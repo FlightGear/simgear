@@ -67,6 +67,7 @@ protected:
 #else
         glDeleteTexturesEXT(1, &texture_id);
 #endif
+        texture_id = -1;
     }
 
 

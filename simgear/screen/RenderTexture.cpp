@@ -1414,7 +1414,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #else
         if (GL_NV_float_buffer)
         {
-            pfAttribs.push_back(GL_FLOAT_COMPONENTS_NV);
+            pfAttribs.push_back(GLX_FLOAT_COMPONENTS_NV);
             pfAttribs.push_back(1);
         }
 #endif

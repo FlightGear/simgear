@@ -164,7 +164,7 @@ if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_
     LIBS=$save_LIBS
 fi
 
-AM_CONDITIONAL(HAVE_THREADS, test "x$enable_threads" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
+AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_c_r_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
 
 AC_SEARCH_LIBS(inet_addr, xnet)

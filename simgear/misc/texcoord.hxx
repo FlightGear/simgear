@@ -47,7 +47,7 @@
  * @param scale (default = 1.0) scaling factor
  * @return list of texture coordinates
  */
-point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
+point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 
 

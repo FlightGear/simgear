@@ -140,7 +140,14 @@ enter this in the official comments in case I forget again. :-)
 
 */
 
+#include <simgear/compiler.h>
+
+// #include STL_IOSTREAM
+
 #include "texcoord.hxx"
+
+// SG_USING_STD(cout);
+// SG_USING_STD(endl);
 
 
 #define FG_STANDARD_TEXTURE_DIMENSION 1000.0 // meters
@@ -149,9 +156,10 @@ enter this in the official comments in case I forget again. :-)
 
 
 // return the basic unshifted/unmoded texture coordinate for a lat/lon
-inline Point3D basic_tex_coord( const Point3D& p, 
-				double degree_width, double degree_height,
-				double scale )
+static inline Point3D basic_tex_coord( const Point3D& p, 
+                                       double degree_width,
+                                       double degree_height,
+                                       double scale )
 {
     return Point3D( p.x() * ( degree_width * scale / 
 			      FG_STANDARD_TEXTURE_DIMENSION ),
@@ -163,7 +171,7 @@ inline Point3D basic_tex_coord( const Point3D& p,
 
 // traverse the specified fan/strip/list of vertices and attempt to
 // calculate "none stretching" texture coordinates
-point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
+point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale )
 {
     // cout << "calculating texture coordinates for a specific fan of size = "

@@ -130,7 +130,7 @@ bool sgGenTile( const string& path, SGBucket b,
         geod_nodes.push_back( geod[i] );
         rectangle.push_back( i );
     }
-    point_list texs = calc_tex_coords( b, geod_nodes, rectangle, 
+    point_list texs = sgCalcTexCoords( b, geod_nodes, rectangle, 
                                        1000.0 / tex_width );
 
     // Allocate ssg structure

@@ -61,7 +61,7 @@ public:
 
     // initialize the sky object and connect it into our scene graph
     // root
-    ssgBranch *build();
+    ssgBranch *build( double hscale = 80000.0, double vscale = 80000.0 );
 
     // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for

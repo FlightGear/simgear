@@ -49,19 +49,19 @@
 
 
 // in meters of course
-#define CENTER_ELEV   25000.0
+static const float center_elev = 0.3125;
 
-#define UPPER_RADIUS  50000.0
-#define UPPER_ELEV    20000.0
+static const float upper_radius = 0.6250;
+static const float upper_elev = 0.2500;
 
-#define MIDDLE_RADIUS 70000.0
-#define MIDDLE_ELEV    8000.0
+static const float middle_radius = 0.8750;
+static const float middle_elev = 0.1000;
 
-#define LOWER_RADIUS  80000.0
-#define LOWER_ELEV        0.0
+static const float lower_radius = 0.8750;
+static const float lower_elev = 0.0000;
 
-#define BOTTOM_RADIUS 50000.0
-#define BOTTOM_ELEV   -2000.0
+static const float bottom_radius = 0.6250;
+static const float bottom_elev = -0.0250;
 
 
 // Set up dome rendering callbacks
@@ -103,7 +103,7 @@ SGSkyDome::~SGSkyDome( void ) {
 
 
 // initialize the sky object and connect it into our scene graph
-ssgBranch * SGSkyDome::build( ) {
+ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     sgVec4 color;
 
     float theta;
@@ -145,30 +145,30 @@ ssgBranch * SGSkyDome::build( ) {
     sgVec3 lower_vertex[12];
     sgVec3 bottom_vertex[12];
 
-    sgSetVec3( center_vertex, 0.0, 0.0, CENTER_ELEV );
+    sgSetVec3( center_vertex, 0.0, 0.0, center_elev * vscale );
 
     for ( i = 0; i < 12; i++ ) {
 	theta = (i * 30.0) * SGD_DEGREES_TO_RADIANS;
 
 	sgSetVec3( upper_vertex[i],
-		   cos(theta) * UPPER_RADIUS,
-		   sin(theta) * UPPER_RADIUS,
-		   UPPER_ELEV );
+		   cos(theta) * upper_radius * hscale,
+		   sin(theta) * upper_radius * hscale,
+		   upper_elev * vscale );
 	
 	sgSetVec3( middle_vertex[i],
-		   cos((double)theta) * MIDDLE_RADIUS,
-		   sin((double)theta) * MIDDLE_RADIUS,
-		   MIDDLE_ELEV );
+		   cos((double)theta) * middle_radius * hscale,
+		   sin((double)theta) * middle_radius * hscale,
+		   middle_elev * vscale );
 
 	sgSetVec3( lower_vertex[i],
-		   cos((double)theta) * LOWER_RADIUS,
-		   sin((double)theta) * LOWER_RADIUS,
-		   LOWER_ELEV );
+		   cos((double)theta) * lower_radius * hscale,
+		   sin((double)theta) * lower_radius * hscale,
+		   lower_elev * vscale );
 
 	sgSetVec3( bottom_vertex[i],
-		   cos((double)theta) * BOTTOM_RADIUS,
-		   sin((double)theta) * BOTTOM_RADIUS,
-		   BOTTOM_ELEV );
+		   cos((double)theta) * bottom_radius * hscale,
+		   sin((double)theta) * bottom_radius * hscale,
+		   bottom_elev * vscale );
     }
 
     // generate the center disk vertex/color arrays

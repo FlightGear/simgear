@@ -111,6 +111,7 @@ public:
                       GL_RGB, GL_UNSIGNED_BYTE, texture_data );
 
         delete texture_data;
+        texture_data = 0;
     }
 
     // Nowhere does it say that resident textures have to be in video memory!

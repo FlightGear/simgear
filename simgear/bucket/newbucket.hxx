@@ -107,14 +107,18 @@ public:
     // return the center lon of a tile
     double get_center_lon() const;
 
-    // return width of the tile
+    // return width of the tile in degrees
     double get_width() const;
+    // return width of the tile in meters
+    double get_width_m() const; 
+    // return height of the tile in degrees
+    double get_height() const;
+    // return height of the tile in meters
+    double get_height_m() const;
 
     // return the center lat of a tile
     double get_center_lat() const;
 
-    // return height of the tile
-    double get_height() const;
 
     // Informational methods
     inline int get_lon() const { return lon; }
@@ -300,13 +304,13 @@ inline double FGBucket::get_center_lat() const {
 }
 
 
-// return width of the tile
+// return width of the tile in degrees
 inline double FGBucket::get_width() const {
     return bucket_span( get_center_lat() );
 }
 
 
-// return height of the tile
+// return height of the tile in degrees
 inline double FGBucket::get_height() const {
     return FG_BUCKET_SPAN;
 }

@@ -85,6 +85,33 @@ string FGBucket::gen_base_path() const {
 }
 
 
+// return width of the tile in meters
+double FGBucket::get_width_m() const {
+    double clat = (int)get_center_lat();
+    if ( clat > 0 ) {
+	clat = (int)clat + 0.5;
+    } else {
+	clat = (int)clat - 0.5;
+    }
+    double clat_rad = clat * DEG_TO_RAD;
+    double cos_lat = cos( clat_rad );
+    double local_radius = cos_lat * EQUATORIAL_RADIUS_M;
+    double local_perimeter = 2.0 * local_radius * FG_PI;
+    double degree_width = local_perimeter / 360.0;
+
+    return bucket_span( get_center_lat() ) * degree_width;
+}
+
+
+// return height of the tile in meters
+double FGBucket::get_height_m() const {
+    double perimeter = 2.0 * EQUATORIAL_RADIUS_M * FG_PI;
+    double degree_height = perimeter / 360.0;
+
+    return FG_BUCKET_SPAN * degree_height;
+}
+
+
 // find the bucket which is offset by the specified tile units in the
 // X & Y direction.  We need the current lon and lat to resolve
 // ambiguities when going from a wider tile to a narrower one above or

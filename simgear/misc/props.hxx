@@ -511,7 +511,9 @@ public:
   enum Attribute {
     READ = 1,
     WRITE = 2,
-    ARCHIVE = 4
+    ARCHIVE = 4,
+    TRACE_READ = 8,
+    TRACE_WRITE = 16
   };
 
 
@@ -1037,6 +1039,24 @@ private:
    * Clear any existing value and set the type to NONE.
    */
   void clear_value ();
+
+
+  /**
+   * Get the value as a string.
+   */
+  string get_string () const;
+
+
+  /**
+   * Trace a read access.
+   */
+  void trace_read (Type accessType) const;
+
+
+  /**
+   * Trace a write access.
+   */
+  void trace_write (Type accessType) const;
 
   string _name;
   int _index;

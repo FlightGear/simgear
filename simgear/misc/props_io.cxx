@@ -181,6 +181,12 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     attval = atts.getValue("archive");
     if (checkFlag(attval, false))
       mode |= SGPropertyNode::ARCHIVE;
+    attval = atts.getValue("trace-read");
+    if (checkFlag(attval, false))
+      mode |= SGPropertyNode::TRACE_READ;
+    attval = atts.getValue("trace-write");
+    if (checkFlag(attval, false))
+      mode |= SGPropertyNode::TRACE_WRITE;
 
 				// Check for an alias.
     attval = atts.getValue("alias");

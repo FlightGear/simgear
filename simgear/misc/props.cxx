@@ -7,6 +7,7 @@
 // $Id$
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +42,9 @@ public:
 
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
+
+#define DO_TRACE_READ(type) if(getAttribute(TRACE_READ)) trace_read(type)
+#define DO_TRACE_WRITE(type) if (getAttribute(TRACE_WRITE)) trace_write(type)
 
 #define GET_BOOL (_value.bool_val->getValue())
 #define GET_INT (_value.int_val->getValue())
@@ -407,6 +411,66 @@ SGPropertyNode::clear_value ()
 
 
 /**
+ * Get the value as a string.
+ */
+string
+SGPropertyNode::get_string () const
+{
+  TEST_READ("");
+  char buf[128];
+
+  switch (_type) {
+  case ALIAS:
+    return _value.alias->getStringValue();
+  case BOOL:
+    if (GET_BOOL)
+      return "true";
+    else
+      return "false";
+  case INT:
+    sprintf(buf, "%d", GET_INT);
+    return buf;
+  case LONG:
+    sprintf(buf, "%ld", GET_LONG);
+    return buf;
+  case FLOAT:
+    sprintf(buf, "%f", GET_FLOAT);
+    return buf;
+  case DOUBLE:
+    sprintf(buf, "%f", GET_DOUBLE);
+    return buf;
+  case STRING:
+  case UNSPECIFIED:
+    return GET_STRING;
+  }
+
+  return "";			// if NONE
+}
+
+
+/**
+ * Trace a read access for a property.
+ */
+void
+SGPropertyNode::trace_read (SGPropertyNode::Type accessType) const
+{
+  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Read node " << getPath()
+	 << ", value \"" << get_string() << '"');
+}
+
+
+/**
+ * Trace a write access for a property.
+ */
+void
+SGPropertyNode::trace_write (SGPropertyNode::Type accessType) const
+{
+  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Write node " << getPath()
+	 << ", value\"" << get_string() << '"');
+}
+
+
+/**
  * Alias to another node.
  */
 bool
@@ -586,6 +650,7 @@ SGPropertyNode::getType () const
 bool 
 SGPropertyNode::getBoolValue () const
 {
+  DO_TRACE_READ(BOOL);
   TEST_READ(false);
   switch (_type) {
   case ALIAS:
@@ -611,6 +676,7 @@ SGPropertyNode::getBoolValue () const
 int 
 SGPropertyNode::getIntValue () const
 {
+  DO_TRACE_READ(INT);
   TEST_READ(0);
   switch (_type) {
   case ALIAS:
@@ -636,6 +702,7 @@ SGPropertyNode::getIntValue () const
 long 
 SGPropertyNode::getLongValue () const
 {
+  DO_TRACE_READ(LONG);
   TEST_READ(0L);
   switch (_type) {
   case ALIAS:
@@ -661,6 +728,7 @@ SGPropertyNode::getLongValue () const
 float 
 SGPropertyNode::getFloatValue () const
 {
+  DO_TRACE_READ(FLOAT);
   TEST_READ(0.0);
   switch (_type) {
   case ALIAS:
@@ -686,6 +754,7 @@ SGPropertyNode::getFloatValue () const
 double 
 SGPropertyNode::getDoubleValue () const
 {
+  DO_TRACE_READ(DOUBLE);
   TEST_READ(0.0L);
   switch (_type) {
   case ALIAS:
@@ -711,40 +780,14 @@ SGPropertyNode::getDoubleValue () const
 string
 SGPropertyNode::getStringValue () const
 {
-  TEST_READ("");
-  char buf[128];
-
-  switch (_type) {
-  case ALIAS:
-    return _value.alias->getStringValue();
-  case BOOL:
-    if (GET_BOOL)
-      return "true";
-    else
-      return "false";
-  case INT:
-    sprintf(buf, "%d", GET_INT);
-    return buf;
-  case LONG:
-    sprintf(buf, "%ld", GET_LONG);
-    return buf;
-  case FLOAT:
-    sprintf(buf, "%f", GET_FLOAT);
-    return buf;
-  case DOUBLE:
-    sprintf(buf, "%f", GET_DOUBLE);
-    return buf;
-  case STRING:
-  case UNSPECIFIED:
-    return GET_STRING;
-  }
-
-  return "";			// if NONE
+  DO_TRACE_READ(STRING);
+  return get_string();
 }
 
 bool
 SGPropertyNode::setBoolValue (bool value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -754,27 +797,36 @@ SGPropertyNode::setBoolValue (bool value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setBoolValue(value);
+    result = _value.alias->setBoolValue(value);
+    break;
   case BOOL:
-    return SET_BOOL(value);
+    result = SET_BOOL(value);
+    break;
   case INT:
-    return SET_INT(int(value));
+    result = SET_INT(int(value));
+    break;
   case LONG:
-    return SET_LONG(long(value));
+    result = SET_LONG(long(value));
+    break;
   case FLOAT:
-    return SET_FLOAT(float(value));
+    result = SET_FLOAT(float(value));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(double(value));
+    result = SET_DOUBLE(double(value));
+    break;
   case STRING:
-    return SET_STRING(value ? "true" : "false");
+    result = SET_STRING(value ? "true" : "false");
+    break;
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(BOOL);
+  return result;
 }
 
 bool
 SGPropertyNode::setIntValue (int value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -784,30 +836,39 @@ SGPropertyNode::setIntValue (int value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setIntValue(value);
+    result = _value.alias->setIntValue(value);
+    break;
   case BOOL:
-    return SET_BOOL(value == 0 ? false : true);
+    result = SET_BOOL(value == 0 ? false : true);
+    break;
   case INT:
-    return SET_INT(value);
+    result = SET_INT(value);
+    break;
   case LONG:
-    return SET_LONG(long(value));
+    result = SET_LONG(long(value));
+    break;
   case FLOAT:
-    return SET_FLOAT(float(value));
+    result = SET_FLOAT(float(value));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(double(value));
+    result = SET_DOUBLE(double(value));
+    break;
   case STRING: {
     char buf[128];
     sprintf(buf, "%d", value);
-    return SET_STRING(buf);
+    result = SET_STRING(buf);
+    break;
   }
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(INT);
+  return result;
 }
 
 bool
 SGPropertyNode::setLongValue (long value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -817,30 +878,39 @@ SGPropertyNode::setLongValue (long value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setLongValue(value);
+    result = _value.alias->setLongValue(value);
+    break;
   case BOOL:
-    return SET_BOOL(value == 0L ? false : true);
+    result = SET_BOOL(value == 0L ? false : true);
+    break;
   case INT:
-    return SET_INT(int(value));
+    result = SET_INT(int(value));
+    break;
   case LONG:
-    return SET_LONG(value);
+    result = SET_LONG(value);
+    break;
   case FLOAT:
-    return SET_FLOAT(float(value));
+    result = SET_FLOAT(float(value));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(double(value));
+    result = SET_DOUBLE(double(value));
+    break;
   case STRING: {
     char buf[128];
     sprintf(buf, "%d", value);
-    return SET_STRING(buf);
+    result = SET_STRING(buf);
+    break;
   }
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(LONG);
+  return result;
 }
 
 bool
 SGPropertyNode::setFloatValue (float value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -850,30 +920,39 @@ SGPropertyNode::setFloatValue (float value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setFloatValue(value);
+    result = _value.alias->setFloatValue(value);
+    break;
   case BOOL:
-    return SET_BOOL(value == 0.0 ? false : true);
+    result = SET_BOOL(value == 0.0 ? false : true);
+    break;
   case INT:
-    return SET_INT(int(value));
+    result = SET_INT(int(value));
+    break;
   case LONG:
-    return SET_LONG(long(value));
+    result = SET_LONG(long(value));
+    break;
   case FLOAT:
-    return SET_FLOAT(value);
+    result = SET_FLOAT(value);
+    break;
   case DOUBLE:
-    return SET_DOUBLE(double(value));
+    result = SET_DOUBLE(double(value));
+    break;
   case STRING: {
     char buf[128];
     sprintf(buf, "%f", value);
-    return SET_STRING(buf);
+    result = SET_STRING(buf);
+    break;
   }
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(FLOAT);
+  return result;
 }
 
 bool
 SGPropertyNode::setDoubleValue (double value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -883,30 +962,39 @@ SGPropertyNode::setDoubleValue (double value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setDoubleValue(value);
+    result = _value.alias->setDoubleValue(value);
+    break;
   case BOOL:
-    return SET_BOOL(value == 0.0L ? false : true);
+    result = SET_BOOL(value == 0.0L ? false : true);
+    break;
   case INT:
-    return SET_INT(int(value));
+    result = SET_INT(int(value));
+    break;
   case LONG:
-    return SET_LONG(long(value));
+    result = SET_LONG(long(value));
+    break;
   case FLOAT:
-    return SET_FLOAT(float(value));
+    result = SET_FLOAT(float(value));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(value);
+    result = SET_DOUBLE(value);
+    break;
   case STRING: {
     char buf[128];
     sprintf(buf, "%lf", value);
-    return SET_STRING(buf);
+    result = SET_STRING(buf);
+    break;
   }
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(DOUBLE);
+  return result;
 }
 
 bool
 SGPropertyNode::setStringValue (string value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
@@ -916,27 +1004,36 @@ SGPropertyNode::setStringValue (string value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setStringValue(value);
+    result = _value.alias->setStringValue(value);
+    break;
   case BOOL:
-    return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    result = SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    break;
   case INT:
-    return SET_INT(atoi(value.c_str()));
+    result = SET_INT(atoi(value.c_str()));
+    break;
   case LONG:
-    return SET_LONG(strtol(value.c_str(), 0, 0));
+    result = SET_LONG(strtol(value.c_str(), 0, 0));
+    break;
   case FLOAT:
-    return SET_FLOAT(atof(value.c_str()));
+    result = SET_FLOAT(atof(value.c_str()));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(strtod(value.c_str(), 0));
+    result = SET_DOUBLE(strtod(value.c_str(), 0));
+    break;
   case STRING:
-    return SET_STRING(value);
+    result = SET_STRING(value);
+    break;
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(STRING);
+  return result;
 }
 
 bool
 SGPropertyNode::setUnspecifiedValue (string value)
 {
+  bool result = false;
   TEST_WRITE;
   if (_type == NONE) {
     clear_value();
@@ -946,23 +1043,31 @@ SGPropertyNode::setUnspecifiedValue (string value)
 
   switch (_type) {
   case ALIAS:
-    return _value.alias->setUnspecifiedValue(value);
+    result = _value.alias->setUnspecifiedValue(value);
+    break;
   case BOOL:
-    return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    result = SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    break;
   case INT:
-    return SET_INT(atoi(value.c_str()));
+    result = SET_INT(atoi(value.c_str()));
+    break;
   case LONG:
-    return SET_LONG(strtol(value.c_str(), 0, 0));
+    result = SET_LONG(strtol(value.c_str(), 0, 0));
+    break;
   case FLOAT:
-    return SET_FLOAT(atof(value.c_str()));
+    result = SET_FLOAT(atof(value.c_str()));
+    break;
   case DOUBLE:
-    return SET_DOUBLE(strtod(value.c_str(), 0));
+    result = SET_DOUBLE(strtod(value.c_str(), 0));
+    break;
   case STRING:
   case UNSPECIFIED:
-    return SET_STRING(value);
+    result = SET_STRING(value);
+    break;
   }
 
-  return false;			// should never happen
+  DO_TRACE_WRITE(UNSPECIFIED);
+  return result;
 }
 
 bool

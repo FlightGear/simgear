@@ -38,10 +38,18 @@
 
 SG_USING_STD(string);
 
+// Constructor -- starts with an empty table.
+SGInterpTable::SGInterpTable()
+    : size(0)
+{
+}
+
 
 // Constructor -- loads the interpolation table from the specified
 // file
-SGInterpTable::SGInterpTable( const string& file ) {
+SGInterpTable::SGInterpTable( const string& file ) 
+  : size(0)
+{
     SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 
     sg_gzifstream in( file );
@@ -50,56 +58,62 @@ SGInterpTable::SGInterpTable( const string& file ) {
 	exit(-1);
     }
 
-    size = 0;
     in >> skipcomment;
     while ( in ) {
-	if ( size < MAX_TABLE_SIZE ) {
-	    in >> table[size][0] >> table[size][1];
-	    in >> skipws;
-	    size++;
-	} else {
-            SG_LOG( SG_MATH, SG_ALERT,
-		    "fgInterpolateInit(): Exceed max table size = "
-		    << MAX_TABLE_SIZE );
-	    exit(-1);
-	}
+      double ind, dep;
+      in >> ind >> dep;
+      in >> skipws;
+      table.push_back(Entry(ind, dep));
+      size++;
     }
 }
 
 
+// Add an entry to the table.
+void SGInterpTable::addEntry (double ind, double dep)
+{
+  table.push_back(Entry(ind,dep));
+  size++;
+}
+
+
 // Given an x value, linearly interpolate the y value from the table
-double SGInterpTable::interpolate(double x) {
+double SGInterpTable::interpolate(double x) const
+{
     int i;
     double y;
 
+    if (size == 0.0)
+      return 0.0;
+
     i = 0;
 
-    while ( (x > table[i][0]) && (i < size) ) {
-	// cout << "  i = " << i << " table[i][0] = " << table[i][0] << endl;
+    while ( (i < size) && (x > table[i].ind) ) {
+	// cout << "  i = " << i << " table[i].ind = " << table[i].ind << endl;
 	// cout << "  size = " << size << endl;
 	i++;
     }
 
     // printf ("i = %d ", i);
 
-    if ( (i == 0) && (x < table[0][0]) ) {
+    if ( (i == 0) && (x < table[0].ind) ) {
 	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to small = " << x );
-	return table[0][1];
+	return table[0].dep;
     }
 
-    // cout << " table[size-1][0] = " << table[size-1][0] << endl;
-    if ( x > table[size-1][0] ) {
+    // cout << " table[size-1].ind = " << table[size-1].ind << endl;
+    if ( x > table[size-1].ind ) {
 	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to big = " << x );
-	return table[size-1][1];
+	return table[size-1].dep;
     }
 
     // y = y1 + (y0 - y1)(x - x1) / (x0 - x1)
-    y = table[i][1] + 
-	( (table[i-1][1] - table[i][1]) * 
-	  (x - table[i][0]) ) /
-	(table[i-1][0] - table[i][0]);
+    y = table[i].dep + 
+	( (table[i-1].dep - table[i].dep) * 
+	  (x - table[i].ind) ) /
+	(table[i-1].ind - table[i].ind);
 
     return(y);
 }

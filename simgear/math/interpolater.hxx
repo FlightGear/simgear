@@ -36,10 +36,12 @@
 
 #include <simgear/compiler.h>
 
+#include <vector>
+SG_USING_STD(vector);
+
 #include STL_STRING
 SG_USING_STD(string);
 
-#define MAX_TABLE_SIZE 32
 
 /**
  * A class that provids a simple linear 2d interpolation lookup table.
@@ -48,10 +50,26 @@ SG_USING_STD(string);
  * variable can be anything.
  */
 class SGInterpTable {
+
+    struct Entry
+    {
+      Entry ()
+	: ind(0.0L), dep(0.0L) {}
+      Entry (double independent, double dependent)
+	: ind(independent), dep(dependent) {}
+      double ind;
+      double dep;
+    };
+
     int size;
-    double table[MAX_TABLE_SIZE][2];
+    vector<Entry> table;
 
 public:
+
+    /**
+     * Constructor. Creates a new, empty table.
+     */
+    SGInterpTable();
 
     /**
      * Constructor. Loads the interpolation table from the specified file.
@@ -59,12 +77,22 @@ public:
      */
     SGInterpTable( const string& file );
 
+
+    /**
+     * Add an entry to the table, extending the table's length.
+     *
+     * @param ind The independent variable.
+     * @param dep The dependent variable.
+     */
+    void addEntry (double ind, double dep);
+    
+
     /**
      * Given an x value, linearly interpolate the y value from the table.
      * @param x independent variable
      * @return interpolated dependent variable
      */
-    double interpolate(double x);
+    double interpolate(double x) const;
 
     /** Destructor */
     ~SGInterpTable();

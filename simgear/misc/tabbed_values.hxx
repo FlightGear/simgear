@@ -1,10 +1,10 @@
 #ifndef SG_TABBED_VALUES_HXX
 #define SG_TABBED_VALUES_HXX
 
-#include <vector>
-#include <string>
+#include <simgear/compiler.h>
 
-#include "simgear/compiler.h"
+#include <vector>
+#include STL_STRING
 
 SG_USING_STD(vector);
 SG_USING_STD(string);

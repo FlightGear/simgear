@@ -1,6 +1,8 @@
 
 #ifndef __SGI_HXX
-#define __SGI_HXX
+#define __SGI_HXX 1
+
+#ifdef __cplusplus
 
 #include <string>
 
@@ -40,4 +42,6 @@ operator+(const char* lhs, const std::string& rhs)
     return std::string(lhs) + rhs;
 }
 
-#endif // !__SGI_HXX
+#endif /* __cplusplus */
+
+#endif /* !__SGI_HXX */

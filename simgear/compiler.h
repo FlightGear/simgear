@@ -290,8 +290,6 @@
 #if defined ( sgi ) && !defined( __GNUC__ )
 #  define SG_HAVE_NATIVE_SGI_COMPILERS
 
-#include <simgear/compatibility/IRIX>
-
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define SG_CLASS_PARTIAL_SPECIALIZATION
 #  define SG_NEED_AUTO_PTR
@@ -309,7 +307,7 @@
 #  define STL_ITERATOR   <iterator>
 #  define STL_FSTREAM    <fstream>
 #  define STL_STDEXCEPT  <stdexcept>
-#  define STL_STRING     <string>
+#  define STL_STRING     <simgear/compatibility/irix_string>
 #  define STL_STRSTREAM  <strstream>
 
 #pragma set woff 1001,1012,1014,1116,1155,1172,1174

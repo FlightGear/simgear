@@ -30,4 +30,4 @@ include_HEADERS	= \
 	new \
 	streambuf \
 	\
-	IRIX
+	irix_string

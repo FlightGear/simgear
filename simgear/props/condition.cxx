@@ -46,11 +46,6 @@ FGPropertyCondition::FGPropertyCondition ( SGPropertyNode *prop_root,
                                            const char *propname )
     : _node( prop_root->getNode(propname, true) )
 {
-    cout << "FGPropertyCondition::FGPropertyCondition()" << endl;
-    cout << "  prop_root = " << prop_root << endl;
-    cout << "  propname = " << propname << endl;
-    _node = prop_root->getNode(propname, true);
-    cout << "  _node = " << _node << endl;
 }
 
 FGPropertyCondition::~FGPropertyCondition ()

@@ -420,12 +420,26 @@ SGSpinAnimation::update()
 SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgSelector),
     _use_personality( props->getBoolValue("use-personality",false) ),
-    _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
-    _last_time_sec( sim_time_sec ),
     _total_duration_sec( 0 ),
     _step( 0 )
     
 {
+    SGPropertyNode_ptr dNode = props->getChild( "duration-sec" );
+    if ( dNode == 0 ) {
+        _duration_sec = 1.0;
+    } else {
+        SGPropertyNode_ptr rNode = dNode->getChild("random");
+        if ( rNode == 0 ) {
+            _duration_sec = dNode->getDoubleValue();
+        } else {
+            double dmin = rNode->getDoubleValue( "min", 0.0 ),
+                   dmax = rNode->getDoubleValue( "max", 1.0 );
+            _duration_sec = dmin + sg_random() * ( dmax - dmin );
+        }
+    }
+
+    _last_time_sec = sim_time_sec - _duration_sec;
+
     vector<SGPropertyNode_ptr> nodes = props->getChildren( "branch-duration-sec" );
     size_t nb = nodes.size();
     for ( size_t i = 0; i < nb; i++ ) {

@@ -240,6 +240,21 @@ SOURCE=.\simgear\ephemeris\neptune.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\ephemeris\pluto.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgephem"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgephem"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\ephemeris\saturn.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -411,6 +426,21 @@ SOURCE=.\simgear\io\sg_socket.cxx
 # Begin Group "Lib_sgmagvar"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\magvar\coremag.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmagvar"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmagvar"
+
+!ENDIF 
+
+# End Source File
 # Begin Source File
 
 SOURCE=.\simgear\magvar\coremag.cxx
@@ -617,6 +647,36 @@ SOURCE=.\simgear\metar\Drvmetar.c
 # Begin Source File
 
 SOURCE=.\simgear\metar\Fracpart.cpp
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmetar"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmetar"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\metar\Local.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmetar"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmetar"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\metar\Metar.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -883,7 +943,37 @@ SOURCE=.\simgear\screen\GLBitmaps.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\screen\GLBitmaps.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgscreen"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgscreen"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\screen\screen-dump.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgscreen"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgscreen"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\screen\win32-printer.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1162,7 +1252,37 @@ SOURCE=.\simgear\xgl\xglUtils.c
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\simgear\xml\asciitab.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\xml\easyxml.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\hashtable.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1192,7 +1312,112 @@ SOURCE=.\simgear\xml\hashtable.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\xml\iasciitab.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\latin1tab.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\nametab.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\utf8tab.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\xmldef.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\xmlparse.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\xml\xmlparse.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\xmlrole.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1222,7 +1447,37 @@ SOURCE=.\simgear\xml\xmlrole.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\xml\xmltok.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\xml\xmltok.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgxml"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgxml"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\xml\xmltok_impl.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1301,6 +1556,21 @@ SOURCE=.\simgear\zlib\deflate.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\zlib\deflate.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\zlib\gzio.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1331,6 +1601,21 @@ SOURCE=.\simgear\zlib\infblock.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\zlib\infblock.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\zlib\infcodes.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1346,7 +1631,52 @@ SOURCE=.\simgear\zlib\infcodes.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\zlib\infcodes.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\zlib\inffast.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\zlib\inffast.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\zlib\inffixed.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1391,6 +1721,21 @@ SOURCE=.\simgear\zlib\inftrees.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\zlib\inftrees.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\zlib\infutil.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1406,7 +1751,37 @@ SOURCE=.\simgear\zlib\infutil.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\zlib\infutil.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\zlib\trees.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\zlib\trees.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

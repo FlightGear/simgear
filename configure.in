@@ -350,3 +350,9 @@ if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h
 else
    echo "Threads: no threads (pthread lib not found.)"
 fi
+
+if test "$OS" = "IRIX" -o "$OS" = "IRIX64"; then
+    if test "$CXX" = "CC"; then
+        echo "\nRemember to run: sh ../FlightGear/irix-hack.sh!\07\n"
+    fi
+fi

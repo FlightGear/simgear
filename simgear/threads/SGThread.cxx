@@ -5,6 +5,9 @@
 #else
 #  include <sys/time.h>
 #endif
+#if _MSC_VER >= 1300
+#  include "winsock2.h"
+#endif
 
 #include "SGThread.hxx"
 

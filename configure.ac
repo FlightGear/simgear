@@ -185,7 +185,7 @@ if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_
         CFLAGS=$save_CFLAGS
     else
         dnl This is cheating a bit. pthread_exit comes with using -pthread, not
--lpthread
+        dnl -lpthread
         ac_cv_lib_pthread_pthread_exit="yes"
     fi
     LIBS=$save_LIBS

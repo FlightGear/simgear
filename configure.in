@@ -192,8 +192,8 @@ elif test "x$ac_cv_header_windows_h" != "xyes" ; then
     if test "x$ac_cv_lib_MesaGL_glNewList" = "xyes" ; then
 	AC_CHECK_HEADER(GL/fxmesa.h)
 	if test "x$ac_cv_header_GL_fxmesa_h" = "xyes"; then
-	    AC_DEFINE( XMESA )
-            AC_DEFINE( FX )
+	    AC_DEFINE(XMESA)
+            AC_DEFINE(FX)
         fi
     fi
 
@@ -309,7 +309,7 @@ AC_CHECK_HEADERS( \
 	sys/stat.h sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
 
 if test "x$ac_cv_header_stdint_h" = "xyes"; then
-    AC_DEFINE( HAVE_STDINT_H )
+    AC_DEFINE(HAVE_STDINT_H)
 fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.

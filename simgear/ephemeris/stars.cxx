@@ -21,6 +21,7 @@
 // $Id$
 
 
+#include <simgear/debug/logstream.hxx>
 #include <simgear/misc/fgstream.hxx>
 
 #include "stars.hxx"
@@ -49,11 +50,12 @@ bool FGStars::load() {
 
      // build the full path name to the stars data base file
     data_path.append( "stars" );
-    cout << "  Loading stars from " << data_path.str() << endl;
+    FG_LOG( FG_ASTRO, FG_INFO, "  Loading stars from " << data_path.str() );
 
     fg_gzifstream in( data_path.str() );
     if ( ! in.is_open() ) {
-	cout << "Cannot open star file: " << data_path.str() << endl;
+	FG_LOG( FG_ASTRO, FG_ALERT, "Cannot open star file: "
+		<< data_path.str() );
 	exit(-1);
     }
 
@@ -110,7 +112,7 @@ bool FGStars::load() {
 	++nstars;
     }
 
-    cout << "  Loaded " << nstars << " stars" << endl;
+    FG_LOG( FG_ASTRO, FG_INFO, "  Loaded " << nstars << " stars" );
 
     return true;
 }

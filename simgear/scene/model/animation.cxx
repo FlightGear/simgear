@@ -182,6 +182,11 @@ SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
     : _branch(branch)
 {
     _branch->setName(props->getStringValue("name", 0));
+    if ( props->getBoolValue( "enable-hot", true ) ) {
+        _branch->setTraversalMaskBits( SSGTRAV_HOT );
+    } else {
+        _branch->clrTraversalMaskBits( SSGTRAV_HOT );
+    }
 }
 
 SGAnimation::~SGAnimation ()

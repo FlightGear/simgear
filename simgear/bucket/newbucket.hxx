@@ -113,19 +113,19 @@ private:
 public:
 
     // default constructor
-    inline SGBucket();
+    SGBucket();
 
     // constructor for specified location
-    inline SGBucket(const double dlon, const double dlat);
+    SGBucket(const double dlon, const double dlat);
 
     // create an impossible bucket if false
-    inline SGBucket(const bool is_good);
+    SGBucket(const bool is_good);
 
     // Parse a unique scenery tile index and find the lon, lat, x, and y
-    inline SGBucket(const long int bindex);
+    SGBucket(const long int bindex);
 
     // default destructor
-    inline ~SGBucket();
+    ~SGBucket();
 
     // Set the bucket params for the specified lat and lon
     void set_bucket( double dlon, double dlat );

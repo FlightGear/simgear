@@ -107,7 +107,7 @@ void* naParseAlloc(struct Parser* p, int bytes)
         p->leftInChunk = sz;
     }
 
-    result = p->chunks[0] + p->chunkSizes[0] - p->leftInChunk;
+    result = (char *)p->chunks[0] + p->chunkSizes[0] - p->leftInChunk;
     p->leftInChunk -= bytes;
     return (void*)result;
 }

@@ -1,5 +1,6 @@
 #include "nasal.h"
 
+#ifndef _MSC_VER
 // No need to include <string.h> just for this:
 static int strlen(char* s)
 {
@@ -7,6 +8,7 @@ static int strlen(char* s)
     while(*s) s++;
     return s - s0;
 }
+#endif
 
 static naRef size(naContext c, naRef args)
 {

@@ -1,3 +1,10 @@
+New in 0.0.19pre2
+* September 1, 2002
+
+* Fixed various build problems (one show stopper with the interpreters
+  subdir)
+
+
 New in 0.0.19pre1
 * August 31, 2002
 

@@ -468,7 +468,7 @@ display(void)
 	CMetarStation::for_each( dispMetarStation );
 	glEnd();
 	glColor3d(0.0, 0.0, 1.0);
-	glutWireSphere(EARTH_RAD,32,16);
+	glutWireSphere(SG_EARTH_RAD,32,16);
 	glutSwapBuffers();
 	ii++;
 	glPopMatrix();

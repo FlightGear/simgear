@@ -69,13 +69,13 @@
 #  define M_E     2.7182818284590452354
 #endif
 
-// ONE_SECOND is pi/180/60/60, or about 100 feet at earths' equator
-#define ONE_SECOND 4.848136811E-6
+// SG_ONE_SECOND is pi/180/60/60, or about 100 feet at earths' equator
+#define SG_ONE_SECOND 4.848136811E-6
 
 
 // Radius of Earth in kilometers at the equator.  Another source had
 // 6378.165 but this is probably close enough
-#define EARTH_RAD 6378.155
+#define SG_EARTH_RAD 6378.155
 
 
 // Earth parameters for WGS 84, taken from LaRCsim/ls_constants.h

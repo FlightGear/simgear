@@ -42,8 +42,8 @@ double fgGeodAltFromCart(const Point3D& cp)
     lat_geoc = SGD_PI_2 - atan2( sqrt(cp.x()*cp.x() + cp.y()*cp.y()), cp.z() );
     radius = sqrt( cp.x()*cp.x() + cp.y()*cp.y() + cp.z()*cp.z() );
 	
-    if( ( (SGD_PI_2 - lat_geoc) < ONE_SECOND )        // near North pole
-	|| ( (SGD_PI_2 + lat_geoc) < ONE_SECOND ) )   // near South pole
+    if( ( (SGD_PI_2 - lat_geoc) < SG_ONE_SECOND )        // near North pole
+	|| ( (SGD_PI_2 + lat_geoc) < SG_ONE_SECOND ) )   // near South pole
     {
 	result = radius - EQUATORIAL_RADIUS_M*E;
     } else {

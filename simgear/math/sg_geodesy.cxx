@@ -31,9 +31,6 @@
 SG_USING_STD(cout);
 #endif
 
-// ONE_SECOND is pi/180/60/60, or about 100 feet at earths' equator
-#define ONE_SECOND 4.848136811E-6
-
 
 #define DOMAIN_ERR_DEBUG 1
 
@@ -60,8 +57,8 @@ void sgGeocToGeod( double lat_geoc, double radius, double
     double t_lat, x_alpha, mu_alpha, delt_mu, r_alpha, l_point, rho_alpha;
     double sin_mu_a, denom,delt_lambda, lambda_sl, sin_lambda_sl;
 
-    if( ( (SGD_PI_2 - lat_geoc) < ONE_SECOND )        // near North pole
-	|| ( (SGD_PI_2 + lat_geoc) < ONE_SECOND ) )   // near South pole
+    if( ( (SGD_PI_2 - lat_geoc) < SG_ONE_SECOND )        // near North pole
+	|| ( (SGD_PI_2 + lat_geoc) < SG_ONE_SECOND ) )   // near South pole
     {
 	*lat_geod = lat_geoc;
 	*sea_level_r = EQUATORIAL_RADIUS_M*E;

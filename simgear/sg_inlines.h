@@ -28,11 +28,13 @@
 #ifndef _SG_INLINES_H
 #define _SG_INLINES_H
 
+// return the sign of a value
 template <class T>
 inline const int SG_SIGN(const T x) {
     return x < T(0) ? -1 : 1;
 }
 
+// return the minimum of two values
 template <class T>
 inline const T SG_MIN2(const T a, const T b) {
     return a < b ? a : b;
@@ -44,6 +46,7 @@ inline const T SG_MIN3( const T a, const T b, const T c) {
     return (a < b ? SG_MIN2 (a, c) : SG_MIN2 (b, c));
 }
 
+// return the maximum of two values
 template <class T>
 inline const T SG_MAX2(const T a, const T b) {
     return  a > b ? a : b;
@@ -55,10 +58,47 @@ inline const T SG_MAX3 (const T a, const T b, const T c) {
     return (a > b ? SG_MAX2 (a, c) : SG_MAX2 (b, c));
 }
 
-// 
+// return the minimum and maximum of three values
+template <class T>
+inline void SG_MIN_MAX3 ( T &min, T &max, const T a, const T b, const T c) {
+    if( a > b ) {
+        if( a > c ) {
+            max = a;
+            min = SG_MIN2 (b, c);
+        } else {
+            max = c;
+            min = SG_MIN2 (a, b);
+        }
+    } else {
+        if( b > c ) {
+            max = b;
+            min = SG_MIN2 (a, c);
+        } else {
+            max = c;
+            min = SG_MIN2 (a, b);
+        }
+    }
+}
+
+// swap two values
 template <class T>
 inline void SG_SWAP( T &a, T &b) {
     T c = a;  a = b;  b = c;
 }
+
+// clamp a value to lie between min and max
+template <class T>
+inline void SG_CLAMP_RANGE(T &x, const T min, const T max ) {
+    if ( x < min ) { x = min; }
+    if ( x > max ) { x = max; }
+}
+
+// normalize a value to lie between min and max
+template <class T>
+inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
+    T step = max - min;
+    while( val >= max )  val -= step;
+    while( val < min ) val += step;
+};
 
 #endif // _SG_INLINES_H

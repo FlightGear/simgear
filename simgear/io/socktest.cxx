@@ -41,6 +41,10 @@ int main() {
 	if ( s.readline( buf, 256 ) > 0 ) {
 	    cout << "result = " << buf;
 	}
+#ifdef __MINGW32__
+	Sleep(100);
+#else
 	sleep(1);
+#endif
     }
 }

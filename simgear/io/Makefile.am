@@ -26,6 +26,12 @@ else
 INCLUDES = -I$(top_srcdir)
 endif
 
+if IS_MINGW
+NETWORK_LIB = -lwsock32
+else
+NETWORK_LIB =
+endif
+
 noinst_PROGRAMS = decode_binobj socktest lowtest
 
 socktest_SOURCES = socktest.cxx
@@ -51,4 +57,4 @@ decode_binobj_LDADD = \
         $(top_builddir)/simgear/misc/libsgmisc.a \
         $(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
-        -lz
+         $(NETWORK_LIB) -lz

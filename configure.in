@@ -34,11 +34,6 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
-# Check to see if this `configure' is being run in the `Cygwin32' environment
-AC_CYGWIN
-AC_MINGW32
-AC_EXEEXT
-
 AR="ar"
 OS=`uname -s`
 if test "$OS" = "IRIX" -o "$OS" = "IRIX64"; then
@@ -102,18 +97,30 @@ AM_CONDITIONAL(ENABLE_JPEG_SERVER, test "x$with_jpeg_factory" = "xyes")
 dnl Check for MS Windows environment
 AC_CHECK_HEADER(windows.h)
 
-if test "x$HOSTTYPE" != "xmacintosh" ; then
+AC_EGREP_CPP(yes,
+[#ifdef __MINGW32__
+ yes
+ #endif
+],is_mingw=yes, is_mingw=no)
+
+echo "IS_MINGW = "$is_mingw
+AM_CONDITIONAL(IS_MINGW, test $is_mingw="yes")
+
+AC_EGREP_CPP(yes,
+[#ifdef __CYGWIN__
+ yes
+ #endif
+],is_cygwin=yes, is_cygwin=no)
+
+echo "IS_CYGWIN = "$is_cygwin
+AM_CONDITIONAL(IS_CYGWIN, test $is_cygwin="yes")
+
+if test "x$HOSTTYPE" != "xmacintosh" -a "x$is_mingw" != "xyes"; then
     dnl extra library and include directories
     EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
 
     if test -d /opt/X11R6 ; then
         EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
-    fi
-
-    if test "x$ac_cv_header_windows_h" = "xyes" ; then
-        if test -d /usr/mingw/usr ; then
-            EXTRA_DIRS="$EXTRA_DIRS /usr/mingw/usr"
-        fi
     fi
 fi
 
@@ -140,10 +147,6 @@ dnl Checks for libraries.
 null_LIBS="$LIBS"
 
 AC_CHECK_LIB(m, cos)
-
-if test  "x$ac_cv_mingw32" = "xyes" ; then
-    LIBS="$LIBS -lwsock32"
-fi
 
 base_LIBS="$LIBS"
 
@@ -240,8 +243,8 @@ else
 
     LIBS="$LIBS -l${WIN32_GLUT} -l${WIN32_GLU} -l${WIN32_OPENGL}"
     LIBS="$LIBS -luser32 -lgdi32"
-    if test  "x$ac_cv_mingw32" = "xyes" ; then
-	LIBS="$LIBS -wsock32"
+    if test "x$is_mingw" = "xyes" ; then
+        EXTRA_DIRS="${EXTRA_DIRS}"
     fi
     echo "Will link apps with $LIBS"
 fi

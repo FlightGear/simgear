@@ -363,12 +363,9 @@ double sgTimeCurrentMJD( long int warp ) {
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
     struct tm m_gmt;    // copy of system gmtime(&time_t) structure
+    struct tm *gmt = &m_gmt;
 #else
     struct tm *gmt;
-#endif
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    tm * gmt = &m_gmt;
 #endif
 
     // get current Unix calendar time (in seconds)

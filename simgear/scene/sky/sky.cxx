@@ -266,7 +266,10 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
 	double ratio = 1.0;
 
-	if ( alt < asl - transition ) {
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ) {
+	    // clear layer
+	    ratio = 1.0;
+        } else if ( alt < asl - transition ) {
 	    // below cloud layer
 	    ratio = 1.0;
 	} else if ( alt < asl ) {

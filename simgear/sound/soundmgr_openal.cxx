@@ -35,7 +35,7 @@
 # include <AL/alc.h>
 #endif
 
-#if defined (__APPLE__) 
+#if defined (__APPLE__)
 // any C++ header file undefines isinf and isnan
 // so this should be included before <iostream>
 inline int (isinf)(double r) { return isinf(r); }
@@ -44,6 +44,10 @@ inline int (isnan)(double r) { return isnan(r); }
 
 #if defined(__MINGW32__)
 #define isnan(x) _isnan(x)
+#endif
+
+#if defined (__FreeBSD__)
+inline int isnan(double r) { return !(r < 0 || r > 0); }
 #endif
 
 #include STL_IOSTREAM

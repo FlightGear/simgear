@@ -142,6 +142,10 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 {
     double lambda_sl, sin_lambda_sl, cos_lambda_sl, sin_mu, cos_mu, px, py;
     
+#ifdef DOMAIN_ERR_DEBUG
+    errno = 0;
+#endif
+
     lambda_sl = atan( E*E * tan(lat_geod) ); // sea level geocentric latitude
     sin_lambda_sl = sin( lambda_sl );
     cos_lambda_sl = cos( lambda_sl );

@@ -34,7 +34,8 @@ const char *OUT_OF_MEMORY = "Out of memory.";
 SGTexture::SGTexture()
    : texture_id(0),
      texture_data(0),
-     num_colors(3)
+     num_colors(3),
+     file(0)
 {
 }
 
@@ -378,7 +379,7 @@ SGTexture::read_raw_texture(const char *name)
 
     ptr = texture_data;
     for(y=0; y<256; y++) {
-        gzread(image->gzfile, ptr, 256*3);
+        gzread(image->file, ptr, 256*3);
         ptr+=256*3;
     }
     ImageClose(image);
@@ -414,7 +415,7 @@ SGTexture::read_r8_texture(const char *name)
 
     ptr = texture_data;
     for(xy=0; xy<(256*256); xy++) {
-        gzread(image->gzfile, c, 1);
+        gzread(image->file, c, 1);
 
         //look in the table for the right colours
         ptr[0]=msfs_colour[c[0]][0];
@@ -438,7 +439,7 @@ SGTexture::write_texture(const char *name) {
 	    image->tmp[x]=*ptr;
             ptr = ptr + num_colors;
          }
-         fwrite(image->tmp, 1, texture_width, image->file);
+         fwrite(image->tmp, 1, texture_width, file);
       }
    }
 
@@ -500,12 +501,12 @@ SGTexture::ImageOpen(const char *fileName)
         errstr = OUT_OF_MEMORY;
         return 0;
     }
-    if ((image->gzfile = gzopen(fileName, "rb")) == 0) {
+    if ((image->file = gzopen(fileName, "rb")) == 0) {
       errstr = FILE_OPEN_ERROR;
       return 0;
     }
 
-    gzread(image->gzfile, image, 12);
+    gzread(image->file, image, 12);
 
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
@@ -526,9 +527,9 @@ SGTexture::ImageOpen(const char *fileName)
             return 0;
         }
         image->rleEnd = 512 + (2 * x);
-        gzseek(image->gzfile, 512, SEEK_SET);
-        gzread(image->gzfile, image->rowStart, x);
-        gzread(image->gzfile, image->rowSize, x);
+        gzseek(image->file, 512, SEEK_SET);
+        gzread(image->file, image->rowStart, x);
+        gzread(image->file, image->rowSize, x);
         if (swapFlag) {
             ConvertUint(image->rowStart, x/(int) sizeof(unsigned));
             ConvertUint((unsigned *)image->rowSize, x/(int) sizeof(int));
@@ -540,8 +541,8 @@ SGTexture::ImageOpen(const char *fileName)
 
 void
 SGTexture::ImageClose(SGTexture::ImageRec *image) {
-    if (image->gzfile)  gzclose(image->gzfile);
-    if (image->file)    fclose(image->file);
+    if (image->file)  gzclose(image->file);
+    if (file) fclose(file);
     delete image->tmp;
     delete image;
 }
@@ -570,12 +571,12 @@ SGTexture::RawImageOpen(const char *fileName)
         errstr = OUT_OF_MEMORY;
         return 0;
     }
-    if ((image->gzfile = gzopen(fileName, "rb")) == 0) {
+    if ((image->file = gzopen(fileName, "rb")) == 0) {
       errstr = FILE_OPEN_ERROR;
       return 0;
     }
 
-    gzread(image->gzfile, image, 12);
+    gzread(image->file, image, 12);
 
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
@@ -617,7 +618,7 @@ SGTexture::ImageWriteOpen(const char *fileName)
         errstr = OUT_OF_MEMORY;
         return 0;
     }
-    if ((image->file = fopen(fileName, "wb")) == 0) {
+    if ((file = fopen(fileName, "wb")) == 0) {
         errstr = FILE_OPEN_ERROR;
         return 0;
     }
@@ -629,9 +630,9 @@ SGTexture::ImageWriteOpen(const char *fileName)
     image->ysize = texture_height;
     image->zsize = num_colors;
 
-    fwrite(image, 1, 12, image->file);
+    fwrite(image, 1, 12, file);
 
-    fseek(image->file, 512, SEEK_SET);
+    fseek(file, 512, SEEK_SET);
 
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
@@ -652,9 +653,9 @@ SGTexture::ImageWriteOpen(const char *fileName)
             return 0;
         }
         image->rleEnd = 512 + (2 * x);
-        fseek(image->file, 512, SEEK_SET);
-        fwrite(image->rowStart, 1, x, image->file);
-        fwrite(image->rowSize, 1, x, image->file);
+        fseek(file, 512, SEEK_SET);
+        fwrite(image->rowStart, 1, x, file);
+        fwrite(image->rowSize, 1, x, file);
         if (swapFlag) {
             ConvertUint(image->rowStart, x/(int) sizeof(unsigned));
             ConvertUint((unsigned *)image->rowSize, x/(int) sizeof(int));
@@ -671,8 +672,8 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
     int count;
 
     if ((image->type & 0xFF00) == 0x0100) {
-        gzseek(image->gzfile, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
-        gzread(image->gzfile, image->tmp,
+        gzseek(image->file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
+        gzread(image->file, image->tmp,
                (unsigned int)image->rowSize[y+z*image->ysize]);
 
         iPtr = image->tmp;
@@ -696,9 +697,9 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
             }
         }
     } else {
-        gzseek(image->gzfile, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
+        gzseek(image->file, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
               SEEK_SET);
-        gzread(image->gzfile, buf, image->xsize);
+        gzread(image->file, buf, image->xsize);
     }
 }
 
@@ -708,9 +709,9 @@ SGTexture::ImagePutRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
     int count;
 
     if ((image->type & 0xFF00) == 0x0100) {
-        fseek(image->file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
+        fseek(file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
         fread( image->tmp, 1, (unsigned int)image->rowSize[y+z*image->ysize],
-               image->file);
+               file);
 
         iPtr = image->tmp;
         oPtr = buf;
@@ -733,9 +734,9 @@ SGTexture::ImagePutRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
             }
         }
     } else {
-        fseek(image->file, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
+        fseek(file, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
               SEEK_SET);
-        fread(buf, 1, image->xsize, image->file);
+        fread(buf, 1, image->xsize, file);
     }
 }
 
@@ -812,4 +813,29 @@ SGTexture::make_monochrome(GLubyte r, GLubyte g, GLubyte b) {
 
          set_pixel(x,y,ap);
       }
+}
+
+void
+SGTexture::make_normalmap(float brightness) {
+   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * 3);
+
+   for (int y=0; y<texture_height; y++)
+      for (int x=0; x<texture_width; x++)
+      {
+         int mpos = (x + y*texture_width)*3;
+         int dpos = (x + y*texture_width)*num_colors;
+
+         int xp1 = (x < (texture_width-1)) ? x+1 : 0;
+         int yp1 = (y < (texture_height-1)) ? y+1 : 0;
+         int posxp1 = (xp1 + y*texture_width)*num_colors;
+         int posyp1 = (x + yp1*texture_width)*num_colors;
+
+         map[mpos+0] = (128+(texture_data[posxp1]-texture_data[dpos])/2);
+         map[mpos+1] = (128+(texture_data[posyp1]-texture_data[dpos])/2);
+         map[mpos+2] = 128 + GLubyte(128*brightness);
+      }
+
+   free (texture_data);
+   texture_data = map;
+   num_colors = 3;
 }

@@ -40,6 +40,7 @@ private:
 
 protected:
 
+    FILE *file;
     typedef struct _ImageRec {
         unsigned short imagic;
         unsigned short type;
@@ -49,9 +50,8 @@ protected:
         unsigned int wasteBytes;
         char name[80];
         unsigned long colorMap;
-        gzFile gzfile;
-        FILE *file;
-        GLubyte *tmp, *tmpR, *tmpG, *tmpB;
+        gzFile file;
+        GLubyte *tmp;
         unsigned long rleEnd;
         unsigned int *rowStart;
         int *rowSize;
@@ -99,9 +99,11 @@ public:
     inline GLuint id() { return texture_id; }
     inline GLubyte *texture() { return texture_data; }
     inline void set_data(GLubyte *data) { texture_data = data; }
+    // inline void set_colors(int c) { num_colors = c; }
 
     inline int width() { return texture_width; }
     inline int height() { return texture_height; }
+    inline int colors() { return num_colors; }
 
     // dynamic texture functions.
     // everything drawn to the OpenGL screen after prepare is
@@ -139,6 +141,7 @@ public:
     inline void clear_err_str() { errstr = ""; }
 
     void make_monochrome(GLubyte r=255, GLubyte g=255, GLubyte b=255);
+    void make_normalmap(float brightness = 1.0);
 };
 
 #endif

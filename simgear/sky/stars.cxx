@@ -72,7 +72,9 @@ static int sgStarPostDraw( ssgEntity *e ) {
 
 
 // Constructor
-SGStars::SGStars( void ) {
+SGStars::SGStars( void ) :
+old_phase(-1)
+{
 }
 
 
@@ -149,12 +151,12 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
+    // cout << "repainting stars" << endl;
     // double min = 100;
     // double max = -100;
     double mag, nmag, alpha, factor, cutoff;
     float *color;
 
-    static int old_phase = -1;
     int phase;
 
     // determine which star structure to draw
@@ -195,6 +197,7 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
     }
 
     if( phase != old_phase ) {
+	// cout << "  phase change, repainting stars, num = " << num << endl;
         old_phase = phase;
         for ( int i = 0; i < num; ++i ) {
             // if ( star_data[i][2] < min ) { min = star_data[i][2]; }
@@ -225,6 +228,8 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
             sgSetVec4( color, 1.0, 1.0, 1.0, alpha );
             // cout << "alpha[" << i << "] = " << alpha << endl;
         }
+    } else {
+	// cout << "  no phase change, skipping" << endl;
     }
 
     // cout << "min = " << min << " max = " << max << " count = " << num 

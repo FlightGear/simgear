@@ -41,6 +41,8 @@ class SGStars {
     ssgColourArray *cl;
     ssgVertexArray *vl;
 
+    int old_phase;		// data for optimization
+
 public:
 
     // Constructor

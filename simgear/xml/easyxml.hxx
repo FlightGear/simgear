@@ -10,6 +10,8 @@
 
 #include <simgear/compiler.h>
 
+#include <simgear/misc/exception.hxx>
+
 #include STL_IOSTREAM
 #include STL_STRING
 #include <vector>
@@ -19,6 +21,19 @@ SG_USING_STD(istream);
 #endif
 SG_USING_STD(string);
 SG_USING_STD(vector);
+
+
+/**
+ * Exception for an low-level XML parsing error.
+ */
+class sg_xml_exception : public sg_io_exception
+{
+public:
+  sg_xml_exception ();
+  sg_xml_exception (const string &message);
+  sg_xml_exception (const string &message, const sg_location &location);
+  virtual ~sg_xml_exception ();
+};
 
 
 /**
@@ -355,25 +370,6 @@ public:
    * the warning.
    */
   virtual void warning (const char * message, int line, int column) {}
-
-
-  /**
-   * Callback for a fatal XML parsing error.
-   *
-   * The XML parser will use this method to report any fatal errors
-   * during parsing.  Once the first error callback is received, 
-   * normal processing will stop, though additional errors may be
-   * reported.  The application should take any appropriate
-   * error-handling procedures when it receives this callback, and
-   * should not attempt to use any of the data found in the XML
-   * document.
-   *
-   * @param message The error message from the parser.
-   * @param line The number of the line that generated the error.
-   * @param column The character position in the line that generated
-   * the error.
-   */
-  virtual void error (const char * message, int line, int column) = 0;
 };
 
 
@@ -391,11 +387,34 @@ public:
  * @param input The byte input stream containing the XML document.
  * @param visitor An object that contains callbacks for XML parsing
  * events.
- * @return true if the parse succeeded, false if there was a fatal
- * error.
+ * @param path A string describing the original path of the resource.
+ * @exception Throws sg_io_exception or sg_xml_exception if there
+ * is a problem reading the file.
  * @see XMLVisitor
  */
-extern bool readXML (istream &input, XMLVisitor &visitor);
+extern void readXML (istream &input, XMLVisitor &visitor,
+		     const string &path="");
+
+
+/**
+ * @relates XMLVisitor
+ * Read an XML document.
+ *
+ * This function reads an XML document from the input stream provided,
+ * and invokes the callback methods in the visitor object to pass the 
+ * parsing events back to the application.  When this function
+ * returns, the parser will have reported all of the data in the XML
+ * document to the application through the visitor callback methods,
+ * and XML processing will be complete.
+ *
+ * @param path The file name of the XML resource.
+ * @param visitor An object that contains callbacks for XML parsing
+ * events.
+ * @exception Throws sg_io_exception or sg_xml_exception if there
+ * is a problem reading the file.
+ * @see XMLVisitor
+ */
+extern void readXML (const string &path, XMLVisitor &visitor);
 
 
 #endif // __EASYXML_HXX

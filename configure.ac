@@ -271,6 +271,7 @@ opengl_LIBS="$LIBS"
 LIBS="$base_LIBS"
 
 dnl check for OpenAL libraries
+OPENAL_OK="no"
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
@@ -278,18 +279,26 @@ case "${host}" in
     AC_SEARCH_LIBS(alGenBuffers, openal32)
     AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
+    if test "x$ac_cv_lib_openal32_algenbuffers" == "xyes"; then
+       OPENAL_OK="yes"
+    fi
     ;;
 
 *-apple-darwin*)
     dnl Mac OS X
 
     LIBS="$LIBS -framework IOKit -framework OpenAL"
+    # not sure how to test if OpenAL exists on MacOS (does it come by default?)
+    OPENAL_OK="yes"
     ;;
 
 *)
     dnl default unix style machines
 
     AC_SEARCH_LIBS(alGenBuffers, openal)
+    if test "x$ac_cv_lib_openal_algenbuffers" == "xyes"; then
+       OPENAL_OK="yes"
+    fi
     ;;
 
 esac

@@ -1,0 +1,12 @@
+[This file is mirrored in both the FlightGear and SimGear packages.]
+
+You *must* have the development components of OpenAL installed on your system
+to build FlightGear!"  You can get a copy here:
+
+    http://www.openal.org
+
+Build notes:
+
+The OpenAL developers do not make "versioned" releases so we recommend that
+you pull the latest version via anonymous CVS (follow the instructions at
+the OpenAL web site) and build/install that.

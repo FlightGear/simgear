@@ -71,6 +71,17 @@ private:
 
     FGPath tex_path;
 
+    // visibility
+    float visibility;
+    float effective_visibility;
+
+    // near cloud visibility state variables
+    bool in_puff;
+    double puff_length;
+    double puff_progression;
+    double ramp_up;
+    double ramp_down;
+
 public:
 
     // Constructor
@@ -92,7 +103,7 @@ public:
     // 0 degrees = high noon
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
-    bool repaint( sgVec4 sky_color, sgVec4 fog_color, 
+    bool repaint( sgVec4 sky_color, sgVec4 fog_color,
 		  double sun_angle, double moon_angle,
 		  int nplanets, sgdVec3 *planet_data,
 		  int nstars, sgdVec3 *star_data );
@@ -105,16 +116,20 @@ public:
     // additional orientation for the sunrise/set effects and is used
     // by the skydome and perhaps clouds.
     bool reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
-		     double lon, double lat, double spin,
+		     double lon, double lat, double alt, double spin,
 		     double gst, 
 		     double sun_ra, double sun_dec, double sun_dist,
 		     double moon_ra, double moon_dec, double moon_dist );
+
+    // modify the given visibility based on cloud layers, thickness,
+    // transition range, and simulated "puffs".
+    void modify_vis( float alt, float time_factor );
 
     // draw background portions of the sky
     void draw_background();
 
     // draw scenery elements of the sky
-    void draw_scene();
+    void draw_scene( float alt );
 
     // specify the texture path (optional, defaults to current directory)
     inline void texture_path( const string& path ) {
@@ -134,12 +149,17 @@ public:
 	post_selector->select( 0 );
     }
 
-    // add a cloud layer (above see level in meters)
-    void add_cloud_layer( double asl );
+    // add a cloud layer (above sea level in meters)
+    void add_cloud_layer( double asl, double thickness, double transition );
 
     inline int get_num_layers() const { return cloud_layers.size(); }
     inline SGCloudLayer *get_cloud_layer( int i ) const {
 	return cloud_layers[i];
+    }
+
+    inline float get_visibility() const { return effective_visibility; }
+    inline void set_visibility( float v ) {
+	effective_visibility = visibility = v;
     }
 };
 

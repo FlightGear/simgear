@@ -26,6 +26,7 @@
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
+#include <simgear/math/fg_random.h>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 
@@ -43,9 +44,15 @@ SGCloudLayer::~SGCloudLayer( void ) {
 
 
 // build the moon object
-ssgBranch * SGCloudLayer::build( FGPath path, double s, double asl ) {
+void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
+			  double transition )
+{
+    scale = 2000.0;
 
     layer_asl = asl;
+    layer_thickness = thickness;
+    layer_transition = transition;
+
     size = s;
     last_lon = last_lat = -999.0f;
 
@@ -76,25 +83,27 @@ ssgBranch * SGCloudLayer::build( FGPath path, double s, double asl ) {
     sgSetVec4( color, 1.0f, 1.0f, 1.0f, 1.0f );
 
     sgSetVec3( vertex, -size, -size, 0.0f );
-    sgSetVec2( tc, 0.0f, 0.0f );
+    sgVec2 base;
+    sgSetVec2( base, fg_random(), fg_random() );
+    sgSetVec2( tc, base[0], base[1] );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
     sgSetVec3( vertex, size, -size, 0.0f );
-    sgSetVec2( tc, size / 1000.0f, 0.0f );
+    sgSetVec2( tc, base[0] + size / scale, base[1] );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
     sgSetVec3( vertex, -size, size, 0.0f );
-    sgSetVec2( tc, 0.0f, size / 1000.0f );
+    sgSetVec2( tc, base[0], base[1] + size / scale );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
     sgSetVec3( vertex, size, size, 0.0f );
-    sgSetVec2( tc, size / 1000.0f, size / 1000.0f );
+    sgSetVec2( tc, base[0] + size / scale, base[1] + size / scale );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
@@ -113,7 +122,8 @@ ssgBranch * SGCloudLayer::build( FGPath path, double s, double asl ) {
     // moon_transform->addKid( halo );
     layer_transform->addKid( layer );
 
-    return layer_transform;
+    layer_root = new ssgRoot;
+    layer_root->addKid( layer_transform );
 }
 
 
@@ -135,7 +145,9 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
 // lat specifies a rotation about the new Y axis
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
-bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat ) {
+bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
+			       double alt )
+{
     sgMat4 T1, LON, LAT;
     sgVec3 axis;
 
@@ -143,7 +155,11 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat ) {
     sgVec3 asl_offset;
     sgCopyVec3( asl_offset, up );
     sgNormalizeVec3( asl_offset );
-    sgScaleVec3( asl_offset, layer_asl );
+    if ( alt <= layer_asl ) {
+	sgScaleVec3( asl_offset, layer_asl );
+    } else {
+	sgScaleVec3( asl_offset, layer_asl + layer_thickness );
+    }
     // cout << "asl_offset = " << asl_offset[0] << "," << asl_offset[1]
     //      << "," << asl_offset[2] << endl;
     sgAddVec3( asl_offset, p );
@@ -193,8 +209,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat ) {
 	calc_gc_course_dist( dest, start, &course, &dist );
 	// cout << "course = " << course << ", dist = " << dist << endl;
 
-	double xoff = cos( course ) * dist / 500.0;
-	double yoff = sin( course ) * dist / 500.0;
+	double xoff = cos( course ) * dist / (2 * scale);
+	double yoff = sin( course ) * dist / (2 * scale);
 
 	// cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
 
@@ -212,17 +228,22 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat ) {
 	// cout << "base = " << base[0] << "," << base[1] << endl;
 
 	tc = tl->get( 1 );
-	sgSetVec2( tc, base[0] + size / 1000.0f, base[1] );
+	sgSetVec2( tc, base[0] + size / scale, base[1] );
  
 	tc = tl->get( 2 );
-	sgSetVec2( tc, base[0], base[1] + size / 1000.0f );
+	sgSetVec2( tc, base[0], base[1] + size / scale );
  
 	tc = tl->get( 3 );
-	sgSetVec2( tc, base[0] + size / 1000.0f, base[1] + size / 1000.0f );
+	sgSetVec2( tc, base[0] + size / scale, base[1] + size / scale );
  
 	last_lon = lon;
 	last_lat = lat;
     }
 
     return true;
+}
+
+
+void SGCloudLayer::draw() {
+    ssgCullAndDraw( layer_root );
 }

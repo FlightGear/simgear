@@ -32,6 +32,7 @@
 
 class SGCloudLayer {
 
+    ssgRoot *layer_root;
     ssgTransform *layer_transform;
     ssgSimpleState *layer_state;
 
@@ -41,7 +42,10 @@ class SGCloudLayer {
 
     // height above sea level (meters)
     float layer_asl;
+    float layer_thickness;
+    float layer_transition;
     float size;
+    float scale;
 
     // for handling texture coordinates to simulate cloud movement
     // from winds, and to simulate the clouds being tied to ground
@@ -58,7 +62,8 @@ public:
     ~SGCloudLayer( void );
 
     // build the cloud object
-    ssgBranch *build( FGPath path, double size, double asl );
+    void build( FGPath path, double size, double asl, double thickness,
+		double transition );
 
     // repaint the cloud colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
@@ -75,7 +80,14 @@ public:
     // lat specifies a rotation about the new Y axis
     // spin specifies a rotation about the new Z axis (and orients the
     // sunrise/set effects
-    bool reposition( sgVec3 p, sgVec3 up, double lon, double lat );
+    bool reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt );
+
+    // draw the cloud layer
+    void draw();
+
+    inline float get_asl() const { return layer_asl; }
+    inline float get_thickness() const { return layer_thickness; }
+    inline float get_transition() const { return layer_transition; }
 };
 
 

@@ -1,12 +1,23 @@
-noinst_LIBRARIES = libSky.a
+includedir = @includedir@/sky
 
-libSky_a_SOURCES = \
-	cloud.cxx cloud.hxx \
-	dome.cxx dome.hxx \
-	moon.cxx moon.hxx \
-	oursun.cxx oursun.hxx \
-	sky.cxx sky.hxx \
-	sphere.cxx sphere.hxx \
-	stars.cxx stars.hxx
+lib_LIBRARIES = libsgsky.a
 
-INCLUDES += -I$(top_builddir) -I$(top_builddir)/src
+include_HEADERS = \
+	cloud.hxx \
+	dome.hxx \
+	moon.hxx \
+	oursun.hxx \
+	sky.hxx \
+	sphere.hxx \
+	stars.hxx
+
+libsgsky_a_SOURCES = \
+	cloud.cxx \
+	dome.cxx \
+	moon.cxx \
+	oursun.cxx \
+	sky.cxx \
+	sphere.cxx \
+	stars.cxx
+
+INCLUDES += -I$(top_builddir)

@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include STL_IOSTREAM
 
+#include <math.h>
+
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
@@ -363,6 +365,17 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         calc_gc_course_dist( dest, start, &course, &dist );
         // cout << "course = " << course << ", dist = " << dist << endl;
 
+        // if start and dest are too close together,
+        // calc_gc_course_dist() can return a course of "nan".  If
+        // this happens, lets just use the last known good course.
+        // This is a hack, and it would probably be better to make
+        // calc_gc_course_dist() more robust.
+        if ( isnan(course) ) {
+            course = last_course;
+        } else {
+            last_course = course;
+        }
+
         // calculate cloud movement due to external forces
         double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
 
@@ -396,9 +409,10 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         if ( base[0] > -10.0 && base[0] < 10.0 ) {
             base[0] -= (int)base[0];
         } else {
-            base[0] = 0.0;
             SG_LOG(SG_ASTRO, SG_DEBUG,
-       		"Error: base = " << base[0] << "," << base[1]);
+                   "Error: base = " << base[0] << "," << base[1] <<
+                   " course = " << course << " dist = " << dist );
+            base[0] = 0.0;
         }
 
         base[1] += yoff;
@@ -409,9 +423,10 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         if ( base[1] > -10.0 && base[1] < 10.0 ) {
            base[1] -= (int)base[1];
         } else {
-           base[1] = 0.0;
            SG_LOG(SG_ASTRO, SG_ALERT,
-	   	"Error: base = " << base[0] << "," << base[1]);
+                  "Error: base = " << base[0] << "," << base[1] <<
+                  " course = " << course << " dist = " << dist );
+           base[1] = 0.0;
         }
 
         // cout << "base = " << base[0] << "," << base[1] << endl;

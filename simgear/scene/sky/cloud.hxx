@@ -194,8 +194,7 @@ private:
     // from winds, and to simulate the clouds being tied to ground
     // position, not view position
     // double xoff, yoff;
-    double last_lon, last_lat;
-
+    double last_lon, last_lat, last_course;
 };
 
 

@@ -25,8 +25,11 @@ noinst_PROGRAMS = decode_binobj socktest lowtest
 socktest_SOURCES = socktest.cxx
 
 socktest_LDADD = \
-	$(top_builddir)/simgear/io/libsgio.a \
-	$(top_builddir)/simgear/debug/libsgdebug.a
+	$(top_builddir)/simgear/bucket/libsgbucket.a \
+        $(top_builddir)/simgear/io/libsgio.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/misc/libsgmisc.a \
+	-lz
 
 lowtest_SOURCES = lowtest.cxx
 

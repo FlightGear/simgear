@@ -17,7 +17,9 @@ waytest_SOURCES = waytest.cxx
 waytest_LDADD = \
 	$(top_builddir)/simgear/route/libsgroute.a \
 	$(top_builddir)/simgear/math/libsgmath.a \
-	$(top_builddir)/simgear/debug/libsgdebug.a
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/misc/libsgmisc.a \
+	-lz
 
 routetest_SOURCES = routetest.cxx
 

@@ -32,15 +32,15 @@ include_HEADERS = \
 
 SUBDIRS = \
 	$(ZLIB_DIRS) \
-	bucket \
+	xml \
 	debug \
+	misc \
+	bucket \
 	ephemeris \
+	io \
 	magvar \
 	math \
 	$(METAR_DIRS) \
-	xml \
-	misc \
-	io \
 	route \
 	screen \
 	$(SERIAL_DIRS) \

@@ -121,7 +121,7 @@ bool SkySceneLoader::Load(std::string filename)
       FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));  
       float rScale = 1.0;
       FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
-      rScale = 20.0;
+      rScale = 30.0;
       SkyArchive cloudArchive;
       FAIL_RETURN(cloudArchive.Load(pFilename));
       FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale)); 
@@ -129,7 +129,7 @@ bool SkySceneLoader::Load(std::string filename)
   }
   
   Vec3f dir(0, 0, 1);
-  pLight->SetPosition(Vec3f(3000, 0, 7000));
+  pLight->SetPosition(Vec3f(0, 0, 7000));
   pLight->SetDirection(dir);
   pLight->SetAmbient(Vec4f( 0.0f, 0.0f, 0.0f, 0.0f));
   pLight->SetDiffuse(Vec4f(1.0f, 1.0f, 1.0f, 0.0f));
@@ -146,8 +146,7 @@ bool SkySceneLoader::Load(std::string filename)
 }
 
 void SkySceneLoader::Set_Cloud_Orig( Point3D *posit )
-{ // use this to adjust camera position for a new tile center
-
+{ 
 	// set origin for cloud coordinates to initial tile center
 	origin = *posit;
 	sgdSetVec3( delta, origin[0], origin[1], origin[2]);	
@@ -157,6 +156,12 @@ void SkySceneLoader::Set_Cloud_Orig( Point3D *posit )
 
 void SkySceneLoader::Update( double *view_pos )
 {
+	
+	double wind_x, wind_y, wind_z;
+	wind_x = -0.05; wind_z =  0.05;
+	// just a dumb test to see if we can move the clouds en masse via the camera
+	delta[0] += wind_x; delta[2] += wind_z;
+	
 	sgdSubVec3( cam_pos, view_pos, delta );
 	//cout << "ORIGIN: " << delta[0] << " " << delta[1] << " " << delta[2] << endl;
 	//cout << "CAM   : " << cam_pos[0] << " " << cam_pos[1] << " "  << cam_pos[2] << endl;

@@ -21,8 +21,8 @@
 // $Id$
 //----------------------------------------------------------------------------
 #include <iostream.h>
-#include <vec3f.hpp>
-#include <mat44.hpp>
+#include "vec3f.hpp"
+#include "mat44.hpp"
 
 int main(int argc, char *argv[])
 {

@@ -666,7 +666,8 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
     _particles.push_back(pParticle);
   }
   // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
-  // we need to develop out own scheme for loading and positioning clouds
+  // this "almost" works not quite the right solution okay to get some up and running
+  // we need to develop our own scheme for loading and positioning clouds
   Mat33f rot_mat;
   Vec3f  moveit;
 
@@ -676,9 +677,9 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   // flip the y and z axis, clouds now sit in the x-y plane
   Rotate( rot_mat ); 
     
-   // adjust for lon af KSFO		-122.357				 
-  rot_mat.Set( -0.76604f, 0.64277f, 0.0f,
-  						 -0.64277f, -0.76604f, 0.0f,
+   // adjust for lon af KSFO plus 		-122.357				 
+  rot_mat.Set( -0.84473f, 0.53519f, 0.0f,
+  						 -0.53519f, -0.84473f, 0.0f,
   						 0.0f, 0.0f, 1.0f);
   						 
   //Rotate( rot_mat );
@@ -690,7 +691,7 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
    
   Rotate( rot_mat );
     
-  moveit.Set( 0.0, 0.0, 4050.0  );
+  moveit.Set( 1000.0, 0.0, 4050.0  );
   
   Translate( moveit );
   

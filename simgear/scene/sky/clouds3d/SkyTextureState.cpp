@@ -126,7 +126,7 @@ SKYRESULT SkyTextureState::Activate()
       if (pCurrent->GetTextureParameter(i, GL_TEXTURE_WRAP_R) != paramValue) 
       {
         FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_WRAP_R, paramValue));
-        //glTexParameteri(eTarget, GL_TEXTURE_WRAP_R, paramValue);
+        glTexParameteri(eTarget, GL_TEXTURE_WRAP_R, paramValue);
       }
       //GLVU::CheckForGLError("SkyTextureState::Activate(2)");
       paramValue = GetTextureParameter(i, GL_TEXTURE_MIN_FILTER);

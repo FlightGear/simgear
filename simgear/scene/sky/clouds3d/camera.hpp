@@ -31,8 +31,8 @@
 #define CAMERA
 
 #include <stdio.h>
-#include <vec3f.hpp>
-#include <mat16fv.hpp>
+#include "vec3f.hpp"
+#include "mat16fv.hpp"
 
 class Camera
 {

@@ -872,12 +872,12 @@ SKYRESULT SkyTextureManager::_Create3DTextureObject(SkyTexture &texture,
  * Deletes the data as well as the OpenGL texture ID(s).
  */ 
 void SkyTextureManager::DestroyTextureObject(SkyTexture &texture)
-{
-  /*if (texture.GetID)
+{ /*
+  if (texture.GetID)
     glDeleteTextures(1, &(texture.iTextureID));
   if (texture.bSliced3D && texture.pSliceIDs)
   {
     glDeleteTextures(texture.iDepth, texture.pSliceIDs);
     delete [] texture.pSliceIDs;
-  }*/
+  } */
 }

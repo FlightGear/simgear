@@ -24,8 +24,8 @@
 #define __SKYRENDERABLEINSTANCE_HPP__
 
 #include <vector>
-#include <mat33.hpp>
-#include <mat44.hpp>
+#include "mat33.hpp"
+#include "mat44.hpp"
 #include "SkyUtil.hpp"
 
 // forward to reduce unnecessary dependencies

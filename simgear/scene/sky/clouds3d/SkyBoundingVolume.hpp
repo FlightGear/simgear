@@ -23,8 +23,8 @@
 #ifndef __SKYBOUNDINGVOLUME_HPP__
 #define __SKYBOUNDINGVOLUME_HPP__
 
-#include <vec3f.hpp>
-#include <mat44.hpp>
+#include "vec3f.hpp"
+#include "mat44.hpp"
 
 // forward to reduce unnecessary dependencies
 class Camera;

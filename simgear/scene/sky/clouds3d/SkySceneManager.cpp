@@ -33,8 +33,6 @@
 #include "SkyRenderable.hpp"
 #include "SkyRenderableInstance.hpp"
 #include "SkyRenderableInstanceCloud.hpp"
-//#include "SkyHeavens.hpp"
-//#include "SkyHeightField.hpp"
 
 #include "camutils.hpp"
 #include <algorithm>
@@ -518,7 +516,7 @@ SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale /* 
   SkyArchive subArchive;
 	//iNumClouds = 5;  //set this value to reduce cloud field for debugging
   for (int i = 0; i < iNumClouds; ++i)
-  {printf("Loading # %d of %d clouds\n", i, iNumClouds);
+  {printf("Loading # %d of %d clouds\n", i+1, iNumClouds);
     cloudArchive.FindArchive("Cloud", &subArchive, i);
     SkyCloud *pCloud = new SkyCloud();
     pCloud->Load(subArchive, rScale);

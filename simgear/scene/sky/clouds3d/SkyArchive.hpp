@@ -208,7 +208,7 @@ public:
     SKYRESULT MakeEmpty();
 
     // Loads the contents from a file.
-    bool Load(const char* pFileName);
+    SKYRESULT Load(const char* pFileName);
     
     // Commits the contents of a SkyArchive to file storage.
     SKYRESULT Save(const char* pFileName) const;

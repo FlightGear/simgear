@@ -20,10 +20,15 @@ libsgio_a_SOURCES = \
 
 INCLUDES += -I$(top_srcdir)
 
-noinst_PROGRAMS = socktest
+noinst_PROGRAMS = socktest lowtest
 
 socktest_SOURCES = socktest.cxx
 
 socktest_LDADD = \
 	$(top_builddir)/simgear/io/libsgio.a \
-	$(top_builddir)/simgear/debug/libsgdebug.a 
+	$(top_builddir)/simgear/debug/libsgdebug.a
+
+lowtest_SOURCES = lowtest.cxx
+
+lowtest_LDADD = \
+	$(top_builddir)/simgear/io/libsgio.a 

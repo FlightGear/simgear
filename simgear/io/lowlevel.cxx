@@ -1,4 +1,4 @@
-// lowlevel.hxx -- routines to handle lowlevel compressed binary IO of
+// lowlevel.cxx -- routines to handle lowlevel compressed binary IO of
 //                 various datatypes
 //
 // Shamelessly adapted from plib (plib.sourceforge.net) January 2001
@@ -21,9 +21,10 @@
 // Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //
 // $Id$
-//
+
 
 #include "lowlevel.hxx" 
+
 
 static int  read_error = false ;
 static int write_error = false ;
@@ -33,36 +34,7 @@ void sgClearWriteError() { write_error = false; }
 int sgReadError() { return  read_error ; }
 int sgWriteError() { return write_error ; }
 
-static const int sgEndianTest = 1;
-#define sgIsLittleEndian (*((char *) &sgEndianTest ) != 0)
-#define sgIsBigEndian    (*((char *) &sgEndianTest ) == 0)
 
-static inline void sgEndianSwap(unsigned short *x) {
-    *x =
-        (( *x >>  8 ) & 0x00FF ) | 
-        (( *x <<  8 ) & 0xFF00 ) ;
-}
-  
-static inline void sgEndianSwap(unsigned int *x) {
-    *x =
-        (( *x >> 24 ) & 0x000000FF ) | 
-        (( *x >>  8 ) & 0x0000FF00 ) | 
-        (( *x <<  8 ) & 0x00FF0000 ) | 
-        (( *x << 24 ) & 0xFF000000 ) ;
-}
-  
-static inline void sgEndianSwap(unsigned long long *x) {
-    *x =
-        (( *x >> 56 ) & 0x00000000000000FFULL ) | 
-        (( *x >> 40 ) & 0x000000000000FF00ULL ) | 
-        (( *x >> 24 ) & 0x0000000000FF0000ULL ) | 
-        (( *x >>  8 ) & 0x00000000FF000000ULL ) | 
-        (( *x <<  8 ) & 0x000000FF00000000ULL ) | 
-        (( *x << 24 ) & 0x0000FF0000000000ULL ) |
-        (( *x << 40 ) & 0x00FF000000000000ULL ) |
-        (( *x << 56 ) & 0xFF00000000000000ULL ) ;
-}
-  
 void sgReadChar ( gzFile fd, char *var )
 {
     if ( gzread ( fd, var, sizeof(char) ) != sizeof(char) ) {
@@ -84,7 +56,7 @@ void sgReadFloat ( gzFile fd, float *var )
     if ( gzread ( fd, var, sizeof(float) ) != sizeof(float) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)var);
     }
 }
@@ -92,7 +64,7 @@ void sgReadFloat ( gzFile fd, float *var )
 
 void sgWriteFloat ( gzFile fd, const float var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(float) ) != sizeof(float) ) {
@@ -106,7 +78,7 @@ void sgReadDouble ( gzFile fd, double *var )
     if ( gzread ( fd, var, sizeof(double) ) != sizeof(double) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned long long*)var);
     }
 }
@@ -114,7 +86,7 @@ void sgReadDouble ( gzFile fd, double *var )
 
 void sgWriteDouble ( gzFile fd, const double var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned long long*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) != sizeof(double) ) {
@@ -128,7 +100,7 @@ void sgReadUInt ( gzFile fd, unsigned int *var )
     if ( gzread ( fd, var, sizeof(unsigned int) ) != sizeof(unsigned int) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)var);
     }
 }
@@ -136,7 +108,7 @@ void sgReadUInt ( gzFile fd, unsigned int *var )
 
 void sgWriteUInt ( gzFile fd, const unsigned int var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned int) )
@@ -152,7 +124,7 @@ void sgReadInt ( gzFile fd, int *var )
     if ( gzread ( fd, var, sizeof(int) ) != sizeof(int) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)var);
     }
 }
@@ -160,7 +132,7 @@ void sgReadInt ( gzFile fd, int *var )
 
 void sgWriteInt ( gzFile fd, const int var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(int) ) != sizeof(int) ) {
@@ -174,7 +146,7 @@ void sgReadLong ( gzFile fd, long int *var )
     if ( gzread ( fd, var, sizeof(long int) ) != sizeof(long int) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)var);
     }
 }
@@ -182,7 +154,7 @@ void sgReadLong ( gzFile fd, long int *var )
 
 void sgWriteLong ( gzFile fd, const long int var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(long int) )
@@ -198,7 +170,7 @@ void sgReadLongLong ( gzFile fd, long long int *var )
     if ( gzread ( fd, var, sizeof(long long int) ) != sizeof(long long int) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned long long int*)var);
     }
 }
@@ -206,7 +178,7 @@ void sgReadLongLong ( gzFile fd, long long int *var )
 
 void sgWriteLongLong ( gzFile fd, const long long int var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned long long*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(long long int) )
@@ -222,7 +194,7 @@ void sgReadUShort ( gzFile fd, unsigned short *var )
     if ( gzread ( fd, var, sizeof(unsigned short) ) != sizeof(unsigned short) ){
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned short int*)var);
     }
 }
@@ -230,7 +202,7 @@ void sgReadUShort ( gzFile fd, unsigned short *var )
 
 void sgWriteUShort ( gzFile fd, const unsigned short var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned short*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned short) )
@@ -246,7 +218,7 @@ void sgReadShort ( gzFile fd, short *var )
     if ( gzread ( fd, var, sizeof(short) ) != sizeof(short) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned short int*)var);
     }
 }
@@ -254,7 +226,7 @@ void sgReadShort ( gzFile fd, short *var )
 
 void sgWriteShort ( gzFile fd, const short var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned short*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(short) ) != sizeof(short) ) {
@@ -268,7 +240,7 @@ void sgReadFloat ( gzFile fd, const unsigned int n, float *var )
     if ( gzread ( fd, var, sizeof(float) * n ) != (int)(sizeof(float) * n) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned int*)var++);
         }
@@ -278,7 +250,7 @@ void sgReadFloat ( gzFile fd, const unsigned int n, float *var )
 
 void sgWriteFloat ( gzFile fd, const unsigned int n, const float *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         float *swab = new float[n];
         float *ptr = swab;
         memcpy( swab, var, sizeof(float) * n );
@@ -299,7 +271,7 @@ void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
     if ( gzread ( fd, var, sizeof(double) * n ) != (int)(sizeof(double) * n) ) {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned long long*)var++);
         }
@@ -309,7 +281,7 @@ void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
 
 void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         double *swab = new double[n];
         double *ptr = swab;
         memcpy( swab, var, sizeof(double) * n );
@@ -349,7 +321,7 @@ void sgReadUShort ( gzFile fd, const unsigned int n, unsigned short *var )
     {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned short int*)var++);
         }
@@ -359,7 +331,7 @@ void sgReadUShort ( gzFile fd, const unsigned int n, unsigned short *var )
 
 void sgWriteUShort ( gzFile fd, const unsigned int n, const unsigned short *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         unsigned short *swab = new unsigned short[n];
         unsigned short *ptr = swab;
         memcpy( swab, var, sizeof(unsigned short) * n );
@@ -384,7 +356,7 @@ void sgReadShort ( gzFile fd, const unsigned int n, short *var )
     {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned short int*)var++);
         }
@@ -394,7 +366,7 @@ void sgReadShort ( gzFile fd, const unsigned int n, short *var )
 
 void sgWriteShort ( gzFile fd, const unsigned int n, const short *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         short *swab = new short[n];
         short *ptr = swab;
         memcpy( swab, var, sizeof(short) * n );
@@ -418,7 +390,7 @@ void sgReadUInt ( gzFile fd, const unsigned int n, unsigned int *var )
     {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned int*)var++);
         }
@@ -428,7 +400,7 @@ void sgReadUInt ( gzFile fd, const unsigned int n, unsigned int *var )
 
 void sgWriteUInt ( gzFile fd, const unsigned int n, const unsigned int *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         unsigned int *swab = new unsigned int[n];
         unsigned int *ptr = swab;
         memcpy( swab, var, sizeof(unsigned int) * n );
@@ -453,7 +425,7 @@ void sgReadInt ( gzFile fd, const unsigned int n, int *var )
     {
         read_error = true ;
     }
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
             sgEndianSwap( (unsigned int*)var++);
         }
@@ -463,7 +435,7 @@ void sgReadInt ( gzFile fd, const unsigned int n, int *var )
 
 void sgWriteInt ( gzFile fd, const unsigned int n, const int *var )
 {
-    if ( sgIsBigEndian ) {
+    if ( sgIsBigEndian() ) {
         int *swab = new int[n];
         int *ptr = swab;
         memcpy( swab, var, sizeof(int) * n );

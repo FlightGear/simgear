@@ -40,7 +40,7 @@
 
 
 // Note that output is written in little endian form (and converted as
-// necessary)
+// necessary for big endian machines)
 
 void sgReadChar ( gzFile fd, char *var ) ;
 void sgWriteChar ( gzFile fd, const char var ) ;
@@ -119,5 +119,41 @@ void sgClearWriteError();
 int sgReadError();
 int sgWriteError();
 
+inline bool sgIsLittleEndian() {
+    static const int sgEndianTest = 1;
+    return (*((char *) &sgEndianTest ) != 0);
+}
+
+inline bool sgIsBigEndian() {
+    static const int sgEndianTest = 1;
+    return (*((char *) &sgEndianTest ) == 0);
+}
+
+inline void sgEndianSwap(unsigned short *x) {
+    *x =
+        (( *x >>  8 ) & 0x00FF ) | 
+        (( *x <<  8 ) & 0xFF00 ) ;
+}
+  
+inline void sgEndianSwap(unsigned int *x) {
+    *x =
+        (( *x >> 24 ) & 0x000000FF ) | 
+        (( *x >>  8 ) & 0x0000FF00 ) | 
+        (( *x <<  8 ) & 0x00FF0000 ) | 
+        (( *x << 24 ) & 0xFF000000 ) ;
+}
+  
+inline void sgEndianSwap(unsigned long long *x) {
+    *x =
+        (( *x >> 56 ) & 0x00000000000000FFULL ) | 
+        (( *x >> 40 ) & 0x000000000000FF00ULL ) | 
+        (( *x >> 24 ) & 0x0000000000FF0000ULL ) | 
+        (( *x >>  8 ) & 0x00000000FF000000ULL ) | 
+        (( *x <<  8 ) & 0x000000FF00000000ULL ) | 
+        (( *x << 24 ) & 0x0000FF0000000000ULL ) |
+        (( *x << 40 ) & 0x00FF000000000000ULL ) |
+        (( *x << 56 ) & 0xFF00000000000000ULL ) ;
+}
+  
 
 #endif // _SG_LOWLEVEL_HXX

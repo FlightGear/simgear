@@ -79,9 +79,7 @@ struct CodeGenerator {
     int loopTop;
 
     // Dynamic storage for constants, to be compiled into a static table
-    naRef consts;   // index -> naRef
-    naRef interned; // naRef -> index (scalars only!)
-    int nConsts;
+    naRef consts;
 };
 
 void naParseError(struct Parser* p, char* msg, int line);

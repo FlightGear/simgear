@@ -40,31 +40,32 @@ static void genBinOp(int op, struct Parser* p, struct Token* t)
 
 static int newConstant(struct Parser* p, naRef c)
 {
-    int i = p->cg->nConsts++;
+    int i;
+    naVec_append(p->cg->consts, c);
+    i = naVec_size(p->cg->consts) - 1;
     if(i > 0xffff) naParseError(p, "too many constants in code block", 0);
-    naHash_set(p->cg->consts, naNum(i), c);
     return i;
 }
 
 static naRef getConstant(struct Parser* p, int idx)
 {
-    naRef c;
-    naHash_get(p->cg->consts, naNum(idx), &c);
-    return c;
+    return naVec_get(p->cg->consts, idx);
 }
 
 // Interns a scalar (!) constant and returns its index
 static int internConstant(struct Parser* p, naRef c)
 {
-    naRef r;
-    naHash_get(p->cg->interned, c, &r);
-    if(!IS_NIL(r)) {
-        return (int)r.num;
-    } else {
-        int idx = newConstant(p, c);
-        naHash_set(p->cg->interned, c, naNum(idx));
-        return idx;
+    int i, n = naVec_size(p->cg->consts);
+    for(i=0; i<n; i++) {
+        naRef b = naVec_get(p->cg->consts, i);
+        if(IS_NUM(b) && IS_NUM(c) && b.num == c.num)
+            return i;
+        if(IS_REF(b) && IS_REF(c) && b.ref.ptr.obj->type != c.ref.ptr.obj->type)
+            continue;
+        if(naEqual(b, c))
+            return i;
     }
+    return newConstant(p, c);
 }
 
 static void genScalarConstant(struct Parser* p, struct Token* t)
@@ -515,9 +516,7 @@ naRef naCodeGen(struct Parser* p, struct Token* t)
     cg.codeAlloced = 1024; // Start fairly big, this is a cheap allocation
     cg.byteCode = naParseAlloc(p, cg.codeAlloced);
     cg.nBytes = 0;
-    cg.consts = naNewHash(p->context);
-    cg.interned = naNewHash(p->context);
-    cg.nConsts = 0;
+    cg.consts = naNewVector(p->context);
     cg.loopTop = 0;
     p->cg = &cg;
 
@@ -530,7 +529,7 @@ naRef naCodeGen(struct Parser* p, struct Token* t)
     code->byteCode = naAlloc(cg.nBytes);
     for(i=0; i < cg.nBytes; i++)
         code->byteCode[i] = cg.byteCode[i];
-    code->nConstants = cg.nConsts;
+    code->nConstants = naVec_size(cg.consts);
     code->constants = naAlloc(code->nConstants * sizeof(naRef));
     code->srcFile = p->srcFile;
     for(i=0; i<code->nConstants; i++)

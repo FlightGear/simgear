@@ -151,11 +151,14 @@ static int readdec(unsigned char* s, int len, int i, double* v)
 // are returned as zero.
 static int readsigned(unsigned char* s, int len, int i, double* v)
 {
+    int i0 = i, i2;
     double sgn=1, val;
     if(i >= len) { *v = 0; return len; }
     if(s[i] == '+')      { i++; }
     else if(s[i] == '-') { i++; sgn = -1; }
-    i = readdec(s, len, i, &val);
+    i2 = readdec(s, len, i, &val);
+    if(i2 == i)
+        return i0; // don't parse "+" or "-" as zero.
     *v = sgn*val;
     return i;
 }

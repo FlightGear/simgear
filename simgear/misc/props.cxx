@@ -1917,7 +1917,7 @@ SGPropertyNode::hash_table::entry::~entry ()
 {
 				// Don't delete the value; we don't own
 				// the pointer.
-  delete _key;
+  delete [] _key;
 }
 
 void
@@ -1957,7 +1957,7 @@ SGPropertyNode::hash_table::bucket::get_entry (const char * key, bool create)
     for (i = 0; i < _length; i++) {
       new_entries[i] = _entries[i];
     }
-    delete _entries;
+    delete [] _entries;
     _entries = new_entries;
     _entries[_length] = new entry;
     _entries[_length]->set_key(key);

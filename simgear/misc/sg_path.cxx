@@ -114,6 +114,12 @@ string SGPath::dir() {
     }
 }
 
+string SGPath::filename() {
+    int index = path.rfind(SG_PATH_SEP);
+    if (index < 0) index = 0;
+    return path.substr(index);
+}
+
 bool SGPath::exists() const {
     FILE* fp = fopen( path.c_str(), "r");
     if (fp == 0) {

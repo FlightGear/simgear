@@ -1,209 +1,121 @@
-// eventmMgr.hxx -- periodic event scheduler
-//
-// Written by Curtis Olson, started December 1997.
-// Modified by Bernie Bright, April 2002.
-//
-// Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-//
-// $Id$
+#ifndef _SG_EVENT_MGR_HXX
+#define _SG_EVENT_MGR_HXX
 
-#ifndef SG_EVENT_MGR_HXX
-#define SG_EVENT_MGR_HXX 1
-
-#include <simgear/compiler.h>
-
-#include <simgear/structure/callback.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/structure/subsystem_mgr.hxx>
-#include <simgear/timing/timestamp.hxx>
 
-#include <vector>
-#include <string>
+#include "callback.hxx"
 
-SG_USING_STD(vector);
-SG_USING_STD(string);
+class SGEventMgr;
 
-
-class SGEvent
-{
-
-public:
-
-    typedef int interval_type;
-
-private:
-
-    string _name;
-    SGCallback* _callback;
-    SGSubsystem* _subsystem;
-    interval_type _repeat_value;
-    interval_type _initial_value;
-    int _ms_to_go;
-
-    unsigned long _cum_time;    // cumulative processor time of this event
-    unsigned long _min_time;    // time of quickest execution
-    unsigned long _max_time;    // time of slowest execution
-    unsigned long _count;       // number of times executed
-
-public:
-
-    /**
-     * 
-     */
-    SGEvent();
-
-    SGEvent( const char* desc,
-             SGCallback* cb,
-             interval_type repeat_value,
-             interval_type initial_value );
-
-    SGEvent( const char* desc,
-             SGSubsystem* subsystem,
-             interval_type repeat_value,
-             interval_type initial_value );
-
-    /**
-     * 
-     */
-    ~SGEvent();
-
-    /**
-     * 
-     */
-    inline void reset()
-    {
-        _ms_to_go = _repeat_value;
-    }
-
-    /**
-     * Execute this event's callback.
-     */
+struct SGTimer {
+    double interval;
+    SGCallback* callback;
+    SGEventMgr* mgr;
+    bool repeat;
+    bool simtime;
     void run();
-
-    inline string name() const { return _name; }
-    inline interval_type repeat_value() const { return _repeat_value; }
-    inline int value() const { return _ms_to_go; }
-
-    /**
-     * Display event statistics.
-     */
-    void print_stats() const;
-
-    /**
-     * Update the elapsed time for this event.
-     * @param dt_ms elapsed time in milliseconds.
-     * @return true if elapsed time has expired.
-     */
-    inline bool update( int dt_ms )
-    {
-        return (_ms_to_go -= dt_ms) <= 0;
-    }
 };
 
+class SGTimerQueue {
+public:
+    SGTimerQueue(int preSize=1);
+    ~SGTimerQueue();
+
+    void update(double deltaSecs);
+
+    double now() { return _now; }
+
+    void     insert(SGTimer* timer, double time);
+    SGTimer* remove(SGTimer* timer);
+    SGTimer* remove();
+
+    SGTimer* nextTimer() { return _numEntries ? _table[0].timer : 0; }
+    double   nextTime()  { return -_table[0].pri; }
+
+private:
+    // The "priority" is stored as a negative time.  This allows the
+    // implemenetation to treat the "top" of the heap as the largest
+    // value and avoids developer mindbugs. ;)
+    struct HeapEntry { double pri; SGTimer* timer; };
+
+    int parent(int n) { return ((n+1)/2) - 1; }
+    int lchild(int n) { return ((n+1)*2) - 1; }
+    int rchild(int n) { return ((n+1)*2 + 1) - 1; }
+    void swap(int a, int b) {
+	HeapEntry tmp = _table[a];
+	_table[a] = _table[b];
+	_table[b] = tmp;
+    }
+    void siftDown(int n);
+    void siftUp(int n);
+    void growArray();
+    void check();
+
+    double _now;
+    HeapEntry *_table;
+    int _numEntries;
+    int _tableSize;
+};
 
 class SGEventMgr : public SGSubsystem
 {
-private:
-
-    typedef SGEvent::interval_type interval_type;
-    typedef vector< SGEvent > event_container_type;
-
-    void add( const SGEvent& event );
-
-    // registered events.
-    event_container_type event_table;
-
-
 public:
-    SGEventMgr();
-    ~SGEventMgr();
+    SGEventMgr() { _freezeProp = 0; }
+
+    virtual void init() {}
+    virtual void update(double delta_time_sec);
+
+    void setFreezeProperty(SGPropertyNode* node) { _freezeProp = node; }
 
     /**
-     * Initialize the scheduling subsystem.
+     * Add a single function callback event as a repeating task.
+     * ex: addTask("foo", &Function ... )
      */
-    void init();
-    void reinit();
-    void bind();
-    void unbind();
-
-    /*
-     * Update the elapsed time for all events.
-     * @param dt elapsed time in seconds.
-     */
-    void update( double dt );
+    template<typename FUNC>
+    inline void addTask(const char* name, const FUNC& f,
+                        double interval, double delay=0, bool sim=false)
+    { add(make_callback(f), interval, delay, true, sim); }
 
     /**
-     * register a free standing function to be executed some time in the future.
-     * @param desc A brief description of this callback for logging.
-     * @param cb The callback function to be executed.
-     * @param repeat_value repetition rate in milliseconds.
-     * @param initial_value initial delay value in milliseconds.  A value of
-     * -1 means run immediately.
+     * Add a single function callback event as a one-shot event.
+     * ex: addEvent("foo", &Function ... )
      */
-    template< typename Fun >
-    inline void add( const char* name,
-                     const Fun& f,
-                     interval_type repeat_value,
-                     interval_type initial_value = -1 )
-    {
-        this->add( SGEvent( name,
-                            make_callback(f),
-                            repeat_value,
-                            initial_value ) );
-    }
+    template<typename FUNC>
+    inline void addEvent(const char* name, const FUNC& f,
+                         double delay, bool sim=false)
+    { add(make_callback(f), 0, delay, false, sim); }
 
     /**
-     * register a subsystem of which the update function will be executed some
-     * time in the future.
-     * @param desc A brief description of this callback for logging.
-     * @param subsystem The subsystem of which the update function will be
-     * executed.
-     * @param repeat_value repetition rate in milliseconds.
-     * @param initial_value initial delay value in milliseconds.  A value of
-     * -1 means run immediately.
+     * Add a object/method pair as a repeating task.
+     * ex: addTask("foo", &object, &ClassName::Method, ...)
      */
-    inline void add( const char* name,
-                     SGSubsystem* subsystem,
-                     interval_type repeat_value,
-                     interval_type initial_value = -1 )
-    {
-        this->add( SGEvent( name,
-                            subsystem,
-                            repeat_value,
-                            initial_value ) );
-    }
-
-    template< class ObjPtr, typename MemFn >
-    inline void add( const char* name,
-                     const ObjPtr& p,
-                     MemFn pmf,
-                     interval_type repeat_value,
-                     interval_type initial_value = -1 )
-    {
-        this->add( SGEvent( name,
-                            make_callback(p,pmf),
-                            repeat_value,
-                            initial_value ) );
-    }
+    template<class OBJ, typename METHOD>
+    inline void addTask(const char* name,
+                        const OBJ& o, METHOD m,
+                        double interval, double delay=0, bool sim=false)
+    { add(make_callback(o,m), interval, delay, true, sim); }
 
     /**
-     * Display statistics for all registered events.
+     * Add a object/method pair as a repeating task.
+     * ex: addEvent("foo", &object, &ClassName::Method, ...)
      */
-    void print_stats() const;
+    template<class OBJ, typename METHOD>
+    inline void addEvent(const char* name,
+                         const OBJ& o, METHOD m,
+                         double delay, bool sim=false)
+    { add(make_callback(o,m), 0, delay, false, sim); }
+
+private:
+    friend class SGTimer;
+
+    void add(SGCallback* cb,
+             double interval, double delay,
+             bool repeat, bool simtime);
+
+    SGPropertyNode* _freezeProp;
+    SGTimerQueue _rtQueue; 
+    SGTimerQueue _simQueue;
 };
 
-
-#endif //SG_EVENT_MGR_HXX
+#endif // _SG_EVENT_MGR_HXX

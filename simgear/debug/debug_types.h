@@ -24,7 +24,8 @@ typedef enum {
     SG_CLIPPER   = 0x00002000,
     SG_NETWORK   = 0x00004000,
     SG_ATC       = 0x00008000,
-    SG_UNDEFD    = 0x00010000, // For range checking
+    SG_NASAL     = 0x00010000,
+    SG_UNDEFD    = 0x00020000, // For range checking
 
     SG_ALL     = 0xFFFFFFFF
 } sgDebugClass;

@@ -24,6 +24,7 @@ SUBDIRS = \
 	magvar \
 	math \
 	$(METAR_DIRS) \
+	nasal \
 	props \
 	route \
 	scene \

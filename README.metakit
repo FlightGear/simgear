@@ -1,6 +1,23 @@
-With the author's permission, SimGear now bundles MetaKit.  
+For your convenience (and with the author's permission) a copy of the
+MetaKit source is bundled with SimGear.  You must have metakit
+installed before you can build SimGear.
 
-Important build note:
+- Most linux distributions have a metakit package.  For linux
+  developers, we recommend ysou install your distributions package
+  rather than building from source.
+
+- For developers on most other platforms, you will have to build
+  metakit from source and install it yourself.  For your convenience a
+  tar ball of the metakit source is included with the simgear source
+  distribution.  Untar the metakit source, and follow the included
+  build and installation instructions.
+
+Once metakit is installed you can return to configuring and building
+Simgear.
+
+=============================================================================
+
+Potentially important build note:
 
   Later on when you are linking programs with -lmk4 (i.e. FlightGear or one
   of it's associated programs) if you come across an error similar to the

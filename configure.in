@@ -63,7 +63,7 @@ if test "x$with_logging" = "xno" ; then
     AC_DEFINE(FG_NDEBUG)
 fi
 
-dnl specify if we are building with "checker"
+dnl specify if we are building with "electric fence"
 AC_ARG_WITH(efence, [  --with-efence           Specify if we are building with "electric-fence"])
 
 if test "x$with_efence" = "xyes" ; then
@@ -74,7 +74,7 @@ fi
 dnl Check for MS Windows environment
 AC_CHECK_HEADER(windows.h)
 
-if test "$HOSTTYPE" != "macintosh" ; then
+if test "x$HOSTTYPE" != "xmacintosh" ; then
     dnl extra library and include directories
     EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
 
@@ -103,7 +103,7 @@ dnl Enable serial support on Unix type systems
 AM_CONDITIONAL(ENABLE_UNIX_SERIAL, true)
 
 dnl X11 might be installed on Mac OS X, don't want to use it if it is.
-if test "$HOSTTYPE" != "macintosh" ; then
+if test "x$HOSTTYPE" != "xmacintosh" ; then
     dnl Check for X11 (fancy)
     AC_PATH_XTRA
 fi
@@ -128,7 +128,7 @@ AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a
 AC_CHECK_LIB(socket, socket)
 
 dnl X11 might be installed, but we don't want to use it for OSX -dw-
-if test "$HOSTTYPE" != "macintosh" ; then
+if test "x$HOSTTYPE" != "xmacintosh" ; then
     AC_CHECK_LIB(X11, XCreateWindow)
     AC_CHECK_LIB(Xext, XShmCreateImage)
     AC_CHECK_LIB(Xi, XGetExtensionVersion)
@@ -140,11 +140,11 @@ fi
 
 dnl check for OpenGL related libraries
 
-if test "$HOSTTYPE" = "macintosh" ; then
+if test "x$HOSTTYPE" = "xmacintosh" ; then
     dnl Macintosh OSX
     LIBS="$LIBS -framework OpenGL -framework GLUT"
 elif test "x$ac_cv_header_windows_h" != "xyes" ; then
-    dnl Reasonable stuff for non-windoze variants ... :-)
+    dnl Reasonable stuff for X-Windows based machines
 
     AC_CHECK_LIB(GLcore, glNewList)
     if test "x$ac_cv_lib_GLcore_glNewList" = "xno" ; then
@@ -183,8 +183,7 @@ elif test "x$ac_cv_header_windows_h" != "xyes" ; then
     AC_CHECK_LIB(glut, glutGameModeString)
     LIBS="$save_LIBS"
 else
-    dnl Win32 is a little wierd because it has to try to handle the various
-    dnl winbloze-isms.  We'll just do this manually for now.
+    dnl Win32 libs
 
     echo Win32 specific hacks...
     AC_DEFINE(WIN32)
@@ -250,35 +249,24 @@ if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
     exit
 fi
 
-# dnl Check for system installed gdbm
-# AC_CHECK_HEADER(gdbm.h)
-# if test "x$ac_cv_header_gdbm_h" = "xyes"; then
-#     AC_DEFINE( HAVE_GDBM )
-# else
-#     echo "no gdbm found, configuring and building."
-# fi
-# AM_CONDITIONAL(HAVE_GDBM, test "x$ac_cv_header_gdbm_h" = "xyes" )
-
 dnl Check for system installed metakit
 AC_CHECK_HEADER(mk4.h)
 if test "x$ac_cv_header_mk4_h" != "xyes"; then
-    echo "no metakit found, configuring and building."
-    # Run configure in the metakit subdir
-    AC_CONFIG_SUBDIRS( simgear/metakit/unix )
+    echo "Metakit not found, you will need to install this first."
+    echo "Please read the README.metakit for more information."
+    exit
 fi
-AM_CONDITIONAL(HAVE_METAKIT, test "x$ac_cv_header_mk4_h" = "xyes" )
 
 
 dnl Specify if we want logging (testing build) or not (release build)
 
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
-if test "x$ac_cv_header_zlib_h" = "xyes"; then
-    AC_DEFINE( HAVE_ZLIB )
-else
-    echo "no zlib found, building."
+if test "x$ac_cv_header_zlib_h" != "xyes"; then
+    echo "zlib not found, you will need to install this first."
+    echo "Please read the README.zlib for more information."
+    exit
 fi
-AM_CONDITIONAL(HAVE_ZLIB, test "x$ac_cv_header_zlib_h" = "xyes" )
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -325,14 +313,9 @@ AC_OUTPUT( \
 	simgear/timing/Makefile \
 	simgear/xgl/Makefile \
 	simgear/xml/Makefile \
-	simgear/zlib/Makefile \
 )
 
-AC_OUTPUT_COMMANDS([
-#	if test "x$ac_cv_header_windows_h" = "xyes" ; then
-#		cp simgear/gdbm/autoconf.h.cygwin32 simgear/gdbm/autoconf.h
-#	fi
-])
+# AC_OUTPUT_COMMANDS([])
 
 echo ""
 echo "Configure Summary"
@@ -354,14 +337,6 @@ fi
 
 echo -n "Automake version: ($AUTO_MAKE_VERSION) "
 automake --version | head -1
-
-if test "x$ac_cv_header_mk4_h" != "xyes"; then
-   echo "Building metakit"
-fi
-
-if test "x$ac_cv_header_zlib_h" != "xyes"; then
-   echo "Building zlib"
-fi
 
 if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
    echo "Threads: pthread lib found."

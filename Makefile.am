@@ -1,6 +1,13 @@
-EXTRA_DIST	= mksymlinks.sh acsite.m4 acconfig.h SimGear.dsp SimGear.dsw
+EXTRA_DIST = \
+	acsite.m4 \
+	acconfig.h \
+	mksymlinks.sh \
+	SimGear.dsp \
+	SimGear.dsw \
+	metakit-2.4.2-32.tar.gz \
+	zlib-1.1.3.tar.gz
 
-SUBDIRS		= simgear
+SUBDIRS	= simgear
 
 #
 # Additional all, clean, and distclean rules for additional packages.
@@ -8,7 +15,7 @@ SUBDIRS		= simgear
 # would be nice because there are then problems with make dist
 #
 
-all: 
+old_all: 
 	@list='@subdirs@'; \
 	target=`echo $@`; \
 	for subdir in $$list; do \
@@ -23,7 +30,7 @@ all:
 	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done
 
-install: 
+old_install: 
 	@list='@subdirs@'; \
 	target=`echo $@`; \
 	for subdir in $$list; do \
@@ -38,7 +45,7 @@ install:
 	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done
 
-clean: 
+old_clean: 
 	@list='@subdirs@'; \
 	target=`echo $@`; \
 	for subdir in $$list; do \
@@ -53,7 +60,7 @@ clean:
 	   || case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done
 
-distclean: 
+old_distclean: 
 	@list='@subdirs@'; \
 	target=`echo $@`; \
 	for subdir in $$list; do \
@@ -72,7 +79,7 @@ distclean:
 # distclean the associated packages and include them in the dist
 #
 
-dist-hook:
+old_dist-hook:
 	(cd $(top_srcdir); \
 		$(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl --lib)
 	pwd
@@ -93,7 +100,7 @@ dist-hook:
 	done
 	(cd $(top_srcdir); tar cf - simgear/metakit) | \
                 (cd $(distdir); tar xvf -)
-	
+
 
 #
 # Rule to build RPM distribution package

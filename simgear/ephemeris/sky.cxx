@@ -78,6 +78,10 @@ static GLubyte middle_color[12][4];
 static GLubyte lower_color[12][4];
 
 
+// Defined the shared sky object here
+FGSky current_sky;
+
+
 // Constructor
 FGSky::FGSky( void ) {
 }
@@ -89,12 +93,24 @@ FGSky::~FGSky( void ) {
 
 
 // initialize the sky object and connect it into the scene graph
-bool FGSky::initialize() {
-    sgVec3 vertex;
+bool FGSky::initialize( ssgRoot *root ) {
     sgVec3 color;
 
     float theta;
     int i;
+
+    // set up the state
+    sky_state = new ssgSimpleState();
+    if ( current_options.get_shading() == 1 ) {
+	sky_state->setShadeModel( GL_SMOOTH );
+    } else {
+	sky_state->setShadeModel( GL_FLAT );
+    }
+    sky_state->disable( GL_DEPTH_TEST );
+    sky_state->enable( GL_LIGHTING );
+    sky_state->disable( GL_FOG );
+    sky_state->disable( GL_CULL_FACE );
+    sky_state->disable( GL_TEXTURE_2D );
 
     // initialize arrays
     center_disk_vl = new ssgVertexArray( 14 );
@@ -197,8 +213,44 @@ bool FGSky::initialize() {
     lower_ring_vl->add( lower_vertex[0] );
     lower_ring_cl->add( color );
 
-    // force a repaint of the colors
-    repaint();
+    // force a repaint of the sky colors with ugly defaults
+    sgVec3 fog_color;
+    sgSetVec3( fog_color, 1.0, 1.0, 1.0 );
+    repaint( color, fog_color, 0.0 );
+
+    // build the ssg scene graph sub tree for the sky and connected
+    // into the provide scene graph branch
+    sky_selector = new ssgSelector;
+    sky_transform = new ssgTransform;
+
+    ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
+
+    center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
+				   center_disk_vl, NULL, NULL, center_disk_cl );
+
+    upper_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				  upper_ring_vl, NULL, NULL, upper_ring_cl );
+
+    middle_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				   middle_ring_vl, NULL, NULL, middle_ring_cl );
+
+    lower_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				  lower_ring_vl, NULL, NULL, lower_ring_cl );
+
+    center_disk->setState( sky_state );
+    upper_ring->setState( sky_state );
+    middle_ring->setState( sky_state );
+    lower_ring->setState( sky_state );
+
+    sky_transform->addKid( center_disk );
+    sky_transform->addKid( upper_ring );
+    sky_transform->addKid( middle_ring );
+    sky_transform->addKid( lower_ring );
+
+    sky_selector->addKid( sky_transform );
+    sky_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+
+    root->addKid( sky_selector );
 
     return true;
 }
@@ -206,7 +258,11 @@ bool FGSky::initialize() {
 
 // repaint the sky colors based on current value of sun_angle, sky,
 // and fog colors.  This updates the color arrays for ssgVtxTable.
-bool FGSky::repaint() {
+// sun angle in degrees relative to verticle
+// 0 degrees = high noon
+// 90 degrees = sun rise/set
+// 180 degrees = darkest midnight
+bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
     double diff;
     sgVec3 outer_param, outer_amt, outer_diff;
     sgVec3 middle_param, middle_amt, middle_diff;
@@ -406,25 +462,51 @@ bool FGSky::repaint() {
 }
 
 
-// build the ssg scene graph sub tree for the sky and connected into
-// the provide scene graph root
-bool FGSky::build( ssgBranch *branch ) {
-    sky_selector = new ssgSelector;
-    sky_transform = new ssgTransform;
+// reposition the sky at the specified origin and orientation
+// lon specifies a rotation about the Z axis
+// lat specifies a rotation about the new Y axis
+// spin specifies a rotation about the new Z axis (and orients the
+// sunrise/set effects
+bool FGSky::reposition( sgVec3 p, double lon, double lat, double spin ) {
+    sgMat4 T, LON, LAT, SPIN;
+    sgVec3 axis;
 
-    ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
+    // Translate to view position
+    // Point3D zero_elev = current_view.get_cur_zero_elev();
+    // xglTranslatef( zero_elev.x(), zero_elev.y(), zero_elev.z() );
+    sgMakeTransMat4( T, p );
 
-    center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
-				   center_disk_vl, NULL, NULL, center_disk_cl );
+    // printf("  Translated to %.2f %.2f %.2f\n", 
+    //        zero_elev.x, zero_elev.y, zero_elev.z );
 
-    upper_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				  upper_ring_vl, NULL, NULL, upper_ring_cl );
+    // Rotate to proper orientation
+    // printf("  lon = %.2f  lat = %.2f\n", FG_Longitude * RAD_TO_DEG,
+    //        FG_Latitude * RAD_TO_DEG);
+    // xglRotatef( f->get_Longitude() * RAD_TO_DEG, 0.0, 0.0, 1.0 );
+    sgSetVec3( axis, 0.0, 0.0, 1.0 );
+    sgMakeRotMat4( LON, lon * RAD_TO_DEG, axis );
 
-    middle_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				   middle_ring_vl, NULL, NULL, middle_ring_cl );
+    // xglRotatef( 90.0 - f->get_Latitude() * RAD_TO_DEG, 0.0, 1.0, 0.0 );
+    sgSetVec3( axis, 0.0, 1.0, 0.0 );
+    sgMakeRotMat4( LAT, 90.0 - lat * RAD_TO_DEG, axis );
 
-    lower_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				  lower_ring_vl, NULL, NULL, lower_ring_cl );
+    // xglRotatef( l->sun_rotation * RAD_TO_DEG, 0.0, 0.0, 1.0 );
+    sgSetVec3( axis, 0.0, 0.0, 1.0 );
+    sgMakeRotMat4( SPIN, spin * RAD_TO_DEG, axis );
+
+    sgMat4 TRANSFORM;
+
+    sgCopyMat4( TRANSFORM, T );
+    sgPreMultMat4( TRANSFORM, LON );
+    sgPreMultMat4( TRANSFORM, LAT );
+    sgPreMultMat4( TRANSFORM, SPIN );
+
+    sgCoord skypos;
+    sgSetCoord( &skypos, TRANSFORM );
+
+    sky_transform->setTransform( &skypos );
+
+    return true;
 }
 
 

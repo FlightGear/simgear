@@ -34,24 +34,10 @@
 
 
 class FGSky {
-    double sun_angle;		// sun angle in degrees relative to verticle
-				// 0 degrees = high noon
-				// 90 degrees = sun rise/set
-				// 180 degrees = darkest midnight
-
-    sgVec3 sky_color;		// base sky color
-    sgVec3 fog_color;		// fog color
-
-    sgVec3 origin;		// coordinates of sky placement origin
-				// I recommend (lon, lat, 0) relative to
-				// your world coordinate scheme
-
-    double lon, lat;		// current lon and lat (for properly rotating
-				// sky)
-
 
     ssgSelector *sky_selector;
     ssgTransform *sky_transform;
+    ssgSimpleState *sky_state;
 
     ssgVertexArray *center_disk_vl;
     ssgColourArray *center_disk_cl;
@@ -74,38 +60,37 @@ public:
     ~FGSky( void );
 
     // initialize the sky object and connect it into the scene graph
-    bool initialize();
+    // as a kid to to the specified root
+    bool initialize( ssgRoot *branch );
 
     // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
     // ssgVtxTable.
-    bool repaint();
+    // sun angle in degrees relative to verticle
+    // 0 degrees = high noon
+    // 90 degrees = sun rise/set
+    // 180 degrees = darkest midnight
+    bool repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle );
 
-    // build the ssg scene graph sub tree for the sky and connected
-    // into the provide scene graph branch
-    bool build( ssgBranch *branch );
+    // reposition the sky at the specified origin and orientation
+    // lon specifies a rotation about the Z axis
+    // lat specifies a rotation about the new Y axis
+    // spin specifies a rotation about the new Z axis (and orients the
+    // sunrise/set effects
+    bool reposition( sgVec3 p, double lon, double lat, double spin );
 
     // enable the sky in the scene graph (default)
-    bool enable() { sky_selector->select( 1 ); }
+    void enable() { sky_selector->select( 1 ); }
 
     // disable the sky in the scene graph.  The leaf node is still
     // there, how ever it won't be traversed on the cullandrender
     // phase.
-    bool disable() { sky_selector->select( 0 ); }
+    void disable() { sky_selector->select( 0 ); }
 
-    inline void set_sun_angle( double a ) { sun_angle = a; }
-    inline void set_sky_color( sgVec3 color ) { 
-	sgCopyVec3(sky_color, color);
-    }
-    inline void set_fog_color( sgVec3 color ) { 
-	sgCopyVec3(fog_color, color);
-    }
-    inline void set_origin( sgVec3 p ) { 
-	sgCopyVec3(origin, p);
-    }
-    inline void set_lon( double l ) { lon = l; }
-    inline void set_lat( double l ) { lat = l; }
 };
+
+
+extern FGSky current_sky;
 
 
 // (Re)generate the display list

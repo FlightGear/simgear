@@ -12,7 +12,7 @@ IMAGE_SERVER_INCL =
 IMAGE_SERVER_SRCS = 
 endif
 
-noinst_HEADERS = colours.h
+noinst_HEADERS = colours.h RenderTexture.h
 
 include_HEADERS = \
 	colors.hxx \
@@ -29,6 +29,7 @@ libsgscreen_a_SOURCES = \
 	screen-dump.cxx \
 	tr.cxx \
 	extensions.cxx \
+	RenderTexture.cpp \
 	win32-printer.h
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) -DGLX_GLXEXT_PROTOTYPES

@@ -134,8 +134,6 @@ esac
 
 dnl Checks for libraries.
 
-AC_SEARCH_LIBS(cos, m)
-
 dnl Thread related checks
 AC_CHECK_HEADER(pthread.h)
 AC_CHECK_LIB(pthread, pthread_exit)
@@ -166,9 +164,21 @@ fi
 
 AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
+thread_LIBS="$LIBS"
+LIBS=""
 
+dnl search for network related libraries
 AC_SEARCH_LIBS(inet_addr, xnet)
 AC_SEARCH_LIBS(socket, socket)
+
+network_LIBS="$LIBS"
+LIBS=""
+
+dnl check for some default libraries
+AC_SEARCH_LIBS(cos, m)
+
+base_LIBS="$LIBS"
+LIBS=""
 
 dnl check for glut location
 AC_CHECK_HEADER(GL/glut.h)
@@ -183,9 +193,6 @@ else
         exit
     fi
 fi
-
-base_LIBS="$LIBS"
-LIBS=""
 
 dnl check for OpenGL related libraries
 case "${host}" in
@@ -252,6 +259,8 @@ LIBS="$base_LIBS"
 
 AC_SUBST(base_LIBS)
 AC_SUBST(opengl_LIBS)
+AC_SUBST(thread_LIBS)
+AC_SUBST(network_LIBS)
 
 dnl Check for MS Windows environment
 AC_CHECK_HEADER(windows.h)

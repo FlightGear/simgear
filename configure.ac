@@ -152,7 +152,7 @@ if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_
     dnl fails.  See if we need -pthread instead of -lpthread and look
     dnl for the functions in libc_r.
     save_CXXFLAGS="$CXXFLAGS"
-    save_CFLAGS="$FLAGS"
+    save_CFLAGS="$CFLAGS"
     CXXFLAGS="-pthread $CXXFLAGS"
     CFLAGS="-pthread $FLAGS"
     save_LIBS=$LIBS

@@ -22,7 +22,7 @@
  * $Id$
  **************************************************************************/
 
-#include <Debug/logstream.hxx>
+#include <simgear/logstream.hxx>
 
 #ifdef FG_MATH_EXCEPTION_CLASH
 #  define exception c_exception

@@ -32,14 +32,15 @@
 #include <math.h>
 
 #include <GL/glut.h>
-#include <XGL/xgl.h>
+#include <simgear/xgl.h>
+
+#include <simgear/logstream.hxx>
+#include <simgear/constants.h>
+#include <simgear/fg_random.h>
 
 #include <Aircraft/aircraft.hxx>
-#include <Debug/logstream.hxx>
 #include <FDM/flight.hxx>
-#include <Include/fg_constants.h>
 #include <Main/views.hxx>
-#include <Math/fg_random.h>
 #include <Time/event.hxx>
 #include <Time/fg_time.hxx>
 

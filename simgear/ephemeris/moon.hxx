@@ -24,8 +24,9 @@
 #ifndef _MOON_HXX_
 #define _MOON_HXX_
 
+#include <simgear/constants.h>
+
 #include <Aircraft/aircraft.hxx>
-#include <Include/fg_constants.h>
 #include <Main/views.hxx>
 #include <Time/fg_time.hxx>
 

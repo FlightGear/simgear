@@ -25,9 +25,10 @@
 
 #include <string.h>
 
-#include <Debug/logstream.hxx>
+#include <simgear/logstream.hxx>
+#include <simgear/fgpath.hxx>
+
 #include <Main/options.hxx>
-#include <Misc/fgpath.hxx>
 #include <Objects/texload.h>
 
 #ifdef __BORLANDC__

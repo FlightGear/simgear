@@ -30,7 +30,8 @@
 #  include <windows.h>
 #endif
 
-#include "Include/compiler.h"
+#include <simgear/compiler.h>
+
 #ifdef FG_HAVE_STD_INCLUDES
 #  include <cmath>
 #  include <cstdio>
@@ -46,18 +47,18 @@
 #include <string>
 
 #include <GL/glut.h>
-#include <XGL/xgl.h>
+#include <simgear/xgl.h>
+
+#include <simgear/logstream.hxx>
+#include <simgear/constants.h>
+#include <simgear/fgpath.hxx>
+#include <simgear/fgstream.hxx>
+#include <simgear/stopwatch.hxx>
 
 #include <Aircraft/aircraft.hxx>
-#include <Debug/logstream.hxx>
-#include <Include/fg_constants.h>
-#include <Misc/fgpath.hxx>
-#include <Misc/fgstream.hxx>
-#include <Misc/stopwatch.hxx>
 #include <Main/options.hxx>
 #include <Main/views.hxx>
 #include <Time/fg_time.hxx>
-#include "Misc/stopwatch.hxx"
 
 #include "stars.hxx"
 

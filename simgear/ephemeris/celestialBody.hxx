@@ -31,8 +31,9 @@
 #endif                                   
 
 
+#include <simgear/constants.h>
+
 #include <Time/fg_time.hxx>
-#include <Include/fg_constants.h>
 
 class Star;
 

@@ -26,10 +26,13 @@
 #  define exception c_exception
 #endif
 #include <math.h>
+
+#include <simgear/logstream.hxx>
+
 #include <Time/sunpos.hxx>
-#include <Debug/logstream.hxx>
 #include <Time/light.hxx>
 #include <Main/options.hxx>
+
 #include "star.hxx"
 
 /*************************************************************************

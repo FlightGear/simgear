@@ -16,4 +16,4 @@ libAstro_a_SOURCES = \
 	uranus.cxx uranus.hxx \
 	venus.cxx venus.hxx
 
-INCLUDES += -I$(top_builddir) -I$(top_builddir)/Lib -I$(top_builddir)/Simulator
+INCLUDES += -I$(top_builddir) -I$(top_builddir)/src

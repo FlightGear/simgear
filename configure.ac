@@ -1,7 +1,5 @@
 dnl Process this file with autoget.sh to produce a working configure
 dnl script.
-dnl
-dnl $Id$
 
 AC_INIT
 AC_CONFIG_SRCDIR([simgear/bucket/newbucket.cxx])

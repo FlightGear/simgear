@@ -26,9 +26,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef __MWERKS__
 #include <stdlib.h> // for exit()
-#endif
 
 #include STL_STRING
 
@@ -38,14 +36,16 @@
 
 #include "interpolater.hxx"
 
+FG_USING_STD(string);
+
 
 // Constructor -- loads the interpolation table from the specified
 // file
-fgINTERPTABLE::fgINTERPTABLE( const string& file ) {
+SGInterpTable::SGInterpTable( const string& file ) {
     FG_LOG( FG_MATH, FG_INFO, "Initializing Interpolator for " << file );
 
     fg_gzifstream in( file );
-    if ( !in ) {
+    if ( !in.is_open() ) {
         FG_LOG( FG_GENERAL, FG_ALERT, "Cannot open file: " << file );
 	exit(-1);
     }
@@ -55,6 +55,7 @@ fgINTERPTABLE::fgINTERPTABLE( const string& file ) {
     while ( in ) {
 	if ( size < MAX_TABLE_SIZE ) {
 	    in >> table[size][0] >> table[size][1];
+	    in >> skipws;
 	    size++;
 	} else {
             FG_LOG( FG_MATH, FG_ALERT,
@@ -67,28 +68,31 @@ fgINTERPTABLE::fgINTERPTABLE( const string& file ) {
 
 
 // Given an x value, linearly interpolate the y value from the table
-double fgINTERPTABLE::interpolate(double x) {
+double SGInterpTable::interpolate(double x) {
     int i;
     double y;
 
     i = 0;
 
     while ( (x > table[i][0]) && (i < size) ) {
+	// cout << "  i = " << i << " table[i][0] = " << table[i][0] << endl;
+	// cout << "  size = " << size << endl;
 	i++;
     }
 
     // printf ("i = %d ", i);
 
     if ( (i == 0) && (x < table[0][0]) ) {
-	FG_LOG( FG_MATH, FG_ALERT, 
-		"fgInterpolateInit(): lookup error, x to small = " << x );
-	return(0.0);
+	FG_LOG( FG_MATH, FG_DEBUG, 
+		"interpolate(): lookup error, x to small = " << x );
+	return table[0][1];
     }
 
-    if ( x > table[i][0] ) {
-	FG_LOG( FG_MATH, FG_ALERT, 
-		"fgInterpolateInit(): lookup error, x to big = " << x );
-	return(0.0);
+    // cout << " table[size-1][0] = " << table[size-1][0] << endl;
+    if ( x > table[size-1][0] ) {
+	FG_LOG( FG_MATH, FG_DEBUG, 
+		"interpolate(): lookup error, x to big = " << x );
+	return table[size-1][1];
     }
 
     // y = y1 + (y0 - y1)(x - x1) / (x0 - x1)
@@ -102,7 +106,7 @@ double fgINTERPTABLE::interpolate(double x) {
 
 
 // Destructor
-fgINTERPTABLE::~fgINTERPTABLE( void ) {
+SGInterpTable::~SGInterpTable( void ) {
 }
 
 

@@ -40,7 +40,7 @@ FG_USING_STD(string);
 #define MAX_TABLE_SIZE 32
 
 
-class fgINTERPTABLE {
+class SGInterpTable {
     int size;
     double table[MAX_TABLE_SIZE][2];
 
@@ -48,13 +48,13 @@ public:
 
     // Constructor -- loads the interpolation table from the specified
     // file
-    fgINTERPTABLE( const string& file );
+    SGInterpTable( const string& file );
 
     // Given an x value, linearly interpolate the y value from the table
     double interpolate(double x);
 
     // Destructor
-    ~fgINTERPTABLE( void );
+    ~SGInterpTable( void );
 };
 
 

@@ -131,21 +131,70 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
-    // TEST return true;
-
+    // double min = 100;
+    // double max = -100;
+    double mag, nmag, alpha, factor, cutoff;
     float *color;
+
+    // determine which star structure to draw
+    if ( sun_angle > (FG_PI_2 + 10.0 * DEG_TO_RAD ) ) {
+	// deep night
+	factor = 1.0;
+	cutoff = 4.2;
+    } else if ( sun_angle > (FG_PI_2 + 8.8 * DEG_TO_RAD ) ) {
+	factor = 1.0;
+	cutoff = 3.6;
+    } else if ( sun_angle > (FG_PI_2 + 7.5 * DEG_TO_RAD ) ) {
+	factor = 0.95;
+	cutoff = 3.0;
+    } else if ( sun_angle > (FG_PI_2 + 7.0 * DEG_TO_RAD ) ) {
+	factor = 0.9;
+	cutoff = 2.4;
+    } else if ( sun_angle > (FG_PI_2 + 6.5 * DEG_TO_RAD ) ) {
+	factor = 0.85;
+	cutoff = 1.8;
+    } else if ( sun_angle > (FG_PI_2 + 6.0 * DEG_TO_RAD ) ) {
+	factor = 0.8;
+	cutoff = 1.2;
+    } else if ( sun_angle > (FG_PI_2 + 5.5 * DEG_TO_RAD ) ) {
+	factor = 0.75;
+	cutoff = 0.6;
+    } else {
+	// early dusk or late dawn
+	factor = 0.7;
+	cutoff = 0.0;
+    }
+
     for ( int i = 0; i < num; ++i ) {
+	// if ( star_data[i][2] < min ) { min = star_data[i][2]; }
+	// if ( star_data[i][2] > max ) { max = star_data[i][2]; }
+
+	// magnitude ranges from -1 (bright) to 4 (dim).  The range of
+	// star and planet magnitudes can actually go outside of this,
+	// but for our purpose, if it is brighter that -1, we'll color
+	// it full white/alpha anyway and 4 is a convenient cutoff
+	// point which keeps the number of stars drawn at about 500.
+
 	// color (magnitude)
-	double magnitude = (0.0 - star_data[i][2]) / 5.0 + 1.0;
-	magnitude = magnitude * 0.7 + (3 * 0.1);
-	if (magnitude > 1.0) magnitude = 1.0;
-	if (magnitude < 0.0) magnitude = 0.0;
+	mag = star_data[i][2];
+	if ( mag < cutoff ) {
+	    nmag = ( 4 - mag ) / 5.0; // translate to 0 ... 1.0 scale
+	    alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
+	    alpha *= factor;          // dim when the sun is brighter
+	} else {
+	    alpha = 0.0;
+	}
+
+	if (alpha > 1.0) { alpha = 1.0; }
+	if (alpha < 0.0) { alpha = 0.0; }
 
 	color = cl->get( i );
-	sgSetVec4( color, 1.0, 1.0, 1.0, magnitude );
-	// sgSetVec4( color, 1, 1, 1, 1.0 );
-	// cout << "color[" << i << "] = " << magnitude << endl;
+	sgSetVec4( color, 1.0, 1.0, 1.0, alpha );
+	// cout << "alpha[" << i << "] = " << alpha << endl;
     }
+
+    // cout << "min = " << min << " max = " << max << " count = " << num 
+    //      << endl;
 
     return true;
 }

@@ -310,18 +310,6 @@ if test "x$ac_cv_header_zlib_h" != "xyes"; then
     exit
 fi
 
-AC_LANG_SAVE
-AC_LANG_CPLUSPLUS
-dnl Check for installed boost headers
-AC_CHECK_HEADER(boost/config.hpp)
-if test "x$ac_cv_header_boost_config_hpp" != "xyes"; then
-    echo 
-    echo "Boost not found, you will need to install this first."
-    echo "Please read the README.boost for more information."
-    exit
-fi
-AC_LANG_RESTORE
-
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS( \

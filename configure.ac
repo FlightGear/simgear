@@ -165,6 +165,7 @@ dnl Checks for libraries.
 
 dnl Thread related checks
 AC_CHECK_HEADER(pthread.h)
+AC_CHECK_LIB(pthread, pthread_exit)
 AC_SEARCH_LIBS(pthread_exit, pthread)
 if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
     CXXFLAGS="$CXXFLAGS -D_REENTRANT"

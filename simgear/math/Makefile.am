@@ -27,4 +27,4 @@ libsgmath_a_SOURCES = \
 	polar3d.cxx \
 	vector.cxx
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_builddir)/src

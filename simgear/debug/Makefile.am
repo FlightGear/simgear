@@ -6,4 +6,4 @@ include_HEADERS = debug_types.h logstream.hxx
 
 libsgdebug_a_SOURCES = logstream.cxx
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_builddir)/src

@@ -23,8 +23,4 @@ libsgmisc_a_SOURCES = \
 	texcoord.cxx \
 	zfstream.cxx
 
-INCLUDES += \
-	-I$(top_builddir) \
-	-I$(top_builddir)/bucket \
-	-I$(top_builddir)/math \
-	$(ZLIB_INCL)
+INCLUDES += -I$(top_builddir)/src

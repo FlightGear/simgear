@@ -7,4 +7,4 @@ libsgscreen_a_SOURCES = \
 	screen-dump.cxx \
 	win32-printer.h
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_builddir)/src

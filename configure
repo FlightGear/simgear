@@ -456,7 +456,7 @@ echo > confdefs.h
 
 # A filename unique to this package, relative to the directory that
 # configure is in, which we can look for to find out if srcdir is correct.
-ac_unique_file=bucket/newbucket.cxx
+ac_unique_file=src/bucket/newbucket.cxx
 
 # Find the source files, if location was not specified.
 if test -z "$srcdir"; then
@@ -694,7 +694,7 @@ fi
 
 PACKAGE=SimGear
 
-VERSION=0.0.0
+VERSION=0.0.1
 
 if test "`cd $srcdir && pwd`" != "`pwd`" && test -f $srcdir/config.status; then
   { echo "configure: error: source directory already configured; run "make distclean" there first" 1>&2; exit 1; }
@@ -3949,16 +3949,17 @@ ac_given_INSTALL="$INSTALL"
 trap 'rm -fr `echo "\
 	VERSION \
 	Makefile \
-	include/Makefile \
-	bucket/Makefile \
-	debug/Makefile \
-	math/Makefile \
-	misc/Makefile \
-	screen/Makefile \
-	serial/Makefile \
-	xgl/Makefile \
-	zlib/Makefile \
- include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+	src/Makefile \
+	src/include/Makefile \
+	src/bucket/Makefile \
+	src/debug/Makefile \
+	src/math/Makefile \
+	src/misc/Makefile \
+	src/screen/Makefile \
+	src/serial/Makefile \
+	src/xgl/Makefile \
+	src/zlib/Makefile \
+ src/include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -4062,15 +4063,16 @@ cat >> $CONFIG_STATUS <<EOF
 CONFIG_FILES=\${CONFIG_FILES-"\
 	VERSION \
 	Makefile \
-	include/Makefile \
-	bucket/Makefile \
-	debug/Makefile \
-	math/Makefile \
-	misc/Makefile \
-	screen/Makefile \
-	serial/Makefile \
-	xgl/Makefile \
-	zlib/Makefile \
+	src/Makefile \
+	src/include/Makefile \
+	src/bucket/Makefile \
+	src/debug/Makefile \
+	src/math/Makefile \
+	src/misc/Makefile \
+	src/screen/Makefile \
+	src/serial/Makefile \
+	src/xgl/Makefile \
+	src/zlib/Makefile \
 "}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
@@ -4152,7 +4154,7 @@ ac_eD='%g'
 if test "${CONFIG_HEADERS+set}" != set; then
 EOF
 cat >> $CONFIG_STATUS <<EOF
-  CONFIG_HEADERS="include/config.h"
+  CONFIG_HEADERS="src/include/config.h"
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 fi
@@ -4243,7 +4245,7 @@ cat >> $CONFIG_STATUS <<EOF
 
 EOF
 cat >> $CONFIG_STATUS <<\EOF
-test -z "$CONFIG_HEADERS" || echo timestamp > include/stamp-h
+test -z "$CONFIG_HEADERS" || echo timestamp > src/include/stamp-h
 
 exit 0
 EOF

@@ -12,4 +12,4 @@ libsgbucket_a_SOURCES = newbucket.cxx
 # 	$(top_builddir)/bucket/libsgbucket.a \
 # 	$(top_builddir)/misc/libsgmisc.a
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_builddir)/src

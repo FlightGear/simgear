@@ -3,10 +3,10 @@ dnl working configure script.
 dnl
 dnl $Id$
 
-AC_INIT(bucket/newbucket.cxx)
+AC_INIT(src/bucket/newbucket.cxx)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.0.0)
+AM_INIT_AUTOMAKE(SimGear, 0.0.1)
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET
@@ -221,20 +221,21 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 	random setitimer getitimer signal GetLocalTime rint getrusage )
 
-AM_CONFIG_HEADER(include/config.h)
+AM_CONFIG_HEADER(src/include/config.h)
 
 AC_OUTPUT( \
 	VERSION \
 	Makefile \
-	include/Makefile \
-	bucket/Makefile \
-	debug/Makefile \
-	math/Makefile \
-	misc/Makefile \
-	screen/Makefile \
-	serial/Makefile \
-	xgl/Makefile \
-	zlib/Makefile \
+	src/Makefile \
+	src/include/Makefile \
+	src/bucket/Makefile \
+	src/debug/Makefile \
+	src/math/Makefile \
+	src/misc/Makefile \
+	src/screen/Makefile \
+	src/serial/Makefile \
+	src/xgl/Makefile \
+	src/zlib/Makefile \
 )
 
 AC_OUTPUT_COMMANDS([./mksymlinks.sh])

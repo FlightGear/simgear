@@ -4,7 +4,7 @@
 
 #include "serial.hxx"
 
-main () {
+int main () {
     FGSerialPort port;
     string value;
     bool result;
@@ -27,4 +27,6 @@ main () {
 	    cout << "-> " << value << endl;
 	}
     }
+
+    return 0;
 }

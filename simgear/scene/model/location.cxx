@@ -104,7 +104,7 @@ static void MakeTRANS( sgMat4 dst, const double Theta,
 // Constructor
 SGLocation::SGLocation( void ):
     _dirty(true),
-    _lon_deg(0),
+    _lon_deg(-1000),
     _lat_deg(0),
     _alt_ft(0),
     _roll_deg(0),

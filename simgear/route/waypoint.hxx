@@ -76,6 +76,7 @@ private:
     double distance;
 
     string id;
+    string name;
 
 public:
 
@@ -86,10 +87,11 @@ public:
      * @param alt target altitude
      * @param mode type of coordinates/math to use
      * @param s waypoint identifier
+     * @param n waypoint name
      */
     SGWayPoint( const double lon = 0.0, const double lat = 0.0,
 		const double alt = 0.0, const modetype m = WGS84,
-		const string s = "" );
+		const string s = "", const string n = "" );
 
     /** Destructor */
     ~SGWayPoint();
@@ -152,6 +154,9 @@ public:
 
     /** @return waypoint id */
     inline string get_id() const { return id; }
+
+    /** @return waypoint name */
+    inline string get_name() const { return name; }
 
 };
 

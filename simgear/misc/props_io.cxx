@@ -442,7 +442,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
 
 				// If there is a literal value,
 				// write it first.
-  if (node->hasValue() && node->getAttribute(SGPropertyNode::ARCHIVE)) {
+  if (node->hasValue() && (write_all || node->getAttribute(SGPropertyNode::ARCHIVE))) {
     doIndent(output, indent);
     output << '<' << name;
     writeAtts(output, node);

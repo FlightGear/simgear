@@ -101,7 +101,7 @@ void* macosxGetGLProcAddress(const char *func) {
 
 void *SGGetGLProcAddress(const char *func) {
     static void *libHandle = NULL;
-    void (*fptr)() = NULL;
+    void *fptr = NULL;
 
     /*
      * Clear the error buffer
@@ -112,7 +112,7 @@ void *SGGetGLProcAddress(const char *func) {
         libHandle = dlopen("libGL.so", RTLD_LAZY);
 
     if (libHandle != NULL) {
-        fptr = (void (*)()) dlsym(libHandle, func);
+        fptr = dlsym(libHandle, func);
 
         char *error = dlerror();
         if (error)

@@ -49,6 +49,7 @@ enum {
     SG_BOUNDING_SPHERE = 0,
 
     SG_VERTEX_LIST = 1,
+    SG_COLOR_LIST = 4,
     SG_NORMAL_LIST = 2,
     SG_TEXCOORD_LIST = 3,
 
@@ -310,6 +311,41 @@ bool SGBinObject::read_bin( const string& file ) {
 		    // cout << "node = " << p << endl;
 		    wgs84_nodes.push_back( p );
 		    fptr += 3;
+		}
+	    }
+	} else if ( obj_type == SG_COLOR_LIST ) {
+	    // read color list properties
+	    for ( j = 0; j < nproperties; ++j ) {
+		char prop_type;
+		sgReadChar( fp, &prop_type );
+
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
+		sgReadBytes( fp, nbytes, ptr );
+	    }
+
+	    // read color list elements
+	    for ( j = 0; j < nelements; ++j ) {
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
+		sgReadBytes( fp, nbytes, ptr );
+		int count = nbytes / (sizeof(float) * 4);
+		float *fptr = (float *)ptr;
+		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned int *)&(fptr[0]) );
+			sgEndianSwap( (unsigned int *)&(fptr[1]) );
+			sgEndianSwap( (unsigned int *)&(fptr[2]) );
+			sgEndianSwap( (unsigned int *)&(fptr[3]) );
+		    }
+		    p = Point3D( fptr[0], fptr[1], fptr[2] );
+		    // cout << "node = " << p << endl;
+		    colors.push_back( p );
+		    fptr += 4;
 		}
 	    }
 	} else if ( obj_type == SG_NORMAL_LIST ) {
@@ -600,6 +636,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     Point3D p;
     sgVec2 t;
     sgVec3 pt;
+    sgVec4 color;
     int i, j;
 
     string dir = base + "/" + b.gen_base_path();
@@ -630,7 +667,9 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     cout << "fans size = " << fans_v.size() << "  fan_materials = " 
 	 << fan_materials.size() << endl;
 
-    cout << "points = " << wgs84_nodes.size() << endl;
+    cout << "nodes = " << wgs84_nodes.size() << endl;
+    cout << "colors = " << colors.size() << endl;
+    cout << "normals = " << normals.size() << endl;
     cout << "tex coords = " << texcoords.size() << endl;
 
     // write header magic
@@ -645,6 +684,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     short nobjects = 0;
     nobjects++;			// for gbs
     nobjects++;			// for vertices
+    nobjects++;			// for colors
     nobjects++;			// for normals
     nobjects++;			// for texcoords
 
@@ -727,6 +767,20 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	p = wgs84_nodes[i] - gbs_center;
 	sgSetVec3( pt, p.x(), p.y(), p.z() );
 	sgWriteVec3( fp, pt );
+    }
+
+    // dump vertex color list
+    sgWriteChar( fp, (char)SG_COLOR_LIST );             // type
+    sgWriteShort( fp, 0 );		                 // nproperties
+    sgWriteShort( fp, 1 );		                 // nelements
+    sgWriteUInt( fp, colors.size() * sizeof(float) * 4 ); // nbytes
+    for ( i = 0; i < (int)colors.size(); ++i ) {
+	p = colors[i];
+        // Right now we have a place holder for color alpha but we
+        // need to update the interface so the calling program can
+        // provide the info.
+	sgSetVec4( color, p.x(), p.y(), p.z(), 1.0 );
+	sgWriteVec4( fp, color );
     }
 
     // dump vertex normal list

@@ -92,6 +92,7 @@ class SGBinObject {
     Point3D gbs_center;
     float gbs_radius;
     point_list wgs84_nodes;
+    point_list colors;
     point_list normals;
     point_list texcoords;
     group_list pts_v;
@@ -118,6 +119,9 @@ public:
 
     inline point_list get_wgs84_nodes() const { return wgs84_nodes; }
     inline void set_wgs84_nodes( point_list n ) { wgs84_nodes = n; }
+
+    inline point_list get_colors() const { return colors; }
+    inline void set_colors( point_list c ) { colors = c; }
 
     inline point_list get_normals() const { return normals; }
     inline void set_normals( point_list n ) { normals = n; }

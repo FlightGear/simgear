@@ -43,9 +43,9 @@ class PropsVisitor : public XMLVisitor
 public:
 
   PropsVisitor (SGPropertyNode * root, const string &base)
-    : _root(root), _level(0), _base(base), _exception(0) {}
+    : _root(root), _level(0), _base(base), _hasException(false) {}
 
-  virtual ~PropsVisitor () { delete _exception; }
+  virtual ~PropsVisitor () {}
 
   void startXML ();
   void endXML ();
@@ -54,8 +54,12 @@ public:
   void data (const char * s, int length);
   void warning (const char * message, int line, int column);
 
-  bool hasException () const { return (_exception != 0); }
-  const sg_io_exception * getException () const { return _exception; }
+  bool hasException () const { return _hasException; }
+  sg_io_exception &getException () { return _exception; }
+  void setException (const sg_io_exception &exception) {
+    _exception = exception;
+    _hasException = true;
+  }
 
 private:
 
@@ -91,7 +95,8 @@ private:
   int _level;
   vector<State> _state_stack;
   string _base;
-  sg_io_exception * _exception;
+  sg_io_exception _exception;
+  bool _hasException;
 };
 
 void
@@ -191,9 +196,8 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       path.append(attval);
       try {
 	readProperties(path.str(), node);
-      } catch (const sg_io_exception &t) {
-	cerr << "Caught exception\n";
-	_exception = t.clone();
+      } catch (sg_io_exception &e) {
+	setException(e);
       }
     }
 
@@ -284,7 +288,7 @@ readProperties (istream &input, SGPropertyNode * start_node,
   PropsVisitor visitor(start_node, base);
   readXML(input, visitor, base);
   if (visitor.hasException())
-    throw *(visitor.getException());
+    throw visitor.getException();
 }
 
 
@@ -301,7 +305,7 @@ readProperties (const string &file, SGPropertyNode * start_node)
   PropsVisitor visitor(start_node, file);
   readXML(file, visitor);
   if (visitor.hasException())
-    throw *(visitor.getException());
+    throw visitor.getException();
 }
 
 

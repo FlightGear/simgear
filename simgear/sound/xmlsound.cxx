@@ -406,15 +406,14 @@ SGXmlSound::update (double dt)
    // Change sample state
    //
    _sample->set_pitch( pitch_offset + pitch );
-   _sample->set_volume( volume_offset + volume );
-
    if ((volume_offset + volume ) > 1.0)
    {
       _sample->set_volume( 1.0 );
       SG_LOG(SG_GENERAL, SG_WARN,
-             "WARNING: Volume larger than 1.0 for configuration for '" << _name
-              << "' clipping ...");
-   }
+             "Volume larger than 1.0 in configuration for '" << _name
+              << "', clipping.");
+   } else 
+      _sample->set_volume( volume_offset + volume );
 
 
    //

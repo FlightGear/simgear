@@ -58,23 +58,26 @@ int main( int argc, char **argv ) {
     }
     cout << endl;
 
-    cout << "# triangle groups" << endl;
+    cout << "# geometry groups" << endl;
     cout << endl;
 
     string material;
     int_list vertex_index;
+    int_list normal_index;
     int_list tex_index;
 
     // generate points
     string_list pt_materials = obj.get_pt_materials();
     group_list pts_v = obj.get_pts_v();
+    group_list pts_n = obj.get_pts_n();
     for ( i = 0; i < (int)pts_v.size(); ++i ) {
 	material = pt_materials[i];
 	vertex_index = pts_v[i];
+	normal_index = pts_n[i];
         cout << "# usemtl " << material << endl;
         cout << "pt ";
         for ( j = 0; j < (int)vertex_index.size(); ++j ) {
-            cout << vertex_index[j] << " ";
+            cout << vertex_index[j] << "/" << normal_index[j] << " ";
         }
         cout << endl;
     }
@@ -82,15 +85,22 @@ int main( int argc, char **argv ) {
     // generate triangles
     string_list tri_materials = obj.get_tri_materials();
     group_list tris_v = obj.get_tris_v();
+    group_list tris_n = obj.get_tris_n();
     group_list tris_tc = obj.get_tris_tc();
     for ( i = 0; i < (int)tris_v.size(); ++i ) {
 	material = tri_materials[i];
 	vertex_index = tris_v[i];
+	normal_index = tris_n[i];
 	tex_index = tris_tc[i];
         cout << "# usemtl " << material << endl;
         cout << "f ";
         for ( j = 0; j < (int)vertex_index.size(); ++j ) {
-            cout << vertex_index[j] << "/" << tex_index[j] << " ";
+            cout << vertex_index[j];
+	    if ( normal_index.size() ) {
+		cout << "/" << normal_index[j];
+	    }
+	    cout << "/" << tex_index[j];
+	    cout << " ";
         }
         cout << endl;
     }
@@ -98,15 +108,21 @@ int main( int argc, char **argv ) {
     // generate strips
     string_list strip_materials = obj.get_strip_materials();
     group_list strips_v = obj.get_strips_v();
+    group_list strips_n = obj.get_strips_n();
     group_list strips_tc = obj.get_strips_tc();
     for ( i = 0; i < (int)strips_v.size(); ++i ) {
 	material = strip_materials[i];
 	vertex_index = strips_v[i];
+	normal_index = strips_n[i];
 	tex_index = strips_tc[i];
         cout << "# usemtl " << material << endl;
         cout << "ts ";
         for ( j = 0; j < (int)vertex_index.size(); ++j ) {
-            cout << vertex_index[j] << "/" << tex_index[j] << " ";
+            cout << vertex_index[j];
+	    if ( normal_index.size() ) {
+		cout << "/" << normal_index[j];
+	    }
+	    cout << "/" << tex_index[j] << " ";
         }
         cout << endl;
     }
@@ -114,15 +130,21 @@ int main( int argc, char **argv ) {
     // generate fans
     string_list fan_materials = obj.get_fan_materials();
     group_list fans_v = obj.get_fans_v();
+    group_list fans_n = obj.get_fans_n();
     group_list fans_tc = obj.get_fans_tc();
     for ( i = 0; i < (int)fans_v.size(); ++i ) {
 	material = fan_materials[i];
 	vertex_index = fans_v[i];
+	normal_index = fans_n[i];
 	tex_index = fans_tc[i];
         cout << "# usemtl " << material << endl;
         cout << "tf ";
         for ( j = 0; j < (int)vertex_index.size(); ++j ) {
-            cout << vertex_index[j] << "/" << tex_index[j] << " ";
+            cout << vertex_index[j];
+	    if ( normal_index.size() ) {
+		cout << "/" << normal_index[j];
+	    }
+	    cout << "/" << tex_index[j] << " ";
         }
         cout << endl;
     }

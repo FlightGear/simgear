@@ -203,7 +203,16 @@ SGCloudLayer::rebuild()
 
     const float layer_scale = layer_span / scale;
     const float mpi = SG_PI/4;
-    const float alt_diff = layer_asl * 0.8;
+
+    // caclculate the difference between a flat-earth model and 
+    // a round earth model given the span and altutude ASL of
+    // the cloud layer. This is the difference in altitude between
+    // the top of the inverted bowl and the edge of the bowl.
+    // const float alt_diff = layer_asl * 0.8;
+    const float layer_to_core = (SG_EARTH_RAD * 1000 + layer_asl);
+    const float layer_angle = acos( 0.5*layer_span / layer_to_core);
+    const float border_to_core = layer_to_core * sin(layer_angle);
+    const float alt_diff = layer_to_core - border_to_core;
 
     for (int i = 0; i < 4; i++)
     {

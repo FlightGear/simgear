@@ -340,26 +340,26 @@ SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
         return;
 
     unsigned int pos = (x + y*texture_width)*3;
-    texture_data[pos]   = c[0];
-    texture_data[pos+1] = c[1];
-    texture_data[pos+2] = c[2];
+    texture_data[pos]   = (unsigned char)(c[0] * 256);
+    texture_data[pos+1] = (unsigned char)(c[1] * 256);
+    texture_data[pos+2] = (unsigned char)(c[2] * 256);
 }
 
 
-sgVec3 *
+float *
 SGTexture::get_pixel(GLuint x, GLuint y)
 {
     static sgVec3 c;
 
     sgSetVec3(c, 0, 0, 0);
     if (!texture_data)
-        return;
+        return c;
 
     unsigned int pos = (x + y*texture_width)*3;
 
     sgSetVec3(c, texture_data[pos], texture_data[pos+1], texture_data[pos+2]);
 
-    return &c;
+    return c;
 }
 
 SGTexture::ImageRec *

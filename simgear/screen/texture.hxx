@@ -101,7 +101,7 @@ public:
 
     // texture pixel manipulation functions.
     void set_pixel(GLuint x, GLuint y, sgVec3 &c);
-    sgVec3 *get_pixel(GLuint x, GLuint y);
+    float *get_pixel(GLuint x, GLuint y);
 
     void bind();
     inline void select(bool keep_data = false) {

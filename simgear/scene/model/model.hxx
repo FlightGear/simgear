@@ -11,8 +11,10 @@
 #endif
 
 #include <vector>
+#include <set>
 
 SG_USING_STD(vector);
+SG_USING_STD(set);
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -64,7 +66,7 @@ sgMakeAnimation( ssgBranch * model,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
                  double sim_time_sec,
-                 vector<ssgBranch *> &ignore_branches );
+                 set<ssgBranch *> &ignore_branches );
 
 /**
  * Set the filter state on models

@@ -39,9 +39,9 @@ inline double ulEndianLittleDouble(double x) {
 struct SkyArchiveEntry
 {
   SkyArchiveEntry() : type(0), pData(NULL), iDataSize(0) {}
-  unsigned char type;
-  void*         pData;
-  unsigned int  iDataSize;
+  unsigned char  type;
+  unsigned char* pData;
+  unsigned int   iDataSize;
 };
 
 struct SkyArchiveFileEntry
@@ -192,7 +192,7 @@ SKYRESULT SkyArchive::AddData(const char*         pName,
   }
   else
   {
-    pNewEntry->pData = (void*)pData;
+    pNewEntry->pData = (unsigned char*)pData;
   }
   
   char* pInternalName = new char[::strlen(pName)+1];
@@ -1206,7 +1206,7 @@ SKYRESULT SkyArchive::_Load( FILE* pSrcFile)
       break;
     default:
       {
-        void* pData = new unsigned char[embeddedItem.iDataSize];
+        unsigned char* pData = new unsigned char[embeddedItem.iDataSize];
         iNumItemsRead = fread((void*)pData, embeddedItem.iDataSize, 1, pSrcFile);
         if (1 > iNumItemsRead)
           FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::_Load(): failed to read item data.");

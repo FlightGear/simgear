@@ -35,8 +35,8 @@
 Timezone::Timezone(float la, float lo, char* cc, char* desc) :
     GeoCoord(la, lo)
 { 
-    countryCode = strdup(cc);
-    descriptor = strdup(desc);
+    countryCode = cc;
+    descriptor = desc;
 }
 
 /* Build a timezone object from a textline in zone.tab */
@@ -50,7 +50,7 @@ Timezone::Timezone(const char *infoString) :
     char latlon[128];
     strncpy(buffer, infoString, i);
     buffer[i] = 0;
-    countryCode = strdup(buffer);
+    countryCode = buffer;
     i ++;
     int start = i;
     while (infoString[i] != '\t') {
@@ -107,7 +107,7 @@ Timezone::Timezone(const char *infoString) :
     size = i - start;
     strncpy(buffer, (&infoString[start]), size);
     buffer[size] = 0;
-    descriptor = strdup(buffer);
+    descriptor = buffer;
 }
 
 /* the copy constructor */
@@ -115,8 +115,8 @@ Timezone::Timezone(const Timezone& other)
 {
     lat = other.getLat();
     lon = other.getLon();
-    countryCode = strdup(other.countryCode);
-    descriptor = strdup(other.descriptor);
+    countryCode = other.countryCode;
+    descriptor = other.descriptor;
 }
 
 

@@ -40,6 +40,8 @@
 #  include <stdlib.h>
 #endif
 
+#include <string>
+
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
 #endif
@@ -59,7 +61,6 @@
 #include "sg_time.hxx"
 #include "timezone.h"
 #include "lowleveltime.h"
-
 
 #define DEGHR(x)        ((x)/15.)
 #define RADHR(x)        DEGHR(x*SGD_RADIANS_TO_DEGREES)
@@ -100,12 +101,12 @@ void SGTime::init( double lon, double lat,
 
         SGPath name( root );
         name.append( nearestTz->getDescription() );
-        zonename = strdup( name.c_str() );
+        zonename = name.str();
         SG_LOG( SG_EVENT, SG_INFO, "Using zonename = " << zonename );
     } else {
         SG_LOG( SG_EVENT, SG_INFO, "*** NO TIME ZONE NAME ***" );
         tzContainer = NULL;
-        zonename = NULL;
+        zonename.erase();
     }
 }
 
@@ -131,12 +132,6 @@ SGTime::~SGTime()
         TimezoneContainer *tmp = tzContainer;
         tzContainer = NULL;
 	delete tmp;
-    }
-
-    if ( zonename != NULL ) {
-        char *tmp = zonename;
-        zonename = NULL;
-	free(tmp);
     }
 }
 
@@ -299,17 +294,12 @@ void SGTime::updateLocal( double lon, double lat, const string& root ) {
     GeoCoord* nearestTz = tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );
-    if ( zonename ) {
-        char *ptr = zonename;
-        zonename = NULL;
-        free(ptr);
-    }
-    zonename = strdup( zone.c_str() );
+    zonename = zone.str();
 
     //Avoid troubles when zone.tab hasn't got the right line endings
-    if (zonename[strlen(zonename)-1] == '\r')
+    if (zonename[zonename.size()-1] == '\r')
     {
-      zonename[strlen(zonename)-1]=0;
+      zonename[zonename.size()-1]=0;
       zone.set( zonename );
     }
 

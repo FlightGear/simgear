@@ -69,7 +69,7 @@ public:
 
   //double getAngle(const GeoCoord& other) const;
   virtual void print() {} ; 
-  virtual char *getDescription() {return 0;};
+  virtual const char * getDescription() {return 0;};
 };
 
 typedef vector<GeoCoord*> GeoCoordVector;

@@ -72,7 +72,7 @@ private:
     TimezoneContainer* tzContainer;
 
     // Points to the current local timezone name;
-    char *zonename;
+    string zonename;
 
     // Unix "calendar" time in seconds
     time_t cur_time;
@@ -170,7 +170,7 @@ public:
     inline time_t get_cur_time() const { return cur_time; };
 
     /** @return time zone name for your current position*/
-    inline char* get_zonename() const { return zonename; }
+    inline const char * get_zonename() const { return zonename.c_str(); }
 
     /** @return GMT in a "brokent down" tm structure */
 #if defined(_MSC_VER) || defined(__MINGW32__)

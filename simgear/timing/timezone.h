@@ -37,24 +37,24 @@
 class Timezone : public GeoCoord
 {
 private:
-  char* countryCode;
-  char* descriptor;
+  string countryCode;
+  string descriptor;
 
 public:
   Timezone() :
     GeoCoord()
     { 
-      countryCode = 0; 
-      descriptor = 0;
+      countryCode.erase(); 
+      descriptor.erase();
     };
   Timezone(float la, float lo, char* cc, char* desc);
   Timezone(const char *infoString);
   Timezone(const Timezone &other);
-  virtual ~Timezone() { delete [] countryCode; delete [] descriptor; };
+  virtual ~Timezone() { };
   
 
-  virtual void print() { printf("%s", descriptor);};
-  virtual char * getDescription() { return descriptor; };
+  virtual void print() { printf("%s", descriptor.c_str());};
+  virtual const char * getDescription() { return descriptor.c_str(); };
 };
 
 /************************************************************************

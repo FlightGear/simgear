@@ -69,15 +69,13 @@ SGSoundMgr::SGSoundMgr() {
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     // initialize OpenAL
-    if ( (dev = alcOpenDevice( NULL )) != NULL) {
-        context = alcCreateContext( dev, NULL );
-    }
-
-    if ( (dev != NULL) && (context != NULL) ) {
+    if ( (dev = alcOpenDevice( NULL )) != NULL
+            && ( context = alcCreateContext( dev, NULL )) != NULL ) {
         working = true;
-         alcMakeContextCurrent( context );
+        alcMakeContextCurrent( context );
     } else {
         working = false;
+        context = 0;
 	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
     }
 
@@ -115,7 +113,8 @@ SGSoundMgr::SGSoundMgr() {
 
 SGSoundMgr::~SGSoundMgr() {
 
-    alcDestroyContext( context );
+    if (context)
+        alcDestroyContext( context );
     //
     // Remove the samples from the sample manager.
     //
@@ -163,10 +162,12 @@ void SGSoundMgr::update( double dt ) {
 void
 SGSoundMgr::pause ()
 {
-    alcSuspendContext( context );
-    if ( alGetError() != AL_NO_ERROR) {
-	SG_LOG( SG_GENERAL, SG_ALERT,
-                "Oops AL error after soundmgr pause()!" );
+    if (context) {
+        alcSuspendContext( context );
+        if ( alGetError() != AL_NO_ERROR) {
+	    SG_LOG( SG_GENERAL, SG_ALERT,
+                    "Oops AL error after soundmgr pause()!" );
+        }
     }
 }
 
@@ -174,10 +175,12 @@ SGSoundMgr::pause ()
 void
 SGSoundMgr::resume ()
 {
-    alcProcessContext( context );
-    if ( alGetError() != AL_NO_ERROR) {
-	SG_LOG( SG_GENERAL, SG_ALERT,
-                "Oops AL error after soundmgr resume()!" );
+    if (context) {
+        alcProcessContext( context );
+        if ( alGetError() != AL_NO_ERROR) {
+	    SG_LOG( SG_GENERAL, SG_ALERT,
+                    "Oops AL error after soundmgr resume()!" );
+        }
     }
 }
 

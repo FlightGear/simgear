@@ -93,7 +93,7 @@ public:
      */
     virtual bool empty() {
 	SGGuard<SGLOCK> g(mutex);
-	return fifo.empty();
+	return this->fifo.empty();
     }
 
     /**
@@ -103,7 +103,7 @@ public:
      */
     virtual void push( const T& item ) {
 	SGGuard<SGLOCK> g(mutex);
-	fifo.push( item );
+	this->fifo.push( item );
     }
 
     /**
@@ -113,8 +113,8 @@ public:
      */
     virtual T front() {
 	SGGuard<SGLOCK> g(mutex);
-	assert( ! fifo.empty() );
-	T item = fifo.front();
+	assert( ! this->fifo.empty() );
+	T item = this->fifo.front();
 	return item;
     }
 
@@ -126,14 +126,14 @@ public:
     virtual T pop() {
 	SGGuard<SGLOCK> g(mutex);
 	//if (fifo.empty()) throw NoSuchElementException();
-	assert( ! fifo.empty() );
+	assert( ! this->fifo.empty() );
 //  	if (fifo.empty())
 //  	{
 //  	    mutex.unlock();
 //  	    pthread_exit( PTHREAD_CANCELED );
 //  	}
-	T item = fifo.front();
-	fifo.pop();
+	T item = this->fifo.front();
+	this->fifo.pop();
 	return item;
     }
 private:
@@ -172,7 +172,7 @@ public:
      */
     virtual bool empty() {
 	SGGuard<SGMutex> g(mutex);
-	return fifo.empty();
+	return this->fifo.empty();
     }
 
     /**
@@ -182,7 +182,7 @@ public:
      */
     virtual void push( const T& item ) {
 	SGGuard<SGMutex> g(mutex);
-	fifo.push( item );
+	this->fifo.push( item );
 	not_empty.signal();
     }
 
@@ -195,10 +195,10 @@ public:
     virtual T front() {
 	SGGuard<SGMutex> g(mutex);
 
-	assert(fifo.empty() != true);
+	assert(this->fifo.empty() != true);
 	//if (fifo.empty()) throw ??
 
-	T item = fifo.front();
+	T item = this->fifo.front();
 	return item;
     }
 
@@ -211,14 +211,14 @@ public:
     virtual T pop() {
 	SGGuard<SGMutex> g(mutex);
 
-	while (fifo.empty())
+	while (this->fifo.empty())
 	    not_empty.wait(mutex);
 
-	assert(fifo.empty() != true);
+	assert(this->fifo.empty() != true);
 	//if (fifo.empty()) throw ??
 
-	T item = fifo.front();
-	fifo.pop();
+	T item = this->fifo.front();
+	this->fifo.pop();
 	return item;
     }
 

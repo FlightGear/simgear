@@ -13,6 +13,7 @@ include_HEADERS = \
 	compiler.h constants.h sg_inlines.h sg_traits.hxx sg_zlib.h version.h
 
 SUBDIRS = \
+	compatibility \
 	xml \
 	debug \
 	misc \

@@ -231,8 +231,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const string &fg_root, const SGPropertyNode *props,
-            bool smooth_shading, bool use_textures );
+  SGMaterial( const string &fg_root, const SGPropertyNode *props );
 
 
   /**
@@ -241,7 +240,7 @@ public:
    * @param texture_path A string containing an absolute path
    * to a texture file (usually RGB).
    */
-  SGMaterial( const string &texpath, bool smooth_shading, bool use_textures );
+  SGMaterial( const string &texpath );
 
 
   /**
@@ -253,7 +252,7 @@ public:
    *
    * @param s The SSG state for this material.
    */
-  SGMaterial( ssgSimpleState *s, bool smooth_shading, bool use_textures );
+  SGMaterial( ssgSimpleState *s );
 
   /**
    * Destructor.
@@ -278,7 +277,7 @@ public:
   /**
    * Get the textured state.
    */
-  virtual inline ssgSimpleState *get_textured () { return textured; }
+  virtual inline ssgSimpleState *get_state () const { return state; }
 
 
   /**
@@ -315,12 +314,6 @@ public:
   virtual ObjectGroup * get_object_group (int index) const {
     return object_groups[index];
   }
-
-
-  /**
-   * Get the current state.
-   */
-  virtual inline ssgStateSelector *get_state () const { return state; }
 
 
   /**
@@ -369,9 +362,7 @@ private:
   string texture_path;
 
   // pointers to ssg states
-  ssgStateSelector *state;
-  ssgSimpleState *textured;
-  ssgSimpleState *nontextured;
+  ssgSimpleState *state;
 
   // texture size
   double xsize, ysize;
@@ -407,11 +398,8 @@ private:
   SGMaterial( const string &fg_root, const SGMaterial &mat ); // unimplemented
 
   void read_properties( const string &fg_root, const SGPropertyNode *props );
-  void build_ssg_state( bool defer_tex_load,
-                        bool smooth_shading,
-                        bool use_textures );
-  void set_ssg_state( ssgSimpleState *s,
-                      bool smooth_shading, bool use_textures );
+  void build_ssg_state( bool defer_tex_load );
+  void set_ssg_state( ssgSimpleState *s );
 
 
 };

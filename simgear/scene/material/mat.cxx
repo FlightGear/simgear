@@ -253,31 +253,24 @@ SGMaterial::ObjectGroup::get_object (int index) const
 ////////////////////////////////////////////////////////////////////////
 
 
-SGMaterial::SGMaterial( const string &fg_root,
-                    const SGPropertyNode *props,
-                    bool smooth_shading,
-                    bool use_textures )
+SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
 {
     init();
     read_properties( fg_root, props );
-    build_ssg_state( false, smooth_shading, use_textures );
+    build_ssg_state( false );
 }
 
-SGMaterial::SGMaterial( const string &texpath,
-                    bool smooth_shading,
-                    bool use_textures )
+SGMaterial::SGMaterial( const string &texpath )
 {
     init();
     texture_path = texpath;
-    build_ssg_state( true, smooth_shading, use_textures );
+    build_ssg_state( true );
 }
 
-SGMaterial::SGMaterial( ssgSimpleState *s,
-                    bool smooth_shading,
-                    bool use_textures )
+SGMaterial::SGMaterial( ssgSimpleState *s )
 {
     init();
-    set_ssg_state( s, smooth_shading, use_textures );
+    set_ssg_state( s );
 }
 
 SGMaterial::~SGMaterial (void)
@@ -354,9 +347,7 @@ void
 SGMaterial::init ()
 {
     texture_path = "";
-    state = 0;
-    textured = 0;
-    nontextured = 0;
+    state = NULL;
     xsize = 0;
     ysize = 0;
     wrapu = true;
@@ -374,13 +365,12 @@ SGMaterial::init ()
 bool
 SGMaterial::load_texture ()
 {
-    if (texture_loaded) {
+    if ( texture_loaded ) {
         return false;
     } else {
         SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
                 << texture_path );
-        textured->setTexture( (char *)texture_path.c_str(),
-                              wrapu, wrapv, mipmap );
+        state->setTexture( (char *)texture_path.c_str(), wrapu, wrapv, mipmap );
         texture_loaded = true;
         return true;
     }
@@ -388,140 +378,55 @@ SGMaterial::load_texture ()
 
 
 void 
-SGMaterial::build_ssg_state( bool defer_tex_load,
-                           bool smooth_shading,
-                           bool use_textures )
+SGMaterial::build_ssg_state( bool defer_tex_load )
 {
-    GLenum shade_model = ( smooth_shading ? GL_SMOOTH : GL_FLAT);
+    GLenum shade_model = GL_SMOOTH;
     
-    state = new ssgStateSelector(2);
+    state = new ssgSimpleState();
     state->ref();
 
-    textured = new ssgSimpleState();
-    textured->ref();
-
-    nontextured = new ssgSimpleState();
-    nontextured->ref();
-
     // Set up the textured state
-    textured->setShadeModel( shade_model );
-    textured->enable( GL_LIGHTING );
-    textured->enable ( GL_CULL_FACE ) ;
-    textured->enable( GL_TEXTURE_2D );
-    textured->disable( GL_BLEND );
-    textured->disable( GL_ALPHA_TEST );
+    state->setShadeModel( shade_model );
+    state->enable( GL_LIGHTING );
+    state->enable ( GL_CULL_FACE ) ;
+    state->enable( GL_TEXTURE_2D );
+    state->disable( GL_BLEND );
+    state->disable( GL_ALPHA_TEST );
     if ( !defer_tex_load ) {
         SG_LOG(SG_INPUT, SG_INFO, "    " << texture_path );
-	textured->setTexture( (char *)texture_path.c_str(), wrapu, wrapv );
+	state->setTexture( (char *)texture_path.c_str(), wrapu, wrapv );
 	texture_loaded = true;
     } else {
 	texture_loaded = false;
     }
-    textured->enable( GL_COLOR_MATERIAL );
+    state->enable( GL_COLOR_MATERIAL );
 #if 0
-    textured->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    textured->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    textured->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
+    state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
 #else
-    textured->setMaterial ( GL_AMBIENT,
+    state->setMaterial ( GL_AMBIENT,
                             ambient[0], ambient[1],
                             ambient[2], ambient[3] ) ;
-    textured->setMaterial ( GL_DIFFUSE,
+    state->setMaterial ( GL_DIFFUSE,
                             diffuse[0], diffuse[1],
                             diffuse[2], diffuse[3] ) ;
-    textured->setMaterial ( GL_SPECULAR,
+    state->setMaterial ( GL_SPECULAR,
                             specular[0], specular[1],
                             specular[2], specular[3] ) ;
-    textured->setMaterial ( GL_EMISSION,
+    state->setMaterial ( GL_EMISSION,
                             emission[0], emission[1],
                             emission[2], emission[3] ) ;
-    textured->setShininess ( shininess );
+    state->setShininess ( shininess );
 #endif
-
-    // Set up the coloured state
-    nontextured->enable( GL_LIGHTING );
-    nontextured->setShadeModel( shade_model );
-    nontextured->enable ( GL_CULL_FACE      ) ;
-    nontextured->disable( GL_TEXTURE_2D );
-    nontextured->disable( GL_BLEND );
-    nontextured->disable( GL_ALPHA_TEST );
-    nontextured->disable( GL_COLOR_MATERIAL );
-
-    nontextured->setMaterial ( GL_AMBIENT, 
-			       ambient[0], ambient[1], 
-			       ambient[2], ambient[3] ) ;
-    nontextured->setMaterial ( GL_DIFFUSE, 
-			       diffuse[0], diffuse[1], 
-			       diffuse[2], diffuse[3] ) ;
-    nontextured->setMaterial ( GL_SPECULAR, 
-			       specular[0], specular[1], 
-			       specular[2], specular[3] ) ;
-    nontextured->setMaterial ( GL_EMISSION, 
-			       emission[0], emission[1], 
-			       emission[2], emission[3] ) ;
-    nontextured->setShininess ( shininess );
-
-    state->setStep( 0, textured );    // textured
-    state->setStep( 1, nontextured ); // untextured
-
-    // Choose the appropriate starting state.
-    if ( use_textures ) {
-	state->selectStep(0);
-    } else {
-	state->selectStep(1);
-    }
 }
 
 
-void SGMaterial::set_ssg_state( ssgSimpleState *s,
-                              bool smooth_shading, bool use_textures )
+void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
-    GLenum shade_model = ( smooth_shading ? GL_SMOOTH : GL_FLAT);
-
-    state = new ssgStateSelector(2);
+    state = s;
     state->ref();
-
-    textured = s;
     texture_loaded = true;
-
-    nontextured = new ssgSimpleState();
-    nontextured->ref();
-
-    // Set up the textured state
-    textured->setShadeModel( shade_model );
-
-    // Set up the coloured state
-    nontextured->enable( GL_LIGHTING );
-    nontextured->setShadeModel( shade_model );
-    nontextured->enable ( GL_CULL_FACE      ) ;
-    nontextured->disable( GL_TEXTURE_2D );
-    nontextured->disable( GL_BLEND );
-    nontextured->disable( GL_ALPHA_TEST );
-    nontextured->disable( GL_COLOR_MATERIAL );
-
-    nontextured->setMaterial ( GL_AMBIENT, 
-			       ambient[0], ambient[1], 
-			       ambient[2], ambient[3] ) ;
-    nontextured->setMaterial ( GL_DIFFUSE, 
-			       diffuse[0], diffuse[1], 
-			       diffuse[2], diffuse[3] ) ;
-    nontextured->setMaterial ( GL_SPECULAR, 
-			       specular[0], specular[1], 
-			       specular[2], specular[3] ) ;
-    nontextured->setMaterial ( GL_EMISSION, 
-			       emission[0], emission[1], 
-			       emission[2], emission[3] ) ;
-    nontextured->setShininess ( shininess );
-
-    state->setStep( 0, textured );    // textured
-    state->setStep( 1, nontextured ); // untextured
-
-    // Choose the appropriate starting state.
-    if ( use_textures ) {
-	state->selectStep(0);
-    } else {
-	state->selectStep(1);
-    }
 }
 
 // end of newmat.cxx

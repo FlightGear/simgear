@@ -74,9 +74,6 @@ public:
     // find a material record by material name
     SGMaterial *find( const string& material );
 
-    void set_step (int step);
-    int get_step ();
-
     /**
      * Load the next deferred texture, if there is any.
      */

@@ -39,6 +39,7 @@
 #include <plib/ssg.h>
 
 #include <simgear/props/props.hxx>
+#include <simgear/math/sg_random.h>
 
 #include "matmodel.hxx"
 
@@ -111,13 +112,19 @@ public:
    * @return true if the texture loaded, false if it was loaded
    * already.
    */
-  virtual bool load_texture ();
+  virtual bool load_texture (int n = -1);
 
 
   /**
    * Get the textured state.
    */
-  virtual inline ssgSimpleState *get_state () const { return state; }
+  virtual ssgSimpleState *get_state (int n = -1) const;
+
+
+  /**
+   * Get the number of textures assigned to this material.
+   */
+  virtual inline int get_num() const { return _status.size(); }
 
 
   /**
@@ -190,6 +197,13 @@ protected:
    */
   virtual void init();
 
+protected:
+
+  typedef struct {
+      ssgSimpleState *state;
+      string texture_path;
+      bool texture_loaded;
+  } _internal_state;
 
 private:
 
@@ -198,11 +212,8 @@ private:
   // Internal state.
   ////////////////////////////////////////////////////////////////////
 
-  // names
-  string texture_path;
-
-  // pointers to ssg states
-  ssgSimpleState *state;
+  // texture status
+  vector<_internal_state> _status;
 
   // texture size
   double xsize, ysize;
@@ -219,9 +230,6 @@ private:
   // material properties
   sgVec4 ambient, diffuse, specular, emission;
   double shininess;
-
-  // true if texture loading deferred, and not yet loaded
-  bool texture_loaded;
 
   vector<SGMatModelGroup *> object_groups;
 

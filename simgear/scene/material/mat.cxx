@@ -30,40 +30,17 @@
 #include <map>
 SG_USING_STD(map);
 
-#include <simgear/compiler.h>
+#include <plib/ul.h>
 
 #ifdef SG_MATH_EXCEPTION_CLASH
 #  include <math.h>
 #endif
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
 
 #include "mat.hxx"
-
-
-////////////////////////////////////////////////////////////////////////
-// Local static functions.
-////////////////////////////////////////////////////////////////////////
-
-/**
- * Internal method to test whether a file exists.
- *
- * TODO: this should be moved to a SimGear library of local file
- * functions.
- */
-static inline bool
-local_file_exists( const string& path ) {
-    sg_gzifstream in( path );
-    if ( ! in.is_open() ) {
-	return false;
-    } else {
-	return true;
-    }
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -81,7 +58,10 @@ SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
 SGMaterial::SGMaterial( const string &texpath )
 {
     init();
-    texture_path = texpath;
+
+    _internal_state st = { NULL, texpath, false };
+    _status.push_back( st );
+
     build_ssg_state( true );
 }
 
@@ -108,17 +88,34 @@ SGMaterial::~SGMaterial (void)
 void
 SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props )
 {
-				// Get the path to the texture
-  string tname = props->getStringValue("texture", "unknown.rgb");
-  SGPath tpath( fg_root );
-  tpath.append("Textures.high");
-  tpath.append(tname);
-  if (!local_file_exists(tpath.str())) {
-    tpath = SGPath( fg_root );
+				// Gather the path(s) to the texture(s)
+  vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
+  for (int i = 0; i < textures.size(); i++)
+  {
+    string tname = textures[i]->getStringValue();
+    if (tname == "")
+        tname = "unknown.rgb";
+
+    SGPath tpath( fg_root );
+    tpath.append("Textures.high");
+    tpath.append(tname);
+    if (!ulFileExists(tpath.c_str())) {
+      tpath = SGPath( fg_root );
+      tpath.append("Textures");
+      tpath.append(tname);
+    }
+    _internal_state st = { NULL, tpath.str(), false };
+    _status.push_back( st );
+  }
+
+  if (textures.size() == 0) {
+    string tname = "unknown.rgb";
+    SGPath tpath( fg_root );
     tpath.append("Textures");
     tpath.append(tname);
+    _internal_state st = { NULL, tpath.str(), true };
+    _status.push_back( st );
   }
-  texture_path = tpath.str();
 
   xsize = props->getDoubleValue("xsize", 0.0);
   ysize = props->getDoubleValue("ysize", 0.0);
@@ -165,15 +162,13 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
 void 
 SGMaterial::init ()
 {
-    texture_path = "";
-    state = NULL;
+    _status.clear();
     xsize = 0;
     ysize = 0;
     wrapu = true;
     wrapv = true;
     mipmap = true;
     light_coverage = 0.0;
-    texture_loaded = false;
     refcount = 0;
     shininess = 1.0;
     for (int i = 0; i < 4; i++) {
@@ -185,17 +180,35 @@ SGMaterial::init ()
 }
 
 bool
-SGMaterial::load_texture ()
+SGMaterial::load_texture ( int n )
 {
-    if ( texture_loaded ) {
-        return false;
-    } else {
-        SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
-                << texture_path );
-        state->setTexture( (char *)texture_path.c_str(), wrapu, wrapv, mipmap );
-        texture_loaded = true;
-        return true;
+    int i   = (n >= 0) ? n   : 0 ;
+    int end = (n >= 0) ? n+1 : _status.size();
+
+    for (; i < end; i++)
+    {
+        if ( !_status[i].texture_loaded ) {
+            SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
+                                          << _status[i].texture_path );
+            _status[i].state->setTexture(
+                   (char *)_status[i].texture_path.c_str(),
+                   wrapu, wrapv, mipmap );
+            _status[i].texture_loaded = true;
+       }
     }
+    return true;
+}
+
+ssgSimpleState *
+SGMaterial::get_state (int n) const
+{
+    if (_status.size() == 0) {
+        SG_LOG( SG_GENERAL, SG_WARN, "No state available.");
+        return NULL;
+    }
+
+    int r = int( sg_random() * _status.size() );
+    return (n >= 0) ? _status[n].state : _status[r].state;
 }
 
 
@@ -204,45 +217,53 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 {
     GLenum shade_model = GL_SMOOTH;
     
-    state = new ssgSimpleState();
-    state->ref();
+    for (int i = 0; i < _status.size(); i++)
+    {
+        ssgSimpleState *state = new ssgSimpleState();
+        state->ref();
 
-    // Set up the textured state
-    state->setShadeModel( shade_model );
-    state->enable( GL_LIGHTING );
-    state->enable ( GL_CULL_FACE ) ;
-    state->enable( GL_TEXTURE_2D );
-    state->disable( GL_BLEND );
-    state->disable( GL_ALPHA_TEST );
-    if ( !defer_tex_load ) {
-        SG_LOG(SG_INPUT, SG_INFO, "    " << texture_path );
-	state->setTexture( (char *)texture_path.c_str(), wrapu, wrapv );
-	texture_loaded = true;
-    } else {
-	texture_loaded = false;
-    }
-    state->enable( GL_COLOR_MATERIAL );
-    state->setMaterial ( GL_AMBIENT,
-                            ambient[0], ambient[1],
-                            ambient[2], ambient[3] ) ;
-    state->setMaterial ( GL_DIFFUSE,
+        // Set up the textured state
+        state->setShadeModel( shade_model );
+        state->enable( GL_LIGHTING );
+        state->enable ( GL_CULL_FACE ) ;
+        state->enable( GL_TEXTURE_2D );
+        state->disable( GL_BLEND );
+        state->disable( GL_ALPHA_TEST );
+
+        if ( !defer_tex_load ) {
+            SG_LOG(SG_INPUT, SG_INFO, "    " << _status[i].texture_path );
+	    state->setTexture( (char *)_status[i].texture_path.c_str(),
+                                wrapu, wrapv );
+            _status[i].texture_loaded = true;
+        } else {
+            _status[i].texture_loaded = false;
+        }
+
+        state->enable( GL_COLOR_MATERIAL );
+        state->setMaterial ( GL_AMBIENT,
+                             ambient[0], ambient[1],
+                             ambient[2], ambient[3] ) ;
+        state->setMaterial ( GL_DIFFUSE,
                             diffuse[0], diffuse[1],
                             diffuse[2], diffuse[3] ) ;
-    state->setMaterial ( GL_SPECULAR,
+        state->setMaterial ( GL_SPECULAR,
                             specular[0], specular[1],
                             specular[2], specular[3] ) ;
-    state->setMaterial ( GL_EMISSION,
+        state->setMaterial ( GL_EMISSION,
                             emission[0], emission[1],
                             emission[2], emission[3] ) ;
-    state->setShininess ( shininess );
+        state->setShininess ( shininess );
+
+        _status[i].state = state;
+    }
 }
 
 
 void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
-    state = s;
-    state->ref();
-    texture_loaded = true;
+    s->ref();
+    _internal_state st = { s, "", true };
+    _status.push_back( st );
 }
 
 // end of mat.cxx

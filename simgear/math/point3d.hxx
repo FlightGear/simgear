@@ -108,6 +108,10 @@ public:
     void setx(const double x);
     void sety(const double y);
     void setz(const double z);
+    void setlon(const double x);
+    void setlat(const double y);
+    void setradius(const double z);
+    void setelev(const double z);
 
     // Queries 
 
@@ -237,6 +241,22 @@ inline void Point3D::sety(const double y) {
 }
 
 inline void Point3D::setz(const double z) {
+    n[PZ] = z;
+}
+
+inline void Point3D::setlon(const double x) {
+    n[PX] = x;
+}
+
+inline void Point3D::setlat(const double y) {
+    n[PY] = y;
+}
+
+inline void Point3D::setradius(const double z) {
+    n[PZ] = z;
+}
+
+inline void Point3D::setelev(const double z) {
     n[PZ] = z;
 }
 

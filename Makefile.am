@@ -73,7 +73,8 @@ distclean:
 #
 
 dist-hook:
-	(cd $(top_srcdir); $(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl)
+	(cd $(top_srcdir); \
+		$(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl --lib)
 	tar cf - simgear/metar | (cd $(distdir); tar xvf -)
 	@list='@subdirs@'; \
 	target=distclean; \

@@ -47,7 +47,7 @@ SGCloudLayer::~SGCloudLayer( void ) {
 void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
 			  double transition )
 {
-    scale = 2000.0;
+    scale = 4000.0;
 
     layer_asl = asl;
     layer_thickness = thickness;

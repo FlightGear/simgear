@@ -1,6 +1,7 @@
 EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
+	DoxygenMain.cxx
 	README.MSVC \
 	README.metakit \
 	README.zlib \

@@ -160,6 +160,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
+    direction[0] = 0.0; direction[1] = 0.0; direction[2] = 0.0;
     inner = outer = 360.0; outergain = 0.0;
 
     // clear errors from elsewhere?

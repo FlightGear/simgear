@@ -6,7 +6,11 @@
 #  include <simgear_config.h>
 #endif
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
+#if defined(__CYGWIN__)  /* && !defined(USING_X) */
+#define WIN32
+#endif
+ 
+#if defined(WIN32)  /* MINGW and MSC predefine WIN32 */
 # include <windows.h>
 #endif
 

@@ -1,10 +1,13 @@
-New in 0.3.6-pre1
+New in 0.3.6-pre2
 * Better MinGW support
+* A bit better handling of OpenAL under Cygwin
 * Switched audio system from plib's "sl/sm" to OpenAL.
 * Add support for scaling an object based on distance.  The scaling
   factor is determined by a lookup table based on distance.
 * Add a "flash" animation type.
 * Fix cloud positioning/animation bugs.
+* Fix an off-by-one error in props_io.cxx
+* Clip audio gain (volume) to 1.0
 
 
 New in 0.3.5

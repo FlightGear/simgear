@@ -65,7 +65,7 @@ SGCommandMgr::execute (const string &name) const
 {
 				// FIXME
   SGPropertyNode node;
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -75,7 +75,7 @@ SGCommandMgr::execute (const string &name, bool value) const
 				// FIXME
   SGPropertyNode node;
   node.setBoolValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -85,7 +85,7 @@ SGCommandMgr::execute (const string &name, int value) const
 				// FIXME
   SGPropertyNode node;
   node.setIntValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -95,7 +95,7 @@ SGCommandMgr::execute (const string &name, long value) const
 				// FIXME
   SGPropertyNode node;
   node.setLongValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -105,7 +105,7 @@ SGCommandMgr::execute (const string &name, float value) const
 				// FIXME
   SGPropertyNode node;
   node.setFloatValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -115,7 +115,7 @@ SGCommandMgr::execute (const string &name, double value) const
 				// FIXME
   SGPropertyNode node;
   node.setDoubleValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 
@@ -125,7 +125,7 @@ SGCommandMgr::execute (const string &name, string value) const
 				// FIXME
   SGPropertyNode node;
   node.setStringValue(value);
-  execute(name, &node);
+  return execute(name, &node);
 }
 
 

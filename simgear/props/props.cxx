@@ -969,9 +969,9 @@ SGPropertyNode::getPath (bool simplify) const
 }
 
 SGPropertyNode::Type
-SGPropertyNode::getType () const
+SGPropertyNode::getType (bool deref_alias) const
 {
-  if (_type == ALIAS)
+  if (_type == ALIAS && deref_alias)
     return _value.alias->getType();
   else
     return _type;

@@ -1,5 +1,7 @@
-// sg_file.hxx -- File I/O routines
-//
+/** \file sg_file.hxx
+ * File I/O routines.
+ */
+
 // Written by Curtis Olson, started November 1999.
 //
 // Copyright (C) 1999  Curtis L. Olson - curt@flightgear.org
@@ -45,6 +47,9 @@
 SG_USING_STD(string);
 
 
+/**
+ * A file I/O class based on SGIOChannel.
+ */
 class SGFile : public SGIOChannel {
 
     string file_name;
@@ -52,7 +57,16 @@ class SGFile : public SGIOChannel {
 
 public:
 
+    /**
+     * Create an instance of SGFile.
+     * When calling the constructor you need to provide a file
+     * name. This file is not opened immediately, but instead will be
+     * opened when the open() method is called.
+     * @param file name of file to open
+     */
     SGFile( const string& file );
+
+    /** Destructor */
     ~SGFile();
 
     // open the file based on specified direction
@@ -73,6 +87,7 @@ public:
     // close file
     bool close();
 
+    /** Return the name of the file being manipulated. */
     inline string get_file_name() const { return file_name; }
 };
 

@@ -119,8 +119,31 @@ public:
      * @param length max number of bytes to read
      */
     virtual int readline( char *buf, int length );
+
+
+    /**
+     * The write() method is modeled after the write() Unix system
+     * call and is analogous to the read() method. You provide a
+     * pointer to a buffer of data, and then length of that data to be
+     * written out. The number of bytes written is returned.
+     * @param buf a char pointer to your output buffer 
+     * @param length number of bytes to write
+     */
     virtual int write( const char *buf, const int length );
+
+    /**
+     * The writestring() method is a simple wrapper that will
+     * calculate the length of a null terminated character array and
+     * write it to the output channel.
+     * @param buf a char pointer to your output buffer 
+     */
     virtual int writestring( const char *str );
+
+    /**
+     * The close() method is modeled after the close() Unix system
+     * call and will close an open device. You should call this method
+     * when you are done using your IO class, before it is destructed.
+     */
     virtual bool close();
 
     inline void set_type( SGChannelType t ) { type = t; }

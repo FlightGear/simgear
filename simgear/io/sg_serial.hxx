@@ -1,5 +1,8 @@
-// sg_serial.hxx -- Serial I/O routines
-//
+/**
+ * \file sg_serial.hxx
+ * Serial I/O routines
+ */
+
 // Written by Curtis Olson, started November 1999.
 //
 // Copyright (C) 1999  Curtis L. Olson - curt@flightgear.org
@@ -45,7 +48,9 @@
 
 SG_USING_STD(string);
 
-
+/**
+ * A serial I/O class based on SGIOChannel.
+ */
 class SGSerial : public SGIOChannel {
 
     string device;
@@ -57,7 +62,21 @@ class SGSerial : public SGIOChannel {
 
 public:
 
+    /**
+     * Create an instance of SGSerial.
+     * This creates an instance of the SGSerial class. You need to
+     * provide the serial device name and desired baud rate.  For Unix
+     * style systems, device names will be similar to
+     * ``/dev/ttyS0''. For DOS style systems you may want to use
+     * something similar to ``COM1:''. As with the SGFile class,
+     * device is not opened immediately, but instead will be opened
+     * when the open() method is called.
+     * @param device_name name of serial device
+     * @param baud_rate speed of communication
+     */
     SGSerial( const string& device_name, const string& baud_rate );
+
+    /** Destructor */
     ~SGSerial();
 
     // open the serial port based on specified direction
@@ -78,7 +97,10 @@ public:
     // close port
     bool close();
 
+    /** Return the serial port device name */
     inline string get_device() const { return device; }
+
+    /** Return the baud rate */
     inline string get_baud() const { return baud; }
 };
 

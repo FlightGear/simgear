@@ -43,7 +43,9 @@ class PropsVisitor : public XMLVisitor
 public:
 
   PropsVisitor (SGPropertyNode * root, const string &base)
-    : _ok(true), _root(root), _level(0), _base(base) {}
+    : _root(root), _level(0), _base(base), _exception(0) {}
+
+  virtual ~PropsVisitor () { delete _exception; }
 
   void startXML ();
   void endXML ();
@@ -51,9 +53,9 @@ public:
   void endElement (const char * name);
   void data (const char * s, int length);
   void warning (const char * message, int line, int column);
-  void error (const char * message, int line, int column);
 
-  bool isOK () const { return _ok; }
+  bool hasException () const { return (_exception != 0); }
+  const sg_io_exception * getException () const { return _exception; }
 
 private:
 
@@ -84,12 +86,12 @@ private:
     _level--;
   }
 
-  bool _ok;
   string _data;
   SGPropertyNode * _root;
   int _level;
   vector<State> _state_stack;
   string _base;
+  sg_io_exception * _exception;
 };
 
 void
@@ -120,9 +122,11 @@ checkFlag (const char * flag, bool defaultState = true)
   else if (string(flag) == "n")
     return false;
   else {
-    SG_LOG(SG_INPUT, SG_ALERT, "Unrecognized flag value '" << flag
-	   << "', assuming yes");
-    return true;
+    string message = "Unrecognized flag value '";
+    message += flag;
+    message += '\'';
+				// FIXME: add location info
+    throw sg_io_exception(message, "SimGear Property Reader");
   }
 }
 
@@ -133,9 +137,10 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 
   if (_level == 0) {
     if (string(name) != (string)"PropertyList") {
-      SG_LOG(SG_INPUT, SG_ALERT, "Root element name is " <<
-	     name << "; expected PropertyList");
-      _ok = false;
+      string message = "Root element name is ";
+      message += name;
+      message += "; expected PropertyList";
+      throw sg_io_exception(message, "SimGear Property Reader");
     }
     push_state(_root, "", DEFAULT_MODE);
   }
@@ -183,13 +188,12 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     attval = atts.getValue("include");
     if (attval != 0) {
       SGPath path(SGPath(_base).dir());
-      cerr << "Base is " << _base << endl;
-      cerr << "Dir is " << SGPath(_base).dir() << endl;
       path.append(attval);
-      if (!readProperties(path.str(), node)) {
-	SG_LOG(SG_INPUT, SG_ALERT, "Failed to read include file "
-	       << attval);
-	_ok = false;
+      try {
+	readProperties(path.str(), node);
+      } catch (const sg_io_exception &t) {
+	cerr << "Caught exception\n";
+	_exception = t.clone();
       }
     }
 
@@ -224,9 +228,11 @@ PropsVisitor::endElement (const char * name)
     } else if (st.type == "unspecified") {
       ret = st.node->setUnspecifiedValue(_data);
     } else {
-      SG_LOG(SG_INPUT, SG_ALERT, "Unrecognized data type " << st.type
-	     << " assuming 'unspecified'");
-      ret = st.node->setUnspecifiedValue(_data);
+      string message = "Unrecognized data type '";
+      message += st.type;
+      message += '\'';
+				// FIXME: add location information
+      throw sg_io_exception(message, "SimGear Property Reader");
     }
     if (!ret)
       SG_LOG(SG_INPUT, SG_ALERT, "readProperties: Failed to set "
@@ -256,14 +262,6 @@ PropsVisitor::warning (const char * message, int line, int column)
 	 << message << " at line " << line << ", column " << column);
 }
 
-void
-PropsVisitor::error (const char * message, int line, int column)
-{
-  SG_LOG(SG_INPUT, SG_ALERT, "readProperties: FATAL: " <<
-	 message << " at line " << line << ", column " << column);
-  _ok = false;
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -279,12 +277,14 @@ PropsVisitor::error (const char * message, int line, int column)
  * @param base A base path for resolving external include references.
  * @return true if the read succeeded, false otherwise.
  */
-bool
+void
 readProperties (istream &input, SGPropertyNode * start_node,
 		const string &base)
 {
   PropsVisitor visitor(start_node, base);
-  return readXML(input, visitor) && visitor.isOK();
+  readXML(input, visitor, base);
+  if (visitor.hasException())
+    throw *(visitor.getException());
 }
 
 
@@ -295,18 +295,13 @@ readProperties (istream &input, SGPropertyNode * start_node,
  * @param start_node The root node for reading properties.
  * @return true if the read succeeded, false otherwise.
  */
-bool
+void
 readProperties (const string &file, SGPropertyNode * start_node)
 {
-  cerr << "Reading properties from " << file << endl;
-  ifstream input(file.c_str());
-  if (input.good()) {
-    return readProperties(input, start_node, file);
-  } else {
-    SG_LOG(SG_INPUT, SG_ALERT, "Error reading property list from file "
-	   << file);
-    return false;
-  }
+  PropsVisitor visitor(start_node, file);
+  readXML(file, visitor);
+  if (visitor.hasException())
+    throw *(visitor.getException());
 }
 
 
@@ -467,14 +462,7 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 }
 
 
-/**
- * Write a property tree to an output stream in XML format.
- *
- * @param output The output stream.
- * @param start_node The root node to write.
- * @return true if the write succeeded, false otherwise.
- */
-bool
+void
 writeProperties (ostream &output, const SGPropertyNode * start_node)
 {
   int nChildren = start_node->nChildren();
@@ -487,28 +475,17 @@ writeProperties (ostream &output, const SGPropertyNode * start_node)
   }
 
   output << "</PropertyList>" << endl;
-
-  return true;
 }
 
 
-/**
- * Write a property tree to a file in XML format.
- *
- * @param file The destination file.
- * @param start_node The root node to write.
- * @return true if the write succeeded, false otherwise.
- */
-bool
+void
 writeProperties (const string &file, const SGPropertyNode * start_node)
 {
   ofstream output(file.c_str());
   if (output.good()) {
-    return writeProperties(output, start_node);
+    writeProperties(output, start_node);
   } else {
-    SG_LOG(SG_INPUT, SG_ALERT, "Cannot write properties to file "
-	   << file);
-    return false;
+    throw sg_io_exception("Cannot open file", sg_location(file));
   }
 }
 
@@ -565,7 +542,9 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 	retval = false;
       break;
     default:
-      throw string("Unrecognized SGPropertyNode type");
+      string message = "Unknown internal SGPropertyNode type";
+      message += in->getType();
+      throw sg_error(message, "SimGear Property Reader");
     }
   }
 

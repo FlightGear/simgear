@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -46,10 +45,10 @@
 /***************************************************************************
  * default constructor for class  SolarSystem:   
  * or course there can only be one way to create an entire solar system -:) )
- * the fgTIME argument is needed to properly initialize the the current orbital
+ * the FGTime argument is needed to properly initialize the the current orbital
  * elements
  *************************************************************************/
-SolarSystem::SolarSystem(fgTIME *t)
+SolarSystem::SolarSystem(FGTime *t)
 {
   if (theSolarSystem)
     {
@@ -97,7 +96,7 @@ SolarSystem::~SolarSystem()
 void SolarSystem::rebuild()
 {
   //fgLIGHT *l = &cur_light_params;
-  fgTIME  *t = &cur_time_params;  
+  FGTime *t = FGTime::cur_time_params;  
   //float x, y, z;
   //double sun_angle;
   double ra, dec;
@@ -106,9 +105,7 @@ void SolarSystem::rebuild()
   //GLfloat ambient;
   //GLfloat amb[4];
   
-  
   glDisable(GL_LIGHTING);
-
 
   // Step 1: update all the positions
   ourSun->updatePosition(t);
@@ -130,20 +127,19 @@ void SolarSystem::rebuild()
 
   displayList = xglGenLists(1);
 
+  FG_LOG( FG_ASTRO, FG_INFO, "Rebuilding astro display list" );
+
   // Step 2: rebuild the display list
   xglNewList( displayList, GL_COMPILE);
   {
     // Step 2a: Add the moon...
     // Not that it is preferred to draw the moon first, and the sun next, in order to mime a
     // solar eclipse. This is yet untested though...
+    // Euhh, actually the ecplise doesn't work...
 
     earthsMoon->newImage();
     // Step 2b:  Add the sun
-    //xglPushMatrix();
-    //{
-      ourSun->newImage();
-      //}
-    //xglPopMatrix();
+    ourSun->newImage();
     // Step 2c: Add the planets
     xglBegin(GL_POINTS);
     mercury->getPos(&ra, &dec, &magnitude);addPlanetToList(ra, dec, magnitude);

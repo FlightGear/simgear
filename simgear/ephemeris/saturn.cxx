@@ -1,5 +1,5 @@
 /**************************************************************************
- * mars.cxx
+ * saturn.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 
 #ifdef __BORLANDC__
@@ -28,33 +27,43 @@
 #endif
 #include <math.h>
 
-#include "mars.hxx"
+#include "saturn.hxx"
 
 /*************************************************************************
- * Mars::Mars(fgTIME *t)
- * Public constructor for class Mars
+ * Saturn::Saturn(FGTime *t)
+ * Public constructor for class Saturn
  * Argument: The current time.
- * the hard coded orbital elements for Mars are passed to 
+ * the hard coded orbital elements for Saturn are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Mars::Mars(fgTIME *t) :
-  CelestialBody(49.55740,  2.1108100E-5,
-		1.8497,   -1.78E-8,
-		286.5016,  2.9296100E-5,
-		1.5236880, 0.000000,
-		0.093405,  2.516E-9,
-		18.60210,  0.52402077660, t)
+Saturn::Saturn(FGTime *t) :
+  CelestialBody(113.6634,   2.3898000E-5,
+		2.4886,	   -1.081E-7,
+		339.3939,   2.9766100E-5,
+		9.5547500,  0.000000,
+		0.055546,  -9.499E-9,
+		316.9670,   0.03344422820, t)
 {
 }
+
 /*************************************************************************
- * void Mars::updatePosition(fgTIME *t, Star *ourSun)
+ * void Saturn::updatePosition(FGTime *t, Star *ourSun)
  * 
- * calculates the current position of Mars, by calling the base class,
+ * calculates the current position of Saturn, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
- * a Mars specific equation
+ * a Saturn specific equation
  *************************************************************************/
-void Mars::updatePosition(fgTIME *t, Star *ourSun)
+void Saturn::updatePosition(FGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
-  magnitude = -1.51 + 5*log10( r*R ) + 0.016 * FV;
+  
+  double actTime = fgCalcActTime(t);
+  double ir = 0.4897394;
+  double Nr = 2.9585076 + 6.6672E-7*actTime;
+  double B = asin (sin(declination) * cos(ir) - 
+		   cos(declination) * sin(ir) *
+		   sin(rightAscension - Nr));
+  double ring_magn = -2.6 * sin(fabs(B)) + 1.2 * pow(sin(B), 2);
+  magnitude = -9.0 + 5*log10(r*R) + 0.044 * FV + ring_magn;
 }
+

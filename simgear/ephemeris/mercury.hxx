@@ -1,5 +1,5 @@
 /**************************************************************************
- * mars.hxx
+ * mercury.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,20 +20,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _MARS_HXX_
-#define _MARS_HXX_
+#ifndef _MERCURY_HXX_
+#define _MERCURY_HXX_
 
 #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 #include "star.hxx"
 
-class Mars : public CelestialBody
+class Mercury : public CelestialBody
 {
 public:
-  Mars ( fgTIME *t);
-  void updatePosition(fgTIME *t, Star *ourSun);
+  Mercury ( FGTime *t);
+  void updatePosition(FGTime *t, Star* ourSun);
 };
 
-#endif // _MARS_HXX_
+#endif // _MERURY_HXX_

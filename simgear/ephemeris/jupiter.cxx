@@ -1,5 +1,5 @@
 /**************************************************************************
- * saturn.cxx
+ * jupiter.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,51 +20,46 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
+
 
 #ifdef __BORLANDC__
 #  define exception c_exception
 #endif
 #include <math.h>
 
-#include "saturn.hxx"
+#include "jupiter.hxx"
 
 /*************************************************************************
- * Saturn::Saturn(fgTIME *t)
- * Public constructor for class Saturn
+ * Jupiter::Jupiter(FGTime *t)
+ * Public constructor for class Jupiter
  * Argument: The current time.
- * the hard coded orbital elements for Saturn are passed to 
+ * the hard coded orbital elements for Jupiter are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Saturn::Saturn(fgTIME *t) :
-  CelestialBody(113.6634,   2.3898000E-5,
-		2.4886,	   -1.081E-7,
-		339.3939,   2.9766100E-5,
-		9.5547500,  0.000000,
-		0.055546,  -9.499E-9,
-		316.9670,   0.03344422820, t)
+Jupiter::Jupiter(FGTime *t) :
+  CelestialBody(100.4542,  2.7685400E-5,	
+		1.3030,   -1.557E-7,
+		273.8777,  1.6450500E-5,
+		5.2025600, 0.000000,
+		0.048498,  4.469E-9,
+		19.89500,  0.08308530010, t)
 {
 }
 
 /*************************************************************************
- * void Saturn::updatePosition(fgTIME *t, Star *ourSun)
+ * void Jupiter::updatePosition(FGTime *t, Star *ourSun)
  * 
- * calculates the current position of Saturn, by calling the base class,
+ * calculates the current position of Jupiter, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
- * a Saturn specific equation
+ * a Jupiter specific equation
  *************************************************************************/
-void Saturn::updatePosition(fgTIME *t, Star *ourSun)
+void Jupiter::updatePosition(FGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
-  
-  double actTime = fgCalcActTime(t);
-  double ir = 0.4897394;
-  double Nr = 2.9585076 + 6.6672E-7*actTime;
-  double B = asin (sin(declination) * cos(ir) - 
-		   cos(declination) * sin(ir) *
-		   sin(rightAscension - Nr));
-  double ring_magn = -2.6 * sin(fabs(B)) + 1.2 * pow(sin(B), 2);
-  magnitude = -9.0 + 5*log10(r*R) + 0.044 * FV + ring_magn;
+  magnitude = -9.25 + 5*log10( r*R ) + 0.014 * FV;
 }
+
+
+
 

@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 #ifndef _NEPTUNE_HXX_
 #define _NEPTUNE_HXX_
@@ -32,8 +31,8 @@
 class Neptune : public CelestialBody
 {
 public:
-  Neptune ( fgTIME *t);
-  void updatePosition(fgTIME *t, Star *ourSun);
+  Neptune ( FGTime *t);
+  void updatePosition(FGTime *t, Star *ourSun);
 };
 
 #endif // _NEPTUNE_HXX_

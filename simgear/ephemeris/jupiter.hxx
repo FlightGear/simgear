@@ -1,5 +1,5 @@
 /**************************************************************************
- * venus.hxx
+ * jupiter.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,20 +20,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _VENUS_HXX_
-#define _VENUS_HXX_
+#ifndef _JUPITER_HXX_
+#define _JUPITER_HXX_
 
 #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 #include "star.hxx"
 
-class Venus : public CelestialBody
+class Jupiter : public CelestialBody
 {
 public:
-  Venus ( fgTIME *t);
-  void updatePosition(fgTIME *t, Star *ourSun);
+  Jupiter (FGTime *t);
+  void updatePosition(FGTime *t, Star *ourSun);
 };
 
-#endif // _VENUS_HXX_
+#endif // _JUPITER_HXX_

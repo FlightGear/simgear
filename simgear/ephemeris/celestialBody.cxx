@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 
 #include "celestialBody.hxx"
@@ -51,7 +50,7 @@
  * return value: none
  *
  *************************************************************************/
-void CelestialBody::updatePosition(fgTIME *t, Star *ourSun)
+void CelestialBody::updatePosition(FGTime *t, Star *ourSun)
 {
   double eccAnom, v, ecl, actTime, 
     xv, yv, xh, yh, zh, xg, yg, zg, xe, ye, ze;

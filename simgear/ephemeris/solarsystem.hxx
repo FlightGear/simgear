@@ -1,5 +1,5 @@
 /**************************************************************************
- * moon.hxx
+ * solarsystem.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,38 +20,72 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _MOON_HXX_
-#define _MOON_HXX_
+#ifndef _SOLARSYSTEM_H_
+#define _SOLARSYSTEM_H_
 
-#include <Aircraft/aircraft.hxx>
-#include <Include/fg_constants.h>
-#include <Main/views.hxx>
+#include <Time/light.hxx>
 #include <Time/fg_time.hxx>
+#include <Main/views.hxx>
 
-#include "celestialBody.hxx"
 #include "star.hxx"
+#include "moon.hxx"
+#include "mercury.hxx"
+#include "venus.hxx"
+#include "mars.hxx"
+#include "jupiter.hxx"
+#include "saturn.hxx"
+#include "uranus.hxx"
+#include "neptune.hxx"
+#include "pluto.hxx"
 
-class Moon : public CelestialBody
+
+class SolarSystem
 {
 private:
-  void TexInit();  // This should move to the constructor eventually.
-
-  GLUquadricObj *moonObject;
-  GLuint Sphere;
-  GLuint moon_texid;
-  GLuint moon_halotexid;
-  GLubyte *moon_texbuf;
-  GLubyte *moon_halotexbuf;
+  Star*    ourSun;
+  Moon*    earthsMoon;
+  Mercury* mercury;
+  Venus*   venus;
+  Mars*    mars;
+  Jupiter* jupiter;
+  Saturn*  saturn;
+  Uranus*  uranus;
+  Neptune* neptune;
+  //Pluto*   pluto;
   
-  void setHalo();
+  GLint displayList;
+  double scaleMagnitude(double magn);
+  void addPlanetToList(double ra, double dec, double magn);
+
+
 public:
-  Moon ( fgTIME *t);
-  ~Moon();
-  void updatePosition(fgTIME *t, Star *ourSun);
-  void newImage();
+  SolarSystem(FGTime *t);
+  CelestialBody *getSun();
+  CelestialBody *getMoon();
+  ~SolarSystem();
+
+  static SolarSystem *theSolarSystem;  // thanks to Bernie Bright!
+  void rebuild();
+  friend void solarSystemRebuild();
+  void draw();
 };
 
+inline CelestialBody* SolarSystem::getSun()
+{
+  return ourSun;
+}
 
-#endif // _MOON_HXX_
+inline CelestialBody* SolarSystem::getMoon()
+{
+  return earthsMoon;
+}
+
+inline void SolarSystem::draw()
+{
+  xglCallList(displayList);
+}
+  
+extern void solarSystemRebuild();
+
+#endif // _SOLARSYSTEM_H_

@@ -1,5 +1,5 @@
 /**************************************************************************
- * jupiter.cxx
+ * neptune.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,47 +20,40 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-
 
 #ifdef __BORLANDC__
 #  define exception c_exception
 #endif
 #include <math.h>
 
-#include "jupiter.hxx"
+#include "neptune.hxx"
 
 /*************************************************************************
- * Jupiter::Jupiter(fgTIME *t)
- * Public constructor for class Jupiter
+ * Neptune::Neptune(FGTime *t)
+ * Public constructor for class Neptune
  * Argument: The current time.
- * the hard coded orbital elements for Jupiter are passed to 
+ * the hard coded orbital elements for Neptune are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Jupiter::Jupiter(fgTIME *t) :
-  CelestialBody(100.4542,  2.7685400E-5,	
-		1.3030,   -1.557E-7,
-		273.8777,  1.6450500E-5,
-		5.2025600, 0.000000,
-		0.048498,  4.469E-9,
-		19.89500,  0.08308530010, t)
+Neptune::Neptune(FGTime *t) :
+  CelestialBody(131.7806,   3.0173000E-5,
+		1.7700,	   -2.550E-7,
+		272.8461,  -6.027000E-6,	
+		30.058260,  3.313E-8,
+		0.008606,   2.150E-9,
+		260.2471,   0.00599514700, t)
 {
 }
-
 /*************************************************************************
- * void Jupiter::updatePosition(fgTIME *t, Star *ourSun)
+ * void Neptune::updatePosition(FGTime *t, Star *ourSun)
  * 
- * calculates the current position of Jupiter, by calling the base class,
+ * calculates the current position of Neptune, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
- * a Jupiter specific equation
+ * a Neptune specific equation
  *************************************************************************/
-void Jupiter::updatePosition(fgTIME *t, Star *ourSun)
+void Neptune::updatePosition(FGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
-  magnitude = -9.25 + 5*log10( r*R ) + 0.014 * FV;
+  magnitude = -6.90 + 5*log10 (r*R) + 0.001 *FV;
 }
-
-
-
-

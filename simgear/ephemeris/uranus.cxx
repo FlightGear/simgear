@@ -1,5 +1,5 @@
 /**************************************************************************
- * neptune.cxx
+ * uranus.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 
 #ifdef __BORLANDC__
@@ -28,33 +27,34 @@
 #endif
 #include <math.h>
 
-#include "neptune.hxx"
+#include "uranus.hxx"
 
 /*************************************************************************
- * Neptune::Neptune(fgTIME *t)
- * Public constructor for class Neptune
+ * Uranus::Uranus(FGTime *t)
+ * Public constructor for class Uranus
  * Argument: The current time.
- * the hard coded orbital elements for Neptune are passed to 
+ * the hard coded orbital elements for Uranus are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Neptune::Neptune(fgTIME *t) :
-  CelestialBody(131.7806,   3.0173000E-5,
-		1.7700,	   -2.550E-7,
-		272.8461,  -6.027000E-6,	
-		30.058260,  3.313E-8,
-		0.008606,   2.150E-9,
-		260.2471,   0.00599514700, t)
+Uranus::Uranus(FGTime *t) :
+  CelestialBody(74.00050,   1.3978000E-5,
+		0.7733,     1.900E-8,
+		96.66120,   3.0565000E-5,
+		19.181710, -1.55E-8,
+		0.047318,   7.450E-9,
+		142.5905,   0.01172580600, t)
 {
 }
+
 /*************************************************************************
- * void Neptune::updatePosition(fgTIME *t, Star *ourSun)
+ * void Uranus::updatePosition(FGTime *t, Star *ourSun)
  * 
- * calculates the current position of Neptune, by calling the base class,
+ * calculates the current position of Uranus, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
- * a Neptune specific equation
+ * a Uranus specific equation
  *************************************************************************/
-void Neptune::updatePosition(fgTIME *t, Star *ourSun)
+void Uranus::updatePosition(FGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
-  magnitude = -6.90 + 5*log10 (r*R) + 0.001 *FV;
+  magnitude = -7.15 + 5*log10( r*R) + 0.001 * FV;
 }

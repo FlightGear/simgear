@@ -1,5 +1,5 @@
 /**************************************************************************
- * star.hxx
+ * moon.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,80 +20,37 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _STAR_HXX_
-#define _STAR_HXX_
+#ifndef _MOON_HXX_
+#define _MOON_HXX_
 
+#include <Aircraft/aircraft.hxx>
+#include <Include/fg_constants.h>
+#include <Main/views.hxx>
 #include <Time/fg_time.hxx>
+
 #include "celestialBody.hxx"
+#include "star.hxx"
 
-
-class Star : public CelestialBody
+class Moon : public CelestialBody
 {
 private:
-  //double longitude;  // the sun's true longitude - this is depreciated by
-                       // CelestialBody::lonEcl 
-  double xs, ys;     // the sun's rectangular geocentric coordinates
-  double distance;   // the sun's distance to the earth
-   GLUquadricObj *SunObject;
-  GLuint sun_texid;
-  GLubyte *sun_texbuf;
+  void TexInit();  // This should move to the constructor eventually.
 
-  void setTexture();
+  GLUquadricObj *moonObject;
+  GLuint Sphere;
+  GLuint moon_texid;
+  GLuint moon_halotexid;
+  GLubyte *moon_texbuf;
+  GLubyte *moon_halotexbuf;
+  
+  void setHalo();
 public:
-  Star (fgTIME *t);
-  ~Star();
-  void updatePosition(fgTIME *t);
-  double getM();
-  double getw();
-  //double getLon();
-  double getxs();
-  double getys();
-  double getDistance();
+  Moon ( FGTime *t);
+  ~Moon();
+  void updatePosition(FGTime *t, Star *ourSun);
   void newImage();
 };
 
 
-
-inline double Star::getM()
-{
-  return M;
-}
-
-inline double Star::getw()
-{
-  return w;
-}
-
-inline double Star::getxs()
-{
-  return xs;
-}
-
-inline double Star::getys()
-{
-  return ys;
-}
-
-inline double Star::getDistance()
-{
-  return distance;
-}
-
-
-#endif // _STAR_HXX_
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // _MOON_HXX_

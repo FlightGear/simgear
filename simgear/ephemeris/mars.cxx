@@ -1,5 +1,5 @@
 /**************************************************************************
- * uranus.cxx
+ * mars.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,7 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
 
 #ifdef __BORLANDC__
@@ -28,34 +27,33 @@
 #endif
 #include <math.h>
 
-#include "uranus.hxx"
+#include "mars.hxx"
 
 /*************************************************************************
- * Uranus::Uranus(fgTIME *t)
- * Public constructor for class Uranus
+ * Mars::Mars(FGTime *t)
+ * Public constructor for class Mars
  * Argument: The current time.
- * the hard coded orbital elements for Uranus are passed to 
+ * the hard coded orbital elements for Mars are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Uranus::Uranus(fgTIME *t) :
-  CelestialBody(74.00050,   1.3978000E-5,
-		0.7733,     1.900E-8,
-		96.66120,   3.0565000E-5,
-		19.181710, -1.55E-8,
-		0.047318,   7.450E-9,
-		142.5905,   0.01172580600, t)
+Mars::Mars(FGTime *t) :
+  CelestialBody(49.55740,  2.1108100E-5,
+		1.8497,   -1.78E-8,
+		286.5016,  2.9296100E-5,
+		1.5236880, 0.000000,
+		0.093405,  2.516E-9,
+		18.60210,  0.52402077660, t)
 {
 }
-
 /*************************************************************************
- * void Uranus::updatePosition(fgTIME *t, Star *ourSun)
+ * void Mars::updatePosition(FGTime *t, Star *ourSun)
  * 
- * calculates the current position of Uranus, by calling the base class,
+ * calculates the current position of Mars, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
- * a Uranus specific equation
+ * a Mars specific equation
  *************************************************************************/
-void Uranus::updatePosition(fgTIME *t, Star *ourSun)
+void Mars::updatePosition(FGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
-  magnitude = -7.15 + 5*log10( r*R) + 0.001 * FV;
+  magnitude = -1.51 + 5*log10( r*R ) + 0.016 * FV;
 }

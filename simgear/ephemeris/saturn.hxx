@@ -1,5 +1,5 @@
 /**************************************************************************
- * uranus.hxx
+ * saturn.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,20 +20,26 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _URANUS_HXX_
-#define _URANUS_HXX_
+#ifndef _SATURN_HXX_
+#define _SATURN_HXX_
 
 #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 #include "star.hxx"
 
-class Uranus : public CelestialBody
+class Saturn : public CelestialBody
 {
 public:
-  Uranus ( fgTIME *t);
-  void updatePosition(fgTIME *t, Star *ourSun);
+  Saturn ( FGTime *t);
+  void updatePosition(FGTime *t, Star *ourSun);
 };
 
-#endif // _URANUS_HXX_
+#endif // _SATURN_HXX_
+
+
+
+
+
+
+

@@ -1,5 +1,5 @@
 /**************************************************************************
- * saturn.hxx
+ * star.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -20,23 +20,75 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Id$
- * (Log is kept at end of this file)
  **************************************************************************/
-#ifndef _SATURN_HXX_
-#define _SATURN_HXX_
+#ifndef _STAR_HXX_
+#define _STAR_HXX_
 
 #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
-#include "star.hxx"
 
-class Saturn : public CelestialBody
+
+class Star : public CelestialBody
 {
+private:
+  //double longitude;  // the sun's true longitude - this is depreciated by
+                       // CelestialBody::lonEcl 
+  double xs, ys;     // the sun's rectangular geocentric coordinates
+  double distance;   // the sun's distance to the earth
+   GLUquadricObj *SunObject;
+  GLuint sun_texid;
+  GLubyte *sun_texbuf;
+
+  void setTexture();
 public:
-  Saturn ( fgTIME *t);
-  void updatePosition(fgTIME *t, Star *ourSun);
+  Star (FGTime *t);
+  ~Star();
+  void updatePosition(FGTime *t);
+  double getM();
+  double getw();
+  //double getLon();
+  double getxs();
+  double getys();
+  double getDistance();
+  void newImage();
 };
 
-#endif // _SATURN_HXX_
+
+
+inline double Star::getM()
+{
+  return M;
+}
+
+inline double Star::getw()
+{
+  return w;
+}
+
+inline double Star::getxs()
+{
+  return xs;
+}
+
+inline double Star::getys()
+{
+  return ys;
+}
+
+inline double Star::getDistance()
+{
+  return distance;
+}
+
+
+#endif // _STAR_HXX_
+
+
+
+
+
+
+
 
 
 

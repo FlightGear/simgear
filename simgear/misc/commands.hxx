@@ -25,14 +25,54 @@ SG_USING_STD(vector);
 
 
 /**
+ * Stored state for a command.
+ *
+ * <p>This class allows a command to cache parts of its state between
+ * invocations with the same parameters.  Nearly every command that
+ * actually uses this will subclass it in some way.  The command
+ * allocates the structure, but it is up to the caller to delete it
+ * when it is no longer necessary, unless the command deletes it
+ * and replaces the value with 0 or another command-state object
+ * first.</p>
+ *
+ * <p>Note that this class is for caching only; all of the information
+ * in it must be recoverable by other means, since the state could
+ * arbitrarily disappear between invocations if the caller decides to
+ * delete it.</p>
+ *
+ * <p>By default, the command state includes a place to keep a copy of
+ * the parameters.</p>
+ *
+ * @author David Megginson, david@megginson.com
+ */
+class SGCommandState
+{
+public:
+  SGCommandState ();
+  SGCommandState (const SGPropertyNode * args);
+  virtual ~SGCommandState ();
+  virtual void setArgs (const SGPropertyNode * args);
+  virtual const SGPropertyNode * getArgs () const { return _args; }
+private:
+  SGPropertyNode * _args;
+};
+
+
+/**
  * Manage commands.
  *
  * <p>This class allows the application to register and unregister
- * commands, and provides shortcuts for executing them.  Commands
- * are simple functions that take a const pointer to an SGPropertyNode
- * as an argument and return a bool value indicating success or failure.
- * The property node may be ignored, or it may contain values that
- * the command uses as parameters.</p>
+ * commands, and provides shortcuts for executing them.  Commands are
+ * simple functions that take a const pointer to an SGPropertyNode and
+ * a pointer to a pointer variable (which should be 0 initially) where
+ * the function can store compiled copies of its arguments, etc. to
+ * avoid expensive recalculations.  If the command deletes the
+ * SGCommandState, it must replace it with a new pointer or 0;
+ * otherwise, the caller is free to delete and zero the pointer at any
+ * time and the command will start fresh with the next invocation.
+ * The command must return a bool value indicating success or failure.
+ * The property node may be ignored, or it may contain values that the
+ * command uses as parameters.</p>
  *
  * <p>There are convenience methods for invoking a command function
  * with no arguments or with a single, primitive argument.</p>
@@ -46,7 +86,8 @@ public:
   /**
    * Type for a command function.
    */
-  typedef bool (*command_t) (const SGPropertyNode * arg);
+  typedef bool (*command_t) (const SGPropertyNode * arg,
+			     SGCommandState ** state);
 
 
   /**
@@ -105,104 +146,106 @@ public:
    * @return true if the command is present and executes successfully,
    * false otherwise.
    */
-  virtual bool execute (const string &name, const SGPropertyNode * arg) const;
+  virtual bool execute (const string &name,
+			const SGPropertyNode * arg,
+			SGCommandState ** state) const;
 
 
-  /**
-   * Execute a command with no argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with no value and no children.
-   *
-   * @param name The name of the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name) const;
+//   /**
+//    * Execute a command with no argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with no value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name) const;
 
 
-  /**
-   * Execute a command with a single bool argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a bool value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The bool argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, bool arg) const;
+//   /**
+//    * Execute a command with a single bool argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a bool value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The bool argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, bool arg) const;
 
 
-  /**
-   * Execute a command with a single int argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a int value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The int argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, int arg) const;
+//   /**
+//    * Execute a command with a single int argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a int value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The int argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, int arg) const;
 
 
-  /**
-   * Execute a command with a single long argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a long value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The long argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, long arg) const;
+//   /**
+//    * Execute a command with a single long argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a long value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The long argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, long arg) const;
 
 
-  /**
-   * Execute a command with a single float argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a float value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The float argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, float arg) const;
+//   /**
+//    * Execute a command with a single float argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a float value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The float argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, float arg) const;
 
 
-  /**
-   * Execute a command with a single double argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a double value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The double argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, double arg) const;
+//   /**
+//    * Execute a command with a single double argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a double value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The double argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, double arg) const;
 
 
-  /**
-   * Execute a command with a single string argument.
-   *
-   * The command function will receive a pointer to a property node
-   * with a string value and no children.
-   *
-   * @param name The name of the command.
-   * @param arg The string argument to the command.
-   * @return true if the command is present and executes successfully,
-   * false otherwise.
-   */
-  virtual bool execute (const string &name, string arg) const;
+//   /**
+//    * Execute a command with a single string argument.
+//    *
+//    * The command function will receive a pointer to a property node
+//    * with a string value and no children.
+//    *
+//    * @param name The name of the command.
+//    * @param arg The string argument to the command.
+//    * @return true if the command is present and executes successfully,
+//    * false otherwise.
+//    */
+//   virtual bool execute (const string &name, string arg) const;
 
 
 private:

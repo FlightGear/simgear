@@ -1,10 +1,10 @@
 includedir = @includedir@/sky/clouds3d
 
 # enable the following line once extgl.c get's added to the distro
-# EXTRA_DIST = extgl.c
+EXTRA_DIST = extgl.c extgl.h
 
 if EXTGL_NEEDED
-  EXTGL_SOURCE = extgl.c
+  EXTGL_SOURCE = extgl.c extgl.h
 else
   EXTGL_SOURCE = 
 endif

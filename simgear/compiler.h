@@ -278,6 +278,11 @@
 #  define STL_STRING     <string>
 #  define STL_STRSTREAM  <strstream.h>
 
+#  define __STL_FUNCTION_TMPL_PARTIAL_ORDER
+
+#pragma set woff 1001,1012,1014,1116,1172,1174,1401,146,0
+#pragma set woff 1551,1552,1681
+
 #endif // Native SGI compilers
 
 

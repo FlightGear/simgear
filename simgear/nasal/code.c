@@ -454,6 +454,7 @@ static void run1(struct Context* ctx, struct Frame* f, naRef code)
         break;
     case OP_MCALL:
         c = POP(ctx); b = POP(ctx); a = POP(ctx); // a,b,c = obj, func, args
+        naVec_append(ctx->temps, a);
         setupFuncall(ctx, b, c);
         naHash_set(ctx->fStack[ctx->fTop-1].locals, ctx->meRef, a);
         break;

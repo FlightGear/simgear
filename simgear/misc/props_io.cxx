@@ -342,24 +342,26 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// write it first.
   if (node->hasValue()) {
     doIndent(output, indent);
-    output << '<' << name << " n=\"" << index;
-    if (node->isAlias() && node->getAliasTarget() != 0) {
-      output << "\" alias=\""
-	     << node->getAliasTarget()->getPath() << "\"/>" << endl;
-    } else {
+    output << '<' << name << " n=\"" << index << '"';
+    if (node->isAlias() && node->getAliasTarget() != 0)
+      output << " alias=\"" << node->getAliasTarget()->getPath() << "\"/>";
+    else {
       if (node->getType() != SGValue::UNKNOWN)
-	output << "\" type=\"" << getTypeName(node->getType()) << '"';
+	output << " type=\"" << getTypeName(node->getType()) << '"';
       output << '>';
       writeData(output, node->getStringValue());
-      output << "</" << name << '>' << endl;;
+      output << "</" << name << '>' << endl;
     }
   }
 
 				// If there are children, write them
 				// next.
-  if (nChildren > 0) {
+  if (nChildren > 0 || node->isAlias()) {
     doIndent(output, indent);
-    output << '<' << name << " n=\"" << index << "\">" << endl;;
+    output << '<' << name << " n=\"" << index << '"';
+    if (node->isAlias() && node->getAliasTarget() != 0)
+      output << " alias=\"" << node->getAliasTarget()->getPath() << '"';
+    output << '>' << endl;
     for (int i = 0; i < nChildren; i++)
       writeNode(output, node->getChild(i), indent + INDENT_STEP);
     doIndent(output, indent);
@@ -369,10 +371,10 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// If there were no children and no
 				// value, at least note the presence
 				// of the node.
-  if (nChildren == 0 && !node->hasValue()) {
-    doIndent(output, indent);
-    output << '<' << name << " n=\"" << index << "\"/>" << endl;
-  }
+//   if (nChildren == 0 && !node->isAlias() && !node->hasValue()) {
+//     doIndent(output, indent);
+//     output << '<' << name << " n=\"" << index << "\"/>" << endl;
+//   }
 
   return true;
 }

@@ -197,54 +197,23 @@ void SkySceneLoader::Resize(  double w, double h )
 }
 
 void SkySceneLoader::Draw( sgMat4 mat )
-{/* need this if you want to look at FG matrix
-	if ( _ssgCurrentContext == NULL )
-  {
-    cout<< "ssg: No Current Context: Did you forgot to call ssgInit()?" ; char x; cin >> x;
-  }
-  
-  ssgForceBasicState () ;
-  */
-  sgMat4 test, m, *pm, viewmat,  cameraMatrix;
-  pm = &m;
-  sgSetVec4(mat[3], cam_pos[0], cam_pos[1], cam_pos[2], SG_ONE);
-  // at this point the view matrix has the cloud camera position relative to cloud origin
-  // now transform to screen coordinates
-  sgTransposeNegateMat4 ( viewmat, mat ) ;
+{
+    sgMat4 cameraMatrix;
 
-  sgCopyMat4    ( cameraMatrix, my_copy_of_ssgOpenGLAxisSwapMatrix ) ;
-  sgPreMultMat4 ( cameraMatrix, viewmat ) ;
+    // sgCopyMat4(cameraMatrix,mat);    
+    // or just 
+    ssgGetModelviewMatrix(cameraMatrix);
+
+    glMatrixMode ( GL_MODELVIEW ) ;
+    glLoadIdentity () ;
+    glLoadMatrixf( (float *) cameraMatrix );
   
-  //sgCopyMat4 ( test, cameraMatrix );
+    pCam->SetModelviewMatrix( (float *) cameraMatrix );
   
-  //printf( "\nSkyworks ViewModel matrix\n" );
-	//cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
-  //cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
-  //cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
-  //cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
+    SceneManager::InstancePtr()->Display(*pCam);
 	
-	 // this is the cameraview matrix used by flightgear to render scene
-	//_ssgCurrentContext->getModelviewMatrix( m );
-	
-  glMatrixMode ( GL_MODELVIEW ) ;
-  glLoadIdentity () ;
-  glLoadMatrixf( (float *) cameraMatrix );
-  
-  //sgCopyMat4( test, m );
+    //pLight->Display(); // draw the light position to  debug with sun position
 
-	pCam->SetModelviewMatrix( (float *) cameraMatrix );
-  
-  //printf( "\nFG modelview matrix\n" );
-  //cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
-  //cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
-  //cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
-  //cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
-
-	SceneManager::InstancePtr()->Display(*pCam);
-	
-	//pLight->Display(); // draw the light position to  debug with sun position
-
-  glMatrixMode ( GL_MODELVIEW ) ;
-  glLoadIdentity () ;
-
+    glMatrixMode ( GL_MODELVIEW ) ;
+    glLoadIdentity () ;
 }

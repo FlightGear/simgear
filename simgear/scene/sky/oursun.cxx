@@ -49,6 +49,14 @@
 #include "sphere.hxx"
 #include "oursun.hxx"
 
+// FIXME: This should not be needed, but at this time (08/15/2003)
+//        certain NVidia drivers don't seem to implement
+//        fgPushAttrib(FG_FOG_BIT) properly. The result is that
+//        there is not fog when looking at the sun.
+#ifndef SG_PROPER_FOG_SUPPORT
+static float curFogDensity;
+#endif
+
 
 // Set up sun rendering call backs
 static int sgSunOrbPreDraw( ssgEntity *e ) {
@@ -87,6 +95,10 @@ static int sgSunHaloPreDraw( ssgEntity *e ) {
     ssgLeaf *f = (ssgLeaf *)e;
     if ( f -> hasState () ) f->getState()->apply() ;
 
+#ifndef SG_PROPER_FOG_SUPPORT
+    glGetFloatv( GL_FOG_DENSITY, &curFogDensity );
+#endif
+
     glPushAttrib( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
     // cout << "push error = " << glGetError() << endl;
 
@@ -104,6 +116,10 @@ static int sgSunHaloPostDraw( ssgEntity *e ) {
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
+
+#ifndef SG_PROPER_FOG_SUPPORT
+    glFogf( GL_FOG_DENSITY, curFogDensity );
+#endif
 
     // glEnable( GL_DEPTH_TEST );
     // glEnable( GL_FOG );

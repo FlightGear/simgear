@@ -248,8 +248,8 @@ void SGSky::postDraw( float alt ) {
 }
 
  
-void SGSky::add_cloud_layer( double span, double asl,
-			     double thickness, double transition,
+void SGSky::add_cloud_layer( double asl, double thickness,
+			     double transition, double span,
 			     ssgSimpleState *state ) {
     SGCloudLayer *layer = new SGCloudLayer;
     layer->build( span, asl, thickness, transition, state );
@@ -273,19 +273,19 @@ void SGSky::add_cloud_layer( double span, double asl,
 }
 
 
-void SGSky::add_cloud_layer( double span, double asl,
-			     double thickness, double transition,
+void SGSky::add_cloud_layer( double asl, double thickness,
+			     double transition, double span,
 			     const string &tex_path ) {
     ssgSimpleState *state = SGCloudMakeState( tex_path );
-    add_cloud_layer( span, asl, thickness, transition, state );
+    add_cloud_layer( asl, thickness, transition, span, state );
 }
 
 
-void SGSky::add_cloud_layer( double span, double asl,
-			     double thickness, double transition,
+void SGSky::add_cloud_layer( double asl, double thickness,
+			     double transition, double span,
 			     SGCloudType type ) {
     if ( type > 0 && type < SG_MAX_CLOUD_TYPES ) {
-	add_cloud_layer( span, asl, thickness, transition, cloud_mats[type] );
+	add_cloud_layer( asl, thickness, transition, span, cloud_mats[type] );
     }
 }
 

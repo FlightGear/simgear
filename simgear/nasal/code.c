@@ -358,8 +358,12 @@ static void run1(struct Context* ctx, struct Frame* f, naRef code)
         PUSH(ctx, evalAndOr(ctx, op, a, b));
         break;
     case OP_CAT:
-        a = stringify(ctx, POP(ctx)); b = stringify(ctx, POP(ctx));
+        // stringify can call the GC, so don't take stuff of the stack!
+        if(ctx->opTop <= 1) ERR(ctx, "BUG: stack underflow");
+        a = stringify(ctx, ctx->opStack[ctx->opTop-1]);
+        b = stringify(ctx, ctx->opStack[ctx->opTop-2]);
         c = naStr_concat(naNewString(ctx), b, a);
+        ctx->opTop -= 2;
         PUSH(ctx, c);
         break;
     case OP_NEG:
@@ -531,6 +535,7 @@ static naRef run(naContext ctx)
 {
     // Return early if an error occurred.  It will be visible to the
     // caller via naGetError().
+    ctx->error = 0;
     if(setjmp(ctx->jumpHandle))
         return naNil();
     

@@ -104,6 +104,26 @@ naRef naNewClosure(struct Context* c, naRef namespace, naRef next)
     return closure;
 }
 
+naRef naNewGhost(naContext c, naGhostType* type, void* ptr)
+{
+    naRef ghost = naNew(c, T_GHOST);
+    ghost.ref.ptr.ghost->gtype = type;
+    ghost.ref.ptr.ghost->ptr = ptr;
+    return ghost;
+}
+
+naGhostType* naGhost_type(naRef ghost)
+{
+    if(!IS_GHOST(ghost)) return 0;
+    return ghost.ref.ptr.ghost->gtype;
+}
+
+void* naGhost_ptr(naRef ghost)
+{
+    if(!IS_GHOST(ghost)) return 0;
+    return ghost.ref.ptr.ghost->ptr;
+}
+
 naRef naNil()
 {
     naRef r;
@@ -151,6 +171,7 @@ int naTypeSize(int type)
     case T_FUNC: return sizeof(struct naFunc);
     case T_CLOSURE: return sizeof(struct naClosure);
     case T_CCODE: return sizeof(struct naCCode);
+    case T_GHOST: return sizeof(struct naGhost);
     };
     return 0x7fffffff; // Make sure the answer is nonsense :)
 }
@@ -200,3 +221,7 @@ int naIsCCode(naRef r)
     return IS_CCODE(r);
 }
 
+int naIsGhost(naRef r)
+{
+    return IS_GHOST(r);
+}

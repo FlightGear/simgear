@@ -7,7 +7,7 @@
 // What actually gets executed at runtime is a bound FUNC object,
 // which combines the raw code with a pointer to a CLOSURE chain of
 // namespaces.
-enum { T_STR, T_VEC, T_HASH, T_CODE, T_CLOSURE, T_FUNC, T_CCODE,
+enum { T_STR, T_VEC, T_HASH, T_CODE, T_CLOSURE, T_FUNC, T_CCODE, T_GHOST,
        NUM_NASAL_TYPES }; // V. important that this come last!
 
 #define IS_REF(r) ((r).ref.reftag == NASAL_REFTAG)
@@ -21,6 +21,7 @@ enum { T_STR, T_VEC, T_HASH, T_CODE, T_CLOSURE, T_FUNC, T_CCODE,
 #define IS_FUNC(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_FUNC)
 #define IS_CLOSURE(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_CLOSURE)
 #define IS_CCODE(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_CCODE)
+#define IS_GHOST(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_GHOST)
 #define IS_CONTAINER(r) (IS_VEC(r)||IS_HASH(r))
 #define IS_SCALAR(r) (IS_NUM((r)) || IS_STR((r)))
 
@@ -88,6 +89,12 @@ struct naClosure {
 struct naCCode {
     GC_HEADER;
     naCFunction fptr;
+};
+
+struct naGhost {
+    GC_HEADER;
+    naGhostType* gtype;
+    void* ptr;
 };
 
 struct naPool {

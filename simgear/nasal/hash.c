@@ -196,7 +196,7 @@ void naHash_keys(naRef dst, naRef hash)
 {
     struct naHash* h = hash.ref.ptr.hash;
     int i;
-    if(!IS_HASH(hash)) return;
+    if(!IS_HASH(hash) || !h->table) return;
     for(i=0; i<(1<<h->lgalloced); i++) {
         struct HashNode* hn = h->table[i];
         while(hn) {

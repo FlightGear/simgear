@@ -118,6 +118,7 @@ static naRef typeOf(naContext c, naRef args)
     else if(naIsVector(r)) t = "vector";
     else if(naIsHash(r)) t = "hash";
     else if(naIsFunc(r)) t = "func";
+    else if(naIsGhost(r)) t = "ghost";
     r = naStr_fromdata(naNewString(c), t, strlen(t));
     return r;
 }

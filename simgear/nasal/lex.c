@@ -132,7 +132,7 @@ static void newToken(struct Parser* p, int pos, int type,
 static int hexc(char c, struct Parser* p, int index)
 {
     if(c >= '0' && c <= '9') return c - '0';
-    if(c >= 'A' && c <= 'F') return c - 'a' + 10;
+    if(c >= 'A' && c <= 'F') return c - 'A' + 10;
     if(c >= 'a' && c <= 'f') return c - 'a' + 10;
     error(p, "bad hex constant", index);
     return 0;
@@ -170,6 +170,7 @@ static void dqEscape(char* buf, int len, int index, struct Parser* p,
         if(len < 4) error(p, "unterminated string", index);
         *cOut = (char)((hexc(buf[2], p, index)<<4) | hexc(buf[3], p, index));
         *eatenOut = 4;
+        break;
     default:
         // Unhandled, put the backslash back
         *cOut = '\\';
@@ -235,7 +236,8 @@ static int trySymbol(struct Parser* p, int start)
 {
     int i = start;
     while((i < p->len) &&
-          ((p->buf[i] >= 'A' && p->buf[i] <= 'Z') ||
+          ((p->buf[i] == '_') ||
+           (p->buf[i] >= 'A' && p->buf[i] <= 'Z') ||
            (p->buf[i] >= 'a' && p->buf[i] <= 'z') ||
            (p->buf[i] >= '0' && p->buf[i] <= '9')))
     { i++; }
@@ -316,7 +318,7 @@ void naLex(struct Parser* p)
         if(!handled) {
             int symlen=0, lexlen=0, lexeme;
             lexlen = tryLexemes(p, i, &lexeme);
-            if((c>='A' && c<='Z') || (c>='a' && c<='z'))
+            if((c>='A' && c<='Z') || (c>='a' && c<='z') || (c=='_'))
                 symlen = trySymbol(p, i);
             if(lexlen && lexlen >= symlen) {
                 newToken(p, i, LEXEMES[lexeme].tok, 0, 0, 0);

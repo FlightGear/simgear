@@ -41,6 +41,12 @@ static void naCode_gcclean(struct naCode* o)
     naFree(o->constants); o->constants = 0;
 }
 
+static void naGhost_gcclean(struct naGhost* g)
+{
+    if(g->ptr) g->gtype->destroy(g->ptr);
+    g->ptr = 0;
+}
+
 static void freeelem(struct naPool* p, struct naObj* o)
 {
     // Mark the object as "freed" for debugging purposes
@@ -60,6 +66,9 @@ static void freeelem(struct naPool* p, struct naObj* o)
         break;
     case T_CODE:
         naCode_gcclean((struct naCode*)o);
+        break;
+    case T_GHOST:
+        naGhost_gcclean((struct naGhost*)o);
         break;
     }
 

@@ -31,6 +31,7 @@ typedef union {
             struct naFunc* func;
             struct naClosure* closure;
             struct naCCode* ccode;
+            struct naGhost* ghost;
         } ptr;
 #ifndef NASAL_BIG_ENDIAN_32_BIT
         int reftag; // Little-endian and 64 bit systems need this here!
@@ -138,6 +139,15 @@ void naHash_set(naRef hash, naRef key, naRef val);
 void naHash_cset(naRef hash, char* key, naRef val);
 void naHash_delete(naRef hash, naRef key);
 void naHash_keys(naRef dst, naRef hash);
+
+// Ghost utilities:
+typedef struct naGhostType {
+    void (*destroy)(void* ghost);
+} naGhostType;
+naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
+naGhostType* naGhost_type(naRef ghost);
+void*        naGhost_ptr(naRef ghost);
+int          naIsGhost(naRef r);
 
 #ifdef __cplusplus
 } // extern "C"

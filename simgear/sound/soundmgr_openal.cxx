@@ -86,6 +86,7 @@ SGSoundMgr::SGSoundMgr() {
 
     // exaggerate the ear candy?
     alDopplerFactor(1.0);
+    alDopplerVelocity(340.0);	// speed of sound in meters per second.
 }
 
 // destructor

@@ -140,6 +140,7 @@ void
 PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 {
   State &st = state();
+  const char * attval;
 
   if (_level == 0) {
     if (string(name) != (string)"PropertyList") {
@@ -148,12 +149,23 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       message += "; expected PropertyList";
       throw sg_io_exception(message, "SimGear Property Reader");
     }
+
+				// Check for an include.
+    attval = atts.getValue("include");
+    if (attval != 0) {
+      SGPath path(SGPath(_base).dir());
+      path.append(attval);
+      try {
+	readProperties(path.str(), _root);
+      } catch (sg_io_exception &e) {
+	setException(e);
+      }
+    }
+
     push_state(_root, "", DEFAULT_MODE);
   }
 
   else {
-
-    const char * attval;
 				// Get the index.
     attval = atts.getValue("n");
     int index = 0;

@@ -64,14 +64,116 @@ public:
 
     double get_alt_m() { return alt_m; }
     double *get_abs_pos() { return abs_pos; }
+    int i;
 
-    // color is a number in the range of 0.0 = full red, 1.0 = full white
-    void set_color( float color ) {
+    // color the vasi/papi correctly based on angle
+    void set_color( float angle_deg ) {
         int count = leaf->getNumColours();
-        for ( int i = 0; i < count; ++i ) {
-            float *entry = leaf->getColour( i );
-            entry[1] = color;
-            entry[2] = color;
+        double trans = 0.05;
+        double color = 1.0;
+        double ref;
+        float *entry;
+
+        if ( count == 12 ) {
+            // PAPI configuration
+
+            // papi D
+            ref = 3.5;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( i = 0; i < 3; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+
+            // papi C
+            ref = 3.167;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( i = 3; i < 6; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+
+            // papi B
+            ref = 2.833;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( i = 6; i < 9; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+
+            // papi A
+            ref = 2.5;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( i = 9; i < 12; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+        } else if ( count == 36 ) {
+            // probably vasi, first 18 are downwind bar (2.5 deg)
+            ref = 2.5;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( int i = 0; i < 18; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+
+            // last 6 are upwind bar (3.0 deg)
+            ref = 3.0;
+            if ( angle_deg < ref - trans ) {
+                color = 0.0;
+            } else if ( angle_deg < ref + trans ) {
+                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+            } else {
+                color = 1.0;
+            }
+            for ( int i = 18; i < 36; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
+        } else {
+            // fail safe
+            cout << "unknown vasi/papi configuration, count = " << count << endl;
+            for ( int i = 0; i < count; ++i ) {
+                entry = leaf->getColour( i );
+                entry[1] = color;
+                entry[2] = color;
+            }
         }
     }
 };

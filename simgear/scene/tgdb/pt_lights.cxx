@@ -34,7 +34,7 @@
 // strobe pre-draw (we want a larger point size)
 static int StrobePreDraw( ssgEntity *e ) {
     glPushAttrib( GL_POINT_BIT );
-    glPointSize(4.0);
+    glPointSize(3.0);
     glEnable(GL_POINT_SMOOTH);
 
     return true;
@@ -631,8 +631,8 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
         // structure.
         ssgRangeSelector *lod = (ssgRangeSelector *)light_group->getKid(0);
         ssgLeaf *leaf = (ssgLeaf *)lod->getKid(0);
-        leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-        leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+        // leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
+        // leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
 
         SGVASIUserData *vasi = new SGVASIUserData( pos, leaf );
 

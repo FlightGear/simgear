@@ -73,8 +73,6 @@ void SGTimerQueue::update(double deltaSecs)
 
 void SGTimerQueue::insert(SGTimer* timer, double time)
 {
-    if(time < 0) *(int*)0=0;
-
     if(_numEntries >= _tableSize)
 	growArray();
 
@@ -120,21 +118,16 @@ SGTimer* SGTimerQueue::remove()
 
 void SGTimerQueue::siftDown(int n)
 {
-    // While we have a child bigger than us:
-    while(((lchild(n) < (_numEntries-1))
-	   && (_table[n].pri < _table[lchild(n)].pri))
-	  ||
-	  ((rchild(n) < (_numEntries-1))
-	   && (_table[n].pri < _table[rchild(n)].pri)))
-    {
-        // Swap us with the biggest child
-        if(_table[lchild(n)].pri > _table[rchild(n)].pri) {
-            swap(n, lchild(n)); 
-            n = lchild(n);
-        } else {
-            swap(n, rchild(n));
-            n = rchild(n);
-        }
+    // While we have children bigger than us, swap us with the biggest
+    // child.
+    while(lchild(n) < _numEntries) {
+        int bigc = lchild(n);
+        if(rchild(n) < _numEntries && pri(rchild(n)) > pri(bigc))
+            bigc = rchild(n);
+        if(pri(bigc) <= pri(n))
+            break;
+        swap(n, bigc);
+        n = bigc;
     }
 }
 

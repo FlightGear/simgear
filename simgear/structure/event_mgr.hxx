@@ -42,6 +42,7 @@ private:
     int parent(int n) { return ((n+1)/2) - 1; }
     int lchild(int n) { return ((n+1)*2) - 1; }
     int rchild(int n) { return ((n+1)*2 + 1) - 1; }
+    double pri(int n) { return _table[n].pri; }
     void swap(int a, int b) {
 	HeapEntry tmp = _table[a];
 	_table[a] = _table[b];

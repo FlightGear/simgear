@@ -832,7 +832,7 @@ SGTexture::make_normalmap(float brightness) {
 
          map[mpos+0] = (128+(texture_data[posxp1]-texture_data[dpos])/2);
          map[mpos+1] = (128+(texture_data[posyp1]-texture_data[dpos])/2);
-         map[mpos+2] = 128 + GLubyte(128*brightness);
+         map[mpos+2] = 127 + GLubyte(128*brightness);
       }
 
    free (texture_data);

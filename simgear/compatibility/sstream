@@ -10,8 +10,7 @@ namespace std {
 
    class ostringstream : public ostrstream {
    public:
-      ~ostringstream() { delete ostrstream::str(); }
-      std::string str() { return string(ostrstream::str()) + '\0'; }
+      std::string str() {  return string(ostrstream::str()); }
    };
 
 

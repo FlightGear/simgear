@@ -35,6 +35,7 @@ SUBDIRS = \
 	screen \
 	$(SERIAL_DIRS) \
 	sky \
+	timing \
 	xgl \
 	$(ZLIB_DIRS)
 

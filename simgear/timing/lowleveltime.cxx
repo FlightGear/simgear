@@ -285,10 +285,10 @@ static void fgtzset_internal (int always, const char *tz)
   time(&now);
   static int is_initialized = 0;
   //register const char *tz;
-  register size_t l;
-  char *tzbuf;
-  unsigned short int hh, mm, ss;
-  unsigned short int whichrule;
+  // register size_t l;
+  // char *tzbuf;
+  // unsigned short int hh, mm, ss;
+  // unsigned short int whichrule;
 
   if (is_initialized && !always)
     return;
@@ -789,7 +789,7 @@ static struct ttinfo * fgfind_transition (time_t timer)
 /**************************************************************************/
 void fgtzfile_read (const char *file)
 {
-  static const char default_tzdir[] = TZDIR;
+  // static const char default_tzdir[] = TZDIR;
   size_t num_isstd, num_isgmt;
   register FILE *f;
   struct tzhead tzhead;
@@ -993,7 +993,7 @@ void fgtzfile_read (const char *file)
 /****************************************************************************/
 static void fgcompute_tzname_max (size_t chars)
 {
-  extern size_t tzname_cur_max; /* Defined in tzset.c. */
+  // extern size_t tzname_cur_max; /* Defined in tzset.c. */
 
   const char *p;
 

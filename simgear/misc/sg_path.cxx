@@ -23,6 +23,8 @@
 // $Id$
 
 
+#include <simgear_config.h>
+
 #include "sg_path.hxx"
 
 

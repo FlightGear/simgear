@@ -1,6 +1,6 @@
-noinst_LIBRARIES = libAstro.a
+noinst_LIBRARIES = libEphemeris.a
 
-libAstro_a_SOURCES = \
+libEphemeris_a_SOURCES = \
 	celestialBody.cxx celestialBody.hxx \
 	ephemeris.cxx ephemeris.hxx \
 	jupiter.cxx jupiter.hxx \

@@ -37,17 +37,26 @@ SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_TYPES];
 
 
 // Constructor
-SGCloudLayer::SGCloudLayer( const string &tex_path )
-  : layer_root(new ssgRoot),
+SGCloudLayer::SGCloudLayer( const string &tex_path ) :
+    layer_root(new ssgRoot),
     layer_transform(new ssgTransform),
-    layer(0),
+    layer(NULL),
+    cl(NULL),
+    vl(NULL),
+    tl(NULL),
     texture_path(tex_path),
-    layer_span(0),
-    layer_asl(0),
-    layer_thickness(0),
-    layer_transition(0),
-    layer_type(SG_CLOUD_CLEAR)
+    layer_span(0.0),
+    layer_asl(0.0),
+    layer_thickness(0.0),
+    layer_transition(0.0),
+    layer_type(SG_CLOUD_CLEAR),
+    scale(4000.0),
+    last_lon(0.0),
+    last_lat(0.0)
 {
+    for ( int i = 0; i < SG_MAX_CLOUD_TYPES; ++i ) {
+        layer_states[i] = NULL;
+    }
     layer_root->addKid(layer_transform);
     rebuild();
 }
@@ -130,32 +139,37 @@ void
 SGCloudLayer::rebuild()
 {
 				// Initialize states and sizes if necessary.
-    if (layer_states[0] == 0) {
-      SGPath cloud_path;
+    if ( layer_states[0] == NULL ) {
+        SGPath cloud_path;
 
-      cloud_path.set(texture_path.str());
-      cloud_path.append("overcast.rgb");
-      layer_states[SG_CLOUD_OVERCAST] = SGCloudMakeState(cloud_path.str());
+        cloud_path.set(texture_path.str());
+        cloud_path.append("overcast.rgb");
+        layer_states[SG_CLOUD_OVERCAST] = SGCloudMakeState(cloud_path.str());
 
-      cloud_path.set(texture_path.str());
-      cloud_path.append("mostlycloudy.rgba");
-      layer_states[SG_CLOUD_MOSTLY_CLOUDY] =
-	SGCloudMakeState(cloud_path.str());
+        cloud_path.set(texture_path.str());
+        cloud_path.append("mostlycloudy.rgba");
+        layer_states[SG_CLOUD_MOSTLY_CLOUDY]
+            = SGCloudMakeState(cloud_path.str());
 
-      cloud_path.set(texture_path.str());
-      cloud_path.append("mostlysunny.rgba");
-      layer_states[SG_CLOUD_MOSTLY_SUNNY] = SGCloudMakeState(cloud_path.str());
+        cloud_path.set(texture_path.str());
+        cloud_path.append("mostlysunny.rgba");
+        layer_states[SG_CLOUD_MOSTLY_SUNNY]
+            = SGCloudMakeState(cloud_path.str());
 
-      cloud_path.set(texture_path.str());
-      cloud_path.append("cirrus.rgba");
-      layer_states[SG_CLOUD_CIRRUS] = SGCloudMakeState(cloud_path.str());
+        cloud_path.set(texture_path.str());
+        cloud_path.append("cirrus.rgba");
+        layer_states[SG_CLOUD_CIRRUS] = SGCloudMakeState(cloud_path.str());
 
-      layer_states[SG_CLOUD_CLEAR] = 0;
+        layer_states[SG_CLOUD_CLEAR] = 0;
     }
 
     scale = 4000.0;
 
     last_lon = last_lat = -999.0f;
+
+    if ( layer != NULL ) {
+        layer_transform->removeKid(layer); // automatic delete
+    }
 
     cl = new ssgColourArray( 4 );
     vl = new ssgVertexArray( 4 );
@@ -193,17 +207,15 @@ SGCloudLayer::rebuild()
     vl->add( vertex );
     tl->add( tc );
 
-    if (layer != 0)
-      layer_transform->removeKid(layer); // automatic delete
     layer = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
-    if (layer_states[layer_type] != 0)
-      layer->setState( layer_states[layer_type] );
+    layer_transform->addKid( layer );
+    if ( layer_states[layer_type] != NULL ) {
+        layer->setState( layer_states[layer_type] );
+    }
 
-    // force a repaint of the moon colors with arbitrary defaults
+    // force a repaint of the sky colors with arbitrary defaults
     repaint( color );
 
-    // moon_transform->addKid( halo );
-    layer_transform->addKid( layer );
 }
 
 
@@ -346,8 +358,9 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
 
 void SGCloudLayer::draw() {
-    if (layer_type != SG_CLOUD_CLEAR)
-      ssgCullAndDraw( layer_root );
+    if ( layer_type != SG_CLOUD_CLEAR ) {
+        ssgCullAndDraw( layer_root );
+    }
 }
 
 

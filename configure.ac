@@ -379,7 +379,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS( \
 	fcntl.h getopt.h malloc.h memory.h stdint.h stdlib.h sys/param.h \
-	sys/stat.h sys/time.h sys/timeb.h unistd.h winbase.h values.h )
+	sys/stat.h sys/time.h sys/timeb.h unistd.h values.h )
 
 if test "x$ac_cv_header_stdint_h" = "xyes"; then
     AC_DEFINE([HAVE_STDINT_H], 1, [Define if stdint.h exists])

@@ -1,6 +1,6 @@
 includedir = @includedir@/scene
 
-SUBDIRS = model
+SUBDIRS = material model
 
 # lib_LIBRARIES = libsgscene.a
 

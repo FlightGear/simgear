@@ -99,6 +99,5 @@ dist-hook:
 # Rule to build RPM distribution package
 #
 rpm: dist
-	cp $(PACKAGE)-$(VERSION).tar.gz /usr/src/packages/SOURCES
-	rpm -ba @PACKAGE@.spec
+        rpm -ta $(PACKAGE)-$(VERSION).tar.gz
 

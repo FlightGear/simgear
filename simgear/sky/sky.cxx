@@ -44,6 +44,8 @@ SGSky::SGSky( void ) {
     puff_progression = 0;
     ramp_up = 0.15;
     ramp_down = 0.15;
+    // ramp_up = 4.0;
+    // ramp_down = 4.0;
 }
 
 
@@ -129,7 +131,7 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
 {
     if ( effective_visibility > 1000.0 ) {
 	enable();
-	dome->repaint( sky_color, fog_color, sun_angle );
+	dome->repaint( sky_color, fog_color, sun_angle, effective_visibility );
 	oursun->repaint( sun_angle );
 	moon->repaint( moon_angle );
 	planets->repaint( sun_angle, nplanets, planet_data );
@@ -185,7 +187,7 @@ void SGSky::preDraw() {
 // draw translucent clouds ... do this after you've drawn all the
 // oapaque elements of your scene.
 void SGSky::postDraw( float alt ) {
-    float slop = 4.0;		// if we are closer than this to a cloud layer,
+    float slop = 5.0;		// if we are closer than this to a cloud layer,
 				// don't draw clouds
 
     int in_cloud = -1;		// cloud we are in

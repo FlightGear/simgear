@@ -78,10 +78,10 @@ private:
 
     // near cloud visibility state variables
     bool in_puff;
-    double puff_length;
-    double puff_progression;
-    double ramp_up;
-    double ramp_down;
+    double puff_length;		// in seconds
+    double puff_progression;	// in seconds
+    double ramp_up;		// in seconds
+    double ramp_down;		// in seconds
 
 public:
 

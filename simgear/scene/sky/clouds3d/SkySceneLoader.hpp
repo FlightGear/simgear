@@ -23,10 +23,16 @@
 #ifndef __SKYSCENELOADER_HPP__
 #define __SKYSCENELOADER_HPP__
 
-#include <string>
+#ifdef HAVE_CONFIG
+#  include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+#include <simgear/misc/sg_path.hxx>
+#include <simgear/math/point3d.hxx>
+
 #include "SkyUtil.hpp"
 
-#include <simgear/math/point3d.hxx>
 
 //------------------------------------------------------------------------------
 /**
@@ -42,7 +48,7 @@ public:
   SkySceneLoader();
   ~SkySceneLoader();
 
-  bool Load(std::string filename);
+  bool Load( SGPath fileroot );
   
   void Set_Cloud_Orig( Point3D *posit );
   

@@ -25,6 +25,8 @@
 
 #include <plib/ssg.h>
 #include <plib/sg.h>
+
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 #include <simgear/math/vector.hxx>
@@ -99,14 +101,18 @@ SkySceneLoader::~SkySceneLoader()
  *  It can however, load any number of Cloud
  +
  */ 
-bool SkySceneLoader::Load(std::string filename)
+//bool SkySceneLoader::Load(std::string filepath)
+bool SkySceneLoader::Load( SGPath filename )
 { 
   SkyArchive archive;
-  cout << "SkySceneLoader::Load( " << filename << " )" << endl;
+ 
+  SGPath base = filename.dir();
+ 
   if (SKYFAILED(archive.Load(filename.c_str()))) {
-  	cout << "Archive file not found\n";
-    return false;
+      cout << "Archive file not found\n" <<  filename.c_str();
+      return false;
   }
+    
   char *pFilename;
   
   // Need to create the managers
@@ -124,18 +130,22 @@ bool SkySceneLoader::Load(std::string filename)
   {
     for (unsigned int i = 0; i < iNumFiles; ++i)
     {
-      FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));  
+      FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));
+      //  this is where we have to append the $fg_root string to the filename
+      base.append( pFilename );
+      const char *FilePath = base.c_str();
+     
       float rScale = 1.0;
       FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
       rScale = 30.0;
       SkyArchive cloudArchive;
-      FAIL_RETURN(cloudArchive.Load(pFilename));
+      FAIL_RETURN(cloudArchive.Load(FilePath));
       FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale)); 
     }
   }
   
   Vec3f dir(0, 0, 1);
-  pLight->SetPosition(Vec3f(0, 0, 7000));
+  pLight->SetPosition(Vec3f(0, 0, 17000));
   pLight->SetDirection(dir);
   pLight->SetAmbient(Vec4f( 0.0f, 0.0f, 0.0f, 0.0f));
   pLight->SetDiffuse(Vec4f(1.0f, 1.0f, 1.0f, 0.0f));
@@ -175,7 +185,7 @@ void SkySceneLoader::Update( double *view_pos )
 	SceneManager::InstancePtr()->Update(*pCam);
 	
 	// need some scheme to reshade selected clouds a few at a time to save frame rate cycles
-	///SceneManager::InstancePtr()->ShadeClouds();
+	// SceneManager::InstancePtr()->ShadeClouds();
 	
 }
 

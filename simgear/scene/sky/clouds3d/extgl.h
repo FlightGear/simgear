@@ -9,6 +9,12 @@
 #ifndef __EXTGL_H__
 #define __EXTGL_H__
 
+// Ok to include <simgear_config.h> here because extgl.h is not an
+// installed header.  If it were an installed header, this would be very bad.
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 /*-----------------------------------------*/
 /*-----------------------------------------*/
 

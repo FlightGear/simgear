@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2  /I "." /I ".." /I ".\SimGear" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /D "HAVE_CONFIG_H"  /I "." /I ".." /I ".\SimGear" /D "HAVE_CONFIG_H" /D "NDEBUG" /D "WIN32" /D "_MBCS" /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LINK32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /GX /ZI /Od  /I "." /I ".." /I ".\SimGear" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FR /FD /GZ /c
+# ADD CPP /nologo /W3 /GX /ZI /Od /D "HAVE_CONFIG_H"  /I "." /I ".." /I ".\SimGear" /D "HAVE_CONFIG_H" /D "_DEBUG" /D "WIN32" /D "_MBCS" /FR /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -1824,5 +1824,33 @@ SOURCE=.\simgear\zlib\zutil.h
 
 # End Source File
 # End Group
+
+# Begin Source File
+
+SOURCE = .\simgear\simgear_config.h.vc5
+
+!IF  "$(CFG)" == "FlightGear - Win32 Release"
+
+# Begin Custom Build - Creating config.h
+InputPath=.\simgear\simgear_config.h.vc5
+
+".\simgear\simgear_config.h": $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+        copy .\simgear\simgear_config.h.vc5 .\simgear\simgear_config.h
+
+# End Custom Build
+
+!ELSEIF  "$(CFG)" == "FlightGear - Win32 Debug"
+
+# Begin Custom Build - Creating config.h
+InputPath=.\simgear\simgear_config.h.vc5
+
+".\simgear\simgear_config.h": $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+        copy .\simgear\simgear_config.h.vc5 .\simgear\simgear_config.h
+
+# End Custom Build
+
+!ENDIF
+
+# End Source File
 # End Target
 # End Project

@@ -105,7 +105,9 @@ SkySceneLoader::~SkySceneLoader()
 //bool SkySceneLoader::Load(std::string filepath)
 bool SkySceneLoader::Load( unsigned char *data, unsigned int size, double latitude, double longitude )
 {
-  pLight = new SkyLight(eType);
+    if( !pLight)
+	pLight = new SkyLight(eType);
+
   // Need to create the managers
   cout << "GraphicsContext::Instantiate();" << endl;
   GraphicsContext::Instantiate();
@@ -187,12 +189,18 @@ bool SkySceneLoader::Load( SGPath filename, double latitude, double longitude )
       //FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
       float rScale = 40.0;
       SkyArchive cloudArchive;
+      cout << "Calling cloudArchive.Load(FilePath)" << endl;
       FAIL_RETURN(cloudArchive.Load(FilePath));
+      cout << "Calling SceneManager::InstancePtr()->LoadClouds" << endl;
       FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale, latitude, longitude)); 
     }
   }
+  cout << "After Load Clouds" << endl;
   
   Vec3f dir(0, 0, 1);
+  if( !pLight)
+      pLight = new SkyLight(eType);
+
   pLight->SetPosition(Vec3f(0, 0, 17000));
   pLight->SetDirection(dir);
   pLight->SetAmbient(Vec4f( 0.0f, 0.0f, 0.0f, 0.0f));
@@ -202,9 +210,12 @@ bool SkySceneLoader::Load( SGPath filename, double latitude, double longitude )
   
    // No attenuation
   pLight->SetAttenuation(1.0f, 0.0f, 0.0f);
+  cout << "Before SceneManager::InstancePtr()->AddLight(pLight)" << endl;
   SceneManager::InstancePtr()->AddLight(pLight);
   
+  cout << "Before SceneManager::InstancePtr()->ShadeClouds()" << endl;
   SceneManager::InstancePtr()->ShadeClouds();
+  cout << "After SceneManager::InstancePtr()->ShadeClouds()" << endl;
  
   return true;
 }

@@ -38,14 +38,20 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+
+# Used on the Irix platform
 AR="ar"
+ARFLAGS="cru"
 OS=`uname -s`
 if test "$OS" = "IRIX" -o "$OS" = "IRIX64"; then
     if test "$CXX" = "CC"; then
         AR="CC -ar"
-        AC_SUBST(AR)
+        ARFLAGS="-o"
     fi
 fi
+AC_SUBST(AR)
+AC_SUBST(ARFLAGS)
+
 
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir

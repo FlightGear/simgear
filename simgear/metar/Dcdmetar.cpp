@@ -1293,6 +1293,7 @@ static bool isVisibility( char **visblty, Decoded_METAR *Mptr,
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
+#if 0
 static bool vrblVsby( char *string1, char *string2,
                       Decoded_METAR *Mptr, int *NDEX )
 {
@@ -1368,6 +1369,7 @@ static bool vrblVsby( char *string1, char *string2,
    }
  
 }
+#endif
  
  
 /********************************************************************/

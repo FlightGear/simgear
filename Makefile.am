@@ -5,11 +5,9 @@ EXTRA_DIST = \
 	README.metakit \
 	README.zlib \
 	SimGear.dsp \
-	SimGear.dsw \
-	metakit-2.4.2-32.tar.gz \
-	zlib-1.1.4.tar.gz
+	SimGear.dsw
 
-SUBDIRS	= simgear
+SUBDIRS	= src-libs simgear
 
 #
 # Rule to build RPM distribution package

@@ -292,6 +292,7 @@ fi
 dnl Check for system installed metakit
 AC_CHECK_HEADER(mk4.h)
 if test "x$ac_cv_header_mk4_h" != "xyes"; then
+    echo 
     echo "Metakit not found, you will need to install this first."
     echo "Please read the README.metakit for more information."
     exit
@@ -303,10 +304,23 @@ dnl Specify if we want logging (testing build) or not (release build)
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
 if test "x$ac_cv_header_zlib_h" != "xyes"; then
+    echo 
     echo "zlib not found, you will need to install this first."
     echo "Please read the README.zlib for more information."
     exit
 fi
+
+AC_LANG_SAVE
+AC_LANG_CPLUSPLUS
+dnl Check for installed boost headers
+AC_CHECK_HEADER(boost/config.hpp)
+if test "x$ac_cv_header_boost_config_hpp" != "xyes"; then
+    echo 
+    echo "Boost not found, you will need to install this first."
+    echo "Please read the README.boost for more information."
+    exit
+fi
+AC_LANG_RESTORE
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -335,6 +349,7 @@ AM_CONFIG_HEADER(simgear/simgear_config.h)
 AC_OUTPUT( \
 	Makefile \
 	SimGear.spec \
+	src-libs/Makefile \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/bucket/Makefile \

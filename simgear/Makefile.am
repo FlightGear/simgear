@@ -44,7 +44,7 @@ SUBDIRS = \
 	screen \
 	$(SERIAL_DIRS) \
 	sky \
-	$(SGTHREAD_DIR)
+	$(SGTHREAD_DIR) \
 	timing \
 	xgl \
 	$(ZLIB_DIRS)

@@ -33,6 +33,9 @@ bool SGSearchExtensionsString(char *extString, char *extName) {
     char *p, *end;
     int n, extNameLen;
 
+    if ((extString == NULL) || (extName == NULL))
+        return false;
+
     extNameLen = strlen(extName);
 
     p=extString;

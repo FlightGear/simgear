@@ -1,4 +1,4 @@
-New in 0.3.6-pre2
+New in 0.3.6-pre3
 * Better MinGW support
 * A bit better handling of OpenAL under Cygwin
 * Switched audio system from plib's "sl/sm" to OpenAL.

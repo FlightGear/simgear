@@ -1067,26 +1067,26 @@ private:
 /**
  * Read properties from an XML input stream.
  */
-bool readProperties (istream &input, SGPropertyNode * start_node,
+void readProperties (istream &input, SGPropertyNode * start_node,
 		     const string &base = "");
 
 
 /**
  * Read properties from an XML file.
  */
-bool readProperties (const string &file, SGPropertyNode * start_node);
+void readProperties (const string &file, SGPropertyNode * start_node);
 
 
 /**
  * Write properties to an XML output stream.
  */
-bool writeProperties (ostream &output, const SGPropertyNode * start_node);
+void writeProperties (ostream &output, const SGPropertyNode * start_node);
 
 
 /**
  * Write properties to an XML file.
  */
-bool writeProperties (const string &file, const SGPropertyNode * start_node);
+void writeProperties (const string &file, const SGPropertyNode * start_node);
 
 
 /**

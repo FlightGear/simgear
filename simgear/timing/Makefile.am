@@ -6,6 +6,7 @@ include_HEADERS = \
 	geocoord.h \
 	lowleveltime.h \
 	sg_time.hxx \
+	timestamp.hxx \
 	timezone.h
 
 libsgtiming_a_SOURCES = \

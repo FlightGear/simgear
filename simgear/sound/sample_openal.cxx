@@ -131,8 +131,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     alSourcei( source, AL_LOOPING, loop );
 
     alSourcei( source, AL_SOURCE_RELATIVE, AL_TRUE );
-    alSourcef( source, AL_REFERENCE_DISTANCE, 250.0f );
-    alSourcef( source, AL_MAX_DISTANCE, 2000.0f );
+    alSourcef( source, AL_REFERENCE_DISTANCE, 500.0f );
+    alSourcef( source, AL_MAX_DISTANCE, 3000.0f );
 }
 
 

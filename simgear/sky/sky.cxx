@@ -49,7 +49,7 @@ SGSky::SGSky( void ) {
 // Destructor
 SGSky::~SGSky( void )
 {
-    for (int i = 0; i < cloud_layers.size(); i++)
+    for (unsigned int i = 0; i < cloud_layers.size(); i++)
         delete cloud_layers[i];
 }
 

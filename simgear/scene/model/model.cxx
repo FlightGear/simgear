@@ -30,8 +30,21 @@ SG_USING_STD(vector);
 
 
 ////////////////////////////////////////////////////////////////////////
+// Global state
+////////////////////////////////////////////////////////////////////////
+static bool
+model_filter = true;
+
+
+////////////////////////////////////////////////////////////////////////
 // Static utility functions.
 ////////////////////////////////////////////////////////////////////////
+
+static int
+model_filter_callback (ssgEntity * entity, int mask)
+{
+  return model_filter;
+}
 
 /**
  * Callback to update an animation.
@@ -187,7 +200,7 @@ sgMakeAnimation( ssgBranch * model,
 ssgBranch *
 sgLoad3DModel( const string &fg_root, const string &path,
                SGPropertyNode *prop_root,
-               double sim_time_sec )
+               double sim_time_sec, ssgEntity *(*load_panel)(SGPropertyNode *) )
 {
   ssgBranch * model = 0;
   SGPropertyNode props;
@@ -223,6 +236,8 @@ sgLoad3DModel( const string &fg_root, const string &path,
 
                                 // Set up the alignment node
   ssgTransform * alignmainmodel = new ssgTransform;
+  if ( load_panel == 0 )
+    alignmainmodel->setTravCallback( SSG_CALLBACK_PRETRAV, model_filter_callback );
   alignmainmodel->addKid(model);
   sgMat4 res_matrix;
   sgMakeOffsetsMatrix(&res_matrix,
@@ -235,6 +250,18 @@ sgLoad3DModel( const string &fg_root, const string &path,
   alignmainmodel->setTransform(res_matrix);
 
   unsigned int i;
+
+  if ( load_panel ) {
+                                // Load panels
+    vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
+    for (i = 0; i < panel_nodes.size(); i++) {
+        SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
+        ssgEntity * panel = load_panel(panel_nodes[i]);
+        if (panel_nodes[i]->hasValue("name"))
+            panel->setName((char *)panel_nodes[i]->getStringValue("name"));
+        model->addKid(panel);
+    }
+  }
 
                                 // Load sub-models
   vector<SGPropertyNode_ptr> model_nodes = props.getChildren("model");
@@ -252,7 +279,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
     align->setTransform(res_matrix);
 
     ssgBranch * kid = sgLoad3DModel( fg_root, node->getStringValue("path"),
-                                     prop_root, sim_time_sec );
+                                     prop_root, sim_time_sec, load_panel );
     align->addKid(kid);
     align->setName(node->getStringValue("name", ""));
     model->addKid(align);
@@ -269,6 +296,14 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 
   return alignmainmodel;
+}
+
+bool
+sgSetModelFilter( bool filter )
+{
+  bool old = model_filter;
+  model_filter = filter;
+  return old;
 }
 
 

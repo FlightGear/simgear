@@ -43,7 +43,8 @@ SG_USING_STD(vector);
  */
 ssgBranch *
 sgLoad3DModel( const string& fg_root, const string &path,
-                          SGPropertyNode *prop_root, double sim_time_sec );
+                          SGPropertyNode *prop_root, double sim_time_sec,
+                          ssgEntity *(*load_panel)(SGPropertyNode *) = 0 );
 
 
 /**
@@ -64,5 +65,10 @@ sgMakeAnimation( ssgBranch * model,
                  SGPropertyNode_ptr node,
                  double sim_time_sec );
 
+/**
+ * Set the filter state on models
+ */
+bool
+sgSetModelFilter( bool filter );
 
 #endif // __MODEL_HXX

@@ -1,3 +1,24 @@
+New in 0.0.14
+* Added a module to manage waypoints and routes, calculate bearing and
+  distance to next waypoint, lateral distance off route, etc.
+* Moved some of the basic time management code over from flightgear.
+* Bucket dimensions can be returned in meters
+* Added SOCK_STREAM (TCP) socket support to the networking code.
+* Updated random number generator interface so application can provide
+  it's own seed value as well as use the default time seed.
+* Added a routine to calculate the distance between a point and a line segment.
+* Updates to the property manager and the property list loader/saver.
+* Added an explanation of the rational behind our terrain texture coordinate
+  generation code.
+* Fixed sky dome so that the color at the horizon will always match
+  the specified fog color.
+* Did a fair amount of fg -> sg name space updating (lots left to do.)
+* December 14, 2000
+* Added support for KAI C++ on linux.
+* MSVC tweaks.
+* MacOS tweaks.
+* FreeBSD tweaks.
+
 New in 0.0.13
 * September 14, 2000
 * Added support for reading and writing xml files (easyxml)

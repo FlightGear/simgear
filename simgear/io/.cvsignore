@@ -1,0 +1,6 @@
+.deps
+Makefile
+Makefile.in
+decode_binobj
+lowtest
+socktest

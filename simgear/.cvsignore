@@ -1,0 +1,6 @@
+Makefile
+Makefile.in
+simgear_config.h
+stamp-h
+stamp-h.in
+version.h

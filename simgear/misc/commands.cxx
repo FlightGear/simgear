@@ -5,6 +5,7 @@
 // $Id$
 
 #include "commands.hxx"
+#include "props_io.hxx"
 
 
 

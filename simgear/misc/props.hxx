@@ -1108,46 +1108,6 @@ private:
 
 };
 
-
-
-////////////////////////////////////////////////////////////////////////
-// I/O functions.
-////////////////////////////////////////////////////////////////////////
-
-
-/**
- * Read properties from an XML input stream.
- */
-void readProperties (istream &input, SGPropertyNode * start_node,
-		     const string &base = "");
-
-
-/**
- * Read properties from an XML file.
- */
-void readProperties (const string &file, SGPropertyNode * start_node);
-
-
-/**
- * Write properties to an XML output stream.
- */
-void writeProperties (ostream &output, const SGPropertyNode * start_node,
-		      bool write_all = false);
-
-
-/**
- * Write properties to an XML file.
- */
-void writeProperties (const string &file, const SGPropertyNode * start_node,
-		      bool write_all = false);
-
-
-/**
- * Copy properties from one node to another.
- */
-bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
-
-
 #endif // __PROPS_HXX
 
 // end of props.hxx

@@ -9,6 +9,7 @@
 
 #include "sg_path.hxx"
 #include "props.hxx"
+#include "props_io.hxx"
 
 #include STL_IOSTREAM
 #if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)

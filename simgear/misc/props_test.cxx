@@ -7,6 +7,7 @@
 
 #include STL_IOSTREAM
 #include "props.hxx"
+#include "props_io.hxx"
 
 #if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(cout);

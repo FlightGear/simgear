@@ -6,6 +6,7 @@ include_HEADERS = \
         commands.hxx \
         exception.hxx \
 	props.hxx \
+  props_io.hxx \
 	sg_path.hxx \
 	sgstream.hxx \
 	stopwatch.hxx \

@@ -1,5 +1,7 @@
 #include "tabbed_values.hxx"
 
+#include "assert.h"
+
 SGTabbedValues::SGTabbedValues(const char *line) :
 	_line(line)
 {

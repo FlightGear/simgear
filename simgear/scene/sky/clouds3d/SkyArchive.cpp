@@ -1165,7 +1165,7 @@ SKYRESULT SkyArchive::_Load( FILE* pSrcFile)
   if (!iNumItemsRead)
     FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::_Load(): failed to read Archive header.");
 
-   _ulEndianSwap(&thisItem.iDataSize);
+   thisItem.iDataSize = ulEndianLittle32(thisItem.iDataSize);
 
   _pName = new char[::strlen(thisItem.pName)+1];
   ::strcpy( _pName, thisItem.pName);
@@ -1178,7 +1178,7 @@ SKYRESULT SkyArchive::_Load( FILE* pSrcFile)
     if (1 > iNumItemsRead)
       FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::_Load(): failed to read embedded archive item.");
 
-    _ulEndianSwap(&embeddedItem.iDataSize);
+    embeddedItem.iDataSize = ulEndianLittle32(embeddedItem.iDataSize);
 
    
     switch( embeddedItem.type)

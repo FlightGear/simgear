@@ -174,7 +174,7 @@ bool SkySceneLoader::Load( SGPath filename, double latitude, double longitude )
   unsigned int iNumFiles;
   if (!SKYFAILED(archive.GetInfo("CloudFile", STRING_TYPE, &iNumFiles)))
   {
-    _ulEndianSwap(&iNumFiles);
+    iNumFiles = ulEndianLittle32(iNumFiles);
     for (unsigned int i = 0; i < iNumFiles; ++i)
     {
       FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));

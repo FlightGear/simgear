@@ -735,13 +735,13 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
 
   archive.FindUInt32("CldNumParticles", &iNumParticles);
-  _ulEndianSwap(&iNumParticles);
+  iNumParticles = ulEndianLittle32(iNumParticles);
 
   //if (!bLocal)
     archive.FindVec3f("CldCenter", &vecCenter);
-    _ulEndianSwap((unsigned int*)&vecCenter.x);
-    _ulEndianSwap((unsigned int*)&vecCenter.y);
-    _ulEndianSwap((unsigned int*)&vecCenter.z);
+    vecCenter.x = ulEndianLittleFloat(vecCenter.x);
+    vecCenter.y = ulEndianLittleFloat(vecCenter.y);
+    vecCenter.z = ulEndianLittleFloat(vecCenter.z);
 
   Vec3f *pParticlePositions = new Vec3f[iNumParticles];
   float *pParticleRadii     = new float[iNumParticles];
@@ -755,17 +755,16 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   for (unsigned int i = 0; i < iNumParticles; ++i)
   {
 
-     _ulEndianSwap((unsigned int*)&pParticlePositions[i].x);
-     _ulEndianSwap((unsigned int*)&pParticlePositions[i].y);
-     _ulEndianSwap((unsigned int*)&pParticlePositions[i].z);
+    pParticlePositions[i].x = ulEndianLittleFloat(pParticlePositions[i].x);
+    pParticlePositions[i].y = ulEndianLittleFloat(pParticlePositions[i].y);
+    pParticlePositions[i].z = ulEndianLittleFloat(pParticlePositions[i].z);
 
-     _ulEndianSwap((unsigned int*)&pParticleRadii[i]);
+    pParticleRadii[i] = ulEndianLittleFloat(pParticleRadii[i]);
 
-     _ulEndianSwap((unsigned int*)&pParticleColors[i].x);
-     _ulEndianSwap((unsigned int*)&pParticleColors[i].y); 
-     _ulEndianSwap((unsigned int*)&pParticleColors[i].z); 
-     _ulEndianSwap((unsigned int*)&pParticleColors[i].w); 
-
+    pParticleColors[i].x = ulEndianLittleFloat(pParticleColors[i].x);
+    pParticleColors[i].y = ulEndianLittleFloat(pParticleColors[i].y);
+    pParticleColors[i].z = ulEndianLittleFloat(pParticleColors[i].z);
+    pParticleColors[i].w = ulEndianLittleFloat(pParticleColors[i].w);
 
     SkyCloudParticle *pParticle = new SkyCloudParticle((pParticlePositions[i] + vecCenter) * rScale,
                                                        pParticleRadii[i] * rScale,

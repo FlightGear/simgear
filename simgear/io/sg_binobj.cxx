@@ -255,11 +255,19 @@ bool SGBinObject::read_bin( const string& file ) {
 		sgReadBytes( fp, nbytes, ptr );
 
 		double *dptr = (double *)ptr;
+		if ( sgIsBigEndian() ) {
+		    sgEndianSwap( (unsigned long long *)&(dptr[0]) );
+		    sgEndianSwap( (unsigned long long *)&(dptr[1]) );
+		    sgEndianSwap( (unsigned long long *)&(dptr[2]) );
+		}
 		gbs_center = Point3D( dptr[0], dptr[1], dptr[2] );
 		// cout << "Center = " << gbs_center << endl;
 		ptr += sizeof(double) * 3;
 		
 		float *fptr = (float *)ptr;
+		if ( sgIsBigEndian() ) {
+		    sgEndianSwap( (unsigned int *)fptr );
+		}
 		gbs_radius = fptr[0];
 		// cout << "Bounding radius = " << gbs_radius << endl;
 	    }
@@ -286,6 +294,11 @@ bool SGBinObject::read_bin( const string& file ) {
 		int count = nbytes / (sizeof(float) * 3);
 		float *fptr = (float *)ptr;
 		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned int *)&(fptr[0]) );
+			sgEndianSwap( (unsigned int *)&(fptr[1]) );
+			sgEndianSwap( (unsigned int *)&(fptr[2]) );
+		    }
 		    p = Point3D( fptr[0], fptr[1], fptr[2] );
 		    // cout << "node = " << p << endl;
 		    wgs84_nodes.push_back( p );
@@ -345,6 +358,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		int count = nbytes / (sizeof(float) * 2);
 		float *fptr = (float *)ptr;
 		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned int *)&(fptr[0]) );
+			sgEndianSwap( (unsigned int *)&(fptr[1]) );
+		    }
 		    p = Point3D( fptr[0], fptr[1], 0 );
 		    // cout << "texcoord = " << p << endl;
 		    texcoords.push_back( p );
@@ -381,6 +398,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		int_list vs, tcs;
 		vs.clear(); tcs.clear();
 		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned short *)&(sptr[0]) );
+			sgEndianSwap( (unsigned short *)&(sptr[1]) );
+		    }
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
 		    // cout << sptr[0] << "/" << sptr[1] << " ";
@@ -421,6 +442,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		int_list vs, tcs;
 		vs.clear(); tcs.clear();
 		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned short *)&(sptr[0]) );
+			sgEndianSwap( (unsigned short *)&(sptr[1]) );
+		    }
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
 		    // cout << sptr[0] << "/" << sptr[1] << " ";
@@ -461,6 +486,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		int_list vs, tcs;
 		vs.clear(); tcs.clear();
 		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned short *)&(sptr[0]) );
+			sgEndianSwap( (unsigned short *)&(sptr[1]) );
+		    }
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
 		    // cout << sptr[0] << "/" << sptr[1] << " ";

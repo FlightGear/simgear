@@ -26,6 +26,8 @@ using std::sort;
 #include <simgear/debug/logstream.hxx>
 
 SG_USING_STD(sort);
+SG_USING_STD(find);
+SG_USING_STD(vector);
 
 #endif
 
@@ -844,7 +846,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
     SGPropertyNode_ptr node;
     pos = find_child(name, index, _removedChildren);
     if (pos >= 0) {
-      std::vector<SGPropertyNode_ptr>::iterator it = _removedChildren.begin();
+      vector<SGPropertyNode_ptr>::iterator it = _removedChildren.begin();
       it += pos;
       node = _removedChildren[pos];
       _removedChildren.erase(it);
@@ -902,7 +904,7 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
   SGPropertyNode_ptr ret;
   int pos = find_child(name, index, _children);
   if (pos >= 0) {
-    std::vector<SGPropertyNode_ptr>::iterator it = _children.begin();
+    vector<SGPropertyNode_ptr>::iterator it = _children.begin();
     it += pos;
     SGPropertyNode_ptr node = _children[pos];
     _children.erase(it);

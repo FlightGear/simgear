@@ -7,6 +7,11 @@
 #include "MetarReport.h"
 #include "Metar.h"
 
+#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(endl);
+FG_USING_STD(ostream);
+#endif
+
 CMetarReport::CMetarReport(
    char *s ) :
 		m_DecodedReport( 0 )
@@ -230,44 +235,44 @@ int CMetarReport::SnowDepthInches()
 }
 
 
-std::ostream&
+ostream&
 operator << ( ostream& out, CMetarReport& p )
 {
     return out 
 	<< "StationID " << p.StationID()
 	<< " WindDirection " << p.WindDirection()
 	<< " WindSpeed " << p.WindSpeed()
-	<< " WindGustSpeed " << p.WindGustSpeed() << std::endl
+	<< " WindGustSpeed " << p.WindGustSpeed() << endl
 	<< "CloudLow " << p.CloudLow()
 	<< " CloudMedium " << p.CloudMedium()
-	<< " CloudHigh " << p.CloudHigh() << std::endl
+	<< " CloudHigh " << p.CloudHigh() << endl
 	<< "TornadicDirection " << p.TornadicDirection()
-	<< " TornadicMovementDirection " << p.TornadicMovementDirection() << std::endl
+	<< " TornadicMovementDirection " << p.TornadicMovementDirection() << endl
 	<< "ThunderStormDirection " << p.ThunderStormDirection()
-	<< " ThunderStormMovementDirection " << p.ThunderStormMovementDirection() << std::endl
+	<< " ThunderStormMovementDirection " << p.ThunderStormMovementDirection() << endl
 	<< "Virga " << p.Virga()
-	<< " VirgaDirection " << p.VirgaDirection() << std::endl
-	<< "VolcanicAsh " << p.VolcanicAsh() << std::endl
-	<< "Hail " << p.Hail() << std::endl
+	<< " VirgaDirection " << p.VirgaDirection() << endl
+	<< "VolcanicAsh " << p.VolcanicAsh() << endl
+	<< "Hail " << p.Hail() << endl
 	<< "LightningDirection " << p.LightningDirection()
 	<< " OccationalLightning " << p.OccationalLightning()
 	<< " FrequentLightning " << p.FrequentLightning()
-	<< " ContinuousLightning " << p.ContinuousLightning() << std::endl
+	<< " ContinuousLightning " << p.ContinuousLightning() << endl
 	<< "CloudToGroundLightning " << p.CloudToGroundLightning()
 	<< " InterCloudLightning " << p.InterCloudLightning()
 	<< " CloudToCloudLightning " << p.CloudToCloudLightning()
-	<< " CloudToAirLightning " << p.CloudToAirLightning() << std::endl
+	<< " CloudToAirLightning " << p.CloudToAirLightning() << endl
 	<< "DistantLightning " << p.DistantLightning()
 	<< " AirportLightning " << p.AirportLightning()
 	<< " VicinityLightning " << p.VicinityLightning()
-	<< " OverheadLightning " << p.OverheadLightning() << std::endl
-	<< "VerticalVisibility " << p.VerticalVisibility() << std::endl // Meters
+	<< " OverheadLightning " << p.OverheadLightning() << endl
+	<< "VerticalVisibility " << p.VerticalVisibility() << endl // Meters
 	<< "Temperature " << p.Temperature() 
-	<< " DewpointTemperature " << p.DewpointTemperature() << std::endl
+	<< " DewpointTemperature " << p.DewpointTemperature() << endl
 	<< "Ceiling " << p.Ceiling()
 	<< " EstimatedCeiling " << p.EstimatedCeiling()
-	<< " VariableSkyLayerHeight " << p.VariableSkyLayerHeight() << std::endl
-	<< "SnowDepthInches " << p.SnowDepthInches() << std::endl
+	<< " VariableSkyLayerHeight " << p.VariableSkyLayerHeight() << endl
+	<< "SnowDepthInches " << p.SnowDepthInches() << endl
 	;
 }
 

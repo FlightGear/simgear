@@ -116,7 +116,7 @@ gzfilebuf::open( const char *name, ios_openmode io_mode )
     char char_mode[10];
     cvt_iomode( char_mode, io_mode );
     if ( (file = gzopen(name, char_mode)) == NULL ) {
-	perror( "gzfilebuf::open(): " );
+	// perror( "gzfilebuf::open(): " );
 	errno = 0;
 	return NULL;
     }

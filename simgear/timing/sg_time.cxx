@@ -28,6 +28,8 @@
 
 #include <simgear/compiler.h>
 
+#include <errno.h>		// for errno
+
 #ifdef FG_HAVE_STD_INCLUDES
 #  include <cmath>
 #  include <cstdio>
@@ -416,7 +418,7 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     // if this open fails errno is set to 2
     // CYGWIN for one does this
     if ( errno ) {
-	perror( "sgTimeGetGMT(): " );
+	perror( "sgTimeGetGMT()" );
 	errno = 0;
     }
     return ret;

@@ -73,7 +73,7 @@ public:
 	char pFlag() { return m_pFlag; }
 			// Get attributes
 
-    friend std::ostream& operator << ( std::ostream&, const CMetarStation& );
+    friend ostream& operator << ( ostream&, const CMetarStation& );
 	void dump();
 	
 

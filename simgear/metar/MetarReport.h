@@ -117,6 +117,6 @@ private:
 			// Assignment operator.  Not implemented.
 };
 
-std::ostream& operator << ( std::ostream&, CMetarReport& );
+ostream& operator << ( ostream&, CMetarReport& );
 
 #endif

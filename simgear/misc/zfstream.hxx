@@ -37,6 +37,12 @@
 #  include <simgear/zlib/zlib.h>
 #endif
 
+// At least Irix needs this
+#ifdef FG_HAVE_NATIVE_SGI_COMPILERS
+#include <char_traits.h>
+FG_USING_STD(char_traits);
+#endif
+
 #ifdef FG_HAVE_STD_INCLUDES
 
 #  include <streambuf>

@@ -10,6 +10,12 @@
 
 #include <simgear/misc/fgpath.hxx>
 
+#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(ostream);
+FG_USING_STD(cout);
+FG_USING_STD(endl);
+#endif
+
 
 double CMetarStation::decodeDMS( char *b )
 {
@@ -94,28 +100,28 @@ CMetarStation::CMetarStation(
 
 void CMetarStation::dump()
 {
-	std::cout << "ID:" << ID();
-	std::cout << std::endl;
-	std::cout << "number:" << number();
-	std::cout << std::endl;
-	std::cout << "name:" << name();
-	std::cout << std::endl;
-	std::cout << "state:" << state();
-	std::cout << std::endl;
-	std::cout << "country:" << country();
-	std::cout << std::endl;
-	std::cout << "region:" << region();
-	std::cout << std::endl;
-	std::cout << "Location (cart):" << locationCart();
-	std::cout << std::endl;
-	std::cout << "Location (polar):" << locationPolar();
-	std::cout << std::endl;
-	std::cout << "Upper Location (cart):" << upperLocationCart();
-	std::cout << std::endl;
-	std::cout << "Upper Location (polar):" << upperLocationPolar();
-	std::cout << std::endl;
-	std::cout << "P flag:" << pFlag();
-	std::cout << std::endl;
+	cout << "ID:" << ID();
+	cout << endl;
+	cout << "number:" << number();
+	cout << endl;
+	cout << "name:" << name();
+	cout << endl;
+	cout << "state:" << state();
+	cout << endl;
+	cout << "country:" << country();
+	cout << endl;
+	cout << "region:" << region();
+	cout << endl;
+	cout << "Location (cart):" << locationCart();
+	cout << endl;
+	cout << "Location (polar):" << locationPolar();
+	cout << endl;
+	cout << "Upper Location (cart):" << upperLocationCart();
+	cout << endl;
+	cout << "Upper Location (polar):" << upperLocationPolar();
+	cout << endl;
+	cout << "P flag:" << pFlag();
+	cout << endl;
 }
 
 
@@ -135,7 +141,7 @@ CMetarStationDB::CMetarStationDB(const char * dbPath)
     if ( f != NULL ) {
 	// Read each line, create an instance of a station, and add it to the vector
 	while ( fgets( buf, 256, f) != NULL && feof( f ) == 0 ) {
-	    //std::cout << buf << std::endl;
+	    // cout << buf << endl;
 	    m = new CMetarStation( buf );
 	    //m->dump();
 	    METAR_Stations[m->ID()]=( m );
@@ -143,10 +149,10 @@ CMetarStationDB::CMetarStationDB(const char * dbPath)
 	
 	// Close the list
 	fclose( f );
-	// std::cout << METAR_Stations.size() << " Metar stations" << std::endl;
+	// cout << METAR_Stations.size() << " Metar stations" << endl;
 	
     } else {
-	// std::cout << "Could not open MetarStations file " << std::endl;
+	// cout << "Could not open MetarStations file " << endl;
 	
     }
 }
@@ -195,20 +201,20 @@ CMetarStationDB::~CMetarStationDB() {
     }
 }
 
-std::ostream&
+ostream&
 operator << ( ostream& out, const CMetarStation& p )
 {
     return out 
-		<< "ID:" << p.m_ID << std::endl
-		<< "number:" << p.m_number << std::endl
-		<< "name:" << p.m_name << std::endl
-		<< "state:" << p.m_state << std::endl
-		<< "country:" << p.m_country << std::endl
-		<< "region:" << p.m_region << std::endl
-		<< "Location (cart):" << p.m_locationCart << std::endl
-		<< "Location (polar):" << p.m_locationCart << std::endl
-		<< "Upper Location (cart):" << p.m_upperLocationCart << std::endl
-		<< "Upper Location (polar):" << p.m_upperLocationPolar << std::endl
-		<< "P flag:" << p.m_pFlag << std::endl;
+		<< "ID:" << p.m_ID << endl
+		<< "number:" << p.m_number << endl
+		<< "name:" << p.m_name << endl
+		<< "state:" << p.m_state << endl
+		<< "country:" << p.m_country << endl
+		<< "region:" << p.m_region << endl
+		<< "Location (cart):" << p.m_locationCart << endl
+		<< "Location (polar):" << p.m_locationCart << endl
+		<< "Upper Location (cart):" << p.m_upperLocationCart << endl
+		<< "Upper Location (polar):" << p.m_upperLocationPolar << endl
+		<< "P flag:" << p.m_pFlag << endl;
 }
 

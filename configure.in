@@ -227,6 +227,7 @@ AM_CONFIG_HEADER(simgear/config.h)
 
 AC_OUTPUT( \
 	Makefile \
+	SimGear.spec \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/bucket/Makefile \

@@ -141,7 +141,7 @@ ssgBranch * SGMoon::build( SGPath path, double moon_size ) {
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_DIFFUSE );
     orb_state->setMaterial( GL_AMBIENT, 0, 0, 0, 1.0 );
-    orb_state->setMaterial( GL_EMISSION, 0.1, 0.1, 0.1, 1 );
+    orb_state->setMaterial( GL_EMISSION, 0.0, 0.0, 0.0, 1 );
     orb_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     orb_state->enable( GL_BLEND );
     orb_state->enable( GL_ALPHA_TEST );

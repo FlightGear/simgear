@@ -20,7 +20,7 @@
 
 
 
-#include <fastmath.hxx>
+#include "fastmath.hxx"
 
 /**
  * This function is on avarage 9 times faster than the system exp() function

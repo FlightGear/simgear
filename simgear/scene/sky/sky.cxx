@@ -266,8 +266,8 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
 	double ratio = 1.0;
 
-        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ) {
-	    // clear layer
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR || cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_FEW || cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_SCATTERED) {
+	    // less than 50% coverage -- assume we're in the clear for now
 	    ratio = 1.0;
         } else if ( alt < asl - transition ) {
 	    // below cloud layer

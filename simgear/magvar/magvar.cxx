@@ -49,3 +49,8 @@ void SGMagVar::update( double lon, double lat, double alt_m, double jd ) {
     magdip = atan(field[5]/sqrt(field[3]*field[3]+field[4]*field[4]));
 }
 
+
+double sgGetMagVar( double lon, double lat, double alt_m, double jd ) {
+    double field[6];
+    return calc_magvar( lat, lon, alt_m / 1000.0, (long)jd, field );
+}

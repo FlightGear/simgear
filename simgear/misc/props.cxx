@@ -1,4 +1,4 @@
-// props.hxx - interface definition for a property list.
+// props.cxx - implementation of a property list.
 // Started Fall 2000 by David Megginson, david@megginson.com
 // This code is released into the Public Domain.
 //
@@ -1050,31 +1050,41 @@ SGPropertyNode::isTied () const
 bool
 SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
 {
-  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
 }
 
 bool
 SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
 {
-  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
 }
 
 bool
 SGPropertyNode::tie (const SGRawValue<float> &rawValue, bool useDefault)
 {
-  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
 }
 
 bool
 SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
 {
-  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
 }
 
 bool
 SGPropertyNode::tie (const SGRawValue<string> &rawValue, bool useDefault)
 {
-  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
 }
 
 bool
@@ -1308,7 +1318,7 @@ SGPropertyNode::isTied (const string &relative_path) const
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<bool> &rawValue,
-		     bool useDefault = true)
+		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
@@ -1320,7 +1330,7 @@ SGPropertyNode::tie (const string &relative_path,
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<int> &rawValue,
-		     bool useDefault = true)
+		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
@@ -1332,7 +1342,7 @@ SGPropertyNode::tie (const string &relative_path,
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<float> &rawValue,
-		     bool useDefault = true)
+		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
@@ -1344,7 +1354,7 @@ SGPropertyNode::tie (const string &relative_path,
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<double> &rawValue,
-		     bool useDefault = true)
+		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }
@@ -1356,7 +1366,7 @@ SGPropertyNode::tie (const string &relative_path,
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<string> &rawValue,
-		     bool useDefault = true)
+		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
 }

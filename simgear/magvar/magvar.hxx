@@ -55,4 +55,9 @@ public:
 };
 
 
-#endif // _LIGHT_HXX
+// lookup the magvar for any arbitrary location (doesn't save state
+// and note that this is a fair amount of cpu work)
+double sgGetMagVar( double lon, double lat, double alt_m, double jd );
+
+
+#endif // _MAGVAR_HXX

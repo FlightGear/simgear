@@ -2,13 +2,13 @@
 
 #include <simgear/compiler.h>
 
-#include <ostream>
 #include <string.h>		// strcmp()
 
 #include "easyxml.hxx"
 #include "xmlparse.h"
 
 #include STL_FSTREAM
+#include STL_IOSTREAM
 
 SG_USING_STD(ifstream);
 

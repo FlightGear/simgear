@@ -28,7 +28,7 @@
 #include <strings.h>
 #endif
 
-#include <ostream>
+#include STL_IOSTREAM
 
 #include <simgear/debug/logstream.hxx>
 

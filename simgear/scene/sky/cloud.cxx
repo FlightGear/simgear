@@ -52,8 +52,8 @@ static ssgTexture *normal_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
 static ssgTexture *color_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
 static GLuint normalization_cube_map;
 
-static glActiveTextureProc glActiveTextureARB = 0;
-static glClientActiveTextureProc glClientActiveTextureARB = 0;
+static glActiveTextureProc glActiveTexturePtr = 0;
+static glClientActiveTextureProc glClientActiveTexturePtr = 0;
 
 bool SGCloudLayer::enable_bump_mapping = false;
 
@@ -327,8 +327,8 @@ SGCloudLayer::rebuild()
             //
             SGPath cloud_path;
 
-            glActiveTextureARB = (glActiveTextureProc)SGLookupFunction("glActiveTextureARB");
-            glClientActiveTextureARB = (glClientActiveTextureProc)SGLookupFunction("glClientActiveTextureARB");
+            glActiveTexturePtr = (glActiveTextureProc)SGLookupFunction("glActiveTextureARB");
+            glClientActiveTexturePtr = (glClientActiveTextureProc)SGLookupFunction("glClientActiveTextureARB");
 
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast.rgb");
@@ -868,15 +868,15 @@ void SGCloudLayer::draw( bool top ) {
             sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
 
-            glActiveTextureARB( GL_TEXTURE0_ARB );
+            glActiveTexturePtr( GL_TEXTURE0_ARB );
             glBindTexture( GL_TEXTURE_2D, normal->getHandle() );
             glEnable( GL_TEXTURE_2D );
 
             //Bind normalisation cube map to texture unit 1
-            glActiveTextureARB( GL_TEXTURE1_ARB );
+            glActiveTexturePtr( GL_TEXTURE1_ARB );
             glBindTexture( GL_TEXTURE_CUBE_MAP_ARB, normalization_cube_map );
             glEnable( GL_TEXTURE_CUBE_MAP_ARB );
-            glActiveTextureARB( GL_TEXTURE0_ARB );
+            glActiveTexturePtr( GL_TEXTURE0_ARB );
 
             //Set vertex arrays for cloud
             glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
@@ -892,7 +892,7 @@ void SGCloudLayer::draw( bool top ) {
             glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
             //Send tangent space light vectors for normalisation to unit 1
-            glClientActiveTextureARB( GL_TEXTURE1_ARB );
+            glClientActiveTexturePtr( GL_TEXTURE1_ARB );
             glTexCoordPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].tangentSpLight );
             glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
@@ -903,7 +903,7 @@ void SGCloudLayer::draw( bool top ) {
             glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE );
             glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
 
-            glActiveTextureARB( GL_TEXTURE1_ARB );
+            glActiveTexturePtr( GL_TEXTURE1_ARB );
 
             glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
             glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
@@ -911,10 +911,10 @@ void SGCloudLayer::draw( bool top ) {
             glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
 
             if ( nb_texture_unit >= 3 ) {
-                glActiveTextureARB( GL_TEXTURE2_ARB );
+                glActiveTexturePtr( GL_TEXTURE2_ARB );
                 glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
 
-                glClientActiveTextureARB( GL_TEXTURE2_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE2_ARB );
                 glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
                 glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
@@ -932,8 +932,8 @@ void SGCloudLayer::draw( bool top ) {
                 glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
                 glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_CONSTANT_ARB );
 
-                glClientActiveTextureARB( GL_TEXTURE0_ARB );
-                glActiveTextureARB( GL_TEXTURE0_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
+                glActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 //Draw cloud layer
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
@@ -942,24 +942,24 @@ void SGCloudLayer::draw( bool top ) {
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
 
                 glDisable( GL_TEXTURE_2D );
-                glActiveTextureARB( GL_TEXTURE1_ARB );
+                glActiveTexturePtr( GL_TEXTURE1_ARB );
                 glDisable( GL_TEXTURE_CUBE_MAP_ARB );
-                glActiveTextureARB( GL_TEXTURE2_ARB );
+                glActiveTexturePtr( GL_TEXTURE2_ARB );
                 glDisable( GL_TEXTURE_2D );
-                glActiveTextureARB( GL_TEXTURE0_ARB );
+                glActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTextureARB( GL_TEXTURE1_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE1_ARB );
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTextureARB( GL_TEXTURE2_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE2_ARB );
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 glDisableClientState( GL_COLOR_ARRAY );
 
             } else {
-                glClientActiveTextureARB( GL_TEXTURE0_ARB );
-                glActiveTextureARB( GL_TEXTURE0_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
+                glActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 //Draw cloud layer
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
@@ -971,17 +971,17 @@ void SGCloudLayer::draw( bool top ) {
                 //Disable textures
                 glDisable( GL_TEXTURE_2D );
 
-                glActiveTextureARB( GL_TEXTURE1_ARB );
+                glActiveTexturePtr( GL_TEXTURE1_ARB );
                 glDisable( GL_TEXTURE_CUBE_MAP_ARB );
-                glActiveTextureARB( GL_TEXTURE0_ARB );
+                glActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 //disable vertex arrays
                 glDisableClientState( GL_VERTEX_ARRAY );
 
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTextureARB( GL_TEXTURE1_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE1_ARB );
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 //Return to standard modulate texenv
                 glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );

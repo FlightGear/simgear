@@ -127,6 +127,12 @@ public:
 	    route.erase( route.begin() );
 	}
     }
+
+    // Calculate perpendicular distance from the current route segment
+    // This routine assumes all points are laying on a flat plane and
+    // ignores the altitude (or Z) dimension.  For best results, use
+    // with CARTESIAN way points.
+    double distance_off_route( double x, double y ) const;
 };
 
 

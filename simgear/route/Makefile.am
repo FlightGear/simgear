@@ -10,11 +10,18 @@ libsgroute_a_SOURCES = \
 
 INCLUDES += -I$(top_srcdir)
 
-noinst_PROGRAMS = waytest
+noinst_PROGRAMS = waytest routetest
 
 waytest_SOURCES = waytest.cxx
 
 waytest_LDADD = \
+	$(top_builddir)/simgear/route/libsgroute.a \
+	$(top_builddir)/simgear/math/libsgmath.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a
+
+routetest_SOURCES = routetest.cxx
+
+routetest_LDADD = \
 	$(top_builddir)/simgear/route/libsgroute.a \
 	$(top_builddir)/simgear/math/libsgmath.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a

@@ -809,7 +809,7 @@ SGTexture::make_monochrome(float contrast, GLubyte r, GLubyte g, GLubyte b) {
 
          if (contrast != 1.0) {
             float pixcol = -1.0 + (avg/128);
-            avg = 128 + 128*powf(pixcol, contrast);
+            avg = 128 + int(128*powf(pixcol, contrast));
          }
 
          ap[0] = avg*r/255;
@@ -837,7 +837,7 @@ SGTexture::make_grayscale(float contrast) {
 
          if (contrast != 1.0) {
             float pixcol = -1.0 + (avg/128);
-            avg = 128 + 128*powf(pixcol, contrast);
+            avg = 128 + int(128*powf(pixcol, contrast));
          }
 
          int pos = (x + y*texture_width)*colors;
@@ -877,7 +877,7 @@ SGTexture::make_maxcolorwindow() {
    while (pos < texture_width * texture_height * num_colors) {
       for (int i=0; i < max; i++) {
          texture_data[pos+i] -= offs;
-         texture_data[pos+i] *= factor;
+         texture_data[pos+i] = int(factor * texture_data[pos+i]);
       }
       pos += num_colors;
    }
@@ -923,7 +923,7 @@ SGTexture::make_normalmap(float brightness, float contrast) {
 
          map[mpos+0] = (128+(cx1-c)/2);
          map[mpos+1] = (128+(cy1-c)/2);
-         map[mpos+2] = 127+brightness*128; // 255-c/2;
+         map[mpos+2] = 127+int(brightness*128); // 255-c/2;
 
          mpos += colors;
          dpos += num_colors;

@@ -3,6 +3,10 @@
 //
 // This file is in the Public Domain, and comes with no warranty.
 
+#ifdef HAVE_CONFIG_H
+#include <simgear_config.h>
+#endif
+
 #include <simgear/compiler.h>
 
 #include <string.h>             // for strcmp()

@@ -28,8 +28,8 @@
 
 #include <simgear/constants.h>
 
-#include "celestialBody.hxx"
-#include "star.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
+#include <simgear/ephemeris/star.hxx>
 
 class Moon : public CelestialBody
 {

@@ -118,7 +118,7 @@
 #  define bcopy(from, to, n) memcpy(to, from, n)
 
 // -rp- please use FG_MEM_COPY everywhere !
-#  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
+// #define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
 
 // -dw- currently used glut has no game mode stuff
 #  define GLUT_WRONG_VERSION

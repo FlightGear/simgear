@@ -26,7 +26,7 @@
 #define _STAR_HXX_
 
 
-#include "celestialBody.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
 
 
 class Star : public CelestialBody

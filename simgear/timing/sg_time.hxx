@@ -43,7 +43,7 @@
 #  include <time.h>
 #endif
 
-#include "timezone.h"
+#include <simgear/timing/timezone.h>
 
 
 // Define a structure containing time parameters

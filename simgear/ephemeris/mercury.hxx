@@ -25,8 +25,8 @@
 #ifndef _MERCURY_HXX_
 #define _MERCURY_HXX_
 
-#include "celestialBody.hxx"
-#include "star.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
+#include <simgear/ephemeris/star.hxx>
 
 class Mercury : public CelestialBody
 {

@@ -36,16 +36,16 @@
 
 #include <plib/sg.h>
 
-#include "star.hxx"
-#include "moon.hxx"
-#include "mercury.hxx"
-#include "venus.hxx"
-#include "mars.hxx"
-#include "jupiter.hxx"
-#include "saturn.hxx"
-#include "uranus.hxx"
-#include "neptune.hxx"
-#include "stars.hxx"
+#include <simgear/ephemeris/star.hxx>
+#include <simgear/ephemeris/moon.hxx>
+#include <simgear/ephemeris/mercury.hxx>
+#include <simgear/ephemeris/venus.hxx>
+#include <simgear/ephemeris/mars.hxx>
+#include <simgear/ephemeris/jupiter.hxx>
+#include <simgear/ephemeris/saturn.hxx>
+#include <simgear/ephemeris/uranus.hxx>
+#include <simgear/ephemeris/neptune.hxx>
+#include <simgear/ephemeris/stars.hxx>
 
 
 class SGEphemeris {

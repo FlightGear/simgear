@@ -30,8 +30,9 @@
 #ifndef _TIMEZONE_H_
 #define _TIMEZONE_H_
 
-#include "geocoord.h"
 #include <stdio.h>
+
+#include <simgear/timing/geocoord.h>
 
 class Timezone : public GeoCoord
 {

@@ -100,44 +100,42 @@ CMetarStation::CMetarStation(
 
 int CMetarStation::initialize()
 {
-	// Read the list of metar stations, decoding and adding to global list.
+    // Read the list of metar stations, decoding and adding to global list.
 
-	CMetarStation *m;
-	char buf[256];
+    CMetarStation *m;
+    char buf[256];
 
-	// Goto the Flight Gear installation directory
+    // Goto the Flight Gear installation directory
 #ifdef TESTPROG
-    FGPath weatherPath( "/mkv/Build/FlightGear" );
+    //FGPath weatherPath( "/mkv/Build/FlightGear" );
+    FGPath weatherPath( ":Data" );
 #else
     FGPath weatherPath( current_options.get_fg_root() );
 #endif
 
-    weatherPath.append( "Weather/MetarStations" );
-	// Open the metar station list
-	FILE *f = fopen( weatherPath.c_str(), "r" );
+    weatherPath.append( "Weather" );
+    weatherPath.append( "MetarStations" );
+    // Open the metar station list
+    FILE *f = fopen( weatherPath.c_str(), "r" );
 	
 
-	if ( f != NULL )
-	{
-		// Read each line, create an instance of a station, and add it to the vector
-		while ( fgets( buf, 256, f) != NULL && feof( f ) == 0 )
-		{
-			//std::cout << buf << std::endl;
-			m = new CMetarStation( buf );
-			//m->dump();
-			METAR_Stations.push_back( m );
-		}
+    if ( f != NULL ) {
+	// Read each line, create an instance of a station, and add it to the vector
+	while ( fgets( buf, 256, f) != NULL && feof( f ) == 0 ) {
+	    //std::cout << buf << std::endl;
+	    m = new CMetarStation( buf );
+	    //m->dump();
+	    METAR_Stations.push_back( m );
+	}
 	
-		// Close the list
-		fclose( f );
-		std::cout << METAR_Stations.size() << " Metar stations" << std::endl;
-		return 1;
-	}
-	else
-	{
-		std::cout << "Could not open MetarStations file " << std::endl;
-		return 0;
-	}
+	// Close the list
+	fclose( f );
+	// std::cout << METAR_Stations.size() << " Metar stations" << std::endl;
+	return 1;
+    } else {
+	// std::cout << "Could not open MetarStations file " << std::endl;
+	return 0;
+    }
 }
 
 

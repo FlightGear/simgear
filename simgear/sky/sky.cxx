@@ -267,10 +267,10 @@ void SGSky::add_cloud_layer( double asl, double thickness,
 	cloud_layers.push_back( layer );
     }
 
-    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-	cout << "layer " << i << " = " << cloud_layers[i]->get_asl() << endl;
-    }
-    cout << endl;
+    // for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+    //   cout << "layer " << i << " = " << cloud_layers[i]->get_asl() << endl;
+    // }
+    // cout << endl;
 }
 
 

@@ -420,6 +420,6 @@ extern bool writePropertyList (const string &file,
 extern SGPropertyList current_properties;
 
 
-#endif __PROPS_HXX
+#endif // __PROPS_HXX
 
 // end of props.hxx

@@ -491,8 +491,8 @@ SGValue::setUnknownValue (const string &value)
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-SGValue::tieBool (bool_getter getter, bool_setter setter = 0,
-		  bool useDefault = true)
+SGValue::tieBool (bool_getter getter, bool_setter setter,
+		  bool useDefault)
 {
   if (_tied) {
     return false;
@@ -517,8 +517,8 @@ SGValue::tieBool (bool_getter getter, bool_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-SGValue::tieInt (int_getter getter, int_setter setter = 0,
-		 bool useDefault = true)
+SGValue::tieInt (int_getter getter, int_setter setter,
+		 bool useDefault)
 {
   if (_tied) {
     return false;
@@ -543,8 +543,8 @@ SGValue::tieInt (int_getter getter, int_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-SGValue::tieFloat (float_getter getter, float_setter setter = 0,
-		   bool useDefault = true)
+SGValue::tieFloat (float_getter getter, float_setter setter,
+		   bool useDefault)
 {
   if (_tied) {
     return false;
@@ -569,8 +569,8 @@ SGValue::tieFloat (float_getter getter, float_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-SGValue::tieDouble (double_getter getter, double_setter setter = 0,
-		    bool useDefault = true)
+SGValue::tieDouble (double_getter getter, double_setter setter,
+		    bool useDefault)
 {
   if (_tied) {
     return false;
@@ -595,8 +595,8 @@ SGValue::tieDouble (double_getter getter, double_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-SGValue::tieString (string_getter getter, string_setter setter = 0,
-		    bool useDefault = true)
+SGValue::tieString (string_getter getter, string_setter setter,
+		    bool useDefault)
 {
   if (_tied) {
     return false;
@@ -693,7 +693,7 @@ SGPropertyList::~SGPropertyList ()
  * and must not end with '/'.
  */
 SGValue *
-SGPropertyList::getValue (const string &name, bool create = false)
+SGPropertyList::getValue (const string &name, bool create)
 {
   const_iterator el = _props.find(name);
   if (el == _props.end()) {
@@ -914,7 +914,7 @@ bool
 SGPropertyList::tieBool (const string &name, 
 			 bool_getter getter,
 			 bool_setter setter,
-			 bool useDefault = true)
+			 bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying bool property '" << name << '\'');
   return getValue(name, true)->tieBool(getter, setter, useDefault);
@@ -930,7 +930,7 @@ bool
 SGPropertyList::tieInt (const string &name, 
 			int_getter getter,
 			int_setter setter,
-			bool useDefault = true)
+			bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying int property '" << name << '\'');
   return getValue(name, true)->tieInt(getter, setter, useDefault);
@@ -946,7 +946,7 @@ bool
 SGPropertyList::tieFloat (const string &name, 
 			  float_getter getter,
 			  float_setter setter,
-			  bool useDefault = true)
+			  bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying float property '" << name << '\'');
   return getValue(name, true)->tieFloat(getter, setter, useDefault);
@@ -962,7 +962,7 @@ bool
 SGPropertyList::tieDouble (const string &name, 
 			   double_getter getter,
 			   double_setter setter,
-			   bool useDefault = true)
+			   bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying double property '" << name << '\'');
   return getValue(name, true)->tieDouble(getter, setter, useDefault);
@@ -978,7 +978,7 @@ bool
 SGPropertyList::tieString (const string &name, 
 			   string_getter getter,
 			   string_setter setter,
-			   bool useDefault = true)
+			   bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying string property '" << name << '\'');
   return getValue(name, true)->tieString(getter, setter, useDefault);
@@ -1037,8 +1037,8 @@ get_base (const string &parent, const string &child,
 /**
  * Constructor.
  */
-SGPropertyNode::SGPropertyNode (const string &path = "",
-				SGPropertyList * props = 0)
+SGPropertyNode::SGPropertyNode (const string &path,
+				SGPropertyList * props)
   : _props(props), _node(0)
 {
   setPath(path);

@@ -39,11 +39,11 @@
 
 #include <vector>
 
-#include "cloud.hxx"
-#include "dome.hxx"
-#include "moon.hxx"
-#include "oursun.hxx"
-#include "stars.hxx"
+#include <simgear/sky/cloud.hxx>
+#include <simgear/sky/dome.hxx>
+#include <simgear/sky/moon.hxx>
+#include <simgear/sky/oursun.hxx>
+#include <simgear/sky/stars.hxx>
 
 FG_USING_STD(vector);
 

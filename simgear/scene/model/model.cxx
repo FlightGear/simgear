@@ -271,10 +271,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
       throw sg_exception("Failed to load 3D model");
   }
 
-  if ( model != 0 ) {
-    makeDList( model );
-  }
-
                                 // Set up the alignment node
   ssgTransform * alignmainmodel = new ssgTransform;
   if ( load_panel == 0 )
@@ -334,6 +330,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
       animation_nodes[i]->getChildren("object-name");
     sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
                      sim_time_sec);
+  }
+
+  if ( model != 0 ) {
+    makeDList( model );
   }
 
   return alignmainmodel;

@@ -236,16 +236,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
 
   unsigned int i;
 
-                                // Load animations
-  vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
-  for (i = 0; i < animation_nodes.size(); i++) {
-    const char * name = animation_nodes[i]->getStringValue("name", 0);
-    vector<SGPropertyNode_ptr> name_nodes =
-      animation_nodes[i]->getChildren("object-name");
-    sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
-                     sim_time_sec);
-  }
-
                                 // Load sub-models
   vector<SGPropertyNode_ptr> model_nodes = props.getChildren("model");
   for (i = 0; i < model_nodes.size(); i++) {
@@ -264,7 +254,18 @@ sgLoad3DModel( const string &fg_root, const string &path,
     ssgBranch * kid = sgLoad3DModel( fg_root, node->getStringValue("path"),
                                      prop_root, sim_time_sec );
     align->addKid(kid);
+    align->setName(node->getStringValue("name", ""));
     model->addKid(align);
+  }
+
+                                // Load animations
+  vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
+  for (i = 0; i < animation_nodes.size(); i++) {
+    const char * name = animation_nodes[i]->getStringValue("name", 0);
+    vector<SGPropertyNode_ptr> name_nodes =
+      animation_nodes[i]->getChildren("object-name");
+    sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
+                     sim_time_sec);
   }
 
   return alignmainmodel;

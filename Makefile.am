@@ -99,5 +99,5 @@ dist-hook:
 # Rule to build RPM distribution package
 #
 rpm: dist
-        rpm -ta $(PACKAGE)-$(VERSION).tar.gz
+	rpm -ta $(PACKAGE)-$(VERSION).tar.gz
 

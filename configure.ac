@@ -165,34 +165,18 @@ dnl Checks for libraries.
 
 dnl Thread related checks
 AC_CHECK_HEADER(pthread.h)
-AC_CHECK_LIB(pthread, pthread_exit)
-AC_SEARCH_LIBS(pthread_exit, pthread)
-if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
+AC_SEARCH_LIBS(pthread_exit, [pthread c_r])
+if test "x$ac_cv_header_pthread_h" = "xyes"; then
     CXXFLAGS="$CXXFLAGS -D_REENTRANT"
     CFLAGS="$CFLAGS -D_REENTRANT"
-fi
-if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
-    dnl FreeBSD: System has pthread.h, but -lpthread library check
-    dnl fails.  See if we need -pthread instead of -lpthread and look
-    dnl for the functions in libc_r.
-    save_CXXFLAGS="$CXXFLAGS"
-    save_CFLAGS="$CFLAGS"
+
+  if test "x$ac_cv_search_pthread_exit" = "x-lc_r"; then
     CXXFLAGS="-pthread $CXXFLAGS"
     CFLAGS="-pthread $FLAGS"
-    save_LIBS=$LIBS
-    AC_CHECK_LIB(c_r, pthread_exit)
-    if test "x$ac_cv_lib_c_r_pthread_exit" != "xyes"; then
-        CXXFLAGS=$save_CXXFLAGS
-        CFLAGS=$save_CFLAGS
-    else
-        dnl This is cheating a bit. pthread_exit comes with using -pthread, not
-        dnl -lpthread
-        ac_cv_lib_pthread_pthread_exit="yes"
-    fi
-    LIBS=$save_LIBS
+  fi
 fi
 
-AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
+AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_header_pthread_h" = "xyes")
 
 thread_LIBS="$LIBS"
 LIBS=""
@@ -280,6 +264,7 @@ case "${host}" in
     AC_SEARCH_LIBS(alGenBuffers, openal32)
     AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
+    openal_LIBS="$LIBS"
     OPENAL_OK="$ac_cv_search_alGenBuffers"
     ;;
 
@@ -287,6 +272,7 @@ case "${host}" in
     dnl Mac OS X
 
     LIBS="$LIBS -framework IOKit -framework OpenAL"
+    openal_LIBS="$LIBS"
     # not sure how to test if OpenAL exists on MacOS (does it come by default?)
     OPENAL_OK="yes"
     ;;
@@ -294,8 +280,12 @@ case "${host}" in
 *)
     dnl default unix style machines
 
+    save_LIBS=$LIBS
+    LIBS="$LIBS $thread_LIBS"
     AC_SEARCH_LIBS(alGenBuffers, openal)
     OPENAL_OK="$ac_cv_search_alGenBuffers"
+    openal_LIBS="$LIBS"
+    LIBS=$save_LIBS
     ;;
 
 esac
@@ -311,7 +301,6 @@ if test "$OPENAL_OK" == "no"; then
     exit
 fi
 
-openal_LIBS="$LIBS"
 LIBS="$base_LIBS"
 
 AC_SUBST(base_LIBS)
@@ -472,7 +461,7 @@ else
    echo "Without JPEG Factory support"
 fi
 
-if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
+if test "x$ac_cv_header_pthread_h" = "xyes"; then
    echo "Threads: pthread lib found."
 else
    echo "Threads: no threads (pthread lib not found.)"

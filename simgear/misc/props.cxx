@@ -793,7 +793,7 @@ SGPropertyList::getValue (const string &name, bool create)
     if (!create)
       return 0;
     else {
-      FG_LOG(FG_GENERAL, FG_INFO, "Creating new property '" << name << '\'');
+      FG_LOG(FG_GENERAL, FG_DEBUG, "Creating new property '" << name << '\'');
       if (name.size() == 0 ||
 	  name[0] != '/' ||
 	  name[name.size()-1] == '/' ||
@@ -1009,7 +1009,7 @@ SGPropertyList::tieBool (const string &name,
 			 bool_setter setter,
 			 bool useDefault)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Tying bool property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying bool property '" << name << '\'');
   useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieBool(getter, setter, useDefault);
 }
@@ -1026,7 +1026,7 @@ SGPropertyList::tieInt (const string &name,
 			int_setter setter,
 			bool useDefault)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Tying int property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying int property '" << name << '\'');
   useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieInt(getter, setter, useDefault);
 }
@@ -1043,7 +1043,7 @@ SGPropertyList::tieFloat (const string &name,
 			  float_setter setter,
 			  bool useDefault)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Tying float property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying float property '" << name << '\'');
   useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieFloat(getter, setter, useDefault);
 }
@@ -1060,7 +1060,7 @@ SGPropertyList::tieDouble (const string &name,
 			   double_setter setter,
 			   bool useDefault)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Tying double property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying double property '" << name << '\'');
   useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieDouble(getter, setter, useDefault);
 }
@@ -1077,7 +1077,7 @@ SGPropertyList::tieString (const string &name,
 			   string_setter setter,
 			   bool useDefault)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Tying string property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying string property '" << name << '\'');
   useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieString(getter, setter, useDefault);
 }
@@ -1091,7 +1091,7 @@ SGPropertyList::tieString (const string &name,
 bool
 SGPropertyList::untie (const string &name)
 {
-  FG_LOG(FG_GENERAL, FG_INFO, "Untying property '" << name << '\'');
+  FG_LOG(FG_GENERAL, FG_DEBUG, "Untying property '" << name << '\'');
   return getValue(name, true)->untie();
 }
 

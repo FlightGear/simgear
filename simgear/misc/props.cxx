@@ -17,6 +17,7 @@ using std::sort;
 
 #else
 
+#include <algorithm>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 
@@ -24,7 +25,6 @@ SG_USING_STD(sort);
 
 #endif
 
-#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 

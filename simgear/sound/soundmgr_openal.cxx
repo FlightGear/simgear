@@ -23,7 +23,7 @@
 //
 // $Id$
 
-#include <iostream>
+#include <simgear/compiler.h>
 
 #if defined(__APPLE__)
 # include <OpenAL/al.h>
@@ -34,6 +34,19 @@
 # include <AL/alut.h>
 # include <AL/alc.h>
 #endif
+
+#if defined (__APPLE__) 
+// any C++ header file undefines isinf and isnan
+// so this should be included before <iostream>
+inline int (isinf)(double r) { return isinf(r); }
+inline int (isnan)(double r) { return isnan(r); } 
+#endif
+
+#if defined(__MINGW32__)
+#define isnan(x) _isnan(x)
+#endif
+
+#include STL_IOSTREAM
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -275,6 +288,11 @@ bool SGSoundMgr::stop( const string& refname ) {
 
 // set source position of all managed sounds
 void SGSoundMgr::set_source_pos_all( ALfloat *pos ) {
+    if ( isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2]) ) {
+        // bail if a bad position is passed in
+        return;
+    }
+
     sample_map_iterator sample_current = samples.begin();
     sample_map_iterator sample_end = samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
@@ -286,6 +304,11 @@ void SGSoundMgr::set_source_pos_all( ALfloat *pos ) {
 
 // set source velocity of all managed sounds
 void SGSoundMgr::set_source_vel_all( ALfloat *vel ) {
+    if ( isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2]) ) {
+        // bail if a bad velocity is passed in
+        return;
+    }
+
     sample_map_iterator sample_current = samples.begin();
     sample_map_iterator sample_end = samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {

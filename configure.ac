@@ -216,6 +216,7 @@ else
 
     echo Win32 specific hacks...
     AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
+    AC_DEFINE([NOMINMAX], 1, [Define for Win32 platforms])
 
     dnl just define these to true and hope for the best
     ac_cv_lib_glut_glutGetModifiers="yes"

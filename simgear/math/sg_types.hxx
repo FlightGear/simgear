@@ -49,6 +49,11 @@ typedef vector < int > int_list;
 typedef int_list::iterator int_list_iterator;
 typedef int_list::const_iterator const_int_list_iterator;
 
+/** STL vector list of doubles */
+typedef vector < double > double_list;
+typedef double_list::iterator double_list_iterator;
+typedef double_list::const_iterator const_double_list_iterator;
+
 /** STL vector list of Point3D */
 typedef vector < Point3D > point_list;
 typedef point_list::iterator point_list_iterator;

@@ -141,12 +141,6 @@
 #      define STL_STDEXCEPT  <stdexcept>
 #      define STL_STRING     <string>
 #      define STL_STRSTREAM  <strstream>
-
-# ifdef WIN32
-       // keep windows.h from #defining min() max() macros
-#      define NOMINMAX
-#endif
-
 #  else
 #    error Time to upgrade. GNU compilers < 2.7 not supported
 #  endif

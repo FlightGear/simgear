@@ -346,7 +346,7 @@ bool SGBinObject::read_bin( const string& file ) {
 	return false;
     }
 
-    // read calender time
+    // read creation time
     unsigned int foo_calendar_time;
     sgReadUInt( fp, &foo_calendar_time );
 

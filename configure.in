@@ -66,14 +66,6 @@ if test "x$with_logging" = "xno" ; then
     AC_DEFINE(FG_NDEBUG)
 fi
 
-dnl specify if we are building with "electric fence"
-AC_ARG_WITH(efence, [  --with-efence           Specify if we are building with "electric-fence"])
-
-if test "x$with_efence" = "xyes" ; then
-    echo "Building with efence"
-    LIBS="$LIBS -lefence"
-fi
-
 # Specify if we want to build with Norman's jpeg image server support.
 # This requires libjpeg to be installed and available.
 # Default to with_jpeg_server=no
@@ -371,12 +363,6 @@ if test "x$with_logging" != "x"; then
     echo "Debug messages: $with_logging"
 else
     echo "Debug messages: yes"
-fi
-
-if test "x$with_efence" != "x"; then
-    echo "Electric fence: $with_efence"
-else
-    echo "Electric fence: no"
 fi
 
 echo -n "Automake version: ($AUTO_MAKE_VERSION) "

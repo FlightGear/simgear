@@ -93,19 +93,23 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   for (int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
-    if (tname == "")
+    if (tname == "") {
         tname = "unknown.rgb";
+    }
 
     SGPath tpath( fg_root );
     tpath.append("Textures.high");
     tpath.append(tname);
-    if (!ulFileExists(tpath.c_str())) {
+    if ( !ulFileExists(tpath.c_str()) ) {
       tpath = SGPath( fg_root );
       tpath.append("Textures");
       tpath.append(tname);
     }
-    _internal_state st( NULL, tpath.str(), false );
-    _status.push_back( st );
+
+    if ( ulFileExists(tpath.c_str()) ) {
+      _internal_state st( NULL, tpath.str(), false );
+      _status.push_back( st );
+    }
   }
 
   if (textures.size() == 0) {
@@ -208,11 +212,12 @@ SGMaterial::get_state (int n) const
         return NULL;
     }
 
-    if ( _current_ptr >= _status.size())
+    ssgSimpleState *st = (n >= 0) ? _status[n].state
+                                  : _status[_current_ptr].state;
+    ((SGMaterial *)this)->_current_ptr += 1;
+    if (_current_ptr >= _status.size())
         ((SGMaterial *)this)->_current_ptr = 0;
 
-    ssgSimpleState *st = (n >= 0) ? _status[n].state : _status[_current_ptr].state;
-    ((SGMaterial *)this)->_current_ptr += 1;
     return st;
 }
 

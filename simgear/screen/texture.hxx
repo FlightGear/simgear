@@ -61,6 +61,15 @@ protected:
     void ImageClose(ImageRec *image);
     void ImageGetRow(ImageRec *image, GLubyte *buf, int y, int z);
 
+    inline void free_id() {
+#ifdef GL_VERSION_1_1
+        glDeleteTextures(1, &texture_id);
+#else
+        glDeleteTexturesEXT(1, &texture_id);
+#endif
+    }
+
+
 public:
 
     SGTexture();
@@ -77,6 +86,7 @@ public:
 
     inline GLuint id() { return texture_id; }
     inline GLubyte *texture() { return texture_data; }
+    inline void set_data(GLubyte *data) { texture_data = data; }
 
     inline int width() { return texture_width; }
     inline int height() { return texture_height; }
@@ -88,16 +98,28 @@ public:
     void prepare(unsigned int width = 256, unsigned int height = 256);
     void finish(unsigned int width, unsigned int height);
 
+#if 0
     // texture pixel manipulation functions.
     void set_pixel(GLuint x, GLuint y, sgVec3 &c);
     sgVec3 *get_pixel(GLuint x, GLuint y);
+#endif
 
     void bind();
     inline void select() {
-        // if (texture_data)
-            glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB,
-                          texture_width, texture_height, 0,
-                          GL_RGB, GL_UNSIGNED_BYTE, texture_data );
+        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB,
+                      texture_width, texture_height, 0,
+                      GL_RGB, GL_UNSIGNED_BYTE, texture_data );
+
+        delete texture_data;
+    }
+
+    // Nowhere does it say that resident textures have to be in video memory!
+    // NVidia's OpenGL drivers implement glAreTexturesResident() correctly,
+    // but the Matrox G400, for example, doesn't.
+    inline bool is_resident() {
+        GLboolean is_res;
+        glAreTexturesResident(1, &texture_id, &is_res);
+        return is_res;
     }
 };
 

@@ -22,18 +22,24 @@
 #include "colours.h"
 
 SGTexture::SGTexture()
+   : texture_id(0),
+     texture_data(0)
 {
-    texture_data = 0;
 }
 
 SGTexture::SGTexture(unsigned int width, unsigned int height)
+   : texture_id(0)
 {
     texture_data = new GLubyte[ width * height * 3 ];
 }
 
 SGTexture::~SGTexture()
 {
-    delete texture_data;
+    if (texture_data)
+        delete texture_data;
+
+    if (texture_id)
+        free_id();
 }
 
 void
@@ -323,6 +329,7 @@ SGTexture::read_r8_texture(const char *name)
 }
 
 
+#if 0
 void
 SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
 {
@@ -343,6 +350,7 @@ SGTexture::get_pixel(GLuint x, GLuint y)
 
     return &c;
 }
+#endif
 
 
 SGTexture::ImageRec *

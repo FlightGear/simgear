@@ -221,9 +221,8 @@ copy_string (const char * s)
 				// FIXME: potential buffer overflow.
 				// For some reason, strnlen and
 				// strncpy cause all kinds of crashes.
-  string str = s;
-  char * copy = new char[str.size() + 1];
-  strcpy(copy, str.c_str());
+  char * copy = new char[strlen(s) + 1];
+  strcpy(copy, s);
   return copy;
 }
 

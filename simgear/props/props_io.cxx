@@ -133,7 +133,6 @@ checkFlag (const char * flag, bool defaultState = true)
 void
 PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 {
-  State &st = state();
   const char * attval;
 
   if (_level == 0) {
@@ -160,6 +159,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   }
 
   else {
+    State &st = state();
 				// Get the index.
     attval = atts.getValue("n");
     int index = 0;

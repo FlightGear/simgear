@@ -1,12 +1,12 @@
 includedir = @includedir@/sky
 
-lib_LIBRARIES = libsgcloud3d.a
+lib_LIBRARIES = libsgclouds3d.a
 
 include_HEADERS = \
 	SkySceneLoader.hpp \
 	SkyUtil.hpp
 
-libsgcloud3d_a_SOURCES = \
+libsgclouds3d_a_SOURCES = \
 	vec3fv.cpp \
 	mat16fv.cpp \
 	tri.cpp \

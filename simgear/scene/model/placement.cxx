@@ -17,7 +17,7 @@
 #include <plib/ssg.h>
 #include <plib/ul.h>
 
-#include <simgear/scene/model/location.hxx>
+#include "location.hxx"
 
 #include "placement.hxx"
 

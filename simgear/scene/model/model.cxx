@@ -21,7 +21,8 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
-#include <simgear/scene/model/animation.hxx>
+
+#include "animation.hxx"
 
 #include "model.hxx"
 

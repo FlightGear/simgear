@@ -1,5 +1,7 @@
-#ifndef __MODEL_LOADER_HXX
-#define __MODEL_LOADER_HXX 1
+// modellib.cxx - implement an SSG model library.
+
+#ifndef _SG_MODEL_LIB_HXX
+#define _SG_MODEL_LIB_HXX 1
 
 #ifndef __cplusplus
 # error This library requires C++
@@ -19,33 +21,25 @@ SG_USING_STD(string);
 
 
 /**
- * Base class for loading and managing SSG things.
- */
-class SGssgLoader
-{
-public:
-    SGssgLoader ();
-    virtual ~SGssgLoader ();
-    virtual void flush ();
-protected:
-    std::map<string,ssgBase *> _table;
-};
-
-
-/**
  * Class for loading and managing models with XML wrappers.
  */
-class SGModelLoader : public SGssgLoader
+class SGModelLib
 {
+
 public:
-    SGModelLoader ();
-    virtual ~SGModelLoader ();
+
+    SGModelLib ();
+    virtual ~SGModelLib ();
+    virtual void flush1();
 
     virtual ssgEntity *load_model( const string &fg_root,
                                    const string &path,
                                    SGPropertyNode *prop_root,
                                    double sim_time_sec );
+protected:
+
+    map<string,ssgBase *> _table;
 };
 
 
-#endif
+#endif // _SG_MODEL_LIB_HXX

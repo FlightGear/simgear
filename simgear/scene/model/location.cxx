@@ -35,9 +35,6 @@
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/vector.hxx>
 
-// #include <Scenery/scenery.hxx>
-// #include "globals.hxx"
-
 #include "location.hxx"
 
 

@@ -7,6 +7,7 @@
 
 #include <stdlib.h>		// atof() atoi()
 
+#include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/xml/easyxml.hxx>
 
@@ -126,7 +127,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     int index = 0;
     if (att_n != 0) {
       index = atoi(att_n);
-      st.counters[name] = max(st.counters[name], index+1);
+      st.counters[name] = SG_MAX2(st.counters[name], index+1);
     } else {
       index = st.counters[name];
       st.counters[name]++;

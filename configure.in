@@ -34,6 +34,18 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
+OS=`uname -s`
+if test $OS = "IRIX" -o $OS = "IRIX64"; then
+    if text $CC = "CC"; then
+        AR="CC -ar"
+    else
+        AR="ar"
+    fi
+else
+    AR="ar"
+fi
+AC_SUBST(AR)
+
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir
 else

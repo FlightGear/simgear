@@ -23,9 +23,16 @@
 #ifndef SGTHREAD_HXX_INCLUDED
 #define SGTHREAD_HXX_INCLUDED 1
 
+#include <simgear/compiler.h>
+
 #include <pthread.h>
-#include <cassert>
-#include <cerrno>
+#if defined ( SG_HAVE_STD_INCLUDES )
+#  include <cassert>
+#  include <cerrno>
+#else
+#  include <assert.h>
+#  include <sys/errno.h>
+#endif
 
 class SGThread;
 

@@ -202,13 +202,17 @@ SGMaterial::load_texture ( int n )
 ssgSimpleState *
 SGMaterial::get_state (int n) const
 {
+    static unsigned current = 0;
+
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No state available.");
         return NULL;
     }
 
-    int r = int( sg_random() * _status.size() );
-    return (n >= 0) ? _status[n].state : _status[r].state;
+    if ( ++current >= _status.size())
+        current = 0;
+
+    return (n >= 0) ? _status[n].state : _status[current].state;
 }
 
 

@@ -39,7 +39,6 @@
 #include <plib/ssg.h>
 
 #include <simgear/props/props.hxx>
-#include <simgear/math/sg_random.h>
 
 #include "matmodel.hxx"
 

@@ -62,13 +62,16 @@ Timezone::Timezone(const char *infoString) :
     char sign;
     sign = latlon[0];
     strncpy(buffer, &latlon[1], 2);
+    buffer[2] = 0;
     lat = atof(buffer);
     strncpy(buffer, &latlon[3], 2);
+    buffer[2] = 0;
     lat += (atof(buffer) / 60);
     int nextPos;
     if (strlen(latlon) > 12) {
         nextPos = 7;
         strncpy(buffer, &latlon[5], 2);
+        buffer[2] = 0;
         lat += (atof(buffer) / 3600.0);
     } else {
         nextPos = 5;
@@ -80,6 +83,7 @@ Timezone::Timezone(const char *infoString) :
     sign = latlon[nextPos];
     nextPos++;
     strncpy(buffer, &latlon[nextPos], 3);
+    buffer[3] = 0;
     lon = atof(buffer);
     nextPos += 3;
     strncpy(buffer, &latlon[nextPos], 2);
@@ -89,6 +93,7 @@ Timezone::Timezone(const char *infoString) :
     if (strlen(latlon) > 12) {
         nextPos += 2;
         strncpy(buffer, &latlon[nextPos], 2); 
+        buffer[2] = 0;
         lon +=  (atof (buffer) / 3600.00);
     }
     if (sign == '-') {
@@ -136,10 +141,11 @@ TimezoneContainer::TimezoneContainer(const char *filename)
             if( buffer[0] == '#' )
                continue;
 #else
-            for (int i = 0; i < 256; i++) {
-                if (buffer[i] == '#') {
-                    buffer[i] = 0;
-                }
+            for (char *p = buffer; *p; p++) {
+                if (*p == '#') {
+                    *p = 0;
+                    break;
+                }    
             }
 #endif
             if (buffer[0]) {

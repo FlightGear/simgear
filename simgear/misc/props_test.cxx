@@ -313,7 +313,7 @@ test_property_nodes ()
   cout << endl;
 
   cout << "Looking for all /hack[0]/bar children" << endl;
-  vector<SGPropertyNode *> bar = child->getChildren("bar");
+  vector<SGPropertyNode_ptr> bar = child->getChildren("bar");
   cout << "There are " << bar.size() << " matches" << endl;
   for (int i = 0; i < (int)bar.size(); i++)
     cout << bar[i]->getName() << '[' << bar[i]->getIndex() << ']' << endl;

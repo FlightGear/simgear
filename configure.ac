@@ -154,8 +154,36 @@ AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a
 
 AC_CHECK_LIB(socket, socket)
 
-dnl X11 might be installed, but we don't want to use it for OSX -dw-
-if test "x$HOSTTYPE" != "xmacintosh" ; then
+AC_CANONICAL_HOST
+
+case "${host}" in
+*-*-cygwin* | *-*-mingw32*)
+    dnl CygWin under Windoze.
+
+    echo Win32 specific hacks...
+    AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
+    AC_DEFINE([NOMINMAX], 1, [Define for Win32 platforms])
+
+    dnl just define these to true and hope for the best
+    ac_cv_lib_glut_glutGetModifiers="yes"
+    ac_cv_lib_glut_glutGameModeString="yes"
+
+    LIBS="$LIBS -lglut32 -lglu32 -lopengl32"
+    LIBS="$LIBS -luser32 -lgdi32 -lwinmm"
+    if test "x$is_mingw" = "xyes" ; then
+        EXTRA_DIRS="${EXTRA_DIRS}"
+    fi
+    echo "Will link apps with $LIBS"
+    
+    ;;
+*-apple-darwin*)
+    dnl Mac OS X
+
+    LIBS="$LIBS -framework GLUT -framework OpenGL -framework Carbon -lobjc"
+    ;;
+*)
+    dnl Reasonable stuff for X-Windows based machines
+
     AC_CHECK_LIB(X11, XCreateWindow)
     AC_CHECK_LIB(Xext, XShmCreateImage)
     AC_CHECK_LIB(Xi, XGetExtensionVersion)
@@ -163,18 +191,7 @@ if test "x$HOSTTYPE" != "xmacintosh" ; then
     AC_CHECK_LIB(SM, SmcOpenConnection)
     AC_CHECK_LIB(Xt, XtMalloc)
     AC_CHECK_LIB(Xmu, XmuLookupStandardColormap)
-fi
-
-dnl check for OpenGL related libraries
-
-AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
-
-if test "x$HOSTTYPE" = "xmacintosh" ; then
-    dnl Macintosh OSX
-    LIBS="$LIBS -framework OpenGL -framework GLUT"
-elif test "x$ac_cv_header_windows_h" != "xyes" ; then
-    dnl Reasonable stuff for X-Windows based machines
-
+    
     AC_CHECK_LIB(GLcore, glNewList)
     if test "x$ac_cv_lib_GLcore_glNewList" = "xno" ; then
 	dnl if no GLcore, check for GL
@@ -211,36 +228,9 @@ elif test "x$ac_cv_header_windows_h" != "xyes" ; then
     save_LIBS="$LIBS"
     AC_CHECK_LIB(glut, glutGameModeString)
     LIBS="$save_LIBS"
-else
-    dnl Win32 libs
 
-    echo Win32 specific hacks...
-    AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
-    AC_DEFINE([NOMINMAX], 1, [Define for Win32 platforms])
-
-    dnl just define these to true and hope for the best
-    ac_cv_lib_glut_glutGetModifiers="yes"
-    ac_cv_lib_glut_glutGameModeString="yes"
-
-    if test "x$with_sgi_opengl" = "xyes" ; then
-        echo "Building with glut.dll, glu.dll, and opengl.dll"
-	WIN32_GLUT=glut
-	WIN32_GLU=glu
-	WIN32_OPENGL=opengl
-    else 
-	echo "Building with glut32.dll, glu32.dll, and opengl32.dll"
-	WIN32_GLUT=glut32
-	WIN32_GLU=glu32
-	WIN32_OPENGL=opengl32
-    fi
-
-    LIBS="$LIBS -l${WIN32_GLUT} -l${WIN32_GLU} -l${WIN32_OPENGL}"
-    LIBS="$LIBS -luser32 -lgdi32"
-    if test "x$is_mingw" = "xyes" ; then
-        EXTRA_DIRS="${EXTRA_DIRS}"
-    fi
-    echo "Will link apps with $LIBS"
-fi
+    ;;
+esac
 
 if test "x$ac_cv_lib_glut_glutGetModifiers" = "xno"; then
     echo 
@@ -267,6 +257,7 @@ AC_SUBST(base_LIBS)
 AC_SUBST(opengl_LIBS)
 
 AM_CONDITIONAL(HAVE_XWINDOWS, test "x$ac_cv_lib_X11_XCreateWindow" = "xyes" )
+AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
 
 # The following are C++ items that need to be tested for with the c++
 # compiler

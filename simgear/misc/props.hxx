@@ -261,6 +261,8 @@ public:
   virtual const_iterator begin () const { return _props.begin(); }
   virtual const_iterator end () const { return _props.end(); }
 
+  virtual bool hasValue (const string &name) const;
+
   virtual SGValue * getValue (const string &name, bool create = false);
   virtual const SGValue * getValue (const string &name) const;
 
@@ -373,6 +375,9 @@ public:
   virtual SGPropertyNode &getParent () const;
   virtual SGPropertyNode &getChild (int n) const;
   virtual SGPropertyNode &getSubNode (const string &subpath) const;
+
+				// Check for a value.
+  virtual bool hasValue (const string &subpath = "") const;
 
 				// Get values directly.
   virtual SGValue * getValue (const string &subpath = "");

@@ -264,7 +264,7 @@ SGValue::getBoolValue () const
     return (getRawDouble() == 0.0 ? false : true);
   case UNKNOWN:
   case STRING:
-    return ((getRawString() == "false" || getIntValue() == 0) ? false : true);
+    return ((getRawString() == "true" || getIntValue() != 0) ? true : false);
   }
   return false;
 }
@@ -389,12 +389,24 @@ SGValue::getStringValue () const
 bool
 SGValue::setBoolValue (bool value)
 {
-  if (_type == UNKNOWN || _type == BOOL) {
-    _type = BOOL;
+  if (_type == UNKNOWN)
+    _type = INT;
+  switch (_type) {
+  case BOOL:
     return setRawBool(value);
-  } else {
-    return false;
+  case INT:
+    return setRawInt((int)value);
+  case FLOAT:
+    return setRawFloat((float)value);
+  case DOUBLE:
+    return setRawDouble((double)value);
+  case STRING:
+    if (value)
+      return setRawString("true");
+    else
+      return setRawString("false");
   }
+  return false;
 }
 
 
@@ -406,12 +418,26 @@ SGValue::setBoolValue (bool value)
 bool
 SGValue::setIntValue (int value)
 {
-  if (_type == UNKNOWN || _type == INT) {
+  if (_type == UNKNOWN)
     _type = INT;
+  switch (_type) {
+  case BOOL:
+    if (value == 0)
+      return setRawBool(false);
+    else
+      return setRawBool(true);
+  case INT:
     return setRawInt(value);
-  } else {
-    return false;
+  case FLOAT:
+    return setRawFloat((float)value);
+  case DOUBLE:
+    return setRawDouble((double)value);
+  case STRING:
+    char buf[128];
+    sprintf(buf, "%d", value);
+    return setRawString(buf);
   }
+  return false;
 }
 
 
@@ -423,12 +449,26 @@ SGValue::setIntValue (int value)
 bool
 SGValue::setFloatValue (float value)
 {
-  if (_type == UNKNOWN || _type == FLOAT) {
+  if (_type == UNKNOWN)
     _type = FLOAT;
+  switch (_type) {
+  case BOOL:
+    if (value == 0.0)
+      return setRawBool(false);
+    else
+      return setRawBool(true);
+  case INT:
+    return setRawInt((int)value);
+  case FLOAT:
     return setRawFloat(value);
-  } else {
-    return false;
+  case DOUBLE:
+    return setRawDouble((double)value);
+  case STRING:
+    char buf[128];
+    sprintf(buf, "%f", value);
+    return setRawString(buf);
   }
+  return false;
 }
 
 
@@ -440,12 +480,26 @@ SGValue::setFloatValue (float value)
 bool
 SGValue::setDoubleValue (double value)
 {
-  if (_type == UNKNOWN || _type == DOUBLE) {
+  if (_type == UNKNOWN)
     _type = DOUBLE;
+  switch (_type) {
+  case BOOL:
+    if (value == 0.0L)
+      return setRawBool(false);
+    else
+      return setRawBool(true);
+  case INT:
+    return setRawInt((int)value);
+  case FLOAT:
+    return setRawFloat((float)value);
+  case DOUBLE:
     return setRawDouble(value);
-  } else {
-    return false;
+  case STRING:
+    char buf[128];
+    sprintf(buf, "%lf", value);
+    return setRawString(buf);
   }
+  return false;
 }
 
 
@@ -457,12 +511,25 @@ SGValue::setDoubleValue (double value)
 bool
 SGValue::setStringValue (const string &value)
 {
-  if (_type == UNKNOWN || _type == STRING) {
+  if (_type == UNKNOWN)
     _type = STRING;
+
+  switch (_type) {
+  case BOOL:
+    if (value == "true" || atoi(value.c_str()) != 0)
+      return setRawBool(true);
+    else
+      return setRawBool(false);
+  case INT:
+    return setRawInt(atoi(value.c_str()));
+  case FLOAT:
+    return setRawFloat(atof(value.c_str()));
+  case DOUBLE:
+    return setRawDouble(atof(value.c_str()));
+  case STRING:
     return setRawString(value);
-  } else {
-    return false;
   }
+  return false;
 }
 
 
@@ -474,11 +541,23 @@ SGValue::setStringValue (const string &value)
 bool
 SGValue::setUnknownValue (const string &value)
 {
-  if (_type == UNKNOWN || _type == STRING) {
+  switch (_type) {
+  case BOOL:
+    if (value == "true" || atoi(value.c_str()) != 0)
+      return setRawBool(true);
+    else
+      return setRawBool(false);
+  case INT:
+    return setRawInt(atoi(value.c_str()));
+  case FLOAT:
+    return setRawFloat(atof(value.c_str()));
+  case DOUBLE:
+    return setRawDouble(atof(value.c_str()));
+  case STRING:
+  case UNKNOWN:
     return setRawString(value);
-  } else {
-    return false;
   }
+  return false;
 }
 
 
@@ -497,7 +576,7 @@ SGValue::tieBool (bool_getter getter, bool_setter setter,
   if (_tied) {
     return false;
   } else {
-    if (useDefault && setter && _type != UNKNOWN)
+    if (useDefault && setter)
       (*setter)(getBoolValue());
     _tied = true;
     _type = BOOL;
@@ -523,7 +602,7 @@ SGValue::tieInt (int_getter getter, int_setter setter,
   if (_tied) {
     return false;
   } else {
-    if (useDefault && setter && _type != UNKNOWN)
+    if (useDefault && setter)
       (*setter)(getIntValue());
     _tied = true;
     _type = INT;
@@ -549,7 +628,7 @@ SGValue::tieFloat (float_getter getter, float_setter setter,
   if (_tied) {
     return false;
   } else {
-    if (useDefault && setter && _type != UNKNOWN)
+    if (useDefault && setter)
       (*setter)(getFloatValue());
     _tied = true;
     _type = FLOAT;
@@ -575,7 +654,7 @@ SGValue::tieDouble (double_getter getter, double_setter setter,
   if (_tied) {
     return false;
   } else {
-    if (useDefault && setter && _type != UNKNOWN)
+    if (useDefault && setter)
       (*setter)(getDoubleValue());
     _tied = true;
     _type = DOUBLE;
@@ -601,7 +680,7 @@ SGValue::tieString (string_getter getter, string_setter setter,
   if (_tied) {
     return false;
   } else {
-    if (useDefault && setter && _type != UNKNOWN)
+    if (useDefault && setter)
       (*setter)(getStringValue());
     _tied = true;
     _type = STRING;
@@ -682,6 +761,20 @@ SGPropertyList::SGPropertyList ()
  */
 SGPropertyList::~SGPropertyList ()
 {
+}
+
+
+/**
+ * Return true if a value is present.
+ */
+bool
+SGPropertyList::hasValue (const string &name) const
+{
+  const_iterator el = _props.find(name);
+  if (el == _props.end())
+    return false;
+  else
+    return true;
 }
 
 
@@ -917,6 +1010,7 @@ SGPropertyList::tieBool (const string &name,
 			 bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying bool property '" << name << '\'');
+  useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieBool(getter, setter, useDefault);
 }
 
@@ -933,6 +1027,7 @@ SGPropertyList::tieInt (const string &name,
 			bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying int property '" << name << '\'');
+  useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieInt(getter, setter, useDefault);
 }
 
@@ -949,6 +1044,7 @@ SGPropertyList::tieFloat (const string &name,
 			  bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying float property '" << name << '\'');
+  useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieFloat(getter, setter, useDefault);
 }
 
@@ -965,6 +1061,7 @@ SGPropertyList::tieDouble (const string &name,
 			   bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying double property '" << name << '\'');
+  useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieDouble(getter, setter, useDefault);
 }
 
@@ -981,6 +1078,7 @@ SGPropertyList::tieString (const string &name,
 			   bool useDefault)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Tying string property '" << name << '\'');
+  useDefault = useDefault && hasValue(name);
   return getValue(name, true)->tieString(getter, setter, useDefault);
 }
 
@@ -1195,6 +1293,22 @@ SGPropertyNode::getSubNode (const string &subpath) const
   _node->setPropertyList(_props);
   _node->setPath(_path + string("/") + subpath);
   return *_node;
+}
+
+
+/**
+ * Test whether the specified subpath has a value.
+ */
+bool
+SGPropertyNode::hasValue (const string &subpath) const
+{
+  if (_props == 0)
+    return false;
+
+  if (subpath.size() == 0)
+    return _props->hasValue(_path);
+  else
+    return _props->hasValue(_path + string("/") + subpath);
 }
 
 

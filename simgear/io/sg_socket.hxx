@@ -34,8 +34,7 @@
 #include STL_STRING
 
 #include <simgear/math/sg_types.hxx>
-
-#include "iochannel.hxx"
+#include <simgear/io/iochannel.hxx>
 
 FG_USING_STD(string);
 

@@ -44,7 +44,8 @@
 // already depending on how you defined FG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO
 #ifdef __MWERKS__
-#  include <math.h> // needed fabs()
+FG_USING_STD(sprintf);
+FG_USING_STD(fabs);
 #endif
 
 #include STL_STRING

@@ -3,6 +3,9 @@
 #  include <config.h>
 #endif
 
+#include <string.h>		// strcmp()
+#include <stdlib.h>		// atof() atoi()
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/xml/easyxml.hxx>
 
@@ -13,12 +16,11 @@
 #include <string>
 #include <vector>
 
-using std::istream;
-using std::ifstream;
-using std::ostream;
-using std::ofstream;
-using std::string;
-using std::vector;
+FG_USING_STD(ofstream);
+FG_USING_STD(ifstream);
+FG_USING_STD(string);
+FG_USING_STD(vector);
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -265,6 +267,8 @@ getTypeName (SGValue::Type type)
   case SGValue::STRING:
     return "string";
   }
+
+  return "unknown";		// avoid a compiler warning
 }
 
 
@@ -274,7 +278,7 @@ getTypeName (SGValue::Type type)
 static void
 writeData (ostream &output, const string &data)
 {
-  for (int i = 0; i < data.size(); i++) {
+  for (int i = 0; i < (int)data.size(); i++) {
     switch (data[i]) {
     case '&':
       output << "&amp;";

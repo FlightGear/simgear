@@ -89,7 +89,7 @@ CMetarStation::CMetarStation(
 	m_locationCart = sgPolarToCart3d( p );
 	Point3D up( ulongitude, ulatitude, ualtitude+EQUATORIAL_RADIUS_M );
 	m_upperLocationPolar = up;
-	m_upperLocationCart = fgPolarToCart3d( up );
+	m_upperLocationCart = sgPolarToCart3d( up );
 	s = t;
 	m_pFlag = s[0];
 }

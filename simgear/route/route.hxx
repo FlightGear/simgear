@@ -42,7 +42,7 @@
 FG_USING_STD(string);
 FG_USING_STD(vector);
 
-#include "waypoint.hxx"
+#include <simgear/route/waypoint.hxx>
 
 
 class SGRoute {

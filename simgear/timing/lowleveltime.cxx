@@ -304,7 +304,7 @@ static void fgtzset_internal (int always, const char *tz)
     /* User specified the empty string; use UTC explicitly.  */
     tz = "Universal";
 
-#ifdef MACOS
+#ifdef macintosh
   /* as you well know, mac paths contain leading colon, this code
      messes things up.... */
 #else

@@ -6,6 +6,8 @@
 
 #include <simgear/compiler.h>
 
+#include <string.h>		// strcmp()
+
 #include "easyxml.hxx"
 #include "xmlparse.h"
 

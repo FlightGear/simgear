@@ -25,8 +25,8 @@
 #ifndef _NEPTUNE_HXX_
 #define _NEPTUNE_HXX_
 
-#include "celestialBody.hxx"
-#include "star.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
+#include <simgear/ephemeris/star.hxx>
 
 class Neptune : public CelestialBody
 {

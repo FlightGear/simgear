@@ -39,10 +39,8 @@
 
 #include "stars.hxx"
 
-#ifdef _MSC_VER
 FG_USING_STD(cout);
 FG_USING_STD(endl);
-#endif 
 
 
 // Set up star rendering call backs

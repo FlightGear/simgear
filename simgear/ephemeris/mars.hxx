@@ -25,8 +25,8 @@
 #ifndef _MARS_HXX_
 #define _MARS_HXX_
 
-#include "celestialBody.hxx"
-#include "star.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
+#include <simgear/ephemeris/star.hxx>
 
 class Mars : public CelestialBody
 {

@@ -25,8 +25,8 @@
 #ifndef _SATURN_HXX_
 #define _SATURN_HXX_
 
-#include "celestialBody.hxx"
-#include "star.hxx"
+#include <simgear/ephemeris/celestialBody.hxx>
+#include <simgear/ephemeris/star.hxx>
 
 class Saturn : public CelestialBody
 {

@@ -69,7 +69,8 @@ SGSoundMgr::SGSoundMgr() {
 
     // initialize OpenAL
     alutInit( 0, NULL );
-    alGetError();
+    atexit(alutExit);
+
     if ( alGetError() == AL_NO_ERROR) {
         working = true;
     } else {
@@ -119,8 +120,6 @@ SGSoundMgr::~SGSoundMgr() {
 	SGSoundSample *sample = sample_current->second;
 	delete sample;
     }
-
-    alutExit();
 }
 
 

@@ -80,11 +80,8 @@ SGXmlSound::~SGXmlSound()
 {
     _sample->stop();
 
-    if (_property)
-        delete _property;
-
-    if (_condition)
-        delete _condition;
+    delete _property;
+    delete _condition;
 
     _volume.clear();
     _pitch.clear();

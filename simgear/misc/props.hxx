@@ -161,7 +161,7 @@ public:
   virtual ~SGRawValueFunctions () {}
   virtual T getValue () const {
     if (_getter) return (*_getter)();
-    else return DefaultValue;
+    else return SGRawValue<T>::DefaultValue;
   }
   virtual bool setValue (T value) {
     if (_setter) { (*_setter)(value); return true; }
@@ -193,7 +193,7 @@ public:
   virtual ~SGRawValueFunctionsIndexed () {}
   virtual T getValue () const {
     if (_getter) return (*_getter)(_index);
-    else return DefaultValue;
+    else return SGRawValue<T>::DefaultValue;
   }
   virtual bool setValue (T value) {
     if (_setter) { (*_setter)(_index, value); return true; }
@@ -226,7 +226,7 @@ public:
   virtual ~SGRawValueMethods () {}
   virtual T getValue () const {
     if (_getter) { return (_obj.*_getter)(); }
-    else { return DefaultValue; }
+    else { return SGRawValue<T>::DefaultValue; }
   }
   virtual bool setValue (T value) {
     if (_setter) { (_obj.*_setter)(value); return true; }
@@ -260,7 +260,7 @@ public:
   virtual ~SGRawValueMethodsIndexed () {}
   virtual T getValue () const {
     if (_getter) { return (_obj.*_getter)(_index); }
-    else { return DefaultValue; }
+    else { return SGRawValue<T>::DefaultValue; }
   }
   virtual bool setValue (T value) {
     if (_setter) { (_obj.*_setter)(_index, value); return true; }

@@ -710,6 +710,21 @@ SOURCE=.\simgear\metar\Stspack3.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=.\simgear\misc\commands.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\misc\props.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1422,6 +1437,21 @@ SOURCE=.\simgear\zlib\uncompr.c
 # Begin Source File
 
 SOURCE=.\simgear\zlib\zutil.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_z"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_z"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\zlib\zutil.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

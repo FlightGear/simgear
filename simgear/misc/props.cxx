@@ -19,10 +19,13 @@ using std::sort;
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
+
 SG_USING_STD(sort);
 
 #endif
 
+#include <algorithm>
+#include <stdio.h>
 #include <string.h>
 
 

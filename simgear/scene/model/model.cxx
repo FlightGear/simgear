@@ -249,7 +249,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
                                 // Assume that textures are in
                                 // the same location as the XML file.
   if (model == 0) {
-    ssgTexturePath((char *)texturepath.dir().c_str());
+    if (texturepath.extension() != "")
+          texturepath = texturepath.dir();
+
+    ssgTexturePath((char *)texturepath.c_str());
     model = (ssgBranch *)ssgLoad((char *)modelpath.c_str());
     if (model == 0)
       throw sg_exception("Failed to load 3D model");

@@ -16,6 +16,7 @@
 using std::istream;
 using std::ifstream;
 using std::ostream;
+using std::ofstream;
 using std::string;
 using std::vector;
 
@@ -329,6 +330,8 @@ writeNode (ostream &output, SGPropertyNode node, int indent)
     doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }
+
+  return true;
 }
 
 bool
@@ -344,6 +347,8 @@ writePropertyList (ostream &output, const SGPropertyList * props)
   }
 
   output << "</PropertyList>" << endl;
+
+  return true;
 }
 
 bool

@@ -28,6 +28,7 @@ libsgscreen_a_SOURCES = \
 	$(IMAGE_SERVER_SRCS) \
 	screen-dump.cxx \
         tr.cxx \
+	extensions.cxx \
 	win32-printer.h
 
 INCLUDES = -I$(top_srcdir)

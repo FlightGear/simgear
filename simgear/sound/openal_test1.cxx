@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>	// sleep()
 
 #if defined( __APPLE__ )
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>	// sleep()
 
 #include "sample_openal.hxx"
 #include "soundmgr_openal.hxx"

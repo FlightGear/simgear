@@ -7,11 +7,16 @@
 #ifndef _MetarReport_
 #define _MetarReport_
 
-#include <iostream>
-#include <string>
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
+#include STL_STRING
 #include <vector>
+
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
+
+FG_USING_STD(string);
 
 class CMetarReport
 {

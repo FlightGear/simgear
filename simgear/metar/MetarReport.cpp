@@ -1,5 +1,9 @@
 // Metar report implementation class code
 
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
+
 #include "MetarReport.h"
 #include "Metar.h"
 

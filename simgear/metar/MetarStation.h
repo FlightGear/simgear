@@ -8,13 +8,19 @@
 #ifndef _MetarStation_
 #define _MetarStation_
 
-#include <iostream>
-#include <string>
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
+#include STL_STRING
 #include <vector>
 #include <map>
+
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
-//using namespace std;
+
+FG_USING_STD(string);
+FG_USING_STD(vector);
+FG_USING_STD(map);
 
 class CMetarStationDB;
 

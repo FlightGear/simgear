@@ -1,5 +1,8 @@
 // Metar station implementation code
 
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
 #include <stdio.h>
 
 #include "MetarStation.h"

@@ -40,43 +40,67 @@ extern "C" {
 class SGThread
 {
 public:
+    /**
+     * SGThread cancelation modes.
+     */
+    enum cancel_t
+    {
+	CANCEL_DISABLE = 0,
+	CANCEL_DEFERRED,
+	CANCEL_IMMEDIATE,
+    };
+public:
 
     /**
-     * 
+     * Create a new thread object.
+     * When a SGThread object is created it does not begin execution
+     * immediately.  It is started by calling the start() member function.
      */
     SGThread();
 
     /**
-     * 
-     */
-    virtual ~SGThread();
-
-    /**
-     * 
+     * Start the underlying thread of execution.
+     * @return Pthread error code if execution fails, otherwise returns 0.
      */
     int start();
 
     /**
-     * 
+     * Sends a cancellation request to the underlying thread.  The target
+     * thread will either ignore the request, honor it immediately or defer
+     * it until it reaches a cancellation point.
      */
     void cancel();
 
     /**
-     * 
+     * Suspends the exection of the calling thread until this thread
+     * terminates.
      */
     void join();
 
 protected:
+    /**
+     * Destroy a thread object.
+     * This is protected so that its illegal to simply delete a thread
+     * - it must return from its run() function.
+     */
+    virtual ~SGThread();
 
     /**
-     * 
+     * Set the threads cancellation mode.
+     * @param mode The required cancellation mode.
+     */
+    void set_cancel( cancel_t mode );
+
+    /**
+     * All threads execute by deriving the run() method of SGThread.
+     * If this function terminates then the thread also terminates.
      */
     virtual void run() = 0;
 
 private:
 
     /**
-     * 
+     * Pthread thread identifier.
      */
     pthread_t tid;
 
@@ -132,30 +156,49 @@ public:
 
     /**
      * Create a new mutex.
+     * Under Linux this is a 'fast' mutex.
      */
     SGMutex();
 
     /**
      * Destroy a mutex object.
+     * Note: it is the responsibility of the caller to ensure the mutex is
+     * unlocked before destruction occurs.
      */
     ~SGMutex();
 
     /**
-     * 
+     * Lock this mutex.
+     * If the mutex is currently unlocked, it becomes locked and owned by
+     * the calling thread.  If the mutex is already locked by another thread,
+     * the calling thread is suspended until the mutex is unlocked.  If the
+     * mutex is already locked and owned by the calling thread, the calling
+     * thread is suspended until the mutex is unlocked, effectively causing
+     * the calling thread to deadlock.
+     *
+     * @see SGMutex::trylock
      */
     void lock();
 
     /**
-     * 
+     * Try to lock the mutex for the current thread.  Behaves like lock except
+     * that it doesn't block the calling thread.
+     * @return true if mutex was successfully locked, otherwise false.
+     * @see SGMutex::lock
      */
     bool trylock();
 
     /**
-     * 
+     * Unlock this mutex.
+     * It is assumed that the mutex is locked and owned by the calling thread.
      */
     void unlock();
 
 protected:
+
+    /**
+     * Pthread mutex.
+     */
     pthread_mutex_t mutex;
 };
 
@@ -184,7 +227,10 @@ inline void SGMutex::unlock()
 }
 
 /**
- * 
+ * A condition variable is a synchronization device that allows threads to 
+ * suspend execution until some predicate on shared data is satisfied.
+ * A condition variable is always associated with a mutex to avoid race
+ * conditions. 
  */
 class SGCondition
 {
@@ -210,8 +256,8 @@ public:
      * Wait for this condition variable to be signaled for at most
      * 'ms' milliseconds.
      *
-     * @param SGMutex& reference to a locked mutex.
-     * @param unsigned long milliseconds to wait for a signal.
+     * @param mutex reference to a locked mutex.
+     * @param ms milliseconds to wait for a signal.
      *
      * @return 
      */
@@ -219,11 +265,15 @@ public:
 
     /**
      * Wake one thread waiting on this condition variable.
+     * Nothing happens if no threads are waiting.
+     * If several threads are waiting exactly one thread is restarted.  It
+     * is not specified which.
      */
     void signal();
 
     /**
      * Wake all threads waiting on this condition variable.
+     * Nothing happens if no threads are waiting.
      */
     void broadcast();
 
@@ -234,6 +284,9 @@ private:
 
 private:
 
+    /**
+     * The Pthread conditon variable.
+     */
     pthread_cond_t cond;
 };
 

@@ -15,6 +15,27 @@ start_handler( void* arg )
     return 0;
 }
 
+void
+SGThread::set_cancel( cancel_t mode )
+{
+    switch (mode)
+    {
+    case CANCEL_DISABLE:
+	pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, 0 );
+	break;
+    case CANCEL_DEFERRED:
+	pthread_setcanceltype( PTHREAD_CANCEL_DEFERRED, 0 );
+	pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, 0 );
+	break;
+    case CANCEL_IMMEDIATE:
+	pthread_setcanceltype( PTHREAD_CANCEL_ASYNCHRONOUS, 0 );
+	pthread_setcancelstate( PTHREAD_CANCEL_ENABLE, 0 );
+	break;
+    default:
+	break;
+    }
+}
+
 bool
 SGMutex::trylock()
 {

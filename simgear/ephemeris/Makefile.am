@@ -8,11 +8,11 @@ include_HEADERS = \
 	jupiter.hxx \
 	mars.hxx \
 	mercury.hxx \
-	moon.hxx \
+	moonpos.hxx \
 	neptune.hxx \
 	saturn.hxx \
 	star.hxx \
-	stars.hxx \
+	stardata.hxx \
 	uranus.hxx \
 	venus.hxx
 
@@ -22,12 +22,12 @@ libsgephem_a_SOURCES = \
 	jupiter.cxx \
 	mars.cxx \
 	mercury.cxx \
-	moon.cxx \
+	moonpos.cxx \
 	neptune.cxx \
 	pluto.hxx \
 	saturn.cxx \
 	star.cxx \
-	stars.cxx \
+	stardata.cxx \
 	uranus.cxx \
 	venus.cxx
 

@@ -1,4 +1,4 @@
-// stars.hxx -- manage star data
+// stardata.hxx -- manage star data
 //
 // Written by Curtis Olson, started March 2000.
 //

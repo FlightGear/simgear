@@ -29,7 +29,7 @@
 // Constructor
 SGEphemeris::SGEphemeris( const string &path ) {
     our_sun = new Star;
-    moon = new Moon;
+    moon = new MoonPos;
     mercury = new Mercury;
     venus = new Venus;
     mars = new Mars;

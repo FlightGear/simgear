@@ -1,5 +1,5 @@
 /**************************************************************************
- * moon.cxx
+ * moonpos.cxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -36,18 +36,18 @@
 
 // #include <FDM/flight.hxx>
 
-#include "moon.hxx"
+#include "moonpos.hxx"
 
 
 /*************************************************************************
- * Moon::Moon(double mjd)
- * Public constructor for class Moon. Initializes the orbital elements and 
+ * MoonPos::MoonPos(double mjd)
+ * Public constructor for class MoonPos. Initializes the orbital elements and 
  * sets up the moon texture.
  * Argument: The current time.
- * the hard coded orbital elements for Moon are passed to 
+ * the hard coded orbital elements for MoonPos are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Moon::Moon(double mjd) :
+MoonPos::MoonPos(double mjd) :
   CelestialBody(125.1228, -0.0529538083,
 		5.1454,    0.00000,
 		318.0634,  0.1643573223,
@@ -57,7 +57,7 @@ Moon::Moon(double mjd) :
 {
 }
 
-Moon::Moon() :
+MoonPos::MoonPos() :
   CelestialBody(125.1228, -0.0529538083,
 		5.1454,    0.00000,
 		318.0634,  0.1643573223,
@@ -68,18 +68,18 @@ Moon::Moon() :
 }
 
 
-Moon::~Moon()
+MoonPos::~MoonPos()
 {
 }
 
 
 /*****************************************************************************
- * void Moon::updatePosition(double mjd, Star *ourSun)
+ * void MoonPos::updatePosition(double mjd, Star *ourSun)
  * this member function calculates the actual topocentric position (i.e.) 
  * the position of the moon as seen from the current position on the surface
  * of the moon. 
  ****************************************************************************/
-void Moon::updatePosition(double mjd, double lst, double lat, Star *ourSun)
+void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 {
   double 
     eccAnom, ecl, actTime,

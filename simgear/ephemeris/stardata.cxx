@@ -1,4 +1,4 @@
-// stars.cxx -- manage star data
+// stardata.cxx -- manage star data
 //
 // Written by Curtis Olson, started March 2000.
 //
@@ -25,7 +25,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/fgstream.hxx>
 
-#include "stars.hxx"
+#include "stardata.hxx"
 
 #ifdef _MSC_VER
   FG_USING_STD(getline);

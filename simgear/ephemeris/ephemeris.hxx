@@ -37,7 +37,7 @@
 #include <plib/sg.h>
 
 #include <simgear/ephemeris/star.hxx>
-#include <simgear/ephemeris/moon.hxx>
+#include <simgear/ephemeris/moonpos.hxx>
 #include <simgear/ephemeris/mercury.hxx>
 #include <simgear/ephemeris/venus.hxx>
 #include <simgear/ephemeris/mars.hxx>
@@ -45,13 +45,13 @@
 #include <simgear/ephemeris/saturn.hxx>
 #include <simgear/ephemeris/uranus.hxx>
 #include <simgear/ephemeris/neptune.hxx>
-#include <simgear/ephemeris/stars.hxx>
+#include <simgear/ephemeris/stardata.hxx>
 
 
 class SGEphemeris {
 
     Star *our_sun;
-    Moon *moon;
+    MoonPos *moon;
     Mercury *mercury;
     Venus *venus;
     Mars *mars;
@@ -91,7 +91,7 @@ public:
     }
 
     // moon
-    inline Moon *get_moon() const { return moon; }
+    inline MoonPos *get_moon() const { return moon; }
     inline double getMoonRightAscension() const {
 	return moon->getRightAscension();
     }

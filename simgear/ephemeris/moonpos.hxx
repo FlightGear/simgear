@@ -1,5 +1,5 @@
 /**************************************************************************
- * moon.hxx
+ * moonpos.hxx
  * Written by Durk Talsma. Originally started October 1997, for distribution  
  * with the FlightGear project. Version 2 was written in August and 
  * September 1998. This code is based upon algorithms and data kindly 
@@ -22,8 +22,8 @@
  *
  * $Id$
  **************************************************************************/
-#ifndef _MOON_HXX_
-#define _MOON_HXX_
+#ifndef _MOONPOS_HXX_
+#define _MOONPOS_HXX_
 
 
 #include <simgear/constants.h>
@@ -31,7 +31,8 @@
 #include <simgear/ephemeris/celestialBody.hxx>
 #include <simgear/ephemeris/star.hxx>
 
-class Moon : public CelestialBody
+
+class MoonPos : public CelestialBody
 {
 
 private:
@@ -49,12 +50,12 @@ private:
 
 public:
 
-    Moon(double mjd);
-    Moon();
-    ~Moon();
+    MoonPos(double mjd);
+    MoonPos();
+    ~MoonPos();
     void updatePosition(double mjd, double lst, double lat, Star *ourSun);
     // void newImage();
 };
 
 
-#endif // _MOON_HXX_
+#endif // _MOONPOS_HXX_

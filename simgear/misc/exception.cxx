@@ -95,7 +95,7 @@ sg_location::asString () const
     sprintf(buf, "line %d", _line);
     out += buf;
     if (_column != -1)
-      out += ",\n";
+      out += ", ";
   }
   if (_column != -1) {
     sprintf(buf, "column %d", _column);
@@ -133,6 +133,12 @@ sg_throwable::getMessage () const
   return _message;
 }
 
+const string
+sg_throwable::getFormattedMessage () const
+{
+  return getMessage();
+}
+
 void
 sg_throwable::setMessage (const string &message)
 {
@@ -150,14 +156,6 @@ sg_throwable::setOrigin (const string &origin)
 {
   _origin = origin;
 }
-
-
-sg_throwable *
-sg_throwable::clone () const
-{
-  return new sg_throwable(getMessage(), getOrigin());
-}
-
 
 
 
@@ -179,12 +177,6 @@ sg_error::~sg_error ()
 {
 }
 
-sg_error *
-sg_error::clone () const
-{
-  return new sg_error(getMessage(), getOrigin());
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -203,12 +195,6 @@ sg_exception::sg_exception (const string &message, const string &origin)
 
 sg_exception::~sg_exception ()
 {
-}
-
-sg_exception *
-sg_exception::clone () const
-{
-  return new sg_exception(getMessage(), getOrigin());
 }
 
 
@@ -239,6 +225,15 @@ sg_io_exception::~sg_io_exception ()
 {
 }
 
+const string
+sg_io_exception::getFormattedMessage () const
+{
+  string ret = getMessage();
+  ret += "\n at ";
+  ret += getLocation().asString();
+  return ret;
+}
+
 const sg_location &
 sg_io_exception::getLocation () const
 {
@@ -250,13 +245,6 @@ sg_io_exception::setLocation (const sg_location &location)
 {
   _location = location;
 }
-
-sg_io_exception *
-sg_io_exception::clone () const
-{
-  return new sg_io_exception(getMessage(), getLocation(), getOrigin());
-}
-
 
 
 
@@ -294,12 +282,6 @@ sg_format_exception::setText (const string &text)
   _text = text;
 }
 
-sg_format_exception *
-sg_format_exception::clone () const
-{
-  return new sg_format_exception(getMessage(), getText(), getOrigin());
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -319,12 +301,6 @@ sg_range_exception::sg_range_exception (const string &message,
 
 sg_range_exception::~sg_range_exception ()
 {
-}
-
-sg_range_exception *
-sg_range_exception::clone () const
-{
-  return new sg_range_exception(getMessage(), getOrigin());
 }
 
 

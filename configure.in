@@ -6,7 +6,7 @@ dnl $Id$
 AC_INIT(src/bucket/newbucket.cxx)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.0.3)
+AM_INIT_AUTOMAKE(SimGear, 0.0.4)
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET

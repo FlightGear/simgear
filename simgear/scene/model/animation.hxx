@@ -387,10 +387,9 @@ private:
 class SGAlphaTestAnimation : public SGAnimation
 {
 public:
-  SGAlphaTestAnimation (SGPropertyNode *prop_root,
-                        SGPropertyNode_ptr props);
+  SGAlphaTestAnimation(SGPropertyNode_ptr props);
   virtual ~SGAlphaTestAnimation ();
-  virtual void update();
+  virtual void init();
 private:
   void setAlphaClampToBranch(ssgBranch *b, float clamp);
   bool _done;

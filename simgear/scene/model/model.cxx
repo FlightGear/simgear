@@ -131,7 +131,7 @@ sgMakeAnimation( ssgBranch * model,
   } else if (!strcmp("blend", type)) {
     animation = new SGBlendAnimation(prop_root, node);
   } else if (!strcmp("alpha-test", type)) {
-    animation = new SGAlphaTestAnimation(prop_root, node);
+    animation = new SGAlphaTestAnimation(node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);

@@ -872,10 +872,8 @@ SGTexMultipleAnimation::update()
 // Implementation of SGAlphaTestAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SGAlphaTestAnimation::SGAlphaTestAnimation (SGPropertyNode *prop_root,
-                                    SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgBranch),
-    _done(false)
+SGAlphaTestAnimation::SGAlphaTestAnimation(SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgBranch)
 {
   _alpha_clamp = props->getFloatValue("alpha-factor", 0.0);
 }
@@ -884,12 +882,9 @@ SGAlphaTestAnimation::~SGAlphaTestAnimation ()
 {
 }
 
-void SGAlphaTestAnimation::update()
+void SGAlphaTestAnimation::init()
 {
-  if (!_done) {
-    _done = true;
-    setAlphaClampToBranch(_branch,_alpha_clamp);
-  }
+  setAlphaClampToBranch(_branch,_alpha_clamp);
 }
 
 void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)

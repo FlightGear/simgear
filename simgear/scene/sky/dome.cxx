@@ -47,20 +47,20 @@
 #endif
 
 
-// in meters of course
-static const float center_elev = 0.3125;
+// proportions of max dimensions fed to the build() routine
+static const float center_elev = 1.0;
 
-static const float upper_radius = 0.6250;
-static const float upper_elev = 0.2500;
+static const float upper_radius = 0.6;
+static const float upper_elev = 0.15;
 
-static const float middle_radius = 0.8750;
-static const float middle_elev = 0.1000;
+static const float middle_radius = 0.9;
+static const float middle_elev = 0.08;
 
-static const float lower_radius = 0.8750;
-static const float lower_elev = 0.0000;
+static const float lower_radius = 1.0;
+static const float lower_elev = 0.0;
 
-static const float bottom_radius = 0.6250;
-static const float bottom_elev = -0.0250;
+static const float bottom_radius = 0.8;
+static const float bottom_elev = -0.1;
 
 
 // Set up dome rendering callbacks
@@ -105,7 +105,7 @@ SGSkyDome::~SGSkyDome( void ) {
 ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     sgVec4 color;
 
-    float theta;
+    double theta;
     int i;
 
     // set up the state
@@ -153,20 +153,20 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
 		   cos(theta) * upper_radius * hscale,
 		   sin(theta) * upper_radius * hscale,
 		   upper_elev * vscale );
-	
+
 	sgSetVec3( middle_vertex[i],
-		   cos((double)theta) * middle_radius * hscale,
-		   sin((double)theta) * middle_radius * hscale,
+		   cos(theta) * middle_radius * hscale,
+		   sin(theta) * middle_radius * hscale,
 		   middle_elev * vscale );
 
 	sgSetVec3( lower_vertex[i],
-		   cos((double)theta) * lower_radius * hscale,
-		   sin((double)theta) * lower_radius * hscale,
+		   cos(theta) * lower_radius * hscale,
+		   sin(theta) * lower_radius * hscale,
 		   lower_elev * vscale );
 
 	sgSetVec3( bottom_vertex[i],
-		   cos((double)theta) * bottom_radius * hscale,
-		   sin((double)theta) * bottom_radius * hscale,
+		   cos(theta) * bottom_radius * hscale,
+		   sin(theta) * bottom_radius * hscale,
 		   bottom_elev * vscale );
     }
 

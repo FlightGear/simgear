@@ -104,6 +104,10 @@ private:
     // gst_diff has pretty good accuracy over the span of a couple hours
     double gst_diff;
 
+    /** init common constructor code */
+    void init( double lon_rad, double lat_rad, const string& root,
+               time_t init_time );
+
 public:
 
     /** Default constructor */
@@ -120,12 +124,13 @@ public:
      * If you don't know your position when you call the SGTime
      * constructor, you can just use the first form (which assumes 0,
      * 0).
-     * @param lon current longitude
-     * @param lat current latitude
+     * @param lon_rad current longitude (radians)
+     * @param lat_rad current latitude (radians)
      * @param root root path point to data file location (timezone, etc.)
      * @param init_time provide an initialization time, 0 means use
               current clock time */
-    SGTime( double lon, double lat, const string& root, time_t init_time /* = 0 */ );
+    SGTime( double lon_rad, double lat_rad, const string& root,
+            time_t init_time );
 
     /**
      * Create an instance given a data file path.
@@ -136,9 +141,6 @@ public:
     /** Destructor */
     ~SGTime();
 
-    /** init common constructor code */
-    void init( double lon, double lat, const string& root, time_t init_time /* = 0 */ );
-
     /** 
      * Update the time related variables.
      * The update() method requires you to pass in your position and
@@ -146,13 +148,13 @@ public:
      * you to offset "sim" time relative to "real" time. The update()
      * method is designed to be called by the host application before
      * every frame.
-     * @param lon current longitude
-     * @param lat current latitude
+     * @param lon_rad current longitude (radians)
+     * @param lat_rad current latitude (radians)
      * @param ct specify a unix time, otherwise specify 0 to use current
               clock time
      * @param warp an optional time offset specified in seconds.  This
      *        allows us to advance or rewind "time" if we choose to.  */
-    void update( double lon, double lat, time_t ct /* = 0 */, long int warp /* = 0 */ );
+    void update( double lon_rad, double lat_rad, time_t ct, long int warp );
 
     /**
      * Given lon/lat, update timezone information and local_offset
@@ -161,10 +163,10 @@ public:
      * enough that your timezone may have changed as well. In the
      * FlightGear project we call updateLocal() every few minutes from
      * our periodic event manager.
-     * @param lon current longitude
-     * @param lat current latitude
+     * @param lon_rad current longitude (radians)
+     * @param lat_rad current latitude (radians)
      * @param root base path containing time zone directory */
-    void updateLocal( double lon, double lat, const string& root );
+    void updateLocal( double lon_rad, double lat_rad, const string& root );
 
     /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };

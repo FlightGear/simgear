@@ -71,7 +71,7 @@ static const double J2000   = 2451545.0 - MJD0;
 static const double SIDRATE = 0.9972695677;
 
 
-void SGTime::init( double lon, double lat,
+void SGTime::init( double lon_rad, double lat_rad,
                    const string& root, time_t init_time )
 {
     SG_LOG( SG_EVENT, SG_INFO, "Initializing Time" );
@@ -96,7 +96,7 @@ void SGTime::init( double lon, double lat,
                 << zone.str() );
         tzContainer = new SGTimeZoneContainer( zone.c_str() );
 
-        SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+        SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat_rad, SGD_RADIANS_TO_DEGREES * lon_rad );
         SGGeoCoord* nearestTz = tzContainer->getNearest(location);
 
         SGPath name( root );
@@ -110,9 +110,10 @@ void SGTime::init( double lon, double lat,
     }
 }
 
-SGTime::SGTime( double lon, double lat, const string& root, time_t init_time )
+SGTime::SGTime( double lon_rad, double lat_rad, const string& root,
+                time_t init_time )
 {
-    init( lon, lat, root, init_time );
+    init( lon_rad, lat_rad, root, init_time );
 }
 
 
@@ -196,7 +197,9 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
 
 
 // Update the time related variables
-void SGTime::update( double lon, double lat, time_t ct, long int warp ) {
+void SGTime::update( double lon_rad, double lat_rad,
+                     time_t ct, long int warp )
+{
     double gst_precise, gst_course;
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -251,46 +254,51 @@ void SGTime::update( double lon, double lat, time_t ct, long int warp ) {
       
 	gst_diff = gst_precise - gst_course;
 
-	lst = sidereal_course( cur_time, gmt, -(lon * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
+	lst = sidereal_course( cur_time, gmt,
+                               -(lon_rad * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
     } else {
 	// course + difference should drift off very slowly
 	gst = sidereal_course( cur_time, gmt, 0.00 ) + gst_diff;
-	lst = sidereal_course( cur_time, gmt, -(lon * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
+	lst = sidereal_course( cur_time, gmt,
+                               -(lon_rad * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
     }
 
     SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current lon=0.00 Sidereal Time = " << gst );
     SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current LOCAL Sidereal Time = " << lst << " (" 
-	    << sidereal_precise( mjd, -(lon * SGD_RADIANS_TO_DEGREES) ) 
+	    << sidereal_precise( mjd, -(lon_rad * SGD_RADIANS_TO_DEGREES) ) 
 	    << ") (diff = " << gst_diff << ")" );
 }
 
 
 // Given lon/lat, update timezone information and local_offset
-void SGTime::updateLocal( double lon, double lat, const string& root ) {
+void SGTime::updateLocal( double lon_rad, double lat_rad, const string& root ) {
     // sanity checking
-    if ( lon < -SGD_PI || lon > SGD_PI ) {
+    if ( lon_rad < -SGD_PI || lon_rad> SGD_PI ) {
         // not within -180 ... 180
-        lon = 0.0;
+        lon_rad = 0.0;
     }
-    if ( lat < -SGD_PI * 0.5 || lat > SGD_PI * 0.5 ) {
+    if ( lat_rad < -SGD_PI * 0.5 || lat_rad > SGD_PI * 0.5 ) {
         // not within -90 ... 90
-        lat = 0.0;
+        lat_rad = 0.0;
     }
-    if ( lon != lon ) {
-        // only true if lon == nan
-        SG_LOG( SG_EVENT, SG_ALERT, "  Detected lon == nan, resetting to 0.0" );
-        lon = 0.0;
+    if ( lon_rad != lon_rad ) {
+        // only true if lon_rad == nan
+        SG_LOG( SG_EVENT, SG_ALERT,
+                "  Detected lon_rad == nan, resetting to 0.0" );
+        lon_rad = 0.0;
     }
-    if ( lat != lat ) {
-        // only true if lat == nan
-        SG_LOG( SG_EVENT, SG_ALERT, "  Detected lat == nan, resetting to 0.0" );
-        lat = 0.0;
+    if ( lat_rad != lat_rad ) {
+        // only true if lat_rad == nan
+        SG_LOG( SG_EVENT, SG_ALERT,
+                "  Detected lat_rad == nan, resetting to 0.0" );
+        lat_rad = 0.0;
     }
     time_t currGMT;
     time_t aircraftLocalTime;
-    SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+    SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat_rad,
+                         SGD_RADIANS_TO_DEGREES * lon_rad );
     SGGeoCoord* nearestTz = tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );

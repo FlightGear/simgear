@@ -6,16 +6,11 @@
 #  include <simgear_config.h>
 #endif
 
-
-#ifdef HAVE_WINDOWS_H
-#  include <windows.h>
-#endif
-
-#include <GL/gl.h>
-
 #if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
 # include <windows.h>
 #endif
+
+#include <GL/gl.h>
 
 #ifdef __cplusplus
 extern "C" {

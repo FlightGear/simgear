@@ -674,7 +674,7 @@ SKYRESULT SkyTextureManager::_Create2DTextureObject(SkyTexture &texture,
     
   if (bNew)
   {
-    unsigned int iInternalFormat;
+    GLenum iInternalFormat;
     switch (iFormat)
     {
     case GL_LUMINANCE:
@@ -693,7 +693,7 @@ SKYRESULT SkyTextureManager::_Create2DTextureObject(SkyTexture &texture,
                   iInternalFormat, 
                   iWidth, iHeight,
                   0, 
-                  iFormat,
+                  (GLenum) iFormat,
                   GL_UNSIGNED_BYTE, 
                   pData);
   }
@@ -702,7 +702,7 @@ SKYRESULT SkyTextureManager::_Create2DTextureObject(SkyTexture &texture,
     glTexSubImage2D(GL_TEXTURE_2D,
                     0, 0, 0,
                     iWidth, iHeight, 
-                    iFormat, 
+                    (GLenum) iFormat, 
                     GL_UNSIGNED_BYTE, 
                     pData);
   }

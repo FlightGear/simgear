@@ -28,6 +28,8 @@
 
 #include <simgear/compiler.h>
 
+#include <list>
+
 #include STL_STRING
 
 #include <simgear/bucket/newbucket.hxx>
@@ -44,6 +46,12 @@
 #include "obj.hxx"
 
 SG_USING_STD(string);
+SG_USING_STD(list);
+
+struct Leaf {
+    GLenum type;
+    int index;
+};
 
 
 // Generate an ocean tile
@@ -396,82 +404,104 @@ bool sgBinObjLoad( const string& path, const bool is_base,
         object_lod->addKid(random_object_branch);
     }
 
-    // generate triangles
+    typedef map<string,list<Leaf> > LeafMap;
+    LeafMap leafMap;
+    Leaf leaf;
+    leaf.type = GL_TRIANGLES;
     string_list const& tri_materials = obj.get_tri_materials();
     group_list const& tris_v = obj.get_tris_v();
     group_list const& tris_n = obj.get_tris_n();
     group_list const& tris_tc = obj.get_tris_tc();
-    for ( i = 0; i < tris_v.size(); ++i ) {
-        ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLES, matlib,
-                                    tri_materials[i],
-                                    nodes, normals, texcoords,
-                                    tris_v[i], tris_n[i], tris_tc[i],
-                                    is_base, ground_lights );
-
-        if ( use_random_objects ) {
-            SGMaterial *mat = matlib->find( tri_materials[i] );
-            if ( mat == NULL ) {
-                SG_LOG( SG_INPUT, SG_ALERT,
-                        "Unknown material for random surface objects = "
-                        << tri_materials[i] );
-            } else {
-                gen_random_surface_objects( leaf, random_object_branch,
-                                            center, mat );
-            }
-        }
-        local_terrain->addKid( leaf );
+    for ( i = 0; i < tris_v.size(); i++ ) {
+        leaf.index = i;
+        leafMap[ tri_materials[i] ].push_back( leaf );
     }
-
-    // generate strips
+    leaf.type = GL_TRIANGLE_STRIP;
     string_list const& strip_materials = obj.get_strip_materials();
     group_list const& strips_v = obj.get_strips_v();
     group_list const& strips_n = obj.get_strips_n();
     group_list const& strips_tc = obj.get_strips_tc();
-    for ( i = 0; i < strips_v.size(); ++i ) {
-        ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_STRIP,
-                                    matlib, strip_materials[i],
-                                    nodes, normals, texcoords,
-                                    strips_v[i], strips_n[i], strips_tc[i],
-                                    is_base, ground_lights );
-
-        if ( use_random_objects ) {
-            SGMaterial *mat = matlib->find( strip_materials[i] );
-            if ( mat == NULL ) {
-                SG_LOG( SG_INPUT, SG_ALERT,
-                        "Unknown material for random surface objects = "
-                        << strip_materials[i] );
-            } else {
-                gen_random_surface_objects( leaf, random_object_branch,
-                                            center, mat );
-            }
-        }
-        local_terrain->addKid( leaf );
+    for ( i = 0; i < strips_v.size(); i++ ) {
+        leaf.index = i;
+        leafMap[ strip_materials[i] ].push_back( leaf );
     }
-
-    // generate fans
+    leaf.type = GL_TRIANGLE_FAN;
     string_list const& fan_materials = obj.get_fan_materials();
     group_list const& fans_v = obj.get_fans_v();
     group_list const& fans_n = obj.get_fans_n();
     group_list const& fans_tc = obj.get_fans_tc();
-    for ( i = 0; i < fans_v.size(); ++i ) {
-        ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_FAN,
-                                    matlib, fan_materials[i],
-                                    nodes, normals, texcoords,
-                                    fans_v[i], fans_n[i], fans_tc[i],
-                                    is_base, ground_lights );
-        if ( use_random_objects ) {
-            SGMaterial *mat = matlib->find( fan_materials[i] );
-            if ( mat == NULL ) {
-                SG_LOG( SG_INPUT, SG_ALERT,
-                        "Unknown material for random surface objects = "
-                        << fan_materials[i] );
-            } else {
-                gen_random_surface_objects( leaf, random_object_branch,
-                                            center, mat );
-            }
-        }
+    for ( i = 0; i < fans_v.size(); i++ ) {
+        leaf.index = i;
+        leafMap[ fan_materials[i] ].push_back( leaf );
+    }
 
-        local_terrain->addKid( leaf );
+    LeafMap::iterator lmi = leafMap.begin();
+    while ( lmi != leafMap.end() ) {
+        list<Leaf> &leaf_list = lmi->second;
+        list<Leaf>::iterator li = leaf_list.begin();
+        while ( li != leaf_list.end() ) {
+            Leaf &leaf = *li;
+            int ind = leaf.index;
+            if ( leaf.type == GL_TRIANGLES ) {
+                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLES, matlib,
+                                            tri_materials[ind],
+                                            nodes, normals, texcoords,
+                                            tris_v[ind], tris_n[ind], tris_tc[ind],
+                                            is_base, ground_lights );
+
+                if ( use_random_objects ) {
+                    SGMaterial *mat = matlib->find( tri_materials[ind] );
+                    if ( mat == NULL ) {
+                        SG_LOG( SG_INPUT, SG_ALERT,
+                                "Unknown material for random surface objects = "
+                                << tri_materials[ind] );
+                    } else {
+                        gen_random_surface_objects( leaf, random_object_branch,
+                                                    center, mat );
+                    }
+                }
+                local_terrain->addKid( leaf );
+            } else if ( leaf.type == GL_TRIANGLE_STRIP ) {
+                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_STRIP,
+                                            matlib, strip_materials[ind],
+                                            nodes, normals, texcoords,
+                                            strips_v[ind], strips_n[ind], strips_tc[ind],
+                                            is_base, ground_lights );
+
+                if ( use_random_objects ) {
+                    SGMaterial *mat = matlib->find( strip_materials[ind] );
+                    if ( mat == NULL ) {
+                        SG_LOG( SG_INPUT, SG_ALERT,
+                                "Unknown material for random surface objects = "
+                                << strip_materials[ind] );
+                    } else {
+                        gen_random_surface_objects( leaf, random_object_branch,
+                                                    center, mat );
+                    }
+                }
+                local_terrain->addKid( leaf );
+            } else {
+                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_FAN,
+                                            matlib, fan_materials[ind],
+                                            nodes, normals, texcoords,
+                                            fans_v[ind], fans_n[ind], fans_tc[ind],
+                                            is_base, ground_lights );
+                if ( use_random_objects ) {
+                    SGMaterial *mat = matlib->find( fan_materials[ind] );
+                    if ( mat == NULL ) {
+                        SG_LOG( SG_INPUT, SG_ALERT,
+                                "Unknown material for random surface objects = "
+                                << fan_materials[ind] );
+                    } else {
+                        gen_random_surface_objects( leaf, random_object_branch,
+                                                    center, mat );
+                    }
+                }
+                local_terrain->addKid( leaf );
+            }
+            ++li;
+        }
+        ++lmi;
     }
 
     return true;

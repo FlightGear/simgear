@@ -204,12 +204,29 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 	base = tl->get( 0 );
 
 	base[0] += xoff;
-	while ( base[0] > 1.0 ) { base[0] -= 1.0; }
-	while ( base[0] < 0.0 ) { base[0] += 1.0; }
+
+	// the while loops can lead to *long* pauses if base[0] comes
+	// with a bogus value.
+        // while ( base[0] > 1.0 ) { base[0] -= 1.0; }
+	// while ( base[0] < 0.0 ) { base[0] += 1.0; }
+        if ( base[0] > -10.0 && base[0] < 10.0 ) {
+            base[0] -= (int)base[0];
+        } else {
+            base[0] = 0.0;
+            cout << "Error: base = " << base[0] << "," << base[1] << endl;
+        }
 
 	base[1] += yoff;
-	while ( base[1] > 1.0 ) { base[1] -= 1.0; }
-	while ( base[1] < 0.0 ) { base[1] += 1.0; }
+	// the while loops can lead to *long* pauses if base[0] comes
+	// with a bogus value.
+	// while ( base[1] > 1.0 ) { base[1] -= 1.0; }
+	// while ( base[1] < 0.0 ) { base[1] += 1.0; }
+        if ( base[1] > -10.0 && base[1] < 10.0 ) {
+            base[1] -= (int)base[1];
+        } else {
+            base[1] = 0.0;
+            cout << "Error: base = " << base[0] << "," << base[1] << endl;
+        }
 
 	// cout << "base = " << base[0] << "," << base[1] << endl;
 

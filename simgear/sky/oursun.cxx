@@ -37,7 +37,7 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-#ifdef FG_CHEESY_LENS_FLARE
+#ifdef FG_PLIB_SUPPORTS_LENS_FLARE
 #  include <plib/ssgaLensFlare.h>
 #endif
 

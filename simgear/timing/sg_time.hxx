@@ -34,12 +34,6 @@
 #  include <config.h>
 #endif
 
-#ifdef HAVE_WINDOWS_H
-#  include <windows.h>
-#endif
-
-#include <GL/glut.h>
-
 #include <simgear/compiler.h>
 
 #ifdef FG_HAVE_STD_INCLUDES
@@ -48,20 +42,7 @@
 #  include <time.h>
 #endif
 
-// #include <FDM/flight.hxx>
-
 #include "timezone.h"
-// #include "lowleveltime.h"
-
-
-enum sgTimingOffsetType {
-    SG_TIME_SYS_OFFSET   = 0,
-    SG_TIME_GMT_OFFSET   = 1,
-    SG_TIME_LAT_OFFSET   = 2,
-    SG_TIME_SYS_ABSOLUTE = 3,
-    SG_TIME_GMT_ABSOLUTE = 4,
-    SG_TIME_LAT_ABSOLUTE = 5
-};
 
 
 // Define a structure containing time parameters
@@ -95,19 +76,39 @@ private:
     // local sidereal time
     double lst;
 
-    // the difference between the precise sidereal time algorithm
-    // result and the course result.  course_gst + diff has good
-    // accuracy for the short term
+    // the difference between the precise / expensive sidereal time
+    // algorithm result and the quick course result.  course_gst +
+    // gst_diff has pretty good accuracy over the span of a couple hours
     double gst_diff;
-
-    // internal book keeping data
-    double last_mjd, last_dy;
-    int last_mn, last_yr;
 
 public:
 
     SGTime( const string& root );
     ~SGTime();
+
+    // Initialize the time related variables
+    void init( double lon, double lat, const string& root );
+
+    // Update the time related variables
+    void update( double lon, double lat, double alt_m, long int warp );
+
+    // Given lon/lat, update timezone information and local_offset
+    void updateLocal( double lon, double lat, const string& root );
+
+    // given Julian Date and Longitude (decimal degrees West) compute
+    // Local Sidereal Time, in decimal hours.
+    //
+    // Provided courtesy of ecdowney@noao.edu (Elwood Downey) 
+    double sidereal_precise( double lng );
+
+    // return a courser but cheaper estimate of sidereal time
+    double sidereal_course( double lng );
+
+    // Some other stuff which were changed to SGTime members on
+    // questionable grounds -:)
+    time_t get_gmt(int year, int month, int day, 
+		   int hour, int minute, int second);
+    time_t get_gmt(struct tm* the_time);
 
     inline double getJD() const { return jd; };
     inline double getMjd() const { return mjd; };
@@ -115,50 +116,31 @@ public:
     inline double getGst() const { return gst; };
     inline time_t get_cur_time() const { return cur_time; };
     inline struct tm* getGmt()const { return gmt; };
-  
-    // void adjust_warp(int val) { warp += val; };
-    // void adjust_warp_delta(int val) { warp_delta += val; };
-
-    // Initialize the time dependent variables
-    void init( double lon, double lat, const string& root );
-    // time_t timeOffset, sgTimingOffsetType offsetType );
-
-    // Update the time dependent variables
-    void update( double lon, double lat, double alt_m, long int warp );
-    void updateLocal( double lon, double lat, const string& root );
-
-    void cal_mjd (int mn, double dy, int yr);
-    void utc_gst(); 
-    double sidereal_precise (double lng);
-    double sidereal_course(double lng); 
-    // static SGTime *cur_time_params;
-
-    // Some other stuff which were changed to SGTime members on
-    // questionable grounds -:)
-    // time_t get_start_gmt(int year);
-    time_t get_gmt(int year, int month, int day, 
-		   int hour, int minute, int second);
-    time_t get_gmt(struct tm* the_time);
-
     inline char* get_zonename() const { return zonename; }
-
-    char* format_time( const struct tm* p, char* buf );
-    long int fix_up_timezone( long int timezone_orig );
-
-    // inline int get_warp_delta() const { return warp_delta; }
 };
 
 
-inline time_t SGTime::get_gmt(struct tm* the_time) // this is just a wrapper
-{
-  //printf("Using: %24s as input\n", asctime(the_time));
-  return get_gmt(the_time->tm_year,
-	  the_time->tm_mon,
-	  the_time->tm_mday,
-	  the_time->tm_hour,
-	  the_time->tm_min,
-	  the_time->tm_sec);
+// this is just a wrapper
+inline time_t SGTime::get_gmt(struct tm* the_time) {
+    // printf("Using: %24s as input\n", asctime(the_time));
+    return get_gmt(the_time->tm_year,
+		   the_time->tm_mon,
+		   the_time->tm_mday,
+		   the_time->tm_hour,
+		   the_time->tm_min,
+		   the_time->tm_sec);
 }
+
+// given a date in months, mn, days, dy, years, yr, return the
+// modified Julian date (number of days elapsed since 1900 jan 0.5),
+// mjd.  Adapted from Xephem.
+double sgTimeCalcMJD(int mn, double dy, int yr);
+
+// given an mjd, calculate greenwich mean sidereal time, gst
+double sgTimeCalcGST( double mjd );
+
+// format time
+char* sgTimeFormatTime( const struct tm* p, char* buf );
 
 
 #endif // _SG_TIME_HXX

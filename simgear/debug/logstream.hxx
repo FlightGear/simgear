@@ -105,6 +105,35 @@ public:
      */
     static void set_log_level( sgDebugClass c, sgDebugPriority p );
 
+
+    /**
+     * Set the allowed logging classes.
+     * @param c All enabled logging classes anded together.
+     */
+    static void set_log_classes (sgDebugClass c);
+
+
+    /**
+     * Get the logging classes currently enabled.
+     * @return All enabled debug logging anded together.
+     */
+    static sgDebugClass get_log_classes ();
+
+
+    /**
+     * Set the logging priority.
+     * @param c The priority cutoff for logging messages.
+     */
+    static void set_log_priority (sgDebugPriority p);
+
+
+    /**
+     * Get the current logging priority.
+     * @return The priority cutoff for logging messages.
+     */
+    static sgDebugPriority get_log_priority ();
+
+
     /**
      * Set the stream buffer
      * @param sb stream buffer

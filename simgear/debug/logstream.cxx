@@ -57,6 +57,30 @@ logbuf::set_log_level( sgDebugClass c, sgDebugPriority p )
 }
 
 void
+logbuf::set_log_classes (sgDebugClass c)
+{
+    logClass = c;
+}
+
+sgDebugClass
+logbuf::get_log_classes ()
+{
+    return logClass;
+}
+
+void
+logbuf::set_log_priority (sgDebugPriority p)
+{
+    logPriority = p;
+}
+
+sgDebugPriority
+logbuf::get_log_priority ()
+{
+    return logPriority;
+}
+
+void
 logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
     logbuf::set_log_level( c, p );

@@ -26,9 +26,9 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-#include <simgear/math/fg_random.h>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
+#include <simgear/math/sg_random.h>
 
 #include "cloud.hxx"
 
@@ -70,7 +70,7 @@ void SGCloudLayer::build( double s, double asl, double thickness,
 
     sgSetVec3( vertex, -size, -size, 0.0f );
     sgVec2 base;
-    sgSetVec2( base, fg_random(), fg_random() );
+    sgSetVec2( base, sg_random(), sg_random() );
     sgSetVec2( tc, base[0], base[1] );
     cl->add( color );
     vl->add( vertex );

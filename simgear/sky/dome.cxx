@@ -39,7 +39,6 @@
 #include <plib/sg.h>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/fg_random.h>
 
 #include "dome.hxx"
 

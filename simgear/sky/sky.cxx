@@ -30,7 +30,7 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-#include <simgear/math/fg_random.h>
+#include <simgear/math/sg_random.h>
 
 #include "sky.hxx"
 
@@ -328,11 +328,11 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	if ( ratio < 1.0 ) {
 	    if ( ! in_puff ) {
 		// calc chance of entering cloud puff
-		double rnd = fg_random();
+		double rnd = sg_random();
 		double chance = rnd * rnd * rnd;
 		if ( chance > 0.95 /* * (diff - 25) / 50.0 */ ) {
 		    in_puff = true;
-		    puff_length = fg_random() * 2.0; // up to 2 seconds
+		    puff_length = sg_random() * 2.0; // up to 2 seconds
 		    puff_progression = 0.0;
 		}
 	    }

@@ -1,3 +1,7 @@
+
+#ifndef __GLUT_SHAPES_H
+#define __GLUT_SHAPES_H 1
+
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
@@ -9,11 +13,18 @@
 
 #include <GL/gl.h>
 
-#define APIENTRY
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
+# include <windows.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+
 
 extern void APIENTRY glutWireSphere(GLdouble radius, GLint slices, GLint stacks)
 ;
@@ -41,3 +52,5 @@ extern void APIENTRY glutSolidIcosahedron(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // !__GLUT_SHAPES_H

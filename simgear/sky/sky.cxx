@@ -175,18 +175,36 @@ bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
 }
 
 
-// draw background portions of the sky
-void SGSky::draw_background() {
+// draw background portions of the sky ... do this before you draw the
+// rest of your scene.
+void SGSky::preDraw() {
     ssgCullAndDraw( pre_root );
 }
 
 
-// draw scenery elements of the sky
-void SGSky::draw_scene( float alt ) {
+// draw translucent clouds ... do this after you've drawn all the
+// oapaque elements of your scene.
+void SGSky::postDraw( float alt ) {
+    float slop = 4.0;		// if we are closer than this to a cloud layer,
+				// don't draw clouds
 
-    if ( effective_visibility < 4000.0 ) {
-	// bail and don't draw clouds
-	return;
+    int in_cloud = -1;		// cloud we are in
+
+    // check where we are relative to the cloud layers
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+	float asl = cloud_layers[i]->get_asl();
+	float thickness = cloud_layers[i]->get_thickness();
+
+	if ( alt < asl - slop ) {
+	    // below cloud layer
+	} else if ( alt < asl + thickness + slop ) {
+	    // in cloud layer
+
+	    // bail now and don't draw any clouds
+	    in_cloud = i;
+	} else {
+	    // above cloud layer
+	}
     }
 
     // determine rendering order
@@ -200,21 +218,29 @@ void SGSky::draw_scene( float alt ) {
     if ( pos == 0 ) {
 	// we are below all the cloud layers, draw top to bottom
 	for ( int i = cloud_layers.size() - 1; i >= 0; --i ) {
-	    cloud_layers[i]->draw();
+	    if ( i != in_cloud ) {
+		cloud_layers[i]->draw();
+	    }
 	}
     } else if ( pos >= (int)cloud_layers.size() ) {
 	// we are above all the cloud layers, draw bottom to top
 	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-	    cloud_layers[i]->draw();
+	    if ( i != in_cloud ) {
+		cloud_layers[i]->draw();
+	    }
 	}
     } else {
 	// we are between cloud layers, draw lower layers bottom to
 	// top and upper layers top to bottom
 	for ( int i = 0; i < pos; ++i ) {
-	    cloud_layers[i]->draw();
+	    if ( i != in_cloud ) {
+		cloud_layers[i]->draw();
+	    }
 	}
 	for ( int i = cloud_layers.size() - 1; i >= pos; --i ) {
-	    cloud_layers[i]->draw();
+	    if ( i != in_cloud ) {
+		cloud_layers[i]->draw();
+	    }
 	}
     }
 }
@@ -298,25 +324,28 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		double chance = rnd * rnd * rnd;
 		if ( chance > 0.95 /* * (diff - 25) / 50.0 */ ) {
 		    in_puff = true;
-		    do {
-			puff_length = fg_random() * 2.0; // up to 2 seconds
-		    } while ( puff_length <= 0.0 );
+		    puff_length = fg_random() * 2.0; // up to 2 seconds
 		    puff_progression = 0.0;
 		}
 	    }
 
 	    if ( in_puff ) {
 		// modify actual_visibility based on puff envelope
-	    
+
 		if ( puff_progression <= ramp_up ) {
-		    double x = 2 * SGD_PI * puff_progression / ramp_up;
+		    double x = 0.5 * SGD_PI * puff_progression / ramp_up;
 		    double factor = 1.0 - sin( x );
+		    // cout << "ramp up = " << puff_progression
+		    //      << "  factor = " << factor << endl;
 		    effvis = effvis * factor;
 		} else if ( puff_progression >= ramp_up + puff_length ) {
-		    double x = 2 * SGD_PI * 
+		    double x = 0.5 * SGD_PI * 
 			(puff_progression - (ramp_up + puff_length)) /
 			ramp_down;
 		    double factor = sin( x );
+		    // cout << "ramp down = " 
+		    //      << puff_progression - (ramp_up + puff_length) 
+		    //      << "  factor = " << factor << endl;
 		    effvis = effvis * factor;
 		} else {
 		    effvis = 0.0;
@@ -333,6 +362,7 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		//                (double)current_options.get_model_hz();
 
 		puff_progression += time_factor;
+		// cout << "time factor = " << time_factor << endl;
 
 		/* cout << "gml = " << global_multi_loop 
 		   << "  speed up = " << current_options.get_speed_up()
@@ -344,9 +374,9 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		}
 	    }
 
-	    // never let visibility drop below zero
-	    if ( effvis <= 0 ) {
-		effvis = 0.1;
+	    // never let visibility drop below 25 meters
+	    if ( effvis <= 25.0 ) {
+		effvis = 25.0;
 	    }
 	}
     } // for

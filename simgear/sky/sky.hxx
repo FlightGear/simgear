@@ -126,11 +126,13 @@ public:
     // transition range, and simulated "puffs".
     void modify_vis( float alt, float time_factor );
 
-    // draw background portions of the sky
-    void draw_background();
+    // draw background portions of the sky ... do this before you draw
+    // the rest of your scene.
+    void preDraw();
 
-    // draw scenery elements of the sky
-    void draw_scene( float alt );
+    // draw translucent clouds ... do this after you've drawn all the
+    // oapaque elements of your scene.
+    void postDraw( float alt );
 
     // specify the texture path (optional, defaults to current directory)
     inline void texture_path( const string& path ) {

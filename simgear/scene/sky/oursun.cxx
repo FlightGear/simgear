@@ -337,37 +337,6 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 bool SGSun::repaint( double sun_angle ) {
     static float prev_sun_angle = 9999.0;
 
-    // else sun is well below horizon (so no point in repainting it)
-#if 0
-    if ( (sun_angle * SGD_RADIANS_TO_DEGREES < 100 )
-          && (prev_sun_angle != sun_angle))
-    {
-        prev_sun_angle = sun_angle;
-    
-	// x_10 = sun_angle^10
-	double x_10 = sun_angle * sun_angle * sun_angle * sun_angle * sun_angle
-	    * sun_angle * sun_angle * sun_angle * sun_angle * sun_angle;
-
-	float ambient = (float)(0.4 * pow (1.1, - x_10 / 30.0));
-	if (ambient < 0.3) { ambient = 0.3; }
-	if (ambient > 1.0) { ambient = 1.0; }
-
-	sgVec4 color;
-	sgSetVec4( color,
-		   (ambient * 6.0)  - 1.0, // minimum value = 0.8
-		   (ambient * 11.0) - 2.7, // minimum value = 0.6
-		   (ambient * 12.0) - 3.6, // minimum value = 0.0
-		   1.0 );
-    
-	// temp test, forces the color to always be white
-	// sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-
-	if (color[0] > 1.0) color[0] = 1.0;
-	if (color[1] > 1.0) color[1] = 1.0;
-	if (color[2] > 1.0) color[2] = 1.0;
-
-#else
-
     if (prev_sun_angle != sun_angle)
     {
 
@@ -385,7 +354,6 @@ bool SGSun::repaint( double sun_angle ) {
         color[2] = pow(sun_factor, 4.0);
         color[3] = 1.0;
 
-#endif
         gamma_correct_rgb( color );
 
         // cout << "color = " << color[0] << " " << color[1] << " "

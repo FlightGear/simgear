@@ -147,7 +147,7 @@ protected:
 
 class SGMetar {
 public:
-	SGMetar(const char *m);
+	SGMetar(const string& m, const string& proxy = "", const string& port = "", const string &auth = "");
 	~SGMetar();
 
 	enum ReportType {
@@ -253,7 +253,7 @@ protected:
 	int	scanNumber(char **str, int *num, int min, int max = 0);
 	bool	scanBoundary(char **str);
 	const struct Token *scanToken(char **str, const struct Token *list);
-	char	*loadData(const char *id);
+	char	*loadData(const char *id, const string& proxy, const string& port, const string &auth);
 	void	normalizeData();
 };
 

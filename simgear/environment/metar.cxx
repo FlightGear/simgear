@@ -22,7 +22,7 @@
 
 /**
  * @file metar.cxx
- * Interface for encoded SGMetar aviation weather data.
+ * Interface for encoded Meteorological Aerodrome Reports (METAR).
  */
 
 #include <string>
@@ -36,7 +36,7 @@
 #define NaN SGMetarNaN
 
 /**
- * The constructor takes a SGMetar string, or a four-letter ICAO code. In the
+ * The constructor takes a Metar string, or a four-letter ICAO code. In the
  * latter case the metar string is downloaded from
  * http://weather.noaa.gov/pub/data/observations/metar/stations/.
  * The constructor throws sg_io_exceptions on failure. The "METAR"
@@ -44,17 +44,22 @@
  * @a grpcount) and can be left away. A keyword "SPECI" is
  * likewise accepted.
  *
+ * @param m     ICAO station id or metar string
+ * @param proxy proxy host (optional; default: "")
+ * @param port  proxy port (optional; default: "80")
+ * @param auth  proxy authorization information (optional; default: "")
+ *
  * @par Examples:
  * @code
  * SGMetar *m = new SGMetar("METAR KSFO 061656Z 19004KT 9SM SCT100 OVC200 08/03 A3013");
  * double t = m->getTemperature_F();
  * delete m;
  *
- * SGMetar n("KSFO");
+ * SGMetar n("KSFO", "proxy.provider.foo", "3128", "proxy-password");
  * double d = n.getDewpoint_C();
  * @endcode
  */
-SGMetar::SGMetar(const char *m) :
+SGMetar::SGMetar(const string& m, const string& proxy, const string& port, const string& auth) :
 	_grpcount(0),
 	_year(-1),
 	_month(-1),
@@ -71,14 +76,14 @@ SGMetar::SGMetar(const char *m) :
 	_dewp(NaN),
 	_pressure(NaN)
 {
-	if (isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3]) && !m[4]) {
+	if (m.length() == 4 && isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3])) {
 		for (int i = 0; i < 4; i++)
 			_icao[i] = toupper(m[i]);
 		_icao[4] = '\0';
-		_data = loadData(_icao);
+		_data = loadData(_icao, proxy, port, auth);
 	} else {
-		_data = new char[strlen(m) + 2];	// make room for " \0"
-		strcpy(_data, m);
+		_data = new char[m.length() + 2];	// make room for " \0"
+		strcpy(_data, m.c_str());
 		_url = _data;
 	}
 	normalizeData();
@@ -94,7 +99,7 @@ SGMetar::SGMetar(const char *m) :
 	scanType();
 	if (!scanId() || !scanDate()) {
 		delete[] _data;
-		throw sg_io_exception("metar data incomplete (" + _url + ')');
+		throw sg_io_exception("metar data bogus (" + _url + ')');
 	}
 	scanModifier();
 
@@ -120,7 +125,7 @@ SGMetar::SGMetar(const char *m) :
 
 	if (_grpcount < 4) {
 		delete[] _data;
-		throw sg_io_exception("metar data invalid (" + _url + ')');
+		throw sg_io_exception("metar data incomplete (" + _url + ')');
 	}
 	_url = "";
 }
@@ -145,26 +150,39 @@ SGMetar::~SGMetar()
   * @endcode
   * Throws sg_io_exception on failure. Gives up after waiting longer than 10 seconds.
   *
-  * @param id four-letter ICAO SGMetar station code, e.g. "KSFO".
-  * @return pointer to SGMetar data string, allocated by new char[].
+  * @param id four-letter ICAO Metar station code, e.g. "KSFO".
+  * @param proxy proxy host (optional; default: "")
+  * @param port  proxy port (optional; default: "80")
+  * @param auth  proxy authorization information (optional; default: "")
+  * @return pointer to Metar data string, allocated by new char[].
+  * @see rfc2068.txt for proxy spec ("Proxy-Authorization")
   */
-char *SGMetar::loadData(const char *id)
+char *SGMetar::loadData(const char *id, const string& proxy, const string& port, const string& auth)
 {
-	string host = "weather.noaa.gov";
+	string host = proxy.empty() ? "weather.noaa.gov" : proxy;
 	string path = "/pub/data/observations/metar/stations/";
 	path += string(id) + ".TXT";
-	_url = "http://" + host + path;
+	_url = "http://weather.noaa.gov" + path;
 
-	string get = string("GET ") + path + " HTTP/1.0\r\n\r\n";
-
-	SGSocket *sock = new SGSocket(host, "80", "tcp");
+	SGSocket *sock = new SGSocket(host, port.empty() ? "80" : port, "tcp");
 	sock->set_timeout(10000);
 	if (!sock->open(SG_IO_OUT)) {
 		delete sock;
-		throw sg_io_exception("failed to load metar data from " + _url);
+		throw sg_io_exception("cannot connect to " + host);
 	}
 
+	string get = "GET ";
+	if (!proxy.empty())
+		get += "http://weather.noaa.gov";
+	get += path + " HTTP/1.0\r\n";
 	sock->writestring(get.c_str());
+
+	if (!auth.empty()) {
+		get = "Proxy-Authorization: " + auth + "\r\n";
+		sock->writestring(get.c_str());
+	}
+
+	sock->writestring("\r\n");
 
 	int i;
 	const int buflen = 512;
@@ -195,8 +213,8 @@ char *SGMetar::loadData(const char *id)
 
 
 /**
-  * Replace any number of subsequent spaces by just one space.
-  * This makes scanning for things like "ALL RWY" easier.
+  * Replace any number of subsequent spaces by just one space, and add
+  * a trailing space. This makes scanning for things like "ALL RWY" easier.
   */
 void SGMetar::normalizeData()
 {
@@ -204,6 +222,9 @@ void SGMetar::normalizeData()
 	for (src = dest = _data; (*dest++ = *src++); )
 		while (*src == ' ' && src[1] == ' ')
 			src++;
+	for (dest--; isspace(*--dest); ) ;
+	*++dest = ' ';
+	*++dest = '\0';
 }
 
 

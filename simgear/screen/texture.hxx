@@ -1,4 +1,4 @@
-/**
+/*
  * \file texture.hxx
  * Texture manipulation routines
  *
@@ -36,6 +36,8 @@ private:
 
     void resize(unsigned int width = 256, unsigned int height = 256);
 
+    const char *errstr;
+
 protected:
 
     typedef struct _ImageRec {
@@ -47,8 +49,9 @@ protected:
         unsigned int wasteBytes;
         char name[80];
         unsigned long colorMap;
-        gzFile file;
-        GLubyte *tmp;
+        gzFile gzfile;
+        FILE *file;
+        GLubyte *tmp, *tmpR, *tmpG, *tmpB;
         unsigned long rleEnd;
         unsigned int *rowStart;
         int *rowSize;
@@ -61,9 +64,11 @@ protected:
                     GLubyte *l, int n);
 
     ImageRec *ImageOpen(const char *fileName);
+    ImageRec *ImageWriteOpen(const char *fileName);
     ImageRec *RawImageOpen(const char *fileName);
     void ImageClose(ImageRec *image);
     void ImageGetRow(ImageRec *image, GLubyte *buf, int y, int z);
+    void ImagePutRow(ImageRec *image, GLubyte *buf, int y, int z);
 
     inline void free_id() {
 #ifdef GL_VERSION_1_1
@@ -87,6 +92,7 @@ public:
     void read_rgba_texture(const char *name);
     void read_raw_texture(const char *name);
     void read_r8_texture(const char *name);
+    void write_texture(const char *name);
 
     inline bool usable() { return (texture_id > 0) ? true : false; }
 
@@ -128,6 +134,9 @@ public:
         glAreTexturesResident(1, &texture_id, &is_res);
         return is_res != 0;
     }
+
+    inline const char *err_str() { return errstr; }
+    inline void clear_err_str() { errstr = ""; }
 };
 
 #endif

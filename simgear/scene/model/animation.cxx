@@ -407,6 +407,7 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
        }
     }
     //_position_deg(props->getDoubleValue("starting-position-deg", 0)),
+    _position_deg = 0.0;
     _position_deg_min = 0.0;
     _position_deg_max = 0.0;
     SGPropertyNode_ptr position_deg_n = props->getNode( "starting-position-deg" );

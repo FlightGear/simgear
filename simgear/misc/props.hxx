@@ -694,7 +694,7 @@ public:
   /**
    * Check a single mode attribute for the property node.
    */
-  bool getAttribute (Attribute attr) const { return (_attr & attr); }
+  bool getAttribute (Attribute attr) const { return (bool)(_attr & attr); }
 
 
   /**

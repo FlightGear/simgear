@@ -42,7 +42,7 @@
 SG_USING_STD(string);
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
-#  include <winsock2.h>
+#  include <winsock.h>
 #endif
 
 #define SG_MAX_SOCKET_QUEUE 32

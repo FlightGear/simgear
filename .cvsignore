@@ -8,3 +8,12 @@ config.log
 config.status
 configure
 do-config.sh
+.cdtproject
+.project
+config.guess
+config.sub
+depcomp
+INSTALL
+install-sh
+missing
+mkinstalldirs

@@ -1,3 +1,5 @@
+includedir = @includedir@/xml
+
 if HAVE_ZLIB
 ZLIB_INCL =
 else

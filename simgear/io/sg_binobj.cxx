@@ -32,7 +32,7 @@
 #include <time.h>
 #include <zlib.h>
 
-#include <list>
+#include <vector>
 #include STL_STRING
 
 #include <simgear/bucket/newbucket.hxx>
@@ -40,6 +40,9 @@
 #include "lowlevel.hxx"
 #include "sg_binobj.hxx"
 
+
+FG_USING_STD( string );
+FG_USING_STD( vector );
 FG_USING_STD( cout );
 FG_USING_STD( endl );
 
@@ -59,6 +62,46 @@ enum {
 enum {
     SG_MATERIAL = 0
 } tgPropertyTypes;
+
+
+class sgSimpleBuffer {
+
+private:
+
+    char *ptr;
+    unsigned int size;
+
+public:
+
+    inline sgSimpleBuffer( unsigned int s )
+    {
+	size = 1;
+	while ( size < s ) {
+	    size *= 2;
+	}
+	cout << "Creating a new buffer of size = " << size << endl;
+	ptr = new char[size];
+    }
+
+    inline ~sgSimpleBuffer() {
+	delete [] ptr;
+    }
+
+    inline unsigned int get_size() const { return size; }
+    inline char *get_ptr() const { return ptr; }
+    inline void resize( unsigned int s ) {
+	if ( s > size ) {
+	    if ( ptr != NULL ) {
+		delete [] ptr;
+	    }
+	    while ( size < s ) {
+		size *= 2;
+	    }
+	    cout << "resizing buffer to size = " << size << endl;
+	    ptr = new char[size];
+	}
+    }
+};
 
 
 // calculate the center of a list of points, by taking the halfway
@@ -109,6 +152,8 @@ bool SGBinObject::read_bin( const string& file ) {
     Point3D p;
     int i, j, k;
     char material[256];
+    unsigned int nbytes;
+    static sgSimpleBuffer buf( 32768 );  // 32 Kb
 
     // zero out structures
     gbs_center = Point3D( 0 );
@@ -130,14 +175,12 @@ bool SGBinObject::read_bin( const string& file ) {
     fans_tc.clear();
     fan_materials.clear();
    
-    cout << "Loading binary input file = " << file << endl;
-
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "rb" )) == NULL ) {
 	string filegz = file + ".gz";
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
-	    cout << "ERROR: opening " << file << " or " << filegz
-		 << "for reading!" << endl;
+	    // cout << "ERROR: opening " << file << " or " << filegz
+	    //      << "for reading!" << endl;
 	    return false;
 	}
     }
@@ -145,14 +188,15 @@ bool SGBinObject::read_bin( const string& file ) {
     sgClearReadError();
 
     // read headers
-    int header, version;
-    sgReadInt( fp, &header );
+    unsigned int header;
+    unsigned short version;
+    sgReadUInt( fp, &header );
     if ( ((header & 0xFF000000) >> 24) == 'S' &&
 	 ((header & 0x00FF0000) >> 16) == 'G' ) {
-	cout << "Good header" << endl;
+	// cout << "Good header" << endl;
 	// read file version
 	version = (header & 0x0000FFFF);
-	cout << "File version = " << version << endl;
+	// cout << "File version = " << version << endl;
     } else {
 	return false;
     }
@@ -164,12 +208,12 @@ bool SGBinObject::read_bin( const string& file ) {
     local_tm = localtime( &calendar_time );
     char time_str[256];
     strftime( time_str, 256, "%a %b %d %H:%M:%S %Z %Y", local_tm);
-    cout << "File created on " << time_str << endl;
+    // cout << "File created on " << time_str << endl;
 
     // read number of top level objects
     short nobjects;
     sgReadShort( fp, &nobjects );
-    cout << "Total objects to read = " << nobjects << endl;
+    // cout << "Total objects to read = " << nobjects << endl;
 
     // read in objects
     for ( i = 0; i < nobjects; ++i ) {
@@ -180,8 +224,8 @@ bool SGBinObject::read_bin( const string& file ) {
 	sgReadShort( fp, &nproperties );
 	sgReadShort( fp, &nelements );
 
-	cout << "object " << i << " = " << (int)obj_type << " props = "
-	     << nproperties << " elements = " << nelements << endl;
+	// cout << "object " << i << " = " << (int)obj_type << " props = "
+	//      << nproperties << " elements = " << nelements << endl;
 	    
 	if ( obj_type == SG_BOUNDING_SPHERE ) {
 	    // read bounding sphere properties
@@ -189,31 +233,29 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 
 	    // read bounding sphere elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 
 		double *dptr = (double *)ptr;
 		gbs_center = Point3D( dptr[0], dptr[1], dptr[2] );
-		cout << "Center = " << gbs_center << endl;
+		// cout << "Center = " << gbs_center << endl;
 		ptr += sizeof(double) * 3;
 		
 		float *fptr = (float *)ptr;
 		gbs_radius = fptr[0];
-		cout << "Bounding radius = " << gbs_radius << endl;
+		// cout << "Bounding radius = " << gbs_radius << endl;
 	    }
 	} else if ( obj_type == SG_VERTEX_LIST ) {
 	    // read vertex list properties
@@ -221,27 +263,25 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 
 	    // read vertex list elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(float) * 3);
 		float *fptr = (float *)ptr;
 		for ( k = 0; k < count; ++k ) {
 		    p = Point3D( fptr[0], fptr[1], fptr[2] );
-		    cout << "node = " << p << endl;
+		    // cout << "node = " << p << endl;
 		    wgs84_nodes.push_back( p );
 		    fptr += 3;
 		}
@@ -252,28 +292,26 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 
 	    // read normal list elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		unsigned char *ptr = (unsigned char *)buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		unsigned char *ptr = (unsigned char *)(buf.get_ptr());
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / 3;
 		for ( k = 0; k < count; ++k ) {
 		    p = Point3D( ptr[0] / 128.0 - 1.0,
 				 ptr[1] / 128.0 - 1.0,
 				 ptr[2] / 128.0 - 1.0 );
-		    cout << "normal = " << p << endl;
+		    // cout << "normal = " << p << endl;
 		    normals.push_back( p );
 		    ptr += 3;
 		}
@@ -284,27 +322,25 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 
 	    // read texcoord list elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(float) * 2);
 		float *fptr = (float *)ptr;
 		for ( k = 0; k < count; ++k ) {
 		    p = Point3D( fptr[0], fptr[1], 0 );
-		    cout << "texcoord = " << p << endl;
+		    // cout << "texcoord = " << p << endl;
 		    texcoords.push_back( p );
 		    fptr += 2;
 		}
@@ -315,26 +351,24 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
-		    cout << "material type = " << material << endl;
+		    // cout << "material type = " << material << endl;
 		}
 	    }
 
 	    // read triangle face elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
@@ -343,10 +377,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		for ( k = 0; k < count; ++k ) {
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
-		    cout << sptr[0] << "/" << sptr[1] << " ";
+		    // cout << sptr[0] << "/" << sptr[1] << " ";
 		    sptr += 2;
 		}
-		cout << endl;
+		// cout << endl;
 		tris_v.push_back( vs );
 		tris_tc.push_back( tcs );
 		tri_materials.push_back( material );
@@ -357,26 +391,24 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
-		    cout << "material type = " << material << endl;
+		    // cout << "material type = " << material << endl;
 		}
 	    }
 
 	    // read triangle strip elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
@@ -385,10 +417,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		for ( k = 0; k < count; ++k ) {
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
-		    cout << sptr[0] << "/" << sptr[1] << " ";
+		    // cout << sptr[0] << "/" << sptr[1] << " ";
 		    sptr += 2;
 		}
-		cout << endl;
+		// cout << endl;
 		strips_v.push_back( vs );
 		strips_tc.push_back( tcs );
 		strip_materials.push_back( material );
@@ -399,26 +431,24 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
-		    cout << "material type = " << material << endl;
+		    // cout << "material type = " << material << endl;
 		}
 	    }
 
 	    // read triangle fan elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
@@ -427,10 +457,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		for ( k = 0; k < count; ++k ) {
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
-		    cout << sptr[0] << "/" << sptr[1] << " ";
+		    // cout << sptr[0] << "/" << sptr[1] << " ";
 		    sptr += 2;
 		}
-		cout << endl;
+		// cout << endl;
 		fans_v.push_back( vs );
 		fans_tc.push_back( tcs );
 		fan_materials.push_back( material );
@@ -443,21 +473,19 @@ bool SGBinObject::read_bin( const string& file ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
 
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "property size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 
 	    // read elements
 	    for ( j = 0; j < nelements; ++j ) {
-		int nbytes;
-		sgReadInt( fp, &nbytes );
-		cout << "element size = " << nbytes << endl;
-		char buf[nbytes];
-		char *ptr = buf;
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
 		sgReadBytes( fp, nbytes, ptr );
 	    }
 	}
@@ -516,7 +544,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     cout << "tex coords = " << texcoords.size() << endl;
 
     // write header magic
-    sgWriteInt( fp, SG_FILE_MAGIC_NUMBER );
+    sgWriteUInt( fp, SG_FILE_MAGIC_NUMBER );
     time_t calendar_time = time(NULL);
     sgWriteLong( fp, (long int)calendar_time );
 
@@ -580,7 +608,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteShort( fp, 0 );		                // nproperties
     sgWriteShort( fp, 1 );		                // nelements
 
-    sgWriteInt( fp, sizeof(double) * 3 + sizeof(float) ); // nbytes
+    sgWriteUInt( fp, sizeof(double) * 3 + sizeof(float) ); // nbytes
     sgdVec3 center;
     sgdSetVec3( center, gbs_center.x(), gbs_center.y(), gbs_center.z() );
     sgWritedVec3( fp, center );
@@ -590,7 +618,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteChar( fp, (char)SG_VERTEX_LIST );             // type
     sgWriteShort( fp, 0 );		                 // nproperties
     sgWriteShort( fp, 1 );		                 // nelements
-    sgWriteInt( fp, wgs84_nodes.size() * sizeof(float) * 3 ); // nbytes
+    sgWriteUInt( fp, wgs84_nodes.size() * sizeof(float) * 3 ); // nbytes
     for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
 	p = wgs84_nodes[i] - gbs_center;
 	sgSetVec3( pt, p.x(), p.y(), p.z() );
@@ -601,13 +629,13 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteChar( fp, (char)SG_NORMAL_LIST );            // type
     sgWriteShort( fp, 0 );		                // nproperties
     sgWriteShort( fp, 1 );		                // nelements
-    sgWriteInt( fp, normals.size() * 3 );               // nbytes
+    sgWriteUInt( fp, normals.size() * 3 );              // nbytes
     char normal[3];
     for ( i = 0; i < (int)normals.size(); ++i ) {
 	p = normals[i];
-	normal[0] = (char)((p.x() + 1.0) * 128);
-	normal[1] = (char)((p.y() + 1.0) * 128);
-	normal[2] = (char)((p.z() + 1.0) * 128);
+	normal[0] = (unsigned char)((p.x() + 1.0) * 128);
+	normal[1] = (unsigned char)((p.y() + 1.0) * 128);
+	normal[2] = (unsigned char)((p.z() + 1.0) * 128);
 	sgWriteBytes( fp, 3, normal );
     }
 
@@ -615,7 +643,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteChar( fp, (char)SG_TEXCOORD_LIST );          // type
     sgWriteShort( fp, 0 );		                // nproperties
     sgWriteShort( fp, 1 );		                // nelements
-    sgWriteInt( fp, texcoords.size() * sizeof(float) * 2 ); // nbytes
+    sgWriteUInt( fp, texcoords.size() * sizeof(float) * 2 ); // nbytes
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
 	p = texcoords[i];
 	sgSetVec2( t, p.x(), p.y() );
@@ -644,10 +672,10 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    sgWriteShort( fp, 1 );                      // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
-	    sgWriteInt( fp, material.length() );        // nbytes
+	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
-	    sgWriteInt( fp, (end - start) * 3 * 2 * sizeof(short) ); // nbytes
+	    sgWriteUInt( fp, (end - start) * 3 * 2 * sizeof(short) ); // nbytes
 
 	    // write group
 	    for ( i = start; i < end; ++i ) {
@@ -683,14 +711,14 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    sgWriteShort( fp, 1 );		         // nproperties
 	    sgWriteShort( fp, end - start );             // nelements
 
-	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
-	    sgWriteInt( fp, material.length() );        // nbytes
+	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
+	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
 	    // write strips
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteInt( fp, strips_v[i].size() * 2 * sizeof(short) );
+		sgWriteUInt( fp, strips_v[i].size() * 2 * sizeof(short) );
 		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
 		    sgWriteShort( fp, (short)strips_v[i][j] );
 		    sgWriteShort( fp, (short)strips_tc[i][j] );
@@ -724,13 +752,13 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    sgWriteShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
-	    sgWriteInt( fp, material.length() );        // nbytes
+	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
 	    // write fans
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteInt( fp, fans_v[i].size() * 2 * sizeof(short) );
+		sgWriteUInt( fp, fans_v[i].size() * 2 * sizeof(short) );
 		for ( j = 0; j < (int)fans_v[i].size(); ++j ) {
 		    sgWriteShort( fp, (short)fans_v[i][j] );
 		    sgWriteShort( fp, (short)fans_tc[i][j] );

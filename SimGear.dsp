@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "\usr\include" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FD /c
+# ADD CPP /nologo /W3 /GX /O2  /I "." /I ".." /I ".\SimGear" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LINK32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /GX /ZI /Od /I "\usr\include" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FR /FD /GZ /c
+# ADD CPP /nologo /W3 /GX /ZI /Od  /I "." /I ".." /I ".\SimGear" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "HAVE_CONFIG_H" /FR /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -80,18 +80,6 @@ LINK32=link.exe -lib
 
 # Name "SimGear - Win32 Release"
 # Name "SimGear - Win32 Debug"
-# Begin Group "Source Files"
-
-# PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
-# End Group
-# Begin Group "Header Files"
-
-# PROP Default_Filter "h;hpp;hxx;hm;inl"
-# End Group
-# Begin Group "Resource Files"
-
-# PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
-# End Group
 # Begin Group "Lib_sgbucket"
 
 # PROP Default_Filter ""
@@ -973,6 +961,21 @@ SOURCE=.\simgear\screen\screen-dump.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\screen\tr.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgscreen"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgscreen"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\screen\win32-printer.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1110,25 +1113,6 @@ SOURCE=.\simgear\sky\stars.cxx
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
 # PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# End Group
-# Begin Group "Lib_sgthreads"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\simgear\threads\SGThread.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgthreads"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgthreads"
 
 !ENDIF 
 

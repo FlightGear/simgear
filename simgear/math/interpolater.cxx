@@ -83,8 +83,9 @@ double SGInterpTable::interpolate(double x) const
     int i;
     double y;
 
-    if (size == 0.0)
+    if (size == 0.0) {
       return 0.0;
+    }
 
     i = 0;
 
@@ -96,14 +97,14 @@ double SGInterpTable::interpolate(double x) const
 
     // printf ("i = %d ", i);
 
-    if ( (i == 0) && (x < table[0].ind) ) {
+    if ( i <= 0 ) {
 	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to small = " << x );
 	return table[0].dep;
     }
 
     // cout << " table[size-1].ind = " << table[size-1].ind << endl;
-    if ( x > table[size-1].ind ) {
+    if ( i >= size ) {
 	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to big = " << x );
 	return table[size-1].dep;

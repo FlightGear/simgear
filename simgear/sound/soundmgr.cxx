@@ -107,7 +107,7 @@ SGSoundMgr::SGSoundMgr() {
     if ( audio_sched->notWorking() ) {
 	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
     } else {
-	audio_sched -> setMaxConcurrent ( 6 ); 
+	audio_sched -> setMaxConcurrent ( SL_MAX_MIXERINPUTS ); 
 
 	audio_mixer = new smMixer;
 

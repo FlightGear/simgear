@@ -1,5 +1,30 @@
-With the author's permission, SimGear now bundles MetaKit.  MetaKit is
- explained
+With the author's permission, SimGear now bundles MetaKit.  
+
+Important build note:
+
+  Later on when you are linking programs with -lmk4 (i.e. FlightGear or one
+  of it's associated programs) if you come across an error similar to the
+  following:
+
+     c++  -Wall -O2 -L/usr/local/lib -o gensimple  gensimple.o libAirports.a
+          -lsgdebug -lsgmisc -lmk4 -lz -lm 
+     /usr/local/lib/libmk4.a(view.o)(.text+0x1c8):view.cpp: multiple definition
+          of `c4_View::~c4_View(void)'
+    libAirports.a(simple.o)(.text$_$_7c4_View+0x0):simple.cxx: first defined
+          here
+    collect2: ld returned 1 exit status
+    make[2]: *** [gensimple] Error 1
+    make[2]: Leaving directory `/home/curt/FlightGear-0.7.7/src/Airports'
+    make[1]: *** [all-recursive] Error 1
+    make[1]: Leaving directory `/home/curt/FlightGear-0.7.7/src'
+    make: *** [all-recursive] Error 1
+
+  Then you need to come back and rebuild Metakit with the -DNDEBUG flag.
+  For unix/cygwin systems, modify the unix/Makefile file and add -DNDEBUG
+  to the CFLAGS line.
+
+Now we return you to the official metakit readme ... :-)
+
 
 The MetaKit Library 2.01                                            March 2000
 ==============================================================================

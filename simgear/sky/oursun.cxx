@@ -25,6 +25,10 @@
 // $Id$
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/compiler.h>
 
 #include <stdio.h>
@@ -32,6 +36,10 @@
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
+
+#ifdef FG_CHEESY_LENS_FLARE
+#  include <plib/ssgaLensFlare.h>
+#endif
 
 #include "sphere.hxx"
 #include "oursun.hxx"
@@ -109,6 +117,8 @@ SGSun::~SGSun( void ) {
 
 
 #if 0
+// this might be nice to keep, just as an example of how to generate a
+// texture on the fly ...
 static GLuint makeHalo( GLubyte *sun_texbuf, int width ) {
     int texSize;
     GLuint texid;
@@ -303,6 +313,16 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
     halo->setCallback( SSG_CALLBACK_POSTDRAW, sgSunHaloPostDraw );
     sun_transform->addKid( halo );
     sun_transform->addKid( orb );
+
+#if 0
+    // enable this code to add a super cheesy lens flare effect to the sun.
+
+# ifdef FG_PLIB_SUPPORTS_LENS_FLARE
+    // cheesy lens flair
+    sun_transform->addKid( new ssgaLensFlare );
+# endif
+
+#endif
 
     return sun_transform;
 }

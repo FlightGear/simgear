@@ -30,19 +30,12 @@ RSC=rc.exe
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 0
-# PROP BASE Output_Dir "Release"
-# PROP BASE Intermediate_Dir "Release"
-# PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /D "HAVE_CONFIG_H"  /I "." /I ".." /I ".\SimGear" /D "HAVE_CONFIG_H" /D "NDEBUG" /D "WIN32" /D "_MBCS" /FD /c
-# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD CPP /nologo /W3 /GX /O2 /D "NDEBUG" /D "WIN32" /D "_MBCS" /FD /c  /MT /I "." /I ".." /I ".\SimGear" /I ".\SimGear\metakit-2.4.3\include" /I "..\SimGear\zlib-1.1.4" /D "HAVE_CONFIG_H"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
@@ -53,19 +46,12 @@ LINK32=link.exe -lib
 
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
-# PROP BASE Use_MFC 0
-# PROP BASE Use_Debug_Libraries 1
-# PROP BASE Output_Dir "Debug"
-# PROP BASE Intermediate_Dir "Debug"
-# PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /GX /ZI /Od /D "HAVE_CONFIG_H"  /I "." /I ".." /I ".\SimGear" /D "HAVE_CONFIG_H" /D "_DEBUG" /D "WIN32" /D "_MBCS" /FR /FD /GZ /c
-# ADD BASE RSC /l 0x409 /d "_DEBUG"
+# ADD CPP /nologo /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_MBCS" /FR /FD /GZ /c  /MT /I "." /I ".." /I ".\SimGear" /I ".\SimGear\metakit-2.4.3\include" /I "..\SimGear\zlib-1.1.4" /D "HAVE_CONFIG_H"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
@@ -398,6 +384,21 @@ SOURCE=.\simgear\io\sg_serial.cxx
 # Begin Source File
 
 SOURCE=.\simgear\io\sg_socket.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgio"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgio"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\io\sg_socket_udp.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1490,376 +1491,26 @@ SOURCE=.\simgear\xml\xmltok_impl.h
 
 # End Source File
 # End Group
-# Begin Group "Lib_z"
-
-# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\simgear\zlib\adler32.c
+SOURCE=.\simgear\simgear_config.h.vc5
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\compress.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\crc32.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\deflate.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\deflate.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\gzio.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infblock.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infblock.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infcodes.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infcodes.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inffast.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inffast.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inffixed.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inflate.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inftrees.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\inftrees.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infutil.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\infutil.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\trees.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\trees.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\uncompr.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\zutil.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\zlib\zutil.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_z"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_z"
-
-!ENDIF 
-
-# End Source File
-# End Group
-
-# Begin Source File
-
-SOURCE = .\simgear\simgear_config.h.vc5
-
-!IF  "$(CFG)" == "FlightGear - Win32 Release"
 
 # Begin Custom Build - Creating config.h
 InputPath=.\simgear\simgear_config.h.vc5
 
-".\simgear\simgear_config.h": $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+".\simgear\simgear_config.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
         copy .\simgear\simgear_config.h.vc5 .\simgear\simgear_config.h
 
 # End Custom Build
 
-!ELSEIF  "$(CFG)" == "FlightGear - Win32 Debug"
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
 # Begin Custom Build - Creating config.h
 InputPath=.\simgear\simgear_config.h.vc5
 
-".\simgear\simgear_config.h": $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+".\simgear\simgear_config.h" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
         copy .\simgear\simgear_config.h.vc5 .\simgear\simgear_config.h
 
 # End Custom Build

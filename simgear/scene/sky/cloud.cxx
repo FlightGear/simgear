@@ -48,6 +48,8 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_transition(0.0),
     layer_coverage(SG_CLOUD_CLEAR),
     scale(4000.0),
+    speed(0.0),
+    direction(0.0),
     last_lon(0.0),
     last_lat(0.0)
 {

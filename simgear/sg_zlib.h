@@ -61,11 +61,7 @@
   #define sgclose(F)  (fclose((F)))
 #else
 
-#ifdef HAVE_ZLIB
   #include <zlib.h>
-#else
-  #include <simgear/zlib/zlib.h>
-#endif
 
   #define sgFile gzFile
 

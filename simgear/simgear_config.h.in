@@ -50,9 +50,6 @@
 /* Define if you have the vprintf function.  */
 #undef HAVE_VPRINTF
 
-/* Define if you have zlib installed system wide.  */
-#undef HAVE_ZLIB
-
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
 

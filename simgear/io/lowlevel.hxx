@@ -29,12 +29,7 @@
 
 
 #include <stdio.h>
-
-#ifdef HAVE_ZLIB
-#  include <zlib.h>
-#else
-#  include <simgear/zlib/zlib.h>
-#endif
+#include <zlib.h>
 
 #include <plib/sg.h>
 

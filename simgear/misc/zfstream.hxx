@@ -30,11 +30,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef HAVE_ZLIB
-#  include <zlib.h>
-#else
-#  include <simgear/zlib/zlib.h>
-#endif
+#include <zlib.h>
 
 // At least Irix needs this
 #ifdef SG_HAVE_NATIVE_SGI_COMPILERS

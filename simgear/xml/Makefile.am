@@ -1,11 +1,5 @@
 includedir = @includedir@/xml
 
-if HAVE_ZLIB
-ZLIB_INCL =
-else
-ZLIB_INCL = -I$(top_srcdir)/src/zlib
-endif
-
 lib_LIBRARIES = libsgxml.a
 
 include_HEADERS = \
@@ -25,7 +19,7 @@ libsgxml_a_SOURCES = \
 	xmltok_impl.h
 
 if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir) $(ZLIB_INCL)
+INCLUDES += -I$(top_srcdir)
 else
-INCLUDES = -I$(top_srcdir) $(ZLIB_INCL)
+INCLUDES = -I$(top_srcdir)
 endif

@@ -1,11 +1,5 @@
 includedir = @includedir@/misc
 
-if HAVE_ZLIB
-ZLIB_INCL =
-else
-ZLIB_INCL = -I$(top_srcdir)/src/zlib
-endif
-
 lib_LIBRARIES = libsgmisc.a
 
 include_HEADERS = \
@@ -36,7 +30,7 @@ props_test_SOURCES = props_test.cxx
 props_test_LDADD = libsgmisc.a ../xml/libsgxml.a ../debug/libsgdebug.a
 
 if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir) $(ZLIB_INCL)
+INCLUDES += -I$(top_srcdir)
 else
-INCLUDES = -I$(top_srcdir) $(ZLIB_INCL)
+INCLUDES = -I$(top_srcdir)
 endif

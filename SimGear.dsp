@@ -1169,6 +1169,21 @@ SOURCE=.\simgear\timing\sg_time.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\timing\timestamp.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtiming"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtiming"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\timing\timezone.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"

@@ -41,7 +41,7 @@ using std::map;
  * Values also have attributes that control whether they can be read
  * from, written to, or archived (i.e. saved to disk).
  */
-class FGValue
+class SGValue
 {
 public:
 
@@ -68,8 +68,8 @@ public:
     STRING			// text
   };
 
-  FGValue ();
-  virtual ~FGValue ();
+  SGValue ();
+  virtual ~SGValue ();
 
 				// Meta information.
   virtual Type getType () const { return _type; }
@@ -181,7 +181,7 @@ private:
  * A list of FlightGear properties.
  *
  * This list associates names (conventional written as paths,
- * i.e. "/foo/bar/hack") with FGValue classes.  Once an FGValue
+ * i.e. "/foo/bar/hack") with SGValue classes.  Once an SGValue
  * object is associated with the name, the association is
  * permanent -- it is safe to keep a pointer or reference.
  * however, that the type of a value may change if it is tied
@@ -189,7 +189,7 @@ private:
  *
  * When iterating through the list, the value type is
  *
- *   pair<string,FGValue>
+ *   pair<string,SGValue>
  *
  * To get the name from a const_iterator, use
  *
@@ -199,37 +199,37 @@ private:
  *
  *   it->second
  */
-class FGPropertyList
+class SGPropertyList
 {
 public:
-  typedef map<string, FGValue> value_map;
+  typedef map<string, SGValue> value_map;
 
-  typedef FGValue::bool_getter bool_getter;
-  typedef FGValue::int_getter int_getter;
-  typedef FGValue::float_getter float_getter;
-  typedef FGValue::double_getter double_getter;
-  typedef FGValue::string_getter string_getter;
+  typedef SGValue::bool_getter bool_getter;
+  typedef SGValue::int_getter int_getter;
+  typedef SGValue::float_getter float_getter;
+  typedef SGValue::double_getter double_getter;
+  typedef SGValue::string_getter string_getter;
 
-  typedef FGValue::bool_setter bool_setter;
-  typedef FGValue::int_setter int_setter;
-  typedef FGValue::float_setter float_setter;
-  typedef FGValue::double_setter double_setter;
-  typedef FGValue::string_setter string_setter;
+  typedef SGValue::bool_setter bool_setter;
+  typedef SGValue::int_setter int_setter;
+  typedef SGValue::float_setter float_setter;
+  typedef SGValue::double_setter double_setter;
+  typedef SGValue::string_setter string_setter;
 
   typedef value_map::value_type value_type;
   typedef value_map::size_type size_type;
   typedef value_map::const_iterator const_iterator;
 
-  FGPropertyList ();
-  virtual ~FGPropertyList ();
+  SGPropertyList ();
+  virtual ~SGPropertyList ();
 
   virtual size_type size () const { return _props.size(); }
 
   virtual const_iterator begin () const { return _props.begin(); }
   virtual const_iterator end () const { return _props.end(); }
 
-  virtual FGValue * getValue (const string &name, bool create = false);
-  virtual const FGValue * getValue (const string &name) const;
+  virtual SGValue * getValue (const string &name, bool create = false);
+  virtual const SGValue * getValue (const string &name) const;
 
   virtual bool getBoolValue (const string &name) const;
   virtual int getIntValue (const string &name) const;
@@ -299,8 +299,8 @@ private:
  * example that prints the names of all of the different nodes inside 
  * "/controls":
  *
- *   FGPropertyNode controls("/controls", current_property_list);
- *   FGPropertyNode child;
+ *   SGPropertyNode controls("/controls", current_property_list);
+ *   SGPropertyNode child;
  *   int size = controls.size();
  *   for (int i = 0; i < size; i++) {
  *     if (controls.getChild(child, i))
@@ -309,12 +309,12 @@ private:
  *       cerr << "Failed to read child " << i << endl;
  *   }
  */
-class FGPropertyNode
+class SGPropertyNode
 {
 public:
 				// Constructor and destructor
-  FGPropertyNode (const string &path = "", FGPropertyList * props = 0);
-  virtual ~FGPropertyNode ();
+  SGPropertyNode (const string &path = "", SGPropertyList * props = 0);
+  virtual ~SGPropertyNode ();
 
 				// Accessor and setter for the internal
 				// path.
@@ -323,22 +323,22 @@ public:
 
 				// Accessor and setter for the real
 				// property list.
-  virtual FGPropertyList * getPropertyList () { return _props; }
-  virtual void setPropertyList (FGPropertyList * props) {
+  virtual SGPropertyList * getPropertyList () { return _props; }
+  virtual void setPropertyList (SGPropertyList * props) {
     _props = props;
   }
 
 				// Accessors for derived information.
   virtual int size () const;
   virtual const string &getName () const;
-  virtual FGValue * getValue ();
-  virtual bool getParent (FGPropertyNode &parent) const;
-  virtual bool getChild (FGPropertyNode &child, int n) const;
+  virtual SGValue * getValue ();
+  virtual bool getParent (SGPropertyNode &parent) const;
+  virtual bool getChild (SGPropertyNode &child, int n) const;
 
 private:
   string _path;
   mutable string _name;		// for pointer persistence only
-  FGPropertyList * _props;
+  SGPropertyList * _props;
 };
 
 
@@ -347,7 +347,7 @@ private:
 // Global property manager.
 ////////////////////////////////////////////////////////////////////////
 
-extern FGPropertyList current_properties;
+extern SGPropertyList current_properties;
 
 
 #endif __PROPS_HXX

@@ -26,21 +26,21 @@
 
 using std::string;
 
-FGPropertyList current_properties;
+SGPropertyList current_properties;
 
 static string empty_string;
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGValue.
+// Implementation of SGValue.
 ////////////////////////////////////////////////////////////////////////
 
 
 /**
  * Construct a new value.
  */
-FGValue::FGValue ()
+SGValue::SGValue ()
   : _type(UNKNOWN), _tied(false)
 {
 }
@@ -49,7 +49,7 @@ FGValue::FGValue ()
 /**
  * Destroy a value.
  */
-FGValue::~FGValue ()
+SGValue::~SGValue ()
 {
 }
 
@@ -58,7 +58,7 @@ FGValue::~FGValue ()
  * Return a raw boolean value (no type coercion).
  */
 bool
-FGValue::getRawBool () const
+SGValue::getRawBool () const
 {
   if (_tied) {
     if (_value.bool_func.getter != 0)
@@ -75,7 +75,7 @@ FGValue::getRawBool () const
  * Return a raw integer value (no type coercion).
  */
 int
-FGValue::getRawInt () const
+SGValue::getRawInt () const
 {
   if (_tied) {
     if (_value.int_func.getter != 0)
@@ -92,7 +92,7 @@ FGValue::getRawInt () const
  * Return a raw floating-point value (no type coercion).
  */
 float
-FGValue::getRawFloat () const
+SGValue::getRawFloat () const
 {
   if (_tied) {
     if (_value.float_func.getter != 0)
@@ -109,7 +109,7 @@ FGValue::getRawFloat () const
  * Return a raw double-precision floating-point value (no type coercion).
  */
 double
-FGValue::getRawDouble () const
+SGValue::getRawDouble () const
 {
   if (_tied) {
     if (_value.double_func.getter != 0)
@@ -126,7 +126,7 @@ FGValue::getRawDouble () const
  * Return a raw string value (no type coercion).
  */
 const string &
-FGValue::getRawString () const
+SGValue::getRawString () const
 {
   if (_tied && _value.string_func.getter != 0)
     return (*(_value.string_func.getter))();
@@ -141,7 +141,7 @@ FGValue::getRawString () const
  * Return false if the value could not be set, true otherwise.
  */
 bool
-FGValue::setRawBool (bool value)
+SGValue::setRawBool (bool value)
 {
   if (_tied) {
     if (_value.bool_func.setter != 0) {
@@ -163,7 +163,7 @@ FGValue::setRawBool (bool value)
  * Return false if the value could not be set, true otherwise.
  */
 bool
-FGValue::setRawInt (int value)
+SGValue::setRawInt (int value)
 {
   if (_tied) {
     if (_value.int_func.setter != 0) {
@@ -185,7 +185,7 @@ FGValue::setRawInt (int value)
  * Return false if the value could not be set, true otherwise.
  */
 bool
-FGValue::setRawFloat (float value)
+SGValue::setRawFloat (float value)
 {
   if (_tied) {
     if (_value.float_func.setter != 0) {
@@ -207,7 +207,7 @@ FGValue::setRawFloat (float value)
  * Return false if the value could not be set, true otherwise.
  */
 bool
-FGValue::setRawDouble (double value)
+SGValue::setRawDouble (double value)
 {
   if (_tied) {
     if (_value.double_func.setter != 0) {
@@ -229,7 +229,7 @@ FGValue::setRawDouble (double value)
  * Return false if the value could not be set, true otherwise.
  */
 bool
-FGValue::setRawString (const string &value)
+SGValue::setRawString (const string &value)
 {
   if (_tied) {
     if (_value.string_func.setter != 0) {
@@ -251,7 +251,7 @@ FGValue::setRawString (const string &value)
  * If the native type is not boolean, attempt to coerce it.
  */
 bool
-FGValue::getBoolValue () const
+SGValue::getBoolValue () const
 {
   switch (_type) {
   case BOOL:
@@ -276,7 +276,7 @@ FGValue::getBoolValue () const
  * If the native type is not integer, attempt to coerce it.
  */
 int
-FGValue::getIntValue () const
+SGValue::getIntValue () const
 {
   switch (_type) {
   case BOOL:
@@ -301,7 +301,7 @@ FGValue::getIntValue () const
  * If the native type is not float, attempt to coerce it.
  */
 float
-FGValue::getFloatValue () const
+SGValue::getFloatValue () const
 {
   switch (_type) {
   case UNKNOWN:
@@ -327,7 +327,7 @@ FGValue::getFloatValue () const
  * If the native type is not double, attempt to coerce it.
  */
 double
-FGValue::getDoubleValue () const
+SGValue::getDoubleValue () const
 {
   switch (_type) {
   case UNKNOWN:
@@ -353,7 +353,7 @@ FGValue::getDoubleValue () const
  * If the native type is not string, attempt to coerce it.
  */
 const string &
-FGValue::getStringValue () const
+SGValue::getStringValue () const
 {
   char buf[512];
   switch (_type) {
@@ -390,7 +390,7 @@ FGValue::getStringValue () const
  * Returns true on success.
  */
 bool
-FGValue::setBoolValue (bool value)
+SGValue::setBoolValue (bool value)
 {
   if (_type == UNKNOWN || _type == BOOL) {
     _type = BOOL;
@@ -407,7 +407,7 @@ FGValue::setBoolValue (bool value)
  * Returns true on success.
  */
 bool
-FGValue::setIntValue (int value)
+SGValue::setIntValue (int value)
 {
   if (_type == UNKNOWN || _type == INT) {
     _type = INT;
@@ -424,7 +424,7 @@ FGValue::setIntValue (int value)
  * Returns true on success.
  */
 bool
-FGValue::setFloatValue (float value)
+SGValue::setFloatValue (float value)
 {
   if (_type == UNKNOWN || _type == FLOAT) {
     _type = FLOAT;
@@ -441,7 +441,7 @@ FGValue::setFloatValue (float value)
  * Returns true on success.
  */
 bool
-FGValue::setDoubleValue (double value)
+SGValue::setDoubleValue (double value)
 {
   if (_type == UNKNOWN || _type == DOUBLE) {
     _type = DOUBLE;
@@ -458,7 +458,7 @@ FGValue::setDoubleValue (double value)
  * Returns true on success.
  */
 bool
-FGValue::setStringValue (const string &value)
+SGValue::setStringValue (const string &value)
 {
   if (_type == UNKNOWN || _type == STRING) {
     _type = STRING;
@@ -475,7 +475,7 @@ FGValue::setStringValue (const string &value)
  * Returns true on success.
  */
 bool
-FGValue::setUnknownValue (const string &value)
+SGValue::setUnknownValue (const string &value)
 {
   if (_type == UNKNOWN || _type == STRING) {
     return setRawString(value);
@@ -494,7 +494,7 @@ FGValue::setUnknownValue (const string &value)
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-FGValue::tieBool (bool_getter getter, bool_setter setter = 0,
+SGValue::tieBool (bool_getter getter, bool_setter setter = 0,
 		  bool useDefault = true)
 {
   if (_tied) {
@@ -520,7 +520,7 @@ FGValue::tieBool (bool_getter getter, bool_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-FGValue::tieInt (int_getter getter, int_setter setter = 0,
+SGValue::tieInt (int_getter getter, int_setter setter = 0,
 		 bool useDefault = true)
 {
   if (_tied) {
@@ -546,7 +546,7 @@ FGValue::tieInt (int_getter getter, int_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-FGValue::tieFloat (float_getter getter, float_setter setter = 0,
+SGValue::tieFloat (float_getter getter, float_setter setter = 0,
 		   bool useDefault = true)
 {
   if (_tied) {
@@ -572,7 +572,7 @@ FGValue::tieFloat (float_getter getter, float_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-FGValue::tieDouble (double_getter getter, double_setter setter = 0,
+SGValue::tieDouble (double_getter getter, double_setter setter = 0,
 		    bool useDefault = true)
 {
   if (_tied) {
@@ -598,7 +598,7 @@ FGValue::tieDouble (double_getter getter, double_setter setter = 0,
  * Returns true on success (i.e. the value is not currently tied).
  */
 bool
-FGValue::tieString (string_getter getter, string_setter setter = 0,
+SGValue::tieString (string_getter getter, string_setter setter = 0,
 		    bool useDefault = true)
 {
   if (_tied) {
@@ -624,7 +624,7 @@ FGValue::tieString (string_getter getter, string_setter setter = 0,
  * Returns true on success (i.e. the value had been tied).
  */
 bool
-FGValue::untie ()
+SGValue::untie ()
 {
   if (!_tied)
     return false;
@@ -668,14 +668,14 @@ FGValue::untie ()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGPropertyList.
+// Implementation of SGPropertyList.
 ////////////////////////////////////////////////////////////////////////
 
 
 /**
  * Constructor.
  */
-FGPropertyList::FGPropertyList ()
+SGPropertyList::SGPropertyList ()
 {
 }
 
@@ -683,20 +683,20 @@ FGPropertyList::FGPropertyList ()
 /**
  * Destructor.
  */
-FGPropertyList::~FGPropertyList ()
+SGPropertyList::~SGPropertyList ()
 {
 }
 
 
 /**
- * Look up the FGValue structure associated with a property.
+ * Look up the SGValue structure associated with a property.
  *
  * Run some basic validity checks on the property name: it must
  * not be empty, must begin with '/', must never have two '//' in a row,
  * and must not end with '/'.
  */
-FGValue *
-FGPropertyList::getValue (const string &name, bool create = false)
+SGValue *
+SGPropertyList::getValue (const string &name, bool create = false)
 {
   const_iterator el = _props.find(name);
   if (el == _props.end()) {
@@ -721,8 +721,8 @@ FGPropertyList::getValue (const string &name, bool create = false)
 /**
  * Look up a const value (never created).
  */
-const FGValue *
-FGPropertyList::getValue (const string &name) const
+const SGValue *
+SGPropertyList::getValue (const string &name) const
 {
   value_map::const_iterator el = _props.find(name);
   if (el == _props.end())
@@ -736,12 +736,12 @@ FGPropertyList::getValue (const string &name) const
  * Extract a boolean from the value.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to get the FGValue and query it repeatedly.
+ * better to get the SGValue and query it repeatedly.
  */
 bool
-FGPropertyList::getBoolValue (const string &name) const
+SGPropertyList::getBoolValue (const string &name) const
 {
-  const FGValue * val = getValue(name);
+  const SGValue * val = getValue(name);
   if (val == 0)
     return false;
   else
@@ -753,12 +753,12 @@ FGPropertyList::getBoolValue (const string &name) const
  * Extract an integer from the value.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to get the FGValue and query it repeatedly.
+ * better to get the SGValue and query it repeatedly.
  */
 int
-FGPropertyList::getIntValue (const string &name) const
+SGPropertyList::getIntValue (const string &name) const
 {
-  const FGValue * val = getValue(name);
+  const SGValue * val = getValue(name);
   if (val == 0)
     return 0;
   else
@@ -770,12 +770,12 @@ FGPropertyList::getIntValue (const string &name) const
  * Extract a float from the value.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to get the FGValue and query it repeatedly.
+ * better to get the SGValue and query it repeatedly.
  */
 float
-FGPropertyList::getFloatValue (const string &name) const
+SGPropertyList::getFloatValue (const string &name) const
 {
-  const FGValue * val = getValue(name);
+  const SGValue * val = getValue(name);
   if (val == 0)
     return 0.0;
   else
@@ -787,12 +787,12 @@ FGPropertyList::getFloatValue (const string &name) const
  * Extract a double from the value.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to get the FGValue and query it repeatedly.
+ * better to get the SGValue and query it repeatedly.
  */
 double
-FGPropertyList::getDoubleValue (const string &name) const
+SGPropertyList::getDoubleValue (const string &name) const
 {
-  const FGValue * val = getValue(name);
+  const SGValue * val = getValue(name);
   if (val == 0)
     return 0.0;
   else
@@ -804,12 +804,12 @@ FGPropertyList::getDoubleValue (const string &name) const
  * Extract a string from the value.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and query it repeatedly.
+ * better to save the SGValue and query it repeatedly.
  */
 const string &
-FGPropertyList::getStringValue (const string &name) const
+SGPropertyList::getStringValue (const string &name) const
 {
-  const FGValue * val = getValue(name);
+  const SGValue * val = getValue(name);
   if (val == 0)
     return empty_string;
   else
@@ -821,12 +821,12 @@ FGPropertyList::getStringValue (const string &name) const
  * Assign a bool to the value and change the type if unknown.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setBoolValue (const string &name, bool value)
+SGPropertyList::setBoolValue (const string &name, bool value)
 {
   return getValue(name, true)->setBoolValue(value);
 }
@@ -836,12 +836,12 @@ FGPropertyList::setBoolValue (const string &name, bool value)
  * Assign an integer to the value and change the type if unknown.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setIntValue (const string &name, int value)
+SGPropertyList::setIntValue (const string &name, int value)
 {
   return getValue(name, true)->setIntValue(value);
 }
@@ -851,12 +851,12 @@ FGPropertyList::setIntValue (const string &name, int value)
  * Assign a float to the value and change the type if unknown.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setFloatValue (const string &name, float value)
+SGPropertyList::setFloatValue (const string &name, float value)
 {
   return getValue(name, true)->setFloatValue(value);
 }
@@ -866,12 +866,12 @@ FGPropertyList::setFloatValue (const string &name, float value)
  * Assign a double to the value and change the type if unknown.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setDoubleValue (const string &name, double value)
+SGPropertyList::setDoubleValue (const string &name, double value)
 {
   return getValue(name, true)->setDoubleValue(value);
 }
@@ -881,12 +881,12 @@ FGPropertyList::setDoubleValue (const string &name, double value)
  * Assign a string to the value and change the type if unknown.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setStringValue (const string &name, const string &value)
+SGPropertyList::setStringValue (const string &name, const string &value)
 {
   return getValue(name, true)->setStringValue(value);
 }
@@ -896,12 +896,12 @@ FGPropertyList::setStringValue (const string &name, const string &value)
  * Assign a string to the value, but don't change the type.
  *
  * Note that this is inefficient for use in a tight loop: it is
- * better to save the FGValue and modify it repeatedly.
+ * better to save the SGValue and modify it repeatedly.
  *
  * Returns true on success.
  */
 bool
-FGPropertyList::setUnknownValue (const string &name, const string &value)
+SGPropertyList::setUnknownValue (const string &name, const string &value)
 {
   return getValue(name, true)->setUnknownValue(value);
 }
@@ -910,10 +910,10 @@ FGPropertyList::setUnknownValue (const string &name, const string &value)
 /**
  * Tie a boolean value to external functions.
  *
- * Invokes FGValue::tieBool
+ * Invokes SGValue::tieBool
  */
 bool
-FGPropertyList::tieBool (const string &name, 
+SGPropertyList::tieBool (const string &name, 
 			 bool_getter getter,
 			 bool_setter setter,
 			 bool useDefault = true)
@@ -926,10 +926,10 @@ FGPropertyList::tieBool (const string &name,
 /**
  * Tie an integer value to external functions.
  *
- * Invokes FGValue::tieInt
+ * Invokes SGValue::tieInt
  */
 bool
-FGPropertyList::tieInt (const string &name, 
+SGPropertyList::tieInt (const string &name, 
 			int_getter getter,
 			int_setter setter,
 			bool useDefault = true)
@@ -942,10 +942,10 @@ FGPropertyList::tieInt (const string &name,
 /**
  * Tie a float value to external functions.
  *
- * Invokes FGValue::tieFloat
+ * Invokes SGValue::tieFloat
  */
 bool
-FGPropertyList::tieFloat (const string &name, 
+SGPropertyList::tieFloat (const string &name, 
 			  float_getter getter,
 			  float_setter setter,
 			  bool useDefault = true)
@@ -958,10 +958,10 @@ FGPropertyList::tieFloat (const string &name,
 /**
  * Tie a double value to external functions.
  *
- * Invokes FGValue::tieDouble
+ * Invokes SGValue::tieDouble
  */
 bool
-FGPropertyList::tieDouble (const string &name, 
+SGPropertyList::tieDouble (const string &name, 
 			   double_getter getter,
 			   double_setter setter,
 			   bool useDefault = true)
@@ -974,10 +974,10 @@ FGPropertyList::tieDouble (const string &name,
 /**
  * Tie a string value to external functions.
  *
- * Invokes FGValue::tieString
+ * Invokes SGValue::tieString
  */
 bool
-FGPropertyList::tieString (const string &name, 
+SGPropertyList::tieString (const string &name, 
 			   string_getter getter,
 			   string_setter setter,
 			   bool useDefault = true)
@@ -990,10 +990,10 @@ FGPropertyList::tieString (const string &name,
 /**
  * Untie a value from external functions.
  *
- * Invokes FGValue::untie
+ * Invokes SGValue::untie
  */
 bool
-FGPropertyList::untie (const string &name)
+SGPropertyList::untie (const string &name)
 {
   FG_LOG(FG_GENERAL, FG_INFO, "Untying property '" << name << '\'');
   return getValue(name, true)->untie();
@@ -1002,7 +1002,7 @@ FGPropertyList::untie (const string &name)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGPropertyNode.
+// Implementation of SGPropertyNode.
 ////////////////////////////////////////////////////////////////////////
 
 
@@ -1039,8 +1039,8 @@ get_base (const string &parent, const string &child,
 /**
  * Constructor.
  */
-FGPropertyNode::FGPropertyNode (const string &path = "",
-				FGPropertyList * props = 0)
+SGPropertyNode::SGPropertyNode (const string &path = "",
+				SGPropertyList * props = 0)
   : _props(props)
 {
   setPath(path);
@@ -1050,7 +1050,7 @@ FGPropertyNode::FGPropertyNode (const string &path = "",
 /**
  * Destructor.
  */
-FGPropertyNode::~FGPropertyNode ()
+SGPropertyNode::~SGPropertyNode ()
 {
 }
 
@@ -1061,7 +1061,7 @@ FGPropertyNode::~FGPropertyNode ()
  * Strip the trailing '/', if any.
  */
 void
-FGPropertyNode::setPath (const string &path)
+SGPropertyNode::setPath (const string &path)
 {
   _path = path;
 
@@ -1077,7 +1077,7 @@ FGPropertyNode::setPath (const string &path)
  * The local name is just everything after the last slash.
  */
 const string &
-FGPropertyNode::getName () const
+SGPropertyNode::getName () const
 {
   string::size_type pos = _path.rfind('/');
   if (pos != string::npos) {
@@ -1097,8 +1097,8 @@ FGPropertyNode::getName () const
  *
  * Note that this will not create the value if it doesn't already exist.
  */
-FGValue *
-FGPropertyNode::getValue ()
+SGValue *
+SGPropertyNode::getValue ()
 {
   if (_props == 0 || _path.size() == 0)
     return 0;
@@ -1111,7 +1111,7 @@ FGPropertyNode::getValue ()
  * Return the number of children for the current node.
  */
 int
-FGPropertyNode::size () const
+SGPropertyNode::size () const
 {
   if (_props == 0)
     return 0;
@@ -1123,8 +1123,8 @@ FGPropertyNode::size () const
   string pattern = _path;
   pattern += '/';
 
-  FGPropertyList::const_iterator it = _props->begin();
-  FGPropertyList::const_iterator end = _props->end();
+  SGPropertyList::const_iterator it = _props->begin();
+  SGPropertyList::const_iterator end = _props->end();
   while (it != end) {
     if (get_base(pattern, it->first, base) && base != lastBase) {
       s++;
@@ -1144,7 +1144,7 @@ FGPropertyNode::size () const
  * is unmodified.
  */
 bool
-FGPropertyNode::getParent (FGPropertyNode &parent) const
+SGPropertyNode::getParent (SGPropertyNode &parent) const
 {
   string::size_type pos = _path.rfind('/');
   if (pos != string::npos) {
@@ -1164,7 +1164,7 @@ FGPropertyNode::getParent (FGPropertyNode &parent) const
  * is unmodified.
  */
 bool
-FGPropertyNode::getChild (FGPropertyNode &child, int n) const
+SGPropertyNode::getChild (SGPropertyNode &child, int n) const
 {
   if (_props == 0)
     return false;
@@ -1175,8 +1175,8 @@ FGPropertyNode::getChild (FGPropertyNode &child, int n) const
   string pattern = _path;
   pattern += '/';
 
-  FGPropertyList::const_iterator it = _props->begin();
-  FGPropertyList::const_iterator end = _props->end();
+  SGPropertyList::const_iterator it = _props->begin();
+  SGPropertyList::const_iterator end = _props->end();
   while (it != end) {
     if (get_base(pattern, it->first, base) && base != lastBase) {
       if (s == n) {

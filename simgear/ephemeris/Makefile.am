@@ -9,7 +9,6 @@ libAstro_a_SOURCES = \
 	neptune.cxx neptune.hxx \
 	pluto.hxx \
 	saturn.cxx saturn.hxx \
-	skydome.cxx skydome.hxx \
 	solarsystem.cxx solarsystem.hxx \
 	star.cxx star.hxx \
 	stars.cxx stars.hxx \

@@ -107,7 +107,7 @@ public:
     { add(make_callback(o,m), 0, delay, false, sim); }
 
 private:
-    friend class SGTimer;
+    friend struct SGTimer;
 
     void add(SGCallback* cb,
              double interval, double delay,

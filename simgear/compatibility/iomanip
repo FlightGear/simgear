@@ -5,7 +5,9 @@
 # include <iomanip.h>
 
 namespace std {
+
    using ::setw;
+   using ::setprecision;
 
    inline int  setfill(int f) { ::setfill(f); }
 };

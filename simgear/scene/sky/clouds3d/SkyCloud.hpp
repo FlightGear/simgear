@@ -98,9 +98,7 @@ public:
   bool                        IsPhaseFunctionEnabled() const      { return _bUsePhaseFunction;    }
   
   SKYRESULT                   Save(SkyArchive &archive) const;
-  SKYRESULT                   Load(const SkyArchive &archive, float rScale = 1.0f, bool bLocal = false);
-  SKYRESULT                   Load(const SkyArchive &archive, const sgVec4 *mat,
-                                   float rScale = 1.0f, bool bLocal = false);
+  SKYRESULT                   Load(const SkyArchive &archive, float rScale = 1.0f,double latitude=0.0, double longitude=0.0);
   
   void                        Rotate(const Mat33f& rot);
   void                        Translate(const Vec3f& trans);

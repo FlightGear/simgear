@@ -48,7 +48,7 @@ public:
   SkySceneLoader();
   ~SkySceneLoader();
 
-  bool Load( SGPath fileroot );
+  bool Load( SGPath fileroot, double latitude, double longitude );
   
   void Set_Cloud_Orig( Point3D *posit );
   

@@ -618,92 +618,9 @@ SkyMinMaxBox* SkyCloud::CopyBoundingVolume() const
   return pBox; 
 }
 
-
-//------------------------------------------------------------------------------
-// Function     	  : SkyCloud::Load
-// Description	    : 
-//------------------------------------------------------------------------------
-/**
- * @fn SkyCloud::Load(const SkyArchive &archive, float rScale, bool bLocal)
- * @brief Loads the cloud data from @a archive.
- * 
- * If @a rScale does not equal 1.0, then the cloud is scaled by an amount rScale.
- */ 
-SKYRESULT SkyCloud::Load(const SkyArchive &archive,
-                         const sgVec4 *mat,
-                         float rScale /* = 1.0f */, 
-                         bool bLocal /* = false */)
-{
-    unsigned int iNumParticles;
-    Vec3f vecCenter = Vec3f::ZERO;
-  //Vec3f vecCenter;
-  //float rRadius;
-  //archive.FindVec3f("CldCenter", &vecCenter);
-  //archive.FindFloat32("CldRadius", &rRadius);
-
-  //_boundingBox.SetMin(vecCenter - Vec3f(rRadius, rRadius, rRadius));
-  //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
-
-    archive.FindUInt32("CldNumParticles", &iNumParticles);
-    if (!bLocal)
-        archive.FindVec3f("CldCenter", &vecCenter);
-
-    Vec3f *pParticlePositions = new Vec3f[iNumParticles];
-    float *pParticleRadii     = new float[iNumParticles];
-    Vec4f *pParticleColors    = new Vec4f[iNumParticles];
-
-    unsigned int iNumBytes;
-    archive.FindData("CldParticlePositions", ANY_TYPE, (void**const)&pParticlePositions, &iNumBytes);
-    archive.FindData("CldParticleRadii",     ANY_TYPE, (void**const)&pParticleRadii,     &iNumBytes);
-    archive.FindData("CldParticleColors",    ANY_TYPE, (void**const)&pParticleColors,    &iNumBytes);
-
-    for (unsigned int i = 0; i < iNumParticles; ++i)
-    {
-        SkyCloudParticle *pParticle = new SkyCloudParticle((pParticlePositions[i] + vecCenter) * rScale,
-            pParticleRadii[i] * rScale,
-            pParticleColors[i]);
-        _boundingBox.AddPoint(pParticle->GetPosition());
-
-        _particles.push_back(pParticle);
-    }
-  // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
-  // this "almost" works not quite the right solution okay to get some up and running
-  // we need to develop our own scheme for loading and positioning clouds
-    Mat33f rot_mat;
-    Vec3f  moveit;
-
-    rot_mat.Set( 1, 0, 0,
-                 0, 0, -1,
-                 0, 1, 0);
-  // flip the y and z axis, clouds now sit in the x-y plane
-    Rotate( rot_mat ); 
-//  rot_mat.Set(mat[0][0], mat[0][1],mat[0][2],
-//              mat[1][0], mat[1][1],mat[1][2],
-//              mat[2][0], mat[2][1],mat[2][2] );
-   // adjust for lon af KSFO plus 		-122.357				 
-//  rot_mat.Set( -0.84473f, 0.53519f, 0.0f,
-//  						 -0.53519f, -0.84473f, 0.0f,
-//  						 0.0f, 0.0f, 1.0f);
-
-  //Rotate( rot_mat );
-
-   // and about x for latitude 37.6135
-//  rot_mat.Set( 1.0f, 0.0, 0.0f,
-//  						 0.0f, 0.7921f, -0.6103f,
-//  						 0.0f, 0.6103f, 0.7921f);		
-
-//  Rotate( rot_mat );
-
-    moveit.Set( 1000.0, 0.0, 4050.0  );
-
-    Translate( moveit );
-
-    return SKYRESULT_OK;
-}
-
 SKYRESULT SkyCloud::Load(const SkyArchive &archive, 
                          float rScale /* = 1.0f */, 
-                         bool bLocal /* = false */)
+                         double latitude, double longitude)
 {
   unsigned int iNumParticles;
   Vec3f vecCenter = Vec3f::ZERO;
@@ -716,7 +633,7 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
 
   archive.FindUInt32("CldNumParticles", &iNumParticles);
-  if (!bLocal)
+  //if (!bLocal)
     archive.FindVec3f("CldCenter", &vecCenter);
   
   Vec3f *pParticlePositions = new Vec3f[iNumParticles];
@@ -737,36 +654,47 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
     
     _particles.push_back(pParticle);
   }
-  // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
-  // this "almost" works not quite the right solution okay to get some up and running
-  // we need to develop our own scheme for loading and positioning clouds
-  Mat33f rot_mat;
+  
+// This is an interim solution to transform clouds specified in SkyWorks files that are loaded relative to the fgfs
+// earth-centered Cartesian system to new fgfs coordinates that place and orient the cloud field for proper
+// viewing based on the center of the local tile center and local vertical specified at init time.
+ 
+  Mat33f R;
   Vec3f  moveit;
-
-  rot_mat.Set( 1, 0, 0,
-  						 0, 0, -1,
-  						 0, 1, 0);
-  // flip the y and z axis, clouds now sit in the x-y plane
-  Rotate( rot_mat ); 
-    
-   // adjust for lon af KSFO plus 		-122.357				 
-  rot_mat.Set( -0.84473f, 0.53519f, 0.0f,
-  						 -0.53519f, -0.84473f, 0.0f,
-  						 0.0f, 0.0f, 1.0f);
-  						 
-  //Rotate( rot_mat );
-
-   // and about x for latitude 37.6135
-  rot_mat.Set( 1.0f, 0.0, 0.0f,
-  						 0.0f, 0.7921f, -0.6103f,
-  						 0.0f, 0.6103f, 0.7921f);		
-   
-  Rotate( rot_mat );
-    
-  moveit.Set( 1000.0, 0.0, 4050.0  );
+  // invert cloud height vector
+  R.Set( 1, 0, 0, 0, -1, 0, 0, 0, 1 );
+  Rotate( R );
   
-  Translate( moveit );
+float ex = 1.0;
+float ey = 0.0;
+float ez = 0.0;
+float phi = -latitude / 57.29578;
+float one_min_cos = 1 - cos(phi);
   
+R.Set(
+cos(phi) + one_min_cos*ex*ex, one_min_cos*ex*ey - ez*sin(phi), one_min_cos*ex*ez + ey*sin(phi),
+one_min_cos*ex*ey + ez*sin(phi), cos(phi) + one_min_cos*ey*ey, one_min_cos*ey*ez - ex*sin(phi),
+one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one_min_cos*ez*ez );
+  			
+Rotate( R );
+
+ex = 0.0;
+ey = sin( latitude );
+ez = cos( latitude );
+phi = (longitude + 90.0)/ 57.29578;
+one_min_cos = 1 - cos(phi);
+
+R.Set(
+cos(phi) + one_min_cos*ex*ex, one_min_cos*ex*ey - ez*sin(phi), one_min_cos*ex*ez + ey*sin(phi),
+one_min_cos*ex*ey + ez*sin(phi), cos(phi) + one_min_cos*ey*ey, one_min_cos*ey*ez - ex*sin(phi),
+one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one_min_cos*ez*ez );
+  			
+Rotate( R );
+// this sets the cloud height to around 3500 feet MSL @ KSFO   
+moveit.Set( 13000.0, 0.0, 10500.0  );
+  
+Translate( moveit ); 
+
   return SKYRESULT_OK;
 }
 

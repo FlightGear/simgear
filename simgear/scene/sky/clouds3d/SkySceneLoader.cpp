@@ -102,7 +102,7 @@ SkySceneLoader::~SkySceneLoader()
  +
  */ 
 //bool SkySceneLoader::Load(std::string filepath)
-bool SkySceneLoader::Load( SGPath filename )
+bool SkySceneLoader::Load( SGPath filename, double latitude, double longitude )
 { 
   SkyArchive archive;
  
@@ -135,12 +135,12 @@ bool SkySceneLoader::Load( SGPath filename )
       base.append( pFilename );
       const char *FilePath = base.c_str();
      
-      float rScale = 1.0;
-      FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
-      rScale = 30.0;
+      //float rScale = 1.0;
+      //FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
+      float rScale = 40.0;
       SkyArchive cloudArchive;
       FAIL_RETURN(cloudArchive.Load(FilePath));
-      FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale)); 
+      FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale, latitude, longitude)); 
     }
   }
   
@@ -174,8 +174,8 @@ void SkySceneLoader::Update( double *view_pos )
 {
 	
 	double wind_x, wind_y, wind_z;
-	wind_x = -0.05; wind_z =  0.05;
-	// just a dumb test to see if we can move the clouds en masse via the camera
+	wind_x = 0.0; wind_z =  0.0;
+	// just a dumb test to see what happens if we can move the clouds en masse via the camera
 	delta[0] += wind_x; delta[2] += wind_z;
 	
 	sgdSubVec3( cam_pos, view_pos, delta );

@@ -104,7 +104,7 @@ public:
   static void		SortInstances(InstanceArray& instances, const Vec3f& vecSortPoint);
 
   // load a set of clouds from an archive file.
-  SKYRESULT     LoadClouds(SkyArchive& cloudArchive, float rScale = 1.0f);
+  SKYRESULT     LoadClouds(SkyArchive& cloudArchive, float rScale = 1.0f, double latitude=0.0, double longitude=0.0);
   
 protected: // datatypes
   // Typedef the vectors into cleaner names

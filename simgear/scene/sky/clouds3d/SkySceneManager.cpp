@@ -410,7 +410,7 @@ SKYRESULT SkySceneManager::Display( const Camera &cam )
  
   //if (_bDrawTree)// force the issue and draw
     //_VisualizeCloudBVTree(cam, _cloudBVTree.GetRoot());
-    
+/*    
   glLineWidth(2.0);
   glBegin(GL_LINES);
   //  red is Cartesian y-axis
@@ -426,14 +426,14 @@ SKYRESULT SkySceneManager::Display( const Camera &cam )
   glVertex3f( 0.0, 0.0, 0.0);
   glVertex3f( -104000.0, 0.0, 0.0);
   glEnd();
-
+*/
   // draw all container clouds and "free" objects not in clouds.
-  int i = 0;
+  //int i = 0;
   for (InstanceIterator iter = _visibleInstances.begin(); iter != _visibleInstances.end(); ++iter)
   {
     FAIL_RETURN_MSG((*iter)->Display(),
                   "SkySceneManager::Display(): instance display failed.");
-    i++;
+    //i++;
   }
   //cout << "There are " << i << " visible clouds\n";
  
@@ -508,7 +508,7 @@ SKYRESULT SkySceneManager::ShadeClouds()
  * 
  * @todo <WRITE EXTENDED SkySceneManager::LoadClouds FUNCTION DOCUMENTATION>
  */ 
-SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale /* = 1.0f */)
+SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale, double latitude, double longitude)
 {
   unsigned int iNumClouds = 0;
   cloudArchive.FindUInt32("CldNumClouds", &iNumClouds);
@@ -519,7 +519,7 @@ SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale /* 
   {printf("Loading # %d of %d clouds\n", i+1, iNumClouds);
     cloudArchive.FindArchive("Cloud", &subArchive, i);
     SkyCloud *pCloud = new SkyCloud();
-    pCloud->Load(subArchive, rScale);
+    pCloud->Load(subArchive, rScale, latitude, longitude);
     SkyRenderableInstanceCloud *pInstance = new SkyRenderableInstanceCloud(pCloud, false);
     AddCloud(pCloud);
     AddCloudInstance(pInstance);

@@ -296,54 +296,6 @@ int main() {
   AC_MSG_RESULT(yes)
 )
 
-dnl Check for MetaKit
-AC_CHECK_HEADER(mk4.h)
-if test "x$ac_cv_header_mk4_h" != "xyes"; then
-    echo
-    echo "MetaKit library not found."
-    echo
-    echo "If your OS does not provide an installable package for MetaKit"
-    echo "you will have to compile and install it first yourself.  A copy"
-    echo "of metakit-$(VERSION).tar.gz is included with SimGear.  You will"
-    echo "have to untar this source code, and follow its included instructions"
-    echo "to compile and install on your system."
-    echo
-    echo "configure aborted."
-    exit
-fi
-
-AC_MSG_CHECKING([for metakit 2.4.3 or newer])
-saved_LIBS="$LIBS"
-LIBS="$saved_LIBS -lmk4"
-AC_TRY_RUN([
-#include <mk4.h>
-
-#define MIN_MK4_VERSION 243
-
-int main() {
-    int major, minor, micro;
-
-    if ( d4_MetaKitLibraryVersion < MIN_MK4_VERSION ) {
-	 return -1;
-    }
-
-    return 0;
-}
-
-],
-  AC_MSG_RESULT(yes),
-  [AC_MSG_RESULT(wrong version);
-   AC_MSG_ERROR([
-
-Install metakit 2.4.3 or later first.
-
-Or, the compiler may not be finding your libmk4.so library.
-Please check the config.log file for specific details of the
-failure if you believe you have the correct metakit version.
-Also, look up this issue in the FlightGear FAQ.])],
-  AC_MSG_RESULT(yes)
-)
-
 LIBS="$saved_LIBS"
 
 AC_LANG_POP

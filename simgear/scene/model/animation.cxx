@@ -963,8 +963,7 @@ SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
 
 SGTexMultipleAnimation::~SGTexMultipleAnimation ()
 {
-  // delete _table;
-  delete _transform;
+   delete [] _transform;
 }
 
 int

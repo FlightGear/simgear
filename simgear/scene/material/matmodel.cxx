@@ -1,6 +1,6 @@
 // matmodel.cxx -- class to handle models tied to a material property
 //
-// Written by Curtis Olson, started May 1998.
+// Written by David Megginson, started May 1998.
 //
 // Copyright (C) 1998 - 2003  Curtis L. Olson  - curt@flightgear.org
 //
@@ -117,26 +117,26 @@ SGMatModel::~SGMatModel ()
 }
 
 int
-SGMatModel::get_model_count( SGModelLib *loader,
-                                   const string &fg_root,
-                                   SGPropertyNode *prop_root,
-                                   double sim_time_sec )
+SGMatModel::get_model_count( SGModelLib *modellib,
+                             const string &fg_root,
+                             SGPropertyNode *prop_root,
+                             double sim_time_sec )
 {
-  load_models( loader, fg_root, prop_root, sim_time_sec );
+  load_models( modellib, fg_root, prop_root, sim_time_sec );
   return _models.size();
 }
 
 inline void
-SGMatModel::load_models ( SGModelLib *loader,
-                                const string &fg_root,
-                                SGPropertyNode *prop_root,
-                                double sim_time_sec )
+SGMatModel::load_models ( SGModelLib *modellib,
+                          const string &fg_root,
+                          SGPropertyNode *prop_root,
+                          double sim_time_sec )
 {
 				// Load model only on demand
   if (!_models_loaded) {
     for (unsigned int i = 0; i < _paths.size(); i++) {
-      ssgEntity *entity = loader->load_model( fg_root, _paths[i],
-                                              prop_root, sim_time_sec );
+      ssgEntity *entity = modellib->load_model( fg_root, _paths[i],
+                                                prop_root, sim_time_sec );
       if (entity != 0) {
                                 // FIXME: this stuff can be handled
                                 // in the XML wrapper as well (at least,
@@ -164,22 +164,22 @@ SGMatModel::load_models ( SGModelLib *loader,
 
 ssgEntity *
 SGMatModel::get_model( int index,
-                               SGModelLib *loader,
-                               const string &fg_root,
-                               SGPropertyNode *prop_root,
-                               double sim_time_sec )
+                       SGModelLib *modellib,
+                       const string &fg_root,
+                       SGPropertyNode *prop_root,
+                       double sim_time_sec )
 {
-  load_models( loader, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
+  load_models( modellib, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
   return _models[index];
 }
 
 ssgEntity *
-SGMatModel::get_random_model( SGModelLib *loader,
-                                      const string &fg_root,
-                                      SGPropertyNode *prop_root,
-                                      double sim_time_sec )
+SGMatModel::get_random_model( SGModelLib *modellib,
+                              const string &fg_root,
+                              SGPropertyNode *prop_root,
+                              double sim_time_sec )
 {
-  load_models( loader, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
+  load_models( modellib, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
   int nModels = _models.size();
   int index = int(sg_random() * nModels);
   if (index >= nModels)

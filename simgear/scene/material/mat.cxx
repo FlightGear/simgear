@@ -40,7 +40,6 @@ SG_USING_STD(map);
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
-#include <simgear/scene/model/modellib.hxx>
 
 #include "mat.hxx"
 

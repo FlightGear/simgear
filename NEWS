@@ -1,3 +1,10 @@
+New in 0.0.17 (final)
+* February 16, 2002
+
+* Converted some cout's to SG_LOG's.
+* xplicitely reset the glBlendFunc() after drawing the moon for the
+  Voodoo2 linux driver since it seems to have a bug in glPopAttrib().
+
 New in 0.0.17pre2
 * February 13, 2002
 

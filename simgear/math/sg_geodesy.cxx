@@ -108,7 +108,7 @@ static double seaLevelRadius(double r, double z)
 // starts making very poor guesses as to latitude.  As altitude
 // approaches infinity, it should be guessing with geocentric
 // coordinates, not "local geodetic up" ones.
-void sgCartToGeod(double* xyz, double* lat, double* lon, double* alt)
+void sgCartToGeod(const double* xyz, double* lat, double* lon, double* alt)
 {
     // The error is expressed as a radian angle, and we want accuracy
     // to 1 part in 2^50 (an IEEE double has between 51 and 52

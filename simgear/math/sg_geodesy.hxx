@@ -42,7 +42,7 @@ void sgGeodToGeoc(double lat_geod, double alt,
  * @param lon (out) Longitude, in radians
  * @param alt (out) Altitude, in meters above the WGS84 ellipsoid
  */
-void sgCartToGeod(double* xyz, double* lat, double* lon, double* alt);
+void sgCartToGeod(const double* xyz, double* lat, double* lon, double* alt);
 
 /**
  * Convert a cartesian point to a geodetic lat/lon/altitude.

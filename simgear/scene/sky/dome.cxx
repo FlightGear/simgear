@@ -332,7 +332,10 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     sgVec4 lower_color[12];
     sgVec4 bottom_color[12];
 
-    double vis_factor;
+    double vis_factor, cvf = vis;
+
+    if (cvf > 45000)
+        cvf = 45000;
 
     if ( vis < 3000.0 ) {
 	vis_factor = (vis - 1000.0) / 2000.0;
@@ -356,9 +359,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        l->sky_color[j], l->fog_color[j], diff);
 
-	    upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
-	    middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
-		+ middle_amt[j];
+	    upper_color[i][j] = sky_color[j] - diff *
+                                 ( 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000) );
+	    middle_color[i][j] = sky_color[j] - diff *
+                                 ( 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000) )
+		                 + middle_amt[j];
 	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
 	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
@@ -397,9 +402,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        sky_color[j], fog_color[j], diff);
 
-	    upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
-	    middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
-		+ middle_amt[j];
+	    upper_color[i][j] = sky_color[j] - diff *
+                                 ( 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000) );
+	    middle_color[i][j] = sky_color[j] - diff *
+                                 ( 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000) )
+                                  + middle_amt[j];
 	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
 	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }

@@ -1,3 +1,13 @@
+New in 0.3.0
+* December 3, 2002
+
+* removed interpreter subdir
+* NOMINAX fix for Cygwin/gcc-3.2
+* Added some prototype 3d clouds based on Mark Harris's demos.
+* Simplified the command manager interface
+* Allow an "include" attribute on root PropertyList element.
+
+
 New in 0.2.0
 * September 6, 2002
 

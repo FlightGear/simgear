@@ -1,0 +1,29 @@
+
+#ifndef __SG_STREAMBUF
+#define __SG_STREAMBUF 1
+
+#if defined(sgi) && !defined(__GNUC__)
+
+# include <char_traits.h>
+# include <iostream>
+
+# define pubsync sync
+
+  using std::char_traits;
+
+  typedef char_traits<char>            traits_type;
+  typedef char_traits<char>::int_type  int_type;
+
+  typedef streampos  pos_type;
+  typedef streamoff  off_type;
+
+  namespace std {
+    using ::streambuf;
+    using ::streampos;
+    using ::streamoff;
+  };
+
+#endif
+
+#endif // !__SG_STREAMBUF
+

@@ -1,0 +1,8 @@
+
+#ifndef __SG_FSTREAM
+#define __SG_FSTREAM 1
+
+# include <fstream.h>
+
+#endif // !__SG_FSTREAM
+

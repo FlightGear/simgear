@@ -1,0 +1,8 @@
+
+#ifndef __SG_STRSTREAM
+#define __SG_STRSTREAM 1
+
+# include <strstream.h>
+
+#endif // !__SG_STRSTREAM
+

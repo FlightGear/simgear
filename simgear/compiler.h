@@ -291,28 +291,24 @@
 #  define SG_HAVE_NATIVE_SGI_COMPILERS
 
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
+#  define SG_CLASS_PARTIAL_SPECIALIZATION
 #  define SG_NEED_AUTO_PTR
 #  define SG_MEMBER_TEMPLATES
 #  define SG_NAMESPACES
 #  define SG_HAVE_STD
-#  define SG_CLASS_PARTIAL_SPECIALIZATION
+#  define SG_HAVE_STREAMBUF
 #  define SG_HAVE_TRAITS
+#  define SG_HAVE_STD_INCLUDES
 
 #  define STL_ALGORITHM  <algorithm>
 #  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip.h>
-#  define STL_IOSTREAM   <iostream.h>
-#  define STL_ITERATOR   <iterator.h>
-#  define STL_FSTREAM    <fstream.h>
+#  define STL_IOMANIP    <iomanip>
+#  define STL_IOSTREAM   <iostream>
+#  define STL_ITERATOR   <iterator>
+#  define STL_FSTREAM    <fstream>
 #  define STL_STDEXCEPT  <stdexcept>
 #  define STL_STRING     <string>
-#  define STL_STRSTREAM  <strstream.h>
-
-// #  define __STL_FUNCTION_TMPL_PARTIAL_ORDER
-// typedef void PFNGLPOINTPARAMETERFEXTPROC
-
-#define glPointParameterfEXT	glPointParameterfSGIS
-#define glPointParameterfvEXT	glPointParameterfvSGIS
+#  define STL_STRSTREAM  <strstream>
 
 #pragma set woff 1001,1012,1014,1116,1155,1172,1174
 #pragma set woff 1401,1460,1551,1552,1681
@@ -321,7 +317,7 @@
 #pragma set woff 1682,3303
 #endif
 
-#  define SG_COMPILER_STR "SGI Irix compiler version " SG_STRINGIZE(_COMPILER_VERSION)
+#  define SG_COMPILER_STR "SGI MipsPro compiler version " SG_STRINGIZE(_COMPILER_VERSION)
 
 #endif // Native SGI compilers
 

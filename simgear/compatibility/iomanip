@@ -1,0 +1,8 @@
+
+#ifndef __SG_IOMANIP
+#define __SG_IOMANIP 1
+
+# include <iomanip.h>
+
+#endif // !__SG_IOMANIP
+

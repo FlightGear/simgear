@@ -49,6 +49,7 @@ case "${host}" in
     if test "$CXX" = "CC"; then
         AR="CC -ar"
         ARFLAGS="-o"
+        CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility"
     fi
     ;;
 esac
@@ -386,6 +387,7 @@ AC_CONFIG_FILES([ \
 	src-libs/Makefile \
 	simgear/Makefile \
 	simgear/version.h \
+	simgear/compatibility/Makefile \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \

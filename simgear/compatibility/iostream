@@ -1,0 +1,29 @@
+
+#ifndef __SG_IOSTREAM
+#define __SG_IOSTREAM 1
+
+# include <iostream.h>
+
+#if defined(sgi) && !defined(__GNUC__)
+
+  class ios_base : public ios {
+  public:
+
+    typedef int  openmode;
+    typedef int  seekdir;
+
+    enum { binary = 0 };
+  };
+
+  namespace std {
+    using ::cin;
+    using ::cout;
+    using ::cerr;
+    using ::clog;
+    using ::ios_base;
+  };
+
+#endif
+
+#endif // !__SG_IOSTREAM
+

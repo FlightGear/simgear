@@ -1,0 +1,61 @@
+// inlines.h -- various inline template definitions
+//
+// Written by Norman Vine, started June 2000.
+//
+// Copyright (C) 2000  Norman Vine  - nhv@cape.com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+//
+// $Id$
+
+
+#ifndef _SG_INLINES_H
+#define _SG_INLINES_H
+
+
+template <class T>
+inline const int SG_SIGN(const T x) {
+    return x < T(0) ? -1 : 1;
+}
+
+template <class T>
+inline const T SG_MIN(const T a, const T b) {
+    return a < b ? a : b;
+}
+
+// return the minimum of three values
+template <class T>
+inline const T SG_MIN3( const T a, const T b, const T c) {
+    return (a < b ? SG_MIN (a, c) : SG_MIN (b, c));
+}
+
+template <class T>
+inline const T SG_MAX(const T a, const T b) {
+    return  a > b ? a : b;
+}
+
+// return the maximum of three values
+template <class T>
+inline const T SG_MAX3 (const T a, const T b, const T c) {
+    return (a > b ? SG_MAX (a, c) : SG_MAX (b, c));
+}
+
+// 
+template <class T>
+inline void SG_SWAP( T &a, T &b) {
+    T c = a;  a = b;  b = c;
+}
+
+#endif // _SG_INLINES_H

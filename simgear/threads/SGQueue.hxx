@@ -61,6 +61,13 @@ public:
      */
     virtual T pop() = 0;
 
+    /**
+     * Query the size of the queue
+     *
+     * @return size_t size of queue.
+     */
+    virtual size_t size() = 0;
+
 protected:
     /**
      * 
@@ -136,6 +143,17 @@ public:
 	this->fifo.pop();
 	return item;
     }
+
+    /**
+     * Query the size of the queue
+     *
+     * @return size_t size of queue.
+     */
+    virtual size_t size() {
+	SGGuard<SGLOCK> g(mutex);
+        return this->fifo.size();
+    }
+
 private:
 
     /**
@@ -220,6 +238,16 @@ public:
 	T item = this->fifo.front();
 	this->fifo.pop();
 	return item;
+    }
+
+    /**
+     * Query the size of the queue
+     *
+     * @return size_t size of queue.
+     */
+    virtual size_t size() {
+	SGGuard<SGMutex> g(mutex);
+        return this->fifo.size();
     }
 
 private:

@@ -332,9 +332,11 @@ sgLoad3DModel( const string &fg_root, const string &path,
                      sim_time_sec);
   }
 
+#if PLIB_VERSION > 183
   if ( model != 0 ) {
     makeDList( model );
   }
+#endif
 
   return alignmainmodel;
 }

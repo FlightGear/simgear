@@ -177,6 +177,9 @@ bool sgGenTile( const string& path, SGBucket b,
         new ssgVtxTable ( GL_TRIANGLE_FAN, vl, nl, tl, cl );
 
     leaf->setState( state );
+#if PLIB_VERSION > 183
+    leaf->makeDList();
+#endif
 
     geometry->addKid( leaf );
 
@@ -448,7 +451,6 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                             nodes, normals, texcoords,
                                             tris_v[ind], tris_n[ind], tris_tc[ind],
                                             is_base, ground_lights );
-
                 if ( use_random_objects ) {
                     SGMaterial *mat = matlib->find( tri_materials[ind] );
                     if ( mat == NULL ) {
@@ -467,7 +469,6 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                             nodes, normals, texcoords,
                                             strips_v[ind], strips_n[ind], strips_tc[ind],
                                             is_base, ground_lights );
-
                 if ( use_random_objects ) {
                     SGMaterial *mat = matlib->find( strip_materials[ind] );
                     if ( mat == NULL ) {

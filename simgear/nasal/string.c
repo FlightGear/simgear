@@ -199,6 +199,9 @@ static int tonum(unsigned char* s, int len, double* result)
         i += fraclen;
     }
 
+    // Nothing so far?  Then the parse failed.
+    if(i == 0) return 0;
+
     // Read the exponent, if any
     if(i < len && (s[i] == 'e' || s[i] == 'E'))
         i = readsigned(s, len, i+1, &exp);

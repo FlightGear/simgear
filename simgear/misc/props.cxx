@@ -938,15 +938,13 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
 const char *
 SGPropertyNode::getDisplayName (bool simplify) const
 {
-  if (_display_name == 0) {
-    string display = _name;
-    if (_index != 0 || !simplify) {
-      char buffer[64];
-      sprintf(buffer, "[%d]", _index);
-      display += buffer;
-    }
-    _display_name = copy_string(display.c_str());
+  string display = _name;
+  if (_index != 0 || !simplify) {
+    char buffer[64];
+    sprintf(buffer, "[%d]", _index);
+    display += buffer;
   }
+  _display_name = copy_string(display.c_str());
   return _display_name;
 }
 

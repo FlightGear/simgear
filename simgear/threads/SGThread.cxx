@@ -4,7 +4,7 @@
 #  include <time.h>
 #else
 #  if defined ( sgi ) && !defined( __GNUC__ )
-     // This works arounf a bug triggered when using MipsPro 7.4.1
+     // This works around a bug triggered when using MipsPro 7.4.1
      // and (at least) IRIX 6.5.20
 #    include <iostream>
 #  endif

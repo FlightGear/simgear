@@ -67,9 +67,11 @@ public:
 
     /**
      * Start the underlying thread of execution.
+     * @param cpu An optional parameter to specify on which CPU to run this
+     * thread (only supported on IRIX at this time).
      * @return Pthread error code if execution fails, otherwise returns 0.
      */
-    int start();
+    int start( unsigned cpu = 0 );
 
     /**
      * Sends a cancellation request to the underlying thread.  The target
@@ -130,10 +132,14 @@ SGThread::~SGThread()
 }
 
 inline int
-SGThread::start()
+SGThread::start( unsigned cpu )
 {
     int status = pthread_create( &tid, 0, start_handler, this );
     assert( status == 0 );
+#if defined( sgi )
+    if ( !status && !cpu )
+        pthread_setrunon_np( cpu );
+#endif
     return status;
 }
 

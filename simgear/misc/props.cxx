@@ -418,7 +418,7 @@ SGPropertyNode::set_string (const char * val)
   if (_tied) {
     return _value.string_val->setValue(val);
   } else {
-    delete _local_val.string_val;
+    delete (char *)_local_val.string_val;
     _local_val.string_val = copy_string(val);
     return true;
   }
@@ -461,7 +461,7 @@ SGPropertyNode::clear_value ()
   case UNSPECIFIED:
     delete _value.string_val;
     _value.string_val = 0;
-    delete _local_val.string_val;
+    delete (char *)_local_val.string_val;
     _local_val.string_val = 0;
     break;
   }
@@ -662,7 +662,7 @@ SGPropertyNode::SGPropertyNode (const char * name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  delete _name;
+  delete (char *)_name;
   for (int i = 0; i < (int)_children.size(); i++) {
     delete _children[i];
   }

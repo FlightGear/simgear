@@ -1,3 +1,10 @@
+New in 0.3.3
+* June 3, 2003
+
+* Fix a compile problem for cygwin
+* Updated/tweaked doxygen documentation in several areas
+
+
 New in 0.3.2
 * June 2, 2003
 

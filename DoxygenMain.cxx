@@ -69,10 +69,10 @@
  *
  * - A sound effects manager.  (SGSoundMgr, SGSimpleSound, SGSound)
  *
- * - A threading abstraction.
+ * - A threading abstraction.  (SGThread)
  *
  * - A simple but highly functional XML parser that interfaces nicely
- *   with the property manager.
+ *   with the property manager.  (easyxml.hxx)
 
  * \section supports Supported Platforms
  * SimGear has been built on the following platforms:

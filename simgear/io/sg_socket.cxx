@@ -218,7 +218,14 @@ SGSocket::read( char *buf, int length )
 
     if (result > 0)
     {
-	result = sock.recv( buf, length );
+	if (is_tcp)
+	{
+            result = client->recv( buf, length );
+        }
+        else
+        {
+            result = sock.recv( buf, length );
+        }
 
 	if ( result != length )
 	{

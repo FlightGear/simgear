@@ -53,13 +53,16 @@ static string fix_path( const string path ) {
 
 
 // default constructor
-SGPath::SGPath() {
-    path = "";
+SGPath::SGPath() :
+    path("")
+{
 }
 
 
 // create a path based on "path"
-SGPath::SGPath( const string p ) {
+SGPath::SGPath( const string p ) :
+    path("")
+{
     set( p );
 }
 

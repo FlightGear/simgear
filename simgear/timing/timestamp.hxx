@@ -102,7 +102,10 @@ public:
     inline long get_usec() const { return usec; }
 };
 
-inline SGTimeStamp::SGTimeStamp() {
+inline SGTimeStamp::SGTimeStamp() :
+    seconds(0),
+    usec(0)
+{
 }
 
 inline SGTimeStamp::SGTimeStamp( const long s, const long u ) {

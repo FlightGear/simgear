@@ -32,10 +32,14 @@
 #endif
 
 // Constructor
-SGStarData::SGStarData() {
+SGStarData::SGStarData() :
+    nstars(0)
+{
 }
 
-SGStarData::SGStarData( SGPath path ) {
+SGStarData::SGStarData( SGPath path ) :
+    nstars(0)
+{
     data_path = SGPath( path );
     load();
 }

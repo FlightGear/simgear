@@ -32,6 +32,7 @@ class Jupiter : public CelestialBody
 {
 public:
   Jupiter (FGTime *t);
+  Jupiter ();
   void updatePosition(FGTime *t, Star *ourSun);
 };
 

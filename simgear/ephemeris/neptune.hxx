@@ -32,6 +32,7 @@ class Neptune : public CelestialBody
 {
 public:
   Neptune ( FGTime *t);
+  Neptune ();
   void updatePosition(FGTime *t, Star *ourSun);
 };
 

@@ -32,6 +32,7 @@ class Mercury : public CelestialBody
 {
 public:
   Mercury ( FGTime *t);
+  Mercury ();
   void updatePosition(FGTime *t, Star* ourSun);
 };
 

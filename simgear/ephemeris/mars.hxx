@@ -32,6 +32,7 @@ class Mars : public CelestialBody
 {
 public:
   Mars ( FGTime *t);
+  Mars ();
   void updatePosition(FGTime *t, Star *ourSun);
 };
 

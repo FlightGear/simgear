@@ -32,6 +32,7 @@ class Venus : public CelestialBody
 {
 public:
   Venus ( FGTime *t);
+  Venus ();
   void updatePosition(FGTime *t, Star *ourSun);
 };
 

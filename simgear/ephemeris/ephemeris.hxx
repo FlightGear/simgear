@@ -26,16 +26,38 @@
 #define _EPHEMERIS_HXX
 
 
+#include <plib/sg.h>
+
 #include <Time/fg_time.hxx>
 
 #include "star.hxx"
 #include "moon.hxx"
+#include "mercury.hxx"
+#include "venus.hxx"
+#include "mars.hxx"
+#include "jupiter.hxx"
+#include "saturn.hxx"
+#include "uranus.hxx"
+#include "neptune.hxx"
 
 
 class FGEphemeris {
 
     Star *our_sun;
     Moon *moon;
+    Mercury *mercury;
+    Venus *venus;
+    Mars *mars;
+    Jupiter *jupiter;
+    Saturn *saturn;
+    Uranus *uranus;
+    Neptune *neptune;
+
+    // 9 planets - earth - pluto which we don't draw = 7
+    // planets[i][0] = Right Ascension
+    // planets[i][1] = Declination
+    // planets[i][2] = Magnitude
+    sgdVec3 planets[7];
 
 public:
 
@@ -50,19 +72,24 @@ public:
     void update(FGTime *t);
 
     // sun position
-    inline double getSunRightAscension() {
+    inline double getSunRightAscension() const {
 	return our_sun->getRightAscension();
     }
-    inline double getSunDeclination() {
+    inline double getSunDeclination() const {
 	return our_sun->getDeclination();
     }
 
     // moon position
-    inline double getMoonRightAscension() {
+    inline double getMoonRightAscension() const {
 	return moon->getRightAscension();
     }
-    inline double getMoonDeclination() {
+    inline double getMoonDeclination() const {
 	return moon->getDeclination();
+    }
+
+    // planets
+    inline sgdVec3 *getPlanets() const {
+	return planets;
     }
 };
 

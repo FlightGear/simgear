@@ -87,8 +87,8 @@ void CelestialBody::updatePosition(FGTime *t, Star *ourSun)
   ze = yg * sin(ecl) + zg * cos(ecl);
   rightAscension = atan2(ye, xe);
   declination = atan2(ze, sqrt(xe*xe + ye*ye));
-  FG_LOG(FG_GENERAL, FG_INFO, "Planet found at : " 
-	 << rightAscension << " (ra), " << declination << " (dec)" );
+  /* FG_LOG(FG_GENERAL, FG_INFO, "Planet found at : " 
+	 << rightAscension << " (ra), " << declination << " (dec)" ); */
 
   //calculate some variables specific to calculating the magnitude 
   //of the planet

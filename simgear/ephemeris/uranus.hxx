@@ -32,6 +32,7 @@ class Uranus : public CelestialBody
 {
 public:
   Uranus ( FGTime *t);
+  Uranus ();
   void updatePosition(FGTime *t, Star *ourSun);
 };
 

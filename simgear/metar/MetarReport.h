@@ -16,7 +16,7 @@
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 class CMetarReport
 {

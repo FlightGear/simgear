@@ -93,7 +93,7 @@
        // g++-2.8.x and egcs-1.x
 #      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #      define SG_NEED_AUTO_PTR
-#      define FG_MEMBER_TEMPLATES
+#      define SG_MEMBER_TEMPLATES
 #      define SG_NAMESPACES
 #      define SG_HAVE_STD
 #      define SG_HAVE_STREAMBUF
@@ -120,7 +120,7 @@
 #  define SG_NAMESPACES
 #  define SG_HAVE_STD
 #  define SG_HAVE_STREAMBUF
-#  define FG_HAVE_TRAITS
+#  define SG_HAVE_TRAITS
 #  define SG_HAVE_STD_INCLUDES
 
 #  define STL_ALGORITHM  <algorithm>
@@ -140,7 +140,7 @@
 /*
   CodeWarrior compiler from Metrowerks, Inc.
 */
-#  define FG_HAVE_TRAITS
+#  define SG_HAVE_TRAITS
 #  define SG_HAVE_STD_INCLUDES
 #  define SG_HAVE_STD
 #  define SG_NAMESPACES
@@ -250,15 +250,15 @@
 //
 
 #if defined ( sgi ) && !defined( __GNUC__ )
-#  define FG_HAVE_NATIVE_SGI_COMPILERS
+#  define SG_HAVE_NATIVE_SGI_COMPILERS
 
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define SG_NEED_AUTO_PTR
-#  define FG_MEMBER_TEMPLATES
+#  define SG_MEMBER_TEMPLATES
 #  define SG_NAMESPACES
 #  define SG_HAVE_STD
 #  define SG_CLASS_PARTIAL_SPECIALIZATION
-#  define FG_HAVE_TRAITS
+#  define SG_HAVE_TRAITS
 
 #  define STL_ALGORITHM  <algorithm>
 #  define STL_FUNCTIONAL <functional>
@@ -289,53 +289,53 @@
 // No user modifiable definitions beyond here.
 //
 
-#ifdef FG_NEED_EXPLICIT
+#ifdef SG_NEED_EXPLICIT
 #  define explicit
 #endif
 
-#ifdef FG_NEED_TYPENAME
+#ifdef SG_NEED_TYPENAME
 #  define typename
 #endif
 
-#ifdef FG_NEED_MUTABLE
+#ifdef SG_NEED_MUTABLE
 #  define mutable
 #endif
 
-#ifdef FG_NEED_BOOL
+#ifdef SG_NEED_BOOL
    typedef int bool;
 #  define true 1
 #  define false 0
 #endif
 
 #ifdef SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#  define FG_NULL_TMPL_ARGS <>
+#  define SG_NULL_TMPL_ARGS <>
 #else
-#  define FG_NULL_TMPL_ARGS
+#  define SG_NULL_TMPL_ARGS
 #endif
 
 #ifdef SG_CLASS_PARTIAL_SPECIALIZATION
-# define FG_TEMPLATE_NULL template<>
+# define SG_TEMPLATE_NULL template<>
 #else
-# define FG_TEMPLATE_NULL
+# define SG_TEMPLATE_NULL
 #endif
 
-// FG_NO_NAMESPACES is a hook so that users can disable namespaces
+// SG_NO_NAMESPACES is a hook so that users can disable namespaces
 // without having to edit library headers.
-#if defined(SG_NAMESPACES) && !defined(FG_NO_NAMESPACES)
-#   define FG_NAMESPACE(X) namespace X {
-#   define FG_NAMESPACE_END }
-#   define FG_USING_NAMESPACE(X) using namespace X
+#if defined(SG_NAMESPACES) && !defined(SG_NO_NAMESPACES)
+#   define SG_NAMESPACE(X) namespace X {
+#   define SG_NAMESPACE_END }
+#   define SG_USING_NAMESPACE(X) using namespace X
 # else
-#   define FG_NAMESPACE(X)
-#   define FG_NAMESPACE_END
-#   define FG_USING_NAMESPACE(X)
+#   define SG_NAMESPACE(X)
+#   define SG_NAMESPACE_END
+#   define SG_USING_NAMESPACE(X)
 #endif
 
 # ifdef SG_HAVE_STD
-#  define FG_USING_STD(X) using std::X
+#  define SG_USING_STD(X) using std::X
 #  define STD std
 # else
-#  define FG_USING_STD(X) 
+#  define SG_USING_STD(X) 
 #  define STD
 # endif
 

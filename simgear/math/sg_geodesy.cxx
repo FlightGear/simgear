@@ -27,8 +27,8 @@
 #include "localconsts.hxx"
 
 
-#ifndef FG_HAVE_NATIVE_SGI_COMPILERS
-FG_USING_STD(cout);
+#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
+SG_USING_STD(cout);
 #endif
 
 // ONE_SECOND is pi/180/60/60, or about 100 feet at earths' equator

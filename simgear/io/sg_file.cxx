@@ -33,7 +33,7 @@
 
 #include "sg_file.hxx"
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 
 SGFile::SGFile( const string &file) {

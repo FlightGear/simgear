@@ -11,11 +11,11 @@
 #include STL_STRING
 #include <vector>
 
-#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD(istream);
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(istream);
 #endif
-FG_USING_STD(string);
-FG_USING_STD(vector);
+SG_USING_STD(string);
+SG_USING_STD(vector);
 
 
 /**

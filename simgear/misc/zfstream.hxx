@@ -38,9 +38,9 @@
 #endif
 
 // At least Irix needs this
-#ifdef FG_HAVE_NATIVE_SGI_COMPILERS
+#ifdef SG_HAVE_NATIVE_SGI_COMPILERS
 #include <char_traits.h>
-FG_USING_STD(char_traits);
+SG_USING_STD(char_traits);
 #endif
 
 #ifdef SG_HAVE_STD_INCLUDES
@@ -59,10 +59,10 @@ FG_USING_STD(char_traits);
 #  define ios_badbit   ios_base::badbit
 #  define ios_failbit  ios_base::failbit
 
-FG_USING_STD(streambuf);
-FG_USING_STD(ios_base);
-FG_USING_STD(streampos);
-FG_USING_STD(streamoff);
+SG_USING_STD(streambuf);
+SG_USING_STD(ios_base);
+SG_USING_STD(streampos);
+SG_USING_STD(streamoff);
 
 #else
 
@@ -81,7 +81,7 @@ FG_USING_STD(streamoff);
 
 #if defined(__GNUC__) && __GNUC_MINOR__ < 8
 #  define ios_binary   ios::bin
-#elif defined( FG_HAVE_NATIVE_SGI_COMPILERS )
+#elif defined( SG_HAVE_NATIVE_SGI_COMPILERS )
 #  define ios_binary   0
 #else
 #  define ios_binary   ios::binary

@@ -32,8 +32,8 @@
 #include STL_STRING
 #include <vector>
 
-FG_USING_STD(vector);
-FG_USING_STD(string);
+SG_USING_STD(vector);
+SG_USING_STD(string);
 
 
 #define SG_IO_MAX_MSG_SIZE 16384

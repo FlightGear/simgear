@@ -36,7 +36,7 @@
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 #if defined(_MSC_VER)
 #  include <winsock.h>

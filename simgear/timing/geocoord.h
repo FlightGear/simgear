@@ -43,7 +43,7 @@
 // But it looks like it isn't used anyways -:)
 #include <vector>
 
-FG_USING_NAMESPACE(std);
+SG_USING_NAMESPACE(std);
 
 #include <simgear/constants.h>
 

@@ -32,7 +32,7 @@
 #include <simgear/compiler.h>
 
 // At least Irix needs this
-#ifdef FG_HAVE_NATIVE_SGI_COMPILERS
+#ifdef SG_HAVE_NATIVE_SGI_COMPILERS
 #include <char_traits.h>
 #endif
 
@@ -46,17 +46,17 @@
 
 #include <simgear/debug/debug_types.h>
 
-#ifndef FG_HAVE_NATIVE_SGI_COMPILERS
-FG_USING_STD(streambuf);
-FG_USING_STD(ostream);
-FG_USING_STD(cerr);
-FG_USING_STD(endl);
+#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
+SG_USING_STD(streambuf);
+SG_USING_STD(ostream);
+SG_USING_STD(cerr);
+SG_USING_STD(endl);
 #else
-FG_USING_STD(char_traits);
+SG_USING_STD(char_traits);
 #endif
 
 #ifdef __MWERKS__
-FG_USING_STD(iostream);
+SG_USING_STD(iostream);
 #endif
 
 //

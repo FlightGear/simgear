@@ -14,7 +14,7 @@
 #include "props.hxx"
 
 #include STL_IOSTREAM
-#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 #  include <fstream>
 #else
 #  include <fstream.h>
@@ -23,15 +23,15 @@
 #include <vector>
 #include <map>
 
-#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD(istream);
-FG_USING_STD(ifstream);
-FG_USING_STD(ostream);
-FG_USING_STD(ofstream);
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(istream);
+SG_USING_STD(ifstream);
+SG_USING_STD(ostream);
+SG_USING_STD(ofstream);
 #endif
-FG_USING_STD(string);
-FG_USING_STD(vector);
-FG_USING_STD(map);
+SG_USING_STD(string);
+SG_USING_STD(vector);
+SG_USING_STD(map);
 
 
 

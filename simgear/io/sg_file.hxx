@@ -42,7 +42,7 @@
 
 #include "iochannel.hxx"
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 
 class SGFile : public SGIOChannel {

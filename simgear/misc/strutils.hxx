@@ -34,7 +34,7 @@
 #  include <stdlib.h>
 #endif
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 // Default characters to remove.
 extern const string whitespace;

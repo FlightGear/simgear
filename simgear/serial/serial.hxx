@@ -40,7 +40,7 @@
 
 #include <simgear/compiler.h>
 #include STL_STRING
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 // if someone know how to do this all with C++ streams let me know
 // #include <stdio.h>

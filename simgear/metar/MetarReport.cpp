@@ -7,9 +7,9 @@
 #include "MetarReport.h"
 #include "Metar.h"
 
-#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD(endl);
-FG_USING_STD(ostream);
+#if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(endl);
+SG_USING_STD(ostream);
 #endif
 
 CMetarReport::CMetarReport(

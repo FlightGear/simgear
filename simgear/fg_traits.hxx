@@ -3,12 +3,12 @@
 
 #include <simgear/compiler.h>
 
-#ifndef FG_HAVE_TRAITS
+#ifndef SG_HAVE_TRAITS
 
 // Dummy up some char traits for now.
 template<class charT> struct char_traits{};
 
-FG_TEMPLATE_NULL
+SG_TEMPLATE_NULL
 struct char_traits<char>
 {
     typedef char      char_type;
@@ -18,6 +18,6 @@ struct char_traits<char>
 
     static int_type eof() { return EOF; }
 };
-#endif // FG_HAVE_TRAITS
+#endif // SG_HAVE_TRAITS
 
 #endif // _FG_TRAITS_HXX

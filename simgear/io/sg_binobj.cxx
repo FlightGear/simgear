@@ -40,12 +40,12 @@
 #include "sg_binobj.hxx"
 
 
-FG_USING_STD( string );
-FG_USING_STD( vector );
+SG_USING_STD( string );
+SG_USING_STD( vector );
 
-#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD( cout );
-FG_USING_STD( endl );
+#if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD( cout );
+SG_USING_STD( endl );
 #endif
 
 

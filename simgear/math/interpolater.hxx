@@ -35,7 +35,7 @@
 #include <simgear/compiler.h>
 
 #include STL_STRING
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 #define MAX_TABLE_SIZE 32
 

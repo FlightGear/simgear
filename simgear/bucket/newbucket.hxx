@@ -47,16 +47,16 @@
 // already depending on how you defined SG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO
 #ifdef __MWERKS__
-FG_USING_STD(sprintf);
-FG_USING_STD(fabs);
+SG_USING_STD(sprintf);
+SG_USING_STD(fabs);
 #endif
 
 #include STL_STRING
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
-#if ! defined( FG_HAVE_NATIVE_SGI_COMPILERS )
-FG_USING_STD(ostream);
+#if ! defined( SG_HAVE_NATIVE_SGI_COMPILERS )
+SG_USING_STD(ostream);
 #endif
 
 

@@ -45,7 +45,7 @@
 #include <simgear/sky/oursun.hxx>
 #include <simgear/sky/stars.hxx>
 
-FG_USING_STD(vector);
+SG_USING_STD(vector);
 
 
 typedef vector < SGCloudLayer* > layer_list_type;

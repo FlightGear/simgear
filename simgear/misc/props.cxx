@@ -18,7 +18,7 @@
 #include <algorithm>
 #include "props.hxx"
 
-FG_USING_STD(sort);
+SG_USING_STD(sort);
 
 
 

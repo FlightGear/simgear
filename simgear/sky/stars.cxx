@@ -41,9 +41,9 @@
 
 #include "stars.hxx"
 
-#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD(cout);
-FG_USING_STD(endl);
+#if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(cout);
+SG_USING_STD(endl);
 #endif
 
 

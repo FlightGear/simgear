@@ -36,7 +36,7 @@
 
 #include "interpolater.hxx"
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 
 // Constructor -- loads the interpolation table from the specified

@@ -52,12 +52,12 @@
 // already depending on how you defined SG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO
 #ifdef __MWERKS__
-FG_USING_NAMESPACE(std);
+SG_USING_NAMESPACE(std);
 #endif
 
-#ifndef FG_HAVE_NATIVE_SGI_COMPILERS
-FG_USING_STD(ostream);
-FG_USING_STD(istream);
+#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
+SG_USING_STD(ostream);
+SG_USING_STD(istream);
 #endif
 
 

@@ -36,7 +36,7 @@
 
 #include STL_STRING
 
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 
 #ifdef macintosh

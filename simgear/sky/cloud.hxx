@@ -34,7 +34,7 @@
 #include <plib/ssg.h>
 
 #include STL_STRING
-FG_USING_STD(string);
+SG_USING_STD(string);
 
 
 #define SG_MAX_CLOUD_TYPES 4	// change this if we add/remove cloud

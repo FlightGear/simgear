@@ -30,8 +30,4 @@ noinst_PROGRAMS = props_test
 props_test_SOURCES = props_test.cxx
 props_test_LDADD = libsgmisc.a ../xml/libsgxml.a ../debug/libsgdebug.a
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

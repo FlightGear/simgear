@@ -30,8 +30,4 @@ libsginterp_a_SOURCES = \
 	ixlib_js_internals.hh \
 	ixlib_random.hh
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

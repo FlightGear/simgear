@@ -1,9 +1,3 @@
-if ENABLE_UNIX_SERIAL
-SERIAL_DIRS = serial
-else
-SERIAL_DIRS =
-endif
-
 if HAVE_THREADS
 SGTHREAD_DIR = threads
 else
@@ -30,7 +24,7 @@ SUBDIRS = \
 	$(METAR_DIRS) \
 	route \
 	screen \
-	$(SERIAL_DIRS) \
+	serial \
 	sky \
 	$(SGTHREAD_DIR) \
 	timing \

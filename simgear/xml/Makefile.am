@@ -18,8 +18,4 @@ libsgxml_a_SOURCES = \
 	xmltok.h xmltok.c \
 	xmltok_impl.h
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

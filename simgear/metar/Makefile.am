@@ -11,8 +11,4 @@ libsgmetar_a_SOURCES = \
 	MetarStation.cpp \
 	Prtdmetr.cpp Stspack2.cpp Stspack3.cpp
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

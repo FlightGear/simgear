@@ -128,9 +128,6 @@ dnl enough.  AM_CONDITIONALS are then referenced to conditionally
 dnl build a Makefile.in from a Makefile.am which lets us define custom
 dnl includes, compile alternative source files, etc.
 
-dnl Enable serial support on Unix type systems
-AM_CONDITIONAL(ENABLE_UNIX_SERIAL, true)
-
 dnl X11 might be installed on Mac OS X, don't want to use it if it is.
 if test "x$HOSTTYPE" != "xmacintosh" ; then
     dnl Check for X11 (fancy)
@@ -254,7 +251,9 @@ fi
 if test "x$ac_cv_lib_glut_glutGameModeString" = "xno"; then
     echo
     echo "Your version of glut doesn't support game mode."
-    echo "You need to fetch and install the latest version of glut from:"
+    echo "You need to install the latest version of glut.  If your"
+    echo "distribution doesn't provide a newer version, you can get the source"
+    echo "code from:"
     echo
     echo "    http://reality.sgi.com/opengl/glut3/glut3.html"
     exit 1

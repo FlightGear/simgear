@@ -20,11 +20,7 @@ libsgio_a_SOURCES = \
 	sg_socket.cxx \
 	sg_socket_udp.cxx 
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif
 
 if IS_MINGW
 NETWORK_LIB = -lwsock32

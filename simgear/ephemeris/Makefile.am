@@ -31,8 +31,4 @@ libsgephem_a_SOURCES = \
 	uranus.cxx \
 	venus.cxx
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

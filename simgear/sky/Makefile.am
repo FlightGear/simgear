@@ -20,8 +20,4 @@ libsgsky_a_SOURCES = \
 	sphere.cxx \
 	stars.cxx
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

@@ -16,8 +16,4 @@ libsgtiming_a_SOURCES = \
 	timestamp.cxx \
 	timezone.cxx
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

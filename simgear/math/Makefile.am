@@ -24,8 +24,4 @@ libsgmath_a_SOURCES = \
 	sg_random.c \
 	vector.cxx
 
-if OLD_AUTOMAKE
-INCLUDES += -I$(top_srcdir)
-else
 INCLUDES = -I$(top_srcdir)
-endif

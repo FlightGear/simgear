@@ -34,11 +34,12 @@ typedef enum {
  * Define the possible logging priorities (and their order).
  */
 typedef enum {
-    SG_BULK,	    // For frequent messages
-    SG_DEBUG, 	    // Less frequent debug type messages
-    SG_INFO,        // Informatory messages
-    SG_WARN,	    // Possible impending problem
-    SG_ALERT       // Very possible impending problem
+    SG_BULK = 1,       // For frequent messages
+    SG_DEBUG,          // Less frequent debug type messages
+    SG_INFO,           // Informatory messages
+    SG_WARN,           // Possible impending problem
+    SG_ALERT           // Very possible impending problem
     // SG_EXIT,        // Problem (no core)
     // SG_ABORT        // Abandon ship (core)
 } sgDebugPriority;
+

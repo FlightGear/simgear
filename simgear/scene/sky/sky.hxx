@@ -219,8 +219,8 @@ private:
     float visibility;
     float effective_visibility;
 
-    // which is the cloud layer we are in
     int in_cloud;
+    int cur_layer_pos;
 
     // near cloud visibility state variables
     bool in_puff;

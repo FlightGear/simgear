@@ -179,6 +179,7 @@ void SGSky::preDraw( float alt ) {
     int i;
 
     // check where we are relative to the cloud layers
+    in_cloud = -1;
     for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
        float asl = cloud_layers[i]->getElevation_m();
        float thickness = cloud_layers[i]->getThickness_m();
@@ -196,22 +197,19 @@ void SGSky::preDraw( float alt ) {
     }
 
     // determine rendering order
-    int pos = 0;
-    while ( pos < (int)cloud_layers.size() &&
-           alt > cloud_layers[pos]->getElevation_m())
+    cur_layer_pos = 0;
+    while ( cur_layer_pos < (int)cloud_layers.size() &&
+           alt > cloud_layers[cur_layer_pos]->getElevation_m())
     {
-       ++pos;
+       ++cur_layer_pos;
     }
 
     // draw the cloud layers that are above us, top to bottom
- 
-    glDepthMask( GL_FALSE );
-    for ( i = (int)cloud_layers.size() - 1; i >= 0; --i ) {
+    for ( i = (int)cloud_layers.size() - 1; i >= cur_layer_pos; --i ) {
         if ( i != in_cloud ) {
             cloud_layers[i]->draw();
         }
     }
-    glDepthMask( GL_TRUE );
 }
 
 
@@ -219,30 +217,13 @@ void SGSky::preDraw( float alt ) {
 // oapaque elements of your scene.
 void SGSky::postDraw( float alt ) {
 
-    	// if we are closer than this to  a cloud layer, don't draw clouds
-    static const float slop = 5.0;
-
-    int i;
-
-    // determine rendering order
-    int pos = 0;
-    while ( pos < (int)cloud_layers.size() && 
-	    alt > cloud_layers[pos]->getElevation_m())
-    {
-	++pos;
-    }
-
     // draw the cloud layers that are below us, bottom to top
 
-    glDepthMask( GL_FALSE );
-    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
+    for ( int i = 0; i < cur_layer_pos; ++i ) {
         if ( i != in_cloud ) {
             cloud_layers[i]->draw();
         }
     }
-    glDepthMask( GL_TRUE );
-
-    in_cloud = -1;
 }
 
 void

@@ -438,9 +438,9 @@ SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
       _max_deg(props->getDoubleValue("max-deg")),
       _position_deg(props->getDoubleValue("starting-position-deg", 0))
 {
-  _center[0] = props->getFloatValue("center/x-m", 0);
-  _center[1] = props->getFloatValue("center/y-m", 0);
-  _center[2] = props->getFloatValue("center/z-m", 0);
+  _center[0] = props->getFloatValue("center/x", 0);
+  _center[1] = props->getFloatValue("center/y", 0);
+  _center[2] = props->getFloatValue("center/z", 0);
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
@@ -477,15 +477,16 @@ SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTexTrans),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _offset_m(props->getDoubleValue("offset-m", 0.0)),
+    _offset(props->getDoubleValue("offset", 0.0)),
     _factor(props->getDoubleValue("factor", 1.0)),
     _step(props->getDoubleValue("step",0.0)),
+    _scroll(props->getDoubleValue("scroll",0.0)),
     _table(read_interpolation_table(props)),
-    _has_min(props->hasValue("min-m")),
-    _min_m(props->getDoubleValue("min-m")),
-    _has_max(props->hasValue("max-m")),
-    _max_m(props->getDoubleValue("max-m")),
-    _position_m(props->getDoubleValue("starting-position-m", 0))
+    _has_min(props->hasValue("min")),
+    _min(props->getDoubleValue("min")),
+    _has_max(props->hasValue("max")),
+    _max(props->getDoubleValue("max")),
+    _position(props->getDoubleValue("starting-position", 0))
 {
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
@@ -503,24 +504,164 @@ SGTexTranslateAnimation::update()
 {
   if (_table == 0) {
     if(_step > 0) {
+      double scrollval = 0.0;
+      if(_scroll > 0) {
+        // calculate scroll amount (for odometer like movement)
+        double remainder  =  _step - fmod(fabs(_prop->getDoubleValue()), _step);
+        if (remainder < _scroll) {
+          scrollval = (_scroll - remainder) / _scroll * _step;
+        }
+      }
       // apply stepping of input value
       if(_prop->getDoubleValue() > 0) 
-       _position_m = ((floor(_prop->getDoubleValue()/_step) * _step) + _offset_m) * _factor;
+       _position = ((floor(_prop->getDoubleValue()/_step) * _step) + _offset + scrollval) * _factor;
      else
-      _position_m = ((ceil(_prop->getDoubleValue()/_step) * _step) + _offset_m) * _factor;
+      _position = ((ceil(_prop->getDoubleValue()/_step) * _step) + _offset + scrollval) * _factor;
     } else {
-       _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+       _position = (_prop->getDoubleValue() + _offset) * _factor;
     }
-    if (_has_min && _position_m < _min_m)
-      _position_m = _min_m;
-    if (_has_max && _position_m > _max_m)
-      _position_m = _max_m;
+    if (_has_min && _position < _min)
+      _position = _min;
+    if (_has_max && _position > _max)
+      _position = _max;
   } else {
-    _position_m = _table->interpolate(_prop->getDoubleValue());
+    _position = _table->interpolate(_prop->getDoubleValue());
   }
-  set_translation(_matrix, _position_m, _axis);
+  set_translation(_matrix, _position, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGTexMultipleAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
+                                        SGPropertyNode_ptr props )
+  : SGAnimation(props, new ssgTexTrans),
+      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
+{
+  int i;
+  // Load animations
+  vector<SGPropertyNode_ptr> transform_nodes = props->getChildren("transform");
+  _transform = new TexTransform [transform_nodes.size()];
+  _num_transforms = 0;
+  for (i = 0; i < transform_nodes.size(); i++) {
+    SGPropertyNode_ptr transform_props = transform_nodes[i];
+
+    if (!strcmp("textranslate",transform_props->getStringValue("subtype", 0))) {
+
+      // transform is a translation
+      _transform[i].subtype = 0;
+
+      _transform[i].prop = (SGPropertyNode *)prop_root->getNode(transform_props->getStringValue("property", "/null"), true);
+
+      _transform[i].offset = transform_props->getDoubleValue("offset", 0.0);
+      _transform[i].factor = transform_props->getDoubleValue("factor", 1.0);
+      _transform[i].step = transform_props->getDoubleValue("step",0.0);
+      _transform[i].scroll = transform_props->getDoubleValue("scroll",0.0);
+      _transform[i].table = read_interpolation_table(transform_props);
+      _transform[i].has_min = transform_props->hasValue("min");
+      _transform[i].min = transform_props->getDoubleValue("min");
+      _transform[i].has_max = transform_props->hasValue("max");
+      _transform[i].max = transform_props->getDoubleValue("max");
+      _transform[i].position = transform_props->getDoubleValue("starting-position", 0);
+
+      _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
+      _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
+      _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
+      sgNormalizeVec3(_transform[i].axis);
+      _num_transforms++;
+    } else if (!strcmp("texrotate",transform_nodes[i]->getStringValue("subtype", 0))) {
+
+      // transform is a rotation
+      _transform[i].subtype = 1;
+
+      _transform[i].prop = (SGPropertyNode *)prop_root->getNode(transform_props->getStringValue("property", "/null"), true);
+      _transform[i].offset = transform_props->getDoubleValue("offset-deg", 0.0);
+      _transform[i].factor = transform_props->getDoubleValue("factor", 1.0);
+      _transform[i].table = read_interpolation_table(transform_props);
+      _transform[i].has_min = transform_props->hasValue("min-deg");
+      _transform[i].min = transform_props->getDoubleValue("min-deg");
+      _transform[i].has_max = transform_props->hasValue("max-deg");
+      _transform[i].max = transform_props->getDoubleValue("max-deg");
+      _transform[i].position = transform_props->getDoubleValue("starting-position-deg", 0);
+
+      _transform[i].center[0] = transform_props->getFloatValue("center/x", 0);
+      _transform[i].center[1] = transform_props->getFloatValue("center/y", 0);
+      _transform[i].center[2] = transform_props->getFloatValue("center/z", 0);
+      _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
+      _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
+      _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
+      sgNormalizeVec3(_transform[i].axis);
+      _num_transforms++;
+    }
+  }
+}
+
+SGTexMultipleAnimation::~SGTexMultipleAnimation ()
+{
+  // delete _table;
+  delete _transform;
+}
+
+void
+SGTexMultipleAnimation::update()
+{
+  int i;
+  sgMat4 tmatrix;
+  sgMakeIdentMat4(tmatrix);
+  for (i = 0; i < _num_transforms; i++) {
+
+    if(_transform[i].subtype == 0) {
+
+      // subtype 0 is translation
+      if (_transform[i].table == 0) {
+        if(_transform[i].step > 0) {
+          double scrollval = 0.0;
+          if(_transform[i].scroll > 0) {
+            // calculate scroll amount (for odometer like movement)
+            double remainder  =  _transform[i].step - fmod(fabs(_transform[i].prop->getDoubleValue()), _transform[i].step);
+            if (remainder < _transform[i].scroll) {
+              scrollval = (_transform[i].scroll - remainder) / _transform[i].scroll * _transform[i].step;
+            }
+          }
+          // apply stepping of input value
+          if(_transform[i].prop->getDoubleValue() > 0) 
+            _transform[i].position = ((floor(_transform[i].prop->getDoubleValue()/_transform[i].step) * _transform[i].step) + _transform[i].offset) * _transform[i].factor;
+          else
+            _transform[i].position = ((ceil(_transform[i].prop->getDoubleValue()/_transform[i].step) * _transform[i].step) + _transform[i].offset) * _transform[i].factor;
+        } else {
+           _transform[i].position = (_transform[i].prop->getDoubleValue() + _transform[i].offset) * _transform[i].factor;
+        }
+        if (_transform[i].has_min && _transform[i].position < _transform[i].min)
+          _transform[i].position = _transform[i].min;
+        if (_transform[i].has_max && _transform[i].position > _transform[i].max)
+          _transform[i].position = _transform[i].max;
+      } else {
+         _transform[i].position = _transform[i].table->interpolate(_transform[i].prop->getDoubleValue());
+      }
+      set_translation(_transform[i].matrix, _transform[i].position, _transform[i].axis);
+      sgPreMultMat4(tmatrix, _transform[i].matrix);
+
+    } else if (_transform[i].subtype == 1) {
+
+      // subtype 1 is rotation
+
+      if (_transform[i].table == 0) {
+        _transform[i].position = _transform[i].prop->getDoubleValue() * _transform[i].factor + _transform[i].offset;
+        if (_transform[i].has_min && _transform[i].position < _transform[i].min)
+         _transform[i].position = _transform[i].min;
+       if (_transform[i].has_max && _transform[i].position > _transform[i].max)
+         _transform[i].position = _transform[i].max;
+     } else {
+        _transform[i].position = _transform[i].table->interpolate(_transform[i].prop->getDoubleValue());
+      }
+      set_rotation(_transform[i].matrix, _transform[i].position, _transform[i].center, _transform[i].axis);
+      sgPreMultMat4(tmatrix, _transform[i].matrix);
+    }
+  }
+  ((ssgTexTrans *)_branch)->setTransform(tmatrix);
+}
 
 // end of animation.cxx

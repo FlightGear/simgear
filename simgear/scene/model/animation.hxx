@@ -260,17 +260,57 @@ public:
   virtual void update();
 private:
   SGPropertyNode_ptr _prop;
-  double _offset_m;
+  double _offset;
   double _factor;
   double _step;
+  double _scroll;
   SGInterpTable * _table;
   bool _has_min;
-  double _min_m;
+  double _min;
   bool _has_max;
-  double _max_m;
-  double _position_m;
+  double _max;
+  double _position;
   sgMat4 _matrix;
   sgVec3 _axis;
 };
+
+
+
+/**
+ * Classes for handling multiple types of Texture translations on one object
+ */
+
+class SGTexMultipleAnimation : public SGAnimation
+{
+public:
+  SGTexMultipleAnimation( SGPropertyNode *prop_root,
+                      SGPropertyNode_ptr props );
+  virtual ~SGTexMultipleAnimation ();
+  virtual void update();
+private:
+  class TexTransform
+    {
+    public:
+    SGPropertyNode_ptr prop;
+    int subtype; //  0=translation, 1=rotation
+    double offset;
+    double factor;
+    double step;
+    double scroll;
+    SGInterpTable * table;
+    bool has_min;
+    double min;
+    bool has_max;
+    double max;
+    double position;
+    sgMat4 matrix;
+    sgVec3 center;
+    sgVec3 axis;
+  };
+  SGPropertyNode_ptr _prop;
+  TexTransform* _transform;
+  int _num_transforms;
+};
+
 
 #endif // _SG_ANIMATION_HXX

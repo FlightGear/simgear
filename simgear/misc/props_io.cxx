@@ -329,3 +329,61 @@ writeProperties (const string &file, const SGPropertyNode * start_node)
     return false;
   }
 }
+
+
+/**
+ * Copy one property list to another.
+ */
+bool
+copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
+{
+  bool retval = true;
+
+				// First, copy the actual value,
+				// if any.
+  if (in->hasValue()) {
+    switch (in->getType()) {
+    case SGValue::BOOL:
+      if (!out->setBoolValue(in->getBoolValue()))
+	retval = false;
+      break;
+    case SGValue::INT:
+      if (!out->setIntValue(in->getIntValue()))
+	retval = false;
+      break;
+    case SGValue::FLOAT:
+      if (!out->setFloatValue(in->getFloatValue()))
+	retval = false;
+      break;
+    case SGValue::DOUBLE:
+      if (!out->setDoubleValue(in->getDoubleValue()))
+	retval = false;
+      break;
+    case SGValue::STRING:
+      if (!out->setStringValue(in->getStringValue()))
+	retval = false;
+      break;
+    case SGValue::UNKNOWN:
+      if (!out->setUnknownValue(in->getStringValue()))
+	retval = false;
+      break;
+    default:
+      throw string("Unknown SGValue type"); // FIXME!!!
+    }
+  }
+
+				// Next, copy the children.
+  int nChildren = in->nChildren();
+  for (int i = 0; i < nChildren; i++) {
+    const SGPropertyNode * in_child = in->getChild(i);
+    SGPropertyNode * out_child = out->getChild(in_child->getName(),
+					       in_child->getIndex(),
+					       true);
+    if (!copyProperties(in_child, out_child))
+      retval = false;
+  }
+
+  return retval;
+}
+
+// end of props_io.cxx

@@ -473,6 +473,7 @@ bool readProperties (istream &input, SGPropertyNode * start_node);
 bool readProperties (const string &file, SGPropertyNode * start_node);
 bool writeProperties (ostream &output, const SGPropertyNode * start_node);
 bool writeProperties (const string &file, const SGPropertyNode * start_node);
+bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
 
 
 #endif // __PROPS_HXX

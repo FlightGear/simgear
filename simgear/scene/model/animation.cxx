@@ -498,14 +498,14 @@ SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _table(read_interpolation_table(props)),
+    _prev_value(1.0),
     _offset(props->getDoubleValue("offset", 0.0)),
     _factor(props->getDoubleValue("factor", 1.0)),
-    _table(read_interpolation_table(props)),
     _has_min(props->hasValue("min")),
     _min(props->getDoubleValue("min", 0.0)),
     _has_max(props->hasValue("max")),
-    _max(props->getDoubleValue("max", 1.0)),
-    _prev_value(1.0)
+    _max(props->getDoubleValue("max", 1.0))
 {
 }
 

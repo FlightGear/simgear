@@ -49,6 +49,8 @@
 #include "sphere.hxx"
 #include "oursun.hxx"
 
+static double sun_exp2_punch_through;
+
 // Set up sun rendering call backs
 static int sgSunOrbPreDraw( ssgEntity *e ) {
     /* cout << endl << "Sun orb pre draw" << endl << "----------------" 

@@ -90,7 +90,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
 {
 				// Gather the path(s) to the texture(s)
   vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
-  for (int i = 0; i < textures.size(); i++)
+  for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
     if (tname == "") {
@@ -227,7 +227,7 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 {
     GLenum shade_model = GL_SMOOTH;
     
-    for (int i = 0; i < _status.size(); i++)
+    for (unsigned int i = 0; i < _status.size(); i++)
     {
         ssgSimpleState *state = new ssgSimpleState();
         state->ref();

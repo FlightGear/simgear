@@ -217,7 +217,7 @@ private:
   vector<_internal_state> _status;
 
   // Round-robin counter
-  int _current_ptr;
+  unsigned int _current_ptr;
 
   // texture size
   double xsize, ysize;

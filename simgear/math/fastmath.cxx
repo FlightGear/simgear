@@ -41,7 +41,7 @@ double fast_exp(double val) {
     const double a = 1048576/M_LN2;
     const double b_c = 1072632447; /* 1072693248 - 60801 */
 
-    _eco.n.i = a*val + b_c;
+    _eco.n.i = (int)(a*val + b_c);
 
     return _eco.d;
 }

@@ -34,8 +34,6 @@
 
 #include <simgear/misc/sg_path.hxx>
 
-static double sun_exp2_punch_through;
-
 class SGSun {
 
     ssgTransform *sun_transform;

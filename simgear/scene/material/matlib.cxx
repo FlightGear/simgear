@@ -174,56 +174,6 @@ static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
 }
 
 
-// generate the directional vasi light environment texture map
-static int gen_vasi_light_map_old() {
-    const int env_tex_res = 256;
-    int half_res = env_tex_res / 2;
-
-    static unsigned char env_map[env_tex_res][env_tex_res][4];
-    GLuint tex_name;
-
-    for ( int i = 0; i < env_tex_res; ++i ) {
-        for ( int j = 0; j < env_tex_res; ++j ) {
-            double x = (i - half_res) / (double)half_res;
-            double y = (j - half_res) / (double)half_res;
-            double dist = sqrt(x*x + y*y);
-            if ( dist > 1.0 ) { dist = 1.0; }
-            double bright = cos( dist * SGD_PI_2 );
-
-            // top half white, bottom half red
-            env_map[i][j][0] = 255;
-            if ( i > half_res ) {
-                // white
-                env_map[i][j][1] = 255;
-                env_map[i][j][2] = 255;
-            } else if ( i == half_res - 1 || i == half_res ) {
-                // pink
-                env_map[i][j][1] = 127;
-                env_map[i][j][2] = 127;
-            } else {
-                // red
-                env_map[i][j][1] = 0;
-                env_map[i][j][2] = 0;
-            }
-            env_map[i][j][3] = (int)(bright * 255);
-        }
-    }
-
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-    glGenTextures( 1, &tex_name );
-    glBindTexture( GL_TEXTURE_2D, tex_name );
-  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
-                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
-
-    return tex_name;
-}
-
-
 // Load a library of material properties
 bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
 

@@ -50,7 +50,11 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 
     ibuffer = (unsigned char *) malloc(win_width*win_height*RGB);
 
-    fp = fopen(filename, "wb");
+    if ( (fp = fopen(filename, "wb")) == NULL ) {
+	printf("Warning: cannot open %s\n", filename);
+	return;
+    }
+
     fprintf(fp, "P6\n# CREATOR: glReadPixel()\n%d %d\n%d\n",
 	    win_width, win_height, UCHAR_MAX);
     q = 0;

@@ -82,7 +82,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }
@@ -97,7 +97,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }
@@ -112,7 +112,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }
@@ -127,7 +127,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }
@@ -142,7 +142,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }
@@ -157,7 +157,7 @@ public:
             if ( angle_deg < ref - trans ) {
                 color = 0.0;
             } else if ( angle_deg < ref + trans ) {
-                color = (ref + trans - angle_deg) * (1 / (2 * trans) );
+                color = 1.0 - (ref + trans - angle_deg) * (1 / (2 * trans) );
             } else {
                 color = 1.0;
             }

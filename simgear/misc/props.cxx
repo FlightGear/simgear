@@ -450,9 +450,10 @@ SGPropertyNode::get_string () const
   case STRING:
   case UNSPECIFIED:
     return GET_STRING;
+  case NONE:
+  default:
+    return "";
   }
-
-  return "";			// if NONE
 }
 
 
@@ -676,9 +677,10 @@ SGPropertyNode::getBoolValue () const
   case STRING:
   case UNSPECIFIED:
     return (GET_STRING == "true" || getDoubleValue() != 0.0L);
+  case NONE:
+  default:
+    return false;
   }
-
-  return false;			// if NONE
 }
 
 int 
@@ -702,9 +704,10 @@ SGPropertyNode::getIntValue () const
   case STRING:
   case UNSPECIFIED:
     return atoi(GET_STRING.c_str());
+  case NONE:
+  default:
+    return 0;
   }
-
-  return 0;			// if NONE
 }
 
 long 
@@ -728,9 +731,10 @@ SGPropertyNode::getLongValue () const
   case STRING:
   case UNSPECIFIED:
     return strtol(GET_STRING.c_str(), 0, 0);
+  case NONE:
+  default:
+    return 0L;
   }
-
-  return 0L;			// if NONE
 }
 
 float 
@@ -754,9 +758,10 @@ SGPropertyNode::getFloatValue () const
   case STRING:
   case UNSPECIFIED:
     return atof(GET_STRING.c_str());
+  case NONE:
+  default:
+    return 0.0;
   }
-
-  return 0.0;			// if NONE
 }
 
 double 
@@ -780,9 +785,10 @@ SGPropertyNode::getDoubleValue () const
   case STRING:
   case UNSPECIFIED:
     return strtod(GET_STRING.c_str(), 0);
+  case NONE:
+  default:
+    return 0.0L;
   }
-
-  return 0.0L;			// if NONE
 }
 
 string
@@ -823,7 +829,11 @@ SGPropertyNode::setBoolValue (bool value)
     result = SET_DOUBLE(double(value));
     break;
   case STRING:
+  case UNSPECIFIED:
     result = SET_STRING(value ? "true" : "false");
+    break;
+  case NONE:
+  default:
     break;
   }
 
@@ -861,12 +871,16 @@ SGPropertyNode::setIntValue (int value)
   case DOUBLE:
     result = SET_DOUBLE(double(value));
     break;
-  case STRING: {
+  case STRING:
+  case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%d", value);
     result = SET_STRING(buf);
     break;
   }
+  case NONE:
+  default:
+    break;
   }
 
   DO_TRACE_WRITE(INT);
@@ -903,12 +917,16 @@ SGPropertyNode::setLongValue (long value)
   case DOUBLE:
     result = SET_DOUBLE(double(value));
     break;
-  case STRING: {
+  case STRING:
+  case UNSPECIFIED: {
     char buf[128];
-    sprintf(buf, "%d", value);
+    sprintf(buf, "%ld", value);
     result = SET_STRING(buf);
     break;
   }
+  case NONE:
+  default:
+    break;
   }
 
   DO_TRACE_WRITE(LONG);
@@ -945,12 +963,16 @@ SGPropertyNode::setFloatValue (float value)
   case DOUBLE:
     result = SET_DOUBLE(double(value));
     break;
-  case STRING: {
+  case STRING:
+  case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%f", value);
     result = SET_STRING(buf);
     break;
   }
+  case NONE:
+  default:
+    break;
   }
 
   DO_TRACE_WRITE(FLOAT);
@@ -987,12 +1009,16 @@ SGPropertyNode::setDoubleValue (double value)
   case DOUBLE:
     result = SET_DOUBLE(value);
     break;
-  case STRING: {
+  case STRING:
+  case UNSPECIFIED: {
     char buf[128];
-    sprintf(buf, "%lf", value);
+    sprintf(buf, "%f", value);
     result = SET_STRING(buf);
     break;
   }
+  case NONE:
+  default:
+    break;
   }
 
   DO_TRACE_WRITE(DOUBLE);
@@ -1030,7 +1056,11 @@ SGPropertyNode::setStringValue (string value)
     result = SET_DOUBLE(strtod(value.c_str(), 0));
     break;
   case STRING:
+  case UNSPECIFIED:
     result = SET_STRING(value);
+    break;
+  case NONE:
+  default:
     break;
   }
 
@@ -1071,6 +1101,9 @@ SGPropertyNode::setUnspecifiedValue (string value)
   case STRING:
   case UNSPECIFIED:
     result = SET_STRING(value);
+    break;
+  case NONE:
+  default:
     break;
   }
 
@@ -1252,7 +1285,8 @@ SGPropertyNode::untie ()
     SET_DOUBLE(val);
     break;
   }
-  case STRING: {
+  case STRING:
+  case UNSPECIFIED: {
     string val = getStringValue();
     clear_value();
     _type = STRING;
@@ -1260,6 +1294,9 @@ SGPropertyNode::untie ()
     SET_STRING(val);
     break;
   }
+  case NONE:
+  default:
+    break;
   }
 
   _tied = false;

@@ -309,7 +309,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
             base[0] -= (int)base[0];
         } else {
             base[0] = 0.0;
-	    SG_LOG(SG_ASTRO, SG_ALERT,
+	    SG_LOG(SG_ASTRO, SG_DEBUG,
 		   "Error: base = " << base[0] << "," << base[1]);
         }
 

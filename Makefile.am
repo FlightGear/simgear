@@ -2,6 +2,7 @@ EXTRA_DIST = \
 	acsite.m4 \
 	acconfig.h \
 	mksymlinks.sh \
+	README.MSVC \
 	README.metakit \
 	README.zlib \
 	SimGear.dsp \

@@ -85,32 +85,103 @@ SG_USING_STD(ostream);
 /**
  * Abstract base class for a raw value.
  *
- * Unlike values, raw values are not persistent -- the raw value can
- * change frequently, but the changes are not visible to the application.
+ * The property manager is implemented in three layers.  The {@link
+ * SGPropertyNode} is the highest and most abstract layer,
+ * representing * an LValue/RValue pair: it * records the position
+ * of the property in the property tree and * contains facilities
+ * for navigation to other nodes.  Each node * may contain an {@link
+ * SGValue}, which is guaranteed persistent: the * {@link SGValue}
+ * will not change during a session, even if the * property is bound
+ * and unbound multiple times.  The SGValue is the * abstraction of
+ * an RValue: it allows for conversion among all of the different
+ * types, and can be bound to external pointers, functions, methods,
+ * or other data sources.  Every SGValue contains an SGRawValue of
+ * a specific type.  The SGRawValue (this class) may change frequently
+ * during a session as a value is retyped or bound and unbound to
+ * various data source, but the abstract SGValue layer insulates
+ * the application from those changes.  The raw value contains no
+ * facilities for data binding or for type conversion: it is simply
+ * the abstraction of a primitive data type (or a compound data
+ * type, in the case of a string).
  *
  * The SGValue class always keeps a *copy* of a raw value, not the
  * original one passed to it; if you override a derived class but do
- * not replace the clone() method, strange things will happen.
+ * not replace the {@link #clone} method, strange things will happen.
  *
- * All raw values must implement getValue, setValue, and clone for the
- * appropriate type.
- */
+ * All raw values must implement {@link #getValue}, {@link #setValue},
+ * and {@link #clone} for the appropriate type.
+ *
+ * @see SGValue
+ * @see SGPropertyNode */
 template <class T>
 class SGRawValue
 {
 public:
+
+  /**
+   * The default underlying value for this type.
+   *
+   * Every raw value has a default; the default is false for a
+   * boolean, 0 for the various numeric values, and "" for a string.
+   * If additional types of raw values are added in the future, they
+   * may need different kinds of default values (such as epoch for a
+   * date type).  The default value is used when creating new values.
+   */
   static const T DefaultValue;	// Default for this kind of raw value.
 
+
+  /**
+   * Constructor.
+   *
+   * Use the default value for this type.
+   */
   SGRawValue () {}
+
+
+  /**
+   * Destructor.
+   */
   virtual ~SGRawValue () {}
+
+
+  /**
+   * Return the underlying value.
+   *
+   * @return The actual value for the property.
+   * @see #setValue
+   */
   virtual T getValue () const = 0;
+
+
+  /**
+   * Assign a new underlying value.
+   *
+   * If the new value cannot be set (because this is a read-only
+   * raw value, or because the new value is not acceptable for
+   * some reason) this method returns false and leaves the original
+   * value unchanged.
+   *
+   * @param value The actual value for the property.
+   * @return true if the value was set successfully, false otherwise.
+   * @see #getValue
+   */
   virtual bool setValue (T value) = 0;
+
+
+  /**
+   * Create a new deep copy of this raw value.
+   *
+   * The copy will contain its own version of the underlying value
+   * as well.
+   *
+   * @return A deep copy of the current object.
+   */
   virtual SGRawValue * clone () const = 0;
 };
 
 
 /**
- * A value managed internally.
+ * An unbound raw value, stored internally.
  *
  * Instances of this class are created automatically, by default,
  * by the SGValue class; ordinarily the application should not
@@ -120,38 +191,106 @@ template <class T>
 class SGRawValueInternal : public SGRawValue<T>
 {
 public:
+
+  /**
+   * Default constructor.
+   *
+   * Initialize with the default value for this type.
+   */
   SGRawValueInternal () {}
+
+  /**
+   * Explicit value constructor.
+   *
+   * Initialize with the underlying value provided.
+   *
+   * @param value The initial value for this property.
+   */
   SGRawValueInternal (T value) : _value(value) {}
+
+  /**
+   * Destructor.
+   */
   virtual ~SGRawValueInternal () {}
+
+  /**
+   * Get the underlying value.
+   */
   virtual T getValue () const { return _value; }
+
+  /**
+   * Set the underlying value.
+   */
   virtual bool setValue (T value) { _value = value; return true; }
+
+  /**
+   * Create a deep copy of this raw value.
+   */
   virtual SGRawValue<T> * clone () const {
     return new SGRawValueInternal<T>(_value);
   }
+
 private:
   T _value;
 };
 
 
 /**
- * A value managed through a direct pointer.
+ * A raw value bound to a pointer.
  *
  * This is the most efficient way to tie an external value, but also
  * the most dangerous, because there is no way for the supplier to
  * perform bounds checking and derived calculations except by polling
- * the variable to see if it has changed.
+ * the variable to see if it has changed.  There is no default
+ * constructor, because this class would be meaningless without a
+ * pointer.
  */
 template <class T>
 class SGRawValuePointer : public SGRawValue<T>
 {
 public:
+
+  /**
+   * Explicit pointer constructor.
+   *
+   * Create a new raw value bound to the value of the variable
+   * referenced by the pointer.
+   *
+   * @param ptr The pointer to the variable to which this raw value
+   * will be bound.
+   */
   SGRawValuePointer (T * ptr) : _ptr(ptr) {}
+
+  /**
+   * Destructor.
+   */
   virtual ~SGRawValuePointer () {}
+
+  /**
+   * Get the underlying value.
+   *
+   * This method will dereference the pointer and return the
+   * variable's value.
+   */
   virtual T getValue () const { return *_ptr; }
+
+  /**
+   * Set the underlying value.
+   *
+   * This method will dereference the pointer and change the
+   * variable's value.
+   */
   virtual bool setValue (T value) { *_ptr = value; return true; }
+
+  /**
+   * Create a copy of this raw value.
+   *
+   * The copy will use the same external pointer as the original.
+   */
   virtual SGRawValue<T> * clone () const {
     return new SGRawValuePointer<T>(_ptr);
   }
+
 private:
   T * _ptr;
 };
@@ -167,22 +306,66 @@ template <class T>
 class SGRawValueFunctions : public SGRawValue<T>
 {
 public:
+
+  /**
+   * The template type of a static getter function.
+   */
   typedef T (*getter_t)();
+
+  /**
+   * The template type of a static setter function.
+   */
   typedef void (*setter_t)(T);
+
+  /**
+   * Explicit constructor.
+   *
+   * Create a new raw value bound to the getter and setter supplied.
+   *
+   * @param getter A static function for getting a value, or 0
+   * to read-disable the value.
+   * @param setter A static function for setting a value, or 0
+   * to write-disable the value.
+   */
   SGRawValueFunctions (getter_t getter = 0, setter_t setter = 0)
     : _getter(getter), _setter(setter) {}
+
+  /**
+   * Destructor.
+   */
   virtual ~SGRawValueFunctions () {}
+
+  /**
+   * Get the underlying value.
+   *
+   * This method will invoke the getter function to get a value.
+   * If no getter function was supplied, this method will always
+   * return the default value for the type.
+   */
   virtual T getValue () const {
     if (_getter) return (*_getter)();
     else return SGRawValue<T>::DefaultValue;
   }
+
+  /**
+   * Set the underlying value.
+   *
+   * This method will invoke the setter function to change the
+   * underlying value.  If no setter function was supplied, this
+   * method will return false.
+   */
   virtual bool setValue (T value) {
     if (_setter) { (*_setter)(value); return true; }
     else return false;
   }
+
+  /**
+   * Create a copy of this raw value, bound to the same functions.
+   */
   virtual SGRawValue<T> * clone () const {
     return new SGRawValueFunctions<T>(_getter,_setter);
   }
+
 private:
   getter_t _getter;
   setter_t _setter;
@@ -190,10 +373,12 @@ private:
 
 
 /**
- * An indexed value managed through static functions.
+ * An indexed value bound to static functions.
  *
  * A read-only value will not have a setter; a write-only value will
- * not have a getter.
+ * not have a getter.  An indexed value is useful for binding one
+ * of a list of possible values (such as multiple engines for a
+ * plane).  The index is hard-coded at creation time.
  */
 template <class T>
 class SGRawValueFunctionsIndexed : public SGRawValue<T>

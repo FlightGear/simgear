@@ -133,11 +133,15 @@ gzfilebuf::attach( int file_descriptor, ios_openmode io_mode )
 gzfilebuf*
 gzfilebuf::close()
 {
+    // cout << "closing ..." ;
     if ( is_open() )
     {
 	sync();
 	gzclose( file );
 	file = NULL;
+	// cout << "done" << endl;
+    } else {
+	// cout << "error" << endl;
     }
 
     return this;

@@ -139,12 +139,11 @@ PropsVisitor::endElement (const char * name)
 	     << " assuming 'unknown'");
       ret = st.node->setUnknownValue(_data);
     }
+    if (!ret)
+      FG_LOG(FG_INPUT, FG_ALERT, "readProperties: Failed to set "
+	     << st.node->getPath() << " to value \""
+	     << _data << "\" with type " << st.type);
   }
-
-  if (!ret)
-    FG_LOG(FG_INPUT, FG_ALERT, "readProperties: Failed to set "
-	   << st.node->getPath() << " to value \""
-	   << _data << " with type " << st.type);
 
   pop_state();
 }

@@ -70,7 +70,7 @@ typedef group_list::const_iterator const_group_list_iterator;
  * - property: prop_typecode, nbytes, BYTE+
  *
  * - obj_typecode: bounding sphere | vertices | normals | texcoords |
- *                 triangles | fans | strips 
+ *                 points | triangles | fans | strips 
  *
  * - prop_typecode: material_name | ???
  *
@@ -94,6 +94,8 @@ class SGBinObject {
     point_list wgs84_nodes;
     point_list normals;
     point_list texcoords;
+    group_list pts_v;
+    string_list pt_materials;
     group_list tris_v;
     group_list tris_tc; 
     string_list tri_materials;
@@ -122,6 +124,11 @@ public:
 
     inline point_list get_texcoords() const { return texcoords; }
     inline void set_texcoords( point_list t ) { texcoords = t; }
+
+    inline group_list get_pts_v() const { return pts_v; }
+    inline void set_pts_v( group_list g ) { pts_v = g; }
+    inline string_list get_pt_materials() const { return pt_materials; }
+    inline void set_pt_materials( string_list s ) { pt_materials = s; }
 
     inline group_list get_tris_v() const { return tris_v; }
     inline void set_tris_v( group_list g ) { tris_v = g; }

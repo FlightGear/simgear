@@ -52,6 +52,8 @@ enum {
     SG_NORMAL_LIST = 2,
     SG_TEXCOORD_LIST = 3,
 
+    SG_POINTS = 9,
+
     SG_TRIANGLE_FACES = 10,
     SG_TRIANGLE_STRIPS = 11,
     SG_TRIANGLE_FANS = 12
@@ -160,6 +162,9 @@ bool SGBinObject::read_bin( const string& file ) {
     wgs84_nodes.clear();
     normals.clear();
     texcoords.clear();
+
+    pts_v.clear();
+    pt_materials.clear();
 
     tris_v.clear();
     tris_tc.clear();
@@ -375,6 +380,47 @@ bool SGBinObject::read_bin( const string& file ) {
 		    fptr += 2;
 		}
 	    }
+	} else if ( obj_type == SG_POINTS ) {
+	    // read points properties
+	    for ( j = 0; j < nproperties; ++j ) {
+		char prop_type;
+		sgReadChar( fp, &prop_type );
+
+		sgReadUInt( fp, &nbytes );
+		// cout << "property size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
+		sgReadBytes( fp, nbytes, ptr );
+		if ( prop_type == SG_MATERIAL ) {
+		    strncpy( material, ptr, nbytes );
+		    material[nbytes] = '\0';
+		    // cout << "material type = " << material << endl;
+		}
+	    }
+
+	    // read point elements
+	    for ( j = 0; j < nelements; ++j ) {
+		sgReadUInt( fp, &nbytes );
+		// cout << "element size = " << nbytes << endl;
+		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+		char *ptr = buf.get_ptr();
+		sgReadBytes( fp, nbytes, ptr );
+		int count = nbytes / sizeof(short);
+		short *sptr = (short *)ptr;
+		int_list vs;
+		vs.clear();
+		for ( k = 0; k < count; ++k ) {
+		    if ( sgIsBigEndian() ) {
+			sgEndianSwap( (unsigned short *)&(sptr[0]) );
+		    }
+		    vs.push_back( sptr[0] );
+		    // cout << sptr[0] << " ";
+		    ++sptr;
+		}
+		// cout << endl;
+		pts_v.push_back( vs );
+		pt_materials.push_back( material );
+	    }
 	} else if ( obj_type == SG_TRIANGLE_FACES ) {
 	    // read triangle face properties
 	    for ( j = 0; j < nproperties; ++j ) {
@@ -575,6 +621,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     sgClearWriteError();
 
+    cout << "points size = " << pts_v.size() << "  pt_materials = " 
+	 << pt_materials.size() << endl;
     cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
 	 << tri_materials.size() << endl;
     cout << "strips size = " << strips_v.size() << "  strip_materials = " 
@@ -599,6 +647,20 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects++;			// for vertices
     nobjects++;			// for normals
     nobjects++;			// for texcoords
+
+    // points
+    short npts = 0;
+    start = 0; end = 1;
+    while ( start < (int)pt_materials.size() ) {
+	material = pt_materials[start];
+	while ( (end < (int)pt_materials.size()) &&
+		(material == pt_materials[end]) ) {
+	    end++;
+	}
+	npts++;
+	start = end; end = start + 1;
+    }
+    nobjects += npts;
 
     // tris
     short ntris = 0;
@@ -690,6 +752,45 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	p = texcoords[i];
 	sgSetVec2( t, p.x(), p.y() );
 	sgWriteVec2( fp, t );
+    }
+
+    // dump point groups if they exist
+    if ( pts_v.size() > 0 ) {
+	int start = 0;
+	int end = 1;
+	string material;
+	while ( start < (int)pt_materials.size() ) {
+	    // find next group
+	    material = pt_materials[start];
+	    while ( (end < (int)pt_materials.size()) && 
+		    (material == pt_materials[end]) )
+		{
+		    // cout << "end = " << end << endl;
+		    end++;
+		}
+	    // cout << "group = " << start << " to " << end - 1 << endl;
+
+	    // write group headers
+	    sgWriteChar( fp, (char)SG_POINTS );          // type
+	    sgWriteShort( fp, 1 );		         // nproperties
+	    sgWriteShort( fp, end - start );             // nelements
+
+	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
+	    sgWriteUInt( fp, material.length() );        // nbytes
+	    sgWriteBytes( fp, material.length(), material.c_str() );
+
+	    // write strips
+	    for ( i = start; i < end; ++i ) {
+		// nbytes
+		sgWriteUInt( fp, pts_v[i].size() * sizeof(short) );
+		for ( j = 0; j < (int)pts_v[i].size(); ++j ) {
+		    sgWriteShort( fp, (short)pts_v[i][j] );
+		}
+	    }
+	    
+	    start = end;
+	    end = start + 1;
+	}
     }
 
     // dump individual triangles if they exist

@@ -40,7 +40,7 @@ SG_USING_STD(map);
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
-#include <simgear/scene/model/loader.hxx>
+#include <simgear/scene/model/modellib.hxx>
 
 #include "matmodel.hxx"
 
@@ -117,7 +117,7 @@ SGMatModel::~SGMatModel ()
 }
 
 int
-SGMatModel::get_model_count( SGModelLoader *loader,
+SGMatModel::get_model_count( SGModelLib *loader,
                                    const string &fg_root,
                                    SGPropertyNode *prop_root,
                                    double sim_time_sec )
@@ -127,7 +127,7 @@ SGMatModel::get_model_count( SGModelLoader *loader,
 }
 
 inline void
-SGMatModel::load_models ( SGModelLoader *loader,
+SGMatModel::load_models ( SGModelLib *loader,
                                 const string &fg_root,
                                 SGPropertyNode *prop_root,
                                 double sim_time_sec )
@@ -164,7 +164,7 @@ SGMatModel::load_models ( SGModelLoader *loader,
 
 ssgEntity *
 SGMatModel::get_model( int index,
-                               SGModelLoader *loader,
+                               SGModelLib *loader,
                                const string &fg_root,
                                SGPropertyNode *prop_root,
                                double sim_time_sec )
@@ -174,7 +174,7 @@ SGMatModel::get_model( int index,
 }
 
 ssgEntity *
-SGMatModel::get_random_model( SGModelLoader *loader,
+SGMatModel::get_random_model( SGModelLib *loader,
                                       const string &fg_root,
                                       SGPropertyNode *prop_root,
                                       double sim_time_sec )

@@ -38,7 +38,7 @@
 #include <plib/ssg.h>
 
 #include <simgear/props/props.hxx>
-#include <simgear/scene/model/loader.hxx>
+#include <simgear/scene/model/modellib.hxx>
 
 #include "matmodel.hxx"
 

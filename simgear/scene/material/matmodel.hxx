@@ -36,7 +36,7 @@
 #include <plib/ssg.h>
 
 #include <simgear/props/props.hxx>
-#include <simgear/scene/model/loader.hxx>
+#include <simgear/scene/model/modellib.hxx>
 
 SG_USING_STD(string);
 
@@ -71,7 +71,7 @@ public:
      *
      * @return The number of variant models.
      */
-    int get_model_count( SGModelLoader *loader,
+    int get_model_count( SGModelLib *loader,
                          const string &fg_root,
                          SGPropertyNode *prop_root,
                          double sim_time_sec );
@@ -84,7 +84,7 @@ public:
      * @return The model.
      */
     ssgEntity *get_model( int index,
-                          SGModelLoader *loader,
+                          SGModelLib *loader,
                           const string &fg_root,
                           SGPropertyNode *prop_root,
                           double sim_time_sec );
@@ -95,7 +95,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    ssgEntity *get_random_model( SGModelLoader *loader,
+    ssgEntity *get_random_model( SGModelLib *loader,
                                  const string &fg_root,
                                  SGPropertyNode *prop_root,
                                  double sim_time_sec );
@@ -132,7 +132,7 @@ private:
      * This class uses lazy loading so that models won't be held
      * in memory for materials that are never referenced.
      */
-    void load_models( SGModelLoader *loader,
+    void load_models( SGModelLib *loader,
                       const string &fg_root,
                       SGPropertyNode *prop_root,
                       double sim_time_sec );

@@ -135,6 +135,7 @@ naRef naNil()
 naRef naNum(double num)
 {
     naRef r;
+    r.ref.reftag = ~NASAL_REFTAG;
     r.num = num;
     return r;
 }

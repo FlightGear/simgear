@@ -2040,7 +2040,7 @@ void
 SGPropertyNode::fireValueChanged (SGPropertyNode * node)
 {
   if (_listeners != 0) {
-    for (int i = 0; i < _listeners->size(); i++) {
+    for (unsigned int i = 0; i < _listeners->size(); i++) {
       (*_listeners)[i]->valueChanged(node);
     }
   }
@@ -2053,7 +2053,7 @@ SGPropertyNode::fireChildAdded (SGPropertyNode * parent,
 				SGPropertyNode * child)
 {
   if (_listeners != 0) {
-    for (int i = 0; i < _listeners->size(); i++) {
+    for (unsigned int i = 0; i < _listeners->size(); i++) {
       (*_listeners)[i]->childAdded(parent, child);
     }
   }
@@ -2066,7 +2066,7 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
 				  SGPropertyNode * child)
 {
   if (_listeners != 0) {
-    for (int i = 0; i < _listeners->size(); i++) {
+    for (unsigned int i = 0; i < _listeners->size(); i++) {
       (*_listeners)[i]->childRemoved(parent, child);
     }
   }

@@ -19,6 +19,7 @@ include_HEADERS = \
 	texture.hxx \
 	$(IMAGE_SERVER_INCL) \
 	screen-dump.hxx \
+	extensions.hxx \
 	tr.h
 
 libsgscreen_a_SOURCES = \

@@ -241,6 +241,12 @@ class XMLVisitor
 public:
 
   /**
+   * Virtual destructor.
+   */
+  virtual ~XMLVisitor () {}
+
+
+  /**
    * Callback for the start of an XML document.
    *
    * The XML parser will invoke this method once, at the beginning of

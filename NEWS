@@ -1,3 +1,11 @@
+New in 0.0.11
+* July 3, 2000
+* Replaced gdbm with metakit
+* Added drop in sky (depends on plib)
+* Added spherical course and dist given two points calculations
+* MSVC5 fixes
+* Math/bucket/tiling tweaks from Norman Vine
+
 New in 0.0.7
 * March 29, 2000
 * Added support for RedHat package building contributed by Habibie 

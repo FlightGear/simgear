@@ -27,11 +27,16 @@ void naRuntimeError(struct Context* c, char* msg)
     longjmp(c->jumpHandle, 1);
 }
 
-int boolify(struct Context* ctx, naRef r)
+static int boolify(struct Context* ctx, naRef r)
 {
-    if(IS_NIL(r)) return 0;
     if(IS_NUM(r)) return r.num != 0;
-    if(IS_STR(r)) return 1;
+    if(IS_NIL(r)) return 0;
+    if(IS_STR(r)) {
+        double d;
+        if(naStr_len(r) == 0) return 0;
+        if(naStr_tonum(r, &d)) return d != 0;
+        else return 1;
+    }
     ERR(ctx, "non-scalar used in boolean context");
     return 0;
 }

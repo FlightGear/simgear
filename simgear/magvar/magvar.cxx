@@ -271,7 +271,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
     field[4]=Y;
     field[5]=Z;   /* output fields */
 
-    /* find variation, convert to degrees! */
-    return rad_to_deg(atan2(Y, X));  /* E is positive */
+    /* find variation, leave in radians! */
+    return atan2(Y, X);  /* E is positive */
 }
 

@@ -43,9 +43,12 @@ if (argc == 8){
 var = SGMagVar( deg_to_rad(lat_deg), deg_to_rad(lon_deg), h,
                 yymmdd_to_julian_days(yy,mm,dd), field );
 
+fprintf(stdout,"%6.0lf %6.0lf %6.0lf\n", field[0], field[1], field[2] );
+fprintf(stdout,"%6.0lf %6.0lf %6.0lf\n", field[3], field[4], field[5] );
 fprintf(stdout,"%6.0lf %6.0lf %6.0lf %4.2lf %4.2lf \n",
   field[3],field[4],field[5],
-  rad_to_deg(atan(field[5]/pow(field[3]*field[3]+field[4]*field[4],0.5))),var);
+  rad_to_deg(atan(field[5]/pow(field[3]*field[3]+field[4]*field[4],0.5))),
+  rad_to_deg(var));
 exit(0);
 }
   

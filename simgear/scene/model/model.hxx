@@ -63,7 +63,8 @@ sgMakeAnimation( ssgBranch * model,
                  vector<SGPropertyNode_ptr> &name_nodes,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
-                 double sim_time_sec );
+                 double sim_time_sec,
+                 vector<ssgBranch *> &ignore_branches );
 
 /**
  * Set the filter state on models

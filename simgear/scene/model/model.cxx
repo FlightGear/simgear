@@ -12,6 +12,7 @@
 #include <string.h>             // for strcmp()
 
 #include <vector>
+#include <set>
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -26,6 +27,7 @@
 #include "model.hxx"
 
 SG_USING_STD(vector);
+SG_USING_STD(set);
 
 
 
@@ -122,8 +124,10 @@ sgMakeAnimation( ssgBranch * model,
                  vector<SGPropertyNode_ptr> &name_nodes,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
-                 double sim_time_sec )
+                 double sim_time_sec,
+                 set<ssgBranch *> &ignore_branches )
 {
+  bool ignore = false;
   SGAnimation * animation = 0;
   const char * type = node->getStringValue("type", "none");
   if (!strcmp("none", type)) {
@@ -152,6 +156,7 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGTexMultipleAnimation(prop_root, node);
   } else if (!strcmp("blend", type)) {
     animation = new SGBlendAnimation(prop_root, node);
+    ignore = true;
   } else if (!strcmp("alpha-test", type)) {
     animation = new SGAlphaTestAnimation(node);
   } else if (!strcmp("flash", type)) {
@@ -204,19 +209,22 @@ sgMakeAnimation( ssgBranch * model,
     branch->setUserData(animation);
     branch->setTravCallback(SSG_CALLBACK_PRETRAV, animation_callback);
     branch->setTravCallback(SSG_CALLBACK_POSTTRAV, restore_callback);
+    if ( ignore ) {
+      ignore_branches.insert( branch );
+    }
   }
 }
 
 
-static void makeDList( ssgBranch *b )
+static void makeDList( ssgBranch *b, const set<ssgBranch *> &ignore )
 {
   int nb = b->getNumKids();
   for (int i = 0; i<nb; i++) {
     ssgEntity *e = b->getKid(i);
     if (e->isAKindOf(ssgTypeLeaf())) {
       ((ssgLeaf*)e)->makeDList();
-    } else if (e->isAKindOf(ssgTypeBranch())) {
-      makeDList( (ssgBranch*)e );
+    } else if (e->isAKindOf(ssgTypeBranch()) && ignore.find((ssgBranch *)e) == ignore.end()) {
+      makeDList( (ssgBranch*)e, ignore );
     }
   }
 }
@@ -270,12 +278,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
     if (model == 0)
       throw sg_exception("Failed to load 3D model");
   }
-
-#if PLIB_VERSION > 183
-  if ( model != 0 ) {
-     makeDList( model );
-  }
-#endif
                                 // Set up the alignment node
   ssgTransform * alignmainmodel = new ssgTransform;
   if ( load_panel == 0 )
@@ -292,18 +294,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
   alignmainmodel->setTransform(res_matrix);
 
   unsigned int i;
-
-  if ( load_panel ) {
-                                // Load panels
-    vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
-    for (i = 0; i < panel_nodes.size(); i++) {
-        SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
-        ssgEntity * panel = load_panel(panel_nodes[i]);
-        if (panel_nodes[i]->hasValue("name"))
-            panel->setName((char *)panel_nodes[i]->getStringValue("name"));
-        model->addKid(panel);
-    }
-  }
 
                                 // Load sub-models
   vector<SGPropertyNode_ptr> model_nodes = props.getChildren("model");
@@ -328,20 +318,33 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 
                                 // Load animations
+  set<ssgBranch *> ignore_branches;
   vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
   for (i = 0; i < animation_nodes.size(); i++) {
     const char * name = animation_nodes[i]->getStringValue("name", 0);
     vector<SGPropertyNode_ptr> name_nodes =
       animation_nodes[i]->getChildren("object-name");
     sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
-                     sim_time_sec);
+                     sim_time_sec, ignore_branches);
   }
 
-#if 0
+#if PLIB_VERSION > 183
   if ( model != 0 ) {
-    makeDList( model );
+     makeDList( model, ignore_branches );
   }
 #endif
+
+  if ( load_panel ) {
+                                // Load panels
+    vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
+    for (i = 0; i < panel_nodes.size(); i++) {
+        SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
+        ssgEntity * panel = load_panel(panel_nodes[i]);
+        if (panel_nodes[i]->hasValue("name"))
+            panel->setName((char *)panel_nodes[i]->getStringValue("name"));
+        model->addKid(panel);
+    }
+  }
 
   return alignmainmodel;
 }

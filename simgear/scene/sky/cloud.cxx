@@ -150,7 +150,7 @@ SGCloudLayer::rebuild()
     if ( !state_initialized ) { 
         state_initialized = true;
 
-        cout << "initializing cloud layers" << endl;
+        SG_LOG(SG_ASTRO, SG_INFO, "initializing cloud layers");
 
         SGPath cloud_path;
 
@@ -459,7 +459,7 @@ void SGCloudLayer::draw() {
 ssgSimpleState *sgCloudMakeState( const string &path ) {
     ssgSimpleState *state = new ssgSimpleState();
 
-    cout << " texture = " << path << endl;
+    SG_LOG(SG_ASTRO, SG_INFO, " texture = ");
 
     state->setTexture( (char *)path.c_str() );
     state->setShadeModel( GL_SMOOTH );

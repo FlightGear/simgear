@@ -254,7 +254,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
                         << names[j]->getStringValue() );
             }
         } else {
-            SG_LOG(SG_INPUT, SG_ALERT,
+            SG_LOG(SG_INPUT, SG_WARN,
                    "Skipping bad material entry " << node->getName());
         }
     }

@@ -260,13 +260,13 @@ public:
      * @return the lon of the lower left corner of 
      * the 1x1 chunk containing this tile.
      */
-    inline int get_lon() const { return lon; }
+    inline int get_chunk_lon() const { return lon; }
 
     /**
      * @return the lat of the lower left corner of 
      * the 1x1 chunk containing this tile.
      */
-    inline int get_lat() const { return lat; }
+    inline int get_chunk_lat() const { return lat; }
 
     /**
      * @return the x coord within the 1x1 degree chunk this tile.

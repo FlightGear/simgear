@@ -1159,7 +1159,7 @@ SGPropertyNode::tie (const SGRawValue<long> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
-  long old_val;
+  long old_val = 0;
   if (useDefault)
     old_val = getLongValue();
 

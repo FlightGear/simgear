@@ -69,7 +69,7 @@ public:
      * Construct a path based on the starting path provided.
      * @param p initial path
      */
-    SGPath( const string p );
+    SGPath( const string& p );
 
     /** Destructor */
     ~SGPath();
@@ -78,20 +78,21 @@ public:
      * Set path to a new value
      * @param p new path
      */
-    void set( const string p );
+    void set( const string& p );
+    SGPath& operator= ( const char* p ) { this->set(p); return *this; }
 
     /**
      * Append another piece to the existing path.  Inserts a path
      * separator between the existing component and the new component.
      * @param p additional path component */
-    void append( const string p );
+    void append( const string& p );
 
     /**
      * Concatenate a string to the end of the path without inserting a
      * path separator.
      * @param p addtional path suffix
      */
-    void concat( const string p );
+    void concat( const string& p );
 
     /**
      * Get the directory part of the path.
@@ -102,12 +103,23 @@ public:
     /** Get the path string
      * @return path string
      */
-    inline string str() const { return path; }
+    string str() const { return path; }
 
     /** Get the path string
      * @return path in "C" string (ptr to char array) form.
      */
-    inline const char *c_str() { return path.c_str(); }
+    const char* c_str() { return path.c_str(); }
+
+    /**
+     * Determine if file exists by attempting to fopen it.
+     * @return true if file exists, otherwise returns false.
+     */
+    bool exists() const;
+
+private:
+
+    void fix();
+
 };
 
 

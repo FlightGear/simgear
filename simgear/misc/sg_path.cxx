@@ -24,6 +24,7 @@
 
 
 #include <simgear_config.h>
+#include <stdio.h>
 
 #include "sg_path.hxx"
 
@@ -33,37 +34,35 @@
 // should be used in file or directory names.  In windoze, allow the
 // second character to be a ":" for things like c:\foo\bar
 
-static string fix_path( const string path ) {
-    string result = path;
-
-    for ( int i = 0; i < (int)path.size(); ++i ) {
+void
+SGPath::fix()
+{
+    for ( string::size_type i = 0; i < path.size(); ++i ) {
 #if defined( WIN32 )
 	// for windoze, don't replace the ":" for the second character
 	if ( i == 1 ) {
 	    continue;
 	}
 #endif
-	if ( result[i] == SG_BAD_PATH_SEP ) {
-	    result[i] = SG_PATH_SEP;
+	if ( path[i] == SG_BAD_PATH_SEP ) {
+	    path[i] = SG_PATH_SEP;
 	}
     }
-
-    return result;
 }
 
 
 // default constructor
-SGPath::SGPath() :
-    path("")
+SGPath::SGPath()
+    : path("")
 {
 }
 
 
 // create a path based on "path"
-SGPath::SGPath( const string p ) :
-    path("")
+SGPath::SGPath( const std::string& p )
+    : path(p)
 {
-    set( p );
+    fix();
 }
 
 
@@ -73,36 +72,35 @@ SGPath::~SGPath() {
 
 
 // set path
-void SGPath::set( const string p ) {
-    path = fix_path( p );
+void SGPath::set( const string& p ) {
+    path = p;
+    fix();
 }
 
 
 // append another piece to the existing path
-void SGPath::append( const string p ) {
-    string part = fix_path( p );
-
+void SGPath::append( const string& p ) {
     if ( path.size() == 0 ) {
-	path = part;
+	path = p;
     } else {
-	if ( part[0] != SG_PATH_SEP ) {
+	if ( p[0] != SG_PATH_SEP ) {
 	    path += SG_PATH_SEP;
 	}
-	path += part;
+	path += p;
     }
+    fix();
 }
 
 
 // concatenate a string to the end of the path without inserting a
 // path separator
-void SGPath::concat( const string p ) {
-    string part = fix_path( p );
-
+void SGPath::concat( const string& p ) {
     if ( path.size() == 0 ) {
-	path = part;
+	path = p;
     } else {
-	path += part;
+	path += p;
     }
+    fix();
 }
 
 
@@ -114,4 +112,13 @@ string SGPath::dir() {
     } else {
 	return "";
     }
+}
+
+bool SGPath::exists() const {
+    FILE* fp = fopen( path.c_str(), "r");
+    if (fp == 0) {
+	return false;
+    }
+    fclose(fp);
+    return true;
 }

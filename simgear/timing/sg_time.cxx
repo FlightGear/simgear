@@ -407,14 +407,23 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 #  define MK_TIME_IS_GMT 1
 #endif
 
-#if defined( HAVE_TIMEGM ) 
+#if defined( HAVE_TIMEGM )
     return ( timegm(&mt) );
 #elif defined( MK_TIME_IS_GMT )
-    return ( mktime(&mt) );
+    time_t ret = mktime(&mt);
+    // This is necessary as some mktime() calls may
+    // try to access the system timezone files
+    // if this open fails errno is set to 2
+    // CYGWIN for one does this
+    if ( errno ) {
+	perror( "sgTimeGetGMT(): " );
+	errno = 0;
+    }
+    return ret;
 #else // ! defined ( MK_TIME_IS_GMT )
 
     // timezone seems to work as a proper offset for Linux & Solaris
-#   if defined( __linux__ ) || defined( __sun__ ) 
+#   if defined( __linux__ ) || defined( __sun__ )
 #       define TIMEZONE_OFFSET_WORKS 1
 #   endif
 
@@ -429,7 +438,7 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     timezone = fix_up_timezone( timezone );
 
 #  if defined( TIMEZONE_OFFSET_WORKS )
-    FG_LOG( FG_EVENT, FG_DEBUG, 
+    FG_LOG( FG_EVENT, FG_DEBUG,
 	    "start = " << start << ", timezone = " << timezone );
     return( start - timezone );
 #  else // ! defined( TIMEZONE_OFFSET_WORKS )

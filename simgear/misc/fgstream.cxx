@@ -23,6 +23,12 @@
 
 #include <ctype.h> // isspace()
 
+#ifdef FG_HAVE_STD_INCLUDES
+# include <cerrno>
+#else
+# include <errno.h>
+#endif
+
 #include "fgstream.hxx"
 
 fg_gzifstream::fg_gzifstream()

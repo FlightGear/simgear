@@ -862,8 +862,12 @@ void fgtzfile_read (const char *file)
 //     }
 
   f = fopen (file, "rb");
-  if (f == NULL)
-    return;
+
+  if (f == NULL) {
+      perror( "fgtzfile_read(): " );
+      errno = 0;
+      return;
+  }
 
   if (fread ((void *) &tzhead, sizeof (tzhead), 1, f) != 1)
     goto lose;

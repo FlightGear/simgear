@@ -22,7 +22,16 @@
 //
 // $Id$
 
+#include <simgear/compiler.h>
+
+#ifdef FG_HAVE_STD_INCLUDES
+# include <cerrno>
+#else
+# include <errno.h>
+#endif
 #include <memory.h>
+#include <stdio.h>
+
 #include "zfstream.hxx"
 
 //
@@ -106,8 +115,11 @@ gzfilebuf::open( const char *name, ios_openmode io_mode )
 
     char char_mode[10];
     cvt_iomode( char_mode, io_mode );
-    if ( (file = gzopen(name, char_mode)) == NULL )
+    if ( (file = gzopen(name, char_mode)) == NULL ) {
+	perror( "gzfilebuf::open(): " );
+	errno = 0;
 	return NULL;
+    }
 
     own_file_descriptor = true;
 
@@ -122,8 +134,11 @@ gzfilebuf::attach( int file_descriptor, ios_openmode io_mode )
 
     char char_mode[10];
     cvt_iomode( char_mode, io_mode );
-    if ( (file = gzdopen(file_descriptor, char_mode)) == NULL )
+    if ( (file = gzdopen(file_descriptor, char_mode)) == NULL ) {
+	perror( "gzfilebuf::attach(): " );
+	errno = 0;
 	return NULL;
+    }
 
     own_file_descriptor = false;
 

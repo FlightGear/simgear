@@ -219,7 +219,7 @@
 #  define bcopy(from, to, n) memcpy(to, from, n)
 #  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
 
-#  if _MSC_VER == 1200  // msvc++ 6.0
+#  if _MSC_VER >= 1200  // msvc++ 6.0 or greater
 #    define SG_NAMESPACES
 #    define SG_HAVE_STD
 #    define SG_HAVE_STD_INCLUDES

@@ -212,6 +212,6 @@ private:
 
 };
 
-#endif __COMMANDS_HXX
+#endif // __COMMANDS_HXX
 
 // end of commands.hxx

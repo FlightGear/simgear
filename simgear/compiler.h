@@ -313,6 +313,27 @@
 #endif // sun
 
 //
+// Intel C++ Compiler
+//
+#if defined(__ICC)
+#  define SG_NAMESPACES
+#  define SG_HAVE_STD
+#  define SG_HAVE_STREAMBUF
+#  define SG_HAVE_TRAITS
+#  define SG_HAVE_STD_INCLUDES
+
+#  define STL_ALGORITHM  <algorithm>
+#  define STL_FUNCTIONAL <functional>
+#  define STL_IOMANIP    <iomanip>
+#  define STL_IOSTREAM   <iostream>
+#  define STL_ITERATOR   <iterator>
+#  define STL_FSTREAM    <fstream>
+#  define STL_STDEXCEPT  <stdexcept>
+#  define STL_STRING     <string>
+#  define STL_STRSTREAM  <strstream>
+#endif // __ICC
+
+//
 // No user modifiable definitions beyond here.
 //
 

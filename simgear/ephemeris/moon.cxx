@@ -22,10 +22,8 @@
  * $Id$
  **************************************************************************/
 
-#include <FDM/flight.hxx>
 
 #include <string.h>
-#include "moon.hxx"
 
 #include <Debug/logstream.hxx>
 #include <Main/options.hxx>
@@ -37,6 +35,9 @@
 #endif
 #include <math.h>
 
+#include <FDM/flight.hxx>
+
+#include "moon.hxx"
 
 /*************************************************************************
  * Moon::Moon(FGTime *t)

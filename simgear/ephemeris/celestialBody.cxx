@@ -22,14 +22,16 @@
  * $Id$
  **************************************************************************/
 
-#include "celestialBody.hxx"
-#include "star.hxx"
 #include <Debug/logstream.hxx>
 
 #ifdef FG_MATH_EXCEPTION_CLASH
 #  define exception c_exception
 #endif
 #include <math.h>
+
+#include "celestialBody.hxx"
+#include "star.hxx"
+
 
 /**************************************************************************
  * void CelestialBody::updatePosition(fgTIME *t, Star *ourSun)

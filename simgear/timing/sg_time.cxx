@@ -88,7 +88,7 @@ void SGTime::init( double lon, double lat,
     cout << "Current local time          = " 
          << asctime(localtime(&cur_time)) << endl;
 
-    if ( root != (string)"" ) {
+    if ( !root.empty()) {
         SGPath zone( root );
         zone.append( "zone.tab" );
         SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "

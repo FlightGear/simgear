@@ -46,11 +46,13 @@ SGCloudLayer::SGCloudLayer( const string &tex_path )
     layer_transition(0),
     layer_type(SG_CLOUD_CLEAR)
 {
-  rebuild();
+    rebuild();
 }
 
 // Destructor
-SGCloudLayer::~SGCloudLayer( void ) {
+SGCloudLayer::~SGCloudLayer()
+{
+    delete layer_root;
 }
 
 float
@@ -62,7 +64,10 @@ SGCloudLayer::getSpan_m () const
 void
 SGCloudLayer::setSpan_m (float span_m)
 {
-    layer_span = span_m;
+    if (span_m != layer_span) {
+	layer_span = span_m;
+	rebuild();
+    }
 }
 
 float
@@ -110,8 +115,10 @@ SGCloudLayer::getType () const
 void
 SGCloudLayer::setType (Type type)
 {
-    layer_type = type;
-    rebuild();
+    if (type != layer_type) {
+	layer_type = type;
+	rebuild();
+    }
 }
 
 
@@ -143,7 +150,11 @@ SGCloudLayer::rebuild()
       layer_states[SG_CLOUD_CLEAR] = 0;
     }
 
+				// This should automatically delete
+				// layer_transform as well.
     delete layer_root;
+    layer_root = 0;
+    layer_transform = 0;
 
     scale = 4000.0;
 

@@ -1,5 +1,8 @@
-// route.hxx -- Class to manage a list of waypoints (route)
-//
+/**
+ * \file route.hxx
+ * Provides a class to manage a list of waypoints (i.e. a route).
+ */
+
 // Written by Curtis Olson, started October 2000.
 //
 // Copyright (C) 2000  Curtis L. Olson  - curt@hfrl.umn.edu
@@ -44,6 +47,9 @@ SG_USING_STD(vector);
 
 #include <simgear/route/waypoint.hxx>
 
+/**
+ * A class to manage a list of waypoints (i.e. a route).
+ */
 
 class SGRoute {
 
@@ -55,16 +61,22 @@ private:
 
 public:
 
+    /** Constructor */
     SGRoute();
+
+    /** Destructor */
     ~SGRoute();
 
-    // clear the entire route
+    /** Clear the entire route */
     inline void clear() {
 	route.clear();
 	current_wp = 0;
     }
 
-    // add a waypoint
+    /**
+     * Add a waypoint.
+     * @param wp a waypoint
+     */
     inline void add_waypoint( const SGWayPoint &wp ) {
 	route.push_back( wp );
 
@@ -77,10 +89,16 @@ public:
 	}
     }
 
-    // get the number of waypoints
+    /**
+     * Get the number of waypoints (i.e. route length )
+     * @return route length
+     */
     inline int size() const { return route.size(); }
 
-    // get the front waypoint
+    /**
+     * Get the front waypoint.
+     * @return the first waypoint.
+     */
     inline SGWayPoint get_first() const {
 	if ( route.size() ) {
 	    return route[0];
@@ -89,7 +107,10 @@ public:
 	}
     }
 
-    // get the current waypoint
+    /**
+     * Get the current waypoint
+     * @return the current waypoint
+     */
     inline SGWayPoint get_current() const {
 	if ( current_wp < (int)route.size() ) {
 	    return route[current_wp];
@@ -98,21 +119,28 @@ public:
 	}
     }
 
-    // set the current waypoint
+    /**
+     * Set the current waypoint
+     * @param number of waypoint to make current.
+     */
     inline void set_current( int n ) {
 	if ( n >= 0 && n < (int)route.size() ) {
 	    current_wp = n;
 	}
     }
 
-    // increment the current waypoint
+    /** Increment the current waypoint pointer. */
     inline void increment_current() {
 	if ( current_wp < (int)route.size() - 1 ) {
 	    ++current_wp;
 	}
     }
 
-    // get the nth waypoint
+    /**
+     * Get the nth waypoint
+     * @param n waypoint number
+     * @return the nth waypoint
+     */
     inline SGWayPoint get_waypoint( const int n ) const {
 	if ( n < (int)route.size() ) {
 	    return route[n];
@@ -121,17 +149,19 @@ public:
 	}
     }
 
-    // delete the front waypoint
+    /** Delete the front waypoint */
     inline void delete_first() {
 	if ( route.size() ) {
 	    route.erase( route.begin() );
 	}
     }
 
-    // Calculate perpendicular distance from the current route segment
-    // This routine assumes all points are laying on a flat plane and
-    // ignores the altitude (or Z) dimension.  For best results, use
-    // with CARTESIAN way points.
+    /**
+     * Calculate perpendicular distance from the current route segment
+     * This routine assumes all points are laying on a flat plane and
+     * ignores the altitude (or Z) dimension.  For most accurate
+     * results, use with CARTESIAN way points.
+     */
     double distance_off_route( double x, double y ) const;
 };
 

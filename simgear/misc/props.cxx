@@ -931,7 +931,8 @@ SGPropertyNode::getPath (bool simplify) const
     sprintf(buffer, "[%d]", _index);
     path += buffer;
   }
-  return path.c_str();
+  strncpy(_buffer, path.c_str(), MAX_STRING_LEN);
+  return _buffer;
 }
 
 SGPropertyNode::Type

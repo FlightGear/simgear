@@ -72,9 +72,9 @@ static float middle_vertex[12][3];
 static float outer_vertex[12][3];
 static float bottom_vertex[12][3];
 
-static float inner_color[12][4];
-static float middle_color[12][4];
-static float outer_color[12][4];
+static GLubyte inner_color[12][4];
+static GLubyte middle_color[12][4];
+static GLubyte outer_color[12][4];
 
 
 // Calculate the sky structure vertices
@@ -168,19 +168,21 @@ void fgSkyColorsInit( void ) {
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        l->sky_color[j], l->fog_color[j], diff);
 
-	    inner_color[i][j] = l->sky_color[j] - diff * 0.3;
-	    middle_color[i][j] = l->sky_color[j] - diff * 0.9 + middle_amt[j];
-	    outer_color[i][j] = l->fog_color[j] + outer_amt[j];
+	    inner_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.3) * 255);
+	    middle_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.9 
+					   + middle_amt[j]) * 255);
+	    outer_color[i][j] = (GLubyte)((l->fog_color[j] + outer_amt[j]) 
+					  * 255);
 
-	    if ( inner_color[i][j] > 1.00 ) { inner_color[i][j] = 1.00; }
-	    if ( inner_color[i][j] < 0.10 ) { inner_color[i][j] = 0.10; }
-	    if ( middle_color[i][j] > 1.00 ) { middle_color[i][j] = 1.00; }
-	    if ( middle_color[i][j] < 0.10 ) { middle_color[i][j] = 0.10; }
-	    if ( outer_color[i][j] > 1.00 ) { outer_color[i][j] = 1.00; }
-	    if ( outer_color[i][j] < 0.10 ) { outer_color[i][j] = 0.10; }
+	    if ( inner_color[i][j] > 255 ) { inner_color[i][j] = 255; }
+	    if ( inner_color[i][j] < 25 ) { inner_color[i][j] = 25; }
+	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
+	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
+	    if ( outer_color[i][j] > 255 ) { outer_color[i][j] = 255; }
+	    if ( outer_color[i][j] < 25 ) { outer_color[i][j] = 25; }
 	}
 	inner_color[i][3] = middle_color[i][3] = outer_color[i][3] = 
-	    l->sky_color[3];
+	    (GLubyte)(l->sky_color[3] * 255);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] -= outer_diff[j];
@@ -212,19 +214,21 @@ void fgSkyColorsInit( void ) {
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        l->sky_color[j], l->fog_color[j], diff);
 
-	    inner_color[i][j] = l->sky_color[j] - diff * 0.3;
-	    middle_color[i][j] = l->sky_color[j] - diff * 0.9 + middle_amt[j];
-	    outer_color[i][j] = l->fog_color[j] + outer_amt[j];
+	    inner_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.3) * 255);
+	    middle_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.9 
+					    + middle_amt[j]) * 255);
+	    outer_color[i][j] = (GLubyte)((l->fog_color[j] + outer_amt[j]) 
+					  * 255);
 
-	    if ( inner_color[i][j] > 1.00 ) { inner_color[i][j] = 1.00; }
-	    if ( inner_color[i][j] < 0.10 ) { inner_color[i][j] = 0.10; }
-	    if ( middle_color[i][j] > 1.00 ) { middle_color[i][j] = 1.00; }
-	    if ( middle_color[i][j] < 0.10 ) { middle_color[i][j] = 0.10; }
-	    if ( outer_color[i][j] > 1.00 ) { outer_color[i][j] = 1.00; }
-	    if ( outer_color[i][j] < 0.15 ) { outer_color[i][j] = 0.15; }
+	    if ( inner_color[i][j] > 255 ) { inner_color[i][j] = 255; }
+	    if ( inner_color[i][j] < 25 ) { inner_color[i][j] = 25; }
+	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
+	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
+	    if ( outer_color[i][j] > 255 ) { outer_color[i][j] = 255; }
+	    if ( outer_color[i][j] < 35 ) { outer_color[i][j] = 35; }
 	}
 	inner_color[i][3] = middle_color[i][3] = outer_color[i][3] = 
-	    l->sky_color[3];
+	    (GLubyte)(l->sky_color[3] * 255);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] += outer_diff[j];
@@ -261,9 +265,10 @@ void fgSkyInit( void ) {
 void fgSkyRender( void ) {
     FGInterface *f;
     fgLIGHT *l;
-    float inner_color[4];
-    float middle_color[4];
-    float outer_color[4];
+    GLubyte sky_color[4];
+    GLubyte inner_color[4];
+    GLubyte middle_color[4];
+    GLubyte outer_color[4];
     double diff;
     int i;
 
@@ -279,11 +284,12 @@ void fgSkyRender( void ) {
 	// printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	//        l->sky_color[j], l->adj_fog_color[j], diff);
 
-	inner_color[i] = l->sky_color[i] - diff * 0.3;
-	middle_color[i] = l->sky_color[i] - diff * 0.9;
-	outer_color[i] = l->adj_fog_color[i];
+	inner_color[i] = (GLubyte)((l->sky_color[i] - diff * 0.3) * 255);
+	middle_color[i] = (GLubyte)((l->sky_color[i] - diff * 0.9) * 255);
+	outer_color[i] = (GLubyte)(l->adj_fog_color[i] * 255);
     }
-    inner_color[3] = middle_color[3] = outer_color[3] = l->adj_fog_color[3];
+    inner_color[3] = middle_color[3] = outer_color[3] = 
+	(GLubyte)(l->adj_fog_color[3] * 255);
 
     xglPushMatrix();
 
@@ -302,36 +308,39 @@ void fgSkyRender( void ) {
 
     // Draw inner/center section of sky*/
     xglBegin( GL_TRIANGLE_FAN );
+    for ( i = 0; i < 4; i++ ) {
+	sky_color[i] = (GLubyte)(l->sky_color[i] * 255);
+    }
     xglColor4fv(l->sky_color);
     xglVertex3f(0.0, 0.0, CENTER_ELEV);
     for ( i = 11; i >= 0; i-- ) {
-	xglColor4fv( inner_color );
+	xglColor4ubv( inner_color );
 	xglVertex3fv( inner_vertex[i] );
     }
-    xglColor4fv( inner_color );
+    xglColor4ubv( inner_color );
     xglVertex3fv( inner_vertex[11] );
     xglEnd();
 
     // Draw the middle ring
     xglBegin( GL_TRIANGLE_STRIP );
     for ( i = 0; i < 12; i++ ) {
-	xglColor4fv( middle_color );
+	xglColor4ubv( middle_color );
 	// printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	//        middle_color[i][0], middle_color[i][1], middle_color[i][2], 
 	//        middle_color[i][3]);
 	// xglColor4f(1.0, 0.0, 0.0, 1.0);
 	xglVertex3fv( middle_vertex[i] );
-	xglColor4fv( inner_color );
+	xglColor4ubv( inner_color );
 	// printf("inner_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	//        inner_color[i][0], inner_color[i][1], inner_color[i][2], 
 	//        inner_color[i][3]);
 	// xglColor4f(0.0, 0.0, 1.0, 1.0);
 	xglVertex3fv( inner_vertex[i] );
     }
-    xglColor4fv( middle_color );
+    xglColor4ubv( middle_color );
     // xglColor4f(1.0, 0.0, 0.0, 1.0);
     xglVertex3fv( middle_vertex[0] );
-    xglColor4fv( inner_color );
+    xglColor4ubv( inner_color );
     // xglColor4f(0.0, 0.0, 1.0, 1.0);
     xglVertex3fv( inner_vertex[0] );
     xglEnd();
@@ -339,20 +348,20 @@ void fgSkyRender( void ) {
     // Draw the outer ring
     xglBegin( GL_TRIANGLE_STRIP );
     for ( i = 0; i < 12; i++ ) {
-	xglColor4fv( outer_color );
+	xglColor4ubv( outer_color );
 	xglVertex3fv( outer_vertex[i] );
-	xglColor4fv( middle_color );
+	xglColor4ubv( middle_color );
 	xglVertex3fv( middle_vertex[i] );
     }
-    xglColor4fv( outer_color );
+    xglColor4ubv( outer_color );
     xglVertex3fv( outer_vertex[0] );
-    xglColor4fv( middle_color );
+    xglColor4ubv( middle_color );
     xglVertex3fv( middle_vertex[0] );
     xglEnd();
 
     // Draw the bottom skirt
     xglBegin( GL_TRIANGLE_STRIP );
-    xglColor4fv( outer_color );
+    xglColor4ubv( outer_color );
     for ( i = 0; i < 12; i++ ) {
 	xglVertex3fv( bottom_vertex[i] );
 	xglVertex3fv( outer_vertex[i] );

@@ -296,7 +296,7 @@ if test "x$ac_cv_header_mk4_h" != "xyes"; then
     echo "If your OS does not provide an installable package for MetaKit"
     echo "you will have to compile and install it first yourself.  A copy"
     echo "of metakit-$(VERSION).tar.gz is included with SimGear.  You will"
-    echo "have to untar this source code, and follow it's included instructions"
+    echo "have to untar this source code, and follow its included instructions"
     echo "to compile and install on your system."
     echo
     echo "configure aborted."
@@ -348,7 +348,7 @@ if test "x$ac_cv_header_zlib_h" != "xyes"; then
     echo "If your OS does not provide an installable package for zlib"
     echo "you will have to compile and install it first yourself.  A copy"
     echo "of zlib-1.1.4.tar.gz is included with SimGear.  You will"
-    echo "have to untar this source code, and follow it's included instructions"
+    echo "have to untar this source code, and follow its included instructions"
     echo "to compile and install on your system."
     echo
     echo "configure aborted."

@@ -30,6 +30,14 @@
 #endif                                   
 
 
+#include <ssg.h>		// plib include
+
+
+class fgSky : ssgLeaf
+{
+};
+
+
 // (Re)generate the display list
 void fgSkyInit( void );
 

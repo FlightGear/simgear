@@ -150,6 +150,7 @@ void naGarbageCollect()
 
 void setupFuncall(struct Context* ctx, naRef func, naRef args)
 {
+    struct Frame* f;
     if(!IS_FUNC(func) ||
        !(IS_CCODE(func.ref.ptr.func->code) ||
          IS_CODE(func.ref.ptr.func->code)))
@@ -157,7 +158,6 @@ void setupFuncall(struct Context* ctx, naRef func, naRef args)
         ERR(ctx, "function/method call invoked on uncallable object");
     }
 
-    struct Frame* f;
     f = &(ctx->fStack[ctx->fTop++]);
     f->func = func;
     f->ip = 0;

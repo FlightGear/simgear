@@ -4,7 +4,7 @@
 #include <string.h>
 
 #if !defined( WIN32 )
-#  if !defined( HAVE_STL_SGI_PORT ) && !defined( __MWERKS__ )
+#  if !defined( HAVE_STL_SGI_PORT ) && !defined( __MWERKS__ ) && !defined( __APPLE__ )
 //   Avoid malloc with STLport and MSL
 #    include <malloc.h>
 #  endif

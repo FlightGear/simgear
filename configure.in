@@ -49,8 +49,7 @@ else
     includedir="${includedir}/simgear"
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
-
-
+         
 # set logging default value
 # with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
@@ -69,19 +68,22 @@ fi
 dnl Check for MS Windows environment
 AC_CHECK_HEADER(windows.h)
 
-dnl extra library and include directories
-EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
+if test "$HOSTTYPE" != "macintosh" ; then
+    dnl extra library and include directories
+    EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
 
-if test -d /opt/X11R6 ; then
-     EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
-fi
-
-if test "x$ac_cv_header_windows_h" = "xyes" ; then
-    if test -d /usr/mingw/usr ; then
-        EXTRA_DIRS="$EXTRA_DIRS /usr/mingw/usr"
+    if test -d /opt/X11R6 ; then
+        EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
     fi
-    EXTRA_DIRS="${EXTRA_DIRS} `pwd`/Win32"
+
+    if test "x$ac_cv_header_windows_h" = "xyes" ; then
+        if test -d /usr/mingw/usr ; then
+            EXTRA_DIRS="$EXTRA_DIRS /usr/mingw/usr"
+        fi
+        EXTRA_DIRS="${EXTRA_DIRS} `pwd`/Win32"
+    fi
 fi
+
 wi_EXTRA_DIRS(no, ${EXTRA_DIRS})
 
 dnl Using AM_CONDITIONAL is a step out of the protected little 
@@ -94,8 +96,11 @@ dnl includes, compile alternative source files, etc.
 dnl Enable serial support on Unix type systems
 AM_CONDITIONAL(ENABLE_UNIX_SERIAL, true)
 
-dnl Check for X11 (fancy)
-AC_PATH_XTRA
+dnl X11 might be installed on Mac OS X, don't want to use it if it is.
+if test "$HOSTTYPE" != "macintosh" ; then
+    dnl Check for X11 (fancy)
+    AC_PATH_XTRA
+fi
 
 dnl Checks for libraries.
 
@@ -115,17 +120,24 @@ fi
 AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
 AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(X11, XCreateWindow)
-AC_CHECK_LIB(Xext, XShmCreateImage)
-AC_CHECK_LIB(Xi, XGetExtensionVersion)
-AC_CHECK_LIB(ICE, IceOpenConnection)
-AC_CHECK_LIB(SM, SmcOpenConnection)
-AC_CHECK_LIB(Xt, XtMalloc)
-AC_CHECK_LIB(Xmu, XmuLookupStandardColormap)
+
+dnl X11 might be installed, but we don't want to use it for OSX -dw-
+if test "$HOSTTYPE" != "macintosh" ; then
+    AC_CHECK_LIB(X11, XCreateWindow)
+    AC_CHECK_LIB(Xext, XShmCreateImage)
+    AC_CHECK_LIB(Xi, XGetExtensionVersion)
+    AC_CHECK_LIB(ICE, IceOpenConnection)
+    AC_CHECK_LIB(SM, SmcOpenConnection)
+    AC_CHECK_LIB(Xt, XtMalloc)
+    AC_CHECK_LIB(Xmu, XmuLookupStandardColormap)
+fi
 
 dnl check for OpenGL related libraries
 
-if test "x$ac_cv_header_windows_h" != "xyes" ; then
+if test "$HOSTTYPE" = "macintosh" ; then
+    dnl Macintosh OSX
+    LIBS="$LIBS -framework OpenGL -framework GLUT"
+elif test "x$ac_cv_header_windows_h" != "xyes" ; then
     dnl Reasonable stuff for non-windoze variants ... :-)
 
     AC_CHECK_LIB(GLcore, glNewList)

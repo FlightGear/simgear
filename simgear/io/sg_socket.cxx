@@ -75,7 +75,7 @@ SGSocket::~SGSocket() {
 SGSocket::SocketType SGSocket::make_server_socket () {
     struct sockaddr_in name;
 
-#if defined( __CYGWIN__ ) || defined( __CYGWIN32__ ) || defined( sgi ) || defined( _MSC_VER ) || defined(__MINGW32__)
+#if defined( __CYGWIN__ ) || defined( __CYGWIN32__ ) || defined( sgi ) || defined( _MSC_VER ) || defined(__MINGW32__) || defined( __APPLE__ )
     int length;
 #else
     socklen_t length;

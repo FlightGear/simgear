@@ -1,0 +1,76 @@
+%define ver	@VERSION@
+%define rel	1
+%define prefix	/usr
+
+Summary:	Simulator Construction Gear.
+Name:		@PACKAGE@
+Version:	%ver
+Release:	%rel
+Copyright:	LGPL
+Group:		Libraries/Graphics
+Source:		%{name}-%{version}.tar.gz
+#URL:		
+BuildRoot:	/tmp/%{name}-%{version}-%{rel}-root
+Packager:	Fill In As You Wish
+Docdir:		%{prefix}/doc
+
+%description
+This package contains a tools and libraries useful for constructing 
+simulation and visualization applications such as FlightGear or TerraGear. 
+
+Authors:
+	N/A
+
+%prep
+%setup -n %{name}-%{version}
+
+
+%build
+# Needed for snapshot releases.
+if [ ! -f configure ]; then
+	CFLAGS="$RPM_OPT_FLAGS" ./autogen.sh --prefix=%prefix
+else
+	CFLAGS="$RPM_OPT_FLAGS" ./configure --prefix=%prefix
+fi
+
+if [ "$SMP" != "" ]; then
+	JSMP	= '"MAKE=make -k -j $SMP"'
+fi
+
+make ${JSMP};
+
+
+%install
+[ -d ${RPM_BUILD_ROOT} ] && rm -rf ${RPM_BUILD_ROOT}
+
+make prefix=${RPM_BUILD_ROOT}%{prefix} install
+
+#
+# Generating file lists and store them in file-lists
+# Starting with the directory listings
+#
+find ${RPM_BUILD_ROOT}%{prefix}/{bin,include,lib} -type d | sed "s#^${RPM_BUILD_ROOT}#\%attr (-\,root\,root) \%dir #" > file-lists
+%{?ETCDR:find ${RPM_BUILD_ROOT}%{!?SYSCF:%{prefix}}/etc -type d | sed "s#^${RPM_BUILD_ROOT}#\%attr (-\,root\,root) \%dir #" >> file-lists}
+
+#
+# Then, the file listings
+#
+echo "%defattr (-, root, root)" >> file-lists
+%{?ETCDR:find ${RPM_BUILD_ROOT}%{!?SYSCF:%{prefix}}/etc/%{name}.conf -type f | sed -e "s#^${RPM_BUILD_ROOT}#%config #g" >> file-lists}
+find ${RPM_BUILD_ROOT}%{prefix} -type f | sed -e "s#^${RPM_BUILD_ROOT}##g" >> file-lists
+
+
+%clean
+(cd ..; rm -rf %{name}-%{version} ${RPM_BUILD_ROOT})
+
+
+%files -f file-lists
+%defattr (-, root, root)
+%doc AUTHORS
+%doc COPYING
+%doc ChangeLog
+%doc INSTALL
+%doc NEWS
+%doc README
+%doc %{name}.spec.in
+

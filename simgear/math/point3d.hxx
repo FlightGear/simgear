@@ -32,11 +32,11 @@
 
 #include <simgear/compiler.h>
 
-#ifdef FG_MATH_EXCEPTION_CLASH
+#ifdef SG_MATH_EXCEPTION_CLASH
 # define exception c_exception
 #endif
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 # include <iostream>
 # include <cassert>
 # include <cmath>
@@ -49,7 +49,7 @@
 #include <simgear/math/localconsts.hxx>
 
 // I don't understand ... <math.h> or <cmath> should be included
-// already depending on how you defined FG_HAVE_STD_INCLUDES, but I
+// already depending on how you defined SG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO
 #ifdef __MWERKS__
 FG_USING_NAMESPACE(std);

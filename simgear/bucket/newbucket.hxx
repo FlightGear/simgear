@@ -33,7 +33,7 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 #  include <cmath>
 #  include <cstdio> // sprintf()
 #else
@@ -44,7 +44,7 @@
 #include STL_IOSTREAM
 
 // I don't understand ... <math.h> or <cmath> should be included
-// already depending on how you defined FG_HAVE_STD_INCLUDES, but I
+// already depending on how you defined SG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO
 #ifdef __MWERKS__
 FG_USING_STD(sprintf);

@@ -46,23 +46,23 @@
  *  (8)  Defines SG_NO_ARROW_OPERATOR if the compiler is unable
  *       to support operator->() for iterators.
  *
- *  (9)  Defines FG_USE_EXCEPTIONS if the compiler supports exceptions.
+ *  (9)  Defines SG_USE_EXCEPTIONS if the compiler supports exceptions.
  *       Note: no FlightGear code uses exceptions.
  *
- *  (10) Define FG_NAMESPACES if the compiler supports namespaces.
+ *  (10) Define SG_NAMESPACES if the compiler supports namespaces.
  *
- *  (11) FG_MATH_FN_IN_NAMESPACE_STD -- not used??
+ *  (11) SG_MATH_FN_IN_NAMESPACE_STD -- not used??
  *
- *  (12) Define FG_HAVE_STD if std namespace is supported.
+ *  (12) Define SG_HAVE_STD if std namespace is supported.
  *
- *  (13) Defines FG_CLASS_PARTIAL_SPECIALIZATION if the compiler 
+ *  (13) Defines SG_CLASS_PARTIAL_SPECIALIZATION if the compiler 
  *       supports partial specialization of class templates.
  *
- *  (14) Defines FG_HAVE_STD_INCLUDES to use ISO C++ Standard headers.
+ *  (14) Defines SG_HAVE_STD_INCLUDES to use ISO C++ Standard headers.
  *
- *  (15) Defines FG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
+ *  (15) Defines SG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
  *
- *  (16) Define FG_MATH_EXCEPTION_CLASH if math.h defines an exception class
+ *  (16) Define SG_MATH_EXCEPTION_CLASH if math.h defines an exception class
  *       that clashes with the one defined in <stdexcept>.
  */
 
@@ -84,8 +84,8 @@
 #      define STL_STRSTREAM  <strstream.h>
 
 #      define SG_NEED_AUTO_PTR
-#      define FG_NO_DEFAULT_TEMPLATE_ARGS
-#      define FG_INCOMPLETE_FUNCTIONAL
+#      define SG_NO_DEFAULT_TEMPLATE_ARGS
+#      define SG_INCOMPLETE_FUNCTIONAL
 #      define SG_NO_ARROW_OPERATOR
 
 #    elif __GNUC_MINOR__ >= 8
@@ -94,10 +94,10 @@
 #      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #      define SG_NEED_AUTO_PTR
 #      define FG_MEMBER_TEMPLATES
-#      define FG_NAMESPACES
-#      define FG_HAVE_STD
-#      define FG_HAVE_STREAMBUF
-#      define FG_CLASS_PARTIAL_SPECIALIZATION
+#      define SG_NAMESPACES
+#      define SG_HAVE_STD
+#      define SG_HAVE_STREAMBUF
+#      define SG_CLASS_PARTIAL_SPECIALIZATION
 
 #      define STL_ALGORITHM  <algorithm>
 #      define STL_FUNCTIONAL <functional>
@@ -117,11 +117,11 @@
 /* KAI C++ */
 #if defined(__KCC)
 
-#  define FG_NAMESPACES
-#  define FG_HAVE_STD
-#  define FG_HAVE_STREAMBUF
+#  define SG_NAMESPACES
+#  define SG_HAVE_STD
+#  define SG_HAVE_STREAMBUF
 #  define FG_HAVE_TRAITS
-#  define FG_HAVE_STD_INCLUDES
+#  define SG_HAVE_STD_INCLUDES
 
 #  define STL_ALGORITHM  <algorithm>
 #  define STL_FUNCTIONAL <functional>
@@ -141,9 +141,9 @@
   CodeWarrior compiler from Metrowerks, Inc.
 */
 #  define FG_HAVE_TRAITS
-#  define FG_HAVE_STD_INCLUDES
-#  define FG_HAVE_STD
-#  define FG_NAMESPACES
+#  define SG_HAVE_STD_INCLUDES
+#  define SG_HAVE_STD
+#  define SG_NAMESPACES
 
 #  define STL_ALGORITHM  <algorithm>
 #  define STL_FUNCTIONAL <functional>
@@ -171,10 +171,10 @@
 #  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
 
 #  if _MSC_VER == 1200  // msvc++ 6.0
-#    define FG_NAMESPACES
-#    define FG_HAVE_STD
-#    define FG_HAVE_STD_INCLUDES
-#    define FG_HAVE_STREAMBUF
+#    define SG_NAMESPACES
+#    define SG_HAVE_STD
+#    define SG_HAVE_STD_INCLUDES
+#    define SG_HAVE_STREAMBUF
 
 #    define STL_ALGORITHM  <algorithm>
 #    define STL_FUNCTIONAL <functional>
@@ -191,10 +191,10 @@
 
 #  elif _MSC_VER == 1100 // msvc++ 5.0
 #    define NEEDNAMESPACESTD
-#    define FG_NAMESPACES
-#    define FG_HAVE_STD
-#    define FG_HAVE_STD_INCLUDES
-#    define FG_HAVE_STREAMBUF
+#    define SG_NAMESPACES
+#    define SG_HAVE_STD
+#    define SG_HAVE_STD_INCLUDES
+#    define SG_HAVE_STREAMBUF
 
 #    define STL_ALGORITHM  <algorithm>
 #    define STL_FUNCTIONAL <functional>
@@ -222,7 +222,7 @@
 #  define STL_ALGORITHM  "algorithm"
 #  define STL_FUNCTIONAL "functional"
 
-#  define FG_MATH_EXCEPTION_CLASH
+#  define SG_MATH_EXCEPTION_CLASH
 
 # else
 
@@ -232,16 +232,16 @@
 #  define STL_STDEXCEPT  <stdexcept>
 #  define STL_STRSTREAM  <strstream>
 
-#  define FG_INCOMPLETE_FUNCTIONAL
+#  define SG_INCOMPLETE_FUNCTIONAL
 
 # endif // HAVE_SGI_STL_PORT
 
 #  define STL_IOSTREAM   <iostream>
 #  define STL_FSTREAM    <fstream>
 #  define STL_STRING     <string>
-#  define FG_NO_DEFAULT_TEMPLATE_ARGS
-#  define FG_NAMESPACES
-// #  define FG_HAVE_STD
+#  define SG_NO_DEFAULT_TEMPLATE_ARGS
+#  define SG_NAMESPACES
+// #  define SG_HAVE_STD
 
 #endif // __BORLANDC__
 
@@ -255,9 +255,9 @@
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define SG_NEED_AUTO_PTR
 #  define FG_MEMBER_TEMPLATES
-#  define FG_NAMESPACES
-#  define FG_HAVE_STD
-#  define FG_CLASS_PARTIAL_SPECIALIZATION
+#  define SG_NAMESPACES
+#  define SG_HAVE_STD
+#  define SG_CLASS_PARTIAL_SPECIALIZATION
 #  define FG_HAVE_TRAITS
 
 #  define STL_ALGORITHM  <algorithm>
@@ -313,7 +313,7 @@
 #  define FG_NULL_TMPL_ARGS
 #endif
 
-#ifdef FG_CLASS_PARTIAL_SPECIALIZATION
+#ifdef SG_CLASS_PARTIAL_SPECIALIZATION
 # define FG_TEMPLATE_NULL template<>
 #else
 # define FG_TEMPLATE_NULL
@@ -321,7 +321,7 @@
 
 // FG_NO_NAMESPACES is a hook so that users can disable namespaces
 // without having to edit library headers.
-#if defined(FG_NAMESPACES) && !defined(FG_NO_NAMESPACES)
+#if defined(SG_NAMESPACES) && !defined(FG_NO_NAMESPACES)
 #   define FG_NAMESPACE(X) namespace X {
 #   define FG_NAMESPACE_END }
 #   define FG_USING_NAMESPACE(X) using namespace X
@@ -331,7 +331,7 @@
 #   define FG_USING_NAMESPACE(X)
 #endif
 
-# ifdef FG_HAVE_STD
+# ifdef SG_HAVE_STD
 #  define FG_USING_STD(X) using std::X
 #  define STD std
 # else
@@ -341,7 +341,7 @@
 
 // Additional <functional> implementation from SGI STL 3.11
 // Adapter function objects: pointers to member functions
-#ifdef FG_INCOMPLETE_FUNCTIONAL
+#ifdef SG_INCOMPLETE_FUNCTIONAL
 
 template <class _Ret, class _Tp>
 class const_mem_fun_ref_t
@@ -360,6 +360,6 @@ template <class _Ret, class _Tp>
 inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
   { return const_mem_fun_ref_t<_Ret,_Tp>(__f); }
 
-#endif // FG_INCOMPLETE_FUNCTIONAL
+#endif // SG_INCOMPLETE_FUNCTIONAL
 
 #endif // _SG_COMPILER_H

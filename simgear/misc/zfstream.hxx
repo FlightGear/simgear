@@ -43,7 +43,7 @@
 FG_USING_STD(char_traits);
 #endif
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 
 #  include <streambuf>
 #  include <istream>
@@ -66,7 +66,7 @@ FG_USING_STD(streamoff);
 
 #else
 
-#  ifdef FG_HAVE_STREAMBUF
+#  ifdef SG_HAVE_STREAMBUF
 #    include <streambuf.h>
 #    include <istream.h>
 #  else
@@ -94,7 +94,7 @@ FG_USING_STD(streamoff);
 
 #  include <simgear/fg_traits.hxx>
 
-#endif // FG_HAVE_STD_INCLUDES
+#endif // SG_HAVE_STD_INCLUDES
 
 //-----------------------------------------------------------------------------
 //
@@ -104,7 +104,7 @@ class gzfilebuf : public streambuf
 {
 public:
 
-#ifndef FG_HAVE_STD_INCLUDES
+#ifndef SG_HAVE_STD_INCLUDES
     typedef char_traits<char>           traits_type;
     typedef char_traits<char>::int_type int_type;
     // typedef char_traits<char>::pos_type pos_type;

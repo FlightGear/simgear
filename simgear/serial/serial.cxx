@@ -28,7 +28,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef FG_HAVE_STD_INCLUDE
+#ifdef SG_HAVE_STD_INCLUDE
 #  include <cerrno>
 #else
 #  include <errno.h>

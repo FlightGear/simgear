@@ -25,7 +25,7 @@
 
 #include <simgear/debug/logstream.hxx>
 
-#ifdef FG_MATH_EXCEPTION_CLASH
+#ifdef SG_MATH_EXCEPTION_CLASH
 #  define exception c_exception
 #endif
 #include <math.h>

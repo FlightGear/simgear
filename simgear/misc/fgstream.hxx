@@ -34,7 +34,7 @@
 
 #include <simgear/compiler.h>
 
-#if defined( FG_HAVE_STD_INCLUDES )
+#if defined( SG_HAVE_STD_INCLUDES )
 #  include <istream>
 #elif defined ( FG_HAVE_NATIVE_SGI_COMPILERS )
 #  include <CC/stream.h>

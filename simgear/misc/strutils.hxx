@@ -28,7 +28,7 @@
 
 #include STL_STRING
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 #  include <cstdlib>
 #else
 #  include <stdlib.h>

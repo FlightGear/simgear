@@ -36,7 +36,7 @@
 #include <char_traits.h>
 #endif
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 # include <streambuf>
 # include <iostream>
 #else
@@ -77,7 +77,7 @@ class logbuf : public streambuf
 {
 public:
 
-#ifndef FG_HAVE_STD_INCLUDES
+#ifndef SG_HAVE_STD_INCLUDES
     typedef char_traits<char>           traits_type;
     typedef char_traits<char>::int_type int_type;
     // typedef char_traits<char>::pos_type pos_type;
@@ -124,7 +124,7 @@ private:
 inline int
 logbuf::sync()
 {
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 	return sbuf->pubsync();
 #else
 	return sbuf->sync();

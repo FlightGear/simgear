@@ -1,5 +1,8 @@
-// sky.hxx -- ssg based sky model
-//
+/**
+ * \file sky.hxx
+ * Provides a class to model a realistic (time/date/position) based sky.
+ */
+
 // Written by Curtis Olson, started December 1997.
 // SSG-ified by Curtis Olson, February 2000.
 //
@@ -52,6 +55,131 @@ typedef vector < SGCloudLayer* > layer_list_type;
 typedef layer_list_type::iterator layer_list_iterator;
 typedef layer_list_type::const_iterator layer_list_const_iterator;
 
+/**
+ * A class to model a realistic (time/date/position) based sky.
+ *
+ * Introduction 
+ *
+ * The SGSky class models a blended sky dome, a haloed sun, a textured
+ * moon with phase that properly matches the date, stars and planets,
+ * and cloud layers. SGSky is designed to be dropped into existing
+ * plib based applications and depends heavily on plib's scene graph
+ * library, ssg. The sky implements various time of day lighting
+ * effects, it plays well with fog and visibility effects, and
+ * implements scudded cloud fly-through effects. Additionally, you can
+ * wire in the output of the SGEphemeris class to accurately position
+ * all the objects in the sky.
+ *
+ * Building the sky 
+ *
+
+ * Once you have created an instance of SGSky you must call the
+ * build() method.  Building the sky requires several textures. So,
+ * you must specify the path/directory where these textures reside
+ * before building the sky.  You do this first by calling the
+ * texture_path() method.
+
+ * The arguments you pass to the build() method allow you to specify
+ * the size of your sun sphere and moon sphere, a number of planets,
+ * and a multitude of stars.  For the planets and stars you pass in an
+ * array of right ascensions, declinations, magnitudes, and the
+ * distance from the view point.
+
+ * Cloud Layers 
+
+ * Cloud layers can be added, changed, or removed individually. To add
+ * a cloud layer use the add_cloud_layer() method.  The arguments
+ * allow you to specify base height above sea level, layer thickness,
+ * a transition zone for entering/leaving the cloud layer, the size of
+ * the cloud object, and the type of cloud texture. All distances are
+ * in meters. There are additional forms of this method that allow you
+ * to specify your own ssgSimpleState or texture name for drawing the
+ * cloud layer.
+
+ * Repainting the Sky 
+
+ * As the sun circles the globe, you can call the repaint() method to
+ * recolor the sky objects to simulate sunrise and sunset effects,
+ * visibility, and other lighting changes.  The arguments allow you to
+ * specify a base sky color (for the top of the dome), a fog color
+ * (for the horizon), the sun angle with the horizon (for
+ * sunrise/sunset effects), the moon angle (so we can make it more
+ * yellow at the horizon), and new star and planet data so that we can
+ * optionally change the magnitude of these (for day / night
+ * transitions.)
+
+ * Positioning Sky Objects 
+
+ * As time progresses and as you move across the surface of the earth,
+ * the apparent position of the objects and the various lighting
+ * effects can change. the reposition() method allows you to specify
+ * the positions of all the sky objects as well as your view position.
+ * The arguments allow you to specify your view position in world
+ * Cartesian coordinates, the zero elevation position in world
+ * Cartesian coordinates (your longitude, your latitude, sea level),
+ * the ``up'' vector in world Cartesian coordinates, current
+ * longitude, latitude, and altitude. A ``spin'' angle can be
+ * specified for orienting the sky with the sun position so sunset and
+ * sunrise effects look correct. You must specify GMT side real time,
+ * the sun right ascension, sun declination, and sun distance from
+ * view point (to keep it inside your view volume.) You also must
+ * specify moon right ascension, moon declination, and moon distance
+ * from view point.
+
+ * Rendering the Sky 
+
+ * The sky is designed to be rendered in two stages. The first stage
+ * renders the parts that form your back drop - the sky dome, the
+ * stars and planets, the sun, and the moon.  These should be rendered
+ * before the rest of your scene by calling the preDraw() method. The
+ * second stage renders the clouds which are likely to be translucent
+ * (depending on type) and should be drawn after your scene has been
+ * rendered.  Use the postDraw() method to draw the second stage of
+ * the sky.
+
+ * A typical application might do the following: 
+
+ * <li> thesky->preDraw();
+ * <li> ssgCullAndDraw ( myscene ) ;
+ * <li> thesky->postDraw( my_altitude );
+
+ * The current altitude in meters is passed to the postDraw() method
+ * so the clouds layers can be rendered correction from most distant
+ * to closest.
+
+ * Visibility Effects 
+
+ * Visibility and fog is important for correctly rendering the
+ * sky. You can inform SGSky of the current visibility by calling the
+ * set_visibility() method.
+
+ * When transitioning through clouds, it is nice to pull in the fog as
+ * you get close to the cloud layer to hide the fact that the clouds
+ * are drawn as a flat polygon. As you get nearer to the cloud layer
+ * it is also nice to temporarily pull in the visibility to simulate
+ * the effects of flying in and out of the puffy edge of the
+ * cloud. These effects can all be accomplished by calling the
+ * modify_vis() method.  The arguments allow you to specify your
+ * current altitude (which is then compared to the altitudes of the
+ * various cloud layers.) You can also specify a time factor which
+ * should be the length in seconds since the last time you called
+ * modify_vis(). The time_factor value allows the puffy cloud effect
+ * to be calculated correctly.
+
+ * The modify_vis() method alters the SGSky's internal idea of
+ * visibility, so you should subsequently call get_visibility() to get
+ * the actual modified visibility. You should then make the
+ * appropriate glFog() calls to setup fog properly for your scene.
+
+ * Accessor Methods 
+
+ * Once an instance of SGSky has been successfully initialized, there
+ * are a couple accessor methods you can use such as get_num_layers()
+ * to return the number of cloud layers, get_cloud_layer(i) to return
+ * cloud layer number i, get_visibility() to return the actual
+ * visibility as modified by the sky/cloud model.
+
+ */
 
 class SGSky {
 
@@ -86,90 +214,197 @@ private:
 
 public:
 
-    // Constructor
+    /** Constructor */
     SGSky( void );
 
-    // Destructor
+    /** Destructor */
     ~SGSky( void );
 
-    // initialize the sky and connect the components to the scene
-    // graph at the provided branch
+    /**
+     * Initialize the sky and connect the components to the scene
+     * graph at the provided branch.  See discussion in detailed class
+     * description.
+     * @param sun_size size of sun
+     * @param moon_size size of moon
+     * @param nplanets number of planets
+     * @param planet_data an array of planet right ascensions, declinations,
+     *        and magnitudes
+     * @param planet_dist distance from viewer to put the planets
+     * @param nstars number of stars
+     * @param star_data an array of star right ascensions, declinations,
+     *        and magnitudes
+     * @param star_dist distance from viewer to put the stars */
     void build( double sun_size, double moon_size,
 		int nplanets, sgdVec3 *planet_data, double planet_dist,
 		int nstars, sgdVec3 *star_data, double star_dist );
 
-    // repaint the sky components based on current value of sun_angle,
-    // sky, and fog colors.
-    //
-    // sun angle in degrees relative to verticle
-    // 0 degrees = high noon
-    // 90 degrees = sun rise/set
-    // 180 degrees = darkest midnight
+    /**
+     * Repaint the sky components based on current value of sun_angle,
+     * sky, and fog colors.  You can also specify new star and planet
+     * data so that we can optionally change the magnitude of these
+     * (for day/night transitions.)  See discussion in detailed
+     * class description.
+     *
+     * Sun and moon angles are specified in degrees relative to local up
+     * <li> 0 degrees = high noon
+     * <li> 90 degrees = sun rise/set
+     * <li> 180 degrees = darkest midnight
+     * @param sky_color the base sky color (for the top of the dome)
+     * @param fog_color the fog color (for the horizon)
+     * @param sun_angle the sun angle with the horizon (for sunrise/sunset
+     *        effects)
+     * @param moon_angle the moon angle (so we can make it more yellow
+     *        at the horizon)
+     * @param nplanets number of planets
+     * @param planet_data an array of planet right ascensions, declinations,
+     *        and magnitudes
+     * @param nstars number of stars
+     * @param star_data an array of star right ascensions, declinations,
+     *        and magnitudes
+     */
     bool repaint( sgVec4 sky_color, sgVec4 fog_color,
 		  double sun_angle, double moon_angle,
 		  int nplanets, sgdVec3 *planet_data,
 		  int nstars, sgdVec3 *star_data );
 
-    // reposition the sky at the specified origin and orientation
-    //
-    // lon specifies a rotation about the Z axis
-    // lat specifies a rotation about the new Y axis
-    // spin specifies a rotation about the new Z axis (this allows
-    // additional orientation for the sunrise/set effects and is used
-    // by the skydome and perhaps clouds.
+    /**
+     * Reposition the sky at the specified origin and orientation
+     *
+     * lon specifies a rotation about the Z axis
+     * lat specifies a rotation about the new Y axis
+     * spin specifies a rotation about the new Z axis (this allows
+     * additional orientation for the sunrise/set effects and is used
+     * by the skydome and perhaps clouds.  See discussion in detailed
+     * class description.
+     * @param view_pos specify your view position in world Cartesian
+     *        coordinates
+     * @param zero_elev the zero elevation position in world Cartesian
+     *        coordinates
+     * @param view_up the up vector in world Cartesian coordinates
+     * @param lon current longitude
+     * @param lat current latitude
+     * @param alt current altitude
+     * @param spin an offset angle for orienting the sky effects with the
+     *        sun position so sunset and sunrise effects look correct.
+     * @param gst GMT side real time
+     * @param sun_ra the sun's current right ascension
+     * @param sun_dec the sun's current declination
+     * @param sun_dist the sun's distance from the current view point
+     *        (to keep it inside your view volume.)
+     * @param moon_ra the moon's current right ascension
+     * @param moon_dec the moon's current declination
+     * @param moon_dist the moon's distance from the current view point. 
+     */
     bool reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
 		     double lon, double lat, double alt, double spin,
 		     double gst, 
 		     double sun_ra, double sun_dec, double sun_dist,
 		     double moon_ra, double moon_dec, double moon_dist );
 
-    // modify the given visibility based on cloud layers, thickness,
-    // transition range, and simulated "puffs".
+    /**
+     * Modify the given visibility based on cloud layers, thickness,
+     * transition range, and simulated "puffs".  See discussion in detailed
+     * class description.
+     * @param alt current altitude
+     * @param time_factor amount of time since modify_vis() last called so
+     *        we can scale effect rates properly despite variable frame rates.
+     */
     void modify_vis( float alt, float time_factor );
 
-    // draw background portions of the sky ... do this before you draw
-    // the rest of your scene.
+    /**
+     * Draw background portions of the sky ... do this before you draw
+     * the rest of your scene.  See discussion in detailed
+     * class description.
+     */
     void preDraw();
 
-    // draw translucent clouds ... do this after you've drawn all the
-    // oapaque elements of your scene.
+    /**
+     * Draw translucent clouds ... do this after you've drawn all the
+     * oapaque elements of your scene.  See discussion in detailed
+     * class description.
+     * @param alt current altitude
+     */
     void postDraw( float alt );
 
-    // specify the texture path (optional, defaults to current directory)
+    /** 
+     * Specify the texture path (optional, defaults to current directory)
+     * @param path base path to texture locations
+     */
     inline void texture_path( const string& path ) {
 	tex_path = SGPath( path );
     }
 
-    // enable the sky
+    /** Enable drawing of the sky. */
     inline void enable() {
 	pre_selector->select( 1 );
 	post_selector->select( 1 );
     }
 
-    // disable the sky in the scene graph.  The leaf node is still
-    // there, how ever it won't be traversed on by ssgCullandRender()
+    /**
+     * Disable drawing of the sky in the scene graph.  The leaf node is still
+     * there, how ever it won't be traversed on by ssgCullandRender()
+     */
     inline void disable() {
 	pre_selector->select( 0 );
 	post_selector->select( 0 );
     }
 
-    // add a cloud layer (above sea level in meters)
+    /**
+     * Add a cloud layer (distances in meters).
+     * @param asl cloud base height above sea level
+     * @param thickness cloud layer thickness
+     * @param transition thickness of transition layer from 100% out of 
+     *        cloud to 100% in cloud.  Used for scudded clouds effect.
+     * @param span horizontal size of cloud object
+     * @param type type of cloud (chosen from available cloud types)
+     */
     void add_cloud_layer( double asl, double thickness,
 			  double transition, double span,
 			  SGCloudType type );
+
+    /**
+     * Add a cloud layer (distances in meters).
+     * @param asl cloud base height above sea level
+     * @param thickness cloud layer thickness
+     * @param transition thickness of transition layer from 100% out of 
+     *        cloud to 100% in cloud.  Used for scudded clouds effect.
+     * @param span horizontal size of cloud object
+     * @param tex_path file name of a cloud texture
+     */
     void add_cloud_layer( double asl, double thickness,
 			  double transition, double span,
 			  const string &tex_path );
+
+    /**
+     * Add a cloud layer (distances in meters).
+     * @param asl cloud base height above sea level
+     * @param thickness cloud layer thickness
+     * @param transition thickness of transition layer from 100% out of 
+     *        cloud to 100% in cloud.  Used for scudded clouds effect.
+     * @param span horizontal size of cloud object
+     * @param state pointer to an existing ssgSimpleState
+     */
     void add_cloud_layer( double asl, double thickness,
 			  double transition, double span,
 			  ssgSimpleState *state );
 
+    /** @return number of cloud layers */
     inline int get_num_layers() const { return cloud_layers.size(); }
+
+    /**
+     * Get a cloud layer
+     * @param i which cloud layer
+     * @return cloud layer number i */
     inline SGCloudLayer *get_cloud_layer( int i ) const {
 	return cloud_layers[i];
     }
 
+    /** @return current effective visibility */
     inline float get_visibility() const { return effective_visibility; }
+
+    /** Set desired clear air visibility.
+     * @param v visibility in meters
+     */
     inline void set_visibility( float v ) {
 	effective_visibility = visibility = v;
     }

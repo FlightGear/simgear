@@ -1,5 +1,8 @@
-// sg_time.hxx -- data structures and routines for managing time related stuff.
-//
+/**
+ * \file sg_time.hxx
+ * Data structures and routines for managing time related values.
+ */
+
 // Written by Curtis Olson, started August 1997.
 //
 // Copyright (C) 1997  Curtis L. Olson  - curt@flightgear.org
@@ -46,7 +49,10 @@
 #include <simgear/timing/timezone.h>
 
 
-// Define a structure containing time parameters
+/**
+ * A class to calculate and manage a variety of time parameters.
+ */
+
 class SGTime {
 
 private:
@@ -84,12 +90,33 @@ private:
 
 public:
 
-    SGTime( double lon, double lat, const string& root );
-    SGTime( const string& root );
+    /** Default constructor */
     SGTime();
+
+    /**
+     * Create an instance based on a specified position and data file path.
+     * @param lon current longitude
+     * @param lat current latitude
+     * @param root root path point to data file location (timezone, etc.)
+     */
+    SGTime( double lon, double lat, const string& root );
+
+    /**
+     * Create an instance given a data file path
+     * @param root root path point to data file location (timezone, etc.)
+     */
+    SGTime( const string& root );
+
+    /** Destructor */
     ~SGTime();
 
-    // Update the time related variables
+    /** 
+     * Update the time related variables.
+     * @param lon current longitude
+     * @param lat current latitude
+     * @param warp an optional time offset specified in seconds.  This
+     *        allows us to advance or rewind "time" if we choose to.
+     */
     void update( double lon, double lat, long int warp = 0 );
 
     // Given lon/lat, update timezone information and local_offset

@@ -301,7 +301,20 @@ INPUT                  = \
 	simgear/bucket \
 	simgear/compiler.h \
 	simgear/constants.h \
-	simgear/debug
+	simgear/debug \
+	simgear/ephemeris \
+	simgear/io \
+	simgear/magvar \
+	simgear/math \
+	simgear/misc \
+	simgear/route \
+	simgear/screen \
+	simgear/serial \
+	simgear/sg_inlines.h \
+	simgear/sg_traits.hxx \
+	simgear/sg_zlib.h \
+	simgear/sky \
+	simgear/timing
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

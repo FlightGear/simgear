@@ -47,6 +47,13 @@ inline void gamma_correct_rgb(float *color,
     color[0] = pow(color[0], tmp);
     color[1] = pow(color[1], tmp);
     color[2] = pow(color[2], tmp);
+
+    if ( color[0] < 0.0 ) { color[0] = 0.0; }
+    if ( color[1] < 0.0 ) { color[1] = 0.0; }
+    if ( color[2] < 0.0 ) { color[2] = 0.0; }
+    if ( color[0] > 1.0 ) { color[0] = 1.0; }
+    if ( color[1] > 1.0 ) { color[1] = 1.0; }
+    if ( color[2] > 1.0 ) { color[2] = 1.0; }
 };
 
 inline void gamma_correct_c(float *color,
@@ -56,6 +63,8 @@ inline void gamma_correct_c(float *color,
       return;
 
    *color = pow(*color, reff/system);
+   if ( *color < 0.0 ) { *color = 0.0; }
+   if ( *color > 1.0 ) { *color = 1.0; }
 };
 
 inline void gamma_restore_rgb(float *color,
@@ -68,6 +77,13 @@ inline void gamma_restore_rgb(float *color,
     color[0] = pow(color[0], tmp);
     color[1] = pow(color[1], tmp);
     color[2] = pow(color[2], tmp);
+
+    if ( color[0] < 0.0 ) { color[0] = 0.0; }
+    if ( color[1] < 0.0 ) { color[1] = 0.0; }
+    if ( color[2] < 0.0 ) { color[2] = 0.0; }
+    if ( color[0] > 1.0 ) { color[0] = 1.0; }
+    if ( color[1] > 1.0 ) { color[1] = 1.0; }
+    if ( color[2] > 1.0 ) { color[2] = 1.0; }
 };
 
 inline void gamma_restore_c(float *color,
@@ -77,6 +93,8 @@ inline void gamma_restore_c(float *color,
       return;
 
    *color = pow(*color, system/reff);
+   if ( *color < 0.0 ) { *color = 0.0; }
+   if ( *color > 1.0 ) { *color = 1.0; }
 };
 
 

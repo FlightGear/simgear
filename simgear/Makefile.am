@@ -16,6 +16,12 @@ else
 ZLIB_DIRS = zlib
 endif
 
+if HAVE_THREADS
+SGTHREAD_DIR = threads
+else
+SGTHREAD_DIR = 
+endif
+
 # METAR_DIRS =
 METAR_DIRS = metar
 
@@ -38,8 +44,7 @@ SUBDIRS = \
 	screen \
 	$(SERIAL_DIRS) \
 	sky \
-        threads \
+	$(SGTHREAD_DIR)
 	timing \
 	xgl \
 	$(ZLIB_DIRS)
-

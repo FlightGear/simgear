@@ -313,6 +313,7 @@ INPUT                  = \
 	simgear/sg_inlines.h \
 	simgear/sg_traits.hxx \
 	simgear/sg_zlib.h \
+	simgear/threads \
 	simgear/sky \
 	simgear/timing \
 	simgear/xml

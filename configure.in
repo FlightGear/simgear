@@ -28,6 +28,7 @@ echo CC = $CC
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC
+AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
@@ -93,6 +94,15 @@ null_LIBS="$LIBS"
 AC_CHECK_LIB(m, cos)
 
 base_LIBS="$LIBS"
+
+dnl Thread related checks
+AC_CHECK_LIB(pthread, pthread_exit)
+AC_CHECK_HEADER(pthread.h)
+if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -o "x$ac_cv_header_pthread_h" = "xyes"; then
+    CXXFLAGS="$CXXFLAGS -D_REENTRANT"
+    CFLAGS="$CFLAGS -D_REENTRANT"
+fi
+AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -o "x$ac_cv_header_pthread_h" = "xyes")
 
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(X11, XCreateWindow)

@@ -222,7 +222,6 @@ void SkySceneLoader::Draw()
   //_ssgCurrentContext->cull(r) ;
   //_ssgDrawDList () ;
 
-  SceneManager::InstancePtr()->Update(*pCam);
   SceneManager::InstancePtr()->Display(*pCam);
 	
   //pLight->Display(); // draw the light position to  debug with sun position

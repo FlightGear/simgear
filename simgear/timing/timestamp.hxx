@@ -1,5 +1,8 @@
-// timestamp.hxx -- class for managing a timestamp (seconds & milliseconds.)
-//
+/**
+ * \file timestamp.hxx
+ * Provides a class for managing a timestamp (seconds & milliseconds.)
+ */
+
 // Written by Curtis Olson, started December 1998.
 //
 // Copyright (C) 1998  Curtis L. Olson  - curt@flightgear.org
@@ -76,6 +79,16 @@ class SGTimeStamp;
 SGTimeStamp operator + (const SGTimeStamp& t, const long& m);
 long operator - (const SGTimeStamp& a, const SGTimeStamp& b);
 
+/**
+ * The SGTimeStamp class allows you to mark and compare time stamps
+ * with microsecond accuracy (if your system has support for this
+ * level of accuracy.)
+ *
+ * The SGTimeStamp is useful for tracking the elapsed time of various
+ * events in your program. You can also use it to keep constistant
+ * motion across varying frame rates.
+ */
+
 class SGTimeStamp {
 
 private:
@@ -85,20 +98,46 @@ private:
 
 public:
 
+    /** Default constructor */
     SGTimeStamp();
+
+    /**
+     * This creates an instance of the SGTimeStamp object. When
+     * calling the constructor you may provide initial seconds an
+     * microseconds values.
+     * @param s initial seconds value
+     * @param m initial microseconds value
+     */
     SGTimeStamp( const long s, const long m );
     ~SGTimeStamp();
 
-    // Set time to current time
+    /** Update stored time to current time (seconds and microseconds) */
     void stamp();
 
+    /** Compare two time stamps for equality */
     SGTimeStamp& operator = ( const SGTimeStamp& t );
 
+    /**
+     * Increment the saved time by the specified number of microseconds
+     * @param t time stamp
+     * @param m microseconds increment
+     * @return new time stamp
+     */
     friend SGTimeStamp operator + (const SGTimeStamp& t, const long& m);
+
+    /**
+     * Subtract two time stamps returning the difference in microseconds.
+     * @param a timestamp 1
+     * @param b timestame 2
+     * @return difference in microseconds
+     */
     friend long operator - (const SGTimeStamp& a, const SGTimeStamp& b);
 
+    /** @return the saved seconds of this time stamp */
     inline long get_seconds() const { return seconds; }
-    // inline long get_usec() const { return usec; }
+
+    /** @return the saved microseconds of this time stamp */
+    inline long get_usec() const { return usec; }
 };
 
 inline SGTimeStamp::SGTimeStamp() {

@@ -314,7 +314,8 @@ INPUT                  = \
 	simgear/sg_traits.hxx \
 	simgear/sg_zlib.h \
 	simgear/sky \
-	simgear/timing
+	simgear/timing \
+	simgear/xml
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

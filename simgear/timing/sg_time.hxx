@@ -51,6 +51,22 @@
 
 /**
  * A class to calculate and manage a variety of time parameters.
+ * The SGTime class provides many real-world time values. It
+ * calculates current time in seconds, GMT time, local time zone,
+ * local offset in seconds from GMT, Julian date, and sidereal
+ * time. All of these operate with seconds as their granularity so
+ * this class is not intended for timing sub-second events. These
+ * values are intended as input to things like real world lighting
+ * calculations and real astronomical object placement.
+
+ * To properly use the SGTime class there are a couple of things to be
+ * aware of. After creating an instance of the class, you will need to
+ * periodically (i.e. before every frame) call the update()
+ * method. Optionally, if you care about updating time zone
+ * information based on your latitude and longitude, you can call the
+ * updateLocal() method periodically as your position changes by
+ * significant amounts.
+
  */
 
 class SGTime {
@@ -95,14 +111,22 @@ public:
 
     /**
      * Create an instance based on a specified position and data file path.
+     * This creates an instance of the SGTime object. When calling the
+     * constructor you need to provide a root path pointing to your
+     * time zone definition tree. Optionally, you can call a form of
+     * the constructor that accepts your current longitude and
+     * latitude in radians.
+     *
+     * If you don't know your position when you call the SGTime
+     * constructor, you can just use the first form (which assumes 0,
+     * 0).
      * @param lon current longitude
      * @param lat current latitude
-     * @param root root path point to data file location (timezone, etc.)
-     */
+     * @param root root path point to data file location (timezone, etc.)  */
     SGTime( double lon, double lat, const string& root );
 
     /**
-     * Create an instance given a data file path
+     * Create an instance given a data file path.
      * @param root root path point to data file location (timezone, etc.)
      */
     SGTime( const string& root );
@@ -112,22 +136,48 @@ public:
 
     /** 
      * Update the time related variables.
+     * The update() method requires you to pass in your position and
+     * an optional time offset in seconds. The offset (or warp) allows
+     * you to offset "sim" time relative to "real" time. The update()
+     * method is designed to be called by the host application before
+     * every frame.
      * @param lon current longitude
      * @param lat current latitude
      * @param warp an optional time offset specified in seconds.  This
-     *        allows us to advance or rewind "time" if we choose to.
-     */
+     *        allows us to advance or rewind "time" if we choose to.  */
     void update( double lon, double lat, long int warp = 0 );
 
-    // Given lon/lat, update timezone information and local_offset
+    /**
+     * Given lon/lat, update timezone information and local_offset
+     * The updateLocal() method is intended to be called less
+     * frequently - only when your position is likely to be changed
+     * enough that your timezone may have changed as well. In the
+     * FlightGear project we call updateLocal() every few minutes from
+     * our periodic event manager.
+     * @param lon current longitude
+     * @param lat current latitude
+     * @param root base path containing time zone directory */
     void updateLocal( double lon, double lat, const string& root );
 
+    /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };
+
+    /** @return time zone name for your current position*/
     inline char* get_zonename() const { return zonename; }
+
+    /** @return GMT in a "brokent down" tm structure */
     inline struct tm* getGmt()const { return gmt; };
+
+    /** @return julian date */
     inline double getJD() const { return jd; };
+
+    /** @return modified julian date */
     inline double getMjd() const { return mjd; };
+
+    /** @return local side real time */
     inline double getLst() const { return lst; };
+
+    /** @return grenich side real time (lst when longitude == 0) */
     inline double getGst() const { return gst; };
 };
 
@@ -135,11 +185,27 @@ public:
 // Some useful utility functions that don't make sense to be part of
 // the SGTime class
 
-// Return unix time in seconds for the given data (relative to GMT)
+/**
+ * \relates SGTime
+ * Return unix time in seconds for the given data (relative to GMT)
+ * @param year current GMT year
+ * @param month current GMT month
+ * @param day current GMT day
+ * @param hour current GMT hour
+ * @param minute current minute
+ * @param second current second
+ * @return unix/system time in seconds
+ */
 time_t sgTimeGetGMT(int year, int month, int day, 
 		    int hour, int minute, int second);
 
-// this is just a wrapper
+/**
+ * \relates SGTime
+ * this is just a wrapper for sgTimeGetGMT that allows an alternate
+ * form of input parameters.
+ * @param the_time the current GMT time in the tm structure
+ * @return unix/system time in seconds
+ */
 inline time_t sgTimeGetGMT(struct tm* the_time) {
     // printf("Using: %24s as input\n", asctime(the_time));
     return sgTimeGetGMT(the_time->tm_year,
@@ -150,15 +216,32 @@ inline time_t sgTimeGetGMT(struct tm* the_time) {
 			the_time->tm_sec);
 }
 
-// given a date in months, mn, days, dy, years, yr, return the
-// modified Julian date (number of days elapsed since 1900 jan 0.5),
-// mjd.  Adapted from Xephem.
+/**
+ * \relates SGTime
+ * Given a date in our form, return the equivalent modified Julian
+ * date (number of days elapsed since 1900 jan 0.5), mjd.  Adapted
+ * from Xephem.
+ * @param mn month
+ * @param dy day
+ * @param yr year
+ * @return modified julian date */
 double sgTimeCalcMJD(int mn, double dy, int yr);
 
-// given an mjd, calculate greenwich mean sidereal time, gst
+/**
+ * \relates SGTime
+ * Given an mjd, calculate greenwich mean sidereal time, gst
+ * @param mjd modified julian date
+ * @return greenwich mean sidereal time (gst)
+ */
 double sgTimeCalcGST( double mjd );
 
-// format time
+/**
+ * \relates SGTime
+ * Format time in a pretty form
+ * @param p time specified in a tm struct
+ * @param buf buffer space to contain the result
+ * @return pointer to character array containt the result
+ */
 char* sgTimeFormatTime( const struct tm* p, char* buf );
 
 

@@ -421,7 +421,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
         = new SGMaterial( rwy_red_medium_lights );
 
     // hard coded low intensity runway red light state
-    tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
+    tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
     ssgSimpleState *rwy_red_low_lights = new ssgSimpleState();
     rwy_red_low_lights->ref();
     rwy_red_low_lights->disable( GL_LIGHTING );
@@ -475,7 +475,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
         = new SGMaterial( rwy_green_medium_lights );
 
     // hard coded low intensity runway green light state
-    tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
+    tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
     ssgSimpleState *rwy_green_low_lights = new ssgSimpleState();
     rwy_green_low_lights->ref();
     rwy_green_low_lights->disable( GL_LIGHTING );

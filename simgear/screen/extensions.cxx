@@ -26,7 +26,7 @@
 
 #include "extensions.hxx"
 
-bool SGSearchExtensionsString(char *extString, char *extName) {
+static bool SGSearchExtensionsString(char *extString, char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
     // surrounded by white spaces, or GL_FALSE otherwise.
 

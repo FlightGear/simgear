@@ -41,7 +41,7 @@ extern "C" {
 #define APIENTRY
 #endif
 
-static bool SGSearchExtensionsString(char *extString, char *extName);
+    // static bool SGSearchExtensionsString(char *extString, char *extName);
 bool SGIsOpenGLExtensionSupported(char *extName);
 
 #ifdef __APPLE__

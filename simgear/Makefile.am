@@ -28,7 +28,6 @@ SUBDIRS = \
 	scene \
 	screen \
 	serial \
-	sky \
 	sound \
 	$(SGTHREAD_DIR) \
 	timing \

@@ -420,11 +420,11 @@ AC_CONFIG_FILES([ \
 	simgear/scene/Makefile \
 	simgear/scene/material/Makefile \
 	simgear/scene/model/Makefile \
+	simgear/scene/sky/Makefile \
+	simgear/scene/sky/clouds3d/Makefile \
 	simgear/scene/tgdb/Makefile \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
-	simgear/sky/Makefile \
-	simgear/sky/clouds3d/Makefile \
 	simgear/sound/Makefile \
 	simgear/threads/Makefile \
 	simgear/timing/Makefile \

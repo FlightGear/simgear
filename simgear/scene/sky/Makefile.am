@@ -1,4 +1,4 @@
-includedir = @includedir@/sky
+includedir = @includedir@/scene/sky
 
 # SUBDIRS = clouds3d
 

@@ -42,11 +42,11 @@
 
 #include <vector>
 
-#include <simgear/sky/cloud.hxx>
-#include <simgear/sky/dome.hxx>
-#include <simgear/sky/moon.hxx>
-#include <simgear/sky/oursun.hxx>
-#include <simgear/sky/stars.hxx>
+#include <simgear/scene/sky/cloud.hxx>
+#include <simgear/scene/sky/dome.hxx>
+#include <simgear/scene/sky/moon.hxx>
+#include <simgear/scene/sky/oursun.hxx>
+#include <simgear/scene/sky/stars.hxx>
 
 SG_USING_STD(vector);
 

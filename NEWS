@@ -1,3 +1,31 @@
+New in 0.0.15
+* June 22, 2001
+* Various bug fixes, tweaks, and optimizations.
+* Added a command manager (analogous to the property manager)
+* Better Irix Mips support.
+* Various gcc-3.0 fixes.
+* Various MSVC fixes.
+* Added MSVC project files (automatically generated from the unix
+  automake configuration files.)
+* Removed total size limitation on interpolation table module.
+* Various Cygwin fixes.
+* Added some convenience functions to point3d.
+* Various compiler warning fixes.
+* Added a thread wrapper class (currently only supports pthreads)
+* Added IO routines for a lowlevel, native simgear binary 3d file
+  format optimized for TerraGear terrain.
+* Better endianness checking and support for the binary file
+  read/write routines.
+* Added doxygen comments for all public interface code.  Documentation
+  can be accessed via the SimGear web page.
+* Many FG -> SG name space changes for better consistancy throughout
+  this package.
+* Added property aliases, repeated name tags, and a general xml
+  inclusion facilities.  Many other property manager clean ups
+  following a complete rewrite.
+* Fixed some critical null pointer bugs in property manager.
+* Magnetic variation can now be fetched for any arbitrary location.
+
 New in 0.0.14
 * December 14, 2000
 * Added a module to manage waypoints and routes, calculate bearing and

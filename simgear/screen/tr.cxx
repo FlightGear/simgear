@@ -2,6 +2,9 @@
 
 /*
  * $Log$
+ * Revision 1.3  2001/07/30 20:34:21  curt
+ * Various MSVC fixes.
+ *
  * Revision 1.2  2001/06/27 02:48:01  curt
  * Fixed a type conversion bug that could trip up some of the pickier compilers
  * out there.
@@ -46,6 +49,8 @@
  * Copyright (C) Brian Paul
  */
 
+
+#include <simgear/compiler.h>
 
 #include <assert.h>
 #include <math.h>

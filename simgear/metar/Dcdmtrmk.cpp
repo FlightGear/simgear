@@ -1,3 +1,5 @@
+#include <simgear/compiler.h>
+
 #include "Local.h"     /* standard header file */
 #include "Metar.h"
  
@@ -1393,9 +1395,9 @@ static bool isVariableVsby( char **string, Decoded_METAR *Mptr,
    /* DECLARE LOCAL VARIABLES */
    /***************************/
  
-   char *slash,
-        *slash1,
-        *slash2,
+   char *slash = NULL,
+        *slash1 = NULL,
+        *slash2 = NULL,
         buf[ 5 ],
         *V_char;
    float minimumVsby,
@@ -2788,8 +2790,8 @@ static bool isSLP( char **token, Decoded_METAR *Mptr, int *NDEX )
    /* DECLARE LOCAL VARIABLES */
    /***************************/
  
-   int pressure,
-       ndex;
+   int pressure;
+   // int ndex;
  
    /*************************/
    /* BEGIN BODY OF ROUTINE */
@@ -2861,7 +2863,7 @@ static bool isSectorVsby( char **string, Decoded_METAR *Mptr,
    /* DECLARE LOCAL VARIABLES */
    /***************************/
  
-   float vsby;
+   float vsby = 0.0f;
    char  dd[3],
          *slash;
  
@@ -4791,18 +4793,18 @@ void DcdMTRmk( char **token, Decoded_METAR *Mptr )
        FZRANO = 0, TSNO = 0, maintIndicator = 0, CHINO = 0, RVRNO = 0,
        VISNO = 0, PNO = 0, DVR = 0;
  
-   int  NDEX,
-        ndex,
-        i;
-   char *slash,
-        *tokenX,
-        *V_char,
-        *temp_token;
+   int  NDEX;
+   // int ndex;
+   int i;
+   // char *slash;
+   // char *tokenX;
+   // char *V_char;
+   // char *temp_token;
  
-   bool extra_token,
-        IS_NOT_RMKS;
+   // bool extra_token;
+   bool IS_NOT_RMKS;
  
-   float T_vsby;
+   // float T_vsby;
  
    /*************************/
    /* START BODY OF ROUTINE */

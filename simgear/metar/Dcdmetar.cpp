@@ -1358,8 +1358,8 @@ static bool vrblVsby( char *string1, char *string2,
                       Decoded_METAR *Mptr, int *NDEX )
 {
    char buf[ 6 ];
-   int numerator,
-       denominator;
+   /* int numerator,
+       denominator; */
    char *slash,
         *V_char,
         *temp;
@@ -1800,7 +1800,7 @@ static bool isWxToken( char *token )
  
    if( token == NULL )
       return FALSE;
-   for( i = 0; i < strlen(token); i++ )
+   for( i = 0; i < (int)strlen(token); i++ )
    {
       if( !(isalpha(*(token+i)) || *(token+i) == '+' ||
                                    *(token+i) == '-'   ) )
@@ -2365,17 +2365,14 @@ int DcdMETAR( char *string , Decoded_METAR *Mptr )
                         CAVOK, visibility,
                         RVR, presentWX, PartialObscur,
                         skyCond, tempGroup,
-                        altimStng, NotIDed = 99} StartGroup,
-                                      SaveStartGroup,
-                                      MetarGroup;
+                        altimStng, NotIDed = 99 }
+   StartGroup, SaveStartGroup, MetarGroup;
  
-   WindStruct *WinDataPtr;
+   // WindStruct *WinDataPtr;
  
-   int    ndex,
-          NDEX,
-          i,
-          jkj,
-          j;
+   int ndex;
+   int NDEX;
+   // int i, jkj, j;
  
  
    char   **token,

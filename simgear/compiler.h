@@ -152,6 +152,7 @@
 #if defined( __MINGW32__ )
 #  define bcopy(from, to, n) memcpy(to, from, n)
 #  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
+#  define isnan _isnan
 #  define snprintf _snprintf
 #endif
 
@@ -235,6 +236,7 @@
 #    define STL_STRING     <string>
 #    define STL_STRSTREAM  <strstream>
 
+#    define isnan _isnan
 #    define snprintf _snprintf
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters

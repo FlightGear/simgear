@@ -16,7 +16,7 @@ include_HEADERS = \
 	SkyUtil.hpp
 
 libsgclouds3d_a_SOURCES = \
-        $(EXTRA_SOURCE) \
+        $(EXTGL_SOURCE) \
 	vec3fv.cpp \
 	mat16fv.cpp \
 	tri.cpp \

@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "extensions.hxx"
+#include <simgear/debug/logstream.hxx>
 
 static bool SGSearchExtensionsString(char *extString, char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
@@ -96,4 +97,30 @@ void* macosxGetGLProcAddress(const char *func) {
   return function;
 }
 
+#else if !defined( WIN32 )
+
+void *SGGetGLProcAddress(const char *func) {
+    static void *libHandle = NULL;
+    void (*fptr)() = NULL;
+
+    /*
+     * Clear the error buffer
+     */
+    dlerror();
+
+    if (libHandle == NULL)
+        libHandle = dlopen("libGL.so", RTLD_LAZY);
+
+    if (libHandle != NULL) {
+        fptr = (void (*)()) dlsym(libHandle, func);
+
+        char *error = dlerror();
+        if (error)
+            SG_LOG(SG_GENERAL, SG_INFO, error);
+    }
+
+    return fptr;
+}
+
 #endif
+

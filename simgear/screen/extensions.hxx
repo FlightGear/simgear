@@ -53,6 +53,11 @@ bool SGIsOpenGLExtensionSupported(char *extName);
 #ifdef __APPLE__
   // don't use an inline function for symbol lookup, since it is too big
   void* macosxGetGLProcAddress(const char *func);
+
+#else if !defined( WIN32 )
+
+  void *SGGetGLProcAddress(const char *func);
+  
 #endif
 
 inline void (*SGLookupFunction(const char *func))()
@@ -65,16 +70,7 @@ inline void (*SGLookupFunction(const char *func))()
 
 #else // UNIX
 
-    // If the target system s UNIX and the ARB_get_proc_address
-    // GLX extension is *not* guaranteed to be supported. An alternative
-    // dlsym-based approach will be used instead.
-
-    void *libHandle;
-    void (*fptr)();
-    libHandle = dlopen("libGL.so", RTLD_LAZY);
-    fptr = (void (*)()) dlsym(libHandle, func);
-    dlclose(libHandle);
-    return fptr;
+    return (void (*)()) SGGetGLProcAddress(func);
 #endif
 }
 

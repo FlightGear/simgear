@@ -28,8 +28,8 @@
 #include "apt_signs.hxx"
 
 
-ssgBranch *gen_taxi_sign( SGMaterialLib *matlib,
-                          const string path, const string content )
+ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
+                           const string path, const string content )
 {
     // for demo purposes we assume each element (letter) is 1x1 meter.
     // Sign is placed 0.25 meters above the ground
@@ -109,8 +109,8 @@ ssgBranch *gen_taxi_sign( SGMaterialLib *matlib,
 }
 
 
-ssgBranch *gen_runway_sign( SGMaterialLib *matlib,
-                            const string path, const string name )
+ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
+                             const string path, const string name )
 {
     // for demo purposes we assume each element (letter) is 1x1 meter.
     // Sign is placed 0.25 meters above the ground

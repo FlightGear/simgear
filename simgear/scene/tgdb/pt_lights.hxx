@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _PT_LIGHTS_HXX
-#define _PT_LIGHTS_HXX
+#ifndef _SG_PT_LIGHTS_HXX
+#define _SG_PT_LIGHTS_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -51,16 +51,16 @@ typedef int_list::const_iterator int_point_list_iterator;
 
 // Define the various supported light types
 typedef enum {
-    FG_RWYLIGHT_TAXI = 0,
-    FG_RWYLIGHT_VASI,
-    FG_RWYLIGHT_EDGE,
-    FG_RWYLIGHT_TOUCHDOWN,
-    FG_RWYLIGHT_THRESHOLD,
-    FG_RWYLIGHT_WHITE,
-    FG_RWYLIGHT_RED,
-    FG_RWYLIGHT_GREEN,
-    FG_RWYLIGHT_YELLOW
-} fgRunwayLightType;
+    SG_RWYLIGHT_TAXI = 0,
+    SG_RWYLIGHT_VASI,
+    SG_RWYLIGHT_EDGE,
+    SG_RWYLIGHT_TOUCHDOWN,
+    SG_RWYLIGHT_THRESHOLD,
+    SG_RWYLIGHT_WHITE,
+    SG_RWYLIGHT_RED,
+    SG_RWYLIGHT_GREEN,
+    SG_RWYLIGHT_YELLOW
+} sgPointLightType;
 
 
 // Generate a directional light.  This routines creates a
@@ -92,16 +92,16 @@ typedef enum {
 // Yes this get's to be long and convoluted.  If you can suggest a
 // simpler way, please do! :-)
 
-ssgLeaf *gen_directional_light( sgVec3 pt, sgVec3 dir, sgVec3 up );
+ssgLeaf *sgMakeDirectionalLight( sgVec3 pt, sgVec3 dir, sgVec3 up );
 
 
-ssgBranch *gen_directional_lights( const point_list &nodes,
-                                   const point_list &normals,
-                                   const int_list &pnt_i,
-                                   const int_list &nml_i,
-                                   SGMaterialLib *matlib,
-                                   const string &material,
-                                   sgVec3 up );
+ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
+                                    const point_list &normals,
+                                    const int_list &pnt_i,
+                                    const int_list &nml_i,
+                                    SGMaterialLib *matlib,
+                                    const string &material,
+                                    sgVec3 up );
 
 
-#endif // _PT_LIGHTS_HXX
+#endif // _SG_PT_LIGHTS_HXX

@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _APT_SIGNS_HXX
-#define _APT_SIGNS_HXX
+#ifndef _SG_APT_SIGNS_HXX
+#define _SG_APT_SIGNS_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -42,13 +42,13 @@ SG_USING_STD(string);
 
 
 // Generate a taxi sign
-ssgBranch *gen_taxi_sign( SGMaterialLib *matlib,
-                          const string path, const string content );
+ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
+                           const string path, const string content );
 
 
 // Generate a runway sign
-ssgBranch *gen_runway_sign( SGMaterialLib *matlib,
-                            const string path, const string name );
+ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
+                             const string path, const string name );
 
 
-#endif // _APT_SIGNS_HXX
+#endif // _SG_APT_SIGNS_HXX

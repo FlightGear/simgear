@@ -47,8 +47,8 @@ static int StrobePostDraw( ssgEntity *e ) {
 
 
 // Generate a directional light
-ssgLeaf *gen_directional_light( sgVec3 pt, sgVec3 dir, sgVec3 up, 
-                                const SGMaterial *mat ) {
+ssgLeaf *sgMakeDirectionalLight( sgVec3 pt, sgVec3 dir, sgVec3 up, 
+                                 const SGMaterial *mat ) {
 
     // calculate a vector perpendicular to dir and up
     sgVec3 perp;
@@ -575,13 +575,13 @@ static ssgLeaf *gen_normal_line( SGMaterialLib *matlib,
 #endif
 
 
-ssgBranch *gen_directional_lights( const point_list &nodes,
-                                   const point_list &normals,
-                                   const int_list &pnt_i,
-                                   const int_list &nml_i,
-                                   SGMaterialLib *matlib,
-                                   const string &material,
-                                   sgVec3 up )
+ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
+                                    const point_list &normals,
+                                    const int_list &pnt_i,
+                                    const int_list &nml_i,
+                                    SGMaterialLib *matlib,
+                                    const string &material,
+                                    sgVec3 up )
 {
     sgVec3 nup;
     sgNormalizeVec3( nup, up );

@@ -23,7 +23,7 @@
 #ifndef __SKYARCHIVE_HPP__
 #define __SKYARCHIVE_HPP__
 
-#pragma warning( disable : 4786 )
+// #pragma warning( disable : 4786 )
 
 #include "vec2f.hpp"
 #include "vec3f.hpp"

@@ -19,7 +19,7 @@
  * 
  * Implementation of a class that maintains the state and operation of a light.
  */
-#pragma warning( disable : 4786)
+// #pragma warning( disable : 4786)
 
 #include "SkyLight.hpp"
 #include "SkyMaterial.hpp"

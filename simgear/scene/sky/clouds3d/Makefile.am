@@ -1,4 +1,4 @@
-includedir = @includedir@/sky
+includedir = @includedir@/sky/clouds3d
 
 lib_LIBRARIES = libsgclouds3d.a
 

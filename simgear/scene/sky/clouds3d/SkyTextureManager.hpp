@@ -22,7 +22,7 @@
 #ifndef SKYTEXTUREMANAGER_HPP
 #define SKYTEXTUREMANAGER_HPP
 
-#pragma warning( disable : 4786)
+// #pragma warning( disable : 4786)
 
 #include "SkySingleton.hpp"
 #include "SkyTexture.hpp"

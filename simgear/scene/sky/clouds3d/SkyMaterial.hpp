@@ -23,7 +23,7 @@
 #ifndef __SKYMATERIAL_HPP__
 #define __SKYMATERIAL_HPP__
 
-#pragma warning( disable : 4786)
+// #pragma warning( disable : 4786)
 
 #include "vec4f.hpp"
 #include "SkyUtil.hpp"

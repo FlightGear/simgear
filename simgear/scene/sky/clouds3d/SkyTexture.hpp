@@ -23,7 +23,7 @@
 #ifndef __SKYTEXTURE_HPP__
 #define __SKYTEXTURE_HPP__
 
-#pragma warning( disable : 4786 )
+// #pragma warning( disable : 4786 )
 
 #include <GL/glut.h>
 

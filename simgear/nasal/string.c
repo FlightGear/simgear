@@ -213,13 +213,13 @@ static int tonum(unsigned char* s, int len, double* result)
 
 // Very simple positive (!) integer print routine.  Puts the result in
 // s and returns the number of characters written.  Does not null
-// terminate the result.
+// terminate the result.  Presumes at least a 32 bit integer, and
+// cannot print integers larger than 9999999999.
 static int decprint(int val, unsigned char* s)
 {
     int p=1, i=0;
     if(val == 0) { *s = '0'; return 1; }
-    while(p <= val) p *= 10;
-    p /= 10;
+    while(p < 1000000000 && p*10 < val) p *= 10;
     while(p > 0) {
         int count = 0;
         while(val >= p) { val -= p; count++; }

@@ -329,7 +329,7 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 	random drand48 setitimer getitimer signal GetLocalTime rint getrusage )
 
-AM_CONFIG_HEADER([simgear/simgear_config.h])
+AM_CONFIG_HEADER(simgear/simgear_config.h)
 
 AC_CONFIG_FILES([ \
 	Makefile \

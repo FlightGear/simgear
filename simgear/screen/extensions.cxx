@@ -113,7 +113,11 @@ void *SGGetGLProcAddress(const char *func) {
     if (libHandle != NULL) {
         fptr = dlsym(libHandle, func);
 
+#if defined (__FreeBSD__)
+        const char *error = dlerror();
+#else
         char *error = dlerror();
+#endif
         if (error)
             SG_LOG(SG_GENERAL, SG_INFO, error);
     }

@@ -21,14 +21,12 @@
 // #include <stdio.h>
 #include <math.h>
 
-#if defined (__APPLE__) 
+#if defined (__APPLE__) || defined (__FreeBSD__)
 // any C++ header file undefines isinf and isnan
 // so this should be included before <iostream>
 inline int (isinf)(double r) { return isinf(r); }
 inline int (isnan)(double r) { return isnan(r); } 
 #endif
-
-// #include STL_IOSTREAM
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -633,7 +631,6 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
 
     return true;
 }
-
 
 // reposition the cloud layer at the specified origin and orientation
 // lon specifies a rotation about the Z axis

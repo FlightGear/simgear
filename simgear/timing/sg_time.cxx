@@ -64,13 +64,13 @@
 
 SGTime::SGTime( const string& root )
 {
-    if (cur_time_params) {
+    /* if (cur_time_params) {
 	FG_LOG( FG_GENERAL, FG_ALERT, 
 		"Error: only one instance of SGTime allowed" );
 	exit(-1);
-    }
+    } */
 
-    cur_time_params = this;
+    // cur_time_params = this;
 
     FGPath zone( root );
     zone.append( "Timezone" );
@@ -475,4 +475,4 @@ char* SGTime::format_time( const struct tm* p, char* buf )
 }
 
 
-SGTime* SGTime::cur_time_params = 0;
+// SGTime* SGTime::cur_time_params = 0;

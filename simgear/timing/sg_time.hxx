@@ -131,7 +131,7 @@ public:
     void utc_gst(); 
     double sidereal_precise (double lng);
     double sidereal_course(double lng); 
-    static SGTime *cur_time_params;
+    // static SGTime *cur_time_params;
 
     // Some other stuff which were changed to SGTime members on
     // questionable grounds -:)

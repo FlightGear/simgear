@@ -26,6 +26,9 @@
 
 #include "stars.hxx"
 
+#ifdef _MSC_VER
+  FG_USING_STD(getline);
+#endif
 
 // Constructor
 FGStars::FGStars() {

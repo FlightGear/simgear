@@ -27,7 +27,7 @@
 #endif
 
 #include <plib/ssg.h>
-
+#include <simgear/constants.h>
 
 // return a sphere object as an ssgBranch
 ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
@@ -61,8 +61,8 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 	// accept value as given to us in
     }
 
-    drho = M_PI / (float) stacks;
-    dtheta = 2.0 * M_PI / (float) slices;
+    drho = FG_PI / (float) stacks;
+    dtheta = 2.0 * FG_PI / (float) slices;
 
     /* texturing: s goes from 0.0/0.25/0.5/0.75/1.0 at +y/+x/-y/-x/+y
        axis t goes from -1.0/+1.0 at z = -radius/+radius (linear along

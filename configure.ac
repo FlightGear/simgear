@@ -184,20 +184,6 @@ AC_SEARCH_LIBS(cos, m)
 
 base_LIBS="$LIBS"
 
-dnl check for glut location
-AC_CHECK_HEADER(GL/glut.h)
-if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
-    AC_DEFINE([GLUT_H], <GL/glut.h>, [Define as glut.h include location])
-else
-    AC_CHECK_HEADER(GLUT/glut.h)
-    if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
-        AC_DEFINE([GLUT_H], <GLUT/glut.h>, [Define as glut.h include location])
-    else
-        echo "Neither GL/glut.h nor GLUT/glut.h found.  Cannot continue"
-        exit
-    fi
-fi
-
 dnl check for OpenGL related libraries
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
@@ -207,7 +193,7 @@ case "${host}" in
     AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
     AC_DEFINE([NOMINMAX], 1, [Define for Win32 platforms])
 
-    LIBS="$LIBS -lglut32 -lglu32 -lopengl32"
+    LIBS="$LIBS -lglu32 -lopengl32"
     LIBS="$LIBS -luser32 -lgdi32 -lwinmm"
 
     dnl add -lwsock32 for mingwin
@@ -223,7 +209,7 @@ case "${host}" in
 *-apple-darwin*)
     dnl Mac OS X
 
-    LIBS="$LIBS -framework GLUT -framework OpenGL -framework Carbon -lobjc"
+    LIBS="$LIBS -framework OpenGL -framework Carbon -lobjc"
     ;;
 
 *)
@@ -253,7 +239,6 @@ case "${host}" in
     fi
 
     AC_SEARCH_LIBS(gluLookAt, [ GLU MesaGLU ])
-    AC_SEARCH_LIBS(glutGetModifiers, [ glut freeglut ])
     ;;
 
 esac
@@ -452,13 +437,6 @@ fi
 
 echo -n "Automake version: "
 automake --version | head -1
-
-if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
-   echo "With GL/glut.h"
-fi
-if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
-   echo "With GLUT/glut.h"
-fi
 
 if test "x$with_jpeg_factory" = "xyes"; then
    echo "With JPEG Factory support"

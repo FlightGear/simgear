@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #include "screen-dump.hxx"
 

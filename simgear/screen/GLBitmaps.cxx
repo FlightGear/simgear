@@ -11,7 +11,7 @@
 #include <limits.h>
 #include <string.h>		// memcpy()
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #include "GLBitmaps.h"
 

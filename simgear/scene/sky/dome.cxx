@@ -33,7 +33,7 @@
 
 #include <math.h>
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #include <plib/sg.h>
 

@@ -7,7 +7,10 @@
 #endif
 
 #include "xgl.h"
+
+#ifdef USING_GLUT
 #include GLUT_H
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -2729,6 +2732,7 @@ void xglViewport ( GLint x, GLint y, GLsizei width, GLsizei height )
     glViewport ( x, y, width, height ) ;
 }
 
+#ifdef USING_GLUT
 void xglutAddMenuEntry ( char* label, int value )
 {
   if ( xglTraceIsEnabled("glutAddMenuEntry") )
@@ -2864,6 +2868,7 @@ void xglutSwapBuffers ()
   if ( xglExecuteIsEnabled("glutSwapBuffers") )
     glutSwapBuffers () ;
 }
+#endif
 
 GLboolean xglAreTexturesResidentEXT ( GLsizei n, GLuint* textures, GLboolean* residences )
 {

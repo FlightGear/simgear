@@ -150,6 +150,21 @@ AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a
 
 AC_CHECK_LIB(socket, socket)
 
+dnl check for glut location
+AC_CHECK_HEADER(GL/glut.h)
+if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
+    AC_DEFINE([GLUT_H], "GL/glut.h", [Define as glut.h include location])
+else
+    AC_CHECK_HEADER(GLUT/glut.h)
+    if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
+        AC_DEFINE([GLUT_H], "GLUT/glut.h", [Define as glut.h include location])
+    else
+        echo "Neither GL/glut.h nor GLUT/glut.h found.  Cannot continue"
+        exit
+    fi
+fi
+
+dnl check for OpenGL related libraries
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
@@ -220,20 +235,6 @@ case "${host}" in
     ;;
 
 esac
-
-dnl check for glut location
-AC_CHECK_HEADER(GL/glut.h)
-if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
-    AC_DEFINE([GLUT_H], "GL/glut.h", [Define as glut.h include location])
-else
-    AC_CHECK_HEADER(GLUT/glut.h)
-    if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
-        AC_DEFINE([GLUT_H], "GLUT/glut.h", [Define as glut.h include location])
-    else
-        echo "Neither GL/glut.h nor GLUT/glut.h found.  Cannot continue"
-        exit
-    fi
-fi
 
 opengl_LIBS="$LIBS"
 LIBS="$base_LIBS"
@@ -333,6 +334,8 @@ failure if you believe you have the correct metakit version.
 Also, look up this issue in the FlightGear FAQ.])],
   AC_MSG_RESULT(yes)
 )
+
+LIBS="$saved_LIBS"
 
 AC_LANG_POP
 

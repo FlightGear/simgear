@@ -42,10 +42,6 @@ inline int (isinf)(double r) { return isinf(r); }
 inline int (isnan)(double r) { return isnan(r); } 
 #endif
 
-#if defined(__MINGW32__)
-#define isnan(x) _isnan(x)
-#endif
-
 #if defined (__FreeBSD__)
 #  if __FreeBSD_version < 500000
      extern "C" {
@@ -61,6 +57,9 @@ inline int (isnan)(double r) { return isnan(r); }
 
 #include "soundmgr_openal.hxx"
 
+#if defined(__MINGW32__)
+#define isnan(x) _isnan(x)
+#endif
 
 //
 // Sound Manager

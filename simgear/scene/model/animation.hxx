@@ -99,8 +99,15 @@ public:
 class SGRangeAnimation : public SGAnimation
 {
 public:
-  SGRangeAnimation (SGPropertyNode_ptr props);
+  SGRangeAnimation (SGPropertyNode *prop_root,
+                    SGPropertyNode_ptr props);
   virtual ~SGRangeAnimation ();
+  virtual void update();
+private:
+  SGPropertyNode_ptr _min_prop;
+  SGPropertyNode_ptr _max_prop;
+  float _min;
+  float _max;
 };
 
 

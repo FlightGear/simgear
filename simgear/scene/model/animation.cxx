@@ -97,7 +97,7 @@ set_scale (sgMat4 &matrix, double x, double y, double z)
 static void
 change_alpha( ssgBase *_branch, float _blend )
 {
-  unsigned int i;
+  int i;
 
   for (i = 0; i < ((ssgBranch *)_branch)->getNumKids(); i++)
     change_alpha( ((ssgBranch *)_branch)->getKid(i), _blend );
@@ -214,17 +214,53 @@ SGNullAnimation::~SGNullAnimation ()
 // Implementation of SGRangeAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SGRangeAnimation::SGRangeAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgRangeSelector)
+SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
+                                    SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgRangeSelector),
+    _min(0.0), _max(0.0)
 {
-    float ranges[] = { props->getFloatValue("min-m", 0),
-                       props->getFloatValue("max-m", 5000) };
+    float ranges[2];
+
+    SGPropertyNode_ptr node = props->getChild( "min-property" );
+    if (node != 0) {
+       _min_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
+       ranges[0] = _min_prop->getFloatValue();
+    } else {
+       ranges[0] = _min = props->getFloatValue("min-m", 0);
+    }
+    node = props->getChild( "max-property" );
+    if (node != 0) {
+       _max_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
+       ranges[1] = _max_prop->getFloatValue();
+    } else {
+       ranges[1] = _max = props->getFloatValue("max-m", 0);
+    }
     ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
-                       
 }
 
 SGRangeAnimation::~SGRangeAnimation ()
 {
+}
+
+void
+SGRangeAnimation::update()
+{
+    float ranges[2];
+    bool upd = false;
+    if (_min_prop != 0) {
+       ranges[0] = _min_prop->getFloatValue();
+       upd = true;
+    } else {
+       ranges[0] = _min;
+    }
+    if (_max_prop != 0) {
+       ranges[1] = _max_prop->getFloatValue();
+       upd = true;
+    } else {
+       ranges[1] = _max;
+    }
+    if (upd)
+       ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
 }
 
 

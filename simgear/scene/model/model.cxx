@@ -107,7 +107,7 @@ sgMakeAnimation( ssgBranch * model,
   if (!strcmp("none", type)) {
     animation = new SGNullAnimation(node);
   } else if (!strcmp("range", type)) {
-    animation = new SGRangeAnimation(node);
+    animation = new SGRangeAnimation(prop_root, node);
   } else if (!strcmp("billboard", type)) {
     animation = new SGBillboardAnimation(node);
   } else if (!strcmp("select", type)) {

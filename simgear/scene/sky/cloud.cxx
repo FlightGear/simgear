@@ -182,36 +182,34 @@ SGCloudLayer::rebuild()
     sgVec2 tc;
 
     const float layer_scale = layer_span / scale;
-    const float mpi = SG_PI/2;
+    const float mpi = SG_PI/4;
 
     for (int i = -2; i < 2; i++)
     {
-        int row = i + 2;
-
-        if ( layer[row] != NULL ) {
-            layer_transform->removeKid(layer[row]); // automatic delete
+        if ( layer[i+2] != NULL ) {
+            layer_transform->removeKid(layer[i+2]); // automatic delete
         }
 
-        vl[row] = new ssgVertexArray( 10 );
-        cl[row] = new ssgColourArray( 10 );
-        tl[row] = new ssgTexCoordArray( 10 );
+        vl[i+2] = new ssgVertexArray( 10 );
+        cl[i+2] = new ssgColourArray( 10 );
+        tl[i+2] = new ssgTexCoordArray( 10 );
 
 
         sgSetVec3( vertex, layer_span*i/2, -layer_span,
-                           -250 * (cos((i+2)*mpi) + 3) );
+                           500 * (sin((i+2)*mpi) - 2) );
 
         sgSetVec2( tc, base[0] + layer_scale * (i+2)/4, base[1] );
 
         sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == -2) ? 0.0f : 0.15f );
 
-        cl[row]->add( color );
-        vl[row]->add( vertex );
-        tl[row]->add( tc );
+        cl[i+2]->add( color );
+        vl[i+2]->add( vertex );
+        tl[i+2]->add( tc );
 
         for (int j = -2; j < 2; j++)
         {
             sgSetVec3( vertex, layer_span*(i+1)/2, layer_span*j/2,
-                               -250 * (cos((i+3)*mpi) + cos((j+2)*mpi) + 2) );
+                               500 * (sin((i+3)*mpi) + sin((j+2)*mpi) - 2) );
 
             sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
                            base[1] + layer_scale * (j+2)/4 );
@@ -220,13 +218,13 @@ SGCloudLayer::rebuild()
                               ((j == -2) || (i == 1)) ?  
                               ((j == -2) && (i == 1)) ? 0.0f : 0.15f : 1.0f );
 
-            cl[row]->add( color );
-            vl[row]->add( vertex );
-            tl[row]->add( tc );
+            cl[i+2]->add( color );
+            vl[i+2]->add( vertex );
+            tl[i+2]->add( tc );
 
 
             sgSetVec3( vertex, layer_span*i/2, layer_span*(j+1)/2,
-                               -250 * (cos((i+2)*mpi) + cos((j+3)*mpi) + 2) );
+                               500 * (sin((i+2)*mpi) + sin((j+3)*mpi) - 2) );
 
             sgSetVec2( tc, base[0] + layer_scale * (i+2)/4,
                            base[1] + layer_scale * (j+3)/4 );
@@ -234,28 +232,28 @@ SGCloudLayer::rebuild()
             sgSetVec4( color, 1.0f, 1.0f, 1.0f,
                               ((j == 1) || (i == -2)) ?
                               ((j == 1) && (i == -2)) ? 0.0f : 0.15f : 1.0f );
-            cl[row]->add( color );
-            vl[row]->add( vertex );
-            tl[row]->add( tc );
+            cl[i+2]->add( color );
+            vl[i+2]->add( vertex );
+            tl[i+2]->add( tc );
         }
 
         sgSetVec3( vertex, layer_span*(i+1)/2, layer_span, 
-                           -250 * (cos((i+3)*mpi) + 3) );
+                           500 * (sin((i+3)*mpi) - 2) );
 
         sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
                        base[1] + layer_scale );
 
         sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 1) ? 0.0f : 0.15f );
 
-        cl[row]->add( color );
-        vl[row]->add( vertex );
-        tl[row]->add( tc );
+        cl[i+2]->add( color );
+        vl[i+2]->add( vertex );
+        tl[i+2]->add( tc );
 
-        layer[row] = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl[row], NULL, tl[row], cl[row] );
-        layer_transform->addKid( layer[row] );
+        layer[i+2] = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl[i+2], NULL, tl[i+2], cl[i+2] );
+        layer_transform->addKid( layer[i+2] );
 
         if ( layer_states[layer_coverage] != NULL ) {
-            layer[row]->setState( layer_states[layer_coverage] );
+            layer[i+2]->setState( layer_states[layer_coverage] );
         }
     }
 
@@ -269,9 +267,9 @@ SGCloudLayer::rebuild()
 bool SGCloudLayer::repaint( sgVec3 fog_color ) {
     float *color;
 
-    for ( int row = 0; row < 4; row++ )
-        for ( int i = 0; i < 10; ++i ) {
-            color = cl[row]->get( i );
+    for ( int i = 0; i < 4; i++ )
+        for ( int j = 0; j < 10; ++j ) {
+            color = cl[i]->get( j );
             sgCopyVec3( color, fog_color );
         }
 
@@ -391,23 +389,21 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
         for (int i = -2; i < 2; i++)
         {
-            int row = i + 2;
-
-            tc = tl[row]->get( 0 );
+            tc = tl[i+2]->get( 0 );
             sgSetVec2( tc, base[0] + layer_scale * (i+2)/4, base[1] );
             
             for (int j = -2; j < 2; j++)
             {
-                tc = tl[row]->get( (j+2)*2+1 );
+                tc = tl[i+2]->get( (j+2)*2+1 );
                 sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
                                base[1] + layer_scale * (j+2)/4 );
  
-        	tc = tl[row]->get( (j+3)*2 );
+        	tc = tl[i+2]->get( (j+3)*2 );
                 sgSetVec2( tc, base[0] + layer_scale * (i+2)/4,
                                base[1] + layer_scale * (j+3)/4 );
             }
  
-            tc = tl[row]->get( 9 );
+            tc = tl[i+2]->get( 9 );
             sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
                            base[1] + layer_scale );
         }

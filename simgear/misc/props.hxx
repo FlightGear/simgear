@@ -1131,13 +1131,15 @@ void readProperties (const string &file, SGPropertyNode * start_node);
 /**
  * Write properties to an XML output stream.
  */
-void writeProperties (ostream &output, const SGPropertyNode * start_node);
+void writeProperties (ostream &output, const SGPropertyNode * start_node,
+		      bool write_all = false);
 
 
 /**
  * Write properties to an XML file.
  */
-void writeProperties (const string &file, const SGPropertyNode * start_node);
+void writeProperties (const string &file, const SGPropertyNode * start_node,
+		      bool write_all = false);
 
 
 /**

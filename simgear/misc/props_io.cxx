@@ -428,12 +428,13 @@ isArchivable (const SGPropertyNode * node)
 
 
 static bool
-writeNode (ostream &output, const SGPropertyNode * node, int indent)
+writeNode (ostream &output, const SGPropertyNode * node,
+	   bool write_all, int indent)
 {
 				// Don't write the node or any of
 				// its descendants unless it is
 				// allowed to be archived.
-  if (!isArchivable(node))
+  if (!write_all && !isArchivable(node))
     return true;		// Everything's OK, but we won't write.
 
   const string &name = node->getName();
@@ -457,15 +458,14 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
     }
   }
 
-				// If there are children, write them
-				// next.
+				// If there are children, write them next.
   if (nChildren > 0 || node->isAlias()) {
     doIndent(output, indent);
     output << '<' << name;
     writeAtts(output, node);
     output << '>' << endl;
     for (int i = 0; i < nChildren; i++)
-      writeNode(output, node->getChild(i), indent + INDENT_STEP);
+      writeNode(output, node->getChild(i), write_all, indent + INDENT_STEP);
     doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }
@@ -475,7 +475,8 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 
 
 void
-writeProperties (ostream &output, const SGPropertyNode * start_node)
+writeProperties (ostream &output, const SGPropertyNode * start_node,
+		 bool write_all)
 {
   int nChildren = start_node->nChildren();
 
@@ -483,7 +484,7 @@ writeProperties (ostream &output, const SGPropertyNode * start_node)
   output << "<PropertyList>" << endl;
 
   for (int i = 0; i < nChildren; i++) {
-    writeNode(output, start_node->getChild(i), INDENT_STEP);
+    writeNode(output, start_node->getChild(i), write_all, INDENT_STEP);
   }
 
   output << "</PropertyList>" << endl;
@@ -491,11 +492,12 @@ writeProperties (ostream &output, const SGPropertyNode * start_node)
 
 
 void
-writeProperties (const string &file, const SGPropertyNode * start_node)
+writeProperties (const string &file, const SGPropertyNode * start_node,
+		 bool write_all)
 {
   ofstream output(file.c_str());
   if (output.good()) {
-    writeProperties(output, start_node);
+    writeProperties(output, start_node, write_all);
   } else {
     throw sg_io_exception("Cannot open file", sg_location(file));
   }

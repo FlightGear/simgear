@@ -1081,7 +1081,7 @@ private:
 
   class hash_table;
 
-  const char * _name;
+  char * _name;
   int _index;
   SGPropertyNode * _parent;
   vector<SGPropertyNode *> _children;
@@ -1107,7 +1107,7 @@ private:
     long long_val;
     float float_val;
     double double_val;
-    const char * string_val;
+    char * string_val;
   } _local_val;
 
 
@@ -1130,7 +1130,7 @@ private:
       virtual SGPropertyNode * get_value () { return _value; }
       virtual void set_value (SGPropertyNode * value);
     private:
-      const char * _key;
+      char * _key;
       SGPropertyNode * _value;
     };
 
@@ -1147,6 +1147,8 @@ private:
       int _length;
       entry ** _entries;
     };
+
+    friend class bucket;
 
     hash_table ();
     virtual ~hash_table ();

@@ -269,3 +269,4 @@ SKYRESULT SkyTextureState::SetTextureParameter(unsigned int iTextureUnit,
   
   return SKYRESULT_OK;
 }
+

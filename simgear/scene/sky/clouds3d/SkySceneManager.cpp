@@ -293,7 +293,8 @@ SkyMaterial* SkySceneManager::GetMaterial(int iMaterialID)
  * @todo <WRITE EXTENDED SkySceneManager::ActivateMaterial FUNCTION DOCUMENTATION>
  */ 
 SKYRESULT SkySceneManager::ActivateMaterial(int iMaterialID)
-{cout  << "Activating material\n"; char mm; cin >> mm;
+{
+//   cout  << "Activating material\n"; char mm; cin >> mm;
   MaterialIterator mi = _materials.find(iMaterialID);
   if (_materials.end() == mi)
   {
@@ -478,7 +479,8 @@ SKYRESULT SkySceneManager::RebuildCloudBVTree()
  * @todo <WRITE EXTENDED SkySceneManager::ShadeClouds FUNCTION DOCUMENTATION>
  */ 
 SKYRESULT SkySceneManager::ShadeClouds()
-{cout  <<  "SkySceneManager::ShadeClouds()\n";
+{
+//   cout  <<  "SkySceneManager::ShadeClouds()\n";
   int i=0;
   
   for (CloudInstanceIterator cii = _cloudInstances.begin(); cii != _cloudInstances.end(); ++cii)
@@ -489,7 +491,7 @@ SKYRESULT SkySceneManager::ShadeClouds()
       if (SkyLight::SKY_LIGHT_DIRECTIONAL == li->second->GetType())
       {
         (*cii)->GetCloud()->Illuminate(li->second, *cii, li == _lights.begin());
-        printf("Shading Cloud %d of %d with light %d \n", i++, _cloudInstances.size(), *li );
+//         printf("Shading Cloud %d of %d with light %d \n", i++, _cloudInstances.size(), *li );
       }
     }
   }
@@ -750,7 +752,8 @@ SKYRESULT SkySceneManager::_ResolveVisibility(const Camera &cam)
 
   // opaque instances
   for (ii = _instances.begin(); ii != _instances.end(); ++ii)
-  {cout <<  "Opague instance\n"; char zz; cin >> zz;
+  {
+//     cout <<  "Opague instance\n"; char zz; cin >> zz;
     (*ii)->ViewFrustumCull(cam);  // First VFC then check if culled, some instances may
     // manually set the culled flag, instead of using VFC  
     if (!(*ii)->IsCulled())
@@ -765,7 +768,8 @@ SKYRESULT SkySceneManager::_ResolveVisibility(const Camera &cam)
 
   // transparent instances
   for (ii = _transparentInstances.begin(); ii != _transparentInstances.end(); ++ii)
-  {cout << "Transparent instance\n"; char tt; cin >> tt;
+  {
+//     cout << "Transparent instance\n"; char tt; cin >> tt;
     (*ii)->ViewFrustumCull(cam);  // First VFC then check if culled, some instances may
     // manually set the culled flag, instead of using VFC  
     if (!(*ii)->IsCulled())

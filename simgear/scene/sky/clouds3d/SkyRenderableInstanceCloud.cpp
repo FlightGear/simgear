@@ -68,7 +68,7 @@ SkyRenderableInstanceCloud::SkyRenderableInstanceCloud(SkyCloud *pCloud,
   _iCulledCount(0)
 {
   _Initialize();
-  cout << "Cloud Instance created" << endl;
+//   cout << "Cloud Instance created" << endl;
 }
 
 //------------------------------------------------------------------------------

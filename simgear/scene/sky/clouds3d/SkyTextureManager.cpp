@@ -285,7 +285,7 @@ SKYRESULT SkyTextureManager::Clone2DTexture(const string &filename,
   if (!pImageData)
   {
     char buffer[256];
-    sprintf(buffer, "SkyTextureManager::Clone2DTexture(): Could not load image. %s.\n", filename);
+    sprintf(buffer, "SkyTextureManager::Clone2DTexture(): Could not load image. %s.\n", filename.c_str());
     FAIL_RETURN_MSG(SKYRESULT_OK, buffer);
   }
 

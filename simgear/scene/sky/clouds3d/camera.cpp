@@ -21,7 +21,7 @@
 // $Id$
 //============================================================================
 #include "camera.hpp"
-#include <iostream.h>
+#include <iostream>
 
 //----------------------------------------------------------------------------
 // CONSTRUCTOR: defines a default camera system defined as (45 DEG FOV)

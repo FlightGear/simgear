@@ -339,9 +339,8 @@ int SGSocket::readline( char *buf, int length ) {
 	    // cout << "sock_stream\n";
 	    if ( msgsock == INVALID_SOCKET ) {
 		// cout << "msgsock == invalid\n";
-		msgsock = accept(sock, 0, 0);
-		closesocket(sock);
-		sock = msgsock;
+		msgsock = sock;
+		sock = accept(msgsock, 0, 0);
 	    } else {
 		// cout << "ready to read\n";
 		char *buf_ptr = save_buf + save_len;
@@ -361,8 +360,7 @@ int SGSocket::readline( char *buf, int length ) {
 		if ( result == 0 && save_len == 0 && first_read == true ) {
 		    SG_LOG( SG_IO, SG_ALERT, 
 			    "Connection closed by foreign host." );
-		    closesocket(sock);
-		    open( get_dir() );
+                    close();
 		}
 	    }
 	} else {
@@ -494,6 +492,10 @@ bool SGSocket::close() {
     }
 
     closesocket( sock );
+    if ( sock_style == SOCK_STREAM && msgsock != INVALID_SOCKET ) {
+	sock = msgsock;
+	msgsock = INVALID_SOCKET;
+    }
     return true;
 }
 

@@ -23,5 +23,4 @@ libsgmisc_a_SOURCES = \
 	texcoord.cxx \
 	zfstream.cxx
 
-# INCLUDES += -I$(top_builddir)/src $(ZLIB_INCL)
-INCLUDES += $(ZLIB_INCL)
+INCLUDES += -I$(top_builddir) $(ZLIB_INCL)

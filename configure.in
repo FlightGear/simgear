@@ -223,15 +223,15 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 	random setitimer getitimer signal GetLocalTime rint getrusage )
 
-AM_CONFIG_HEADER(simgear/include/config.h)
+AM_CONFIG_HEADER(simgear/config.h)
 
 AC_OUTPUT( \
 	Makefile \
 	simgear/Makefile \
-	simgear/include/Makefile \
-	simgear/include/version.h \
+	simgear/version.h \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
+	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/misc/Makefile \
 	simgear/screen/Makefile \

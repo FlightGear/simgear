@@ -14,4 +14,4 @@ testserial_LDADD = \
 	$(top_builddir)/simgear/serial/libsgserial.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a
 
-# INCLUDES += -I$(top_builddir)/simgear
+INCLUDES += -I$(top_builddir)

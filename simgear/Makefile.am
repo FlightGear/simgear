@@ -13,10 +13,14 @@ endif
 METAR_DIRS =
 # METAR_DIRS = metar
 
+EXTRA_DIST = version.h.in
+
+include_HEADERS = compiler.h constants.h fg_traits.hxx fg_zlib.h version.h
+
 SUBDIRS = \
-	include \
 	bucket \
 	debug \
+	magvar \
 	math \
 	$(METAR_DIRS) \
 	misc \

@@ -1,0 +1,53 @@
+/* 2/14/00 fixed help message- dip angle (down positive), variation (E positive) */
+
+#include	<stdio.h>
+#include	<stdlib.h>
+#include	<math.h>
+
+#include "magvar.hxx"
+
+
+int main(int argc, char *argv[])
+{
+  /* args are double lat_deg, double lon_deg, double h, 
+                   int mm, int dd, int yy,int model */
+  /* output N, E, down components of B (nTesla)
+     dip angle (down positive), variation (E positive) */
+double lat_deg,lon_deg,h,var;
+int model,yy,mm,dd;
+double field[6];
+
+if ((argc != 8) && (argc !=7)) {
+fprintf(stdout,"Usage: mag lat_deg lon_deg h mm dd yy [model]\n");
+fprintf(stdout,"N latitudes, E longitudes positive degrees, h in km, mm dd yy is date\n");
+fprintf(stdout,"model 1,2,3,4,5,6,7 <=> IGRF90,WMM85,WMM90,WMM95,IGRF95,WMM2000,IGRF2000\n");
+fprintf(stdout,"Default model is IGRF2000, valid 1/1/00 - 12/31/05\n");
+fprintf(stdout,"Output Bx (N) By (E) Bz (down) (in nTesla) dip (degrees down positive)\n");
+fprintf(stdout,"variation (degrees E positive)\n");
+exit(1);
+}
+
+lat_deg=strtod(argv[1],NULL);
+lon_deg=strtod(argv[2],NULL);
+h=      strtod(argv[3],NULL);
+mm=     (int)strtol(argv[4],NULL,10);
+dd=     (int)strtol(argv[5],NULL,10);
+yy=     (int)strtol(argv[6],NULL,10);
+if (argc == 8){
+  model=  (int)strtol(argv[7],NULL,10);
+}else{
+  model=7;
+}
+
+
+var = SGMagVar( deg_to_rad(lat_deg), deg_to_rad(lon_deg), h,
+                yymmdd_to_julian_days(yy,mm,dd), field );
+
+fprintf(stdout,"%6.0lf %6.0lf %6.0lf %4.2lf %4.2lf \n",
+  field[3],field[4],field[5],
+  rad_to_deg(atan(field[5]/pow(field[3]*field[3]+field[4]*field[4],0.5))),var);
+exit(0);
+}
+  
+  
+

@@ -127,27 +127,28 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   mipmap = props->getBoolValue("mipmap", true);
   light_coverage = props->getDoubleValue("light-coverage", 0.0);
 
-  ambient[0] = props->getDoubleValue("ambient/r", 0.0);
-  ambient[1] = props->getDoubleValue("ambient/g", 0.0);
-  ambient[2] = props->getDoubleValue("ambient/b", 0.0);
-  ambient[3] = props->getDoubleValue("ambient/a", 0.0);
+  // Taken from default values as used in ac3d
+  ambient[0] = props->getDoubleValue("ambient/r", 0.2);
+  ambient[1] = props->getDoubleValue("ambient/g", 0.2);
+  ambient[2] = props->getDoubleValue("ambient/b", 0.2);
+  ambient[3] = props->getDoubleValue("ambient/a", 1.0);
 
-  diffuse[0] = props->getDoubleValue("diffuse/r", 0.0);
-  diffuse[1] = props->getDoubleValue("diffuse/g", 0.0);
-  diffuse[2] = props->getDoubleValue("diffuse/b", 0.0);
-  diffuse[3] = props->getDoubleValue("diffuse/a", 0.0);
+  diffuse[0] = props->getDoubleValue("diffuse/r", 1.0);
+  diffuse[1] = props->getDoubleValue("diffuse/g", 1.0);
+  diffuse[2] = props->getDoubleValue("diffuse/b", 1.0);
+  diffuse[3] = props->getDoubleValue("diffuse/a", 1.0);
 
-  specular[0] = props->getDoubleValue("specular/r", 0.0);
-  specular[1] = props->getDoubleValue("specular/g", 0.0);
-  specular[2] = props->getDoubleValue("specular/b", 0.0);
-  specular[3] = props->getDoubleValue("specular/a", 0.0);
+  specular[0] = props->getDoubleValue("specular/r", 0.5);
+  specular[1] = props->getDoubleValue("specular/g", 0.5);
+  specular[2] = props->getDoubleValue("specular/b", 0.5);
+  specular[3] = props->getDoubleValue("specular/a", 1.0);
 
   emission[0] = props->getDoubleValue("emissive/r", 0.0);
   emission[1] = props->getDoubleValue("emissive/g", 0.0);
   emission[2] = props->getDoubleValue("emissive/b", 0.0);
-  emission[3] = props->getDoubleValue("emissive/a", 0.0);
+  emission[3] = props->getDoubleValue("emissive/a", 1.0);
 
-  shininess = props->getDoubleValue("shininess", 0.0);
+  shininess = props->getDoubleValue("shininess", 1.0);
 
   vector<SGPropertyNode_ptr> object_group_nodes =
     ((SGPropertyNode *)props)->getChildren("object-group");
@@ -174,9 +175,12 @@ SGMaterial::init ()
     light_coverage = 0.0;
     texture_loaded = false;
     refcount = 0;
-    shininess = 0.0;
+    shininess = 1.0;
     for (int i = 0; i < 4; i++) {
-        ambient[i] = diffuse[i] = specular[i] = emission[i] = 0.0;
+        ambient[i]  = (i < 3) ? 0.2 : 1.0;
+        specular[i] = (i < 3) ? 0.5 : 1.0;
+        diffuse[i]  = 1.0;
+        emission[i] = (i < 3) ? 0.0 : 1.0;
     }
 }
 
@@ -218,11 +222,6 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 	texture_loaded = false;
     }
     state->enable( GL_COLOR_MATERIAL );
-#if 0
-    state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-#else
     state->setMaterial ( GL_AMBIENT,
                             ambient[0], ambient[1],
                             ambient[2], ambient[3] ) ;
@@ -236,7 +235,6 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
                             emission[0], emission[1],
                             emission[2], emission[3] ) ;
     state->setShininess ( shininess );
-#endif
 }
 
 

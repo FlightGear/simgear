@@ -23,7 +23,7 @@
 
 #include <simgear/compiler.h>
 
-#if ! defined( _MSC_VER )
+#if !defined(_MSC_VER)
 #  include <sys/time.h>		// select()
 #  include <sys/types.h>	// socket(), bind(), select(), accept()
 #  include <sys/socket.h>	// socket(), bind(), listen(), accept()
@@ -31,33 +31,28 @@
 #  include <netdb.h>		// gethostbyname()
 #  include <unistd.h>		// select(), fsync()/fdatasync(), fcntl()
 #  include <fcntl.h>		// fcntl()
-#else
-#  include <sys/timeb.h>	// select()
-#  include <winsock2.h>		// socket(), bind(), listen(), accept(),
-				// struct sockaddr_in, gethostbyname()
-#  include <windows.h>
-#  include <io.h>
 #endif
 
 #if defined( sgi )
 #include <strings.h>
 #endif
 
-#include STL_STRING
-
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_socket.hxx"
 
-FG_USING_STD(string);
-
 
 SGSocket::SGSocket( const string& host, const string& port, 
 		    const string& style ) :
+    hostname(host),
+    port_str(port),
     save_len(0)
 {
-    hostname = host;
-    port_str = port;
+#if defined(_MSC_VER)
+    if (!wsock_init && !wsastartup()) {
+    	FG_LOG( FG_IO, FG_ALERT, "Winsock not available");
+    }
+#endif
 
     if ( style == "udp" ) {
 	sock_style = SOCK_DGRAM;
@@ -77,7 +72,7 @@ SGSocket::~SGSocket() {
 }
 
 
-int SGSocket::make_server_socket () {
+SGSocket::SocketType SGSocket::make_server_socket () {
     struct sockaddr_in name;
 
 #if defined( __CYGWIN__ ) || defined( __CYGWIN32__ ) || defined( sgi ) || defined( _MSC_VER )
@@ -88,10 +83,10 @@ int SGSocket::make_server_socket () {
      
     // Create the socket.
     sock = socket (PF_INET, sock_style, 0);
-    if (sock < 0) {
-	FG_LOG( FG_IO, FG_ALERT, 
-		"Error: socket() failed in make_server_socket()" );
-	return -1;
+    if (sock == INVALID_SOCKET) {
+        FG_LOG( FG_IO, FG_ALERT, 
+                "Error: socket() failed in make_server_socket()" );
+        return INVALID_SOCKET;
     }
      
     // Give the socket a name.
@@ -99,18 +94,18 @@ int SGSocket::make_server_socket () {
     name.sin_addr.s_addr = INADDR_ANY;
     name.sin_port = htons(port); // set port to zero to let system pick
     name.sin_addr.s_addr = htonl (INADDR_ANY);
-    if (bind (sock, (struct sockaddr *) &name, sizeof (name)) < 0) {
-	FG_LOG( FG_IO, FG_ALERT,
-		"Error: bind() failed in make_server_socket()" );
-	return -1;
+    if (bind (sock, (struct sockaddr *) &name, sizeof (name)) != 0) {
+	    FG_LOG( FG_IO, FG_ALERT,
+		    "Error: bind() failed in make_server_socket()" );
+        return INVALID_SOCKET;
     }
-     
+
     // Find the assigned port number
     length = sizeof(struct sockaddr_in);
     if ( getsockname(sock, (struct sockaddr *) &name, &length) ) {
 	FG_LOG( FG_IO, FG_ALERT,
 		"Error: getsockname() failed in make_server_socket()" );
-	return -1;
+        return INVALID_SOCKET;
     }
     port = ntohs(name.sin_port);
 
@@ -118,7 +113,7 @@ int SGSocket::make_server_socket () {
 }
 
 
-int SGSocket::make_client_socket () {
+SGSocket::SocketType SGSocket::make_client_socket () {
     struct sockaddr_in name;
     struct hostent *hp;
      
@@ -126,10 +121,10 @@ int SGSocket::make_client_socket () {
 
     // Create the socket.
     sock = socket (PF_INET, sock_style, 0);
-    if (sock < 0) {
-	FG_LOG( FG_IO, FG_ALERT, 
-		"Error: socket() failed in make_client_socket()" );
-	return -1;
+    if (sock == INVALID_SOCKET) {
+        FG_LOG( FG_IO, FG_ALERT, 
+                "Error: socket() failed in make_server_socket()" );
+        return INVALID_SOCKET;
     }
      
     // specify address family
@@ -148,20 +143,40 @@ int SGSocket::make_client_socket () {
     name.sin_port = htons(port);
 
     if ( connect(sock, (struct sockaddr *) &name, 
-		 sizeof(struct sockaddr_in)) < 0 )
+		 sizeof(struct sockaddr_in)) != 0 )
     {
-#ifdef _MSC_VER
-	_close(sock);
-#else
-	std::close(sock);
-#endif
+	closesocket(sock);
 	FG_LOG( FG_IO, FG_ALERT, 
 		"Error: connect() failed in make_client_socket()" );
-	return -1;
+	return INVALID_SOCKET;
     }
 
     return sock;
 }
+
+
+// Wrapper functions
+size_t readsocket( int fd, void *buf, size_t count ) {
+#if defined(_MSC_VER)
+    return ::recv( fd, buf, count, 0 );
+#else
+    return ::read( fd, buf, count );
+#endif
+}
+
+size_t writesocket( int fd, const void *buf, size_t count ) {
+#if defined(_MSC_VER)
+    return ::send( fd, buf, count, 0 );
+#else
+    return ::write( fd, buf, count );
+#endif
+}
+
+#if !defined(_MSC_VER)
+int closesocket( int fd ) {
+    return ::close( fd );
+}
+#endif
 
 
 // If specified as a server (in direction for now) open the master
@@ -183,11 +198,13 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	// call.  A port of "0" indicates that we want to let the os
 	// pick any available port.
 	sock = make_server_socket();
+	// TODO: check for error.
+
 	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
 
 	if ( sock_style == SOCK_DGRAM ) {
 	    // Non-blocking UDP
-	    fcntl( sock, F_SETFL, O_NONBLOCK );
+	    nonblock();
 	} else {
 	    // Blocking TCP
 	    // Specify the maximum length of the connection queue
@@ -198,10 +215,11 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	// this means client for now
 
 	sock = make_client_socket();
+    // TODO: check for error.
 
 	if ( sock_style == SOCK_DGRAM ) {
 	    // Non-blocking UDP
-	    fcntl( sock, F_SETFL, O_NONBLOCK );
+	    nonblock();
 	}
     } else {
 	FG_LOG( FG_IO, FG_ALERT, 
@@ -237,11 +255,7 @@ int SGSocket::read( char *buf, int length ) {
     select(32, &ready, 0, 0, &tv);
 
     if ( FD_ISSET(sock, &ready) ) {
-#ifdef _MSC_VER
-	result = _read( sock, buf, length );
-#else
-	result = std::read( sock, buf, length );
-#endif
+	result = readsocket( sock, buf, length );
 	if ( result != length ) {
 	    FG_LOG( FG_IO, FG_INFO, 
 		    "Warning: read() not enough bytes." );
@@ -266,18 +280,15 @@ int SGSocket::readline( char *buf, int length ) {
 
     // test for any input read on sock (returning immediately, even if
     // nothing)
-    select(32, &ready, 0, 0, &tv);
+    int rc = select(32, &ready, 0, 0, &tv);
+    // FG_LOG( FG_IO, FG_DEBUG, "select returned " << rc );
 
     if ( FD_ISSET(sock, &ready) ) {
 	// read a chunk, keep in the save buffer until we have the
 	// requested amount read
 
 	char *buf_ptr = save_buf + save_len;
-#ifdef _MSC_VER
-	result = _read( sock, buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );
-#else
-	result = std::read( sock, buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );
-#endif
+	result = readsocket( sock, buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );
 	save_len += result;
 	// cout << "current read = " << buf_ptr << endl;
 	// cout << "current save_buf = " << save_buf << endl;
@@ -317,11 +328,7 @@ int SGSocket::readline( char *buf, int length ) {
 int SGSocket::write( char *buf, int length ) {
     bool error_condition = false;
 
-#ifdef _MSC_VER
-    if ( _write(sock, buf, length) < 0 ) {
-#else
-    if ( std::write(sock, buf, length) < 0 ) {
-#endif
+    if ( writesocket(sock, buf, length) < 0 ) {
 	FG_LOG( FG_IO, FG_ALERT, "Error writing to socket: " << port );
 	error_condition = true;
     }
@@ -361,11 +368,7 @@ int SGSocket::write( char *buf, int length ) {
 	// std::read( msgsock, junk, SG_IO_MAX_MSG_SIZE );
 
 	// write the interesting data to the socket
-#ifdef _MSC_VER
-	if ( _write(msgsock, buf, length) < 0 ) {
-#else
-	if ( std::write(msgsock, buf, length) < 0 ) {
-#endif
+	if ( writesocket(msgsock, buf, length) == SOCKET_ERROR ) {
 	    FG_LOG( FG_IO, FG_ALERT, "Error writing to socket: " << port );
 	    error_condition = true;
 	} else {
@@ -398,18 +401,59 @@ bool SGSocket::close() {
 #if 0
     for ( int i = 0; i < (int)client_connections.size(); ++i ) {
 	int msgsock = client_connections[i];
-#ifdef _MSC_VER
-	_close( msgsock );
-#else
-	std::close( msgsock );
-#endif
+	closesocket( msgsock );
     }
 #endif
 
-#ifdef _MSC_VER
-    _close( sock );
+    closesocket( sock );
+    return true;
+}
+
+
+// configure the socket as non-blocking
+bool SGSocket::nonblock() {
+#if defined(_MSC_VER)
+    u_long arg = 1;
+    if (ioctlsocket( sock, FIONBIO, &arg ) != 0) {
+        int error_code = WSAGetLastError();
+        FG_LOG( FG_IO, FG_ALERT, 
+                "Error " << error_code << ": unable to set non-blocking mode"
+);
+            return false;
+    }
 #else
-    std::close( sock );
+    fcntl( sock, F_SETFL, O_NONBLOCK );
 #endif
     return true;
 }
+
+#if defined(_MSC_VER)
+
+bool SGSocket::wsock_init = false;
+
+bool
+SGSocket::wsastartup() {
+    WORD wVersionRequested;
+    WSADATA wsaData;
+
+    //wVersionRequested = MAKEWORD( 2, 2 );
+    wVersionRequested = MAKEWORD( 1, 1 );
+    int err = WSAStartup( wVersionRequested, &wsaData );
+    if (err != 0)
+    {
+        FG_LOG( FG_IO, FG_ALERT, "Error: Couldn't load winsock" );
+        return false;
+    }
+
+#if 0
+    if ( LOBYTE( wsaData.wVersion ) != 2 ||
+        HIBYTE( wsaData.wVersion ) != 2 ) {
+        FG_LOG( FG_IO, FG_ALERT, "Couldn't load a suitable winsock");
+        WSACleanup( );
+        return false;
+    }
+#endif
+    wsock_init = true;
+    return true;
+}
+#endif

@@ -31,7 +31,7 @@
 
 #include <simgear/compiler.h>
 
-#include <string>
+#include STL_STRING
 
 #include <simgear/math/fg_types.hxx>
 
@@ -39,29 +39,51 @@
 
 FG_USING_STD(string);
 
+#if defined(_MSC_VER)
+#  include <winsock.h>
+#endif
 
 #define SG_MAX_SOCKET_QUEUE 32
 
 
 class SGSocket : public SGIOChannel {
+public:
+#if defined(_MSC_VER)
+    typedef SOCKET SocketType;
+#else
+    typedef int SocketType;
+#   define INVALID_SOCKET (-1)
+#endif
 
+private:
     string hostname;
     string port_str;
 
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
     int save_len;
 
-    int sock;
+    SocketType sock;
     short unsigned int port;
     int sock_style;			// SOCK_STREAM or SOCK_DGRAM
 
     // make a server (master listening) socket
-    int make_server_socket();
+    SocketType make_server_socket();
 
     // make a client socket
-    int make_client_socket();
+    SocketType make_client_socket();
 
-    // int_list client_connections;
+    // wrapper functions
+    size_t readsocket( int fd, void *buf, size_t count );
+    size_t writesocket( int fd, const void *buf, size_t count );
+#if !defined(_MSC_VER)
+    int closesocket(int fd);
+#endif
+
+#if defined(_MSC_VER)
+    // Ensure winsock has been initialised.
+    static bool wsock_init;
+    static bool wsastartup();
+#endif
 
 public:
 
@@ -87,6 +109,9 @@ public:
 
     // close file
     bool close();
+
+    // Enable non-blocking mode.
+    bool nonblock();
 
     inline string get_hostname() const { return hostname; }
     inline string get_port_str() const { return port_str; }

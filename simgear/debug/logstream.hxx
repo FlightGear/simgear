@@ -256,6 +256,7 @@ logstream::operator<< ( const loglevel& l )
     return *this;
 }
 
+extern logstream *global_logstream;
 
 /**
  * \relates logstream
@@ -267,8 +268,22 @@ logstream::operator<< ( const loglevel& l )
 inline logstream&
 sglog()
 {
-    static logstream logstrm( cerr );
-    return logstrm;
+  if (global_logstream == NULL) {
+
+#ifdef __APPLE__
+    /**
+     * There appears to be a bug in the C++ runtime in Mac OS X that
+     * will crash if certain funtions are called (in this case
+     * cerr.rdbuf()) during static initialization of a class. This
+     * print statement is hack to kick the library in the pants so it
+     * won't crash when cerr.rdbuf() is first called -DW 
+     **/
+    cout << "Using Mac OS X hack for initializing C++ stdio..." << endl;
+#endif    
+    global_logstream = new logstream (cerr);
+  }
+    
+  return *global_logstream;
 }
 
 

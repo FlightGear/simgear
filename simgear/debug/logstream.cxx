@@ -23,6 +23,8 @@
 
 #include "logstream.hxx"
 
+logstream *global_logstream = NULL;
+
 bool            logbuf::logging_enabled = true;
 sgDebugClass    logbuf::logClass        = SG_NONE;
 sgDebugPriority logbuf::logPriority     = SG_INFO;

@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 SimGear.spec
+aclocal.m4
 config.cache
 config.log
 config.status

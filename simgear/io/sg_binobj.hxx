@@ -91,21 +91,35 @@ class SGBinObject {
 
     Point3D gbs_center;
     float gbs_radius;
-    point_list wgs84_nodes;
-    point_list colors;
-    point_list normals;
-    point_list texcoords;
-    group_list pts_v;
-    string_list pt_materials;
-    group_list tris_v;
-    group_list tris_tc; 
-    string_list tri_materials;
-    group_list strips_v;
-    group_list strips_tc; 
-    string_list strip_materials;
-    group_list fans_v;
-    group_list fans_tc;
-    string_list fan_materials;
+
+    point_list wgs84_nodes;	// vertex list
+    point_list colors;		// color list
+    point_list normals;		// normal list
+    point_list texcoords;	// texture coordinate list
+
+    group_list pts_v;		// points vertex index
+    group_list pts_n;		// points normal index
+    group_list pts_c;		// points color index
+    group_list pts_tc;		// points texture coordinate index
+    string_list pt_materials;	// points materials
+
+    group_list tris_v;		// triangles vertex index
+    group_list tris_n;		// triangles normal index
+    group_list tris_c;		// triangles color index
+    group_list tris_tc;		// triangles texture coordinate index
+    string_list tri_materials;	// triangles materials
+
+    group_list strips_v;	// tristrips vertex index
+    group_list strips_n;	// tristrips normal index
+    group_list strips_c;	// tristrips color index
+    group_list strips_tc;	// tristrips texture coordinate index
+    string_list strip_materials;// tristrips materials
+
+    group_list fans_v;		// fans vertex index
+    group_list fans_n;		// fans normal index
+    group_list fans_c;		// fans color index
+    group_list fans_tc;		// fans texture coordinate index
+    string_list fan_materials;	// fans materials
 
 public:
 
@@ -131,11 +145,21 @@ public:
 
     inline group_list get_pts_v() const { return pts_v; }
     inline void set_pts_v( group_list g ) { pts_v = g; }
+    inline group_list get_pts_n() const { return pts_n; }
+    inline void set_pts_n( group_list g ) { pts_n = g; }
+    inline group_list get_pts_c() const { return pts_c; }
+    inline void set_pts_c( group_list g ) { pts_c = g; }
+    inline group_list get_pts_tc() const { return pts_tc; }
+    inline void set_pts_tc( group_list g ) { pts_tc = g; }
     inline string_list get_pt_materials() const { return pt_materials; }
     inline void set_pt_materials( string_list s ) { pt_materials = s; }
 
     inline group_list get_tris_v() const { return tris_v; }
     inline void set_tris_v( group_list g ) { tris_v = g; }
+    inline group_list get_tris_n() const { return tris_n; }
+    inline void set_tris_n( group_list g ) { tris_n = g; }
+    inline group_list get_tris_c() const { return tris_c; }
+    inline void set_tris_c( group_list g ) { tris_c = g; }
     inline group_list get_tris_tc() const { return tris_tc; }
     inline void set_tris_tc( group_list g ) { tris_tc = g; }
     inline string_list get_tri_materials() const { return tri_materials; }
@@ -143,6 +167,10 @@ public:
     
     inline group_list get_strips_v() const { return strips_v; }
     inline void set_strips_v( group_list g ) { strips_v = g; }
+    inline group_list get_strips_n() const { return strips_n; }
+    inline void set_strips_n( group_list g ) { strips_n = g; }
+    inline group_list get_strips_c() const { return strips_c; }
+    inline void set_strips_c( group_list g ) { strips_c = g; }
     inline group_list get_strips_tc() const { return strips_tc; }
     inline void set_strips_tc( group_list g ) { strips_tc = g; }
     inline string_list get_strip_materials() const { return strip_materials; }
@@ -150,6 +178,10 @@ public:
     
     inline group_list get_fans_v() const { return fans_v; }
     inline void set_fans_v( group_list g ) { fans_v = g; }
+    inline group_list get_fans_n() const { return fans_n; }
+    inline void set_fans_n( group_list g ) { fans_n = g; }
+    inline group_list get_fans_c() const { return fans_c; }
+    inline void set_fans_c( group_list g ) { fans_c = g; }
     inline group_list get_fans_tc() const { return fans_tc; }
     inline void set_fans_tc( group_list g ) { fans_tc = g; }
     inline string_list get_fan_materials() const { return fan_materials; }

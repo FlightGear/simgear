@@ -58,11 +58,20 @@ enum {
     SG_TRIANGLE_FACES = 10,
     SG_TRIANGLE_STRIPS = 11,
     SG_TRIANGLE_FANS = 12
-} tgObjectTypes;
+} sgObjectTypes;
 
 enum {
-    SG_MATERIAL = 0
-} tgPropertyTypes;
+    SG_IDX_VERTICES =  0x0001,
+    SG_IDX_NORMALS =   0x0010,
+    SG_IDX_COLORS =    0x0100,
+    SG_IDX_TEXCOORDS = 0x1000
+} sgIndexTypes;
+
+enum {
+    SG_MATERIAL = 0,
+    SG_INDEX_TYPES = 1
+} sgPropertyTypes;
+
 
 
 class sgSimpleBuffer {
@@ -148,11 +157,130 @@ double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes ) {
 }
 
 
+
+// read object properties
+static void read_object( gzFile fp,
+			 int obj_type,
+			 int nproperties,
+			 int nelements,
+			 group_list *vertices,
+			 group_list *normals,
+			 group_list *colors,
+			 group_list *texcoords,
+			 string_list *materials )
+{
+    unsigned int nbytes;
+    char idx_mask;
+    int idx_size;
+    bool do_vertices, do_normals, do_colors, do_texcoords;
+    int j, k, idx;
+    static sgSimpleBuffer buf( 32768 );  // 32 Kb
+    char material[256];
+
+    // default values
+    if ( obj_type == SG_POINTS ) {
+	idx_size = 1;
+	idx_mask = SG_IDX_VERTICES;
+	do_vertices = true;
+	do_normals = false;
+	do_colors = false;
+	do_texcoords = false;
+    } else {
+	idx_size = 2;
+	idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
+	do_vertices = true;
+	do_normals = false;
+	do_colors = false;
+	do_texcoords = true;
+    }
+
+    for ( j = 0; j < nproperties; ++j ) {
+	char prop_type;
+	sgReadChar( fp, &prop_type );
+
+	sgReadUInt( fp, &nbytes );
+	// cout << "property size = " << nbytes << endl;
+	if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+	char *ptr = buf.get_ptr();
+	sgReadBytes( fp, nbytes, ptr );
+	if ( prop_type == SG_MATERIAL ) {
+	    strncpy( material, ptr, nbytes );
+	    material[nbytes] = '\0';
+	    // cout << "material type = " << material << endl;
+	} else if ( prop_type == SG_INDEX_TYPES ) {
+	    idx_mask = ptr[0];
+	    idx_size = 0;
+	    do_vertices = false;
+	    do_normals = false;
+	    do_colors = false;
+	    do_texcoords = false;
+	    if ( idx_mask & SG_IDX_VERTICES ) {
+		do_vertices = true;
+		++idx_size;
+	    }
+	    if ( idx_mask & SG_IDX_NORMALS ) {
+		do_normals = true;
+		++idx_size;
+	    }
+	    if ( idx_mask & SG_IDX_COLORS ) {
+		do_colors = true;
+		++idx_size;
+	    }
+	    if ( idx_mask & SG_IDX_TEXCOORDS ) {
+		do_texcoords = true;
+		++idx_size;
+	    }
+	}
+    }
+
+    for ( j = 0; j < nelements; ++j ) {
+	sgReadUInt( fp, &nbytes );
+	// cout << "element size = " << nbytes << endl;
+	if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
+	char *ptr = buf.get_ptr();
+	sgReadBytes( fp, nbytes, ptr );
+	int count = nbytes / (idx_size * sizeof(short));
+	short *sptr = (short *)ptr;
+	int_list vs; vs.clear();
+	int_list ns; ns.clear();
+	int_list cs; cs.clear();
+	int_list tcs; tcs.clear();
+	for ( k = 0; k < count; ++k ) {
+	    if ( sgIsBigEndian() ) {
+		for ( idx = 0; idx < idx_size; ++idx ) {
+		    sgEndianSwap( (unsigned short *)&(sptr[idx]) );
+		}
+	    }
+	    idx = 0;
+	    if ( do_vertices ) {
+		vs.push_back( sptr[idx++] );
+	    }
+	    if ( do_normals ) {
+		ns.push_back( sptr[idx++] );
+		    }
+	    if ( do_colors ) {
+		cs.push_back( sptr[idx++] );
+	    }
+	    if ( do_texcoords ) {
+		tcs.push_back( sptr[idx++] );
+	    }
+	    // cout << sptr[0] << " ";
+	    sptr += idx_size;
+	}
+	// cout << endl;
+	vertices->push_back( vs );
+	normals->push_back( ns );
+	colors->push_back( cs );
+	texcoords->push_back( tcs );
+	materials->push_back( material );
+    }
+}
+
+
 // read a binary file and populate the provided structures.
 bool SGBinObject::read_bin( const string& file ) {
     Point3D p;
     int i, j, k;
-    char material[256];
     unsigned int nbytes;
     static sgSimpleBuffer buf( 32768 );  // 32 Kb
 
@@ -165,17 +293,26 @@ bool SGBinObject::read_bin( const string& file ) {
     texcoords.clear();
 
     pts_v.clear();
+    pts_n.clear();
+    pts_c.clear();
+    pts_tc.clear();
     pt_materials.clear();
 
     tris_v.clear();
+    tris_n.clear();
+    tris_c.clear();
     tris_tc.clear();
     tri_materials.clear();
 
     strips_v.clear();
+    strips_n.clear();
+    strips_c.clear();
     strips_tc.clear();
     strip_materials.clear();
 
     fans_v.clear();
+    fans_n.clear();
+    fans_c.clear();
     fans_tc.clear();
     fan_materials.clear();
    
@@ -417,92 +554,27 @@ bool SGBinObject::read_bin( const string& file ) {
 		}
 	    }
 	} else if ( obj_type == SG_POINTS ) {
-	    // read points properties
-	    for ( j = 0; j < nproperties; ++j ) {
-		char prop_type;
-		sgReadChar( fp, &prop_type );
-
-		sgReadUInt( fp, &nbytes );
-		// cout << "property size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		if ( prop_type == SG_MATERIAL ) {
-		    strncpy( material, ptr, nbytes );
-		    material[nbytes] = '\0';
-		    // cout << "material type = " << material << endl;
-		}
-	    }
-
 	    // read point elements
-	    for ( j = 0; j < nelements; ++j ) {
-		sgReadUInt( fp, &nbytes );
-		// cout << "element size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / sizeof(short);
-		short *sptr = (short *)ptr;
-		int_list vs;
-		vs.clear();
-		for ( k = 0; k < count; ++k ) {
-		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned short *)&(sptr[0]) );
-		    }
-		    vs.push_back( sptr[0] );
-		    // cout << sptr[0] << " ";
-		    ++sptr;
-		}
-		// cout << endl;
-		pts_v.push_back( vs );
-		pt_materials.push_back( material );
-	    }
+	    read_object( fp, SG_POINTS, nproperties, nelements,
+			 &pts_v, &pts_n, &pts_c, &pts_tc, &pt_materials );
 	} else if ( obj_type == SG_TRIANGLE_FACES ) {
 	    // read triangle face properties
-	    for ( j = 0; j < nproperties; ++j ) {
-		char prop_type;
-		sgReadChar( fp, &prop_type );
-
-		sgReadUInt( fp, &nbytes );
-		// cout << "property size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		if ( prop_type == SG_MATERIAL ) {
-		    strncpy( material, ptr, nbytes );
-		    material[nbytes] = '\0';
-		    // cout << "material type = " << material << endl;
-		}
-	    }
-
-	    // read triangle face elements
-	    for ( j = 0; j < nelements; ++j ) {
-		sgReadUInt( fp, &nbytes );
-		// cout << "element size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2);
-		short *sptr = (short *)ptr;
-		int_list vs, tcs;
-		vs.clear(); tcs.clear();
-		for ( k = 0; k < count; ++k ) {
-		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned short *)&(sptr[0]) );
-			sgEndianSwap( (unsigned short *)&(sptr[1]) );
-		    }
-		    vs.push_back( sptr[0] );
-		    tcs.push_back( sptr[1] );
-		    // cout << sptr[0] << "/" << sptr[1] << " ";
-		    sptr += 2;
-		}
-		// cout << endl;
-		tris_v.push_back( vs );
-		tris_tc.push_back( tcs );
-		tri_materials.push_back( material );
-	    }
+	    read_object( fp, SG_TRIANGLE_FACES, nproperties, nelements,
+			 &tris_v, &tris_n, &tris_c, &tris_tc, &tri_materials );
 	} else if ( obj_type == SG_TRIANGLE_STRIPS ) {
 	    // read triangle strip properties
+	    read_object( fp, SG_TRIANGLE_STRIPS, nproperties, nelements,
+			 &strips_v, &strips_n, &strips_c, &strips_tc,
+			 &strip_materials );
+#if 0
+	    // default values
+	    idx_size = 2;
+	    idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
+	    do_vertices = true;
+	    do_normals = false;
+	    do_colors = false;
+	    do_texcoords = true;
+
 	    for ( j = 0; j < nproperties; ++j ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
@@ -538,15 +610,27 @@ bool SGBinObject::read_bin( const string& file ) {
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
 		    // cout << sptr[0] << "/" << sptr[1] << " ";
-		    sptr += 2;
+		    sptr += idx_size;
 		}
 		// cout << endl;
 		strips_v.push_back( vs );
 		strips_tc.push_back( tcs );
 		strip_materials.push_back( material );
 	    }
+#endif
 	} else if ( obj_type == SG_TRIANGLE_FANS ) {
 	    // read triangle fan properties
+	    read_object( fp, SG_TRIANGLE_FANS, nproperties, nelements,
+			 &fans_v, &fans_n, &fans_c, &fans_tc, &fan_materials );
+#if 0
+	    // default values
+	    idx_size = 2;
+	    idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
+	    do_vertices = true;
+	    do_normals = false;
+	    do_colors = false;
+	    do_texcoords = true;
+
 	    for ( j = 0; j < nproperties; ++j ) {
 		char prop_type;
 		sgReadChar( fp, &prop_type );
@@ -582,13 +666,14 @@ bool SGBinObject::read_bin( const string& file ) {
 		    vs.push_back( sptr[0] );
 		    tcs.push_back( sptr[1] );
 		    // cout << sptr[0] << "/" << sptr[1] << " ";
-		    sptr += 2;
+		    sptr += idx_size;
 		}
 		// cout << endl;
 		fans_v.push_back( vs );
 		fans_tc.push_back( tcs );
 		fan_materials.push_back( material );
 	    }
+#endif
 	} else {
 	    // unknown object type, just skip
 
@@ -638,6 +723,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgVec3 pt;
     sgVec4 color;
     int i, j;
+    char idx_mask;
+    int idx_size;
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
@@ -826,19 +913,40 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_POINTS );          // type
-	    sgWriteShort( fp, 1 );		         // nproperties
+	    sgWriteShort( fp, 2 );		         // nproperties
 	    sgWriteShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
+	    idx_mask = 0;
+	    idx_size = 0;
+	    if ( pts_v.size() ) { idx_mask |= SG_IDX_VERTICES; ++idx_size; }
+	    if ( pts_n.size() ) { idx_mask |= SG_IDX_NORMALS; ++idx_size; }
+	    if ( pts_c.size() ) { idx_mask |= SG_IDX_COLORS; ++idx_size; }
+	    if ( pts_tc.size() ) { idx_mask |= SG_IDX_TEXCOORDS; ++idx_size; }
+	    sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
+	    sgWriteUInt( fp, 1 );                        // nbytes
+	    sgWriteChar( fp, idx_mask );
+
 	    // write strips
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, pts_v[i].size() * sizeof(short) );
+		sgWriteUInt( fp, pts_v[i].size() * idx_size * sizeof(short) );
 		for ( j = 0; j < (int)pts_v[i].size(); ++j ) {
-		    sgWriteShort( fp, (short)pts_v[i][j] );
+		    if ( pts_v.size() ) { 
+			sgWriteShort( fp, (short)pts_v[i][j] );
+		    }
+		    if ( pts_n.size() ) { 
+			sgWriteShort( fp, (short)pts_n[i][j] );
+		    }
+		    if ( pts_c.size() ) { 
+			sgWriteShort( fp, (short)pts_c[i][j] );
+		    }
+		    if ( pts_tc.size() ) { 
+			sgWriteShort( fp, (short)pts_tc[i][j] );
+		    }
 		}
 	    }
 	    
@@ -865,20 +973,41 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_FACES ); // type
-	    sgWriteShort( fp, 1 );		        // nproperties
+	    sgWriteShort( fp, 2 );		        // nproperties
 	    sgWriteShort( fp, 1 );                      // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
-	    sgWriteUInt( fp, (end - start) * 3 * 2 * sizeof(short) ); // nbytes
+	    idx_mask = 0;
+	    idx_size = 0;
+	    if ( tris_v.size() ) { idx_mask |= SG_IDX_VERTICES; ++idx_size; }
+	    if ( tris_n.size() ) { idx_mask |= SG_IDX_NORMALS; ++idx_size; }
+	    if ( tris_c.size() ) { idx_mask |= SG_IDX_COLORS; ++idx_size; }
+	    if ( tris_tc.size() ) { idx_mask |= SG_IDX_TEXCOORDS; ++idx_size; }
+	    sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
+	    sgWriteUInt( fp, 1 );                        // nbytes
+	    sgWriteChar( fp, idx_mask );
+
+	    // nbytes
+	    sgWriteUInt( fp, (end - start) * 3 * idx_size * sizeof(short) );
 
 	    // write group
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < 3; ++j ) {
-		    sgWriteShort( fp, (short)tris_v[i][j] );
-		    sgWriteShort( fp, (short)tris_tc[i][j] );
+		    if ( tris_v.size() ) {
+			sgWriteShort( fp, (short)tris_v[i][j] );
+		    }
+		    if ( tris_n.size() ) {
+			sgWriteShort( fp, (short)tris_n[i][j] );
+		    }
+		    if ( tris_c.size() ) {
+			sgWriteShort( fp, (short)tris_c[i][j] );
+		    }
+		    if ( tris_tc.size() ) {
+			sgWriteShort( fp, (short)tris_tc[i][j] );
+		    }
 		}
 	    }
 
@@ -905,20 +1034,40 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_STRIPS ); // type
-	    sgWriteShort( fp, 1 );		         // nproperties
+	    sgWriteShort( fp, 2 );		         // nproperties
 	    sgWriteShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
+	    idx_mask = 0;
+	    idx_size = 0;
+	    if ( strips_v.size() ) { idx_mask |= SG_IDX_VERTICES; ++idx_size; }
+	    if ( strips_n.size() ) { idx_mask |= SG_IDX_NORMALS; ++idx_size; }
+	    if ( strips_c.size() ) { idx_mask |= SG_IDX_COLORS; ++idx_size; }
+	    if ( strips_tc.size() ) { idx_mask |= SG_IDX_TEXCOORDS; ++idx_size;}
+	    sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
+	    sgWriteUInt( fp, 1 );                        // nbytes
+	    sgWriteChar( fp, idx_mask );
+
 	    // write strips
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, strips_v[i].size() * 2 * sizeof(short) );
+		sgWriteUInt( fp, strips_v[i].size() * idx_size * sizeof(short));
 		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-		    sgWriteShort( fp, (short)strips_v[i][j] );
-		    sgWriteShort( fp, (short)strips_tc[i][j] );
+		    if ( strips_v.size() ) { 
+			sgWriteShort( fp, (short)strips_v[i][j] );
+		    }
+		    if ( strips_n.size() ) { 
+			sgWriteShort( fp, (short)strips_n[i][j] );
+		    }
+		    if ( strips_c.size() ) { 
+			sgWriteShort( fp, (short)strips_c[i][j] );
+		    }
+		    if ( strips_tc.size() ) { 
+			sgWriteShort( fp, (short)strips_tc[i][j] );
+		    }
 		}
 	    }
 	    
@@ -945,20 +1094,40 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_FANS );   // type
-	    sgWriteShort( fp, 1 );		         // nproperties
+	    sgWriteShort( fp, 2 );		         // nproperties
 	    sgWriteShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
 	    sgWriteBytes( fp, material.length(), material.c_str() );
 
+	    idx_mask = 0;
+	    idx_size = 0;
+	    if ( fans_v.size() ) { idx_mask |= SG_IDX_VERTICES; ++idx_size; }
+	    if ( fans_n.size() ) { idx_mask |= SG_IDX_NORMALS; ++idx_size; }
+	    if ( fans_c.size() ) { idx_mask |= SG_IDX_COLORS; ++idx_size; }
+	    if ( fans_tc.size() ) { idx_mask |= SG_IDX_TEXCOORDS; ++idx_size; }
+	    sgWriteChar( fp, (char)SG_INDEX_TYPES );     // property
+	    sgWriteUInt( fp, 1 );                        // nbytes
+	    sgWriteChar( fp, idx_mask );
+
 	    // write fans
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, fans_v[i].size() * 2 * sizeof(short) );
+		sgWriteUInt( fp, fans_v[i].size() * idx_size * sizeof(short) );
 		for ( j = 0; j < (int)fans_v[i].size(); ++j ) {
-		    sgWriteShort( fp, (short)fans_v[i][j] );
-		    sgWriteShort( fp, (short)fans_tc[i][j] );
+		    if ( fans_v.size() ) {
+			sgWriteShort( fp, (short)fans_v[i][j] );
+		    }
+		    if ( fans_n.size() ) {
+			sgWriteShort( fp, (short)fans_n[i][j] );
+		    }
+		    if ( fans_c.size() ) {
+			sgWriteShort( fp, (short)fans_c[i][j] );
+		    }
+		    if ( fans_tc.size() ) {
+			sgWriteShort( fp, (short)fans_tc[i][j] );
+		    }
 		}
 	    }
 	    

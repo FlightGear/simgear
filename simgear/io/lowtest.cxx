@@ -23,6 +23,8 @@ int main() {
     }
     cout << "endian" << endl;
 
+    cout << "sizeof(short) = " << sizeof(short) << endl;
+
     short s = 1111;
     cout << "short s = " << s << endl;
     sgEndianSwap((unsigned short *)&s);

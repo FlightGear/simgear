@@ -134,11 +134,7 @@ esac
 
 dnl Checks for libraries.
 
-null_LIBS="$LIBS"
-
 AC_SEARCH_LIBS(cos, m)
-
-base_LIBS="$LIBS"
 
 dnl Thread related checks
 AC_CHECK_HEADER(pthread.h)
@@ -187,6 +183,9 @@ else
         exit
     fi
 fi
+
+base_LIBS="$LIBS"
+LIBS=""
 
 dnl check for OpenGL related libraries
 case "${host}" in

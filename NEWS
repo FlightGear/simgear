@@ -1,5 +1,5 @@
-New in 0.3.8-pre1
-* December 15, 2004
+New in 0.3.8-pre2
+* January 3, 2005
 
 * Configure script does a sanity check for the existance of openal.
 * Better pthreads detection for FreeBSD.
@@ -11,6 +11,9 @@ New in 0.3.8-pre1
 * Make display list usage optional.
 * Event manager: specifying a zero delay will force event execution in
   the next frame rather than entering an infinite loop.
+* gcc-4.0 fix.
+* Fixes to property tree loading and saving.
+* Make volume inaudible at startup.
 
 
 New in 0.3.7

@@ -10,36 +10,6 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGCommandState class.
-////////////////////////////////////////////////////////////////////////
-
-SGCommandState::SGCommandState ()
-  : _args(0)
-{
-}
-
-SGCommandState::SGCommandState (const SGPropertyNode * args)
-  : _args(0)
-{
-  setArgs(args);
-}
-
-SGCommandState::~SGCommandState ()
-{
-  delete _args;
-}
-
-void
-SGCommandState::setArgs (const SGPropertyNode * args)
-{
-  delete _args;
-  _args = new SGPropertyNode();
-  copyProperties(args, _args);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Implementation of SGCommandMgr class.
 ////////////////////////////////////////////////////////////////////////
 
@@ -81,14 +51,13 @@ SGCommandMgr::getCommandNames () const
 }
 
 bool
-SGCommandMgr::execute (const string &name, const SGPropertyNode * arg,
-		       SGCommandState ** state) const
+SGCommandMgr::execute (const string &name, const SGPropertyNode * arg) const
 {
   command_t command = getCommand(name);
   if (command == 0)
     return false;
   else
-    return (*command)(arg, state);
+    return (*command)(arg);
 }
 
 // end of commands.cxx

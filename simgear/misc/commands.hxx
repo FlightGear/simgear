@@ -25,57 +25,12 @@ SG_USING_STD(vector);
 
 
 /**
- * Stored state for a command.
- *
- * <p>This class allows a command to cache parts of its state between
- * invocations with the same parameters.  Nearly every command that
- * actually uses this will subclass it in some way.  The command
- * allocates the structure, but it is up to the caller to delete it
- * when it is no longer necessary, unless the command deletes it
- * and replaces the value with 0 or another command-state object
- * first.</p>
- *
- * <p>Note that this class is for caching only; all of the information
- * in it must be recoverable by other means, since the state could
- * arbitrarily disappear between invocations if the caller decides to
- * delete it.</p>
- *
- * <p>By default, the command state includes a place to keep a copy of
- * the parameters.</p>
- *
- * @author David Megginson, david@megginson.com
- */
-class SGCommandState
-{
-public:
-  SGCommandState ();
-  SGCommandState (const SGPropertyNode * args);
-  virtual ~SGCommandState ();
-  virtual void setArgs (const SGPropertyNode * args);
-  virtual const SGPropertyNode * getArgs () const { return _args; }
-private:
-  SGPropertyNode * _args;
-};
-
-
-/**
  * Manage commands.
  *
  * <p>This class allows the application to register and unregister
  * commands, and provides shortcuts for executing them.  Commands are
- * simple functions that take a const pointer to an SGPropertyNode and
- * a pointer to a pointer variable (which should be 0 initially) where
- * the function can store compiled copies of its arguments, etc. to
- * avoid expensive recalculations.  If the command deletes the
- * SGCommandState, it must replace it with a new pointer or 0;
- * otherwise, the caller is free to delete and zero the pointer at any
- * time and the command will start fresh with the next invocation.
- * The command must return a bool value indicating success or failure.
- * The property node may be ignored, or it may contain values that the
- * command uses as parameters.</p>
- *
- * <p>There are convenience methods for invoking a command function
- * with no arguments or with a single, primitive argument.</p>
+ * simple functions that take a const pointer to an SGPropertyNode:
+ * the function may use the nodes children as parameters.</p>
  *
  * @author David Megginson, david@megginson.com
  */
@@ -86,8 +41,7 @@ public:
   /**
    * Type for a command function.
    */
-  typedef bool (*command_t) (const SGPropertyNode * arg,
-			     SGCommandState ** state);
+  typedef bool (*command_t) (const SGPropertyNode * arg);
 
 
   /**
@@ -136,9 +90,6 @@ public:
   /**
    * Execute a command.
    *
-   * This is the primary method for invoking a command; the others
-   * are convenience methods that invoke this one indirectly.
-   * 
    * @param name The name of the command.
    * @param arg A const pointer to an SGPropertyNode.  The node
    * may have a value and/or children, etc., so that it is possible
@@ -146,9 +97,7 @@ public:
    * @return true if the command is present and executes successfully,
    * false otherwise.
    */
-  virtual bool execute (const string &name,
-			const SGPropertyNode * arg,
-			SGCommandState ** state) const;
+  virtual bool execute (const string &name, const SGPropertyNode * arg) const;
 
 private:
 

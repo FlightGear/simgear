@@ -156,7 +156,11 @@ void SGMetar::useCurrentDate()
 {
 	struct tm now;
 	time_t now_sec = time(0);
+#ifdef _MSC_VER
+	now = *gmtime(&now_sec);
+#else
 	gmtime_r(&now_sec, &now);
+#endif
 	_year = now.tm_year + 1900;
 	_month = now.tm_mon + 1;
 }

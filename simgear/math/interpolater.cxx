@@ -32,7 +32,7 @@
 
 // depricated - #include <simgear/sg_zlib.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/fgstream.hxx>
+#include <simgear/misc/sgstream.hxx>
 
 #include "interpolater.hxx"
 
@@ -44,7 +44,7 @@ SG_USING_STD(string);
 SGInterpTable::SGInterpTable( const string& file ) {
     SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 
-    fg_gzifstream in( file );
+    sg_gzifstream in( file );
     if ( !in.is_open() ) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
 	exit(-1);

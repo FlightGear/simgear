@@ -31,7 +31,7 @@
 
 #include <math.h>
 
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "newbucket.hxx"
 
@@ -180,7 +180,7 @@ string SGBucket::gen_base_path() const {
 	    hem, top_lon, pole, top_lat, 
 	    hem, main_lon, pole, main_lat);
 
-    FGPath path( raw_path );
+    SGPath path( raw_path );
 
     return path.str();
 }

@@ -1,5 +1,4 @@
-//
-// fgpath.cxx -- routines to abstract out path separator differences
+// sg_path.cxx -- routines to abstract out path separator differences
 //               between MacOS and the rest of the world
 //
 // Written by Curtis L. Olson, started April 1999.
@@ -24,7 +23,7 @@
 // $Id$
 
 
-#include "fgpath.hxx"
+#include "sg_path.hxx"
 
 
 // If Unix, replace all ":" with "/".  If MacOS, replace all "/" with
@@ -42,8 +41,8 @@ static string fix_path( const string path ) {
 	    continue;
 	}
 #endif
-	if ( result[i] == FG_BAD_PATH_SEP ) {
-	    result[i] = FG_PATH_SEP;
+	if ( result[i] == SG_BAD_PATH_SEP ) {
+	    result[i] = SG_PATH_SEP;
 	}
     }
 
@@ -52,37 +51,37 @@ static string fix_path( const string path ) {
 
 
 // default constructor
-FGPath::FGPath() {
+SGPath::SGPath() {
     path = "";
 }
 
 
 // create a path based on "path"
-FGPath::FGPath( const string p ) {
+SGPath::SGPath( const string p ) {
     set( p );
 }
 
 
 // destructor
-FGPath::~FGPath() {
+SGPath::~SGPath() {
 }
 
 
 // set path
-void FGPath::set( const string p ) {
+void SGPath::set( const string p ) {
     path = fix_path( p );
 }
 
 
 // append another piece to the existing path
-void FGPath::append( const string p ) {
+void SGPath::append( const string p ) {
     string part = fix_path( p );
 
     if ( path.size() == 0 ) {
 	path = part;
     } else {
-	if ( part[0] != FG_PATH_SEP ) {
-	    path += FG_PATH_SEP;
+	if ( part[0] != SG_PATH_SEP ) {
+	    path += SG_PATH_SEP;
 	}
 	path += part;
     }
@@ -91,7 +90,7 @@ void FGPath::append( const string p ) {
 
 // concatenate a string to the end of the path without inserting a
 // path separator
-void FGPath::concat( const string p ) {
+void SGPath::concat( const string p ) {
     string part = fix_path( p );
 
     if ( path.size() == 0 ) {
@@ -103,8 +102,8 @@ void FGPath::concat( const string p ) {
 
 
 // get the directory part of the path.
-string FGPath::dir() {
-    int index = path.rfind(FG_PATH_SEP);
+string SGPath::dir() {
+    int index = path.rfind(SG_PATH_SEP);
     if (index >= 0) {
 	return path.substr(0, index);
     } else {

@@ -28,7 +28,7 @@
 
 #include <plib/sg.h>
 
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 
 #define SG_MAX_STARS 850
@@ -39,13 +39,13 @@ class SGStarData {
     int nstars;
     sgdVec3 *stars;
     
-    FGPath data_path;
+    SGPath data_path;
 
 public:
 
     // Constructor
     SGStarData();
-    SGStarData( FGPath path );
+    SGStarData( SGPath path );
 
     // Destructor
     ~SGStarData();

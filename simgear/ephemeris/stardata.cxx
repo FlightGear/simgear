@@ -23,7 +23,7 @@
 
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/fgstream.hxx>
+#include <simgear/misc/sgstream.hxx>
 
 #include "stardata.hxx"
 
@@ -35,8 +35,8 @@
 SGStarData::SGStarData() {
 }
 
-SGStarData::SGStarData( FGPath path ) {
-    data_path = FGPath( path );
+SGStarData::SGStarData( SGPath path ) {
+    data_path = SGPath( path );
     load();
 }
 
@@ -56,7 +56,7 @@ bool SGStarData::load() {
     data_path.append( "stars" );
     SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << data_path.str() );
 
-    fg_gzifstream in( data_path.str() );
+    sg_gzifstream in( data_path.str() );
     if ( ! in.is_open() ) {
 	SG_LOG( SG_ASTRO, SG_ALERT, "Cannot open star file: "
 		<< data_path.str() );

@@ -222,7 +222,7 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 
 
 // initialize the sun object and connect it into our scene graph root
-ssgBranch * SGSun::build( FGPath path, double sun_size ) {
+ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 
     // set up the orb state
     orb_state = new ssgSimpleState();

@@ -124,7 +124,7 @@ SGMoon::~SGMoon( void ) {
 
 
 // build the moon object
-ssgBranch * SGMoon::build( FGPath path, double moon_size ) {
+ssgBranch * SGMoon::build( SGPath path, double moon_size ) {
 
     // set up the orb state
     path.append( "moon.rgba" );

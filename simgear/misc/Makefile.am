@@ -9,19 +9,19 @@ endif
 lib_LIBRARIES = libsgmisc.a
 
 include_HEADERS = \
-	fgpath.hxx \
-	fgstream.hxx \
 	props.hxx \
+	sg_path.hxx \
+	sgstream.hxx \
 	stopwatch.hxx \
 	strutils.hxx \
 	texcoord.hxx \
 	zfstream.hxx
 
 libsgmisc_a_SOURCES = \
-	fgpath.cxx \
-	fgstream.cxx \
 	props.cxx \
         props_io.cxx \
+	sg_path.cxx \
+	sgstream.cxx \
 	strutils.cxx \
 	texcoord.cxx \
 	zfstream.cxx

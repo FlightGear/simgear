@@ -98,7 +98,7 @@ void SGSky::build(  double sun_size, double moon_size,
     post_root->addKid( post_selector );
 
     // add the cloud ssgStates to the material lib
-    FGPath cloud_path;
+    SGPath cloud_path;
 
     cloud_path.set( tex_path.str() );
     cloud_path.append( "overcast.rgb" );

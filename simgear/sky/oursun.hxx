@@ -32,7 +32,7 @@
 
 #include <plib/ssg.h>
 
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 
 class SGSun {
@@ -58,7 +58,7 @@ public:
     ~SGSun( void );
 
     // return the sun object
-    ssgBranch *build( FGPath path, double sun_size );
+    ssgBranch *build( SGPath path, double sun_size );
 
     // repaint the sun colors based on current value of sun_anglein
     // degrees relative to verticle

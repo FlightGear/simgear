@@ -37,7 +37,7 @@ SGEphemeris::SGEphemeris( const string &path ) {
     saturn = new Saturn;
     uranus = new Uranus;
     neptune = new Neptune;
-    stars = new SGStarData( FGPath(path) );
+    stars = new SGStarData( SGPath(path) );
 }
 
 

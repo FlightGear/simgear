@@ -35,7 +35,7 @@
 #include <plib/ssg.h>		// plib include
 
 #include <simgear/compiler.h>
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include <vector>
 
@@ -71,7 +71,7 @@ private:
     ssgSelector *pre_selector, *post_selector;
     ssgTransform *pre_transform, *post_transform;
 
-    FGPath tex_path;
+    SGPath tex_path;
 
     // visibility
     float visibility;
@@ -137,7 +137,7 @@ public:
 
     // specify the texture path (optional, defaults to current directory)
     inline void texture_path( const string& path ) {
-	tex_path = FGPath( path );
+	tex_path = SGPath( path );
     }
 
     // enable the sky

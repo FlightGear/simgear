@@ -27,7 +27,6 @@
 #include <string.h>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/fgpath.hxx>
 
 #ifdef __BORLANDC__
 #  define exception c_exception

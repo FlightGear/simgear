@@ -8,8 +8,6 @@
 #include "MetarStation.h"
 #include <algorithm>
 
-#include <simgear/misc/fgpath.hxx>
-
 #if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(ostream);
 SG_USING_STD(cout);

@@ -32,7 +32,7 @@
 
 #include <plib/ssg.h>
 
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 
 class SGMoon {
@@ -55,7 +55,7 @@ public:
     ~SGMoon( void );
 
     // build the moon object
-    ssgBranch *build( FGPath path, double moon_size );
+    ssgBranch *build( SGPath path, double moon_size );
 
     // repaint the moon colors based on current value of moon_anglein
     // degrees relative to verticle

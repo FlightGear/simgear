@@ -54,7 +54,7 @@
 
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "sg_time.hxx"
 #include "timezone.h"
@@ -83,7 +83,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
     //      << asctime(localtime(&cur_time)) << endl;
 
     if ( root != (string)"" ) {
-	FGPath zone( root );
+	SGPath zone( root );
 	zone.append( "zone.tab" );
 	SG_LOG( SG_EVENT, SG_DEBUG, "Reading timezone info from: "
 		<< zone.str() );
@@ -92,7 +92,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
 	GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
 	GeoCoord* nearestTz = tzContainer->getNearest(location);
 
-	FGPath name( root );
+	SGPath name( root );
 	name.append( nearestTz->getDescription() );
 	zonename = strdup( name.c_str() );
 	// cout << "Using zonename = " << zonename << endl;
@@ -254,7 +254,7 @@ void SGTime::updateLocal( double lon, double lat, const string& root )
   time_t aircraftLocalTime;
   GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
   GeoCoord* nearestTz = tzContainer->getNearest(location);
-  FGPath zone( root );
+  SGPath zone( root );
   zone.append ( nearestTz->getDescription() );
   if ( zonename ) {
       delete zonename;

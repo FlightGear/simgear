@@ -10,7 +10,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/xml/easyxml.hxx>
 
-#include "fgpath.hxx"
+#include "sg_path.hxx"
 #include "props.hxx"
 
 #include STL_IOSTREAM
@@ -143,9 +143,9 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 				// Check for an include.
     const char * att_include = atts.getValue("include");
     if (att_include != 0) {
-      FGPath path(FGPath(_base).dir());
+      SGPath path(SGPath(_base).dir());
       cerr << "Base is " << _base << endl;
-      cerr << "Dir is " << FGPath(_base).dir() << endl;
+      cerr << "Dir is " << SGPath(_base).dir() << endl;
       path.append(att_include);
       if (!readProperties(path.str(), node)) {
 	SG_LOG(SG_INPUT, SG_ALERT, "Failed to read include file "

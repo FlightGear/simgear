@@ -27,7 +27,6 @@
 
 #include <math.h>
 
-#include <simgear/misc/fgpath.hxx>
 #include <simgear/magvar/magvar.hxx>
 
 #include "coremag.hxx"

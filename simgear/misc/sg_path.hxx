@@ -95,17 +95,29 @@ public:
     void concat( const string& p );
 
     /**
+     * Get the file part of the path (everything after the last path sep)
+     * @return file string
+     */
+    string file();
+  
+    /**
      * Get the directory part of the path.
      * @return directory string
      */
     string dir();
   
     /**
-     * Return the filename part of the path.
-     * @return file name string
+     * Get the base part of the path (everything but the extension.)
+     * @return the base string
      */
-    string filename();
-	
+    string base();
+
+    /**
+     * Get the extention part of the path (everything after the final ".")
+     * @return the extention string
+     */
+    string extension();
+
     /** Get the path string
      * @return path string
      */

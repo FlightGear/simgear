@@ -104,6 +104,17 @@ void SGPath::concat( const string& p ) {
 }
 
 
+// Get the file part of the path (everything after the last path sep)
+string SGPath::file() {
+    int index = path.rfind(SG_PATH_SEP);
+    if (index >= 0) {
+	return path.substr(index + 1);
+    } else {
+	return "";
+    }
+}
+  
+
 // get the directory part of the path.
 string SGPath::dir() {
     int index = path.rfind(SG_PATH_SEP);
@@ -114,10 +125,24 @@ string SGPath::dir() {
     }
 }
 
-string SGPath::filename() {
-    int index = path.rfind(SG_PATH_SEP);
-    if (index < 0) index = 0;
-    return path.substr(index);
+// get the base part of the path (everything but the extension.)
+string SGPath::base() {
+    int index = path.rfind(".");
+    if (index >= 0) {
+	return path.substr(0, index);
+    } else {
+	return "";
+    }
+}
+
+// get the extention (everything after the final ".")
+string SGPath::extension() {
+    int index = path.rfind(".");
+    if (index >= 0) {
+	return path.substr(index + 1);
+    } else {
+	return "";
+    }
 }
 
 bool SGPath::exists() const {

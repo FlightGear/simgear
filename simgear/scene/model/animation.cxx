@@ -80,6 +80,18 @@ set_translation (sgMat4 &matrix, double position_m, sgVec3 &axis)
 }
 
 /**
+ * Set up the transform matrix for a scale operation.
+ */
+static void
+set_scale (sgMat4 &matrix, double x, double y, double z)
+{
+  sgMakeIdentMat4( matrix );
+  matrix[0][0] = x;
+  matrix[1][1] = y;
+  matrix[2][2] = z;
+}
+
+/**
  * Modify property value by step and scroll settings in texture translations
  */
 static double
@@ -445,6 +457,80 @@ SGTranslateAnimation::update()
     _position_m = _table->interpolate(_prop->getDoubleValue());
   }
   set_translation(_matrix, _position_m, _axis);
+  ((ssgTransform *)_branch)->setTransform(_matrix);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGScaleAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
+                                        SGPropertyNode_ptr props )
+  : SGAnimation(props, new ssgTransform),
+      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _x_factor(props->getDoubleValue("x-factor", 1.0)),
+    _y_factor(props->getDoubleValue("y-factor", 1.0)),
+    _z_factor(props->getDoubleValue("z-factor", 1.0)),
+    _x_offset(props->getDoubleValue("x-offset", 1.0)),
+    _y_offset(props->getDoubleValue("y-offset", 1.0)),
+    _z_offset(props->getDoubleValue("z-offset", 1.0)),
+    _table(read_interpolation_table(props)),
+    _has_min_x(props->hasValue("x-min")),
+    _has_min_y(props->hasValue("y-min")),
+    _has_min_z(props->hasValue("z-min")),
+    _min_x(props->getDoubleValue("x-min")),
+    _min_y(props->getDoubleValue("y-min")),
+    _min_z(props->getDoubleValue("z-min")),
+    _has_max_x(props->hasValue("x-max")),
+    _has_max_y(props->hasValue("y-max")),
+    _has_max_z(props->hasValue("z-max")),
+    _max_x(props->getDoubleValue("x-max")),
+    _max_y(props->getDoubleValue("y-max")),
+    _max_z(props->getDoubleValue("z-max"))
+{
+}
+
+SGScaleAnimation::~SGScaleAnimation ()
+{
+  delete _table;
+}
+
+void
+SGScaleAnimation::update()
+{
+  if (_table == 0) {
+      _x_scale = _prop->getDoubleValue() * _x_factor + _x_offset;
+    if (_has_min_x && _x_scale < _min_x)
+      _x_scale = _min_x;
+    if (_has_max_x && _x_scale > _max_x)
+      _x_scale = _max_x;
+  } else {
+    _x_scale = _table->interpolate(_prop->getDoubleValue());
+  }
+
+  if (_table == 0) {
+    _y_scale = _prop->getDoubleValue() * _y_factor + _y_offset;
+    if (_has_min_y && _y_scale < _min_y)
+      _y_scale = _min_y;
+    if (_has_max_y && _y_scale > _max_y)
+      _y_scale = _max_y;
+  } else {
+    _y_scale = _table->interpolate(_prop->getDoubleValue());
+  }
+
+  if (_table == 0) {
+    _z_scale = _prop->getDoubleValue() * _z_factor + _z_offset;
+    if (_has_min_z && _z_scale < _min_z)
+      _z_scale = _min_z;
+    if (_has_max_z && _z_scale > _max_z)
+      _z_scale = _max_z;
+  } else {
+    _z_scale = _table->interpolate(_prop->getDoubleValue());
+  }
+
+  set_scale(_matrix, _x_scale, _y_scale, _z_scale );
   ((ssgTransform *)_branch)->setTransform(_matrix);
 }
 

@@ -222,6 +222,43 @@ private:
 };
 
 /**
+ * Animation to scale an object.
+ */
+class SGScaleAnimation : public SGAnimation
+{
+public:
+  SGScaleAnimation( SGPropertyNode *prop_root,
+                        SGPropertyNode_ptr props );
+  virtual ~SGScaleAnimation ();
+  virtual void update();
+private:
+  SGPropertyNode_ptr _prop;
+  double _x_factor;
+  double _y_factor;
+  double _z_factor;
+  double _x_offset;
+  double _y_offset;
+  double _z_offset;
+  SGInterpTable * _table;
+  bool _has_min_x;
+  bool _has_min_y;
+  bool _has_min_z;
+  double _min_x;
+  double _min_y;
+  double _min_z;
+  bool _has_max_x;
+  bool _has_max_y;
+  bool _has_max_z;
+  double _max_x;
+  double _max_y;
+  double _max_z;
+  double _x_scale;
+  double _y_scale;
+  double _z_scale;
+  sgMat4 _matrix;
+};
+
+/**
  * Animation to rotate texture mappings around a center point.
  *
  * This animation rotates to a specific position.

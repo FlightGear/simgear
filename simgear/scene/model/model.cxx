@@ -121,6 +121,8 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGRotateAnimation(prop_root, node);
   } else if (!strcmp("translate", type)) {
     animation = new SGTranslateAnimation(prop_root, node);
+  } else if (!strcmp("scale", type)) {
+    animation = new SGScaleAnimation(prop_root, node);
   } else if (!strcmp("texrotate", type)) {
     animation = new SGTexRotateAnimation(prop_root, node);
   } else if (!strcmp("textranslate", type)) {

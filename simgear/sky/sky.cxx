@@ -31,6 +31,8 @@
 #include <simgear/constants.h>
 #include <simgear/math/fg_random.h>
 
+#include <Objects/matlib.hxx>
+
 #include "sky.hxx"
 
 
@@ -93,6 +95,30 @@ void SGSky::build(  double sun_size, double moon_size,
 
     pre_root->addKid( pre_selector );
     post_root->addKid( post_selector );
+
+    // add the cloud ssgStates to the material lib
+    FGPath cloud_path;
+    ssgSimpleState *cloud_state;
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "cirrus.rgba" );
+    cloud_state = SGCloudMakeState( cloud_path.str() );
+    material_lib.add_item( "CloudCirrus", cloud_state );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "mostlycloudy.rgba" );
+    cloud_state = SGCloudMakeState( cloud_path.str() );
+    material_lib.add_item( "CloudMostlyCloudy", cloud_state );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "mostlysunny.rgba" );
+    cloud_state = SGCloudMakeState( cloud_path.str() );
+    material_lib.add_item( "CloudMostlySunny", cloud_state );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "overcast.rgb" );
+    cloud_state = SGCloudMakeState( cloud_path.str() );
+    material_lib.add_item( "CloudOvercast", cloud_state );
 }
 
 
@@ -201,9 +227,10 @@ void SGSky::draw_scene( float alt ) {
 }
 
  
-void SGSky::add_cloud_layer( double asl, double thickness, double transition ) {
+void SGSky::add_cloud_layer( double asl, double thickness, double transition,
+			     SGCloudType type ) {
     SGCloudLayer *layer = new SGCloudLayer;
-    layer->build(tex_path, 40000.0f, asl, thickness, transition);
+    layer->build(tex_path, 40000.0f, asl, thickness, transition, type );
 
     layer_list_iterator current = cloud_layers.begin();
     layer_list_iterator last = cloud_layers.end();

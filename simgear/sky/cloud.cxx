@@ -30,6 +30,8 @@
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 
+#include <Objects/matlib.hxx>
+
 #include "cloud.hxx"
 
 
@@ -45,7 +47,7 @@ SGCloudLayer::~SGCloudLayer( void ) {
 
 // build the moon object
 void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
-			  double transition )
+			  double transition, SGCloudType type )
 {
     scale = 4000.0;
 
@@ -56,21 +58,27 @@ void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
     size = s;
     last_lon = last_lat = -999.0f;
 
-    // set up the cloud state
-    path.append( "cloud.rgba" );
-    layer_state = new ssgSimpleState();
-    layer_state->setTexture( (char *)path.c_str() );
-    layer_state->setShadeModel( GL_SMOOTH );
-    layer_state->disable( GL_LIGHTING );
-    layer_state->disable( GL_CULL_FACE );
-    layer_state->enable( GL_TEXTURE_2D );
-    layer_state->enable( GL_COLOR_MATERIAL );
-    layer_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    layer_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    layer_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-    layer_state->enable( GL_BLEND );
-    layer_state->enable( GL_ALPHA_TEST );
-    layer_state->setAlphaClamp( 0.01 );
+    // look up the appropriate cloud state
+    FGNewMat *m;
+
+    switch ( type ) {
+    case SG_CLOUD_OVERCAST:
+	m = material_lib.find( "CloudOvercast" );
+	layer_state = m->get_state();
+	break;
+    case SG_CLOUD_MOSTLY_CLOUDY:
+	m = material_lib.find( "CloudMostlyCloudy" );
+	layer_state = m->get_state();
+	break;
+    case SG_CLOUD_MOSTLY_SUNNY:
+	m = material_lib.find( "CloudMostlySunny" );
+	layer_state = m->get_state();
+	break;
+    case SG_CLOUD_CIRRUS:
+	m = material_lib.find( "CloudCirrus" );
+	layer_state = m->get_state();
+	break;
+    }
 
     cl = new ssgColourArray( 4 );
     vl = new ssgVertexArray( 4 );
@@ -246,4 +254,25 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
 void SGCloudLayer::draw() {
     ssgCullAndDraw( layer_root );
+}
+
+
+// make an ssgSimpleState for a cloud layer given the named texture
+ssgSimpleState *SGCloudMakeState( const string &path ) {
+    ssgSimpleState *state = new ssgSimpleState();
+
+    state->setTexture( (char *)path.c_str() );
+    state->setShadeModel( GL_SMOOTH );
+    state->disable( GL_LIGHTING );
+    state->disable( GL_CULL_FACE );
+    state->enable( GL_TEXTURE_2D );
+    state->enable( GL_COLOR_MATERIAL );
+    state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
+    state->enable( GL_BLEND );
+    state->enable( GL_ALPHA_TEST );
+    state->setAlphaClamp( 0.01 );
+
+    return state;
 }

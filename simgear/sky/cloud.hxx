@@ -30,7 +30,17 @@
 #include <simgear/misc/fgpath.hxx>
 
 
+enum SGCloudType {
+    SG_CLOUD_OVERCAST = 0,
+    SG_CLOUD_MOSTLY_CLOUDY,
+    SG_CLOUD_MOSTLY_SUNNY,
+    SG_CLOUD_CIRRUS,
+};
+
+
 class SGCloudLayer {
+
+private:
 
     ssgRoot *layer_root;
     ssgTransform *layer_transform;
@@ -63,7 +73,7 @@ public:
 
     // build the cloud object
     void build( FGPath path, double size, double asl, double thickness,
-		double transition );
+		double transition, SGCloudType type );
 
     // repaint the cloud colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
@@ -89,6 +99,10 @@ public:
     inline float get_thickness() const { return layer_thickness; }
     inline float get_transition() const { return layer_transition; }
 };
+
+
+// make an ssgSimpleState for a cloud layer given the named texture
+ssgSimpleState *SGCloudMakeState( const string &path );
 
 
 #endif // _SG_CLOUD_HXX_

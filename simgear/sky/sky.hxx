@@ -150,7 +150,8 @@ public:
     }
 
     // add a cloud layer (above sea level in meters)
-    void add_cloud_layer( double asl, double thickness, double transition );
+    void add_cloud_layer( double asl, double thickness, double transition,
+			  SGCloudType type );
 
     inline int get_num_layers() const { return cloud_layers.size(); }
     inline SGCloudLayer *get_cloud_layer( int i ) const {

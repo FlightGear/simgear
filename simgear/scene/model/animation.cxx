@@ -1118,44 +1118,29 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
         SGPropertyNode_ptr props, const SGPath &texture_path)
     : SGAnimation(props, new ssgBranch),
-    _base_dir(texture_path),
+    _prop_root(prop_root),
+    _prop_base(""),
+    _texture_base(texture_path),
     _cached_material(0),
     _cloned_material(0),
     _read(0),
     _update(0),
     _global(props->getBoolValue("global", false))
 {
-    _diff.red = props->getFloatValue("diffuse-red", -1.0);
-    _diff.green = props->getFloatValue("diffuse-green", -1.0);
-    _diff.blue = props->getFloatValue("diffuse-blue", -1.0);
-    _diff.factor = props->getFloatValue("diffuse-factor", 1.0);
-    _diff.offset = props->getFloatValue("diffuse-offset", 0.0);
-    if (_diff.dirty())
-        _update |= DIFFUSE;
+    SGPropertyNode_ptr n;
+    n = props->getChild("condition");
+    _condition = n ? sgReadCondition(_prop_root, n) : 0;
+    n = props->getChild("property-base");
+    if (n) {
+        _prop_base = n->getStringValue();
+        if (!_prop_base.empty() && _prop_base.end()[-1] != '/')
+            _prop_base += '/';
+    }
 
-    _amb.red = props->getFloatValue("ambient-red", -1.0);
-    _amb.green = props->getFloatValue("ambient-green", -1.0);
-    _amb.blue = props->getFloatValue("ambient-blue", -1.0);
-    _amb.factor = props->getFloatValue("ambient-factor", 1.0);
-    _amb.offset = props->getFloatValue("ambient-offset", 0.0);
-    if (_amb.dirty())
-        _update |= AMBIENT;
-
-    _spec.red = props->getFloatValue("specular-red", -1.0);
-    _spec.green = props->getFloatValue("specular-green", -1.0);
-    _spec.blue = props->getFloatValue("specular-blue", -1.0);
-    _spec.factor = props->getFloatValue("specular-factor", 1.0);
-    _spec.offset = props->getFloatValue("specular-offset", 0.0);
-    if (_spec.dirty())
-        _update |= SPECULAR;
-
-    _emis.red = props->getFloatValue("emission-red", -1.0);
-    _emis.green = props->getFloatValue("emission-green", -1.0);
-    _emis.blue = props->getFloatValue("emission-blue", -1.0);
-    _emis.factor = props->getFloatValue("emission-factor", 1.0);
-    _emis.offset = props->getFloatValue("emission-offset", 0.0);
-    if (_emis.dirty())
-        _update |= EMISSION;
+    initColorGroup(props->getChild("diffuse"), &_diff, DIFFUSE);
+    initColorGroup(props->getChild("ambient"), &_amb, AMBIENT);
+    initColorGroup(props->getChild("emission"), &_emis, EMISSION);
+    initColorGroup(props->getChild("specular"), &_spec, SPECULAR);
 
     _shi = props->getFloatValue("shininess", -1.0);
     if (_shi >= 0.0)
@@ -1171,74 +1156,47 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
 
     string _texture_str = props->getStringValue("texture", "");
     if (!_texture_str.empty()) {
-        _texture = _base_dir;
+        _texture = _texture_base;
         _texture.append(_texture_str);
         _update |= TEXTURE;
     }
 
-    SGPropertyNode_ptr node = props->getChild("condition");
-    _condition = node ? sgReadCondition(prop_root, node) : 0;
+    n = props->getChild("shininess-prop");
+    _shi_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = props->getChild("transparency-prop");
+    _trans_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = props->getChild("threshold-prop");
+    _thresh_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = props->getChild("texture-prop");
+    _tex_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+}
 
-    node = props->getChild("diffuse-red-prop");
-    _diff.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("diffuse-green-prop");
-    _diff.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("diffuse-blue-prop");
-    _diff.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("diffuse-factor-prop");
-    _diff.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("diffuse-offset-prop");
-    _diff.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    if (_diff.live())
-        _read |= DIFFUSE;
+void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)
+{
+    if (!group)
+        return;
 
-    node = props->getChild("ambient-red-prop");
-    _amb.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("ambient-green-prop");
-    _amb.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("ambient-blue-prop");
-    _amb.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("ambient-factor-prop");
-    _amb.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("ambient-offset-prop");
-    _amb.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    if (_amb.live())
-        _read |= AMBIENT;
+    col->red = group->getFloatValue("red", -1.0);
+    col->green = group->getFloatValue("green", -1.0);
+    col->blue = group->getFloatValue("blue", -1.0);
+    col->factor = group->getFloatValue("factor", 1.0);
+    col->offset = group->getFloatValue("offset", 0.0);
+    if (col->dirty())
+        _update |= flag;
 
-    node = props->getChild("specular-red-prop");
-    _spec.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("specular-green-prop");
-    _spec.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("specular-blue-prop");
-    _spec.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("specular-factor-prop");
-    _spec.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("specular-offset-prop");
-    _spec.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    if (_spec.live())
-        _read |= SPECULAR;
-
-    node = props->getChild("emission-red-prop");
-    _emis.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("emission-green-prop");
-    _emis.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("emission-blue-prop");
-    _emis.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("emission-factor-prop");
-    _emis.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("emission-offset-prop");
-    _emis.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    if (_emis.live())
-        _read |= EMISSION;
-
-    node = props->getChild("shininess-prop");
-    _shi_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("transparency-prop");
-    _trans_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("threshold-prop");
-    _thresh_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
-    node = props->getChild("texture-prop");
-    _tex_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    SGPropertyNode *n;
+    n = group->getChild("red-prop");
+    col->red_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = group->getChild("green-prop");
+    col->green_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = group->getChild("blue-prop");
+    col->blue_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = group->getChild("factor-prop");
+    col->factor_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    n = group->getChild("offset-prop");
+    col->offset_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+    if (col->live())
+        _read |= flag;
 }
 
 void SGMaterialAnimation::init()
@@ -1252,66 +1210,15 @@ int SGMaterialAnimation::update()
     if (_condition && !_condition->test())
         return 2;
 
-    if (_read & DIFFUSE) {
-        ColorSpec tmp = _diff;
-        if (_diff.red_prop)
-            _diff.red = _diff.red_prop->getFloatValue();
-        if (_diff.green_prop)
-            _diff.green = _diff.green_prop->getFloatValue();
-        if (_diff.blue_prop)
-            _diff.blue = _diff.blue_prop->getFloatValue();
-        if (_diff.factor_prop)
-            _diff.factor = _diff.factor_prop->getFloatValue();
-        if (_diff.offset_prop)
-            _diff.offset = _diff.offset_prop->getFloatValue();
-        if (_diff != tmp)
-            _update |= DIFFUSE;
-    }
-    if (_read & AMBIENT) {
-        ColorSpec tmp = _amb;
-        if (_amb.red_prop)
-            _amb.red = _amb.red_prop->getFloatValue();
-        if (_amb.green_prop)
-            _amb.green = _amb.green_prop->getFloatValue();
-        if (_amb.blue_prop)
-            _amb.blue = _amb.blue_prop->getFloatValue();
-        if (_amb.factor_prop)
-            _amb.factor = _amb.factor_prop->getFloatValue();
-        if (_amb.offset_prop)
-            _amb.offset = _amb.offset_prop->getFloatValue();
-        if (_amb != tmp)
-            _update |= AMBIENT;
-    }
-    if (_read & SPECULAR) {
-        ColorSpec tmp = _spec;
-        if (_spec.red_prop)
-            _spec.red = _spec.red_prop->getFloatValue();
-        if (_spec.green_prop)
-            _spec.green = _spec.green_prop->getFloatValue();
-        if (_spec.blue_prop)
-            _spec.blue = _spec.blue_prop->getFloatValue();
-        if (_spec.factor_prop)
-            _spec.factor = _spec.factor_prop->getFloatValue();
-        if (_spec.offset_prop)
-            _spec.offset = _spec.offset_prop->getFloatValue();
-        if (_spec != tmp)
-            _update |= SPECULAR;
-    }
-    if (_read & EMISSION) {
-        ColorSpec tmp = _emis;
-        if (_emis.red_prop)
-            _emis.red = _emis.red_prop->getFloatValue();
-        if (_emis.green_prop)
-            _emis.green = _emis.green_prop->getFloatValue();
-        if (_emis.blue_prop)
-            _emis.blue = _emis.blue_prop->getFloatValue();
-        if (_emis.factor_prop)
-            _emis.factor = _emis.factor_prop->getFloatValue();
-        if (_emis.offset_prop)
-            _emis.offset = _emis.offset_prop->getFloatValue();
-        if (_emis != tmp)
-            _update |= EMISSION;
-    }
+    if (_read & DIFFUSE)
+        updateColorGroup(&_diff, DIFFUSE);
+    if (_read & AMBIENT)
+        updateColorGroup(&_amb, AMBIENT);
+    if (_read & EMISSION)
+        updateColorGroup(&_emis, EMISSION);
+    if (_read & SPECULAR)
+        updateColorGroup(&_spec, SPECULAR);
+
     float f;
     if (_shi_prop) {
         f = _shi;
@@ -1335,7 +1242,7 @@ int SGMaterialAnimation::update()
         string t = _tex_prop->getStringValue();
         if (!t.empty() && t != _texture_str) {
             _texture_str = t;
-            _texture = _base_dir;
+            _texture = _texture_base;
             _texture.append(t);
             _update |= TEXTURE;
         }
@@ -1345,6 +1252,23 @@ int SGMaterialAnimation::update()
         _update = 0;
     }
     return 2;
+}
+
+void SGMaterialAnimation::updateColorGroup(ColorSpec *col, int flag)
+{
+    ColorSpec tmp = *col;
+    if (col->red_prop)
+        col->red = col->red_prop->getFloatValue();
+    if (col->green_prop)
+        col->green = col->green_prop->getFloatValue();
+    if (col->blue_prop)
+        col->blue = col->blue_prop->getFloatValue();
+    if (col->factor_prop)
+        col->factor = col->factor_prop->getFloatValue();
+    if (col->offset_prop)
+        col->offset = col->offset_prop->getFloatValue();
+    if (*col != tmp)
+        _update |= flag;
 }
 
 void SGMaterialAnimation::cloneMaterials(ssgBranch *b)
@@ -1382,10 +1306,10 @@ void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
     }
     if (_update & AMBIENT)
         s->setMaterial(GL_AMBIENT, _amb.rgba());
-    if (_update & SPECULAR)
-        s->setMaterial(GL_SPECULAR, _spec.rgba());
     if (_update & EMISSION)
         s->setMaterial(GL_EMISSION, _emis.rgba());
+    if (_update & SPECULAR)
+        s->setMaterial(GL_SPECULAR, _spec.rgba());
     if (_update & SHININESS)
         s->setShininess(clamp(_shi, 0.0, 128.0));
     if (_update & TRANSPARENCY) {

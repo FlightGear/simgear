@@ -466,14 +466,14 @@ private:
         SGPropertyNode_ptr factor_prop;
         SGPropertyNode_ptr offset_prop;
         sgVec4 v;
-        bool dirty() {
+        inline bool dirty() {
             return red >= 0.0 || green >= 0.0 || blue >= 0.0;
         }
-        bool live() {
+        inline bool live() {
             return red_prop || green_prop || blue_prop
                     || factor_prop || offset_prop;
         }
-        bool operator!=(ColorSpec& a) {
+        inline bool operator!=(ColorSpec& a) {
             return red != a.red || green != a.green || blue != a.blue
                     || factor != a.factor || offset != a.offset;
         }
@@ -484,12 +484,14 @@ private:
             v[3] = 1.0;
             return v;
         }
-        float clamp(float val) {
+        inline float clamp(float val) {
             return val < 0.0 ? 0.0 : val > 1.0 ? 1.0 : val;
         }
     };
     SGCondition *_condition;
-    SGPath _base_dir;
+    SGPropertyNode *_prop_root;
+    string _prop_base;
+    SGPath _texture_base;
     SGPath _texture;
     string _texture_str;
     ssgSimpleState* _cached_material;
@@ -505,6 +507,7 @@ private:
     float _trans;
     float _thresh;	// alpha_clamp (see man glAlphaFunc)
     string _tex;
+    string _tmpstr;
     SGPropertyNode_ptr _shi_prop;
     SGPropertyNode_ptr _trans_prop;
     SGPropertyNode_ptr _thresh_prop;
@@ -512,8 +515,13 @@ private:
 
     void cloneMaterials(ssgBranch *b);
     void setMaterialBranch(ssgBranch *b);
-    float clamp(float val, float min = 0.0, float max = 1.0) {
+    void initColorGroup(SGPropertyNode_ptr, ColorSpec *, int flag);
+    void updateColorGroup(ColorSpec *, int flag);
+    inline float clamp(float val, float min = 0.0, float max = 1.0) {
         return val < min ? min : val > max ? max : val;
+    }
+    const char *path(const char *rel) {
+        return (_tmpstr = _prop_base + rel).c_str();
     }
 };
 

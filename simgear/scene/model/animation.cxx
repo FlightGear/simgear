@@ -102,9 +102,9 @@ change_alpha( ssgBase *_branch, float _blend )
   for (i = 0; i < ((ssgBranch *)_branch)->getNumKids(); i++)
     change_alpha( ((ssgBranch *)_branch)->getKid(i), _blend );
 
-  if ( strcmp("ssgLeaf", _branch->getTypeName()) &&
-       strcmp("ssgVtxTable", _branch->getTypeName()) &&
-       strcmp("ssgVTable", _branch->getTypeName()) )
+  if ( !_branch->isAKindOf(ssgTypeLeaf())
+       && !_branch->isAKindOf(ssgTypeVtxTable())
+       && !_branch->isAKindOf(ssgTypeVTable()) )
     return;
 
   int num_colors = ((ssgLeaf *)_branch)->getNumColours();

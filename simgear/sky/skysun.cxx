@@ -44,25 +44,97 @@ FGSkySun::~FGSkySun( void ) {
 }
 
 
+static GLuint makeHalo( GLubyte *sun_texbuf ) {
+    int texWidth = 64;		// 64x64 is plenty
+    int texSize;
+    GLuint texid;
+    GLubyte *p;
+    int i,j;
+    double radius;
+  
+    // create a texture id
+#ifdef GL_VERSION_1_1
+    glGenTextures(1, &texid);
+    glBindTexture(GL_TEXTURE_2D, texid);
+#elif GL_EXT_texture_object
+    glGenTexturesEXT(1, &texid);
+    glBindTextureEXT(GL_TEXTURE_2D, texid);
+#else
+#   error port me
+#endif
+
+    glPixelStorei( GL_UNPACK_ALIGNMENT, 4 );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE ) ;
+ 
+    // create the actual texture contents
+    texSize = texWidth * texWidth;
+  
+    sun_texbuf = new GLubyte[texSize*4];
+    if ( !sun_texbuf ) {
+	return 0;  // Ugly!
+    }
+
+    p = sun_texbuf;
+  
+    radius = (double)(texWidth / 2);
+  
+    for (i=0; i < texWidth; i++) {
+	for (j=0; j < texWidth; j++) {
+	    double x, y, d;
+	    
+	    *p = 0xff;
+	    *(p+1) = 0xff;
+	    *(p+2) = 0xff;
+
+	    x = fabs((double)(i - (texWidth / 2)));
+	    y = fabs((double)(j - (texWidth / 2)));
+
+	    d = sqrt((x * x) + (y * y));
+	    if (d < radius) {
+		// t is 1.0 at center, 0.0 at edge
+		double t = 1.0 - (d / radius);
+
+		// inverse square looks nice 
+		*(p+3) = (int)((double) 0xff * (t*t));
+	    } else {
+		*(p+3) = 0x00;
+	    }
+	    p += 4;
+	}
+    }
+
+    glTexImage2D( GL_TEXTURE_2D,
+		  0,
+		  GL_RGBA,
+		  texWidth, texWidth,
+		  0,
+		  GL_RGBA, GL_UNSIGNED_BYTE,
+		  sun_texbuf );
+
+    return texid;
+}
+
+
 // initialize the sun object and connect it into our scene graph root
 bool FGSkySun::initialize() {
 
-    // create the scene graph for the dome
+    // create the scene graph for the sun/halo
     skysun = new ssgRoot;
     skysun->setName( "Sky Sun" );
 
-    // set up the state
+    // set up the orb state
     orb_state = new ssgSimpleState();
     orb_state->setShadeModel( GL_SMOOTH );
     orb_state->disable( GL_LIGHTING );
-    orb_state->disable( GL_DEPTH_TEST );
     orb_state->disable( GL_CULL_FACE );
     orb_state->disable( GL_TEXTURE_2D );
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    orb_state->disable( GL_BLEND );
 
     cl = new ssgColourArray( 1 );
-
     ssgBranch *orb = ssgMakeSphere( orb_state, cl, 550.0, 10, 10 );
 
     // force a repaint of the sun colors with arbitrary defaults
@@ -81,6 +153,51 @@ bool FGSkySun::initialize() {
     sun_selector->clrTraversalMaskBits( SSGTRAV_HOT );
 
     skysun->addKid( sun_selector );
+
+    // set up the halo state
+    halo_state = new ssgSimpleState();
+    halo_state->setShadeModel( GL_SMOOTH );
+    halo_state->disable( GL_LIGHTING );
+    halo_state->disable( GL_CULL_FACE );
+    halo_state->enable( GL_TEXTURE_2D );
+    halo_state->enable( GL_COLOR_MATERIAL );
+    halo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    halo_state->enable( GL_BLEND );
+    halo_state->setTranslucent();
+
+    // build the halo
+    sun_texid = makeHalo( sun_texbuf );
+    halo_state->setTexture( sun_texid );
+    cout << "set texture" << endl;;
+
+    // Build ssg structure
+    sgVec3 v3;
+    halo_vl = new ssgVertexArray;
+    sgSetVec3( v3, -5000.0, 0.0, -5000.0 );
+    halo_vl->add( v3 );
+    sgSetVec3( v3, 5000.0, 0.0, -5000.0 );
+    halo_vl->add( v3 );
+    sgSetVec3( v3, 5000.0, 0.0,  5000.0 );
+    halo_vl->add( v3 );
+    sgSetVec3( v3, -5000.0, 0.0,  5000.0 );
+    halo_vl->add( v3 );
+
+    sgVec2 v2;
+    halo_tl = new ssgTexCoordArray;
+    sgSetVec2( v2, 0.0f, 0.0f );
+    halo_tl->add( v2 );
+    sgSetVec2( v2, 1.0, 0.0 );
+    halo_tl->add( v2 );
+    sgSetVec2( v2, 1.0, 1.0 );
+    halo_tl->add( v2 );
+    sgSetVec2( v2, 0.0, 1.0 );
+    halo_tl->add( v2 );
+
+    ssgLeaf *halo = 
+	new ssgVtxTable ( GL_QUADS, halo_vl, NULL, halo_tl, cl );
+    halo->setState( halo_state);
+
+    sun_transform->addKid( halo );
 
     return true;
 }
@@ -114,7 +231,8 @@ bool FGSkySun::repaint( double sun_angle ) {
 	if (color[1] > 1.0) color[1] = 1.0;
 	if (color[2] > 1.0) color[2] = 1.0;
 
-	cout << "color = " << color[0] << " " << color[1] << " " << color[2] << endl;
+	// cout << "color = " << color[0] << " " << color[1] << " " 
+	//      << color[2] << endl;
 
 	float *ptr;
 	ptr = cl->get( 0 );
@@ -198,11 +316,11 @@ Star::Star(FGTime *t) :
     
   FG_LOG( FG_GENERAL, FG_INFO, "Initializing Sun Texture");
 #ifdef GL_VERSION_1_1
-  xglGenTextures(1, &sun_texid);
-  xglBindTexture(GL_TEXTURE_2D, sun_texid);
+  glGenTextures(1, &sun_texid);
+  glBindTexture(GL_TEXTURE_2D, sun_texid);
 #elif GL_EXT_texture_object
-  xglGenTexturesEXT(1, &sun_texid);
-  xglBindTextureEXT(GL_TEXTURE_2D, sun_texid);
+  glGenTexturesEXT(1, &sun_texid);
+  glBindTextureEXT(GL_TEXTURE_2D, sun_texid);
 #else
 #  error port me
 #endif
@@ -368,12 +486,12 @@ void Star::newImage(void)
     if (amb[0] > 1.0) amb[0] = 1.0;
     if (amb[1] > 1.0) amb[1] = 1.0;
     if (amb[2] > 1.0) amb[2] = 1.0;
-    xglColor3fv(amb);
+    glColor3fv(amb);
     glPushMatrix();
     {
-      xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
-      xglRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
-      xglTranslatef(0,60000,0);
+      glRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
+      glRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
+      glTranslatef(0,60000,0);
       if (current_options.get_textures())
 	{
 	  glEnable(GL_TEXTURE_2D); // TEXTURE ENABLED
@@ -391,8 +509,8 @@ void Star::newImage(void)
 	  glTexCoord2f(0.0f, 1.0f); glVertex3f(-5000, 0.0,  5000);
 	  glEnd();
 	}
-      xglDisable(GL_TEXTURE_2D); // TEXTURE DISABLED
-      xglDisable(GL_BLEND);	// BLEND DISABLED
+      glDisable(GL_TEXTURE_2D); // TEXTURE DISABLED
+      glDisable(GL_BLEND);	// BLEND DISABLED
     }
 
     glPopMatrix();
@@ -400,10 +518,10 @@ void Star::newImage(void)
     glDisable(GL_BLEND);	// BLEND DISABLED
     glPushMatrix();
     {     
-      xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
-      xglRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
-      xglColor4fv(amb);
-      xglTranslatef(0,60000,0);
+      glRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
+      glRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
+      glColor4fv(amb);
+      glTranslatef(0,60000,0);
       gluSphere( SunObject,  sun_size, 10, 10 );
       }
     glPopMatrix();

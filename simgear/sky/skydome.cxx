@@ -104,11 +104,11 @@ bool FGSkyDome::initialize( ) {
     dome_state = new ssgSimpleState();
     dome_state->setShadeModel( GL_SMOOTH );
     dome_state->disable( GL_LIGHTING );
-    dome_state->disable( GL_DEPTH_TEST );
     dome_state->disable( GL_CULL_FACE );
     dome_state->disable( GL_TEXTURE_2D );
     dome_state->enable( GL_COLOR_MATERIAL );
     dome_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    dome_state->disable( GL_BLEND );
 
     // initialize arrays
     center_disk_vl = new ssgVertexArray( 14 );

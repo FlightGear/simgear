@@ -43,6 +43,12 @@ class FGSkySun {
 
     ssgColourArray *cl;
 
+    ssgVertexArray *halo_vl;
+    ssgTexCoordArray *halo_tl;
+
+    GLuint sun_texid;
+    GLubyte *sun_texbuf;
+
 public:
 
     // Constructor

@@ -24,17 +24,15 @@
 #ifndef _VENUS_HXX_
 #define _VENUS_HXX_
 
-#include <simgear/timing/sg_time.hxx>
-
 #include "celestialBody.hxx"
 #include "star.hxx"
 
 class Venus : public CelestialBody
 {
 public:
-  Venus ( SGTime *t);
+  Venus (double mjd);
   Venus ();
-  void updatePosition(SGTime *t, Star *ourSun);
+  void updatePosition(double mjd, Star *ourSun);
 };
 
 #endif // _VENUS_HXX_

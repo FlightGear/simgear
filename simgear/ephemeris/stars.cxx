@@ -31,25 +31,25 @@
 #endif
 
 // Constructor
-FGStars::FGStars() {
+SGStarData::SGStarData() {
 }
 
-FGStars::FGStars( FGPath path ) {
+SGStarData::SGStarData( FGPath path ) {
     data_path = FGPath( path );
     load();
 }
 
 
 // Destructor
-FGStars::~FGStars() {
+SGStarData::~SGStarData() {
 }
 
 
-bool FGStars::load() {
+bool SGStarData::load() {
 
     // -dw- avoid local data > 32k error by dynamic allocation of the
     // array, problem for some compilers
-    stars = new sgdVec3[FG_MAX_STARS];
+    stars = new sgdVec3[SG_MAX_STARS];
 
      // build the full path name to the stars data base file
     data_path.append( "stars" );
@@ -69,7 +69,7 @@ bool FGStars::load() {
     nstars = 0;
 
     // read in each line of the file
-    while ( ! in.eof() && nstars < FG_MAX_STARS ) {
+    while ( ! in.eof() && nstars < SG_MAX_STARS ) {
 	in >> skipcomment;
 
         getline( in, name, ',' );

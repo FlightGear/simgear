@@ -26,7 +26,6 @@
 
 
 #include <simgear/constants.h>
-#include <simgear/timing/sg_time.hxx>
 
 #include "celestialBody.hxx"
 #include "star.hxx"
@@ -49,10 +48,10 @@ private:
 
 public:
 
-    Moon( SGTime *t);
+    Moon(double mjd);
     Moon();
     ~Moon();
-    void updatePosition(SGTime *t, double lat, Star *ourSun);
+    void updatePosition(double mjd, double lst, double lat, Star *ourSun);
     // void newImage();
 };
 

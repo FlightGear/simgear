@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _STARS_HXX
-#define _STARS_HXX
+#ifndef _SG_STARDATA_HXX
+#define _SG_STARDATA_HXX
 
 
 #include <plib/sg.h>
@@ -30,10 +30,10 @@
 #include <simgear/misc/fgpath.hxx>
 
 
-#define FG_MAX_STARS 850
+#define SG_MAX_STARS 850
 
 
-class FGStars {
+class SGStarData {
 
     int nstars;
     sgdVec3 *stars;
@@ -43,11 +43,11 @@ class FGStars {
 public:
 
     // Constructor
-    FGStars();
-    FGStars( FGPath path );
+    SGStarData();
+    SGStarData( FGPath path );
 
     // Destructor
-    ~FGStars();
+    ~SGStarData();
 
     // load the stars database
     bool load();
@@ -58,4 +58,4 @@ public:
 };
 
 
-#endif // _STARS_HXX
+#endif // _SG_STARDATA_HXX

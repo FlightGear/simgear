@@ -24,17 +24,15 @@
 #ifndef _MARS_HXX_
 #define _MARS_HXX_
 
-#include <simgear/timing/sg_time.hxx>
-
 #include "celestialBody.hxx"
 #include "star.hxx"
 
 class Mars : public CelestialBody
 {
 public:
-  Mars ( SGTime *t);
+  Mars ( double mjd );
   Mars ();
-  void updatePosition(SGTime *t, Star *ourSun);
+  void updatePosition(double mjd, Star *ourSun);
 };
 
 #endif // _MARS_HXX_

@@ -38,10 +38,10 @@ private:
 
 public:
 
-    Star (SGTime *t);
+    Star (double mjd);
     Star ();
     ~Star();
-    void updatePosition(SGTime *t);
+    void updatePosition(double mjd);
     double getM();
     double getw();
     double getxs();

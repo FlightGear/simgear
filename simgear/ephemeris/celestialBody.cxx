@@ -34,7 +34,7 @@
 
 
 /**************************************************************************
- * void CelestialBody::updatePosition(SGTime *t, Star *ourSun)
+ * void CelestialBody::updatePosition(double mjd, Star *ourSun)
  *
  * Basically, this member function provides a general interface for 
  * calculating the right ascension and declinaion. This function is 
@@ -45,20 +45,20 @@
  * position is calculated an a slightly different manner.  
  *
  * arguments:
- * SGTime t: provides the current time.
+ * double mjd: provides the modified julian date.
  * Star *ourSun: the sun's position is needed to convert heliocentric 
  *               coordinates into geocentric coordinates.
  *
  * return value: none
  *
  *************************************************************************/
-void CelestialBody::updatePosition(SGTime *t, Star *ourSun)
+void CelestialBody::updatePosition(double mjd, Star *ourSun)
 {
   double eccAnom, v, ecl, actTime, 
     xv, yv, xh, yh, zh, xg, yg, zg, xe, ye, ze;
 
-  updateOrbElements(t);
-  actTime = fgCalcActTime(t);
+  updateOrbElements(mjd);
+  actTime = fgCalcActTime(mjd);
 
   // calcualate the angle bewteen ecliptic and equatorial coordinate system
   ecl = DEG_TO_RAD * (23.4393 - 3.563E-7 *actTime);

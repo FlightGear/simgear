@@ -39,20 +39,20 @@
 
 
 /*************************************************************************
- * Moon::Moon(SGTime *t)
+ * Moon::Moon(double mjd)
  * Public constructor for class Moon. Initializes the orbital elements and 
  * sets up the moon texture.
  * Argument: The current time.
  * the hard coded orbital elements for Moon are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Moon::Moon(SGTime *t) :
+Moon::Moon(double mjd) :
   CelestialBody(125.1228, -0.0529538083,
 		5.1454,    0.00000,
 		318.0634,  0.1643573223,
 		60.266600, 0.000000,
 		0.054900,  0.000000,
-		115.3654,  13.0649929509, t)
+		115.3654,  13.0649929509, mjd)
 {
 }
 
@@ -73,12 +73,12 @@ Moon::~Moon()
 
 
 /*****************************************************************************
- * void Moon::updatePosition(SGTime *t, Star *ourSun)
+ * void Moon::updatePosition(double mjd, Star *ourSun)
  * this member function calculates the actual topocentric position (i.e.) 
  * the position of the moon as seen from the current position on the surface
  * of the moon. 
  ****************************************************************************/
-void Moon::updatePosition(SGTime *t, double lat, Star *ourSun)
+void Moon::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 {
   double 
     eccAnom, ecl, actTime,
@@ -86,8 +86,8 @@ void Moon::updatePosition(SGTime *t, double lat, Star *ourSun)
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
     geoRa, geoDec;
   
-  updateOrbElements(t);
-  actTime = fgCalcActTime(t);
+  updateOrbElements(mjd);
+  actTime = fgCalcActTime(mjd);
 
   // calculate the angle between ecliptic and equatorial coordinate system
   // in Radians
@@ -174,7 +174,7 @@ void Moon::updatePosition(SGTime *t, double lat, Star *ourSun)
   if (geoRa < 0)
     geoRa += (2*FG_PI);
   
-  HA = t->getLst() - (3.8197186 * geoRa);
+  HA = lst - (3.8197186 * geoRa);
   /* FG_LOG( FG_GENERAL, FG_INFO, "t->getLst() = " << t->getLst() 
 	  << " HA = " << HA ); */
 

@@ -24,17 +24,15 @@
 #ifndef _JUPITER_HXX_
 #define _JUPITER_HXX_
 
-#include <simgear/timing/sg_time.hxx>
-
 #include "celestialBody.hxx"
 #include "star.hxx"
 
 class Jupiter : public CelestialBody
 {
 public:
-  Jupiter (SGTime *t);
+  Jupiter (double mjd);
   Jupiter ();
-  void updatePosition(SGTime *t, Star *ourSun);
+  void updatePosition(double mjd, Star *ourSun);
 };
 
 #endif // _JUPITER_HXX_

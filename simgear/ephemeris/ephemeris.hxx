@@ -1,7 +1,10 @@
 // ephemeris.hxx -- Top level class for calculating current positions of
 //                  astronomical objects
 //
-// Written by Curtis Olson, started March 2000.
+// Top level interface written by Curtis Olson, started March 2000.
+//
+// All the core code underneath this is written by Durk Talsma.  See
+// the headers of all the other individual files for details.
 //
 // Copyright (C) 2000  Curtis L. Olson - curt@flightgear.org
 //
@@ -32,8 +35,6 @@
 
 #include <plib/sg.h>
 
-#include <simgear/timing/sg_time.hxx>
-
 #include "star.hxx"
 #include "moon.hxx"
 #include "mercury.hxx"
@@ -46,7 +47,7 @@
 #include "stars.hxx"
 
 
-class FGEphemeris {
+class SGEphemeris {
 
     Star *our_sun;
     Moon *moon;
@@ -65,19 +66,19 @@ class FGEphemeris {
     int nplanets;
     sgdVec3 planets[7];
 
-    FGStars *stars;
+    SGStarData *stars;
 
 public:
 
     // Constructor
-    FGEphemeris( const string &path );
+    SGEphemeris( const string &path );
 
     // Destructor
-    ~FGEphemeris( void );
+    ~SGEphemeris( void );
 
     // Update (recalculate) the positions of all objects for the
     // specified time
-    void update(SGTime *t, double lat);
+    void update(double mjd, double lst, double lat);
 
     // sun
     inline Star *get_sun() const { return our_sun; }

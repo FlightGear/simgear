@@ -24,17 +24,15 @@
 #ifndef _MERCURY_HXX_
 #define _MERCURY_HXX_
 
-#include <simgear/timing/sg_time.hxx>
-
 #include "celestialBody.hxx"
 #include "star.hxx"
 
 class Mercury : public CelestialBody
 {
 public:
-  Mercury ( SGTime *t);
+  Mercury (double mjd);
   Mercury ();
-  void updatePosition(SGTime *t, Star* ourSun);
+  void updatePosition(double mjd, Star* ourSun);
 };
 
 #endif // _MERURY_HXX_

@@ -24,13 +24,12 @@
 #ifndef _PLUTO_HXX_
 #define _PLUTO_HXX_
 
-#include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 
 class Pluto : public CelestialBody
 {
 public:
-  Pluto ( FGTime *t);
+  Pluto (double mjd);
   Pluto ();
 };
 

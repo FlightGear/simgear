@@ -34,7 +34,7 @@
 
 
 /*************************************************************************
- * Star::Star(SGTime *t)
+ * Star::Star(double mjd)
  * Public constructor for class Star
  * Argument: The current time.
  * the hard coded orbital elements our sun are passed to 
@@ -42,13 +42,13 @@
  * note that the word sun is avoided, in order to prevent some compilation
  * problems on sun systems 
  ************************************************************************/
-Star::Star(SGTime *t) :
+Star::Star(double mjd) :
     CelestialBody (0.000000,  0.0000000000,
 		   0.0000,    0.00000,
 		   282.9404,  4.7093500E-5,	
 		   1.0000000, 0.000000,	
 		   0.016709,  -1.151E-9,
-		   356.0470,  0.98560025850, t)
+		   356.0470,  0.98560025850, mjd)
 {
     distance = 0.0;
 }
@@ -70,20 +70,20 @@ Star::~Star()
 
 
 /*************************************************************************
- * void Star::updatePosition(SGTime *t, Star *ourSun)
+ * void Star::updatePosition(double mjd, Star *ourSun)
  * 
  * calculates the current position of our sun.
  *************************************************************************/
-void Star::updatePosition(SGTime *t)
+void Star::updatePosition(double mjd)
 {
   double 
     actTime, eccAnom, 
     xv, yv, v, r,
     xe, ye, ze, ecl;
 
-  updateOrbElements(t);
+  updateOrbElements(mjd);
   
-  actTime = fgCalcActTime(t);
+  actTime = fgCalcActTime(mjd);
   ecl = DEG_TO_RAD * (23.4393 - 3.563E-7 * actTime); // Angle in Radians
   eccAnom = fgCalcEccAnom(M, e);  // Calculate the eccentric Anomaly (also known as solving Kepler's equation)
   

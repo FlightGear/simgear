@@ -26,7 +26,7 @@
 
 
 // Constructor
-FGEphemeris::FGEphemeris( const string &path ) {
+SGEphemeris::SGEphemeris( const string &path ) {
     our_sun = new Star;
     moon = new Moon;
     mercury = new Mercury;
@@ -36,12 +36,12 @@ FGEphemeris::FGEphemeris( const string &path ) {
     saturn = new Saturn;
     uranus = new Uranus;
     neptune = new Neptune;
-    stars = new FGStars( FGPath(path) );
+    stars = new SGStarData( FGPath(path) );
 }
 
 
 // Destructor
-FGEphemeris::~FGEphemeris( void ) {
+SGEphemeris::~SGEphemeris( void ) {
     delete our_sun;
     delete moon;
     delete mercury;
@@ -57,17 +57,17 @@ FGEphemeris::~FGEphemeris( void ) {
 
 // Update (recalculate) the positions of all objects for the specified
 // time
-void FGEphemeris::update( SGTime *t, double lat ) {
+void SGEphemeris::update( double mjd, double lst, double lat ) {
     // update object positions
-    our_sun->updatePosition( t );
-    moon->updatePosition( t, lat, our_sun );
-    mercury->updatePosition( t, our_sun );
-    venus->updatePosition( t, our_sun );
-    mars->updatePosition( t, our_sun );
-    jupiter->updatePosition( t, our_sun );
-    saturn->updatePosition( t, our_sun );
-    uranus->updatePosition( t, our_sun );
-    neptune->updatePosition( t, our_sun );
+    our_sun->updatePosition( mjd );
+    moon->updatePosition( mjd, lst, lat, our_sun );
+    mercury->updatePosition( mjd, our_sun );
+    venus->updatePosition( mjd, our_sun );
+    mars->updatePosition( mjd, our_sun );
+    jupiter->updatePosition( mjd, our_sun );
+    saturn->updatePosition( mjd, our_sun );
+    uranus->updatePosition( mjd, our_sun );
+    neptune->updatePosition( mjd, our_sun );
 
     // update planets list
     nplanets = 7;

@@ -30,19 +30,19 @@
 #include "saturn.hxx"
 
 /*************************************************************************
- * Saturn::Saturn(SGTime *t)
+ * Saturn::Saturn(double mjd)
  * Public constructor for class Saturn
  * Argument: The current time.
  * the hard coded orbital elements for Saturn are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Saturn::Saturn(SGTime *t) :
+Saturn::Saturn(double mjd) :
   CelestialBody(113.6634,   2.3898000E-5,
 		2.4886,	   -1.081E-7,
 		339.3939,   2.9766100E-5,
 		9.5547500,  0.000000,
 		0.055546,  -9.499E-9,
-		316.9670,   0.03344422820, t)
+		316.9670,   0.03344422820, mjd)
 {
 }
 Saturn::Saturn() :
@@ -56,17 +56,17 @@ Saturn::Saturn() :
 }
 
 /*************************************************************************
- * void Saturn::updatePosition(SGTime *t, Star *ourSun)
+ * void Saturn::updatePosition(double mjd, Star *ourSun)
  * 
  * calculates the current position of Saturn, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
  * a Saturn specific equation
  *************************************************************************/
-void Saturn::updatePosition(SGTime *t, Star *ourSun)
+void Saturn::updatePosition(double mjd, Star *ourSun)
 {
-  CelestialBody::updatePosition(t, ourSun);
+  CelestialBody::updatePosition(mjd, ourSun);
   
-  double actTime = fgCalcActTime(t);
+  double actTime = fgCalcActTime(mjd);
   double ir = 0.4897394;
   double Nr = 2.9585076 + 6.6672E-7*actTime;
   double B = asin (sin(declination) * cos(ir) - 

@@ -41,7 +41,7 @@
 gzfilebuf::gzfilebuf()
     : streambuf(),
       file(NULL),
-#if defined( __MWERKS__ )
+#if defined( __MWERKS__ ) || __GNUC__ > 2
       mode(ios_openmode(0)),
 #else
       mode(0),

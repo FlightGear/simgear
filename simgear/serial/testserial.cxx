@@ -1,8 +1,17 @@
-#include <string>
+#include <simgear/compiler.h>
+
+#include STL_STRING
+#include STL_IOSTREAM
 
 #include <simgear/debug/logstream.hxx>
 
 #include "serial.hxx"
+
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(cout);
+SG_USING_STD(endl);
+#endif
+
 
 int main () {
     FGSerialPort port;

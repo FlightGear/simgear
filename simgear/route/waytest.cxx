@@ -1,5 +1,15 @@
+#include <simgear/compiler.h>
 #include <simgear/constants.h>
+
+#include STL_IOSTREAM
+
 #include "waypoint.hxx"
+
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(cout);
+SG_USING_STD(endl);
+#endif
+
 
 int main() {
     SGWayPoint a1(-93.216923, 44.880547, 0.0, SGWayPoint::WGS84, "KMSP");

@@ -1,7 +1,15 @@
+#include <simgear/compiler.h>
+
 #include <unistd.h>
+#include STL_IOSTREAM
 
 #include "sg_socket.hxx"
 #include "lowlevel.hxx"
+
+#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+SG_USING_STD(cout);
+SG_USING_STD(endl);
+#endif
 
 static const int sgEndianTest = 1;
 #define sgIsLittleEndian (*((char *) &sgEndianTest ) != 0)

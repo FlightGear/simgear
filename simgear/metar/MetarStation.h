@@ -88,7 +88,7 @@ private:
 		const CMetarStation &rObj );
 			// Assignment operator.  Not implemented.
 
-	friend CMetarStationDB;
+	friend class CMetarStationDB;
 };
 
 

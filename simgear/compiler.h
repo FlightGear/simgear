@@ -111,6 +111,26 @@
 #      define STL_STRSTREAM  <strstream>
 
 #    endif
+#  elif __GNUC__ == 3
+       // g++-3.0.x
+#      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
+#      define SG_NEED_AUTO_PTR
+#      define SG_MEMBER_TEMPLATES
+#      define SG_NAMESPACES
+#      define SG_HAVE_STD
+#      define SG_HAVE_STREAMBUF
+#      define SG_CLASS_PARTIAL_SPECIALIZATION
+#      define SG_HAVE_STD_INCLUDES
+
+#      define STL_ALGORITHM  <algorithm>
+#      define STL_FUNCTIONAL <functional>
+#      define STL_IOMANIP    <iomanip>
+#      define STL_IOSTREAM   <iostream>
+#      define STL_FSTREAM    <fstream>
+#      define STL_STDEXCEPT  <stdexcept>
+#      define STL_STRING     <string>
+#      define STL_STRSTREAM  <strstream>
+
 #  else
 #    error Time to upgrade. GNU compilers < 2.7 not supported
 #  endif

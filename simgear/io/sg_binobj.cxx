@@ -61,10 +61,10 @@ enum {
 } sgObjectTypes;
 
 enum {
-    SG_IDX_VERTICES =  0x0001,
-    SG_IDX_NORMALS =   0x0010,
-    SG_IDX_COLORS =    0x0100,
-    SG_IDX_TEXCOORDS = 0x1000
+    SG_IDX_VERTICES =  0x01,
+    SG_IDX_NORMALS =   0x02,
+    SG_IDX_COLORS =    0x04,
+    SG_IDX_TEXCOORDS = 0x08
 } sgIndexTypes;
 
 enum {
@@ -170,7 +170,7 @@ static void read_object( gzFile fp,
 			 string_list *materials )
 {
     unsigned int nbytes;
-    char idx_mask;
+    unsigned char idx_mask;
     int idx_size;
     bool do_vertices, do_normals, do_colors, do_texcoords;
     int j, k, idx;
@@ -209,6 +209,7 @@ static void read_object( gzFile fp,
 	    // cout << "material type = " << material << endl;
 	} else if ( prop_type == SG_INDEX_TYPES ) {
 	    idx_mask = ptr[0];
+	    // cout << "idx_mask = " << (int)idx_mask << endl;
 	    idx_size = 0;
 	    do_vertices = false;
 	    do_normals = false;
@@ -566,114 +567,10 @@ bool SGBinObject::read_bin( const string& file ) {
 	    read_object( fp, SG_TRIANGLE_STRIPS, nproperties, nelements,
 			 &strips_v, &strips_n, &strips_c, &strips_tc,
 			 &strip_materials );
-#if 0
-	    // default values
-	    idx_size = 2;
-	    idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
-	    do_vertices = true;
-	    do_normals = false;
-	    do_colors = false;
-	    do_texcoords = true;
-
-	    for ( j = 0; j < nproperties; ++j ) {
-		char prop_type;
-		sgReadChar( fp, &prop_type );
-
-		sgReadUInt( fp, &nbytes );
-		// cout << "property size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		if ( prop_type == SG_MATERIAL ) {
-		    strncpy( material, ptr, nbytes );
-		    material[nbytes] = '\0';
-		    // cout << "material type = " << material << endl;
-		}
-	    }
-
-	    // read triangle strip elements
-	    for ( j = 0; j < nelements; ++j ) {
-		sgReadUInt( fp, &nbytes );
-		// cout << "element size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2);
-		short *sptr = (short *)ptr;
-		int_list vs, tcs;
-		vs.clear(); tcs.clear();
-		for ( k = 0; k < count; ++k ) {
-		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned short *)&(sptr[0]) );
-			sgEndianSwap( (unsigned short *)&(sptr[1]) );
-		    }
-		    vs.push_back( sptr[0] );
-		    tcs.push_back( sptr[1] );
-		    // cout << sptr[0] << "/" << sptr[1] << " ";
-		    sptr += idx_size;
-		}
-		// cout << endl;
-		strips_v.push_back( vs );
-		strips_tc.push_back( tcs );
-		strip_materials.push_back( material );
-	    }
-#endif
 	} else if ( obj_type == SG_TRIANGLE_FANS ) {
 	    // read triangle fan properties
 	    read_object( fp, SG_TRIANGLE_FANS, nproperties, nelements,
 			 &fans_v, &fans_n, &fans_c, &fans_tc, &fan_materials );
-#if 0
-	    // default values
-	    idx_size = 2;
-	    idx_mask = (char)(SG_IDX_VERTICES | SG_IDX_TEXCOORDS);
-	    do_vertices = true;
-	    do_normals = false;
-	    do_colors = false;
-	    do_texcoords = true;
-
-	    for ( j = 0; j < nproperties; ++j ) {
-		char prop_type;
-		sgReadChar( fp, &prop_type );
-
-		sgReadUInt( fp, &nbytes );
-		// cout << "property size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		if ( prop_type == SG_MATERIAL ) {
-		    strncpy( material, ptr, nbytes );
-		    material[nbytes] = '\0';
-		    // cout << "material type = " << material << endl;
-		}
-	    }
-
-	    // read triangle fan elements
-	    for ( j = 0; j < nelements; ++j ) {
-		sgReadUInt( fp, &nbytes );
-		// cout << "element size = " << nbytes << endl;
-		if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
-		char *ptr = buf.get_ptr();
-		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2);
-		short *sptr = (short *)ptr;
-		int_list vs, tcs;
-		vs.clear(); tcs.clear();
-		for ( k = 0; k < count; ++k ) {
-		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned short *)&(sptr[0]) );
-			sgEndianSwap( (unsigned short *)&(sptr[1]) );
-		    }
-		    vs.push_back( sptr[0] );
-		    tcs.push_back( sptr[1] );
-		    // cout << sptr[0] << "/" << sptr[1] << " ";
-		    sptr += idx_size;
-		}
-		// cout << endl;
-		fans_v.push_back( vs );
-		fans_tc.push_back( tcs );
-		fan_materials.push_back( material );
-	    }
-#endif
 	} else {
 	    // unknown object type, just skip
 
@@ -723,7 +620,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgVec3 pt;
     sgVec4 color;
     int i, j;
-    char idx_mask;
+    unsigned char idx_mask;
     int idx_size;
 
     string dir = base + "/" + b.gen_base_path();

@@ -169,7 +169,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
 
 // destructor
 SGSoundSample::~SGSoundSample() {
-    SG_LOG( SG_GENERAL, SG_ALERT, "Deleting a sample" );
+    SG_LOG( SG_GENERAL, SG_INFO, "Deleting a sample" );
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
 }

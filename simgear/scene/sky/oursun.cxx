@@ -113,6 +113,8 @@ static int sgSunHaloPostDraw( ssgEntity *e ) {
 
 // Constructor
 SGSun::SGSun( void ) {
+    prev_sun_angle = -9999.0;
+    visibility = -9999.0;
 }
 
 
@@ -335,17 +337,14 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGSun::repaint( double sun_angle, double new_visibility ) {
-    static float prev_sun_angle = 9999.0;
-
     if ( visibility != new_visibility ) {
-        static double sqrt_m_log01 = sqrt( -log( 0.01 ) );
         visibility = new_visibility;
+
+        static double sqrt_m_log01 = sqrt( -log( 0.01 ) );
         sun_exp2_punch_through = sqrt_m_log01 / (visibility * 15);
     }
 
-    if (prev_sun_angle != sun_angle)
-    {
-
+    if (prev_sun_angle != sun_angle) {
         prev_sun_angle = sun_angle;
 
         float sun_factor = 4*cos(sun_angle);

@@ -51,6 +51,7 @@ class SGSun {
     GLubyte *sun_texbuf;
 
     double visibility;
+    double prev_sun_angle;
 
 public:
 

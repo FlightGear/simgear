@@ -1,5 +1,5 @@
-New in 0.3.4-pre1
-* October 15, 2003
+New in 0.3.4
+* October 22, 2003
 
 * Removed Metakit, FlightGear no longer uses it.
 * Removed all glut dependencies from SimGear.
@@ -21,6 +21,7 @@ New in 0.3.4-pre1
 * Various Solaris fixes.
 * Various cygwin/mingwin fixes.
 * Various Mac OS X fixes.
+* Various Irix fixes.
 
 
 New in 0.3.3

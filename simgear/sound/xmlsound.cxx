@@ -408,6 +408,13 @@ SGXmlSound::update (double dt)
    _sample->set_pitch( pitch_offset + pitch );
    _sample->set_volume( volume_offset + volume );
 
+#if 0
+   if ((pitch_offset + pitch) > 2.0)
+      cout << "WARNING: Pitch higher than 2.0 for configuration for '" << _name << "'"<< endl;
+#endif
+   if ((volume_offset + volume ) > 1.0)
+      cout << "WARNING: Volume larger than 1.0 for configuration for '" << _name << "'" << endl;
+
 
    //
    // Do we need to start playing the sample?

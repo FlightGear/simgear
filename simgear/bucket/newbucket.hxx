@@ -23,6 +23,9 @@
  * $Id$
  **************************************************************************/
 
+/** \file newbucket.hxx
+ * A class and associated utiltity functions to manage world scenery tiling.
+ */
 
 #ifndef _NEWBUCKET_HXX
 #define _NEWBUCKET_HXX
@@ -33,12 +36,12 @@
 #ifdef FG_HAVE_STD_INCLUDES
 #  include <cmath>
 #  include <cstdio> // sprintf()
-#  include <iostream>
 #else
 #  include <math.h>
 #  include <stdio.h> // sprintf()
-#  include <iostream.h>
 #endif
+
+#include STL_IOSTREAM
 
 // I don't understand ... <math.h> or <cmath> should be included
 // already depending on how you defined FG_HAVE_STD_INCLUDES, but I
@@ -57,17 +60,19 @@ FG_USING_STD(ostream);
 #endif
 
 
+/**
+ * standard size of a bucket in degrees (1/8 of a degree)
+ */
+#define SG_BUCKET_SPAN      0.125
 
-#define SG_BUCKET_SPAN      0.125   // 1/8 of a degree
-#define SG_HALF_BUCKET_SPAN 0.0625  // 1/2 of 1/8 of a degree = 1/16 = 0.0625
-
-class SGBucket;
-ostream& operator<< ( ostream&, const SGBucket& );
-bool operator== ( const SGBucket&, const SGBucket& );
+/**
+ * half of a standard SG_BUCKET_SPAN
+ */
+#define SG_HALF_BUCKET_SPAN ( 0.5 * SG_BUCKET_SPAN )
 
 
 // return the horizontal tile span factor based on latitude
-inline double sg_bucket_span( double l ) {
+static double sg_bucket_span( double l ) {
     if ( l >= 89.0 ) {
 	return 360.0;
     } else if ( l >= 88.0 ) {
@@ -102,6 +107,13 @@ inline double sg_bucket_span( double l ) {
 }
 
 
+/**
+ * A class to manage world scenery tiling.
+ * This class encapsulates the world tiling scheme.  It provides ways
+ * to calculate a unique tile index from a lat/lon, and it can provide
+ * information such as the dimensions of a given tile.
+ */
+
 class SGBucket {
 
 private:
@@ -113,59 +125,98 @@ private:
 
 public:
 
-    // default constructor
+    /**
+     * Default constructor.
+     */
     SGBucket();
 
-    // constructor for specified location
+    /**
+     * Construct a bucket given a specific location.
+     * @param dlon longitude specified in degrees
+     * @param dlat latitude specified in degrees
+     */
     SGBucket(const double dlon, const double dlat);
 
-    // create an impossible bucket if false
+    /** Construct a bucket.
+     *  @param is_good if false, create an invalid bucket.  This is
+     *  useful * if you are comparing cur_bucket to last_bucket and
+     *  you want to * make sure last_bucket starts out as something
+     *  impossible.
+     */
     SGBucket(const bool is_good);
 
-    // Parse a unique scenery tile index and find the lon, lat, x, and y
+    /** Construct a bucket given a unique bucket index number.
+     * @param bindex unique bucket index
+     */
     SGBucket(const long int bindex);
 
-    // default destructor
+    /**
+     * Default destructor.
+     */
     ~SGBucket();
 
-    // Set the bucket params for the specified lat and lon
+    /**
+     * Reset a bucket to represent a new lat and lon
+     * @param dlon longitude specified in degrees
+     * @param dlat latitude specified in degrees
+     */
     void set_bucket( double dlon, double dlat );
+
+    /**
+     * Reset a bucket to represent a new lat and lon
+     * @param lonlat an array of double[2] holding lon and lat
+     * (specified) in degrees
+     */
     void set_bucket( double *lonlat );
 
-    // create an impossible bucket
-    inline void make_bad( void ) {
+    /**
+     * Create an impossible bucket.
+     * This is useful if you are comparing cur_bucket to last_bucket
+     * and you want to make sure last_bucket starts out as something
+     * impossible.
+     */
+    inline void make_bad() {
 	set_bucket(0.0, 0.0);
 	lon = -1000;
     }
 
-    // Generate the unique scenery tile index for this bucket
-    // 
-    // The index is constructed as follows:
-    // 
-    // 9 bits - to represent 360 degrees of longitude (-180 to 179)
-    // 8 bits - to represent 180 degrees of latitude (-90 to 89)
-    //
-    // Each 1 degree by 1 degree tile is further broken down into an 8x8
-    // grid.  So we also need:
-    //
-    // 3 bits - to represent x (0 to 7)
-    // 3 bits - to represent y (0 to 7)
-
+    /**
+     * Generate the unique scenery tile index for this bucket
+     *
+     * The index is constructed as follows:
+     * 
+     * 9 bits - to represent 360 degrees of longitude (-180 to 179)
+     * 8 bits - to represent 180 degrees of latitude (-90 to 89)
+     *
+     * Each 1 degree by 1 degree tile is further broken down into an 8x8
+     * grid.  So we also need:
+     *
+     * 3 bits - to represent x (0 to 7)
+     * 3 bits - to represent y (0 to 7)
+     */
     inline long int gen_index() const {
 	return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
     }
 
+    /**
+     * Generate the unique scenery tile index for this bucket in ascii
+     * string form.
+     */
     inline string gen_index_str() const {
 	char tmp[20];
 	sprintf(tmp, "%ld", 
-		(((long)lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x);
+                (((long)lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x);
 	return (string)tmp;
     }
 
-    // Build the path name for this bucket
+    /**
+     * Build the base path name for this bucket.
+     */
     string gen_base_path() const;
 
-    // return the center lon of a tile
+    /**
+     * Return the center lon of a tile.
+     */
     inline double get_center_lon() const {
 	double span = sg_bucket_span( lat + y / 8.0 + SG_HALF_BUCKET_SPAN );
 
@@ -176,42 +227,88 @@ public:
 	}
     }
 
-    // return the center lat of a tile
+    /**
+     * Return the center lat of a tile.
+     */
     inline double get_center_lat() const {
 	return lat + y / 8.0 + SG_HALF_BUCKET_SPAN;
     }
 
-    // return width of the tile in degrees
+    /**
+     * Return width of the tile in degrees.
+     */
     double get_width() const;
-    // return height of the tile in degrees
+
+    /**
+     * Return height of the tile in degrees.
+     */
     double get_height() const;
 
-    // return width of the tile in meters
+    /**
+     * Return width of the tile in meters.
+     */
     double get_width_m() const; 
-    // return height of the tile in meters
+
+    /**
+     * Return height of the tile in meters.
+     */
     double get_height_m() const;
  
-    // Informational methods
+    // Informational methods.
+
+    /**
+     * Return the lon of the lower left corner of this tile.
+     */
     inline int get_lon() const { return lon; }
+
+    /**
+     * Return the lat of the lower left corner of this tile.
+     */
     inline int get_lat() const { return lat; }
+
+    /**
+     * Return the x coord within the 1x1 degree chunk this tile.
+     */
     inline int get_x() const { return x; }
+
+    /**
+     * Return the y coord within the 1x1 degree chunk this tile.
+     */
     inline int get_y() const { return y; }
 
     // friends
+
     friend ostream& operator<< ( ostream&, const SGBucket& );
     friend bool operator== ( const SGBucket&, const SGBucket& );
 };
 
 
-// offset a bucket specified by dlon, dlat by the specified tile units
-// in the X & Y direction
+/**
+ * Return the bucket which is offset from the specified dlon, dlat by
+ * the specified tile units in the X & Y direction.
+ * @param dlon starting lon in degrees
+ * @param dlat starting lat in degrees
+ * @param x number of bucket units to offset in x (lon) direction
+ * @param y number of bucket units to offset in y (lat) direction
+ */
 SGBucket sgBucketOffset( double dlon, double dlat, int x, int y );
 
 
-// calculate the offset between two buckets
+/**
+ * Calculate the offset between two buckets (in quantity of buckets).
+ * @param b1 bucket 1
+ * @param b2 bucket 2
+ * @param dx offset distance (lon) in tile units
+ * @param dy offset distance (lat) in tile units
+ */
 void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy );
 
 
+/**
+ * Write the bucket lon, lat, x, and y to the output stream.
+ * @param out output stream
+ * @param b bucket
+ */
 inline ostream&
 operator<< ( ostream& out, const SGBucket& b )
 {
@@ -219,6 +316,11 @@ operator<< ( ostream& out, const SGBucket& b )
 }
 
 
+/**
+ * Compare two bucket structures for equality.
+ * @param b1 bucket 1
+ * @param b2 bucket 2
+ */
 inline bool
 operator== ( const SGBucket& b1, const SGBucket& b2 )
 {

@@ -9,7 +9,8 @@ include_HEADERS = \
 	strutils.hxx \
 	tabbed_values.hxx \
 	texcoord.hxx \
-	zfstream.hxx
+	zfstream.hxx \
+	interpolator.hxx
 
 libsgmisc_a_SOURCES = \
 	sg_path.cxx \
@@ -17,7 +18,8 @@ libsgmisc_a_SOURCES = \
 	strutils.cxx \
 	tabbed_values.cxx \
 	texcoord.cxx \
-	zfstream.cxx
+	zfstream.cxx \
+	interpolator.cxx
 
 noinst_PROGRAMS = tabbed_value_test
 

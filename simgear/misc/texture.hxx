@@ -47,6 +47,7 @@ protected:
 public:
 
     SGTexture();
+    SGTexture(unsigned int width, unsigned int height);
     ~SGTexture();
 
     /* Copyright (c) Mark J. Kilgard, 1997.  */

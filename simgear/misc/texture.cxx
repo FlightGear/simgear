@@ -12,8 +12,6 @@
  * $Id$
  */
 
-#include <stdlib.h>	// malloc()
-
 #include <GL/glu.h>
 #include <zlib.h>
 
@@ -22,13 +20,17 @@
 
 SGTexture::SGTexture()
 {
-    texture_data = NULL;
+    texture_data = 0;
+}
+
+SGTexture::SGTexture(unsigned int width, unsigned int height)
+{
+    texture_data = new GLubyte[ width*height*3 ];
 }
 
 SGTexture::~SGTexture()
 {
-   if (texture_data)
-      free(texture_data);
+    delete texture_data;
 }
 
 void
@@ -159,7 +161,7 @@ SGTexture::read_alpha_texture(const char *name)
     int y;
 
     if (texture_data)
-        free(texture_data);
+        delete texture_data;
 
     image = ImageOpen(name);
     if(!image) {
@@ -176,9 +178,7 @@ SGTexture::read_alpha_texture(const char *name)
       return;
     }
 
-    texture_data = (GLubyte *)
-           malloc(image->xsize*image->ysize*sizeof(GLubyte));
-
+    texture_data = new GLubyte[ image->xsize * image->ysize ];
     if (!texture_data)
         return;
 
@@ -199,7 +199,7 @@ SGTexture::read_rgb_texture(const char *name)
     int y;
 
     if (texture_data)
-        free(texture_data);
+        delete texture_data;
 
     image = ImageOpen(name);
     if(!image)
@@ -212,17 +212,17 @@ SGTexture::read_rgb_texture(const char *name)
       return;
     }
 
-    texture_data = (GLubyte *)malloc(image->xsize*image->ysize*sizeof(GLubyte)*3);
-    rbuf = (GLubyte *)malloc(image->xsize*sizeof(GLubyte));
-    gbuf = (GLubyte *)malloc(image->xsize*sizeof(GLubyte));
-    bbuf = (GLubyte *)malloc(image->xsize*sizeof(GLubyte));
-    abuf = (GLubyte *)malloc(image->xsize*sizeof(GLubyte));
+    texture_data = new GLubyte[ image->xsize * image->ysize * 3];
+    rbuf = new GLubyte[ image->xsize ];
+    gbuf = new GLubyte[ image->xsize ];
+    bbuf = new GLubyte[ image->xsize ];
+    abuf = new GLubyte[ image->xsize ];
     if(!texture_data || !rbuf || !gbuf || !bbuf || !abuf) {
-      if (texture_data) free(texture_data);
-      if (rbuf) free(rbuf);
-      if (gbuf) free(gbuf);
-      if (bbuf) free(bbuf);
-      if (abuf) free(abuf);
+      delete texture_data;
+      delete rbuf;
+      delete gbuf;
+      delete bbuf;
+      delete abuf;
       return;
     }
 
@@ -245,10 +245,10 @@ SGTexture::read_rgb_texture(const char *name)
     }
 
     ImageClose(image);
-    free(rbuf);
-    free(gbuf);
-    free(bbuf);
-    free(abuf);
+    delete rbuf;
+    delete gbuf;
+    delete bbuf;
+    delete abuf;
 }
 
 void
@@ -259,7 +259,7 @@ SGTexture::read_raw_texture(const char *name)
     int y;
 
     if (texture_data)
-        free(texture_data);
+        delete texture_data;
 
     image = RawImageOpen(name);
 
@@ -269,7 +269,7 @@ SGTexture::read_raw_texture(const char *name)
     texture_width = 256;
     texture_height = 256;
 
-    texture_data = (GLubyte *)malloc(256*256*sizeof(GLubyte)*3);
+    texture_data = new GLubyte[ 256 * 256 * 3 ];
     if(!texture_data)
       return;
 
@@ -290,7 +290,7 @@ SGTexture::read_r8_texture(const char *name)
     int xy;
 
     if (texture_data)
-        free(texture_data);
+        delete texture_data;
 
     //it wouldn't make sense to write a new function ...
     image = RawImageOpen(name);
@@ -301,7 +301,7 @@ SGTexture::read_r8_texture(const char *name)
     texture_width = 256;
     texture_height = 256;
 
-    texture_data = (GLubyte *)malloc(256*256*sizeof(GLubyte)*3);
+    texture_data = new GLubyte [ 256 * 256 * 3 ];
     if(!texture_data)
         return;
 
@@ -339,13 +339,13 @@ SGTexture::ImageOpen(const char *fileName)
         swapFlag = 0;
     }
 
-    image = (SGTexture::ImageRec *)malloc(sizeof(SGTexture::ImageRec));
-    if (image == NULL) {
+    image = new SGTexture::ImageRec;
+    if (image == 0) {
         // fprintf(stderr, "Out of memory!\n");
-        exit(1);
+        return 0;
     }
-    if ((image->file = gzopen(fileName, "rb")) == NULL) {
-      return NULL;
+    if ((image->file = gzopen(fileName, "rb")) == 0) {
+      return 0;
     }
 
     gzread(image->file, image, 12);
@@ -354,19 +354,19 @@ SGTexture::ImageOpen(const char *fileName)
         ConvertShort(&image->imagic, 6);
     }
 
-    image->tmp = (GLubyte *)malloc(image->xsize*256);
-    if (image->tmp == NULL) {
+    image->tmp = new GLubyte[ image->xsize * 256 ];
+    if (image->tmp == 0) {
         // fprintf(stderr, "\nOut of memory!\n");
-        exit(1);
+        return 0;
     }
 
     if ((image->type & 0xFF00) == 0x0100) {
         x = image->ysize * image->zsize * (int) sizeof(unsigned);
-        image->rowStart = (unsigned *)malloc(x);
-        image->rowSize = (int *)malloc(x);
-        if (image->rowStart == NULL || image->rowSize == NULL) {
+        image->rowStart = new unsigned[x];
+        image->rowSize = new int[x];
+        if (image->rowStart == 0 || image->rowSize == 0) {
             // fprintf(stderr, "\nOut of memory!\n");
-            exit(1);
+            return 0;
         }
         image->rleEnd = 512 + (2 * x);
         gzseek(image->file, 512, SEEK_SET);
@@ -384,8 +384,8 @@ SGTexture::ImageOpen(const char *fileName)
 void
 SGTexture::ImageClose(SGTexture::ImageRec *image) {
     gzclose(image->file);
-    free(image->tmp);
-    free(image);
+    delete image->tmp;
+    delete image;
 }
 
 
@@ -407,13 +407,13 @@ SGTexture::RawImageOpen(const char *fileName)
         swapFlag = 0;
     }
 
-    image = (SGTexture::ImageRec *)malloc(sizeof(SGTexture::ImageRec));
-    if (image == NULL) {
+    image = new SGTexture::ImageRec;
+    if (image == 0) {
         // fprintf(stderr, "Out of memory!\n");
-        exit(1);
+        return 0;
     }
-    if ((image->file = gzopen(fileName, "rb")) == NULL) {
-      return NULL;
+    if ((image->file = gzopen(fileName, "rb")) == 0) {
+      return 0;
     }
 
     gzread(image->file, image, 12);
@@ -424,11 +424,11 @@ SGTexture::RawImageOpen(const char *fileName)
 
 
     //just allocate a pseudo value as I'm too lazy to change ImageClose()...
-    image->tmp = (GLubyte *)malloc(1);
+    image->tmp = new GLubyte;
 
-    if (image->tmp == NULL) {
+    if (image->tmp == 0) {
         // fprintf(stderr, "\nOut of memory!\n");
-        exit(1);
+        return 0;
     }
 
     return image;

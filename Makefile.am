@@ -77,7 +77,6 @@ dist-hook:
 		$(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl --lib)
 	pwd
 	echo "copying simgear/metar"
-	(cd $(top_srcdir); tar cf - simgear/metar) | (cd $(distdir); tar xvf -)
 	echo "other stuff"
 	@list='@subdirs@'; \
 	target=distclean; \

@@ -377,6 +377,7 @@ AC_CONFIG_FILES([ \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/metar/Makefile \
+	simgear/environment/Makefile \
 	simgear/misc/Makefile \
 	simgear/nasal/Makefile \
 	simgear/props/Makefile \

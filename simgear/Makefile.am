@@ -5,7 +5,7 @@ SGTHREAD_DIR =
 endif
 
 # METAR_DIRS =
-METAR_DIRS = metar
+METAR_DIRS = metar environment
 
 EXTRA_DIST = simgear_config.h.vc5 version.h.in
 

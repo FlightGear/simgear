@@ -15,7 +15,6 @@ include_HEADERS = \
 	stopwatch.hxx \
 	strutils.hxx \
 	tabbed_values.hxx \
-	texture.hxx \
 	texcoord.hxx \
 	zfstream.hxx
 
@@ -28,7 +27,6 @@ libsgmisc_a_SOURCES = \
 	sgstream.cxx \
 	strutils.cxx \
 	tabbed_values.cxx \
-	texture.cxx \
 	texcoord.cxx \
 	zfstream.cxx
 

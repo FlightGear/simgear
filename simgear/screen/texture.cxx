@@ -25,7 +25,7 @@ SGTexture::SGTexture()
 
 SGTexture::SGTexture(unsigned int width, unsigned int height)
 {
-    texture_data = new GLubyte[ width*height*3 ];
+    texture_data = new GLubyte[ width * height * 3 ];
 }
 
 SGTexture::~SGTexture()
@@ -275,8 +275,8 @@ SGTexture::read_raw_texture(const char *name)
 
     ptr = texture_data;
     for(y=0; y<256; y++) {
-                gzread(image->file, ptr, 256*3);
-                ptr+=256*3;
+        gzread(image->file, ptr, 256*3);
+        ptr+=256*3;
     }
     ImageClose(image);
 }
@@ -317,6 +317,28 @@ SGTexture::read_r8_texture(const char *name)
         ptr+=3;
     }
     ImageClose(image);
+}
+
+
+void
+SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
+{
+    unsigned int pos = (x + y*texture_width)*3;
+    texture_data[pos]   = c[0];
+    texture_data[pos+1] = c[1];
+    texture_data[pos+2] = c[2];
+}
+
+
+sgVec3 *
+SGTexture::get_pixel(GLuint x, GLuint y)
+{
+    static sgVec3 c;
+    unsigned int pos = (x + y*texture_width)*3;
+
+    sgSetVec3(c, texture_data[pos], texture_data[pos+1], texture_data[pos+2]);
+
+    return &c;
 }
 
 
@@ -492,6 +514,7 @@ SGTexture::ConvertShort(unsigned short *array, unsigned int length) {
         *array++ = (b1 << 8) | (b2);
     }
 }
+
 
 void
 SGTexture::ConvertUint(unsigned *array, unsigned int length) {

@@ -5,6 +5,8 @@
 #include <GL/gl.h>
 #include <zlib.h>
 
+#include <plib/sg.h>
+
 class SGTexture {
 
 private:
@@ -64,8 +66,16 @@ public:
     inline int width() { return texture_width; }
     inline int height() { return texture_height; }
 
+    // dynamic texture functions.
+    // everything drawn to the OpenGL screen after prepare is
+    // called and before finish is called will be included
+    // in the new texture.
     void prepare(unsigned int width = 256, unsigned int height = 256);
     void finish(unsigned int width, unsigned int height);
+
+    // texture pixel manipulation functions.
+    void set_pixel(GLuint x, GLuint y, sgVec3 &c);
+    sgVec3 *get_pixel(GLuint x, GLuint y);
 
     void bind();
     inline void select() {

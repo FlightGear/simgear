@@ -372,7 +372,7 @@
 
 #ifdef __APPLE__
 #  define SG_GL_H <OpenGL/gl.h>
-#  define SG_GLX_H <OpenGL/glx.h>
+#  define SG_GLX_H <AGL/agl.h>
 #  define SG_GLU_H <OpenGL/glu.h>
 #  define SG_GLEXT_H <OpenGL/glext.h>
 #  define SG_GLUT_H <GLUT/glut.h>

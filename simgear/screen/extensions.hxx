@@ -24,7 +24,14 @@
 #ifndef __SG_EXTENSIONS_HXX
 #define __SG_EXTENSIONS_HXX 1
 
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
+# include <windows.h>
+#else
+# include <dlfcn.h>
+#endif
+
 #include <GL/gl.h>
+
 
 #if defined(__cplusplus)
 extern "C" {
@@ -44,7 +51,7 @@ bool SGIsOpenGLExtensionSupported(char *extName);
 
 inline void (*SGLookupFunction(const char *func))() {
 
-#if defined( WIN32 )
+#if defined( WIN32 ) && !defined(__CYGWIN__) && !defined(__MINGW32__)
         return (void (*)()) wglGetProcAddress(func);
 
 #elif defined( __APPLE__ )
@@ -54,7 +61,7 @@ inline void (*SGLookupFunction(const char *func))() {
   // If the target system s UNIX and the ARB_get_proc_address
   // GLX extension is *not* guaranteed to be supported. An alternative
   // dlsym-based approach will be used instead.
-  #if defined( linux ) || defined ( sgi )
+  #if defined( linux ) || defined ( sgi ) || defined(__CYGWIN__) || defined(__MINGW32__)
         void *libHandle;
         void (*fptr)();
         libHandle = dlopen("libGL.so", RTLD_LAZY);

@@ -24,14 +24,6 @@
 
 #include <string.h>
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
-#if !defined( WIN32 ) && !defined( __APPLE__ )
-#include <dlfcn.h>
-#endif
-
 #include "extensions.hxx"
 
 bool SGSearchExtensionsString(char *extString, char *extName) {

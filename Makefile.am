@@ -1,9 +1,8 @@
 EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
-	DoxygenMain.cxx
+	DoxygenMain.cxx \
 	README.MSVC \
-	README.metakit \
 	README.zlib \
 	SimGear.dsp \
 	SimGear.dsw

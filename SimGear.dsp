@@ -1094,6 +1094,21 @@ SOURCE=.\simgear\scene\model\animation.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\scene\model\custtrans.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\scene\model\location.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1125,6 +1140,21 @@ SOURCE=.\simgear\scene\model\model.cxx
 # Begin Source File
 
 SOURCE=.\simgear\scene\model\modellib.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\personality.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -2363,7 +2393,7 @@ SOURCE=.\simgear\serial\serial.cxx
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\simgear\sound\sound.cxx
+SOURCE=.\simgear\sound\sample_openal.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -2378,7 +2408,22 @@ SOURCE=.\simgear\sound\sound.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\sound\soundmgr.cxx
+SOURCE=.\simgear\sound\soundmgr_openal.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsound"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsound"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\sound\xmlsound.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

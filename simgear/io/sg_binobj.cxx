@@ -116,7 +116,7 @@ public:
 
 // calculate the center of a list of points, by taking the halfway
 // point between the min and max points.
-static Point3D calc_center( point_list& wgs84_nodes ) {
+Point3D sgCalcCenter( point_list& wgs84_nodes ) {
     Point3D p, min, max;
 
     if ( wgs84_nodes.size() ) {
@@ -1145,7 +1145,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
 		    group_nodes.push_back( wgs84_nodes[ tris_v[i][j] ] );
-		    bs_center = calc_center( group_nodes );
+		    bs_center = sgCalcCenter( group_nodes );
 		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
 		}
 	    }
@@ -1196,7 +1196,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
 		    group_nodes.push_back( wgs84_nodes[ strips_v[i][j] ] );
-		    bs_center = calc_center( group_nodes );
+		    bs_center = sgCalcCenter( group_nodes );
 		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
 		}
 	    }

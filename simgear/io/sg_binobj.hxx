@@ -223,6 +223,16 @@ public:
 
 /**
  * \relates SGBinObject
+ * Calculate the center of a list of points, by taking the halfway
+ * point between the min and max points.
+ * @param wgs84_nodes list of points in wgs84 coordinates
+ * @return center point
+ */
+Point3D sgCalcCenter( point_list& wgs84_nodes );
+
+
+/**
+ * \relates SGBinObject
  * Calculate the bounding sphere of a set of nodes.
  * Center is the center of the tile and zero elevation.
  * @param center center of our bounding radius

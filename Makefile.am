@@ -2,6 +2,8 @@ EXTRA_DIST = \
 	acsite.m4 \
 	acconfig.h \
 	mksymlinks.sh \
+	README.metakit \
+	README.zlib \
 	SimGear.dsp \
 	SimGear.dsw \
 	metakit-2.4.2-32.tar.gz \

@@ -235,8 +235,8 @@ void Star::newImage(void)
       xglTranslatef(0,60000,0);
       if (current_options.get_textures())
 	{
-	  glEnable(GL_TEXTURE_2D);                                             // TEXTURE ENABLED
-	  glEnable(GL_BLEND);                                                  // BLEND ENABLED
+	  glEnable(GL_TEXTURE_2D); // TEXTURE ENABLED
+	  glEnable(GL_BLEND);	// BLEND ENABLED
 	  
 	  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);  
@@ -254,8 +254,8 @@ void Star::newImage(void)
     }
 
     glPopMatrix();
-    glDisable(GL_LIGHTING);	//LIGHTING DISABLED
-    glDisable(GL_BLEND);	//BLEND DISABLED
+    glDisable(GL_LIGHTING);	// LIGHTING DISABLED
+    glDisable(GL_BLEND);	// BLEND DISABLED
     glPushMatrix();
     {     
       xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
@@ -265,7 +265,8 @@ void Star::newImage(void)
       gluSphere( SunObject,  sun_size, 10, 10 );
       }
     glPopMatrix();
-    glDisable(GL_TEXTURE_2D);                                             // TEXTURE DISABLED
-    glDisable(GL_BLEND);                                                  // BLEND DISABLED  
+    glDisable(GL_TEXTURE_2D);	// TEXTURE DISABLED
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    glDisable(GL_BLEND);	// BLEND DISABLED  
   }
 }

@@ -1,7 +1,7 @@
 For your convenience and allowed by zlib's license terms:
 http://www.gzip.org/zlib/zlib_license.html a copy of the zlib source
-is bundled with SimGear.  You must have zlib installed before you can
-build SimGear.
+is bundled with SimGear in $(top_srcdir)/src-libs/.  You must have
+zlib installed before you can build SimGear.
 
 - Most linux distributions have a zlib package.  For linux
   developers, we recommend ysou install your distributions package

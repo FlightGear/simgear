@@ -1,6 +1,6 @@
 For your convenience (and with the author's permission) a copy of the
-MetaKit source is bundled with SimGear.  You must have metakit
-installed before you can build SimGear.
+MetaKit source is bundled with SimGear in $(top_srcdir)/src-libs/.
+You must have metakit installed before you can build SimGear.
 
 - Most linux distributions have a metakit package.  For linux
   developers, we recommend ysou install your distributions package

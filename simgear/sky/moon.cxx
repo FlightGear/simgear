@@ -220,7 +220,10 @@ bool SGMoon::repaint( double moon_angle ) {
 		   (ambient * 11.0) - 3.0, // minimum value = 0.3
 		   (ambient * 12.0) - 3.6, // minimum value = 0.0
 		   0.5 );
-    
+
+	// temp test, forces the color to always be white
+	// sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+
 	if (color[0] > 1.0) color[0] = 1.0;
 	if (color[1] > 1.0) color[1] = 1.0;
 	if (color[2] > 1.0) color[2] = 1.0;

@@ -39,7 +39,15 @@ class SGCloudLayer {
     ssgVertexArray *vl;
     ssgTexCoordArray *tl;
 
-    float layer_asl;		// height above sea level (meters)
+    // height above sea level (meters)
+    float layer_asl;
+    float size;
+
+    // for handling texture coordinates to simulate cloud movement
+    // from winds, and to simulate the clouds being tied to ground
+    // position, not view position
+    // double xoff, yoff;
+    double last_lon, last_lat;
 
 public:
 

@@ -26,6 +26,8 @@
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
+#include <simgear/math/point3d.hxx>
+#include <simgear/math/polar3d.hxx>
 
 #include "cloud.hxx"
 
@@ -41,9 +43,11 @@ SGCloudLayer::~SGCloudLayer( void ) {
 
 
 // build the moon object
-ssgBranch * SGCloudLayer::build( FGPath path, double size, double asl ) {
+ssgBranch * SGCloudLayer::build( FGPath path, double s, double asl ) {
 
     layer_asl = asl;
+    size = s;
+    last_lon = last_lat = -999.0f;
 
     // set up the cloud state
     path.append( "cloud.rgba" );
@@ -175,6 +179,50 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat ) {
     sgSetCoord( &layerpos, TRANSFORM );
 
     layer_transform->setTransform( &layerpos );
+
+    // now calculate update texture coordinates
+    if ( last_lon < -900 ) {
+	last_lon = lon;
+	last_lat = lat;
+    }
+
+    if ( lon != last_lon || lat != last_lat ) {
+	Point3D start( last_lon, last_lat, 0.0 );
+	Point3D dest( lon, lat, 0.0 );
+	double course, dist;
+	calc_gc_course_dist( dest, start, &course, &dist );
+	// cout << "course = " << course << ", dist = " << dist << endl;
+
+	double xoff = cos( course ) * dist / 500.0;
+	double yoff = sin( course ) * dist / 500.0;
+
+	// cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
+
+	float *base, *tc;
+	base = tl->get( 0 );
+
+	base[0] += xoff;
+	while ( base[0] > 1.0 ) { base[0] -= 1.0; }
+	while ( base[0] < 0.0 ) { base[0] += 1.0; }
+
+	base[1] += yoff;
+	while ( base[1] > 1.0 ) { base[1] -= 1.0; }
+	while ( base[1] < 0.0 ) { base[1] += 1.0; }
+
+	// cout << "base = " << base[0] << "," << base[1] << endl;
+
+	tc = tl->get( 1 );
+	sgSetVec2( tc, base[0] + size / 1000.0f, base[1] );
+ 
+	tc = tl->get( 2 );
+	sgSetVec2( tc, base[0], base[1] + size / 1000.0f );
+ 
+	tc = tl->get( 3 );
+	sgSetVec2( tc, base[0] + size / 1000.0f, base[1] + size / 1000.0f );
+ 
+	last_lon = lon;
+	last_lat = lat;
+    }
 
     return true;
 }

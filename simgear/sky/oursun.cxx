@@ -312,6 +312,9 @@ bool SGSun::repaint( double sun_angle ) {
 		   (ambient * 12.0) - 3.6, // minimum value = 0.0
 		   1.0 );
     
+	// temp test, forces the color to always be white
+	// sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+
 	if (color[0] > 1.0) color[0] = 1.0;
 	if (color[1] > 1.0) color[1] = 1.0;
 	if (color[2] > 1.0) color[2] = 1.0;

@@ -67,6 +67,8 @@ public:
 		DECREASING
 	};
 
+	void set(double dist, int dir = -1, int mod = -1, int tend = -1);
+
 	inline double	getVisibility_m()	const { return _distance; }
 	inline double	getVisibility_ft()	const { return _distance == NaN ? NaN : _distance * SG_METER_TO_FEET; }
 	inline double	getVisibility_sm()	const { return _distance == NaN ? NaN : _distance * SG_METER_TO_SM; }
@@ -87,7 +89,8 @@ class SGMetarRunway {
 	friend class SGMetar;
 public:
 	SGMetarRunway() :
-		_deposit(0),
+		_deposit(-1),
+		_deposit_string(0),
 		_extent(-1),
 		_extent_string(0),
 		_depth(NaN),
@@ -96,7 +99,8 @@ public:
 		_comment(0),
 		_wind_shear(false) {}
 
-	inline const char		*getDeposit()		const { return _deposit; }
+	inline int			getDeposit()		const { return _deposit; }
+	inline const char		*getDepositString()	const { return _deposit_string; }
 	inline double			getExtent()		const { return _extent; }
 	inline const char		*getExtentString()	const { return _extent_string; }
 	inline double			getDepth()		const { return _depth; }
@@ -110,7 +114,8 @@ public:
 protected:
 	SGMetarVisibility _min_visibility;
 	SGMetarVisibility _max_visibility;
-	const char	*_deposit;
+	int		_deposit;
+	const char	*_deposit_string;
 	int		_extent;
 	const char	*_extent_string;
 	double		_depth;
@@ -131,6 +136,8 @@ public:
 		_type(0),
 		_type_long(0) {}
 
+	void set(double alt, int cov = -1);
+
 	inline int	getCoverage()		const { return _coverage; }
 	inline double	getAltitude_m()		const { return _altitude; }
 	inline double	getAltitude_ft()	const { return _altitude == NaN ? NaN : _altitude * SG_METER_TO_FEET; }
@@ -147,7 +154,8 @@ protected:
 
 class SGMetar {
 public:
-	SGMetar(const string& m, const string& proxy = "", const string& port = "", const string &auth = "");
+	SGMetar(const string& m, const string& proxy = "", const string& port = "",
+			const string &auth = "", const time_t time = 0);
 	~SGMetar();
 
 	enum ReportType {
@@ -159,6 +167,7 @@ public:
 
 	inline const char *getData()		const { return _data; }
 	inline const char *getUnusedData()	const { return _m; }
+	inline const bool getProxy()		const { return _x_proxy; }
 	inline const char *getId()		const { return _icao; }
 	inline int	getYear()		const { return _year; }
 	inline int	getMonth()		const { return _month; }
@@ -193,6 +202,11 @@ public:
 	inline double	getPressure_hPa()	const { return _pressure == NaN ? NaN : _pressure / 100; }
 	inline double	getPressure_inHg()	const { return _pressure == NaN ? NaN : _pressure * SG_PA_TO_INHG; }
 
+	inline int	getRain()		const { return _rain; }
+	inline int	getHail()		const { return _hail; }
+	inline int	getSnow()		const { return _snow; }
+	inline bool	getCAVOK()		const { return _cavok; }
+
 	double		getRelHumidity()	const;
 
 	inline vector<SGMetarCloud>& getClouds()	{ return _clouds; }
@@ -202,6 +216,7 @@ public:
 protected:
 	string	_url;
 	int	_grpcount;
+	bool	_x_proxy;
 	char	*_data;
 	char	*_m;
 	char	_icao[5];
@@ -219,6 +234,10 @@ protected:
 	double	_temp;
 	double	_dewp;
 	double	_pressure;
+	int	_rain;
+	int	_hail;
+	int	_snow;
+	bool	_cavok;
 
 	SGMetarVisibility		_min_visibility;
 	SGMetarVisibility		_max_visibility;
@@ -230,6 +249,7 @@ protected:
 
 	bool	scanPreambleDate();
 	bool	scanPreambleTime();
+	void	useCurrentDate();
 
 	bool	scanType();
 	bool	scanId();
@@ -253,7 +273,8 @@ protected:
 	int	scanNumber(char **str, int *num, int min, int max = 0);
 	bool	scanBoundary(char **str);
 	const struct Token *scanToken(char **str, const struct Token *list);
-	char	*loadData(const char *id, const string& proxy, const string& port, const string &auth);
+	char	*loadData(const char *id, const string& proxy, const string& port,
+			const string &auth, time_t time);
 	void	normalizeData();
 };
 

@@ -26,6 +26,7 @@
  */
 
 #include <string>
+#include <time.h>
 
 #include <simgear/io/sg_socket.hxx>
 #include <simgear/debug/logstream.hxx>
@@ -59,8 +60,10 @@
  * double d = n.getDewpoint_C();
  * @endcode
  */
-SGMetar::SGMetar(const string& m, const string& proxy, const string& port, const string& auth) :
+SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
+		const string& auth, const time_t time) :
 	_grpcount(0),
+	_x_proxy(false),
 	_year(-1),
 	_month(-1),
 	_day(-1),
@@ -74,13 +77,17 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port, const
 	_wind_range_to(-1),
 	_temp(NaN),
 	_dewp(NaN),
-	_pressure(NaN)
+	_pressure(NaN),
+	_rain(false),
+	_hail(false),
+	_snow(false),
+	_cavok(false)
 {
 	if (m.length() == 4 && isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3])) {
 		for (int i = 0; i < 4; i++)
 			_icao[i] = toupper(m[i]);
 		_icao[4] = '\0';
-		_data = loadData(_icao, proxy, port, auth);
+		_data = loadData(_icao, proxy, port, auth, time);
 	} else {
 		_data = new char[m.length() + 2];	// make room for " \0"
 		strcpy(_data, m.c_str());
@@ -92,7 +99,8 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port, const
 	_icao[0] = '\0';
 
 	// NOAA preample
-	scanPreambleDate();
+	if (!scanPreambleDate())
+		useCurrentDate();
 	scanPreambleTime();
 
 	// METAR header
@@ -127,6 +135,7 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port, const
 		delete[] _data;
 		throw sg_io_exception("metar data incomplete (" + _url + ')');
 	}
+
 	_url = "";
 }
 
@@ -140,6 +149,16 @@ SGMetar::~SGMetar()
 	_runways.clear();
 	_weather.clear();
 	delete[] _data;
+}
+
+
+void SGMetar::useCurrentDate()
+{
+	struct tm now;
+	time_t now_sec = time(0);
+	gmtime_r(&now_sec, &now);
+	_year = now.tm_year + 1900;
+	_month = now.tm_mon + 1;
 }
 
 
@@ -157,10 +176,15 @@ SGMetar::~SGMetar()
   * @return pointer to Metar data string, allocated by new char[].
   * @see rfc2068.txt for proxy spec ("Proxy-Authorization")
   */
-char *SGMetar::loadData(const char *id, const string& proxy, const string& port, const string& auth)
+char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
+		const string& auth, time_t time)
 {
+	const int buflen = 512;
+	char buf[2 * buflen];
+
 	string host = proxy.empty() ? "weather.noaa.gov" : proxy;
 	string path = "/pub/data/observations/metar/stations/";
+
 	path += string(id) + ".TXT";
 	_url = "http://weather.noaa.gov" + path;
 
@@ -174,24 +198,25 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 	string get = "GET ";
 	if (!proxy.empty())
 		get += "http://weather.noaa.gov";
-	get += path + " HTTP/1.0\r\n";
+
+	sprintf(buf, "%ld", time);
+	get += path + " HTTP/1.0\015\012X-Time: " + buf + "\015\012";
+
+	if (!auth.empty())
+		get += "Proxy-Authorization: " + auth + "\015\012";
+
+	get += "\015\012";
 	sock->writestring(get.c_str());
 
-	if (!auth.empty()) {
-		get = "Proxy-Authorization: " + auth + "\r\n";
-		sock->writestring(get.c_str());
-	}
-
-	sock->writestring("\r\n");
-
 	int i;
-	const int buflen = 512;
-	char buf[2 * buflen];
 
 	// skip HTTP header
-	while ((i = sock->readline(buf, buflen)))
+	while ((i = sock->readline(buf, buflen))) {
 		if (i <= 2 && isspace(buf[0]) && (!buf[1] || isspace(buf[1])))
 			break;
+		if (!strncmp(buf, "X-MetarProxy: ", 9))
+			_x_proxy = true;
+	}
 	if (i) {
 		i = sock->readline(buf, buflen);
 		if (i)
@@ -392,7 +417,7 @@ bool SGMetar::scanWind()
 	if (gust != NaN)
 		_gust_speed = gust * factor;
 	_grpcount++;
-	return false;
+	return true;
 }
 
 
@@ -643,14 +668,15 @@ bool SGMetar::scanWeather()
 	}
 
 	string pre, post;
+	int intensity = 0;
 	if (*m == '-')
-		m++, pre = "light ";
+		m++, pre = "light ", intensity = 1;
 	else if (*m == '+')
-		m++, pre = "heavy ";
+		m++, pre = "heavy ", intensity = 3;
 	else if (!strncmp(m, "VC", 2))
 		m += 2, post = "in the vicinity ";
 	else
-		pre = "moderate ";
+		pre = "moderate ", intensity = 2;
 
 	int i;
 	for (i = 0; i < 3; i++) {
@@ -662,6 +688,12 @@ bool SGMetar::scanWeather()
 		if (!(a = scanToken(&m, phenomenon)))
 			break;
 		weather += string(a->text) + " ";
+		if (!strcmp(a->id, "RA"))
+			_rain = intensity;
+		else if (!strcmp(a->id, "HA"))
+			_hail = intensity;
+		else if (!strcmp(a->id, "SN"))
+			_snow = intensity;
 	}
 	if (!weather.length())
 		return false;
@@ -714,8 +746,13 @@ bool SGMetar::scanSkyCondition()
 		m += i;
 		if (!scanBoundary(&m))
 			return false;
-		cl._coverage = 0;
-		_clouds.push_back(cl);
+
+		if (i == 3) {
+			cl._coverage = 0;
+			_clouds.push_back(cl);
+		} else {
+			_cavok = true;
+		}
 		_m = m;
 		return true;
 	}
@@ -907,10 +944,11 @@ bool SGMetar::scanRunwayReport()
 
 	if (!strncmp(m, "CLRD", 4)) {
 		m += 4;							// runway cleared
-		r._deposit = "cleared";
+		r._deposit_string = "cleared";
 	} else {
 		if (scanNumber(&m, &i, 1)) {
-			r._deposit = runway_deposit[i];
+			r._deposit = i;
+			r._deposit_string = runway_deposit[i];
 		} else if (*m == '/')
 			m++;
 		else
@@ -1135,6 +1173,26 @@ const struct Token *SGMetar::scanToken(char **str, const struct Token *list)
 	}
 	*str += maxlen;
 	return longest;
+}
+
+
+void SGMetarCloud::set(double alt, int cov)
+{
+	_altitude = alt;
+	if (cov != -1)
+		_coverage = cov;
+}
+
+
+void SGMetarVisibility::set(double dist, int dir, int mod, int tend)
+{
+	_distance = dist;
+	if (dir != -1)
+		_direction = dir;
+	if (mod != -1)
+		_modifier = mod;
+	if (tend != 1)
+		_tendency = tend;
 }
 
 #undef NaN

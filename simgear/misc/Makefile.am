@@ -10,7 +10,7 @@ lib_LIBRARIES = libsgmisc.a
 
 include_HEADERS = \
         commands.hxx \
-        exception.hxx
+        exception.hxx \
 	props.hxx \
 	sg_path.hxx \
 	sgstream.hxx \

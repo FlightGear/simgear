@@ -1,11 +1,14 @@
+#include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-#include <string>
-#include <iostream>
+#include STL_STRING
+#include STL_IOSTREAM
 
 #include "sg_socket.hxx"
 
 using std::string;
+#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 using std::cout;
+#endif
 
 class TcpServer
 {

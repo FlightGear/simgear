@@ -46,7 +46,7 @@ SGSocket::SGSocket( const string& host, const string& port_,
 {
     if (!init)
     {
-	netInit();
+	netInit(NULL, NULL);	// plib-1.4.2 compatible
 	init = true;
     }
 
@@ -54,7 +54,7 @@ SGSocket::SGSocket( const string& host, const string& port_,
     {
 	is_tcp = true;
     }
-    else if ( style != "udp" )
+    else if ( style != (string)"udp" )
     {
 	SG_LOG( SG_IO, SG_ALERT,
 		"Error: SGSocket() unknown style = " << style );

@@ -39,14 +39,20 @@ tcp_server_SOURCES = tcp_server.cxx
 tcp_server_LDADD = \
 	$(top_builddir)/simgear/io/libsgio.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
-	-lplibnet
+	$(top_builddir)/simgear/bucket/libsgbucket.a \
+	$(top_builddir)/simgear/misc/libsgmisc.a \
+	$(top_builddir)/simgear/xml/libsgxml.a \
+	-lplibnet -lz
 
 tcp_client_SOURCES = tcp_client.cxx
 
 tcp_client_LDADD = \
 	$(top_builddir)/simgear/io/libsgio.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
-	-lplibnet
+	$(top_builddir)/simgear/bucket/libsgbucket.a \
+	$(top_builddir)/simgear/misc/libsgmisc.a \
+        $(top_builddir)/simgear/xml/libsgxml.a \
+	-lplibnet -lz
 
 socktest_SOURCES = socktest.cxx
 

@@ -235,9 +235,9 @@ PropsVisitor::endElement (const char * name)
     } else if (st.type == "double") {
       ret = st.node->setDoubleValue(strtod(_data.c_str(), 0));
     } else if (st.type == "string") {
-      ret = st.node->setStringValue(_data);
+      ret = st.node->setStringValue(_data.c_str());
     } else if (st.type == "unspecified") {
-      ret = st.node->setUnspecifiedValue(_data);
+      ret = st.node->setUnspecifiedValue(_data.c_str());
     } else {
       string message = "Unrecognized data type '";
       message += st.type;
@@ -438,7 +438,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
   if (!write_all && !isArchivable(node))
     return true;		// Everything's OK, but we won't write.
 
-  const string &name = node->getName();
+  const string name = node->getName();
   int nChildren = node->nChildren();
 
 				// If there is a literal value,

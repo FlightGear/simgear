@@ -6,16 +6,24 @@
 //
 // $Id$
 
-#include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include STL_IOSTREAM
-#include <algorithm>
 #include "props.hxx"
 
+#if PROPS_STANDALONE
+
+#include <iostream>
+using std::cerr;
+using std::endl;
+using std::sort;
+
+#else
+
+#include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 SG_USING_STD(sort);
+
+#endif
+
+#include <string.h>
 
 
 
@@ -54,7 +62,7 @@ const int SGRawValue<int>::DefaultValue = 0;
 const long SGRawValue<long>::DefaultValue = 0L;
 const float SGRawValue<float>::DefaultValue = 0.0;
 const double SGRawValue<double>::DefaultValue = 0.0L;
-const string SGRawValue<string>::DefaultValue = "";
+const char * const SGRawValue<const char *>::DefaultValue = "";
 
 
 
@@ -76,7 +84,7 @@ struct PathComponent
  *
  * Name: [_a-zA-Z][-._a-zA-Z0-9]*
  */
-static inline string
+static inline const string
 parse_name (const string &path, int &i)
 {
   string name = "";
@@ -204,16 +212,35 @@ parse_path (const string &path, vector<PathComponent> &components)
 ////////////////////////////////////////////////////////////////////////
 
 
+static const char *
+copy_string (const char * s)
+{
+				// FIXME: potential buffer overflow.
+				// For some reason, strnlen and
+				// strncpy cause all kinds of crashes.
+  string str = s;
+  size_t len = strlen(s);
+  char * copy = new char[str.size() + 1];
+  strcpy(copy, str.c_str());
+  return copy;
+}
+
+static bool
+compare_strings (const char * s1, const char * s2)
+{
+  return !strncmp(s1, s2, SGPropertyNode::MAX_STRING_LEN);
+}
+
 /**
  * Locate a child node by name and index.
  */
 static int
-find_child (const string &name, int index, vector<SGPropertyNode *> nodes)
+find_child (const char * name, int index, vector<SGPropertyNode *> nodes)
 {
   int nNodes = nodes.size();
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
-    if (node->getName() == name && node->getIndex() == index)
+    if (compare_strings(node->getName(), name) && node->getIndex() == index)
       return i;
   }
   return -1;
@@ -261,7 +288,7 @@ find_node (SGPropertyNode * current,
 				// Otherwise, a child name
   else {
     SGPropertyNode * child =
-      current->getChild(components[position].name,
+      current->getChild(components[position].name.c_str(),
 			components[position].index,
 			create);
     return find_node(child, components, position + 1, create);
@@ -319,13 +346,13 @@ SGPropertyNode::get_double () const
     return _local_val.double_val;
 }
 
-inline const string
+inline const char *
 SGPropertyNode::get_string () const
 {
   if (_tied)
     return _value.string_val->getValue();
   else
-    return *(_local_val.string_val);
+    return _local_val.string_val;
 }
 
 inline bool
@@ -384,12 +411,13 @@ SGPropertyNode::set_double (double val)
 }
 
 inline bool
-SGPropertyNode::set_string (const string &val)
+SGPropertyNode::set_string (const char * val)
 {
   if (_tied) {
     return _value.string_val->setValue(val);
   } else {
-    (*_local_val.string_val) = val;
+    delete _local_val.string_val;
+    _local_val.string_val = copy_string(val);
     return true;
   }
 }
@@ -443,12 +471,11 @@ SGPropertyNode::clear_value ()
 /**
  * Get the value as a string.
  */
-string
+const char *
 SGPropertyNode::make_string () const
 {
   if (!getAttribute(READ))
     return "";
-  char buf[128];
 
   switch (_type) {
   case ALIAS:
@@ -459,17 +486,17 @@ SGPropertyNode::make_string () const
     else
       return "false";
   case INT:
-    sprintf(buf, "%d", get_int());
-    return buf;
+    sprintf(_buffer, "%d", get_int());
+    return _buffer;
   case LONG:
-    sprintf(buf, "%ld", get_long());
-    return buf;
+    sprintf(_buffer, "%ld", get_long());
+    return _buffer;
   case FLOAT:
-    sprintf(buf, "%f", get_float());
-    return buf;
+    sprintf(_buffer, "%f", get_float());
+    return _buffer;
   case DOUBLE:
-    sprintf(buf, "%f", get_double());
-    return buf;
+    sprintf(_buffer, "%f", get_double());
+    return _buffer;
   case STRING:
   case UNSPECIFIED:
     return get_string();
@@ -485,8 +512,13 @@ SGPropertyNode::make_string () const
 void
 SGPropertyNode::trace_write () const
 {
+#if PROPS_STANDALONE
+  cerr << "TRACE: Write node " << getPath () << ", value\""
+       << make_string() << '"' << endl;
+#else
   SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Write node " << getPath()
 	 << ", value\"" << make_string() << '"');
+#endif
 }
 
 /**
@@ -495,8 +527,13 @@ SGPropertyNode::trace_write () const
 void
 SGPropertyNode::trace_read () const
 {
+#if PROPS_STANDALONE
+  cerr << "TRACE: Write node " << getPath () << ", value \""
+       << make_string() << '"' << endl;
+#else
   SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Read node " << getPath()
 	 << ", value \"" << make_string() << '"');
+#endif
 }
 
 
@@ -509,7 +546,7 @@ SGPropertyNode::trace_read () const
  * Default constructor: always creates a root node.
  */
 SGPropertyNode::SGPropertyNode ()
-  : _name(""),
+  : _name(copy_string("")),
     _index(0),
     _parent(0),
     _path_cache(0),
@@ -517,6 +554,7 @@ SGPropertyNode::SGPropertyNode ()
     _tied(false),
     _attr(READ|WRITE)
 {
+  _local_val.string_val = 0;
 }
 
 
@@ -524,14 +562,15 @@ SGPropertyNode::SGPropertyNode ()
  * Copy constructor.
  */
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  : _name(node._name),
-    _index(node._index),
+  : _index(node._index),
     _parent(0),			// don't copy the parent
     _path_cache(0),
     _type(node._type),
     _tied(node._tied),
     _attr(node._attr)
 {
+  _name = copy_string(node._name);
+  _local_val.string_val = 0;
   switch (_type) {
   case NONE:
     break;
@@ -591,7 +630,6 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
       _value.string_val = node._value.string_val->clone();
     } else {
       _tied = false;
-      _local_val.string_val = new string;
       set_string(node.get_string());
     }
     break;
@@ -602,16 +640,18 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 /**
  * Convenience constructor.
  */
-SGPropertyNode::SGPropertyNode (const string &name,
-				int index, SGPropertyNode * parent)
-  : _name(name),
-    _index(index),
+SGPropertyNode::SGPropertyNode (const char * name,
+				int index,
+				SGPropertyNode * parent)
+  : _index(index),
     _parent(parent),
     _path_cache(0),
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE)
 {
+  _name = copy_string(name);
+  _local_val.string_val = 0;
 }
 
 
@@ -620,10 +660,11 @@ SGPropertyNode::SGPropertyNode (const string &name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
+  delete _name;
   for (int i = 0; i < (int)_children.size(); i++) {
     delete _children[i];
   }
-  delete _path_cache;
+//   delete _path_cache;
   clear_value();
 }
 
@@ -647,7 +688,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
  * Alias to another node by path.
  */
 bool
-SGPropertyNode::alias (const string &path)
+SGPropertyNode::alias (const char * path)
 {
   return alias(getNode(path, true));
 }
@@ -714,7 +755,7 @@ SGPropertyNode::getChild (int position) const
  * Get a non-const child by name and index, creating if necessary.
  */
 SGPropertyNode *
-SGPropertyNode::getChild (const string &name, int index, bool create)
+SGPropertyNode::getChild (const char * name, int index, bool create)
 {
   int pos = find_child(name, index, _children);
   if (pos >= 0) {
@@ -732,7 +773,7 @@ SGPropertyNode::getChild (const string &name, int index, bool create)
  * Get a const child by name and index.
  */
 const SGPropertyNode *
-SGPropertyNode::getChild (const string &name, int index) const
+SGPropertyNode::getChild (const char * name, int index) const
 {
   int pos = find_child(name, index, _children);
   if (pos >= 0)
@@ -746,13 +787,13 @@ SGPropertyNode::getChild (const string &name, int index) const
  * Get all children with the same name (but different indices).
  */
 vector<SGPropertyNode *>
-SGPropertyNode::getChildren (const string &name)
+SGPropertyNode::getChildren (const char * name)
 {
   vector<SGPropertyNode *> children;
   int max = _children.size();
 
   for (int i = 0; i < max; i++)
-    if (_children[i]->getName() == name)
+    if (compare_strings(_children[i]->getName(), name))
       children.push_back(_children[i]);
 
   sort(children.begin(), children.end(), CompareIndices());
@@ -764,13 +805,13 @@ SGPropertyNode::getChildren (const string &name)
  * Get all children const with the same name (but different indices).
  */
 vector<const SGPropertyNode *>
-SGPropertyNode::getChildren (const string &name) const
+SGPropertyNode::getChildren (const char * name) const
 {
   vector<const SGPropertyNode *> children;
   int max = _children.size();
 
   for (int i = 0; i < max; i++)
-    if (_children[i]->getName() == name)
+    if (compare_strings(_children[i]->getName(), name))
       children.push_back(_children[i]);
 
   sort(children.begin(), children.end(), CompareIndices());
@@ -778,7 +819,7 @@ SGPropertyNode::getChildren (const string &name) const
 }
 
 
-string
+const char *
 SGPropertyNode::getPath (bool simplify) const
 {
   if (_parent == 0)
@@ -792,7 +833,7 @@ SGPropertyNode::getPath (bool simplify) const
     sprintf(buffer, "[%d]", _index);
     path += buffer;
   }
-  return path;
+  return path.c_str();
 }
 
 SGPropertyNode::Type
@@ -831,7 +872,7 @@ SGPropertyNode::getBoolValue () const
     return get_double() == 0.0L ? false : true;
   case STRING:
   case UNSPECIFIED:
-    return (get_string() == "true" || getDoubleValue() != 0.0L);
+    return (compare_strings(get_string(), "true") || getDoubleValue() != 0.0L);
   case NONE:
   default:
     return SGRawValue<bool>::DefaultValue;
@@ -864,7 +905,7 @@ SGPropertyNode::getIntValue () const
     return int(get_double());
   case STRING:
   case UNSPECIFIED:
-    return atoi(get_string().c_str());
+    return atoi(get_string());
   case NONE:
   default:
     return SGRawValue<int>::DefaultValue;
@@ -897,7 +938,7 @@ SGPropertyNode::getLongValue () const
     return long(get_double());
   case STRING:
   case UNSPECIFIED:
-    return strtol(get_string().c_str(), 0, 0);
+    return strtol(get_string(), 0, 0);
   case NONE:
   default:
     return SGRawValue<long>::DefaultValue;
@@ -930,7 +971,7 @@ SGPropertyNode::getFloatValue () const
     return float(get_double());
   case STRING:
   case UNSPECIFIED:
-    return atof(get_string().c_str());
+    return atof(get_string());
   case NONE:
   default:
     return SGRawValue<float>::DefaultValue;
@@ -964,14 +1005,14 @@ SGPropertyNode::getDoubleValue () const
     return get_double();
   case STRING:
   case UNSPECIFIED:
-    return strtod(get_string().c_str(), 0);
+    return strtod(get_string(), 0);
   case NONE:
   default:
     return SGRawValue<double>::DefaultValue;
   }
 }
 
-string
+const char *
 SGPropertyNode::getStringValue () const
 {
 				// Shortcut for common case
@@ -981,7 +1022,7 @@ SGPropertyNode::getStringValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<string>::DefaultValue;
+    return SGRawValue<const char *>::DefaultValue;
   return make_string();
 }
 
@@ -1238,7 +1279,7 @@ SGPropertyNode::setDoubleValue (double value)
 }
 
 bool
-SGPropertyNode::setStringValue (string value)
+SGPropertyNode::setStringValue (const char * value)
 {
 				// Shortcut for common case
   if (_attr == (READ|WRITE) && _type == STRING)
@@ -1248,7 +1289,6 @@ SGPropertyNode::setStringValue (string value)
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _local_val.string_val = new string;
     _type = STRING;
   }
 
@@ -1257,19 +1297,20 @@ SGPropertyNode::setStringValue (string value)
     result = _value.alias->setStringValue(value);
     break;
   case BOOL:
-    result = set_bool((value == "true" || atoi(value.c_str())) ? true : false);
+    result = set_bool((compare_strings(value, "true")
+		       || atoi(value)) ? true : false);
     break;
   case INT:
-    result = set_int(atoi(value.c_str()));
+    result = set_int(atoi(value));
     break;
   case LONG:
-    result = set_long(strtol(value.c_str(), 0, 0));
+    result = set_long(strtol(value, 0, 0));
     break;
   case FLOAT:
-    result = set_float(atof(value.c_str()));
+    result = set_float(atof(value));
     break;
   case DOUBLE:
-    result = set_double(strtod(value.c_str(), 0));
+    result = set_double(strtod(value, 0));
     break;
   case STRING:
   case UNSPECIFIED:
@@ -1286,13 +1327,12 @@ SGPropertyNode::setStringValue (string value)
 }
 
 bool
-SGPropertyNode::setUnspecifiedValue (string value)
+SGPropertyNode::setUnspecifiedValue (const char * value)
 {
   bool result = false;
   TEST_WRITE;
   if (_type == NONE) {
     clear_value();
-    _local_val.string_val = new string;
     _type = UNSPECIFIED;
   }
 
@@ -1301,19 +1341,20 @@ SGPropertyNode::setUnspecifiedValue (string value)
     result = _value.alias->setUnspecifiedValue(value);
     break;
   case BOOL:
-    result = set_bool((value == "true" || atoi(value.c_str())) ? true : false);
+    result = set_bool((compare_strings(value, "true")
+		       || atoi(value)) ? true : false);
     break;
   case INT:
-    result = set_int(atoi(value.c_str()));
+    result = set_int(atoi(value));
     break;
   case LONG:
-    result = set_long(strtol(value.c_str(), 0, 0));
+    result = set_long(strtol(value, 0, 0));
     break;
   case FLOAT:
-    result = set_float(atof(value.c_str()));
+    result = set_float(atof(value));
     break;
   case DOUBLE:
-    result = set_double(strtod(value.c_str(), 0));
+    result = set_double(strtod(value, 0));
     break;
   case STRING:
   case UNSPECIFIED:
@@ -1441,7 +1482,7 @@ SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
 }
 
 bool
-SGPropertyNode::tie (const SGRawValue<string> &rawValue, bool useDefault)
+SGPropertyNode::tie (const SGRawValue<const char *> &rawValue, bool useDefault)
 {
   if (_type == ALIAS || _tied)
     return false;
@@ -1457,7 +1498,7 @@ SGPropertyNode::tie (const SGRawValue<string> &rawValue, bool useDefault)
   _value.string_val = rawValue.clone();
 
   if (useDefault)
-    setStringValue(old_val);
+    setStringValue(old_val.c_str());
 
   return true;
 }
@@ -1509,7 +1550,7 @@ SGPropertyNode::untie ()
     string val = getStringValue();
     clear_value();
     _type = STRING;
-    _local_val.string_val = new string(val);
+    _local_val.string_val = copy_string(val.c_str());
     break;
   }
   case NONE:
@@ -1540,25 +1581,28 @@ SGPropertyNode::getRootNode () const
 }
 
 SGPropertyNode *
-SGPropertyNode::getNode (const string &relative_path, bool create)
+SGPropertyNode::getNode (const char * relative_path, bool create)
 {
-  if (_path_cache == 0)
-    _path_cache = new cache_map;
+//   if (_path_cache == 0)
+//     _path_cache = new cache_map;
 
-  SGPropertyNode * result = (*_path_cache)[relative_path];
-  if (result == 0) {
-    vector<PathComponent> components;
-    parse_path(relative_path, components);
-    result = find_node(this, components, 0, create);
-    if (result != 0)
-      (*_path_cache)[relative_path] = result;
-  }
+//   SGPropertyNode * result = (*_path_cache)[relative_path];
+//   if (result == 0) {
+//     vector<PathComponent> components;
+//     parse_path(relative_path, components);
+//     result = find_node(this, components, 0, create);
+//     if (result != 0)
+//       (*_path_cache)[relative_path] = result;
+//   }
   
-  return result;
+//   return result;
+  vector<PathComponent> components;
+  parse_path(relative_path, components);
+  return find_node(this, components, 0, create);
 }
 
 SGPropertyNode *
-SGPropertyNode::getNode (const string &relative_path, int index, bool create)
+SGPropertyNode::getNode (const char * relative_path, int index, bool create)
 {
   vector<PathComponent> components;
   parse_path(relative_path, components);
@@ -1568,13 +1612,13 @@ SGPropertyNode::getNode (const string &relative_path, int index, bool create)
 }
 
 const SGPropertyNode *
-SGPropertyNode::getNode (const string &relative_path) const
+SGPropertyNode::getNode (const char * relative_path) const
 {
   return ((SGPropertyNode *)this)->getNode(relative_path, false);
 }
 
 const SGPropertyNode *
-SGPropertyNode::getNode (const string &relative_path, int index) const
+SGPropertyNode::getNode (const char * relative_path, int index) const
 {
   return ((SGPropertyNode *)this)->getNode(relative_path, index, false);
 }
@@ -1589,7 +1633,7 @@ SGPropertyNode::getNode (const string &relative_path, int index) const
  * Test whether another node has a value attached.
  */
 bool
-SGPropertyNode::hasValue (const string &relative_path) const
+SGPropertyNode::hasValue (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? false : node->hasValue());
@@ -1600,7 +1644,7 @@ SGPropertyNode::hasValue (const string &relative_path) const
  * Get the value type for another node.
  */
 SGPropertyNode::Type
-SGPropertyNode::getType (const string &relative_path) const
+SGPropertyNode::getType (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? UNSPECIFIED : (Type)(node->getType()));
@@ -1611,7 +1655,7 @@ SGPropertyNode::getType (const string &relative_path) const
  * Get a bool value for another node.
  */
 bool
-SGPropertyNode::getBoolValue (const string &relative_path,
+SGPropertyNode::getBoolValue (const char * relative_path,
 			      bool defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
@@ -1623,7 +1667,7 @@ SGPropertyNode::getBoolValue (const string &relative_path,
  * Get an int value for another node.
  */
 int
-SGPropertyNode::getIntValue (const string &relative_path,
+SGPropertyNode::getIntValue (const char * relative_path,
 			     int defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
@@ -1635,7 +1679,7 @@ SGPropertyNode::getIntValue (const string &relative_path,
  * Get a long value for another node.
  */
 long
-SGPropertyNode::getLongValue (const string &relative_path,
+SGPropertyNode::getLongValue (const char * relative_path,
 			      long defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
@@ -1647,7 +1691,7 @@ SGPropertyNode::getLongValue (const string &relative_path,
  * Get a float value for another node.
  */
 float
-SGPropertyNode::getFloatValue (const string &relative_path,
+SGPropertyNode::getFloatValue (const char * relative_path,
 			       float defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
@@ -1659,7 +1703,7 @@ SGPropertyNode::getFloatValue (const string &relative_path,
  * Get a double value for another node.
  */
 double
-SGPropertyNode::getDoubleValue (const string &relative_path,
+SGPropertyNode::getDoubleValue (const char * relative_path,
 				double defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
@@ -1670,9 +1714,9 @@ SGPropertyNode::getDoubleValue (const string &relative_path,
 /**
  * Get a string value for another node.
  */
-string
-SGPropertyNode::getStringValue (const string &relative_path,
-				string defaultValue) const
+const char *
+SGPropertyNode::getStringValue (const char * relative_path,
+				const char * defaultValue) const
 {
   const SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? defaultValue : node->getStringValue());
@@ -1683,7 +1727,7 @@ SGPropertyNode::getStringValue (const string &relative_path,
  * Set a bool value for another node.
  */
 bool
-SGPropertyNode::setBoolValue (const string &relative_path, bool value)
+SGPropertyNode::setBoolValue (const char * relative_path, bool value)
 {
   return getNode(relative_path, true)->setBoolValue(value);
 }
@@ -1693,7 +1737,7 @@ SGPropertyNode::setBoolValue (const string &relative_path, bool value)
  * Set an int value for another node.
  */
 bool
-SGPropertyNode::setIntValue (const string &relative_path, int value)
+SGPropertyNode::setIntValue (const char * relative_path, int value)
 {
   return getNode(relative_path, true)->setIntValue(value);
 }
@@ -1703,7 +1747,7 @@ SGPropertyNode::setIntValue (const string &relative_path, int value)
  * Set a long value for another node.
  */
 bool
-SGPropertyNode::setLongValue (const string &relative_path, long value)
+SGPropertyNode::setLongValue (const char * relative_path, long value)
 {
   return getNode(relative_path, true)->setLongValue(value);
 }
@@ -1713,7 +1757,7 @@ SGPropertyNode::setLongValue (const string &relative_path, long value)
  * Set a float value for another node.
  */
 bool
-SGPropertyNode::setFloatValue (const string &relative_path, float value)
+SGPropertyNode::setFloatValue (const char * relative_path, float value)
 {
   return getNode(relative_path, true)->setFloatValue(value);
 }
@@ -1723,7 +1767,7 @@ SGPropertyNode::setFloatValue (const string &relative_path, float value)
  * Set a double value for another node.
  */
 bool
-SGPropertyNode::setDoubleValue (const string &relative_path, double value)
+SGPropertyNode::setDoubleValue (const char * relative_path, double value)
 {
   return getNode(relative_path, true)->setDoubleValue(value);
 }
@@ -1733,7 +1777,7 @@ SGPropertyNode::setDoubleValue (const string &relative_path, double value)
  * Set a string value for another node.
  */
 bool
-SGPropertyNode::setStringValue (const string &relative_path, string value)
+SGPropertyNode::setStringValue (const char * relative_path, const char * value)
 {
   return getNode(relative_path, true)->setStringValue(value);
 }
@@ -1743,7 +1787,8 @@ SGPropertyNode::setStringValue (const string &relative_path, string value)
  * Set an unknown value for another node.
  */
 bool
-SGPropertyNode::setUnspecifiedValue (const string &relative_path, string value)
+SGPropertyNode::setUnspecifiedValue (const char * relative_path,
+				     const char * value)
 {
   return getNode(relative_path, true)->setUnspecifiedValue(value);
 }
@@ -1753,7 +1798,7 @@ SGPropertyNode::setUnspecifiedValue (const string &relative_path, string value)
  * Test whether another node is tied.
  */
 bool
-SGPropertyNode::isTied (const string &relative_path) const
+SGPropertyNode::isTied (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? false : node->isTied());
@@ -1764,7 +1809,7 @@ SGPropertyNode::isTied (const string &relative_path) const
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
+SGPropertyNode::tie (const char * relative_path,
 		     const SGRawValue<bool> &rawValue,
 		     bool useDefault)
 {
@@ -1776,7 +1821,7 @@ SGPropertyNode::tie (const string &relative_path,
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
+SGPropertyNode::tie (const char * relative_path,
 		     const SGRawValue<int> &rawValue,
 		     bool useDefault)
 {
@@ -1788,7 +1833,7 @@ SGPropertyNode::tie (const string &relative_path,
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
+SGPropertyNode::tie (const char * relative_path,
 		     const SGRawValue<long> &rawValue,
 		     bool useDefault)
 {
@@ -1800,7 +1845,7 @@ SGPropertyNode::tie (const string &relative_path,
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
+SGPropertyNode::tie (const char * relative_path,
 		     const SGRawValue<float> &rawValue,
 		     bool useDefault)
 {
@@ -1812,7 +1857,7 @@ SGPropertyNode::tie (const string &relative_path,
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
+SGPropertyNode::tie (const char * relative_path,
 		     const SGRawValue<double> &rawValue,
 		     bool useDefault)
 {
@@ -1824,8 +1869,8 @@ SGPropertyNode::tie (const string &relative_path,
  * Tie a node reached by a relative path, creating it if necessary.
  */
 bool
-SGPropertyNode::tie (const string &relative_path,
-		     const SGRawValue<string> &rawValue,
+SGPropertyNode::tie (const char * relative_path,
+		     const SGRawValue<const char *> &rawValue,
 		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);
@@ -1836,7 +1881,7 @@ SGPropertyNode::tie (const string &relative_path,
  * Attempt to untie another node reached by a relative path.
  */
 bool
-SGPropertyNode::untie (const string &relative_path)
+SGPropertyNode::untie (const char * relative_path)
 {
   SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? false : node->untie());

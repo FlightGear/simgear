@@ -53,7 +53,7 @@ static double getNum (int index) { return 1.0 / index; }
 static void
 show_values (const SGPropertyNode * node)
 {
-  cout << "Bool: " << node->getBoolValue() << endl;
+  cout << "Bool: " << (node->getBoolValue() ? "true" : "false") << endl;
   cout << "Int: " << node->getIntValue() << endl;
   cout << "Float: " << node->getFloatValue() << endl;
   cout << "Double: " << node->getDoubleValue() << endl;
@@ -275,7 +275,7 @@ test_value ()
 static void
 dump_node (const SGPropertyNode * node)
 {
-  writeProperties(cout, node);
+  writeProperties(cout, node, true);
 }
 
 static void
@@ -333,11 +333,15 @@ int main (int ac, char ** av)
   test_property_nodes();
 
   for (int i = 1; i < ac; i++) {
-    cout << "Reading " << av[i] << endl;
-    SGPropertyNode root;
-    readProperties(av[i], &root);
-    writeProperties(cout, &root);
-    cout << endl;
+    try {
+      cout << "Reading " << av[i] << endl;
+      SGPropertyNode root;
+      readProperties(av[i], &root);
+      writeProperties(cout, &root, true);
+      cout << endl;
+    } catch (string &message) {
+      cout << "Aborted with " << message << endl;
+    }
   }
 
   return 0;

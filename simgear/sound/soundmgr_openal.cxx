@@ -47,7 +47,7 @@ inline int (isnan)(double r) { return isnan(r); }
 #endif
 
 #if defined (__FreeBSD__)
-inline int isnan(double r) { return !(r < 0 || r > 0); }
+inline int isnan(double r) { return !(r <= 0 || r >= 0); }
 #endif
 
 #include STL_IOSTREAM

@@ -7,6 +7,37 @@
 #include "easyxml.hxx"
 #include "xmlparse.h"
 
+#include STL_FSTREAM
+
+SG_USING_STD(ifstream);
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of sg_xml_exception.
+////////////////////////////////////////////////////////////////////////
+
+sg_xml_exception::sg_xml_exception ()
+  : sg_io_exception("", "SimGear XML parser")
+{
+}
+
+sg_xml_exception::sg_xml_exception (const string &message)
+  : sg_io_exception(message, "SimGear XML parser")
+{
+}
+
+sg_xml_exception::sg_xml_exception (const string &message,
+				    const sg_location &location)
+  : sg_io_exception(message, location, "SimGear XML parser")
+{
+}
+
+sg_xml_exception::~sg_xml_exception ()
+{
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of XMLAttributes.
@@ -162,7 +193,7 @@ ExpatAtts::getValue (int i) const
 // Static callback functions for Expat.
 ////////////////////////////////////////////////////////////////////////
 
-#define VISITOR (*((XMLVisitor*)userData))
+#define VISITOR (*((XMLVisitor *)userData))
 
 static void
 start_element (void * userData, const char * name, const char ** atts)
@@ -198,11 +229,9 @@ processing_instruction (void * userData,
 // Implementation of XMLReader.
 ////////////////////////////////////////////////////////////////////////
 
-bool
-readXML (istream &input, XMLVisitor &visitor)
+void
+readXML (istream &input, XMLVisitor &visitor, const string &path)
 {
-  bool retval = true;
-
   XML_Parser parser = XML_ParserCreate(0);
   XML_SetUserData(parser, &visitor);
   XML_SetElementHandler(parser, start_element, end_element);
@@ -214,26 +243,47 @@ readXML (istream &input, XMLVisitor &visitor)
   char buf[16384];
   while (!input.eof()) {
 
-    input.read(buf,16384);
-				// TODO: deal with bad stream.
-    if (!XML_Parse(parser, buf, input.gcount(), false)) {
-      visitor.error(XML_ErrorString(XML_GetErrorCode(parser)),
-		    XML_GetCurrentColumnNumber(parser),
-		    XML_GetCurrentLineNumber(parser));
-      retval = false;
+				// FIXME: get proper error string from system
+    if (!input.good()) {
+      XML_ParserFree(parser);
+      throw sg_io_exception("Problem reading file",
+			    sg_location(path,
+					XML_GetCurrentLineNumber(parser),
+					XML_GetCurrentColumnNumber(parser)));
     }
+
+    input.read(buf,16384);
+    if (!XML_Parse(parser, buf, input.gcount(), false)) {
+      XML_ParserFree(parser);
+      throw sg_xml_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+			     sg_location(path,
+					 XML_GetCurrentLineNumber(parser),
+					 XML_GetCurrentColumnNumber(parser)));
+    }
+
   }
 
 				// Verify end of document.
-  if (!XML_Parse(parser, buf, 0, true))
-    retval = false;
-
-  if (retval)
-    visitor.endXML();
+  if (!XML_Parse(parser, buf, 0, true)) {
+    XML_ParserFree(parser);
+    throw sg_xml_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+			   sg_location(path,
+				       XML_GetCurrentLineNumber(parser),
+				       XML_GetCurrentColumnNumber(parser)));
+  }
 
   XML_ParserFree(parser);
+}
 
-  return retval;
+void
+readXML (const string &path, XMLVisitor &visitor)
+{
+  ifstream input(path.c_str());
+  if (input.good()) {
+    readXML(input, visitor, path);
+  } else {
+    throw sg_io_exception("Failed to open file", sg_location(path));
+  }
 }
 
 // end of easyxml.cxx

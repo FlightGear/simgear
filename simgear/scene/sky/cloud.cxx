@@ -1012,6 +1012,7 @@ void SGCloudLayer::draw( bool top ) {
                 sgVec4 color;
                 ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
                 float average = ( color[0] + color[1] + color[2] ) / 3.0f;
+                average = 0.15 + average/10;
                 sgVec4 averageColor;
                 sgSetVec4( averageColor, average, average, average, 1.0f );
                 ssgGetLight( 0 )->setColour( GL_DIFFUSE, averageColor );

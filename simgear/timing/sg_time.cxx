@@ -30,7 +30,7 @@
 
 #include <errno.h>		// for errno
 
-#ifdef FG_HAVE_STD_INCLUDES
+#ifdef SG_HAVE_STD_INCLUDES
 #  include <cmath>
 #  include <cstdio>
 #  include <cstdlib>

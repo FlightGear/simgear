@@ -249,7 +249,7 @@ find_node (SGPropertyNode * current,
   }
 
 				// Success! This is the one we want.
-  else if (position >= components.size()) {
+  else if (position >= (int)components.size()) {
     return current;
   }
 
@@ -473,6 +473,8 @@ SGValue::getBoolValue () const
   case UNKNOWN:
     return (GET_STRING == "true" || getDoubleValue() != 0.0L);
   }
+
+  return false;
 }
 
 
@@ -499,6 +501,8 @@ SGValue::getIntValue () const
   case UNKNOWN:
     return atoi(GET_STRING.c_str());
   }
+
+  return 0;
 }
 
 
@@ -551,6 +555,8 @@ SGValue::getFloatValue () const
   case UNKNOWN:
     return atof(GET_STRING.c_str());
   }
+
+  return 0.0;
 }
 
 
@@ -577,6 +583,8 @@ SGValue::getDoubleValue () const
   case UNKNOWN:
     return strtod(GET_STRING.c_str(), 0);
   }
+
+  return 0.0;
 }
 
 
@@ -606,12 +614,14 @@ SGValue::getStringValue () const
     sprintf(buf, "%f", GET_FLOAT);
     return buf;
   case DOUBLE:
-    sprintf(buf, "%lf", GET_DOUBLE);
+    sprintf(buf, "%f", GET_DOUBLE);
     return buf;
   case STRING:
   case UNKNOWN:
     return GET_STRING;
   }
+
+  return "";
 }
 
 
@@ -864,7 +874,7 @@ SGValue::tie (const SGRawValue<bool> &value, bool use_default)
   else if (_tied)
     return false;
 
-  bool old_val;
+  bool old_val = false;
   if (use_default)
     old_val = getBoolValue();
 
@@ -891,7 +901,7 @@ SGValue::tie (const SGRawValue<int> &value, bool use_default)
   else if (_tied)
     return false;
 
-  int old_val;
+  int old_val = 0;
   if (use_default)
     old_val = getIntValue();
 
@@ -945,7 +955,7 @@ SGValue::tie (const SGRawValue<float> &value, bool use_default)
   else if (_tied)
     return false;
 
-  float old_val;
+  float old_val = 0.0;
   if (use_default)
     old_val = getFloatValue();
 
@@ -972,7 +982,7 @@ SGValue::tie (const SGRawValue<double> &value, bool use_default)
   else if (_tied)
     return false;
 
-  double old_val;
+  double old_val = 0.0;
   if (use_default)
     old_val = getDoubleValue();
 
@@ -1126,7 +1136,7 @@ SGPropertyNode::SGPropertyNode (const string &name,
 SGPropertyNode::~SGPropertyNode ()
 {
   delete _value;
-  for (int i = 0; i < _children.size(); i++)
+  for (int i = 0; i < (int)_children.size(); i++)
     delete _children[i];
 }
 

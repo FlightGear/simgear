@@ -17,37 +17,57 @@
  * Boston, MA  02111-1307, USA.
  *
  * $Id$
+ *
  **************************************************************************/
 
-#ifndef _COMPILER_H
-#define _COMPILER_H
+/** \file compiler.h
+ * A set of defines to encapsulate compiler and platform differences.
+ * What this file does.
+ *
+ *  (1)  Defines macros for some STL includes which may be affected
+ *       by file name length limitations.
+ *
+ *  (2)  Defines macros for some features not supported by all C++ compilers.
+ *
+ *  (3)  Defines 'explicit' as a null macro if the compiler doesn't support
+ *       the explicit keyword.
+ *
+ *  (4)  Defines 'typename' as a null macro if the compiler doesn't support
+ *       the typename keyword.
+ *
+ *  (5)  Defines bool, true and false if the compiler doesn't do so.
+ *
+ *  (6)  Defines SG_EXPLICIT_FUNCTION_TMPL_ARGS if the compiler
+ *       supports calling a function template by providing its template
+ *       arguments explicitly.
+ *
+ *  (7)  Defines FG_NEED_AUTO_PTR if STL doesn't provide auto_ptr<>.
+ *
+ *  (8)  Defines FG_NO_ARROW_OPERATOR if the compiler is unable
+ *       to support operator->() for iterators.
+ *
+ *  (9)  Defines FG_USE_EXCEPTIONS if the compiler supports exceptions.
+ *       Note: no FlightGear code uses exceptions.
+ *
+ *  (10) Define FG_NAMESPACES if the compiler supports namespaces.
+ *
+ *  (11) FG_MATH_FN_IN_NAMESPACE_STD -- not used??
+ *
+ *  (12) Define FG_HAVE_STD if std namespace is supported.
+ *
+ *  (13) Defines FG_CLASS_PARTIAL_SPECIALIZATION if the compiler 
+ *       supports partial specialization of class templates.
+ *
+ *  (14) Defines FG_HAVE_STD_INCLUDES to use ISO C++ Standard headers.
+ *
+ *  (15) Defines FG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
+ *
+ *  (16) Define FG_MATH_EXCEPTION_CLASH if math.h defines an exception class
+ *       that clashes with the one defined in <stdexcept>.
+ */
 
-// What this file does.
-//  (1)  Defines macros for some STL includes which may be affected
-//       by file name length limitations.
-//  (2)  Defines macros for some features not supported by all C++ compilers.
-//  (3)  Defines 'explicit' as a null macro if the compiler doesn't support
-//       the explicit keyword.
-//  (4)  Defines 'typename' as a null macro if the compiler doesn't support
-//       the typename keyword.
-//  (5)  Defines bool, true and false if the compiler doesn't do so.
-//  (6)  Defines FG_EXPLICIT_FUNCTION_TMPL_ARGS if the compiler
-//       supports calling a function template by providing its template
-//       arguments explicitly.
-//  (7)  Defines FG_NEED_AUTO_PTR if STL doesn't provide auto_ptr<>.
-//  (8)  Defines FG_NO_ARROW_OPERATOR if the compiler is unable
-//       to support operator->() for iterators.
-//  (9)  Defines FG_USE_EXCEPTIONS if the compiler supports exceptions.
-//       Note: no FlightGear code uses exceptions.
-//  (10) Define FG_NAMESPACES if the compiler supports namespaces.
-//  (11) FG_MATH_FN_IN_NAMESPACE_STD -- not used??
-//  (12) Define FG_HAVE_STD if std namespace is supported.
-//  (13) Defines FG_CLASS_PARTIAL_SPECIALIZATION if the compiler 
-//       supports partial specialization of class templates.
-//  (14) Defines FG_HAVE_STD_INCLUDES to use ISO C++ Standard headers.
-//  (15) Defines FG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
-//  (16) Define FG_MATH_EXCEPTION_CLASH if math.h defines an exception class
-//       that clashes with the one defined in <stdexcept>.
+#ifndef _SG_COMPILER_H
+#define _SG_COMPILER_H
 
 #ifdef __GNUC__
 #  if __GNUC__ == 2 
@@ -71,7 +91,7 @@
 #    elif __GNUC_MINOR__ >= 8
 
        // g++-2.8.x and egcs-1.x
-#      define FG_EXPLICIT_FUNCTION_TMPL_ARGS
+#      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #      define FG_NEED_AUTO_PTR
 #      define FG_MEMBER_TEMPLATES
 #      define FG_NAMESPACES
@@ -232,7 +252,7 @@
 #if defined ( sgi ) && !defined( __GNUC__ )
 #  define FG_HAVE_NATIVE_SGI_COMPILERS
 
-#  define FG_EXPLICIT_FUNCTION_TMPL_ARGS
+#  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define FG_NEED_AUTO_PTR
 #  define FG_MEMBER_TEMPLATES
 #  define FG_NAMESPACES
@@ -287,7 +307,7 @@
 #  define false 0
 #endif
 
-#ifdef FG_EXPLICIT_FUNCTION_TMPL_ARGS
+#ifdef SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define FG_NULL_TMPL_ARGS <>
 #else
 #  define FG_NULL_TMPL_ARGS
@@ -342,4 +362,4 @@ inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
 
 #endif // FG_INCOMPLETE_FUNCTIONAL
 
-#endif // _COMPILER_H
+#endif // _SG_COMPILER_H

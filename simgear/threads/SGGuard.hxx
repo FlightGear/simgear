@@ -6,16 +6,16 @@
  * An SGGuard object locks its synchronization object during creation and
  * automatically unlocks it when it goes out of scope.
  */
-template<class LOCK>
+template<class SGLOCK>
 class SGGuard
 {
 public:
 
     /**
      * Create an SGGuard object and lock the passed lockable object.
-     * @param LOCK A lockable object.
+     * @param SGLOCK A lockable object.
      */
-    inline SGGuard( LOCK& l ) : lock(l) { lock.lock(); }
+    inline SGGuard( SGLOCK& l ) : lock(l) { lock.lock(); }
 
     /**
      * Destroy this object and unlock the locakable object.
@@ -27,12 +27,12 @@ private:
     /**
      * A lockable object.
      */
-    LOCK& lock;
+    SGLOCK& lock;
 
 private:
     // Disable copying.
-    SGGuard(const LOCK&);
-    LOCK& operator= (const LOCK&);
+    SGGuard(const SGLOCK&);
+    SGLOCK& operator= (const SGLOCK&);
 };
 
 #endif // SGGUARD_HXX_INCLUDED

@@ -64,7 +64,7 @@ protected:
 /**
  * A simple thread safe queue.  All access functions are guarded with a mutex.
  */
-template<class T, class LOCK=SGMutex>
+template<class T, class SGLOCK=SGMutex>
 class SGLockedQueue : public SGQueue<T>
 {
 public:
@@ -85,7 +85,7 @@ public:
      * @return bool True if queue is empty, otherwisr false.
      */
     virtual bool empty() {
-	SGGuard<LOCK> g(mutex);
+	SGGuard<SGLOCK> g(mutex);
 	return fifo.empty();
     }
 
@@ -95,7 +95,7 @@ public:
      * @param T object to add.
      */
     virtual void push( const T& item ) {
-	SGGuard<LOCK> g(mutex);
+	SGGuard<SGLOCK> g(mutex);
 	fifo.push( item );
     }
 
@@ -105,7 +105,7 @@ public:
      * @return T next available object.
      */
     virtual T pop() {
-	SGGuard<LOCK> g(mutex);
+	SGGuard<SGLOCK> g(mutex);
 	//if (fifo.empty()) throw NoSuchElementException();
 	assert( ! fifo.empty() );
 //  	if (fifo.empty())
@@ -122,7 +122,7 @@ private:
     /**
      * Mutex to serialise access.
      */
-    LOCK mutex;
+    SGLOCK mutex;
 
 private:
     // Prevent copying.

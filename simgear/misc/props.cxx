@@ -304,8 +304,6 @@ float
 SGValue::getFloatValue () const
 {
   switch (_type) {
-  case UNKNOWN:
-    return 0.0;
   case BOOL:
     return (float)(getRawBool());
   case INT:
@@ -314,6 +312,7 @@ SGValue::getFloatValue () const
     return getRawFloat();
   case DOUBLE:
     return (float)(getRawDouble());
+  case UNKNOWN:
   case STRING:
     return (float)atof(getRawString().c_str());
   }
@@ -330,8 +329,6 @@ double
 SGValue::getDoubleValue () const
 {
   switch (_type) {
-  case UNKNOWN:
-    return 0.0;
   case BOOL:
     return (double)(getRawBool());
   case INT:
@@ -340,6 +337,7 @@ SGValue::getDoubleValue () const
     return (double)(getRawFloat());
   case DOUBLE:
     return getRawDouble();
+  case UNKNOWN:
   case STRING:
     return atof(getRawString().c_str());
   }
@@ -357,8 +355,6 @@ SGValue::getStringValue () const
 {
   char buf[512];
   switch (_type) {
-  case UNKNOWN:
-    return getRawString();
   case BOOL:
     if (getRawBool())
       string_val = "true";
@@ -377,6 +373,7 @@ SGValue::getStringValue () const
     sprintf(buf, "%f", getRawDouble());
     string_val = buf;
     return string_val;
+  case UNKNOWN:
   case STRING:
     return getRawString();
   }
@@ -739,11 +736,11 @@ SGPropertyList::getValue (const string &name) const
  * better to get the SGValue and query it repeatedly.
  */
 bool
-SGPropertyList::getBoolValue (const string &name) const
+SGPropertyList::getBoolValue (const string &name, bool defaultValue) const
 {
   const SGValue * val = getValue(name);
   if (val == 0)
-    return false;
+    return defaultValue;
   else
     return val->getBoolValue();
 }
@@ -756,11 +753,11 @@ SGPropertyList::getBoolValue (const string &name) const
  * better to get the SGValue and query it repeatedly.
  */
 int
-SGPropertyList::getIntValue (const string &name) const
+SGPropertyList::getIntValue (const string &name, int defaultValue) const
 {
   const SGValue * val = getValue(name);
   if (val == 0)
-    return 0;
+    return defaultValue;
   else
     return val->getIntValue();
 }
@@ -773,11 +770,11 @@ SGPropertyList::getIntValue (const string &name) const
  * better to get the SGValue and query it repeatedly.
  */
 float
-SGPropertyList::getFloatValue (const string &name) const
+SGPropertyList::getFloatValue (const string &name, float defaultValue) const
 {
   const SGValue * val = getValue(name);
   if (val == 0)
-    return 0.0;
+    return defaultValue;
   else
     return val->getFloatValue();
 }
@@ -790,11 +787,11 @@ SGPropertyList::getFloatValue (const string &name) const
  * better to get the SGValue and query it repeatedly.
  */
 double
-SGPropertyList::getDoubleValue (const string &name) const
+SGPropertyList::getDoubleValue (const string &name, double defaultValue) const
 {
   const SGValue * val = getValue(name);
   if (val == 0)
-    return 0.0;
+    return defaultValue;
   else
     return val->getDoubleValue();
 }
@@ -807,11 +804,12 @@ SGPropertyList::getDoubleValue (const string &name) const
  * better to save the SGValue and query it repeatedly.
  */
 const string &
-SGPropertyList::getStringValue (const string &name) const
+SGPropertyList::getStringValue (const string &name,
+				const string &defaultValue) const
 {
   const SGValue * val = getValue(name);
   if (val == 0)
-    return empty_string;
+    return defaultValue;
   else
     return val->getStringValue();
 }
@@ -1041,7 +1039,7 @@ get_base (const string &parent, const string &child,
  */
 SGPropertyNode::SGPropertyNode (const string &path = "",
 				SGPropertyList * props = 0)
-  : _props(props)
+  : _props(props), _node(0)
 {
   setPath(path);
 }
@@ -1052,6 +1050,8 @@ SGPropertyNode::SGPropertyNode (const string &path = "",
  */
 SGPropertyNode::~SGPropertyNode ()
 {
+  delete _node;
+  _node = 0;
 }
 
 
@@ -1086,24 +1086,6 @@ SGPropertyNode::getName () const
   } else {
     return empty_string;
   }
-}
-
-
-/**
- * Return the value of the current node.
- *
- * Currently, this does a lookup each time, but we could cache the
- * value safely as long as it's non-zero.
- *
- * Note that this will not create the value if it doesn't already exist.
- */
-SGValue *
-SGPropertyNode::getValue ()
-{
-  if (_props == 0 || _path.size() == 0)
-    return 0;
-  else
-    return _props->getValue(_path);
 }
 
 
@@ -1143,17 +1125,18 @@ SGPropertyNode::size () const
  * A return value of true means success; otherwise, the node supplied
  * is unmodified.
  */
-bool
-SGPropertyNode::getParent (SGPropertyNode &parent) const
+SGPropertyNode &
+SGPropertyNode::getParent () const
 {
+  if (_node == 0)
+    _node = new SGPropertyNode();
+
   string::size_type pos = _path.rfind('/');
   if (pos != string::npos) {
-    parent.setPath(_path.substr(0, pos-1));
-    parent.setPropertyList(_props);
-    return true;
-  } else {
-    return false;
+    _node->setPropertyList(_props);
+    _node->setPath(_path.substr(0, pos-1));
   }
+  return *_node;
 }
 
 
@@ -1163,11 +1146,14 @@ SGPropertyNode::getParent (SGPropertyNode &parent) const
  * A return value of true means success; otherwise, the node supplied
  * is unmodified.
  */
-bool
-SGPropertyNode::getChild (SGPropertyNode &child, int n) const
+SGPropertyNode &
+SGPropertyNode::getChild (int n) const
 {
+  if (_node == 0)
+    _node = new SGPropertyNode();
+
   if (_props == 0)
-    return false;
+    return *_node;
 
   int s = 0;
   string base;
@@ -1180,12 +1166,9 @@ SGPropertyNode::getChild (SGPropertyNode &child, int n) const
   while (it != end) {
     if (get_base(pattern, it->first, base) && base != lastBase) {
       if (s == n) {
-	string path = _path;
-	path += '/';
-	path += base;
-	child.setPath(path);
-	child.setPropertyList(_props);
-	return true;
+	_node->setPropertyList(_props);
+	_node->setPath(_path + string("/") + base);
+	return *_node;
       } else {
 	s++;
 	lastBase = base;
@@ -1194,7 +1177,133 @@ SGPropertyNode::getChild (SGPropertyNode &child, int n) const
     it++;
   }
 
-  return false;
+  return *_node;
 }
+
+
+/**
+ * Return a node for an arbitrary subpath.
+ *
+ * Never returns 0.
+ */
+SGPropertyNode &
+SGPropertyNode::getSubNode (const string &subpath) const
+{
+  if (_node == 0)
+    _node = new SGPropertyNode();
+
+  _node->setPropertyList(_props);
+  _node->setPath(_path + string("/") + subpath);
+  return *_node;
+}
+
+
+/**
+ * Return the value of the current node.
+ *
+ * Currently, this does a lookup each time, but we could cache the
+ * value safely as long as it's non-zero.
+ *
+ * Note that this will not create the value if it doesn't already exist.
+ */
+SGValue *
+SGPropertyNode::getValue (const string &subpath)
+{
+  if (_props == 0 || _path.size() == 0)
+    return 0;
+
+  if (subpath.size() == 0)
+    return _props->getValue(_path);
+  else
+    return _props->getValue(_path + string("/") + subpath);
+}
+
+
+/**
+ * Return a bool value.
+ */
+bool
+SGPropertyNode::getBoolValue (const string &subpath, bool defaultValue) const
+{
+  if (_props == 0 || _path.size() == 0)
+    return defaultValue;
+
+  if (subpath == "")
+    return _props->getBoolValue(_path, defaultValue);
+  else
+    return _props->getBoolValue(_path + string("/") + subpath,
+				defaultValue);
+}
+
+
+/**
+ * Return an int value.
+ */
+int
+SGPropertyNode::getIntValue (const string &subpath, int defaultValue) const
+{
+  if (_props == 0 || _path.size() == 0)
+    return defaultValue;
+
+  if (subpath == "")
+    return _props->getIntValue(_path, defaultValue);
+  else
+    return _props->getIntValue(_path + string("/") + subpath,
+			       defaultValue);
+}
+
+
+/**
+ * Return a float value.
+ */
+float
+SGPropertyNode::getFloatValue (const string &subpath, float defaultValue) const
+{
+  if (_props == 0 || _path.size() == 0)
+    return defaultValue;
+
+  if (subpath == "")
+    return _props->getFloatValue(_path, defaultValue);
+  else
+    return _props->getFloatValue(_path + string("/") + subpath,
+				 defaultValue);
+}
+
+
+/**
+ * Return a double value.
+ */
+double
+SGPropertyNode::getDoubleValue (const string &subpath,
+				double defaultValue) const
+{
+  if (_props == 0 || _path.size() == 0)
+    return defaultValue;
+
+  if (subpath == "")
+    return _props->getDoubleValue(_path, defaultValue);
+  else
+    return _props->getDoubleValue(_path + string("/") + subpath,
+				  defaultValue);
+}
+
+
+/**
+ * Return a string value.
+ */
+const string &
+SGPropertyNode::getStringValue (const string &subpath,
+				const string &defaultValue) const
+{
+  if (_props == 0 || _path.size() == 0)
+    return defaultValue;
+
+  if (subpath == "")
+    return _props->getStringValue(_path, defaultValue);
+  else
+    return _props->getStringValue(_path + string("/") + subpath,
+				  defaultValue);
+}
+
 
 // end of props.cxx

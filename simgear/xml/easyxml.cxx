@@ -20,9 +20,10 @@ int
 XMLAttributes::findAttribute (const char * name) const
 {
   int s = size();
-  for (int i = 0; i < s; i++)
+  for (int i = 0; i < s; i++) {
     if (strcmp(name, getName(i)) == 0)
       return i;
+  }
   return -1;
 }
 
@@ -39,7 +40,7 @@ XMLAttributes::getValue (const char * name) const
   if (pos >= 0)
     return getValue(pos);
   else
-    return getValue(0);
+    return 0;
 }
 
 
@@ -122,9 +123,9 @@ class ExpatAtts : public XMLAttributes
 public:
   ExpatAtts (const char ** atts) : _atts(atts) {}
   
-  int size () const;
-  const char * getName (int i) const;
-  const char * getValue (int i) const;
+  virtual int size () const;
+  virtual const char * getName (int i) const;
+  virtual const char * getValue (int i) const;
   
 private:
   const char ** _atts;
@@ -162,8 +163,7 @@ ExpatAtts::getValue (int i) const
 static void
 start_element (void * userData, const char * name, const char ** atts)
 {
-  ExpatAtts attributes(atts);
-  VISITOR.startElement(name, attributes);
+  VISITOR.startElement(name, ExpatAtts(atts));
 }
 
 static void

@@ -21,6 +21,7 @@ libsgmisc_a_SOURCES = \
 	fgpath.cxx \
 	fgstream.cxx \
 	props.cxx \
+        props_io.cxx \
 	strutils.cxx \
 	texcoord.cxx \
 	zfstream.cxx

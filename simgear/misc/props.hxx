@@ -19,9 +19,42 @@
 
 #include <string>
 #include <map>
+#include <iostream>
 
 using std::string;
 using std::map;
+using std::istream;
+using std::ostream;
+
+#ifdef UNKNOWN
+#pragma warn A sloppy coder has defined UNKNOWN as a macro!
+#undef UNKNOWN
+#endif
+
+#ifdef BOOL
+#pragma warn A sloppy coder has defined BOOL as a macro!
+#undef BOOL
+#endif
+
+#ifdef INT
+#pragma warn A sloppy coder has defined INT as a macro!
+#undef INT
+#endif
+
+#ifdef FLOAT
+#pragma warn A sloppy coder has defined FLOAT as a macro!
+#undef FLOAT
+#endif
+
+#ifdef DOUBLE
+#pragma warn A sloppy coder has defined DOUBLE as a macro!
+#undef DOUBLE
+#endif
+
+#ifdef STRING
+#pragma warn A sloppy coder has defined STRING as a macro!
+#undef STRING
+#endif
 
 
 
@@ -80,7 +113,7 @@ public:
   virtual int getIntValue () const;
   virtual float getFloatValue () const;
   virtual double getDoubleValue () const;
-  virtual const string &getStringValue () const;
+  virtual const string & getStringValue () const;
 
 				// Setters.
   virtual bool setBoolValue (bool value);
@@ -231,11 +264,17 @@ public:
   virtual SGValue * getValue (const string &name, bool create = false);
   virtual const SGValue * getValue (const string &name) const;
 
-  virtual bool getBoolValue (const string &name) const;
-  virtual int getIntValue (const string &name) const;
-  virtual float getFloatValue (const string &name) const;
-  virtual double getDoubleValue (const string &name) const;
-  virtual const string &getStringValue (const string &name) const;
+  virtual bool getBoolValue (const string &name,
+			     bool defaultValue = false) const;
+  virtual int getIntValue (const string &name,
+			   int defaultValue = 0) const;
+  virtual float getFloatValue (const string &name,
+			       float defaultValue = 0.0) const;
+  virtual double getDoubleValue (const string &name,
+				 double defaultValue = 0.0L) const;
+  virtual const string & getStringValue (const string &name,
+					 const string &defaultValue = "")
+    const;
 
   virtual bool setBoolValue (const string &name, bool value);
   virtual bool setIntValue (const string &name, int value);
@@ -331,15 +370,43 @@ public:
 				// Accessors for derived information.
   virtual int size () const;
   virtual const string &getName () const;
-  virtual SGValue * getValue ();
-  virtual bool getParent (SGPropertyNode &parent) const;
-  virtual bool getChild (SGPropertyNode &child, int n) const;
+  virtual SGPropertyNode &getParent () const;
+  virtual SGPropertyNode &getChild (int n) const;
+  virtual SGPropertyNode &getSubNode (const string &subpath) const;
+
+				// Get values directly.
+  virtual SGValue * getValue (const string &subpath = "");
+  virtual bool getBoolValue (const string &subpath = "",
+			     bool defaultValue = false) const;
+  virtual int getIntValue (const string &subpath = "",
+			   int defaultValue = 0) const;
+  virtual float getFloatValue (const string &subpath = "",
+			       float defaultValue = 0.0) const;
+  virtual double getDoubleValue (const string &subpath = "",
+				 double defaultValue = 0.0L) const;
+  virtual const string &
+  getStringValue (const string &subpath = "",
+		  const string &defaultValue = "") const;
 
 private:
   string _path;
-  mutable string _name;		// for pointer persistence only
   SGPropertyList * _props;
+				// for pointer persistence...
+				// NOT THREAD SAFE!!!
+				// (each thread must have its own node
+				// object)
+  mutable string _name;
+  mutable SGPropertyNode * _node;
 };
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Input and output.
+////////////////////////////////////////////////////////////////////////
+
+extern bool readPropertyList (istream &input, SGPropertyList * props);
+extern bool writePropertyList (ostream &output, const SGPropertyList * props);
 
 
 

@@ -231,47 +231,23 @@ void
 SGLocation::recalcPosition( double lon_deg, double lat_deg, double alt_ft,
                             const Point3D scenery_center ) const
 {
-  double sea_level_radius_m;
-  double lat_geoc_rad;
+  double lat = lat_deg * SGD_DEGREES_TO_RADIANS;
+  double lon = lon_deg * SGD_DEGREES_TO_RADIANS;
+  double alt = alt_ft * SG_FEET_TO_METER;
 
+  sgGeodToCart(lat, lon, alt, _absolute_view_pos);
 
-				// Convert from geodetic to geocentric
-				// coordinates.
-  sgGeodToGeoc(lat_deg * SGD_DEGREES_TO_RADIANS,
-	       alt_ft * SG_FEET_TO_METER,
-	       &sea_level_radius_m,
-	       &lat_geoc_rad);
-
-				// Calculate the cartesian coordinates
-				// of point directly below at sea level.
-                                // aka Zero Elevation Position
-  Point3D p = Point3D(lon_deg * SG_DEGREES_TO_RADIANS,
-		      lat_geoc_rad,
-		      sea_level_radius_m);
-  Point3D tmp = sgPolarToCart3d(p) - _tile_center;
-  sgSetVec3(_zero_elev_view_pos, tmp[0], tmp[1], tmp[2]);
-
-				// Calculate the absolute view position
-				// in fgfs coordinates.
-                                // aka Absolute View Position
-  p.setz(p.radius() + alt_ft * SG_FEET_TO_METER);
-  tmp = sgPolarToCart3d(p);
-  sgdSetVec3(_absolute_view_pos, tmp[0], tmp[1], tmp[2]);
-
-				// Calculate the relative view position
-				// from the scenery center.
-                                // aka Relative View Position
+  int i;
+  double ground[3];
+  sgGeodToCart(lat, lon, 0, ground);
+  for(i=0; i<3; i++)
+      _zero_elev_view_pos[i] = ground[i] - _tile_center[i];
 
   // FIXME: view position should ONLY be calculated in the viewer...
   // Anything else should calculate their own positions relative to the 
   // viewer's tile_center.
-  sgdVec3 center;
-  sgdSetVec3( center,
-              scenery_center.x(), scenery_center.y(), scenery_center.z() );
-  sgdVec3 view_pos;
-  sgdSubVec3(view_pos, _absolute_view_pos, center);
-  sgSetVec3(_relative_view_pos, view_pos);
-
+  for(i=0; i<3; i++)
+    _relative_view_pos[i] = _absolute_view_pos[i] - scenery_center[i];
 }
 
 void

@@ -266,12 +266,9 @@ gen_random_surface_objects (ssgLeaf *leaf,
                                 // Calculate the geodetic centre of
                                 // the tile, for aligning automatic
                                 // objects.
-    double lon_deg, lat_rad, lat_deg, alt_m, sl_radius_m;
-    Point3D geoc = sgCartToPolar3d(*center);
-    lon_deg = geoc.lon() * SGD_RADIANS_TO_DEGREES;
-    sgGeocToGeod(geoc.lat(), geoc.radius(),
-                 &lat_rad, &alt_m, &sl_radius_m);
-    lat_deg = lat_rad * SGD_RADIANS_TO_DEGREES;
+    double xyz[3], lon_rad, lat_rad, alt_m;
+    xyz[0] = center->x(); xyz[1] = center->y(); xyz[2] = center->z();
+    sgCartToGeod(xyz, &lat_rad, &lon_rad, &alt_m);
 
                                 // LOD for the leaf
                                 // max random object range: 20000m
@@ -292,10 +289,10 @@ gen_random_surface_objects (ssgLeaf *leaf,
     data->leaf = leaf;
     data->mat = mat;
     data->branch = in_range;
-    data->sin_lat = sin(lat_deg * SGD_DEGREES_TO_RADIANS);
-    data->cos_lat = cos(lat_deg * SGD_DEGREES_TO_RADIANS);
-    data->sin_lon = sin(lon_deg * SGD_DEGREES_TO_RADIANS);
-    data->cos_lon = cos(lon_deg * SGD_DEGREES_TO_RADIANS);
+    data->sin_lat = sin(lat_rad);
+    data->cos_lat = cos(lat_rad);
+    data->sin_lon = sin(lon_rad);
+    data->cos_lon = cos(lon_rad);
 
     in_range->setUserData(data);
     in_range->setTravCallback(SSG_CALLBACK_PRETRAV, leaf_in_range_callback);

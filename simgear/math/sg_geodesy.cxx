@@ -1,167 +1,212 @@
-// sg_geodesy.cxx -- routines to convert between geodetic and geocentric 
-//                   coordinate systems.
-//
-// Copied and adapted directly from LaRCsim/ls_geodesy.c
-//
-// See below for the complete original LaRCsim comments.
-//
-// $Id$
-
-#include <simgear/compiler.h>
-
-#ifdef SG_HAVE_STD_INCLUDES
-# include <cmath>
-# include <cerrno>
-# include <cstdio>
-#else
-# include <math.h>
-# include <errno.h>
-# include <stdio.h>
-#endif
-
 #include <simgear/constants.h>
-#include <simgear/debug/logstream.hxx>
-
-#include "point3d.hxx"
 #include "sg_geodesy.hxx"
-#include "localconsts.hxx"
 
-
-SG_USING_STD(cout);
-
-
-// #define DOMAIN_ERR_DEBUG 1
-
-
-// sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
-//     INPUTS:	
-//         lat_geoc	Geocentric latitude, radians, + = North
-//         radius	C.G. radius to earth center (meters)
+// Notes:
 //
-//     OUTPUTS:
-//         lat_geod	Geodetic latitude, radians, + = North
-//         alt		C.G. altitude above mean sea level (meters)
-//         sea_level_r	radius from earth center to sea level at
-//                      local vertical (surface normal) of C.G. (meters)
+// The XYZ/cartesian coordinate system in use puts the X axis through
+// zero lat/lon (off west Africa), the Z axis through the north pole,
+// and the Y axis through 90 degrees longitude (in the Indian Ocean).
+//
+// All latitude and longitude values are in radians.  Altitude is in
+// meters, with zero on the WGS84 ellipsoid.
+//
+// The code below makes use of the notion of "squashed" space.  This
+// is a 2D cylindrical coordinate system where the radius from the Z
+// axis is multiplied by SQUASH; the earth in this space is a perfect
+// circle with a radius of POLRAD.
+//
+// Performance: with full optimization, a transformation from
+// lat/lon/alt to XYZ and back takes 5263 CPU cycles on my 2.2GHz
+// Pentium 4.  About 83% of this is spent in the iterative sgCartToGeod()
+// algorithm.
 
+// These are hard numbers from the WGS84 standard.  DON'T MODIFY
+// unless you want to change the datum.
+static const double EQURAD = 6378137;
+static const double iFLATTENING = 298.257223563;
 
-void sgGeocToGeod( const double& lat_geoc, const double& radius,
-                   double *lat_geod, double *alt, double *sea_level_r )
+// These are derived quantities more useful to the code:
+#if 0
+static const double SQUASH = 1 - 1/iFLATTENING;
+static const double STRETCH = 1/SQUASH;
+static const double POLRAD = EQURAD * SQUASH;
+#else
+// High-precision versions of the above produced with an arbitrary
+// precision calculator (the compiler might lose a few bits in the FPU
+// operations).  These are specified to 81 bits of mantissa, which is
+// higher than any FPU known to me:
+static const double SQUASH  = 0.9966471893352525192801545;
+static const double STRETCH = 1.0033640898209764189003079;
+static const double POLRAD  = 6356752.3142451794975639668;
+#endif
+
+// Returns a "local" geodetic latitude: an approximation that will be
+// correct only at zero altitude.
+static double localLat(double r, double z)
 {
-#ifdef DOMAIN_ERR_DEBUG
-    errno = 0;			// start with error zero'd
-#endif
-
-    double t_lat, x_alpha, mu_alpha, delt_mu, r_alpha, l_point, rho_alpha;
-    double sin_mu_a, denom,delt_lambda, lambda_sl, sin_lambda_sl;
-
-    if( ( (SGD_PI_2 - lat_geoc) < SG_ONE_SECOND )        // near North pole
-	|| ( (SGD_PI_2 + lat_geoc) < SG_ONE_SECOND ) )   // near South pole
-    {
-	*lat_geod = lat_geoc;
-	*sea_level_r = SG_EQUATORIAL_RADIUS_M*E;
-	*alt = radius - *sea_level_r;
-    } else {
-	// cout << "  lat_geoc = " << lat_geoc << endl;
-	t_lat = tan(lat_geoc);
-	// cout << "  tan(t_lat) = " << t_lat << endl;
-	x_alpha = E*SG_EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
-#ifdef DOMAIN_ERR_DEBUG
-	if ( errno ) {
-	    perror("fgGeocToGeod()");
-	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" << t_lat*t_lat + E*E << ")" );
-	}
-#endif
-	// cout << "  x_alpha = " << x_alpha << endl;
-	double tmp = sqrt(SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha);
-	if ( tmp < 0.0 ) { tmp = 0.0; }
-#ifdef DOMAIN_ERR_DEBUG
-	if ( errno ) {
-	    perror("fgGeocToGeod()");
-	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" << SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha
-		    << ")" );
-	}
-#endif
-	mu_alpha = atan2(tmp,E*x_alpha);
-	if (lat_geoc < 0) mu_alpha = - mu_alpha;
-	sin_mu_a = sin(mu_alpha);
-	delt_lambda = mu_alpha - lat_geoc;
-	r_alpha = x_alpha/cos(lat_geoc);
-	l_point = radius - r_alpha;
-	*alt = l_point*cos(delt_lambda);
-
-	denom = sqrt(1-EPS*EPS*sin_mu_a*sin_mu_a);
-#ifdef DOMAIN_ERR_DEBUG
-	if ( errno ) {
-	    perror("fgGeocToGeod()");
-	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
-		    1-EPS*EPS*sin_mu_a*sin_mu_a << ")" );
-	}
-#endif
-	rho_alpha = SG_EQUATORIAL_RADIUS_M*(1-EPS)/
-	    (denom*denom*denom);
-	delt_mu = atan2(l_point*sin(delt_lambda),rho_alpha + *alt);
-	*lat_geod = mu_alpha - delt_mu;
-	lambda_sl = atan( E*E * tan(*lat_geod) ); // SL geoc. latitude
-	sin_lambda_sl = sin( lambda_sl );
-	*sea_level_r = 
-	    sqrt(SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
-#ifdef DOMAIN_ERR_DEBUG
-	if ( errno ) {
-	    perror("fgGeocToGeod()");
-	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
-		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
-		    << ")" );
-	}
-#endif
-
-    }
-
+    // Squash to a spherical earth, compute a tangent vector to the
+    // surface circle (in squashed space, the surface is a perfect
+    // sphere) by swapping the components and negating one, stretch to
+    // real coordinates, and take an inverse-tangent/perpedicular
+    // vector to get a local geodetic "up" vector.  (Those steps all
+    // cook down to just a few multiplies).  Then just turn it into an
+    // angle.
+    double upr = r * SQUASH;
+    double upz = z * STRETCH;
+    return atan2(upz, upr);
 }
 
-
-// sgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
-//     INPUTS:	
-//         lat_geod	Geodetic latitude, radians, + = North
-//         alt		C.G. altitude above mean sea level (meters)
-//
-//     OUTPUTS:
-//         sl_radius	SEA LEVEL radius to earth center (meters)
-//                      (add Altitude to get true distance from earth center.
-//         lat_geoc	Geocentric latitude, radians, + = North
-//
-
-
-void sgGeodToGeoc( const double& lat_geod, const double& alt, double *sl_radius,
-		      double *lat_geoc )
+// This is the inverse of the algorithm in localLat().  It returns the
+// (cylindrical) coordinates of a surface latitude expressed as an
+// "up" unit vector.
+static void surfRZ(double upr, double upz, double* r, double* z)
 {
-    double lambda_sl, sin_lambda_sl, cos_lambda_sl, sin_mu, cos_mu, px, py;
-    
-#ifdef DOMAIN_ERR_DEBUG
-    errno = 0;
-#endif
+    // We are
+    // converting a (2D, cylindrical) "up" vector defined by the
+    // geodetic latitude into unitless R and Z coordinates in
+    // cartesian space.
+    double R = upr * STRETCH;
+    double Z = upz * SQUASH;
 
-    lambda_sl = atan( E*E * tan(lat_geod) ); // sea level geocentric latitude
-    sin_lambda_sl = sin( lambda_sl );
-    cos_lambda_sl = cos( lambda_sl );
-    sin_mu = sin(lat_geod);                  // Geodetic (map makers') latitude
-    cos_mu = cos(lat_geod);
-    *sl_radius = 
-	sqrt(SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
-#ifdef DOMAIN_ERR_DEBUG
-	if ( errno ) {
-	    perror("fgGeodToGeoc()");
-	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
-		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
-		    << ")" );
-	}
-#endif
-    py = *sl_radius*sin_lambda_sl + alt*sin_mu;
-    px = *sl_radius*cos_lambda_sl + alt*cos_mu;
-    *lat_geoc = atan2( py, px );
+    // Now we need to turn R and Z into a surface point.  That is,
+    // pick a coefficient C for them such that the point is on the
+    // surface when converted to "squashed" space:
+    //  (C*R*SQUASH)^2 + (C*Z)^2 = POLRAD^2
+    //   C^2 = POLRAD^2 / ((R*SQUASH)^2 + Z^2)
+    double sr = R * SQUASH;
+    double c = POLRAD / sqrt(sr*sr + Z*Z);
+    R *= c;
+    Z *= c;
+
+    *r = R; *z = Z;
 }
 
+// Returns the insersection of the line joining the center of the
+// earth and the specified cylindrical point with the surface of the
+// WGS84 ellipsoid.  Works by finding a normalization constant (in
+// squashed space) that places the squashed point on the surface of
+// the sphere.
+static double seaLevelRadius(double r, double z)
+{
+    double sr = r * SQUASH;
+    double norm = POLRAD/sqrt(sr*sr + z*z);
+    r *= norm;
+    z *= norm;
+    return sqrt(r*r + z*z);
+}
 
+// Convert a cartexian XYZ coordinate to a geodetic lat/lon/alt.  This
+// is a "recursion relation".  In essence, it iterates over the 2D
+// part of sgGeodToCart refining its approximation at each step.  The
+// MAX_LAT_ERROR threshold is picked carefully to allow us to reach
+// the full precision of an IEEE double.  While this algorithm might
+// look slow, it's not.  It actually converges very fast indeed --
+// I've never seen it take more than six iterations under normal
+// conditions.  Three or four is more typical. (It gets slower as the
+// altitude/error gets larger; at 50000m altitude, it starts to need
+// seven loops.)  One caveat is that at *very* large altitudes, it
+// starts making very poor guesses as to latitude.  As altitude
+// approaches infinity, it should be guessing with geocentric
+// coordinates, not "local geodetic up" ones.
+void sgCartToGeod(double* xyz, double* lat, double* lon, double* alt)
+{
+    // The error is expressed as a radian angle, and we want accuracy
+    // to 1 part in 2^50 (an IEEE double has between 51 and 52
+    // significant bits of magnitude due to the "hidden" digit; leave
+    // at least one bit free for potential slop).  In real units, this
+    // works out to about 6 nanometers.
+    static const double MAX_LAT_ERROR = 8.881784197001252e-16;
+    double x = xyz[0], y = xyz[1], z = xyz[2];
+
+    // Longitude is trivial.  Convert to cylindrical "(r, z)"
+    // coordinates while we're at it.
+    *lon = atan2(y, x);
+    double r = sqrt(x*x + y*y);
+
+    double lat1, lat2 = localLat(r, z);
+    double r2, z2, dot;
+    do {
+        lat1 = lat2;
+
+        // Compute an "up" vector
+        double upr = cos(lat1);
+        double upz = sin(lat1);
+
+        // Find the surface point with that latitude
+        surfRZ(upr, upz, &r2, &z2);
+
+        // Convert r2z2 to the vector pointing from the surface to rz
+        r2 = r - r2;
+        z2 = z - z2;
+
+        // Dot it with "up" to get an approximate altitude
+        dot = r2*upr + z2*upz;
+
+        // And compute an approximate geodetic surface coordinate
+        // using that altitude, so now: R2Z2 = RZ - ((RZ - SURF) dot
+        // UP)
+        r2 = r - dot * upr;
+        z2 = z - dot * upz;
+
+        // Find the latitude of *that* point, and iterate
+        lat2 = localLat(r2, z2);
+    } while(fabs(lat2 - lat1) > MAX_LAT_ERROR);
+
+    // All done!  We have an accurate geodetic lattitude, now
+    // calculate the altitude as a cartesian distance between the
+    // final geodetic surface point and the initial r/z coordinate.
+    *lat = lat1;
+    double dr = r - r2;
+    double dz = z - z2;
+    double altsign = (dot > 0) ? 1 : -1;
+    *alt = altsign * sqrt(dr*dr + dz*dz);
+}
+
+void sgGeodToCart(double lat, double lon, double alt, double* xyz)
+{
+    // This is the inverse of the algorithm in localLat().  We are
+    // converting a (2D, cylindrical) "up" vector defined by the
+    // geodetic latitude into unitless R and Z coordinates in
+    // cartesian space.
+    double upr = cos(lat);
+    double upz = sin(lat);
+    double r, z;
+    surfRZ(upr, upz, &r, &z);
+
+    // Add the altitude using the "up" unit vector we calculated
+    // initially.
+    r += upr * alt;
+    z += upz * alt;
+
+    // Finally, convert from cylindrical to cartesian
+    xyz[0] = r * cos(lon);
+    xyz[1] = r * sin(lon);
+    xyz[2] = z;
+}
+
+void sgGeocToGeod(double lat_geoc, double radius,
+                  double *lat_geod, double *alt, double *sea_level_r)
+{
+    // Build a fake cartesian point, and run it through CartToGeod
+    double lon_dummy, xyz[3];
+    xyz[0] = cos(lat_geoc) * radius;
+    xyz[1] = 0;
+    xyz[2] = sin(lat_geoc) * radius;
+    sgCartToGeod(xyz, lat_geod, &lon_dummy, alt);
+    *sea_level_r = seaLevelRadius(xyz[0], xyz[2]);
+}
+
+void sgGeodToGeoc(double lat_geod, double alt,
+                  double *sl_radius, double *lat_geoc)
+{
+    double xyz[3];
+    sgGeodToCart(lat_geod, 0, alt, xyz);
+    *lat_geoc = atan2(xyz[2], xyz[0]);
+    *sl_radius = seaLevelRadius(xyz[0], xyz[2]);
+}
+
+////////////////////////////////////////////////////////////////////////
+//
 // Direct and inverse distance functions 
 //
 // Proceedings of the 7th International Symposium on Geodetic
@@ -175,12 +220,10 @@ void sgGeodToGeoc( const double& lat_geod, const double& alt, double *sl_radius,
 //
 // modified for FlightGear to use WGS84 only -- Norman Vine
 
-#define GEOD_INV_PI SGD_PI
+static const double GEOD_INV_PI = SGD_PI;
 
 // s == distance
 // az = azimuth
-
-// for WGS_84 a = 6378137.000, rf = 298.257223563;
 
 static inline double M0( double e2 ) {
     //double e4 = e2*e2;
@@ -191,12 +234,12 @@ static inline double M0( double e2 ) {
 
 // given, alt, lat1, lon1, az1 and distance (s), calculate lat2, lon2
 // and az2.  Lat, lon, and azimuth are in degrees.  distance in meters
-int geo_direct_wgs_84 ( const double& alt, const double& lat1,
-                        const double& lon1, const double& az1,
-                        const double& s, double *lat2, double *lon2,
+int geo_direct_wgs_84 ( double alt, double lat1,
+                        double lon1, double az1,
+                        double s, double *lat2, double *lon2,
                         double *az2 )
 {
-    double a = 6378137.000, rf = 298.257223563;
+    double a = EQURAD, rf = iFLATTENING;
     double RADDEG = (GEOD_INV_PI)/180.0, testv = 1.0E-10;
     double f = ( rf > 0.0 ? 1.0/rf : 0.0 );
     double b = a*(1.0-f);
@@ -284,12 +327,12 @@ int geo_direct_wgs_84 ( const double& alt, const double& lat1,
 // given alt, lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters
-int geo_inverse_wgs_84( const double& alt, const double& lat1,
-                        const double& lon1, const double& lat2,
-			const double& lon2, double *az1, double *az2,
+int geo_inverse_wgs_84( double alt, double lat1,
+                        double lon1, double lat2,
+			double lon2, double *az1, double *az2,
                         double *s )
 {
-    double a = 6378137.000, rf = 298.257223563;
+    double a = EQURAD, rf = iFLATTENING;
     int iter=0;
     double RADDEG = (GEOD_INV_PI)/180.0, testv = 1.0E-10;
     double f = ( rf > 0.0 ? 1.0/rf : 0.0 );
@@ -399,92 +442,3 @@ int geo_inverse_wgs_84( const double& alt, const double& lat1,
 	return 0;
     }
 }
-
-
-/***************************************************************************
-
-	TITLE:	ls_geodesy
-	
-----------------------------------------------------------------------------
-
-	FUNCTION:	Converts geocentric coordinates to geodetic positions
-
-----------------------------------------------------------------------------
-
-	MODULE STATUS:	developmental
-
-----------------------------------------------------------------------------
-
-	GENEALOGY:	Written as part of LaRCSim project by E. B. Jackson
-
-----------------------------------------------------------------------------
-
-	DESIGNED BY:	E. B. Jackson
-	
-	CODED BY:	E. B. Jackson
-	
-	MAINTAINED BY:	E. B. Jackson
-
-----------------------------------------------------------------------------
-
-	MODIFICATION HISTORY:
-	
-	DATE	PURPOSE						BY
-	
-	930208	Modified to avoid singularity near polar region.	EBJ
-	930602	Moved backwards calcs here from ls_step.		EBJ
-	931214	Changed erroneous Latitude and Altitude variables to 
-		*lat_geod and *alt in routine ls_geoc_to_geod.		EBJ
-	940111	Changed header files from old ls_eom.h style to ls_types, 
-		and ls_constants.  Also replaced old DATA type with new
-		SCALAR type.						EBJ
-
-	CURRENT RCS HEADER:
-
-$Header$
- * Revision 1.5  1994/01/11  18:47:05  bjax
- * Changed include files to use types and constants, not ls_eom.h
- * Also changed DATA type to SCALAR type.
- *
- * Revision 1.4  1993/12/14  21:06:47  bjax
- * Removed global variable references Altitude and Latitude.   EBJ
- *
- * Revision 1.3  1993/06/02  15:03:40  bjax
- * Made new subroutine for calculating geodetic to geocentric; changed name
- * of forward conversion routine from ls_geodesy to ls_geoc_to_geod.
- *
-
-----------------------------------------------------------------------------
-
-	REFERENCES:
-
-		[ 1]	Stevens, Brian L.; and Lewis, Frank L.: "Aircraft 
-			Control and Simulation", Wiley and Sons, 1992.
-			ISBN 0-471-61397-5		      
-
-
-----------------------------------------------------------------------------
-
-	CALLED BY:	ls_aux
-
-----------------------------------------------------------------------------
-
-	CALLS TO:
-
-----------------------------------------------------------------------------
-
-	INPUTS:	
-		lat_geoc	Geocentric latitude, radians, + = North
-		radius		C.G. radius to earth center, ft
-
-----------------------------------------------------------------------------
-
-	OUTPUTS:
-		lat_geod	Geodetic latitude, radians, + = North
-		alt		C.G. altitude above mean sea level, ft
-		sea_level_r	radius from earth center to sea level at
-				local vertical (surface normal) of C.G.
-
---------------------------------------------------------------------------*/
-
-

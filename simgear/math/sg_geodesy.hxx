@@ -1,26 +1,7 @@
-/**
- * \file sg_geodesy.hxx
- * Routines to convert between geodetic and geocentric coordinate systems.
- * Copied and adapted directly from LaRCsim/ls_geodesy.c
- */
-
-// See below for the complete original LaRCsim comments.
-//
-// $Id$
-
-
 #ifndef _SG_GEODESY_HXX
 #define _SG_GEODESY_HXX
 
-
-#ifndef __cplusplus                                                          
-# error This library requires C++
-#endif                                   
-
-
 #include <simgear/math/point3d.hxx>
-#include <simgear/math/polar3d.hxx>
-
 
 /** 
  * Convert from geocentric coordinates to geodetic coordinates
@@ -31,44 +12,77 @@
  * @param sea_level_r (out) radius from earth center to sea level at
  *        local vertical (surface normal) of C.G. (meters)
  */
-void sgGeocToGeod( const double& lat_geoc, const double& radius,
-                   double *lat_geod, double *alt, double *sea_level_r );
+void sgGeocToGeod(double lat_geoc, double radius,
+                  double *lat_geod, double *alt, double *sea_level_r);
 
 
 /**
- * Convert from geodetic coordinates to geocentric coordinates
+ * Convert from geodetic coordinates to geocentric coordinates.
+ * WARNING: this function is non-reversible.  Due to the fact that
+ * "up" is a different direction for geocentric and geodetic frames,
+ * you can not simply add your "alt" parameter to the "sl_radius"
+ * result and get back (via sgGeodToGeoc()) to the coordinates you
+ * started with.  The error under normal conditions will be of
+ * centimeter order; whether that is important or not is application
+ * dependent. Consider using sgGeodToCart() instead.
+ *
  * @param lat_geod (in) Geodetic latitude, radians, + = North
  * @param alt (in) C.G. altitude above mean sea level (meters)
  * @param sl_radius (out) SEA LEVEL radius to earth center (meters)
- *        (add Altitude to get true distance from earth center.
  * @param lat_geoc (out) Geocentric latitude, radians, + = North
  */
-void sgGeodToGeoc( const double& lat_geod, const double& alt,
-                   double *sl_radius, double *lat_geoc );
+void sgGeodToGeoc(double lat_geod, double alt,
+                  double *sl_radius, double *lat_geoc );
+
+/**
+ * Convert a cartesian point to a geodetic lat/lon/altitude.
+ *
+ * @param xyz (in) Pointer to cartesian point.
+ * @param lat (out) Latitude, in radians
+ * @param lon (out) Longitude, in radians
+ * @param alt (out) Altitude, in meters above the WGS84 ellipsoid
+ */
+void sgCartToGeod(double* xyz, double* lat, double* lon, double* alt);
+
+/**
+ * Convert a cartesian point to a geodetic lat/lon/altitude.
+ * Alternate form using Point3D objects.
+ *
+ * @param cartesian point
+ * @return geodetic point
+ */
+inline Point3D sgCartToGeod(const Point3D& p)
+{
+    double lat, lon, alt, xyz[3];
+    xyz[0] = p.x(); xyz[1] = p.y(); xyz[2] = p.z(); 
+    sgCartToGeod(xyz, &lat, &lon, &alt);
+    return Point3D(lon, lat, alt);
+}
 
 
 /**
- * Convert a geodetic point lon(radians), lat(radians), elev(meter) to
- * a cartesian point.
+ * Convert a geodetic lat/lon/altitude to a cartesian point.
+ *
+ * @param lat (in) Latitude, in radians
+ * @param lon (in) Longitude, in radians
+ * @param alt (in) Altitude, in meters above the WGS84 ellipsoid
+ * @param xyz (out) Pointer to cartesian point.
+ */
+void sgGeodToCart(double lat, double lon, double alt, double* xyz);
+
+/**
+ * Convert a geodetic lat/lon/altitude to a cartesian point.
+ * Alternate form using Point3D objects.
+ *
  * @param geodetic point
  * @return cartesian point
  */
-inline Point3D sgGeodToCart(const Point3D& geod) {
-    double gc_lon, gc_lat, sl_radius;
-
-    // printf("A geodetic point is (%.2f, %.2f, %.2f)\n", 
-    //        geod[0], geod[1], geod[2]);
-
-    gc_lon = geod.lon();
-    sgGeodToGeoc(geod.lat(), geod.radius(), &sl_radius, &gc_lat);
-
-    // printf("A geocentric point is (%.2f, %.2f, %.2f)\n", gc_lon, 
-    //        gc_lat, sl_radius+geod[2]);
-
-    Point3D pp = Point3D( gc_lon, gc_lat, sl_radius + geod.radius());
-    return sgPolarToCart3d(pp);
+inline Point3D sgGeodToCart(const Point3D& geod)
+{
+    double xyz[3];
+    sgGeodToCart(geod.lat(), geod.lon(), geod.elev(), xyz);
+    return Point3D(xyz[0], xyz[1], xyz[2]);
 }
-
 
 /**
  * Given a starting position and an offset radial and distance,
@@ -82,9 +96,9 @@ inline Point3D sgGeodToCart(const Point3D& geod) {
  * @param lon2 (out) degrees
  * @param az2 (out) return course in degrees
  */
-int geo_direct_wgs_84 ( const double& alt, const double& lat1,
-                        const double& lon1, const double& az1, 
-			const double& s, double *lat2, double *lon2,
+int geo_direct_wgs_84 ( double alt, double lat1,
+                        double lon1, double az1, 
+			double s, double *lat2, double *lon2,
                         double *az2 );
 
 
@@ -100,98 +114,9 @@ int geo_direct_wgs_84 ( const double& alt, const double& lat1,
  * @param az2 (out) end heading degrees
  * @param s (out) distance meters
  */
-int geo_inverse_wgs_84( const double& alt, const double& lat1,
-                        const double& lon1, const double& lat2,
-			const double& lon2, double *az1, double *az2,
+int geo_inverse_wgs_84( double alt, double lat1,
+                        double lon1, double lat2,
+			double lon2, double *az1, double *az2,
                         double *s );
-
-
-/***************************************************************************
-
-	TITLE:	ls_geodesy
-	
-----------------------------------------------------------------------------
-
-	FUNCTION:	Converts geocentric coordinates to geodetic positions
-
-----------------------------------------------------------------------------
-
-	MODULE STATUS:	developmental
-
-----------------------------------------------------------------------------
-
-	GENEALOGY:	Written as part of LaRCSim project by E. B. Jackson
-
-----------------------------------------------------------------------------
-
-	DESIGNED BY:	E. B. Jackson
-	
-	CODED BY:	E. B. Jackson
-	
-	MAINTAINED BY:	E. B. Jackson
-
-----------------------------------------------------------------------------
-
-	MODIFICATION HISTORY:
-	
-	DATE	PURPOSE						BY
-	
-	930208	Modified to avoid singularity near polar region.	EBJ
-	930602	Moved backwards calcs here from ls_step.		EBJ
-	931214	Changed erroneous Latitude and Altitude variables to 
-		*lat_geod and *alt in routine ls_geoc_to_geod.		EBJ
-	940111	Changed header files from old ls_eom.h style to ls_types, 
-		and ls_constants.  Also replaced old DATA type with new
-		SCALAR type.						EBJ
-
-	CURRENT RCS HEADER:
-
-$Header$
-
- * Revision 1.5  1994/01/11  18:47:05  bjax
- * Changed include files to use types and constants, not ls_eom.h
- * Also changed DATA type to SCALAR type.
- *
- * Revision 1.4  1993/12/14  21:06:47  bjax
- * Removed global variable references Altitude and Latitude.   EBJ
- *
- * Revision 1.3  1993/06/02  15:03:40  bjax
- * Made new subroutine for calculating geodetic to geocentric; changed name
- * of forward conversion routine from ls_geodesy to ls_geoc_to_geod.
- *
-
-----------------------------------------------------------------------------
-
-	REFERENCES:
-
-		[ 1]	Stevens, Brian L.; and Lewis, Frank L.: "Aircraft 
-			Control and Simulation", Wiley and Sons, 1992.
-			ISBN 0-471-61397-5		      
-
-
-----------------------------------------------------------------------------
-
-	CALLED BY:	ls_aux
-
-----------------------------------------------------------------------------
-
-	CALLS TO:
-
-----------------------------------------------------------------------------
-
-	INPUTS:	
-		lat_geoc	Geocentric latitude, radians, + = North
-		radius		C.G. radius to earth center, ft
-
-----------------------------------------------------------------------------
-
-	OUTPUTS:
-		lat_geod	Geodetic latitude, radians, + = North
-		alt		C.G. altitude above mean sea level, ft
-		sea_level_r	radius from earth center to sea level at
-				local vertical (surface normal) of C.G.
-
---------------------------------------------------------------------------*/
-
 
 #endif // _SG_GEODESY_HXX

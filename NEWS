@@ -1,5 +1,5 @@
-New in 0.3.8-pre2
-* January 3, 2005
+New in 0.3.8
+* January 18, 2005
 
 * Configure script does a sanity check for the existance of openal.
 * Better pthreads detection for FreeBSD.
@@ -14,6 +14,13 @@ New in 0.3.8-pre2
 * gcc-4.0 fix.
 * Fixes to property tree loading and saving.
 * Make volume inaudible at startup.
+* Solaris fixes.
+* For low density cloud coverages, blend the layer to nothing as we pass
+  through instead of fully engulfing the aircraft in the cloud.
+* Add several new capabilities to the texture management code for building
+  normal maps and doing some simple on-the-fly effects on textures.
+* Better error message for sound problems.
+* Add support for binding a thread to a specific CPU.
 
 
 New in 0.3.7

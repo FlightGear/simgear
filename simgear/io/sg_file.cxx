@@ -36,8 +36,9 @@
 FG_USING_STD(string);
 
 
-SGFile::SGFile() {
+SGFile::SGFile( const string &file) {
     set_type( sgFileType );
+    file_name = file;
 }
 
 

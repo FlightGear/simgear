@@ -33,10 +33,12 @@
 FG_USING_STD(string);
 
 
-SGSerial::SGSerial() :
+SGSerial::SGSerial( const string& device_name, const string& baud_rate ) :
     save_len(0)
 {
     set_type( sgSerialType );
+    device = device_name;
+    baud = baud_rate;
 }
 
 

@@ -57,7 +57,7 @@ class SGSerial : public SGIOChannel {
 
 public:
 
-    SGSerial();
+    SGSerial( const string& device_name, const string& baud_rate );
     ~SGSerial();
 
     // open the serial port based on specified direction
@@ -79,9 +79,7 @@ public:
     bool close();
 
     inline string get_device() const { return device; }
-    inline void set_device( const string& d ) { device = d; }
     inline string get_baud() const { return baud; }
-    inline void set_baud( const string& b ) { baud = b; }
 };
 
 

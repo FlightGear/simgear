@@ -52,7 +52,7 @@ class SGFile : public SGIOChannel {
 
 public:
 
-    SGFile();
+    SGFile( const string& file );
     ~SGFile();
 
     // open the file based on specified direction
@@ -74,7 +74,6 @@ public:
     bool close();
 
     inline string get_file_name() const { return file_name; }
-    inline void set_file_name( const string& fn ) { file_name = fn; }
 };
 
 

@@ -565,6 +565,22 @@ class SGPropertyNode
 
 public:
 
+  /**
+   * Property value types.
+   *
+   * Right now, this duplicates SGValue::Type, but SGValue will be
+   * disappearing soon.
+   */
+  enum Type {
+    BOOL,
+    INT,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    STRING,
+    UNKNOWN
+  };
+
   SGPropertyNode ();
    virtual ~SGPropertyNode ();
 
@@ -607,7 +623,7 @@ public:
   const SGPropertyNode * getNode (const string &relative_path) const;
 
 				// Value-related stuff.
-  SGValue::Type getType () const;
+  Type getType () const;
   
   bool getBoolValue () const;
   int getIntValue () const;
@@ -636,11 +652,7 @@ public:
   bool untie ();
 
 				// Values from paths.
-  bool hasValue (const string &relative_path) const;
-  SGValue * getValue (const string &relative_path, bool create = false);
-  const SGValue * getValue (const string &relative_path) const;
-
-  SGValue::Type getType (const string &relative_path) const;
+  Type getType (const string &relative_path) const;
   
   bool getBoolValue (const string &relative_path,
 		     bool defaultValue = false) const;
@@ -685,6 +697,10 @@ protected:
   SGPropertyNode (const string &name, int index, SGPropertyNode * parent);
 
 private:
+
+  bool hasValue (const string &relative_path) const;
+  SGValue * getValue (const string &relative_path, bool create = false);
+  const SGValue * getValue (const string &relative_path) const;
 
   SGPropertyNode (const SGPropertyNode &node) {}
 

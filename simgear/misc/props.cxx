@@ -40,7 +40,7 @@ SG_USING_STD(sort);
 class CompareIndices
 {
 public:
-  int operator() (const SGPropertyNode * n1, const SGPropertyNode *n2) const {
+  int operator() (const SGPropertyNode_ptr n1, const SGPropertyNode_ptr n2) const {
     return (n1->getIndex() < n2->getIndex());
   }
 };
@@ -236,7 +236,7 @@ compare_strings (const char * s1, const char * s2)
  * Locate a child node by name and index.
  */
 static int
-find_child (const char * name, int index, vector<SGPropertyNode *> nodes)
+find_child (const char * name, int index, vector<SGPropertyNode_ptr> nodes)
 {
   int nNodes = nodes.size();
   for (int i = 0; i < nNodes; i++) {
@@ -551,11 +551,35 @@ SGPropertyNode::trace_read () const
 #endif
 }
 
+/**
+ * Increment reference counter
+ */
+void
+SGPropertyNode::incrementRef()
+{
+  ++_count;
+}
+
+/**
+ * Decrement reference counter
+ */
+int
+SGPropertyNode::decrementRef()
+{
+  return --_count;
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
 // Public methods from SGPropertyNode.
 ////////////////////////////////////////////////////////////////////////
+
+/**
+ * Last used attribute
+ * Update as needed when enum Attribute is changed
+ */
+const int SGPropertyNode::LAST_USED_ATTRIBUTE = TRACE_WRITE;
 
 /**
  * Default constructor: always creates a root node.
@@ -567,7 +591,8 @@ SGPropertyNode::SGPropertyNode ()
     _path_cache(0),
     _type(NONE),
     _tied(false),
-    _attr(READ|WRITE)
+    _attr(READ|WRITE),
+    _count(0)
 {
   _local_val.string_val = 0;
 }
@@ -582,7 +607,8 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
     _path_cache(0),
     _type(node._type),
     _tied(node._tied),
-    _attr(node._attr)
+    _attr(node._attr),
+    _count(0)
 {
   _name = copy_string(node._name);
   _local_val.string_val = 0;
@@ -663,7 +689,8 @@ SGPropertyNode::SGPropertyNode (const char * name,
     _path_cache(0),
     _type(NONE),
     _tied(false),
-    _attr(READ|WRITE)
+    _attr(READ|WRITE),
+    _count(0)
 {
   _name = copy_string(name);
   _local_val.string_val = 0;
@@ -676,9 +703,6 @@ SGPropertyNode::SGPropertyNode (const char * name,
 SGPropertyNode::~SGPropertyNode ()
 {
   delete [] _name;
-  for (int i = 0; i < (int)_children.size(); i++) {
-    delete _children[i];
-  }
   delete _path_cache;
   clear_value();
 }
@@ -776,7 +800,18 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
   if (pos >= 0) {
     return _children[pos];
   } else if (create) {
-    _children.push_back(new SGPropertyNode(name, index, this));
+    SGPropertyNode_ptr node;
+    pos = find_child(name, index, _removedChildren);
+    if (pos >= 0) {
+      std::vector<SGPropertyNode_ptr>::iterator it = _removedChildren.begin();
+      it += pos;
+      node = _removedChildren[pos];
+      _removedChildren.erase(it);
+      node->setAttribute(REMOVED, false);
+    } else {
+      node = new SGPropertyNode(name, index, this);
+    }
+    _children.push_back(node);
     return _children[_children.size()-1];
   } else {
     return 0;
@@ -801,10 +836,10 @@ SGPropertyNode::getChild (const char * name, int index) const
 /**
  * Get all children with the same name (but different indices).
  */
-vector<SGPropertyNode *>
-SGPropertyNode::getChildren (const char * name)
+vector<SGPropertyNode_ptr>
+SGPropertyNode::getChildren (const char * name) const
 {
-  vector<SGPropertyNode *> children;
+  vector<SGPropertyNode_ptr> children;
   int max = _children.size();
 
   for (int i = 0; i < max; i++)
@@ -817,20 +852,25 @@ SGPropertyNode::getChildren (const char * name)
 
 
 /**
- * Get all children const with the same name (but different indices).
+ * Remove a child node
  */
-vector<const SGPropertyNode *>
-SGPropertyNode::getChildren (const char * name) const
+SGPropertyNode_ptr 
+SGPropertyNode::removeChild (const char * name, int index, bool keep)
 {
-  vector<const SGPropertyNode *> children;
-  int max = _children.size();
-
-  for (int i = 0; i < max; i++)
-    if (compare_strings(_children[i]->getName(), name))
-      children.push_back(_children[i]);
-
-  sort(children.begin(), children.end(), CompareIndices());
-  return children;
+  SGPropertyNode_ptr ret;
+  int pos = find_child(name, index, _children);
+  if (pos >= 0) {
+    std::vector<SGPropertyNode_ptr>::iterator it = _children.begin();
+    it += pos;
+    SGPropertyNode_ptr node = _children[pos];
+    _children.erase(it);
+    if (keep) {
+      _removedChildren.push_back(node);
+    }
+    node->setAttribute(REMOVED, true);
+    ret = node;
+  }
+  return ret;
 }
 
 
@@ -2023,5 +2063,103 @@ SGPropertyNode::hash_table::hashcode (const char * key)
   }
   return hash;
 }
+
+
+
+/**
+ * Default constructor
+ */
+SGPropertyNode_ptr::SGPropertyNode_ptr()
+{
+  _ptr = 0;
+}
+
+/**
+ * Copy constructor
+ */
+SGPropertyNode_ptr::SGPropertyNode_ptr( const SGPropertyNode_ptr &r )
+{
+  _ptr = r._ptr;
+  if (_ptr)
+     _ptr->incrementRef();
+}
+
+/**
+ * Constructor from a pointer to a node
+ */
+SGPropertyNode_ptr::SGPropertyNode_ptr( SGPropertyNode *p )
+{
+  _ptr = p;
+  if (_ptr)
+     _ptr->incrementRef();
+}
+
+/**
+ * Destructor
+ */
+SGPropertyNode_ptr::~SGPropertyNode_ptr()
+{
+  if (_ptr && _ptr->decrementRef() == 0)
+    delete _ptr;
+}
+
+/**
+ * Assignement operator
+ */
+SGPropertyNode_ptr &
+SGPropertyNode_ptr::operator=( const SGPropertyNode_ptr &r )
+{
+  if (_ptr && _ptr->decrementRef() == 0)
+    delete _ptr;
+  _ptr = r._ptr;
+  if (_ptr)
+     _ptr->incrementRef();
+
+  return *this;
+}
+
+/**
+ * Pointer access operator
+ */
+SGPropertyNode *
+SGPropertyNode_ptr::operator->()
+{
+  return _ptr;
+}
+
+/**
+ * Pointer access operator (const)
+ */
+const SGPropertyNode *
+SGPropertyNode_ptr::operator->() const
+{
+  return _ptr;
+}
+
+/**
+ * Conversion to SGPropertyNode * operator
+ */
+SGPropertyNode_ptr::operator SGPropertyNode *()
+{
+  return _ptr;
+}
+
+/**
+ * Conversion to const SGPropertyNode * operator
+ */
+SGPropertyNode_ptr::operator const SGPropertyNode *() const
+{
+  return _ptr;
+}
+
+/**
+ * Validity test
+ */
+bool 
+SGPropertyNode_ptr::valid() const
+{
+  return _ptr != 0;
+}
+
 
 // end of props.cxx

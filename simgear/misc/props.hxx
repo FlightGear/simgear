@@ -449,6 +449,69 @@ private:
   setter_t _setter;
 };
 
+
+/**
+ * The smart pointer that manage reference counting
+ */
+class SGPropertyNode;
+class SGPropertyNode_ptr
+{
+public:
+
+  /**
+   * Default constructor
+   */
+  SGPropertyNode_ptr();
+
+  /**
+   * Copy constructor
+   */
+  SGPropertyNode_ptr( const SGPropertyNode_ptr &r );
+
+  /**
+   * Constructor from a pointer to a node
+   */
+  SGPropertyNode_ptr( SGPropertyNode *p );
+
+  /**
+   * Destructor
+   */
+  ~SGPropertyNode_ptr();
+
+  /**
+   * Assignement operator
+   */
+  SGPropertyNode_ptr &operator=( const SGPropertyNode_ptr &r );
+
+  /**
+   * Pointer access operator
+   */
+  SGPropertyNode *operator->();
+
+  /**
+   * Pointer access operator (const)
+   */
+  const SGPropertyNode *operator->() const;
+
+  /**
+   * Conversion to SGPropertyNode * operator
+   */
+  operator SGPropertyNode *();
+
+  /**
+   * Conversion to const SGPropertyNode * operator
+   */
+  operator const SGPropertyNode *() const;
+
+  /**
+   * Validity test
+   */
+  bool valid() const;
+
+private:
+
+  SGPropertyNode *_ptr;
+};
 
 
 /**
@@ -491,9 +554,17 @@ public:
     READ = 1,
     WRITE = 2,
     ARCHIVE = 4,
-    TRACE_READ = 8,
-    TRACE_WRITE = 16
+    REMOVED = 8,
+    TRACE_READ = 16,
+    TRACE_WRITE = 32
   };
+
+
+  /**
+   * Last used attribute
+   * Update as needed when enum Attribute is changed
+   */
+  static const int LAST_USED_ATTRIBUTE;
 
 
   /**
@@ -588,13 +659,14 @@ public:
   /**
    * Get a vector of all children with the specified name.
    */
-  vector<SGPropertyNode *> getChildren (const char * name);
+  vector<SGPropertyNode_ptr> getChildren (const char * name) const;
 
 
   /**
-   * Get a vector all all children (const) with the specified name.
+   * Remove a child node
    */
-  vector<const SGPropertyNode *> getChildren (const char * name) const;
+  SGPropertyNode_ptr removeChild (const char * name, int index = 0,
+                                  bool keep = true);
 
 
   //
@@ -1077,6 +1149,20 @@ private:
    */
   void trace_write () const;
 
+
+  /**
+   * Increment reference counter
+   */
+  void incrementRef();
+
+  /**
+   * Decrement reference counter
+   */
+  int decrementRef();
+
+  friend class SGPropertyNode_ptr;
+
+
   mutable char _buffer[MAX_STRING_LEN+1];
 
   class hash_table;
@@ -1084,11 +1170,13 @@ private:
   char * _name;
   int _index;
   SGPropertyNode * _parent;
-  vector<SGPropertyNode *> _children;
+  vector<SGPropertyNode_ptr> _children;
+  vector<SGPropertyNode_ptr> _removedChildren;
   hash_table * _path_cache;
   Type _type;
   bool _tied;
   int _attr;
+  int _count;
 
 				// The right kind of pointer...
   union {

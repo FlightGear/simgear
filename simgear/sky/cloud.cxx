@@ -38,21 +38,23 @@ SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_TYPES];
 
 // Constructor
 SGCloudLayer::SGCloudLayer( const string &tex_path )
-  : layer_root(0),
-    layer_transform(0),
+  : layer_root(new ssgRoot),
+    layer_transform(new ssgTransform),
+    layer(0),
     texture_path(tex_path),
     layer_asl(0),
     layer_thickness(0),
     layer_transition(0),
     layer_type(SG_CLOUD_CLEAR)
 {
+    layer_root->addKid(layer_transform);
     rebuild();
 }
 
 // Destructor
 SGCloudLayer::~SGCloudLayer()
 {
-    delete layer_root;
+    delete layer_root;		// deletes layer_transform and layer as well
 }
 
 float
@@ -150,12 +152,6 @@ SGCloudLayer::rebuild()
       layer_states[SG_CLOUD_CLEAR] = 0;
     }
 
-				// This should automatically delete
-				// layer_transform as well.
-    delete layer_root;
-    layer_root = 0;
-    layer_transform = 0;
-
     scale = 4000.0;
 
     last_lon = last_lat = -999.0f;
@@ -196,23 +192,17 @@ SGCloudLayer::rebuild()
     vl->add( vertex );
     tl->add( tc );
 
-    ssgLeaf *layer = 
-	new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
+    if (layer != 0)
+      layer_transform->removeKid(layer); // automatic delete
+    layer = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
     if (layer_states[layer_type] != 0)
       layer->setState( layer_states[layer_type] );
 
     // force a repaint of the moon colors with arbitrary defaults
     repaint( color );
 
-    // build the ssg scene graph sub tree for the sky and connected
-    // into the provide scene graph branch
-    layer_transform = new ssgTransform;
-
     // moon_transform->addKid( halo );
     layer_transform->addKid( layer );
-
-    layer_root = new ssgRoot;
-    layer_root->addKid( layer_transform );
 }
 
 

@@ -2,6 +2,9 @@
 
 /*
  * $Log$
+ * Revision 1.1  2002/09/07 02:58:19  curt
+ * Initial revision
+ *
  * Revision 1.1  2001/06/26 15:19:39  curt
  * Added tr.cxx / tr.h, Brian Paul's LGPL'd tiled rendering support libs for
  * rendering ultra high res "tiled" screen shots.

@@ -2,6 +2,9 @@
 
 /*
  * $Log$
+ * Revision 1.1  2002/09/07 02:58:19  curt
+ * Initial revision
+ *
  * Revision 1.3  2001/07/30 20:34:21  curt
  * Various MSVC fixes.
  *

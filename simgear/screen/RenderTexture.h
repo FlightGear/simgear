@@ -337,6 +337,8 @@ protected: // data
     
     HDC          _hPreviousDC;
     HGLRC        _hPreviousContext;
+#elif defined( __APPLE__ )
+    
 #else
     Display     *_pDisplay;
     GLXContext   _hGLContext;

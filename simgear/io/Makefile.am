@@ -57,4 +57,4 @@ decode_binobj_LDADD = \
         $(top_builddir)/simgear/misc/libsgmisc.a \
         $(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
-         $(NETWORK_LIB) -lz
+	$(NETWORK_LIB) -lz

@@ -52,7 +52,7 @@ void sgUserDataInit( SGModelLib *m, const string &r,
 /**
  * User data for populating leaves when they come in range.
  */
-class sgLeafUserData : public ssgBase
+class SGLeafUserData : public ssgBase
 {
 public:
     bool is_filled_in;
@@ -71,7 +71,7 @@ public:
 /**
  * User data for populating triangles when they come in range.
  */
-class sgTriUserData : public ssgBase
+class SGTriUserData : public ssgBase
 {
 public:
     bool is_filled_in;
@@ -82,7 +82,7 @@ public:
     double area;
     SGMatModelGroup * object_group;
     ssgBranch * branch;
-    sgLeafUserData * leafData;
+    SGLeafUserData * leafData;
     unsigned int seed;
 
     void fill_in_triangle();
@@ -99,15 +99,15 @@ public:
  * it works and seems fairly efficient (since branches can still
  * be culled when they're out of the view frustum).
  */
-class sgDummyBSphereEntity : public ssgBranch
+class SGDummyBSphereEntity : public ssgBranch
 {
 public:
-  sgDummyBSphereEntity (float radius)
+  SGDummyBSphereEntity (float radius)
   {
     bsphere.setCenter(0, 0, 0);
     bsphere.setRadius(radius);
   }
-  virtual ~sgDummyBSphereEntity () {}
+  virtual ~SGDummyBSphereEntity () {}
   virtual void recalcBSphere () { bsphere_is_invalid = false; }
 };
 

@@ -82,7 +82,7 @@ static void random_pt_inside_tri( float *res,
  *
  */
 
-void sgTriUserData::fill_in_triangle ()
+void SGTriUserData::fill_in_triangle ()
 {
                                 // generate a repeatable random seed
     sg_srandom(seed);
@@ -110,7 +110,7 @@ void sgTriUserData::fill_in_triangle ()
     }
 }
 
-void sgTriUserData::add_object_to_triangle (SGMatModel * object)
+void SGTriUserData::add_object_to_triangle (SGMatModel * object)
 {
     // Set up the random heading if required.
     double hdg_deg = 0;
@@ -131,7 +131,7 @@ void sgTriUserData::add_object_to_triangle (SGMatModel * object)
     branch->addKid(pos);
 }
 
-void sgTriUserData::makeWorldMatrix (sgMat4 mat, double hdg_deg )
+void SGTriUserData::makeWorldMatrix (sgMat4 mat, double hdg_deg )
 {
     if (hdg_deg == 0) {
         mat[0][0] =  leafData->sin_lat * leafData->cos_lon;
@@ -185,7 +185,7 @@ void sgTriUserData::makeWorldMatrix (sgMat4 mat, double hdg_deg )
 static int
 tri_in_range_callback (ssgEntity * entity, int mask)
 {
-  sgTriUserData * data = (sgTriUserData *)entity->getUserData();
+  SGTriUserData * data = (SGTriUserData *)entity->getUserData();
   if (!data->is_filled_in) {
         data->fill_in_triangle();
     data->is_filled_in = true;
@@ -209,7 +209,7 @@ tri_in_range_callback (ssgEntity * entity, int mask)
 static int
 tri_out_of_range_callback (ssgEntity * entity, int mask)
 {
-  sgTriUserData * data = (sgTriUserData *)entity->getUserData();
+  SGTriUserData * data = (SGTriUserData *)entity->getUserData();
   if (data->is_filled_in) {
     data->branch->removeAllKids();
     data->is_filled_in = false;
@@ -243,7 +243,7 @@ get_bounding_radius( sgVec3 center, float *p1, float *p2, float *p3)
  *
  */
 
-void sgLeafUserData::setup_triangle (int i )
+void SGLeafUserData::setup_triangle (int i )
 {
     short n1, n2, n3;
     leaf->getTriangle(i, &n1, &n2, &n3);
@@ -297,7 +297,7 @@ void sgLeafUserData::setup_triangle (int i )
                                 // Set up the user data for if/when
                                 // the random objects in this triangle
                                 // are filled in.
-        sgTriUserData * data = new sgTriUserData;
+        SGTriUserData * data = new SGTriUserData;
         data->is_filled_in = false;
         data->p1 = p1;
         data->p2 = p2;
@@ -319,7 +319,7 @@ void sgLeafUserData::setup_triangle (int i )
         out_of_range->setUserData(data);
         out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
                                       tri_out_of_range_callback);
-        out_of_range->addKid(new sgDummyBSphereEntity(bounding_radius));
+        out_of_range->addKid(new SGDummyBSphereEntity(bounding_radius));
         lod->addKid(out_of_range);
     }
 }

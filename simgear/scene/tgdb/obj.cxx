@@ -192,7 +192,7 @@ bool sgGenTile( const string& path, SGBucket b,
 static int
 leaf_in_range_callback (ssgEntity * entity, int mask)
 {
-  sgLeafUserData * data = (sgLeafUserData *)entity->getUserData();
+  SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
 
   if (!data->is_filled_in) {
                                 // Iterate through all the triangles
@@ -222,7 +222,7 @@ leaf_in_range_callback (ssgEntity * entity, int mask)
 static int
 leaf_out_of_range_callback (ssgEntity * entity, int mask)
 {
-  sgLeafUserData * data = (sgLeafUserData *)entity->getUserData();
+  SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
   if (data->is_filled_in) {
     data->branch->removeAllKids();
     data->is_filled_in = false;
@@ -287,7 +287,7 @@ gen_random_surface_objects (ssgLeaf *leaf,
     lod->addKid(in_range);
     lod->addKid(out_of_range);
 
-    sgLeafUserData * data = new sgLeafUserData;
+    SGLeafUserData * data = new SGLeafUserData;
     data->is_filled_in = false;
     data->leaf = leaf;
     data->mat = mat;
@@ -303,7 +303,7 @@ gen_random_surface_objects (ssgLeaf *leaf,
     out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
                                    leaf_out_of_range_callback);
     out_of_range
-      ->addKid(new sgDummyBSphereEntity(leaf->getBSphere()->getRadius()));
+      ->addKid(new SGDummyBSphereEntity(leaf->getBSphere()->getRadius()));
 }
 
 

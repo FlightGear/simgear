@@ -23,7 +23,8 @@
 
 SGTexture::SGTexture()
    : texture_id(0),
-     texture_data(0)
+     texture_data(0),
+     num_colors(3)
 {
 }
 
@@ -225,7 +226,7 @@ SGTexture::read_rgb_texture(const char *name)
       return;
     }
 
-    texture_data = new GLubyte[ image->xsize * image->ysize * 3];
+    texture_data = new GLubyte[ image->xsize * image->ysize * 3 ];
     rbuf = new GLubyte[ image->xsize ];
     gbuf = new GLubyte[ image->xsize ];
     bbuf = new GLubyte[ image->xsize ];
@@ -245,7 +246,7 @@ SGTexture::read_rgb_texture(const char *name)
             ImageGetRow(image,rbuf,y,0);
             ImageGetRow(image,gbuf,y,1);
             ImageGetRow(image,bbuf,y,2);
-            ImageGetRow(image,abuf,y,3);  /* Discard. */
+            ImageGetRow(image,abuf,y,3); // discard
             rgbtorgb(rbuf,gbuf,bbuf,ptr,image->xsize);
             ptr += (image->xsize * 3);
         } else {
@@ -253,6 +254,70 @@ SGTexture::read_rgb_texture(const char *name)
             ImageGetRow(image,gbuf,y,1);
             ImageGetRow(image,bbuf,y,2);
             rgbtorgb(rbuf,gbuf,bbuf,ptr,image->xsize);
+            ptr += (image->xsize * 3);
+        }
+    }
+
+    ImageClose(image);
+    delete rbuf;
+    delete gbuf;
+    delete bbuf;
+    delete abuf;
+}
+
+
+
+void
+SGTexture::read_rgba_texture(const char *name)
+{
+    GLubyte *ptr;
+    GLubyte *rbuf, *gbuf, *bbuf, *abuf;
+    SGTexture::ImageRec *image;
+    int y;
+
+    if (texture_data)
+        delete texture_data;
+
+    image = ImageOpen(name);
+    if(!image)
+        return;
+
+    texture_width = image->xsize;
+    texture_height = image->ysize;
+    if (image->zsize != 3 && image->zsize != 4) {
+      ImageClose(image);
+      return;
+    }
+
+    texture_data = new GLubyte[ image->xsize * image->ysize * 4 ];
+    rbuf = new GLubyte[ image->xsize ];
+    gbuf = new GLubyte[ image->xsize ];
+    bbuf = new GLubyte[ image->xsize ];
+    abuf = new GLubyte[ image->xsize ];
+    if(!texture_data || !rbuf || !gbuf || !bbuf || !abuf) {
+      delete texture_data;
+      delete rbuf;
+      delete gbuf;
+      delete bbuf;
+      delete abuf;
+      return;
+    }
+
+    ptr = texture_data;
+    memset(abuf, 255, image->xsize);
+    for(y=0; y<image->ysize; y++) {
+        if(image->zsize == 4) {
+            ImageGetRow(image,rbuf,y,0);
+            ImageGetRow(image,gbuf,y,1);
+            ImageGetRow(image,bbuf,y,2);
+            ImageGetRow(image,abuf,y,3);
+            rgbatorgba(rbuf,gbuf,bbuf,abuf,ptr,image->xsize);
+            ptr += (image->xsize * 4);
+        } else {
+            ImageGetRow(image,rbuf,y,0);
+            ImageGetRow(image,gbuf,y,1);
+            ImageGetRow(image,bbuf,y,2);
+            rgbatorgba(rbuf,gbuf,bbuf,abuf,ptr,image->xsize);
             ptr += (image->xsize * 3);
         }
     }
@@ -521,6 +586,19 @@ SGTexture::rgbtorgb(GLubyte *r, GLubyte *g, GLubyte *b, GLubyte *l, int n) {
         l += 3; r++; g++; b++;
     }
 }
+
+void
+SGTexture::rgbatorgba(GLubyte *r, GLubyte *g, GLubyte *b, GLubyte *a,
+                      GLubyte *l, int n) {
+    while(n--) {
+        l[0] = r[0];
+        l[1] = g[0];
+        l[2] = b[0];
+        l[3] = a[0];
+        l += 4; r++; g++; b++; a++;
+    }
+}
+
 
 void
 SGTexture::ConvertShort(unsigned short *array, unsigned int length) {

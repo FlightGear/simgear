@@ -31,6 +31,7 @@ private:
 
     GLsizei texture_width;
     GLsizei texture_height;
+    GLsizei num_colors;
 
     void resize(unsigned int width = 256, unsigned int height = 256);
 
@@ -55,6 +56,8 @@ protected:
     void ConvertUint(unsigned *array, unsigned int length);
     void ConvertShort(unsigned short *array, unsigned int length);
     void rgbtorgb(GLubyte *r, GLubyte *g, GLubyte *b, GLubyte *l, int n);
+    void rgbatorgba(GLubyte *r, GLubyte *g, GLubyte *b, GLubyte *a,
+                    GLubyte *l, int n);
 
     ImageRec *ImageOpen(const char *fileName);
     ImageRec *RawImageOpen(const char *fileName);
@@ -80,6 +83,7 @@ public:
     /* Copyright (c) Mark J. Kilgard, 1997.  */
     void read_alpha_texture(const char *name);
     void read_rgb_texture(const char *name);
+    void read_rgba_texture(const char *name);
     void read_raw_texture(const char *name);
     void read_r8_texture(const char *name);
 

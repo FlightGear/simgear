@@ -29,11 +29,10 @@
 // warning for truncation of template name for browse info
 // #pragma warning( disable : 4786)
 #include "SkySingleton.hpp"
-#include "compiler.h"
+#include <simgear/compiler.h>
 #include <list>
 #include <map>
 #include <algorithm>
-#include "compiler.h"
 #ifdef WIN32
 # include "extgl.h"
 #else

@@ -38,11 +38,6 @@ SGWayPoint::SGWayPoint( const double lon, const double lat, const double alt,
 }
 
 
-SGWayPoint::SGWayPoint() {
-    SGWayPoint( 0.0, 0.0, 0.0, WGS84, "" );
-}
-
-
 // Destructor
 SGWayPoint::~SGWayPoint() {
 }

@@ -79,9 +79,6 @@ private:
 
 public:
 
-    /** Default constructor */
-    SGWayPoint();
-
     /**
      * Construct a waypoint
      * @param lon destination longitude
@@ -90,8 +87,9 @@ public:
      * @param mode type of coordinates/math to use
      * @param s waypoint identifier
      */
-    SGWayPoint( const double lon, const double lat, const double alt,
-		const modetype m = WGS84, const string s = "" );
+    SGWayPoint( const double lon = 0.0, const double lat = 0.0,
+		const double alt = 0.0, const modetype m = WGS84,
+		const string s = "" );
 
     /** Destructor */
     ~SGWayPoint();

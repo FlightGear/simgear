@@ -192,7 +192,6 @@ bool SGBinObject::read_bin( const string& file ) {
 
     // read headers
     unsigned int header;
-    unsigned short version;
     sgReadUInt( fp, &header );
     if ( ((header & 0xFF000000) >> 24) == 'S' &&
 	 ((header & 0x00FF0000) >> 16) == 'G' ) {
@@ -327,9 +326,14 @@ bool SGBinObject::read_bin( const string& file ) {
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / 3;
 		for ( k = 0; k < count; ++k ) {
-		    p = Point3D( ptr[0] / 128.0 - 1.0,
-				 ptr[1] / 128.0 - 1.0,
-				 ptr[2] / 128.0 - 1.0 );
+                    sgdVec3 normal;
+                    sgdSetVec3( normal,
+                               (ptr[0]) / 127.5 - 1.0,
+                               (ptr[1]) / 127.5 - 1.0,
+                               (ptr[2]) / 127.5 - 1.0 );
+                    sgdNormalizeVec3( normal );
+
+		    p = Point3D( normal[0], normal[1], normal[2] );
 		    // cout << "normal = " << p << endl;
 		    normals.push_back( p );
 		    ptr += 3;
@@ -668,9 +672,9 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     char normal[3];
     for ( i = 0; i < (int)normals.size(); ++i ) {
 	p = normals[i];
-	normal[0] = (unsigned char)((p.x() + 1.0) * 128);
-	normal[1] = (unsigned char)((p.y() + 1.0) * 128);
-	normal[2] = (unsigned char)((p.z() + 1.0) * 128);
+	normal[0] = (unsigned char)((p.x() + 1.0) * 127.5);
+	normal[1] = (unsigned char)((p.y() + 1.0) * 127.5);
+	normal[2] = (unsigned char)((p.z() + 1.0) * 127.5);
 	sgWriteBytes( fp, 3, normal );
     }
 

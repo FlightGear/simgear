@@ -91,6 +91,8 @@ typedef group_list::const_iterator const_group_list_iterator;
  * - vertex: FLOAT, FLOAT, FLOAT
 */
 class SGBinObject {
+    unsigned short version;
+
     Point3D gbs_center;
     float gbs_radius;
     point_list wgs84_nodes;
@@ -107,6 +109,8 @@ class SGBinObject {
     string_list fan_materials;
 
 public:
+
+    inline unsigned short get_version() const { return version; }
 
     inline Point3D get_gbs_center() const { return gbs_center; }
     inline void set_gbs_center( Point3D p ) { gbs_center = p; }

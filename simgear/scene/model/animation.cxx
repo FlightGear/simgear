@@ -293,7 +293,7 @@ SGRangeAnimation::update()
     ranges[1] = 1000000000.f;
   }
   ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
-  return 1;
+  return 2;
 }
 
 
@@ -679,7 +679,7 @@ SGRotateAnimation::update()
     set_rotation(_matrix, _position_deg, _center, _axis);
     ((ssgTransform *)_branch)->setTransform(_matrix);
   }
-  return 1;
+  return 2;
 }
 
 
@@ -781,7 +781,7 @@ SGTranslateAnimation::update()
     set_translation(_matrix, _position_m, _axis);
     ((ssgTransform *)_branch)->setTransform(_matrix);
   }
-  return 1;
+  return 2;
 }
 
 
@@ -856,7 +856,7 @@ SGScaleAnimation::update()
 
   set_scale(_matrix, _x_scale, _y_scale, _z_scale );
   ((ssgTransform *)_branch)->setTransform(_matrix);
-  return 1;
+  return 2;
 }
 
 

@@ -17,3 +17,5 @@ libsgnasal_a_SOURCES = \
 	parse.c \
 	string.c \
 	vector.c
+
+INCLUDES = -I$(top_srcdir)

@@ -4,6 +4,39 @@
 extern "C" {
 #endif
 
+#ifndef BYTE_ORDER
+
+# if (BSD >= 199103)
+#  include <machine/endian.h>
+# elif defined(__CYGWIN__) || defined(__MINGW32__)
+#  include <sys/param.h>
+# elif defined(linux)
+#  include <endian.h>
+# else
+#  ifndef LITTLE_ENDIAN
+#   define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
+#  endif
+#  ifndef BIG_ENDIAN
+#   define BIG_ENDIAN      4321    /* MSB first: 68000, ibm, net */
+#  endif
+
+#  if defined(ultrix) || defined(__alpha__) || defined(__alpha) ||  \
+      defined(__i386__) || defined(__i486__) || defined(_X86_) ||   \
+      defined(sun386)
+#   define BYTE_ORDER LITTLE_ENDIAN
+#  else
+#   define BYTE_ORDER BIG_ENDIAN
+#  endif
+# endif /* BSD */
+#endif /* BYTE_ORDER */
+
+#if BYTE_ORDER == BIG_ENDIAN
+# include <limits.h>
+# if (LONG_MAX == 2147483647)
+#  define NASAL_BIG_ENDIAN_32_BIT 1
+# endif
+#endif
+
 // This is a nasal "reference".  They are always copied by value, and
 // contain either a pointer to a garbage-collectable nasal object
 // (string, vector, hash) or a floating point number.  Keeping the

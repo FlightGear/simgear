@@ -24,7 +24,7 @@
 #ifndef _URANUS_HXX_
 #define _URANUS_HXX_
 
-#include <simgear/timing/fg_time.hxx>
+#include <simgear/timing/sg_time.hxx>
 
 #include "celestialBody.hxx"
 #include "star.hxx"
@@ -32,9 +32,9 @@
 class Uranus : public CelestialBody
 {
 public:
-  Uranus ( FGTime *t);
+  Uranus ( SGTime *t);
   Uranus ();
-  void updatePosition(FGTime *t, Star *ourSun);
+  void updatePosition(SGTime *t, Star *ourSun);
 };
 
 #endif // _URANUS_HXX_

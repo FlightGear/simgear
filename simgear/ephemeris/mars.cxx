@@ -30,13 +30,13 @@
 #include "mars.hxx"
 
 /*************************************************************************
- * Mars::Mars(FGTime *t)
+ * Mars::Mars(SGTime *t)
  * Public constructor for class Mars
  * Argument: The current time.
  * the hard coded orbital elements for Mars are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Mars::Mars(FGTime *t) :
+Mars::Mars(SGTime *t) :
   CelestialBody(49.55740,  2.1108100E-5,
 		1.8497,   -1.78E-8,
 		286.5016,  2.9296100E-5,
@@ -55,13 +55,13 @@ Mars::Mars() :
 {
 }
 /*************************************************************************
- * void Mars::updatePosition(FGTime *t, Star *ourSun)
+ * void Mars::updatePosition(SGTime *t, Star *ourSun)
  * 
  * calculates the current position of Mars, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
  * a Mars specific equation
  *************************************************************************/
-void Mars::updatePosition(FGTime *t, Star *ourSun)
+void Mars::updatePosition(SGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
   magnitude = -1.51 + 5*log10( r*R ) + 0.016 * FV;

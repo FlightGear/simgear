@@ -24,7 +24,7 @@
 #ifndef _SATURN_HXX_
 #define _SATURN_HXX_
 
-#include <simgear/timing/fg_time.hxx>
+#include <simgear/timing/sg_time.hxx>
 
 #include "celestialBody.hxx"
 #include "star.hxx"
@@ -32,9 +32,9 @@
 class Saturn : public CelestialBody
 {
 public:
-  Saturn ( FGTime *t);
+  Saturn ( SGTime *t);
   Saturn ();
-  void updatePosition(FGTime *t, Star *ourSun);
+  void updatePosition(SGTime *t, Star *ourSun);
 };
 
 #endif // _SATURN_HXX_

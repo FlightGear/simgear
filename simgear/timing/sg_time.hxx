@@ -1,8 +1,8 @@
-// fg_time.hxx -- data structures and routines for managing time related stuff.
+// sg_time.hxx -- data structures and routines for managing time related stuff.
 //
 // Written by Curtis Olson, started August 1997.
 //
-// Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
+// Copyright (C) 1997  Curtis L. Olson  - curt@flightgear.org
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _FG_TIME_HXX
-#define _FG_TIME_HXX
+#ifndef _SG_TIME_HXX
+#define _SG_TIME_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -65,7 +65,7 @@ enum sgTimingOffsetType {
 
 
 // Define a structure containing time parameters
-class FGTime {
+class SGTime {
 
 private:
     // tzContainer stores all the current Timezone control points/
@@ -113,8 +113,8 @@ private:
 
 public:
 
-    FGTime( const string& root );
-    ~FGTime();
+    SGTime( const string& root );
+    ~SGTime();
 
     inline double getJD() const { return jd; };
     inline double getMjd() const { return mjd; };
@@ -138,9 +138,9 @@ public:
     void utc_gst(); 
     double sidereal_precise (double lng);
     double sidereal_course(double lng); 
-    static FGTime *cur_time_params;
+    static SGTime *cur_time_params;
 
-    // Some other stuff which were changed to FGTime members on
+    // Some other stuff which were changed to SGTime members on
     // questionable grounds -:)
     // time_t get_start_gmt(int year);
     time_t get_gmt(int year, int month, int day, 
@@ -154,7 +154,7 @@ public:
 };
 
 
-inline time_t FGTime::get_gmt(struct tm* the_time) // this is just a wrapper
+inline time_t SGTime::get_gmt(struct tm* the_time) // this is just a wrapper
 {
   //printf("Using: %24s as input\n", asctime(the_time));
   return get_gmt(the_time->tm_year,
@@ -166,4 +166,4 @@ inline time_t FGTime::get_gmt(struct tm* the_time) // this is just a wrapper
 }
 
 
-#endif // _FG_TIME_HXX
+#endif // _SG_TIME_HXX

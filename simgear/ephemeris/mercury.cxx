@@ -30,13 +30,13 @@
 #include "mercury.hxx"
 
 /*************************************************************************
- * Mercury::Mercury(FGTime *t)
+ * Mercury::Mercury(SGTime *t)
  * Public constructor for class Mercury
  * Argument: The current time.
  * the hard coded orbital elements for Mercury are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Mercury::Mercury(FGTime *t) :
+Mercury::Mercury(SGTime *t) :
   CelestialBody (48.33130,   3.2458700E-5,
                   7.0047,    5.00E-8,
                   29.12410,  1.0144400E-5,
@@ -55,13 +55,13 @@ Mercury::Mercury() :
 {
 }
 /*************************************************************************
- * void Mercury::updatePosition(FGTime *t, Star *ourSun)
+ * void Mercury::updatePosition(SGTime *t, Star *ourSun)
  * 
  * calculates the current position of Mercury, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
  * a Mercury specific equation
  *************************************************************************/
-void Mercury::updatePosition(FGTime *t, Star *ourSun)
+void Mercury::updatePosition(SGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
   magnitude = -0.36 + 5*log10( r*R ) + 0.027 * FV + 2.2E-13 * pow(FV, 6); 

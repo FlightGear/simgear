@@ -1,4 +1,4 @@
-// fg_time.cxx -- data structures and routines for managing time related stuff.
+// sg_time.cxx -- data structures and routines for managing time related stuff.
 //
 // Written by Curtis Olson, started August 1997.
 //
@@ -58,7 +58,7 @@
 // #include <Main/options.hxx>
 // #include <Time/light.hxx>
 
-#include "fg_time.hxx"
+#include "sg_time.hxx"
 #include "timezone.h"
 #include "lowleveltime.h"
 // #include "moonpos.hxx"
@@ -73,11 +73,11 @@
 // #define TIME_ZONE_OFFSET_WORK 0  // default value
 
 
-FGTime::FGTime( const string& root )
+SGTime::SGTime( const string& root )
 {
     if (cur_time_params) {
 	FG_LOG( FG_GENERAL, FG_ALERT, 
-		"Error: only one instance of FGTime allowed" );
+		"Error: only one instance of SGTime allowed" );
 	exit(-1);
     }
 
@@ -94,13 +94,13 @@ FGTime::FGTime( const string& root )
 }
 
 
-FGTime::~FGTime()
+SGTime::~SGTime()
 {
     delete tzContainer;
     delete zonename;
 }
 
-void FGTime::updateLocal( double lon, double lat, const string& root )
+void SGTime::updateLocal( double lon, double lat, const string& root )
 {
   time_t currGMT;
   time_t aircraftLocalTime;
@@ -122,7 +122,7 @@ void FGTime::updateLocal( double lon, double lat, const string& root )
 
 // Initialize the time dependent variables (maybe I'll put this in the
 // constructor later)
-void FGTime::init( double lon, double lat, const string& root, 
+void SGTime::init( double lon, double lat, const string& root, 
 		   time_t timeOffset, sgTimingOffsetType offsetType )
 {
     FG_LOG( FG_EVENT, FG_INFO, "Initializing Time" );
@@ -208,7 +208,7 @@ void FGTime::init( double lon, double lat, const string& root,
 // modified Julian date (number of days elapsed since 1900 jan 0.5),
 // mjd.  Adapted from Xephem.
 
-void FGTime::cal_mjd (int mn, double dy, int yr) 
+void SGTime::cal_mjd (int mn, double dy, int yr) 
 {
     //static double last_mjd, last_dy;
     //double mjd;
@@ -256,7 +256,7 @@ void FGTime::cal_mjd (int mn, double dy, int yr)
 
 
 // given an mjd, calculate greenwich mean sidereal time, gst
-void FGTime::utc_gst () 
+void SGTime::utc_gst () 
 {
     double day = floor(mjd-0.5)+0.5;
     double hr = (mjd-day)*24.0;
@@ -276,7 +276,7 @@ void FGTime::utc_gst ()
 //
 // Provided courtesy of ecdowney@noao.edu (Elwood Downey) 
 
-double FGTime::sidereal_precise (double lng) 
+double SGTime::sidereal_precise (double lng) 
 {
     double lstTmp;
 
@@ -298,7 +298,7 @@ double FGTime::sidereal_precise (double lng)
 
 
 // return a courser but cheaper estimate of sidereal time
-double FGTime::sidereal_course(double lng) 
+double SGTime::sidereal_course(double lng) 
 {
     //struct tm *gmt;
     //double lstTmp;
@@ -338,7 +338,7 @@ double FGTime::sidereal_course(double lng)
 
 
 // Update time variables such as gmt, julian date, and sidereal time
-void FGTime::update( double lon, double lat, double alt_m ) {
+void SGTime::update( double lon, double lat, double alt_m ) {
     double gst_precise, gst_course;
 
     FG_LOG( FG_EVENT, FG_DEBUG, "Updating time" );
@@ -408,7 +408,7 @@ void FGTime::update( double lon, double lat, double alt_m ) {
 
 
 /******************************************************************
- * The following are some functions that were included as FGTime
+ * The following are some functions that were included as SGTime
  * members, although they currently don't make use of any of the
  * class's variables. Maybe this'll change in the future
  *****************************************************************/
@@ -438,7 +438,7 @@ void FGTime::update( double lon, double lat, double alt_m ) {
 // If you are having problems with incorrectly positioned astronomical
 // bodies, this is a really good place to start looking.
 
-time_t FGTime::get_gmt(int year, int month, int day, int hour, int min, int sec)
+time_t SGTime::get_gmt(int year, int month, int day, int hour, int min, int sec)
 {
     struct tm mt;
 
@@ -490,7 +490,7 @@ time_t FGTime::get_gmt(int year, int month, int day, int hour, int min, int sec)
 	daylight = 1;
     } else if ( daylight < 0 ) {
 	FG_LOG( FG_EVENT, FG_WARN, 
-		"OOOPS, problem in fg_time.cxx, no daylight savings info." );
+		"OOOPS, problem in sg_time.cxx, no daylight savings info." );
     }
 
     long int offset = -(timezone / 3600 - daylight);
@@ -509,7 +509,7 @@ time_t FGTime::get_gmt(int year, int month, int day, int hour, int min, int sec)
 }
 
 // Fix up timezone if using ftime()
-long int FGTime::fix_up_timezone( long int timezone_orig ) 
+long int SGTime::fix_up_timezone( long int timezone_orig ) 
 {
 #if !defined( HAVE_GETTIMEOFDAY ) && defined( HAVE_FTIME )
     // ftime() needs a little extra help finding the current timezone
@@ -522,7 +522,7 @@ long int FGTime::fix_up_timezone( long int timezone_orig )
 }
 
 
-char* FGTime::format_time( const struct tm* p, char* buf )
+char* SGTime::format_time( const struct tm* p, char* buf )
 {
     sprintf( buf, "%d/%d/%2d %d:%02d:%02d", 
 	     p->tm_mon, p->tm_mday, p->tm_year,
@@ -531,14 +531,4 @@ char* FGTime::format_time( const struct tm* p, char* buf )
 }
 
 
-#if 0
-// Force an update of the sky and lighting parameters
-void FGTime::local_update_sky_and_lighting_params( void ) {
-    fgUpdateSunPos();
-    fgUpdateMoonPos();
-    cur_light_params.Update();
-}
-#endif
-
-
-FGTime* FGTime::cur_time_params = 0;
+SGTime* SGTime::cur_time_params = 0;

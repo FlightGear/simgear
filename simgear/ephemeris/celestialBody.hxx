@@ -32,7 +32,7 @@
 
 
 #include <simgear/constants.h>
-#include <simgear/timing/fg_time.hxx>
+#include <simgear/timing/sg_time.hxx>
 
 class Star;
 
@@ -61,8 +61,8 @@ protected:              // make the data protected, in order to give the
   double lonEcl, latEcl;
 
   double fgCalcEccAnom(double M, double e);
-  double fgCalcActTime(FGTime *t);
-  void updateOrbElements(FGTime *t);
+  double fgCalcActTime(SGTime *t);
+  void updateOrbElements(SGTime *t);
 
 public:
   CelestialBody(double Nf, double Ns,
@@ -70,7 +70,7 @@ public:
 		double wf, double ws,
 		double af, double as,
 		double ef, double es,
-		double Mf, double Ms, FGTime *t);
+		double Mf, double Ms, SGTime *t);
   CelestialBody(double Nf, double Ns,
 		double If, double Is,
 		double wf, double ws,
@@ -84,7 +84,7 @@ public:
   double getMagnitude();
   double getLon();
   double getLat(); 
-  void updatePosition(FGTime *t, Star *ourSun);
+  void updatePosition(SGTime *t, Star *ourSun);
 };
 
 /*****************************************************************************
@@ -112,7 +112,7 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
 				    double wf, double ws,
 				    double af, double as,
 				    double ef, double es,
-				    double Mf, double Ms, FGTime *t)
+				    double Mf, double Ms, SGTime *t)
 {
   NFirst = Nf;     NSec = Ns;
   iFirst = If;     iSec = Is;
@@ -139,15 +139,15 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
 };
 
 /****************************************************************************
- * inline void CelestialBody::updateOrbElements(FGTime *t)
+ * inline void CelestialBody::updateOrbElements(SGTime *t)
  * given the current time, this private member calculates the actual 
  * orbital elements
  *
- * Arguments: FGTime *t: the current time:
+ * Arguments: SGTime *t: the current time:
  *
  * return value: none
  ***************************************************************************/
-inline void CelestialBody::updateOrbElements(FGTime *t)
+inline void CelestialBody::updateOrbElements(SGTime *t)
 {
   double actTime = fgCalcActTime(t);
    M = DEG_TO_RAD * (MFirst + (MSec * actTime));
@@ -158,7 +158,7 @@ inline void CelestialBody::updateOrbElements(FGTime *t)
    a = aFirst + (aSec * actTime);
 }
 /*****************************************************************************
- * inline double CelestialBody::fgCalcActTime(FGTime *t)
+ * inline double CelestialBody::fgCalcActTime(SGTime *t)
  * this private member function returns the offset in days from the epoch for
  * wich the orbital elements are calculated (Jan, 1st, 2000).
  * 
@@ -166,7 +166,7 @@ inline void CelestialBody::updateOrbElements(FGTime *t)
  *
  * return value: the (fractional) number of days until Jan 1, 2000.
  ****************************************************************************/
-inline double CelestialBody::fgCalcActTime(FGTime *t)
+inline double CelestialBody::fgCalcActTime(SGTime *t)
 {
   return (t->getMjd() - 36523.5);
 }

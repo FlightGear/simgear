@@ -31,13 +31,13 @@
 #include "jupiter.hxx"
 
 /*************************************************************************
- * Jupiter::Jupiter(FGTime *t)
+ * Jupiter::Jupiter(SGTime *t)
  * Public constructor for class Jupiter
  * Argument: The current time.
  * the hard coded orbital elements for Jupiter are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Jupiter::Jupiter(FGTime *t) :
+Jupiter::Jupiter(SGTime *t) :
   CelestialBody(100.4542,  2.7685400E-5,	
 		1.3030,   -1.557E-7,
 		273.8777,  1.6450500E-5,
@@ -58,13 +58,13 @@ Jupiter::Jupiter() :
 }
 
 /*************************************************************************
- * void Jupiter::updatePosition(FGTime *t, Star *ourSun)
+ * void Jupiter::updatePosition(SGTime *t, Star *ourSun)
  * 
  * calculates the current position of Jupiter, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
  * a Jupiter specific equation
  *************************************************************************/
-void Jupiter::updatePosition(FGTime *t, Star *ourSun)
+void Jupiter::updatePosition(SGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
   magnitude = -9.25 + 5*log10( r*R ) + 0.014 * FV;

@@ -39,14 +39,14 @@
 
 
 /*************************************************************************
- * Moon::Moon(FGTime *t)
+ * Moon::Moon(SGTime *t)
  * Public constructor for class Moon. Initializes the orbital elements and 
  * sets up the moon texture.
  * Argument: The current time.
  * the hard coded orbital elements for Moon are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Moon::Moon(FGTime *t) :
+Moon::Moon(SGTime *t) :
   CelestialBody(125.1228, -0.0529538083,
 		5.1454,    0.00000,
 		318.0634,  0.1643573223,
@@ -73,12 +73,12 @@ Moon::~Moon()
 
 
 /*****************************************************************************
- * void Moon::updatePosition(FGTime *t, Star *ourSun)
+ * void Moon::updatePosition(SGTime *t, Star *ourSun)
  * this member function calculates the actual topocentric position (i.e.) 
  * the position of the moon as seen from the current position on the surface
  * of the moon. 
  ****************************************************************************/
-void Moon::updatePosition(FGTime *t, double lat, Star *ourSun)
+void Moon::updatePosition(SGTime *t, double lat, Star *ourSun)
 {
   double 
     eccAnom, ecl, actTime,

@@ -32,7 +32,7 @@
 
 #include <plib/sg.h>
 
-#include <simgear/timing/fg_time.hxx>
+#include <simgear/timing/sg_time.hxx>
 
 #include "star.hxx"
 #include "moon.hxx"
@@ -77,7 +77,7 @@ public:
 
     // Update (recalculate) the positions of all objects for the
     // specified time
-    void update(FGTime *t, double lat);
+    void update(SGTime *t, double lat);
 
     // sun
     inline Star *get_sun() const { return our_sun; }

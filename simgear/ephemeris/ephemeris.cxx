@@ -57,7 +57,7 @@ FGEphemeris::~FGEphemeris( void ) {
 
 // Update (recalculate) the positions of all objects for the specified
 // time
-void FGEphemeris::update( FGTime *t, double lat ) {
+void FGEphemeris::update( SGTime *t, double lat ) {
     // update object positions
     our_sun->updatePosition( t );
     moon->updatePosition( t, lat, our_sun );

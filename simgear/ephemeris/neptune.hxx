@@ -24,7 +24,7 @@
 #ifndef _NEPTUNE_HXX_
 #define _NEPTUNE_HXX_
 
-#include <simgear/timing/fg_time.hxx>
+#include <simgear/timing/sg_time.hxx>
 
 #include "celestialBody.hxx"
 #include "star.hxx"
@@ -32,9 +32,9 @@
 class Neptune : public CelestialBody
 {
 public:
-  Neptune ( FGTime *t);
+  Neptune ( SGTime *t);
   Neptune ();
-  void updatePosition(FGTime *t, Star *ourSun);
+  void updatePosition(SGTime *t, Star *ourSun);
 };
 
 #endif // _NEPTUNE_HXX_

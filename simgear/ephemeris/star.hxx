@@ -25,7 +25,6 @@
 #define _STAR_HXX_
 
 
-// #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 
 
@@ -39,10 +38,10 @@ private:
 
 public:
 
-    Star (FGTime *t);
+    Star (SGTime *t);
     Star ();
     ~Star();
-    void updatePosition(FGTime *t);
+    void updatePosition(SGTime *t);
     double getM();
     double getw();
     double getxs();

@@ -30,13 +30,13 @@
 #include "uranus.hxx"
 
 /*************************************************************************
- * Uranus::Uranus(FGTime *t)
+ * Uranus::Uranus(SGTime *t)
  * Public constructor for class Uranus
  * Argument: The current time.
  * the hard coded orbital elements for Uranus are passed to 
  * CelestialBody::CelestialBody();
  ************************************************************************/
-Uranus::Uranus(FGTime *t) :
+Uranus::Uranus(SGTime *t) :
   CelestialBody(74.00050,   1.3978000E-5,
 		0.7733,     1.900E-8,
 		96.66120,   3.0565000E-5,
@@ -56,13 +56,13 @@ Uranus::Uranus() :
 }
 
 /*************************************************************************
- * void Uranus::updatePosition(FGTime *t, Star *ourSun)
+ * void Uranus::updatePosition(SGTime *t, Star *ourSun)
  * 
  * calculates the current position of Uranus, by calling the base class,
  * CelestialBody::updatePosition(); The current magnitude is calculated using 
  * a Uranus specific equation
  *************************************************************************/
-void Uranus::updatePosition(FGTime *t, Star *ourSun)
+void Uranus::updatePosition(SGTime *t, Star *ourSun)
 {
   CelestialBody::updatePosition(t, ourSun);
   magnitude = -7.15 + 5*log10( r*R) + 0.001 * FV;

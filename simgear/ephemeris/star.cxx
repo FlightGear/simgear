@@ -34,7 +34,7 @@
 
 
 /*************************************************************************
- * Star::Star(FGTime *t)
+ * Star::Star(SGTime *t)
  * Public constructor for class Star
  * Argument: The current time.
  * the hard coded orbital elements our sun are passed to 
@@ -42,7 +42,7 @@
  * note that the word sun is avoided, in order to prevent some compilation
  * problems on sun systems 
  ************************************************************************/
-Star::Star(FGTime *t) :
+Star::Star(SGTime *t) :
     CelestialBody (0.000000,  0.0000000000,
 		   0.0000,    0.00000,
 		   282.9404,  4.7093500E-5,	
@@ -70,11 +70,11 @@ Star::~Star()
 
 
 /*************************************************************************
- * void Star::updatePosition(FGTime *t, Star *ourSun)
+ * void Star::updatePosition(SGTime *t, Star *ourSun)
  * 
  * calculates the current position of our sun.
  *************************************************************************/
-void Star::updatePosition(FGTime *t)
+void Star::updatePosition(SGTime *t)
 {
   double 
     actTime, eccAnom, 

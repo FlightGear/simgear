@@ -194,7 +194,7 @@ SGCloudLayer::rebuild()
 
     const float layer_scale = layer_span / scale;
     const float mpi = SG_PI/4;
-    const float alt_diff = layer_asl * 1.5;
+    const float alt_diff = layer_asl * 0.8;
 
     for (int i = 0; i < 4; i++)
     {

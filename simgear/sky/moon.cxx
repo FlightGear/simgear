@@ -57,12 +57,16 @@ static int sgMoonOrbPreDraw( ssgEntity *e ) {
     return true;
 }
 
+
 static int sgMoonOrbPostDraw( ssgEntity *e ) {
     /* cout << endl << "Moon orb post draw" << endl << "----------------" 
 	 << endl << endl; */
     // glEnable( GL_DEPTH_TEST );
     // glEnable( GL_FOG );
-    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+
+    // Some drivers don't properly reset glBendFunc with a
+    // glPopAttrib() so we reset it to the 'default' here.
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
@@ -78,6 +82,8 @@ static int sgMoonOrbPostDraw( ssgEntity *e ) {
     return true;
 }
 
+
+#if 0
 static int sgMoonHaloPreDraw( ssgEntity *e ) {
     /* cout << endl << "Moon halo pre draw" << endl << "----------------" 
 	 << endl << endl; */
@@ -107,6 +113,7 @@ static int sgMoonHaloPostDraw( ssgEntity *e ) {
 
     return true;
 }
+#endif
 
 
 // Constructor

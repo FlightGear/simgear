@@ -106,10 +106,16 @@
 #define SG_METER_TO_FEET    3.28083989501312335958  
 
 /** Meters to Nautical Miles.  1 nm = 6076.11549 feet */
-#define SG_METER_TO_NM      0.00053995680
+#define SG_METER_TO_NM      0.0005399568034557235
 
 /** Nautical Miles to Meters */
 #define SG_NM_TO_METER      1852.0000
+
+/** Meters to Statute Miles. */
+#define SG_METER_TO_SM      0.0006213699494949496
+
+/** Statute Miles to Meters. */
+#define SG_SM_TO_METER      1609.3412196
 
 /** Radians to Nautical Miles.  1 nm = 1/60 of a degree */
 #define SG_NM_TO_RAD        0.00029088820866572159
@@ -117,9 +123,33 @@
 /** Nautical Miles to Radians */
 #define SG_RAD_TO_NM        3437.7467707849392526
 
+/** Miles per second to Knots */
+#define SG_MPS_TO_KT        1.9438444924406046432
+
+/** Knots to Miles per second */
+#define SG_KT_TO_MPS        0.5144444444444444444
+
+/** Miles per second to Miles per hour */
+#define SG_MPS_TO_MPH       2.2369362920544020312
+
+/** Miles per hour to Miles per second */
+#define SG_MPH_TO_MPS       0.44704
+
+/** Miles per second to Kilometers per hour */
+#define SG_MPS_TO_KMH       3.6
+
+/** Kilometers per hour to Miles per second */
+#define SG_KMH_TO_MPS       0.2777777777777777778
+
+/** Pascal to Inch Mercury */
+#define SG_PA_TO_INHG       0.0002952998330101010
+
+/** Inch Mercury to Pascal */
+#define SG_INHG_TO_PA       3386.388640341
+
+
 /** For divide by zero avoidance, this will be close enough to zero */
 #define SG_EPSILON 0.0000001
-
 
 /** Highest binobj format version we know how to read/write.  This starts at
  *  0 and can go up to 65535 */

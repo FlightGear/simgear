@@ -168,7 +168,7 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 
 // draw background portions of the sky ... do this before you draw the
 // rest of your scene.
-void SGSky::preDraw( float alt ) {
+void SGSky::preDraw( float alt, float fog_exp2_density ) {
     ssgCullAndDraw( pre_root );
 
     	// if we are closer than this to a cloud layer, don't draw clouds
@@ -200,15 +200,15 @@ void SGSky::preDraw( float alt ) {
     {
        ++cur_layer_pos;
     }
-}
 
-void SGSky::drawUpperClouds( float fog_exp2_density ) {
     // FIXME: This should not be needed, but at this time (08/15/2003)
     //        certain NVidia drivers don't seem to implement
     //        glPushAttrib(FG_FOG_BIT) properly. The result is that
     //        there is not fog when looking at the sun.
     glFogf ( GL_FOG_DENSITY, fog_exp2_density );
+}
 
+void SGSky::drawUpperClouds( ) {
     // draw the cloud layers that are above us, top to bottom
     for ( int i = (int)cloud_layers.size() - 1; i >= cur_layer_pos; --i ) {
         if ( i != in_cloud ) {

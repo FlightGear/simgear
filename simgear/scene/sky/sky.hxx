@@ -334,7 +334,7 @@ public:
      * class description.
      * @param alt current altitude
      */
-    void preDraw( float alt );
+    void preDraw( float alt, float fog_exp2_density );
 
     /**
      * Draw upper translucent clouds ... do this before you've drawn 
@@ -342,7 +342,7 @@ public:
      * detailed class description.
      * @param fog_exp2_density fog density of the current cloud layer
      */
-    void drawUpperClouds( float fog_exp2_density );
+    void drawUpperClouds();
 
     /**
      * Draw lower translucent clouds ... do this after you've drawn 

@@ -20,9 +20,9 @@
 //============================================================================
 
 #include "camutils.hpp"
-#include <plane.hpp>
-#include <tri.hpp>
-#include <minmaxbox.hpp>
+#include "plane.hpp"
+#include "tri.hpp"
+#include "minmaxbox.hpp"
 
 //----------------------------------------------------------------------------
 // Given a camera's 8 corner vertices and its 6 side planes and a triangle ABC, 

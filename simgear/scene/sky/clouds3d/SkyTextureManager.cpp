@@ -22,6 +22,14 @@
 
 #pragma warning( disable : 4786)
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
 #include <GL/glu.h>
 
 #include "SkyTextureManager.hpp"

@@ -1,3 +1,12 @@
+New in 0.0.12
+* July 19, 2000
+* Converted project license from GPL to LGPL.
+* Moved low level IO (socket, file, serial) code over to SimGear.
+* Moved ephemeral code into simgear
+* Moved basic world time code into simgear
+* Added a property manager (registry)
+* Some documentation added.
+
 New in 0.0.11
 * July 3, 2000
 * Replaced gdbm with metakit

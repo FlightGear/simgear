@@ -1,8 +1,9 @@
-// sky.cxx -- model sky with an upside down "bowl"
+// skydome.cxx -- model sky with an upside down "bowl"
 //
 // Written by Curtis Olson, started December 1997.
+// SSG-ified by Curtis Olson, February 2000.
 //
-// Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
+// Copyright (C) 1997-2000  Curtis L. Olson  - curt@flightgear.org
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -44,7 +45,7 @@
 #include <Time/event.hxx>
 #include <Time/fg_time.hxx>
 
-#include "sky.hxx"
+#include "skydome.hxx"
 
 
 #ifdef __MWERKS__
@@ -68,32 +69,32 @@
 #define BOTTOM_ELEV   -2000.0
 
 
-static float inner_vertex[12][3];
-static float middle_vertex[12][3];
-static float outer_vertex[12][3];
-static float bottom_vertex[12][3];
+// static float inner_vertex[12][3];
+// static float middle_vertex[12][3];
+// static float outer_vertex[12][3];
+// static float bottom_vertex[12][3];
 
-static GLubyte upper_color[12][4];
-static GLubyte middle_color[12][4];
-static GLubyte lower_color[12][4];
+// static GLubyte upper_color[12][4];
+// static GLubyte middle_color[12][4];
+// static GLubyte lower_color[12][4];
 
 
 // Defined the shared sky object here
-FGSky current_sky;
+FGSkyDome current_sky;
 
 
 // Constructor
-FGSky::FGSky( void ) {
+FGSkyDome::FGSkyDome( void ) {
 }
 
 
 // Destructor
-FGSky::~FGSky( void ) {
+FGSkyDome::~FGSkyDome( void ) {
 }
 
 
 // initialize the sky object and connect it into the scene graph
-bool FGSky::initialize( ssgRoot *root ) {
+bool FGSkyDome::initialize( ssgRoot *root ) {
     sgVec3 color;
 
     float theta;
@@ -106,11 +107,12 @@ bool FGSky::initialize( ssgRoot *root ) {
     } else {
 	sky_state->setShadeModel( GL_FLAT );
     }
+    sky_state->disable( GL_LIGHTING );
     sky_state->disable( GL_DEPTH_TEST );
-    sky_state->enable( GL_LIGHTING );
-    sky_state->disable( GL_FOG );
     sky_state->disable( GL_CULL_FACE );
-    sky_state->disable( GL_TEXTURE_2D );
+    sky_state->disable( GL_TEXTURE );
+    sky_state->enable( GL_COLOR_MATERIAL );
+    sky_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
 
     // initialize arrays
     center_disk_vl = new ssgVertexArray( 14 );
@@ -262,7 +264,7 @@ bool FGSky::initialize( ssgRoot *root ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
+bool FGSkyDome::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
     double diff;
     sgVec3 outer_param, outer_amt, outer_diff;
     sgVec3 middle_param, middle_amt, middle_diff;
@@ -302,7 +304,6 @@ bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
     // First, recalulate the basic colors
     //
 
-    sgVec3 center_color;
     sgVec3 upper_color[12];
     sgVec3 middle_color[12];
     sgVec3 lower_color[12];
@@ -315,21 +316,19 @@ bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        l->sky_color[j], l->fog_color[j], diff);
 
-	    upper_color[i][j] = (GLubyte)((sky_color[j] - diff * 0.3) * 255);
-	    middle_color[i][j] = (GLubyte)((sky_color[j] - diff * 0.9 
-					   + middle_amt[j]) * 255);
-	    lower_color[i][j] = (GLubyte)((fog_color[j] + outer_amt[j]) 
-					  * 255);
+	    upper_color[i][j] = sky_color[j] - diff * 0.3;
+	    middle_color[i][j] = sky_color[j] - diff * 0.9 + middle_amt[j];
+	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
-	    if ( upper_color[i][j] > 255 ) { upper_color[i][j] = 255; }
-	    if ( upper_color[i][j] < 25 ) { upper_color[i][j] = 25; }
-	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
-	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
-	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
-	    if ( lower_color[i][j] < 25 ) { lower_color[i][j] = 25; }
+	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
+	    if ( upper_color[i][j] < 0.1 ) { upper_color[i][j] = 0.1; }
+	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
+	    if ( middle_color[i][j] < 0.1 ) { middle_color[i][j] = 0.1; }
+	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
+	    if ( lower_color[i][j] < 0.1 ) { lower_color[i][j] = 0.1; }
 	}
 	// upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	//                     (GLubyte)(sky_color[3] * 255);
+	//                     (GLubyte)(sky_color[3] * 1.0);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] -= outer_diff[j];
@@ -358,21 +357,19 @@ bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
 	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
 	    //        sky_color[j], fog_color[j], diff);
 
-	    upper_color[i][j] = (GLubyte)((sky_color[j] - diff * 0.3) * 255);
-	    middle_color[i][j] = (GLubyte)((sky_color[j] - diff * 0.9 
-					    + middle_amt[j]) * 255);
-	    lower_color[i][j] = (GLubyte)((fog_color[j] + outer_amt[j]) 
-					  * 255);
+	    upper_color[i][j] = sky_color[j] - diff * 0.3;
+	    middle_color[i][j] = sky_color[j] - diff * 0.9 + middle_amt[j];
+	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
-	    if ( upper_color[i][j] > 255 ) { upper_color[i][j] = 255; }
-	    if ( upper_color[i][j] < 25 ) { upper_color[i][j] = 25; }
-	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
-	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
-	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
+	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
+	    if ( upper_color[i][j] < 0.1 ) { upper_color[i][j] = 0.1; }
+	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
+	    if ( middle_color[i][j] < 0.1 ) { middle_color[i][j] = 0.1; }
+	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
 	    if ( lower_color[i][j] < 35 ) { lower_color[i][j] = 35; }
 	}
 	// upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	//                     (GLubyte)(sky_color[3] * 255);
+	//                     (GLubyte)(sky_color[3] * 1.0);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] += outer_diff[j];
@@ -405,7 +402,9 @@ bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
     // update the center disk color arrays
     counter = 0;
     slot = center_disk_cl->get( counter++ );
-    sgCopyVec3( slot, center_color );
+    // sgVec3 red;
+    // sgSetVec3( red, 1.0, 0.0, 0.0 );
+    sgCopyVec3( slot, sky_color );
     for ( i = 11; i >= 0; i-- ) {
 	slot = center_disk_cl->get( counter++ );
 	sgCopyVec3( slot, upper_color[i] );
@@ -467,7 +466,7 @@ bool FGSky::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) {
 // lat specifies a rotation about the new Y axis
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
-bool FGSky::reposition( sgVec3 p, double lon, double lat, double spin ) {
+bool FGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
     sgMat4 T, LON, LAT, SPIN;
     sgVec3 axis;
 
@@ -508,6 +507,11 @@ bool FGSky::reposition( sgVec3 p, double lon, double lat, double spin ) {
 
     return true;
 }
+
+
+#if 0
+
+// depricated code from here to the end 
 
 
 // Calculate the sky structure vertices
@@ -807,3 +811,4 @@ void fgSkyRender() {
 }
 
 
+#endif

@@ -1,8 +1,9 @@
-// sky.hxx -- model sky with an upside down "bowl"
+// skydome.hxx -- model sky with an upside down "bowl"
 //
 // Written by Curtis Olson, started December 1997.
+// SSG-ified by Curtis Olson, February 2000.
 //
-// Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
+// Copyright (C) 1997-2000  Curtis L. Olson  - curt@flightgear.org
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -21,8 +22,8 @@
 // $Id$
 
 
-#ifndef _SKY_HXX
-#define _SKY_HXX
+#ifndef _SKYDOME_HXX
+#define _SKYDOME_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -33,7 +34,7 @@
 #include <plib/ssg.h>		// plib include
 
 
-class FGSky {
+class FGSkyDome {
 
     ssgSelector *sky_selector;
     ssgTransform *sky_transform;
@@ -54,10 +55,10 @@ class FGSky {
 public:
 
     // Constructor
-    FGSky( void );
+    FGSkyDome( void );
 
     // Destructor
-    ~FGSky( void );
+    ~FGSkyDome( void );
 
     // initialize the sky object and connect it into the scene graph
     // as a kid to to the specified root
@@ -90,19 +91,19 @@ public:
 };
 
 
-extern FGSky current_sky;
+extern FGSkyDome current_sky;
 
 
 // (Re)generate the display list
-void fgSkyInit();
+// void fgSkyInit();
 
 // (Re)calculate the sky colors at each vertex
-void fgSkyColorsInit();
+// void fgSkyColorsInit();
 
 // Draw the Sky
-void fgSkyRender();
+// void fgSkyRender();
 
 
-#endif // _SKY_HXX
+#endif // _SKYDOM_HXX
 
 

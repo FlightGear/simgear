@@ -157,27 +157,22 @@ void Moon::setHalo()
   for (i=0; i < texWidth; i++) {
     for (j=0; j < texWidth; j++) {
       double x, y, d;
-	    
+      
+      *p = 0xff;
+      *(p+1) = 0xff;
+      *(p+2) = 0xff;
+	  
       x = fabs((double)(i - (texWidth / 2)));
       y = fabs((double)(j - (texWidth / 2)));
 
       d = sqrt((x * x) + (y * y));
-      if (d < radius) 
-	{
+      if (d < radius) {
 	  double t = 1.0 - (d / radius); // t is 1.0 at center, 0.0 at edge */
 	  // inverse square looks nice 
-	  *p = (int)((double)0xff * (t * t));
-	  *(p+1) = (int)((double) 0xff * (t*t));
-	  *(p+2) = (int)((double) 0xff * (t*t));
-	  *(p+3) = 0x11;
-	} 
-      else
-	{
-	  *p = 0x00;
-	  *(p+1) = 0x00;
-	  *(p+2) = 0x00;
-	  *(p+3) = 0x11;
-	}
+	  *(p+3) = (int)((double) 0x20 * (t*t));
+      } else {
+	  *(p+3) = 0x00;
+      }
       p += 4;
     }
   }
@@ -354,7 +349,8 @@ void Moon::newImage()
 	// Draw the halo...
 	if (current_options.get_textures())
 	  {
-	    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	    // glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 	    glEnable(GL_TEXTURE_2D); // TEXTURE ENABLED
 	    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);  
 	    glBindTexture(GL_TEXTURE_2D, moon_halotexid);

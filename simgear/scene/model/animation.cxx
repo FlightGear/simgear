@@ -553,7 +553,7 @@ SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
   : SGAnimation(props, new ssgTexTrans),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
 {
-  int i;
+  unsigned int i;
   // Load animations
   vector<SGPropertyNode_ptr> transform_nodes = props->getChildren("transform");
   _transform = new TexTransform [transform_nodes.size()];

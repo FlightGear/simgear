@@ -1096,8 +1096,8 @@ bool ccap2std(char *, Devaddr *, Diskaddr *);
  
 bool std2ccap(Devaddr *, Diskaddr *, char *);
  
-char *strupr(char *);
-char *strlwr(char *);
+//char *strupr(char *);
+//char *strlwr(char *);
 //char *strdup(char *);
 //int strcmpi(char *, char *);
  

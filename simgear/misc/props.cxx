@@ -358,8 +358,9 @@ SGPropertyNode::SGPropertyNode (const string &name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  for (int i = 0; i < (int)_children.size(); i++)
+  for (int i = 0; i < (int)_children.size(); i++) {
     delete _children[i];
+  }
   clear_value();
 }
 

@@ -27,6 +27,11 @@ SG_USING_STD(istream);
 SG_USING_STD(ostream);
 #endif
 
+#ifdef NONE
+#pragma warn A sloppy coder has defined NONE as a macro!
+#undef NONE
+#endif
+
 #ifdef ALIAS
 #pragma warn A sloppy coder has defined ALIAS as a macro!
 #undef ALIAS
@@ -694,7 +699,7 @@ public:
   /**
    * Check a single mode attribute for the property node.
    */
-  bool getAttribute (Attribute attr) const { return (bool)(_attr & attr); }
+  bool getAttribute (Attribute attr) const { return ((_attr & attr) != 0); }
 
 
   /**

@@ -49,9 +49,7 @@ SGTexture::SGTexture(unsigned int width, unsigned int height)
 
 SGTexture::~SGTexture()
 {
-    if ( texture_data ) {
-        delete texture_data;
-    }
+    delete texture_data;
 
     if ( texture_id != 0 ) {
         free_id();
@@ -182,8 +180,7 @@ SGTexture::read_alpha_texture(const char *name)
     SGTexture::ImageRec *image;
     int y;
 
-    if (texture_data)
-        delete texture_data;
+    delete[] texture_data;
 
     image = ImageOpen(name);
     if(!image) {
@@ -225,8 +222,7 @@ SGTexture::read_rgb_texture(const char *name)
     SGTexture::ImageRec *image;
     int y;
 
-    if (texture_data)
-        delete texture_data;
+    delete[] texture_data;
 
     image = ImageOpen(name);
     if(!image) {
@@ -249,11 +245,11 @@ SGTexture::read_rgb_texture(const char *name)
     bbuf = new GLubyte[ image->xsize ];
     abuf = new GLubyte[ image->xsize ];
     if(!texture_data || !rbuf || !gbuf || !bbuf || !abuf) {
-      delete texture_data;
-      delete rbuf;
-      delete gbuf;
-      delete bbuf;
-      delete abuf;
+      delete[] texture_data;
+      delete[] rbuf;
+      delete[] gbuf;
+      delete[] bbuf;
+      delete[] abuf;
       errstr = OUT_OF_MEMORY;
       return;
     }
@@ -277,10 +273,10 @@ SGTexture::read_rgb_texture(const char *name)
     }
 
     ImageClose(image);
-    delete rbuf;
-    delete gbuf;
-    delete bbuf;
-    delete abuf;
+    delete[] rbuf;
+    delete[] gbuf;
+    delete[] bbuf;
+    delete[] abuf;
 }
 
 
@@ -293,8 +289,7 @@ SGTexture::read_rgba_texture(const char *name)
     SGTexture::ImageRec *image;
     int y;
 
-    if (texture_data)
-        delete texture_data;
+    delete[] texture_data;
 
     image = ImageOpen(name);
     if(!image) {
@@ -317,11 +312,11 @@ SGTexture::read_rgba_texture(const char *name)
     bbuf = new GLubyte[ image->xsize ];
     abuf = new GLubyte[ image->xsize ];
     if(!texture_data || !rbuf || !gbuf || !bbuf || !abuf) {
-      delete texture_data;
-      delete rbuf;
-      delete gbuf;
-      delete bbuf;
-      delete abuf;
+      delete[] texture_data;
+      delete[] rbuf;
+      delete[] gbuf;
+      delete[] bbuf;
+      delete[] abuf;
       errstr = OUT_OF_MEMORY;
       return;
     }
@@ -346,10 +341,10 @@ SGTexture::read_rgba_texture(const char *name)
     }
 
     ImageClose(image);
-    delete rbuf;
-    delete gbuf;
-    delete bbuf;
-    delete abuf;
+    delete[] rbuf;
+    delete[] gbuf;
+    delete[] bbuf;
+    delete[] abuf;
 }
 
 void
@@ -359,8 +354,7 @@ SGTexture::read_raw_texture(const char *name)
     SGTexture::ImageRec *image;
     int y;
 
-    if (texture_data)
-        delete texture_data;
+    delete[] texture_data;
 
     image = RawImageOpen(name);
 
@@ -394,8 +388,7 @@ SGTexture::read_r8_texture(const char *name)
     SGTexture::ImageRec *image;
     int xy;
 
-    if (texture_data)
-        delete texture_data;
+    delete[] texture_data;
 
     //it wouldn't make sense to write a new function ...
     image = RawImageOpen(name);
@@ -544,7 +537,7 @@ void
 SGTexture::ImageClose(SGTexture::ImageRec *image) {
     if (image->file)  gzclose(image->file);
     if (file) fclose(file);
-    delete image->tmp;
+    delete[] image->tmp;
     delete image;
 }
 
@@ -585,7 +578,7 @@ SGTexture::RawImageOpen(const char *fileName)
 
 
     //just allocate a pseudo value as I'm too lazy to change ImageClose()...
-    image->tmp = new GLubyte;
+    image->tmp = new GLubyte[1];
 
     if (image->tmp == 0) {
         errstr = OUT_OF_MEMORY;
@@ -827,7 +820,7 @@ SGTexture::make_grayscale(float contrast) {
       return;
 
    int colors = (num_colors == 3) ? 1 : 2;
-   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * colors);
+   GLubyte *map = new GLubyte[ texture_width * texture_height * colors ];
 
    for (int y=0; y<texture_height; y++)
       for (int x=0; x<texture_width; x++)
@@ -846,7 +839,7 @@ SGTexture::make_grayscale(float contrast) {
             map[pos+1] = rgb[3];
       }
 
-   free (texture_data);
+   delete[] texture_data;
    texture_data = map;
    num_colors = colors;
 }
@@ -856,8 +849,8 @@ void
 SGTexture::make_maxcolorwindow() {
    GLubyte minmaxc[2] = {255, 0};
 
-   unsigned int pos = 0;
-   unsigned int max = num_colors;
+   int pos = 0;
+   int max = num_colors;
    if (num_colors == 2) max = 1;
    if (num_colors == 4) max = 3; 
    while (pos < texture_width * texture_height * num_colors) {
@@ -892,7 +885,7 @@ SGTexture::make_normalmap(float brightness, float contrast) {
    int colors = (num_colors == 1) ? 3 : 4;
    bool alpha = (colors > 3);
    int tsize = texture_width * texture_height * colors;
-   GLubyte *map = (GLubyte *)malloc (tsize);
+   GLubyte *map = new GLubyte[ tsize ];
 
    int mpos = 0, dpos = 0;
    for (int y=0; y<texture_height; y++) {
@@ -930,7 +923,7 @@ SGTexture::make_normalmap(float brightness, float contrast) {
       }
    }
 
-   free (texture_data);
+   delete[] texture_data;
    texture_data = map;
    num_colors = colors;
 }
@@ -941,7 +934,7 @@ SGTexture::make_bumpmap(float brightness, float contrast) {
    make_grayscale(contrast);
 
    int colors = (num_colors == 1) ? 1 : 2;
-   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * colors);
+   GLubyte *map = new GLubyte[ texture_width * texture_height * colors ];
 
    for (int y=0; y<texture_height; y++)
       for (int x=0; x<texture_width; x++)
@@ -960,7 +953,7 @@ SGTexture::make_bumpmap(float brightness, float contrast) {
             map[mpos+1] = texture_data[dpos+1];
       }
 
-   free (texture_data);
+   delete[] texture_data;
    texture_data = map;
    num_colors = colors;
 }

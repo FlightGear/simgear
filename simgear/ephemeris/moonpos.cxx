@@ -182,7 +182,17 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // SG_LOG( SG_GENERAL, SG_INFO, "g = " << g );
 
   rightAscension = geoRa - mpar * rho * cos(gclat) * sin(HA) / cos (geoDec);
-  declination = geoDec - mpar * rho * sin (gclat) * sin (g - geoDec) / sin(g);
+  if (fabs(lat) > 0) {
+      declination
+	  = geoDec - mpar * rho * sin (gclat) * sin (g - geoDec) / sin(g);
+  } else {
+      declination = geoDec;
+      // cerr << "Geocentric vs. Topocentric position" << endl;
+      // cerr << "RA (difference)  : "
+      //      << SGD_RADIANS_TO_DEGREES * (geoRa - rightAscension) << endl;
+      // cerr << "Dec (difference) : "
+      //      << SGD_RADIANS_TO_DEGREES * (geoDec - declination) << endl;
+  }
 
   /* SG_LOG( SG_GENERAL, SG_INFO, 
 	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension) 

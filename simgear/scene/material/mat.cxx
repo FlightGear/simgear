@@ -133,14 +133,14 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   ambient[2] = props->getDoubleValue("ambient/b", 0.2);
   ambient[3] = props->getDoubleValue("ambient/a", 1.0);
 
-  diffuse[0] = props->getDoubleValue("diffuse/r", 1.0);
-  diffuse[1] = props->getDoubleValue("diffuse/g", 1.0);
-  diffuse[2] = props->getDoubleValue("diffuse/b", 1.0);
+  diffuse[0] = props->getDoubleValue("diffuse/r", 0.8);
+  diffuse[1] = props->getDoubleValue("diffuse/g", 0.8);
+  diffuse[2] = props->getDoubleValue("diffuse/b", 0.8);
   diffuse[3] = props->getDoubleValue("diffuse/a", 1.0);
 
-  specular[0] = props->getDoubleValue("specular/r", 0.5);
-  specular[1] = props->getDoubleValue("specular/g", 0.5);
-  specular[2] = props->getDoubleValue("specular/b", 0.5);
+  specular[0] = props->getDoubleValue("specular/r", 0.0);
+  specular[1] = props->getDoubleValue("specular/g", 0.0);
+  specular[2] = props->getDoubleValue("specular/b", 0.0);
   specular[3] = props->getDoubleValue("specular/a", 1.0);
 
   emission[0] = props->getDoubleValue("emissive/r", 0.0);
@@ -178,8 +178,8 @@ SGMaterial::init ()
     shininess = 1.0;
     for (int i = 0; i < 4; i++) {
         ambient[i]  = (i < 3) ? 0.2 : 1.0;
-        specular[i] = (i < 3) ? 0.5 : 1.0;
-        diffuse[i]  = 1.0;
+        specular[i] = (i < 3) ? 0.0 : 1.0;
+        diffuse[i]  = (i < 3) ? 0.8 : 1.0;
         emission[i] = (i < 3) ? 0.0 : 1.0;
     }
 }

@@ -1,4 +1,4 @@
-includedir = @includedir@/sky/clouds3d
+includedir = @includedir@/scene/sky/clouds3d
 
 # enable the following line once extgl.c get's added to the distro
 EXTRA_DIST = extgl.c extgl.h

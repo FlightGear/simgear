@@ -23,6 +23,8 @@
 // $Id$
 
 
+#include <iostream>
+
 #include "ephemeris.hxx"
 
 
@@ -37,6 +39,10 @@ SGEphemeris::SGEphemeris( const string &path ) {
     saturn = new Saturn;
     uranus = new Uranus;
     neptune = new Neptune;
+    nplanets = 7;
+    for ( int i = 0; i < nplanets; ++i ) {
+        sgdSetVec3( planets[i], 0.0, 0.0, 0.0 );
+    }
     stars = new SGStarData( SGPath(path) );
 }
 

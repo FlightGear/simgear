@@ -50,7 +50,7 @@ SGSocket::SGSocket( const string& host, const string& port,
 {
 #if defined(_MSC_VER)
     if (!wsock_init && !wsastartup()) {
-    	FG_LOG( FG_IO, FG_ALERT, "Winsock not available");
+    	SG_LOG( SG_IO, SG_ALERT, "Winsock not available");
     }
 #endif
 
@@ -60,7 +60,7 @@ SGSocket::SGSocket( const string& host, const string& port,
 	sock_style = SOCK_STREAM;
     } else {
 	sock_style = SOCK_DGRAM;
-	FG_LOG( FG_IO, FG_ALERT,
+	SG_LOG( SG_IO, SG_ALERT,
 		"Error: SGSocket() unknown style = " << style );
     }
 
@@ -84,7 +84,7 @@ SGSocket::SocketType SGSocket::make_server_socket () {
     // Create the socket.
     sock = socket (PF_INET, sock_style, 0);
     if (sock == INVALID_SOCKET) {
-        FG_LOG( FG_IO, FG_ALERT, 
+        SG_LOG( SG_IO, SG_ALERT, 
                 "Error: socket() failed in make_server_socket()" );
         return INVALID_SOCKET;
     }
@@ -95,7 +95,7 @@ SGSocket::SocketType SGSocket::make_server_socket () {
     name.sin_port = htons(port); // set port to zero to let system pick
     name.sin_addr.s_addr = htonl (INADDR_ANY);
     if (bind (sock, (struct sockaddr *) &name, sizeof (name)) != 0) {
-	    FG_LOG( FG_IO, FG_ALERT,
+	    SG_LOG( SG_IO, SG_ALERT,
 		    "Error: bind() failed in make_server_socket()" );
         return INVALID_SOCKET;
     }
@@ -103,7 +103,7 @@ SGSocket::SocketType SGSocket::make_server_socket () {
     // Find the assigned port number
     length = sizeof(struct sockaddr_in);
     if ( getsockname(sock, (struct sockaddr *) &name, &length) ) {
-	FG_LOG( FG_IO, FG_ALERT,
+	SG_LOG( SG_IO, SG_ALERT,
 		"Error: getsockname() failed in make_server_socket()" );
         return INVALID_SOCKET;
     }
@@ -117,12 +117,12 @@ SGSocket::SocketType SGSocket::make_client_socket () {
     struct sockaddr_in name;
     struct hostent *hp;
      
-    FG_LOG( FG_IO, FG_INFO, "Make client socket()" );
+    SG_LOG( SG_IO, SG_INFO, "Make client socket()" );
 
     // Create the socket.
     sock = socket (PF_INET, sock_style, 0);
     if (sock == INVALID_SOCKET) {
-        FG_LOG( FG_IO, FG_ALERT, 
+        SG_LOG( SG_IO, SG_ALERT, 
                 "Error: socket() failed in make_server_socket()" );
         return INVALID_SOCKET;
     }
@@ -146,7 +146,7 @@ SGSocket::SocketType SGSocket::make_client_socket () {
 		 sizeof(struct sockaddr_in)) != 0 )
     {
 	closesocket(sock);
-	FG_LOG( FG_IO, FG_ALERT, 
+	SG_LOG( SG_IO, SG_ALERT, 
 		"Error: connect() failed in make_client_socket()" );
 	return INVALID_SOCKET;
     }
@@ -201,11 +201,11 @@ bool SGSocket::open( const SGProtocolDir d ) {
 	// pick any available port.
 	sock = make_server_socket();
 	if ( sock == INVALID_SOCKET ) {
-	    FG_LOG( FG_IO, FG_ALERT, "socket creation failed" );
+	    SG_LOG( SG_IO, SG_ALERT, "socket creation failed" );
 	    return false;
 	}
 
-	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
+	SG_LOG( SG_IO, SG_INFO, "socket is connected to port = " << port );
 
 	if ( sock_style == SOCK_DGRAM ) {
 	    // Non-blocking UDP
@@ -235,19 +235,19 @@ bool SGSocket::open( const SGProtocolDir d ) {
 	sock = make_server_socket();
 	// TODO: check for error.
 
-	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
+	SG_LOG( SG_IO, SG_INFO, "socket is connected to port = " << port );
 
 	// Blocking TCP
 	// Specify the maximum length of the connection queue
 	listen( sock, SG_MAX_SOCKET_QUEUE );
     } else {
-	FG_LOG( FG_IO, FG_ALERT, 
+	SG_LOG( SG_IO, SG_ALERT, 
 		"Error:  bidirection mode not available for UDP sockets." );
 	return false;
     }
 
     if ( sock < 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error opening socket: " << hostname
+	SG_LOG( SG_IO, SG_ALERT, "Error opening socket: " << hostname
 		<< ":" << port );
 	return false;
     }
@@ -296,7 +296,7 @@ int SGSocket::read( char *buf, int length ) {
 	}
 
 	if ( result != length ) {
-	    FG_LOG( FG_IO, FG_INFO, 
+	    SG_LOG( SG_IO, SG_INFO, 
 		    "Warning: read() not enough bytes." );
 	}
     }
@@ -355,7 +355,7 @@ int SGSocket::readline( char *buf, int length ) {
 		// could cause problems so if you see connections
 		// dropping for unexplained reasons, LOOK HERE!
 		if ( result == 0 && save_len == 0 && first_read == true ) {
-		    FG_LOG( FG_IO, FG_ALERT, 
+		    SG_LOG( SG_IO, SG_ALERT, 
 			    "Connection closed by foreign host." );
 		    closesocket(sock);
 		    open( get_dir() );
@@ -412,7 +412,7 @@ int SGSocket::write( const char *buf, const int length ) {
     bool error_condition = false;
 
     if ( writesocket(sock, buf, length) < 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error writing to socket: " << port );
+	SG_LOG( SG_IO, SG_ALERT, "Error writing to socket: " << port );
 	error_condition = true;
     }
 
@@ -433,7 +433,7 @@ int SGSocket::write( const char *buf, const int length ) {
     if ( FD_ISSET(sock, &ready) ) {
 	int msgsock = accept(sock, 0, 0);
 	if ( msgsock < 0 ) {
-	    FG_LOG( FG_IO, FG_ALERT, 
+	    SG_LOG( SG_IO, SG_ALERT, 
 		    "Error: accept() failed in write()" );
 	    return 0;
 	} else {
@@ -441,7 +441,7 @@ int SGSocket::write( const char *buf, const int length ) {
 	}
     }
 
-    FG_LOG( FG_IO, FG_INFO, "Client connections = " << 
+    SG_LOG( SG_IO, SG_INFO, "Client connections = " << 
 	    client_connections.size() );
     for ( int i = 0; i < (int)client_connections.size(); ++i ) {
 	int msgsock = client_connections[i];
@@ -452,7 +452,7 @@ int SGSocket::write( const char *buf, const int length ) {
 
 	// write the interesting data to the socket
 	if ( writesocket(msgsock, buf, length) == SOCKET_ERROR ) {
-	    FG_LOG( FG_IO, FG_ALERT, "Error writing to socket: " << port );
+	    SG_LOG( SG_IO, SG_ALERT, "Error writing to socket: " << port );
 	    error_condition = true;
 	} else {
 #ifdef _POSIX_SYNCHRONIZED_IO
@@ -504,7 +504,7 @@ bool SGSocket::nonblock() {
     u_long arg = 1;
     if (ioctlsocket( sock, FIONBIO, &arg ) != 0) {
         int error_code = WSAGetLastError();
-        FG_LOG( FG_IO, FG_ALERT, 
+        SG_LOG( SG_IO, SG_ALERT, 
                 "Error " << error_code << ": unable to set non-blocking mode"
 );
             return false;
@@ -529,14 +529,14 @@ SGSocket::wsastartup() {
     int err = WSAStartup( wVersionRequested, &wsaData );
     if (err != 0)
     {
-        FG_LOG( FG_IO, FG_ALERT, "Error: Couldn't load winsock" );
+        SG_LOG( SG_IO, SG_ALERT, "Error: Couldn't load winsock" );
         return false;
     }
 
 #if 0
     if ( LOBYTE( wsaData.wVersion ) != 2 ||
         HIBYTE( wsaData.wVersion ) != 2 ) {
-        FG_LOG( FG_IO, FG_ALERT, "Couldn't load a suitable winsock");
+        SG_LOG( SG_IO, SG_ALERT, "Couldn't load a suitable winsock");
         WSACleanup( );
         return false;
     }

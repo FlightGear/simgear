@@ -9,7 +9,7 @@ int main () {
     string value;
     bool result;
 
-    fglog().setLogLevels( FG_ALL, FG_INFO );
+    sglog().setLogLevels( SG_ALL, SG_INFO );
 
     cout << "start of main" << endl;
 

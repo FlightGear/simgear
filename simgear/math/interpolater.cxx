@@ -42,11 +42,11 @@ SG_USING_STD(string);
 // Constructor -- loads the interpolation table from the specified
 // file
 SGInterpTable::SGInterpTable( const string& file ) {
-    FG_LOG( FG_MATH, FG_INFO, "Initializing Interpolator for " << file );
+    SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 
     fg_gzifstream in( file );
     if ( !in.is_open() ) {
-        FG_LOG( FG_GENERAL, FG_ALERT, "Cannot open file: " << file );
+        SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
 	exit(-1);
     }
 
@@ -58,7 +58,7 @@ SGInterpTable::SGInterpTable( const string& file ) {
 	    in >> skipws;
 	    size++;
 	} else {
-            FG_LOG( FG_MATH, FG_ALERT,
+            SG_LOG( SG_MATH, SG_ALERT,
 		    "fgInterpolateInit(): Exceed max table size = "
 		    << MAX_TABLE_SIZE );
 	    exit(-1);
@@ -83,14 +83,14 @@ double SGInterpTable::interpolate(double x) {
     // printf ("i = %d ", i);
 
     if ( (i == 0) && (x < table[0][0]) ) {
-	FG_LOG( FG_MATH, FG_DEBUG, 
+	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to small = " << x );
 	return table[0][1];
     }
 
     // cout << " table[size-1][0] = " << table[size-1][0] << endl;
     if ( x > table[size-1][0] ) {
-	FG_LOG( FG_MATH, FG_DEBUG, 
+	SG_LOG( SG_MATH, SG_DEBUG, 
 		"interpolate(): lookup error, x to big = " << x );
 	return table[size-1][1];
     }

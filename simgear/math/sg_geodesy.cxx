@@ -71,7 +71,7 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << t_lat*t_lat + E*E << ")" );
+	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" << t_lat*t_lat + E*E << ")" );
 	}
 #endif
 	// cout << "  x_alpha = " << x_alpha << endl;
@@ -80,7 +80,7 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha
+	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" << SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha
 		    << ")" );
 	}
 #endif
@@ -96,7 +96,7 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
 		    1-EPS*EPS*sin_mu_a*sin_mu_a << ")" );
 	}
 #endif
@@ -111,7 +111,7 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
 		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
 		    << ")" );
 	}
@@ -153,7 +153,7 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeodToGeoc()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+	    SG_LOG( SG_GENERAL, SG_ALERT, "sqrt(" <<
 		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
 		    << ")" );
 	}

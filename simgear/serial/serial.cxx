@@ -94,7 +94,7 @@ bool FGSerialPort::open_port(const string& device) {
             0,
             NULL );
 
-        FG_LOG( FG_IO, FG_ALERT, "Error opening serial device \"" 
+        SG_LOG( SG_IO, SG_ALERT, "Error opening serial device \"" 
             << device << "\" " << (const char*) lpMsgBuf );
         LocalFree( lpMsgBuf );
         return false;
@@ -111,7 +111,7 @@ bool FGSerialPort::open_port(const string& device) {
     cout << "Serial fd created = " << fd << endl;
 
     if ( fd  == -1 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Cannot open " << device
+	SG_LOG( SG_IO, SG_ALERT, "Cannot open " << device
 		<< " for serial I/O" );
 	return false;
     } else {
@@ -120,7 +120,7 @@ bool FGSerialPort::open_port(const string& device) {
 
     // set required port parameters 
     if ( tcgetattr( fd, &config ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Unable to poll port settings" );
+	SG_LOG( SG_IO, SG_ALERT, "Unable to poll port settings" );
 	return false;
     }
 
@@ -142,7 +142,7 @@ bool FGSerialPort::open_port(const string& device) {
     // cout << "config.c_iflag = " << config.c_iflag << endl;
 
     if ( tcsetattr( fd, TCSANOW, &config ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Unable to update port settings" );
+	SG_LOG( SG_IO, SG_ALERT, "Unable to update port settings" );
 	return false;
     }
 
@@ -176,7 +176,7 @@ bool FGSerialPort::set_baud(int baud) {
     speed_t speed = B9600;
 
     if ( tcgetattr( fd, &config ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Unable to poll port settings" );
+	SG_LOG( SG_IO, SG_ALERT, "Unable to poll port settings" );
 	return false;
     }
 
@@ -203,22 +203,22 @@ bool FGSerialPort::set_baud(int baud) {
 	speed = B230400;
 #endif
     } else {
-	FG_LOG( FG_IO, FG_ALERT, "Unsupported baud rate " << baud );
+	SG_LOG( SG_IO, SG_ALERT, "Unsupported baud rate " << baud );
 	return false;
     }
 
     if ( cfsetispeed( &config, speed ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Problem setting input baud rate" );
+	SG_LOG( SG_IO, SG_ALERT, "Problem setting input baud rate" );
 	return false;
     }
 
     if ( cfsetospeed( &config, speed ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Problem setting output baud rate" );
+	SG_LOG( SG_IO, SG_ALERT, "Problem setting output baud rate" );
 	return false;
     }
 
     if ( tcsetattr( fd, TCSANOW, &config ) != 0 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Unable to update port settings" );
+	SG_LOG( SG_IO, SG_ALERT, "Unable to update port settings" );
 	return false;
     }
 
@@ -248,7 +248,7 @@ string FGSerialPort::read_port() {
     if ( count < 0 ) {
 	// error condition
 	if ( errno != EAGAIN ) {
-	    FG_LOG( FG_IO, FG_ALERT, 
+	    SG_LOG( SG_IO, SG_ALERT, 
 		    "Serial I/O on read, error number = " << errno );
 	}
 
@@ -281,7 +281,7 @@ int FGSerialPort::read_port(char *buf, int len) {
     if ( count < 0 ) {
 	// error condition
 	if ( errno != EAGAIN ) {
-	    FG_LOG( FG_IO, FG_ALERT, 
+	    SG_LOG( SG_IO, SG_ALERT, 
 		    "Serial I/O on read, error number = " << errno );
 	}
 
@@ -325,7 +325,7 @@ int FGSerialPort::write_port(const string& value) {
             0,
             NULL );
 
-        FG_LOG( FG_IO, FG_ALERT, "Serial I/O write error: " 
+        SG_LOG( SG_IO, SG_ALERT, "Serial I/O write error: " 
              << (const char*) lpMsgBuf );
         LocalFree( lpMsgBuf );
         return int(lpNumberOfBytesWritten);
@@ -339,7 +339,7 @@ int FGSerialPort::write_port(const string& value) {
     int count;
 
     if ( error ) {
-        FG_LOG( FG_IO, FG_ALERT, "attempting serial write error recovery" );
+        SG_LOG( SG_IO, SG_ALERT, "attempting serial write error recovery" );
 	// attempt some sort of error recovery
 	count = write(fd, "\n", 1);
 	if ( count == 1 ) {
@@ -362,7 +362,7 @@ int FGSerialPort::write_port(const string& value) {
 	    error = false;
 	} else {
 	    error = true;
-	    FG_LOG( FG_IO, FG_ALERT,
+	    SG_LOG( SG_IO, SG_ALERT,
 		    "Serial I/O on write, error number = " << errno );
 	}
     }
@@ -400,7 +400,7 @@ int FGSerialPort::write_port(const char* buf, int len) {
             0,
             NULL );
 
-        FG_LOG( FG_IO, FG_ALERT, "Serial I/O write error: " 
+        SG_LOG( SG_IO, SG_ALERT, "Serial I/O write error: " 
              << (const char*) lpMsgBuf );
         LocalFree( lpMsgBuf );
         return int(lpNumberOfBytesWritten);
@@ -435,7 +435,7 @@ int FGSerialPort::write_port(const char* buf, int len) {
 	    // ok ... in our context we don't really care if we can't
 	    // write a string, we'll just get it the next time around
 	} else {
-	    FG_LOG( FG_IO, FG_ALERT,
+	    SG_LOG( SG_IO, SG_ALERT,
 		    "Serial I/O on write, error number = " << errno );
 	}
     }

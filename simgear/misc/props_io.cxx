@@ -113,7 +113,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 
   if (_level == 0) {
     if (string(name) != "PropertyList") {
-      FG_LOG(FG_INPUT, FG_ALERT, "Root element name is " <<
+      SG_LOG(SG_INPUT, SG_ALERT, "Root element name is " <<
 	     name << "; expected PropertyList");
       _ok = false;
     }
@@ -137,7 +137,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     const char * att_alias = atts.getValue("alias");
     if (att_alias != 0) {
       if (!node->alias(att_alias))
-	FG_LOG(FG_INPUT, FG_ALERT, "Failed to set alias to " << att_alias);
+	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << att_alias);
     }
 
 				// Check for an include.
@@ -148,7 +148,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       cerr << "Dir is " << FGPath(_base).dir() << endl;
       path.append(att_include);
       if (!readProperties(path.str(), node)) {
-	FG_LOG(FG_INPUT, FG_ALERT, "Failed to read include file "
+	SG_LOG(SG_INPUT, SG_ALERT, "Failed to read include file "
 	       << att_include);
 	_ok = false;
       }
@@ -183,12 +183,12 @@ PropsVisitor::endElement (const char * name)
     } else if (st.type == "unknown") {
       ret = st.node->setUnknownValue(_data);
     } else {
-      FG_LOG(FG_INPUT, FG_ALERT, "Unknown data type " << st.type
+      SG_LOG(SG_INPUT, SG_ALERT, "Unknown data type " << st.type
 	     << " assuming 'unknown'");
       ret = st.node->setUnknownValue(_data);
     }
     if (!ret)
-      FG_LOG(FG_INPUT, FG_ALERT, "readProperties: Failed to set "
+      SG_LOG(SG_INPUT, SG_ALERT, "readProperties: Failed to set "
 	     << st.node->getPath() << " to value \""
 	     << _data << "\" with type " << st.type);
   }
@@ -206,14 +206,14 @@ PropsVisitor::data (const char * s, int length)
 void
 PropsVisitor::warning (const char * message, int line, int column)
 {
-  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: warning: "
+  SG_LOG(SG_INPUT, SG_ALERT, "readProperties: warning: "
 	 << message << " at line " << line << ", column " << column);
 }
 
 void
 PropsVisitor::error (const char * message, int line, int column)
 {
-  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: FATAL: " <<
+  SG_LOG(SG_INPUT, SG_ALERT, "readProperties: FATAL: " <<
 	 message << " at line " << line << ", column " << column);
   _ok = false;
 }
@@ -257,7 +257,7 @@ readProperties (const string &file, SGPropertyNode * start_node)
   if (input.good()) {
     return readProperties(input, start_node, file);
   } else {
-    FG_LOG(FG_INPUT, FG_ALERT, "Error reading property list from file "
+    SG_LOG(SG_INPUT, SG_ALERT, "Error reading property list from file "
 	   << file);
     return false;
   }
@@ -416,7 +416,7 @@ writeProperties (const string &file, const SGPropertyNode * start_node)
   if (output.good()) {
     return writeProperties(output, start_node);
   } else {
-    FG_LOG(FG_INPUT, FG_ALERT, "Cannot write properties to file "
+    SG_LOG(SG_INPUT, SG_ALERT, "Cannot write properties to file "
 	   << file);
     return false;
   }

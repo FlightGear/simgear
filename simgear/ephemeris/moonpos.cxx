@@ -138,7 +138,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   r += (-0.58 * cos(M - 2*D)
 	-0.46 * cos(2*D)
 	);
-  // FG_LOG(FG_GENERAL, FG_INFO, "Running moon update");
+  // SG_LOG(SG_GENERAL, SG_INFO, "Running moon update");
   xg = r * cos(lonEcl) * cos(latEcl);
   yg = r * sin(lonEcl) * cos(latEcl);
   zg = r *               sin(latEcl);
@@ -150,7 +150,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   geoRa  = atan2(ye, xe);
   geoDec = atan2(ze, sqrt(xe*xe + ye*ye));
 
-  /* FG_LOG( FG_GENERAL, FG_INFO, 
+  /* SG_LOG( SG_GENERAL, SG_INFO, 
 	  "(geocentric) geoRa = (" << (SGD_RADIANS_TO_DEGREES * geoRa) 
 	  << "), geoDec= (" << (SGD_RADIANS_TO_DEGREES * geoDec) << ")" ); */
 
@@ -162,30 +162,30 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // First calculate the moon's parrallax, that is, the apparent size of the 
   // (equatorial) radius of the earth, as seen from the moon 
   mpar = asin ( 1 / r);
-  // FG_LOG( FG_GENERAL, FG_INFO, "r = " << r << " mpar = " << mpar );
-  // FG_LOG( FG_GENERAL, FG_INFO, "lat = " << f->get_Latitude() );
+  // SG_LOG( SG_GENERAL, SG_INFO, "r = " << r << " mpar = " << mpar );
+  // SG_LOG( SG_GENERAL, SG_INFO, "lat = " << f->get_Latitude() );
 
   gclat = lat - 0.003358 * 
       sin (2 * SGD_DEGREES_TO_RADIANS * lat );
-  // FG_LOG( FG_GENERAL, FG_INFO, "gclat = " << gclat );
+  // SG_LOG( SG_GENERAL, SG_INFO, "gclat = " << gclat );
 
   rho = 0.99883 + 0.00167 * cos(2 * SGD_DEGREES_TO_RADIANS * lat);
-  // FG_LOG( FG_GENERAL, FG_INFO, "rho = " << rho );
+  // SG_LOG( SG_GENERAL, SG_INFO, "rho = " << rho );
   
   if (geoRa < 0)
     geoRa += (2*SGD_PI);
   
   HA = lst - (3.8197186 * geoRa);
-  /* FG_LOG( FG_GENERAL, FG_INFO, "t->getLst() = " << t->getLst() 
+  /* SG_LOG( SG_GENERAL, SG_INFO, "t->getLst() = " << t->getLst() 
 	  << " HA = " << HA ); */
 
   g = atan (tan(gclat) / cos ((HA / 3.8197186)));
-  // FG_LOG( FG_GENERAL, FG_INFO, "g = " << g );
+  // SG_LOG( SG_GENERAL, SG_INFO, "g = " << g );
 
   rightAscension = geoRa - mpar * rho * cos(gclat) * sin(HA) / cos (geoDec);
   declination = geoDec - mpar * rho * sin (gclat) * sin (g - geoDec) / sin(g);
 
-  /* FG_LOG( FG_GENERAL, FG_INFO, 
+  /* SG_LOG( SG_GENERAL, SG_INFO, 
 	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension) 
 	  << "), Dec= (" << (SGD_RADIANS_TO_DEGREES *declination) << ")" ); */
 }

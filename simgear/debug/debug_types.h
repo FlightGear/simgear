@@ -1,38 +1,43 @@
-// NB: To add a dbg_class, add it here, and add it to the structure in
-// fg_debug.c
+/** \file debug_types.h
+ *  Define the various logging classes and prioritiess
+ */
 
+/** 
+ * Define the possible classes/categories of logging messages
+ */
 typedef enum {
-    FG_NONE      = 0x00000000,
+    SG_NONE      = 0x00000000,
 
-    FG_TERRAIN   = 0x00000001,
-    FG_ASTRO     = 0x00000002,
-    FG_FLIGHT    = 0x00000004,
-    FG_INPUT     = 0x00000008,
-    FG_GL        = 0x00000010,
-    FG_VIEW      = 0x00000020,
-    FG_COCKPIT   = 0x00000040,
-    FG_GENERAL   = 0x00000080,
-    FG_MATH      = 0x00000100,
-    FG_EVENT     = 0x00000200,
-    FG_AIRCRAFT  = 0x00000400,
-    FG_AUTOPILOT = 0x00000800,
-    FG_IO        = 0x00001000,
-    FG_CLIPPER   = 0x00002000,
-    FG_NETWORK   = 0x00004000,
-    FG_UNDEFD    = 0x00008000, // For range checking
+    SG_TERRAIN   = 0x00000001,
+    SG_ASTRO     = 0x00000002,
+    SG_FLIGHT    = 0x00000004,
+    SG_INPUT     = 0x00000008,
+    SG_GL        = 0x00000010,
+    SG_VIEW      = 0x00000020,
+    SG_COCKPIT   = 0x00000040,
+    SG_GENERAL   = 0x00000080,
+    SG_MATH      = 0x00000100,
+    SG_EVENT     = 0x00000200,
+    SG_AIRCRAFT  = 0x00000400,
+    SG_AUTOPILOT = 0x00000800,
+    SG_IO        = 0x00001000,
+    SG_CLIPPER   = 0x00002000,
+    SG_NETWORK   = 0x00004000,
+    SG_UNDEFD    = 0x00008000, // For range checking
 
-    FG_ALL     = 0xFFFFFFFF
-} fgDebugClass;
+    SG_ALL     = 0xFFFFFFFF
+} sgDebugClass;
 
 
-// NB: To add a priority, add it here.
+/**
+ * Define the possible logging priorities (and their order).
+ */
 typedef enum {
-    FG_BULK,	    // For frequent messages
-    FG_DEBUG, 	    // Less frequent debug type messages
-    FG_INFO,        // Informatory messages
-    FG_WARN,	    // Possible impending problem
-    FG_ALERT       // Very possible impending problem
-    // FG_EXIT,        // Problem (no core)
-    // FG_ABORT        // Abandon ship (core)
-} fgDebugPriority;
-
+    SG_BULK,	    // For frequent messages
+    SG_DEBUG, 	    // Less frequent debug type messages
+    SG_INFO,        // Informatory messages
+    SG_WARN,	    // Possible impending problem
+    SG_ALERT       // Very possible impending problem
+    // SG_EXIT,        // Problem (no core)
+    // SG_ABORT        // Abandon ship (core)
+} sgDebugPriority;

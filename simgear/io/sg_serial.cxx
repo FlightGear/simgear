@@ -51,14 +51,14 @@ bool SGSerial::open( const SGProtocolDir d ) {
     set_dir( d );
 
     if ( ! port.open_port( device ) ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error opening device: " << device );
+	SG_LOG( SG_IO, SG_ALERT, "Error opening device: " << device );
 	return false;
     }
 
     // cout << "fd = " << port.fd << endl;
 
     if ( ! port.set_baud( atoi( baud.c_str() ) ) ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error setting baud: " << baud );
+	SG_LOG( SG_IO, SG_ALERT, "Error setting baud: " << baud );
 	return false;
     }
 
@@ -116,7 +116,7 @@ int SGSerial::readline( char *buf, int length ) {
     // copy to external buffer
     strncpy( buf, save_buf, result );
     buf[result] = '\0';
-    FG_LOG( FG_IO, FG_INFO, "fg_serial line = " << buf );
+    SG_LOG( SG_IO, SG_INFO, "fg_serial line = " << buf );
 
     // shift save buffer
     for ( i = result; i < save_len; ++i ) {
@@ -133,7 +133,7 @@ int SGSerial::write( const char *buf, const int length ) {
     int result = port.write_port( buf, length );
 
     if ( result != length ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error writing data: " << device );
+	SG_LOG( SG_IO, SG_ALERT, "Error writing data: " << device );
     }
 
     return result;

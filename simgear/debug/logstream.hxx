@@ -1,5 +1,7 @@
-// Stream based logging mechanism.
-//
+/** \file logstream.hxx
+ * Stream based logging mechanism.
+ */
+
 // Written by Bernie Bright, 1998
 //
 // Copyright (C) 1998  Bernie Bright - bbright@c031.aone.net.au
@@ -27,7 +29,6 @@
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
-
 
 #include <simgear/compiler.h>
 
@@ -67,12 +68,11 @@ SG_USING_STD(iostream);
 // 3. Read environment for default debugClass and debugPriority.
 //
 
-//-----------------------------------------------------------------------------
-//
-// logbuf is an output-only streambuf with the ability to disable sets of
-// messages at runtime. Only messages with priority >= logbuf::logPriority
-// and debugClass == logbuf::logClass are output.
-//
+/**
+ * logbuf is an output-only streambuf with the ability to disable sets of
+ * messages at runtime. Only messages with priority >= logbuf::logPriority
+ * and debugClass == logbuf::logClass are output.
+ */
 class logbuf : public streambuf
 {
 public:
@@ -83,27 +83,32 @@ public:
     // typedef char_traits<char>::pos_type pos_type;
     // typedef char_traits<char>::off_type off_type;
 #endif
-//     logbuf( streambuf* sb ) : sbuf(sb) {}
+    // logbuf( streambuf* sb ) : sbuf(sb) {}
+    /** Constructor */
     logbuf();
+    /** Destructor */
     ~logbuf();
 
-    // Is logging enabled?
+    /** Is logging enabled? */
     bool enabled() { return logging_enabled; }
 
-    // Set the logging level of subsequent messages.
-    void set_log_state( fgDebugClass c, fgDebugPriority p );
+    /** Set the logging level of subsequent messages. */
+    void set_log_state( sgDebugClass c, sgDebugPriority p );
 
-    // Set the global logging level.
-    static void set_log_level( fgDebugClass c, fgDebugPriority p );
+    /** Set the global logging level. */
+    static void set_log_level( sgDebugClass c, sgDebugPriority p );
 
-    //
+    /** Set the stream buffer */
     void set_sb( streambuf* sb );
 
 protected:
 
+    /** sync/flush */
     inline virtual int sync();
+
+    /** overflow */
     int_type overflow( int ch );
-//     int xsputn( const char* s, istreamsize n );
+    // int xsputn( const char* s, istreamsize n );
 
 private:
 
@@ -111,8 +116,8 @@ private:
     static streambuf* sbuf;
 
     static bool logging_enabled;
-    static fgDebugClass logClass;
-    static fgDebugPriority logPriority;
+    static sgDebugClass logClass;
+    static sgDebugPriority logPriority;
 
 private:
 
@@ -132,7 +137,7 @@ logbuf::sync()
 }
 
 inline void
-logbuf::set_log_state( fgDebugClass c, fgDebugPriority p )
+logbuf::set_log_state( sgDebugClass c, sgDebugPriority p )
 {
     logging_enabled = ((c & logClass) != 0 && p >= logPriority);
 }
@@ -143,54 +148,52 @@ logbuf::overflow( int c )
     return logging_enabled ? sbuf->sputc(c) : (EOF == 0 ? 1: 0);
 }
 
-//-----------------------------------------------------------------------------
-//
-// logstream manipulator for setting the log level of a message.
-//
+/**
+ * logstream manipulator for setting the log level of a message.
+ */
 struct loglevel
 {
-    loglevel( fgDebugClass c, fgDebugPriority p )
+    loglevel( sgDebugClass c, sgDebugPriority p )
 	: logClass(c), logPriority(p) {}
 
-    fgDebugClass logClass;
-    fgDebugPriority logPriority;
+    sgDebugClass logClass;
+    sgDebugPriority logPriority;
 };
 
-//-----------------------------------------------------------------------------
-//
-// A helper class that ensures a streambuf and ostream are constructed and
-// destroyed in the correct order.  The streambuf must be created before the
-// ostream but bases are constructed before members.  Thus, making this class
-// a private base of logstream, declared to the left of ostream, we ensure the
-// correct order of construction and destruction.
-//
+/**
+ * A helper class that ensures a streambuf and ostream are constructed and
+ * destroyed in the correct order.  The streambuf must be created before the
+ * ostream but bases are constructed before members.  Thus, making this class
+ * a private base of logstream, declared to the left of ostream, we ensure the
+ * correct order of construction and destruction.
+ */
 struct logstream_base
 {
-//     logstream_base( streambuf* sb ) : lbuf(sb) {}
+    // logstream_base( streambuf* sb ) : lbuf(sb) {}
     logstream_base() {}
 
     logbuf lbuf;
 };
 
-//-----------------------------------------------------------------------------
-//
-// 
-//
+/**
+ * Class to manage the debug logging stream.
+ */
 class logstream : private logstream_base, public ostream
 {
 public:
-    // The default is to send messages to cerr.
+    /** The default is to send messages to cerr. */
     logstream( ostream& out )
-// 	: logstream_base(out.rdbuf()),
+	// : logstream_base(out.rdbuf()),
 	: logstream_base(),
 	  ostream(&lbuf) { lbuf.set_sb(out.rdbuf());}
 
+    /** Set the output stream */
     void set_output( ostream& out ) { lbuf.set_sb( out.rdbuf() ); }
 
-    // Set the global log class and priority level.
-     void setLogLevels( fgDebugClass c, fgDebugPriority p );
+    /** Set the global log class and priority level. */
+    void setLogLevels( sgDebugClass c, sgDebugPriority p );
 
-    // Output operator to capture the debug level and priority of a message.
+    /** Output operator to capture the debug level and priority of a message. */
     inline ostream& operator<< ( const loglevel& l );
 };
 
@@ -201,26 +204,31 @@ logstream::operator<< ( const loglevel& l )
     return *this;
 }
 
-//-----------------------------------------------------------------------------
-//
-// Return the one and only logstream instance.
-// We use a function instead of a global object so we are assured that cerr
-// has been initialised.
-//
+
+/**
+ * Return the one and only logstream instance.
+ * We use a function instead of a global object so we are assured that cerr
+ * has been initialised.
+ */
 inline logstream&
-fglog()
+sglog()
 {
     static logstream logstrm( cerr );
     return logstrm;
 }
 
+
+/** \def SG_LOG(C,P,M)
+ * Log a message = M of class = C and priority = P
+ */
 #ifdef FG_NDEBUG
-# define FG_LOG(C,P,M)
+# define SG_LOG(C,P,M)
 #elif defined( __MWERKS__ )
-# define FG_LOG(C,P,M) ::fglog() << ::loglevel(C,P) << M << std::endl
+# define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
 #else
-# define FG_LOG(C,P,M) fglog() << loglevel(C,P) << M << endl
+# define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << endl
 #endif
+
 
 #endif // _LOGSTREAM_H
 

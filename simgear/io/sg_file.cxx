@@ -60,13 +60,13 @@ bool SGFile::open( const SGProtocolDir d ) {
     } else if ( get_dir() == SG_IO_IN ) {
 	fp = ::open( file_name.c_str(), O_RDONLY );
     } else {
-	FG_LOG( FG_IO, FG_ALERT, 
+	SG_LOG( SG_IO, SG_ALERT, 
 		"Error:  bidirection mode not available for files." );
 	return false;
     }
 
     if ( fp == -1 ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error opening file: "	<< file_name );
+	SG_LOG( SG_IO, SG_ALERT, "Error opening file: "	<< file_name );
 	return false;
     }
 
@@ -110,7 +110,7 @@ int SGFile::readline( char *buf, int length ) {
 int SGFile::write( const char *buf, const int length ) {
     int result = ::write( fp, buf, length );
     if ( result != length ) {
-	FG_LOG( FG_IO, FG_ALERT, "Error writing data: " << file_name );
+	SG_LOG( SG_IO, SG_ALERT, "Error writing data: " << file_name );
     }
 
     return result;

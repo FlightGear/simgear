@@ -24,8 +24,8 @@
 #include "logstream.hxx"
 
 bool            logbuf::logging_enabled = true;
-fgDebugClass    logbuf::logClass        = FG_NONE;
-fgDebugPriority logbuf::logPriority     = FG_INFO;
+sgDebugClass    logbuf::logClass        = SG_NONE;
+sgDebugPriority logbuf::logPriority     = SG_INFO;
 streambuf*      logbuf::sbuf            = NULL;
 
 logbuf::logbuf()
@@ -50,14 +50,14 @@ logbuf::set_sb( streambuf* sb )
 }
 
 void
-logbuf::set_log_level( fgDebugClass c, fgDebugPriority p )
+logbuf::set_log_level( sgDebugClass c, sgDebugPriority p )
 {
     logClass = c;
     logPriority = p;
 }
 
 void
-logstream::setLogLevels( fgDebugClass c, fgDebugPriority p )
+logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
     logbuf::set_log_level( c, p );
 }

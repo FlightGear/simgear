@@ -72,7 +72,7 @@ static const double SIDRATE = 0.9972695677;
 
 SGTime::SGTime( double lon, double lat, const string& root )
 {
-    FG_LOG( FG_EVENT, FG_INFO, "Initializing Time" );
+    SG_LOG( SG_EVENT, SG_INFO, "Initializing Time" );
 
     gst_diff = -9999.0;
 
@@ -85,7 +85,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
     if ( root != (string)"" ) {
 	FGPath zone( root );
 	zone.append( "zone.tab" );
-	FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: "
+	SG_LOG( SG_EVENT, SG_DEBUG, "Reading timezone info from: "
 		<< zone.str() );
 	tzContainer = new TimezoneContainer( zone.c_str() );
 
@@ -157,13 +157,13 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
     now = cur_time;
     start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);
   
-    FG_LOG( FG_EVENT, FG_DEBUG, "  COURSE: GMT = "
+    SG_LOG( SG_EVENT, SG_DEBUG, "  COURSE: GMT = "
 	    << sgTimeFormatTime(gmt, tbuf) );
-    FG_LOG( FG_EVENT, FG_DEBUG, "  March 21 noon (GMT) = " << start_gmt );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  March 21 noon (GMT) = " << start_gmt );
   
     diff = (now - start_gmt) / (3600.0 * 24.0);
   
-    FG_LOG( FG_EVENT, FG_DEBUG, 
+    SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Time since 3/21/" << gmt->tm_year << " GMT = " << diff );
   
     part = fmod(diff, 1.0);
@@ -176,7 +176,7 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 	lstTmp += 24.0;
     }
   
-    FG_LOG( FG_EVENT, FG_DEBUG,
+    SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  days = " << days << "  hours = " << hours << "  lon = " 
 	    << lng << "  lst = " << lstTmp );
   
@@ -188,18 +188,18 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 void SGTime::update( double lon, double lat, long int warp ) {
     double gst_precise, gst_course;
 
-    FG_LOG( FG_EVENT, FG_DEBUG, "Updating time" );
+    SG_LOG( SG_EVENT, SG_DEBUG, "Updating time" );
 
     // get current Unix calendar time (in seconds)
     // warp += warp_delta;
     cur_time = time(NULL) + warp;
-    FG_LOG( FG_EVENT, FG_DEBUG, 
+    SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current Unix calendar time = " << cur_time 
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
     gmt = gmtime(&cur_time);
-    FG_LOG( FG_EVENT, FG_DEBUG, 
+    SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
 	    << gmt->tm_mday << "/" << gmt->tm_year << " "
 	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
@@ -217,7 +217,7 @@ void SGTime::update( double lon, double lat, long int warp ) {
 
     // convert "back" to Julian date + partial day (as a fraction of one)
     jd = mjd + MJD0;
-    FG_LOG( FG_EVENT, FG_DEBUG, "  Current Julian Date = " << jd );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  Current Julian Date = " << jd );
 
     // printf("  Current Longitude = %.3f\n", FG_Longitude * SGD_RADIANS_TO_DEGREES);
 
@@ -225,7 +225,7 @@ void SGTime::update( double lon, double lat, long int warp ) {
     if ( gst_diff < -100.0 ) {
 	// first time through do the expensive calculation & cheap
         // calculation to get the difference.
-	FG_LOG( FG_EVENT, FG_INFO, "  First time, doing precise gst" );
+	SG_LOG( SG_EVENT, SG_INFO, "  First time, doing precise gst" );
 	gst_precise = gst = sidereal_precise( mjd, 0.00 );
 	gst_course = sidereal_course( cur_time, gmt, 0.00 );
       
@@ -238,9 +238,9 @@ void SGTime::update( double lon, double lat, long int warp ) {
 	lst = sidereal_course( cur_time, gmt, -(lon * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
     }
 
-    FG_LOG( FG_EVENT, FG_DEBUG,
+    SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current lon=0.00 Sidereal Time = " << gst );
-    FG_LOG( FG_EVENT, FG_DEBUG,
+    SG_LOG( SG_EVENT, SG_DEBUG,
 	    "  Current LOCAL Sidereal Time = " << lst << " (" 
 	    << sidereal_precise( mjd, -(lon * SGD_RADIANS_TO_DEGREES) ) 
 	    << ") (diff = " << gst_diff << ")" );
@@ -332,7 +332,7 @@ double sgTimeCalcGST( double mjd ) {
     x /= 3600.0;
     gst = (1.0/SIDRATE)*hr + x;
 
-    FG_LOG( FG_EVENT, FG_DEBUG, "  gst => " << gst );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  gst => " << gst );
 
     return gst;
 }
@@ -431,16 +431,16 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 
     time_t start = mktime(&mt);
 
-    FG_LOG( FG_EVENT, FG_DEBUG, "start1 = " << start );
+    SG_LOG( SG_EVENT, SG_DEBUG, "start1 = " << start );
     // the ctime() call can screw up time progression on some versions
     // of Linux
-    // fgPrintf( FG_EVENT, FG_DEBUG, "start2 = %s", ctime(&start));
-    FG_LOG( FG_EVENT, FG_DEBUG, "(tm_isdst = " << mt.tm_isdst << ")" );
+    // fgPrintf( SG_EVENT, SG_DEBUG, "start2 = %s", ctime(&start));
+    SG_LOG( SG_EVENT, SG_DEBUG, "(tm_isdst = " << mt.tm_isdst << ")" );
 
     timezone = fix_up_timezone( timezone );
 
 #  if defined( TIMEZONE_OFFSET_WORKS )
-    FG_LOG( FG_EVENT, FG_DEBUG,
+    SG_LOG( SG_EVENT, SG_DEBUG,
 	    "start = " << start << ", timezone = " << timezone );
     return( start - timezone );
 #  else // ! defined( TIMEZONE_OFFSET_WORKS )
@@ -449,19 +449,19 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     if ( daylight > 0 ) {
 	daylight = 1;
     } else if ( daylight < 0 ) {
-	FG_LOG( FG_EVENT, FG_WARN, 
+	SG_LOG( SG_EVENT, FG_WARN, 
 		"OOOPS, problem in sg_time.cxx, no daylight savings info." );
     }
 
     long int offset = -(timezone / 3600 - daylight);
 
-    FG_LOG( FG_EVENT, FG_DEBUG, "  Raw time zone offset = " << timezone );
-    FG_LOG( FG_EVENT, FG_DEBUG, "  Daylight Savings = " << daylight );
-    FG_LOG( FG_EVENT, FG_DEBUG, "  Local hours from GMT = " << offset );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  Raw time zone offset = " << timezone );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  Daylight Savings = " << daylight );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  Local hours from GMT = " << offset );
     
     long int start_gmt = start - timezone + (daylight * 3600);
     
-    FG_LOG( FG_EVENT, FG_DEBUG, "  March 21 noon (CST) = " << start );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  March 21 noon (CST) = " << start );
 
     return ( start_gmt );
 #  endif // ! defined( TIMEZONE_OFFSET_WORKS )

@@ -333,6 +333,9 @@
 #   define SG_USING_NAMESPACE(X)
 #endif
 
+/** \def SG_USING_STD(x)
+ *  Expands to using std::x if SG_HAVE_STD is defined 
+ */
 # ifdef SG_HAVE_STD
 #  define SG_USING_STD(X) using std::X
 #  define STD std

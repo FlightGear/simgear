@@ -300,7 +300,8 @@ WARN_LOGFILE           =
 INPUT                  = \
 	simgear/bucket \
 	simgear/compiler.h \
-	simgear/constants.h
+	simgear/constants.h \
+	simgear/debug
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

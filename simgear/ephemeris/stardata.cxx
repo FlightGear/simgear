@@ -54,11 +54,11 @@ bool SGStarData::load() {
 
      // build the full path name to the stars data base file
     data_path.append( "stars" );
-    FG_LOG( FG_ASTRO, FG_INFO, "  Loading stars from " << data_path.str() );
+    SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << data_path.str() );
 
     fg_gzifstream in( data_path.str() );
     if ( ! in.is_open() ) {
-	FG_LOG( FG_ASTRO, FG_ALERT, "Cannot open star file: "
+	SG_LOG( SG_ASTRO, SG_ALERT, "Cannot open star file: "
 		<< data_path.str() );
 	exit(-1);
     }
@@ -116,7 +116,7 @@ bool SGStarData::load() {
 	++nstars;
     }
 
-    FG_LOG( FG_ASTRO, FG_INFO, "  Loaded " << nstars << " stars" );
+    SG_LOG( SG_ASTRO, SG_INFO, "  Loaded " << nstars << " stars" );
 
     return true;
 }

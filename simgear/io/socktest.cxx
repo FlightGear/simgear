@@ -1,8 +1,25 @@
 #include <unistd.h>
 
 #include "sg_socket.hxx"
+#include "lowlevel.hxx"
+
+static const int sgEndianTest = 1;
+#define sgIsLittleEndian (*((char *) &sgEndianTest ) != 0)
+#define sgIsBigEndian    (*((char *) &sgEndianTest ) == 0)
 
 int main() {
+
+    if ( sgIsLittleEndian ) {
+       cout << "this machine is little endian\n";
+    }
+
+    if ( sgIsBigEndian ) {
+       cout << "this machine is big endian\n";
+    }
+
+    cout << "short = " << sizeof(unsigned short) << endl;
+    cout << "int = " << sizeof(unsigned int) << endl;
+    cout << "long long = " << sizeof(long long) << endl;
 
     SGSocket s( "", "5500", "tcp" );
 

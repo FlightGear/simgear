@@ -39,6 +39,9 @@
 #include <plib/sg.h>
 
 
+// Note that output is written in little endian form (and converted as
+// necessary)
+
 void sgReadChar ( gzFile fd, char *var ) ;
 void sgWriteChar ( gzFile fd, const char var ) ;
 void sgReadFloat ( gzFile fd, float *var ) ;
@@ -51,6 +54,8 @@ void sgReadInt ( gzFile fd, int *var ) ;
 void sgWriteInt ( gzFile fd, const int var ) ;
 void sgReadLong ( gzFile fd, long int *var ) ;
 void sgWriteLong ( gzFile fd, const long int var ) ;
+void sgReadLongLong ( gzFile fd, long long int *var ) ;
+void sgWriteLongLong ( gzFile fd, const long long int var ) ;
 void sgReadUShort ( gzFile fd, unsigned short *var ) ;
 void sgWriteUShort ( gzFile fd, const unsigned short var ) ;
 void sgReadShort ( gzFile fd, short *var ) ;

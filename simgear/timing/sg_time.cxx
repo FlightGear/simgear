@@ -65,7 +65,6 @@
 SGTime::SGTime( const string& root )
 {
     FGPath zone( root );
-    zone.append( "Timezone" );
     zone.append( "zone.tab" );
 
     FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: " << zone.str() );
@@ -108,7 +107,6 @@ void SGTime::init( double lon, double lat, const string& root )
     GeoCoord* nearestTz = tzContainer->getNearest(location);
 
     FGPath zone( root );
-    zone.append( "Timezone" );
     zone.append( nearestTz->getDescription() );
 
     // cout << "Using " << zone.str() << " for timezone information" << endl;
@@ -129,8 +127,67 @@ void SGTime::init( double lon, double lat, const string& root )
 }
 
 
+// given Julian Date and Longitude (decimal degrees West) compute
+// Local Sidereal Time, in decimal hours.
+//
+// Provided courtesy of ecdowney@noao.edu (Elwood Downey) 
+static double sidereal_precise( double mjd, double lng )
+{
+    /* printf ("Current Lst on JD %13.5f at %8.4f degrees West: ", 
+       mjd + MJD0, lng); */
+
+    // convert to required internal units
+    lng *= DEG_TO_RAD;
+
+    // compute LST and print
+    double gst = sgTimeCalcGST( mjd );
+    double lst = gst - RADHR( lng );
+    lst -= 24.0 * floor( lst / 24.0 );
+    // printf ("%7.4f\n", lstTmp);
+
+    return lst;
+}
+
+
+// return a courser but cheaper estimate of sidereal time
+static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
+{
+    time_t start_gmt, now;
+    double diff, part, days, hours, lstTmp;
+    char tbuf[64];
+  
+    now = cur_time;
+    start_gmt = sgTimeGetGMT(gmt->tm_year, 2, 21, 12, 0, 0);
+  
+    FG_LOG( FG_EVENT, FG_DEBUG, "  COURSE: GMT = "
+	    << sgTimeFormatTime(gmt, tbuf) );
+    FG_LOG( FG_EVENT, FG_DEBUG, "  March 21 noon (GMT) = " << start_gmt );
+  
+    diff = (now - start_gmt) / (3600.0 * 24.0);
+  
+    FG_LOG( FG_EVENT, FG_DEBUG, 
+	    "  Time since 3/21/" << gmt->tm_year << " GMT = " << diff );
+  
+    part = fmod(diff, 1.0);
+    days = diff - part;
+    hours = gmt->tm_hour + gmt->tm_min/60.0 + gmt->tm_sec/3600.0;
+  
+    lstTmp = (days - lng)/15.0 + hours - 12;
+  
+    while ( lstTmp < 0.0 ) {
+	lstTmp += 24.0;
+    }
+  
+    FG_LOG( FG_EVENT, FG_DEBUG,
+	    "  days = " << days << "  hours = " << hours << "  lon = " 
+	    << lng << "  lst = " << lstTmp );
+  
+    return lstTmp;
+}
+
+
 // Update the time related variables
-void SGTime::update( double lon, double lat, double alt_m, long int warp ) {
+void SGTime::update( double lon, double lat, long int warp ) {
     double gst_precise, gst_course;
 
     FG_LOG( FG_EVENT, FG_DEBUG, "Updating time" );
@@ -171,23 +228,23 @@ void SGTime::update( double lon, double lat, double alt_m, long int warp ) {
 	// first time through do the expensive calculation & cheap
         // calculation to get the difference.
 	FG_LOG( FG_EVENT, FG_INFO, "  First time, doing precise gst" );
-	gst_precise = gst = sidereal_precise(0.00);
-	gst_course = sidereal_course(0.00);
+	gst_precise = gst = sidereal_precise( mjd, 0.00 );
+	gst_course = sidereal_course( cur_time, gmt, 0.00 );
       
 	gst_diff = gst_precise - gst_course;
 
-	lst = sidereal_course(-(lon * RAD_TO_DEG)) + gst_diff;
+	lst = sidereal_course( cur_time, gmt, -(lon * RAD_TO_DEG) ) + gst_diff;
     } else {
 	// course + difference should drift off very slowly
-	gst = sidereal_course( 0.00 ) + gst_diff;
-	lst = sidereal_course( -(lon * RAD_TO_DEG)) + gst_diff;
+	gst = sidereal_course( cur_time, gmt, 0.00 ) + gst_diff;
+	lst = sidereal_course( cur_time, gmt, -(lon * RAD_TO_DEG) ) + gst_diff;
     }
 
     FG_LOG( FG_EVENT, FG_DEBUG,
 	    "  Current lon=0.00 Sidereal Time = " << gst );
     FG_LOG( FG_EVENT, FG_DEBUG,
 	    "  Current LOCAL Sidereal Time = " << lst << " (" 
-	    << sidereal_precise(-(lon * RAD_TO_DEG)) 
+	    << sidereal_precise( mjd, -(lon * RAD_TO_DEG) ) 
 	    << ") (diff = " << gst_diff << ")" );
 }
 
@@ -200,79 +257,16 @@ void SGTime::updateLocal( double lon, double lat, const string& root )
   GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
   GeoCoord* nearestTz = tzContainer->getNearest(location);
   FGPath zone( root );
-  zone.append ("Timezone" );
   zone.append ( nearestTz->getDescription() );
   if ( zonename ) {
       delete zonename;
   }
   zonename = strdup( zone.c_str() );
-  currGMT = get_gmt( gmtime(&cur_time) );
-  aircraftLocalTime = get_gmt( (fgLocaltime(&cur_time, zone.c_str())) );
+  currGMT = sgTimeGetGMT( gmtime(&cur_time) );
+  aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zone.c_str())) );
   local_offset = aircraftLocalTime - currGMT;
   // cout << "Using " << local_offset << " as local time offset Timezone is " 
   //      << zonename << endl;
-}
-
-
-// given Julian Date and Longitude (decimal degrees West) compute
-// Local Sidereal Time, in decimal hours.
-//
-// Provided courtesy of ecdowney@noao.edu (Elwood Downey) 
-double SGTime::sidereal_precise( double lng )
-{
-    double lstTmp;
-
-    /* printf ("Current Lst on JD %13.5f at %8.4f degrees West: ", 
-       mjd + MJD0, lng); */
-
-    // convert to required internal units
-    lng *= DEG_TO_RAD;
-
-    // compute LST and print
-    gst = sgTimeCalcGST( mjd );
-    lstTmp = gst - RADHR (lng);
-    lstTmp -= 24.0*floor(lstTmp/24.0);
-    // printf ("%7.4f\n", lstTmp);
-
-    // that's all
-    return (lstTmp);
-}
-
-
-// return a courser but cheaper estimate of sidereal time
-double SGTime::sidereal_course( double lng )
-{
-    time_t start_gmt, now;
-    double diff, part, days, hours, lstTmp;
-    char tbuf[64];
-  
-    now = cur_time;
-    start_gmt = get_gmt(gmt->tm_year, 2, 21, 12, 0, 0);
-  
-    FG_LOG( FG_EVENT, FG_DEBUG, "  COURSE: GMT = "
-	    << sgTimeFormatTime(gmt, tbuf) );
-    FG_LOG( FG_EVENT, FG_DEBUG, "  March 21 noon (GMT) = " << start_gmt );
-  
-    diff = (now - start_gmt) / (3600.0 * 24.0);
-  
-    FG_LOG( FG_EVENT, FG_DEBUG, 
-	    "  Time since 3/21/" << gmt->tm_year << " GMT = " << diff );
-  
-    part = fmod(diff, 1.0);
-    days = diff - part;
-    hours = gmt->tm_hour + gmt->tm_min/60.0 + gmt->tm_sec/3600.0;
-  
-    lstTmp = (days - lng)/15.0 + hours - 12;
-  
-    while ( lstTmp < 0.0 ) {
-	lstTmp += 24.0;
-    }
-  
-    FG_LOG( FG_EVENT, FG_DEBUG,
-	    "  days = " << days << "  hours = " << hours << "  lon = " 
-	    << lng << "  lst = " << lstTmp );
-  
-    return(lstTmp);
 }
 
 
@@ -397,7 +391,7 @@ double sgTimeCalcGST( double mjd ) {
 // If you are having problems with incorrectly positioned astronomical
 // bodies, this is a really good place to start looking.
 
-time_t SGTime::get_gmt(int year, int month, int day, int hour, int min, int sec)
+time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 {
     struct tm mt;
 

@@ -90,45 +90,37 @@ public:
     void init( double lon, double lat, const string& root );
 
     // Update the time related variables
-    void update( double lon, double lat, double alt_m, long int warp );
+    void update( double lon, double lat, long int warp = 0 );
 
     // Given lon/lat, update timezone information and local_offset
     void updateLocal( double lon, double lat, const string& root );
 
-    // given Julian Date and Longitude (decimal degrees West) compute
-    // Local Sidereal Time, in decimal hours.
-    //
-    // Provided courtesy of ecdowney@noao.edu (Elwood Downey) 
-    double sidereal_precise( double lng );
-
-    // return a courser but cheaper estimate of sidereal time
-    double sidereal_course( double lng );
-
-    // Some other stuff which were changed to SGTime members on
-    // questionable grounds -:)
-    time_t get_gmt(int year, int month, int day, 
-		   int hour, int minute, int second);
-    time_t get_gmt(struct tm* the_time);
-
+    inline time_t get_cur_time() const { return cur_time; };
+    inline char* get_zonename() const { return zonename; }
+    inline struct tm* getGmt()const { return gmt; };
     inline double getJD() const { return jd; };
     inline double getMjd() const { return mjd; };
     inline double getLst() const { return lst; };
     inline double getGst() const { return gst; };
-    inline time_t get_cur_time() const { return cur_time; };
-    inline struct tm* getGmt()const { return gmt; };
-    inline char* get_zonename() const { return zonename; }
 };
 
 
+// Some useful utility functions that don't make sense to be part of
+// the SGTime class
+
+// Return unix time in seconds for the given data (relative to GMT)
+time_t sgTimeGetGMT(int year, int month, int day, 
+		    int hour, int minute, int second);
+
 // this is just a wrapper
-inline time_t SGTime::get_gmt(struct tm* the_time) {
+inline time_t sgTimeGetGMT(struct tm* the_time) {
     // printf("Using: %24s as input\n", asctime(the_time));
-    return get_gmt(the_time->tm_year,
-		   the_time->tm_mon,
-		   the_time->tm_mday,
-		   the_time->tm_hour,
-		   the_time->tm_min,
-		   the_time->tm_sec);
+    return sgTimeGetGMT(the_time->tm_year,
+			the_time->tm_mon,
+			the_time->tm_mday,
+			the_time->tm_hour,
+			the_time->tm_min,
+			the_time->tm_sec);
 }
 
 // given a date in months, mn, days, dy, years, yr, return the

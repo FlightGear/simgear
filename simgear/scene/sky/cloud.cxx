@@ -28,10 +28,6 @@ inline int (isinf)(double r) { return isinf(r); }
 inline int (isnan)(double r) { return isnan(r); } 
 #endif
 
-#if defined(__MINGW32__)
-#define isnan(x) _isnan(x)
-#endif
-
 // #include STL_IOSTREAM
 
 #include <plib/sg.h>
@@ -46,6 +42,10 @@ inline int (isnan)(double r) { return isnan(r); }
 #include <simgear/screen/texture.hxx>
 
 #include "cloud.hxx"
+
+#if defined(__MINGW32__)
+#define isnan(x) _isnan(x)
+#endif
 
 
 static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
@@ -865,17 +865,23 @@ void SGCloudLayer::draw( bool top ) {
             glEnable( GL_BLEND ); 
             glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-            glPolygonMode( GL_FILL, GL_FRONT_AND_BACK );
             glShadeModel( GL_SMOOTH );
             glEnable( GL_COLOR_MATERIAL ); 
             sgVec4 color;
-            sgSetVec4( color, 0.05, 0.05, 0.05, 0.0 );
+            float emis = 0.05;
+            if ( top ) {
+                ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
+                emis = ( color[0]+color[1]+color[2] ) / 3.0;
+                if ( emis < 0.05 )
+                    emis = 0.05;
+            }
+            sgSetVec4( color, emis, emis, emis, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, color );
-            sgSetVec4( color, 0.8, 0.8, 0.8, 0.0 );
+            sgSetVec4( color, 1.0f, 1.0f, 1.0f, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, color );
             sgSetVec4( color, 0.5, 0.5, 0.5, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, color );
-            sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+            sgSetVec4( color, 0.0, 0.0, 0.0, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
 
             glActiveTexturePtr( GL_TEXTURE0_ARB );

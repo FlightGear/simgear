@@ -32,7 +32,6 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/condition.hxx>
-#include <simgear/math/fastmath.hxx>
 
 
 #include "sound.hxx"
@@ -42,8 +41,8 @@
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }
 static double _snd_abs(double v)   { return (v >= 0) ? v : -v; }
 static double _snd_sqrt(double v)  { return (v < 0) ? sqrt(-v) : sqrt(v); }
-static double _snd_log10(double v) { return (v < 1) ? 0 : fast_log10(v); }
-static double _snd_log(double v)   { return (v < 1) ? 0 : fast_log(v); }
+static double _snd_log10(double v) { return (v < 1) ? 0 : log10(v); }
+static double _snd_log(double v)   { return (v < 1) ? 0 : log(v); }
 // static double _snd_sqr(double v)   { return v*v; }
 // static double _snd_pow3(double v)  { return v*v*v; }
 

@@ -71,6 +71,14 @@
 #ifndef _SG_COMPILER_H
 #define _SG_COMPILER_H
 
+/*
+ * Helper macro SG_STRINGIZE:
+ * Converts the parameter X to a string after macro replacement
+ * on X has been performed.
+ */
+#define SG_STRINGIZE(X) SG_DO_STRINGIZE(X)
+#define SG_DO_STRINGIZE(X) #X
+
 #ifdef __GNUC__
 #  if __GNUC__ == 2 
 #    if __GNUC_MINOR__ < 8
@@ -137,7 +145,10 @@
 #  else
 #    error Time to upgrade. GNU compilers < 2.7 not supported
 #  endif
-#endif
+
+#  define SG_COMPILER "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
+
+#endif // __GNUC__
 
 #if defined( __MINGW32__ )
 #  define bcopy(from, to, n) memcpy(to, from, n)
@@ -162,7 +173,10 @@
 #  define STL_STDEXCEPT  <stdexcept>
 #  define STL_STRING     <string>
 #  define STL_STRSTREAM  <strstream>
-#endif
+
+#  define SG_COMPILER "Kai C++ version " SG_STRINGIZE(__KCC_VERSION)
+
+#endif // __KCC
 
 //
 // Metrowerks 
@@ -193,7 +207,10 @@
 
 // -dw- currently used glut has no game mode stuff
 #  define GLUT_WRONG_VERSION
-#endif
+
+#  define SG_COMPILER "Metrowerks CodeWarrior C++ version " SG_STRINGIZE(__MWERKS__)
+
+#endif // __MWERKS__
 
 //
 // Microsoft compilers.
@@ -218,13 +235,30 @@
 #    define STL_STRING     <string>
 #    define STL_STRSTREAM  <strstream>
 
+#    define SG_NO_INCLASS_MEMBER_INITIALIZATION
+
+// disable min/max macros if defined:
+// #    ifdef min
+// #      undef min
+// #    endif
+// #    ifdef max
+// #      undef max
+// #    endif
+// #    ifndef NOMINMAX
+// #      define NOMINMAX
+// #    endif
+
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float
 #    pragma warning(disable: 4305) //
+
 #  else
 #    error What version of MSVC++ is this?
 #  endif
-#endif
+
+#    define SG_COMPILER "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
+
+#endif // _MSC_VER
 
 #ifdef __BORLANDC__
 # if defined(HAVE_SGI_STL_PORT)
@@ -255,6 +289,8 @@
 #  define SG_NO_DEFAULT_TEMPLATE_ARGS
 #  define SG_NAMESPACES
 // #  define SG_HAVE_STD
+
+#  define SG_COMPILER "Borland C++ version " SG_STRINGIZE(__BORLANDC__)
 
 #endif // __BORLANDC__
 
@@ -296,6 +332,8 @@
 #pragma set woff 1682,3303
 #endif
 
+#  define SG_COMPILER "SGI Irix compiler version " SG_STRINGIZE(_COMPILER_VERSION)
+
 #endif // Native SGI compilers
 
 
@@ -310,6 +348,9 @@
 #  else
      extern void *memmove(void *, const void *, size_t);
 #  endif // __cplusplus
+
+#  define SG_COMPILER "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
+
 #endif // sun
 
 //
@@ -331,6 +372,9 @@
 #  define STL_STDEXCEPT  <stdexcept>
 #  define STL_STRING     <string>
 #  define STL_STRSTREAM  <strstream>
+
+#  define SG_COMPILER "Intel C++ version " SG_STRINGIZE(__ICC)
+
 #endif // __ICC
 
 //
@@ -412,5 +456,18 @@ inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
   { return const_mem_fun_ref_t<_Ret,_Tp>(__f); }
 
 #endif // SG_INCOMPLETE_FUNCTIONAL
+
+/**
+ * SG_STATIC_CONSTANT workaround.
+ * On compilers which don't allow in-class initialization of static integral
+ * constant members, we must use enums as a workaround if we want the constants
+ * to be available at compile-time. This macro gives us a convenient way to
+ * declare such constants.
+ */
+#ifdef SG_NO_INCLASS_MEMBER_INITIALIZATION
+#  define SG_STATIC_CONST(type,assignment) enum { assignment }
+#else
+#  define SG_STATIC_CONST(type,assignment) static const type assignment
+#endif
 
 #endif // _SG_COMPILER_H

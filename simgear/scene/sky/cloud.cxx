@@ -468,10 +468,10 @@ ssgSimpleState *sgCloudMakeState( const string &path ) {
     state->enable( GL_TEXTURE_2D );
     state->enable( GL_COLOR_MATERIAL );
     state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    state->setMaterial( GL_AMBIENT, 0.7, 0.7, 0.7, 1.0 );
-    state->setMaterial( GL_DIFFUSE, 0.9, 0.9, 0.9, 1.0 );
-    state->setMaterial( GL_SPECULAR, 1.0, 1.0, 1.0, 5.0 );
+    state->setMaterial( GL_EMISSION, 0.05, 0.05, 0.05, 1.0 );
+    state->setMaterial( GL_AMBIENT, 0.2, 0.2, 0.2, 1.0 );
+    state->setMaterial( GL_DIFFUSE, 0.5, 0.5, 0.5, 1.0 );
+    state->setMaterial( GL_SPECULAR, 1.0, 1.0, 1.0, 1.0 );
     state->enable( GL_BLEND );
     state->enable( GL_ALPHA_TEST );
     state->setAlphaClamp( 0.01 );

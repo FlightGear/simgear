@@ -36,6 +36,9 @@ extern "C" {
 
 #include <simgear/screen/tr.h>
 
+
+extern void (*jpgRenderFrame)(void);
+
 /* should look at how VNC does this */
 class trJpgFactory {
     private:

@@ -57,8 +57,7 @@ typedef struct {
 
 typedef my_destination_mgr * my_dest_ptr;
 
-/* Where should this go <simgear/screen/tr.h> ?? */
-extern void trRenderFrame( void );
+void (*jpgRenderFrame)(void) = NULL;
 
 trJpgFactory::trJpgFactory() {
     imageWidth = imageHeight = 0;
@@ -233,7 +232,7 @@ int trJpgFactory::compress()
 
 int trJpgFactory::render()
 {
-    if( !tr ) {
+    if( !tr || !jpgRenderFrame ) {
         printf("!! NO tr !!\n   trJpgFactory::render()\n");
         return 0;
     }
@@ -253,7 +252,7 @@ int trJpgFactory::render()
 
     // printf("\ttrBeginTile(tr)\n");
     trBeginTile(tr);
-    trRenderFrame();
+    jpgRenderFrame();
     trEndTile(tr);
 
     /* just to be safe */

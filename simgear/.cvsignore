@@ -4,4 +4,5 @@ simgear_config.h
 simgear_config.h.in
 stamp-h
 stamp-h.in
+stamp-h1
 version.h

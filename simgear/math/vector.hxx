@@ -37,15 +37,6 @@
 
 #include <plib/sg.h>
 
-#include <simgear/math/mat3.h>
-
-
-// Map a vector onto the plane specified by normal
-void map_vec_onto_cur_surface_plane( MAT3vec normal,
-				     MAT3vec v0,
-				     MAT3vec vec,
-				     MAT3vec result );
-
 
 inline void sgmap_vec_onto_cur_surface_plane( sgVec3 normal, 
 					      sgVec3 v0, 
@@ -90,16 +81,6 @@ inline void sgmap_vec_onto_cur_surface_plane( sgVec3 normal,
     // printf("  result = %.2f, %.2f, %.2f\n", 
     // result[0], result[1], result[2]);
 }
-
-
-// Given a point p, and a line through p0 with direction vector d,
-// find the shortest distance from the point to the line
-double fgPointLine(MAT3vec p, MAT3vec p0, MAT3vec d);
-
-
-// Given a point p, and a line through p0 with direction vector d,
-// find the shortest distance (squared) from the point to the line
-double fgPointLineSquared(MAT3vec p, MAT3vec p0, MAT3vec d);
 
 
 // Given a point p, and a line through p0 with direction vector d,

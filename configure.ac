@@ -56,9 +56,15 @@ fi
          
 # Determine version of automake ... important because of
 # incompatibilities between versions
-AUTO_MAKE_VERSION=`automake --version | head -1 | awk '{print $4}' | sed -e 's/\-p[[0-9]]$//' | sed -e 's/\.//'`
-AM_CONDITIONAL(ANCIENT_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 14)
-AM_CONDITIONAL(OLD_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 15)
+AUTO_MAKE_VERSION=`automake --version | head -1 | awk '{print $4}' | sed -e 's/\.\([0-9]*\).*/\1/'`
+if test $AUTO_MAKE_VERSION -lt 15; then\
+    echo ""
+    echo "You need to upgrade to automake version 1.5 or greater."
+    echo "Most distributions have packages available to install or you can"
+    echo "find the source for the most recent version at"
+    echo "ftp://ftp.gnu.org/gnu/automake"
+    exit 1
+fi
 
 # set logging default value
 # with_logging=yes
@@ -113,7 +119,7 @@ AM_CONDITIONAL(IS_CYGWIN, test "x$is_cygwin" = "xyes")
 
 if test "x$HOSTTYPE" != "xmacintosh" -a "x$is_mingw" != "xyes"; then
     dnl extra library and include directories
-    EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
+    EXTRA_DIRS="/usr/local /usr/X11R6"
 
     if test -d /opt/X11R6 ; then
         EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
@@ -271,11 +277,11 @@ AM_CONDITIONAL(HAVE_XWINDOWS, test "x$ac_cv_lib_X11_XCreateWindow" = "xyes" )
 AC_LANG_PUSH(C++)
 
 dnl Check for "plib" without which we cannot go on
-AC_CHECK_HEADER(plib/pu.h)
-if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
+AC_CHECK_HEADER(plib/ul.h)
+if test "x$ac_cv_header_plib_ul_h" != "xyes"; then
     echo
     echo "You *must* have the plib library installed on your system to build"
-    echo "the FGFS simulator!"
+    echo "SimGear!"
     echo
     echo "Please see README.plib for more details."
     echo
@@ -283,10 +289,28 @@ if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
     exit
 fi
 
-AC_CHECK_HEADER(plib/ssgaLensFlare.h)
-if test "x$ac_cv_header_plib_ssgaLensFlare_h" = "xyes"; then
-    AC_DEFINE([FG_CHEESY_LENS_FLARE], 1, [Define for cheesy lens flare effect])
-fi
+AC_MSG_CHECKING([for plib 1.6.0 or newer])
+AC_TRY_RUN([
+#include <plib/ul.h>
+
+#define MIN_PLIB_VERSION 160
+
+int main() {
+    int major, minor, micro;
+
+    if ( PLIB_VERSION < MIN_PLIB_VERSION ) {
+	 return -1;
+    }
+
+    return 0;
+}
+
+],
+  AC_MSG_RESULT(yes),
+  [AC_MSG_RESULT(wrong version);
+   AC_MSG_ERROR([Install plib 1.6.0 or later first...])],
+  AC_MSG_RESULT(yes)
+)
 
 dnl Check for system installed metakit
 AC_CHECK_HEADER(mk4.h)

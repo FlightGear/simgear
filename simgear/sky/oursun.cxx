@@ -37,7 +37,10 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-#ifdef FG_PLIB_SUPPORTS_LENS_FLARE
+// define the following to enable a cheesy lens flare effect for the sun
+// #define FG_TEST_CHEESY_LENS_FLARE
+
+#ifdef FG_TEST_CHEESY_LENS_FLARE
 #  include <plib/ssgaLensFlare.h>
 #endif
 
@@ -314,14 +317,9 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
     sun_transform->addKid( halo );
     sun_transform->addKid( orb );
 
-#if 0
-    // enable this code to add a super cheesy lens flare effect to the sun.
-
-# ifdef FG_PLIB_SUPPORTS_LENS_FLARE
+#ifdef FG_TEST_CHEESY_LENS_FLARE
     // cheesy lens flair
     sun_transform->addKid( new ssgaLensFlare );
-# endif
-
 #endif
 
     return sun_transform;

@@ -28,10 +28,6 @@
 #define _SG_BINOBJ_HXX
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <plib/sg.h>
 
 #include <simgear/compiler.h>

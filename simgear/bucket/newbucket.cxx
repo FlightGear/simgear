@@ -24,11 +24,6 @@
  **************************************************************************/
 
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-
 #include <math.h>
 
 #include <simgear/misc/sg_path.hxx>

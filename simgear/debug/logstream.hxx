@@ -26,10 +26,6 @@
 #ifndef _LOGSTREAM_H
 #define _LOGSTREAM_H
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include <simgear/compiler.h>
 
 // At least Irix needs this

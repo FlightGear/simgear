@@ -21,10 +21,6 @@
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include "strutils.hxx"
 
 const string whitespace = " \n\r\t";

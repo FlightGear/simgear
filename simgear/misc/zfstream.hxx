@@ -28,10 +28,6 @@
 #ifndef _zfstream_hxx
 #define _zfstream_hxx
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include <simgear/compiler.h>
 
 #ifdef HAVE_ZLIB

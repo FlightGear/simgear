@@ -30,10 +30,6 @@
 #define _SG_CONSTANTS_H
 
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include <simgear/compiler.h>
 
 #ifdef SG_HAVE_STD_INCLUDES

@@ -8,10 +8,6 @@
 #ifndef __EASYXML_HXX
 #define __EASYXML_HXX
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include <simgear/compiler.h>
 
 #include STL_IOSTREAM

@@ -13,6 +13,7 @@ libsgtiming_a_SOURCES = \
 	geocoord.cxx \
 	lowleveltime.cxx \
 	sg_time.cxx \
+	timestamp.cxx \
 	timezone.cxx
 
 INCLUDES += -I$(top_srcdir)

@@ -1,8 +1,4 @@
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #include <simgear/compiler.h>
 
 #include <stdlib.h>		// atof() atoi()

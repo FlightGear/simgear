@@ -33,10 +33,6 @@
 # error This library requires C++
 #endif
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 #  include <windows.h>
 #endif

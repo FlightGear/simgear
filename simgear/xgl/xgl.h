@@ -2,6 +2,10 @@
 #define _XGL_H
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #ifdef HAVE_WINDOWS_H
 #  include <windows.h>
 #endif

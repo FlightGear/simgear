@@ -456,9 +456,9 @@ void
 SGTimedAnimation::init()
 {
     if ( !_use_personality ) {
-        for ( size_t i = 0; i < getBranch()->getNumKids(); i++ ) {
+        for ( int i = 0; i < getBranch()->getNumKids(); i++ ) {
             double v;
-            if ( i < _branch_duration_specs.size() ) {
+            if ( i < (int)_branch_duration_specs.size() ) {
                 DurationSpec &sp = _branch_duration_specs[ i ];
                 v = sp._min + sg_random() * ( sp._max - sp._min );
             } else {

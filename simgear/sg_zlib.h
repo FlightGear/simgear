@@ -35,7 +35,11 @@
 
 
 #ifdef HAVE_CONFIG_H
+#ifdef FGFS
+#  include <config.h>
+#else
 #  include <simgear_config.h>
+#endif
 #endif
 
 

@@ -1,3 +1,13 @@
+New in 0.0.13
+* September 14, 2000
+* Added support for reading and writing xml files (easyxml)
+* Then updates to property manager and xml code.
+* Update magnetic variation code.
+* Sky code now uses glPushAttrib and glPopAttrib so it plays better with
+  other ssg based apps.
+* MacOS tweaks.
+* MSVC tweaks.
+
 New in 0.0.12
 * July 19, 2000
 * Converted project license from GPL to LGPL.

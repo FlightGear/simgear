@@ -639,8 +639,13 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
 
   archive.FindUInt32("CldNumParticles", &iNumParticles);
+  _ulEndianSwap(&iNumParticles);
+
   //if (!bLocal)
     archive.FindVec3f("CldCenter", &vecCenter);
+    _ulEndianSwap((unsigned int*)&vecCenter.x);
+    _ulEndianSwap((unsigned int*)&vecCenter.y);
+    _ulEndianSwap((unsigned int*)&vecCenter.z);
 
   Vec3f *pParticlePositions = new Vec3f[iNumParticles];
   float *pParticleRadii     = new float[iNumParticles];
@@ -650,9 +655,22 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   archive.FindData("CldParticlePositions", ANY_TYPE, (void**const)&pParticlePositions, &iNumBytes);
   archive.FindData("CldParticleRadii",     ANY_TYPE, (void**const)&pParticleRadii,     &iNumBytes);
   archive.FindData("CldParticleColors",    ANY_TYPE, (void**const)&pParticleColors,    &iNumBytes);
-  
+
   for (unsigned int i = 0; i < iNumParticles; ++i)
   {
+
+     _ulEndianSwap((unsigned int*)&pParticlePositions[i].x);
+     _ulEndianSwap((unsigned int*)&pParticlePositions[i].y);
+     _ulEndianSwap((unsigned int*)&pParticlePositions[i].z);
+
+     _ulEndianSwap((unsigned int*)&pParticleRadii[i]);
+
+     _ulEndianSwap((unsigned int*)&pParticleColors[i].x);
+     _ulEndianSwap((unsigned int*)&pParticleColors[i].y); 
+     _ulEndianSwap((unsigned int*)&pParticleColors[i].z); 
+     _ulEndianSwap((unsigned int*)&pParticleColors[i].w); 
+
+
     SkyCloudParticle *pParticle = new SkyCloudParticle((pParticlePositions[i] + vecCenter) * rScale,
                                                        pParticleRadii[i] * rScale,
                                                        pParticleColors[i]);

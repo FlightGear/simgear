@@ -513,6 +513,7 @@ SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale, do
 {
   unsigned int iNumClouds = 0;
   cloudArchive.FindUInt32("CldNumClouds", &iNumClouds);
+  _ulEndianSwap(&iNumClouds);
  
   SkyArchive subArchive;
 	//iNumClouds = 5;  //set this value to reduce cloud field for debugging

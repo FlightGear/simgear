@@ -57,13 +57,13 @@ SkyTextureState::SkyTextureState()
        glActiveTexturePtr = (glActiveTextureProc)
                             SGLookupFunction("glActiveTextureARB");
 
-    }
-
-    glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &iNumTextureUnits);
-    if (iNumTextureUnits > 0)
-      s_iNumTextureUnits = iNumTextureUnits;
-    else
-      s_iNumTextureUnits = 1;
+       glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &iNumTextureUnits);
+       if (iNumTextureUnits > 0)
+         s_iNumTextureUnits = iNumTextureUnits;
+       else
+         s_iNumTextureUnits = 1;
+     } else
+       s_iNumTextureUnits = 1;
   }
   
   _pTextureUnitState = new TexState[s_iNumTextureUnits];

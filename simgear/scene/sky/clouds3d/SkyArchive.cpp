@@ -24,6 +24,8 @@
 #include <plib/ul.h>
 #include "SkyArchive.hpp"
 
+#include <assert.h>
+
 // FIXME: Remove this section whenever plib has it's own endian conversion
 //        funcrtions for 64-bit data types.
 #ifndef ulEndianLittleDouble
@@ -33,8 +35,6 @@ inline double ulEndianLittleDouble(double x) {
    return x;
 }
 #endif
-
-#include <assert.h>
 
 struct SkyArchiveEntry
 {
@@ -520,7 +520,7 @@ SKYRESULT SkyArchive::FindInt16(const char* pName, short* pInt16, unsigned int i
   if (pEntry)
   {
     unsigned short* pData  = (unsigned short*)(pEntry->pData);
-    *pInt16       = ulEndianLittle16(*pData);
+    *pInt16       = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -540,7 +540,7 @@ SKYRESULT SkyArchive::FindInt32(const char* pName, int* pInt32, unsigned int ind
   if (pEntry)
   {
     unsigned int* pData  = (unsigned int*)(pEntry->pData);
-    *pInt32     = ulEndianLittle32(*pData);
+    *pInt32     = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -580,7 +580,7 @@ SKYRESULT SkyArchive::FindUInt16(const char* pName, unsigned short* pUInt16, uns
   if (pEntry)
   {
     unsigned short* pData = (unsigned short*)(pEntry->pData);
-    *pUInt16              = ulEndianLittle16(*pData);
+    *pUInt16              = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -600,7 +600,7 @@ SKYRESULT SkyArchive::FindUInt32(const char* pName, unsigned int* pUInt32, unsig
   if (pEntry)
   {
     unsigned int* pData = (unsigned int*)(pEntry->pData);
-    *pUInt32            = ulEndianLittle32(*pData);
+    *pUInt32            = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -620,7 +620,7 @@ SKYRESULT SkyArchive::FindFloat32(const char* pName, float* pFloat32, unsigned i
   if (pEntry)
   {
     float* pData  = (float*)(pEntry->pData);
-    *pFloat32     = ulEndianLittleFloat(*pData);
+    *pFloat32     = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -640,7 +640,7 @@ SKYRESULT SkyArchive::FindFloat64(const char* pName, double* pFloat64, unsigned 
   if (pEntry)
   {
     double* pData = (double*)(pEntry->pData);
-    *pFloat64     = ulEndianLittleDouble(*pData);
+    *pFloat64     = *pData;
     return SKYRESULT_OK;
   }
   return SKYRESULT_FAIL;
@@ -1175,8 +1175,7 @@ SKYRESULT SkyArchive::_Load( FILE* pSrcFile)
   if (!iNumItemsRead)
     FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::_Load(): failed to read Archive header.");
 
-  unsigned int ui = thisItem.iDataSize;
-  thisItem.iDataSize = ulEndianLittle32(ui);
+   _ulEndianSwap(&thisItem.iDataSize);
 
   _pName = new char[::strlen(thisItem.pName)+1];
   ::strcpy( _pName, thisItem.pName);
@@ -1189,8 +1188,7 @@ SKYRESULT SkyArchive::_Load( FILE* pSrcFile)
     if (1 > iNumItemsRead)
       FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::_Load(): failed to read embedded archive item.");
 
-    unsigned int ui = embeddedItem.iDataSize;
-    embeddedItem.iDataSize = ulEndianLittle32(ui);
+    _ulEndianSwap(&embeddedItem.iDataSize);
 
    
     switch( embeddedItem.type)

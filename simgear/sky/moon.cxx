@@ -29,6 +29,8 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
 #include <stdio.h>
 #include <iostream>
 
@@ -88,7 +90,7 @@ static int sgMoonHaloPreDraw( ssgEntity *e ) {
     if ( f -> hasState () ) f->getState()->apply() ;
 
     glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT | GL_COLOR_BUFFER_BIT);
-    cout << "push error = " << glGetError() << endl;
+    // cout << "push error = " << glGetError() << endl;
 
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
@@ -105,7 +107,7 @@ static int sgMoonHaloPostDraw( ssgEntity *e ) {
     // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
     
     glPopAttrib();
-    cout << "pop error = " << glGetError() << endl;
+    // cout << "pop error = " << glGetError() << endl;
 
     return true;
 }

@@ -86,7 +86,7 @@ CMetarStation::CMetarStation(
 	double ualtitude = atoi( s ) * FEET_TO_METER;
 	Point3D p( longitude, latitude, altitude+EQUATORIAL_RADIUS_M );
 	m_locationPolar = p;
-	m_locationCart = fgPolarToCart3d( p );
+	m_locationCart = sgPolarToCart3d( p );
 	Point3D up( ulongitude, ulatitude, ualtitude+EQUATORIAL_RADIUS_M );
 	m_upperLocationPolar = up;
 	m_upperLocationCart = fgPolarToCart3d( up );

@@ -1,5 +1,11 @@
 // easyxml.cxx - implementation of EasyXML interfaces.
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include "easyxml.hxx"
 #include "xmlparse.h"
 

@@ -133,7 +133,7 @@ int SGSerial::write( const char *buf, const int length ) {
     int result = port.write_port( buf, length );
 
     if ( result != length ) {
-	SG_LOG( SG_IO, SG_ALERT, "Error writing data: " << device );
+	SG_LOG( SG_IO, SG_WARN, "Error writing data: " << device );
     }
 
     return result;

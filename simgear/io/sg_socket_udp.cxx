@@ -162,7 +162,7 @@ int SGSocketUDP::write( const char *buf, const int length ) {
     bool error_condition = false;
 
     if ( sock.send( buf, length, 0 ) < 0 ) {
-	SG_LOG( SG_IO, SG_ALERT, "Error writing to socket: " << port );
+	SG_LOG( SG_IO, SG_WARN, "Error writing to socket: " << port );
 	error_condition = true;
 	return 0;
     }

@@ -331,7 +331,7 @@ SGSocket::write( const char *buf, const int length )
 
     if ( s->send( buf, length ) < 0 )
     {
-	SG_LOG( SG_IO, SG_ALERT, "Error writing to socket: " << port );
+	SG_LOG( SG_IO, SG_WARN, "Error writing to socket: " << port );
 	error_condition = true;
     }
 

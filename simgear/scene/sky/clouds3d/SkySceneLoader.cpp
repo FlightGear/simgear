@@ -222,9 +222,10 @@ void SkySceneLoader::Draw()
   //_ssgCurrentContext->cull(r) ;
   //_ssgDrawDList () ;
 
-	SceneManager::InstancePtr()->Display(*pCam);
+  SceneManager::InstancePtr()->Update(*pCam);
+  SceneManager::InstancePtr()->Display(*pCam);
 	
-	//pLight->Display(); // draw the light position to  debug with sun position
+  //pLight->Display(); // draw the light position to  debug with sun position
 
   glMatrixMode ( GL_MODELVIEW ) ;
   glLoadIdentity () ;

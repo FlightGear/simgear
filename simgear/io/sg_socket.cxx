@@ -218,7 +218,7 @@ SGSocket::read( char *buf, int length )
 
     if (result > 0)
     {
-	if (is_tcp)
+       if (is_tcp && is_server)
 	{
             result = client->recv( buf, length );
         }
@@ -257,7 +257,7 @@ SGSocket::readline( char *buf, int length )
 	// read a chunk, keep in the save buffer until we have the
 	// requested amount read
 
-	if (is_tcp)
+       if (is_tcp && is_server)
 	{
 	    char *buf_ptr = save_buf + save_len;
 	    result = client->recv( buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );

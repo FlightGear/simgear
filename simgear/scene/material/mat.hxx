@@ -33,6 +33,7 @@
 #include <simgear/compiler.h>
 
 #include STL_STRING      // Standard C++ string library
+#include <vector>
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -42,6 +43,7 @@
 #include "matmodel.hxx"
 
 SG_USING_STD(string);
+SG_USING_STD(vector);
 
 
 /**

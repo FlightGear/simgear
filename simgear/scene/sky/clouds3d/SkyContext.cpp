@@ -30,7 +30,11 @@
 
 // #include GLUT_H
 
-#ifndef WIN32
+#if defined (__APPLE__)
+#  include <OpenGL/OpenGL.h>
+#endif
+
+#if !defined (WIN32) && !defined(__APPLE__)
 #include <GL/glx.h>
 #endif
 
@@ -138,6 +142,8 @@ SkyMaterial* SkyContext::GetCurrentMaterial()
 {
 #ifdef WIN32
     ContextMaterialIterator cmi = _currentMaterials.find(wglGetCurrentContext());
+#elif defined(__APPLE__)
+    ContextMaterialIterator cmi = _currentMaterials.find(CGLGetCurrentContext());
 #else
     ContextMaterialIterator cmi = _currentMaterials.find(glXGetCurrentContext());
 #endif
@@ -166,6 +172,8 @@ SkyTextureState* SkyContext::GetCurrentTextureState()
 {
 #ifdef WIN32
     ContextTextureStateIterator ctsi = _currentTextureState.find(wglGetCurrentContext());
+#elif defined(__APPLE__)
+    ContextTextureStateIterator ctsi = _currentTextureState.find(CGLGetCurrentContext());
 #else
     ContextTextureStateIterator ctsi = _currentTextureState.find(glXGetCurrentContext());
 #endif
@@ -194,6 +202,8 @@ SKYRESULT SkyContext::AddCurrentGLContext()
     SkyMaterial *pCurrentMaterial = new SkyMaterial;
 #ifdef WIN32
     _currentMaterials.insert(std::make_pair(wglGetCurrentContext(), pCurrentMaterial));
+#elif defined (__APPLE__)
+    _currentMaterials.insert(std::make_pair(CGLGetCurrentContext(), pCurrentMaterial));
 #else
     _currentMaterials.insert(std::make_pair(glXGetCurrentContext(), pCurrentMaterial));
 #endif
@@ -201,6 +211,8 @@ SKYRESULT SkyContext::AddCurrentGLContext()
     SkyTextureState *pCurrentTS = new SkyTextureState;
 #ifdef WIN32
     _currentTextureState.insert(std::make_pair(wglGetCurrentContext() , pCurrentTS));
+#elif defined (__APPLE__)
+    _currentTextureState.insert(std::make_pair(CGLGetCurrentContext() , pCurrentTS));
 #else
     _currentTextureState.insert(std::make_pair(glXGetCurrentContext() , pCurrentTS));
 #endif

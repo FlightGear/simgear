@@ -62,15 +62,35 @@
 #define RADHR(x)        DEGHR(x*RAD_TO_DEG)
 
 
-SGTime::SGTime( const string& root )
+SGTime::SGTime( double lon, double lat, const string& root )
 {
+    FG_LOG( FG_EVENT, FG_INFO, "Initializing Time" );
+
+    gst_diff = -9999.0;
+
+    cur_time = time(NULL); 
+    // cout << "Current greenwich mean time = " << asctime(gmtime(&cur_time))
+    //      << endl;
+    // cout << "Current local time          = " 
+    //      << asctime(localtime(&cur_time)) << endl;
+
     FGPath zone( root );
     zone.append( "zone.tab" );
-
     FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: " << zone.str() );
     tzContainer = new TimezoneContainer( zone.c_str() );
 
-    zonename = NULL;
+    GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
+    GeoCoord* nearestTz = tzContainer->getNearest(location);
+
+    FGPath name( root );
+    name.append( nearestTz->getDescription() );
+    zonename = strdup( name.c_str() );
+    // cout << "Using zonename = " << zonename << endl;
+}
+
+
+SGTime::SGTime( const string& root ) {
+    SGTime( 0.0, 0.0, root );
 }
 
 
@@ -81,49 +101,6 @@ SGTime::~SGTime()
     if ( zonename != NULL ) {
 	delete zonename;
     }
-}
-
-
-// Initialize the time related variables
-void SGTime::init( double lon, double lat, const string& root )
-{
-    FG_LOG( FG_EVENT, FG_INFO, "Initializing Time" );
-    gst_diff = -9999.0;
-
-    // time_t currGMT;
-    // time_t systemLocalTime;
-    // time_t aircraftLocalTime;
-
-    // would it be better to put these sanity checks in the options
-    // parsing code? (CLO)
-
-    cur_time = time(NULL); 
-
-    // printf ("Current greenwich mean time = %24s", asctime(gmtime(&cur_time)));
-    // printf ("Current local time          = %24s", asctime(localtime(&cur_time)));
-    // time_t tmp = cur_time;
-    GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
-
-    GeoCoord* nearestTz = tzContainer->getNearest(location);
-
-    FGPath zone( root );
-    zone.append( nearestTz->getDescription() );
-
-    // cout << "Using " << zone.str() << " for timezone information" << endl;
-    zonename = strdup( zone.c_str() );
-    // cout << "zonename = " << zonename << endl;
-    //show( buffer.c_str(), cur_time, 1); 
-    //printf ("Current greenwich mean time = %24s", asctime(gmtime(&cur_time)));
-    //printf ("Current local time          = %24s", asctime(localtime(&cur_time)));
-    // currGMT = get_gmt( gmtime(&cur_time) );
-    // cout << "currGMT = " << currGMT << endl;
-
-    // systemLocalTime = get_gmt( localtime(&cur_time) );
-    // cout << "systemLocalTime = " << systemLocalTime << endl;
-
-    // aircraftLocalTime = get_gmt( fgLocaltime(&cur_time, zone.c_str()) ); 
-    //printf ("Current greenwich mean time = %24s", asctime(gmtime(&cur_time)));
-    //printf ("Current local time          = %24s", asctime(localtime(&cur_time)));
 }
 
 

@@ -83,11 +83,9 @@ private:
 
 public:
 
+    SGTime( double lon, double lat, const string& root );
     SGTime( const string& root );
     ~SGTime();
-
-    // Initialize the time related variables
-    void init( double lon, double lat, const string& root );
 
     // Update the time related variables
     void update( double lon, double lat, long int warp = 0 );

@@ -46,13 +46,13 @@
 
 #include "serial.hxx"
 
-FGSerialPort::FGSerialPort()
+SGSerialPort::SGSerialPort()
     : dev_open(false)
 {
     // empty
 }
 
-FGSerialPort::FGSerialPort(const string& device, int baud) {
+SGSerialPort::SGSerialPort(const string& device, int baud) {
     open_port(device);
     
     if ( dev_open ) {
@@ -60,13 +60,13 @@ FGSerialPort::FGSerialPort(const string& device, int baud) {
     }
 }
 
-FGSerialPort::~FGSerialPort() {
+SGSerialPort::~SGSerialPort() {
     // closing the port here screws us up because if we would even so
-    // much as make a copy of an FGSerialPort object and then delete it,
+    // much as make a copy of an SGSerialPort object and then delete it,
     // the file descriptor gets closed.  Doh!!!
 }
 
-bool FGSerialPort::open_port(const string& device) {
+bool SGSerialPort::open_port(const string& device) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
@@ -148,7 +148,7 @@ bool FGSerialPort::open_port(const string& device) {
 }
 
 
-bool FGSerialPort::close_port() {
+bool SGSerialPort::close_port() {
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
     CloseHandle( fd );
 #else
@@ -161,7 +161,7 @@ bool FGSerialPort::close_port() {
 }
 
 
-bool FGSerialPort::set_baud(int baud) {
+bool SGSerialPort::set_baud(int baud) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
@@ -225,7 +225,7 @@ bool FGSerialPort::set_baud(int baud) {
 
 }
 
-string FGSerialPort::read_port() {
+string SGSerialPort::read_port() {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
@@ -261,7 +261,7 @@ string FGSerialPort::read_port() {
 
 }
 
-int FGSerialPort::read_port(char *buf, int len) {
+int SGSerialPort::read_port(char *buf, int len) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
@@ -295,7 +295,7 @@ int FGSerialPort::read_port(char *buf, int len) {
 }
 
 
-int FGSerialPort::write_port(const string& value) {
+int SGSerialPort::write_port(const string& value) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
@@ -371,7 +371,7 @@ int FGSerialPort::write_port(const string& value) {
 }
 
 
-int FGSerialPort::write_port(const char* buf, int len) {
+int SGSerialPort::write_port(const char* buf, int len) {
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
     LPCVOID lpBuffer = buf;

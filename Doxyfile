@@ -312,7 +312,6 @@ INPUT                  = \
 	simgear/serial \
 	simgear/sg_inlines.h \
 	simgear/sg_traits.hxx \
-	simgear/sg_zlib.h \
 	simgear/sky \
 	simgear/threads \
 	simgear/timing \
@@ -385,7 +384,7 @@ FILTER_SOURCE_FILES    = NO
 # of all compounds will be generated. Enable this if the project 
 # contains a lot of classes, structs, unions or interfaces. 
 
-ALPHABETICAL_INDEX     = NO
+ALPHABETICAL_INDEX     = YES
 
 # If the alphabetical index is enabled (see ALPHABETICAL_INDEX) then 
 # the COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns 
@@ -481,7 +480,7 @@ ENUM_VALUES_PER_LINE   = 4
 # JavaScript and frames is required (for instance Netscape 4.0+ 
 # or Internet explorer 4.0+). 
 
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 
 # If the treeview is enabled (see GENERATE_TREEVIEW) then this tag can be 
 # used to set the initial width (in pixels) of the frame in which the tree 
@@ -514,7 +513,7 @@ COMPACT_LATEX          = NO
 # by the printer. Possible values are: a4, a4wide, letter, legal and 
 # executive. If left blank a4wide will be used. 
 
-PAPER_TYPE             = a4wide
+PAPER_TYPE             = letter
 
 # The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX 
 # packages that should be included in the LaTeX output. 

@@ -11,7 +11,7 @@ SG_USING_STD(cout);
 SG_USING_STD(endl);
 
 int main () {
-    FGSerialPort port;
+    SGSerialPort port;
     string value;
     bool result;
 

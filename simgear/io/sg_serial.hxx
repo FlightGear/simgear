@@ -55,7 +55,7 @@ class SGSerial : public SGIOChannel {
 
     string device;
     string baud;
-    FGSerialPort port;
+    SGSerialPort port;
 
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
     int save_len;

@@ -48,7 +48,7 @@ SG_USING_STD(string);
 /**
  * A class to encapsulate low level serial port IO.
  */
-class FGSerialPort
+class SGSerialPort
 {
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
     typedef HANDLE fd_type;
@@ -64,17 +64,17 @@ private:
 public:
 
     /** Default constructor */
-    FGSerialPort();
+    SGSerialPort();
 
     /**
      * Constructor
      * @param device device name
      * @param baud baud rate
      */
-    FGSerialPort(const string& device, int baud);
+    SGSerialPort(const string& device, int baud);
 
     /** Destructor */
-    ~FGSerialPort();
+    ~SGSerialPort();
 
     /** Open a the serial port
      * @param device name of device

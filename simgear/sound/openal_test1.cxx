@@ -1,7 +1,14 @@
 #include <stdio.h>
 
-#include <AL/al.h>
-#include <AL/alut.h>
+#if defined( __APPLE__ )
+# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
+# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
+# include <OpenAL/al.h>
+# include <OpenAL/alut.h>
+#else
+# include <AL/al.h>
+# include <AL/alut.h>
+#endif
 
 #include <simgear/debug/logstream.hxx>
 

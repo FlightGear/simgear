@@ -21,8 +21,15 @@
 // $Id$
 
 
-#include <AL/al.h>
-#include <AL/alut.h>
+#if defined( __APPLE__ )
+# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
+# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
+# include <OpenAL/al.h>
+# include <OpenAL/alut.h>
+#else
+# include <AL/al.h>
+# include <AL/alut.h>
+#endif
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -86,8 +93,13 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     }
 
     // Load the sample file
+#if defined (__APPLE__)
+    alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
+                     &format, &data, &size, &freq );
+#else
     alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
                      &format, &data, &size, &freq, &loop );
+#endif
     if (alGetError() != AL_NO_ERROR) {
         throw sg_exception("Failed to load wav file.");
     }

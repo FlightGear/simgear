@@ -21,7 +21,7 @@ noinst_PROGRAMS = openal_test1 openal_test2
 openal_test1_SOURCES = openal_test1.cxx
 openal_test2_SOURCES = openal_test2.cxx
 
-openal_test1_LDADD = -lsgdebug -lopenal
+openal_test1_LDADD = -lsgdebug $(openal_LIBS)
 openal_test2_LDADD = \
 	$(top_builddir)/simgear/sound/libsgsound.a \
 	-lsgdebug -lsgmisc -lsgstructure $(openal_LIBS)

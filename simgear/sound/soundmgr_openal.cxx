@@ -25,9 +25,15 @@
 
 #include <iostream>
 
-#include <AL/al.h>
-#include <AL/alut.h>
-#include <AL/alc.h>
+#if defined(__APPLE__)
+# include <OpenAL/al.h>
+# include <OpenAL/alut.h>
+# include <OpenAL/alc.h>
+#else
+# include <AL/al.h>
+# include <AL/alut.h>
+# include <AL/alc.h>
+#endif
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>

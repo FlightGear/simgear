@@ -24,6 +24,16 @@
 #include <plib/ul.h>
 #include "SkyArchive.hpp"
 
+// FIXME: Remove this section whenever plib has it's own endian conversion
+//        funcrtions for 64-bit data types.
+#ifndef ulEndianLittleDouble
+// This hack doesn't actually do anything, but it's pressence
+// marks the places that need endiannes attention.
+inline double ulEndianLittleDouble(double x) {
+   return x;
+}
+#endif
+
 #include <assert.h>
 
 struct SkyArchiveEntry

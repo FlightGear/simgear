@@ -104,21 +104,21 @@ public:
      * @param cur_lat (in) current latitude
      * @param cur_alt (in) current altitude
      * @param course (out) heading from current location to this waypoint
-     * @param distance (out) distance from current location to this waypoint
+     * @param dist (out) distance from current location to this waypoint
      */
     void CourseAndDistance( const double cur_lon, const double cur_lat,
 			    const double cur_alt,
-			    double *course, double *distance ) const;
+			    double *course, double *dist ) const;
 
     /**
      * Calculate course and distances between a specified starting waypoint
      * and this waypoint.
      * @param wp (in) original waypoint
      * @param course (out) heading from current location to this waypoint
-     * @param distance (out) distance from current location to this waypoint
+     * @param dist (out) distance from current location to this waypoint
      */
     void CourseAndDistance( const SGWayPoint &wp,
-			    double *course, double *distance ) const;
+			    double *course, double *dist ) const;
 
     /** @return waypoint mode */
     inline modetype get_mode() const { return mode; }

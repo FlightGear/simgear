@@ -50,15 +50,15 @@ SGWayPoint::~SGWayPoint() {
 void SGWayPoint::CourseAndDistance( const double cur_lon,
 				    const double cur_lat,
 				    const double cur_alt,
-				    double *course, double *distance ) const {
+				    double *course, double *dist ) const {
     if ( mode == WGS84 ) {
 	double reverse;
 	geo_inverse_wgs_84( cur_alt, cur_lat, cur_lon, target_lat, target_lon,
-			    course, &reverse, distance );
+			    course, &reverse, dist );
     } else if ( mode == SPHERICAL ) {
 	Point3D current( cur_lon * SGD_DEGREES_TO_RADIANS, cur_lat * SGD_DEGREES_TO_RADIANS, 0.0 );
 	Point3D target( target_lon * SGD_DEGREES_TO_RADIANS, target_lat * SGD_DEGREES_TO_RADIANS, 0.0 );
-	calc_gc_course_dist( current, target, course, distance );
+	calc_gc_course_dist( current, target, course, dist );
 	*course = 360.0 - *course * SGD_RADIANS_TO_DEGREES;
     } else if ( mode == CARTESIAN ) {
 	double dx = target_lon - cur_lon;
@@ -70,15 +70,15 @@ void SGWayPoint::CourseAndDistance( const double cur_lon,
 	while ( *course > 360.0 ) {
 	    *course -= 360.0;
 	}
-	*distance = sqrt( dx * dx + dy * dy );
+	*dist = sqrt( dx * dx + dy * dy );
     }
 }
 
 // Calculate course and distances between two waypoints
 void SGWayPoint::CourseAndDistance( const SGWayPoint &wp,
-			double *course, double *distance ) const {
+			double *course, double *dist ) const {
     CourseAndDistance( wp.get_target_lon(),
 		       wp.get_target_lat(),
 		       wp.get_target_alt(),
-		       course, distance );
+		       course, dist );
 }

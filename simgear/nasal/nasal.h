@@ -4,8 +4,6 @@
 extern "C" {
 #endif
 
-#define NASAL_BIG_ENDIAN_32_BIT
-
 // This is a nasal "reference".  They are always copied by value, and
 // contain either a pointer to a garbage-collectable nasal object
 // (string, vector, hash) or a floating point number.  Keeping the

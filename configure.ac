@@ -48,18 +48,18 @@ case "${host}" in
         AR="$CXX -ar"
         ARFLAGS="-o"
         CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility"
-        compatability_DIR="compatability"
+        compatibility_DIR="compatibility"
     fi
     ;;
 *)
     AR="ar"
     ARFLAGS="cru"
-    compatability_DIR=
+    compatibility_DIR=
     ;;
 esac
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
-AC_SUBST(compatability_DIR)
+AC_SUBST(compatibility_DIR)
 
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir

@@ -235,7 +235,7 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
   if (!_bImageExists || !_bEnabled)
   {
     //FAIL_RETURN(DisplayWithoutImpostor(*(GLVU::GetCurrent()->GetCurrentCam())));
-    FAIL_RETURN(DisplayWithoutImpostor(Camera::Camera()));
+    FAIL_RETURN(DisplayWithoutImpostor(Camera()));
   }
   else
   {//cout << "Using impostor image\n";

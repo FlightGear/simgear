@@ -170,7 +170,7 @@ sgMakeAnimation( ssgBranch * model,
   if (name_nodes.size() > 0) {
     object = find_named_node(model, name_nodes[0]->getStringValue());
     if (object == 0) {
-      SG_LOG(SG_INPUT, SG_WARN, "Object " << name_nodes[0]->getStringValue()
+      SG_LOG(SG_INPUT, SG_ALERT, "Object " << name_nodes[0]->getStringValue()
              << " not found");
       delete animation;
       animation = 0;
@@ -189,7 +189,7 @@ sgMakeAnimation( ssgBranch * model,
       const char * name = name_nodes[i]->getStringValue();
       object = find_named_node(model, name);
       if (object == 0) {
-          SG_LOG(SG_INPUT, SG_WARN, "Object " << name << " not found");
+          SG_LOG(SG_INPUT, SG_ALERT, "Object " << name << " not found");
           delete animation;
           animation = 0;
       } else {
@@ -199,10 +199,12 @@ sgMakeAnimation( ssgBranch * model,
       }
   }
 
-  animation->init();
-  branch->setUserData(animation);
-  branch->setTravCallback(SSG_CALLBACK_PRETRAV, animation_callback);
-  branch->setTravCallback(SSG_CALLBACK_POSTTRAV, restore_callback);
+  if ( animation != 0 ) {
+    animation->init();
+    branch->setUserData(animation);
+    branch->setTravCallback(SSG_CALLBACK_PRETRAV, animation_callback);
+    branch->setTravCallback(SSG_CALLBACK_POSTTRAV, restore_callback);
+  }
 }
 
 

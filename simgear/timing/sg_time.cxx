@@ -136,7 +136,7 @@ SGTime::~SGTime()
     if ( zonename != NULL ) {
         char *tmp = zonename;
         zonename = NULL;
-	delete tmp;
+	free(tmp);
     }
 }
 
@@ -302,7 +302,7 @@ void SGTime::updateLocal( double lon, double lat, const string& root ) {
     if ( zonename ) {
         char *ptr = zonename;
         zonename = NULL;
-        delete ptr;
+        free(ptr);
     }
     zonename = strdup( zone.c_str() );
 

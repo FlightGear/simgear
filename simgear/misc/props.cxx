@@ -1338,7 +1338,8 @@ SGPropertyNode::getNode (const string &relative_path, bool create)
     vector<PathComponent> components;
     parse_path(relative_path, components);
     result = find_node(this, components, 0, create);
-    (*_path_cache)[relative_path] = result;
+    if (result != 0)
+      (*_path_cache)[relative_path] = result;
   }
   
   return result;

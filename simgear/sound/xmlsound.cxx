@@ -239,7 +239,8 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    _mgr = sndmgr;
    if ( (_sample = _mgr->find(_name)) == NULL ) {
        _sample = new SGSoundSample( path.c_str(),
-                                    node->getStringValue("path", "") );
+                                    node->getStringValue("path", ""),
+                                    true );
        _mgr->add( _sample, _name );
    }
 

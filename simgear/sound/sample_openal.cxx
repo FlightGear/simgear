@@ -61,7 +61,8 @@ static void print_openal_error( ALuint error ) {
 
 
 // constructor
-SGSoundSample::SGSoundSample( const char *path, const char *file ) :
+SGSoundSample::SGSoundSample( const char *path, const char *file,
+                              bool cleanup ) :
     pitch(1.0),
     volume(1.0),
     loop(AL_FALSE)
@@ -70,7 +71,9 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     if ( strlen(file) ) {
         samplepath.append( file );
     }
-     
+
+    sample_name = samplepath.str();
+
     SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
             << samplepath.str() );
 
@@ -108,7 +111,10 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
         throw sg_exception("Failed to buffer data.");
     }
 
-    alutUnloadWAV( format, data, size, freq );
+    if ( cleanup ) {
+        alutUnloadWAV( format, data, size, freq );
+        data = NULL;
+    }
 
     // Bind buffer with a source.
     alGenSources(1, &source);
@@ -133,13 +139,15 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
 {
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
 
+    sample_name = "unknown, generated from data";
+
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
     // Load wav data into a buffer.
     alGenBuffers(1, &buffer);
     if (alGetError() != AL_NO_ERROR) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "Error in alGenBuffers()" );
+        throw sg_exception("Failed to gen buffer." );
         return;
     }
 
@@ -168,6 +176,9 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
 // destructor
 SGSoundSample::~SGSoundSample() {
     SG_LOG( SG_GENERAL, SG_INFO, "Deleting a sample" );
+    if ( data != NULL ) {
+        delete data;
+    }
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
 }

@@ -34,6 +34,8 @@
 
 #include <simgear/compiler.h>
 
+#include STL_STRING
+
 #if defined(__APPLE__)
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
@@ -46,6 +48,8 @@
 
 #include <simgear/debug/logstream.hxx>
 
+SG_USING_STD(string);
+
 
 /**
  * manages everything we need to know for an individual sound sample
@@ -54,6 +58,8 @@
 class SGSoundSample {
 
 private:
+
+    string sample_name;
 
     // Buffers hold sound data.
     ALuint buffer;
@@ -79,14 +85,22 @@ private:
 
 public:
 
-    SGSoundSample( const char *path, const char *file );
+    /**
+     * Constructor
+     * @param path Path name to sound
+     * @param file File name of sound
+     * @param cleanup Request clean up the intermediate data (this
+       should usually be true unless you want to manipulate the data
+       later.)
+     */
+    SGSoundSample( const char *path, const char *file, bool cleanup );
     SGSoundSample( unsigned char *_data, int len, int _freq );
     ~SGSoundSample();
 
     /**
      * Start playing this sample.
      *
-     * @param looped Define wether the sound should be played in a loop.
+     * @param _loop Define wether the sound should be played in a loop.
      */
     void play( bool _loop );
 
@@ -118,7 +132,7 @@ public:
         alGetSourcei( source, AL_SOURCE_STATE, &result );
         if ( alGetError() != AL_NO_ERROR) {
             SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample is_playing()!" );
+                    "Oops AL error in sample is_playing(): " << sample_name );
         }
         return (result == AL_PLAYING) ;
     }
@@ -139,7 +153,8 @@ public:
         alSourcef( source, AL_PITCH, pitch );
         if ( alGetError() != AL_NO_ERROR) {
             SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample set_pitch()! " << p );
+                    "Oops AL error in sample set_pitch()! " << p
+                    << " for " << sample_name );
         }
     }
 
@@ -156,7 +171,8 @@ public:
         alSourcef( source, AL_GAIN, volume );
         if ( alGetError() != AL_NO_ERROR) {
             SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample set_volume()!" );
+                    "Oops AL error in sample set_volume()! " << v
+                    << " for " << sample_name  );
         }
     }
 

@@ -83,40 +83,50 @@ SG_USING_STD(ostream);
 // This is the mechanism that information-providing routines can
 // use to link their own values to the property manager.  Any
 // SGValue can be tied to a raw value and then untied again.
+//
+// Note: we are forced to use inlined methods here to ensure
+// that the templates will be instantiated.  We're probably taking
+// a small performance hit for that.
 ////////////////////////////////////////////////////////////////////////
 
 
 /**
  * Abstract base class for a raw value.
  *
- * The property manager is implemented in three layers.  The {@link
+ * <p>The property manager is implemented in two layers.  The {@link
  * SGPropertyNode} is the highest and most abstract layer,
- * representing * an LValue/RValue pair: it * records the position
- * of the property in the property tree and * contains facilities
- * for navigation to other nodes.  Each node * may contain an {@link
- * SGValue}, which is guaranteed persistent: the * {@link SGValue}
- * will not change during a session, even if the * property is bound
- * and unbound multiple times.  The SGValue is the * abstraction of
- * an RValue: it allows for conversion among all of the different
- * types, and can be bound to external pointers, functions, methods,
- * or other data sources.  Every SGValue contains an SGRawValue of
- * a specific type.  The SGRawValue (this class) may change frequently
- * during a session as a value is retyped or bound and unbound to
- * various data source, but the abstract SGValue layer insulates
- * the application from those changes.  The raw value contains no
- * facilities for data binding or for type conversion: it is simply
- * the abstraction of a primitive data type (or a compound data
- * type, in the case of a string).
+ * representing an LValue/RValue pair: it records the position of the
+ * property in the property tree and contains facilities for
+ * navigation to other nodes.  It is guaranteed to be persistent: the
+ * {@link SGPropertyNode} will not change during a session, even if
+ * the property is bound and unbound multiple times.</p>
  *
- * The SGValue class always keeps a *copy* of a raw value, not the
- * original one passed to it; if you override a derived class but do
- * not replace the {@link #clone} method, strange things will happen.
+ * <p>When the property value is not managed internally in the
+ * SGPropertyNode, the SGPropertyNode will contain a reference to an
+ * SGRawValue (this class), which provides an abstract way to get,
+ * set, and clone the underlying value.  The SGRawValue may change
+ * frequently during a session as a value is retyped or bound and
+ * unbound to various data source, but the abstract SGPropertyNode
+ * layer insulates the application from those changes.  The raw value
+ * contains no facilities for data binding or for type conversion: it
+ * is simply the abstraction of a primitive data type (or a compound
+ * data type, in the case of a string).</p>
  *
- * All raw values must implement {@link #getValue}, {@link #setValue},
- * and {@link #clone} for the appropriate type.
+ * <p>The SGPropertyNode class always keeps a *copy* of a raw value,
+ * not the original one passed to it; if you override a derived class
+ * but do not replace the {@link #clone} method, strange things will
+ * happen.</p>
  *
- * @see SGValue
- * @see SGPropertyNode */
+ * <p>All derived SGRawValue classes must implement {@link #getValue},
+ * {@link #setValue}, and {@link #clone} for the appropriate type.</p>
+ *
+ * @see SGPropertyNode
+ * @see SGRawValuePointer
+ * @see SGRawValueFunctions
+ * @see SGRawValueFunctionsIndexed
+ * @see SGRawValueMethods
+ * @see SGRawValueMethodsIndexed
+ */
 template <class T>
 class SGRawValue
 {
@@ -181,61 +191,6 @@ public:
    * @return A deep copy of the current object.
    */
   virtual SGRawValue * clone () const = 0;
-};
-
-
-/**
- * An unbound raw value, stored internally.
- *
- * Instances of this class are created automatically, by default,
- * by the SGValue class; ordinarily the application should not
- * need to touch it.
- */
-template <class T>
-class SGRawValueInternal : public SGRawValue<T>
-{
-public:
-
-  /**
-   * Default constructor.
-   *
-   * Initialize with the default value for this type.
-   */
-  SGRawValueInternal () {}
-
-  /**
-   * Explicit value constructor.
-   *
-   * Initialize with the underlying value provided.
-   *
-   * @param value The initial value for this property.
-   */
-  SGRawValueInternal (T value) : _value(value) {}
-
-  /**
-   * Destructor.
-   */
-  virtual ~SGRawValueInternal () {}
-
-  /**
-   * Get the underlying value.
-   */
-  virtual T getValue () const { return _value; }
-
-  /**
-   * Set the underlying value.
-   */
-  virtual bool setValue (T value) { _value = value; return true; }
-
-  /**
-   * Create a deep copy of this raw value.
-   */
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValueInternal<T>(_value);
-  }
-
-private:
-  T _value;
 };
 
 
@@ -383,6 +338,8 @@ private:
  * not have a getter.  An indexed value is useful for binding one
  * of a list of possible values (such as multiple engines for a
  * plane).  The index is hard-coded at creation time.
+ *
+ * @see SGRawValue
  */
 template <class T>
 class SGRawValueFunctionsIndexed : public SGRawValue<T>
@@ -485,9 +442,7 @@ private:
  */
 class SGPropertyNode
 {
-
 public:
-
 
   /**
    * Property value types.

@@ -65,6 +65,20 @@ int main( int argc, char **argv ) {
     int_list vertex_index;
     int_list tex_index;
 
+    // generate points
+    string_list pt_materials = obj.get_pt_materials();
+    group_list pts_v = obj.get_pts_v();
+    for ( i = 0; i < (int)pts_v.size(); ++i ) {
+	material = pt_materials[i];
+	vertex_index = pts_v[i];
+        cout << "# usemtl " << material << endl;
+        cout << "pt ";
+        for ( j = 0; j < (int)vertex_index.size(); ++j ) {
+            cout << vertex_index[j] << " ";
+        }
+        cout << endl;
+    }
+
     // generate triangles
     string_list tri_materials = obj.get_tri_materials();
     group_list tris_v = obj.get_tris_v();

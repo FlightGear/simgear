@@ -346,7 +346,7 @@
 //
 // Intel C++ Compiler
 //
-#if defined(__ICC)
+#if defined(__ICC) || defined (__ECC)
 #  define SG_NAMESPACES
 #  define SG_HAVE_STD
 #  define SG_HAVE_STREAMBUF

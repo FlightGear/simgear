@@ -346,11 +346,12 @@ bool SGBinObject::read_bin( const string& file ) {
 	return false;
     }
 
-    // read creation time
-    time_t calendar_time;
-    sgReadLong( fp, &calendar_time );
+    // read calender time
+    unsigned int foo_calendar_time;
+    sgReadUInt( fp, &foo_calendar_time );
 
 #if 0
+    time_t calendar_time = foo_calendar_time;
     // The following code has a global effect on the host application
     // and can screws up the time elsewhere.  It should be avoided
     // unless you need this for debugging in which case you should

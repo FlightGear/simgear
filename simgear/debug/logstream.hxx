@@ -28,6 +28,10 @@
 
 #include <simgear/compiler.h>
 
+#ifdef _MSC_VER
+#  include <windows.h>
+#endif
+
 #ifdef SG_HAVE_STD_INCLUDES
 # include <streambuf>
 # include <iostream>
@@ -180,7 +184,23 @@ logbuf::set_log_state( sgDebugClass c, sgDebugPriority p )
 inline logbuf::int_type
 logbuf::overflow( int c )
 {
+#ifdef _MSC_VER
+    static has_console = false;
+    if ( logging_enabled ) {
+        if ( !has_console ) {
+            AllocConsole();
+            freopen("conin$", "r", stdin);
+            freopen("conout$", "w", stdout);
+            freopen("conout$", "w", stderr);
+            has_console = true;
+        }
+        sbuf->sputc(c);
+    }
+    else
+        return EOF == 0 ? 1: 0;
+#else
     return logging_enabled ? sbuf->sputc(c) : (EOF == 0 ? 1: 0);
+#endif
 }
 
 /**

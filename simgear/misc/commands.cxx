@@ -9,6 +9,36 @@
 
 
 ////////////////////////////////////////////////////////////////////////
+// Implementation of SGCommandState class.
+////////////////////////////////////////////////////////////////////////
+
+SGCommandState::SGCommandState ()
+  : _args(0)
+{
+}
+
+SGCommandState::SGCommandState (const SGPropertyNode * args)
+  : _args(0)
+{
+  setArgs(args);
+}
+
+SGCommandState::~SGCommandState ()
+{
+  delete _args;
+}
+
+void
+SGCommandState::setArgs (const SGPropertyNode * args)
+{
+  delete _args;
+  _args = new SGPropertyNode();
+  copyProperties(args, _args);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
 // Implementation of SGCommandMgr class.
 ////////////////////////////////////////////////////////////////////////
 
@@ -50,83 +80,84 @@ SGCommandMgr::getCommandNames () const
 }
 
 bool
-SGCommandMgr::execute (const string &name, const SGPropertyNode * arg) const
+SGCommandMgr::execute (const string &name, const SGPropertyNode * arg,
+		       SGCommandState ** state) const
 {
   command_t command = getCommand(name);
   if (command == 0)
     return false;
   else
-    return (*command)(arg);
+    return (*command)(arg, state);
 }
 
 
-bool
-SGCommandMgr::execute (const string &name) const
-{
-				// FIXME
-  SGPropertyNode node;
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, bool value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setBoolValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, bool value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setBoolValue(value);
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, int value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setIntValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, int value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setIntValue(value);
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, long value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setLongValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, long value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setLongValue(value);
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, float value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setFloatValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, float value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setFloatValue(value);
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, double value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setDoubleValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, double value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setDoubleValue(value);
+//   return execute(name, &node);
+// }
 
 
-bool
-SGCommandMgr::execute (const string &name, string value) const
-{
-				// FIXME
-  SGPropertyNode node;
-  node.setStringValue(value);
-  return execute(name, &node);
-}
+// bool
+// SGCommandMgr::execute (const string &name, string value) const
+// {
+// 				// FIXME
+//   SGPropertyNode node;
+//   node.setStringValue(value);
+//   return execute(name, &node);
+// }
 
 
 // end of commands.cxx

@@ -75,18 +75,23 @@ SGTime::SGTime( double lon, double lat, const string& root )
     // cout << "Current local time          = " 
     //      << asctime(localtime(&cur_time)) << endl;
 
-    FGPath zone( root );
-    zone.append( "zone.tab" );
-    FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: " << zone.str() );
-    tzContainer = new TimezoneContainer( zone.c_str() );
+    if ( root != "" ) {
+	FGPath zone( root );
+	zone.append( "zone.tab" );
+	FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: "
+		<< zone.str() );
+	tzContainer = new TimezoneContainer( zone.c_str() );
 
-    GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
-    GeoCoord* nearestTz = tzContainer->getNearest(location);
+	GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
+	GeoCoord* nearestTz = tzContainer->getNearest(location);
 
-    FGPath name( root );
-    name.append( nearestTz->getDescription() );
-    zonename = strdup( name.c_str() );
-    // cout << "Using zonename = " << zonename << endl;
+	FGPath name( root );
+	name.append( nearestTz->getDescription() );
+	zonename = strdup( name.c_str() );
+	// cout << "Using zonename = " << zonename << endl;
+    } else {
+	tzContainer = NULL;
+    }
 }
 
 
@@ -95,9 +100,16 @@ SGTime::SGTime( const string& root ) {
 }
 
 
+SGTime::SGTime() {
+    SGTime( 0.0, 0.0, "" );
+}
+
+
 SGTime::~SGTime()
 {
-    delete tzContainer;
+    if ( tzContainer != NULL ) {
+	delete tzContainer;
+    }
 
     if ( zonename != NULL ) {
 	delete zonename;

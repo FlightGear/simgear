@@ -86,6 +86,7 @@ public:
 
     SGTime( double lon, double lat, const string& root );
     SGTime( const string& root );
+    SGTime();
     ~SGTime();
 
     // Update the time related variables

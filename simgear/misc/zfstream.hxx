@@ -141,7 +141,11 @@ public:
 protected:
 
     virtual int_type underflow();
+#ifndef SG_HAVE_STD_INCLUDES
+    virtual int_type overflow( int_type c = traits_type::eof() );
+#else
     virtual int_type overflow( int_type c = streambuf::traits_type::eof() );
+#endif
 
 private:
 

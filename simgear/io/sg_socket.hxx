@@ -81,8 +81,8 @@ private:
     SocketType make_client_socket();
 
     // wrapper functions
-    size_t readsocket( int fd, void *buf, size_t count );
-    size_t writesocket( int fd, const void *buf, size_t count );
+    int readsocket( int fd, void *buf, size_t count );
+    int writesocket( int fd, const void *buf, size_t count );
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
     int closesocket(int fd);
 #endif

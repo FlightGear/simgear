@@ -160,7 +160,7 @@ SGSocket::SocketType SGSocket::make_client_socket () {
 
 
 // Wrapper functions
-size_t SGSocket::readsocket( int fd, void *buf, size_t count ) {
+int SGSocket::readsocket( int fd, void *buf, size_t count ) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     return ::recv( fd, (char *)buf, count, 0 );
 #else
@@ -168,7 +168,7 @@ size_t SGSocket::readsocket( int fd, void *buf, size_t count ) {
 #endif
 }
 
-size_t SGSocket::writesocket( int fd, const void *buf, size_t count ) {
+int SGSocket::writesocket( int fd, const void *buf, size_t count ) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     return ::send( fd, (const char*)buf, count, 0 );
 #else

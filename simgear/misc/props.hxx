@@ -534,7 +534,7 @@ public:
   /**
    * Get the node's integer index.
    */
-  const int getIndex () const { return _index; }
+  int getIndex () const { return _index; }
 
 
   /**
@@ -557,7 +557,7 @@ public:
   /**
    * Get the number of child nodes.
    */
-  const int nChildren () const { return _children.size(); }
+  int nChildren () const { return _children.size(); }
 
 
   /**

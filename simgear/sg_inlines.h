@@ -30,31 +30,31 @@
 
 // return the sign of a value
 template <class T>
-inline const int SG_SIGN(const T x) {
+inline int SG_SIGN(const T x) {
     return x < T(0) ? -1 : 1;
 }
 
 // return the minimum of two values
 template <class T>
-inline const T SG_MIN2(const T a, const T b) {
+inline T SG_MIN2(const T a, const T b) {
     return a < b ? a : b;
 }
 
 // return the minimum of three values
 template <class T>
-inline const T SG_MIN3( const T a, const T b, const T c) {
+inline T SG_MIN3( const T a, const T b, const T c) {
     return (a < b ? SG_MIN2 (a, c) : SG_MIN2 (b, c));
 }
 
 // return the maximum of two values
 template <class T>
-inline const T SG_MAX2(const T a, const T b) {
+inline T SG_MAX2(const T a, const T b) {
     return  a > b ? a : b;
 }
 
 // return the maximum of three values
 template <class T>
-inline const T SG_MAX3 (const T a, const T b, const T c) {
+inline T SG_MAX3 (const T a, const T b, const T c) {
     return (a > b ? SG_MAX2 (a, c) : SG_MAX2 (b, c));
 }
 

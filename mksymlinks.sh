@@ -29,7 +29,6 @@ ln -s ../../debug/logstream.hxx src/simgear/debug/logstream.hxx
 
 ln -s ../../math/fg_memory.h src/simgear/math/fg_memory.h
 ln -s ../../math/fg_types.hxx src/simgear/math/fg_types.hxx
-ln -s ../../math/mat3.h src/simgear/math/mat3.h
 ln -s ../../math/point3d.hxx src/simgear/math/point3d.hxx
 ln -s ../../math/polar3d.hxx src/simgear/math/polar3d.hxx
 

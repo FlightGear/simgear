@@ -320,7 +320,7 @@ SGCloudLayer::rebuild()
             if ( nb_texture_unit < 2 ) {
                 bump_mapping = false;
             }
-            nb_texture_unit = 2; // Force the number of units for now
+            //nb_texture_unit = 2; // Force the number of units for now
         }
 
         if ( bump_mapping ) {
@@ -829,7 +829,7 @@ void SGCloudLayer::draw( bool top ) {
             ssgGetModelviewMatrix( modelview );
             layer_transform->getTransform( transform );
 
-            sgInvertMat4( tmp, transform );
+            sgTransposeNegateMat4( tmp, transform );
 
             sgPostMultMat4( transform, modelview );
             ssgLoadModelviewMatrix( transform );
@@ -858,6 +858,7 @@ void SGCloudLayer::draw( bool top ) {
 
             glDisable( GL_LIGHTING );
             glDisable( GL_CULL_FACE );
+//            glDisable( GL_ALPHA_TEST );
             if ( layer_coverage == SG_CLOUD_FEW ) {
                 glEnable( GL_ALPHA_TEST );
                 glAlphaFunc ( GL_GREATER, 0.01 );
@@ -869,7 +870,7 @@ void SGCloudLayer::draw( bool top ) {
             glEnable( GL_COLOR_MATERIAL ); 
             sgVec4 color;
             float emis = 0.05;
-            if ( top ) {
+            if ( 1 ) {
                 ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
                 emis = ( color[0]+color[1]+color[2] ) / 3.0;
                 if ( emis < 0.05 )
@@ -879,10 +880,12 @@ void SGCloudLayer::draw( bool top ) {
             glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, color );
             sgSetVec4( color, 1.0f, 1.0f, 1.0f, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, color );
-            sgSetVec4( color, 0.5, 0.5, 0.5, 0.0 );
+            sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, color );
             sgSetVec4( color, 0.0, 0.0, 0.0, 0.0 );
             glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
+
+            glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
 
             glActiveTexturePtr( GL_TEXTURE0_ARB );
             glBindTexture( GL_TEXTURE_2D, normal->getHandle() );
@@ -897,12 +900,12 @@ void SGCloudLayer::draw( bool top ) {
             //Set vertex arrays for cloud
             glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
             glEnableClientState( GL_VERTEX_ARRAY );
-
+/*
             if ( nb_texture_unit >= 3 ) {
                 glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
                 glEnableClientState( GL_COLOR_ARRAY );
             }
-
+*/
             //Send texture coords for normal map to unit 0
             glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
             glEnableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -936,19 +939,10 @@ void SGCloudLayer::draw( bool top ) {
                 glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
                 glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-                sgVec4 factors;
-                if ( top || layer_coverage != SG_CLOUD_OVERCAST ) {
-                    sgSetVec4( factors, 0.5f, 0.5f, 0.3f, 1.0f );
-                } else {
-                    sgSetVec4( factors, 0.1f, 0.1f, 0.0f, 1.0f );
-                }
-                glTexEnvfv( GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, factors );
-
                 glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-                glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE_ARB );
+                glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD );
                 glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
                 glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_CONSTANT_ARB );
 
                 glClientActiveTexturePtr( GL_TEXTURE0_ARB );
                 glActiveTexturePtr( GL_TEXTURE0_ARB );
@@ -1006,47 +1000,49 @@ void SGCloudLayer::draw( bool top ) {
                 //Return to standard modulate texenv
                 glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
-	        glDepthFunc(GL_LEQUAL);
+                if ( layer_coverage == SG_CLOUD_OVERCAST ) {
+	            glDepthFunc(GL_LEQUAL);
 
-                glEnable( GL_LIGHTING );
-                sgVec4 color;
-                ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
-                float average = ( color[0] + color[1] + color[2] ) / 3.0f;
-                average = 0.15 + average/10;
-                sgVec4 averageColor;
-                sgSetVec4( averageColor, average, average, average, 1.0f );
-                ssgGetLight( 0 )->setColour( GL_DIFFUSE, averageColor );
+                    glEnable( GL_LIGHTING );
+                    sgVec4 color;
+                    ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
+                    float average = ( color[0] + color[1] + color[2] ) / 3.0f;
+                    average = 0.15 + average/10;
+                    sgVec4 averageColor;
+                    sgSetVec4( averageColor, average, average, average, 1.0f );
+                    ssgGetLight( 0 )->setColour( GL_DIFFUSE, averageColor );
 
-                glBlendColorPtr( average, average, average, 1.0f );
-                glBlendFunc( GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_COLOR );
+                    glBlendColorPtr( average, average, average, 1.0f );
+                    glBlendFunc( GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_COLOR );
 
-                //Perform a second pass to color the torus
-                //Bind decal texture
-                glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
-                glEnable(GL_TEXTURE_2D);
+                    //Perform a second pass to color the torus
+                    //Bind decal texture
+                    glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
+                    glEnable(GL_TEXTURE_2D);
 
-                //Set vertex arrays for torus
-                glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
-                glEnableClientState( GL_VERTEX_ARRAY );
+                    //Set vertex arrays for torus
+                    glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
+                    glEnableClientState( GL_VERTEX_ARRAY );
 
-                //glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
-                //glEnableClientState( GL_COLOR_ARRAY );
+                    //glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
+                    //glEnableClientState( GL_COLOR_ARRAY );
 
-                glNormalPointer( GL_FLOAT, sizeof(CloudVertex), &vertices[0].normal );
-                glEnableClientState( GL_NORMAL_ARRAY );
+                    glNormalPointer( GL_FLOAT, sizeof(CloudVertex), &vertices[0].normal );
+                    glEnableClientState( GL_NORMAL_ARRAY );
 
-                glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
-                glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+                    glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
+                    glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-                //Draw cloud layer
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
+                    //Draw cloud layer
+                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
+                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
+                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
+                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
 
-                ssgGetLight( 0 )->setColour( GL_DIFFUSE, color );
+                    ssgGetLight( 0 )->setColour( GL_DIFFUSE, color );
 
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                    glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                }
             }
             //Disable texture
             glDisable( GL_TEXTURE_2D );

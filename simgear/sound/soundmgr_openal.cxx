@@ -34,10 +34,22 @@
 #endif
 
 #if defined (__APPLE__)
-// any C++ header file undefines isinf and isnan
-// so this should be included before <iostream>
-inline int (isinf)(double r) { return isinf(r); }
-inline int (isnan)(double r) { return isnan(r); } 
+#  ifdef __GNUC__
+#    if ( __GNUC__ >= 3 ) && ( __GNUC_MINOR__ >= 3 )
+//  #        include <math.h>
+extern "C" int isnan (double);
+extern "C" int isinf (double);
+#    else
+    // any C++ header file undefines isinf and isnan
+    // so this should be included before <iostream>
+    // the functions are STILL in libm (libSystem on mac os x)
+extern "C" int isnan (double);
+extern "C" int isinf (double);
+#    endif
+#  else
+//    inline int (isinf)(double r) { return isinf(r); }
+//    inline int (isnan)(double r) { return isnan(r); }
+#  endif
 #endif
 
 #if defined (__FreeBSD__)

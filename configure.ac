@@ -275,7 +275,9 @@ case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
 
-    LIBS="$LIBS -lopenal32 -lwinmm -ldsound -ldxguid -lole32"
+    AC_SEARCH_LIBS(alGenBuffers, openal32)
+    AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
+    LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
     ;;
 
 *-apple-darwin*)

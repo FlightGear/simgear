@@ -220,5 +220,55 @@ private:
   sgVec3 _axis;
 };
 
+/**
+ * Animation to rotate texture mappings around a center point.
+ *
+ * This animation rotates to a specific position.
+ */
+class SGTexRotateAnimation : public SGAnimation
+{
+public:
+  SGTexRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
+  virtual ~SGTexRotateAnimation ();
+  virtual void update();
+private:
+  SGPropertyNode_ptr _prop;
+  double _offset_deg;
+  double _factor;
+  SGInterpTable * _table;
+  bool _has_min;
+  double _min_deg;
+  bool _has_max;
+  double _max_deg;
+  double _position_deg;
+  sgMat4 _matrix;
+  sgVec3 _center;
+  sgVec3 _axis;
+};
+
+
+/**
+ * Animation to slide texture mappings along an axis.
+ */
+class SGTexTranslateAnimation : public SGAnimation
+{
+public:
+  SGTexTranslateAnimation( SGPropertyNode *prop_root,
+                      SGPropertyNode_ptr props );
+  virtual ~SGTexTranslateAnimation ();
+  virtual void update();
+private:
+  SGPropertyNode_ptr _prop;
+  double _offset_m;
+  double _factor;
+  SGInterpTable * _table;
+  bool _has_min;
+  double _min_m;
+  bool _has_max;
+  double _max_m;
+  double _position_m;
+  sgMat4 _matrix;
+  sgVec3 _axis;
+};
 
 #endif // _SG_ANIMATION_HXX

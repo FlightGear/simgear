@@ -121,6 +121,10 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGRotateAnimation(prop_root, node);
   } else if (!strcmp("translate", type)) {
     animation = new SGTranslateAnimation(prop_root, node);
+  } else if (!strcmp("texrotate", type)) {
+    animation = new SGTexRotateAnimation(prop_root, node);
+  } else if (!strcmp("textranslate", type)) {
+    animation = new SGTexTranslateAnimation(prop_root, node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);

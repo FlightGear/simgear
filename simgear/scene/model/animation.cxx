@@ -1,4 +1,4 @@
-// animation.hxx - classes to manage model animation.
+// animation.cxx - classes to manage model animation.
 // Written by David Megginson, started 2002.
 //
 // This file is in the Public Domain, and comes with no warranty.
@@ -221,12 +221,34 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
     _position_deg(props->getDoubleValue("starting-position-deg", 0)),
     _last_time_sec( sim_time_sec )
 {
-    _center[0] = props->getFloatValue("center/x-m", 0);
-    _center[1] = props->getFloatValue("center/y-m", 0);
-    _center[2] = props->getFloatValue("center/z-m", 0);
-    _axis[0] = props->getFloatValue("axis/x", 0);
-    _axis[1] = props->getFloatValue("axis/y", 0);
-    _axis[2] = props->getFloatValue("axis/z", 0);
+    _center[0] = 0;
+    _center[1] = 0;
+    _center[2] = 0;
+    if (props->hasValue("axis/x1-m")) {
+        double x1,y1,z1,x2,y2,z2;
+        x1 = props->getFloatValue("axis/x1-m");
+        y1 = props->getFloatValue("axis/y1-m");
+        z1 = props->getFloatValue("axis/z1-m");
+        x2 = props->getFloatValue("axis/x2-m");
+        y2 = props->getFloatValue("axis/y2-m");
+        z2 = props->getFloatValue("axis/z2-m");
+        _center[0] = (x1+x2)/2;
+        _center[1]= (y1+y2)/2;
+        _center[2] = (z1+z2)/2;
+        float vector_length = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1));
+        _axis[0] = (x2-x1)/vector_length;
+        _axis[1] = (y2-y1)/vector_length;
+        _axis[2] = (z2-z1)/vector_length;
+    } else {
+       _axis[0] = props->getFloatValue("axis/x", 0);
+       _axis[1] = props->getFloatValue("axis/y", 0);
+       _axis[2] = props->getFloatValue("axis/z", 0);
+    }
+    if (props->hasValue("center/x-m")) {
+       _center[0] = props->getFloatValue("center/x-m", 0);
+       _center[1] = props->getFloatValue("center/y-m", 0);
+       _center[2] = props->getFloatValue("center/z-m", 0);
+    }
     sgNormalizeVec3(_axis);
 }
 
@@ -299,13 +321,35 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
       _max_deg(props->getDoubleValue("max-deg")),
       _position_deg(props->getDoubleValue("starting-position-deg", 0))
 {
-  _center[0] = props->getFloatValue("center/x-m", 0);
-  _center[1] = props->getFloatValue("center/y-m", 0);
-  _center[2] = props->getFloatValue("center/z-m", 0);
-  _axis[0] = props->getFloatValue("axis/x", 0);
-  _axis[1] = props->getFloatValue("axis/y", 0);
-  _axis[2] = props->getFloatValue("axis/z", 0);
-  sgNormalizeVec3(_axis);
+    _center[0] = 0;
+    _center[1] = 0;
+    _center[2] = 0;
+    if (props->hasValue("axis/x1-m")) {
+        double x1,y1,z1,x2,y2,z2;
+        x1 = props->getFloatValue("axis/x1-m");
+        y1 = props->getFloatValue("axis/y1-m");
+        z1 = props->getFloatValue("axis/z1-m");
+        x2 = props->getFloatValue("axis/x2-m");
+        y2 = props->getFloatValue("axis/y2-m");
+        z2 = props->getFloatValue("axis/z2-m");
+        _center[0] = (x1+x2)/2;
+        _center[1]= (y1+y2)/2;
+        _center[2] = (z1+z2)/2;
+        float vector_length = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1));
+        _axis[0] = (x2-x1)/vector_length;
+        _axis[1] = (y2-y1)/vector_length;
+        _axis[2] = (z2-z1)/vector_length;
+    } else {
+       _axis[0] = props->getFloatValue("axis/x", 0);
+       _axis[1] = props->getFloatValue("axis/y", 0);
+       _axis[2] = props->getFloatValue("axis/z", 0);
+    }
+    if (props->hasValue("center/x-m")) {
+       _center[0] = props->getFloatValue("center/x-m", 0);
+       _center[1] = props->getFloatValue("center/y-m", 0);
+       _center[2] = props->getFloatValue("center/z-m", 0);
+    }
+    sgNormalizeVec3(_axis);
 }
 
 SGRotateAnimation::~SGRotateAnimation ()
@@ -373,6 +417,99 @@ SGTranslateAnimation::update()
   }
   set_translation(_matrix, _position_m, _axis);
   ((ssgTransform *)_branch)->setTransform(_matrix);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGTexRotateAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
+                                  SGPropertyNode_ptr props )
+    : SGAnimation(props, new ssgTexTrans),
+      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+      _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
+      _factor(props->getDoubleValue("factor", 1.0)),
+      _table(read_interpolation_table(props)),
+      _has_min(props->hasValue("min-deg")),
+      _min_deg(props->getDoubleValue("min-deg")),
+      _has_max(props->hasValue("max-deg")),
+      _max_deg(props->getDoubleValue("max-deg")),
+      _position_deg(props->getDoubleValue("starting-position-deg", 0))
+{
+  _center[0] = props->getFloatValue("center/x-m", 0);
+  _center[1] = props->getFloatValue("center/y-m", 0);
+  _center[2] = props->getFloatValue("center/z-m", 0);
+  _axis[0] = props->getFloatValue("axis/x", 0);
+  _axis[1] = props->getFloatValue("axis/y", 0);
+  _axis[2] = props->getFloatValue("axis/z", 0);
+  sgNormalizeVec3(_axis);
+}
+
+SGTexRotateAnimation::~SGTexRotateAnimation ()
+{
+  delete _table;
+}
+
+void
+SGTexRotateAnimation::update()
+{
+  if (_table == 0) {
+   _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
+   if (_has_min && _position_deg < _min_deg)
+     _position_deg = _min_deg;
+   if (_has_max && _position_deg > _max_deg)
+     _position_deg = _max_deg;
+  } else {
+    _position_deg = _table->interpolate(_prop->getDoubleValue());
+  }
+  set_rotation(_matrix, _position_deg, _center, _axis);
+  ((ssgTexTrans *)_branch)->setTransform(_matrix);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGTexTranslateAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
+                                        SGPropertyNode_ptr props )
+  : SGAnimation(props, new ssgTexTrans),
+      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _offset_m(props->getDoubleValue("offset-m", 0.0)),
+    _factor(props->getDoubleValue("factor", 1.0)),
+    _table(read_interpolation_table(props)),
+    _has_min(props->hasValue("min-m")),
+    _min_m(props->getDoubleValue("min-m")),
+    _has_max(props->hasValue("max-m")),
+    _max_m(props->getDoubleValue("max-m")),
+    _position_m(props->getDoubleValue("starting-position-m", 0))
+{
+  _axis[0] = props->getFloatValue("axis/x", 0);
+  _axis[1] = props->getFloatValue("axis/y", 0);
+  _axis[2] = props->getFloatValue("axis/z", 0);
+  sgNormalizeVec3(_axis);
+}
+
+SGTexTranslateAnimation::~SGTexTranslateAnimation ()
+{
+  delete _table;
+}
+
+void
+SGTexTranslateAnimation::update()
+{
+  if (_table == 0) {
+    _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+    if (_has_min && _position_m < _min_m)
+      _position_m = _min_m;
+    if (_has_max && _position_m > _max_m)
+      _position_m = _max_m;
+  } else {
+    _position_m = _table->interpolate(_prop->getDoubleValue());
+  }
+  set_translation(_matrix, _position_m, _axis);
+  ((ssgTexTrans *)_branch)->setTransform(_matrix);
 }
 
 

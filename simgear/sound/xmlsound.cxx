@@ -180,7 +180,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
 
    }
 
-
+   float reference_dist = node->getDoubleValue("reference-dist", 500.0);
+   float max_dist = node->getDoubleValue("max-dist", 3000.0);
+   SG_LOG(SG_GENERAL,SG_ALERT, "ref-dist = " << reference_dist );
+   SG_LOG(SG_GENERAL,SG_ALERT, "max-dist = " << max_dist );
+ 
    //
    // set pitch properties
    //
@@ -241,10 +245,13 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
        _sample = new SGSoundSample( path.c_str(),
                                     node->getStringValue("path", ""),
                                     true );
+
        _mgr->add( _sample, _name );
    }
 
    _sample->set_volume(v);
+   _sample->set_reference_dist( reference_dist );
+   _sample->set_max_dist( max_dist );
    _sample->set_pitch(p);
 }
 

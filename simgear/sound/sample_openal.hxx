@@ -81,6 +81,8 @@ private:
 
     double pitch;
     double volume;
+    double reference_dist;
+    double max_dist;
     ALboolean loop;
 
 public:
@@ -210,6 +212,25 @@ public:
         alSourcefv( source, AL_VELOCITY, source_vel );
     }
 
+
+    /**
+     * Set reference distance of sound (the distance where the gain
+     * will be half.)
+     */
+    inline void set_reference_dist( ALfloat dist ) {
+        reference_dist = dist;
+        alSourcef( source, AL_REFERENCE_DISTANCE, reference_dist );
+    }
+
+
+    /**
+     * Set maximume distance of sound (the distance where the sound is
+     * no longer audible.
+     */
+    inline void set_max_dist( ALfloat dist ) {
+        max_dist = dist;
+        alSourcef( source, AL_MAX_DISTANCE, max_dist );
+    }
 };
 
 

@@ -66,6 +66,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     data(NULL),
     pitch(1.0),
     volume(1.0),
+    reference_dist(500.0),
+    max_dist(3000.),
     loop(AL_FALSE)
 {
     SGPath samplepath( path );
@@ -131,8 +133,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     alSourcei( source, AL_LOOPING, loop );
 
     alSourcei( source, AL_SOURCE_RELATIVE, AL_TRUE );
-    alSourcef( source, AL_REFERENCE_DISTANCE, 500.0f );
-    alSourcef( source, AL_MAX_DISTANCE, 3000.0f );
+    alSourcef( source, AL_REFERENCE_DISTANCE, reference_dist );
+    alSourcef( source, AL_MAX_DISTANCE, max_dist );
 }
 
 
@@ -141,6 +143,8 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     data(NULL),
     pitch(1.0),
     volume(1.0),
+    reference_dist(500.0),
+    max_dist(3000.),
     loop(AL_FALSE)
 {
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
@@ -176,6 +180,10 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     alSourcefv( source, AL_POSITION, source_pos );
     alSourcefv( source, AL_VELOCITY, source_vel );
     alSourcei( source, AL_LOOPING, loop );
+
+    alSourcei( source, AL_SOURCE_RELATIVE, AL_TRUE );
+    alSourcef( source, AL_REFERENCE_DISTANCE, reference_dist );
+    alSourcef( source, AL_MAX_DISTANCE, max_dist );
 }
 
 

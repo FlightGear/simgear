@@ -24,10 +24,12 @@
 
 #include <string.h>
 
-#ifndef WIN32
-#include <dlfcn.h>
-#else
+#ifdef WIN32
 #include <windows.h>
+#endif
+
+#if !defined( WIN32 ) && !defined( __APPLE__ )
+#include <dlfcn.h>
 #endif
 
 #include "extensions.hxx"

@@ -143,6 +143,18 @@ public:
     /** get the cloud movement speed */
     inline float getSpeed() { return speed; }
 
+    /**
+     * set the alpha component of the cloud base color.  Normally this
+     * should be 1.0, but you can set it anywhere in the range of 0.0
+     * to 1.0 to fade a cloud layer in or out.
+     * @param alpha cloud alpha value (0.0 to 1.0)
+     */
+    inline void setAlpha( float alpha ) {
+        if ( alpha < 0.0 ) { alpha = 0.0; }
+        if ( alpha > 1.0 ) { alpha = 1.0; }
+        cloud_alpha = alpha;
+    }
+
     /** build the cloud object */
     void rebuild();
 
@@ -190,6 +202,8 @@ private:
     ssgTransform *layer_transform;
     ssgLeaf *layer[4];
     ssgStateSelector *state_sel;
+
+    float cloud_alpha;          // 1.0 = drawn fully, 0.0 faded out completely
 
     ssgColourArray *cl[4]; 
     ssgVertexArray *vl[4];

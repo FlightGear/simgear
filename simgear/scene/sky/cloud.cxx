@@ -197,9 +197,12 @@ generateNormalizationCubeMap()
 
 // Constructor
 SGCloudLayer::SGCloudLayer( const string &tex_path ) :
+    vertices(0),
+    indices(0),
     layer_root(new ssgRoot),
     layer_transform(new ssgTransform),
     state_sel(0),
+    cloud_alpha(1.0),
     texture_path(tex_path),
     layer_span(0.0),
     layer_asl(0.0),
@@ -210,9 +213,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     speed(0.0),
     direction(0.0),
     last_lon(0.0),
-    last_lat(0.0),
-    vertices(0),
-    indices(0)
+    last_lat(0.0)
 {
     cl[0] = cl[1] = cl[2] = cl[3] = NULL;
     vl[0] = vl[1] = vl[2] = vl[3] = NULL;
@@ -495,7 +496,7 @@ SGCloudLayer::rebuild()
                            cos( j * half_angle ),
                            -sin( j * half_angle ) );
                 sgVectorProductVec3( v1.normal, v1.tTangent, v1.sTangent );
-                sgSetVec4( v1.color, 1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f );
+                sgSetVec4( v1.color, 1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : cloud_alpha * 0.15f );
             }
         }
         /*
@@ -630,10 +631,27 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
         float *color;
 
         for ( int i = 0; i < 4; i++ ) {
-            for ( int j = 0; j < 10; ++j ) {
-                color = cl[i]->get( j );
+            color = cl[i]->get( 0 );
+            sgCopyVec3( color, fog_color );
+            color[3] = (i == 0) ? 0.0f : 0.15f;
+
+            for ( int j = 0; j < 4; ++j ) {
+                color = cl[i]->get( (2*j) );
                 sgCopyVec3( color, fog_color );
+                color[3] = 
+                    ((j == 0) || (i == 3)) ?
+                    ((j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f;
+
+                color = cl[i]->get( (2*j) + 1 );
+                sgCopyVec3( color, fog_color );
+                color[3] = 
+                    ((j == 3) || (i == 0)) ?
+                    ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f;
             }
+
+            color = cl[i]->get( 9 );
+            sgCopyVec3( color, fog_color );
+            color[3] = (i == 3) ? 0.0f : 0.15f;
         }
     }
 

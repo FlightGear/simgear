@@ -171,34 +171,34 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 void SGSky::preDraw( float alt, float fog_exp2_density ) {
     ssgCullAndDraw( pre_root );
 
-    	// if we are closer than this to a cloud layer, don't draw clouds
+    // if we are closer than this to a cloud layer, don't draw clouds
     static const float slop = 5.0;
     int i;
 
     // check where we are relative to the cloud layers
     in_cloud = -1;
     for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
-       float asl = cloud_layers[i]->getElevation_m();
-       float thickness = cloud_layers[i]->getThickness_m();
+        float asl = cloud_layers[i]->getElevation_m();
+        float thickness = cloud_layers[i]->getThickness_m();
 
-       if ( alt < asl - slop ) {
-           // below cloud layer
-       } else if ( alt < asl + thickness + slop ) {
-           // in cloud layer
+        if ( alt < asl - slop ) {
+            // below cloud layer
+        } else if ( alt < asl + thickness + slop ) {
+            // in cloud layer
 
-           // bail now and don't draw any clouds
-           in_cloud = i;
-       } else {
-           // above cloud layer
-       }
+            // bail now and don't draw any clouds
+            in_cloud = i;
+        } else {
+            // above cloud layer
+        }
     }
 
     // determine rendering order
     cur_layer_pos = 0;
     while ( cur_layer_pos < (int)cloud_layers.size() &&
-           alt > cloud_layers[cur_layer_pos]->getElevation_m())
+            alt > cloud_layers[cur_layer_pos]->getElevation_m() )
     {
-       ++cur_layer_pos;
+        ++cur_layer_pos;
     }
 
     // FIXME: This should not be needed, but at this time (08/15/2003)
@@ -266,7 +266,10 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
 	double ratio = 1.0;
 
-        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR || cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_FEW || cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_SCATTERED) {
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
+             cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_FEW ||
+             cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_SCATTERED)
+        {
 	    // less than 50% coverage -- assume we're in the clear for now
 	    ratio = 1.0;
         } else if ( alt < asl - transition ) {
@@ -286,9 +289,15 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	    ratio = 1.0;
 	}
 
+        // set the alpha fade value for the cloud layer
+        float temp = ratio * 2.0;
+        if ( temp > 1.0 ) { temp = 1.0; }
+        cloud_layers[i]->setAlpha( temp );
+
 	// accumulate effects from multiple cloud layers
 	effvis *= ratio;
 
+#if 0
 	if ( ratio < 1.0 ) {
 	    if ( ! in_puff ) {
 		// calc chance of entering cloud puff
@@ -345,12 +354,14 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		    in_puff = false; 
 		}
 	    }
-
-	    // never let visibility drop below 25 meters
-	    if ( effvis <= 25.0 ) {
-		effvis = 25.0;
-	    }
 	}
+#endif
+
+        // never let visibility drop below 25 meters
+        if ( effvis <= 25.0 ) {
+            effvis = 25.0;
+        }
+
     } // for
 
     effective_visibility = effvis;

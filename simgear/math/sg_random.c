@@ -49,13 +49,22 @@
 
 // Seed the random number generater with time() so we don't see the
 // same sequence every time
-void sg_srandom(void) {
-    // fgPrintf( FG_MATH, FG_INFO, "Seeding random number generater\n");
-
+void sg_srandom_time(void) {
 #ifdef HAVE_RAND
     srand(time(NULL));
 #else
     srandom(time(NULL));
+#endif                                       
+}
+
+
+// Seed the random number generater with your own seed so can set up
+// repeatable randomization.
+void sg_srandom( unsigned int seed ) {
+#ifdef HAVE_RAND
+    srand( seed );
+#else
+    srandom( seed );
 #endif                                       
 }
 

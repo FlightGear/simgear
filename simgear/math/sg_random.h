@@ -33,7 +33,11 @@ extern "C" {
 
 // Seed the random number generater with time() so we don't see the
 // same sequence every time
-void sg_srandom(void);
+void sg_srandom_time(void);
+
+// Seed the random number generater with your own seed so can set up
+// repeatable randomization.
+void sg_srandom( unsigned int seed );
 
 // return a random number between [0.0, 1.0)
 double sg_random(void);

@@ -36,7 +36,8 @@
 #include <simgear/compiler.h>
 #include <simgear/props/condition.hxx>
 
-#include "soundmgr.hxx"
+#include "sample_openal.hxx"
+#include "soundmgr_openal.hxx"
 
 static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
 
@@ -49,13 +50,13 @@ static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
  * settings, setting up its internal states, and managing sound
  * playback whenever such an event happens.
  */
-class SGSound
+class SGXmlSound
 {
 
 public:
 
-  SGSound();
-  virtual ~SGSound();
+  SGXmlSound();
+  virtual ~SGXmlSound();
 
   /**
    * Initialize the sound event.
@@ -117,7 +118,7 @@ protected:
   enum { ONCE=0, LOOPED, IN_TRANSIT };
   enum { LEVEL=0, INVERTED, FLIPFLOP };
 
-  // SGSound properties
+  // SGXmlSound properties
   typedef struct {
         SGPropertyNode * prop;
         double (*fn)(double);
@@ -132,7 +133,7 @@ protected:
 private:
 
   SGSoundMgr * _mgr;
-  SGSimpleSound * _sample;
+  SGSoundSample * _sample;
 
   SGCondition * _condition;
   SGPropertyNode * _property;

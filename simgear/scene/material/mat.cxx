@@ -59,7 +59,8 @@ SGMaterial::SGMaterial( const string &texpath )
 {
     init();
 
-    _internal_state st = { NULL, texpath, false };
+    _internal_state st = { NULL, "", false };
+    st.texture_path = texpath;
     _status.push_back( st );
 
     build_ssg_state( true );
@@ -104,7 +105,8 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
       tpath.append("Textures");
       tpath.append(tname);
     }
-    _internal_state st = { NULL, tpath.str(), false };
+    _internal_state st = { NULL, "", false };
+    st.texture_path = tpath.str();
     _status.push_back( st );
   }
 
@@ -113,7 +115,8 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
     SGPath tpath( fg_root );
     tpath.append("Textures");
     tpath.append(tname);
-    _internal_state st = { NULL, tpath.str(), true };
+    _internal_state st = { NULL, "", true };
+    st.texture_path = tpath.str();
     _status.push_back( st );
   }
 
@@ -265,8 +268,9 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 
 void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
-    s->ref();
-    _internal_state st = { s, "", true };
+    _internal_state st = { NULL, "", true };
+    st.state = s;
+    st.state->ref();
     _status.push_back( st );
 }
 

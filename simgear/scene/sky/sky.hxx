@@ -324,8 +324,9 @@ public:
      * Draw background portions of the sky ... do this before you draw
      * the rest of your scene.  See discussion in detailed
      * class description.
+     * @param alt current altitude
      */
-    void preDraw();
+    void preDraw( float alt );
 
     /**
      * Draw translucent clouds ... do this after you've drawn all the

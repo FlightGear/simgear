@@ -169,8 +169,47 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 
 // draw background portions of the sky ... do this before you draw the
 // rest of your scene.
-void SGSky::preDraw() {
+void SGSky::preDraw( float alt ) {
     ssgCullAndDraw( pre_root );
+
+    float slop = 5.0;          // if we are closer than this to a cloud layer,
+                               // don't draw clouds
+
+    int in_cloud = -1;         // cloud we are in
+
+    int i;
+
+    // check where we are relative to the cloud layers
+    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
+       float asl = cloud_layers[i]->getElevation_m();
+       float thickness = cloud_layers[i]->getThickness_m();
+
+       if ( alt < asl - slop ) {
+           // below cloud layer
+       } else if ( alt < asl + thickness + slop ) {
+           // in cloud layer
+
+           // bail now and don't draw any clouds
+           in_cloud = i;
+       } else {
+           // above cloud layer
+       }
+    }
+
+    // determine rendering order
+    int pos = 0;
+    while ( pos < (int)cloud_layers.size() &&
+           alt > cloud_layers[pos]->getElevation_m())
+    {
+       ++pos;
+    }
+
+    // draw the cloud layers that are above us, top to bottom
+    for ( i = cloud_layers.size() - 1; i >= 0; --i ) {
+        if ( i != in_cloud ) {
+            cloud_layers[i]->draw();
+        }
+    }
 }
 
 
@@ -209,33 +248,11 @@ void SGSky::postDraw( float alt ) {
 	++pos;
     }
 
-    if ( pos == 0 ) {
-	// we are below all the cloud layers, draw top to bottom
-	for ( i = cloud_layers.size() - 1; i >= 0; --i ) {
-	    if ( i != in_cloud ) {
-		cloud_layers[i]->draw();
-	    }
-	}
-    } else if ( pos >= (int)cloud_layers.size() ) {
-	// we are above all the cloud layers, draw bottom to top
-	for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
-	    if ( i != in_cloud ) {
-		cloud_layers[i]->draw();
-	    }
-	}
-    } else {
-	// we are between cloud layers, draw lower layers bottom to
-	// top and upper layers top to bottom
-	for ( i = 0; i < pos; ++i ) {
-	    if ( i != in_cloud ) {
-		cloud_layers[i]->draw();
-	    }
-	}
-	for ( i = cloud_layers.size() - 1; i >= pos; --i ) {
-	    if ( i != in_cloud ) {
-		cloud_layers[i]->draw();
-	    }
-	}
+    // draw the cloud layers that are below us, bottom to top
+    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
+        if ( i != in_cloud ) {
+            cloud_layers[i]->draw();
+        }
     }
 }
 

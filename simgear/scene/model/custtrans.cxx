@@ -14,7 +14,7 @@ void SGCustomTransform::copy_from( SGCustomTransform *src, int clone_flags )
 {
   ssgBranch::copy_from( src, clone_flags );
   _callback = src->_callback;
-  _data = (void *)src->_callback;
+  _data = src->_data;
 }
 
 ssgBase *SGCustomTransform::clone( int clone_flags )

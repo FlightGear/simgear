@@ -20,7 +20,6 @@ include_HEADERS = \
 
 SUBDIRS = \
 	xml \
-	interpreter \
 	debug \
 	misc \
 	bucket \

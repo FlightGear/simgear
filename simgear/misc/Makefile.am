@@ -26,4 +26,9 @@ libsgmisc_a_SOURCES = \
 	texcoord.cxx \
 	zfstream.cxx
 
+noinst_PROGRAMS = props_test
+
+props_test_SOURCES = props_test.cxx props_test.hxx
+props_test_LDADD = libsgmisc.a ../xml/libsgxml.a ../debug/libsgdebug.a
+
 INCLUDES += -I$(top_srcdir) $(ZLIB_INCL)

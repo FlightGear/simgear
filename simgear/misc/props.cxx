@@ -1,34 +1,256 @@
-// props.cxx -- implementation of SimGear Property Manager.
-//
-// Written by David Megginson - david@megginson.com
-//
-// This module is in the PUBLIC DOMAIN.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// props.hxx - interface definition for a property list.
+// Started Fall 2000 by David Megginson, david@megginson.com
+// This code is released into the Public Domain.
 //
 // See props.html for documentation [replace with URL when available].
 //
 // $Id$
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
-
-#include <simgear/debug/logstream.hxx>
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <algorithm>
 #include "props.hxx"
 
-#include <stdlib.h>
+using std::cerr;
+using std::endl;
+using std::sort;
 
-#include <string>
 
-using std::string;
+
+////////////////////////////////////////////////////////////////////////
+// Convenience macros for value access.
+////////////////////////////////////////////////////////////////////////
 
-SGPropertyList current_properties;
+#define GET_BOOL (_value.bool_val->getValue())
+#define GET_INT (_value.int_val->getValue())
+#define GET_FLOAT (_value.float_val->getValue())
+#define GET_DOUBLE (_value.double_val->getValue())
+#define GET_STRING (_value.string_val->getValue())
 
-static string empty_string;
+#define SET_BOOL(val) (_value.bool_val->setValue(val))
+#define SET_INT(val) (_value.int_val->setValue(val))
+#define SET_FLOAT(val) (_value.float_val->setValue(val))
+#define SET_DOUBLE(val) (_value.double_val->setValue(val))
+#define SET_STRING(val) (_value.string_val->setValue(val))
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Default values for every type.
+////////////////////////////////////////////////////////////////////////
+
+const bool SGRawValue<bool>::DefaultValue = false;
+const int SGRawValue<int>::DefaultValue = 0;
+const float SGRawValue<float>::DefaultValue = 0.0;
+const double SGRawValue<double>::DefaultValue = 0.0L;
+const string SGRawValue<string>::DefaultValue = "";
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Local path normalization code.
+////////////////////////////////////////////////////////////////////////
+
+/**
+ * A component in a path.
+ */
+struct PathComponent
+{
+  string name;
+  int index;
+};
+
+/**
+ * Parse the name for a path component.
+ *
+ * Name: [_a-zA-Z][-._a-zA-Z0-9]*
+ */
+static inline string
+parse_name (const string &path, int &i)
+{
+  string name = "";
+  int max = path.size();
+
+  if (path[i] == '.') {
+    i++;
+    if (i < max && path[i] == '.') {
+      i++;
+      name = "..";
+    } else {
+      name = ".";
+    }
+    if (i < max && path[i] != '/')
+      throw string(string("Illegal character after ") + name);
+  }
+
+  else if (isalpha(path[i]) || path[i] == '_') {
+    name += path[i];
+    i++;
+
+				// The rules inside a name are a little
+				// less restrictive.
+    while (i < max) {
+      if (isalpha(path[i]) || isdigit(path[i]) || path[i] == '_' ||
+	  path[i] == '-' || path[i] == '.') {
+	name += path[i];
+      } else if (path[i] == '[' || path[i] == '/') {
+	break;
+      } else {
+	throw string("name may contain only ._- and alphanumeric characters");
+      }
+      i++;
+    }
+  }
+
+  else {
+    if (name.size() == 0)
+      throw string("name must begin with alpha or '_'");
+  }
+
+  return name;
+}
+
+
+/**
+ * Parse the optional integer index for a path component.
+ *
+ * Index: "[" [0-9]+ "]"
+ */
+static inline int
+parse_index (const string &path, int &i)
+{
+  int index = 0;
+
+  if (path[i] != '[')
+    return 0;
+  else
+    i++;
+
+  for (int max = path.size(); i < max; i++) {
+    if (isdigit(path[i])) {
+      index = (index * 10) + (path[i] - '0');
+    } else if (path[i] == ']') {
+      i++;
+      return index;
+    } else {
+      break;
+    }
+  }
+
+  throw string("unterminated index (looking for ']')");
+}
+
+
+/**
+ * Parse a single path component.
+ *
+ * Component: Name Index?
+ */
+static inline PathComponent
+parse_component (const string &path, int &i)
+{
+  PathComponent component;
+  component.name = parse_name(path, i);
+  if (component.name[0] != '.')
+    component.index = parse_index(path, i);
+  else
+    component.index = -1;
+  return component;
+}
+
+
+/**
+ * Parse a path into its components.
+ */
+static void
+parse_path (const string &path, vector<PathComponent> &components)
+{
+  int pos = 0;
+  int max = path.size();
+
+				// Check for initial '/'
+  if (path[pos] == '/') {
+    PathComponent root;
+    root.name = "";
+    root.index = -1;
+    components.push_back(root);
+    pos++;
+    while (pos < max && path[pos] == '/')
+      pos++;
+  }
+
+  while (pos < max) {
+    components.push_back(parse_component(path, pos));
+    while (pos < max && path[pos] == '/')
+      pos++;
+  }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Other static utility functions.
+////////////////////////////////////////////////////////////////////////
+
+
+/**
+ * Locate a child node by name and index.
+ */
+static int
+find_child (const string &name, int index, vector<SGPropertyNode *> nodes)
+{
+  int nNodes = nodes.size();
+  for (int i = 0; i < nNodes; i++) {
+    SGPropertyNode * node = nodes[i];
+    if (node->getName() == name && node->getIndex() == index)
+      return i;
+  }
+  return -1;
+}
+
+
+/**
+ * Locate another node, given a relative path.
+ */
+static SGPropertyNode *
+find_node (SGPropertyNode * current,
+	   const vector<PathComponent> &components,
+	   int position,
+	   bool create)
+{
+  if (current == 0) {
+    return 0;
+  }
+
+  else if (position >= components.size()) {
+    return current;
+  }
+
+  else if (components[position].name == "") {
+    return find_node(current->getRootNode(), components, position + 1, create);
+  }
+
+  else if (components[position].name == ".") {
+    return find_node(current, components, position + 1, create);
+  }
+
+  else if (components[position].name == "..") {
+    SGPropertyNode * parent = current->getParent();
+    if (parent == 0)
+      throw string("Attempt to move past root with '..'");
+    else
+      return find_node(parent, components, position + 1, create);
+  }
+
+  else {
+    SGPropertyNode * child =
+      current->getChild(components[position].name,
+			components[position].index,
+			create);
+    return find_node(child, components, position + 1, create);
+  }
+}
 
 
 
@@ -38,666 +260,509 @@ static string empty_string;
 
 
 /**
- * Construct a new value.
+ * Default constructor.
+ *
+ * The type will be UNKNOWN and the raw value will be "".
  */
 SGValue::SGValue ()
   : _type(UNKNOWN), _tied(false)
 {
+  _value.string_val = new SGRawValueInternal<string>;
 }
 
 
 /**
- * Destroy a value.
+ * Copy constructor.
+ */
+SGValue::SGValue (const SGValue &source)
+{
+  _type = source._type;
+  _tied = source._tied;
+  switch (source._type) {
+  case BOOL:
+    _value.bool_val = source._value.bool_val->clone();
+    break;
+  case INT:
+    _value.int_val = source._value.int_val->clone();
+    break;
+  case FLOAT:
+    _value.float_val = source._value.float_val->clone();
+    break;
+  case DOUBLE:
+    _value.double_val = source._value.double_val->clone();
+    break;
+  case STRING:
+  case UNKNOWN:
+    _value.string_val = source._value.string_val->clone();
+    break;
+  }
+}
+
+
+/**
+ * Destructor.
  */
 SGValue::~SGValue ()
 {
+  clear_value();
 }
 
 
 /**
- * Return a raw boolean value (no type coercion).
+ * Delete and clear the current value.
  */
-bool
-SGValue::getRawBool () const
+void
+SGValue::clear_value ()
 {
-  if (_tied) {
-    if (_value.bool_func.getter != 0)
-      return (*(_value.bool_func.getter))();
-    else
-      return false;
-  } else {
-    return _value.bool_val;
+  switch (_type) {
+  case BOOL:
+    delete _value.bool_val;
+    _value.bool_val = 0;
+    break;
+  case INT:
+    delete _value.int_val;
+    _value.int_val = 0;
+    break;
+  case FLOAT:
+    delete _value.float_val;
+    _value.float_val = 0;
+    break;
+  case DOUBLE:
+    delete _value.double_val;
+    _value.double_val = 0;
+    break;
+  case STRING:
+  case UNKNOWN:
+    delete _value.string_val;
+    _value.string_val = 0;
+    break;
   }
 }
 
 
 /**
- * Return a raw integer value (no type coercion).
- */
-int
-SGValue::getRawInt () const
-{
-  if (_tied) {
-    if (_value.int_func.getter != 0)
-      return (*(_value.int_func.getter))();
-    else
-      return 0;
-  } else {
-    return _value.int_val;
-  }
-}
-
-
-/**
- * Return a raw floating-point value (no type coercion).
- */
-float
-SGValue::getRawFloat () const
-{
-  if (_tied) {
-    if (_value.float_func.getter != 0)
-      return (*(_value.float_func.getter))();
-    else
-      return 0.0;
-  } else {
-    return _value.float_val;
-  }
-}
-
-
-/**
- * Return a raw double-precision floating-point value (no type coercion).
- */
-double
-SGValue::getRawDouble () const
-{
-  if (_tied) {
-    if (_value.double_func.getter != 0)
-      return (*(_value.double_func.getter))();
-    else
-      return 0.0L;
-  } else {
-    return _value.double_val;
-  }
-}
-
-
-/**
- * Return a raw string value (no type coercion).
- */
-const string &
-SGValue::getRawString () const
-{
-  if (_tied && _value.string_func.getter != 0)
-    return (*(_value.string_func.getter))();
-  else
-    return string_val;
-}
-
-
-/**
- * Set a raw boolean value (no type coercion).
- *
- * Return false if the value could not be set, true otherwise.
- */
-bool
-SGValue::setRawBool (bool value)
-{
-  if (_tied) {
-    if (_value.bool_func.setter != 0) {
-      (*_value.bool_func.setter)(value);
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _value.bool_val = value;
-    return true;
-  }
-}
-
-
-/**
- * Set a raw integer value (no type coercion).
- *
- * Return false if the value could not be set, true otherwise.
- */
-bool
-SGValue::setRawInt (int value)
-{
-  if (_tied) {
-    if (_value.int_func.setter != 0) {
-      (*_value.int_func.setter)(value);
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _value.int_val = value;
-    return true;
-  }
-}
-
-
-/**
- * Set a raw floating-point value (no type coercion).
- *
- * Return false if the value could not be set, true otherwise.
- */
-bool
-SGValue::setRawFloat (float value)
-{
-  if (_tied) {
-    if (_value.float_func.setter != 0) {
-      (*_value.float_func.setter)(value);
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _value.float_val = value;
-    return true;
-  }
-}
-
-
-/**
- * Set a raw double-precision floating-point value (no type coercion).
- *
- * Return false if the value could not be set, true otherwise.
- */
-bool
-SGValue::setRawDouble (double value)
-{
-  if (_tied) {
-    if (_value.double_func.setter != 0) {
-      (*_value.double_func.setter)(value);
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    _value.double_val = value;
-    return true;
-  }
-}
-
-
-/**
- * Set a raw string value (no type coercion).
- *
- * Return false if the value could not be set, true otherwise.
- */
-bool
-SGValue::setRawString (const string &value)
-{
-  if (_tied) {
-    if (_value.string_func.setter != 0) {
-      (*_value.string_func.setter)(value);
-      return true;
-    } else {
-      return false;
-    }
-  } else {
-    string_val = value;
-    return true;
-  }
-}
-
-
-/**
- * Get the boolean value of a property.
- *
- * If the native type is not boolean, attempt to coerce it.
+ * Get a boolean value.
  */
 bool
 SGValue::getBoolValue () const
 {
   switch (_type) {
   case BOOL:
-    return getRawBool();
+    return GET_BOOL;
   case INT:
-    return (getRawInt() == 0 ? false : true);
+    return GET_INT == 0 ? false : true;
   case FLOAT:
-    return (getRawFloat() == 0.0 ? false : true);
+    return GET_FLOAT == 0.0 ? false : true;
   case DOUBLE:
-    return (getRawDouble() == 0.0 ? false : true);
-  case UNKNOWN:
+    return GET_DOUBLE == 0.0L ? false : true;
   case STRING:
-    return ((getRawString() == "true" || getIntValue() != 0) ? true : false);
+  case UNKNOWN:
+    return (GET_STRING == "true" || getDoubleValue() != 0.0L);
   }
-  return false;
 }
 
 
 /**
- * Get the integer value of a property.
- *
- * If the native type is not integer, attempt to coerce it.
+ * Get an integer value.
  */
 int
 SGValue::getIntValue () const
 {
   switch (_type) {
   case BOOL:
-    return getRawBool();
+    return (int)GET_BOOL;
   case INT:
-    return getRawInt();
+    return GET_INT;
   case FLOAT:
-    return (int)(getRawFloat());
+    return (int)GET_FLOAT;
   case DOUBLE:
-    return (int)(getRawDouble());
-  case UNKNOWN:
+    return (int)GET_DOUBLE;
   case STRING:
-    return atoi(getRawString().c_str());
+  case UNKNOWN:
+    return atoi(GET_STRING.c_str());
   }
-  return false;
 }
 
 
 /**
- * Get the floating-point value of a property.
- *
- * If the native type is not float, attempt to coerce it.
+ * Get a float value.
  */
 float
 SGValue::getFloatValue () const
 {
   switch (_type) {
   case BOOL:
-    return (float)(getRawBool());
+    return (float)GET_BOOL;
   case INT:
-    return (float)(getRawInt());
+    return (float)GET_INT;
   case FLOAT:
-    return getRawFloat();
+    return GET_FLOAT;
   case DOUBLE:
-    return (float)(getRawDouble());
-  case UNKNOWN:
+    return GET_DOUBLE;
   case STRING:
-    return (float)atof(getRawString().c_str());
+  case UNKNOWN:
+    return atof(GET_STRING.c_str());
   }
-  return false;
 }
 
 
 /**
- * Get the double-precision floating-point value of a property.
- *
- * If the native type is not double, attempt to coerce it.
+ * Get a double value.
  */
 double
 SGValue::getDoubleValue () const
 {
   switch (_type) {
   case BOOL:
-    return (double)(getRawBool());
+    return (double)GET_BOOL;
   case INT:
-    return (double)(getRawInt());
+    return (double)GET_INT;
   case FLOAT:
-    return (double)(getRawFloat());
+    return (double)GET_FLOAT;
   case DOUBLE:
-    return getRawDouble();
-  case UNKNOWN:
+    return GET_DOUBLE;
   case STRING:
-    return atof(getRawString().c_str());
+  case UNKNOWN:
+    return (double)atof(GET_STRING.c_str());
   }
-  return false;
 }
 
 
 /**
- * Get the string value of a property.
- *
- * If the native type is not string, attempt to coerce it.
+ * Get a string value.
  */
-const string &
+string
 SGValue::getStringValue () const
 {
-  char buf[512];
+  char buf[128];
+
   switch (_type) {
   case BOOL:
-    if (getRawBool())
-      string_val = "true";
+    if (GET_BOOL)
+      return "true";
     else
-      string_val = "false";
-    return string_val;
+      return "false";
   case INT:
-    sprintf(buf, "%d", getRawInt());
-    string_val = buf;
-    return string_val;
+    sprintf(buf, "%d", GET_INT);
+    return buf;
   case FLOAT:
-    sprintf(buf, "%f", getRawFloat());
-    string_val = buf;
-    return string_val;
+    sprintf(buf, "%f", GET_FLOAT);
+    return buf;
   case DOUBLE:
-    sprintf(buf, "%f", getRawDouble());
-    string_val = buf;
-    return string_val;
-  case UNKNOWN:
+    sprintf(buf, "%lf", GET_DOUBLE);
+    return buf;
   case STRING:
-    return getRawString();
+  case UNKNOWN:
+    return GET_STRING;
   }
-  return empty_string;
 }
 
 
 /**
- * Set the boolean value and change the type if unknown.
- *
- * Returns true on success.
+ * Set a bool value.
  */
 bool
 SGValue::setBoolValue (bool value)
 {
-  if (_type == UNKNOWN)
-    _type = INT;
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.bool_val = new SGRawValueInternal<bool>;
+    _type = BOOL;
+  }
+
   switch (_type) {
   case BOOL:
-    return setRawBool(value);
+    return SET_BOOL(value);
   case INT:
-    return setRawInt((int)value);
+    return SET_INT((int)value);
   case FLOAT:
-    return setRawFloat((float)value);
+    return SET_FLOAT((float)value);
   case DOUBLE:
-    return setRawDouble((double)value);
+    return SET_DOUBLE((double)value);
   case STRING:
-    if (value)
-      return setRawString("true");
-    else
-      return setRawString("false");
+    return SET_STRING(value ? "true" : "false");
   }
+
   return false;
 }
 
 
 /**
- * Set the integer value and change the type if unknown.
- *
- * Returns true on success.
+ * Set an int value.
  */
 bool
 SGValue::setIntValue (int value)
 {
-  if (_type == UNKNOWN)
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.int_val = new SGRawValueInternal<int>;
     _type = INT;
+  }
+
   switch (_type) {
   case BOOL:
-    if (value == 0)
-      return setRawBool(false);
-    else
-      return setRawBool(true);
+    return SET_BOOL(value == 0 ? false : true);
   case INT:
-    return setRawInt(value);
+    return SET_INT(value);
   case FLOAT:
-    return setRawFloat((float)value);
+    return SET_FLOAT((float)value);
   case DOUBLE:
-    return setRawDouble((double)value);
-  case STRING:
+    return SET_DOUBLE((double)value);
+  case STRING: {
     char buf[128];
     sprintf(buf, "%d", value);
-    return setRawString(buf);
+    return SET_STRING(buf);
   }
+  }
+
   return false;
 }
 
 
 /**
- * Set the floating-point value and change the type if unknown.
- *
- * Returns true on success.
+ * Set a float value.
  */
 bool
 SGValue::setFloatValue (float value)
 {
-  if (_type == UNKNOWN)
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.float_val = new SGRawValueInternal<float>;
     _type = FLOAT;
+  }
+
   switch (_type) {
   case BOOL:
-    if (value == 0.0)
-      return setRawBool(false);
-    else
-      return setRawBool(true);
+    return SET_BOOL(value == 0.0 ? false : true);
   case INT:
-    return setRawInt((int)value);
+    return SET_INT((int)value);
   case FLOAT:
-    return setRawFloat(value);
+    return SET_FLOAT(value);
   case DOUBLE:
-    return setRawDouble((double)value);
-  case STRING:
+    return SET_DOUBLE((double)value);
+  case STRING: {
     char buf[128];
     sprintf(buf, "%f", value);
-    return setRawString(buf);
+    return SET_STRING(buf);
   }
+  }
+
   return false;
 }
 
 
 /**
- * Set the double-precision value and change the type if unknown.
- *
- * Returns true on success.
+ * Set a double value.
  */
 bool
 SGValue::setDoubleValue (double value)
 {
-  if (_type == UNKNOWN)
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.double_val = new SGRawValueInternal<double>;
     _type = DOUBLE;
+  }
+
   switch (_type) {
   case BOOL:
-    if (value == 0.0L)
-      return setRawBool(false);
-    else
-      return setRawBool(true);
+    return SET_BOOL(value == 0.0L ? false : true);
   case INT:
-    return setRawInt((int)value);
+    return SET_INT((int)value);
   case FLOAT:
-    return setRawFloat((float)value);
+    return SET_FLOAT((float)value);
   case DOUBLE:
-    return setRawDouble(value);
-  case STRING:
+    return SET_DOUBLE(value);
+  case STRING: {
     char buf[128];
     sprintf(buf, "%lf", value);
-    return setRawString(buf);
+    return SET_STRING(buf);
   }
+  }
+
   return false;
 }
 
 
 /**
- * Set the string value and change the type if unknown.
- *
- * Returns true on success.
+ * Set a string value.
  */
 bool
-SGValue::setStringValue (const string &value)
+SGValue::setStringValue (string value)
 {
-  if (_type == UNKNOWN)
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.string_val = new SGRawValueInternal<string>;
     _type = STRING;
+  }
 
   switch (_type) {
   case BOOL:
-    if (value == "true" || atoi(value.c_str()) != 0)
-      return setRawBool(true);
-    else
-      return setRawBool(false);
+    return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
   case INT:
-    return setRawInt(atoi(value.c_str()));
+    return SET_INT(atoi(value.c_str()));
   case FLOAT:
-    return setRawFloat(atof(value.c_str()));
+    return SET_FLOAT(atof(value.c_str()));
   case DOUBLE:
-    return setRawDouble(atof(value.c_str()));
+    return SET_DOUBLE((double)atof(value.c_str()));
   case STRING:
-    return setRawString(value);
+    return SET_STRING(value);
   }
+
   return false;
 }
 
 
 /**
- * Set a string value and don't modify the type.
- *
- * Returns true on success.
+ * Set a value of unknown type (stored as a string).
  */
 bool
-SGValue::setUnknownValue (const string &value)
+SGValue::setUnknownValue (string value)
 {
   switch (_type) {
   case BOOL:
-    if (value == "true" || atoi(value.c_str()) != 0)
-      return setRawBool(true);
-    else
-      return setRawBool(false);
+    return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
   case INT:
-    return setRawInt(atoi(value.c_str()));
+    return SET_INT(atoi(value.c_str()));
   case FLOAT:
-    return setRawFloat(atof(value.c_str()));
+    return SET_FLOAT(atof(value.c_str()));
   case DOUBLE:
-    return setRawDouble(atof(value.c_str()));
+    return SET_DOUBLE((double)atof(value.c_str()));
   case STRING:
   case UNKNOWN:
-    return setRawString(value);
+    return SET_STRING(value);
   }
+
   return false;
 }
 
 
 /**
- * Tie a boolean value to external functions.
- *
- * If useDefault is true, attempt the assign the current value
- * (if any) after tying the functions.
- *
- * Returns true on success (i.e. the value is not currently tied).
+ * Tie a bool value.
  */
 bool
-SGValue::tieBool (bool_getter getter, bool_setter setter,
-		  bool useDefault)
+SGValue::tie (const SGRawValue<bool> &value, bool use_default)
 {
-  if (_tied) {
+  if (_tied)
     return false;
-  } else {
-    if (useDefault && setter)
-      (*setter)(getBoolValue());
-    _tied = true;
-    _type = BOOL;
-    _value.bool_func.getter = getter;
-    _value.bool_func.setter = setter;
-    return true;
-  }
+
+  bool old_val;
+  if (use_default)
+    old_val = getBoolValue();
+
+  clear_value();
+  _type = BOOL;
+  _tied = true;
+  _value.bool_val = value.clone();
+
+  if (use_default)
+    setBoolValue(old_val);
+
+  return true;
 }
 
 
 /**
- * Tie an integer value to external functions.
- *
- * If useDefault is true, attempt the assign the current value
- * (if any) after tying the functions.
- *
- * Returns true on success (i.e. the value is not currently tied).
+ * Tie an int value.
  */
 bool
-SGValue::tieInt (int_getter getter, int_setter setter,
-		 bool useDefault)
+SGValue::tie (const SGRawValue<int> &value, bool use_default)
 {
-  if (_tied) {
+  if (_tied)
     return false;
-  } else {
-    if (useDefault && setter)
-      (*setter)(getIntValue());
-    _tied = true;
-    _type = INT;
-    _value.int_func.getter = getter;
-    _value.int_func.setter = setter;
-    return true;
-  }
+
+  int old_val;
+  if (use_default)
+    old_val = getIntValue();
+
+  clear_value();
+  _type = INT;
+  _tied = true;
+  _value.int_val = value.clone();
+
+  if (use_default)
+    setIntValue(old_val);
+
+  return true;
 }
 
 
 /**
- * Tie a floating-point value to external functions.
- *
- * If useDefault is true, attempt the assign the current value
- * (if any) after tying the functions.
- *
- * Returns true on success (i.e. the value is not currently tied).
+ * Tie a float value.
  */
 bool
-SGValue::tieFloat (float_getter getter, float_setter setter,
-		   bool useDefault)
+SGValue::tie (const SGRawValue<float> &value, bool use_default)
 {
-  if (_tied) {
+  if (_tied)
     return false;
-  } else {
-    if (useDefault && setter)
-      (*setter)(getFloatValue());
-    _tied = true;
-    _type = FLOAT;
-    _value.float_func.getter = getter;
-    _value.float_func.setter = setter;
-    return true;
-  }
+
+  float old_val;
+  if (use_default)
+    old_val = getFloatValue();
+
+  clear_value();
+  _type = FLOAT;
+  _tied = true;
+  _value.float_val = value.clone();
+
+  if (use_default)
+    setFloatValue(old_val);
+
+  return true;
 }
 
 
 /**
- * Tie a double-precision floating-point value to external functions.
- *
- * If useDefault is true, attempt the assign the current value
- * (if any) after tying the functions.
- *
- * Returns true on success (i.e. the value is not currently tied).
+ * Tie a double value.
  */
 bool
-SGValue::tieDouble (double_getter getter, double_setter setter,
-		    bool useDefault)
+SGValue::tie (const SGRawValue<double> &value, bool use_default)
 {
-  if (_tied) {
+  if (_tied)
     return false;
-  } else {
-    if (useDefault && setter)
-      (*setter)(getDoubleValue());
-    _tied = true;
-    _type = DOUBLE;
-    _value.double_func.getter = getter;
-    _value.double_func.setter = setter;
-    return true;
-  }
+
+  double old_val;
+  if (use_default)
+    old_val = getDoubleValue();
+
+  clear_value();
+  _type = DOUBLE;
+  _tied = true;
+  _value.double_val = value.clone();
+
+  if (use_default)
+    setDoubleValue(old_val);
+
+  return true;
 }
 
 
 /**
- * Tie a string value to external functions.
- *
- * If useDefault is true, attempt the assign the current value
- * (if any) after tying the functions.
- *
- * Returns true on success (i.e. the value is not currently tied).
+ * Tie a string value.
  */
 bool
-SGValue::tieString (string_getter getter, string_setter setter,
-		    bool useDefault)
+SGValue::tie (const SGRawValue<string> &value, bool use_default)
 {
-  if (_tied) {
+  if (_tied)
     return false;
-  } else {
-    if (useDefault && setter)
-      (*setter)(getStringValue());
-    _tied = true;
-    _type = STRING;
-    _value.string_func.getter = getter;
-    _value.string_func.setter = setter;
-    return true;
-  }
+
+  string old_val;
+  if (use_default)
+    old_val = getStringValue();
+
+  clear_value();
+  _type = STRING;
+  _tied = true;
+  _value.string_val = value.clone();
+
+  if (use_default)
+    setStringValue(old_val);
+
+  return true;
 }
 
 
 /**
- * Untie a value from external functions.
- *
- * Will always attempt to intialize the internal value from
- * the getter before untying.
- *
- * Returns true on success (i.e. the value had been tied).
+ * Untie a value.
  */
 bool
 SGValue::untie ()
@@ -707,392 +772,44 @@ SGValue::untie ()
 
   switch (_type) {
   case BOOL: {
-    bool value = getRawBool();
-    _tied = false;
-    setRawBool(value);
+    bool val = getBoolValue();
+    clear_value();
+    _value.bool_val = new SGRawValueInternal<bool>;
+    SET_BOOL(val);
     break;
   }
   case INT: {
-    int value = getRawInt();
-    _tied = false;
-    setRawInt(value);
+    int val = getIntValue();
+    clear_value();
+    _value.int_val = new SGRawValueInternal<int>;
+    SET_INT(val);
     break;
   }
   case FLOAT: {
-    float value = getRawFloat();
-    _tied = false;
-    setRawFloat(value);
+    float val = getFloatValue();
+    clear_value();
+    _value.float_val = new SGRawValueInternal<float>;
+    SET_FLOAT(val);
     break;
   }
   case DOUBLE: {
-    double value = getRawDouble();
-    _tied = false;
-    setRawDouble(value);
+    double val = getDoubleValue();
+    clear_value();
+    _value.double_val = new SGRawValueInternal<double>;
+    SET_DOUBLE(val);
     break;
   }
   case STRING: {
-    string value = getRawString();
-    _tied = false;
-    setRawString(value);
+    string val = getStringValue();
+    clear_value();
+    _value.string_val = new SGRawValueInternal<string>;
+    SET_STRING(val);
     break;
   }
   }
 
+  _tied = false;
   return true;
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGPropertyList.
-////////////////////////////////////////////////////////////////////////
-
-
-/**
- * Constructor.
- */
-SGPropertyList::SGPropertyList ()
-{
-}
-
-
-/**
- * Destructor.
- */
-SGPropertyList::~SGPropertyList ()
-{
-}
-
-
-/**
- * Return true if a value is present.
- */
-bool
-SGPropertyList::hasValue (const string &name) const
-{
-  const_iterator el = _props.find(name);
-  if (el == _props.end())
-    return false;
-  else
-    return true;
-}
-
-
-/**
- * Look up the SGValue structure associated with a property.
- *
- * Run some basic validity checks on the property name: it must
- * not be empty, must begin with '/', must never have two '//' in a row,
- * and must not end with '/'.
- */
-SGValue *
-SGPropertyList::getValue (const string &name, bool create)
-{
-  const_iterator el = _props.find(name);
-  if (el == _props.end()) {
-    if (!create)
-      return 0;
-    else {
-      FG_LOG(FG_GENERAL, FG_DEBUG, "Creating new property '" << name << '\'');
-      if (name.size() == 0 ||
-	  name[0] != '/' ||
-	  name[name.size()-1] == '/' ||
-	  name.find("//") != string::npos) {
-	FG_LOG(FG_GENERAL, FG_ALERT, "Illegal property name: '"
-	       << name << '\'');
-	return 0;
-      }
-    }
-  }
-  return &(_props[name]);
-}
-
-
-/**
- * Look up a const value (never created).
- */
-const SGValue *
-SGPropertyList::getValue (const string &name) const
-{
-  value_map::const_iterator el = _props.find(name);
-  if (el == _props.end())
-    return 0;
-  else
-    return &(el->second);
-}
-
-
-/**
- * Extract a boolean from the value.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to get the SGValue and query it repeatedly.
- */
-bool
-SGPropertyList::getBoolValue (const string &name, bool defaultValue) const
-{
-  const SGValue * val = getValue(name);
-  if (val == 0)
-    return defaultValue;
-  else
-    return val->getBoolValue();
-}
-
-
-/**
- * Extract an integer from the value.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to get the SGValue and query it repeatedly.
- */
-int
-SGPropertyList::getIntValue (const string &name, int defaultValue) const
-{
-  const SGValue * val = getValue(name);
-  if (val == 0)
-    return defaultValue;
-  else
-    return val->getIntValue();
-}
-
-
-/**
- * Extract a float from the value.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to get the SGValue and query it repeatedly.
- */
-float
-SGPropertyList::getFloatValue (const string &name, float defaultValue) const
-{
-  const SGValue * val = getValue(name);
-  if (val == 0)
-    return defaultValue;
-  else
-    return val->getFloatValue();
-}
-
-
-/**
- * Extract a double from the value.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to get the SGValue and query it repeatedly.
- */
-double
-SGPropertyList::getDoubleValue (const string &name, double defaultValue) const
-{
-  const SGValue * val = getValue(name);
-  if (val == 0)
-    return defaultValue;
-  else
-    return val->getDoubleValue();
-}
-
-
-/**
- * Extract a string from the value.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and query it repeatedly.
- */
-const string &
-SGPropertyList::getStringValue (const string &name,
-				const string &defaultValue) const
-{
-  const SGValue * val = getValue(name);
-  if (val == 0)
-    return defaultValue;
-  else
-    return val->getStringValue();
-}
-
-
-/**
- * Assign a bool to the value and change the type if unknown.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setBoolValue (const string &name, bool value)
-{
-  return getValue(name, true)->setBoolValue(value);
-}
-
-
-/**
- * Assign an integer to the value and change the type if unknown.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setIntValue (const string &name, int value)
-{
-  return getValue(name, true)->setIntValue(value);
-}
-
-
-/**
- * Assign a float to the value and change the type if unknown.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setFloatValue (const string &name, float value)
-{
-  return getValue(name, true)->setFloatValue(value);
-}
-
-
-/**
- * Assign a double to the value and change the type if unknown.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setDoubleValue (const string &name, double value)
-{
-  return getValue(name, true)->setDoubleValue(value);
-}
-
-
-/**
- * Assign a string to the value and change the type if unknown.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setStringValue (const string &name, const string &value)
-{
-  return getValue(name, true)->setStringValue(value);
-}
-
-
-/**
- * Assign a string to the value, but don't change the type.
- *
- * Note that this is inefficient for use in a tight loop: it is
- * better to save the SGValue and modify it repeatedly.
- *
- * Returns true on success.
- */
-bool
-SGPropertyList::setUnknownValue (const string &name, const string &value)
-{
-  return getValue(name, true)->setUnknownValue(value);
-}
-
-
-/**
- * Tie a boolean value to external functions.
- *
- * Invokes SGValue::tieBool
- */
-bool
-SGPropertyList::tieBool (const string &name, 
-			 bool_getter getter,
-			 bool_setter setter,
-			 bool useDefault)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying bool property '" << name << '\'');
-  useDefault = useDefault && hasValue(name);
-  return getValue(name, true)->tieBool(getter, setter, useDefault);
-}
-
-
-/**
- * Tie an integer value to external functions.
- *
- * Invokes SGValue::tieInt
- */
-bool
-SGPropertyList::tieInt (const string &name, 
-			int_getter getter,
-			int_setter setter,
-			bool useDefault)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying int property '" << name << '\'');
-  useDefault = useDefault && hasValue(name);
-  return getValue(name, true)->tieInt(getter, setter, useDefault);
-}
-
-
-/**
- * Tie a float value to external functions.
- *
- * Invokes SGValue::tieFloat
- */
-bool
-SGPropertyList::tieFloat (const string &name, 
-			  float_getter getter,
-			  float_setter setter,
-			  bool useDefault)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying float property '" << name << '\'');
-  useDefault = useDefault && hasValue(name);
-  return getValue(name, true)->tieFloat(getter, setter, useDefault);
-}
-
-
-/**
- * Tie a double value to external functions.
- *
- * Invokes SGValue::tieDouble
- */
-bool
-SGPropertyList::tieDouble (const string &name, 
-			   double_getter getter,
-			   double_setter setter,
-			   bool useDefault)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying double property '" << name << '\'');
-  useDefault = useDefault && hasValue(name);
-  return getValue(name, true)->tieDouble(getter, setter, useDefault);
-}
-
-
-/**
- * Tie a string value to external functions.
- *
- * Invokes SGValue::tieString
- */
-bool
-SGPropertyList::tieString (const string &name, 
-			   string_getter getter,
-			   string_setter setter,
-			   bool useDefault)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Tying string property '" << name << '\'');
-  useDefault = useDefault && hasValue(name);
-  return getValue(name, true)->tieString(getter, setter, useDefault);
-}
-
-
-/**
- * Untie a value from external functions.
- *
- * Invokes SGValue::untie
- */
-bool
-SGPropertyList::untie (const string &name)
-{
-  FG_LOG(FG_GENERAL, FG_DEBUG, "Untying property '" << name << '\'');
-  return getValue(name, true)->untie();
 }
 
 
@@ -1103,321 +820,556 @@ SGPropertyList::untie (const string &name)
 
 
 /**
- * Extract the base name of the next level down from the parent.
- *
- * The parent must have a '/' appended.  Note that basename may
- * be modified even if the test fails.
+ * Default constructor: always creates a root node.
  */
-static bool
-get_base (const string &parent, const string &child,
-	     string &basename)
+SGPropertyNode::SGPropertyNode ()
+  : _value(0), _name(""), _index(0), _parent(0)
 {
-				// First, check that the parent name
-				// is a prefix of the child name, and
-				// extract the remainder
-  if (child.find(parent) != 0)
-    return false;
-
-  basename = child.substr(parent.size());
-
-  string::size_type pos = basename.find('/');
-  if (pos != string::npos) {
-    basename.resize(pos);
-  }
-
-  if (basename.size() == 0)
-    return false;
-  else
-    return true;
 }
 
 
 /**
- * Constructor.
+ * Convenience constructor.
  */
-SGPropertyNode::SGPropertyNode (const string &path,
-				SGPropertyList * props)
-  : _props(props), _node(0)
+SGPropertyNode::SGPropertyNode (const string &name,
+				int index, SGPropertyNode * parent)
+  : _value(0), _name(name), _index(index), _parent(parent)
 {
-  setPath(path);
 }
 
-
-/**
- * Destructor.
- */
 SGPropertyNode::~SGPropertyNode ()
 {
-  delete _node;
-  _node = 0;
+  delete _value;
+  for (int i = 0; i < _children.size(); i++)
+    delete _children[i];
 }
 
-
-/**
- * Set the path.
- *
- * Strip the trailing '/', if any.
- */
-void
-SGPropertyNode::setPath (const string &path)
+SGPropertyNode *
+SGPropertyNode::getChild (int position)
 {
-  _path = path;
-
-				// Chop the final '/', if present.
-  if (_path.size() > 0 && _path[_path.size()-1] == '/')
-    _path.resize(_path.size()-1);
-}
-
-
-/**
- * Return the local name of the property.
- *
- * The local name is just everything after the last slash.
- */
-const string &
-SGPropertyNode::getName () const
-{
-  string::size_type pos = _path.rfind('/');
-  if (pos != string::npos) {
-    _name = _path.substr(pos+1);
-    return _name;
-  } else {
-    return empty_string;
-  }
-}
-
-
-/**
- * Return the number of children for the current node.
- */
-int
-SGPropertyNode::size () const
-{
-  if (_props == 0)
+  if (position >= 0 && position < nChildren())
+    return _children[position];
+  else
     return 0;
-
-  int s = 0;
-
-  string base;
-  string lastBase;
-  string pattern = _path;
-  pattern += '/';
-
-  SGPropertyList::const_iterator it = _props->begin();
-  SGPropertyList::const_iterator end = _props->end();
-  while (it != end) {
-    if (get_base(pattern, it->first, base) && base != lastBase) {
-      s++;
-      lastBase = base;
-    }
-    it++;
-  }
-
-  return s;
 }
 
-
-/**
- * Initialize a node to represent this node's parent.
- *
- * A return value of true means success; otherwise, the node supplied
- * is unmodified.
- */
-SGPropertyNode &
-SGPropertyNode::getParent () const
+const SGPropertyNode *
+SGPropertyNode::getChild (int position) const
 {
-  if (_node == 0)
-    _node = new SGPropertyNode();
-
-  string::size_type pos = _path.rfind('/');
-  if (pos != string::npos) {
-    _node->setPropertyList(_props);
-    _node->setPath(_path.substr(0, pos-1));
-  }
-  return *_node;
+  if (position >= 0 && position < nChildren())
+    return _children[position];
+  else
+    return 0;
 }
 
-
-/**
- * Initialize a node to represent this node's nth child.
- *
- * A return value of true means success; otherwise, the node supplied
- * is unmodified.
- */
-SGPropertyNode &
-SGPropertyNode::getChild (int n) const
+SGPropertyNode *
+SGPropertyNode::getChild (const string &name, int index, bool create)
 {
-  if (_node == 0)
-    _node = new SGPropertyNode();
-
-  if (_props == 0)
-    return *_node;
-
-  int s = 0;
-  string base;
-  string lastBase;
-  string pattern = _path;
-  pattern += '/';
-
-  SGPropertyList::const_iterator it = _props->begin();
-  SGPropertyList::const_iterator end = _props->end();
-  while (it != end) {
-    if (get_base(pattern, it->first, base) && base != lastBase) {
-      if (s == n) {
-	_node->setPropertyList(_props);
-	_node->setPath(_path + string("/") + base);
-	return *_node;
-      } else {
-	s++;
-	lastBase = base;
-      }
-    }
-    it++;
+  int pos = find_child(name, index, _children);
+  if (pos >= 0) {
+    return getChild(pos);
+  } else if (create) {
+    _children.push_back(new SGPropertyNode(name, index, this));
+    return _children[_children.size()-1];
+  } else {
+    return 0;
   }
-
-  return *_node;
 }
 
-
-/**
- * Return a node for an arbitrary subpath.
- *
- * Never returns 0.
- */
-SGPropertyNode &
-SGPropertyNode::getSubNode (const string &subpath) const
+const SGPropertyNode *
+SGPropertyNode::getChild (const string &name, int index) const
 {
-  if (_node == 0)
-    _node = new SGPropertyNode();
+  int pos = find_child(name, index, _children);
+  if (pos >= 0)
+    _children[_children.size()-1];
+  else
+    return 0;
+}
 
-  _node->setPropertyList(_props);
-  _node->setPath(_path + string("/") + subpath);
-  return *_node;
+
+class CompareIndices
+{
+public:
+  int operator() (const SGPropertyNode * n1, const SGPropertyNode *n2) const {
+    return (n1->getIndex() < n2->getIndex());
+  }
+};
+
+
+/**
+ * Get all children with the same name (but different indices).
+ */
+vector<SGPropertyNode *>
+SGPropertyNode::getChildren (const string &name)
+{
+  vector<SGPropertyNode *> children;
+  int max = _children.size();
+
+  for (int i = 0; i < max; i++)
+    if (_children[i]->getName() == name)
+      children.push_back(_children[i]);
+
+  sort(children.begin(), children.end(), CompareIndices());
+  return children;
 }
 
 
 /**
- * Test whether the specified subpath has a value.
+ * Get all children with the same name (but different indices).
+ */
+vector<const SGPropertyNode *>
+SGPropertyNode::getChildren (const string &name) const
+{
+  vector<const SGPropertyNode *> children;
+  int max = _children.size();
+
+  for (int i = 0; i < max; i++)
+    if (_children[i]->getName() == name)
+      children.push_back(_children[i]);
+
+  sort(children.begin(), children.end(), CompareIndices());
+  return children;
+}
+
+
+string
+SGPropertyNode::getPath (bool simplify) const
+{
+  if (_parent == 0)
+    return "";
+
+  string path = _parent->getPath(simplify);
+  path += '/';
+  path += _name;
+  if (_index != 0 || !simplify) {
+    char buffer[128];
+    sprintf(buffer, "[%d]", _index);
+    path += buffer;
+  }
+  return path;
+}
+
+SGValue::Type
+SGPropertyNode::getType () const
+{
+  if (_value != 0)
+    return _value->getType();
+  else
+    return SGValue::UNKNOWN;
+}
+
+bool 
+SGPropertyNode::getBoolValue () const
+{
+  return (_value == 0 ? SGRawValue<bool>::DefaultValue
+	  : _value->getBoolValue());
+}
+
+int 
+SGPropertyNode::getIntValue () const
+{
+  return (_value == 0 ? SGRawValue<int>::DefaultValue
+	  : _value->getIntValue());
+}
+
+float 
+SGPropertyNode::getFloatValue () const
+{
+  return (_value == 0 ? SGRawValue<float>::DefaultValue
+	  : _value->getFloatValue());
+}
+
+double 
+SGPropertyNode::getDoubleValue () const
+{
+  return (_value == 0 ? SGRawValue<double>::DefaultValue
+	  : _value->getDoubleValue());
+}
+
+string
+SGPropertyNode::getStringValue () const
+{
+  return (_value == 0 ? SGRawValue<string>::DefaultValue
+	  : _value->getStringValue());
+}
+
+bool
+SGPropertyNode::setBoolValue (bool val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setBoolValue(val);
+}
+
+bool
+SGPropertyNode::setIntValue (int val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setIntValue(val);
+}
+
+bool
+SGPropertyNode::setFloatValue (float val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setFloatValue(val);
+}
+
+bool
+SGPropertyNode::setDoubleValue (double val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setDoubleValue(val);
+}
+
+bool
+SGPropertyNode::setStringValue (string val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setStringValue(val);
+}
+
+bool
+SGPropertyNode::setUnknownValue (string val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setUnknownValue(val);
+}
+
+bool
+SGPropertyNode::isTied () const
+{
+  return (_value == 0 ? false : _value->isTied());
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
+{
+  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
+{
+  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<float> &rawValue, bool useDefault)
+{
+  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
+{
+  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<string> &rawValue, bool useDefault)
+{
+  return (_value == 0 ? false : _value->tie(rawValue, useDefault));
+}
+
+bool
+SGPropertyNode::untie ()
+{
+  return (_value == 0 ? false : _value->untie());
+}
+
+SGPropertyNode *
+SGPropertyNode::getRootNode ()
+{
+  if (_parent == 0)
+    return this;
+  else
+    return _parent->getRootNode();
+}
+
+const SGPropertyNode *
+SGPropertyNode::getRootNode () const
+{
+  if (_parent == 0)
+    return this;
+  else
+    return _parent->getRootNode();
+}
+
+SGPropertyNode *
+SGPropertyNode::getNode (const string &relative_path, bool create)
+{
+  vector<PathComponent> components;
+  parse_path(relative_path, components);
+  return find_node(this, components, 0, create);
+}
+
+const SGPropertyNode *
+SGPropertyNode::getNode (const string &relative_path) const
+{
+  vector<PathComponent> components;
+  parse_path(relative_path, components);
+				// FIXME: cast away const
+  return find_node((SGPropertyNode *)this, components, 0, false);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Convenience methods using relative paths.
+////////////////////////////////////////////////////////////////////////
+
+
+/**
+ * Test whether another node has a value attached.
  */
 bool
-SGPropertyNode::hasValue (const string &subpath) const
+SGPropertyNode::hasValue (const string &relative_path) const
 {
-  if (_props == 0)
-    return false;
-
-  if (subpath.size() == 0)
-    return _props->hasValue(_path);
-  else
-    return _props->hasValue(_path + string("/") + subpath);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? false : node->hasValue());
 }
 
 
 /**
- * Return the value of the current node.
- *
- * Currently, this does a lookup each time, but we could cache the
- * value safely as long as it's non-zero.
- *
- * Note that this will not create the value if it doesn't already exist.
+ * Get the value for another node.
  */
 SGValue *
-SGPropertyNode::getValue (const string &subpath)
+SGPropertyNode::getValue (const string &relative_path, bool create)
 {
-  if (_props == 0)
-    return 0;
-
-  if (subpath.size() == 0)
-    return _props->getValue(_path);
-  else
-    return _props->getValue(_path + string("/") + subpath);
+  SGPropertyNode * node = getNode(relative_path, create);
+  if (node != 0 && !node->hasValue())
+    node->setUnknownValue("");
+  return (node == 0 ? 0 : node->getValue());
 }
 
 
 /**
- * Return a bool value.
+ * Get the value for another node.
+ */
+const SGValue *
+SGPropertyNode::getValue (const string &relative_path) const
+{
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? 0 : node->getValue());
+}
+
+
+/**
+ * Get the value type for another node.
+ */
+SGValue::Type
+SGPropertyNode::getType (const string &relative_path) const
+{
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? SGValue::UNKNOWN : node->getType());
+}
+
+
+/**
+ * Get a bool value for another node.
  */
 bool
-SGPropertyNode::getBoolValue (const string &subpath, bool defaultValue) const
+SGPropertyNode::getBoolValue (const string &relative_path,
+			      bool defaultValue) const
 {
-  if (_props == 0)
-    return defaultValue;
-
-  if (subpath == "")
-    return _props->getBoolValue(_path, defaultValue);
-  else
-    return _props->getBoolValue(_path + string("/") + subpath,
-				defaultValue);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getBoolValue());
 }
 
 
 /**
- * Return an int value.
+ * Get an int value for another node.
  */
 int
-SGPropertyNode::getIntValue (const string &subpath, int defaultValue) const
+SGPropertyNode::getIntValue (const string &relative_path,
+			     int defaultValue) const
 {
-  if (_props == 0)
-    return defaultValue;
-
-  if (subpath == "")
-    return _props->getIntValue(_path, defaultValue);
-  else
-    return _props->getIntValue(_path + string("/") + subpath,
-			       defaultValue);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getIntValue());
 }
 
 
 /**
- * Return a float value.
+ * Get a float value for another node.
  */
 float
-SGPropertyNode::getFloatValue (const string &subpath, float defaultValue) const
+SGPropertyNode::getFloatValue (const string &relative_path,
+			       float defaultValue) const
 {
-  if (_props == 0)
-    return defaultValue;
-
-  if (subpath == "")
-    return _props->getFloatValue(_path, defaultValue);
-  else
-    return _props->getFloatValue(_path + string("/") + subpath,
-				 defaultValue);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getFloatValue());
 }
 
 
 /**
- * Return a double value.
+ * Get a double value for another node.
  */
 double
-SGPropertyNode::getDoubleValue (const string &subpath,
+SGPropertyNode::getDoubleValue (const string &relative_path,
 				double defaultValue) const
 {
-  if (_props == 0)
-    return defaultValue;
-
-  if (subpath == "")
-    return _props->getDoubleValue(_path, defaultValue);
-  else
-    return _props->getDoubleValue(_path + string("/") + subpath,
-				  defaultValue);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getDoubleValue());
 }
 
 
 /**
- * Return a string value.
+ * Get a string value for another node.
  */
-const string &
-SGPropertyNode::getStringValue (const string &subpath,
-				const string &defaultValue) const
+string
+SGPropertyNode::getStringValue (const string &relative_path,
+				string defaultValue) const
 {
-  if (_props == 0)
-    return defaultValue;
-
-  if (subpath == "")
-    return _props->getStringValue(_path, defaultValue);
-  else
-    return _props->getStringValue(_path + string("/") + subpath,
-				  defaultValue);
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getStringValue());
 }
 
+
+/**
+ * Set a bool value for another node.
+ */
+bool
+SGPropertyNode::setBoolValue (const string &relative_path, bool value)
+{
+  return getNode(relative_path, true)->setBoolValue(value);
+}
+
+
+/**
+ * Set an int value for another node.
+ */
+bool
+SGPropertyNode::setIntValue (const string &relative_path, int value)
+{
+  return getNode(relative_path, true)->setIntValue(value);
+}
+
+
+/**
+ * Set a float value for another node.
+ */
+bool
+SGPropertyNode::setFloatValue (const string &relative_path, float value)
+{
+  return getNode(relative_path, true)->setFloatValue(value);
+}
+
+
+/**
+ * Set a double value for another node.
+ */
+bool
+SGPropertyNode::setDoubleValue (const string &relative_path, double value)
+{
+  return getNode(relative_path, true)->setDoubleValue(value);
+}
+
+
+/**
+ * Set a string value for another node.
+ */
+bool
+SGPropertyNode::setStringValue (const string &relative_path, string value)
+{
+  return getNode(relative_path, true)->setStringValue(value);
+}
+
+
+/**
+ * Set an unknown value for another node.
+ */
+bool
+SGPropertyNode::setUnknownValue (const string &relative_path, string value)
+{
+  return getNode(relative_path, true)->setUnknownValue(value);
+}
+
+
+/**
+ * Test whether another node is tied.
+ */
+bool
+SGPropertyNode::isTied (const string &relative_path) const
+{
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? false : node->isTied());
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<bool> &rawValue,
+		     bool useDefault = true)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<int> &rawValue,
+		     bool useDefault = true)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<float> &rawValue,
+		     bool useDefault = true)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<double> &rawValue,
+		     bool useDefault = true)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<string> &rawValue,
+		     bool useDefault = true)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Attempt to untie another node reached by a relative path.
+ */
+bool
+SGPropertyNode::untie (const string &relative_path)
+{
+  SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? false : node->untie());
+}
 
 // end of props.cxx

@@ -3,7 +3,6 @@
 #  include <config.h>
 #endif
 
-#include <string.h>		// strcmp()
 #include <stdlib.h>		// atof() atoi()
 
 #include <simgear/debug/logstream.hxx>
@@ -16,200 +15,159 @@
 #include <string>
 #include <vector>
 
-FG_USING_STD(ofstream);
-FG_USING_STD(ifstream);
-FG_USING_STD(string);
-FG_USING_STD(vector);
+using std::istream;
+using std::ifstream;
+using std::ostream;
+using std::ofstream;
+using std::string;
+using std::vector;
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Visitor class for building the property list.
+// Property list visitor, for XML parsing.
 ////////////////////////////////////////////////////////////////////////
 
-class PropVisitor : public XMLVisitor
+class PropsVisitor : public XMLVisitor
 {
 public:
-  PropVisitor (SGPropertyList * props) : _props(props), _level(0), _ok(true) {}
-  void startDocument ();
+
+  PropsVisitor (SGPropertyNode * root) : _ok(true), _root(root), _level(0) {}
+
+  void startXML ();
+  void endXML ();
   void startElement (const char * name, const XMLAttributes &atts);
   void endElement (const char * name);
   void data (const char * s, int length);
-  void warning (const char * message, int line, int col);
-  void error (const char * message, int line, int col);
+  void warning (const char * message, int line, int column);
+  void error (const char * message, int line, int column);
 
   bool isOK () const { return _ok; }
 
 private:
 
-  void pushState (const char * name) {
-    _states.push_back(_state);
+  struct State
+  {
+    State () : node(0), type("") {}
+    State (SGPropertyNode * _node, const char * _type)
+      : node(_node), type(_type) {}
+    SGPropertyNode * node;
+    string type;
+  };
+
+  State &state () { return _state_stack[_state_stack.size() - 1]; }
+
+  void push_state (SGPropertyNode * node, const char * type) {
+    if (type == 0)
+      _state_stack.push_back(State(node, "unknown"));
+    else
+      _state_stack.push_back(State(node, type));
     _level++;
-    _state.name = name;
-    _state.type = SGValue::UNKNOWN;
-    _state.data = "";
-    _state.hasChildren = false;
-    _state.hasData = false;
+    _data = "";
   }
 
-  void popState () {
-    _state = _states.back();
-    _states.pop_back();
+  void pop_state () {
+    _state_stack.pop_back();
     _level--;
   }
 
-  struct State
-  {
-    State () : hasChildren(false), hasData(false) {}
-    string name;
-    SGValue::Type type;
-    string data;
-    bool hasChildren;
-    bool hasData;
-  };
-
-  SGPropertyList * _props;
-  State _state;
-  vector<State> _states;
-  int _level;
   bool _ok;
+  string _data;
+  SGPropertyNode * _root;
+  int _level;
+  vector<State> _state_stack;
+
 };
 
 void
-PropVisitor::startDocument ()
+PropsVisitor::startXML ()
 {
   _level = 0;
-  _ok = true;
-}
-
-
-void
-PropVisitor::startElement (const char * name, const XMLAttributes &atts)
-{
-  if (!_ok)
-    return;
-
-  if (_level == 0 && strcmp(name, "PropertyList")) {
-    _ok = false;
-    FG_LOG(FG_INPUT, FG_ALERT, "XML document has root element \""
-	   << name << "\" instead of \"PropertyList\"");
-    return;
-  }
-
-				// Mixed content?
-  _state.hasChildren = true;
-  if (_state.hasData) {
-    FG_LOG(FG_INPUT, FG_ALERT,
-	   "XML element has mixed elements and data in element "
-	   << _state.name);
-    _ok = false;
-    return;
-  }
-
-				// Start a new state.
-  pushState(name);
-
-				// See if there's a type specified.
-  const char * type = atts.getValue("type");
-  if (type == 0 || !strcmp("unknown", type))
-    _state.type = SGValue::UNKNOWN;
-  else if (!strcmp("bool", type))
-    _state.type = SGValue::BOOL;
-  else if (!strcmp("int", type))
-    _state.type = SGValue::INT;
-  else if (!strcmp("float", type))
-    _state.type = SGValue::FLOAT;
-  else if (!strcmp("double", type))
-    _state.type = SGValue::DOUBLE;
-  else if (!strcmp("string", type))
-    _state.type = SGValue::STRING;
-  else
-    FG_LOG(FG_INPUT, FG_ALERT, "Unrecognized type " << type
-	   << ", using UNKNOWN");
+  _state_stack.resize(0);
 }
 
 void
-PropVisitor::endElement (const char * name)
+PropsVisitor::endXML ()
 {
-  if (!_ok)
-    return;
+  _level = 0;
+  _state_stack.resize(0);
+}
 
-				// See if there's a property to add.
-  if (_state.hasData) {
-    bool status = false;
+void
+PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
+{
+  if (_level == 0) {
+    push_state(_root, "");
+  }
 
-				// Figure out the path name.
-    string path = "";
-    for (int i = 2; i < _level; i++) {
-      path += '/';
-      path += _states[i].name;
+  else {
+    const char * att_n = atts.getValue("n");
+    int index = 0;
+    if (att_n != 0)
+      index = atoi(att_n);
+    push_state(state().node->getChild(name, index, true),
+	       atts.getValue("type"));
+  }
+}
+
+void
+PropsVisitor::endElement (const char * name)
+{
+  State &st = state();
+  bool ret;
+
+				// If there are no children, then
+				// it is a leaf value.
+  if (st.node->nChildren() == 0) {
+    if (st.type == "bool") {
+      if (_data == "true" || atoi(_data.c_str()) != 0)
+	ret = st.node->setBoolValue(true);
+      else
+	ret = st.node->setBoolValue(false);
+    } else if (st.type == "int") {
+      ret = st.node->setIntValue(atoi(_data.c_str()));
+    } else if (st.type == "float") {
+      ret = st.node->setFloatValue(atof(_data.c_str()));
+    } else if (st.type == "double") {
+      ret = st.node->setDoubleValue(atof(_data.c_str()));
+    } else if (st.type == "string") {
+      ret = st.node->setStringValue(_data);
+    } else if (st.type == "unknown") {
+      ret = st.node->setUnknownValue(_data);
+    } else {
+      FG_LOG(FG_INPUT, FG_ALERT, "Unknown data type " << st.type
+	     << " assuming 'unknown'");
+      ret = st.node->setUnknownValue(_data);
     }
-    path += '/';
-    path += _state.name;
-
-				// Set the value
-    switch (_state.type) {
-    case SGValue::BOOL:
-      if (_state.data == "true" || _state.data == "TRUE") {
-	status = _props->setBoolValue(path, true);
-      } else if (atof(_state.data.c_str()) != 0.0) {
-	status = _props->setBoolValue(path, true);
-      } else {
-	status =_props->setBoolValue(path, false);
-      }
-      break;
-    case SGValue::INT :
-      status = _props->setIntValue(path, atoi(_state.data.c_str()));
-      break;
-    case SGValue::FLOAT:
-      status = _props->setFloatValue(path, atof(_state.data.c_str()));
-      break;
-    case SGValue::DOUBLE:
-      status = _props->setDoubleValue(path, atof(_state.data.c_str()));
-      break;
-    case SGValue::STRING:
-      status = _props->setStringValue(path, _state.data);
-      break;
-    default:
-      status = _props->setUnknownValue(path, _state.data);
-      break;
-    }
-    if (!status)
-      FG_LOG(FG_INPUT, FG_ALERT, "Failed to set property "
-	     << path << " to " << _state.data);
   }
 
-				// Pop the stack.
-  popState();
+  if (!ret)
+    FG_LOG(FG_INPUT, FG_ALERT, "readProperties: Failed to set "
+	   << st.node->getPath() << " to value \""
+	   << _data << " with type " << st.type);
+
+  pop_state();
 }
 
 void
-PropVisitor::data (const char * s, int length)
+PropsVisitor::data (const char * s, int length)
 {
-  if (!_ok)
-    return;
-
-				// Check if there is any non-whitespace
-  if (!_state.hasData)
-    for (int i = 0; i < length; i++) 
-      if (s[i] != ' ' && s[i] != '\t' && s[i] != '\n' && s[i] != '\r')
-	_state.hasData = true;
-
-  _state.data += string(s, length); // FIXME: inefficient
+  if (state().node->nChildren() == 0)
+    _data.append(string(s, length));
 }
 
 void
-PropVisitor::warning (const char * message, int line, int col)
+PropsVisitor::warning (const char * message, int line, int column)
 {
-  FG_LOG(FG_INPUT, FG_ALERT, "Warning importing property list: "
-	 << message << " (" << line << ',' << col << ')');
+  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: warning: "
+	 << message << " at line " << line << ", column " << column);
 }
 
 void
-PropVisitor::error (const char * message, int line, int col)
+PropsVisitor::error (const char * message, int line, int column)
 {
-  FG_LOG(FG_INPUT, FG_ALERT, "Error importing property list: "
-	 << message << " (" << line << ',' << col << ')');
+  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: FATAL: "
+	 << message << " at line " << line << ", column " << column);
   _ok = false;
 }
 
@@ -220,18 +178,18 @@ PropVisitor::error (const char * message, int line, int col)
 ////////////////////////////////////////////////////////////////////////
 
 bool
-readPropertyList (istream &input, SGPropertyList * props)
+readProperties (istream &input, SGPropertyNode * start_node)
 {
-  PropVisitor visitor(props);
+  PropsVisitor visitor(start_node);
   return readXML(input, visitor) && visitor.isOK();
 }
 
 bool
-readPropertyList (const string &file, SGPropertyList * props)
+readProperties (const string &file, SGPropertyNode * start_node)
 {
   ifstream input(file.c_str());
   if (input.good()) {
-    return readPropertyList(input, props);
+    return readProperties(input, start_node);
   } else {
     FG_LOG(FG_INPUT, FG_ALERT, "Error reading property list from file "
 	   << file);
@@ -267,8 +225,6 @@ getTypeName (SGValue::Type type)
   case SGValue::STRING:
     return "string";
   }
-
-  return "unknown";		// avoid a compiler warning
 }
 
 
@@ -278,7 +234,7 @@ getTypeName (SGValue::Type type)
 static void
 writeData (ostream &output, const string &data)
 {
-  for (int i = 0; i < (int)data.size(); i++) {
+  for (int i = 0; i < data.size(); i++) {
     switch (data[i]) {
     case '&':
       output << "&amp;";
@@ -306,48 +262,54 @@ doIndent (ostream &output, int indent)
 
 
 static bool
-writeNode (ostream &output, SGPropertyNode node, int indent)
+writeNode (ostream &output, const SGPropertyNode * node, int indent)
 {
-  const string &name = node.getName();
-  int size = node.size();
+  const string &name = node->getName();
+  int index = node->getIndex();
+  int nChildren = node->nChildren();
 
-				// Write out the literal value, if any.
-  SGValue * value = node.getValue();
-  if (value != 0) {
-    SGValue::Type type = value->getType();
+				// If there is a literal value,
+				// write it first.
+  if (node->hasValue()) {
     doIndent(output, indent);
-    output << '<' << name;
-    if (type != SGValue::UNKNOWN)
-      output << " type=\"" << getTypeName(type) << '"';
-    output << '>';
-    writeData(output, value->getStringValue());
+    output << '<' << name << " n=\"" << index
+	   << "\" type=\"" << getTypeName(node->getType()) << "\">";
+    writeData(output, node->getStringValue());
+    output << "</" << name << '>' << endl;;
+  }
+
+				// If there are children, write them
+				// next.
+  if (nChildren > 0) {
+    doIndent(output, indent);
+    output << '<' << name << " n=\"" << index << "\">" << endl;;
+    for (int i = 0; i < nChildren; i++)
+      writeNode(output, node->getChild(i), indent + INDENT_STEP);
+    doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }
 
-				// Write out the children, if any.
-  if (size > 0) {
+				// If there were no children and no
+				// value, at least note the presence
+				// of the node.
+  if (nChildren == 0 && !node->hasValue()) {
     doIndent(output, indent);
-    output << '<' << name << '>' << endl;;
-    for (int i = 0; i < size; i++) {
-      writeNode(output, node.getChild(i), indent + INDENT_STEP);
-    }
-    doIndent(output, indent);
-    output << "</" << name << '>' << endl;
+    output << '<' << name << " n=\"" << index << "\"/>" << endl;
   }
 
   return true;
 }
 
 bool
-writePropertyList (ostream &output, const SGPropertyList * props)
+writeProperties (ostream &output, const SGPropertyNode * start_node)
 {
-  SGPropertyNode root ("/", (SGPropertyList *)props); // FIXME
+  int nChildren = start_node->nChildren();
 
   output << "<?xml version=\"1.0\"?>" << endl << endl;
   output << "<PropertyList>" << endl;
 
-  for (int i = 0; i < root.size(); i++) {
-    writeNode(output, root.getChild(i), INDENT_STEP);
+  for (int i = 0; i < nChildren; i++) {
+    writeNode(output, start_node->getChild(i), INDENT_STEP);
   }
 
   output << "</PropertyList>" << endl;
@@ -356,13 +318,13 @@ writePropertyList (ostream &output, const SGPropertyList * props)
 }
 
 bool
-writePropertyList (const string &file, const SGPropertyList * props)
+writeProperties (const string &file, const SGPropertyNode * start_node)
 {
   ofstream output(file.c_str());
   if (output.good()) {
-    return writePropertyList(output, props);
+    return writeProperties(output, start_node);
   } else {
-    FG_LOG(FG_INPUT, FG_ALERT, "Cannot write property list to file "
+    FG_LOG(FG_INPUT, FG_ALERT, "Cannot write properties to file "
 	   << file);
     return false;
   }

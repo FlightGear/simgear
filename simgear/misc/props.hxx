@@ -1,12 +1,6 @@
-// props.hxx -- declaration of SimGear Property Manager.
-//
-// Written by David Megginson - david@megginson.com
-//
-// This module is in the PUBLIC DOMAIN.
-//
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// props.hxx - interface definition for a property list.
+// Started Fall 2000 by David Megginson, david@megginson.com
+// This code is released into the Public Domain.
 //
 // See props.html for documentation [replace with URL when available].
 //
@@ -18,11 +12,11 @@
 #include <stdio.h>
 
 #include <string>
-#include <map>
+#include <vector>
 #include <iostream>
 
 using std::string;
-using std::map;
+using std::vector;
 using std::istream;
 using std::ostream;
 
@@ -59,146 +53,287 @@ using std::ostream;
 
 
 ////////////////////////////////////////////////////////////////////////
-// Values.
+// A raw value.
+//
+// This is the mechanism that information-providing routines can
+// use to link their own values to the property manager.  Any
+// SGValue can be tied to a raw value and then untied again.
 ////////////////////////////////////////////////////////////////////////
 
+
 /**
- * Abstract representation of a FlightGear value.
+ * Abstract base class for a raw value.
  *
- * This value is designed to be fairly robust -- it can exist without
- * a specified value, it can be any of several types, and it can
- * be tied to an external variable without disrupting any existing
- * pointers or references to the value.  Some basic type conversions
- * are also handled automatically.
+ * Unlike values, raw values are not persistent -- the raw value can
+ * change frequently, but the changes are not visible to the application.
  *
- * Values also have attributes that control whether they can be read
- * from, written to, or archived (i.e. saved to disk).
+ * The SGValue class always keeps a *copy* of a raw value, not the
+ * original one passed to it; if you override a derived class but do
+ * not replace the clone() method, strange things will happen.
+ *
+ * All raw values must implement getValue, setValue, and clone for the
+ * appropriate type.
  */
+template <class T>
+class SGRawValue
+{
+public:
+  static const T DefaultValue;	// Default for this kind of raw value.
+
+  SGRawValue () {}
+  virtual ~SGRawValue () {}
+  virtual T getValue () const = 0;
+  virtual bool setValue (T value) = 0;
+  virtual SGRawValue * clone () const = 0;
+};
+
+
+/**
+ * A value managed internally.
+ *
+ * Instances of this class are created automatically, by default,
+ * by the SGValue class; ordinarily the application should not
+ * need to touch it.
+ */
+template <class T>
+class SGRawValueInternal : public SGRawValue<T>
+{
+public:
+  SGRawValueInternal () {}
+  SGRawValueInternal (T value) : _value(value) {}
+  virtual ~SGRawValueInternal () {}
+  virtual T getValue () const { return _value; }
+  virtual bool setValue (T value) { _value = value; return true; }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValueInternal<T>(_value);
+  }
+private:
+  T _value;
+};
+
+
+/**
+ * A value managed through a direct pointer.
+ *
+ * This is the most efficient way to tie an external value, but also
+ * the most dangerous, because there is no way for the supplier to
+ * perform bounds checking and derived calculations except by polling
+ * the variable to see if it has changed.
+ */
+template <class T>
+class SGRawValuePointer : public SGRawValue<T>
+{
+public:
+  SGRawValuePointer (T * ptr) : _ptr(ptr) {}
+  virtual ~SGRawValuePointer () {}
+  virtual T getValue () const { return *_ptr; }
+  virtual bool setValue (T value) { *_ptr = value; return true; }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValuePointer<T>(_ptr);
+  }
+private:
+  T * _ptr;
+};
+
+
+/**
+ * A value managed through static functions.
+ *
+ * A read-only value will not have a setter; a write-only value will
+ * not have a getter.
+ */
+template <class T>
+class SGRawValueFunctions : public SGRawValue<T>
+{
+public:
+  typedef T (*getter_t)();
+  typedef void (*setter_t)(T);
+  SGRawValueFunctions (getter_t getter = 0, setter_t setter = 0)
+    : _getter(getter), _setter(setter) {}
+  virtual ~SGRawValueFunctions () {}
+  virtual T getValue () const {
+    if (_getter) return (*_getter)();
+    else return DefaultValue;
+  }
+  virtual bool setValue (T value) {
+    if (_setter) { (*_setter)(value); return true; }
+    else return false;
+  }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValueFunctions<T>(_getter,_setter);
+  }
+private:
+  getter_t _getter;
+  setter_t _setter;
+};
+
+
+/**
+ * An indexed value managed through static functions.
+ *
+ * A read-only value will not have a setter; a write-only value will
+ * not have a getter.
+ */
+template <class T>
+class SGRawValueFunctionsIndexed : public SGRawValue<T>
+{
+public:
+  typedef T (*getter_t)(int);
+  typedef void (*setter_t)(int,T);
+  SGRawValueFunctionsIndexed (int index, getter_t getter = 0, setter_t setter = 0)
+    : _index(index), _getter(getter), _setter(setter) {}
+  virtual ~SGRawValueFunctionsIndexed () {}
+  virtual T getValue () const {
+    if (_getter) return (*_getter)(_index);
+    else return DefaultValue;
+  }
+  virtual bool setValue (T value) {
+    if (_setter) { (*_setter)(_index, value); return true; }
+    else return false;
+  }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValueFunctionsIndexed<T>(_index, _getter, _setter);
+  }
+private:
+  int _index;
+  getter_t _getter;
+  setter_t _setter;
+};
+
+
+/**
+ * A value managed through an object and access methods.
+ *
+ * A read-only value will not have a setter; a write-only value will
+ * not have a getter.
+ */
+template <class C, class T>
+class SGRawValueMethods : public SGRawValue<T>
+{
+public:
+  typedef T (C::*getter_t)() const;
+  typedef void (C::*setter_t)(T);
+  SGRawValueMethods (C &obj, getter_t getter = 0, setter_t setter = 0)
+    : _obj(obj), _getter(getter), _setter(setter) {}
+  virtual ~SGRawValueMethods () {}
+  virtual T getValue () const {
+    if (_getter) { return (_obj.*_getter)(); }
+    else { return DefaultValue; }
+  }
+  virtual bool setValue (T value) {
+    if (_setter) { (_obj.*_setter)(value); return true; }
+    else return false;
+  }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValueMethods<C,T>(_obj, _getter, _setter);
+  }
+private:
+  C &_obj;
+  getter_t _getter;
+  setter_t _setter;
+};
+
+
+/**
+ * An indexed value managed through an object and access methods.
+ *
+ * A read-only value will not have a setter; a write-only value will
+ * not have a getter.
+ */
+template <class C, class T>
+class SGRawValueMethodsIndexed : public SGRawValue<T>
+{
+public:
+  typedef T (C::*getter_t)(int) const;
+  typedef void (C::*setter_t)(int, T);
+  SGRawValueMethodsIndexed (C &obj, int index,
+		     getter_t getter = 0, setter_t setter = 0)
+    : _obj(obj), _index(index), _getter(getter), _setter(setter) {}
+  virtual ~SGRawValueMethodsIndexed () {}
+  virtual T getValue () const {
+    if (_getter) { return (_obj.*_getter)(_index); }
+    else { return DefaultValue; }
+  }
+  virtual bool setValue (T value) {
+    if (_setter) { (_obj.*_setter)(_index, value); return true; }
+    else return false;
+  }
+  virtual SGRawValue<T> * clone () const {
+    return new SGRawValueMethodsIndexed<C,T>(_obj, _index, _getter, _setter);
+  }
+private:
+  C &_obj;
+  int _index;
+  getter_t _getter;
+  setter_t _setter;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////
+// A cooked value.
+//
+// This is the value that property-list clients see.  It is a 
+// persistent layer over the possibly-changing raw value; once a
+// client gets an SGValue from the property manager, the pointer
+// will be good for the life of the property manager itself, no
+// matter how often the pointer is tied or untied.
+////////////////////////////////////////////////////////////////////////
+
 class SGValue
 {
 public:
-
-				// External getters
-  typedef bool (*bool_getter)();
-  typedef int (*int_getter)();
-  typedef float (*float_getter)();
-  typedef double (*double_getter)();
-  typedef const string &(*string_getter)();
-
-				// External setters
-  typedef void (*bool_setter)(bool);
-  typedef void (*int_setter)(int);
-  typedef void (*float_setter)(float);
-  typedef void (*double_setter)(double);
-  typedef void (*string_setter)(const string &);
-
   enum Type {
-    UNKNOWN,			// no value assigned yet
-    BOOL,			// boolean
-    INT,			// integer
-    FLOAT,			// floating point
-    DOUBLE,			// double precision
-    STRING			// text
+    BOOL,
+    INT,
+    FLOAT,
+    DOUBLE,
+    STRING,
+    UNKNOWN
   };
-
   SGValue ();
-  virtual ~SGValue ();
+  SGValue (const SGValue &value);
+  ~SGValue ();
 
-				// Meta information.
-  virtual Type getType () const { return _type; }
-  virtual bool isTied () const { return _tied; }
+  Type getType () const { return _type; }
 
-				// Accessors.
-  virtual bool getBoolValue () const;
-  virtual int getIntValue () const;
-  virtual float getFloatValue () const;
-  virtual double getDoubleValue () const;
-  virtual const string & getStringValue () const;
+  bool getBoolValue () const;
+  int getIntValue () const;
+  float getFloatValue () const;
+  double getDoubleValue () const;
+  string getStringValue () const;
 
-				// Setters.
-  virtual bool setBoolValue (bool value);
-  virtual bool setIntValue (int value);
-  virtual bool setFloatValue (float value);
-  virtual bool setDoubleValue (double value);
-  virtual bool setStringValue (const string &value);
-  virtual bool setUnknownValue (const string &value);
+  bool setBoolValue (bool value);
+  bool setIntValue (int value);
+  bool setFloatValue (float value);
+  bool setDoubleValue (double value);
+  bool setStringValue (string value);
+  bool setUnknownValue (string value);
 
-				// Tie to external variables.
-  virtual bool tieBool (bool_getter getter,
-			bool_setter setter = 0,
-			bool useDefault = true);
-  virtual bool tieInt (int_getter getter,
-		       int_setter setter = 0,
-		       bool useDefault = true);
-  virtual bool tieFloat (float_getter getter,
-			 float_setter setter = 0,
-			 bool useDefault = true);
-  virtual bool tieDouble (double_getter getter,
-			  double_setter setter = 0,
-			  bool useDefault = true);
-  virtual bool tieString (string_getter getter,
-			  string_setter setter = 0,
-			  bool useDefault = true);
+  bool isTied () const { return _tied; }
 
-				// Untie from external variables.
-  virtual bool untie ();
+  bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
 
-protected:
-
-  bool getRawBool () const;
-  int getRawInt () const;
-  float getRawFloat () const;
-  double getRawDouble () const;
-  const string &getRawString () const;
-
-  bool setRawBool (bool value);
-  bool setRawInt (int value);
-  bool setRawFloat (float value);
-  bool setRawDouble (double value);
-  bool setRawString (const string & value);
+  bool untie ();
 
 private:
+
+  void clear_value ();
 
   Type _type;
   bool _tied;
 
-  mutable string string_val;
-
-				// The value is one of the following...
+				// The right kind of pointer...
   union {
-
-    bool bool_val;
-    int int_val;
-    float float_val;
-    double double_val;
-
-    struct {
-      bool_setter setter;
-      bool_getter getter;
-    } bool_func;
-
-    struct {
-      int_setter setter;
-      int_getter getter;
-    } int_func;
-
-    struct {
-      void * obj;
-      float_setter setter;
-      float_getter getter;
-    } float_func;
-
-    struct {
-      void * obj;
-      double_setter setter;
-      double_getter getter;
-    } double_func;
-
-    struct {
-      string_setter setter;
-      string_getter getter;
-    } string_func;
-
+    SGRawValue<bool> * bool_val;
+    SGRawValue<int> * int_val;
+    SGRawValue<float> * float_val;
+    SGRawValue<double> * double_val;
+    SGRawValue<string> * string_val;
   } _value;
 
 };
@@ -206,223 +341,138 @@ private:
 
 
 ////////////////////////////////////////////////////////////////////////
-// Top-level manager.
+// A node in a property tree.
 ////////////////////////////////////////////////////////////////////////
 
-
-/**
- * A list of FlightGear properties.
- *
- * This list associates names (conventional written as paths,
- * i.e. "/foo/bar/hack") with SGValue classes.  Once an SGValue
- * object is associated with the name, the association is
- * permanent -- it is safe to keep a pointer or reference.
- * however, that the type of a value may change if it is tied
- * to a variable.
- *
- * When iterating through the list, the value type is
- *
- *   pair<string,SGValue>
- *
- * To get the name from a const_iterator, use
- *
- *   it->first
- *
- * and to get the value from a const_iterator, use
- *
- *   it->second
- */
-class SGPropertyList
-{
-public:
-  typedef map<string, SGValue> value_map;
-
-  typedef SGValue::bool_getter bool_getter;
-  typedef SGValue::int_getter int_getter;
-  typedef SGValue::float_getter float_getter;
-  typedef SGValue::double_getter double_getter;
-  typedef SGValue::string_getter string_getter;
-
-  typedef SGValue::bool_setter bool_setter;
-  typedef SGValue::int_setter int_setter;
-  typedef SGValue::float_setter float_setter;
-  typedef SGValue::double_setter double_setter;
-  typedef SGValue::string_setter string_setter;
-
-  typedef value_map::value_type value_type;
-  typedef value_map::size_type size_type;
-  typedef value_map::const_iterator const_iterator;
-
-  SGPropertyList ();
-  virtual ~SGPropertyList ();
-
-  virtual size_type size () const { return _props.size(); }
-
-  virtual const_iterator begin () const { return _props.begin(); }
-  virtual const_iterator end () const { return _props.end(); }
-
-  virtual bool hasValue (const string &name) const;
-
-  virtual SGValue * getValue (const string &name, bool create = false);
-  virtual const SGValue * getValue (const string &name) const;
-
-  virtual bool getBoolValue (const string &name,
-			     bool defaultValue = false) const;
-  virtual int getIntValue (const string &name,
-			   int defaultValue = 0) const;
-  virtual float getFloatValue (const string &name,
-			       float defaultValue = 0.0) const;
-  virtual double getDoubleValue (const string &name,
-				 double defaultValue = 0.0L) const;
-  virtual const string & getStringValue (const string &name,
-					 const string &defaultValue = "")
-    const;
-
-  virtual bool setBoolValue (const string &name, bool value);
-  virtual bool setIntValue (const string &name, int value);
-  virtual bool setFloatValue (const string &name, float value);
-  virtual bool setDoubleValue (const string &name, double value);
-  virtual bool setStringValue (const string &name, const string &value);
-  virtual bool setUnknownValue (const string &name, const string &value);
-
-  virtual bool tieBool (const string &name,
-			bool_getter getter,
-			bool_setter setter = 0,
-			bool useDefault = true);
-  virtual bool tieInt (const string &name,
-		       int_getter getter,
-		       int_setter setter = 0,
-		       bool useDefault = true);
-  virtual bool tieFloat (const string &name,
-			 float_getter getter,
-			 float_setter setter = 0,
-			 bool useDefault = true);
-  virtual bool tieDouble (const string &name,
-			  double_getter getter,
-			  double_setter setter = 0,
-			  bool useDefault = true);
-  virtual bool tieString (const string &name,
-			  string_getter getter,
-			  string_setter setter = 0,
-			  bool useDefault = true);
-
-  virtual bool untie (const string &name);
-
-private:
-  value_map _props;
-};
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Tree/node/directory view.
-////////////////////////////////////////////////////////////////////////
-
-
-/**
- * Tree view of a property list.
- *
- * This class provides a virtual tree view of a property list, without
- * actually constructing a tree -- the view always stays in sync with
- * the property list itself.
- *
- * This class is designed to be used for setup and configuration; it is
- * optimized for ease of use rather than performance, and shouldn't be
- * used inside a tight loop.
- *
- * Every node is actually just a path together with a pointer to
- * the real property list and a few convenient operations; to the
- * user, however, it looks like a node in a tree or a file system,
- * with the regular operations such as getChild and getParent.
- *
- * Note that a node may be both a branch and a leaf -- that is, it
- * may have a value itself and it may have children.  Here is a simple
- * example that prints the names of all of the different nodes inside 
- * "/controls":
- *
- *   SGPropertyNode controls("/controls", current_property_list);
- *   SGPropertyNode child;
- *   int size = controls.size();
- *   for (int i = 0; i < size; i++) {
- *     if (controls.getChild(child, i))
- *       cout << child.getName() << endl;
- *     else
- *       cerr << "Failed to read child " << i << endl;
- *   }
- */
 class SGPropertyNode
 {
+
 public:
-				// Constructor and destructor
-  SGPropertyNode (const string &path = "", SGPropertyList * props = 0);
+
+  SGPropertyNode ();
   virtual ~SGPropertyNode ();
 
-				// Accessor and setter for the internal
-				// path.
-  virtual const string &getPath () const { return _path; }
-  virtual void setPath (const string &path);
+				// Basic properties.
+  bool hasValue () const { return (_value != 0); }
+  SGValue * getValue () { return _value; }
+  const SGValue * getValue () const { return _value; }
+  const string &getName () const { return _name; }
+  const int getIndex () const { return _index; }
+  SGPropertyNode * getParent () { return _parent; }
+  const SGPropertyNode * getParent () const { return _parent; }
 
-				// Accessor and setter for the real
-				// property list.
-  virtual SGPropertyList * getPropertyList () { return _props; }
-  virtual void setPropertyList (SGPropertyList * props) {
-    _props = props;
-  }
+				// Children.
+  const int nChildren () const { return _children.size(); }
+  SGPropertyNode * getChild (int position);
+  const SGPropertyNode * getChild (int position) const;
+  SGPropertyNode * getChild (const string &name, int index = 0,
+			     bool create = false);
+  const SGPropertyNode * getChild (const string &name, int index = 0) const;
 
-				// Accessors for derived information.
-  virtual int size () const;
-  virtual const string &getName () const;
-  virtual SGPropertyNode &getParent () const;
-  virtual SGPropertyNode &getChild (int n) const;
-  virtual SGPropertyNode &getSubNode (const string &subpath) const;
+  vector<SGPropertyNode *> getChildren (const string &name);
+  vector<const SGPropertyNode *> getChildren (const string &name) const;
 
-				// Check for a value.
-  virtual bool hasValue (const string &subpath = "") const;
+				// Path information.
+  string getPath (bool simplify = false) const;
 
-				// Get values directly.
-  virtual SGValue * getValue (const string &subpath = "");
-  virtual bool getBoolValue (const string &subpath = "",
-			     bool defaultValue = false) const;
-  virtual int getIntValue (const string &subpath = "",
-			   int defaultValue = 0) const;
-  virtual float getFloatValue (const string &subpath = "",
-			       float defaultValue = 0.0) const;
-  virtual double getDoubleValue (const string &subpath = "",
-				 double defaultValue = 0.0L) const;
-  virtual const string &
-  getStringValue (const string &subpath = "",
-		  const string &defaultValue = "") const;
+				// Relative or absolute paths.
+  SGPropertyNode * getRootNode ();
+  const SGPropertyNode * getRootNode () const;
+  SGPropertyNode * getNode (const string &relative_path, bool create = false);
+  const SGPropertyNode * getNode (const string &relative_path) const;
+
+				// Value-related stuff.
+  SGValue::Type getType () const;
+  
+  bool getBoolValue () const;
+  int getIntValue () const;
+  float getFloatValue () const;
+  double getDoubleValue () const;
+  string getStringValue () const;
+
+  bool setBoolValue (bool value);
+  bool setIntValue (int value);
+  bool setFloatValue (float value);
+  bool setDoubleValue (double value);
+  bool setStringValue (string value);
+  bool setUnknownValue (string value);
+
+  bool isTied () const;
+
+  bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
+
+  bool untie ();
+
+				// Values from paths.
+  bool hasValue (const string &relative_path) const;
+  SGValue * getValue (const string &relative_path, bool create = false);
+  const SGValue * getValue (const string &relative_path) const;
+
+  SGValue::Type getType (const string &relative_path) const;
+  
+  bool getBoolValue (const string &relative_path,
+		     bool defaultValue = false) const;
+  int getIntValue (const string &relative_path,
+		   int defaultValue = 0) const;
+  float getFloatValue (const string &relative_path,
+		       float defaultValue = 0.0) const;
+  double getDoubleValue (const string &relative_path,
+			 double defaultValue = 0.0L) const;
+  string getStringValue (const string &relative_path,
+			 string defaultValue = "") const;
+
+  bool setBoolValue (const string &relative_path, bool value);
+  bool setIntValue (const string &relative_path, int value);
+  bool setFloatValue (const string &relative_path, float value);
+  bool setDoubleValue (const string &relative_path, double value);
+  bool setStringValue (const string &relative_path, string value);
+  bool setUnknownValue (const string &relative_path, string value);
+
+  bool isTied (const string &relative_path) const;
+
+  bool tie (const string &relative_path, const SGRawValue<bool> &rawValue,
+	    bool useDefault = true);
+  bool tie (const string &relative_path, const SGRawValue<int> &rawValue,
+	    bool useDefault = true);
+  bool tie (const string &relative_path, const SGRawValue<float> &rawValue,
+	    bool useDefault = true);
+  bool tie (const string &relative_path, const SGRawValue<double> &rawValue,
+	    bool useDefault = true);
+  bool tie (const string &relative_path, const SGRawValue<string> &rawValue,
+	    bool useDefault = true);
+
+  bool untie (const string &relative_path);
+
+protected:
+
+  SGPropertyNode (const string &name, int index, SGPropertyNode * parent);
 
 private:
-  string _path;
-  SGPropertyList * _props;
-				// for pointer persistence...
-				// NOT THREAD SAFE!!!
-				// (each thread must have its own node
-				// object)
-  mutable string _name;
-  mutable SGPropertyNode * _node;
+
+  SGPropertyNode (const SGPropertyNode &node) {}
+
+  SGValue * _value;
+  string _name;
+  int _index;
+  SGPropertyNode * _parent;
+  vector<SGPropertyNode *> _children;
+
 };
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Input and output.
+// I/O functions.
 ////////////////////////////////////////////////////////////////////////
 
-extern bool readPropertyList (istream &input, SGPropertyList * props);
-extern bool readPropertyList (const string &file, SGPropertyList * props);
-extern bool writePropertyList (ostream &output, const SGPropertyList * props);
-extern bool writePropertyList (const string &file,
-			       const SGPropertyList * props);
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Global property manager.
-////////////////////////////////////////////////////////////////////////
-
-extern SGPropertyList current_properties;
+bool readProperties (istream &input, SGPropertyNode * start_node);
+bool readProperties (const string &file, SGPropertyNode * start_node);
+bool writeProperties (ostream &output, const SGPropertyNode * start_node);
+bool writeProperties (const string &file, const SGPropertyNode * start_node);
 
 
 #endif // __PROPS_HXX

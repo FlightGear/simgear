@@ -23,6 +23,8 @@
 // $Id$
 
 
+#include <GL/gl.h>
+
 /**
  * Dump the screen buffer to a ppm file.
  * @param filename name of file

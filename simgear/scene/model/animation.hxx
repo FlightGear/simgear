@@ -222,6 +222,28 @@ private:
 };
 
 /**
+ * Animation to blend an object.
+ */
+class SGBlendAnimation : public SGAnimation
+{
+public:
+  SGBlendAnimation( SGPropertyNode *prop_root,
+                      SGPropertyNode_ptr props );
+  virtual ~SGBlendAnimation ();
+  virtual void update();
+private:
+  SGPropertyNode_ptr _prop;
+  SGInterpTable * _table;
+  double _prev_value;
+  double _offset;
+  double _factor;
+  bool _has_min;
+  double _min;
+  bool _has_max;
+  double _max;
+};
+
+/**
  * Animation to scale an object.
  */
 class SGScaleAnimation : public SGAnimation

@@ -129,6 +129,8 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGTexTranslateAnimation(prop_root, node);
   } else if (!strcmp("texmultiple", type)) {
     animation = new SGTexMultipleAnimation(prop_root, node);
+  } else if (!strcmp("blend", type)) {
+    animation = new SGBlendAnimation(prop_root, node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);

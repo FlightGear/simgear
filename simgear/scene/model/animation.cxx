@@ -92,6 +92,31 @@ set_scale (sgMat4 &matrix, double x, double y, double z)
 }
 
 /**
+ * Recursively process all kids to change the alpha values
+ */
+static void
+change_alpha( ssgBase *_branch, float _blend )
+{
+  unsigned int i;
+
+  for (i = 0; i < ((ssgBranch *)_branch)->getNumKids(); i++)
+    change_alpha( ((ssgBranch *)_branch)->getKid(i), _blend );
+
+  if ( strcmp("ssgLeaf", _branch->getTypeName()) &&
+       strcmp("ssgVtxTable", _branch->getTypeName()) &&
+       strcmp("ssgVTable", _branch->getTypeName()) )
+    return;
+
+  int num_colors = ((ssgLeaf *)_branch)->getNumColours();
+
+  for (i = 0; i < num_colors; i++)
+  {
+    float *color =  ((ssgLeaf *)_branch)->getColour(i);
+    color[3] = _blend;
+  }
+}
+
+/**
  * Modify property value by step and scroll settings in texture translations
  */
 static double
@@ -412,6 +437,53 @@ SGRotateAnimation::update()
   }
   set_rotation(_matrix, _position_deg, _center, _axis);
   ((ssgTransform *)_branch)->setTransform(_matrix);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGBlendAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
+                                        SGPropertyNode_ptr props )
+  : SGAnimation(props, new ssgTransform),
+    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _offset(props->getDoubleValue("offset", 0.0)),
+    _factor(props->getDoubleValue("factor", 1.0)),
+    _table(read_interpolation_table(props)),
+    _has_min(props->hasValue("min")),
+    _min(props->getDoubleValue("min", 0.0)),
+    _has_max(props->hasValue("max")),
+    _max(props->getDoubleValue("max", 1.0)),
+    _prev_value(1.0)
+{
+}
+
+SGBlendAnimation::~SGBlendAnimation ()
+{
+    delete _table;
+}
+
+void
+SGBlendAnimation::update()
+{
+  double _blend;
+
+  if (_table == 0) {
+    _blend = 1.0 - (_prop->getDoubleValue() * _factor + _offset);
+
+    if (_has_min && (_blend < _min))
+      _blend = _min;
+    if (_has_max && (_blend > _max))
+      _blend = _max;
+  } else {
+    _blend = _table->interpolate(_prop->getDoubleValue());
+  }
+
+  if (_blend != _prev_value) {
+    _prev_value = _blend;
+    change_alpha( _branch, _blend );
+  }
 }
 
 

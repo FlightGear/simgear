@@ -117,9 +117,9 @@ checkFlag (const char * flag, bool defaultState = true)
 {
   if (flag == 0)
     return defaultState;
-  else if (flag == "y")
+  else if (!strcmp(flag, "y"))
     return true;
-  else if (flag == "n")
+  else if (!strcmp(flag, "n"))
     return false;
   else {
     string message = "Unrecognized flag value '";
@@ -137,7 +137,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   const char * attval;
 
   if (_level == 0) {
-    if (name != "PropertyList") {
+    if (strcmp(name, "PropertyList")) {
       string message = "Root element name is ";
       message += name;
       message += "; expected PropertyList";

@@ -27,17 +27,10 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>         // for random(), srandom()
+#include <stdlib.h>         // for random(), srandom(), drand48()
 #include <time.h>           // for time() to seed srandom()        
 
 #include "sg_random.h"
-
-#ifndef HAVE_RAND
-#  ifdef sgi
-#    undef RAND_MAX
-#    define RAND_MAX 2147483647
-#  endif
-#endif
 
 #ifdef __SUNPRO_CC
     extern "C" {
@@ -50,10 +43,12 @@
 // Seed the random number generater with time() so we don't see the
 // same sequence every time
 void sg_srandom_time() {
-#ifdef HAVE_RAND
-    srand(time(NULL));
-#else
+#ifdef HAVE_DRAND48
+    srand48(time(NULL) + getpid());
+#elif defined( HAVE_RANDOM )
     srandom(time(NULL));
+#else
+    srand(time(NULL));
 #endif                                       
 }
 
@@ -61,20 +56,24 @@ void sg_srandom_time() {
 // Seed the random number generater with your own seed so can set up
 // repeatable randomization.
 void sg_srandom( unsigned int seed ) {
-#ifdef HAVE_RAND
-    srand( seed );
-#else
+#ifdef HAVE_DRAND48
+    srand48( seed );
+#elif defined( HAVE_RANDOM )
     srandom( seed );
+#else
+    srand( seed );
 #endif                                       
 }
 
 
 // return a random number between [0.0, 1.0)
 double sg_random() {
-#ifdef HAVE_RAND
-    return(rand() / (double)RAND_MAX);
-#else
+#ifdef HAVE_DRAND48
+    return(drand48());
+#elif defined( HAVE_RANDOM )
     return(random() / (double)RAND_MAX);
+#else
+    return(rand() / (double)RAND_MAX);
 #endif
 }
 

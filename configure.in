@@ -322,7 +322,7 @@ dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
-	random setitimer getitimer signal GetLocalTime rint getrusage )
+	random drand48 setitimer getitimer signal GetLocalTime rint getrusage )
 
 AM_CONFIG_HEADER(simgear/simgear_config.h)
 

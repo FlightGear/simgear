@@ -25,7 +25,7 @@ endif
 # METAR_DIRS =
 METAR_DIRS = metar
 
-EXTRA_DIST = version.h.in
+EXTRA_DIST = simgear_config.h.vc5 version.h.in
 
 include_HEADERS = \
 	compiler.h constants.h sg_inlines.h sg_traits.hxx sg_zlib.h version.h

@@ -773,6 +773,21 @@ SOURCE=.\simgear\misc\commands.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\misc\exception.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\misc\props.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"

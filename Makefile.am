@@ -10,7 +10,7 @@ EXTRA_DIST = \
 SUBDIRS	= src-libs simgear
 
 dist-hook:
-	(cd $(top_srcdir); $(HOME)/projects/FlightGear-0.9/admin/am2dsp.pl)
+	(cd $(top_srcdir); $(HOME)/Projects/FlightGear-0.9/admin/am2dsp.pl)
 
 #
 # Rule to build RPM distribution package

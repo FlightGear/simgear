@@ -10,7 +10,7 @@ dnl Require at least automake 2.52
 AC_PREREQ(2.52)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.3.7-pre1)
+AM_INIT_AUTOMAKE(SimGear, 0.3.7)
 
 dnl Specify KAI C++ compiler and flags.
 dnl Borrowed with slight modification from blitz distribution.
@@ -417,6 +417,7 @@ AC_CONFIG_FILES([ \
 	simgear/props/Makefile \
 	simgear/route/Makefile \
 	simgear/scene/Makefile \
+	simgear/scene/fgsg/Makefile \
 	simgear/scene/material/Makefile \
 	simgear/scene/model/Makefile \
 	simgear/scene/sky/Makefile \

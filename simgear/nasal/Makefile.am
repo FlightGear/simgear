@@ -1,10 +1,10 @@
 includedir = @includedir@/nasal
 
-lib_LIBRARIES = libnasal.a
+lib_LIBRARIES = libsgnasal.a
 
 include_HEADERS = nasal.h
 
-libnasal_a_SOURCES = \
+libsgnasal_a_SOURCES = \
 	code.c \
 	codegen.c \
 	debug.c \

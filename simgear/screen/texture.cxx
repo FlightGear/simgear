@@ -809,7 +809,7 @@ SGTexture::make_monochrome(float contrast, GLubyte r, GLubyte g, GLubyte b) {
 
          if (contrast != 1.0) {
             float pixcol = -1.0 + (avg/128);
-            avg = 128 + int(128*powf(pixcol, contrast));
+            avg = 128 + int(128*pow(pixcol, contrast));
          }
 
          ap[0] = avg*r/255;
@@ -837,7 +837,7 @@ SGTexture::make_grayscale(float contrast) {
 
          if (contrast != 1.0) {
             float pixcol = -1.0 + (avg/128);
-            avg = 128 + int(128*powf(pixcol, contrast));
+            avg = 128 + int(128*pow(pixcol, contrast));
          }
 
          int pos = (x + y*texture_width)*colors;

@@ -231,7 +231,6 @@ ssgBranch * SGSun::build( FGPath path, double sun_size ) {
     path.append( "halo.rgba" );
     halo_state = new ssgSimpleState();
     halo_state->setTexture( (char *)path.c_str() );
-    // halo_state->setTexture( sun_texid );
     halo_state->enable( GL_TEXTURE_2D );
     halo_state->disable( GL_LIGHTING );
     halo_state->setShadeModel( GL_SMOOTH );

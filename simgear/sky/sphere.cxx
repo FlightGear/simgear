@@ -26,6 +26,10 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
+
 #include <plib/ssg.h>
 #include <simgear/constants.h>
 
@@ -42,24 +46,6 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
     ssgBranch *sphere = new ssgBranch;
     sgVec2 vec2;
     sgVec3 vec3;
-
-    // handle cl whether it is preinitialized or not
-    if ( cl == NULL ) {
-	// create a new array if needed
-	cl = new ssgColourArray( 1 );
-    }
-
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-
-    if ( cl->getNum() > 1 ) {
-	cl->removeAll();
-	cl->add( color );
-    } else if ( cl->getNum() == 0 ) {
-	cl->add( color );
-    } else {
-	// accept value as given to us in
-    }
 
     drho = FG_PI / (float) stacks;
     dtheta = 2.0 * FG_PI / (float) slices;
@@ -123,6 +109,15 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 
 	ssgLeaf *slice = 
 	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
+
+	if ( vl->getNum() != nl->getNum() ) {
+	    cout << "bad sphere1\n";
+	    exit(-1);
+	}
+	if ( vl->getNum() != tl->getNum() ) {
+	    cout << "bad sphere2\n";
+	    exit(-1);
+	}
 	slice->setState( state );
 	slice->setCallback( SSG_CALLBACK_PREDRAW, predraw );
 	slice->setCallback( SSG_CALLBACK_POSTDRAW, postdraw );

@@ -29,7 +29,8 @@
 #  include <sys/socket.h>	// socket(), bind(), listen(), accept()
 #  include <netinet/in.h>	// struct sockaddr_in
 #  include <netdb.h>		// gethostbyname()
-#  include <unistd.h>		// select(), fsync()/fdatasync()
+#  include <unistd.h>		// select(), fsync()/fdatasync(), fcntl()
+#  include <fcntl.h>		// fcntl()
 #else
 #  include <sys/timeb.h>	// select()
 #  include <winsock2.h>		// socket(), bind(), listen(), accept(),
@@ -51,9 +52,23 @@
 FG_USING_STD(string);
 
 
-SGSocket::SGSocket() :
+SGSocket::SGSocket( const string& host, const string& port, 
+		    const string& style ) :
     save_len(0)
 {
+    hostname = host;
+    port_str = port;
+
+    if ( style == "udp" ) {
+	sock_style = SOCK_DGRAM;
+    } else if ( style == "tcp" ) {
+	sock_style = SOCK_STREAM;
+    } else {
+	sock_style = SOCK_DGRAM;
+	FG_LOG( FG_IO, FG_ALERT,
+		"Error: SGSocket() unknown style = " << style );
+    }
+
     set_type( sgSocketType );
 }
 
@@ -72,7 +87,7 @@ int SGSocket::make_server_socket () {
 #endif
      
     // Create the socket.
-    sock = socket (PF_INET, SOCK_STREAM, 0);
+    sock = socket (PF_INET, sock_style, 0);
     if (sock < 0) {
 	FG_LOG( FG_IO, FG_ALERT, 
 		"Error: socket() failed in make_server_socket()" );
@@ -110,7 +125,7 @@ int SGSocket::make_client_socket () {
     FG_LOG( FG_IO, FG_INFO, "Make client socket()" );
 
     // Create the socket.
-    sock = socket (PF_INET, SOCK_STREAM, 0);
+    sock = socket (PF_INET, sock_style, 0);
     if (sock < 0) {
 	FG_LOG( FG_IO, FG_ALERT, 
 		"Error: socket() failed in make_client_socket()" );
@@ -149,10 +164,9 @@ int SGSocket::make_client_socket () {
 }
 
 
-// If specified as a server (out direction for now) open the master
-// listening socket.  If specified as a client, open a connection to a
-// server.
-
+// If specified as a server (in direction for now) open the master
+// listening socket.  If specified as a client (out direction), open a
+// connection to a server.
 bool SGSocket::open( SGProtocolDir dir ) {
     if ( port_str == "" || port_str == "any" ) {
 	port = 0; 
@@ -160,9 +174,9 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	port = atoi( port_str.c_str() );
     }
     
-    client_connections.clear();
+    // client_connections.clear();
 
-    if ( dir == SG_IO_OUT ) {
+    if ( dir == SG_IO_IN ) {
 	// this means server for now
 
 	// Setup socket to listen on.  Set "port" before making this
@@ -171,13 +185,24 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	sock = make_server_socket();
 	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
 
-	// Specify the maximum length of the connection queue
-	listen(sock, SG_MAX_SOCKET_QUEUE);
+	if ( sock_style == SOCK_DGRAM ) {
+	    // Non-blocking UDP
+	    fcntl( sock, F_SETFL, O_NONBLOCK );
+	} else {
+	    // Blocking TCP
+	    // Specify the maximum length of the connection queue
+	    listen( sock, SG_MAX_SOCKET_QUEUE );
+	}
 
-    } else if ( dir == SG_IO_IN ) {
+    } else if ( dir == SG_IO_OUT ) {
 	// this means client for now
 
 	sock = make_client_socket();
+
+	if ( sock_style == SOCK_DGRAM ) {
+	    // Non-blocking UDP
+	    fcntl( sock, F_SETFL, O_NONBLOCK );
+	}
     } else {
 	FG_LOG( FG_IO, FG_ALERT, 
 		"Error:  bidirection mode not available yet for sockets." );
@@ -194,7 +219,7 @@ bool SGSocket::open( SGProtocolDir dir ) {
 }
 
 
-// read data from socket (client)
+// read data from socket (server)
 // read a block of data of specified size
 int SGSocket::read( char *buf, int length ) {
     int result = 0;
@@ -207,7 +232,7 @@ int SGSocket::read( char *buf, int length ) {
     tv.tv_sec = 0;
     tv.tv_usec = 0;
 
-    // test for any input read on sock (returning immediately, even if
+    // test for any input available on sock (returning immediately, even if
     // nothing)
     select(32, &ready, 0, 0, &tv);
 
@@ -288,9 +313,20 @@ int SGSocket::readline( char *buf, int length ) {
 }
 
 
-// write data to socket (server)
+// write data to socket (client)
 int SGSocket::write( char *buf, int length ) {
+    bool error_condition = false;
 
+#ifdef _MSC_VER
+    if ( _write(sock, buf, length) < 0 ) {
+#else
+    if ( std::write(sock, buf, length) < 0 ) {
+#endif
+	FG_LOG( FG_IO, FG_ALERT, "Error writing to socket: " << port );
+	error_condition = true;
+    }
+
+#if 0 
     // check for any new client connection requests
     fd_set ready;
     FD_ZERO(&ready);
@@ -315,7 +351,6 @@ int SGSocket::write( char *buf, int length ) {
 	}
     }
 
-    bool error_condition = false;
     FG_LOG( FG_IO, FG_INFO, "Client connections = " << 
 	    client_connections.size() );
     for ( int i = 0; i < (int)client_connections.size(); ++i ) {
@@ -341,6 +376,7 @@ int SGSocket::write( char *buf, int length ) {
 #endif
 	}
     }
+#endif
 
     if ( error_condition ) {
 	return 0;
@@ -359,6 +395,7 @@ int SGSocket::writestring( char *str ) {
 
 // close the port
 bool SGSocket::close() {
+#if 0
     for ( int i = 0; i < (int)client_connections.size(); ++i ) {
 	int msgsock = client_connections[i];
 #ifdef _MSC_VER
@@ -367,6 +404,7 @@ bool SGSocket::close() {
 	std::close( msgsock );
 #endif
     }
+#endif
 
 #ifdef _MSC_VER
     _close( sock );

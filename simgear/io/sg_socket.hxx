@@ -53,6 +53,7 @@ class SGSocket : public SGIOChannel {
 
     int sock;
     short unsigned int port;
+    int sock_style;			// SOCK_STREAM or SOCK_DGRAM
 
     // make a server (master listening) socket
     int make_server_socket();
@@ -60,14 +61,16 @@ class SGSocket : public SGIOChannel {
     // make a client socket
     int make_client_socket();
 
-    int_list client_connections;
+    // int_list client_connections;
 
 public:
 
-    SGSocket();
+    SGSocket( const string& host, const string& port, const string& style );
     ~SGSocket();
 
-    // open the file based on specified direction
+    // If specified as a server (in direction for now) open the master
+    // listening socket.  If specified as a client (out direction),
+    // open a connection to a server.
     bool open( SGProtocolDir dir );
 
     // read data from socket
@@ -86,9 +89,7 @@ public:
     bool close();
 
     inline string get_hostname() const { return hostname; }
-    inline void set_hostname( const string& hn ) { hostname = hn; }
     inline string get_port_str() const { return port_str; }
-    inline void set_port_str( const string& p ) { port_str = p; }
 };
 
 

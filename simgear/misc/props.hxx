@@ -406,7 +406,10 @@ private:
 ////////////////////////////////////////////////////////////////////////
 
 extern bool readPropertyList (istream &input, SGPropertyList * props);
+extern bool readPropertyList (const string &file, SGPropertyList * props);
 extern bool writePropertyList (ostream &output, const SGPropertyList * props);
+extern bool writePropertyList (const string &file,
+			       const SGPropertyList * props);
 
 
 

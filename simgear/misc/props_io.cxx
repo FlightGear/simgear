@@ -9,10 +9,12 @@
 #include "props.hxx"
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 
 using std::istream;
+using std::ifstream;
 using std::ostream;
 using std::string;
 using std::vector;
@@ -221,6 +223,19 @@ readPropertyList (istream &input, SGPropertyList * props)
   return readXML(input, visitor) && visitor.isOK();
 }
 
+bool
+readPropertyList (const string &file, SGPropertyList * props)
+{
+  ifstream input(file.c_str());
+  if (input.good()) {
+    return readPropertyList(input, props);
+  } else {
+    FG_LOG(FG_INPUT, FG_ALERT, "Error reading property list from file "
+	   << file);
+    return false;
+  }
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -329,4 +344,17 @@ writePropertyList (ostream &output, const SGPropertyList * props)
   }
 
   output << "</PropertyList>" << endl;
+}
+
+bool
+writePropertyList (const string &file, const SGPropertyList * props)
+{
+  ofstream output(file.c_str());
+  if (output.good()) {
+    return writePropertyList(output, props);
+  } else {
+    FG_LOG(FG_INPUT, FG_ALERT, "Cannot write property list to file "
+	   << file);
+    return false;
+  }
 }

@@ -34,6 +34,7 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
+FG_USING_NAMESPACE(std);
 
 // return a sphere object as an ssgBranch
 ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,

@@ -1209,7 +1209,7 @@ SGPropertyNode::getSubNode (const string &subpath) const
 SGValue *
 SGPropertyNode::getValue (const string &subpath)
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return 0;
 
   if (subpath.size() == 0)
@@ -1225,7 +1225,7 @@ SGPropertyNode::getValue (const string &subpath)
 bool
 SGPropertyNode::getBoolValue (const string &subpath, bool defaultValue) const
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return defaultValue;
 
   if (subpath == "")
@@ -1242,7 +1242,7 @@ SGPropertyNode::getBoolValue (const string &subpath, bool defaultValue) const
 int
 SGPropertyNode::getIntValue (const string &subpath, int defaultValue) const
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return defaultValue;
 
   if (subpath == "")
@@ -1259,7 +1259,7 @@ SGPropertyNode::getIntValue (const string &subpath, int defaultValue) const
 float
 SGPropertyNode::getFloatValue (const string &subpath, float defaultValue) const
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return defaultValue;
 
   if (subpath == "")
@@ -1277,7 +1277,7 @@ double
 SGPropertyNode::getDoubleValue (const string &subpath,
 				double defaultValue) const
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return defaultValue;
 
   if (subpath == "")
@@ -1295,7 +1295,7 @@ const string &
 SGPropertyNode::getStringValue (const string &subpath,
 				const string &defaultValue) const
 {
-  if (_props == 0 || _path.size() == 0)
+  if (_props == 0)
     return defaultValue;
 
   if (subpath == "")

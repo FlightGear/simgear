@@ -114,6 +114,7 @@ Durk Talsma <d.talsma@chello.nl>
   Sun changes color based on position in sky.
   Moon has correct phase and blends well into the sky.
   Planets are correctly positioned and have proper magnitude.
+  Added time zone support in the SGTime class.
   Help with time functions, gui, and other misc stuff.
   http://people.a2000.nl/dtals
 

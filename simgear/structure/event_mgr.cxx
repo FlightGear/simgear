@@ -4,6 +4,10 @@ void SGEventMgr::add(SGCallback* cb,
                      double interval, double delay,
                      bool repeat, bool simtime)
 {
+    // Clamp the delay value to 1 usec, so that user code can use
+    // "zero" as a synonym for "next frame".
+    if(delay <= 0) delay = 0.000001;
+
     SGTimer* t = new SGTimer;
     t->interval = interval;
     t->callback = cb;

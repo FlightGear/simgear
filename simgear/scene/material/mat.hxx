@@ -40,6 +40,8 @@
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/loader.hxx>
 
+#include "matobj.hxx"
+
 SG_USING_STD(string);
 
 
@@ -55,169 +57,6 @@ SG_USING_STD(string);
 class SGMaterial {
 
 public:
-
-
-  //////////////////////////////////////////////////////////////////////
-  // Inner classes.
-  //////////////////////////////////////////////////////////////////////
-
-  class ObjectGroup;
-
-  /**
-   * A randomly-placeable object.
-   *
-   * SGMaterial uses this class to keep track of the model(s) and
-   * parameters for a single instance of a randomly-placeable object.
-   * The object can have more than one variant model (i.e. slightly
-   * different shapes of trees), but they are considered equivalent
-   * and interchangeable.
-   */
-  class Object
-  {
-  public:
-
-    /**
-     * The heading type for a randomly-placed object.
-     */
-    enum HeadingType {
-      HEADING_FIXED,
-      HEADING_BILLBOARD,
-      HEADING_RANDOM
-    };
-
-
-    /**
-     * Get the number of variant models available for the object.
-     *
-     * @return The number of variant models.
-     */
-    int get_model_count( SGModelLoader *loader,
-                         const string &fg_root,
-                         SGPropertyNode *prop_root,
-                         double sim_time_sec );
-
-
-    /**
-     * Get a specific variant model for the object.
-     *
-     * @param index The index of the model.
-     * @return The model.
-     */
-    ssgEntity *get_model( int index,
-                          SGModelLoader *loader,
-                          const string &fg_root,
-                          SGPropertyNode *prop_root,
-                          double sim_time_sec );
-
-
-    /**
-     * Get a randomly-selected variant model for the object.
-     *
-     * @return A randomly select model from the variants.
-     */
-    ssgEntity *get_random_model( SGModelLoader *loader,
-                                 const string &fg_root,
-                                 SGPropertyNode *prop_root,
-                                 double sim_time_sec );
-
-
-    /**
-     * Get the average number of meters^2 occupied by each instance.
-     *
-     * @return The coverage in meters^2.
-     */
-    double get_coverage_m2 () const;
-
-
-    /**
-     * Get the heading type for the object.
-     *
-     * @return The heading type.
-     */
-    HeadingType get_heading_type () const;
-
-  protected:
-
-    friend class ObjectGroup;
-
-    Object (const SGPropertyNode * node, double range_m);
-
-    virtual ~Object ();
-
-  private:
-
-    /**
-     * Actually load the models.
-     *
-     * This class uses lazy loading so that models won't be held
-     * in memory for materials that are never referenced.
-     */
-    void load_models( SGModelLoader *loader,
-                      const string &fg_root,
-                      SGPropertyNode *prop_root,
-                      double sim_time_sec );
-
-    vector<string> _paths;
-    mutable vector<ssgEntity *> _models;
-    mutable bool _models_loaded;
-    double _coverage_m2;
-    double _range_m;
-    HeadingType _heading_type;
-  };
-
-
-  /**
-   * A collection of related objects with the same visual range.
-   *
-   * Grouping objects with the same range together significantly
-   * reduces the memory requirements of randomly-placed objects.
-   * Each SGMaterial instance keeps a (possibly-empty) list of
-   * object groups for placing randomly on the scenery.
-   */
-  class ObjectGroup
-  {
-  public:
-    virtual ~ObjectGroup ();
-
-
-    /**
-     * Get the visual range of the object in meters.
-     *
-     * @return The visual range.
-     */
-    double get_range_m () const;
-
-
-    /**
-     * Get the number of objects in the group.
-     *
-     * @return The number of objects.
-     */
-    int get_object_count () const;
-
-
-    /**
-     * Get a specific object.
-     *
-     * @param index The object's index, zero-based.
-     * @return The object selected.
-     */
-    Object * get_object (int index) const;
-
-  protected:
-
-    friend class SGMaterial;
-
-    ObjectGroup (SGPropertyNode * node);
-
-  private:
-
-    double _range_m;
-    vector<Object *> _objects;
-
-  };
-
-
 
 
   ////////////////////////////////////////////////////////////////////
@@ -311,7 +150,7 @@ public:
   /**
    * Get a randomly-placed object for this material.
    */
-  virtual ObjectGroup * get_object_group (int index) const {
+  virtual SGMatObjectGroup * get_object_group (int index) const {
     return object_groups[index];
   }
 
@@ -383,7 +222,7 @@ private:
   // true if texture loading deferred, and not yet loaded
   bool texture_loaded;
 
-  vector<ObjectGroup *> object_groups;
+  vector<SGMatObjectGroup *> object_groups;
 
   // ref count so we can properly delete if we have multiple
   // pointers to this record

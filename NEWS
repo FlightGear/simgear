@@ -1,5 +1,10 @@
+New in 0.0.6
+* March 27, 2000
+* Added Nima World Magnetic Model 2000 contributed by Ed Williams
+* Fixes for MSVC++
+
 New in 0.0.5
-* 17 March 2000
+* March 17, 2000
 * Restructured directory layout to facilitate windows/mac IDE builds.
 
 New in 0.0.4

@@ -223,11 +223,11 @@ sgLoad3DModel( const string &fg_root, const string &path,
   SGPropertyNode props;
 
                                 // Load the 3D aircraft object itself
-  SGPath modelpath = path;
+  SGPath modelpath = path, texturepath = path;
   if ( !ulIsAbsolutePathName( path.c_str() ) ) {
     SGPath tmp = fg_root;
     tmp.append(modelpath.str());
-    modelpath = tmp;
+    modelpath = texturepath = tmp;
   }
 
                                 // Check for an XML wrapper
@@ -236,6 +236,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
     if (props.hasValue("/path")) {
       modelpath = modelpath.dir();
       modelpath.append(props.getStringValue("/path"));
+      if (props.hasValue("/texture-path")) {
+        texturepath = texturepath.dir();
+        texturepath.append(props.getStringValue("/texture-path"));
+      }
     } else {
       if (model == 0)
         model = new ssgBranch;
@@ -245,7 +249,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
                                 // Assume that textures are in
                                 // the same location as the XML file.
   if (model == 0) {
-    ssgTexturePath((char *)modelpath.dir().c_str());
+    ssgTexturePath((char *)texturepath.dir().c_str());
     model = (ssgBranch *)ssgLoad((char *)modelpath.c_str());
     if (model == 0)
       throw sg_exception("Failed to load 3D model");

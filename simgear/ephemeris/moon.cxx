@@ -392,7 +392,6 @@ void Moon::newImage()
 	glDisable(GL_BLEND);	// BLEND DISABLED
       }
       xglPopMatrix();
-      glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
       glDisable(GL_LIGHTING);	// Lighting Disabled.
       
     }

@@ -266,7 +266,6 @@ void Star::newImage(void)
       }
     glPopMatrix();
     glDisable(GL_TEXTURE_2D);	// TEXTURE DISABLED
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
     glDisable(GL_BLEND);	// BLEND DISABLED  
   }
 }

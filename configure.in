@@ -77,9 +77,10 @@ if test -d /opt/X11R6 ; then
 fi
 
 if test "x$ac_cv_header_windows_h" = "xyes" ; then
+    if test -d /usr/mingw/usr ; then
+        EXTRA_DIRS="$EXTRA_DIRS /usr/mingw/usr"
+    fi
     EXTRA_DIRS="${EXTRA_DIRS} `pwd`/Win32"
-# elif test `uname -s` = "SunOS" ; then
-#   EXTRA_DIRS="${EXTRA_DIRS} `pwd`/SunOS"
 fi
 wi_EXTRA_DIRS(no, ${EXTRA_DIRS})
 

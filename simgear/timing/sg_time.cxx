@@ -193,7 +193,7 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 void SGTime::update( double lon, double lat, long int warp ) {
     double gst_precise, gst_course;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     tm * gmt = &m_gmt;
 #endif
 
@@ -207,7 +207,7 @@ void SGTime::update( double lon, double lat, long int warp ) {
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
 #else
     gmt = gmtime(&cur_time);
@@ -333,13 +333,14 @@ double sgTimeCalcMJD(int mn, double dy, int yr) {
 // return the current modified Julian date (number of days elapsed
 // since 1900 jan 0.5), mjd.
 double sgTimeCurrentMJD( long int warp ) {
-#ifdef _MSC_VER
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
     struct tm m_gmt;    // copy of system gmtime(&time_t) structure
 #else
     struct tm *gmt;
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     tm * gmt = &m_gmt;
 #endif
 
@@ -351,7 +352,7 @@ double sgTimeCurrentMJD( long int warp ) {
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
 #else
     gmt = gmtime(&cur_time);

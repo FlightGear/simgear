@@ -23,7 +23,7 @@
 
 #include <simgear/compiler.h>
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 #  include <sys/time.h>		// select()
 #  include <sys/types.h>	// socket(), bind(), select(), accept()
 #  include <sys/socket.h>	// socket(), bind(), listen(), accept()
@@ -48,7 +48,7 @@ SGSocket::SGSocket( const string& host, const string& port,
     port_str(port),
     save_len(0)
 {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     if (!wsock_init && !wsastartup()) {
     	SG_LOG( SG_IO, SG_ALERT, "Winsock not available");
     }
@@ -75,7 +75,7 @@ SGSocket::~SGSocket() {
 SGSocket::SocketType SGSocket::make_server_socket () {
     struct sockaddr_in name;
 
-#if defined( __CYGWIN__ ) || defined( __CYGWIN32__ ) || defined( sgi ) || defined( _MSC_VER )
+#if defined( __CYGWIN__ ) || defined( __CYGWIN32__ ) || defined( sgi ) || defined( _MSC_VER ) || defined(__MINGW32__)
     int length;
 #else
     socklen_t length;
@@ -161,7 +161,7 @@ SGSocket::SocketType SGSocket::make_client_socket () {
 
 // Wrapper functions
 size_t SGSocket::readsocket( int fd, void *buf, size_t count ) {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     return ::recv( fd, (char *)buf, count, 0 );
 #else
     return ::read( fd, buf, count );
@@ -169,14 +169,14 @@ size_t SGSocket::readsocket( int fd, void *buf, size_t count ) {
 }
 
 size_t SGSocket::writesocket( int fd, const void *buf, size_t count ) {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     return ::send( fd, (const char*)buf, count, 0 );
 #else
     return ::write( fd, buf, count );
 #endif
 }
 
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
 int SGSocket::closesocket( int fd ) {
     return ::close( fd );
 }
@@ -504,7 +504,7 @@ bool SGSocket::nonblock() {
 	return 0;
     }
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     u_long arg = 1;
     if (ioctlsocket( sock, FIONBIO, &arg ) != 0) {
         int error_code = WSAGetLastError();
@@ -519,7 +519,7 @@ bool SGSocket::nonblock() {
     return true;
 }
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 
 bool SGSocket::wsock_init = false;
 

@@ -139,6 +139,11 @@
 #  endif
 #endif
 
+#if defined( __MINGW32__ )
+#  define bcopy(from, to, n) memcpy(to, from, n)
+#  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
+#endif
+
 /* KAI C++ */
 #if defined(__KCC)
 

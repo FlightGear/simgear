@@ -551,7 +551,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     system( (string("mkdir ") + dir).c_str() );
 #else
     system(command.c_str());
@@ -828,7 +828,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     system( (string("mkdir ") + dir).c_str() );
 #else
     system(command.c_str());

@@ -1,6 +1,6 @@
 #include <simgear/compiler.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #  include <time.h>
 #else
 #  include <sys/time.h>

@@ -41,8 +41,8 @@
 
 SG_USING_STD(string);
 
-#if defined(_MSC_VER)
-#  include <winsock.h>
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#  include <winsock2.h>
 #endif
 
 #define SG_MAX_SOCKET_QUEUE 32
@@ -53,7 +53,7 @@ SG_USING_STD(string);
  */
 class SGSocket : public SGIOChannel {
 public:
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     typedef SOCKET SocketType;
 #else
     typedef int SocketType;
@@ -83,11 +83,11 @@ private:
     // wrapper functions
     size_t readsocket( int fd, void *buf, size_t count );
     size_t writesocket( int fd, const void *buf, size_t count );
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__MINGW32__)
     int closesocket(int fd);
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
     // Ensure winsock has been initialised.
     static bool wsock_init;
     static bool wsastartup();

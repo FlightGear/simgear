@@ -113,7 +113,7 @@ parse_name (const string &path, int &i)
       name = ".";
     }
     if (i < max && path[i] != '/')
-      throw string(string("Illegal character after ") + name);
+      throw string("Illegal character after " + name);
   }
 
   else if (isalpha(path[i]) || path[i] == '_') {

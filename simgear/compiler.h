@@ -290,6 +290,8 @@
 #if defined ( sgi ) && !defined( __GNUC__ )
 #  define SG_HAVE_NATIVE_SGI_COMPILERS
 
+#include <simgear/compatibility/IRIX>
+
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #  define SG_CLASS_PARTIAL_SPECIALIZATION
 #  define SG_NEED_AUTO_PTR

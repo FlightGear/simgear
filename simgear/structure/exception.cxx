@@ -86,7 +86,7 @@ sg_location::asString () const
 {
   char buf[128];
   string out = "";
-  if (_path != (string)"") {
+  if (!_path.empty()) {
     out += _path;
     if (_line != -1 || _column != -1)
       out += ",\n";

@@ -54,7 +54,7 @@ SGSocket::SGSocket( const string& host, const string& port_,
     {
 	is_tcp = true;
     }
-    else if ( style != (string)"udp" )
+    else if ( style != "udp" )
     {
 	SG_LOG( SG_IO, SG_ALERT,
 		"Error: SGSocket() unknown style = " << style );

@@ -18,17 +18,17 @@ int main (int ac, char ** av)
 	
 	SGTabbedValues tv(string1);
 	
-	if (tv[0] != string("Hello")) {
+	if (tv[0] != "Hello") {
 		cerr << "failed to read string at index 0" << endl;
 		return 1;
 	}
 	
-	if (tv[1] != string("World")) {
+	if (tv[1] != "World") {
 		cerr << "failed to read string at index 1" << endl;
 		return 1;
 	}
 	
-	if (tv[2] != string("34")) {
+	if (tv[2] != "34") {
 		cerr << "failed to read string at index 2" << endl;
 		return 1;
 	}
@@ -61,7 +61,7 @@ int main (int ac, char ** av)
 		return 3;
 	}
 	
-	if (tv[5] != string("There Is No Spoon")) {
+	if (tv[5] != "There Is No Spoon") {
 		cerr << "failed to read string at index 5 (got [" << tv[5] << "]" << endl;
 		return 1;
 	}

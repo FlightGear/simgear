@@ -28,4 +28,6 @@ include_HEADERS	= \
 	ctime \
 	iomanip \
 	new \
-	streambuf
+	streambuf \
+	\
+	IRIX

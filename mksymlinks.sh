@@ -20,6 +20,7 @@ ln -s ../include/compiler.h src/simgear/compiler.h
 ln -s ../include/constants.h src/simgear/constants.h
 ln -s ../include/fg_traits.hxx src/simgear/fg_traits.hxx
 ln -s ../include/fg_zlib.h src/simgear/fg_zlib.h
+ln -s ../include/version.h src/simgear/version.h
 
 ln -s ../../bucket/newbucket.hxx src/simgear/bucket/newbucket.hxx
 

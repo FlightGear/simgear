@@ -226,10 +226,10 @@ AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 AM_CONFIG_HEADER(src/include/config.h)
 
 AC_OUTPUT( \
-	VERSION \
 	Makefile \
 	src/Makefile \
 	src/include/Makefile \
+	src/include/version.h \
 	src/bucket/Makefile \
 	src/debug/Makefile \
 	src/math/Makefile \

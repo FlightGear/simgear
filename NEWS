@@ -1,14 +1,7 @@
-New in 0.0.19pre2
-* September 1, 2002
+New in 0.2.0
+* September 6, 2002
 
-* Fixed various build problems (one show stopper with the interpreters
-  subdir)
-
-
-New in 0.0.19pre1
-* August 31, 2002
-
-* Modernized the autoconf/make scripts.
+* Modernized the autoconf/make scripts, plus lots of tweaks and enhancements.
 * Removed efence support (in favor of valgrind.)
 
 * Added a javascript interpreter.

@@ -137,17 +137,12 @@ TimezoneContainer::TimezoneContainer(const char *filename)
             if (feof(infile)) {
                 break;
             }
-#ifdef _MSC_VER
-            if( buffer[0] == '#' )
-               continue;
-#else
             for (char *p = buffer; *p; p++) {
                 if (*p == '#') {
                     *p = 0;
                     break;
                 }    
             }
-#endif
             if (buffer[0]) {
                 data.push_back(new Timezone(buffer));
             }

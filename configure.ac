@@ -136,13 +136,13 @@ dnl Checks for libraries.
 
 null_LIBS="$LIBS"
 
-AC_CHECK_LIB(m, cos)
+AC_SEARCH_LIBS(cos, m)
 
 base_LIBS="$LIBS"
 
 dnl Thread related checks
-AC_CHECK_LIB(pthread, pthread_exit)
 AC_CHECK_HEADER(pthread.h)
+AC_CHECK_LIB(pthread, pthread_exit)
 if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
     CXXFLAGS="$CXXFLAGS -D_REENTRANT"
     CFLAGS="$CFLAGS -D_REENTRANT"
@@ -158,27 +158,21 @@ if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_
     save_LIBS=$LIBS
     AC_CHECK_LIB(c_r, pthread_exit)
     if test "x$ac_cv_lib_c_r_pthread_exit" != "xyes"; then
-	CXXFLAGS=$save_CXXFLAGS
-	CFLAGS=$save_CFLAGS
+        CXXFLAGS=$save_CXXFLAGS
+        CFLAGS=$save_CFLAGS
     else
-	dnl This is cheating a bit. pthread_exit comes with using -pthread, not -lpthread
-	ac_cv_lib_pthread_pthread_exit="yes"
+        dnl This is cheating a bit. pthread_exit comes with using -pthread, not
+-lpthread
+        ac_cv_lib_pthread_pthread_exit="yes"
     fi
     LIBS=$save_LIBS
 fi
-AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
-case "${host}" in
-*-*-irix*)
-    ;;
-*-*-solaris*)
-    AC_CHECK_LIB(xnet,inet_addr)
-    AC_CHECK_LIB(socket, socket)
-    ;;
-*)
-    AC_CHECK_LIB(socket, socket)
-    ;;
-esac
+AM_CONDITIONAL(HAVE_THREADS, test "x$enable_threads" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
+
+
+AC_SEARCH_LIBS(inet_addr, xnet)
+AC_SEARCH_LIBS(socket, socket)
 
 dnl check for glut location
 AC_CHECK_HEADER(GL/glut.h)
@@ -225,29 +219,22 @@ case "${host}" in
 *)
     dnl X-Windows based machines
 
-    AC_CHECK_LIB(X11, XCreateWindow)
-    AC_CHECK_LIB(Xext, XShmCreateImage)
-    AC_CHECK_LIB(Xi, XGetExtensionVersion)
-    AC_CHECK_LIB(ICE, IceOpenConnection)
-    AC_CHECK_LIB(SM, SmcOpenConnection)
-    AC_CHECK_LIB(Xt, XtMalloc)
-    AC_CHECK_LIB(Xmu, XmuLookupStandardColormap)
+    AC_SEARCH_LIBS(XCreateWindow, X11)
+    AC_SEARCH_LIBS(XShmCreateImage, Xext)
+    AC_SEARCH_LIBS(XGetExtensionVersion, Xi)
+    AC_SEARCH_LIBS(IceOpenConnection, ICE)
+    AC_SEARCH_LIBS(SmcOpenConnection, SM)
+    AC_SEARCH_LIBS(XtMalloc, Xt)
+    AC_SEARCH_LIBS(XmuLookupStandardColormap, Xmu)
     
-    AC_CHECK_LIB(GLcore, glNewList)
-    if test "x$ac_cv_lib_GLcore_glNewList" = "xno" ; then
-	dnl if no GLcore, check for GL
-	AC_CHECK_LIB(GL, glNewList)
-	if test "x$ac_cv_lib_GL_glNewList" = "xno" ; then
-	    dnl if no GL, check for MesaGL
-	    AC_CHECK_LIB(MesaGL, glNewList)
-	fi
-    else
+    AC_SEARCH_LIBS(glNewList, [ GL GLcore MesaGL ])
+    if test "x$ac_cv_search_glNewList" = "x-lGLcore"; then
 	dnl if GLcore found, then also check for GL
-	AC_CHECK_LIB(GL, glXCreateContext)
+        AC_SEARCH_LIBS(glXCreateContext, GL)
     fi
 
     dnl if using mesa, check for xmesa.h
-    if test "x$ac_cv_lib_MesaGL_glNewList" = "xyes" ; then
+    if test "x$ac_cv_search_glNewList" = "x-lMesaGL"; then
 	AC_CHECK_HEADER(GL/fxmesa.h)
 	if test "x$ac_cv_header_GL_fxmesa_h" = "xyes"; then
 	    AC_DEFINE([XMESA], 1, [Define for fxmesa])
@@ -255,13 +242,8 @@ case "${host}" in
         fi
     fi
 
-    AC_CHECK_LIB(GLU, gluLookAt)
-    if test "x$ac_cv_lib_GLU_gluLookAt" = "xno" ; then
-	dnl if no GLU, check for MesaGLU
-	AC_CHECK_LIB(MesaGLU, gluLookAt)
-    fi
-
-    LIBS="$LIBS -lglut"
+    AC_SEARCH_LIBS(gluLookAt, [ GLU MesaGLU ])
+    AC_SEARCH_LIBS(glutGetModifiers, [ glut freeglut ])
     ;;
 
 esac

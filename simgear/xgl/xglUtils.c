@@ -6,7 +6,10 @@
 #if !defined( WIN32 )
 #  if !defined( HAVE_STL_SGI_PORT ) && !defined( __MWERKS__ ) && !defined( __APPLE__ )
 //   Avoid malloc with STLport and MSL
-#    include <malloc.h>
+#    ifdef HAVE_MALLOC_H
+//     Avoid malloc if system doesn't have it. :-)
+#      include <malloc.h>
+#    endif
 #  endif
 #endif
 

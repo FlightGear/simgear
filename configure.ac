@@ -147,6 +147,25 @@ if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h
     CXXFLAGS="$CXXFLAGS -D_REENTRANT"
     CFLAGS="$CFLAGS -D_REENTRANT"
 fi
+if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
+    dnl FreeBSD: System has pthread.h, but -lpthread library check
+    dnl fails.  See if we need -pthread instead of -lpthread and look
+    dnl for the functions in libc_r.
+    save_CXXFLAGS="$CXXFLAGS"
+    save_CFLAGS="$FLAGS"
+    CXXFLAGS="-pthread $CXXFLAGS"
+    CFLAGS="-pthread $FLAGS"
+    save_LIBS=$LIBS
+    AC_CHECK_LIB(c_r, pthread_exit)
+    if test "x$ac_cv_lib_c_r_pthread_exit" != "xyes"; then
+	CXXFLAGS=$save_CXXFLAGS
+	CFLAGS=$save_CFLAGS
+    else
+	dnl This is cheating a bit. pthread_exit comes with using -pthread, not -lpthread
+	ac_cv_lib_pthread_pthread_exit="yes"
+    fi
+    LIBS=$save_LIBS
+fi
 AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
 AC_CHECK_LIB(socket, socket)

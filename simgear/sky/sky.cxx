@@ -43,35 +43,45 @@ SGSky::~SGSky( void ) {
 
 // initialize the sky and connect the components to the scene graph at
 // the provided branch
-ssgBranch * SGSky::build(  double sun_size, double moon_size,
-			   int nplanets, sgdVec3 *planet_data,
-			   double planet_dist,
-			   int nstars, sgdVec3 *star_data, double star_dist )
+void SGSky::build(  double sun_size, double moon_size,
+		    int nplanets, sgdVec3 *planet_data,
+		    double planet_dist,
+		    int nstars, sgdVec3 *star_data, double star_dist )
 {
-    sky_selector = new ssgSelector;
-    sky_transform = new ssgTransform;
+    pre_root = new ssgRoot;
+    post_root = new ssgRoot;
+
+    pre_selector = new ssgSelector;
+    post_selector = new ssgSelector;
+
+    pre_transform = new ssgTransform;
+    post_transform = new ssgTransform;
 
     dome = new SGSkyDome;
-    sky_transform -> addKid( dome->build() );
+    pre_transform -> addKid( dome->build() );
 
     planets = new SGStars;
-    sky_transform -> addKid( planets->build(nplanets, planet_data,
+    pre_transform -> addKid( planets->build(nplanets, planet_data,
 					    planet_dist)
 			     );
 
     stars = new SGStars;
-    sky_transform -> addKid( stars->build(nstars, star_data, star_dist) );
+    pre_transform -> addKid( stars->build(nstars, star_data, star_dist) );
     
     moon = new SGMoon;
-    sky_transform -> addKid( moon->build(tex_path, moon_size) );
+    pre_transform -> addKid( moon->build(tex_path, moon_size) );
 
     oursun = new SGSun;
-    sky_transform -> addKid( oursun->build(tex_path, sun_size) );
+    pre_transform -> addKid( oursun->build(tex_path, sun_size) );
 
-    sky_selector->addKid( sky_transform );
-    sky_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+    pre_selector->addKid( pre_transform );
+    pre_selector->clrTraversalMaskBits( SSGTRAV_HOT );
 
-    return sky_selector;
+    post_selector->addKid( post_transform );
+    post_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+
+    pre_root->addKid( pre_selector );
+    post_root->addKid( post_selector );
 }
 
 
@@ -93,6 +103,10 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
     planets->repaint( sun_angle, nplanets, planet_data );
     stars->repaint( sun_angle, nstars, star_data );
 
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+	cloud_layers[i]->repaint( fog_color );
+    }
+
     return true;
 }
 
@@ -104,7 +118,7 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
 // spin specifies a rotation about the new Z axis (this allows
 // additional orientation for the sunrise/set effects and is used by
 // the skydome and perhaps clouds.
-bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev, 
+bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
 			double lon, double lat, double spin,
 			double gst, 
 			double sun_ra, double sun_dec, double sun_dist,
@@ -117,5 +131,28 @@ bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev,
     planets->reposition( view_pos, angle );
     stars->reposition( view_pos, angle );
 
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+	cloud_layers[i]->reposition( zero_elev, view_up, lon, lat );
+    }
+
     return true;
+}
+
+
+// draw background portions of the sky
+void SGSky::draw_background() {
+    ssgCullAndDraw( pre_root );
+}
+
+
+// draw scenery elements of the sky
+void SGSky::draw_scene() {
+    ssgCullAndDraw( post_root );
+}
+
+ 
+void SGSky::add_cloud_layer( double asl ) {
+    SGCloudLayer *layer = new SGCloudLayer;
+    post_transform -> addKid( layer->build(tex_path, 20000.0f, asl) );
+    cloud_layers.push_back( layer );
 }

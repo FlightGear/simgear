@@ -1,6 +1,7 @@
 noinst_LIBRARIES = libSky.a
 
 libSky_a_SOURCES = \
+	cloud.cxx cloud.hxx \
 	dome.cxx dome.hxx \
 	moon.cxx moon.hxx \
 	oursun.cxx oursun.hxx \

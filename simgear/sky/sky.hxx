@@ -33,15 +33,28 @@
 
 #include <plib/ssg.h>		// plib include
 
+#include <simgear/compiler.h>
 #include <simgear/misc/fgpath.hxx>
 
+#include <vector>
+
+#include "cloud.hxx"
 #include "dome.hxx"
 #include "moon.hxx"
 #include "oursun.hxx"
 #include "stars.hxx"
 
+FG_USING_STD(vector);
+
+
+typedef vector < SGCloudLayer* > layer_list_type;
+typedef layer_list_type::iterator layer_list_iterator;
+typedef layer_list_type::const_iterator layer_list_const_iterator;
+
 
 class SGSky {
+
+private:
 
     // components of the sky
     SGSkyDome *dome;
@@ -49,9 +62,12 @@ class SGSky {
     SGMoon *moon;
     SGStars *planets;
     SGStars *stars;
+    layer_list_type cloud_layers;
 
-    ssgSelector *sky_selector;
-    ssgTransform *sky_transform;
+    ssgRoot *pre_root, *post_root;
+
+    ssgSelector *pre_selector, *post_selector;
+    ssgTransform *pre_transform, *post_transform;
 
     FGPath tex_path;
 
@@ -65,9 +81,9 @@ public:
 
     // initialize the sky and connect the components to the scene
     // graph at the provided branch
-    ssgBranch *build( double sun_size, double moon_size,
-		      int nplanets, sgdVec3 *planet_data, double planet_dist,
-		      int nstars, sgdVec3 *star_data, double star_dist );
+    void build( double sun_size, double moon_size,
+		int nplanets, sgdVec3 *planet_data, double planet_dist,
+		int nstars, sgdVec3 *star_data, double star_dist );
 
     // repaint the sky components based on current value of sun_angle,
     // sky, and fog colors.
@@ -88,23 +104,43 @@ public:
     // spin specifies a rotation about the new Z axis (this allows
     // additional orientation for the sunrise/set effects and is used
     // by the skydome and perhaps clouds.
-    bool reposition( sgVec3 view_pos, sgVec3 zero_elev, 
+    bool reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
 		     double lon, double lat, double spin,
 		     double gst, 
 		     double sun_ra, double sun_dec, double sun_dist,
 		     double moon_ra, double moon_dec, double moon_dist );
+
+    // draw background portions of the sky
+    void draw_background();
+
+    // draw scenery elements of the sky
+    void draw_scene();
 
     // specify the texture path (optional, defaults to current directory)
     inline void texture_path( const string& path ) {
 	tex_path = FGPath( path );
     }
 
-    // enable the sky in the scene graph (default)
-    inline void enable() { sky_selector->select( 1 ); }
+    // enable the sky
+    inline void enable() {
+	pre_selector->select( 1 );
+	post_selector->select( 1 );
+    }
 
     // disable the sky in the scene graph.  The leaf node is still
     // there, how ever it won't be traversed on by ssgCullandRender()
-    inline void disable() { sky_selector->select( 0 ); }
+    inline void disable() {
+	pre_selector->select( 0 );
+	post_selector->select( 0 );
+    }
+
+    // add a cloud layer (above see level in meters)
+    void add_cloud_layer( double asl );
+
+    inline int get_num_layers() const { return cloud_layers.size(); }
+    inline SGCloudLayer *get_cloud_layer( int i ) const {
+	return cloud_layers[i];
+    }
 };
 
 

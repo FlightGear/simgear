@@ -47,7 +47,7 @@
  * @par Examples:
  * @code
  * SGMetar *m = new SGMetar("METAR KSFO 061656Z 19004KT 9SM SCT100 OVC200 08/03 A3013");
- * double t = m->getTemperature();
+ * double t = m->getTemperature_F();
  * delete m;
  *
  * SGMetar n("KSFO");
@@ -71,15 +71,15 @@ SGMetar::SGMetar(const char *m) :
 	_dewp(NaN),
 	_pressure(NaN)
 {
-	int i;
-	if (isalpha(m[0]) && isalpha(m[1]) && isalpha(m[2]) && isalpha(m[3]) && !m[4]) {
-		for (i = 0; i < 4; i++)
+	if (isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3]) && !m[4]) {
+		for (int i = 0; i < 4; i++)
 			_icao[i] = toupper(m[i]);
 		_icao[4] = '\0';
 		_data = loadData(_icao);
 	} else {
-		_data = new char[strlen(m) + 1];
+		_data = new char[strlen(m) + 2];	// make room for " \0"
 		strcpy(_data, m);
+		_url = _data;
 	}
 	normalizeData();
 
@@ -92,8 +92,10 @@ SGMetar::SGMetar(const char *m) :
 
 	// METAR header
 	scanType();
-	if (!scanId() || !scanDate())
-		throw sg_io_exception("metar data incomplete");
+	if (!scanId() || !scanDate()) {
+		delete[] _data;
+		throw sg_io_exception("metar data incomplete (" + _url + ')');
+	}
 	scanModifier();
 
 	// base set
@@ -116,8 +118,11 @@ SGMetar::SGMetar(const char *m) :
 	scanRemainder();
 	scanRemark();
 
-	if (_grpcount < 4)
-		throw sg_io_exception("metar data invalid");
+	if (_grpcount < 4) {
+		delete[] _data;
+		throw sg_io_exception("metar data invalid (" + _url + ')');
+	}
+	_url = "";
 }
 
 
@@ -148,14 +153,15 @@ char *SGMetar::loadData(const char *id)
 	string host = "weather.noaa.gov";
 	string path = "/pub/data/observations/metar/stations/";
 	path += string(id) + ".TXT";
+	_url = "http://" + host + path;
+
 	string get = string("GET ") + path + " HTTP/1.0\r\n\r\n";
 
 	SGSocket *sock = new SGSocket(host, "80", "tcp");
 	sock->set_timeout(10000);
 	if (!sock->open(SG_IO_OUT)) {
 		delete sock;
-		string err = "failed to load metar data from http://" + host + path;
-		throw sg_io_exception(err);
+		throw sg_io_exception("failed to load metar data from " + _url);
 	}
 
 	sock->writestring(get.c_str());
@@ -177,8 +183,13 @@ char *SGMetar::loadData(const char *id)
 	sock->close();
 	delete sock;
 
-	char *metar = new char[strlen(buf) + 1];
-	strcpy(metar, buf);
+	char *b = buf;
+	scanBoundary(&b);
+	if (*b == '<')
+		throw sg_io_exception("no metar data available from " + _url);
+
+	char *metar = new char[strlen(b) + 2];	// make room for " \0"
+	strcpy(metar, b);
 	return metar;
 }
 
@@ -256,8 +267,9 @@ bool SGMetar::scanType()
 bool SGMetar::scanId()
 {
 	char *m = _m;
-	if (!(isupper(*m++) && isupper(*m++) && isupper(*m++) && isupper(*m++)))
-		return false;
+	for (int i = 0; i < 4; m++, i++)
+		if (!(isalpha(*m) || isdigit(*m)))
+			return false;
 	if (!scanBoundary(&m))
 		return false;
 	strncpy(_icao, _m, 4);
@@ -387,6 +399,12 @@ bool SGMetar::scanVariability()
 bool SGMetar::scanVisibility()
 // TODO: if only directed vis are given, do still set min/max
 {
+	if (!strncmp(_m, "//// ", 5)) {         // spec compliant?
+		_m += 5;
+		_grpcount++;
+		return true;
+	}
+
 	char *m = _m;
 	double distance;
 	int i, dir = -1;

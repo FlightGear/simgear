@@ -148,12 +148,6 @@ protected:
 class SGMetar {
 public:
 	SGMetar(const char *m);
-
-        // The following contructor is tempting, but it is not
-        // correct, it creates an anonymous instance of SGMetar and
-        // then immediately throws it away.
-        // SGMetar(const string m) { SGMetar(m.c_str()); }
-
 	~SGMetar();
 
 	enum ReportType {
@@ -175,12 +169,12 @@ public:
 
 	inline int	getWindDir()		const { return _wind_dir; }
 	inline double	getWindSpeed_mps()	const { return _wind_speed; }
-	inline double	getWindSpeed_kmh()	const { return _wind_speed == NaN ? NaN : _wind_speed * 3.6; }
+	inline double	getWindSpeed_kmh()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_KMH; }
 	inline double	getWindSpeed_kt()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_KT; }
 	inline double	getWindSpeed_mph()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_MPH; }
 
 	inline double	getGustSpeed_mps()	const { return _gust_speed; }
-	inline double	getGustSpeed_kmh()	const { return _gust_speed == NaN ? NaN : _gust_speed * 3.6; }
+	inline double	getGustSpeed_kmh()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_KMH; }
 	inline double	getGustSpeed_kt()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_KT; }
 	inline double	getGustSpeed_mph()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_MPH; }
 
@@ -206,6 +200,7 @@ public:
 	inline vector<string>& getWeather()		{ return _weather; }
 
 protected:
+	string	_url;
 	int	_grpcount;
 	char	*_data;
 	char	*_m;

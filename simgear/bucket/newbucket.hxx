@@ -257,12 +257,14 @@ public:
     // Informational methods.
 
     /**
-     * @return the lon of the lower left corner of this tile.
+     * @return the lon of the lower left corner of 
+     * the 1x1 chunk containing this tile.
      */
     inline int get_lon() const { return lon; }
 
     /**
-     * @return the lat of the lower left corner of this tile.
+     * @return the lat of the lower left corner of 
+     * the 1x1 chunk containing this tile.
      */
     inline int get_lat() const { return lat; }
 

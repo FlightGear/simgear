@@ -279,9 +279,7 @@ case "${host}" in
     AC_SEARCH_LIBS(alGenBuffers, openal32)
     AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
-    if test "x$ac_cv_lib_openal32_algenbuffers" == "xyes"; then
-       OPENAL_OK="yes"
-    fi
+    OPENAL_OK="$ac_cv_search_alGenBuffers"
     ;;
 
 *-apple-darwin*)
@@ -296,14 +294,12 @@ case "${host}" in
     dnl default unix style machines
 
     AC_SEARCH_LIBS(alGenBuffers, openal)
-    if test "x$ac_cv_lib_openal_algenbuffers" == "xyes"; then
-       OPENAL_OK="yes"
-    fi
+    OPENAL_OK="$ac_cv_search_alGenBuffers"
     ;;
 
 esac
 
-if test "x$OPENAL_OK" != "xyes"; then
+if test "$OPENAL_OK" == "no"; then
     echo
     echo "You *must* have the openal library installed on your system to build"
     echo "SimGear!"

@@ -14,8 +14,7 @@ namespace std {
    };
 
 
-   class istringstream : public istrstream {
-   };
+   typedef istrstream istringstream;
 
 };
 

@@ -17,7 +17,7 @@
 #include <simgear/math/sg_random.h>
 
 #include "animation.hxx"
-#include "flash.hxx"
+#include "custtrans.hxx"
 #include "personality.hxx"
 
 
@@ -420,26 +420,12 @@ SGSpinAnimation::update()
 SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgSelector),
     _use_personality( props->getBoolValue("use-personality",false) ),
+    _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
+    _last_time_sec( sim_time_sec ),
     _total_duration_sec( 0 ),
     _step( 0 )
     
 {
-    SGPropertyNode_ptr dNode = props->getChild( "duration-sec" );
-    if ( dNode == 0 ) {
-        _duration_sec = 1.0;
-    } else {
-        SGPropertyNode_ptr rNode = dNode->getChild("random");
-        if ( rNode == 0 ) {
-            _duration_sec = dNode->getDoubleValue();
-        } else {
-            double dmin = rNode->getDoubleValue( "min", 0.0 ),
-                   dmax = rNode->getDoubleValue( "max", 1.0 );
-            _duration_sec = dmin + sg_random() * ( dmax - dmin );
-        }
-    }
-
-    _last_time_sec = sim_time_sec - _duration_sec;
-
     vector<SGPropertyNode_ptr> nodes = props->getChildren( "branch-duration-sec" );
     size_t nb = nodes.size();
     for ( size_t i = 0; i < nb; i++ ) {
@@ -477,13 +463,17 @@ SGTimedAnimation::update()
         SGPersonalityBranch *key = current_object;
         if ( !key->getIntValue( this, INIT ) ) {
             double total = 0;
+            double offset = 1.0;
             for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
                 DurationSpec &sp = _branch_duration_specs[ i ];
                 double v = sp._min + sg_random() * ( sp._max - sp._min );
                 key->setDoubleValue( v, this, BRANCH_DURATION_SEC, i );
+                if ( i == 0 )
+                    offset = v;
                 total += v;
             }
-            key->setDoubleValue( sim_time_sec, this, LAST_TIME_SEC );
+            offset *= sg_random();
+            key->setDoubleValue( sim_time_sec - offset, this, LAST_TIME_SEC );
             key->setDoubleValue( total, this, TOTAL_DURATION_SEC );
             key->setIntValue( 0, this, STEP );
             key->setIntValue( 1, this, INIT );
@@ -1040,33 +1030,129 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 // Implementation of SGFlashAnimation
 ////////////////////////////////////////////////////////////////////////
 SGFlashAnimation::SGFlashAnimation(SGPropertyNode_ptr props)
-  : SGAnimation( props, new SGFlash )
+  : SGAnimation( props, new SGCustomTransform )
 {
-  sgVec3 axis;
-  axis[0] = props->getFloatValue("axis/x", 0);
-  axis[1] = props->getFloatValue("axis/y", 0);
-  axis[2] = props->getFloatValue("axis/z", 1);
-  ((SGFlash *)_branch)->setAxis( axis );
+  _axis[0] = props->getFloatValue("axis/x", 0);
+  _axis[1] = props->getFloatValue("axis/y", 0);
+  _axis[2] = props->getFloatValue("axis/z", 1);
 
-  sgVec3 center;
-  center[0] = props->getFloatValue("center/x-m", 0);
-  center[1] = props->getFloatValue("center/y-m", 0);
-  center[2] = props->getFloatValue("center/z-m", 0);
-  ((SGFlash *)_branch)->setCenter( center );
+  _center[0] = props->getFloatValue("center/x-m", 0);
+  _center[1] = props->getFloatValue("center/y-m", 0);
+  _center[2] = props->getFloatValue("center/z-m", 0);
 
-  float offset = props->getFloatValue("offset", 0.0);
-  float factor = props->getFloatValue("factor", 1.0);
-  float power = props->getFloatValue("power", 1.0);
-  bool two_sides = props->getBoolValue("two-sides", false);
-  ((SGFlash *)_branch)->setParameters( power, factor, offset, two_sides );
+  _offset = props->getFloatValue("offset", 0.0);
+  _factor = props->getFloatValue("factor", 1.0);
+  _power = props->getFloatValue("power", 1.0);
+  _two_sides = props->getBoolValue("two-sides", false);
 
-  float v_min = props->getFloatValue("min", 0.0);
-  float v_max = props->getFloatValue("max", 1.0);
-  ((SGFlash *)_branch)->setClampValues( v_min, v_max );
+  _min_v = props->getFloatValue("min", 0.0);
+  _max_v = props->getFloatValue("max", 1.0);
+
+  ((SGCustomTransform *)_branch)->setTransCallback( &SGFlashAnimation::flashCallback, this );
 }
 
 SGFlashAnimation::~SGFlashAnimation()
 {
+}
+
+void SGFlashAnimation::flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d )
+{
+  ((SGFlashAnimation *)d)->flashCallback( r, f, m );
+}
+
+void SGFlashAnimation::flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
+{
+  sgVec3 transformed_axis;
+  sgXformVec3( transformed_axis, _axis, m );
+  sgNormalizeVec3( transformed_axis );
+
+  sgVec3 view;
+  sgFullXformPnt3( view, _center, m );
+  sgNormalizeVec3( view );
+
+  float cos_angle = -sgScalarProductVec3( transformed_axis, view );
+  float scale_factor = 0.f;
+  if ( _two_sides && cos_angle < 0 )
+    scale_factor = _factor * (float)pow( -cos_angle, _power ) + _offset;
+  else if ( cos_angle > 0 )
+    scale_factor = _factor * (float)pow( cos_angle, _power ) + _offset;
+
+  if ( scale_factor < _min_v )
+      scale_factor = _min_v;
+  if ( scale_factor > _max_v )
+      scale_factor = _max_v;
+
+  sgMat4 transform;
+  sgMakeIdentMat4( transform );
+  transform[0][0] = scale_factor;
+  transform[1][1] = scale_factor;
+  transform[2][2] = scale_factor;
+  transform[3][0] = _center[0] * ( 1 - scale_factor );
+  transform[3][1] = _center[1] * ( 1 - scale_factor );
+  transform[3][2] = _center[2] * ( 1 - scale_factor );
+
+  sgCopyMat4( r, m );
+  sgPreMultMat4( r, transform );
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGDistScaleAnimation
+////////////////////////////////////////////////////////////////////////
+SGDistScaleAnimation::SGDistScaleAnimation(SGPropertyNode_ptr props)
+  : SGAnimation( props, new SGCustomTransform ),
+    _factor(props->getFloatValue("factor", 1.0)),
+    _offset(props->getFloatValue("offset", 0.0)),
+    _min_v(props->getFloatValue("min", 0.0)),
+    _max_v(props->getFloatValue("max", 1.0)),
+    _has_min(props->hasValue("min")),
+    _has_max(props->hasValue("max")),
+    _table(read_interpolation_table(props))
+{
+  _center[0] = props->getFloatValue("center/x-m", 0);
+  _center[1] = props->getFloatValue("center/y-m", 0);
+  _center[2] = props->getFloatValue("center/z-m", 0);
+
+  ((SGCustomTransform *)_branch)->setTransCallback( &SGDistScaleAnimation::distScaleCallback, this );
+}
+
+SGDistScaleAnimation::~SGDistScaleAnimation()
+{
+}
+
+void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d )
+{
+  ((SGDistScaleAnimation *)d)->distScaleCallback( r, f, m );
+}
+
+void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
+{
+  sgVec3 view;
+  sgFullXformPnt3( view, _center, m );
+
+  float scale_factor = sgLengthVec3( view );
+  if (_table == 0) {
+    scale_factor = _factor * scale_factor + _offset;
+    if ( _has_min && scale_factor < _min_v )
+      scale_factor = _min_v;
+    if ( _has_max && scale_factor > _max_v )
+      scale_factor = _max_v;
+  } else {
+    scale_factor = _table->interpolate( scale_factor );
+  }
+
+  sgMat4 transform;
+  sgMakeIdentMat4( transform );
+  transform[0][0] = scale_factor;
+  transform[1][1] = scale_factor;
+  transform[2][2] = scale_factor;
+  transform[3][0] = _center[0] * ( 1 - scale_factor );
+  transform[3][1] = _center[1] * ( 1 - scale_factor );
+  transform[3][2] = _center[2] * ( 1 - scale_factor );
+
+  sgCopyMat4( r, m );
+  sgPreMultMat4( r, transform );
 }
 
 // end of animation.cxx

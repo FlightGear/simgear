@@ -126,6 +126,22 @@ SGMatModel::get_model_count( SGModelLib *modellib,
   return _models.size();
 }
 
+static void
+setAlphaClampToBranch( ssgBranch *b, float clamp )
+{
+  int nb = b->getNumKids();
+  for (int i = 0; i<nb; i++) {
+    ssgEntity *e = b->getKid(i);
+    if (e->isAKindOf(ssgTypeLeaf())) {
+      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
+      s->enable( GL_ALPHA_TEST );
+      s->setAlphaClamp( clamp );
+    } else if (e->isAKindOf(ssgTypeBranch())) {
+      setAlphaClampToBranch( (ssgBranch*)e, clamp );
+    }
+  }
+}
+
 inline void
 SGMatModel::load_models ( SGModelLib *modellib,
                           const string &fg_root,
@@ -147,6 +163,14 @@ SGMatModel::load_models ( SGModelLib *modellib,
         lod->ref();
         lod->setRanges(ranges, 2);
 	if (_heading_type == HEADING_BILLBOARD) {
+          // if the model is a billboard, it is likely :
+          // 1. a branch with only leaves,
+          // 2. a tree or a non rectangular shape faked by transparency
+          // We add alpha clamp then
+          if ( entity->isAKindOf(ssgTypeBranch()) ) {
+            ssgBranch *b = (ssgBranch *)entity;
+            setAlphaClampToBranch( b, 0.01f );
+          }
 	  ssgCutout * cutout = new ssgCutout(false);
 	  cutout->addKid(entity);
 	  lod->addKid(cutout);

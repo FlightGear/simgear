@@ -156,6 +156,8 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGAlphaTestAnimation(node);
   } else if (!strcmp("flash", type)) {
     animation = new SGFlashAnimation(node);
+  } else if (!strcmp("dist-scale", type)) {
+    animation = new SGDistScaleAnimation(node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);

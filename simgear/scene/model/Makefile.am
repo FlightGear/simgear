@@ -6,7 +6,7 @@ noinst_HEADERS =
 
 include_HEADERS = \
 	animation.hxx \
-	flash.hxx \
+	custtrans.hxx \
 	location.hxx \
 	model.hxx \
 	modellib.hxx \
@@ -15,7 +15,7 @@ include_HEADERS = \
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
-	flash.cxx \
+	custtrans.cxx \
 	location.cxx \
 	model.cxx \
 	modellib.cxx \

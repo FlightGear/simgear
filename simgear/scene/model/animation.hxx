@@ -433,6 +433,35 @@ class SGFlashAnimation : public SGAnimation
 public:
   SGFlashAnimation(SGPropertyNode_ptr props);
   virtual ~SGFlashAnimation ();
+
+  static void flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d );
+  void flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m );
+
+private:
+  sgVec3 _axis, _center;
+  float _power, _factor, _offset, _min_v, _max_v;
+  bool _two_sides;
+};
+
+
+/**
+ * An animation that compute a scale according to 
+ * the distance from a point and the viewer
+ */
+class SGDistScaleAnimation : public SGAnimation
+{
+public:
+  SGDistScaleAnimation(SGPropertyNode_ptr props);
+  virtual ~SGDistScaleAnimation ();
+
+  static void distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d );
+  void distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m );
+
+private:
+  sgVec3 _center;
+  float _factor, _offset, _min_v, _max_v;
+  bool _has_min, _has_max;
+  SGInterpTable * _table;
 };
 
 

@@ -42,12 +42,12 @@ Classical least squares fit:
 \f]
 
 \f[
-    b_1 = \frac{n * \sum_0^i (x_i*y_i) - \sum_0^i x_i* \sum_0^i y_i}
-          {n*\sum_0^i x_i^2 - (\sum_0^i x_i)^2}
+    b_1 = \frac{n * \sum_0^{i-1} (x_i*y_i) - \sum_0^{i-1} x_i* \sum_0^{i-1} y_i}
+          {n*\sum_0^{i-1} x_i^2 - (\sum_0^{i-1} x_i)^2}
 \f]
 
 \f[
-    b_0 = \frac{\sum_0^i y_i}{n} - b_1 * \frac{\sum_0^i x_i}{n}
+    b_0 = \frac{\sum_0^{i-1} y_i}{n} - b_1 * \frac{\sum_0^{i-1} x_i}{n}
 \f]
 */
 void least_squares(double *x, double *y, int n, double *m, double *b);

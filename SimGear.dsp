@@ -713,36 +713,6 @@ SOURCE=.\simgear\metar\Stspack3.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\simgear\misc\fgpath.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmisc"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmisc"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\misc\fgstream.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmisc"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmisc"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\misc\props.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -759,6 +729,36 @@ SOURCE=.\simgear\misc\props.cxx
 # Begin Source File
 
 SOURCE=.\simgear\misc\props_io.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\misc\sg_path.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\misc\sgstream.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

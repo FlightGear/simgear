@@ -1,5 +1,5 @@
-New in 0.3.5.pre1
-* March 22, 2004
+New in 0.3.5.pre2
+* March 23, 2004
 
 * Added Andy's nasal interpreter for small built in scripting tasks.
   Nasal integrates nicely with FlightGear's property system.

@@ -10,7 +10,7 @@ dnl Require at least automake 2.52
 AC_PREREQ(2.52)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.3.5.pre1)
+AM_INIT_AUTOMAKE(SimGear, 0.3.5.pre2)
 
 dnl Specify KAI C++ compiler and flags.
 dnl Borrowed with slight modification from blitz distribution.
@@ -113,6 +113,13 @@ else
 fi
 AM_CONDITIONAL(ENABLE_JPEG_SERVER, test "x$with_jpeg_factory" = "xyes")
 
+# specify the plib location
+AC_ARG_WITH(plib, [  --with-plib=PREFIX      Specify the prefix path to plib])
+
+if test "x$with_plib" != "x" ; then
+    echo "plib prefix is $with_plib"
+    EXTRA_DIRS="${EXTRA_DIRS} $with_plib"
+fi
 
 dnl Determine an extra directories to add to include/lib search paths
 case "${host}" in
@@ -127,7 +134,7 @@ case "${host}" in
     if test -d /opt/X11R6 ; then
         EXTRA_DIR2="/opt/X11R6"
     fi
-    EXTRA_DIRS="$EXTRA_DIR1 $EXTRA_DIR2"
+    EXTRA_DIRS="${EXTRA_DIRS} $EXTRA_DIR1 $EXTRA_DIR2"
     ;;
 
 esac

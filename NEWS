@@ -1,3 +1,28 @@
+New in 0.3.4-pre1
+* October 15, 2003
+
+* Removed Metakit, FlightGear no longer uses it.
+* Removed all glut dependencies from SimGear.
+* Moved FGEventMgr and FGSubsystemMgr over to SimGear.
+* Some more incremental work on 3D clouds.
+* Added some "fastmath" functions.
+* Some lighting tweaks and fixes (especially for taxiways.)
+* Added support for "blend" and "scale" and "texture" animations.
+* Added support for animating rotations around an arbitrary axis (so the
+  aircraft designer isn't forced to figure out animations as a combination
+  of rotations around X, Y, and X axes.
+* Updates to sky dome modeling and make cloud layers follow the curve
+  of the earth (sort of.)
+* Updates to sky dome, cloud, and sunrise/sunset color and lighting
+  effects to make them more realistic and lifelike.
+* Better support for detecting and using OpenGL extensions at run time.
+* Add support for win32-pthreads in MSVC.NET
+* Various MSVC fixes.
+* Various Solaris fixes.
+* Various cygwin/mingwin fixes.
+* Various Mac OS X fixes.
+
+
 New in 0.3.3
 * June 3, 2003
 

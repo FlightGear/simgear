@@ -34,4 +34,4 @@ SUBDIRS = \
 	timing \
 	xgl
 
-DIST_SUBDIRS = $(SUBDIRS)
+DIST_SUBDIRS = $(SUBDIRS) compatibility metar threads

@@ -24,6 +24,7 @@ openal_test2_SOURCES = openal_test2.cxx
 openal_test1_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(openal_LIBS)
+
 openal_test2_LDADD = \
 	$(top_builddir)/simgear/sound/libsgsound.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \

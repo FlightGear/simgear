@@ -80,7 +80,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
             << samplepath.str() );
 
-   source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
+    source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
@@ -138,7 +138,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
 
 
 // constructor
-SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
+SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
+                              bool cleanup) :
     data(NULL),
     pitch(1.0),
     volume(1.0),
@@ -172,6 +173,14 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     freq = _freq;
 
     alBufferData( buffer, format, data, size, freq );
+    if (alGetError() != AL_NO_ERROR) {
+        throw sg_exception("Failed to buffer data.");
+    }
+
+    if ( cleanup ) {
+        alutUnloadWAV( format, data, size, freq );
+        data = NULL;
+    }
 
     // Bind buffer with a source.
     alGenSources(1, &source);
@@ -195,9 +204,6 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
 // destructor
 SGSoundSample::~SGSoundSample() {
     SG_LOG( SG_GENERAL, SG_INFO, "Deleting a sample" );
-    if ( data != NULL ) {
-        free(data);
-    }
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);
 }

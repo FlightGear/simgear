@@ -5,7 +5,7 @@
 # include <iostream.h>
 # include <fstream.h>
 
-#if defined(sgi) && !defined(__GNUC__)
+# if defined(sgi) && !defined(__GNUC__)
 
   class ios_base : public ios {
   public:
@@ -23,7 +23,9 @@
     using ::clog;
     using ::endl;
 
+    using ::ios;
     using ::ios_base;
+    using ::iostream;
     using ::istream;
     using ::ostream;
 
@@ -31,7 +33,7 @@
     using ::ofstream;
   };
 
-#endif
+# endif
 
 #endif // !__SG_IOSTREAM
 

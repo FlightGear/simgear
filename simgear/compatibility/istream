@@ -4,14 +4,14 @@
 
 # include <iostream>
 
-#if defined(sgi) && !defined(__GNUC__)
+# if defined(sgi) && !defined(__GNUC__)
 
 # include <stream.h>
 # include <string>
 
   using std::getline;
 
-#endif
+# endif
 
 #endif // !__SG_ISTREAM
 

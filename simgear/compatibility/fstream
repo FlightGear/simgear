@@ -3,6 +3,15 @@
 #define __SG_FSTREAM 1
 
 # include <fstream.h>
+# include <iostream>
+
+# if defined(sgi) && !defined(__GNUC__)
+
+  namespace std {
+    using ::fstream;
+  };
+
+# endif
 
 #endif // !__SG_FSTREAM
 

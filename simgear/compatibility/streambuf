@@ -23,7 +23,7 @@ public:
 };
 
 
-#if defined(sgi) && !defined(__GNUC__)
+# if defined(sgi) && !defined(__GNUC__)
 
 # define pubsync  sync
 
@@ -32,7 +32,7 @@ public:
     using ::streampos;
     using ::streamoff;
   };
-#endif
+# endif
 
 #endif // !__SG_STREAMBUF
 

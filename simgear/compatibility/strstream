@@ -4,5 +4,17 @@
 
 # include <strstream.h>
 
+# if defined(sgi) && !defined(__GNUC__)
+
+  namespace std {
+    using ::ends;
+
+    using ::strstream;
+    using ::istrstream;
+    using ::ostrstream;
+  };
+
+# endif
+
 #endif // !__SG_STRSTREAM
 

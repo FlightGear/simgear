@@ -51,15 +51,16 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                    double *bounding_radius,
                    SGMaterialLib *matlib,
                    bool use_random_objects,
-                   ssgBranch* geometry,
-                   ssgBranch* rwy_lights,
-                   ssgBranch* taxi_lights,
+                   ssgBranch *geometry,
+                   ssgBranch *vasi_lights,
+                   ssgBranch *rwy_lights,
+                   ssgBranch *taxi_lights,
                    ssgVertexArray *ground_lights );
 
 // Generate an ocean tile
 bool sgGenTile( const string& path, SGBucket b,
                 Point3D *center, double *bounding_radius,
-                SGMaterialLib *matlib, ssgBranch* geometry );
+                SGMaterialLib *matlib, ssgBranch *geometry );
 
 
 #endif // _SG_OBJ_HXX

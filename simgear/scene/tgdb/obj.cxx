@@ -318,9 +318,10 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                    double *bounding_radius,
                    SGMaterialLib *matlib,
                    bool use_random_objects,
-                   ssgBranch* geometry,
-                   ssgBranch* rwy_lights,
-                   ssgBranch* taxi_lights,
+                   ssgBranch *geometry,
+                   ssgBranch *vasi_lights,
+                   ssgBranch *rwy_lights,
+                   ssgBranch *taxi_lights,
                    ssgVertexArray *ground_lights )
 {
     SGBinObject obj;
@@ -351,7 +352,8 @@ bool sgBinObjLoad( const string& path, const bool is_base,
     group_list const& pts_n = obj.get_pts_n();
     for ( i = 0; i < pts_v.size(); ++i ) {
         // cout << "pts_v.size() = " << pts_v.size() << endl;
-	if ( pt_materials[i].substr(0, 3) == "RWY" ) {
+        if ( pt_materials[i].substr(0, 3) == "RWY" ) {
+            // airport environment lighting
             sgVec3 up;
             sgSetVec3( up, center->x(), center->y(), center->z() );
             // returns a transform -> lod -> leaf structure
@@ -359,16 +361,17 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                                          pts_v[i], pts_n[i],
                                                          matlib,
                                                          pt_materials[i], up );
-            if ( pt_materials[i].substr(0, 16) == "RWY_BLUE_TAXIWAY_LIGHTS" ) {
-                taxi_lights->addKid( branch );
-            } else if ( pt_materials[i].substr(0, 16)
-                        == "RWY_GREEN_TAXIWAY_LIGHTS" )
+            if ( pt_materials[i] == "RWY_VASI_LIGHTS" ) {
+                vasi_lights->addKid( branch );
+            } else if ( pt_materials[i] == "RWY_BLUE_TAXIWAY_LIGHTS"
+                || pt_materials[i] == "RWY_GREEN_TAXIWAY_LIGHTS" )
             {
                 taxi_lights->addKid( branch );
             } else {
                 rwy_lights->addKid( branch );
             }
         } else {
+            // other geometry
             material = pt_materials[i];
             tex_index.clear();
             ssgLeaf *leaf = sgMakeLeaf( path, GL_POINTS, matlib, material,

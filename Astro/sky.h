@@ -1,8 +1,9 @@
 /**************************************************************************
- * sun.h
+ * sky.h -- model sky with an upside down "bowl"
  *
- * Written 1997 by Durk Talsma, started October, 1997.  For the flight gear
- * project.
+ * Written by Curtis Olson, started December 1997.
+ *
+ * Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,32 +24,25 @@
  **************************************************************************/
 
 
-#ifndef SUN_H
-#define SUN_H
+/* (Re)generate the display list */
+void fgSkyInit();
 
+/* (Re)calculate the sky colors at each vertex */
+void fgSkyColorsInit();
 
-struct SunPos fgCalcSunPos(struct OrbElements sunParams);
-extern struct OrbElements pltOrbElements[9];
-
-/* Initialize the Sun */
-void fgSunInit();
-
-/* Draw the Sun */
-void fgSunRender();
-
-
-#endif /* SUN_H */
+/* Draw the Sky */
+void fgSkyRender();
 
 
 /* $Log$
-/* Revision 1.3  1997/12/11 04:43:56  curt
-/* Fixed sun vector and lighting problems.  I thing the moon is now lit
-/* correctly.
+/* Revision 1.1  1998/01/07 03:16:19  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
- * Revision 1.2  1997/11/25 19:25:39  curt
- * Changes to integrate Durk's moon/sun code updates + clean up.
+ * Revision 1.2  1997/12/22 23:45:49  curt
+ * First stab at sunset/sunrise sky glow effects.
  *
- * Revision 1.1  1997/10/25 03:16:12  curt
- * Initial revision of code contributed by Durk Talsma.
+ * Revision 1.1  1997/12/17 23:14:31  curt
+ * Initial revision.
+ * Begin work on rendering the sky. (Rather than just using a clear screen.)
  *
  */

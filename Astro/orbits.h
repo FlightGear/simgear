@@ -81,9 +81,12 @@ void fgSolarSystemUpdate(struct OrbElements *planets, struct fgTIME t);
 
 
 /* $Log$
-/* Revision 1.2  1997/12/30 16:36:52  curt
-/* Merged in Durk's changes ...
+/* Revision 1.1  1998/01/07 03:16:17  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.2  1997/12/30 16:36:52  curt
+ * Merged in Durk's changes ...
+ *
  * Revision 1.1  1997/10/25 03:16:10  curt
  * Initial revision of code contributed by Durk Talsma.
  *

@@ -1,8 +1,8 @@
 /**************************************************************************
- * astro.h
+ * planets.h
  *
- * Written by Durk Talsma. Started November 1997, for use with the flight
- * gear project.
+ * Written 1997 by Durk Talsma, started October, 1997.  For the flight gear
+ * project.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,39 +23,28 @@
  **************************************************************************/
 
 
-#ifndef _ASTRO_H_
-#define _ASTRO_H_
-
-#include <GL/glut.h>
-#include "stars.h"
-
-extern struct CelestialCoord
-    moonPos;
-
-extern float xMoon, yMoon, zMoon, xSun, ySun, zSun;
-/* extern GLint moon, sun; */
-extern GLint stars[FG_STAR_LEVELS];
+#ifndef PLANETS_H
+#define PLANETS_H
 
 
-/* Initialize Astronomical Objects */
-void fgAstroInit();
+struct CelestialCoord fgCalculatePlanet(struct OrbElements planet,
+                                         struct OrbElements theSun,
+                                         struct fgTIME t, int idx);
 
-/* Render Astronomical objects */
-void fgAstroRender();
-
-
-#endif /* _ASTRO_H_ */
+#endif /* PLANETS_H */
 
 
 /* $Log$
-/* Revision 1.3  1997/12/17 23:13:46  curt
-/* Began working on rendering the sky.
+/* Revision 1.1  1998/01/07 03:16:18  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
- * Revision 1.2  1997/12/11 04:43:56  curt
- * Fixed sun vector and lighting problems.  I thing the moon is now lit
- * correctly.
+ * Revision 1.3  1997/12/30 16:36:53  curt
+ * Merged in Durk's changes ...
  *
- * Revision 1.1  1997/11/25 23:20:23  curt
- * Initial revision.
+ * Revision 1.2  1997/12/12 21:41:30  curt
+ * More light/material property tweaking ... still a ways off.
+ *
+ * Revision 1.1  1997/10/25 03:16:11  curt
+ * Initial revision of code contributed by Durk Talsma.
  *
  */

@@ -329,9 +329,12 @@ void fgSkyRender() {
 
 
 /* $Log$
-/* Revision 1.11  1997/12/30 22:22:38  curt
-/* Further integration of event manager.
+/* Revision 1.1  1998/01/07 03:16:19  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.11  1997/12/30 22:22:38  curt
+ * Further integration of event manager.
+ *
  * Revision 1.10  1997/12/30 20:47:53  curt
  * Integrated new event manager with subsystem initializations.
  *

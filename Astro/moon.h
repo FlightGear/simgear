@@ -51,10 +51,13 @@ extern struct OrbElements pltOrbElements[9];
 
 
 /* $Log$
-/* Revision 1.4  1997/12/11 04:43:56  curt
-/* Fixed sun vector and lighting problems.  I thing the moon is now lit
-/* correctly.
+/* Revision 1.1  1998/01/07 03:16:16  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.4  1997/12/11 04:43:56  curt
+ * Fixed sun vector and lighting problems.  I thing the moon is now lit
+ * correctly.
+ *
  * Revision 1.3  1997/11/25 19:25:35  curt
  * Changes to integrate Durk's moon/sun code updates + clean up.
  *

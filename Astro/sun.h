@@ -1,5 +1,5 @@
 /**************************************************************************
- * planets.h
+ * sun.h
  *
  * Written 1997 by Durk Talsma, started October, 1997.  For the flight gear
  * project.
@@ -23,25 +23,35 @@
  **************************************************************************/
 
 
-#ifndef PLANETS_H
-#define PLANETS_H
+#ifndef SUN_H
+#define SUN_H
 
 
-struct CelestialCoord fgCalculatePlanet(struct OrbElements planet,
-                                         struct OrbElements theSun,
-                                         struct fgTIME t, int idx);
+struct SunPos fgCalcSunPos(struct OrbElements sunParams);
+extern struct OrbElements pltOrbElements[9];
 
-#endif /* PLANETS_H */
+/* Initialize the Sun */
+void fgSunInit();
+
+/* Draw the Sun */
+void fgSunRender();
+
+
+#endif /* SUN_H */
 
 
 /* $Log$
-/* Revision 1.3  1997/12/30 16:36:53  curt
-/* Merged in Durk's changes ...
+/* Revision 1.1  1998/01/07 03:16:21  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
- * Revision 1.2  1997/12/12 21:41:30  curt
- * More light/material property tweaking ... still a ways off.
+ * Revision 1.3  1997/12/11 04:43:56  curt
+ * Fixed sun vector and lighting problems.  I thing the moon is now lit
+ * correctly.
  *
- * Revision 1.1  1997/10/25 03:16:11  curt
+ * Revision 1.2  1997/11/25 19:25:39  curt
+ * Changes to integrate Durk's moon/sun code updates + clean up.
+ *
+ * Revision 1.1  1997/10/25 03:16:12  curt
  * Initial revision of code contributed by Durk Talsma.
  *
  */

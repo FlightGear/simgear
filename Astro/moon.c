@@ -320,9 +320,12 @@ void fgMoonRender() {
 
 
 /* $Log$
-/* Revision 1.16  1998/01/06 01:20:24  curt
-/* Tweaks to help building with MSVC++
+/* Revision 1.1  1998/01/07 03:16:16  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.16  1998/01/06 01:20:24  curt
+ * Tweaks to help building with MSVC++
+ *
  * Revision 1.15  1998/01/05 18:44:35  curt
  * Add an option to advance/decrease time from keyboard.
  *

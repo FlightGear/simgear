@@ -190,9 +190,12 @@ void fgSunRender() {
 
 
 /* $Log$
-/* Revision 1.12  1998/01/05 18:44:36  curt
-/* Add an option to advance/decrease time from keyboard.
+/* Revision 1.1  1998/01/07 03:16:20  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.12  1998/01/05 18:44:36  curt
+ * Add an option to advance/decrease time from keyboard.
+ *
  * Revision 1.11  1997/12/30 23:09:40  curt
  * Worked on winding problem without luck, so back to calling glFrontFace()
  * 3 times for each scenery area.

@@ -133,9 +133,12 @@ struct CelestialCoord fgCalculatePlanet(struct OrbElements planet,
 
 
 /* $Log$
-/* Revision 1.4  1997/12/30 20:47:52  curt
-/* Integrated new event manager with subsystem initializations.
+/* Revision 1.1  1998/01/07 03:16:18  curt
+/* Moved from .../Src/Scenery/ to .../Src/Astro/
 /*
+ * Revision 1.4  1997/12/30 20:47:52  curt
+ * Integrated new event manager with subsystem initializations.
+ *
  * Revision 1.3  1997/12/30 16:36:52  curt
  * Merged in Durk's changes ...
  *

@@ -108,11 +108,11 @@ change_alpha( ssgBase *_branch, float _blend )
     return;
 
   int num_colors = ((ssgLeaf *)_branch)->getNumColours();
-  unsigned int select_ = (_blend == 1.0) ? 0x0000 : 0xffff;
+// unsigned int select_ = (_blend == 1.0) ? false : true;
 
   for (i = 0; i < num_colors; i++)
   {
-    ((ssgSelector *)_branch)->select( select_ );
+//    ((ssgSelector *)_branch)->select( select_ );
     float *color =  ((ssgLeaf *)_branch)->getColour(i);
     color[3] = _blend;
   }

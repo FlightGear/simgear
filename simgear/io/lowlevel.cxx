@@ -28,222 +28,224 @@
 static int  read_error = false ;
 static int write_error = false ;
 
-int sgReadError  (void) { return  read_error ; }
-int sgWriteError (void) { return write_error ; }
+void sgClearReadError() { read_error = false; }
+void sgClearWriteError() { write_error = false; }
+int sgReadError() { return  read_error ; }
+int sgWriteError() { return write_error ; }
 
 
 void sgReadChar ( gzFile fd, char *var )
 {
-  if ( gzread ( fd, var, sizeof(char) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(char) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteChar ( gzFile fd, const char var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(char) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(char) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadFloat ( gzFile fd, float *var )
 {
-  if ( gzread ( fd, var, sizeof(float) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(float) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteFloat ( gzFile fd, const float var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(float) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(float) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadDouble ( gzFile fd, double *var )
 {
-  if ( gzread ( fd, var, sizeof(double) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(double) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteDouble ( gzFile fd, const double var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadUInt ( gzFile fd, unsigned int *var )
 {
-  if ( gzread ( fd, var, sizeof(unsigned int) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(unsigned int) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteUInt ( gzFile fd, const unsigned int var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned int) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned int) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadInt ( gzFile fd, int *var )
 {
-  if ( gzread ( fd, var, sizeof(int) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(int) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteInt ( gzFile fd, const int var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(int) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(int) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadLong ( gzFile fd, long int *var )
 {
-  if ( gzread ( fd, var, sizeof(long int) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(long int) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteLong ( gzFile fd, const long int var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(long int) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(long int) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadUShort ( gzFile fd, unsigned short *var )
 {
-  if ( gzread ( fd, var, sizeof(unsigned short) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(unsigned short) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteUShort ( gzFile fd, const unsigned short var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned short) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(unsigned short) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadShort ( gzFile fd, short *var )
 {
-  if ( gzread ( fd, var, sizeof(short) ) == 1 ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(short) ) > 0 ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteShort ( gzFile fd, const short var )
 {
-  if ( gzwrite ( fd, (void *)(&var), sizeof(short) ) == 1 ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)(&var), sizeof(short) ) > 0 ) return ;
+    write_error = true ;
 }
 
 
 void sgReadFloat ( gzFile fd, const unsigned int n, float *var )
 {
-  if ( gzread ( fd, var, sizeof(float) * n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(float) * n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteFloat ( gzFile fd, const unsigned int n, const float *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(float) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(float) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
 {
-  if ( gzread ( fd, var, sizeof(double) * n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(double) * n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(double) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(double) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 void sgReadBytes   ( gzFile fd, const unsigned int n, void *var ) 
 {
-  if ( n == 0)
-		return;
-  if ( gzread ( fd, var, n ) == 1 ) 
-		return ;
-  read_error = true ;
+    if ( n == 0)
+	return;
+    if ( gzread ( fd, var, n ) > 0 ) 
+	return ;
+    read_error = true ;
 }
 
 void sgWriteBytes ( gzFile fd, const unsigned int n, const void *var ) 
 {
-	if ( n == 0)
-		return;
-  if ( gzwrite ( fd, (void *)var, n ) == 1 ) 
-		return ;
-  write_error = true ;
+    if ( n == 0)
+	return;
+    if ( gzwrite ( fd, (void *)var, n ) > 0 ) 
+	return ;
+    write_error = true ;
 }
 
 
 void sgReadUShort ( gzFile fd, const unsigned int n, unsigned short *var )
 {
-  if ( gzread ( fd, var, sizeof(unsigned short) * n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(unsigned short) * n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteUShort ( gzFile fd, const unsigned int n, const unsigned short *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(unsigned short) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(unsigned short) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 
 
 void sgReadShort ( gzFile fd, const unsigned int n, short *var )
 {
-  if ( gzread ( fd, var, sizeof(short) * n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(short) * n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteShort ( gzFile fd, const unsigned int n, const short *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(short) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(short) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 
 void sgReadUInt ( gzFile fd, const unsigned int n, unsigned int *var )
 {
-  if ( gzread ( fd, var, sizeof(unsigned int)* n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(unsigned int)* n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteUInt ( gzFile fd, const unsigned int n, const unsigned int *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(unsigned int) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(unsigned int) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 
 
 void sgReadInt ( gzFile fd, const unsigned int n, int *var )
 {
-  if ( gzread ( fd, var, sizeof(int) * n ) == (int)n ) return ;
-  read_error = true ;
+    if ( gzread ( fd, var, sizeof(int) * n ) == (int)n ) return ;
+    read_error = true ;
 }
 
 
 void sgWriteInt ( gzFile fd, const unsigned int n, const int *var )
 {
-  if ( gzwrite ( fd, (void *)var, sizeof(int) * n ) == (int)n ) return ;
-  write_error = true ;
+    if ( gzwrite ( fd, (void *)var, sizeof(int) * n ) == (int)n ) return ;
+    write_error = true ;
 }
 
 
@@ -252,41 +254,41 @@ void sgWriteInt ( gzFile fd, const unsigned int n, const int *var )
 
 void sgReadString ( gzFile fd, char **var )
 {
-  int i ;
-  char s [ MAX_ENTITY_NAME_LENGTH ] ;
+    int i ;
+    char s [ MAX_ENTITY_NAME_LENGTH ] ;
 
-  for ( i = 0 ; i < MAX_ENTITY_NAME_LENGTH ; i++ )
-  {
-    int c = gzgetc ( fd ) ;
-    s [ i ] = c ;
+    for ( i = 0 ; i < MAX_ENTITY_NAME_LENGTH ; i++ )
+	{
+	    int c = gzgetc ( fd ) ;
+	    s [ i ] = c ;
 
-    if ( c == '\0' )
-      break ;
-  }
+	    if ( c == '\0' )
+		break ;
+	}
 
-  if ( i >= MAX_ENTITY_NAME_LENGTH-1 )
-    s [ MAX_ENTITY_NAME_LENGTH-1 ] = '\0' ;
+    if ( i >= MAX_ENTITY_NAME_LENGTH-1 )
+	s [ MAX_ENTITY_NAME_LENGTH-1 ] = '\0' ;
 
 
-  if ( s[0] == '\0' )
-    *var = NULL ;
-  else
-  {
-    *var = new char [ strlen(s)+1 ] ;
-    strcpy ( *var, s ) ;
-  }
+    if ( s[0] == '\0' )
+	*var = NULL ;
+    else
+	{
+	    *var = new char [ strlen(s)+1 ] ;
+	    strcpy ( *var, s ) ;
+	}
 }
 
 
 void sgWriteString ( gzFile fd, const char *var )
 {
-  if ( var != NULL ) {
-      if ( gzwrite ( fd, (void *)var, strlen(var) + 1 ) == 
-	   (int)(strlen(var) + 1) )
-	  return ;
-  } else {
-      gzputc( fd, 0 );
-  }
+    if ( var != NULL ) {
+	if ( gzwrite ( fd, (void *)var, strlen(var) + 1 ) == 
+	     (int)(strlen(var) + 1) )
+	    return ;
+    } else {
+	gzputc( fd, 0 );
+    }
 }
 
 

@@ -34,6 +34,8 @@
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
+#include <simgear/math/sg_types.hxx>
+#include <simgear/bucket/newbucket.hxx>
 
 #include <stdio.h>
 #include <time.h>
@@ -41,7 +43,6 @@
 #include <list>
 #include STL_STRING
 
-#include <simgear/math/sg_types.hxx>
 
 
 typedef vector < int_list > group_list;
@@ -79,7 +80,7 @@ double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes );
 // write out the structures to an ASCII file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-void sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
+bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
 		      Point3D gbs_center, float gbs_radius,
 		      const point_list& wgs84_nodes, const point_list& normals,
 		      const point_list& texcoords, 
@@ -92,7 +93,7 @@ void sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
 
 
 // read a binary file object and populate the provided structures.
-void sgReadBinObj( const string& file,
+bool sgReadBinObj( const string& file,
 		    Point3D &gbs_center, float *gbs_radius,
 		    point_list& wgs84_nodes, point_list& normals,
 		    point_list& texcoords, 
@@ -106,7 +107,7 @@ void sgReadBinObj( const string& file,
 // write out the structures to a binary file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-void sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
+bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
 		    Point3D gbs_center, float gbs_radius,
 		    const point_list& wgs84_nodes, const point_list& normals,
 		    const point_list& texcoords, 

@@ -110,7 +110,7 @@ double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes ) {
 // write out the structures to an ASCII file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-void sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
+bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
 		      Point3D gbs_center, float gbs_radius,
 		      const point_list& wgs84_nodes, const point_list& normals,
 		      const point_list& texcoords, 
@@ -139,7 +139,7 @@ void sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
     FILE *fp;
     if ( (fp = fopen( file.c_str(), "w" )) == NULL ) {
 	cout << "ERROR: opening " << file << " for writing!" << endl;
-	exit(-1);
+	return false;
     }
 
     cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
@@ -299,11 +299,13 @@ void sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
 
     command = "gzip --force --best " + file;
     system(command.c_str());
+
+    return true;
 }
 
 
 // read a binary file and populate the provided structures.
-void sgReadBinObj( const string& file,
+bool sgReadBinObj( const string& file,
 		   Point3D &gbs_center, float *gbs_radius,
 		   point_list& wgs84_nodes, point_list& normals,
 		   point_list& texcoords, 
@@ -315,7 +317,8 @@ void sgReadBinObj( const string& file,
 		   string_list& fan_materials )
 {
     Point3D p;
-    int i, j, k, m;
+    int i, j, k;
+    char material[256];
 
     // zero out structures
     wgs84_nodes.clear();
@@ -342,19 +345,23 @@ void sgReadBinObj( const string& file,
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
 	    cout << "ERROR: opening " << file << " or " << filegz
 		 << "for reading!" << endl;
-	    exit(-1);
+	    return false;
 	}
     }
+
+    sgClearReadError();
 
     // read headers
     int header, version;
     sgReadInt( fp, &header );
-    if ( ((header & 0xFF000000) >> 24) == 'T' &&
+    if ( ((header & 0xFF000000) >> 24) == 'S' &&
 	 ((header & 0x00FF0000) >> 16) == 'G' ) {
 	cout << "Good header" << endl;
 	// read file version
 	version = (header & 0x0000FFFF);
 	cout << "File version = " << version << endl;
+    } else {
+	return false;
     }
 
     // read creation time
@@ -470,8 +477,9 @@ void sgReadBinObj( const string& file,
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / 3;
 		for ( k = 0; k < count; ++k ) {
-		    p = Point3D( ptr[0] / 256.0, ptr[1] / 256.0,
-				 ptr[2] / 256.0 );
+		    p = Point3D( ptr[0] / 128.0 - 1.0,
+				 ptr[1] / 128.0 - 1.0,
+				 ptr[2] / 128.0 - 1.0 );
 		    cout << "normal = " << p << endl;
 		    normals.push_back( p );
 		    ptr += 3;
@@ -521,11 +529,9 @@ void sgReadBinObj( const string& file,
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
-		    char material[256];
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
 		    cout << "material type = " << material << endl;
-		    tri_materials.push_back( material );
 		}
 	    }
 
@@ -537,21 +543,20 @@ void sgReadBinObj( const string& file,
 		char buf[nbytes];
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2 * 3);
+		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
 		int_list vs, tcs;
+		vs.clear(); tcs.clear();
 		for ( k = 0; k < count; ++k ) {
-		    vs.clear(); tcs.clear();
-		    for ( m = 0; m < 3; ++m ) {
-			vs.push_back( sptr[0] );
-			tcs.push_back( sptr[1] );
-			cout << sptr[0] << "/" << sptr[1] << " ";
-			sptr += 2;
-		    }
-		    cout << endl;
-		    tris_v.push_back( vs );
-		    tris_tc.push_back( tcs );
+		    vs.push_back( sptr[0] );
+		    tcs.push_back( sptr[1] );
+		    cout << sptr[0] << "/" << sptr[1] << " ";
+		    sptr += 2;
 		}
+		cout << endl;
+		tris_v.push_back( vs );
+		tris_tc.push_back( tcs );
+		tri_materials.push_back( material );
 	    }
 	} else if ( obj_type == SG_TRIANGLE_STRIPS ) {
 	    // read triangle strip properties
@@ -566,11 +571,9 @@ void sgReadBinObj( const string& file,
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
-		    char material[256];
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
 		    cout << "material type = " << material << endl;
-		    strip_materials.push_back( material );
 		}
 	    }
 
@@ -582,7 +585,7 @@ void sgReadBinObj( const string& file,
 		char buf[nbytes];
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2 * 3);
+		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
 		int_list vs, tcs;
 		vs.clear(); tcs.clear();
@@ -595,6 +598,7 @@ void sgReadBinObj( const string& file,
 		cout << endl;
 		strips_v.push_back( vs );
 		strips_tc.push_back( tcs );
+		strip_materials.push_back( material );
 	    }
 	} else if ( obj_type == SG_TRIANGLE_FANS ) {
 	    // read triangle fan properties
@@ -609,11 +613,9 @@ void sgReadBinObj( const string& file,
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
 		if ( prop_type == SG_MATERIAL ) {
-		    char material[256];
 		    strncpy( material, ptr, nbytes );
 		    material[nbytes] = '\0';
 		    cout << "material type = " << material << endl;
-		    fan_materials.push_back( material );
 		}
 	    }
 
@@ -625,7 +627,7 @@ void sgReadBinObj( const string& file,
 		char buf[nbytes];
 		char *ptr = buf;
 		sgReadBytes( fp, nbytes, ptr );
-		int count = nbytes / (sizeof(short) * 2 * 3);
+		int count = nbytes / (sizeof(short) * 2);
 		short *sptr = (short *)ptr;
 		int_list vs, tcs;
 		vs.clear(); tcs.clear();
@@ -638,6 +640,7 @@ void sgReadBinObj( const string& file,
 		cout << endl;
 		fans_v.push_back( vs );
 		fans_tc.push_back( tcs );
+		fan_materials.push_back( material );
 	    }
 	} else {
 	    // unknown object type, just skip
@@ -669,13 +672,20 @@ void sgReadBinObj( const string& file,
 
     // close the file
     gzclose(fp);
+
+    if ( sgReadError() ) {
+	cout << "We detected an error while reading the file." << endl;
+	return false;
+    }
+
+    return true;
 }
 
 
 // write out the structures to a binary file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-void sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
+bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
 		    Point3D gbs_center, float gbs_radius,
 		    const point_list& wgs84_nodes, const point_list& normals,
 		    const point_list& texcoords, 
@@ -705,8 +715,10 @@ void sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "wb9" )) == NULL ) {
 	cout << "ERROR: opening " << file << " for writing!" << endl;
-	exit(-1);
+	return false;
     }
+
+    sgClearWriteError();
 
     cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
 	 << tri_materials.size() << endl;
@@ -808,9 +820,9 @@ void sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
     char normal[3];
     for ( i = 0; i < (int)normals.size(); ++i ) {
 	p = normals[i];
-	normal[0] = (char)(p.x() * 256);
-	normal[1] = (char)(p.y() * 256);
-	normal[2] = (char)(p.z() * 256);
+	normal[0] = (char)((p.x() + 1.0) * 128);
+	normal[1] = (char)((p.y() + 1.0) * 128);
+	normal[2] = (char)((p.z() + 1.0) * 128);
 	sgWriteBytes( fp, 3, normal );
     }
 
@@ -947,4 +959,11 @@ void sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
 
     // close the file
     gzclose(fp);
+
+    if ( sgWriteError() ) {
+	cout << "We detected an error while writing the file." << endl;
+	return false;
+    }
+
+    return true;
 }

@@ -81,8 +81,10 @@ void sgWriteVec4 ( gzFile fd, const sgVec4 var ) ;
 void sgReadMat4 ( gzFile fd, sgMat4 var ) ;
 void sgWriteMat4 ( gzFile fd, const sgMat4 var ) ;
 
-int sgReadError ( void ) ;
-int sgWriteError ( void ) ;
+void sgClearReadError();
+void sgClearWriteError();
+int sgReadError();
+int sgWriteError();
 
 
 #endif // _SG_LOWLEVEL_HXX

@@ -34,6 +34,7 @@
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
+#include <simgear/screen/colors.hxx>
 
 #include "sphere.hxx"
 #include "moon.hxx"
@@ -140,7 +141,7 @@ ssgBranch * SGMoon::build( SGPath path, double moon_size ) {
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_DIFFUSE );
     orb_state->setMaterial( GL_AMBIENT, 0, 0, 0, 1.0 );
-    orb_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    orb_state->setMaterial( GL_EMISSION, 0.1, 0.1, 0.1, 1 );
     orb_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     orb_state->enable( GL_BLEND );
     orb_state->enable( GL_ALPHA_TEST );
@@ -229,38 +230,31 @@ ssgBranch * SGMoon::build( SGPath path, double moon_size ) {
 // 90 degrees = moon rise/set
 // 180 degrees = darkest midnight
 bool SGMoon::repaint( double moon_angle ) {
-    if ( moon_angle * SGD_RADIANS_TO_DEGREES < 100 ) {
-	// else moon is well below horizon (so no point in repainting it)
-    
-	// x_10 = moon_angle^10
-	double x_10 = moon_angle * moon_angle * moon_angle * moon_angle
-	    * moon_angle * moon_angle * moon_angle * moon_angle * moon_angle
-	    * moon_angle;
 
-	float ambient = (float)(0.4 * pow (1.1, - x_10 / 30.0));
-	if (ambient < 0.3) { ambient = 0.3; }
-	if (ambient > 1.0) { ambient = 1.0; }
+    if (prev_moon_angle != moon_angle) {
+        prev_moon_angle = moon_angle;
 
-	sgVec4 color;
-	sgSetVec4( color,
-		   (ambient * 6.0)  - 1.0, // minimum value = 0.8
-		   (ambient * 11.0) - 3.0, // minimum value = 0.3
-		   (ambient * 12.0) - 3.6, // minimum value = 0.0
-		   0.5 );
+        float moon_factor = 4*cos(moon_angle);
 
-	// temp test, forces the color to always be white
-	// sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+        if (moon_factor > 1) moon_factor = 1.0;
+        if (moon_factor < -1) moon_factor = -1.0;
+        moon_factor = moon_factor/2 + 0.5;
 
-	if (color[0] > 1.0) color[0] = 1.0;
-	if (color[1] > 1.0) color[1] = 1.0;
-	if (color[2] > 1.0) color[2] = 1.0;
+        sgVec4 color;
+        color[1] = sqrt(moon_factor);
+        color[0] = sqrt(color[1]);
+        color[2] = moon_factor * moon_factor;
+        color[2] *= color[2];
+        color[3] = 1.0;
 
-	// cout << "color = " << color[0] << " " << color[1] << " " 
-	//      << color[2] << endl;
+        gamma_correct_rgb( color );
 
-	float *ptr;
-	ptr = cl->get( 0 );
-	sgCopyVec4( ptr, color );
+        // cout << "color = " << color[0] << " " << color[1] << " "
+        //      << color[2] << endl;
+
+        float *ptr;
+        ptr = cl->get( 0 );
+        sgCopyVec4( ptr, color );
     }
 
     return true;

@@ -46,6 +46,8 @@ class SGMoon {
     ssgVertexArray *halo_vl;
     ssgTexCoordArray *halo_tl;
 
+    double prev_moon_angle;
+
 public:
 
     // Constructor

@@ -37,7 +37,7 @@
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
-#include <simgear/misc/exception.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include <string.h>
 #include STL_STRING

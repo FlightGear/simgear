@@ -9,8 +9,7 @@
 #define __EASYXML_HXX
 
 #include <simgear/compiler.h>
-
-#include <simgear/misc/exception.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include STL_IOSTREAM
 #include STL_STRING

@@ -367,6 +367,7 @@ AC_CONFIG_FILES([ \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sound/Makefile \
+	simgear/structure/Makefile \
 	simgear/threads/Makefile \
 	simgear/timing/Makefile \
 	simgear/xgl/Makefile \

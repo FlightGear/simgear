@@ -3,8 +3,6 @@ includedir = @includedir@/misc
 lib_LIBRARIES = libsgmisc.a
 
 include_HEADERS = \
-	commands.hxx \
-	exception.hxx \
 	sg_path.hxx \
 	sgstream.hxx \
 	stopwatch.hxx \
@@ -14,8 +12,6 @@ include_HEADERS = \
 	zfstream.hxx
 
 libsgmisc_a_SOURCES = \
-	commands.cxx \
-	exception.cxx \
 	sg_path.cxx \
 	sgstream.cxx \
 	strutils.cxx \

@@ -17,13 +17,12 @@
 #include <plib/ssg.h>
 #include <plib/ul.h>
 
-#include <simgear/misc/exception.hxx>
+#include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 
 #include "animation.hxx"
-
 #include "model.hxx"
 
 SG_USING_STD(vector);

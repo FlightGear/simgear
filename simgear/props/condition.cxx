@@ -13,10 +13,9 @@
 
 // #include STL_IOSTREAM
 
-#include <simgear/misc/exception.hxx>
+#include <simgear/structure/exception.hxx>
 
 #include "props.hxx"
-
 #include "condition.hxx"
 
 SG_USING_STD(istream);

@@ -30,6 +30,7 @@ SUBDIRS = \
 	serial \
 	sound \
 	$(SGTHREAD_DIR) \
+	structure \
 	timing \
 	xgl
 

@@ -96,21 +96,21 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
 
     // cout << "diff = " << diff << "  span = " << span << endl;
 
-    if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
+    if ( (dlon >= 0) || (fabs(diff) < SG_EPSILON) ) {
 	lon = (int)dlon;
     } else {
 	lon = (int)dlon - 1;
     }
 
     // find subdivision or super lon if needed
-    if ( span < FG_EPSILON ) {
+    if ( span < SG_EPSILON ) {
 	// polar cap
 	lon = 0;
 	x = 0;
     } else if ( span <= 1.0 ) {
 	x = (int)((dlon - lon) / span);
     } else {
-	if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
+	if ( (dlon >= 0) || (fabs(diff) < SG_EPSILON) ) {
 	    lon = (int)( (int)(lon / span) * span);
 	} else {
 	    // cout << " lon = " << lon 
@@ -128,7 +128,7 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
     //
     diff = dlat - (double)(int)dlat;
 
-    if ( (dlat >= 0) || (fabs(diff) < FG_EPSILON) ) {
+    if ( (dlat >= 0) || (fabs(diff) < SG_EPSILON) ) {
 	lat = (int)dlat;
     } else {
 	lat = (int)dlat - 1;
@@ -209,7 +209,7 @@ double SGBucket::get_width_m() const {
     double clat_rad = clat * DEG_TO_RAD;
     double cos_lat = cos( clat_rad );
     double local_radius = cos_lat * EQUATORIAL_RADIUS_M;
-    double local_perimeter = 2.0 * local_radius * FG_PI;
+    double local_perimeter = 2.0 * local_radius * SG_PI;
     double degree_width = local_perimeter / 360.0;
 
     return sg_bucket_span( get_center_lat() ) * degree_width;
@@ -218,7 +218,7 @@ double SGBucket::get_width_m() const {
 
 // return height of the tile in meters
 double SGBucket::get_height_m() const {
-    double perimeter = 2.0 * EQUATORIAL_RADIUS_M * FG_PI;
+    double perimeter = 2.0 * EQUATORIAL_RADIUS_M * SG_PI;
     double degree_height = perimeter / 360.0;
 
     return SG_BUCKET_SPAN * degree_height;

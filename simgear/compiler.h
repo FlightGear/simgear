@@ -22,7 +22,9 @@
 
 /** \file compiler.h
  * A set of defines to encapsulate compiler and platform differences.
- * What this file does.
+ * Please refer to the source code for full documentation on this file.
+ *
+ * Here is a summary of what this file does.
  *
  *  (1)  Defines macros for some STL includes which may be affected
  *       by file name length limitations.

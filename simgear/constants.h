@@ -21,6 +21,10 @@
 //
 // $Id$
 
+/** \file constants.h
+ * Various constant definitions.
+ */
+
 
 #ifndef _SG_CONSTANTS_H
 #define _SG_CONSTANTS_H
@@ -46,23 +50,23 @@
 
 // PI, only PI, and nothing but PI
 #ifdef M_PI
-#  define  FG_PI    M_PI
+#  define  SG_PI    M_PI
 #else
-#  define  FG_PI    3.14159265358979323846
+#  define  SG_PI    3.14159265358979323846
 #endif
 
 // 2 * PI
-#define FG_2PI      6.28318530717958647692
+#define SG_2PI      6.28318530717958647692
 
 // PI / 2
 #ifdef M_PI_2
-#  define  FG_PI_2  M_PI_2
+#  define  SG_PI_2  M_PI_2
 #else
-#  define  FG_PI_2  1.57079632679489661923
+#  define  SG_PI_2  1.57079632679489661923
 #endif
 
 // PI / 4
-#define FG_PI_4     0.78539816339744830961
+#define SG_PI_4     0.78539816339744830961
 
 #ifndef M_E
 #  define M_E     2.7182818284590452354
@@ -139,7 +143,7 @@
 #define RAD_TO_NM        3437.7467707849392526
 
 // For divide by zero avoidance, this will be close enough to zero
-#define FG_EPSILON 0.0000001
+#define SG_EPSILON 0.0000001
 
 
 // Highest binobj format version we know how to read/write.  This starts at

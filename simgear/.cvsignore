@@ -1,6 +1,7 @@
 Makefile
 Makefile.in
 simgear_config.h
+simgear_config.h.in
 stamp-h
 stamp-h.in
 version.h

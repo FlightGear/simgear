@@ -392,7 +392,6 @@ public:
   virtual void init();
 private:
   void setAlphaClampToBranch(ssgBranch *b, float clamp);
-  bool _done;
   float _alpha_clamp;
 };
 

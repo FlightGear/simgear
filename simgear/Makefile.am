@@ -35,12 +35,12 @@ SUBDIRS = \
 	bucket \
 	debug \
 	ephemeris \
-	io \
 	magvar \
 	math \
 	$(METAR_DIRS) \
 	xml \
 	misc \
+	io \
 	route \
 	screen \
 	$(SERIAL_DIRS) \

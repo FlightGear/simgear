@@ -190,27 +190,6 @@
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float
 #    pragma warning(disable: 4305) //
-
-#  elif _MSC_VER == 1100 // msvc++ 5.0
-#    define NEEDNAMESPACESTD
-#    define SG_NAMESPACES
-#    define SG_HAVE_STD
-#    define SG_HAVE_STD_INCLUDES
-#    define SG_HAVE_STREAMBUF
-
-#    define STL_ALGORITHM  <algorithm>
-#    define STL_FUNCTIONAL <functional>
-#    define STL_IOMANIP    <iomanip>
-#    define STL_IOSTREAM   <iostream>
-#    define STL_FSTREAM    <fstream>
-#    define STL_STDEXCEPT  <stdexcept>
-#    define STL_STRING     <string>
-#    define STL_STRSTREAM  <strstream>
-
-#    pragma warning(disable: 4786) // identifier was truncated to '255' characters
-#    pragma warning(disable: 4244) // conversion from double to float
-#    pragma warning(disable: 4305) //
-
 #  else
 #    error What version of MSVC++ is this?
 #  endif

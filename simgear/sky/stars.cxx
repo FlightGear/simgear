@@ -33,8 +33,6 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-#include <compiler.h>
-
 #include "stars.hxx"
 
 #if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)

@@ -28,3 +28,5 @@ libsgclouds3d_a_SOURCES = \
 	SkyContext.cpp \
 	SkySceneManager.cpp \
 	SkySceneLoader.cpp
+
+INCLUDES = -I$(top_srcdir)

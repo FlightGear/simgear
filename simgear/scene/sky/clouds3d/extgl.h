@@ -24,6 +24,12 @@
 #include <windows.h>
 #endif
 
+#define __glext_h_
+#define __GLEXT_H_
+
+#define __glext_h_
+#define __GLEXT_H_
+
 #include <GL/gl.h>
 
 #ifndef APIENTRY

@@ -25,6 +25,10 @@
 
 // #pragma warning( disable : 4786 )
 
+#define __glext_h_
+#define __GLEXT_H_
+#define __glext_h_
+#define __GLEXT_H_
 #include <GL/glut.h>
 
 //------------------------------------------------------------------------------

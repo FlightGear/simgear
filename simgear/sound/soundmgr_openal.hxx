@@ -175,6 +175,16 @@ public:
     bool stop( const string& refname );
 
     /**
+     * set overall volume for the application.
+     * @param vol 1.0 is default, must be greater than 0
+     */
+    inline void set_volume( const ALfloat vol ) {
+        if ( vol > 0.0 ) {
+            alListenerf( AL_GAIN, vol );
+        }
+    }
+
+    /**
      * set the position of the listener (in opengl coordinates)
      */
     inline void set_listener_pos( ALfloat *pos ) {

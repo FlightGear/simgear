@@ -2,16 +2,20 @@ includedir = @includedir@/misc
 
 lib_LIBRARIES = libsgmisc.a
 
+noinst_HEADERS = \
+	colours.h
+
 include_HEADERS = \
         commands.hxx \
         exception.hxx \
 	props.hxx \
-  props_io.hxx \
+	props_io.hxx \
 	sg_path.hxx \
 	sgstream.hxx \
 	stopwatch.hxx \
 	strutils.hxx \
 	tabbed_values.hxx \
+	texture.hxx \
 	texcoord.hxx \
 	zfstream.hxx
 
@@ -24,6 +28,7 @@ libsgmisc_a_SOURCES = \
 	sgstream.cxx \
 	strutils.cxx \
 	tabbed_values.cxx \
+	texture.cxx \
 	texcoord.cxx \
 	zfstream.cxx
 

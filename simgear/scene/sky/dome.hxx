@@ -73,6 +73,11 @@ public:
     bool repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle,
 		  double vis );
 
+    // regenerate the sky texture based on the current position and time
+    // 
+    bool repaint( float lat, float lon, int zone, int julianDay,
+                  int time, float turb, bool atmEffects = false );
+
     // reposition the sky at the specified origin and orientation
     // lon specifies a rotation about the Z axis
     // lat specifies a rotation about the new Y axis

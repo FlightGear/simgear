@@ -1,6 +1,7 @@
 includedir = @includedir@/sky
 
-# SUBDIRS = clouds3d
+SUBDIRS = sunsky
+# SUBDIRS += clouds3d
 
 lib_LIBRARIES = libsgsky.a
 

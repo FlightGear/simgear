@@ -12,9 +12,11 @@
 #ifdef FG_HAVE_STD_INCLUDES
 # include <cmath>
 # include <cerrno>
+# include <cstdio>
 #else
 # include <math.h>
 # include <errno.h>
+# include <stdio.h>
 #endif
 
 #include <simgear/constants.h>
@@ -33,6 +35,9 @@ FG_USING_STD(cout);
 #define ONE_SECOND 4.848136811E-6
 
 
+#define DOMAIN_ERR_DEBUG 1
+
+
 // sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
 //     INPUTS:	
 //         lat_geoc	Geocentric latitude, radians, + = North
@@ -48,6 +53,10 @@ FG_USING_STD(cout);
 void sgGeocToGeod( double lat_geoc, double radius, double
 		   *lat_geod, double *alt, double *sea_level_r )
 {
+#ifdef DOMAIN_ERR_DEBUG
+    errno = 0;			// start with error zero'd
+#endif
+
     double t_lat, x_alpha, mu_alpha, delt_mu, r_alpha, l_point, rho_alpha;
     double sin_mu_a, denom,delt_lambda, lambda_sl, sin_lambda_sl;
 
@@ -62,10 +71,23 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 	t_lat = tan(lat_geoc);
 	// cout << "  tan(t_lat) = " << t_lat << endl;
 	x_alpha = E*EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
+#ifdef DOMAIN_ERR_DEBUG
+	if ( errno ) {
+	    perror("fgGeocToGeod()");
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << t_lat*t_lat + E*E << ")" );
+	}
+#endif
 	// cout << "  x_alpha = " << x_alpha << endl;
-	double tmp = RESQ_M - x_alpha * x_alpha;
+	double tmp = sqrt(RESQ_M - x_alpha * x_alpha);
 	if ( tmp < 0.0 ) { tmp = 0.0; }
-	mu_alpha = atan2(sqrt(tmp),E*x_alpha);
+#ifdef DOMAIN_ERR_DEBUG
+	if ( errno ) {
+	    perror("fgGeocToGeod()");
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << RESQ_M - x_alpha * x_alpha
+		    << ")" );
+	}
+#endif
+	mu_alpha = atan2(tmp,E*x_alpha);
 	if (lat_geoc < 0) mu_alpha = - mu_alpha;
 	sin_mu_a = sin(mu_alpha);
 	delt_lambda = mu_alpha - lat_geoc;
@@ -73,13 +95,14 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 	l_point = radius - r_alpha;
 	*alt = l_point*cos(delt_lambda);
 
-	// check for domain error
-	if ( errno == EDOM ) {
-	    FG_LOG( FG_GENERAL, FG_ALERT, "Domain ERROR in fgGeocToGeod!!!!" );
-	    *alt = 0.0;
-	}
-
 	denom = sqrt(1-EPS*EPS*sin_mu_a*sin_mu_a);
+#ifdef DOMAIN_ERR_DEBUG
+	if ( errno ) {
+	    perror("fgGeocToGeod()");
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+		    1-EPS*EPS*sin_mu_a*sin_mu_a << ")" );
+	}
+#endif
 	rho_alpha = EQUATORIAL_RADIUS_M*(1-EPS)/
 	    (denom*denom*denom);
 	delt_mu = atan2(l_point*sin(delt_lambda),rho_alpha + *alt);
@@ -88,12 +111,15 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 	sin_lambda_sl = sin( lambda_sl );
 	*sea_level_r = 
 	    sqrt(RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
-
-	// check for domain error
-	if ( errno == EDOM ) {
-	    FG_LOG( FG_GENERAL, FG_ALERT, "Domain ERROR in sgGeocToGeod!!!!" );
-	    *sea_level_r = 0.0;
+#ifdef DOMAIN_ERR_DEBUG
+	if ( errno ) {
+	    perror("fgGeocToGeod()");
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+		    RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
+		    << ")" );
 	}
+#endif
+
     }
 
 }
@@ -123,6 +149,14 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
     cos_mu = cos(lat_geod);
     *sl_radius = 
 	sqrt(RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
+#ifdef DOMAIN_ERR_DEBUG
+	if ( errno ) {
+	    perror("fgGeodToGeoc()");
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
+		    RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
+		    << ")" );
+	}
+#endif
     py = *sl_radius*sin_lambda_sl + alt*sin_mu;
     px = *sl_radius*cos_lambda_sl + alt*cos_mu;
     *lat_geoc = atan2( py, px );

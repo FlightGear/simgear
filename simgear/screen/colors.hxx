@@ -36,33 +36,46 @@ const float system_gamma = 1.7;
 const float system_gamma = 2.5;
 #endif
 
-
 // simple architecture independant gamma correction function.
 inline void gamma_correct_rgb(float *color,
-                          float reff = 2.5, float system = system_gamma)
+                              float reff = 2.5, float system = system_gamma)
 {
-   color[0] = pow(color[0], reff/system);
-   color[1] = pow(color[1], reff/system);
-   color[2] = pow(color[2], reff/system);
+    if (reff == system)
+       return;
+
+    float tmp = reff/system;
+    color[0] = pow(color[0], tmp);
+    color[1] = pow(color[1], tmp);
+    color[2] = pow(color[2], tmp);
 };
 
 inline void gamma_correct_c(float *color,
-                          float reff = 2.5, float system = system_gamma)
+                            float reff = 2.5, float system = system_gamma)
 {
+   if (reff == system)
+      return;
+
    *color = pow(*color, reff/system);
 };
 
 inline void gamma_restore_rgb(float *color,
-                          float reff = 2.5, float system = system_gamma)
+                              float reff = 2.5, float system = system_gamma)
 {
-   color[0] = pow(color[0], system/reff);
-   color[1] = pow(color[1], system/reff);
-   color[2] = pow(color[2], system/reff);
+    if (reff == system)
+       return;
+
+    float tmp = system/reff;
+    color[0] = pow(color[0], tmp);
+    color[1] = pow(color[1], tmp);
+    color[2] = pow(color[2], tmp);
 };
 
 inline void gamma_restore_c(float *color,
-                          float reff = 2.5, float system = system_gamma)
+                            float reff = 2.5, float system = system_gamma)
 {
+   if (reff == system)
+      return;
+
    *color = pow(*color, system/reff);
 };
 

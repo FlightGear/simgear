@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<poem shortname="roses" version="1.0">
+<title>Roses are Red</title>
+<l n="1">Roses are red,</l>
+<l n="2">Violets are blue;</l>
+<l n="3">Sugar is sweet,</l>
+<l n="4">And I love you.</l>
+</poem>

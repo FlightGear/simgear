@@ -4,7 +4,9 @@ lib_LIBRARIES = libsgmagvar.a
 
 include_HEADERS = magvar.hxx
 
-libsgmagvar_a_SOURCES = magvar.cxx
+libsgmagvar_a_SOURCES = \
+	coremag.hxx coremag.cxx \
+	magvar.cxx
 
 noinst_PROGRAMS = testmagvar
 

@@ -54,11 +54,6 @@ inline int (isnan)(double r) { return isnan(r); }
 #  endif
 #endif
 
-
-#if defined (__FreeBSD__)
-inline int isnan(double r) { return !(r <= 0 || r >= 0); }
-#endif
-
 #include STL_IOSTREAM
 
 #include <simgear/debug/logstream.hxx>

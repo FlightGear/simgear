@@ -124,6 +124,9 @@ public:
      * Set the pitch of this sample.
      */
     inline void set_pitch( double p ) {
+        // clamp in the range of 0.01 to 2.0
+        if ( p < 0.01 ) { p = 0.01; }
+        if ( p > 2.0 ) { p = 2.0; }
         pitch = p;
         alSourcef( source, AL_PITCH, pitch );
         if ( alGetError() != AL_NO_ERROR) {

@@ -41,7 +41,7 @@
 #define RGB3 3			// 3 bytes of color info per pixel
 #define RGBA 4			// 4 bytes of color+alpha info
 
-void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int win_height, int mode)
+bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int win_height, int mode)
 {
     int i, j, k, q;
     unsigned char *ibuffer;
@@ -52,7 +52,7 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 
     if ( (fp = fopen(filename, "wb")) == NULL ) {
 	printf("Warning: cannot open %s\n", filename);
-	return;
+	return false;
     }
 
     fprintf(fp, "P6\n# CREATOR: glReadPixel()\n%d %d\n%d\n",
@@ -69,12 +69,14 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 
     printf("wrote file (%d x %d pixels, %d bytes)\n",
 	   win_width, win_height, RGB3*win_width*win_height);
+    return true;
 }
 
 
 // dump the screen buffer to a ppm file
-void my_glDumpWindow(const char *filename, int win_width, int win_height) {
+bool sg_glDumpWindow(const char *filename, int win_width, int win_height) {
     GLubyte *buffer;
+    bool result;
 
     buffer = (GLubyte *) malloc(win_width*win_height*RGBA);
 
@@ -82,7 +84,10 @@ void my_glDumpWindow(const char *filename, int win_width, int win_height) {
     glFinish();
     glReadPixels(0, 0, win_width, win_height, 
 		 GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-	my_glWritePPMFile( filename, buffer, win_width, win_height, GL_RGBA );
+    result = sg_glWritePPMFile( filename, buffer, win_width, win_height,
+				GL_RGBA );
     free(buffer);
+
+    return result;
 }
 

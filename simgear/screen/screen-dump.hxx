@@ -29,7 +29,7 @@
  * @param win_width width of our opengl window
  * @param win_height height of our opengl window
  */
-void my_glDumpWindow( const char *filename, int win_width, int win_height );
+bool sg_glDumpWindow( const char *filename, int win_width, int win_height );
 
 
 /**
@@ -40,5 +40,5 @@ void my_glDumpWindow( const char *filename, int win_width, int win_height );
  * @param win_height height of buffer
  * @param mode one of GL_RGBA, GL_RGB, etc.
  */
-void my_glWritePPMFile( const char *filename, GLubyte *buffer, int win_width, 
+bool sg_glWritePPMFile( const char *filename, GLubyte *buffer, int win_width, 
 		        int win_height, int mode);

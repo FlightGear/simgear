@@ -190,11 +190,12 @@ SKYRESULT SkyCloud::Display(const Camera &camera, SkyRenderableInstance *pInstan
     // don't just use the camera position -- if it is too far away from the cloud, then
     // precision limitations may cause the STL sort to hang.  Instead, put the sort position
     // just outside the bounding sphere of the cloud in the direction of the camera.
-    Vec3f vecSortPos = -cam.ViewDir();
-    vecSortPos *= (1.1 * _boundingBox.GetRadius());
+    _vecSortPos = -cam.ViewDir();
+    _vecSortPos *= (1.1 * _boundingBox.GetRadius());
+    _vecSortPos += _boundingBox.GetCenter();
     
     // sort the particles from back to front wrt the camera position.
-    _SortParticles(cam.ViewDir(), vecSortPos, SKY_CLOUD_SORT_TOWARD);
+    _SortParticles(cam.ViewDir(), _vecSortPos, SKY_CLOUD_SORT_TOWARD);
 
     //_vecLastSortViewDir = GLVU::GetCurrent()->GetCurrentCam()->ViewDir();
     //_vecLastSortCamPos = GLVU::GetCurrent()->GetCurrentCam()->Orig;
@@ -292,6 +293,7 @@ SKYRESULT SkyCloud::DisplaySplit(const Camera           &camera,
     // just outside the bounding sphere of the cloud in the direction of the camera.
     _vecSortPos = -cam.ViewDir();
     _vecSortPos *= (1.1 * _boundingBox.GetRadius());
+    _vecSortPos += _boundingBox.GetCenter();
     
     // sort the particles from back to front wrt the camera position.
     _SortParticles(cam.ViewDir(), _vecSortPos, SKY_CLOUD_SORT_TOWARD);
@@ -299,7 +301,8 @@ SKYRESULT SkyCloud::DisplaySplit(const Camera           &camera,
     // we can't use the view direction optimization when the cloud is split, or we get a lot
     // of popping of objects in and out of cloud cover.  For consistency, though, we need to update
     // the cached sort direction, since we just sorted the particles.
-    ///_vecLastSortViewDir = GLVU::GetCurrent()->GetCurrentCam()->ViewDir(); 
+    // _vecLastSortViewDir = GLVU::GetCurrent()->GetCurrentCam()->ViewDir(); 
+    // _vecLastSortCamPos = GLVU::GetCurrent()->GetCurrentCam()->Orig;
 
     // compute the split distance.
     vecCloudSpaceSplit  -= _vecSortPos;

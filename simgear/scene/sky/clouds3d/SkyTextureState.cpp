@@ -145,7 +145,7 @@ SKYRESULT SkyTextureState::Activate()
       if (pCurrent->GetTextureParameter(i, GL_TEXTURE_MAG_FILTER) != paramValue) 
       {
         FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_MAG_FILTER, paramValue));
-        glTexParameteri(eTarget, GL_TEXTURE_MIN_FILTER, paramValue);
+        glTexParameteri(eTarget, GL_TEXTURE_MAG_FILTER, paramValue);
       }
       //GLVU::CheckForGLError("SkyTextureState::Activate()");
     }

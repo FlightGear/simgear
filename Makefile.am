@@ -7,7 +7,7 @@ EXTRA_DIST = \
 	SimGear.dsp \
 	SimGear.dsw \
 	metakit-2.4.2-32.tar.gz \
-	zlib-1.1.3.tar.gz
+	zlib-1.1.4.tar.gz
 
 SUBDIRS	= simgear
 

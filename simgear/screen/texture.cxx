@@ -47,13 +47,15 @@ SGTexture::~SGTexture()
 void
 SGTexture::bind()
 {
-    if (!texture_data) {
+    bool gen = false;
+    if (!texture_id) {
 #ifdef GL_VERSION_1_1
         glGenTextures(1, &texture_id);
 
 #elif GL_EXT_texture_object
         glGenTexturesEXT(1, &texture_id);
 #endif
+        gen = true;
     }
 
 #ifdef GL_VERSION_1_1
@@ -63,7 +65,7 @@ SGTexture::bind()
     glBindTextureEXT(GL_TEXTURE_2D, texture_id);
 #endif
 
-    if (!texture_data) {
+    if (gen) {
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -334,6 +336,9 @@ SGTexture::read_r8_texture(const char *name)
 void
 SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
 {
+    if (!texture_data)
+        return;
+
     unsigned int pos = (x + y*texture_width)*3;
     texture_data[pos]   = c[0];
     texture_data[pos+1] = c[1];
@@ -345,6 +350,11 @@ sgVec3 *
 SGTexture::get_pixel(GLuint x, GLuint y)
 {
     static sgVec3 c;
+
+    sgSetVec3(c, 0.0, 0.0, 0.0);
+    if (!texture_data)
+        return;
+
     unsigned int pos = (x + y*texture_width)*3;
 
     sgSetVec3(c, texture_data[pos], texture_data[pos+1], texture_data[pos+2]);

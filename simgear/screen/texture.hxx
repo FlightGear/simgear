@@ -104,10 +104,15 @@ public:
     sgVec3 *get_pixel(GLuint x, GLuint y);
 
     void bind();
-    inline void select() {
+    inline void select(bool keep_data = false) {
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB,
                       texture_width, texture_height, 0,
                       GL_RGB, GL_UNSIGNED_BYTE, texture_data );
+
+        if (!keep_data) {
+            delete[] texture_data;
+            texture_data = 0;
+        }
     }
 
     // Nowhere does it say that resident textures have to be in video memory!

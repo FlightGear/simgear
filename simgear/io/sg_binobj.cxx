@@ -40,12 +40,9 @@
 #include "lowlevel.hxx"
 #include "sg_binobj.hxx"
 
-#ifdef _MSC_VER
-#  include <Win32/mkdir.hpp>
-#endif
-
 FG_USING_STD( cout );
 FG_USING_STD( endl );
+
 
 enum {
     SG_BOUNDING_SPHERE = 0,
@@ -492,7 +489,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
 #ifdef _MSC_VER
-    fg_mkdir( dir.c_str() );
+    system( (string("mkdir ") + dir).c_str() );
 #else
     system(command.c_str());
 #endif
@@ -769,7 +766,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
 #ifdef _MSC_VER
-    fg_mkdir( dir.c_str() );
+    system( (string("mkdir ") + dir).c_str() );
 #else
     system(command.c_str());
 #endif

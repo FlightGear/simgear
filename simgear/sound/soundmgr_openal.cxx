@@ -47,6 +47,15 @@ inline int (isnan)(double r) { return isnan(r); }
 #endif
 
 #if defined (__FreeBSD__)
+#  if __FreeBSD_version < 500000
+     extern "C" {
+       inline int isnan(double r) { return !(r <= 0 || r >= 0); }
+     }
+#  endif
+#endif
+
+
+#if defined (__FreeBSD__)
 inline int isnan(double r) { return !(r <= 0 || r >= 0); }
 #endif
 

@@ -47,7 +47,7 @@ SG_USING_STD(string);
 
 
 // Generate an ocean tile
-bool fgGenTile( const string& path, SGBucket b,
+bool sgGenTile( const string& path, SGBucket b,
                 Point3D *center, double *bounding_radius,
                 SGMaterialLib *matlib, ssgBranch* geometry )
 {
@@ -313,7 +313,7 @@ gen_random_surface_objects (ssgLeaf *leaf,
 ////////////////////////////////////////////////////////////////////////
 
 // Load an Binary obj file
-bool fgBinObjLoad( const string& path, const bool is_base,
+bool sgBinObjLoad( const string& path, const bool is_base,
                    Point3D *center,
                    double *bounding_radius,
                    SGMaterialLib *matlib,

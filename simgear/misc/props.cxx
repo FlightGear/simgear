@@ -8,10 +8,6 @@
 
 #include "props.hxx"
 
-#include <algorithm>
-#include <stdio.h>
-#include <string.h>
-
 #if PROPS_STANDALONE
 
 #include <iostream>
@@ -28,6 +24,9 @@ SG_USING_STD(sort);
 
 #endif
 
+#include <algorithm>
+#include <stdio.h>
+#include <string.h>
 
 
 
@@ -223,7 +222,6 @@ copy_string (const char * s)
 				// For some reason, strnlen and
 				// strncpy cause all kinds of crashes.
   string str = s;
-  size_t len = strlen(s);
   char * copy = new char[str.size() + 1];
   strcpy(copy, str.c_str());
   return copy;

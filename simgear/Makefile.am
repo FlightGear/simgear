@@ -27,6 +27,7 @@ include_HEADERS = \
 SUBDIRS = \
 	bucket \
 	debug \
+	ephemeris \
 	magvar \
 	math \
 	$(METAR_DIRS) \

@@ -252,12 +252,14 @@ AC_OUTPUT( \
 	simgear/version.h \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
+	simgear/ephemeris/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/misc/Makefile \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sky/Makefile \
+	simgear/timing/Makefile \
 	simgear/xgl/Makefile \
 	simgear/zlib/Makefile \
 )

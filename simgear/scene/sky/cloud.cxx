@@ -167,6 +167,7 @@ SGCloudLayer::rebuild()
         ssgSimpleState *state;
 
         state_sel = new ssgStateSelector( 2 );
+        state_sel->ref();
         cloud_path.set(texture_path.str());
         cloud_path.append("overcast.rgb");
         state_sel->setStep( 0, sgCloudMakeState(cloud_path.str()) );
@@ -176,6 +177,7 @@ SGCloudLayer::rebuild()
         layer_states[SG_CLOUD_OVERCAST] = state_sel;
 
         state_sel = new ssgStateSelector( 2 );
+        state_sel->ref();
         cloud_path.set(texture_path.str());
         cloud_path.append("broken.rgba");
         state = sgCloudMakeState(cloud_path.str());
@@ -184,6 +186,7 @@ SGCloudLayer::rebuild()
         layer_states[SG_CLOUD_BROKEN] = state_sel;
 
         state_sel = new ssgStateSelector( 2 );
+        state_sel->ref();
         cloud_path.set(texture_path.str());
         cloud_path.append("scattered.rgba");
         state = sgCloudMakeState(cloud_path.str());
@@ -192,6 +195,7 @@ SGCloudLayer::rebuild()
         layer_states[SG_CLOUD_SCATTERED] = state_sel;
 
         state_sel = new ssgStateSelector( 2 );
+        state_sel->ref();
         cloud_path.set(texture_path.str());
         cloud_path.append("few.rgba");
         state = sgCloudMakeState(cloud_path.str());
@@ -200,6 +204,7 @@ SGCloudLayer::rebuild()
         layer_states[SG_CLOUD_FEW] = state_sel;
 
         state_sel = new ssgStateSelector( 2 );
+        state_sel->ref();
         cloud_path.set(texture_path.str());
         cloud_path.append("cirrus.rgba");
         state = sgCloudMakeState(cloud_path.str());
@@ -525,10 +530,6 @@ ssgSimpleState *sgCloudMakeState( const string &path ) {
     state->enable( GL_BLEND );
     state->enable( GL_ALPHA_TEST );
     state->setAlphaClamp( 0.01 );
-
-    // ref() the state so it doesn't get deleted if the last layer of
-    // it's type is deleted.
-    state->ref();
 
     return state;
 }

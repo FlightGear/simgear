@@ -1044,8 +1044,8 @@ SGPropertyNode::setIntValue (int value)
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.int_val = new SGRawValueInternal<int>;
     _type = INT;
+    _local_val.int_val = 0;
   }
 
   switch (_type) {
@@ -1095,8 +1095,8 @@ SGPropertyNode::setLongValue (long value)
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.long_val = new SGRawValueInternal<long>;
     _type = LONG;
+    _local_val.long_val = 0L;
   }
 
   switch (_type) {
@@ -1146,8 +1146,8 @@ SGPropertyNode::setFloatValue (float value)
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.float_val = new SGRawValueInternal<float>;
     _type = FLOAT;
+    _local_val.float_val = 0;
   }
 
   switch (_type) {
@@ -1473,40 +1473,35 @@ SGPropertyNode::untie ()
     bool val = getBoolValue();
     clear_value();
     _type = BOOL;
-    _value.bool_val = new SGRawValueInternal<bool>;
-    set_bool(val);
+    _local_val.bool_val = val;
     break;
   }
   case INT: {
     int val = getIntValue();
     clear_value();
     _type = INT;
-    _value.int_val = new SGRawValueInternal<int>;
-    set_int(val);
+    _local_val.int_val = val;
     break;
   }
   case LONG: {
     long val = getLongValue();
     clear_value();
     _type = LONG;
-    _value.long_val = new SGRawValueInternal<long>;
-    set_long(val);
+    _local_val.long_val = val;
     break;
   }
   case FLOAT: {
     float val = getFloatValue();
     clear_value();
     _type = FLOAT;
-    _value.float_val = new SGRawValueInternal<float>;
-    set_float(val);
+    _local_val.float_val = val;
     break;
   }
   case DOUBLE: {
     double val = getDoubleValue();
     clear_value();
     _type = DOUBLE;
-    _value.double_val = new SGRawValueInternal<double>;
-    set_double(val);
+    _local_val.double_val = val;
     break;
   }
   case STRING:
@@ -1514,8 +1509,7 @@ SGPropertyNode::untie ()
     string val = getStringValue();
     clear_value();
     _type = STRING;
-    _value.string_val = new SGRawValueInternal<string>;
-    set_string(val);
+    _local_val.string_val = new string(val);
     break;
   }
   case NONE:

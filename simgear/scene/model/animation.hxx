@@ -12,8 +12,10 @@
 #endif
 
 #include <vector>
+#include <map>
 
 SG_USING_STD(vector);
+SG_USING_STD(map);
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -78,6 +80,12 @@ public:
    */
   static void set_sim_time_sec( double val ) { sim_time_sec = val; }
 
+  /**
+   * Current personality branch : enable animation to behave differently
+   * for similar objects
+   */
+  static ssgBranch *current_object;
+
 protected:
 
   static double sim_time_sec;
@@ -115,6 +123,7 @@ private:
   float _max;
   float _min_factor;
   float _max_factor;
+  SGCondition * _condition;
 };
 
 
@@ -165,6 +174,7 @@ private:
   sgMat4 _matrix;
   sgVec3 _center;
   sgVec3 _axis;
+  SGCondition * _condition;
 };
 
 
@@ -179,8 +189,18 @@ public:
     virtual int update();
 private:
     double _duration_sec;
-    double _last_time_sec;
+    map<ssgBranch *,double> _last_time_sec;
+    map<ssgBranch *,double> _total_duration_sec;
     int _step;
+    struct DurationSpec {
+        DurationSpec( double m = 0.0 ) : _min(m), _max(m) {}
+        DurationSpec( double m1, double m2 ) : _min(m1), _max(m2) {}
+        double _min, _max;
+    };
+    vector<DurationSpec> _branch_duration_specs;
+    bool _use_personality;
+    typedef map<ssgBranch *,vector<double> > PersonalityMap;
+    PersonalityMap _branch_duration_sec;
 };
 
 
@@ -208,6 +228,7 @@ private:
   sgMat4 _matrix;
   sgVec3 _center;
   sgVec3 _axis;
+  SGCondition * _condition;
 };
 
 
@@ -233,6 +254,7 @@ private:
   double _position_m;
   sgMat4 _matrix;
   sgVec3 _axis;
+  SGCondition * _condition;
 };
 
 /**

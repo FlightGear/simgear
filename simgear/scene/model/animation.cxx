@@ -14,6 +14,7 @@
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/math/sg_random.h>
 
 #include "animation.hxx"
 #include "flash.hxx"
@@ -174,6 +175,7 @@ read_interpolation_table (SGPropertyNode_ptr props)
 
 // Initialize the static data member
 double SGAnimation::sim_time_sec = 0.0;
+ssgBranch *SGAnimation::current_object = 0;
 
 SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
     : _branch(branch)
@@ -225,12 +227,16 @@ SGNullAnimation::~SGNullAnimation ()
 SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
                                     SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgRangeSelector),
-    _min(0.0), _max(0.0), _min_factor(1.0), _max_factor(1.0)
-
+    _min(0.0), _max(0.0), _min_factor(1.0), _max_factor(1.0),
+    _condition(0)
 {
+    SGPropertyNode_ptr node = props->getChild("condition");
+    if (node != 0)
+       _condition = sgReadCondition(prop_root, node);
+
     float ranges[2];
 
-    SGPropertyNode_ptr node = props->getChild( "min-factor" );
+    node = props->getChild( "min-factor" );
     if (node != 0) {
        _min_factor = props->getFloatValue("min-factor", 1.0);
     }
@@ -264,23 +270,23 @@ SGRangeAnimation::~SGRangeAnimation ()
 int
 SGRangeAnimation::update()
 {
-    float ranges[2];
-    bool upd = false;
+  float ranges[2];
+  if ( _condition == 0 || _condition->test() ) {
     if (_min_prop != 0) {
-       ranges[0] = _min_prop->getFloatValue() * _min_factor;
-       upd = true;
+      ranges[0] = _min_prop->getFloatValue() * _min_factor;
     } else {
-       ranges[0] = _min * _min_factor;
+      ranges[0] = _min * _min_factor;
     }
     if (_max_prop != 0) {
-       ranges[1] = _max_prop->getFloatValue() * _max_factor;
-       upd = true;
+      ranges[1] = _max_prop->getFloatValue() * _max_factor;
     } else {
-       ranges[1] = _max * _max_factor;
+      ranges[1] = _max * _max_factor;
     }
-    if (upd) {
-       ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
-    }
+  } else {
+    ranges[0] = 0.f;
+    ranges[1] = 1000000000.f;
+  }
+  ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
   return 1;
 }
 
@@ -343,8 +349,13 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _factor(props->getDoubleValue("factor", 1.0)),
     _position_deg(props->getDoubleValue("starting-position-deg", 0)),
-    _last_time_sec( sim_time_sec )
+    _last_time_sec( sim_time_sec ),
+    _condition(0)
 {
+    SGPropertyNode_ptr node = props->getChild("condition");
+    if (node != 0)
+        _condition = sgReadCondition(prop_root, node);
+
     _center[0] = 0;
     _center[1] = 0;
     _center[2] = 0;
@@ -383,17 +394,19 @@ SGSpinAnimation::~SGSpinAnimation ()
 int
 SGSpinAnimation::update()
 {
-  double dt = sim_time_sec - _last_time_sec;
-  _last_time_sec = sim_time_sec;
+  if ( _condition == 0 || _condition->test() ) {
+    double dt = sim_time_sec - _last_time_sec;
+    _last_time_sec = sim_time_sec;
 
-  float velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
-  _position_deg += (dt * velocity_rpms * 360);
-  while (_position_deg < 0)
-    _position_deg += 360.0;
-  while (_position_deg >= 360.0)
-    _position_deg -= 360.0;
-  set_rotation(_matrix, _position_deg, _center, _axis);
-  ((ssgTransform *)_branch)->setTransform(_matrix);
+    float velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
+    _position_deg += (dt * velocity_rpms * 360);
+    while (_position_deg < 0)
+        _position_deg += 360.0;
+    while (_position_deg >= 360.0)
+        _position_deg -= 360.0;
+    set_rotation(_matrix, _position_deg, _center, _axis);
+    ((ssgTransform *)_branch)->setTransform(_matrix);
+  }
   return 1;
 }
 
@@ -406,9 +419,25 @@ SGSpinAnimation::update()
 SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgSelector),
     _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
-    _last_time_sec(0),
-    _step(-1)
+    _step( 0 ),
+    _use_personality( props->getBoolValue("use-personality",false) )
 {
+    vector<SGPropertyNode_ptr> nodes = props->getChildren( "branch-duration-sec" );
+    size_t nb = nodes.size();
+    for ( size_t i = 0; i < nb; i++ ) {
+        size_t ind = nodes[ i ]->getIndex();
+        while ( ind >= _branch_duration_specs.size() ) {
+            _branch_duration_specs.push_back( DurationSpec( _duration_sec ) );
+        }
+        SGPropertyNode_ptr rNode = nodes[ i ]->getChild("random");
+        if ( rNode == 0 ) {
+            _branch_duration_specs[ ind ] = DurationSpec( nodes[ i ]->getDoubleValue() );
+        } else {
+            _branch_duration_specs[ ind ] = DurationSpec( rNode->getDoubleValue( "min", 0.0 ),
+                                                          rNode->getDoubleValue( "max", 1.0 ) );
+        }
+    }
+    ((ssgSelector *)getBranch())->selectStep(_step);
 }
 
 SGTimedAnimation::~SGTimedAnimation ()
@@ -418,14 +447,37 @@ SGTimedAnimation::~SGTimedAnimation ()
 int
 SGTimedAnimation::update()
 {
-    if ((sim_time_sec - _last_time_sec) >= _duration_sec) {
-        _last_time_sec = sim_time_sec;
-        _step++;
-        if (_step >= getBranch()->getNumKids())
-            _step = 0;
-        ((ssgSelector *)getBranch())->selectStep(_step);
+    ssgBranch *key = ( _use_personality ? current_object : 0 );
+    PersonalityMap::iterator it = _branch_duration_sec.find( key );
+    if ( it == _branch_duration_sec.end() ) {
+        vector<double> durations;
+        double total = 0;
+        for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
+            DurationSpec &sp = _branch_duration_specs[ i ];
+            double v = sp._min + sg_random() * ( sp._max - sp._min );
+            durations.push_back( v );
+            total += v;
+        }
+        it = _branch_duration_sec.insert( PersonalityMap::value_type( key, durations ) ).first;
+        _last_time_sec[ key ] = sim_time_sec;
+        _total_duration_sec[ key ] = total;
     }
-  return 1;
+
+    while ( ( sim_time_sec - _last_time_sec[ key ] ) >= _total_duration_sec[ key ] ) {
+        _last_time_sec[ key ] += _total_duration_sec[ key ];
+    }
+    double duration = _duration_sec;
+    if ( _step < (int)it->second.size() ) {
+        duration = it->second[ _step ];
+    }
+    if ( ( sim_time_sec - _last_time_sec[ key ] ) >= duration ) {
+        _last_time_sec[ key ] += duration;
+        _step += 1;
+        if ( _step >= getBranch()->getNumKids() )
+            _step = 0;
+        ((ssgSelector *)getBranch())->selectStep( _step );
+    }
+    return 1;
 }
 
 
@@ -445,8 +497,13 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
       _min_deg(props->getDoubleValue("min-deg")),
       _has_max(props->hasValue("max-deg")),
       _max_deg(props->getDoubleValue("max-deg")),
-      _position_deg(props->getDoubleValue("starting-position-deg", 0))
+      _position_deg(props->getDoubleValue("starting-position-deg", 0)),
+      _condition(0)
 {
+    SGPropertyNode_ptr node = props->getChild("condition");
+    if (node != 0)
+      _condition = sgReadCondition(prop_root, node);
+
     _center[0] = 0;
     _center[1] = 0;
     _center[2] = 0;
@@ -486,17 +543,19 @@ SGRotateAnimation::~SGRotateAnimation ()
 int
 SGRotateAnimation::update()
 {
-  if (_table == 0) {
-   _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
-   if (_has_min && _position_deg < _min_deg)
-     _position_deg = _min_deg;
-   if (_has_max && _position_deg > _max_deg)
-     _position_deg = _max_deg;
-  } else {
-    _position_deg = _table->interpolate(_prop->getDoubleValue());
+  if (_condition == 0 || _condition->test()) {
+    if (_table == 0) {
+      _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
+      if (_has_min && _position_deg < _min_deg)
+        _position_deg = _min_deg;
+      if (_has_max && _position_deg > _max_deg)
+        _position_deg = _max_deg;
+    } else {
+      _position_deg = _table->interpolate(_prop->getDoubleValue());
+    }
+    set_rotation(_matrix, _position_deg, _center, _axis);
+    ((ssgTransform *)_branch)->setTransform(_matrix);
   }
-  set_rotation(_matrix, _position_deg, _center, _axis);
-  ((ssgTransform *)_branch)->setTransform(_matrix);
   return 1;
 }
 
@@ -565,8 +624,13 @@ SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
     _min_m(props->getDoubleValue("min-m")),
     _has_max(props->hasValue("max-m")),
     _max_m(props->getDoubleValue("max-m")),
-    _position_m(props->getDoubleValue("starting-position-m", 0))
+    _position_m(props->getDoubleValue("starting-position-m", 0)),
+    _condition(0)
 {
+  SGPropertyNode_ptr node = props->getChild("condition");
+  if (node != 0)
+    _condition = sgReadCondition(prop_root, node);
+
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
@@ -581,17 +645,19 @@ SGTranslateAnimation::~SGTranslateAnimation ()
 int
 SGTranslateAnimation::update()
 {
-  if (_table == 0) {
-    _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
-    if (_has_min && _position_m < _min_m)
-      _position_m = _min_m;
-    if (_has_max && _position_m > _max_m)
-      _position_m = _max_m;
-  } else {
-    _position_m = _table->interpolate(_prop->getDoubleValue());
+  if (_condition == 0 || _condition->test()) {
+    if (_table == 0) {
+      _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+      if (_has_min && _position_m < _min_m)
+        _position_m = _min_m;
+      if (_has_max && _position_m > _max_m)
+        _position_m = _max_m;
+    } else {
+      _position_m = _table->interpolate(_prop->getDoubleValue());
+    }
+    set_translation(_matrix, _position_m, _axis);
+    ((ssgTransform *)_branch)->setTransform(_matrix);
   }
-  set_translation(_matrix, _position_m, _axis);
-  ((ssgTransform *)_branch)->setTransform(_matrix);
   return 1;
 }
 

@@ -4,6 +4,7 @@
 #include <simgear/props/props.hxx>
 
 #include "model.hxx"
+#include "animation.hxx"
 
 #include "modellib.hxx"
 
@@ -60,6 +61,25 @@ SGModelLib::flush1()
     }
 }
 
+struct SGPersonalityBranch : public ssgBranch {
+    ssgBranch *_old_current;
+};
+
+static int
+personality_pretrav_callback(ssgEntity * entity, int mask)
+{
+    ((SGPersonalityBranch *)entity)->_old_current = SGAnimation::current_object;
+    SGAnimation::current_object = (ssgBranch *)entity;
+    return 1;
+}
+
+static int
+personality_posttrav_callback(ssgEntity * entity, int mask)
+{
+    SGAnimation::current_object = ((SGPersonalityBranch *)entity)->_old_current;
+    ((SGPersonalityBranch *)entity)->_old_current = 0;
+    return 1;
+}
 
 ssgEntity *
 SGModelLib::load_model( const string &fg_root,
@@ -67,6 +87,10 @@ SGModelLib::load_model( const string &fg_root,
                            SGPropertyNode *prop_root,
                            double sim_time_sec )
 {
+    ssgBranch *personality_branch = new SGPersonalityBranch;
+    personality_branch->setTravCallback(SSG_CALLBACK_PRETRAV, personality_pretrav_callback);
+    personality_branch->setTravCallback(SSG_CALLBACK_POSTTRAV, personality_posttrav_callback);
+
                                 // FIXME: normalize path to
                                 // avoid duplicates.
     map<string, ssgBase *>::iterator it = _table.find(path);
@@ -75,10 +99,11 @@ SGModelLib::load_model( const string &fg_root,
                                           sim_time_sec );
         model->ref();
         _table[path] = model;      // add one reference to keep it around
-        return model;
+        personality_branch->addKid( model );
     } else {
-        return (ssgEntity *)it->second;
+        personality_branch->addKid( (ssgEntity *)it->second );
     }
+    return personality_branch;
 }
 
 

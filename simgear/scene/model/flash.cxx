@@ -74,7 +74,11 @@ void SGFlash::cull( sgFrustum *f, sgMat4 m, int test_needed )
   sgXformVec3( transformed_axis, _axis, m );
   sgNormalizeVec3( transformed_axis );
 
-  float cos_angle = transformed_axis[ 2 ]; // z component, through the screen
+  sgVec3 view;
+  sgFullXformPnt3( view, _center, m );
+  sgNormalizeVec3( view );
+
+  float cos_angle = -sgScalarProductVec3( transformed_axis, view );
   float scale_factor = 0.f;
   if ( _two_sides && cos_angle < 0 )
     scale_factor = _factor * (float)pow( -cos_angle, _power ) + _offset;

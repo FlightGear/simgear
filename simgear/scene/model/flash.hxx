@@ -1,3 +1,6 @@
+/**
+ * $Id$
+ */
 
 class SGFlash : public ssgBranch
 {

@@ -50,6 +50,12 @@ else
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
          
+# Determine version of automake ... important becuase of
+# incompatibilities between versions
+AUTO_MAKE_VERSION=`automake --version | head -1 | awk '{print $4}' | sed -e 's/\-p[[0-9]]$//' | sed -e 's/\.//'`
+AM_CONDITIONAL(ANCIENT_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 14)
+AM_CONDITIONAL(OLD_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 15)
+
 # set logging default value
 # with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
@@ -346,9 +352,8 @@ else
     echo "Electric fence: no"
 fi
 
-# if test "x$ac_cv_header_gdbm_h" != "xyes"; then
-#    echo "Building gdbm"
-# fi
+echo -n "Automake version: ($AUTO_MAKE_VERSION) "
+automake --version | head -1
 
 if test "x$ac_cv_header_mk4_h" != "xyes"; then
    echo "Building metakit"

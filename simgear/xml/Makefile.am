@@ -3,7 +3,7 @@ includedir = @includedir@/xml
 if HAVE_ZLIB
 ZLIB_INCL =
 else
-XLIB_INCL = -I$(top_srcdir)/src/zlib
+ZLIB_INCL = -I$(top_srcdir)/src/zlib
 endif
 
 lib_LIBRARIES = libsgxml.a
@@ -24,4 +24,8 @@ libsgxml_a_SOURCES = \
 	xmltok.h xmltok.c \
 	xmltok_impl.h
 
+if OLD_AUTOMAKE
 INCLUDES += -I$(top_srcdir) $(ZLIB_INCL)
+else
+INCLUDES = -I$(top_srcdir) $(ZLIB_INCL)
+endif

@@ -8,7 +8,11 @@ libsgroute_a_SOURCES = \
 	route.cxx \
 	waypoint.cxx
 
+if OLD_AUTOMAKE
 INCLUDES += -I$(top_srcdir)
+else
+INCLUDES = -I$(top_srcdir)
+endif
 
 noinst_PROGRAMS = waytest routetest
 

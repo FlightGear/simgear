@@ -14,4 +14,8 @@ testmagvar_SOURCES = testmagvar.cxx
 
 testmagvar_LDADD = $(top_builddir)/simgear/magvar/libsgmagvar.a
 
+if OLD_AUTOMAKE
 INCLUDES += -I$(top_srcdir)
+else
+INCLUDES = -I$(top_srcdir)
+endif

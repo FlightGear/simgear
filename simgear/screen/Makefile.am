@@ -10,4 +10,8 @@ libsgscreen_a_SOURCES = \
         tr.cxx \
 	win32-printer.h
 
+if OLD_AUTOMAKE
 INCLUDES += -I$(top_srcdir)
+else
+INCLUDES = -I$(top_srcdir)
+endif

@@ -1,3 +1,27 @@
+New in 0.0.16
+* July 12, 2001
+* Various changes to the property manager implimentation to better support
+  dumping out the desired portions of the property tree to file.
+* Don't compile the metakit demos by default (causes problems for Irix)'
+* Other various tweaks for Irix.
+* Added a virtual destructor to XMLVisitor to fix a warning message.
+* Check for valid hostname lookup in sg_socket.cxx
+* Add a function to return modified julian date without creating an
+  entire SGTime class.  This avoids an extraneous warning about not
+  being able to find a timezone.
+* Created a mailing list for cvs commit messages.
+* Fixed a potential array under/over run bug in interpolator.cxx
+* Removed all references to SGValue from the property manager.  Added
+  support for an "archive" bit in the property manager to control
+  which values get written out.
+* Added SGCommandState class so that commands can compile and save
+  copies of their arguments for efficiency if they are called multiple
+  times.
+* Added Brian Baul's "tr" tiled rendering low level support library.
+  This along with some higher level code in flightgear allows us to do
+  ultra-hires tiled screen dumps suitable for large format printers.
+  (Norman Vine)
+
 New in 0.0.15
 * June 20, 2001
 * Various bug fixes, tweaks, and optimizations.

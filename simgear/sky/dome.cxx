@@ -224,8 +224,8 @@ ssgBranch * SGSkyDome::build( ) {
     lower_ring_cl->add( color );
 
     // force a repaint of the sky colors with ugly defaults
-    sgVec3 fog_color;
-    sgSetVec3( fog_color, 1.0, 1.0, 1.0 );
+    sgVec4 fog_color;
+    sgSetVec4( fog_color, 1.0, 1.0, 1.0, 1.0 );
     repaint( color, fog_color, 0.0, 5000.0 );
 
     // build the ssg scene graph sub tree for the sky and connected
@@ -342,6 +342,7 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 	diff = sky_color[j] - fog_color[j];
 	center_color[j] = sky_color[j] - diff * ( 1.0 - vis_factor );
     }
+    center_color[3] = 1.0;
 
     for ( i = 0; i < 6; i++ ) {
 	for ( j = 0; j < 3; j++ ) {

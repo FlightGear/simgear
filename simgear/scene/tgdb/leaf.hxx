@@ -56,4 +56,14 @@ ssgLeaf *sgMakeLeaf( const string& path,
                      const bool calc_lights, ssgVertexArray *lights );
 
 
+// return a newly created list of points randomly spread across the
+// specified leaf.  "factor" specifies density ... on average there
+// will be one object per the area specified by "factor" in m^2 A
+// larger factor will mean fewer objects.
+ssgVertexArray *sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor );
+
+// Another varient of the same routine.
+void sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor, 
+                               ssgVertexArray *lights );
+
 #endif // _SG_LEAF_HXX

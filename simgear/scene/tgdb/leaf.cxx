@@ -66,8 +66,9 @@ static void random_pt_inside_tri( float *res,
 }
 
 
-static void gen_random_surface_points( ssgLeaf *leaf, ssgVertexArray *lights,
-                                       double factor ) {
+void sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor, 
+                               ssgVertexArray *lights )
+{
     int tris = leaf->getNumTriangles();
     if ( tris > 0 ) {
         short int n1, n2, n3;
@@ -107,6 +108,13 @@ static void gen_random_surface_points( ssgLeaf *leaf, ssgVertexArray *lights,
     }
 }
 
+
+ssgVertexArray *sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor ) {
+    ssgVertexArray *result = new ssgVertexArray();
+    sgGenRandomSurfacePoints( leaf, factor, result );
+
+    return result;
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -251,7 +259,7 @@ ssgLeaf *sgMakeLeaf( const string& path,
                        << coverage << ", pushing up to 10000");
                 coverage = 10000;
             }
-            gen_random_surface_points(leaf, lights, coverage);
+            sgGenRandomSurfacePoints(leaf, coverage, lights );
         }
     }
 

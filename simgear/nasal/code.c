@@ -150,6 +150,13 @@ void naGarbageCollect()
 
 void setupFuncall(struct Context* ctx, naRef func, naRef args)
 {
+    if(!IS_FUNC(func) ||
+       !(IS_CCODE(func.ref.ptr.func->code) ||
+         IS_CODE(func.ref.ptr.func->code)))
+    {
+        ERR(ctx, "function/method call invoked on uncallable object");
+    }
+
     struct Frame* f;
     f = &(ctx->fStack[ctx->fTop++]);
     f->func = func;
@@ -159,17 +166,12 @@ void setupFuncall(struct Context* ctx, naRef func, naRef args)
 
     DBG(printf("Entering frame %d\n", ctx->fTop-1);)
 
-    if(!IS_REF(func))
-        ERR(ctx, "function/method call invoked on uncallable object");
-
     f->args = args;
     if(IS_CCODE(func.ref.ptr.func->code)) {
         f->locals = naNil();
     } else if(IS_CODE(func.ref.ptr.func->code)) {
         f->locals = naNewHash(ctx);
         naHash_set(f->locals, ctx->argRef, args);
-    } else {
-        ERR(ctx, "function/method call invoked on uncallable object");
     }
 }
 

@@ -8,6 +8,10 @@
 
 #include "props.hxx"
 
+#include <algorithm>
+#include <stdio.h>
+#include <string.h>
+
 #if PROPS_STANDALONE
 
 #include <iostream>
@@ -24,9 +28,6 @@ SG_USING_STD(sort);
 
 #endif
 
-#include <algorithm>
-#include <stdio.h>
-#include <string.h>
 
 
 

@@ -101,8 +101,8 @@ public:
 #ifndef FG_HAVE_STD_INCLUDES
     typedef char_traits<char>           traits_type;
     typedef char_traits<char>::int_type int_type;
-    typedef char_traits<char>::pos_type pos_type;
-    typedef char_traits<char>::off_type off_type;
+    // typedef char_traits<char>::pos_type pos_type;
+    // typedef char_traits<char>::off_type off_type;
 #endif
 
     gzfilebuf();

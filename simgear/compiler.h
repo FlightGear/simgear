@@ -238,6 +238,7 @@
 #  define FG_NAMESPACES
 #  define FG_HAVE_STD
 #  define FG_CLASS_PARTIAL_SPECIALIZATION
+#  define FG_HAVE_TRAITS
 
 #  define STL_ALGORITHM  <algorithm>
 #  define STL_FUNCTIONAL <functional>

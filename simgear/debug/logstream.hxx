@@ -31,6 +31,11 @@
 
 #include <simgear/compiler.h>
 
+// At least Irix needs this
+#ifdef FG_HAVE_NATIVE_SGI_COMPILERS
+#include <char_traits.h>
+#endif
+
 #ifdef FG_HAVE_STD_INCLUDES
 # include <streambuf>
 # include <iostream>
@@ -46,6 +51,8 @@ FG_USING_STD(streambuf);
 FG_USING_STD(ostream);
 FG_USING_STD(cerr);
 FG_USING_STD(endl);
+#else
+FG_USING_STD(char_traits);
 #endif
 
 #ifdef __MWERKS__
@@ -73,8 +80,8 @@ public:
 #ifndef FG_HAVE_STD_INCLUDES
     typedef char_traits<char>           traits_type;
     typedef char_traits<char>::int_type int_type;
-    typedef char_traits<char>::pos_type pos_type;
-    typedef char_traits<char>::off_type off_type;
+    // typedef char_traits<char>::pos_type pos_type;
+    // typedef char_traits<char>::off_type off_type;
 #endif
 //     logbuf( streambuf* sb ) : sbuf(sb) {}
     logbuf();

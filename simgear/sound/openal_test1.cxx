@@ -99,7 +99,11 @@ int main( int argc, char *argv[] ) {
     }
 
     // Load the sample file
+#if defined (__APPLE__)
+    alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq );
+#else
     alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq, &loop );
+#endif
     if (alGetError() != AL_NO_ERROR) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to load wav file.");
     }

@@ -98,25 +98,25 @@ public:
      * Get the file part of the path (everything after the last path sep)
      * @return file string
      */
-    string file();
+    string file() const;
   
     /**
      * Get the directory part of the path.
      * @return directory string
      */
-    string dir();
+    string dir() const;
   
     /**
      * Get the base part of the path (everything but the extension.)
      * @return the base string
      */
-    string base();
+    string base() const;
 
     /**
      * Get the extention part of the path (everything after the final ".")
      * @return the extention string
      */
-    string extension();
+    string extension() const;
 
     /** Get the path string
      * @return path string

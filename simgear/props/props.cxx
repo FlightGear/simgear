@@ -31,7 +31,7 @@ SG_USING_STD(find);
 SG_USING_STD(vector);
 
 #if ( _MSC_VER == 1200 )
-! // MSVC 6 is buggy, and needs something strange here
+// MSVC 6 is buggy, and needs something strange here
 SG_USING_STD(vector<SGPropertyNode_ptr>);
 SG_USING_STD(vector<SGPropertyChangeListener *>);
 SG_USING_STD(vector<SGPropertyNode *>);

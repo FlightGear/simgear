@@ -336,7 +336,9 @@
      extern void *memmove(void *, const void *, size_t);
 #  endif // __cplusplus
 
-#  define SG_COMPILER_STR "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
+#  if  !defined( __GNUC__ )
+#   define SG_COMPILER_STR "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
+#  endif
 
 #endif // sun
 

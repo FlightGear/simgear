@@ -29,7 +29,10 @@
 #include "magvar.hxx"
 
 
-SGMagVar::SGMagVar() {
+SGMagVar::SGMagVar()
+  : magvar(0.0),
+    magdip(0.0)
+{
 }
 
 SGMagVar::~SGMagVar() {

@@ -224,7 +224,7 @@ ssgLeaf *sgMakeLeaf( const string& path,
     if ( size == 1 ) {
         texcoord = texcoords[ tex_index[0] ];
         sgSetVec2( tmp2, texcoord[0], texcoord[1] );
-        sgSetVec2( tmp2, texcoord[0], texcoord[1] );
+        //sgSetVec2( tmp2, texcoord[0], texcoord[1] );
         if ( tex_width > 0 ) {
             tmp2[0] *= (1000.0 / tex_width);
         }

@@ -77,28 +77,29 @@ SGTime::SGTime( double lon, double lat, const string& root )
     gst_diff = -9999.0;
 
     cur_time = time(NULL); 
-    // cout << "Current greenwich mean time = " << asctime(gmtime(&cur_time))
-    //      << endl;
-    // cout << "Current local time          = " 
-    //      << asctime(localtime(&cur_time)) << endl;
+    cout << "Current greenwich mean time = " << asctime(gmtime(&cur_time))
+         << endl;
+    cout << "Current local time          = " 
+         << asctime(localtime(&cur_time)) << endl;
 
     if ( root != (string)"" ) {
-	SGPath zone( root );
-	zone.append( "zone.tab" );
-	SG_LOG( SG_EVENT, SG_DEBUG, "Reading timezone info from: "
-		<< zone.str() );
-	tzContainer = new TimezoneContainer( zone.c_str() );
+        SGPath zone( root );
+        zone.append( "zone.tab" );
+        SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
+                << zone.str() );
+        tzContainer = new TimezoneContainer( zone.c_str() );
 
-	GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
-	GeoCoord* nearestTz = tzContainer->getNearest(location);
+        GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+        GeoCoord* nearestTz = tzContainer->getNearest(location);
 
-	SGPath name( root );
-	name.append( nearestTz->getDescription() );
-	zonename = strdup( name.c_str() );
-	// cout << "Using zonename = " << zonename << endl;
+        SGPath name( root );
+        name.append( nearestTz->getDescription() );
+        zonename = strdup( name.c_str() );
+        SG_LOG( SG_EVENT, SG_INFO, "Using zonename = " << zonename );
     } else {
-	tzContainer = NULL;
-	zonename = NULL;
+        SG_LOG( SG_EVENT, SG_INFO, "*** NO TIME ZONE NAME ***" );
+        tzContainer = NULL;
+        zonename = NULL;
     }
 }
 
@@ -413,22 +414,37 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     return ( timegm(&mt) );
 #elif defined( MK_TIME_IS_GMT )
     time_t ret = mktime(&mt);
+
+#ifdef __CYGWIN__
+	ret -= _timezone;
+#endif
+
     // This is necessary as some mktime() calls may
     // try to access the system timezone files
     // if this open fails errno is set to 2
     // CYGWIN for one does this
-    if ( errno ) {
-	perror( "sgTimeGetGMT()" );
-	errno = 0;
-    }
+    // if ( errno ) {
+    //     perror( "sgTimeGetGMT()" );
+    //     errno = 0;
+    // }
+
+    // reset errno in any event.
+    errno = 0;
+
     return ret;
 #else // ! defined ( MK_TIME_IS_GMT )
 
     // timezone seems to work as a proper offset for Linux & Solaris
-#   if defined( __linux__ ) || defined( __sun__ )
+#   if defined( __linux__ ) || defined( __sun__ ) ||defined(__CYGWIN__)
 #       define TIMEZONE_OFFSET_WORKS 1
 #   endif
 
+#if defined(__CYGWIN__)
+#define TIMEZONE _timezone
+#else
+#define TIMEZONE timezone
+#endif
+	
     time_t start = mktime(&mt);
 
     SG_LOG( SG_EVENT, SG_DEBUG, "start1 = " << start );
@@ -437,12 +453,12 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     // fgPrintf( SG_EVENT, SG_DEBUG, "start2 = %s", ctime(&start));
     SG_LOG( SG_EVENT, SG_DEBUG, "(tm_isdst = " << mt.tm_isdst << ")" );
 
-    timezone = fix_up_timezone( timezone );
+    TIMEZONE = fix_up_timezone( TIMEZONE );
 
 #  if defined( TIMEZONE_OFFSET_WORKS )
     SG_LOG( SG_EVENT, SG_DEBUG,
-	    "start = " << start << ", timezone = " << timezone );
-    return( start - timezone );
+	    "start = " << start << ", timezone = " << TIMEZONE );
+    return( start - TIMEZONE );
 #  else // ! defined( TIMEZONE_OFFSET_WORKS )
 
     daylight = mt.tm_isdst;
@@ -453,13 +469,13 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 		"OOOPS, problem in sg_time.cxx, no daylight savings info." );
     }
 
-    long int offset = -(timezone / 3600 - daylight);
+    long int offset = -(TIMEZONE / 3600 - daylight);
 
-    SG_LOG( SG_EVENT, SG_DEBUG, "  Raw time zone offset = " << timezone );
+    SG_LOG( SG_EVENT, SG_DEBUG, "  Raw time zone offset = " << TIMEZONE );
     SG_LOG( SG_EVENT, SG_DEBUG, "  Daylight Savings = " << daylight );
     SG_LOG( SG_EVENT, SG_DEBUG, "  Local hours from GMT = " << offset );
     
-    long int start_gmt = start - timezone + (daylight * 3600);
+    long int start_gmt = start - TIMEZONE + (daylight * 3600);
     
     SG_LOG( SG_EVENT, SG_DEBUG, "  March 21 noon (CST) = " << start );
 

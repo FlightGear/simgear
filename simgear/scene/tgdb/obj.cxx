@@ -359,7 +359,11 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                                          pts_v[i], pts_n[i],
                                                          matlib,
                                                          pt_materials[i], up );
-            if ( pt_materials[i].substr(0, 16) == "RWY_BLUE_TAXIWAY" ) {
+            if ( pt_materials[i].substr(0, 16) == "RWY_BLUE_TAXIWAY_LIGHTS" ) {
+                taxi_lights->addKid( branch );
+            } else if ( pt_materials[i].substr(0, 16)
+                        == "RWY_GREEN_TAXIWAY_LIGHTS" )
+            {
                 taxi_lights->addKid( branch );
             } else {
                 rwy_lights->addKid( branch );

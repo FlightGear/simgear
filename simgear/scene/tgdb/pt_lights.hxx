@@ -49,20 +49,6 @@ typedef int_list::iterator int_list_iterator;
 typedef int_list::const_iterator int_point_list_iterator;
 
 
-// Define the various supported light types
-typedef enum {
-    SG_RWYLIGHT_TAXI = 0,
-    SG_RWYLIGHT_VASI,
-    SG_RWYLIGHT_EDGE,
-    SG_RWYLIGHT_TOUCHDOWN,
-    SG_RWYLIGHT_THRESHOLD,
-    SG_RWYLIGHT_WHITE,
-    SG_RWYLIGHT_RED,
-    SG_RWYLIGHT_GREEN,
-    SG_RWYLIGHT_YELLOW
-} sgPointLightType;
-
-
 // Generate a directional light.  This routines creates a
 // 'directional' light that can only be viewed from within 90 degrees
 // of the specified dir vector.

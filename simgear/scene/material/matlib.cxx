@@ -491,6 +491,8 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
     rwy_green_low_lights->setTexture( tex_name );
     matlib["RWY_GREEN_LOW_LIGHTS"]
         = new SGMaterial( rwy_green_low_lights );
+    matlib["RWY_GREEN_TAXIWAY_LIGHTS"]
+        = new SGMaterial( rwy_green_low_lights );
 
     // hard coded low intensity taxiway blue light state
     tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );

@@ -341,9 +341,10 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
     if (prev_sun_angle != sun_angle) {
         prev_sun_angle = sun_angle;
 
-        double vis_factor = (new_visibility - 5000.0) / 10000.0;
-        if ( vis_factor < 0.0 ) {
-            vis_factor = 0.0;
+        double nv = (new_visibility > 5000.0) ? new_visibility : 5000.0;
+        double vis_factor = 10000.0 / (nv - 5000.0);
+        if ( vis_factor < 0.25 ) {
+            vis_factor = 0.25;
         } else if ( vis_factor > 1.0) {
             vis_factor = 1.0;
         }

@@ -12,7 +12,8 @@ include_HEADERS = \
 	sg_memory.h \
 	sg_random.h \
 	sg_types.hxx \
-	vector.hxx
+	vector.hxx \
+	fastmath.hxx
 
 EXTRA_DIST = linintp2.h linintp2.inl sphrintp.h sphrintp.inl
 
@@ -22,6 +23,7 @@ libsgmath_a_SOURCES = \
 	polar3d.cxx \
 	sg_geodesy.cxx \
 	sg_random.c \
-	vector.cxx
+	vector.cxx \
+	fastmath.cxx
 
 INCLUDES = -I$(top_srcdir)

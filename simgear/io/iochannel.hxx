@@ -1,5 +1,8 @@
-// iochannel.hxx -- High level IO channel class
-//
+/**
+ * \file iochannel.hxx
+ * High level IO channel base class.
+ */
+
 // Written by Curtis Olson, started November 1999.
 //
 // Copyright (C) 1999  Curtis L. Olson - curt@flightgear.org
@@ -38,6 +41,10 @@ SG_USING_STD(string);
 
 #define SG_IO_MAX_MSG_SIZE 16384
 
+/**
+ * Specify if this is a read (IN), write (OUT), or r/w (BI) directional
+ * channel
+ */
 enum SGProtocolDir {
     SG_IO_NONE = 0,
     SG_IO_IN = 1,
@@ -45,13 +52,27 @@ enum SGProtocolDir {
     SG_IO_BI = 3
 };
 
-
+/**
+ * Specify the channel type
+ */
 enum SGChannelType {
     sgFileType = 0,
     sgSerialType = 1,
     sgSocketType = 2
 };
 
+
+/**
+ * The SGIOChannel base class provides a consistent method for
+ * applications to communication through various mediums. By providing
+ * a base class with multiple derived classes, and application such as
+ * FlightGear can implement a way to speak any protocol via any kind
+ * of I/O channel.
+ *
+ * All of the SGIOChannel derived classes have exactly the same usage
+ * interface once an instance has been created.
+ *
+ */
 class SGIOChannel {
 
     SGChannelType type;
@@ -60,11 +81,43 @@ class SGIOChannel {
 
 public:
 
+    /** Constructor */
     SGIOChannel();
+
+    /** Destructor */
     virtual ~SGIOChannel();
 
+    /** Open a channel.
+     * @param d channel communication "direction"
+     * Direction can be one of: 
+     *  - SG_IO_IN - data will be flowing into this object to the application. 
+     *  - SG_IO_OUT - data will be flowing out of this object from the
+     *                application. 
+     *  - SG_IO_BI - data will be flowing in both directions. 
+     *  - SG_IO_NONE - data will not be flowing in either direction.
+     *                 This is here for the sake of completeness. 
+     */
     virtual bool open( const SGProtocolDir d );
+
+    /**
+     * The read() method is modeled after the read() Unix system
+     * call. You must provide a pointer to a character buffer that has
+     * enough allocated space for your potential read. You can also
+     * specify the maximum number of bytes allowed for this particular
+     * read. The actual number of bytes read is returned.  You are
+     * responsible to ensure that the size of buf is large enough to
+     * accomodate your input message
+     * @param buf a char pointer to your input buffer 
+     * @param length max number of bytes to read
+     */
     virtual int read( char *buf, int length );
+
+    /**
+     * The readline() method is similar to read() except that it will
+     * stop at the first end of line encountered in the input buffer.
+     * @param buf a char pointer to your input buffer 
+     * @param length max number of bytes to read
+     */
     virtual int readline( char *buf, int length );
     virtual int write( const char *buf, const int length );
     virtual int writestring( const char *str );

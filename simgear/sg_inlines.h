@@ -1,5 +1,8 @@
-// inlines.h -- various inline template definitions
-//
+/** 
+ * \file sg_inlines.h
+ * Various inline template definitions.
+ */
+
 // Written by Norman Vine, started June 2000.
 //
 // Copyright (C) 2000  Norman Vine  - nhv@cape.com
@@ -24,7 +27,6 @@
 
 #ifndef _SG_INLINES_H
 #define _SG_INLINES_H
-
 
 template <class T>
 inline const int SG_SIGN(const T x) {

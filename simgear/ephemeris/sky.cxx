@@ -97,69 +97,122 @@ bool FGSky::initialize() {
     int i;
 
     // initialize arrays
-    upper_ring_vl = new ssgVertexArray( 12 );
-    upper_ring_cl = new ssgColourArray( 12 );
+    center_disk_vl = new ssgVertexArray( 14 );
+    center_disk_cl = new ssgColourArray( 14 );
+				       
+    upper_ring_vl = new ssgVertexArray( 26 );
+    upper_ring_cl = new ssgColourArray( 26 );
 
-    middle_ring_vl = new ssgVertexArray( 12 );
-    middle_ring_cl = new ssgColourArray( 12 );
+    middle_ring_vl = new ssgVertexArray( 26 );
+    middle_ring_cl = new ssgColourArray( 26 );
 
-    lower_ring_vl = new ssgVertexArray( 12 );
-    lower_ring_cl = new ssgColourArray( 12 );
+    lower_ring_vl = new ssgVertexArray( 26 );
+    lower_ring_cl = new ssgColourArray( 26 );
 
-    bottom_ring_vl = new ssgVertexArray( 12 );
-    bottom_ring_cl = new ssgColourArray( 12 );
+    // initially seed to all blue
+    sgSetVec3( color, 0.0, 0.0, 1.0 );
 
-    // generate the sky dome vertices
+    // generate the raw vertex data
+    sgVec3 center_vertex;
+    sgVec3 upper_vertex[12];
+    sgVec3 middle_vertex[12];
+    sgVec3 lower_vertex[12];
+    sgVec3 bottom_vertex[12];
 
-    sgSetVec3( color, 0.0, 0.0, 1.0 ); // seed to all blue
+    sgSetVec3( center_vertex, 0.0, 0.0, CENTER_ELEV );
 
     for ( i = 0; i < 12; i++ ) {
 	theta = (i * 30.0) * DEG_TO_RAD;
 
-	sgSetVec3( vertex,
+	sgSetVec3( upper_vertex[i],
 		   cos(theta) * UPPER_RADIUS,
 		   sin(theta) * UPPER_RADIUS,
 		   UPPER_ELEV );
-	upper_ring_vl->add( vertex );
-	upper_ring_cl->add( color );
 	
-	sgSetVec3( vertex,
+	sgSetVec3( middle_vertex[i],
 		   cos((double)theta) * MIDDLE_RADIUS,
 		   sin((double)theta) * MIDDLE_RADIUS,
 		   MIDDLE_ELEV );
-	middle_ring_vl->add( vertex );
-	middle_ring_cl->add( color );
 
-	sgSetVec3( vertex,
+	sgSetVec3( lower_vertex[i],
 		   cos((double)theta) * LOWER_RADIUS,
 		   sin((double)theta) * LOWER_RADIUS,
 		   LOWER_ELEV );
-	lower_ring_vl->add( vertex );
-	lower_ring_cl->add( color );
 
-	sgSetVec3( vertex,
+	sgSetVec3( bottom_vertex[i],
 		   cos((double)theta) * BOTTOM_RADIUS,
 		   sin((double)theta) * BOTTOM_RADIUS,
 		   BOTTOM_ELEV );
-	bottom_ring_vl->add( vertex );
-	bottom_ring_cl->add( color );
     }
 
-    // force a rebuild of the colors
-    rebuild();
+    // generate the center disk vertex/color arrays
+    center_disk_vl->add( center_vertex );
+    center_disk_cl->add( color );
+    for ( i = 11; i >= 0; i-- ) {
+	center_disk_vl->add( upper_vertex[i] );
+	center_disk_cl->add( color );
+    }
+    center_disk_vl->add( upper_vertex[11] );
+    center_disk_cl->add( color );
+
+    // generate the upper ring
+    for ( i = 0; i < 12; i++ ) {
+	upper_ring_vl->add( middle_vertex[i] );
+	upper_ring_cl->add( color );
+
+	upper_ring_vl->add( upper_vertex[i] );
+	upper_ring_cl->add( color );
+    }
+    upper_ring_vl->add( middle_vertex[0] );
+    upper_ring_cl->add( color );
+
+    upper_ring_vl->add( upper_vertex[0] );
+    upper_ring_cl->add( color );
+
+    // generate middle ring
+    for ( i = 0; i < 12; i++ ) {
+	middle_ring_vl->add( lower_vertex[i] );
+	middle_ring_cl->add( color );
+
+	middle_ring_vl->add( middle_vertex[i] );
+	middle_ring_cl->add( color );
+    }
+    middle_ring_vl->add( lower_vertex[0] );
+    middle_ring_cl->add( color );
+
+    middle_ring_vl->add( middle_vertex[0] );
+    middle_ring_cl->add( color );
+
+    // generate lower ring
+    for ( i = 0; i < 12; i++ ) {
+	lower_ring_vl->add( bottom_vertex[i] );
+	lower_ring_cl->add( color );
+
+	lower_ring_vl->add( lower_vertex[i] );
+	lower_ring_cl->add( color );
+    }
+    lower_ring_vl->add( bottom_vertex[0] );
+    lower_ring_cl->add( color );
+
+    lower_ring_vl->add( lower_vertex[0] );
+    lower_ring_cl->add( color );
+
+    // force a repaint of the colors
+    repaint();
 
     return true;
 }
 
 
-// rebuild the sky colors based on current value of sun_angle, sky,
+// repaint the sky colors based on current value of sun_angle, sky,
 // and fog colors.  This updates the color arrays for ssgVtxTable.
-bool FGSky::rebuild() {
+bool FGSky::repaint() {
     double diff;
     sgVec3 outer_param, outer_amt, outer_diff;
     sgVec3 middle_param, middle_amt, middle_diff;
     int i, j;
 
+    // Check for sunrise/sunset condition
     if ( (sun_angle > 80.0) && (sun_angle < 100.0) ) {
 	// 0.0 - 0.4
 	sgSetVec3( outer_param,
@@ -189,10 +242,17 @@ bool FGSky::rebuild() {
     sgCopyVec3( outer_amt, outer_param );
     sgCopyVec3( middle_amt, middle_param );
 
-    // float *upper_color, *middle_color, *lower_color;
+    //
+    // First, recalulate the basic colors
+    //
+
+    sgVec3 center_color;
+    sgVec3 upper_color[12];
+    sgVec3 middle_color[12];
+    sgVec3 lower_color[12];
+    sgVec3 bottom_color[12];
 
     for ( i = 0; i < 6; i++ ) {
-	// inner_color = 
 	for ( j = 0; j < 3; j++ ) {
 	    diff = sky_color[j] - fog_color[j];
 
@@ -212,8 +272,8 @@ bool FGSky::rebuild() {
 	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
 	    if ( lower_color[i][j] < 25 ) { lower_color[i][j] = 25; }
 	}
-	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	    (GLubyte)(sky_color[3] * 255);
+	// upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
+	//                     (GLubyte)(sky_color[3] * 255);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] -= outer_diff[j];
@@ -255,8 +315,8 @@ bool FGSky::rebuild() {
 	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
 	    if ( lower_color[i][j] < 35 ) { lower_color[i][j] = 35; }
 	}
-	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	    (GLubyte)(sky_color[3] * 255);
+	// upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
+	//                     (GLubyte)(sky_color[3] * 255);
 
 	for ( j = 0; j < 3; j++ ) {
 	    outer_amt[j] += outer_diff[j];
@@ -275,7 +335,96 @@ bool FGSky::rebuild() {
 	*/
     }
 
+    for ( i = 0; i < 12; i++ ) {
+	sgCopyVec3( bottom_color[i], fog_color );
+    }
+
+    //
+    // Second, assign the basic colors to the object color arrays
+    //
+
+    float *slot;
+    int counter;
+
+    // update the center disk color arrays
+    counter = 0;
+    slot = center_disk_cl->get( counter++ );
+    sgCopyVec3( slot, center_color );
+    for ( i = 11; i >= 0; i-- ) {
+	slot = center_disk_cl->get( counter++ );
+	sgCopyVec3( slot, upper_color[i] );
+    }
+    slot = center_disk_cl->get( counter++ );
+    sgCopyVec3( slot, upper_color[11] );
+
+    // generate the upper ring
+    counter = 0;
+    for ( i = 0; i < 12; i++ ) {
+	slot = upper_ring_cl->get( counter++ );
+	sgCopyVec3( slot, middle_color[i] );
+
+	slot = upper_ring_cl->get( counter++ );
+	sgCopyVec3( slot, upper_color[i] );
+    }
+    slot = upper_ring_cl->get( counter++ );
+    sgCopyVec3( slot, middle_color[0] );
+
+    slot = upper_ring_cl->get( counter++ );
+    sgCopyVec3( slot, upper_color[0] );
+
+    // generate middle ring
+    counter = 0;
+    for ( i = 0; i < 12; i++ ) {
+	slot = middle_ring_cl->get( counter++ );
+	sgCopyVec3( slot, lower_color[i] );
+
+	slot = middle_ring_cl->get( counter++ );
+	sgCopyVec3( slot, middle_color[i] );
+    }
+    slot = middle_ring_cl->get( counter++ );
+    sgCopyVec3( slot, lower_color[0] );
+
+    slot = middle_ring_cl->get( counter++ );
+    sgCopyVec3( slot, middle_color[0] );
+
+    // generate lower ring
+    counter = 0;
+    for ( i = 0; i < 12; i++ ) {
+	slot = lower_ring_cl->get( counter++ );
+	sgCopyVec3( slot, bottom_color[i] );
+
+	slot = lower_ring_cl->get( counter++ );
+	sgCopyVec3( slot, lower_color[i] );
+    }
+    slot = lower_ring_cl->get( counter++ );
+    sgCopyVec3( slot, bottom_color[0] );
+
+    slot = lower_ring_cl->get( counter++ );
+    sgCopyVec3( slot, lower_color[0] );
+
     return true;
+}
+
+
+// build the ssg scene graph sub tree for the sky and connected into
+// the provide scene graph root
+bool FGSky::build( ssgBranch *branch ) {
+    sky_selector = new ssgSelector;
+    sky_transform = new ssgTransform;
+
+    ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
+
+    center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
+				   center_disk_vl, NULL, NULL, center_disk_cl );
+
+    upper_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				  upper_ring_vl, NULL, NULL, upper_ring_cl );
+
+    middle_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				   middle_ring_vl, NULL, NULL, middle_ring_cl );
+
+    lower_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
+				  lower_ring_vl, NULL, NULL, lower_ring_cl );
 }
 
 

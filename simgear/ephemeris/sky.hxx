@@ -50,6 +50,12 @@ class FGSky {
 				// sky)
 
 
+    ssgSelector *sky_selector;
+    ssgTransform *sky_transform;
+
+    ssgVertexArray *center_disk_vl;
+    ssgColourArray *center_disk_cl;
+
     ssgVertexArray *upper_ring_vl;
     ssgColourArray *upper_ring_cl;
 
@@ -58,9 +64,6 @@ class FGSky {
 
     ssgVertexArray *lower_ring_vl;
     ssgColourArray *lower_ring_cl;
-
-    ssgVertexArray *bottom_ring_vl;
-    ssgColourArray *bottom_ring_cl;
 
 public:
 
@@ -73,18 +76,22 @@ public:
     // initialize the sky object and connect it into the scene graph
     bool initialize();
 
-    // rebuild the sky colors based on current value of sun_angle,
+    // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
     // ssgVtxTable.
-    bool rebuild();
+    bool repaint();
+
+    // build the ssg scene graph sub tree for the sky and connected
+    // into the provide scene graph branch
+    bool build( ssgBranch *branch );
 
     // enable the sky in the scene graph (default)
-    bool enable();
+    bool enable() { sky_selector->select( 1 ); }
 
     // disable the sky in the scene graph.  The leaf node is still
     // there, how ever it won't be traversed on the cullandrender
     // phase.
-    bool disable();
+    bool disable() { sky_selector->select( 0 ); }
 
     inline void set_sun_angle( double a ) { sun_angle = a; }
     inline void set_sky_color( sgVec3 color ) { 

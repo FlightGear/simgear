@@ -1,6 +1,7 @@
-// ephemeris.hxx -- Top level class for calculating current positions of
-//                  astronomical objects
-//
+/** \file ephemeris.hxx
+ * Top level class for calculating current positions of astronomical objects.
+ */
+
 // Top level interface written by Curtis Olson, started March 2000.
 //
 // All the core code underneath this is written by Durk Talsma.  See
@@ -48,6 +49,25 @@
 #include <simgear/ephemeris/stardata.hxx>
 
 
+/** Ephemeris class
+ *
+ * Introduction 
+ *
+ * The SGEphemeris class computes and stores the positions of the Sun,
+ * the Moon, the planets, and the brightest stars.  These positions
+ * can then be used to accurately render the dominant visible items in
+ * the Earth's sky. Note, this class isn't intended for use in an
+ * interplanetary/interstellar/intergalactic type application. It is
+ * calculates everything relative to the Earth and is therefore best
+ * suited for Earth centric applications.
+ *
+ * The positions of the various astronomical objects are time
+ * dependent, so to maintain accuracy, you will need to periodically
+ * call the update() method. The SGTime class conveniently provides
+ * the two time related values you need to pass to the update()
+ * method.
+ */
+
 class SGEphemeris {
 
     Star *our_sun;
@@ -71,40 +91,82 @@ class SGEphemeris {
 
 public:
 
-    // Constructor
+    /**
+     * Constructor.
+     * This creates an instance of the SGEphemeris object. When
+     * calling the constructor you need to provide a path pointing to
+     * your star database file.
+     * @param path path to your star database */
     SGEphemeris( const string &path );
 
-    // Destructor
+    /** Destructor */
     ~SGEphemeris( void );
 
-    // Update (recalculate) the positions of all objects for the
-    // specified time
+    /**
+     * Update (recalculate) the positions of all objects for the
+     * specified time.  The update() method requires you to pass in
+     * the current modified Julian date, the current local sidereal
+     * time, and the current latitude. The update() method is designed
+     * to be called by the host application before every frame.
+     * @param mjd modified julian date
+     * @param lst current local sidereal time
+     * @param lat current latitude
+     */
     void update(double mjd, double lst, double lat);
 
-    // sun
+    /**
+     * Returns a pointer to a Star class containing all the positional
+     * information for Earth's Sun.
+     */
     inline Star *get_sun() const { return our_sun; }
+
+    /** Returns the right ascension of the Sun. */
     inline double getSunRightAscension() const {
 	return our_sun->getRightAscension();
     }
+
+    /** Returns the declination of the Sun. */
     inline double getSunDeclination() const {
 	return our_sun->getDeclination();
     }
 
-    // moon
+    /**
+     * Returns a pointer to a Moon class containing all the positional
+     * information for Earth's Moon.
+     */
     inline MoonPos *get_moon() const { return moon; }
+
+    /** Returns the right ascension of the Moon. */
     inline double getMoonRightAscension() const {
 	return moon->getRightAscension();
     }
+
+    /** Returns the declination of the Moon. */
     inline double getMoonDeclination() const {
 	return moon->getDeclination();
     }
 
-    // planets
+    /** Returns the numbers of defined planets. */
     inline int getNumPlanets() const { return nplanets; }
+
+    /**
+     * Returns a pointer to an array of planet data in sgdVec3
+     * format. (See plib.sourceforge.net for information on plib and
+     * the ``sg'' package.) An sgdVec3 is a 3 element double
+     * array. The first element is the right ascension of the planet,
+     * the second is the declination, and the third is the magnitude.
+     */
     inline sgdVec3 *getPlanets() { return planets; }
 
-    // planets
+    /** Returns the numbers of defined stars. */
     inline int getNumStars() const { return stars->getNumStars(); }
+
+    /**
+     * Returns a pointer to an array of star data in sgdVec3
+     * format. An The first element of the sgdVec3 is the right
+     * ascension of the planet, the second is the declination, and the
+     * third is the magnitude.
+     */
     inline sgdVec3 *getStars() { return stars->getStars(); }
 };
 

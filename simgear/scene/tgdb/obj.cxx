@@ -177,10 +177,6 @@ bool sgGenTile( const string& path, SGBucket b,
         new ssgVtxTable ( GL_TRIANGLE_FAN, vl, nl, tl, cl );
 
     leaf->setState( state );
-#if PLIB_VERSION > 183
-    leaf->makeDList();
-#endif
-
     geometry->addKid( leaf );
 
     return true;

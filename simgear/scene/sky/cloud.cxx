@@ -42,7 +42,7 @@
 #include "cloud.hxx"
 
 
-static ssgSimpleState *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
+static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;
 
 
@@ -50,6 +50,7 @@ static bool state_initialized = false;
 SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_root(new ssgRoot),
     layer_transform(new ssgTransform),
+    state_sel(0),
     texture_path(tex_path),
     layer_span(0.0),
     layer_asl(0.0),
@@ -162,30 +163,49 @@ SGCloudLayer::rebuild()
         SG_LOG(SG_ASTRO, SG_INFO, "initializing cloud layers");
 
         SGPath cloud_path;
+        ssgStateSelector *state_sel;
+        ssgSimpleState *state;
 
+        state_sel = new ssgStateSelector( 2 );
         cloud_path.set(texture_path.str());
         cloud_path.append("overcast.rgb");
-        layer_states[SG_CLOUD_OVERCAST] = sgCloudMakeState(cloud_path.str());
+        state_sel->setStep( 0, sgCloudMakeState(cloud_path.str()) );
+        cloud_path.set(texture_path.str());
+        cloud_path.append("overcast_top.rgb");
+        state_sel->setStep( 1, sgCloudMakeState(cloud_path.str()) );
+        layer_states[SG_CLOUD_OVERCAST] = state_sel;
 
+        state_sel = new ssgStateSelector( 2 );
         cloud_path.set(texture_path.str());
         cloud_path.append("broken.rgba");
-        layer_states[SG_CLOUD_BROKEN]
-            = sgCloudMakeState(cloud_path.str());
+        state = sgCloudMakeState(cloud_path.str());
+        state_sel->setStep( 0, state );
+        state_sel->setStep( 1, state );
+        layer_states[SG_CLOUD_BROKEN] = state_sel;
 
+        state_sel = new ssgStateSelector( 2 );
         cloud_path.set(texture_path.str());
         cloud_path.append("scattered.rgba");
-        layer_states[SG_CLOUD_SCATTERED]
-            = sgCloudMakeState(cloud_path.str());
+        state = sgCloudMakeState(cloud_path.str());
+        state_sel->setStep( 0, state );
+        state_sel->setStep( 1, state );
+        layer_states[SG_CLOUD_SCATTERED] = state_sel;
 
+        state_sel = new ssgStateSelector( 2 );
         cloud_path.set(texture_path.str());
         cloud_path.append("few.rgba");
-        layer_states[SG_CLOUD_FEW]
-            = sgCloudMakeState(cloud_path.str());
+        state = sgCloudMakeState(cloud_path.str());
+        state_sel->setStep( 0, state );
+        state_sel->setStep( 1, state );
+        layer_states[SG_CLOUD_FEW] = state_sel;
 
+        state_sel = new ssgStateSelector( 2 );
         cloud_path.set(texture_path.str());
         cloud_path.append("cirrus.rgba");
-        layer_states[SG_CLOUD_CIRRUS]
-            = sgCloudMakeState(cloud_path.str());
+        state = sgCloudMakeState(cloud_path.str());
+        state_sel->setStep( 0, state );
+        state_sel->setStep( 1, state );
+        layer_states[SG_CLOUD_CIRRUS] = state_sel;
 
         layer_states[SG_CLOUD_CLEAR] = 0;
     }
@@ -285,6 +305,7 @@ SGCloudLayer::rebuild()
         if ( layer_states[layer_coverage] != NULL ) {
             layer[i]->setState( layer_states[layer_coverage] );
         }
+        state_sel = layer_states[layer_coverage];
     }
 
     // force a repaint of the sky colors with arbitrary defaults
@@ -476,8 +497,9 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 }
 
 
-void SGCloudLayer::draw() {
+void SGCloudLayer::draw( bool top ) {
     if ( layer_coverage != SG_CLOUD_CLEAR ) {
+        state_sel->selectStep( top ? 1 : 0 );
         ssgCullAndDraw( layer_root );
     }
 }

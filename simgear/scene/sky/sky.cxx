@@ -212,7 +212,7 @@ void SGSky::drawUpperClouds( ) {
     // draw the cloud layers that are above us, top to bottom
     for ( int i = (int)cloud_layers.size() - 1; i >= cur_layer_pos; --i ) {
         if ( i != in_cloud ) {
-            cloud_layers[i]->draw();
+            cloud_layers[i]->draw( false );
         }
     }
 }
@@ -225,7 +225,7 @@ void SGSky::drawLowerClouds() {
     // draw the cloud layers that are below us, bottom to top
     for ( int i = 0; i < cur_layer_pos; ++i ) {
         if ( i != in_cloud ) {
-            cloud_layers[i]->draw();
+            cloud_layers[i]->draw( true );
         }
     }
 }

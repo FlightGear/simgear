@@ -167,13 +167,14 @@ public:
                      double dt = 0.0 );
 
     /** draw the cloud layer */
-    void draw();
+    void draw( bool top );
 
 private:
 
     ssgRoot *layer_root;
     ssgTransform *layer_transform;
     ssgLeaf *layer[4];
+    ssgStateSelector *state_sel;
 
     ssgColourArray *cl[4]; 
     ssgVertexArray *vl[4];

@@ -329,7 +329,7 @@ void Moon::newImage()
   /*double x_2, x_4, x_8, x_10;
   GLfloat ambient;
   GLfloat amb[4];*/
-  int moonSize = 750;
+  int moonSize = 550;
 
   GLfloat moonColor[4] = {0.85, 0.75, 0.35, 1.0};
   GLfloat black[4] = {0.0, 0.0, 0.0, 1.0};

@@ -203,7 +203,7 @@ void Star::newImage(void)
     double x_2, x_4, x_8, x_10;
     GLfloat ambient;
     GLfloat amb[4];
-    int sun_size = 750;
+    int sun_size = 550;
     
     // daily variation sun gets larger near horizon
     /*if(sun_angle*RAD_TO_DEG > 84.0 && sun_angle*RAD_TO_DEG < 95)

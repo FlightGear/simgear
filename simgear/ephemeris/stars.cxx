@@ -61,7 +61,7 @@
 
 #include "stars.hxx"
 
-FG_USING_STD(getline);
+// FG_USING_STD(getline);
 
 #define EpochStart           (631065600)
 #define DaysSinceEpoch(secs) (((secs)-EpochStart)*(1.0/(24*3600)))

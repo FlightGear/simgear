@@ -76,6 +76,29 @@ if test "x$with_efence" = "xyes" ; then
     LIBS="$LIBS -lefence"
 fi
 
+# Specify if we want to build with Norman's jpeg image server support.
+# This requires libjpeg to be installed and available.
+# Default to with_jpeg_server=no
+JPEGLIB=''
+AC_ARG_WITH(jpeg_factory, [  --with-jpeg-factory     Include Norman's jpeg image factory support code])
+if test "x$with_jpeg_factory" = "xyes" ; then
+    echo "Building with Norman's jpeg image factory support"
+    AC_CHECK_LIB(jpeg, jpeg_start_compress)
+    if test "x$ac_cv_lib_jpeg_jpeg_start_compress" != "xyes" ; then
+        echo
+        echo "In order to build the jpeg factory code you need libjpeg installed."
+        echo "otherwise please configure with the --with-jpeg-sever=no option"
+        echo
+        echo "libjpeg is available at :"
+        echo "  ftp://ftp.uu.net in the directory graphics/jpeg"
+        exit 1
+    fi
+else
+    echo "Building without Norman's jpeg image server support"
+fi
+AM_CONDITIONAL(ENABLE_JPEG_SERVER, test "x$with_jpeg_factory" = "xyes")
+
+
 dnl Check for MS Windows environment
 AC_CHECK_HEADER(windows.h)
 
@@ -348,6 +371,12 @@ fi
 
 echo -n "Automake version: ($AUTO_MAKE_VERSION) "
 automake --version | head -1
+
+if test "x$with_jpeg_factory" = "xyes"; then
+   echo "With JPEG Factory support"
+else
+   echo "Without JPEG Factory support"
+fi
 
 if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
    echo "Threads: pthread lib found."

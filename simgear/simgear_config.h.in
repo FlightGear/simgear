@@ -197,6 +197,9 @@
 /* Define if you have the glut library (-lglut).  */
 #undef HAVE_LIBGLUT
 
+/* Define if you have the jpeg library (-ljpeg).  */
+#undef HAVE_LIBJPEG
+
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM
 

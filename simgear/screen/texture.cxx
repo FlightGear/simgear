@@ -12,6 +12,10 @@
  * $Id$
  */
 
+#include <simgear/compiler.h>
+#ifdef WIN32
+# include <windows.h>
+#endif
 #include <GL/glu.h>
 #include <zlib.h>
 

@@ -1,0 +1,3 @@
+MSVC5 users:
+
+  Copy simgear/config.h.vc5 to simgear/config.h before building.

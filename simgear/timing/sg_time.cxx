@@ -290,6 +290,14 @@ void SGTime::updateLocal( double lon, double lat, const string& root ) {
         delete ptr;
     }
     zonename = strdup( zone.c_str() );
+
+    //Avoid troubles when zone.tab hasn't got the right line endings
+    if (zonename[strlen(zonename)-1] == '\r')
+    {
+      zonename[strlen(zonename)-1]=0;
+      zone.set( zonename );
+    }
+
     currGMT = sgTimeGetGMT( gmtime(&cur_time) );
     aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zone.c_str())) );
     local_offset = aircraftLocalTime - currGMT;

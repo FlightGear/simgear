@@ -28,12 +28,14 @@
 // Constructor
 FGEphemeris::FGEphemeris( void ) {
     our_sun = new Star;
+    moon = new Moon;
 }
 
 
 // Destructor
 FGEphemeris::~FGEphemeris( void ) {
     delete our_sun;
+    delete moon;
 }
 
 
@@ -41,5 +43,6 @@ FGEphemeris::~FGEphemeris( void ) {
 // time
 void FGEphemeris::update( FGTime *t ) {
     our_sun->updatePosition( t );
+    moon->updatePosition( t, our_sun );
 }
 

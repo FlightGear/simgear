@@ -40,6 +40,7 @@
 
 #include "moon.hxx"
 
+
 /*************************************************************************
  * Moon::Moon(FGTime *t)
  * Public constructor for class Moon. Initializes the orbital elements and 
@@ -56,6 +57,7 @@ Moon::Moon(FGTime *t) :
 		0.054900,  0.000000,
 		115.3654,  13.0649929509, t)
 {
+#if 0
   int width, height;
   
   FG_LOG( FG_GENERAL, FG_INFO, "Initializing Moon Texture");
@@ -125,16 +127,29 @@ Moon::Moon(FGTime *t) :
 		GL_RGBA, GL_UNSIGNED_BYTE,
 		moon_halotexbuf);
   moonObject = gluNewQuadric();
+#endif
 }
+
+Moon::Moon() :
+  CelestialBody(125.1228, -0.0529538083,
+		5.1454,    0.00000,
+		318.0634,  0.1643573223,
+		60.266600, 0.000000,
+		0.054900,  0.000000,
+		115.3654,  13.0649929509)
+{
+}
+
 
 Moon::~Moon()
 {
-  //delete moonObject;
-  delete moon_texbuf;
-  delete moon_halotexbuf;
+    //delete moonObject;
+    // delete moon_texbuf;
+    // delete moon_halotexbuf;
 }
 
 
+#if 0
 static int texWidth = 256;	/* 64x64 is plenty */
 
 void Moon::setHalo()
@@ -182,6 +197,7 @@ void Moon::setHalo()
   //	    GL_UNSIGNED_BYTE, textureBuf);
   //free(textureBuf);
 }
+#endif
 
 
 /*****************************************************************************
@@ -255,7 +271,7 @@ void Moon::updatePosition(FGTime *t, Star *ourSun)
   r += (-0.58 * cos(M - 2*D)
 	-0.46 * cos(2*D)
 	);
-  FG_LOG(FG_GENERAL, FG_INFO, "Running moon update");
+  // FG_LOG(FG_GENERAL, FG_INFO, "Running moon update");
   xg = r * cos(lonEcl) * cos(latEcl);
   yg = r * sin(lonEcl) * cos(latEcl);
   zg = r *               sin(latEcl);
@@ -308,6 +324,7 @@ void Moon::updatePosition(FGTime *t, Star *ourSun)
 }
 
 
+#if 0
 /************************************************************************
  * void Moon::newImage()
  *
@@ -396,3 +413,4 @@ void Moon::newImage()
     {
     }
 }
+#endif

@@ -29,11 +29,13 @@
 #include <Time/fg_time.hxx>
 
 #include "star.hxx"
+#include "moon.hxx"
 
 
 class FGEphemeris {
 
     Star *our_sun;
+    Moon *moon;
 
 public:
 
@@ -55,6 +57,13 @@ public:
 	return our_sun->getDeclination();
     }
 
+    // moon position
+    inline double getMoonRightAscension() {
+	return moon->getRightAscension();
+    }
+    inline double getMoonDeclination() {
+	return moon->getDeclination();
+    }
 };
 
 

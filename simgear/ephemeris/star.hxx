@@ -24,6 +24,7 @@
 #ifndef _STAR_HXX_
 #define _STAR_HXX_
 
+
 #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 
@@ -35,10 +36,6 @@ private:
 
     double xs, ys;     // the sun's rectangular geocentric coordinates
     double distance;   // the sun's distance to the earth
-    // GLUquadricObj *SunObject;
-    // GLuint sun_texid;
-    // GLubyte *sun_texbuf;
-    // void setTexture();
 
 public:
 
@@ -52,7 +49,6 @@ public:
     double getxs();
     double getys();
     double getDistance();
-    // void newImage();
 };
 
 

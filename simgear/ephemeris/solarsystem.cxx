@@ -106,7 +106,8 @@ void SolarSystem::rebuild()
   double magnitude;
   //GLfloat ambient;
   //GLfloat amb[4];
-  
+
+#if 0  
   glDisable(GL_LIGHTING);
 
   // Step 1: update all the positions
@@ -155,6 +156,7 @@ void SolarSystem::rebuild()
     xglEnable(GL_LIGHTING);
   }
   xglEndList();
+#endif
 }
 
 /*****************************************************************************
@@ -193,6 +195,7 @@ void SolarSystem::addPlanetToList(double ra, double dec, double magn)
 
   fgLIGHT *l = &cur_light_params;
 
+#if 0
   if ((double) (l->sun_angle - FG_PI_2) > 
       ((magnitude - 1.0) * - 20 * DEG_TO_RAD)) 
     {
@@ -201,6 +204,7 @@ void SolarSystem::addPlanetToList(double ra, double dec, double magn)
 		   50000.0 * sin (ra) * cos (dec),
 		   50000.0 * sin (dec));
     }
+#endif
 }
 
 

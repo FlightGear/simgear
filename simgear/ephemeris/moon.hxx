@@ -24,6 +24,7 @@
 #ifndef _MOON_HXX_
 #define _MOON_HXX_
 
+
 #include <simgear/constants.h>
 
 #include <Aircraft/aircraft.hxx>
@@ -35,22 +36,27 @@
 
 class Moon : public CelestialBody
 {
-private:
-  void TexInit();  // This should move to the constructor eventually.
 
-  GLUquadricObj *moonObject;
-  GLuint Sphere;
-  GLuint moon_texid;
-  GLuint moon_halotexid;
-  GLubyte *moon_texbuf;
-  GLubyte *moon_halotexbuf;
+private:
+
+    // void TexInit();  // This should move to the constructor eventually.
+
+    // GLUquadricObj *moonObject;
+    // GLuint Sphere;
+    // GLuint moon_texid;
+    // GLuint moon_halotexid;
+    // GLubyte *moon_texbuf;
+    // GLubyte *moon_halotexbuf;
   
-  void setHalo();
+    // void setHalo();
+
 public:
-  Moon ( FGTime *t);
-  ~Moon();
-  void updatePosition(FGTime *t, Star *ourSun);
-  void newImage();
+
+    Moon( FGTime *t);
+    Moon();
+    ~Moon();
+    void updatePosition(FGTime *t, Star *ourSun);
+    // void newImage();
 };
 
 

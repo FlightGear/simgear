@@ -123,7 +123,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     // Bind buffer with a source.
     alGenSources(1, &source);
     if (alGetError() != AL_NO_ERROR) {
-        throw sg_exception("Failed to gen source.");
+        throw sg_exception("Failed to gen source.\nPlease update your sound driver and try again.");
     }
 
     alSourcei( source, AL_BUFFER, buffer );
@@ -193,7 +193,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
     // Bind buffer with a source.
     alGenSources(1, &source);
     if (alGetError() != AL_NO_ERROR) {
-        throw sg_exception("Failed to gen source.");
+        throw sg_exception("Failed to gen source.\nPlease update your sound driver and try again.");
     }
 
     alSourcei( source, AL_BUFFER, buffer );

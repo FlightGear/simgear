@@ -163,6 +163,7 @@ naRef naVec_get(naRef v, int i);
 void naVec_set(naRef vec, int i, naRef o);
 int naVec_append(naRef vec, naRef o);
 naRef naVec_removelast(naRef vec);
+void naVec_setsize(naRef vec, int sz);
 
 // Hash utilities:
 int naHash_size(naRef h);

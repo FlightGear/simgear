@@ -46,6 +46,33 @@ static naRef pop(naContext c, naRef args)
     return naVec_removelast(v);
 }
 
+static naRef setsize(naContext c, naRef args)
+{
+    naRef v = naVec_get(args, 0);
+    int sz = (int)naNumValue(naVec_get(args, 1)).num;
+    if(!naIsVector(v)) return naNil();
+    naVec_setsize(v, sz);
+    return v;
+}
+
+static naRef subvec(naContext c, naRef args)
+{
+    int i;
+    naRef nlen, result, v = naVec_get(args, 0);
+    int len = 0, start = (int)naNumValue(naVec_get(args, 1)).num;
+    nlen = naNumValue(naVec_get(args, 2));
+    if(!naIsNil(nlen))
+        len = (int)naNumValue(naVec_get(args, 2)).num;
+    if(!naIsVector(v) || start < 0 || start >= naVec_size(v) || len < 0)
+        return naNil();
+    if(len == 0 || len > naVec_size(v) - start) len = naVec_size(v) - start;
+    result = naNewVector(c);
+    naVec_setsize(result, len);
+    for(i=0; i<len; i++)
+        naVec_set(result, i, naVec_get(v, start + i));
+    return result;
+}
+
 static naRef delete(naContext c, naRef args)
 {
     naRef h = naVec_get(args, 0);
@@ -129,6 +156,8 @@ static struct func funcs[] = {
     { "keys", keys }, 
     { "append", append }, 
     { "pop", pop }, 
+    { "setsize", setsize }, 
+    { "subvec", subvec }, 
     { "delete", delete }, 
     { "int", intf },
     { "num", num },

@@ -58,6 +58,19 @@ int naVec_append(naRef vec, naRef o)
     return v->size++;
 }
 
+void naVec_setsize(naRef vec, int sz)
+{
+    int i;
+    struct naVec* v = vec.ref.ptr.vec;
+    naRef* na = naAlloc(sizeof(naRef) * sz);
+    for(i=0; i<sz; i++)
+        na[i] = (i < v->size) ? v->array[i] : naNil();
+    naFree(v->array);
+    v->array = na;
+    v->size = sz;
+    v->alloced = sz;
+}
+
 naRef naVec_removelast(naRef vec)
 {
     naRef o;

@@ -17,8 +17,8 @@
 #endif                                   
 
 
-#include <simgear/point3d.hxx>
-#include <simgear/polar3d.hxx>
+#include <simgear/math/point3d.hxx>
+#include <simgear/math/polar3d.hxx>
 
 
 // fgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)

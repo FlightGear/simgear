@@ -31,7 +31,7 @@
 
 
 #include <simgear/constants.h>
-#include <simgear/point3d.hxx>
+#include <simgear/math/point3d.hxx>
 
 
 // Find the Altitude above the Ellipsoid (WGS84) given the Earth

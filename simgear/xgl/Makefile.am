@@ -1,3 +1,5 @@
+includedir = @includedir@/xgl
+
 lib_LIBRARIES = libsgxgl.a
 
 include_HEADERS = xgl.h

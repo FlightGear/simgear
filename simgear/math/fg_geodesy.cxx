@@ -17,8 +17,8 @@
 # include <errno.h>
 #endif
 
-#include <simgear/logstream.hxx>
 #include <simgear/constants.h>
+#include <simgear/debug/logstream.hxx>
 
 #include "point3d.hxx"
 #include "fg_geodesy.hxx"

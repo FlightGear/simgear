@@ -1,3 +1,5 @@
+includedir = @includedir@/math
+
 lib_LIBRARIES = libsgmath.a
 
 include_HEADERS = \

@@ -1,3 +1,5 @@
+includedir = @includedir@/screen
+
 lib_LIBRARIES = libsgscreen.a
 
 include_HEADERS = screen-dump.hxx

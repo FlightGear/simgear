@@ -1,6 +1,6 @@
 #include <string>
 
-#include <simgear/logstream.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #include "serial.hxx"
 

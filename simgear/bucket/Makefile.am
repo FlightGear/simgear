@@ -1,3 +1,5 @@
+includedir = @includedir@/bucket
+
 lib_LIBRARIES = libsgbucket.a
 
 include_HEADERS = newbucket.hxx

@@ -1,4 +1,4 @@
-## Process this file with automake to produce Makefile.in
+includedir = @includedir@/misc
 
 if HAVE_ZLIB
 ZLIB_INCL =

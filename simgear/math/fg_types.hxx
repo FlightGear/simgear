@@ -35,7 +35,7 @@
 #include STL_STRING
 #include <vector>
 
-#include <simgear/point3d.hxx>
+#include <simgear/math/point3d.hxx>
 
 FG_USING_STD(vector);
 FG_USING_STD(string);

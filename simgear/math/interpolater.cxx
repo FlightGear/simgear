@@ -31,9 +31,9 @@
 
 #include STL_STRING
 
-#include <simgear/logstream.hxx>
 #include <simgear/fg_zlib.h>
-#include <simgear/fgstream.hxx>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/misc/fgstream.hxx>
 
 #include "interpolater.hxx"
 

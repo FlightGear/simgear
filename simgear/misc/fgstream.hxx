@@ -45,7 +45,7 @@
 
 #include STL_STRING
 
-#include <simgear/zfstream.hxx>
+#include <simgear/misc/zfstream.hxx>
 
 FG_USING_STD(string);
 

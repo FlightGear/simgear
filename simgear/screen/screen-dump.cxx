@@ -32,7 +32,7 @@
 #include <limits.h>
 
 #include <GL/glut.h>
-#include <simgear/xgl.h>
+#include <simgear/xgl/xgl.h>
 
 #include "screen-dump.hxx"
 

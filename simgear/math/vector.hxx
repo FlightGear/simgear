@@ -37,7 +37,7 @@
 
 #include <plib/sg.h>
 
-#include <simgear/mat3.h>
+#include <simgear/math/mat3.h>
 
 
 // Map a vector onto the plane specified by normal

@@ -38,7 +38,7 @@
 # include <simgear/fg_traits.hxx>
 #endif
 
-#include <simgear/debug_types.h>
+#include <simgear/debug/debug_types.h>
 
 #ifndef FG_HAVE_NATIVE_SGI_COMPILERS
 FG_USING_STD(streambuf);

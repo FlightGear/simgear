@@ -30,8 +30,8 @@
 #endif                                   
 
 
-#include <simgear/newbucket.hxx>
-#include <simgear/fg_types.hxx>
+#include <simgear/bucket/newbucket.hxx>
+#include <simgear/math/fg_types.hxx>
 
 
 // traverse the specified fan/strip/list of vertices and attempt to

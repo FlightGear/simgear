@@ -1,3 +1,5 @@
+includedir = @includedir@/serial
+
 noinst_PROGRAMS = testserial
 
 lib_LIBRARIES = libsgserial.a

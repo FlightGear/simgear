@@ -1,3 +1,5 @@
+includedir = @includedir@/debug
+
 EXTRA_DIST = logtest.cxx
 
 lib_LIBRARIES = libsgdebug.a

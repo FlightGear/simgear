@@ -30,7 +30,7 @@
 
 #include <math.h>
 
-#include <simgear/fgpath.hxx>
+#include <simgear/misc/fgpath.hxx>
 
 #include "newbucket.hxx"
 

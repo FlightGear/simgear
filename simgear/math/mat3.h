@@ -19,7 +19,7 @@
 #include <stdio.h>
 
 #include <string.h>
-#include <simgear/fg_memory.h>
+#include <simgear/math/fg_memory.h>
 
 #ifdef __cplusplus                                                          
 extern "C" {                            

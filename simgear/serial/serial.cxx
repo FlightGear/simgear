@@ -43,7 +43,7 @@
 #  include <unistd.h>
 #endif
 
-#include <simgear/logstream.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #include "serial.hxx"
 

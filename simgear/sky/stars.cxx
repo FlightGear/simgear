@@ -140,13 +140,13 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
     if ( sun_angle > (FG_PI_2 + 10.0 * DEG_TO_RAD ) ) {
 	// deep night
 	factor = 1.0;
-	cutoff = 4.2;
+	cutoff = 4.5;
     } else if ( sun_angle > (FG_PI_2 + 8.8 * DEG_TO_RAD ) ) {
 	factor = 1.0;
-	cutoff = 3.6;
+	cutoff = 3.8;
     } else if ( sun_angle > (FG_PI_2 + 7.5 * DEG_TO_RAD ) ) {
 	factor = 0.95;
-	cutoff = 3.0;
+	cutoff = 3.1;
     } else if ( sun_angle > (FG_PI_2 + 7.0 * DEG_TO_RAD ) ) {
 	factor = 0.9;
 	cutoff = 2.4;
@@ -178,8 +178,9 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
 	// color (magnitude)
 	mag = star_data[i][2];
 	if ( mag < cutoff ) {
-	    nmag = ( 4 - mag ) / 5.0; // translate to 0 ... 1.0 scale
-	    alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
+	    nmag = ( 4.5 - mag ) / 5.5; // translate to 0 ... 1.0 scale
+	    // alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
+	    alpha = nmag * 0.85 + 0.15; // translate to a 0.15 ... 1.0 scale
 	    alpha *= factor;          // dim when the sun is brighter
 	} else {
 	    alpha = 0.0;

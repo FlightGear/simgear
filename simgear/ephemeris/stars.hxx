@@ -30,7 +30,7 @@
 #include <simgear/misc/fgpath.hxx>
 
 
-#define FG_MAX_STARS 3500
+#define FG_MAX_STARS 850
 
 
 class FGStars {

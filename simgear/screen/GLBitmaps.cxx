@@ -2,8 +2,12 @@
 #  include <simgear_config.h>
 #endif
 
-#ifdef HAVE_WINDOWS_H
-#  include <windows.h>                     
+#if defined(__CYGWIN__)  /* && !defined(USING_X) */
+#define WIN32
+#endif
+
+#if defined(WIN32)  /* MINGW and MSC predefine WIN32 */
+# include <windows.h>
 #endif
 
 #include <stdio.h>

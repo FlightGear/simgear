@@ -24,10 +24,16 @@
 #ifndef __SG_EXTENSIONS_HXX
 #define __SG_EXTENSIONS_HXX 1
 
-#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-# include <windows.h>
-#else
+#if !defined(WIN32)
 # include <dlfcn.h>
+#endif
+
+#if defined(__CYGWIN__)  /* && !defined(USING_X) */
+#define WIN32
+#endif
+
+#if defined(WIN32)  /* MINGW and MSC predefine WIN32 */
+# include <windows.h>
 #endif
 
 #include <GL/gl.h>

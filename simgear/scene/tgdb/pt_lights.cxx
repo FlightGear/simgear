@@ -34,7 +34,7 @@
 // strobe pre-draw (we want a larger point size)
 static int StrobePreDraw( ssgEntity *e ) {
     glPushAttrib( GL_POINT_BIT );
-    glPointSize(3.0);
+    glPointSize(4.0);
     glEnable(GL_POINT_SMOOTH);
 
     return true;
@@ -42,6 +42,23 @@ static int StrobePreDraw( ssgEntity *e ) {
 
 // strobe post-draw (we want a larger point size)
 static int StrobePostDraw( ssgEntity *e ) {
+    glPopAttrib();
+
+    return true;
+}
+
+
+// vasi pre-draw (we want a larger point size)
+static int VASIPreDraw( ssgEntity *e ) {
+    glPushAttrib( GL_POINT_BIT );
+    glPointSize(2.0);
+    glEnable(GL_POINT_SMOOTH);
+
+    return true;
+}
+
+// vasi post-draw (we want a larger point size)
+static int VASIPostDraw( ssgEntity *e ) {
     glPopAttrib();
 
     return true;
@@ -631,8 +648,8 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
         // structure.
         ssgRangeSelector *lod = (ssgRangeSelector *)light_group->getKid(0);
         ssgLeaf *leaf = (ssgLeaf *)lod->getKid(0);
-        // leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-        // leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+        leaf->setCallback( SSG_CALLBACK_PREDRAW, VASIPreDraw );
+        leaf->setCallback( SSG_CALLBACK_POSTDRAW, VASIPostDraw );
 
         SGVASIUserData *vasi = new SGVASIUserData( pos, leaf );
 

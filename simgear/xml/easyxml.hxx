@@ -24,19 +24,6 @@ SG_USING_STD(vector);
 
 
 /**
- * Exception for an low-level XML parsing error.
- */
-class sg_xml_exception : public sg_io_exception
-{
-public:
-  sg_xml_exception ();
-  sg_xml_exception (const string &message);
-  sg_xml_exception (const string &message, const sg_location &location);
-  virtual ~sg_xml_exception ();
-};
-
-
-/**
  * Interface for XML attributes.
  *
  * This interface is used to provide a list of attributes to the

@@ -92,7 +92,7 @@ void SGSimpleSound::play( slScheduler *sched, bool looped ) {
     sched->addSampleEnvelope(sample, 0, 1, volume_envelope, SL_VOLUME_ENVELOPE);
 }
 
-void SGSimpleSound::stop( slScheduler *sched, bool quick ) {
+void SGSimpleSound::stop( slScheduler *sched ) {
 
     sched->stopSample( sample );
 }

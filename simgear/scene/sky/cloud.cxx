@@ -90,9 +90,16 @@ SGCloudLayer::getElevation_m () const
 }
 
 void
-SGCloudLayer::setElevation_m (float elevation_m)
+SGCloudLayer::setElevation_m (float elevation_m, bool set_span)
 {
     layer_asl = elevation_m;
+
+    if (set_span) {
+        if (elevation_m > 4000)
+            setSpan_m(  elevation_m * 10 );
+        else
+            setSpan_m( 40000 );
+    }
 }
 
 float
@@ -187,6 +194,7 @@ SGCloudLayer::rebuild()
 
     const float layer_scale = layer_span / scale;
     const float mpi = SG_PI/4;
+    const float alt_diff = layer_asl * 1.5;
 
     for (int i = 0; i < 4; i++)
     {
@@ -200,7 +208,7 @@ SGCloudLayer::rebuild()
 
 
         sgSetVec3( vertex, layer_span*(i-2)/2, -layer_span,
-                           500 * (sin(i*mpi) - 2) );
+                           alt_diff * (sin(i*mpi) - 2) );
 
         sgSetVec2( tc, base[0] + layer_scale * i/4, base[1] );
 
@@ -213,7 +221,7 @@ SGCloudLayer::rebuild()
         for (int j = 0; j < 4; j++)
         {
             sgSetVec3( vertex, layer_span*(i-1)/2, layer_span*(j-2)/2,
-                               500 * (sin((i+1)*mpi) + sin(j*mpi) - 2) );
+                               alt_diff * (sin((i+1)*mpi) + sin(j*mpi) - 2) );
 
             sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
                            base[1] + layer_scale * j/4 );
@@ -228,7 +236,7 @@ SGCloudLayer::rebuild()
 
 
             sgSetVec3( vertex, layer_span*(i-2)/2, layer_span*(j-1)/2,
-                               500 * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
+                               alt_diff * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
 
             sgSetVec2( tc, base[0] + layer_scale * i/4,
                            base[1] + layer_scale * (j+1)/4 );
@@ -242,7 +250,7 @@ SGCloudLayer::rebuild()
         }
 
         sgSetVec3( vertex, layer_span*(i-1)/2, layer_span, 
-                           500 * (sin((i+1)*mpi) - 2) );
+                           alt_diff * (sin((i+1)*mpi) - 2) );
 
         sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
                        base[1] + layer_scale );
@@ -461,7 +469,9 @@ ssgSimpleState *sgCloudMakeState( const string &path ) {
     state->enable( GL_COLOR_MATERIAL );
     state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
     state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
+    state->setMaterial( GL_AMBIENT, 0.7, 0.7, 0.7, 1.0 );
+    state->setMaterial( GL_DIFFUSE, 0.9, 0.9, 0.9, 1.0 );
+    state->setMaterial( GL_SPECULAR, 1.0, 1.0, 1.0, 5.0 );
     state->enable( GL_BLEND );
     state->enable( GL_ALPHA_TEST );
     state->setAlphaClamp( 0.01 );

@@ -81,8 +81,9 @@ public:
      * of the cloud layer.  The elevation of the top of the layer is
      * elevation_m + thickness_m.
      * @param elevation_m the layer elevation in meters
+     * @param set_span defines whether it is allowed to adjust the span
      */
-    void setElevation_m (float elevation_m);
+    void setElevation_m (float elevation_m, bool set_span = true);
 
     /** get the layer thickness */
     float getThickness_m () const;

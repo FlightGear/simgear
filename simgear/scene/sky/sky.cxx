@@ -110,7 +110,7 @@ bool SGSky::repaint( const SGSkyColor &sc )
 	dome->repaint( sc.sky_color, sc.fog_color, sc.sun_angle,
                        effective_visibility );
 
-	oursun->repaint( sc.sun_angle );
+	oursun->repaint( sc.sun_angle, effective_visibility );
 
 	moon->repaint( sc.moon_angle );
 

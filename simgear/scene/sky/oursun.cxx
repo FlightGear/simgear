@@ -91,7 +91,8 @@ static int sgSunHaloPreDraw( ssgEntity *e ) {
     // cout << "push error = " << glGetError() << endl;
 
     glDisable( GL_DEPTH_TEST );
-//    glDisable( GL_FOG );
+    // glDisable( GL_FOG );
+    glFogf (GL_FOG_DENSITY, sun_exp2_punch_through);
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     return true;
@@ -259,7 +260,7 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 				    sgSunOrbPreDraw, sgSunOrbPostDraw );
 
     // force a repaint of the sun colors with arbitrary defaults
-    repaint( 0.0 );
+    repaint( 0.0, 1.0 );
 
     // build the halo
     // sun_texbuf = new GLubyte[64*64*3];
@@ -334,8 +335,18 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGSun::repaint( double sun_angle ) {
+bool SGSun::repaint( double sun_angle, double new_visibility ) {
     static float prev_sun_angle = 9999.0;
+
+    if ( visibility != new_visibility ) {
+        static double sqrt_m_log01 = sqrt( -log( 0.01 ) );
+        visibility = new_visibility;
+        if ( visibility < 8000 ) {
+            sun_exp2_punch_through = sqrt_m_log01 / (visibility * 10);
+        } else {
+            sun_exp2_punch_through = sqrt_m_log01 / (8000 * 10);
+        }
+    }
 
     if (prev_sun_angle != sun_angle)
     {

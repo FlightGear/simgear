@@ -34,6 +34,7 @@
 
 #include <simgear/misc/sg_path.hxx>
 
+static double sun_exp2_punch_through;
 
 class SGSun {
 
@@ -48,6 +49,8 @@ class SGSun {
 
     GLuint sun_texid;
     GLubyte *sun_texbuf;
+
+    double visibility;
 
 public:
 
@@ -65,7 +68,7 @@ public:
     // 0 degrees = high noon
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
-    bool repaint( double sun_angle );
+    bool repaint( double sun_angle, double new_visibility );
 
     // reposition the sun at the specified right ascension and
     // declination, offset by our current position (p) so that it

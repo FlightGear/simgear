@@ -14,32 +14,6 @@ SG_USING_STD(ifstream);
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of sg_xml_exception.
-////////////////////////////////////////////////////////////////////////
-
-sg_xml_exception::sg_xml_exception ()
-  : sg_io_exception("", "SimGear XML parser")
-{
-}
-
-sg_xml_exception::sg_xml_exception (const string &message)
-  : sg_io_exception(message, "SimGear XML parser")
-{
-}
-
-sg_xml_exception::sg_xml_exception (const string &message,
-				    const sg_location &location)
-  : sg_io_exception(message, location, "SimGear XML parser")
-{
-}
-
-sg_xml_exception::~sg_xml_exception ()
-{
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Implementation of XMLAttributes.
 ////////////////////////////////////////////////////////////////////////
 
@@ -249,16 +223,18 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
       throw sg_io_exception("Problem reading file",
 			    sg_location(path,
 					XML_GetCurrentLineNumber(parser),
-					XML_GetCurrentColumnNumber(parser)));
+					XML_GetCurrentColumnNumber(parser)),
+			    "SimGear XML Parser");
     }
 
     input.read(buf,16384);
     if (!XML_Parse(parser, buf, input.gcount(), false)) {
       XML_ParserFree(parser);
-      throw sg_xml_exception(XML_ErrorString(XML_GetErrorCode(parser)),
-			     sg_location(path,
-					 XML_GetCurrentLineNumber(parser),
-					 XML_GetCurrentColumnNumber(parser)));
+      throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+			    sg_location(path,
+					XML_GetCurrentLineNumber(parser),
+					XML_GetCurrentColumnNumber(parser)),
+			    "SimGear XML Parser");
     }
 
   }
@@ -266,10 +242,11 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 				// Verify end of document.
   if (!XML_Parse(parser, buf, 0, true)) {
     XML_ParserFree(parser);
-    throw sg_xml_exception(XML_ErrorString(XML_GetErrorCode(parser)),
-			   sg_location(path,
-				       XML_GetCurrentLineNumber(parser),
-				       XML_GetCurrentColumnNumber(parser)));
+    throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+			  sg_location(path,
+				      XML_GetCurrentLineNumber(parser),
+				      XML_GetCurrentColumnNumber(parser)),
+			  "SimGear XML Parser");
   }
 
   XML_ParserFree(parser);
@@ -280,10 +257,20 @@ readXML (const string &path, XMLVisitor &visitor)
 {
   ifstream input(path.c_str());
   if (input.good()) {
-    readXML(input, visitor, path);
+    try {
+      readXML(input, visitor, path);
+    } catch (sg_io_exception &e) {
+      input.close();
+      throw e;
+    } catch (sg_throwable &t) {
+      input.close();
+      throw t;
+    }
   } else {
-    throw sg_io_exception("Failed to open file", sg_location(path));
+    throw sg_io_exception("Failed to open file", sg_location(path),
+			  "SimGear XML Parser");
   }
+  input.close();
 }
 
 // end of easyxml.cxx

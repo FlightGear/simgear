@@ -17,6 +17,7 @@ SUBDIRS = \
 	xml \
 	debug \
 	misc \
+	structure \
 	bucket \
 	ephemeris \
 	io \
@@ -30,7 +31,6 @@ SUBDIRS = \
 	serial \
 	sound \
 	$(SGTHREAD_DIR) \
-	structure \
 	timing \
 	xgl
 

@@ -282,13 +282,11 @@ public:
    * The template type of a static getter function.
    */
   typedef T (*getter_t)();
-  typedef T (*getter_td)(void*);
 
   /**
    * The template type of a static setter function.
    */
   typedef void (*setter_t)(T);
-  typedef void (*setter_td)(T,void*);
 
   /**
    * Explicit constructor.
@@ -301,26 +299,7 @@ public:
    * to write-disable the value.
    */
   SGRawValueFunctions (getter_t getter = 0, setter_t setter = 0)
-    : _getter(getter), _setter(setter),
-      _getter_d(0), _setter_d(0), _data(0) {}
-
-  /**
-   * Explicit constructor.
-   *
-   * Create a new raw value bound to the getter and setter supplied.
-   *
-   * @param getter A static function for getting a value, or 0
-   * to read-disable the value.
-   * @param setter A static function for setting a value, or 0
-   * to write-disable the value.
-   * @param data A pointer to user data which gets passed to the
-   * getter and setter functions. This could be used to pass the this
-   * pointer to the callback function.
-   */
-  SGRawValueFunctions (getter_td getter = 0, setter_td setter = 0,
-                       void *data = NULL)
-    : _setter(0), _getter(0),
-      _getter_d(getter), _setter_d(setter), _data(data) {}
+    : _getter(getter), _setter(setter) {}
 
   /**
    * Destructor.
@@ -335,8 +314,7 @@ public:
    * return the default value for the type.
    */
   virtual T getValue () const {
-    if (_getter_d) return (*_getter_d)(_data);
-    else if (_getter) return (*_getter)();
+    if (_getter) return (*_getter)();
     else return SGRawValue<T>::DefaultValue;
   }
 
@@ -348,8 +326,7 @@ public:
    * method will return false.
    */
   virtual bool setValue (T value) {
-    if (_setter_d) { (*_setter_d)(value,_data); return true; }
-    else if (_setter) { (*_setter)(value); return true; }
+    if (_setter) { (*_setter)(value); return true; }
     else return false;
   }
 
@@ -357,18 +334,12 @@ public:
    * Create a copy of this raw value, bound to the same functions.
    */
   virtual SGRawValue<T> * clone () const {
-    if (_getter_d)
-      return new SGRawValueFunctions<T>(_getter_d,_setter_d,_data);
-    else
-      return new SGRawValueFunctions<T>(_getter,_setter);
+    return new SGRawValueFunctions<T>(_getter,_setter);
   }
 
 private:
   getter_t _getter;
   setter_t _setter;
-  getter_td _getter_d;
-  setter_td _setter_d;
-  void *_data;
 };
 
 
@@ -387,40 +358,25 @@ class SGRawValueFunctionsIndexed : public SGRawValue<T>
 {
 public:
   typedef T (*getter_t)(int);
-  typedef T (*getter_td)(int,void*);
   typedef void (*setter_t)(int,T);
-  typedef void (*setter_td)(int,T,void*);
-  SGRawValueFunctionsIndexed (int index, getter_t getter = 0, setter_t setter =
-0)
-    : _index(index), _getter(getter), _setter(setter),
-      _getter_d(0), _setter_d(0),_data(0) {}
-  SGRawValueFunctionsIndexed (int index, getter_td getter = 0, setter_td setter = 0, void *data = NULL)
-    : _index(index), _setter(0), _getter(0),
-      _getter_d(getter), _setter_d(setter), _data(data) {}
+  SGRawValueFunctionsIndexed (int index, getter_t getter = 0, setter_t setter = 0)
+    : _index(index), _getter(getter), _setter(setter) {}
   virtual ~SGRawValueFunctionsIndexed () {}
   virtual T getValue () const {
-    if (_getter_d)  return (*_getter_d)(_index,_data);
-    else if (_getter) return (*_getter)(_index);
+    if (_getter) return (*_getter)(_index);
     else return SGRawValue<T>::DefaultValue;
   }
   virtual bool setValue (T value) {
-    if (_setter_d) { (*_setter_d)(_index, value, _data); return true; }
-    else if (_setter) { (*_setter)(_index, value); return true; }
+    if (_setter) { (*_setter)(_index, value); return true; }
     else return false;
   }
   virtual SGRawValue<T> * clone () const {
-    if (_getter_d)
-      return new SGRawValueFunctionsIndexed<T>(_index,_getter_d,_setter_d,_data);
-    else 
-      return new SGRawValueFunctionsIndexed<T>(_index,_getter,_setter);
+    return new SGRawValueFunctionsIndexed<T>(_index, _getter, _setter);
   }
 private:
   int _index;
   getter_t _getter;
   setter_t _setter;
-  getter_td _getter_d;
-  setter_td _setter_d;
-  void *_data;
 };
 
 

@@ -45,6 +45,7 @@
  * Changelog:
  *
  * Jan. 2005, Removed GLEW dependencies, Erik Hofman
+ *            Added MacOS X support
  */
 #include <simgear/compiler.h>
 
@@ -55,6 +56,14 @@
 #ifndef _WIN32
 #  include SG_GLX_H
 #endif
+#ifdef __APPLE__
+#  ifndef None
+#     define None false
+#  endif
+#  ifndef True
+#     define True true
+#  endif
+#endif 
 
 #include <string>
 #include <vector>

@@ -579,13 +579,13 @@ bool RenderTexture::_Invalidate()
     _iNumStencilBits = 0;
     
     if (_bIsTexture)
-        glDeleteTextures(1, &_iTextureID);
+        glDeleteTextures(1, (const GLuint*)&_iTextureID);
     if (_bIsDepthTexture) 
     {
         // [Redge]
         if (!_bHasARBDepthTexture) delete[] _pPoorDepthTexture;
         // [/Redge]
-        glDeleteTextures(1, &_iDepthTextureID);
+        glDeleteTextures(1, (const GLuint*)&_iDepthTextureID);
     }
     
 #ifdef _WIN32
@@ -726,9 +726,9 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
     
     // Do same basic work as _Invalidate, but don't reset all our flags
     if (_bIsTexture)
-        glDeleteTextures(1, &_iTextureID);
+        glDeleteTextures(1, (const GLuint*)&_iTextureID);
     if (_bIsDepthTexture)
-        glDeleteTextures(1, &_iDepthTextureID);
+        glDeleteTextures(1, (const GLuint*)&_iDepthTextureID);
 #ifdef _WIN32
     if ( _hPBuffer )
     {
@@ -1822,7 +1822,7 @@ bool RenderTexture::_InitializeTextures()
 
     if (_bIsTexture)
     {
-        glGenTextures(1, &_iTextureID);
+        glGenTextures(1, (GLuint*)&_iTextureID);
         glBindTexture(_iTextureTarget, _iTextureID);  
         
         // Use clamp to edge as the default texture wrap mode for all tex
@@ -1933,7 +1933,7 @@ bool RenderTexture::_InitializeTextures()
   
     if (_bIsDepthTexture)
     { 
-        glGenTextures(1, &_iDepthTextureID);
+        glGenTextures(1, (GLuint*)&_iDepthTextureID);
         glBindTexture(_iTextureTarget, _iDepthTextureID);  
         
         // Use clamp to edge as the default texture wrap mode for all tex

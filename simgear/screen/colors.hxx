@@ -30,7 +30,7 @@
 const float system_gamma = 1.4;
 
 #elif defined (sgi)
-const float system_gamma = 1.7;
+const float system_gamma = 2.0/1.7;
 
 #else	// others
 const float system_gamma = 2.5;

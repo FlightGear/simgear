@@ -54,8 +54,8 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
     sgVec2 vec2;
     sgVec3 vec3;
 
-    drho = SG_PI / (float) stacks;
-    dtheta = 2.0 * SG_PI / (float) slices;
+    drho = SGD_PI / (float) stacks;
+    dtheta = 2.0 * SGD_PI / (float) slices;
 
     /* texturing: s goes from 0.0/0.25/0.5/0.75/1.0 at +y/+x/-y/-x/+y
        axis t goes from -1.0/+1.0 at z = -radius/+radius (linear along

@@ -45,28 +45,25 @@
 #  include <math.h>
 #endif
 
+#include <plib/sg.h>
+
 
 // Make sure PI is defined in its various forms
 
-// PI, only PI, and nothing but PI
-#ifdef M_PI
-#  define  SG_PI    M_PI
-#else
-#  define  SG_PI    3.14159265358979323846
-#endif
+// SG_PI and SGD_PI (float and double) come from plib/sg.h
 
 // 2 * PI
-#define SG_2PI      6.28318530717958647692
+#define SGD_2PI      6.28318530717958647692
 
 // PI / 2
 #ifdef M_PI_2
-#  define  SG_PI_2  M_PI_2
+#  define  SGD_PI_2  M_PI_2
 #else
-#  define  SG_PI_2  1.57079632679489661923
+#  define  SGD_PI_2  1.57079632679489661923
 #endif
 
 // PI / 4
-#define SG_PI_4     0.78539816339744830961
+#define SGD_PI_4     0.78539816339744830961
 
 #ifndef M_E
 #  define M_E     2.7182818284590452354

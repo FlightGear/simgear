@@ -60,8 +60,8 @@ void sgGeocToGeod( double lat_geoc, double radius, double
     double t_lat, x_alpha, mu_alpha, delt_mu, r_alpha, l_point, rho_alpha;
     double sin_mu_a, denom,delt_lambda, lambda_sl, sin_lambda_sl;
 
-    if( ( (SG_PI_2 - lat_geoc) < ONE_SECOND )        // near North pole
-	|| ( (SG_PI_2 + lat_geoc) < ONE_SECOND ) )   // near South pole
+    if( ( (SGD_PI_2 - lat_geoc) < ONE_SECOND )        // near North pole
+	|| ( (SGD_PI_2 + lat_geoc) < ONE_SECOND ) )   // near South pole
     {
 	*lat_geod = lat_geoc;
 	*sea_level_r = EQUATORIAL_RADIUS_M*E;
@@ -180,7 +180,7 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 //
 // modified for FlightGear to use WGS84 only -- Norman Vine
 
-#define GEOD_INV_PI SG_PI
+#define GEOD_INV_PI SGD_PI
 
 // s == distance
 // az = azimuth

@@ -59,7 +59,7 @@ inline Point3D sgPolarToCart3d(const Point3D& p) {
 // specified in radians.  Distances are specified in meters.
 inline Point3D sgCartToPolar3d(const Point3D& cp) {
     return Point3D( atan2( cp.y(), cp.x() ),
-		    SG_PI_2 - 
+		    SGD_PI_2 - 
 		    atan2( sqrt(cp.x()*cp.x() + cp.y()*cp.y()), cp.z() ),
 		    sqrt(cp.x()*cp.x() + cp.y()*cp.y() + cp.z()*cp.z()) );
 }
@@ -93,7 +93,8 @@ inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
     } else {
         result.setx( 
 	    fmod(orig.x() - asin( sin(course) * sin(dist) / 
-				  cos(result.y()) ) + SG_PI, SG_2PI) - SG_PI );
+				  cos(result.y()) )
+                 + SGD_PI, SGD_2PI) - SGD_PI );
     }
 
     return result;
@@ -135,7 +136,7 @@ inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest,
     if ( cos(start.y()) < SG_EPSILON ) {
 	// EPS a small number ~ machine precision
 	if ( start.y() > 0 ) {
-	    tc1 = SG_PI;        // starting from N pole
+	    tc1 = SGD_PI;        // starting from N pole
 	} else {
 	    tc1 = 0;		// starting from S pole
 	}
@@ -149,7 +150,7 @@ inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest,
     if ( sin( dest.x() - start.x() ) < 0 ) {
 	 tc1 = tmp5;
     } else {
-	 tc1 = 2 * SG_PI - tmp5;
+	 tc1 = 2 * SGD_PI - tmp5;
     }
 
     *course = tc1;

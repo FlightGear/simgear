@@ -73,9 +73,6 @@ static int sgSunOrbPostDraw( ssgEntity *e ) {
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
 
-    // glEnable( GL_DEPTH_TEST );
-    // glEnable( GL_FOG );
-
     return true;
 }
 
@@ -103,9 +100,6 @@ static int sgSunHaloPostDraw( ssgEntity *e ) {
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
-
-    // glEnable( GL_DEPTH_TEST );
-    // glEnable( GL_FOG );
 
     return true;
 }

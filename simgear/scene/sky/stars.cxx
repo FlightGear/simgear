@@ -45,7 +45,7 @@ static int sgStarPreDraw( ssgEntity *e ) {
     ssgLeaf *f = (ssgLeaf *)e;
     if ( f -> hasState () ) f->getState()->apply() ;
 
-    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT | GL_COLOR_BUFFER_BIT );
 
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
@@ -59,9 +59,6 @@ static int sgStarPostDraw( ssgEntity *e ) {
        << endl << endl; */
 
     glPopAttrib();
-
-    // glEnable( GL_DEPTH_TEST );
-    // glEnable( GL_FOG );
 
     return true;
 }

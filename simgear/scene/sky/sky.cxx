@@ -175,7 +175,7 @@ void SGSky::preDraw( float alt, float fog_exp2_density ) {
     //        certain NVidia drivers don't seem to implement
     //        glPushAttrib(FG_FOG_BIT) properly. The result is that
     //        there is not fog when looking at the sun.
-    glFogf ( GL_FOG_DENSITY, fog_exp2_density );
+    // glFogf ( GL_FOG_DENSITY, fog_exp2_density );
 
     	// if we are closer than this to a cloud layer, don't draw clouds
     static const float slop = 5.0;

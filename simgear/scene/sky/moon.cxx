@@ -48,7 +48,7 @@ static int sgMoonOrbPreDraw( ssgEntity *e ) {
     ssgLeaf *f = (ssgLeaf *)e;
     if ( f -> hasState () ) f->getState()->apply() ;
 
-    glPushAttrib( GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT );
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT );
     // cout << "push error = " << glGetError() << endl;
 
     glDisable( GL_DEPTH_TEST );
@@ -62,24 +62,14 @@ static int sgMoonOrbPreDraw( ssgEntity *e ) {
 static int sgMoonOrbPostDraw( ssgEntity *e ) {
     /* cout << endl << "Moon orb post draw" << endl << "----------------" 
 	 << endl << endl; */
-    // glEnable( GL_DEPTH_TEST );
-    // glEnable( GL_FOG );
 
     // Some drivers don't properly reset glBendFunc with a
     // glPopAttrib() so we reset it to the 'default' here.
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
     
-    /* test
-    glDisable( GL_LIGHTING );
-    glDisable( GL_CULL_FACE );
-    glEnable( GL_COLOR_MATERIAL );
-    glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
-    glEnable( GL_CULL_FACE );
-    glEnable( GL_LIGHTING ); */
-
     return true;
 }
 
@@ -105,9 +95,6 @@ static int sgMoonHaloPreDraw( ssgEntity *e ) {
 static int sgMoonHaloPostDraw( ssgEntity *e ) {
     /* cout << endl << "Moon halo post draw" << endl << "----------------" 
 	 << endl << endl; */
-    // glEnable( GL_DEPTH_TEST );
-    // glEnable( GL_FOG );
-    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
     
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;

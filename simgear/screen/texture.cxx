@@ -533,6 +533,7 @@ SGTexture::ImageOpen(const char *fileName)
     }
 
     image = new SGTexture::ImageRec;
+    memset(image, 0, sizeof(SGTexture::ImageRec));
     if (image == 0) {
         errstr = OUT_OF_MEMORY;
         return 0;
@@ -602,6 +603,7 @@ SGTexture::RawImageOpen(const char *fileName)
     }
 
     image = new SGTexture::ImageRec;
+    memset(image, 0, sizeof(SGTexture::ImageRec));
     if (image == 0) {
         errstr = OUT_OF_MEMORY;
         return 0;
@@ -648,6 +650,7 @@ SGTexture::ImageWriteOpen(const char *fileName)
     }
 
     image = new SGTexture::ImageRec;
+    memset(image, 0, sizeof(SGTexture::ImageRec));
     if (image == 0) {
         errstr = OUT_OF_MEMORY;
         return 0;

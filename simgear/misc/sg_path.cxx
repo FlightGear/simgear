@@ -154,7 +154,7 @@ string SGPath::dir() const {
 // get the base part of the path (everything but the extension.)
 string SGPath::base() const {
     int index = path.rfind(".");
-    if (index >= 0) {
+    if ((index >= 0) && (path.find("/", index) == string::npos)) {
 	return path.substr(0, index);
     } else {
 	return "";
@@ -162,9 +162,11 @@ string SGPath::base() const {
 }
 
 // get the extention (everything after the final ".")
+// but make sure no "/" follows the "." character (otherwise it
+// is has to be a directory name containing a ".").
 string SGPath::extension() const {
     int index = path.rfind(".");
-    if (index >= 0) {
+    if ((index >= 0)  && (path.find("/", index) == string::npos)) {
 	return path.substr(index + 1);
     } else {
 	return "";

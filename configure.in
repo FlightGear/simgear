@@ -6,7 +6,7 @@ dnl $Id$
 AC_INIT(src/bucket/newbucket.cxx)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.0.2)
+AM_INIT_AUTOMAKE(SimGear, 0.0.3)
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET
@@ -198,7 +198,9 @@ fi
 
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
-if test "x$ac_cv_header_zlib_h" != "xyes"; then
+if test "x$ac_cv_header_zlib_h" = "xyes"; then
+    AC_DEFINE( HAVE_ZLIB )
+else
     echo "no zlib found, building."
 fi
 AM_CONDITIONAL(HAVE_ZLIB, test "x$ac_cv_header_zlib_h" = "xyes" )

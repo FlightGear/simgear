@@ -3,7 +3,7 @@ includedir = @includedir@/misc
 if HAVE_ZLIB
 ZLIB_INCL =
 else
-ZLIB_INCL = -I$(top_builddir)/zlib
+ZLIB_INCL = -I$(top_builddir)/src/zlib
 endif
 
 lib_LIBRARIES = libsgmisc.a
@@ -23,4 +23,4 @@ libsgmisc_a_SOURCES = \
 	texcoord.cxx \
 	zfstream.cxx
 
-INCLUDES += -I$(top_builddir)/src
+INCLUDES += -I$(top_builddir)/src $(ZLIB_INCL)

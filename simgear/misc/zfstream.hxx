@@ -26,7 +26,11 @@
 
 #include <simgear/compiler.h>
 
-#include <zlib.h>
+#ifdef HAVE_ZLIB
+#  include <zlib.h>
+#else
+#  include <simgear/zlib/zlib.h>
+#endif
 
 #ifdef FG_HAVE_STD_INCLUDES
 

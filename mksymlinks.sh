@@ -37,3 +37,6 @@ ln -s ../../misc/fgstream.hxx src/simgear/misc/fgstream.hxx
 ln -s ../../misc/zfstream.hxx src/simgear/misc/zfstream.hxx
 
 ln -s ../../xgl/xgl.h src/simgear/xgl/xgl.h
+
+ln -s ../../zlib/zlib.h src/simgear/zlib/zlib.h
+ln -s ../../zlib/zconf.h src/simgear/zlib/zconf.h

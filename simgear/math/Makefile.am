@@ -1,5 +1,11 @@
 includedir = @includedir@/math
 
+if HAVE_ZLIB
+ZLIB_INCL =
+else
+ZLIB_INCL = -I$(top_builddir)/src/zlib
+endif
+
 lib_LIBRARIES = libsgmath.a
 
 include_HEADERS = \
@@ -29,4 +35,4 @@ libsgmath_a_SOURCES = \
 	polar3d.cxx \
 	vector.cxx
 
-INCLUDES += -I$(top_builddir)/src
+INCLUDES += -I$(top_builddir)/src $(ZLIB_INCL)

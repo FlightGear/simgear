@@ -725,8 +725,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         }
 
         if (sp_dist > 0) {
-            bx = cos(-direction * SGD_DEGREES_TO_RADIANS) * sp_dist;
-            by = sin(-direction * SGD_DEGREES_TO_RADIANS) * sp_dist;
+            bx = cos((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
+            by = sin((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
         }
 
 

@@ -19,7 +19,6 @@
 #include <plib/ul.h>
 
 #include <simgear/structure/exception.hxx>
-#include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
 
@@ -125,6 +124,7 @@ sgMakeAnimation( ssgBranch * model,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
                  double sim_time_sec,
+                 SGPath &texture_path,
                  set<ssgBranch *> &ignore_branches )
 {
   bool ignore = false;
@@ -159,8 +159,8 @@ sgMakeAnimation( ssgBranch * model,
     ignore = true;
   } else if (!strcmp("alpha-test", type)) {
     animation = new SGAlphaTestAnimation(node);
-  } else if (!strcmp("material-emission", type)) {
-    animation = new SGEmissionAnimation(prop_root, node);
+  } else if (!strcmp("material", type)) {
+    animation = new SGMaterialAnimation(prop_root, node, texture_path);
   } else if (!strcmp("flash", type)) {
     animation = new SGFlashAnimation(node);
   } else if (!strcmp("dist-scale", type)) {
@@ -327,7 +327,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
     vector<SGPropertyNode_ptr> name_nodes =
       animation_nodes[i]->getChildren("object-name");
     sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
-                     sim_time_sec, ignore_branches);
+                     sim_time_sec, texturepath, ignore_branches);
   }
 
 #if PLIB_VERSION > 183

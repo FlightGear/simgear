@@ -19,6 +19,7 @@ SG_USING_STD(set);
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
 
@@ -66,6 +67,7 @@ sgMakeAnimation( ssgBranch * model,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
                  double sim_time_sec,
+                 SGPath &texture_path,
                  set<ssgBranch *> &ignore_branches );
 
 /**

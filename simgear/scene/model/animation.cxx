@@ -339,7 +339,7 @@ SGSelectAnimation::update()
       ((ssgSelector *)_branch)->select(0xffff);
   else
       ((ssgSelector *)_branch)->select(0x0000);
-  return 1;
+  return 2;
 }
 
 
@@ -905,7 +905,7 @@ SGTexRotateAnimation::update()
   }
   set_rotation(_matrix, _position_deg, _center, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
-  return 1;
+  return 2;
 }
 
 
@@ -953,7 +953,7 @@ SGTexTranslateAnimation::update()
   }
   set_translation(_matrix, _position, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
-  return 1;
+  return 2;
 }
 
 
@@ -1070,7 +1070,7 @@ SGTexMultipleAnimation::update()
     }
   }
   ((ssgTexTrans *)_branch)->setTransform(tmatrix);
-  return 1;
+  return 2;
 }
 
 
@@ -1112,95 +1112,308 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGEmissionAnimation
+// Implementation of SGMaterialAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SGEmissionAnimation::SGEmissionAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgBranch),
-   _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-  _color0(props->getFloatValue("emiss-red", 0.0)),
-  _color1(props->getFloatValue("emiss-green", 0.0)),
-  _color2(props->getFloatValue("emiss-blue", 0.0)),
-  _old_brightness(0.0),
-  _cached_material(0),
-  _cloned_material(0)
+SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
+        SGPropertyNode_ptr props, const SGPath &texture_path)
+    : SGAnimation(props, new ssgBranch),
+    _base_dir(texture_path),
+    _cached_material(0),
+    _cloned_material(0),
+    _read(0),
+    _update(0),
+    _global(props->getBoolValue("global", false))
 {
+    _diff.red = props->getFloatValue("diffuse-red", -1.0);
+    _diff.green = props->getFloatValue("diffuse-green", -1.0);
+    _diff.blue = props->getFloatValue("diffuse-blue", -1.0);
+    _diff.factor = props->getFloatValue("diffuse-factor", 1.0);
+    _diff.offset = props->getFloatValue("diffuse-offset", 0.0);
+    if (_diff.dirty())
+        _update |= DIFFUSE;
+
+    _amb.red = props->getFloatValue("ambient-red", -1.0);
+    _amb.green = props->getFloatValue("ambient-green", -1.0);
+    _amb.blue = props->getFloatValue("ambient-blue", -1.0);
+    _amb.factor = props->getFloatValue("ambient-factor", 1.0);
+    _amb.offset = props->getFloatValue("ambient-offset", 0.0);
+    if (_amb.dirty())
+        _update |= AMBIENT;
+
+    _spec.red = props->getFloatValue("specular-red", -1.0);
+    _spec.green = props->getFloatValue("specular-green", -1.0);
+    _spec.blue = props->getFloatValue("specular-blue", -1.0);
+    _spec.factor = props->getFloatValue("specular-factor", 1.0);
+    _spec.offset = props->getFloatValue("specular-offset", 0.0);
+    if (_spec.dirty())
+        _update |= SPECULAR;
+
+    _emis.red = props->getFloatValue("emission-red", -1.0);
+    _emis.green = props->getFloatValue("emission-green", -1.0);
+    _emis.blue = props->getFloatValue("emission-blue", -1.0);
+    _emis.factor = props->getFloatValue("emission-factor", 1.0);
+    _emis.offset = props->getFloatValue("emission-offset", 0.0);
+    if (_emis.dirty())
+        _update |= EMISSION;
+
+    _shi = props->getFloatValue("shininess", -1.0);
+    if (_shi >= 0.0)
+        _update |= SHININESS;
+
+    _trans = props->getFloatValue("transparency", -1.0);
+    if (_trans >= 0.0)
+        _update |= TRANSPARENCY;
+
+    _thresh = props->getFloatValue("threshold", -1.0);
+    if (_thresh >= 0.0)
+        _update |= THRESHOLD;
+
+    string _texture_str = props->getStringValue("texture", "");
+    if (!_texture_str.empty()) {
+        _texture = _base_dir;
+        _texture.append(_texture_str);
+        _update |= TEXTURE;
+    }
+
+    SGPropertyNode_ptr node = props->getChild("condition");
+    _condition = node ? sgReadCondition(prop_root, node) : 0;
+
+    node = props->getChild("diffuse-red-prop");
+    _diff.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("diffuse-green-prop");
+    _diff.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("diffuse-blue-prop");
+    _diff.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("diffuse-factor-prop");
+    _diff.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("diffuse-offset-prop");
+    _diff.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    if (_diff.live())
+        _read |= DIFFUSE;
+
+    node = props->getChild("ambient-red-prop");
+    _amb.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("ambient-green-prop");
+    _amb.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("ambient-blue-prop");
+    _amb.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("ambient-factor-prop");
+    _amb.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("ambient-offset-prop");
+    _amb.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    if (_amb.live())
+        _read |= AMBIENT;
+
+    node = props->getChild("specular-red-prop");
+    _spec.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("specular-green-prop");
+    _spec.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("specular-blue-prop");
+    _spec.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("specular-factor-prop");
+    _spec.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("specular-offset-prop");
+    _spec.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    if (_spec.live())
+        _read |= SPECULAR;
+
+    node = props->getChild("emission-red-prop");
+    _emis.red_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("emission-green-prop");
+    _emis.green_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("emission-blue-prop");
+    _emis.blue_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("emission-factor-prop");
+    _emis.factor_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("emission-offset-prop");
+    _emis.offset_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    if (_emis.live())
+        _read |= EMISSION;
+
+    node = props->getChild("shininess-prop");
+    _shi_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("transparency-prop");
+    _trans_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("threshold-prop");
+    _thresh_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
+    node = props->getChild("texture-prop");
+    _tex_prop = node ? prop_root->getNode(node->getStringValue(), true) : 0;
 }
 
-SGEmissionAnimation::~SGEmissionAnimation ()
+void SGMaterialAnimation::init()
 {
+    if (!_global)
+        cloneMaterials(_branch);
 }
 
-void SGEmissionAnimation::init()
+int SGMaterialAnimation::update()
 {
-    // clone material state(s) for this branch
-    cloneMaterials(_branch);
-}
+    if (_condition && !_condition->test())
+        return 2;
 
-void SGEmissionAnimation::cloneMaterials(ssgBranch *b)
-{
-    // clone material state(s) for this branch
-    int nb = b->getNumKids();
-
-    // Traverse the branch(es) and make clones of material settings for the leaves on 
-    // this branch (ssgSimpleState objects). 
-    // Try to be efficient (only make a new clone if the original is different
-    // than the previous).
-
-    for (int i = 0; i<nb; i++) {
-      ssgEntity *e = b->getKid(i);
-      if (e->isAKindOf(ssgTypeLeaf())) {
-        ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
-        // if this is a new material state, then make a copy of it...
-        if (!_cached_material || _cached_material != s) {
-           _cached_material = s;
-           _cloned_material = (ssgSimpleState*)s->clone(SSG_CLONE_STATE);
+    if (_read & DIFFUSE) {
+        ColorSpec tmp = _diff;
+        if (_diff.red_prop)
+            _diff.red = _diff.red_prop->getFloatValue();
+        if (_diff.green_prop)
+            _diff.green = _diff.green_prop->getFloatValue();
+        if (_diff.blue_prop)
+            _diff.blue = _diff.blue_prop->getFloatValue();
+        if (_diff.factor_prop)
+            _diff.factor = _diff.factor_prop->getFloatValue();
+        if (_diff.offset_prop)
+            _diff.offset = _diff.offset_prop->getFloatValue();
+        if (_diff != tmp)
+            _update |= DIFFUSE;
+    }
+    if (_read & AMBIENT) {
+        ColorSpec tmp = _amb;
+        if (_amb.red_prop)
+            _amb.red = _amb.red_prop->getFloatValue();
+        if (_amb.green_prop)
+            _amb.green = _amb.green_prop->getFloatValue();
+        if (_amb.blue_prop)
+            _amb.blue = _amb.blue_prop->getFloatValue();
+        if (_amb.factor_prop)
+            _amb.factor = _amb.factor_prop->getFloatValue();
+        if (_amb.offset_prop)
+            _amb.offset = _amb.offset_prop->getFloatValue();
+        if (_amb != tmp)
+            _update |= AMBIENT;
+    }
+    if (_read & SPECULAR) {
+        ColorSpec tmp = _spec;
+        if (_spec.red_prop)
+            _spec.red = _spec.red_prop->getFloatValue();
+        if (_spec.green_prop)
+            _spec.green = _spec.green_prop->getFloatValue();
+        if (_spec.blue_prop)
+            _spec.blue = _spec.blue_prop->getFloatValue();
+        if (_spec.factor_prop)
+            _spec.factor = _spec.factor_prop->getFloatValue();
+        if (_spec.offset_prop)
+            _spec.offset = _spec.offset_prop->getFloatValue();
+        if (_spec != tmp)
+            _update |= SPECULAR;
+    }
+    if (_read & EMISSION) {
+        ColorSpec tmp = _emis;
+        if (_emis.red_prop)
+            _emis.red = _emis.red_prop->getFloatValue();
+        if (_emis.green_prop)
+            _emis.green = _emis.green_prop->getFloatValue();
+        if (_emis.blue_prop)
+            _emis.blue = _emis.blue_prop->getFloatValue();
+        if (_emis.factor_prop)
+            _emis.factor = _emis.factor_prop->getFloatValue();
+        if (_emis.offset_prop)
+            _emis.offset = _emis.offset_prop->getFloatValue();
+        if (_emis != tmp)
+            _update |= EMISSION;
+    }
+    float f;
+    if (_shi_prop) {
+        f = _shi;
+        _shi = _shi_prop->getFloatValue();
+        if (_shi != f)
+            _update |= SHININESS;
+    }
+    if (_trans_prop) {
+        f = _trans;
+        _trans = _trans_prop->getFloatValue();
+        if (_trans != f)
+            _update |= TRANSPARENCY;
+    }
+    if (_thresh_prop) {
+        f = _thresh;
+        _thresh = _thresh_prop->getFloatValue();
+        if (_thresh != f)
+            _update |= THRESHOLD;
+    }
+    if (_tex_prop) {
+        string t = _tex_prop->getStringValue();
+        if (!t.empty() && t != _texture_str) {
+            _texture_str = t;
+            _texture = _base_dir;
+            _texture.append(t);
+            _update |= TEXTURE;
         }
-        // set the material to the clone...
-        ((ssgLeaf*)e)->setState( _cloned_material );
-      } else if (e->isAKindOf(ssgTypeBranch())) {
-        cloneMaterials( (ssgBranch*)e );
-      }
     }
-
-}
-
-int SGEmissionAnimation::update()
-{
-  float brightness = _prop->getFloatValue();
-
-  // clamp brightness 0 ~ 1
-  if (brightness < 0.00) brightness = 0.00;
-  if (brightness > 1.00) brightness = 1.00;
-
-  // no need to update states unless something changes...
-  if (brightness != _old_brightness) {
-    _old_brightness = brightness; // save it
-    float rd,gr,bl;
-    rd = _color0 * brightness;
-    gr = _color1 * brightness;
-    bl = _color2 * brightness;
-    setEmissionBranch(_branch, rd, gr, bl);
-  }
-  return 1;
-}
-
-void SGEmissionAnimation::setEmissionBranch(ssgBranch *b, float color0, float color1, float color2)
-{
-  int nb = b->getNumKids();
-
-  for (int i = 0; i<nb; i++) {
-    ssgEntity *e = b->getKid(i);
-    if (e->isAKindOf(ssgTypeLeaf())) {
-      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
-      s->setMaterial( GL_EMISSION, color0, color1, color2, 0.0 );
-    } else if (e->isAKindOf(ssgTypeBranch())) {
-      setEmissionBranch((ssgBranch*)e, color0, color1, color2);
+    if (_update) {
+        setMaterialBranch(_branch);
+        _update = 0;
     }
-  }
+    return 2;
 }
 
- 
+void SGMaterialAnimation::cloneMaterials(ssgBranch *b)
+{
+    for (int i = 0; i < b->getNumKids(); i++)
+        cloneMaterials((ssgBranch *)b->getKid(i));
+
+    if (!b->isAKindOf(ssgTypeLeaf()) || !((ssgLeaf *)b)->hasState())
+        return;
+
+    ssgSimpleState *s = (ssgSimpleState *)((ssgLeaf *)b)->getState();
+    if (!_cached_material || _cached_material != s) {
+        _cached_material = s;
+        _cloned_material = (ssgSimpleState *)s->clone(SSG_CLONE_STATE);
+    }
+    ((ssgLeaf *)b)->setState(_cloned_material);
+}
+
+void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
+{
+    for (int i = 0; i < b->getNumKids(); i++)
+        setMaterialBranch((ssgBranch *)b->getKid(i));
+
+    if (!b->isAKindOf(ssgTypeLeaf()) || !((ssgLeaf *)b)->hasState())
+        return;
+
+    ssgSimpleState *s = (ssgSimpleState *)((ssgLeaf *)b)->getState();
+    s->disable(GL_COLOR_MATERIAL);
+    s->setColourMaterial(GL_AMBIENT_AND_DIFFUSE);
+
+    if (_update & DIFFUSE) {
+        float *v = _diff.rgba();
+        SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
+        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], alpha);
+    }
+    if (_update & AMBIENT)
+        s->setMaterial(GL_AMBIENT, _amb.rgba());
+    if (_update & SPECULAR)
+        s->setMaterial(GL_SPECULAR, _spec.rgba());
+    if (_update & EMISSION)
+        s->setMaterial(GL_EMISSION, _emis.rgba());
+    if (_update & SHININESS)
+        s->setShininess(clamp(_shi, 0.0, 128.0));
+    if (_update & TRANSPARENCY) {
+        SGfloat *v = s->getMaterial(GL_DIFFUSE);
+        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], 1.0 - clamp(_trans));
+    }
+    if (_update & THRESHOLD)
+        s->setAlphaClamp(clamp(_thresh));
+    if (_update & TEXTURE)
+        s->setTexture(_texture.c_str());
+    if (_update & (TEXTURE|TRANSPARENCY)) {
+        SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
+        ssgTexture *tex = s->getTexture();
+        if ((tex && tex->hasAlpha()) || alpha < 0.999) {
+            s->enable(GL_BLEND);
+            s->enable(GL_ALPHA_TEST);
+            s->setTranslucent();
+        } else {
+            s->disable(GL_BLEND);
+            s->disable(GL_ALPHA_TEST);
+            s->setOpaque();
+        }
+    }
+    s->force();
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGFlashAnimation
 ////////////////////////////////////////////////////////////////////////

@@ -22,6 +22,7 @@ SG_USING_STD(map);
 
 #include <simgear/math/point3d.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 
 // Don't pull in the headers, since we don't need them here.
@@ -434,25 +435,86 @@ private:
 
 
 /**
- * An "animation" to modify emissive values on leaf nodes
+ * An "animation" to modify material properties
  */
-class SGEmissionAnimation : public SGAnimation
+class SGMaterialAnimation : public SGAnimation
 {
 public:
-  SGEmissionAnimation(SGPropertyNode *prop_root, SGPropertyNode_ptr props);
-  virtual ~SGEmissionAnimation ();
-  virtual void init();
-  virtual int update();
+    SGMaterialAnimation(SGPropertyNode *prop_root, SGPropertyNode_ptr props,
+            const SGPath &texpath);
+    virtual ~SGMaterialAnimation() {}
+    virtual void init();
+    virtual int update();
 private:
-  SGPropertyNode_ptr _prop;
-  ssgSimpleState* _cached_material;
-  ssgSimpleState* _cloned_material;
-  void cloneMaterials(ssgBranch *b);
-  void setEmissionBranch(ssgBranch *b, float color0, float color1, float color2);
-  float _color0;
-  float _color1;
-  float _color2;
-  float _old_brightness;
+    enum {
+        DIFFUSE = 1,
+        AMBIENT = 2,
+        SPECULAR = 4,
+        EMISSION = 8,
+        SHININESS = 16,
+        TRANSPARENCY = 32,
+        THRESHOLD = 64,
+        TEXTURE = 128,
+    };
+    struct ColorSpec {
+        float red, green, blue;
+        float factor;
+        float offset;
+        SGPropertyNode_ptr red_prop;
+        SGPropertyNode_ptr green_prop;
+        SGPropertyNode_ptr blue_prop;
+        SGPropertyNode_ptr factor_prop;
+        SGPropertyNode_ptr offset_prop;
+        sgVec4 v;
+        bool dirty() {
+            return red >= 0.0 || green >= 0.0 || blue >= 0.0;
+        }
+        bool live() {
+            return red_prop || green_prop || blue_prop
+                    || factor_prop || offset_prop;
+        }
+        bool operator!=(ColorSpec& a) {
+            return red != a.red || green != a.green || blue != a.blue
+                    || factor != a.factor || offset != a.offset;
+        }
+        sgVec4 &rgba() {
+            v[0] = clamp(red * factor + offset);
+            v[1] = clamp(green * factor + offset);
+            v[2] = clamp(blue * factor + offset);
+            v[3] = 1.0;
+            return v;
+        }
+        float clamp(float val) {
+            return val < 0.0 ? 0.0 : val > 1.0 ? 1.0 : val;
+        }
+    };
+    SGCondition *_condition;
+    SGPath _base_dir;
+    SGPath _texture;
+    string _texture_str;
+    ssgSimpleState* _cached_material;
+    ssgSimpleState* _cloned_material;
+    unsigned _read;
+    unsigned _update;
+    bool _global;
+    ColorSpec _diff;
+    ColorSpec _amb;
+    ColorSpec _emis;
+    ColorSpec _spec;
+    float _shi;
+    float _trans;
+    float _thresh;	// alpha_clamp (see man glAlphaFunc)
+    string _tex;
+    SGPropertyNode_ptr _shi_prop;
+    SGPropertyNode_ptr _trans_prop;
+    SGPropertyNode_ptr _thresh_prop;
+    SGPropertyNode_ptr _tex_prop;
+
+    void cloneMaterials(ssgBranch *b);
+    void setMaterialBranch(ssgBranch *b);
+    float clamp(float val, float min = 0.0, float max = 1.0) {
+        return val < min ? min : val > max ? max : val;
+    }
 };
 
 

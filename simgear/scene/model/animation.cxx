@@ -79,6 +79,34 @@ set_translation (sgMat4 &matrix, double position_m, sgVec3 &axis)
   sgMakeTransMat4(matrix, xyz);
 }
 
+/**
+ * Modify property value by step and scroll settings in texture translations
+ */
+static double
+apply_mods(double property, double step, double scroll)
+{
+
+  double modprop;
+  if(step > 0) {
+    double scrollval = 0.0;
+    if(scroll > 0) {
+      // calculate scroll amount (for odometer like movement)
+      double remainder  =  step - fmod(fabs(property), step);
+      if (remainder < scroll) {
+        scrollval = (scroll - remainder) / scroll * step;
+      }
+    }
+  // apply stepping of input value
+  if(property > 0) 
+     modprop = ((floor(property/step) * step) + scrollval);
+  else
+     modprop = ((ceil(property/step) * step) + scrollval);
+  } else {
+     modprop = property;
+  }
+  return modprop;
+
+}
 
 /**
  * Read an interpolation table from properties.
@@ -503,29 +531,13 @@ void
 SGTexTranslateAnimation::update()
 {
   if (_table == 0) {
-    if(_step > 0) {
-      double scrollval = 0.0;
-      if(_scroll > 0) {
-        // calculate scroll amount (for odometer like movement)
-        double remainder  =  _step - fmod(fabs(_prop->getDoubleValue()), _step);
-        if (remainder < _scroll) {
-          scrollval = (_scroll - remainder) / _scroll * _step;
-        }
-      }
-      // apply stepping of input value
-      if(_prop->getDoubleValue() > 0) 
-       _position = ((floor(_prop->getDoubleValue()/_step) * _step) + _offset + scrollval) * _factor;
-     else
-      _position = ((ceil(_prop->getDoubleValue()/_step) * _step) + _offset + scrollval) * _factor;
-    } else {
-       _position = (_prop->getDoubleValue() + _offset) * _factor;
-    }
+    _position = (apply_mods(_prop->getDoubleValue(), _step, _scroll) + _offset) * _factor;
     if (_has_min && _position < _min)
       _position = _min;
     if (_has_max && _position > _max)
       _position = _max;
   } else {
-    _position = _table->interpolate(_prop->getDoubleValue());
+    _position = _table->interpolate(apply_mods(_prop->getDoubleValue(), _step, _scroll));
   }
   set_translation(_matrix, _position, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
@@ -617,29 +629,13 @@ SGTexMultipleAnimation::update()
 
       // subtype 0 is translation
       if (_transform[i].table == 0) {
-        if(_transform[i].step > 0) {
-          double scrollval = 0.0;
-          if(_transform[i].scroll > 0) {
-            // calculate scroll amount (for odometer like movement)
-            double remainder  =  _transform[i].step - fmod(fabs(_transform[i].prop->getDoubleValue()), _transform[i].step);
-            if (remainder < _transform[i].scroll) {
-              scrollval = (_transform[i].scroll - remainder) / _transform[i].scroll * _transform[i].step;
-            }
-          }
-          // apply stepping of input value
-          if(_transform[i].prop->getDoubleValue() > 0) 
-            _transform[i].position = ((floor(_transform[i].prop->getDoubleValue()/_transform[i].step) * _transform[i].step) + _transform[i].offset) * _transform[i].factor;
-          else
-            _transform[i].position = ((ceil(_transform[i].prop->getDoubleValue()/_transform[i].step) * _transform[i].step) + _transform[i].offset) * _transform[i].factor;
-        } else {
-           _transform[i].position = (_transform[i].prop->getDoubleValue() + _transform[i].offset) * _transform[i].factor;
-        }
+        _transform[i].position = (apply_mods(_transform[i].prop->getDoubleValue(), _transform[i].step,_transform[i].scroll) + _transform[i].offset) * _transform[i].factor;
         if (_transform[i].has_min && _transform[i].position < _transform[i].min)
           _transform[i].position = _transform[i].min;
         if (_transform[i].has_max && _transform[i].position > _transform[i].max)
           _transform[i].position = _transform[i].max;
       } else {
-         _transform[i].position = _transform[i].table->interpolate(_transform[i].prop->getDoubleValue());
+         _transform[i].position = _transform[i].table->interpolate(apply_mods(_transform[i].prop->getDoubleValue(), _transform[i].step,_transform[i].scroll));
       }
       set_translation(_transform[i].matrix, _transform[i].position, _transform[i].axis);
       sgPreMultMat4(tmatrix, _transform[i].matrix);

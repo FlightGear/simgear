@@ -308,7 +308,7 @@ public:
      * @param moon_dec the moon's current declination
      * @param moon_dist the moon's distance from the current view point. 
      */
-    bool reposition( SGSkyState &st );
+    bool reposition( SGSkyState &st, double dt = 0.0 );
 
     /**
      * Modify the given visibility based on cloud layers, thickness,

@@ -139,7 +139,7 @@ bool SGSky::repaint( const SGSkyColor &sc )
 // spin specifies a rotation about the new Z axis (this allows
 // additional orientation for the sunrise/set effects and is used by
 // the skydome and perhaps clouds.
-bool SGSky::reposition( SGSkyState &st )
+bool SGSky::reposition( SGSkyState &st, double dt )
 {
 
     double angle = st.gst * 15;	// degrees
@@ -159,7 +159,7 @@ bool SGSky::reposition( SGSkyState &st )
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
             cloud_layers[i]->reposition( st.zero_elev, st.view_up,
-                                         st.lon, st.lat, st.alt );
+                                         st.lon, st.lat, st.alt, dt );
         }
     }
 

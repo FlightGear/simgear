@@ -98,6 +98,7 @@ public:
      * visibility.
      */
     float getTransition_m () const;
+
     /**
      * set the transition layer size in meters
      * @param transition_m the transition layer size in meters
@@ -106,11 +107,30 @@ public:
 
     /** get coverage type */
     Coverage getCoverage () const;
+
     /**
      * set coverage type
      * @param coverage the coverage type
      */
     void setCoverage (Coverage coverage);
+
+    /**
+     * set the cloud movement direction
+     * @param dir the cloud movement direction
+     */
+    inline void setDirection(float dir) { direction = dir; }
+
+    /** get the cloud movement direction */
+    inline float getDirection() { return direction; }
+
+    /**
+     * set the cloud movement speed 
+     * @param sp the cloud movement speed
+     */
+    inline void setSpeed(float sp) { speed = sp; }
+
+    /** get the cloud movement speed */
+    inline float getSpeed() { return speed; }
 
     /** build the cloud object */
     void rebuild();
@@ -130,8 +150,10 @@ public:
      * @param lat specifies a rotation about the new Y axis
      * @param spin specifies a rotation about the new Z axis
      *        (and orients the sunrise/set effects)
+     * @param dt the time elapsed since the last call
      */
-    bool reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt );
+    bool reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt,
+                     double dt = 0.0 );
 
     /** draw the cloud layer */
     void draw();
@@ -154,6 +176,8 @@ private:
     float layer_transition;
     Coverage layer_coverage;
     float scale;
+    float speed;
+    float direction;
 
     // for handling texture coordinates to simulate cloud movement
     // from winds, and to simulate the clouds being tied to ground

@@ -285,7 +285,7 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
 bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
-        		       double alt )
+        		       double alt, double dt )
 {
     sgMat4 T1, LON, LAT;
     sgVec3 axis;
@@ -343,15 +343,35 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         last_lat = lat;
     }
 
-    if ( lon != last_lon || lat != last_lat ) {
+    double sp_dist = speed*dt;
+
+    if ( lon != last_lon || lat != last_lat || sp_dist != 0 ) {
         Point3D start( last_lon, last_lat, 0.0 );
         Point3D dest( lon, lat, 0.0 );
-        double course, dist;
-        calc_gc_course_dist( dest, start, &course, &dist );
+        double course = 0.0, dist = 0.0;
+
+        if (dest != start) {
+            calc_gc_course_dist( dest, start, &course, &dist );
+         }
         // cout << "course = " << course << ", dist = " << dist << endl;
 
-        double xoff = cos( course ) * dist / (2 * scale);
-        double yoff = sin( course ) * dist / (2 * scale);
+
+        // calculate cloud movement due to external forces
+        double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
+
+        if (dist > 0.0) {
+            ax = cos(course) * dist;
+            ay = sin(course) * dist;
+        }
+
+        if (sp_dist > 0) {
+            bx = cos(-direction * SGD_DEGREES_TO_RADIANS) * sp_dist;
+            by = sin(-direction * SGD_DEGREES_TO_RADIANS) * sp_dist;
+        }
+
+
+        double xoff = (ax + bx) / (2 * scale);
+        double yoff = (ay + by) / (2 * scale);
 
         const float layer_scale = layer_span / scale;
 

@@ -146,7 +146,7 @@
 #    error Time to upgrade. GNU compilers < 2.7 not supported
 #  endif
 
-#  define SG_COMPILER "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
+#  define SG_COMPILER_STR "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
 
 #endif // __GNUC__
 
@@ -174,7 +174,7 @@
 #  define STL_STRING     <string>
 #  define STL_STRSTREAM  <strstream>
 
-#  define SG_COMPILER "Kai C++ version " SG_STRINGIZE(__KCC_VERSION)
+#  define SG_COMPILER_STR "Kai C++ version " SG_STRINGIZE(__KCC_VERSION)
 
 #endif // __KCC
 
@@ -208,7 +208,7 @@
 // -dw- currently used glut has no game mode stuff
 #  define GLUT_WRONG_VERSION
 
-#  define SG_COMPILER "Metrowerks CodeWarrior C++ version " SG_STRINGIZE(__MWERKS__)
+#  define SG_COMPILER_STR "Metrowerks CodeWarrior C++ version " SG_STRINGIZE(__MWERKS__)
 
 #endif // __MWERKS__
 
@@ -256,7 +256,7 @@
 #    error What version of MSVC++ is this?
 #  endif
 
-#    define SG_COMPILER "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
+#    define SG_COMPILER_STR "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
 
 #endif // _MSC_VER
 
@@ -290,7 +290,7 @@
 #  define SG_NAMESPACES
 // #  define SG_HAVE_STD
 
-#  define SG_COMPILER "Borland C++ version " SG_STRINGIZE(__BORLANDC__)
+#  define SG_COMPILER_STR "Borland C++ version " SG_STRINGIZE(__BORLANDC__)
 
 #endif // __BORLANDC__
 
@@ -332,7 +332,7 @@
 #pragma set woff 1682,3303
 #endif
 
-#  define SG_COMPILER "SGI Irix compiler version " SG_STRINGIZE(_COMPILER_VERSION)
+#  define SG_COMPILER_STR "SGI Irix compiler version " SG_STRINGIZE(_COMPILER_VERSION)
 
 #endif // Native SGI compilers
 
@@ -349,7 +349,7 @@
      extern void *memmove(void *, const void *, size_t);
 #  endif // __cplusplus
 
-#  define SG_COMPILER "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
+#  define SG_COMPILER_STR "Sun compiler version " SG_STRINGIZE(__SUNPRO_CC)
 
 #endif // sun
 
@@ -373,7 +373,7 @@
 #  define STL_STRING     <string>
 #  define STL_STRSTREAM  <strstream>
 
-#  define SG_COMPILER "Intel C++ version " SG_STRINGIZE(__ICC)
+#  define SG_COMPILER_STR "Intel C++ version " SG_STRINGIZE(__ICC)
 
 #endif // __ICC
 

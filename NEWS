@@ -1,9 +1,10 @@
-New in 0.3.5
-* March 16, 2004
+New in 0.3.5.pre1
+* March 22, 2004
 
 * Added Andy's nasal interpreter for small built in scripting tasks.
   Nasal integrates nicely with FlightGear's property system.
-* Added new (much simpler) metar parsing code.
+* Added new (much simpler) metar parsing code (removed older more
+  complex code.)
 * Support VASI/PAPI lights correctly.
 * Fixes to cloud animation.
 * Updates to sky dome coloring as well as sun/moon coloring.

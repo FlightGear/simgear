@@ -17,7 +17,6 @@
 #endif
 
 #include <vector>
-#include <map>
 
 #if PROPS_STANDALONE
 
@@ -26,7 +25,6 @@
 
 using std::string;
 using std::vector;
-using std::map;
 using std::istream;
 using std::ostream;
 
@@ -38,7 +36,6 @@ using std::ostream;
 #include STL_IOSTREAM
 SG_USING_STD(string);
 SG_USING_STD(vector);
-SG_USING_STD(map);
 #if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
 SG_USING_STD(ostream);
@@ -1082,12 +1079,13 @@ private:
 
   mutable char _buffer[MAX_STRING_LEN+1];
 
+  class hash_table;
+
   const char * _name;
   int _index;
   SGPropertyNode * _parent;
   vector<SGPropertyNode *> _children;
-  typedef map<const string,SGPropertyNode *> cache_map;
-  cache_map * _path_cache;
+  hash_table * _path_cache;
   Type _type;
   bool _tied;
   int _attr;
@@ -1112,6 +1110,54 @@ private:
     const char * string_val;
   } _local_val;
 
+
+
+  /**
+   * A very simple hash table with no remove functionality.
+   */
+  class hash_table {
+  public:
+
+    /**
+     * An entry in a bucket in a hash table.
+     */
+    class entry {
+    public:
+      entry ();
+      virtual ~entry ();
+      virtual const char * get_key () { return _key; }
+      virtual void set_key (const char * key);
+      virtual SGPropertyNode * get_value () { return _value; }
+      virtual void set_value (SGPropertyNode * value);
+    private:
+      const char * _key;
+      SGPropertyNode * _value;
+    };
+
+
+    /**
+     * A bucket in a hash table.
+     */
+    class bucket {
+    public:
+      bucket ();
+      virtual ~bucket ();
+      virtual entry * get_entry (const char * key, bool create = false);
+    private:
+      int _length;
+      entry ** _entries;
+    };
+
+    hash_table ();
+    virtual ~hash_table ();
+    virtual SGPropertyNode * get (const char * key);
+    virtual void put (const char * key, SGPropertyNode * value);
+
+  private:
+    unsigned int hashcode (const char * key);
+    unsigned int _data_length;
+    bucket ** _data;
+  };
 
 };
 

@@ -65,7 +65,7 @@ static int sgMoonOrbPostDraw( ssgEntity *e ) {
 
     // Some drivers don't properly reset glBendFunc with a
     // glPopAttrib() so we reset it to the 'default' here.
-    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;

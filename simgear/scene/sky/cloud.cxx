@@ -368,5 +368,9 @@ ssgSimpleState *SGCloudMakeState( const string &path ) {
     state->enable( GL_ALPHA_TEST );
     state->setAlphaClamp( 0.01 );
 
+    // ref() the state so it doesn't get deleted if the last layer of
+    // it's type is deleted.
+    state->ref();
+
     return state;
 }

@@ -7,6 +7,9 @@
  * $Id$
  */
 
+#ifndef __SIMGEAR_MISC_EXCEPTION_HXX
+#define __SIMGEAR_MISC_EXCEPTION_HXX 1
+
 #include <simgear/compiler.h>
 #include STL_STRING
 
@@ -53,10 +56,10 @@ public:
   sg_throwable (const string &message, const string &origin = "");
   virtual ~sg_throwable ();
   virtual const string &getMessage () const;
+  virtual const string getFormattedMessage () const;
   virtual void setMessage (const string &message);
   virtual const string &getOrigin () const;
   virtual void setOrigin (const string &origin);
-  virtual sg_throwable * clone () const;
 private:
   string _message;
   string _origin;
@@ -79,7 +82,6 @@ public:
   sg_error ();
   sg_error (const string &message, const string &origin = "");
   virtual ~sg_error ();
-  virtual sg_error * clone () const;
 };
 
 
@@ -103,7 +105,6 @@ public:
   sg_exception ();
   sg_exception (const string &message, const string &origin = "");
   virtual ~sg_exception ();
-  virtual sg_exception * clone () const;
 };
 
 
@@ -126,9 +127,9 @@ public:
   sg_io_exception (const string &message, const sg_location &location,
 		   const string &origin = "");
   virtual ~sg_io_exception ();
+  virtual const string getFormattedMessage () const;
   virtual const sg_location &getLocation () const;
   virtual void setLocation (const sg_location &location);
-  virtual sg_io_exception * clone () const;
 private:
   sg_location _location;
 };
@@ -154,7 +155,6 @@ public:
   virtual ~sg_format_exception ();
   virtual const string &getText () const;
   virtual void setText (const string &text);
-  virtual sg_format_exception * clone () const;
 private:
   string _text;
 };
@@ -175,7 +175,8 @@ public:
   sg_range_exception ();
   sg_range_exception (const string &message, const string &origin = "");
   virtual ~sg_range_exception ();
-  virtual sg_range_exception * clone () const;
 };
+
+#endif
 
 // end of exception.hxx

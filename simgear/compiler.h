@@ -284,6 +284,10 @@
 #  define STL_STRSTREAM  <strstream.h>
 
 // #  define __STL_FUNCTION_TMPL_PARTIAL_ORDER
+// typedef void PFNGLPOINTPARAMETERFEXTPROC
+
+#define glPointParameterfEXT	glPointParameterfSGIS
+#define glPointParameterfvEXT	glPointParameterfvSGIS
 
 #pragma set woff 1001,1012,1014,1116,1155,1172,1174
 #pragma set woff 1401,1460,1551,1552,1681

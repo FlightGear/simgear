@@ -26,10 +26,7 @@
 
 
 #include <simgear/constants.h>
-
-#include <Aircraft/aircraft.hxx>
-#include <Main/views.hxx>
-#include <Time/fg_time.hxx>
+#include <simgear/timing/fg_time.hxx>
 
 #include "celestialBody.hxx"
 #include "star.hxx"

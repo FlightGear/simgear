@@ -1,18 +1,34 @@
-noinst_LIBRARIES = libEphemeris.a
+includedir = @includedir@/ephemeris
 
-libEphemeris_a_SOURCES = \
-	celestialBody.cxx celestialBody.hxx \
-	ephemeris.cxx ephemeris.hxx \
-	jupiter.cxx jupiter.hxx \
-	mars.cxx mars.hxx \
-	mercury.cxx mercury.hxx \
-	moon.cxx moon.hxx \
-	neptune.cxx neptune.hxx \
+lib_LIBRARIES = libsgephem.a
+
+include_HEADERS = \
+	celestialBody.hxx \
+        ephemeris.hxx \
+	jupiter.hxx \
+	mars.hxx \
+	mercury.hxx \
+	moon.hxx \
+	neptune.hxx \
+	saturn.hxx \
+	star.hxx \
+	stars.hxx \
+	uranus.hxx \
+	venus.hxx
+
+libsgephem_a_SOURCES = \
+	celestialBody.cxx \
+	ephemeris.cxx \
+	jupiter.cxx \
+	mars.cxx \
+	mercury.cxx \
+	moon.cxx \
+	neptune.cxx \
 	pluto.hxx \
-	saturn.cxx saturn.hxx \
-	star.cxx star.hxx \
-	stars.cxx stars.hxx \
-	uranus.cxx uranus.hxx \
-	venus.cxx venus.hxx
+	saturn.cxx \
+	star.cxx \
+	stars.cxx \
+	uranus.cxx \
+	venus.cxx
 
-INCLUDES += -I$(top_builddir) -I$(top_builddir)/src
+INCLUDES += -I$(top_builddir)

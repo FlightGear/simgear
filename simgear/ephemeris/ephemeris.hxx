@@ -32,7 +32,7 @@
 
 #include <plib/sg.h>
 
-#include <Time/fg_time.hxx>
+#include <simgear/timing/fg_time.hxx>
 
 #include "star.hxx"
 #include "moon.hxx"

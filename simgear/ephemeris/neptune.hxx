@@ -24,7 +24,8 @@
 #ifndef _NEPTUNE_HXX_
 #define _NEPTUNE_HXX_
 
-#include <Time/fg_time.hxx>
+#include <simgear/timing/fg_time.hxx>
+
 #include "celestialBody.hxx"
 #include "star.hxx"
 

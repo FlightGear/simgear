@@ -25,7 +25,7 @@
 #define _STAR_HXX_
 
 
-#include <Time/fg_time.hxx>
+// #include <Time/fg_time.hxx>
 #include "celestialBody.hxx"
 
 

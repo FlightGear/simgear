@@ -30,10 +30,6 @@
 
 #include <simgear/debug/logstream.hxx>
 
-#include <Time/sunpos.hxx>
-#include <Time/light.hxx>
-#include <Main/options.hxx>
-
 #include "star.hxx"
 
 

@@ -28,15 +28,12 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/fgpath.hxx>
 
-#include <Main/options.hxx>
-#include <Objects/texload.h>
-
 #ifdef __BORLANDC__
 #  define exception c_exception
 #endif
 #include <math.h>
 
-#include <FDM/flight.hxx>
+// #include <FDM/flight.hxx>
 
 #include "moon.hxx"
 
@@ -89,12 +86,6 @@ void Moon::updatePosition(FGTime *t, double lat, Star *ourSun)
     Ls, Lm, D, F, mpar, gclat, rho, HA, g,
     geoRa, geoDec;
   
-  fgAIRCRAFT *air;
-  FGInterface *f;
-
-  air = &current_aircraft;
-  f = air->fdm_state;
- 
   updateOrbElements(t);
   actTime = fgCalcActTime(t);
 

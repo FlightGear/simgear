@@ -24,7 +24,8 @@
 #ifndef _MARS_HXX_
 #define _MARS_HXX_
 
-#include <Time/fg_time.hxx>
+#include <simgear/timing/fg_time.hxx>
+
 #include "celestialBody.hxx"
 #include "star.hxx"
 

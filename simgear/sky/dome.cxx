@@ -507,9 +507,9 @@ bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
 
     // Rotate to proper orientation
     // printf("  lon = %.2f  lat = %.2f\n",
-    //        FG_Longitude * SGD_RADIANS_TO_DEGREES,
-    //        FG_Latitude * SGD_RADIANS_TO_DEGREES);
-    // xglRotatef( f->get_Longitude() * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
+    //        lon * SGD_RADIANS_TO_DEGREES,
+    //        lat * SGD_RADIANS_TO_DEGREES);
+    // xglRotatef( lon * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
     sgMakeRotMat4( LON, lon * SGD_RADIANS_TO_DEGREES, axis );
 

@@ -22,6 +22,10 @@
 // $Id$
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>         // for random(), srandom()
 #include <time.h>           // for time() to seed srandom()        

@@ -37,13 +37,14 @@ class SGCloudLayer {
 
 public:
 
-    enum Type {
+    enum Coverage {
 	SG_CLOUD_OVERCAST = 0,
-	SG_CLOUD_MOSTLY_CLOUDY,
-	SG_CLOUD_MOSTLY_SUNNY,
+	SG_CLOUD_BROKEN,
+	SG_CLOUD_SCATTERED,
+	SG_CLOUD_FEW,
 	SG_CLOUD_CIRRUS,
 	SG_CLOUD_CLEAR,
-	SG_MAX_CLOUD_TYPES
+	SG_MAX_CLOUD_COVERAGES
     };
 
     // Constructors
@@ -64,8 +65,8 @@ public:
     float getTransition_m () const;
     void setTransition_m (float transition_m);
 
-    Type getType () const;
-    void setType (Type type);
+    Coverage getCoverage () const;
+    void setCoverage (Coverage coverage);
 
     // build the cloud object
     void rebuild();
@@ -92,8 +93,8 @@ public:
 
 private:
 
-    static ssgSimpleState *layer_states[SG_MAX_CLOUD_TYPES];
-    static int layer_sizes[SG_MAX_CLOUD_TYPES];
+    static ssgSimpleState *layer_states[SG_MAX_CLOUD_COVERAGES];
+    static int layer_sizes[SG_MAX_CLOUD_COVERAGES];
 
     ssgRoot *layer_root;
     ssgTransform *layer_transform;
@@ -109,7 +110,7 @@ private:
     float layer_asl;
     float layer_thickness;
     float layer_transition;
-    Type layer_type;
+    Coverage layer_coverage;
     float scale;
 
     // for handling texture coordinates to simulate cloud movement

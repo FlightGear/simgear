@@ -33,7 +33,7 @@
 #include "cloud.hxx"
 
 ssgSimpleState *
-SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_TYPES];
+SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 
 
 // Constructor
@@ -49,12 +49,12 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_asl(0.0),
     layer_thickness(0.0),
     layer_transition(0.0),
-    layer_type(SG_CLOUD_CLEAR),
+    layer_coverage(SG_CLOUD_CLEAR),
     scale(4000.0),
     last_lon(0.0),
     last_lat(0.0)
 {
-    for ( int i = 0; i < SG_MAX_CLOUD_TYPES; ++i ) {
+    for ( int i = 0; i < SG_MAX_CLOUD_COVERAGES; ++i ) {
         layer_states[i] = NULL;
     }
     layer_root->addKid(layer_transform);
@@ -118,17 +118,17 @@ SGCloudLayer::setTransition_m (float transition_m)
     layer_transition = transition_m;
 }
 
-SGCloudLayer::Type
-SGCloudLayer::getType () const
+SGCloudLayer::Coverage
+SGCloudLayer::getCoverage () const
 {
-    return layer_type;
+    return layer_coverage;
 }
 
 void
-SGCloudLayer::setType (Type type)
+SGCloudLayer::setCoverage (Coverage coverage)
 {
-    if (type != layer_type) {
-	layer_type = type;
+    if (coverage != layer_coverage) {
+	layer_coverage = coverage;
 	rebuild();
     }
 }
@@ -147,18 +147,24 @@ SGCloudLayer::rebuild()
         layer_states[SG_CLOUD_OVERCAST] = SGCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
-        cloud_path.append("mostlycloudy.rgba");
-        layer_states[SG_CLOUD_MOSTLY_CLOUDY]
+        cloud_path.append("broken.rgba");
+        layer_states[SG_CLOUD_BROKEN]
             = SGCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
-        cloud_path.append("mostlysunny.rgba");
-        layer_states[SG_CLOUD_MOSTLY_SUNNY]
+        cloud_path.append("scattered.rgba");
+        layer_states[SG_CLOUD_SCATTERED]
+            = SGCloudMakeState(cloud_path.str());
+
+        cloud_path.set(texture_path.str());
+        cloud_path.append("few.rgba");
+        layer_states[SG_CLOUD_FEW]
             = SGCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
         cloud_path.append("cirrus.rgba");
-        layer_states[SG_CLOUD_CIRRUS] = SGCloudMakeState(cloud_path.str());
+        layer_states[SG_CLOUD_CIRRUS]
+            = SGCloudMakeState(cloud_path.str());
 
         layer_states[SG_CLOUD_CLEAR] = 0;
     }
@@ -209,8 +215,8 @@ SGCloudLayer::rebuild()
 
     layer = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
     layer_transform->addKid( layer );
-    if ( layer_states[layer_type] != NULL ) {
-        layer->setState( layer_states[layer_type] );
+    if ( layer_states[layer_coverage] != NULL ) {
+        layer->setState( layer_states[layer_coverage] );
     }
 
     // force a repaint of the sky colors with arbitrary defaults
@@ -358,7 +364,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
 
 void SGCloudLayer::draw() {
-    if ( layer_type != SG_CLOUD_CLEAR ) {
+    if ( layer_coverage != SG_CLOUD_CLEAR ) {
         ssgCullAndDraw( layer_root );
     }
 }

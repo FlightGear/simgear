@@ -16,7 +16,7 @@ enum {
     OP_PUSHCONST, OP_PUSHONE, OP_PUSHZERO, OP_PUSHNIL, OP_POP,
     OP_DUP, OP_XCHG, OP_INSERT, OP_EXTRACT, OP_MEMBER, OP_SETMEMBER,
     OP_LOCAL, OP_SETLOCAL, OP_NEWVEC, OP_VAPPEND, OP_NEWHASH, OP_HAPPEND,
-    OP_LINE, OP_MARK, OP_UNMARK, OP_BREAK, OP_NEWARGS
+    OP_LINE, OP_MARK, OP_UNMARK, OP_BREAK
 };
 
 struct Frame {
@@ -40,10 +40,6 @@ struct Context {
     int markStack[MAX_MARK_DEPTH];
     int markTop;
     int done;
-
-    // Vector of arguments vectors.  A LIFO cache, basically, to avoid
-    // thrashing the GC just for function call arguments.
-    naRef argPool;
 
     // Constants
     naRef meRef;

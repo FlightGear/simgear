@@ -348,6 +348,13 @@ public:
 	post_selector->select( 0 );
     }
 
+
+    /**
+     * Get the current sun color
+     */
+    inline float *get_sun_color() { return oursun->get_color(); }
+
+
     /**
      * Add a cloud layer.
      *

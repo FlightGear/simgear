@@ -74,6 +74,9 @@ public:
     bool reposition( sgVec3 p, double angle,
 		     double rightAscension, double declination,
 		     double sun_dist );
+
+    // retrun the current color of the sun
+    inline float *get_color() { return  cl->get( 0 ); }
 };
 
 

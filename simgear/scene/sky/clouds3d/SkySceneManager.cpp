@@ -47,7 +47,7 @@
  */ 
 SkySceneManager::SkySceneManager()
 : /*_pSkyBox(NULL),
-  _pTerrain(NULL),*/
+  _pTerrain(NULL),*/
   _bDrawLights(false),
   _bDrawTree(false),
   _bReshadeClouds(true)
@@ -408,7 +408,7 @@ SKYRESULT SkySceneManager::Display( const Camera &cam )
     //li->second->Display();
   }
  
-  //if (_bDrawTree)// force the issue and draw
+  //if (_bDrawTree)// force the issue and draw
     //_VisualizeCloudBVTree(cam, _cloudBVTree.GetRoot());
     
   glLineWidth(2.0);
@@ -516,7 +516,7 @@ SKYRESULT SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale /* 
   SkyArchive subArchive;
 	//iNumClouds = 5;  //set this value to reduce cloud field for debugging
   for (int i = 0; i < iNumClouds; ++i)
-  {printf("Loading # %d of %d clouds\n", i+1, iNumClouds);
+  {printf("Loading # %d of %d clouds\n", i+1, iNumClouds);
     cloudArchive.FindArchive("Cloud", &subArchive, i);
     SkyCloud *pCloud = new SkyCloud();
     pCloud->Load(subArchive, rScale);
@@ -596,7 +596,7 @@ void SkySceneManager::_ViewFrustumCullClouds(const Camera& cam, const CloudBVTre
   int i;
   int iResult = CamMinMaxBoxOverlap(&cam, pNode->GetNodeBV().GetMin(), pNode->GetNodeBV().GetMax());
   
- //iResult = COMPLETEIN; // just a hack to force the issue
+ //iResult = COMPLETEIN; // just a hack to force the issue
   if (COMPLETEIN == iResult)
   {
     // trivially add all instances 

@@ -963,6 +963,10 @@ SKYRESULT SkyArchive::Load(const char* pFileName)
     FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::Load(): file name is NULL.");
   	}
   FILE* pSrcFile = NULL;
+  
+  char buf[512];
+  sprintf(buf,"SkyArchive::Load(%s)",pFileName);
+  SkyTrace(buf);
   if (NULL == (pSrcFile = fopen(pFileName, "rb"))) // file opened successfully   
   {
     SkyTrace("Error: SkyArchive::Load(): failed to open file for reading.");

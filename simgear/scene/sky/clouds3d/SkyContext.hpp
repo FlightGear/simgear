@@ -22,27 +22,28 @@
 #ifndef __SKYCONTEXT_HPP__
 #define __SKYCONTEXT_HPP__
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 // warning for truncation of template name for browse info
-#pragma warning( disable : 4786)
+// #pragma warning( disable : 4786)
 
 #include "SkySingleton.hpp"
 
-
-#ifdef _WIN32
-#include "extgl.h"
-#endif
 
 #include <list>
 #include <map>
 #include <algorithm>
 
-//  ifdef to replace windows stuff for handles-JW
+#ifdef WIN32
+# include "extgl.h"
+#else
 typedef void *HANDLE;
 typedef HANDLE *PHANDLE;
 #define DECLARE_HANDLE(n)  typedef HANDLE n
-
 DECLARE_HANDLE(HGLRC);
-// end of ifdef
+#endif
 
 class SkyContext;
 class SkyMaterial;

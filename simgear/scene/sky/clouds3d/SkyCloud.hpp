@@ -33,6 +33,8 @@
 #include "SkyArchive.hpp"
 #include "mat33.hpp"
 
+#include <plib/sg.h>
+
 class SkyMaterial;
 class SkyLight;
 class SkyRenderableInstance;
@@ -97,6 +99,8 @@ public:
   
   SKYRESULT                   Save(SkyArchive &archive) const;
   SKYRESULT                   Load(const SkyArchive &archive, float rScale = 1.0f, bool bLocal = false);
+  SKYRESULT                   Load(const SkyArchive &archive, const sgVec4 *mat,
+                                   float rScale = 1.0f, bool bLocal = false);
   
   void                        Rotate(const Mat33f& rot);
   void                        Translate(const Vec3f& trans);

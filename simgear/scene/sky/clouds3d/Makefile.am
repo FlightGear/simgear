@@ -1,5 +1,12 @@
 includedir = @includedir@/sky/clouds3d
 
+EXTRA_DIST = extlg.c
+if EXTGL_NEEDED
+  EXTGL_SOURCE = extgl.c
+else
+  EXTGL_SOURCE = 
+endif
+
 lib_LIBRARIES = libsgclouds3d.a
 
 include_HEADERS = \
@@ -7,6 +14,7 @@ include_HEADERS = \
 	SkyUtil.hpp
 
 libsgclouds3d_a_SOURCES = \
+        $(EXTRA_SOURCE) \
 	vec3fv.cpp \
 	mat16fv.cpp \
 	tri.cpp \

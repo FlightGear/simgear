@@ -238,7 +238,7 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
     FAIL_RETURN(DisplayWithoutImpostor(Camera::Camera()));
   }
   else
-  {//cout << "Using impostor image\n";
+  {//cout << "Using impostor image\n";
     if (!_pBackTexture || (bDisplayFrontOfSplit && !_pFrontTexture))
       FAIL_RETURN_MSG(SKYRESULT_FAIL, "SkyRenderableInstanceCloud::Display(): missing texture!");
 
@@ -268,7 +268,7 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
     Vec3f x, y, z;
     
     if (!_bScreenImpostor)
-    {//cout << "Outside the cloud\n";
+    {//cout << "Outside the cloud\n";
       z  =    _vecPosition; 
       z -=    _impostorCam.Orig;
       z.Normalize();

@@ -102,15 +102,21 @@ SkySceneLoader::~SkySceneLoader()
 bool SkySceneLoader::Load(std::string filename)
 { 
   SkyArchive archive;
+  cout << "SkySceneLoader::Load( " << filename << " )" << endl;
   if (SKYFAILED(archive.Load(filename.c_str()))) {
   	cout << "Archive file not found\n";
-    return false; }
+    return false;
+  }
   char *pFilename;
   
   // Need to create the managers
+  cout << "GraphicsContext::Instantiate();" << endl;
   GraphicsContext::Instantiate();
+  cout << "  TextureManager::Instantiate();" << endl;
   TextureManager::Instantiate();
+  cout << "  DynamicTextureManager::Instantiate();" << endl;
   DynamicTextureManager::Instantiate();
+  cout << "  SceneManager::Instantiate();" << endl;
   SceneManager::Instantiate();
 
   unsigned int iNumFiles;
@@ -118,7 +124,7 @@ bool SkySceneLoader::Load(std::string filename)
   {
     for (unsigned int i = 0; i < iNumFiles; ++i)
     {
-      FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));  
+      FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));  
       float rScale = 1.0;
       FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
       rScale = 30.0;

@@ -115,7 +115,7 @@ SKYRESULT SkyRenderableInstanceGroup::Display()
   {
     FAIL_RETURN((*ii)->Display());
   }
-***/
+***/
   _pObjectSpaceBV->Display();
 
   glMatrixMode(GL_MODELVIEW);

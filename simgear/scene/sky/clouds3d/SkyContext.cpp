@@ -19,8 +19,15 @@
  * 
  * Graphics Context Interface.  Initializes GL extensions, etc.
  */
+
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <GL/glut.h>
+#ifndef WIN32
 #include <GL/glx.h>
+#endif
 
 //#include "extgl.h"
 
@@ -46,7 +53,7 @@ SkyContext::SkyContext()
   // materials and structure classes
   AddCurrentGLContext();
   // Initialize all the extensions and load the functions - JW (file is extgl.c)
-  #ifdef _WIN32
+  #ifdef WIN32
   glInitialize();
   InitializeExtension("GL_ARB_multitexture");
   #endif
@@ -122,7 +129,11 @@ SKYRESULT SkyContext::InitializeExtension(const char *pExtensionName)
 */ 
 SkyMaterial* SkyContext::GetCurrentMaterial()
 {
-  ContextMaterialIterator cmi = _currentMaterials.find(glXGetCurrentContext());
+#ifdef WIN32
+    ContextMaterialIterator cmi = _currentMaterials.find(wglGetCurrentContext());
+#else
+    ContextMaterialIterator cmi = _currentMaterials.find(glXGetCurrentContext());
+#endif
   if (_currentMaterials.end() != cmi)
     return cmi->second;
   else
@@ -146,7 +157,11 @@ SkyMaterial* SkyContext::GetCurrentMaterial()
  */ 
 SkyTextureState* SkyContext::GetCurrentTextureState()
 {
-  ContextTextureStateIterator ctsi = _currentTextureState.find(glXGetCurrentContext());
+#ifdef WIN32
+    ContextTextureStateIterator ctsi = _currentTextureState.find(wglGetCurrentContext());
+#else
+    ContextTextureStateIterator ctsi = _currentTextureState.find(glXGetCurrentContext());
+#endif
   if (_currentTextureState.end() != ctsi)
     return ctsi->second;
   else
@@ -169,14 +184,21 @@ SkyTextureState* SkyContext::GetCurrentTextureState()
  */ 
 SKYRESULT SkyContext::AddCurrentGLContext()
 {
-  SkyMaterial *pCurrentMaterial = new SkyMaterial;
-  _currentMaterials.insert(std::make_pair(glXGetCurrentContext(), pCurrentMaterial));
- 
-  SkyTextureState *pCurrentTS = new SkyTextureState;
-  _currentTextureState.insert(std::make_pair(glXGetCurrentContext() , pCurrentTS));
-  return SKYRESULT_OK;
-}
+    SkyMaterial *pCurrentMaterial = new SkyMaterial;
+#ifdef WIN32
+    _currentMaterials.insert(std::make_pair(wglGetCurrentContext(), pCurrentMaterial));
+#else
+    _currentMaterials.insert(std::make_pair(glXGetCurrentContext(), pCurrentMaterial));
+#endif
 
+    SkyTextureState *pCurrentTS = new SkyTextureState;
+#ifdef WIN32
+    _currentTextureState.insert(std::make_pair(wglGetCurrentContext() , pCurrentTS));
+#else
+    _currentTextureState.insert(std::make_pair(glXGetCurrentContext() , pCurrentTS));
+#endif
+    return SKYRESULT_OK;
+}
 
 //------------------------------------------------------------------------------
 // Function     	  : SkyContext::Register

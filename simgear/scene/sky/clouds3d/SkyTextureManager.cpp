@@ -214,7 +214,7 @@ SKYRESULT SkyTextureManager::Clone2DTexture(const string &filename,
     IMAGE_TGA
   };
   ImageType eType;
-/****
+/****
   // first get the image type from its extension.
   if (filename.find(".tga") != string.npos || filename.find(".TGA") != string.npos)
     eType = IMAGE_TGA;
@@ -222,7 +222,7 @@ SKYRESULT SkyTextureManager::Clone2DTexture(const string &filename,
     eType = IMAGE_PPM;
   else 
     FAIL_RETURN_MSG(SKYRESULT_FAIL, "SkyTextureManager error: invalid image format");
-  ****/
+  ****/
   // first try the filename sent in in case it includes a path.
   //if (FileUtils::FileExists(filename.c_str()))
   //{
@@ -239,7 +239,7 @@ SKYRESULT SkyTextureManager::Clone2DTexture(const string &filename,
       break;
     default:
       break;
-    }*/
+    }*/
     
   //}
   
@@ -274,7 +274,7 @@ SKYRESULT SkyTextureManager::Clone2DTexture(const string &filename,
           break;
         default:
           break;
-        }*/
+        }*/
         
         //if (pImageData)
           //break;

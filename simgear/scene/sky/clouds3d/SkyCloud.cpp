@@ -225,7 +225,7 @@ SKYRESULT SkyCloud::Display(const Camera &camera, SkyRenderableInstance *pInstan
     color = p->GetBaseColor();
     
     if (_bUsePhaseFunction) // use the phase function for anisotropic scattering.
-    { 
+    { 
       eyeDir = cam.Orig;
       eyeDir -= p->GetPosition();     
       eyeDir.Normalize();
@@ -629,6 +629,78 @@ SkyMinMaxBox* SkyCloud::CopyBoundingVolume() const
  * 
  * If @a rScale does not equal 1.0, then the cloud is scaled by an amount rScale.
  */ 
+SKYRESULT SkyCloud::Load(const SkyArchive &archive,
+                         const sgVec4 *mat,
+                         float rScale /* = 1.0f */, 
+                         bool bLocal /* = false */)
+{
+    unsigned int iNumParticles;
+    Vec3f vecCenter = Vec3f::ZERO;
+  //Vec3f vecCenter;
+  //float rRadius;
+  //archive.FindVec3f("CldCenter", &vecCenter);
+  //archive.FindFloat32("CldRadius", &rRadius);
+
+  //_boundingBox.SetMin(vecCenter - Vec3f(rRadius, rRadius, rRadius));
+  //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
+
+    archive.FindUInt32("CldNumParticles", &iNumParticles);
+    if (!bLocal)
+        archive.FindVec3f("CldCenter", &vecCenter);
+
+    Vec3f *pParticlePositions = new Vec3f[iNumParticles];
+    float *pParticleRadii     = new float[iNumParticles];
+    Vec4f *pParticleColors    = new Vec4f[iNumParticles];
+
+    unsigned int iNumBytes;
+    archive.FindData("CldParticlePositions", ANY_TYPE, (void**const)&pParticlePositions, &iNumBytes);
+    archive.FindData("CldParticleRadii",     ANY_TYPE, (void**const)&pParticleRadii,     &iNumBytes);
+    archive.FindData("CldParticleColors",    ANY_TYPE, (void**const)&pParticleColors,    &iNumBytes);
+
+    for (unsigned int i = 0; i < iNumParticles; ++i)
+    {
+        SkyCloudParticle *pParticle = new SkyCloudParticle((pParticlePositions[i] + vecCenter) * rScale,
+            pParticleRadii[i] * rScale,
+            pParticleColors[i]);
+        _boundingBox.AddPoint(pParticle->GetPosition());
+
+        _particles.push_back(pParticle);
+    }
+  // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
+  // this "almost" works not quite the right solution okay to get some up and running
+  // we need to develop our own scheme for loading and positioning clouds
+    Mat33f rot_mat;
+    Vec3f  moveit;
+
+    rot_mat.Set( 1, 0, 0,
+                 0, 0, -1,
+                 0, 1, 0);
+  // flip the y and z axis, clouds now sit in the x-y plane
+    Rotate( rot_mat ); 
+//  rot_mat.Set(mat[0][0], mat[0][1],mat[0][2],
+//              mat[1][0], mat[1][1],mat[1][2],
+//              mat[2][0], mat[2][1],mat[2][2] );
+   // adjust for lon af KSFO plus 		-122.357				 
+//  rot_mat.Set( -0.84473f, 0.53519f, 0.0f,
+//  						 -0.53519f, -0.84473f, 0.0f,
+//  						 0.0f, 0.0f, 1.0f);
+
+  //Rotate( rot_mat );
+
+   // and about x for latitude 37.6135
+//  rot_mat.Set( 1.0f, 0.0, 0.0f,
+//  						 0.0f, 0.7921f, -0.6103f,
+//  						 0.0f, 0.6103f, 0.7921f);		
+
+//  Rotate( rot_mat );
+
+    moveit.Set( 1000.0, 0.0, 4050.0  );
+
+    Translate( moveit );
+
+    return SKYRESULT_OK;
+}
+
 SKYRESULT SkyCloud::Load(const SkyArchive &archive, 
                          float rScale /* = 1.0f */, 
                          bool bLocal /* = false */)

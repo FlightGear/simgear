@@ -19,7 +19,17 @@
  * 
  * Implementation of a class that maintains the state and operation of a light.
  */
-// #pragma warning( disable : 4786)
+
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef WIN32
+# ifdef _MSC_VER
+#  pragma warning( disable : 4786)
+# endif
+# include "extgl.h"
+#endif
 
 #include "SkyLight.hpp"
 #include "SkyMaterial.hpp"

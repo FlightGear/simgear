@@ -167,6 +167,8 @@ fi
 
 dnl check for OpenGL related libraries
 
+AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
+
 if test "x$HOSTTYPE" = "xmacintosh" ; then
     dnl Macintosh OSX
     LIBS="$LIBS -framework OpenGL -framework GLUT"

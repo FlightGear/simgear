@@ -55,7 +55,7 @@ else
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
          
-# Determine version of automake ... important becuase of
+# Determine version of automake ... important because of
 # incompatibilities between versions
 AUTO_MAKE_VERSION=`automake --version | head -1 | awk '{print $4}' | sed -e 's/\-p[[0-9]]$//' | sed -e 's/\.//'`
 AM_CONDITIONAL(ANCIENT_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 14)

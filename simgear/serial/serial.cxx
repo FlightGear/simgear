@@ -32,9 +32,7 @@
 #  include <errno.h>
 #endif
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
-  // maybe include something???
-#else
+#if !defined( WIN32 ) || defined( __CYGWIN__) || defined( __CYGWIN32__ )
 #  include <termios.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
@@ -75,7 +73,7 @@ bool SGSerialPort::open_port(const string& device) {
         0, // dwShareMode
         NULL, // lpSecurityAttributes
         OPEN_EXISTING,
-        FILE_FLAG_OVERLAPPED,
+        0,
         NULL );
     if ( fd == INVALID_HANDLE_VALUE )
     {
@@ -165,6 +163,51 @@ bool SGSerialPort::set_baud(int baud) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
+    DCB dcb;
+    if ( GetCommState( fd, &dcb ) ) {
+        dcb.BaudRate = baud;
+        dcb.fOutxCtsFlow = FALSE;
+        dcb.fOutxDsrFlow = FALSE;
+        dcb.fOutX = TRUE;
+        dcb.fInX = TRUE;
+
+        if ( !SetCommState( fd, &dcb ) ) {
+            LPVOID lpMsgBuf;
+            FormatMessage(
+                FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+                FORMAT_MESSAGE_FROM_SYSTEM | 
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                NULL,
+                GetLastError(),
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                (LPTSTR) &lpMsgBuf,
+                0,
+                NULL );
+
+            SG_LOG( SG_IO, SG_ALERT, "Unable to update port settings: " 
+                << (const char*) lpMsgBuf );
+            LocalFree( lpMsgBuf );
+	    return false;
+        }
+    } else {
+        LPVOID lpMsgBuf;
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+            FORMAT_MESSAGE_FROM_SYSTEM | 
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            GetLastError(),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+            (LPTSTR) &lpMsgBuf,
+            0,
+            NULL );
+
+        SG_LOG( SG_IO, SG_ALERT, "Unable to poll port settings: " 
+             << (const char*) lpMsgBuf );
+        LocalFree( lpMsgBuf );
+	return false;
+    }
+
     return true;
 
 #else
@@ -227,19 +270,39 @@ bool SGSerialPort::set_baud(int baud) {
 
 string SGSerialPort::read_port() {
 
+    const int max_count = 1024;
+    char buffer[max_count+1];
+    string result;
+
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
-    string result = "";
+    DWORD count;
+    if ( ReadFile( fd, buffer, max_count, &count, 0 ) ) {
+	buffer[count] = '\0';
+        result = buffer;
+    } else {
+        LPVOID lpMsgBuf;
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+            FORMAT_MESSAGE_FROM_SYSTEM | 
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            GetLastError(),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+            (LPTSTR) &lpMsgBuf,
+            0,
+            NULL );
+
+        SG_LOG( SG_IO, SG_ALERT, "Serial I/O read error: " 
+             << (const char*) lpMsgBuf );
+        LocalFree( lpMsgBuf );
+    }
+
     return result;
 
 #else
 
-    const int max_count = 1024;
-    char buffer[max_count+1];
-    int count;
-    string result;
-
-    count = read(fd, buffer, max_count);
+    int count = read(fd, buffer, max_count);
     // cout << "read " << count << " bytes" << endl;
 
     if ( count < 0 ) {
@@ -265,8 +328,31 @@ int SGSerialPort::read_port(char *buf, int len) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
-    buf[0] = '\0';
-    return 0;
+    DWORD count;
+    if ( ReadFile( fd, buf, len, &count, 0 ) ) {
+	buf[count] = '\0';
+
+        return count;
+    } else {
+        LPVOID lpMsgBuf;
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+            FORMAT_MESSAGE_FROM_SYSTEM | 
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            GetLastError(),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+            (LPTSTR) &lpMsgBuf,
+            0,
+            NULL );
+
+        SG_LOG( SG_IO, SG_ALERT, "Serial I/O read error: " 
+             << (const char*) lpMsgBuf );
+        LocalFree( lpMsgBuf );
+
+	buf[0] = '\0';
+	return 0;
+    }
 
 #else
 
@@ -299,16 +385,15 @@ int SGSerialPort::write_port(const string& value) {
 
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
 
-    LPCVOID lpBuffer = value.c_str();
+    LPCVOID lpBuffer = value.data();
     DWORD nNumberOfBytesToWrite = value.length();
     DWORD lpNumberOfBytesWritten;
-    OVERLAPPED lpOverlapped;
 
     if ( WriteFile( fd,
         lpBuffer,
         nNumberOfBytesToWrite,
         &lpNumberOfBytesWritten,
-        &lpOverlapped ) == 0 )
+        0 ) == 0 )
     {
         LPVOID lpMsgBuf;
         FormatMessage(
@@ -377,13 +462,12 @@ int SGSerialPort::write_port(const char* buf, int len) {
     LPCVOID lpBuffer = buf;
     DWORD nNumberOfBytesToWrite = len;
     DWORD lpNumberOfBytesWritten;
-    OVERLAPPED lpOverlapped;
 
     if ( WriteFile( fd,
         lpBuffer,
         nNumberOfBytesToWrite,
         &lpNumberOfBytesWritten,
-        &lpOverlapped ) == 0 )
+        0 ) == 0 )
     {
         LPVOID lpMsgBuf;
         FormatMessage(

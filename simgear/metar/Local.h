@@ -65,13 +65,17 @@
 #define IMOD(i, j)   (((i) % (j)) < 0 ? ((i) % (j))+(j) : ((i) % (j)))
 #define IN_RANGE(n, lo, hi) ((lo) <= (n) && (n) <= (hi))
 #define LOOPDN(r, n) for ((r) = (n)+1; --(r) > 0;)
-#define MAX(x, y)    (((x) < (y)) ? (y) : (x))
-#ifndef max
-#define max(x, y)    (((x) < (y)) ? (y) : (x))
+#ifndef MAX
+#  define MAX(x, y)    (((x) < (y)) ? (y) : (x))
 #endif
-#define MIN(x, y)    (((x) < (y)) ? (x) : (y))
+#ifndef max
+#  define max(x, y)    (((x) < (y)) ? (y) : (x))
+#endif
+#ifndef MIN
+#  define MIN(x, y)    (((x) < (y)) ? (x) : (y))
+#endif
 #ifndef min
-#define min(x, y)    (((x) < (y)) ? (x) : (y))
+#  define min(x, y)    (((x) < (y)) ? (x) : (y))
 #endif
 #define STREQ(s, t)  (strcmp(s, t) == 0)
 #define STRGT(s, t)  (strcmp(s, t) > 0)

@@ -70,11 +70,10 @@
 #include <math.h>
 
 #include <simgear/constants.h>
+#include <simgear/sg_inlines.h>
 
 #include "coremag.hxx"
 
-
-#define	max(a,b)	(((a) > (b)) ? (a) : (b))
 
 static const double pi = 3.14159265358979;
 static const double a = 6378.16;	/* major radius (km) IAU66 ellipsoid */
@@ -243,7 +242,7 @@ double calc_magvar( double lat, double lon, double h, long dat, double* field )
 
 	for ( m = 0; m <= nmax; m++ ) {
 	    double mm = m*m;
-	    for ( n = max(m + 1, 2); n <= nmax; n++ ) {
+	    for ( n = SG_MAX2(m + 1, 2); n <= nmax; n++ ) {
 		roots[m][n][0] = sqrt((n-1)*(n-1) - mm);
 		roots[m][n][1] = 1.0 / sqrt( n*n - mm);
 	    }
@@ -261,7 +260,7 @@ double calc_magvar( double lat, double lon, double h, long dat, double* field )
     /* lower triangle */
     for ( m = 0; m <= nmax; m++ ) {
 	// double mm = m*m;
-	for ( n = max(m + 1, 2); n <= nmax; n++ ) {
+	for ( n = SG_MAX2(m + 1, 2); n <= nmax; n++ ) {
 	    // double root1 = sqrt((n-1)*(n-1) - mm);
 	    // double root2 = 1.0 / sqrt( n*n - mm);
 	    P[n][m] = (P[n-1][m] * c * (2.0*n-1) -
@@ -387,7 +386,7 @@ double SGMagVarOrig( double lat, double lon, double h, long dat, double* field )
 
     /* lower triangle */
     for ( m = 0; m <= nmax; m++ ) {
-	for ( n = max(m + 1, 2); n <= nmax; n++ ) {
+	for ( n = SG_MAX2(m + 1, 2); n <= nmax; n++ ) {
 	    P[n][m] = (P[n-1][m] * c * (2.0*n-1) - P[n-2][m] *
 		       sqrt(1.0*(n-1)*(n-1) - m * m)) /
 		sqrt(1.0* n * n - m * m);

@@ -81,7 +81,7 @@ CMetarStation::CMetarStation(
 	double ulongitude = decodeDMS( s );
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double altitude = atoi( s ) * SG_FEET_TO_METER;
-	m_altitude = altitude;
+	m_altitude = (int)altitude;
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double ualtitude = atoi( s ) * SG_FEET_TO_METER;
 	Point3D p( longitude, latitude, altitude+SG_EQUATORIAL_RADIUS_M );
@@ -173,7 +173,7 @@ CMetarStation * CMetarStationDB::find( Point3D locationCart )
 {
     std::map<std::string,CMetarStation*>::iterator itr;
     double bestDist = 99999999;
-    CMetarStation * bestStation;
+    CMetarStation *bestStation = NULL;
     Point3D curLocation = locationCart;
     itr = METAR_Stations.begin(); 
     while(itr != METAR_Stations.end()) 

@@ -40,7 +40,7 @@ static int DecodeDirChars( char* c )
 			if ( c[1] == 'E' ) r = 45;
 			else if ( c[1] == 'W' ) r = 315;
 		}
-		else if ( r = 180 )
+		else if ( r == 180 )
 		{
 			if ( c[1] == 'E' ) r = 135;
 			else if ( c[1] == 'W' ) r = 225;
@@ -216,17 +216,22 @@ int CMetarReport::VerticalVisibility() // Meters
 
 int CMetarReport::Ceiling()
 {
-	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Ceiling;
+	return
+	    (int)(SG_FEET_TO_METER*((Decoded_METAR *)m_DecodedReport)->Ceiling);
 }
 
 int CMetarReport::EstimatedCeiling()
 {
-	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Estimated_Ceiling;
+	return
+	    (int)(SG_FEET_TO_METER
+		  * ((Decoded_METAR *)m_DecodedReport)->Estimated_Ceiling);
 }
 
 int CMetarReport::VariableSkyLayerHeight()
 {
-	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->VrbSkyLayerHgt;
+	return
+	    (int)(SG_FEET_TO_METER
+		  * ((Decoded_METAR *)m_DecodedReport)->VrbSkyLayerHgt);
 }
 
 int CMetarReport::SnowDepthInches()
@@ -277,9 +282,9 @@ operator << ( ostream& out, CMetarReport& p )
 }
 
 
-double CMetarReport::AirPressure() 
+double CMetarReport::AirPressure()
 {
-  return ((Decoded_METAR *)m_DecodedReport)->inches_altstng;
+    return ((Decoded_METAR *)m_DecodedReport)->inches_altstng;
 }
 
 void CMetarReport::dump()
@@ -287,12 +292,13 @@ void CMetarReport::dump()
 	prtDMETR( (Decoded_METAR *)m_DecodedReport );
 }
 
-double CMetarReport::PrevailVisibility() {
+double CMetarReport::PrevailVisibility()
+{
   //Values from each visibility field converted to meters.
   double smiles;
   double km;
   double meters;
-  smiles = ((Decoded_METAR*) m_DecodedReport)->prevail_vsbySM  * 621 ;
+  smiles = ((Decoded_METAR*) m_DecodedReport)->prevail_vsbySM * 1609.34;
   km =  ((Decoded_METAR*) m_DecodedReport)->prevail_vsbyKM * 1000;
   meters =  ((Decoded_METAR*) m_DecodedReport)->prevail_vsbyM;
   

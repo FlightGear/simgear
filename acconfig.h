@@ -141,6 +141,9 @@
 /* Define if your struct stat has st_rdev.  */
 #undef HAVE_ST_RDEV
 
+/* Define if you have the stdint.h include.  */
+#undef HAVE_STDINT_H
+
 /* Define if you have the strftime function.  */
 #undef HAVE_STRFTIME
 

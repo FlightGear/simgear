@@ -267,8 +267,12 @@ AM_CONDITIONAL(HAVE_ZLIB, test "x$ac_cv_header_zlib_h" = "xyes" )
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS( \
-	fcntl.h getopt.h malloc.h memory.h stdlib.h sys/param.h sys/stat.h \
-        sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
+	fcntl.h getopt.h malloc.h memory.h stdint.h stdlib.h sys/param.h \
+	sys/stat.h sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
+
+if test "x$ac_cv_header_stdint_h" = "xyes"; then
+    AC_DEFINE( HAVE_STDINT_H )
+fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

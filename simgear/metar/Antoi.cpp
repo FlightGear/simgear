@@ -29,14 +29,26 @@
 /*           in the conversion.                                     */
 /*                                                                  */
 /*  Output:- An integer corresponding to the value in the character */
-/*           array or MAXNEG (-2147483648) if the function is       */
+/*           array or INT32_MIN (-2147483647-1) if the function is  */
 /*           unable to acquire system storage.                      */
 /*                                                                  */
 /*  Modification History:                                           */
 /*                 None                                             */
 /*                                                                  */
 /********************************************************************/
- 
+
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
+#ifndef INT32_MIN
+#  define INT32_MIN (-2147483647-1)
+#endif
+
 int antoi(char * string, int len)
 {
  
@@ -55,7 +67,7 @@ int antoi(char * string, int len)
  
     tmpstr = (char *)malloc((len+1) * sizeof(char));
  
-    if (tmpstr == NULL) return (-2147483648);
+    if (tmpstr == NULL) return INT32_MIN;
  
     for (i = 0; i < len; i++)
        tmpstr[i] = string[i];

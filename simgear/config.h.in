@@ -44,6 +44,9 @@
 /* Define if you don't have vprintf but do have _doprnt.  */
 #undef HAVE_DOPRNT
 
+/* Define if you have the stdint.h include.  */
+#undef HAVE_STDINT_H
+
 /* Define if you have the vprintf function.  */
 #undef HAVE_VPRINTF
 
@@ -127,6 +130,9 @@
 
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H
+
+/* Define if you have the <stdint.h> header file.  */
+#undef HAVE_STDINT_H
 
 /* Define if you have the <stdlib.h> header file.  */
 #undef HAVE_STDLIB_H

@@ -38,7 +38,7 @@
 #include "screen-dump.hxx"
 
 
-#define RGB  3			// 3 bytes of color info per pixel
+#define RGB3 3			// 3 bytes of color info per pixel
 #define RGBA 4			// 4 bytes of color+alpha info
 
 void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int win_height, int mode)
@@ -48,7 +48,7 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
     FILE *fp;
     int pixelSize = mode==GL_RGBA?4:3;
 
-    ibuffer = (unsigned char *) malloc(win_width*win_height*RGB);
+    ibuffer = (unsigned char *) malloc(win_width*win_height*RGB3);
 
     if ( (fp = fopen(filename, "wb")) == NULL ) {
 	printf("Warning: cannot open %s\n", filename);
@@ -60,15 +60,15 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
     q = 0;
     for (i = 0; i < win_height; i++)
 	for (j = 0; j < win_width; j++)
-	    for (k = 0; k < RGB; k++)
+	    for (k = 0; k < RGB3; k++)
 		ibuffer[q++] = (unsigned char)
 		    *(buffer + (pixelSize*((win_height-1-i)*win_width+j)+k));
-    fwrite(ibuffer, sizeof(unsigned char), RGB*win_width*win_height, fp);
+    fwrite(ibuffer, sizeof(unsigned char), RGB3*win_width*win_height, fp);
     fclose(fp);
     free(ibuffer);
 
     printf("wrote file (%d x %d pixels, %d bytes)\n",
-	   win_width, win_height, RGB*win_width*win_height);
+	   win_width, win_height, RGB3*win_width*win_height);
 }
 
 

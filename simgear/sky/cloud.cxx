@@ -45,7 +45,7 @@ SGCloudLayer::~SGCloudLayer( void ) {
 }
 
 
-// build the moon object
+// build the cloud object
 void SGCloudLayer::build( double s, double asl, double thickness,
 			  double transition, ssgSimpleState *state )
 {

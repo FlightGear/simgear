@@ -1,5 +1,5 @@
-dnl Process this file with aclocal ; automake -a ; autoconf to produce a 
-dnl working configure script.
+dnl Process this file with autoget.sh to produce a working configure
+dnl script.
 dnl
 dnl $Id$
 
@@ -38,7 +38,7 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
-
+dnl set the $host variable based on local machine/os
 AC_CANONICAL_HOST
 
 dnl Used on the Irix platform
@@ -164,7 +164,7 @@ case "${host}" in
     dnl add -lwsock32 for mingwin
     case "${host}" in
     *-*-mingw32*)
-        LIBS="$LIBS -lwsock32"
+        LIBS="$LIBS -lws2_32"
         ;;
     esac
 
@@ -286,24 +286,70 @@ int main() {
   AC_MSG_RESULT(yes)
 )
 
-dnl Check for system installed metakit
+dnl Check for MetaKit
 AC_CHECK_HEADER(mk4.h)
 if test "x$ac_cv_header_mk4_h" != "xyes"; then
-    echo 
-    echo "Metakit not found, you will need to install this first."
-    echo "Please read the README.metakit for more information."
+    echo
+    echo "MetaKit library not found."
+    echo
+    echo "If your OS does not provide an installable package for MetaKit"
+    echo "you will have to compile and install it first yourself.  A copy"
+    echo "of metakit-$(VERSION).tar.gz is included with SimGear.  You will"
+    echo "have to untar this source code, and follow it's included instructions"
+    echo "to compile and install on your system."
+    echo
+    echo "configure aborted."
     exit
 fi
+
+AC_MSG_CHECKING([for metakit 2.4.3 or newer])
+saved_LIBS="$LIBS"
+LIBS="$saved_LIBS -lmk4"
+AC_TRY_RUN([
+#include <mk4.h>
+
+#define MIN_MK4_VERSION 243
+
+int main() {
+    int major, minor, micro;
+
+    if ( d4_MetaKitLibraryVersion < MIN_MK4_VERSION ) {
+	 return -1;
+    }
+
+    return 0;
+}
+
+],
+  AC_MSG_RESULT(yes),
+  [AC_MSG_RESULT(wrong version);
+   AC_MSG_ERROR([
+
+Install metakit 2.4.3 or later first.
+
+Or, the compiler may not be finding your libmk4.so library.
+Please check the config.log file for specific details of the
+failure if you believe you have the correct metakit version.
+Also, look up this issue in the FlightGear FAQ.])],
+  AC_MSG_RESULT(yes)
+)
 
 AC_LANG_POP
 
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
 if test "x$ac_cv_header_zlib_h" != "xyes"; then
-    echo 
-    echo "zlib not found, you will need to install this first."
-    echo "Please read the README.zlib for more information."
-    exit
+    echo
+    echo "zlib library not found."
+    echo
+    echo "If your OS does not provide an installable package for zlib"
+    echo "you will have to compile and install it first yourself.  A copy"
+    echo "of zlib-1.1.4.tar.gz is included with SimGear.  You will"
+    echo "have to untar this source code, and follow it's included instructions"
+    echo "to compile and install on your system."
+    echo
+    echo "configure aborted."
+    echo
 fi
 
 dnl Checks for header files.
@@ -370,7 +416,7 @@ else
     echo "Debug messages: yes"
 fi
 
-echo -n "Automake version: ($AUTO_MAKE_VERSION) "
+echo -n "Automake version: "
 automake --version | head -1
 
 if test "x$ac_cv_header_GL_glut_h" = "xyes"; then

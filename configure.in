@@ -1,0 +1,258 @@
+dnl Process this file with aclocal ; automake -a ; autoconf to produce a 
+dnl working configure script.
+dnl
+dnl $Id$
+
+AC_INIT(bucket/newbucket.cxx)
+
+dnl Initialize the automake stuff
+AM_INIT_AUTOMAKE(SimGear, 0.0.0)
+
+dnl Checks for programs.
+AC_PROG_MAKE_SET
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_RANLIB
+AC_PROG_INSTALL
+AC_PROG_LN_S
+
+if echo $includedir | egrep "simgear$" > /dev/null; then
+    echo "includedir is" $includedir "libdir is" $libdir
+else
+    includedir="${includedir}/simgear"
+    echo "includedir changed to" $includedir "libdir is" $libdir
+fi
+
+
+dnl Specify if we want logging (testing build) or not (release build)
+# set logging default value
+# with_logging=yes
+AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
+if test "x$with_logging" = "xno" ; then
+    AC_DEFINE(FG_NDEBUG)
+fi
+
+dnl specify if we are building with "checker"
+AC_ARG_WITH(efence, [  --with-efence           Specify if we are building with "electric-fence"])
+
+if test "x$with_efence" = "xyes" ; then
+    echo "Building with efence"
+    LIBS= "$LIBS -lefence"
+fi
+
+dnl Check for MS Windows environment
+AC_CHECK_HEADER(windows.h)
+
+dnl extra library and include directories
+EXTRA_DIRS="/usr/local /usr/local/plib /usr/X11R6"
+
+if test -d /opt/X11R6 ; then
+     EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
+fi
+
+if test "x$ac_cv_header_windows_h" = "xyes" ; then
+    EXTRA_DIRS="${EXTRA_DIRS} `pwd`/Win32"
+# elif test `uname -s` = "SunOS" ; then
+#   EXTRA_DIRS="${EXTRA_DIRS} `pwd`/SunOS"
+fi
+wi_EXTRA_DIRS(no, ${EXTRA_DIRS})
+
+dnl Using AM_CONDITIONAL is a step out of the protected little 
+dnl automake fold so it is potentially dangerous.  But, we are
+dnl beginning to run into cases where the standard checks are not
+dnl enough.  AM_CONDITIONALS are then referenced to conditionally
+dnl build a Makefile.in from a Makefile.am which lets us define custom
+dnl includes, compile alternative source files, etc.
+
+dnl Enable serial support on Unix type systems
+AM_CONDITIONAL(ENABLE_UNIX_SERIAL, true)
+
+dnl Check for X11 (fancy)
+AC_PATH_XTRA
+
+dnl Checks for libraries.
+
+null_LIBS="$LIBS"
+
+AC_CHECK_LIB(m, cos)
+
+base_LIBS="$LIBS"
+
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(X11, XCreateWindow)
+AC_CHECK_LIB(Xext, XShmCreateImage)
+AC_CHECK_LIB(Xi, XGetExtensionVersion)
+AC_CHECK_LIB(ICE, IceOpenConnection)
+AC_CHECK_LIB(SM, SmcOpenConnection)
+AC_CHECK_LIB(Xt, XtMalloc)
+AC_CHECK_LIB(Xmu, XmuLookupStandardColormap)
+
+dnl check for OpenGL related libraries
+
+if test "x$ac_cv_header_windows_h" != "xyes" ; then
+    dnl Reasonable stuff for non-windoze variants ... :-)
+
+    AC_CHECK_LIB(GLcore, glNewList)
+    if test "x$ac_cv_lib_GLcore_glNewList" = "xno" ; then
+	dnl if no GLcore, check for GL
+	AC_CHECK_LIB(GL, glNewList)
+	if test "x$ac_cv_lib_GL_glNewList" = "xno" ; then
+	    dnl if no GL, check for MesaGL
+	    AC_CHECK_LIB(MesaGL, glNewList)
+	fi
+    else
+	dnl if GLcore found, then also check for GL
+	AC_CHECK_LIB(GL, glXCreateContext)
+    fi
+
+    dnl if using mesa, check for xmesa.h
+    if test "x$ac_cv_lib_MesaGL_glNewList" = "xyes" ; then
+	AC_CHECK_HEADER(GL/xmesa.h)
+	if test "x$ac_cv_header_GL_xmesa_h" = "xyes"; then
+	    AC_DEFINE( XMESA )
+            AC_DEFINE( FX )
+        fi
+    fi
+
+    AC_CHECK_LIB(GLU, gluLookAt)
+    if test "x$ac_cv_lib_GLU_gluLookAt" = "xno" ; then
+	dnl if no GLU, check for MesaGLU
+	AC_CHECK_LIB(MesaGLU, gluLookAt)
+    fi
+
+    dnl check for glut
+    AC_CHECK_LIB(glut, glutGetModifiers)
+
+    dnl test for glutGameModeString, but avoid adding glut a second time into
+    dnl the list of libraries
+    save_LIBS="$LIBS"
+    AC_CHECK_LIB(glut, glutGameModeString)
+    LIBS="$save_LIBS"
+else
+    dnl Win32 is a little wierd because it has to try to handle the various
+    dnl winbloze-isms.  We'll just do this manually for now.
+
+    echo Win32 specific hacks...
+    AC_DEFINE(WIN32)
+
+    dnl force a failed check since we will be building under windoze
+    AM_CONDITIONAL(ENABLE_XMESA_FX, test "no" = "yes")
+
+    dnl just define these to true and hope for the best
+    ac_cv_lib_glut_glutGetModifiers="yes"
+    ac_cv_lib_glut_glutGameModeString="yes"
+
+    if test "x$with_sgi_opengl" = "xyes" ; then
+        echo "Building with glut.dll, glu.dll, and opengl.dll"
+	WIN32_GLUT=glut
+	WIN32_GLU=glu
+	WIN32_OPENGL=opengl
+    else 
+	echo "Building with glut32.dll, glu32.dll, and opengl32.dll"
+	WIN32_GLUT=glut32
+	WIN32_GLU=glu32
+	WIN32_OPENGL=opengl32
+    fi
+
+    LIBS="$LIBS -l${WIN32_GLUT} -l${WIN32_GLU} -l${WIN32_OPENGL}"
+    LIBS="$LIBS -luser32 -lgdi32"
+    echo "Will link apps with $LIBS"
+fi
+
+if test "x$ac_cv_lib_glut_glutGetModifiers" = "xno"; then
+    echo 
+    echo "Unable to find the necessary OpenGL or GLUT libraries."
+    echo "See config.log for automated test details and results ..."
+    exit 1
+fi
+
+if test "x$ac_cv_lib_glut_glutGameModeString" = "xno"; then
+    echo
+    echo "Your version of glut doesn't support game mode."
+    echo "You need to fetch and install the latest version of glut from:"
+    echo
+    echo "    http://reality.sgi.com/opengl/glut3/glut3.html"
+    exit 1
+fi
+
+opengl_LIBS="$LIBS"
+LIBS="$base_LIBS"
+
+AC_SUBST(base_LIBS)
+AC_SUBST(opengl_LIBS)
+
+AM_CONDITIONAL(HAVE_XWINDOWS, test "x$ac_cv_lib_X11_XCreateWindow" = "xyes" )
+
+dnl Check for "plib" without which we cannot go on
+AC_CHECK_HEADER(plib/pu.h)
+if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
+    echo
+    echo "You *must* have the plib library installed on your system to build"
+    echo "the FGFS simulator!"
+    echo
+    echo "Please see README.plib for more details."
+    echo
+    echo "configure aborted."
+    exit
+fi
+
+dnl Check for system installed zlib
+AC_CHECK_HEADER(zlib.h)
+if test "x$ac_cv_header_zlib_h" != "xyes"; then
+    echo "no zlib found, building."
+fi
+AM_CONDITIONAL(HAVE_ZLIB, test "x$ac_cv_header_zlib_h" = "xyes" )
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS( \
+	fcntl.h getopt.h malloc.h memory.h stdlib.h sys/param.h sys/stat.h \
+        sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+dnl Checks for library functions.
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
+	random setitimer getitimer signal GetLocalTime rint getrusage )
+
+AM_CONFIG_HEADER(include/config.h)
+
+AC_OUTPUT( \
+	VERSION \
+	Makefile \
+	include/Makefile \
+	bucket/Makefile \
+	debug/Makefile \
+	math/Makefile \
+	misc/Makefile \
+	screen/Makefile \
+	serial/Makefile \
+	xgl/Makefile \
+	zlib/Makefile \
+)
+
+AC_OUTPUT_COMMANDS([./mksymlinks.sh])
+
+echo ""
+echo "Configure Summary"
+echo "================="
+
+echo "Prefix: $prefix"
+
+if test "x$with_logging" != "x"; then
+    echo "Debug messages: $with_logging"
+else
+    echo "Debug messages: yes"
+fi
+
+if test "x$with_efence" != "x"; then
+    echo "Electric fence: $with_efence"
+else
+    echo "Electric fence: no"
+fi

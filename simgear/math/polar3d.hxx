@@ -130,6 +130,80 @@ inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
  * @param dist resulting distance
  */
 inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest, 
+                                 double *course, double *dist )
+{
+    // d = 2*asin(sqrt((sin((lat1-lat2)/2))^2 + 
+    //            cos(lat1)*cos(lat2)*(sin((lon1-lon2)/2))^2))
+    double cos_start_y = cos( start.y() );
+    volatile double tmp1 = sin( (start.y() - dest.y()) * 0.5 );
+    volatile double tmp2 = sin( (start.x() - dest.x()) * 0.5 );
+    double d = 2.0 * asin( sqrt( tmp1 * tmp1 + 
+                                 cos_start_y * cos(dest.y()) * tmp2 * tmp2));
+
+    *dist = d * SG_RAD_TO_NM * SG_NM_TO_METER;
+
+    // We obtain the initial course, tc1, (at point 1) from point 1 to
+    // point 2 by the following. The formula fails if the initial
+    // point is a pole. We can special case this with:
+    //
+    // IF (cos(lat1) < EPS)   // EPS a small number ~ machine precision
+    //   IF (lat1 > 0)
+    //     tc1= pi        //  starting from N pole
+    //   ELSE
+    //     tc1= 0         //  starting from S pole
+    //   ENDIF
+    // ENDIF
+    //
+    // For starting points other than the poles: 
+    // 
+    // IF sin(lon2-lon1)<0       
+    //   tc1=acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+    // ELSE       
+    //   tc1=2*pi-acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+    // ENDIF 
+
+    // if ( cos(start.y()) < SG_EPSILON ) {
+    // doing it this way saves a transcendental call
+    double sin_start_y = sin( start.y() );
+    if ( fabs(1.0-sin_start_y) < SG_EPSILON ) {
+        // EPS a small number ~ machine precision
+        if ( start.y() > 0 ) {
+            *course = SGD_PI;   // starting from N pole
+        } else {
+            *course = 0;        // starting from S pole
+        }
+    } else {
+        // For starting points other than the poles: 
+        // double tmp3 = sin(d)*cos_start_y);
+        // double tmp4 = sin(dest.y())-sin(start.y())*cos(d);
+        // double tmp5 = acos(tmp4/tmp3);
+
+        // Doing this way gaurentees that the temps are
+        // not stored into memory
+        double tmp5 = acos( (sin(dest.y()) - sin_start_y * cos(d)) /
+                            (sin(d) * cos_start_y) );
+
+        // if ( sin( dest.x() - start.x() ) < 0 ) {
+        // the sin of the negative angle is just the opposite sign
+        // of the sin of the angle  so tmp2 will have the opposite
+        // sign of sin( dest.x() - start.x() )
+        if ( tmp2 >= 0 ) {
+            *course = tmp5;
+        } else {
+            *course = 2 * SGD_PI - tmp5;
+        }
+    }
+}
+
+#if 0
+/**
+ * Calculate course/dist given two spherical points.
+ * @param start starting point
+ * @param dest ending point
+ * @param course resulting course
+ * @param dist resulting distance
+ */
+inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest, 
 				 double *course, double *dist ) {
     // d = 2*asin(sqrt((sin((lat1-lat2)/2))^2 + 
     //            cos(lat1)*cos(lat2)*(sin((lon1-lon2)/2))^2))
@@ -183,5 +257,6 @@ inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest,
     *course = tc1;
     *dist = d * SG_RAD_TO_NM * SG_NM_TO_METER;
 }
+#endif // 0
 
 #endif // _POLAR3D_HXX

@@ -42,19 +42,24 @@ dnl set the $host variable based on local machine/os
 AC_CANONICAL_HOST
 
 dnl Used on the Irix platform
-AR="ar"
-ARFLAGS="cru"
 case "${host}" in
 *-*-irix*)
     if test "x$CXX" = "xCC" -o "x$CXX" = "xccache CC"; then
         AR="$CXX -ar"
         ARFLAGS="-o"
         CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility"
+        compatability_DIR="compatability"
     fi
+    ;;
+*)
+    AR="ar"
+    ARFLAGS="cru"
+    compatability_DIR=
     ;;
 esac
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
+AC_SUBST(compatability_DIR)
 
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir

@@ -191,7 +191,6 @@ private:
     SGMoon *moon;
     SGStars *planets;
     SGStars *stars;
-    ssgSimpleState *cloud_mats[SG_MAX_CLOUD_TYPES];
     layer_list_type cloud_layers;
 
     ssgRoot *pre_root, *post_root;
@@ -350,54 +349,44 @@ public:
     }
 
     /**
-     * Add a cloud layer (distances in meters).
-     * @param asl cloud base height above sea level
-     * @param thickness cloud layer thickness
-     * @param transition thickness of transition layer from 100% out of 
-     *        cloud to 100% in cloud.  Used for scudded clouds effect.
-     * @param span horizontal size of cloud object
-     * @param type type of cloud (chosen from available cloud types)
+     * Add a cloud layer.
+     *
+     * Transfer pointer ownership to this object.
+     *
+     * @param layer The new cloud layer to add.
      */
-    void add_cloud_layer( double asl, double thickness,
-			  double transition, double span,
-			  SGCloudType type );
+    void add_cloud_layer (SGCloudLayer * layer);
+
 
     /**
-     * Add a cloud layer (distances in meters).
-     * @param asl cloud base height above sea level
-     * @param thickness cloud layer thickness
-     * @param transition thickness of transition layer from 100% out of 
-     *        cloud to 100% in cloud.  Used for scudded clouds effect.
-     * @param span horizontal size of cloud object
-     * @param tex_path file name of a cloud texture
+     * Get a cloud layer (const).
+     *
+     * Pointer ownership remains with this object.
+     *
+     * @param i The index of the cloud layer, zero-based.
+     * @return A const pointer to the cloud layer.
      */
-    void add_cloud_layer( double asl, double thickness,
-			  double transition, double span,
-			  const string &tex_path );
+    const SGCloudLayer * get_cloud_layer (int i) const;
+
 
     /**
-     * Add a cloud layer (distances in meters).
-     * @param asl cloud base height above sea level
-     * @param thickness cloud layer thickness
-     * @param transition thickness of transition layer from 100% out of 
-     *        cloud to 100% in cloud.  Used for scudded clouds effect.
-     * @param span horizontal size of cloud object
-     * @param state pointer to an existing ssgSimpleState
+     * Get a cloud layer (non-const).
+     *
+     * Pointer ownership remains with this object.
+     *
+     * @param i The index of the cloud layer, zero-based.
+     * @return A non-const pointer to the cloud layer.
      */
-    void add_cloud_layer( double asl, double thickness,
-			  double transition, double span,
-			  ssgSimpleState *state );
+    SGCloudLayer * get_cloud_layer (int i);
 
-    /** @return number of cloud layers */
-    inline int get_num_layers() const { return cloud_layers.size(); }
 
     /**
-     * Get a cloud layer
-     * @param i which cloud layer
-     * @return cloud layer number i */
-    inline SGCloudLayer *get_cloud_layer( int i ) const {
-	return cloud_layers[i];
-    }
+     * Return the number of cloud layers currently available.
+     *
+     * @return The cloud layer count.
+     */
+    int get_cloud_layer_count () const;
+
 
     /** @return current effective visibility */
     inline float get_visibility() const { return effective_visibility; }
@@ -412,5 +401,3 @@ public:
 
 
 #endif // _SG_SKY_HXX
-
-

@@ -47,7 +47,10 @@ SGSky::SGSky( void ) {
 
 
 // Destructor
-SGSky::~SGSky( void ) {
+SGSky::~SGSky( void )
+{
+    for (int i = 0; i < cloud_layers.size(); i++)
+        delete cloud_layers[i];
 }
 
 
@@ -92,25 +95,6 @@ void SGSky::build(  double sun_size, double moon_size,
 
     pre_root->addKid( pre_selector );
     post_root->addKid( post_selector );
-
-    // add the cloud ssgStates to the material lib
-    SGPath cloud_path;
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "overcast.rgb" );
-    cloud_mats[SG_CLOUD_OVERCAST] = SGCloudMakeState( cloud_path.str() );
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "mostlycloudy.rgba" );
-    cloud_mats[SG_CLOUD_MOSTLY_CLOUDY] = SGCloudMakeState( cloud_path.str() );
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "mostlysunny.rgba" );
-    cloud_mats[SG_CLOUD_MOSTLY_SUNNY] = SGCloudMakeState( cloud_path.str() );
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "cirrus.rgba" );
-    cloud_mats[SG_CLOUD_CIRRUS] = SGCloudMakeState( cloud_path.str() );
 }
 
 
@@ -193,8 +177,8 @@ void SGSky::postDraw( float alt ) {
 
     // check where we are relative to the cloud layers
     for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
-	float asl = cloud_layers[i]->get_asl();
-	float thickness = cloud_layers[i]->get_thickness();
+	float asl = cloud_layers[i]->getElevation_m();
+	float thickness = cloud_layers[i]->getThickness_m();
 
 	if ( alt < asl - slop ) {
 	    // below cloud layer
@@ -211,7 +195,7 @@ void SGSky::postDraw( float alt ) {
     // determine rendering order
     int pos = 0;
     while ( pos < (int)cloud_layers.size() && 
-	    alt > cloud_layers[pos]->get_asl())
+	    alt > cloud_layers[pos]->getElevation_m())
     {
 	++pos;
     }
@@ -246,48 +230,29 @@ void SGSky::postDraw( float alt ) {
     }
 }
 
- 
-void SGSky::add_cloud_layer( double asl, double thickness,
-			     double transition, double span,
-			     ssgSimpleState *state ) {
-    SGCloudLayer *layer = new SGCloudLayer;
-    layer->build( span, asl, thickness, transition, state );
-
-    layer_list_iterator current = cloud_layers.begin();
-    layer_list_iterator last = cloud_layers.end();
-    while ( current != last && (*current)->get_asl() < asl ) {
-	++current;
-    }
-
-    if ( current != last ) {
-	cloud_layers.insert( current, layer );
-    } else {
-	cloud_layers.push_back( layer );
-    }
-
-    // for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-    //   cout << "layer " << i << " = " << cloud_layers[i]->get_asl() << endl;
-    // }
-    // cout << endl;
+void
+SGSky::add_cloud_layer( SGCloudLayer * layer )
+{
+    cloud_layers.push_back(layer);
 }
 
-
-void SGSky::add_cloud_layer( double asl, double thickness,
-			     double transition, double span,
-			     const string &tex_path ) {
-    ssgSimpleState *state = SGCloudMakeState( tex_path );
-    add_cloud_layer( asl, thickness, transition, span, state );
+const SGCloudLayer *
+SGSky::get_cloud_layer (int i) const
+{
+    return cloud_layers[i];
 }
 
-
-void SGSky::add_cloud_layer( double asl, double thickness,
-			     double transition, double span,
-			     SGCloudType type ) {
-    if ( type > 0 && type < SG_MAX_CLOUD_TYPES ) {
-	add_cloud_layer( asl, thickness, transition, span, cloud_mats[type] );
-    }
+SGCloudLayer *
+SGSky::get_cloud_layer (int i)
+{
+    return cloud_layers[i];
 }
 
+int
+SGSky::get_cloud_layer_count () const
+{
+    return cloud_layers.size();
+}
 
 // modify the current visibility based on cloud layers, thickness,
 // transition range, and simulated "puffs".
@@ -295,9 +260,9 @@ void SGSky::modify_vis( float alt, float time_factor ) {
     float effvis = visibility;
 
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-	float asl = cloud_layers[i]->get_asl();
-	float thickness = cloud_layers[i]->get_thickness();
-	float transition = cloud_layers[i]->get_transition();
+	float asl = cloud_layers[i]->getElevation_m();
+	float thickness = cloud_layers[i]->getThickness_m();
+	float transition = cloud_layers[i]->getTransition_m();
 
 	double ratio = 1.0;
 
@@ -387,4 +352,3 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
     effective_visibility = effvis;
 }
-

@@ -33,53 +33,42 @@
 SG_USING_STD(string);
 
 
-#define SG_MAX_CLOUD_TYPES 4	// change this if we add/remove cloud
-				// types en the enum below
-
-enum SGCloudType {
-    SG_CLOUD_OVERCAST = 0,
-    SG_CLOUD_MOSTLY_CLOUDY,
-    SG_CLOUD_MOSTLY_SUNNY,
-    SG_CLOUD_CIRRUS
-};
-
-
 class SGCloudLayer {
-
-private:
-
-    ssgRoot *layer_root;
-    ssgTransform *layer_transform;
-    ssgSimpleState *layer_state;
-
-    ssgColourArray *cl; 
-    ssgVertexArray *vl;
-    ssgTexCoordArray *tl;
-
-    // height above sea level (meters)
-    float layer_asl;
-    float layer_thickness;
-    float layer_transition;
-    float size;
-    float scale;
-
-    // for handling texture coordinates to simulate cloud movement
-    // from winds, and to simulate the clouds being tied to ground
-    // position, not view position
-    // double xoff, yoff;
-    double last_lon, last_lat;
 
 public:
 
-    // Constructor
-    SGCloudLayer( void );
+    enum Type {
+	SG_CLOUD_OVERCAST = 0,
+	SG_CLOUD_MOSTLY_CLOUDY,
+	SG_CLOUD_MOSTLY_SUNNY,
+	SG_CLOUD_CIRRUS,
+	SG_CLOUD_CLEAR,
+	SG_MAX_CLOUD_TYPES
+    };
+
+    // Constructors
+    SGCloudLayer( const string &tex_path );
 
     // Destructor
     ~SGCloudLayer( void );
 
+    float getSpan_m () const;
+    void setSpan_m (float span_m);
+
+    float getElevation_m () const;
+    void setElevation_m (float elevation_m);
+
+    float getThickness_m () const;
+    void setThickness_m (float thickness_m);
+
+    float getTransition_m () const;
+    void setTransition_m (float transition_m);
+
+    Type getType () const;
+    void setType (Type type);
+
     // build the cloud object
-    void build( double size, double asl, double thickness,
-		double transition, ssgSimpleState *state );
+    void rebuild();
 
     // repaint the cloud colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
@@ -101,9 +90,34 @@ public:
     // draw the cloud layer
     void draw();
 
-    inline float get_asl() const { return layer_asl; }
-    inline float get_thickness() const { return layer_thickness; }
-    inline float get_transition() const { return layer_transition; }
+private:
+
+    static ssgSimpleState *layer_states[SG_MAX_CLOUD_TYPES];
+    static int layer_sizes[SG_MAX_CLOUD_TYPES];
+
+    ssgRoot *layer_root;
+    ssgTransform *layer_transform;
+    ssgLeaf * layer;
+
+    ssgColourArray *cl; 
+    ssgVertexArray *vl;
+    ssgTexCoordArray *tl;
+
+    // height above sea level (meters)
+    SGPath texture_path;
+    float layer_span;
+    float layer_asl;
+    float layer_thickness;
+    float layer_transition;
+    Type layer_type;
+    float scale;
+
+    // for handling texture coordinates to simulate cloud movement
+    // from winds, and to simulate the clouds being tied to ground
+    // position, not view position
+    // double xoff, yoff;
+    double last_lon, last_lat;
+
 };
 
 

@@ -28,34 +28,126 @@
 #include <simgear/math/polar3d.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "cloud.hxx"
 
+ssgSimpleState *
+SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_TYPES];
+
 
 // Constructor
-SGCloudLayer::SGCloudLayer( void ) {
+SGCloudLayer::SGCloudLayer( const string &tex_path )
+  : layer_root(0),
+    layer_transform(0),
+    texture_path(tex_path),
+    layer_asl(0),
+    layer_thickness(0),
+    layer_transition(0),
+    layer_type(SG_CLOUD_CLEAR)
+{
+  rebuild();
 }
-
 
 // Destructor
 SGCloudLayer::~SGCloudLayer( void ) {
 }
 
+float
+SGCloudLayer::getSpan_m () const
+{
+    return layer_span;
+}
+
+void
+SGCloudLayer::setSpan_m (float span_m)
+{
+    layer_span = span_m;
+}
+
+float
+SGCloudLayer::getElevation_m () const
+{
+    return layer_asl;
+}
+
+void
+SGCloudLayer::setElevation_m (float elevation_m)
+{
+    layer_asl = elevation_m;
+}
+
+float
+SGCloudLayer::getThickness_m () const
+{
+    return layer_thickness;
+}
+
+void
+SGCloudLayer::setThickness_m (float thickness_m)
+{
+    layer_thickness = thickness_m;
+}
+
+float
+SGCloudLayer::getTransition_m () const
+{
+    return layer_transition;
+}
+
+void
+SGCloudLayer::setTransition_m (float transition_m)
+{
+    layer_transition = transition_m;
+}
+
+SGCloudLayer::Type
+SGCloudLayer::getType () const
+{
+    return layer_type;
+}
+
+void
+SGCloudLayer::setType (Type type)
+{
+    layer_type = type;
+    rebuild();
+}
+
 
 // build the cloud object
-void SGCloudLayer::build( double s, double asl, double thickness,
-			  double transition, ssgSimpleState *state )
+void
+SGCloudLayer::rebuild()
 {
+				// Initialize states and sizes if necessary.
+    if (layer_states[0] == 0) {
+      SGPath cloud_path;
+
+      cloud_path.set(texture_path.str());
+      cloud_path.append("overcast.rgb");
+      layer_states[SG_CLOUD_OVERCAST] = SGCloudMakeState(cloud_path.str());
+
+      cloud_path.set(texture_path.str());
+      cloud_path.append("mostlycloudy.rgba");
+      layer_states[SG_CLOUD_MOSTLY_CLOUDY] =
+	SGCloudMakeState(cloud_path.str());
+
+      cloud_path.set(texture_path.str());
+      cloud_path.append("mostlysunny.rgba");
+      layer_states[SG_CLOUD_MOSTLY_SUNNY] = SGCloudMakeState(cloud_path.str());
+
+      cloud_path.set(texture_path.str());
+      cloud_path.append("cirrus.rgba");
+      layer_states[SG_CLOUD_CIRRUS] = SGCloudMakeState(cloud_path.str());
+
+      layer_states[SG_CLOUD_CLEAR] = 0;
+    }
+
+    delete layer_root;
+
     scale = 4000.0;
 
-    layer_asl = asl;
-    layer_thickness = thickness;
-    layer_transition = transition;
-
-    size = s;
     last_lon = last_lat = -999.0f;
-
-    layer_state = state;
 
     cl = new ssgColourArray( 4 );
     vl = new ssgVertexArray( 4 );
@@ -67,7 +159,7 @@ void SGCloudLayer::build( double s, double asl, double thickness,
     sgVec2 tc;
     sgSetVec4( color, 1.0f, 1.0f, 1.0f, 1.0f );
 
-    sgSetVec3( vertex, -size, -size, 0.0f );
+    sgSetVec3( vertex, -layer_span, -layer_span, 0.0f );
     sgVec2 base;
     sgSetVec2( base, sg_random(), sg_random() );
     sgSetVec2( tc, base[0], base[1] );
@@ -75,27 +167,28 @@ void SGCloudLayer::build( double s, double asl, double thickness,
     vl->add( vertex );
     tl->add( tc );
 
-    sgSetVec3( vertex, size, -size, 0.0f );
-    sgSetVec2( tc, base[0] + size / scale, base[1] );
+    sgSetVec3( vertex, layer_span, -layer_span, 0.0f );
+    sgSetVec2( tc, base[0] + layer_span / scale, base[1] );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
-    sgSetVec3( vertex, -size, size, 0.0f );
-    sgSetVec2( tc, base[0], base[1] + size / scale );
+    sgSetVec3( vertex, -layer_span, layer_span, 0.0f );
+    sgSetVec2( tc, base[0], base[1] + layer_span / scale );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
-    sgSetVec3( vertex, size, size, 0.0f );
-    sgSetVec2( tc, base[0] + size / scale, base[1] + size / scale );
+    sgSetVec3( vertex, layer_span, layer_span, 0.0f );
+    sgSetVec2( tc, base[0] + layer_span / scale, base[1] + layer_span / scale );
     cl->add( color );
     vl->add( vertex );
     tl->add( tc );
 
     ssgLeaf *layer = 
 	new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
-    layer->setState( layer_state );
+    if (layer_states[layer_type] != 0)
+      layer->setState( layer_states[layer_type] );
 
     // force a repaint of the moon colors with arbitrary defaults
     repaint( color );
@@ -234,13 +327,13 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 	// cout << "base = " << base[0] << "," << base[1] << endl;
 
 	tc = tl->get( 1 );
-	sgSetVec2( tc, base[0] + size / scale, base[1] );
+	sgSetVec2( tc, base[0] + layer_span / scale, base[1] );
  
 	tc = tl->get( 2 );
-	sgSetVec2( tc, base[0], base[1] + size / scale );
+	sgSetVec2( tc, base[0], base[1] + layer_span / scale );
  
 	tc = tl->get( 3 );
-	sgSetVec2( tc, base[0] + size / scale, base[1] + size / scale );
+	sgSetVec2( tc, base[0] + layer_span / scale, base[1] + layer_span / scale );
  
 	last_lon = lon;
 	last_lat = lat;

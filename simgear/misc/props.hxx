@@ -675,6 +675,15 @@ public:
 
 
   /**
+   * Test whether a named child exists.
+   */
+  bool hasChild (const char * name, int index = 0) const
+  {
+    return (getChild(name, index) != 0);
+  }
+
+
+  /**
    * Get a child node by name and index.
    */
   SGPropertyNode * getChild (const char * name, int index = 0,
@@ -1236,6 +1245,7 @@ private:
   SGPropertyNode * _parent;
   vector<SGPropertyNode_ptr> _children;
   vector<SGPropertyNode_ptr> _removedChildren;
+  mutable char * _path;
   hash_table * _path_cache;
   Type _type;
   bool _tied;

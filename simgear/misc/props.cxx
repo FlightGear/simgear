@@ -635,6 +635,7 @@ SGPropertyNode::SGPropertyNode ()
   : _name(copy_string("")),
     _index(0),
     _parent(0),
+    _path(0),
     _path_cache(0),
     _type(NONE),
     _tied(false),
@@ -652,6 +653,7 @@ SGPropertyNode::SGPropertyNode ()
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   : _index(node._index),
     _parent(0),			// don't copy the parent
+    _path(0),
     _path_cache(0),
     _type(node._type),
     _tied(node._tied),
@@ -735,6 +737,7 @@ SGPropertyNode::SGPropertyNode (const char * name,
 				SGPropertyNode * parent)
   : _index(index),
     _parent(parent),
+    _path(0),
     _path_cache(0),
     _type(NONE),
     _tied(false),
@@ -753,6 +756,7 @@ SGPropertyNode::SGPropertyNode (const char * name,
 SGPropertyNode::~SGPropertyNode ()
 {
   delete [] _name;
+  delete _path;
   delete _path_cache;
   clear_value();
   delete _listeners;
@@ -930,19 +934,25 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
 const char *
 SGPropertyNode::getPath (bool simplify) const
 {
-  if (_parent == 0)
-    return "";
-
-  string path = _parent->getPath(simplify);
-  path += '/';
-  path += _name;
-  if (_index != 0 || !simplify) {
-    char buffer[128];
-    sprintf(buffer, "[%d]", _index);
-    path += buffer;
+				// Calculate the complete path only once.
+  if (_path == 0) {
+    string path;
+    if (_parent == 0) {
+      path = "";
+    } else {
+      path = _parent->getPath(simplify);
+      path += '/';
+      path += _name;
+      if (_index != 0 || !simplify) {
+	char buffer[64];
+	sprintf(buffer, "[%d]", _index);
+	path += buffer;
+      }
+    }
+    _path = copy_string(path.c_str());
   }
-  strncpy(_buffer, path.c_str(), MAX_STRING_LEN);
-  return _buffer;
+
+  return _path;
 }
 
 SGPropertyNode::Type

@@ -125,67 +125,69 @@ public:
 
     inline unsigned short get_version() const { return version; }
 
-    inline Point3D get_gbs_center() const { return gbs_center; }
-    inline void set_gbs_center( Point3D p ) { gbs_center = p; }
+    inline const Point3D& get_gbs_center() const { return gbs_center; }
+    inline void set_gbs_center( const Point3D& p ) { gbs_center = p; }
 
     inline float get_gbs_radius() const { return gbs_radius; }
     inline void set_gbs_radius( float r ) { gbs_radius = r; }
 
-    inline point_list get_wgs84_nodes() const { return wgs84_nodes; }
-    inline void set_wgs84_nodes( point_list n ) { wgs84_nodes = n; }
+    inline const point_list& get_wgs84_nodes() const { return wgs84_nodes; }
+    inline void set_wgs84_nodes( const point_list& n ) { wgs84_nodes = n; }
 
-    inline point_list get_colors() const { return colors; }
-    inline void set_colors( point_list c ) { colors = c; }
+    inline const point_list& get_colors() const { return colors; }
+    inline void set_colors( const point_list& c ) { colors = c; }
 
-    inline point_list get_normals() const { return normals; }
-    inline void set_normals( point_list n ) { normals = n; }
+    inline const point_list& get_normals() const { return normals; }
+    inline void set_normals( const point_list& n ) { normals = n; }
 
-    inline point_list get_texcoords() const { return texcoords; }
-    inline void set_texcoords( point_list t ) { texcoords = t; }
+    inline const point_list& get_texcoords() const { return texcoords; }
+    inline void set_texcoords( const point_list& t ) { texcoords = t; }
 
-    inline group_list get_pts_v() const { return pts_v; }
-    inline void set_pts_v( group_list g ) { pts_v = g; }
-    inline group_list get_pts_n() const { return pts_n; }
-    inline void set_pts_n( group_list g ) { pts_n = g; }
-    inline group_list get_pts_c() const { return pts_c; }
-    inline void set_pts_c( group_list g ) { pts_c = g; }
-    inline group_list get_pts_tc() const { return pts_tc; }
-    inline void set_pts_tc( group_list g ) { pts_tc = g; }
-    inline string_list get_pt_materials() const { return pt_materials; }
-    inline void set_pt_materials( string_list s ) { pt_materials = s; }
+    inline const group_list& get_pts_v() const { return pts_v; }
+    inline void set_pts_v( const group_list& g ) { pts_v = g; }
+    inline const group_list& get_pts_n() const { return pts_n; }
+    inline void set_pts_n( const group_list& g ) { pts_n = g; }
+    inline const group_list& get_pts_c() const { return pts_c; }
+    inline void set_pts_c( const group_list& g ) { pts_c = g; }
+    inline const group_list& get_pts_tc() const { return pts_tc; }
+    inline void set_pts_tc( const group_list& g ) { pts_tc = g; }
+    inline const string_list& get_pt_materials() const { return pt_materials; }
+    inline void set_pt_materials( const string_list& s ) { pt_materials = s; }
 
-    inline group_list get_tris_v() const { return tris_v; }
-    inline void set_tris_v( group_list g ) { tris_v = g; }
-    inline group_list get_tris_n() const { return tris_n; }
-    inline void set_tris_n( group_list g ) { tris_n = g; }
-    inline group_list get_tris_c() const { return tris_c; }
-    inline void set_tris_c( group_list g ) { tris_c = g; }
-    inline group_list get_tris_tc() const { return tris_tc; }
-    inline void set_tris_tc( group_list g ) { tris_tc = g; }
-    inline string_list get_tri_materials() const { return tri_materials; }
-    inline void set_tri_materials( string_list s ) { tri_materials = s; }
+    inline const group_list& get_tris_v() const { return tris_v; }
+    inline void set_tris_v( const group_list& g ) { tris_v = g; }
+    inline const group_list& get_tris_n() const { return tris_n; }
+    inline void set_tris_n( const group_list& g ) { tris_n = g; }
+    inline const group_list& get_tris_c() const { return tris_c; }
+    inline void set_tris_c( const group_list& g ) { tris_c = g; }
+    inline const group_list& get_tris_tc() const { return tris_tc; }
+    inline void set_tris_tc( const group_list& g ) { tris_tc = g; }
+    inline const string_list& get_tri_materials() const { return tri_materials; }
+    inline void set_tri_materials( const string_list& s ) { tri_materials = s; }
     
-    inline group_list get_strips_v() const { return strips_v; }
-    inline void set_strips_v( group_list g ) { strips_v = g; }
-    inline group_list get_strips_n() const { return strips_n; }
-    inline void set_strips_n( group_list g ) { strips_n = g; }
-    inline group_list get_strips_c() const { return strips_c; }
-    inline void set_strips_c( group_list g ) { strips_c = g; }
-    inline group_list get_strips_tc() const { return strips_tc; }
-    inline void set_strips_tc( group_list g ) { strips_tc = g; }
-    inline string_list get_strip_materials() const { return strip_materials; }
-    inline void set_strip_materials( string_list s ) { strip_materials = s; }
+    inline const group_list& get_strips_v() const { return strips_v; }
+    inline void set_strips_v( const group_list& g ) { strips_v = g; }
+    inline const group_list& get_strips_n() const { return strips_n; }
+    inline void set_strips_n( const group_list& g ) { strips_n = g; }
+    inline const group_list& get_strips_c() const { return strips_c; }
+    inline void set_strips_c( const group_list& g ) { strips_c = g; }
+
+    inline const group_list& get_strips_tc() const { return strips_tc; }
+    inline void set_strips_tc( const group_list& g ) { strips_tc = g; }
+    inline const string_list& get_strip_materials() const { return strip_materials; }
+    inline void set_strip_materials( const string_list& s ) { strip_materials = s; }
     
-    inline group_list get_fans_v() const { return fans_v; }
-    inline void set_fans_v( group_list g ) { fans_v = g; }
-    inline group_list get_fans_n() const { return fans_n; }
-    inline void set_fans_n( group_list g ) { fans_n = g; }
-    inline group_list get_fans_c() const { return fans_c; }
-    inline void set_fans_c( group_list g ) { fans_c = g; }
-    inline group_list get_fans_tc() const { return fans_tc; }
-    inline void set_fans_tc( group_list g ) { fans_tc = g; }
-    inline string_list get_fan_materials() const { return fan_materials; }
-    inline void set_fan_materials( string_list s ) { fan_materials = s; }
+    inline const group_list& get_fans_v() const { return fans_v; }
+    inline void set_fans_v( const group_list& g ) { fans_v = g; }
+    inline const group_list& get_fans_n() const { return fans_n; }
+    inline void set_fans_n( const group_list& g ) { fans_n = g; }
+    inline const group_list& get_fans_c() const { return fans_c; }
+    inline void set_fans_c( const group_list& g ) { fans_c = g; }
+
+    inline const group_list& get_fans_tc() const { return fans_tc; }
+    inline void set_fans_tc( const group_list& g ) { fans_tc = g; }
+    inline const string_list& get_fan_materials() const { return fan_materials; }
+    inline void set_fan_materials( const string_list& s ) { fan_materials = s; }
 
     /**
      * Read a binary file object and populate the provided structures.

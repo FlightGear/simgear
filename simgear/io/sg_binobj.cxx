@@ -316,7 +316,7 @@ bool SGBinObject::read_bin( const string& file ) {
     fans_c.clear();
     fans_tc.clear();
     fan_materials.clear();
-   
+
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "rb" )) == NULL ) {
 	string filegz = file + ".gz";
@@ -440,15 +440,14 @@ bool SGBinObject::read_bin( const string& file ) {
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(float) * 3);
 		float *fptr = (float *)ptr;
+		wgs84_nodes.reserve( count );
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
 			sgEndianSwap( (unsigned int *)&(fptr[0]) );
 			sgEndianSwap( (unsigned int *)&(fptr[1]) );
 			sgEndianSwap( (unsigned int *)&(fptr[2]) );
 		    }
-		    p = Point3D( fptr[0], fptr[1], fptr[2] );
-		    // cout << "node = " << p << endl;
-		    wgs84_nodes.push_back( p );
+		    wgs84_nodes.push_back( Point3D(fptr[0], fptr[1], fptr[2]) );
 		    fptr += 3;
 		}
 	    }
@@ -474,6 +473,7 @@ bool SGBinObject::read_bin( const string& file ) {
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(float) * 4);
 		float *fptr = (float *)ptr;
+		colors.reserve(count);
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
 			sgEndianSwap( (unsigned int *)&(fptr[0]) );
@@ -481,9 +481,7 @@ bool SGBinObject::read_bin( const string& file ) {
 			sgEndianSwap( (unsigned int *)&(fptr[2]) );
 			sgEndianSwap( (unsigned int *)&(fptr[3]) );
 		    }
-		    p = Point3D( fptr[0], fptr[1], fptr[2] );
-		    // cout << "node = " << p << endl;
-		    colors.push_back( p );
+		    colors.push_back( Point3D( fptr[0], fptr[1], fptr[2] ) );
 		    fptr += 4;
 		}
 	    }
@@ -508,6 +506,7 @@ bool SGBinObject::read_bin( const string& file ) {
 		unsigned char *ptr = (unsigned char *)(buf.get_ptr());
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / 3;
+		normals.reserve( count );
 		for ( k = 0; k < count; ++k ) {
                     sgdVec3 normal;
                     sgdSetVec3( normal,
@@ -516,9 +515,7 @@ bool SGBinObject::read_bin( const string& file ) {
                                (ptr[2]) / 127.5 - 1.0 );
                     sgdNormalizeVec3( normal );
 
-		    p = Point3D( normal[0], normal[1], normal[2] );
-		    // cout << "normal = " << p << endl;
-		    normals.push_back( p );
+		    normals.push_back(Point3D(normal[0], normal[1], normal[2]));
 		    ptr += 3;
 		}
 	    }
@@ -544,14 +541,13 @@ bool SGBinObject::read_bin( const string& file ) {
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / (sizeof(float) * 2);
 		float *fptr = (float *)ptr;
+		texcoords.reserve(count);
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
 			sgEndianSwap( (unsigned int *)&(fptr[0]) );
 			sgEndianSwap( (unsigned int *)&(fptr[1]) );
 		    }
-		    p = Point3D( fptr[0], fptr[1], 0 );
-		    // cout << "texcoord = " << p << endl;
-		    texcoords.push_back( p );
+		    texcoords.push_back( Point3D( fptr[0], fptr[1], 0 ) );
 		    fptr += 2;
 		}
 	    }

@@ -208,6 +208,19 @@ sgMakeAnimation( ssgBranch * model,
 }
 
 
+static void makeDList( ssgBranch *b )
+{
+  int nb = b->getNumKids();
+  for (int i = 0; i<nb; i++) {
+    ssgEntity *e = b->getKid(i);
+    if (e->isAKindOf(ssgTypeLeaf())) {
+      ((ssgLeaf*)e)->makeDList();
+    } else if (e->isAKindOf(ssgTypeBranch())) {
+      makeDList( (ssgBranch*)e );
+    }
+  }
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -256,6 +269,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
     model = (ssgBranch *)ssgLoad((char *)modelpath.c_str());
     if (model == 0)
       throw sg_exception("Failed to load 3D model");
+  }
+
+  if ( model != 0 ) {
+    makeDList( model );
   }
 
                                 // Set up the alignment node

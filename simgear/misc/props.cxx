@@ -297,7 +297,7 @@ SGPropertyNode::SGPropertyNode ()
     _parent(0),
     _type(NONE),
     _tied(false),
-    _attr(READ|WRITE|ARCHIVE)
+    _attr(READ|WRITE)
 {
 }
 
@@ -348,7 +348,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 SGPropertyNode::SGPropertyNode (const string &name,
 				int index, SGPropertyNode * parent)
   : _name(name), _index(index), _parent(parent), _type(NONE),
-    _tied(false), _attr(READ|WRITE|ARCHIVE)
+    _tied(false), _attr(READ|WRITE)
 {
 }
 

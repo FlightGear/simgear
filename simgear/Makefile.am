@@ -32,6 +32,7 @@ SUBDIRS = \
 	magvar \
 	math \
 	$(METAR_DIRS) \
+	xml \
 	misc \
 	route \
 	screen \
@@ -39,6 +40,5 @@ SUBDIRS = \
 	sky \
 	timing \
 	xgl \
-	xml \
 	$(ZLIB_DIRS)
 

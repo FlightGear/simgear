@@ -321,7 +321,7 @@ test_property_nodes ()
 }
 
 
-main (int ac, char ** av)
+int main (int ac, char ** av)
 {
   test_value();
   test_property_nodes();
@@ -335,4 +335,6 @@ main (int ac, char ** av)
       writeProperties(cout, &root);
     cout << endl;
   }
+
+  return 0;
 }

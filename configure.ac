@@ -113,7 +113,7 @@ AM_CONDITIONAL(IS_CYGWIN, test "x$is_cygwin" = "xyes")
 
 if test "x$HOSTTYPE" != "xmacintosh" -a "x$is_mingw" != "xyes"; then
     dnl extra library and include directories
-    EXTRA_DIRS="/usr/local /usr/X11R6"
+    EXTRA_DIRS="/usr/X11R6"
 
     if test -d /opt/X11R6 ; then
         EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"

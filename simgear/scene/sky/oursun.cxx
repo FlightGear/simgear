@@ -44,6 +44,8 @@
 #  include <plib/ssgaLensFlare.h>
 #endif
 
+#include <simgear/screen/colors.hxx>
+
 #include "sphere.hxx"
 #include "oursun.hxx"
 
@@ -333,8 +335,14 @@ ssgBranch * SGSun::build( SGPath path, double sun_size ) {
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGSun::repaint( double sun_angle ) {
-    if ( sun_angle * SGD_RADIANS_TO_DEGREES < 100 ) {
-	// else sun is well below horizon (so no point in repainting it)
+    static float prev_sun_angle = 9999.0;
+
+    // else sun is well below horizon (so no point in repainting it)
+#if 0
+    if ( (sun_angle * SGD_RADIANS_TO_DEGREES < 100 )
+          && (prev_sun_angle != sun_angle))
+    {
+        prev_sun_angle = sun_angle;
     
 	// x_10 = sun_angle^10
 	double x_10 = sun_angle * sun_angle * sun_angle * sun_angle * sun_angle
@@ -347,7 +355,7 @@ bool SGSun::repaint( double sun_angle ) {
 	sgVec4 color;
 	sgSetVec4( color,
 		   (ambient * 6.0)  - 1.0, // minimum value = 0.8
-		   (ambient * 11.0) - 2.8, // minimum value = 0.5
+		   (ambient * 11.0) - 2.7, // minimum value = 0.6
 		   (ambient * 12.0) - 3.6, // minimum value = 0.0
 		   1.0 );
     
@@ -358,12 +366,34 @@ bool SGSun::repaint( double sun_angle ) {
 	if (color[1] > 1.0) color[1] = 1.0;
 	if (color[2] > 1.0) color[2] = 1.0;
 
-	// cout << "color = " << color[0] << " " << color[1] << " " 
-	//      << color[2] << endl;
+#else
 
-	float *ptr;
-	ptr = cl->get( 0 );
-	sgCopyVec4( ptr, color );
+    if (prev_sun_angle != sun_angle)
+    {
+
+        prev_sun_angle = sun_angle;
+
+        float sun_factor = 4*cos(sun_angle);
+
+        if (sun_factor > 1) sun_factor = 1.0;
+        if (sun_factor < -1) sun_factor = -1.0;
+        sun_factor = sun_factor/2 + 0.5;
+
+        sgVec4 color;
+        color[0] = pow(sun_factor, 0.25);
+        color[1] = pow(sun_factor, 0.50);
+        color[2] = pow(sun_factor, 4.0);
+        color[3] = 1.0;
+
+#endif
+        gamma_correct_rgb( color );
+
+        // cout << "color = " << color[0] << " " << color[1] << " "
+        //      << color[2] << endl;
+
+        float *ptr;
+        ptr = cl->get( 0 );
+        sgCopyVec4( ptr, color );
     }
 
     return true;

@@ -281,13 +281,19 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
 bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 			 double vis )
 {
-    double diff;
+    double diff, prev_sun_angle = 999.0;
     sgVec3 outer_param, outer_amt, outer_diff;
     sgVec3 middle_param, middle_amt, middle_diff;
     int i, j;
 
+    if (prev_sun_angle == sun_angle)
+        return true;
+
+    prev_sun_angle = sun_angle;
+
     // Check for sunrise/sunset condition
-    if ( (sun_angle > 80.0) && (sun_angle < 100.0) ) {
+    if (sun_angle > 80.0) // && (sun_angle < 100.0) )
+    {
 	// 0.0 - 0.4
 	sgSetVec3( outer_param,
 		   (10.0 - fabs(90.0 - sun_angle)) / 20.0,

@@ -38,13 +38,34 @@ const float system_gamma = 2.5;
 
 
 // simple architecture independant gamma correction function.
-inline void gamma_correct(float *color,
+inline void gamma_correct_rgb(float *color,
                           float reff = 2.5, float system = system_gamma)
 {
    color[0] = pow(color[0], reff/system);
    color[1] = pow(color[1], reff/system);
    color[2] = pow(color[2], reff/system);
 };
+
+inline void gamma_correct_c(float *color,
+                          float reff = 2.5, float system = system_gamma)
+{
+   *color = pow(*color, reff/system);
+};
+
+inline void gamma_restore_rgb(float *color,
+                          float reff = 2.5, float system = system_gamma)
+{
+   color[0] = pow(color[0], system/reff);
+   color[1] = pow(color[1], system/reff);
+   color[2] = pow(color[2], system/reff);
+};
+
+inline void gamma_restore_c(float *color,
+                          float reff = 2.5, float system = system_gamma)
+{
+   *color = pow(*color, system/reff);
+};
+
 
 #endif // _SG_COLORS_HXX
 

@@ -69,28 +69,80 @@ public:
     SGSimpleSound( unsigned char *buffer, int len );
     ~SGSimpleSound();
 
+    /**
+     * Start playing this sample.
+     *
+     * @param sched A pointer to the appropriate scheduler.
+     * @param looped Define wether the sound should be played in a loop.
+     */
     void play( slScheduler *sched, bool looped );
-    void stop( slScheduler *sched, bool quick = true );
 
+    /**
+     * Stop playing this sample.
+     *
+     * @param sched A pointer to the appropriate scheduler.
+     */
+    void stop( slScheduler *sched );
+
+    /**
+     * Play this sample once.
+     * @see #play
+     */
     inline void play_once( slScheduler *sched ) { play( sched, false); }
+
+    /** 
+     * Play this sample looped.
+     * @see #play
+     */
     inline void play_looped( slScheduler *sched ) { play( sched, true); }
+
+    /**
+     * Test if a sample is curretnly playing.
+     * @return true if is is playing, false otherwise.
+     */
     inline bool is_playing( ) {
         return ( sample->getPlayCount() > 0 );
     }
 
+    /**
+     * Get the current pitch setting of this sample.
+     */
     inline double get_pitch() const { return pitch; }
+
+    /**
+     * Set the pitch of this sample.
+     */
     inline void set_pitch( double p ) {
        pitch = p;
        pitch_envelope->setStep( 0, 0.01, pitch );
     }
+
+    /**
+     * Get the current volume setting of this sample.
+     */
     inline double get_volume() const { return volume; }
+
+    /**
+     * Set the volume of this sample.
+     */
     inline void set_volume( double v ) {
        volume = v;
        volume_envelope->setStep( 0, 0.01, volume );
     }
 
+    /**
+     * Get a refference to the raw sample.
+     */
     inline slSample *get_sample() { return sample; }
+
+    /**
+     * Get the pitch envelope setting of this sample.
+     */
     inline slEnvelope *get_pitch_envelope() { return pitch_envelope; }
+
+    /**
+     * Get the volume envelope setting of this sample.
+     */
     inline slEnvelope *get_volume_envelope() { return volume_envelope; }
 };
 
@@ -181,7 +233,16 @@ public:
     bool add( SGSimpleSound *sound, const string& refname);
 
     /**
-     * add a sound file, return the sample if successful, else return NULL
+     * Add a sound file to the sound manager.
+     *
+     * The advantage of using this function over the previous one is that
+     * it doesn't load a sample if it already is in memory, but instead it
+     * uses the already loaded sample data.
+     *
+     * @param refname A refference name to make a distincion between samples.
+     * @param path The path or full filename of the sample to load.
+     * @param file An optional filename which will be appended to the path.
+     * @return An instance of the sound for further manipulation.
      */
     SGSimpleSound *add( const string& refname,
                       const char *path, const char *file = NULL );

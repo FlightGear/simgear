@@ -44,6 +44,10 @@ static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
 /**
  * Class for handling one sound event.
  *
+ * This class handles everything for a particular sound event, by
+ * scanning an a pre-loaded property tree structure for sound
+ * settings, setting up its internal states, and managing sound
+ * playback whenever such an event happens.
  */
 class SGSound
 {
@@ -53,10 +57,58 @@ public:
   SGSound();
   virtual ~SGSound();
 
+  /**
+   * Initialize the sound event.
+   *
+   * Prior to initialization of the sound event the propgrams property root
+   * has to be defined, the sound configuration XML tree has to be loaded 
+   * and a sound manager class has to be defined.
+   *
+   * A sound configuration file would look like this:
+   *  <fx>
+   *   <event_name>
+   *    <name/> Define the name of the event. For refference only.
+   *    <mode/> Either:
+   *              looped: play this sound looped.
+   *              in-transit: play looped while the event is happening.
+   *              once: play this sound once.
+   *    <path/> The relative path to the audio file.
+   *    <property/> Take action if this property becomes true.
+   *    <condition/> Take action if this condition becomes true.
+   *    <volume> or <pitch> Define volume or pitch settings.
+   *     <property/> Take the value of this property as a refference for the
+   *                 result.
+   *     <internal/> Either:
+   *                   dt_start: the time elapsed since this sound is playing.
+   *                   dt_stop: the time elapsed since this sound has stopped.
+   *     <offset/> Add this value to the result.
+   *     <factor/> Multiply the result by this factor.
+   *     <min/> Make sure the value is never less than this value.
+   *     <max/> Make sure the value is never larger than this value.
+   *    </volume> or </pitch>
+   *   </event_name>
+   *
+   *   <event_name>
+   *   </event_name>
+   *  </fx>
+   *
+   * @param root The root node of the programs property tree.
+   * @param child A pointer to the location of the current event as defined
+   * in the configuration file.
+   * @param sndmgr A pointer to a pre-initialized sound manager class.
+   * @param path The path where the audio files remain.
+   */
   virtual void init (SGPropertyNode *, SGPropertyNode *, SGSoundMgr *,
                      const string &);
+
+  /**
+   * Check wheter an event has happened and if action has to be taken.
+   */
   virtual void update (double dt);
 
+  /**
+   * Stop taking action on the pre-defined events.
+   */
   void stop();
 
 protected:

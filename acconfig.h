@@ -182,7 +182,7 @@
 #undef HAVE_WAIT3
 
 /* Define if you have gdbm installed system wide.  */
-#undef HAVE_GDBM
+/* #undef HAVE_GDBM */
 
 /* Define if you have zlib installed system wide.  */
 #undef HAVE_ZLIB

@@ -24,11 +24,6 @@ else
 fi
 
 
-dnl Run configure in the gdbm subdir
-dnl AC_CONFIG_SUBDIRS( simgear/gdbm )
-
-
-dnl Specify if we want logging (testing build) or not (release build)
 # set logging default value
 # with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
@@ -200,14 +195,26 @@ if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
     exit
 fi
 
-dnl Check for system installed gdbm
-AC_CHECK_HEADER(gdbm.h)
-if test "x$ac_cv_header_gdbm_h" = "xyes"; then
-    AC_DEFINE( HAVE_GDBM )
-else
-    echo "no gdbm found, configuring and building."
+# dnl Check for system installed gdbm
+# AC_CHECK_HEADER(gdbm.h)
+# if test "x$ac_cv_header_gdbm_h" = "xyes"; then
+#     AC_DEFINE( HAVE_GDBM )
+# else
+#     echo "no gdbm found, configuring and building."
+# fi
+# AM_CONDITIONAL(HAVE_GDBM, test "x$ac_cv_header_gdbm_h" = "xyes" )
+
+dnl Check for system installed metakit
+AC_CHECK_HEADER(mk4.h)
+if test "x$ac_cv_header_mk4_h" != "xyes"; then
+    echo "no metakit found, configuring and building."
+    # Run configure in the metakit subdir
+    AC_CONFIG_SUBDIRS( simgear/metakit/unix )
 fi
-AM_CONDITIONAL(HAVE_GDBM, test "x$ac_cv_header_gdbm_h" = "xyes" )
+AM_CONDITIONAL(HAVE_METAKIT, test "x$ac_cv_header_mk4_h" = "xyes" )
+
+
+dnl Specify if we want logging (testing build) or not (release build)
 
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
@@ -245,7 +252,6 @@ AC_OUTPUT( \
 	simgear/version.h \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
-	simgear/gdbm/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/misc/Makefile \
@@ -256,9 +262,9 @@ AC_OUTPUT( \
 )
 
 AC_OUTPUT_COMMANDS([
-	if test "x$ac_cv_header_windows_h" = "xyes" ; then
-		cp simgear/gdbm/autoconf.h.cygwin32 simgear/gdbm/autoconf.h
-	fi
+#	if test "x$ac_cv_header_windows_h" = "xyes" ; then
+#		cp simgear/gdbm/autoconf.h.cygwin32 simgear/gdbm/autoconf.h
+#	fi
 ])
 
 echo ""
@@ -279,8 +285,12 @@ else
     echo "Electric fence: no"
 fi
 
-if test "x$ac_cv_header_gdbm_h" != "xyes"; then
-   echo "Building gdbm"
+# if test "x$ac_cv_header_gdbm_h" != "xyes"; then
+#    echo "Building gdbm"
+# fi
+
+if test "x$ac_cv_header_mk4_h" != "xyes"; then
+   echo "Building metakit"
 fi
 
 if test "x$ac_cv_header_zlib_h" != "xyes"; then

@@ -49,28 +49,26 @@ bool SGIsOpenGLExtensionSupported(char *extName);
   void* macosxGetGLProcAddress(const char *func);
 #endif
 
-inline void (*SGLookupFunction(const char *func))() {
-
+inline void (*SGLookupFunction(const char *func))()
+{
 #if defined( WIN32 ) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-        return (void (*)()) wglGetProcAddress(func);
+    return (void (*)()) wglGetProcAddress(func);
 
 #elif defined( __APPLE__ )
-	return (void (*)()) macosxGetGLProcAddress(func);
-#else
+    return (void (*)()) macosxGetGLProcAddress(func);
 
-  // If the target system s UNIX and the ARB_get_proc_address
-  // GLX extension is *not* guaranteed to be supported. An alternative
-  // dlsym-based approach will be used instead.
-  #if defined( linux ) || defined ( sgi ) || defined(__CYGWIN__) || defined(__MINGW32__)
-        void *libHandle;
-        void (*fptr)();
-        libHandle = dlopen("libGL.so", RTLD_LAZY);
-        fptr = (void (*)()) dlsym(libHandle, func);
-        dlclose(libHandle);
-        return fptr;
-  #else
-        return glXGetProcAddressARB(func);
-  #endif
+#else // UNIX
+
+    // If the target system s UNIX and the ARB_get_proc_address
+    // GLX extension is *not* guaranteed to be supported. An alternative
+    // dlsym-based approach will be used instead.
+
+    void *libHandle;
+    void (*fptr)();
+    libHandle = dlopen("libGL.so", RTLD_LAZY);
+    fptr = (void (*)()) dlsym(libHandle, func);
+    dlclose(libHandle);
+    return fptr;
 #endif
 }
 

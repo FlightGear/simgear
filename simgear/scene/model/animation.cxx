@@ -217,23 +217,34 @@ SGNullAnimation::~SGNullAnimation ()
 SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
                                     SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgRangeSelector),
-    _min(0.0), _max(0.0)
+    _min(0.0), _max(0.0), _min_factor(1.0), _max_factor(1.0)
+
 {
     float ranges[2];
 
-    SGPropertyNode_ptr node = props->getChild( "min-property" );
+    SGPropertyNode_ptr node = props->getChild( "min-factor" );
+    if (node != 0) {
+       _min_factor = props->getFloatValue("min-factor", 1.0);
+    }
+    node = props->getChild( "max-factor" );
+    if (node != 0) {
+       _max_factor = props->getFloatValue("max-factor", 1.0);
+    }
+    node = props->getChild( "min-property" );
     if (node != 0) {
        _min_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
-       ranges[0] = _min_prop->getFloatValue();
+       ranges[0] = _min_prop->getFloatValue() * _min_factor;
     } else {
-       ranges[0] = _min = props->getFloatValue("min-m", 0);
+       _min = props->getFloatValue("min-m", 0);
+       ranges[0] = _min * _min_factor;
     }
     node = props->getChild( "max-property" );
     if (node != 0) {
        _max_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
-       ranges[1] = _max_prop->getFloatValue();
+       ranges[1] = _max_prop->getFloatValue() * _max_factor;
     } else {
-       ranges[1] = _max = props->getFloatValue("max-m", 0);
+       _max = props->getFloatValue("max-m", 0);
+       ranges[1] = _max * _max_factor;
     }
     ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
 }
@@ -248,19 +259,20 @@ SGRangeAnimation::update()
     float ranges[2];
     bool upd = false;
     if (_min_prop != 0) {
-       ranges[0] = _min_prop->getFloatValue();
+       ranges[0] = _min_prop->getFloatValue() * _min_factor;
        upd = true;
     } else {
-       ranges[0] = _min;
+       ranges[0] = _min * _min_factor;
     }
     if (_max_prop != 0) {
-       ranges[1] = _max_prop->getFloatValue();
+       ranges[1] = _max_prop->getFloatValue() * _max_factor;
        upd = true;
     } else {
-       ranges[1] = _max;
+       ranges[1] = _max * _max_factor;
     }
-    if (upd)
+    if (upd) {
        ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
+    }
 }
 
 
@@ -852,6 +864,47 @@ SGTexMultipleAnimation::update()
     }
   }
   ((ssgTexTrans *)_branch)->setTransform(tmatrix);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGAlphaTestAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGAlphaTestAnimation::SGAlphaTestAnimation (SGPropertyNode *prop_root,
+                                    SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgBranch),
+    _done(false)
+{
+  _alpha_clamp = props->getFloatValue("alpha-factor", 0.0);
+}
+
+SGAlphaTestAnimation::~SGAlphaTestAnimation ()
+{
+}
+
+void SGAlphaTestAnimation::update()
+{
+  if (!_done) {
+    _done = true;
+    setAlphaClampToBranch(_branch,_alpha_clamp);
+  }
+}
+
+void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
+{
+  int nb = b->getNumKids();
+  for (int i = 0; i<nb; i++) {
+    ssgEntity *e = b->getKid(i);
+    if (e->isAKindOf(ssgTypeLeaf())) {
+      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
+      s->enable( GL_ALPHA_TEST );
+      s->setAlphaClamp( clamp );
+    } else if (e->isAKindOf(ssgTypeBranch())) {
+      setAlphaClampToBranch( (ssgBranch*)e, clamp );
+    }
+  }
 }
 
 // end of animation.cxx

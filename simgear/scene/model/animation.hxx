@@ -108,6 +108,8 @@ private:
   SGPropertyNode_ptr _max_prop;
   float _min;
   float _max;
+  float _min_factor;
+  float _max_factor;
 };
 
 
@@ -376,6 +378,23 @@ private:
   SGPropertyNode_ptr _prop;
   TexTransform* _transform;
   int _num_transforms;
+};
+
+
+/**
+ * An animation to enable the alpha test 
+ */
+class SGAlphaTestAnimation : public SGAnimation
+{
+public:
+  SGAlphaTestAnimation (SGPropertyNode *prop_root,
+                        SGPropertyNode_ptr props);
+  virtual ~SGAlphaTestAnimation ();
+  virtual void update();
+private:
+  void setAlphaClampToBranch(ssgBranch *b, float clamp);
+  bool _done;
+  float _alpha_clamp;
 };
 
 

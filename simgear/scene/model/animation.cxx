@@ -108,17 +108,13 @@ change_alpha( ssgBase *_branch, float _blend )
     return;
 
   int num_colors = ((ssgLeaf *)_branch)->getNumColours();
+  unsigned int select_ = (_blend == 1.0) ? 0x0000 : 0xffff;
 
-  if ( _blend == 1.0 ) {	// fully translucent.
-    for (i = 0; i < num_colors; i++)
-      ((ssgSelector *)_branch)->select(0x0000); // deselect item.
-  } else {
-    for (i = 0; i < num_colors; i++)
-    {
-      ((ssgSelector *)_branch)->select(0xffff);
-      float *color =  ((ssgLeaf *)_branch)->getColour(i);
-      color[3] = _blend;
-    }
+  for (i = 0; i < num_colors; i++)
+  {
+    ((ssgSelector *)_branch)->select( select_ );
+    float *color =  ((ssgLeaf *)_branch)->getColour(i);
+    color[3] = _blend;
   }
 }
 

@@ -32,8 +32,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#include <GL/glut.h>
-#include <simgear/xgl/xgl.h>
+#include GLUT_H
 
 #include "screen-dump.hxx"
 

@@ -25,11 +25,20 @@
 
 // #pragma warning( disable : 4786)
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
+#include GLUT_H
+
 #include "vec4f.hpp"
 #include "SkyUtil.hpp"
 #include "SkyTextureManager.hpp"
 #include "SkyTextureState.hpp"
-#include <GL/glut.h>
 
 // forward
 class SkyRenderable;

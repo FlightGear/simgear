@@ -19,7 +19,16 @@
 // camdisplay.cpp
 //============================================================================
 
-#include <GL/glut.h>
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
+#include GLUT_H
+
 #include "camera.hpp"
 
 //----------------------------------------------------------------------------

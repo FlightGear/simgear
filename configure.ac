@@ -6,7 +6,7 @@ dnl $Id$
 AC_INIT
 AC_CONFIG_SRCDIR([simgear/bucket/newbucket.cxx])
 
-# Require at least automake 2.52
+dnl Require at least automake 2.52
 AC_PREREQ(2.52)
 
 dnl Initialize the automake stuff
@@ -39,19 +39,21 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 
 
-# Used on the Irix platform
+AC_CANONICAL_HOST
+
+dnl Used on the Irix platform
 AR="ar"
 ARFLAGS="cru"
-OS=`uname -s`
-if test "$OS" = "IRIX" -o "$OS" = "IRIX64"; then
+case "${host}" in
+*-*-irix*)
     if test "$CXX" = "CC"; then
         AR="CC -ar"
         ARFLAGS="-o"
     fi
-fi
+    ;;
+esac
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
-
 
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir
@@ -60,8 +62,7 @@ else
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
          
-# set logging default value
-# with_logging=yes
+dnl set logging; default value of with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
 if test "x$with_logging" = "xno" ; then
     AC_DEFINE([FG_NDEBUG], 1, [Define for no logging output])
@@ -90,37 +91,25 @@ fi
 AM_CONDITIONAL(ENABLE_JPEG_SERVER, test "x$with_jpeg_factory" = "xyes")
 
 
-dnl Check for MS Windows environment
-AC_CHECK_HEADER(windows.h)
+dnl Determine an extra directories to add to include/lib search paths
+case "${host}" in
+*-apple-darwin* | *-*-mingw32*)
+    echo no EXTRA_DIRS for $host
+    ;;
 
-AC_EGREP_CPP(yes,
-[#ifdef __MINGW32__
- yes
- #endif
-],is_mingw=yes, is_mingw=no)
-
-echo "IS_MINGW = $is_mingw"
-AM_CONDITIONAL(IS_MINGW, test "x$is_mingw" = "xyes")
-
-AC_EGREP_CPP(yes,
-[#ifdef __CYGWIN__
- yes
- #endif
-],is_cygwin=yes, is_cygwin=no)
-
-echo "IS_CYGWIN = $is_cygwin"
-AM_CONDITIONAL(IS_CYGWIN, test "x$is_cygwin" = "xyes")
-
-if test "x$HOSTTYPE" != "xmacintosh" -a "x$is_mingw" != "xyes"; then
-    dnl extra library and include directories
-    EXTRA_DIRS="/usr/X11R6"
-
-    if test -d /opt/X11R6 ; then
-        EXTRA_DIRS="$EXTRA_DIRS /opt/X11R6"
+*)
+    if test -d /usr/X11R6 ; then
+        EXTRA_DIR1="/usr/X11R6"
     fi
-fi
+    if test -d /opt/X11R6 ; then
+        EXTRA_DIR2="/opt/X11R6"
+    fi
+    EXTRA_DIRS="$EXTRA_DIR1 $EXTRA_DIR2"
+    ;;
 
+esac
 wi_EXTRA_DIRS(no, ${EXTRA_DIRS})
+
 
 dnl Using AM_CONDITIONAL is a step out of the protected little 
 dnl automake fold so it is potentially dangerous.  But, we are
@@ -129,11 +118,18 @@ dnl enough.  AM_CONDITIONALS are then referenced to conditionally
 dnl build a Makefile.in from a Makefile.am which lets us define custom
 dnl includes, compile alternative source files, etc.
 
-dnl X11 might be installed on Mac OS X, don't want to use it if it is.
-if test "x$HOSTTYPE" != "xmacintosh" ; then
-    dnl Check for X11 (fancy)
+dnl X11 might be installed on Mac OS X or cygwin/mingwin, we don't want
+dnl to use it if it is.
+case "${host}" in
+*-apple-darwin* | *-*-cygwin* | *-*-mingw32*)
+    echo no fancy X11 check
+    ;;
+
+*)
     AC_PATH_XTRA
-fi
+    ;;
+
+esac
 
 dnl Checks for libraries.
 
@@ -154,8 +150,6 @@ AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a
 
 AC_CHECK_LIB(socket, socket)
 
-AC_CANONICAL_HOST
-
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
@@ -164,25 +158,27 @@ case "${host}" in
     AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
     AC_DEFINE([NOMINMAX], 1, [Define for Win32 platforms])
 
-    dnl just define these to true and hope for the best
-    ac_cv_lib_glut_glutGetModifiers="yes"
-    ac_cv_lib_glut_glutGameModeString="yes"
-
     LIBS="$LIBS -lglut32 -lglu32 -lopengl32"
     LIBS="$LIBS -luser32 -lgdi32 -lwinmm"
-    if test "x$is_mingw" = "xyes" ; then
-        EXTRA_DIRS="${EXTRA_DIRS}"
-    fi
+
+    dnl add -lwsock32 for mingwin
+    case "${host}" in
+    *-*-mingw32*)
+        LIBS="$LIBS -lwsock32"
+        ;;
+    esac
+
     echo "Will link apps with $LIBS"
-    
     ;;
+
 *-apple-darwin*)
     dnl Mac OS X
 
     LIBS="$LIBS -framework GLUT -framework OpenGL -framework Carbon -lobjc"
     ;;
+
 *)
-    dnl Reasonable stuff for X-Windows based machines
+    dnl X-Windows based machines
 
     AC_CHECK_LIB(X11, XCreateWindow)
     AC_CHECK_LIB(Xext, XShmCreateImage)
@@ -220,34 +216,23 @@ case "${host}" in
 	AC_CHECK_LIB(MesaGLU, gluLookAt)
     fi
 
-    dnl check for glut
-    AC_CHECK_LIB(glut, glutGetModifiers)
-
-    dnl test for glutGameModeString, but avoid adding glut a second time into
-    dnl the list of libraries
-    save_LIBS="$LIBS"
-    AC_CHECK_LIB(glut, glutGameModeString)
-    LIBS="$save_LIBS"
-
+    LIBS="$LIBS -lglut"
     ;;
+
 esac
 
-if test "x$ac_cv_lib_glut_glutGetModifiers" = "xno"; then
-    echo 
-    echo "Unable to find the necessary OpenGL or GLUT libraries."
-    echo "See config.log for automated test details and results ..."
-    exit 1
-fi
-
-if test "x$ac_cv_lib_glut_glutGameModeString" = "xno"; then
-    echo
-    echo "Your version of glut doesn't support game mode."
-    echo "You need to install the latest version of glut.  If your"
-    echo "distribution doesn't provide a newer version, you can get the source"
-    echo "code from:"
-    echo
-    echo "    http://reality.sgi.com/opengl/glut3/glut3.html"
-    exit 1
+dnl check for glut location
+AC_CHECK_HEADER(GL/glut.h)
+if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
+    AC_DEFINE([GLUT_H], "GL/glut.h", [Define as glut.h include location])
+else
+    AC_CHECK_HEADER(GLUT/glut.h)
+    if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
+        AC_DEFINE([GLUT_H], "GLUT/glut.h", [Define as glut.h include location])
+    else
+        echo "Neither GL/glut.h nor GLUT/glut.h found.  Cannot continue"
+        exit
+    fi
 fi
 
 opengl_LIBS="$LIBS"
@@ -256,7 +241,8 @@ LIBS="$base_LIBS"
 AC_SUBST(base_LIBS)
 AC_SUBST(opengl_LIBS)
 
-AM_CONDITIONAL(HAVE_XWINDOWS, test "x$ac_cv_lib_X11_XCreateWindow" = "xyes" )
+dnl Check for MS Windows environment
+AC_CHECK_HEADER(windows.h)
 AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
 
 # The following are C++ items that need to be tested for with the c++
@@ -311,8 +297,6 @@ fi
 
 AC_LANG_POP
 
-dnl Specify if we want logging (testing build) or not (release build)
-
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
 if test "x$ac_cv_header_zlib_h" != "xyes"; then
@@ -326,7 +310,7 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS( \
 	fcntl.h getopt.h malloc.h memory.h stdint.h stdlib.h sys/param.h \
-	sys/stat.h sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
+	sys/stat.h sys/time.h sys/timeb.h unistd.h winbase.h values.h )
 
 if test "x$ac_cv_header_stdint_h" = "xyes"; then
     AC_DEFINE([HAVE_STDINT_H], 1, [Define if stdint.h exists])
@@ -341,7 +325,8 @@ AC_STRUCT_TM
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
+AC_CHECK_FUNCS( \
+        ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 	random drand48 setitimer getitimer signal GetLocalTime rint getrusage )
 
 AM_CONFIG_HEADER(simgear/simgear_config.h)
@@ -388,6 +373,13 @@ fi
 echo -n "Automake version: ($AUTO_MAKE_VERSION) "
 automake --version | head -1
 
+if test "x$ac_cv_header_GL_glut_h" = "xyes"; then
+   echo "With GL/glut.h"
+fi
+if test "x$ac_cv_header_GLUT_glut_h" = "xyes"; then
+   echo "With GLUT/glut.h"
+fi
+
 if test "x$with_jpeg_factory" = "xyes"; then
    echo "With JPEG Factory support"
 else
@@ -399,3 +391,4 @@ if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h
 else
    echo "Threads: no threads (pthread lib not found.)"
 fi
+

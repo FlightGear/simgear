@@ -7,7 +7,7 @@
 #endif
 
 #include "xgl.h"
-#include <GL/glut.h>
+#include GLUT_H
 
 #include <stdio.h>
 #include <stdlib.h>

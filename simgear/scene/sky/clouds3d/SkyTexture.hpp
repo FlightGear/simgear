@@ -25,11 +25,20 @@
 
 // #pragma warning( disable : 4786 )
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
+#include GLUT_H
+
 #define __glext_h_
 #define __GLEXT_H_
 #define __glext_h_
 #define __GLEXT_H_
-#include <GL/glut.h>
 
 //------------------------------------------------------------------------------
 /**

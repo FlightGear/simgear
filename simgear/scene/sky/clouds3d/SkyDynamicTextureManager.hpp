@@ -26,8 +26,18 @@
 // warning for truncation of template name for browse info
 #pragma warning( disable : 4786)
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
 #include <map>
-#include <GL/glut.h>
+
+#include GLUT_H
+
 #include "SkyUtil.hpp"
 #include "SkySingleton.hpp"
 

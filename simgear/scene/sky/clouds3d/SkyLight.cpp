@@ -24,6 +24,12 @@
 #  include <simgear_config.h>
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
+#include GLUT_H
+
 #ifdef WIN32
 # ifdef _MSC_VER
 #  pragma warning( disable : 4786)
@@ -34,7 +40,6 @@
 #include "SkyLight.hpp"
 #include "SkyMaterial.hpp"
 #include "mat44.hpp"
-#include <GL/glut.h>
 
 SkyMaterial* SkyLight::s_pMaterial = NULL;
 

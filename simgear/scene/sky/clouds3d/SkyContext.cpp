@@ -24,7 +24,12 @@
 #  include <simgear_config.h>
 #endif
 
-#include <GL/glut.h>
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
+#include GLUT_H
+
 #ifndef WIN32
 #include <GL/glx.h>
 #endif

@@ -33,8 +33,7 @@
 
 #include <math.h>
 
-#include <GL/glut.h>
-#include <simgear/xgl/xgl.h>
+#include GLUT_H
 
 #include <plib/sg.h>
 

@@ -46,6 +46,7 @@
 #ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 SG_USING_STD(streambuf);
 SG_USING_STD(ostream);
+SG_USING_STD(cout);
 SG_USING_STD(cerr);
 SG_USING_STD(endl);
 #else

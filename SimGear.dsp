@@ -303,6 +303,520 @@ SOURCE=.\simgear\ephemeris\venus.cxx
 
 # End Source File
 # End Group
+# Begin Group "Lib_sginterp"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\interpreter.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\interpreter.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_javascript.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_array.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_expression.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_interpreter.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_value.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_declaration.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_instruction.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\js_library.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\lex.javascript.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_token_lex.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_token_javascript.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\scanner.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_scanner.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_scanjs.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\exbase.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\numeric.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_numeric.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\numconv.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_numconv.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\re.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_re.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_re_impl.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\exgen.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_exgen.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\string.cc
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_string.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_base.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_exbase.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_garbage.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_i18n.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_js_internals.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\interpreter\ixlib_random.hh
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sginterp"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sginterp"
+
+!ENDIF 
+
+# End Source File
+# End Group
 # Begin Group "Lib_sgio"
 
 # PROP Default_Filter ""

@@ -268,6 +268,11 @@ AC_SUBST(opengl_LIBS)
 
 AM_CONDITIONAL(HAVE_XWINDOWS, test "x$ac_cv_lib_X11_XCreateWindow" = "xyes" )
 
+# The following are C++ items that need to be tested for with the c++
+# compiler
+
+AC_LANG_PUSH(C++)
+
 dnl Check for "plib" without which we cannot go on
 AC_CHECK_HEADER(plib/pu.h)
 if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
@@ -295,6 +300,7 @@ if test "x$ac_cv_header_mk4_h" != "xyes"; then
     exit
 fi
 
+AC_LANG_POP
 
 dnl Specify if we want logging (testing build) or not (release build)
 

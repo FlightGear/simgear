@@ -1,6 +1,5 @@
 EXTRA_DIST = \
-	acsite.m4 \
-	acconfig.h \
+	acinclude.m4 \
 	autogen.sh \
 	mksymlinks.sh \
 	README.MSVC \

@@ -271,6 +271,11 @@ sgLoad3DModel( const string &fg_root, const string &path,
       throw sg_exception("Failed to load 3D model");
   }
 
+#if PLIB_VERSION > 183
+  if ( model != 0 ) {
+     makeDList( model );
+  }
+#endif
                                 // Set up the alignment node
   ssgTransform * alignmainmodel = new ssgTransform;
   if ( load_panel == 0 )
@@ -332,7 +337,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
                      sim_time_sec);
   }
 
-#if PLIB_VERSION > 183
+#if 0
   if ( model != 0 ) {
     makeDList( model );
   }

@@ -347,7 +347,7 @@ bool SGSun::repaint( double sun_angle ) {
 	sgVec4 color;
 	sgSetVec4( color,
 		   (ambient * 6.0)  - 1.0, // minimum value = 0.8
-		   (ambient * 11.0) - 3.0, // minimum value = 0.3
+		   (ambient * 11.0) - 2.8, // minimum value = 0.5
 		   (ambient * 12.0) - 3.6, // minimum value = 0.0
 		   1.0 );
     

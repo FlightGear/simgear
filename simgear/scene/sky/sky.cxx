@@ -105,7 +105,7 @@ void SGSky::build(  double sun_size, double moon_size,
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
+bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color, sgVec4 cloud_color,
 		     double sun_angle, double moon_angle,
 		     int nplanets, sgdVec3 *planet_data,
 		     int nstars, sgdVec3 *star_data )
@@ -120,7 +120,7 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
 
 	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
             if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
-                cloud_layers[i]->repaint( fog_color );
+                cloud_layers[i]->repaint( cloud_color );
             }
 	}
     } else {

@@ -261,7 +261,7 @@ public:
      * @param star_data an array of star right ascensions, declinations,
      *        and magnitudes
      */
-    bool repaint( sgVec4 sky_color, sgVec4 fog_color,
+    bool repaint( sgVec4 sky_color, sgVec4 fog_color, sgVec4 cloud_color,
 		  double sun_angle, double moon_angle,
 		  int nplanets, sgdVec3 *planet_data,
 		  int nstars, sgdVec3 *star_data );

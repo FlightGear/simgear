@@ -320,3 +320,126 @@ SKYRESULT SkyMaterial::Activate()
 }
 
 
+//------------------------------------------------------------------------------
+// Function     	  : SkyMaterial::Force
+// Description	    : 
+//------------------------------------------------------------------------------
+/**
+ * @fn SkyMaterial::Force()
+ * @brief @todo <WRITE BRIEF SkyMaterial::SetMaterialPropertiesForDisplay DOCUMENTATION>
+ * 
+ * @todo <WRITE EXTENDED SkyMaterial::SetMaterialPropertiesForDisplay FUNCTION DOCUMENTATION>
+ */ 
+SKYRESULT SkyMaterial::Force()
+{
+  // Update the cached current material, and only pass values that have changed to the GL.
+  
+  SkyMaterial *pCurrentMaterial = GraphicsContext::InstancePtr()->GetCurrentMaterial();
+  assert(NULL != pCurrentMaterial);
+
+  // basic material properties
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, &(GetDiffuse().x));
+  pCurrentMaterial->SetDiffuse(GetDiffuse());
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, &(GetSpecular().x));
+  pCurrentMaterial->SetSpecular(GetSpecular());
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, &(GetAmbient().x));
+  pCurrentMaterial->SetAmbient(GetAmbient());
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, &(GetEmissive().x));
+  pCurrentMaterial->SetEmissive(GetEmissive());
+
+  glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, GetSpecularPower());
+  pCurrentMaterial->SetSpecularPower(GetSpecularPower());
+
+  // lighting
+  if (IsLightingEnabled())
+      glEnable(GL_LIGHTING);
+  else
+      glDisable(GL_LIGHTING);
+  pCurrentMaterial->EnableLighting(IsLightingEnabled());
+
+  // color material (which material property tracks color calls)
+  glColorMaterial(GetColorMaterialFace(), GetColorMaterialMode());
+  pCurrentMaterial->SetColorMaterialFace(GetColorMaterialFace());
+  pCurrentMaterial->SetColorMaterialMode(GetColorMaterialMode());
+
+  if (IsColorMaterialEnabled()) 
+      glEnable(GL_COLOR_MATERIAL);
+  else
+      glDisable(GL_COLOR_MATERIAL);
+  pCurrentMaterial->EnableColorMaterial(IsColorMaterialEnabled());
+
+  // fog
+  glFogf(GL_FOG_MODE, GetFogMode());
+  pCurrentMaterial->SetFogMode(GetFogMode());
+
+  glFogfv(GL_FOG_COLOR, GetFogColor());
+  pCurrentMaterial->SetFogColor(GetFogColor());
+
+  glFogf(GL_FOG_DENSITY, GetFogParameter(GL_FOG_DENSITY));
+  pCurrentMaterial->SetFogParameter(GL_FOG_DENSITY, GetFogParameter(GL_FOG_DENSITY));
+
+  glFogf(GL_FOG_START, GetFogParameter(GL_FOG_START));
+  pCurrentMaterial->SetFogParameter(GL_FOG_START, GetFogParameter(GL_FOG_START));
+  glFogf(GL_FOG_END, GetFogParameter(GL_FOG_END));
+  pCurrentMaterial->SetFogParameter(GL_FOG_END, GetFogParameter(GL_FOG_END));
+
+  if (IsFogEnabled())
+      glEnable(GL_FOG);
+  else
+      glDisable(GL_FOG);
+  pCurrentMaterial->EnableFog(IsFogEnabled());
+
+  // depth test
+  glDepthFunc(GetDepthFunc());
+  pCurrentMaterial->SetDepthFunc(GetDepthFunc());
+
+  glDepthMask(GetDepthMask());
+  pCurrentMaterial->SetDepthMask(GetDepthMask());
+
+  if (IsDepthTestEnabled()) 
+      glEnable(GL_DEPTH_TEST);
+  else 
+      glDisable(GL_DEPTH_TEST);
+  pCurrentMaterial->EnableDepthTest(IsDepthTestEnabled());
+
+  // alpha test
+  glAlphaFunc(GetAlphaFunc(), GetAlphaRef());
+  pCurrentMaterial->SetAlphaFunc(GetAlphaFunc());
+  pCurrentMaterial->SetAlphaRef(GetAlphaRef());
+
+  if (IsAlphaTestEnabled()) 
+      glEnable(GL_ALPHA_TEST);
+  else
+      glDisable(GL_ALPHA_TEST);
+
+  // blending
+  glBlendFunc(GetBlendingSourceFactor(), GetBlendingDestFactor());
+  pCurrentMaterial->SetBlendFunc(GetBlendingSourceFactor(), GetBlendingDestFactor());
+
+  if (IsBlendingEnabled())
+      glEnable(GL_BLEND);
+  else
+      glDisable(GL_BLEND);
+  pCurrentMaterial->EnableBlending(IsBlendingEnabled());
+
+  glCullFace(GetFaceCullingMode());
+  pCurrentMaterial->SetFaceCullingMode(GetFaceCullingMode());
+
+  if (IsFaceCullingEnabled())
+      glEnable(GL_CULL_FACE);
+  else
+      glDisable(GL_CULL_FACE);
+  pCurrentMaterial->EnableFaceCulling(IsFaceCullingEnabled());
+
+  // texturing
+  FAIL_RETURN(_textureState.Force());
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GetTextureApplicationMode());
+  pCurrentMaterial->SetTextureApplicationMode(GetTextureApplicationMode());
+
+  return SKYRESULT_OK;
+}
+
+

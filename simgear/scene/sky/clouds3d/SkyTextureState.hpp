@@ -41,6 +41,7 @@ public: // methods
 	SkyTextureState();
 	~SkyTextureState();
 
+  SKYRESULT Force();
   SKYRESULT Activate();
 
   SKYRESULT SetTexture(unsigned int iTextureUnit, GLenum eTarget, SkyTexture& texture);

@@ -239,8 +239,10 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
   }
   else
   {//cout << "Using impostor image\n";
-    if (!_pBackTexture || (bDisplayFrontOfSplit && !_pFrontTexture))
-      FAIL_RETURN_MSG(SKYRESULT_FAIL, "SkyRenderableInstanceCloud::Display(): missing texture!");
+      if (!_pBackTexture || (bDisplayFrontOfSplit && !_pFrontTexture)) {
+          cout << "texture id failure" << endl;
+          FAIL_RETURN_MSG(SKYRESULT_FAIL, "SkyRenderableInstanceCloud::Display(): missing texture!");
+      }
 
     s_pMaterial->SetTexture(0, GL_TEXTURE_2D, bDisplayFrontOfSplit ? *_pFrontTexture : *_pBackTexture);     
     if (_bScreenImpostor)
@@ -264,6 +266,7 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
     }
      
     s_pMaterial->Activate();
+    // s_pMaterial->Force();
 
     Vec3f x, y, z;
     

@@ -397,6 +397,7 @@ SKYRESULT SkySceneManager::Update(const Camera &cam)
 SKYRESULT SkySceneManager::Display( const Camera &cam )
 
 {
+  // _clearMaterial.Force();
   _clearMaterial.Activate();
   //glClear(GL_DEPTH_BUFFER_BIT);
 

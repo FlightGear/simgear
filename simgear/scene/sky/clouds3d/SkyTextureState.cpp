@@ -106,12 +106,12 @@ SKYRESULT SkyTextureState::Activate()
     {
       GLenum eTarget    = GetActiveTarget(i);
       unsigned int iID  = GetTextureID(i);
-      if ((pCurrent->GetActiveTarget(i) != eTarget) ||
-          (pCurrent->GetTextureID(i)    != iID))
-      {
+      // if ((pCurrent->GetActiveTarget(i) != eTarget) ||
+      //     (pCurrent->GetTextureID(i)    != iID))
+      // {
         FAIL_RETURN(pCurrent->SetTexture(i, eTarget, iID));
         glBindTexture(eTarget, iID);
-      }
+      // }
       //GLVU::CheckForGLError("SkyTextureState::Activate(5)");
       GLenum paramValue = GetTextureParameter(i, GL_TEXTURE_WRAP_S);
       if (pCurrent->GetTextureParameter(i, GL_TEXTURE_WRAP_S) != paramValue) 
@@ -149,6 +149,76 @@ SKYRESULT SkyTextureState::Activate()
       }
       //GLVU::CheckForGLError("SkyTextureState::Activate()");
     }
+#ifdef GL_ARB_multitexture
+    if (s_iNumTextureUnits > 1)
+      glActiveTextureARB(GL_TEXTURE0_ARB);
+#endif
+  }
+  return SKYRESULT_OK;
+}
+
+
+//------------------------------------------------------------------------------
+// Function     	  : SkyTextureState::Force
+// Description	    : 
+//------------------------------------------------------------------------------
+/**
+ * @fn SkyTextureState::Force()
+ * @brief @todo <WRITE BRIEF SkyTextureState::Activate DOCUMENTATION>
+ * 
+ * @todo <WRITE EXTENDED SkyTextureState::Activate FUNCTION DOCUMENTATION>
+ */ 
+SKYRESULT SkyTextureState::Force()
+{
+  SkyTextureState *pCurrent = GraphicsContext::InstancePtr()->GetCurrentTextureState();
+  assert(NULL != pCurrent);
+  //GLVU::CheckForGLError("SkyTextureState::Activate(8)");
+  for (unsigned int i = 0; i < s_iNumTextureUnits; ++i)
+  {
+#ifdef GL_ARB_multitexture
+    if (s_iNumTextureUnits > 1)
+      glActiveTextureARB(GL_TEXTURE0_ARB + i);
+#endif
+    bool bEnabled = IsTextureEnabled(i);
+    FAIL_RETURN(pCurrent->EnableTexture(i, bEnabled));
+    //GLVU::CheckForGLError("SkyTextureState::Activate(7)");
+    if (bEnabled)
+        glEnable(GetActiveTarget(i));
+    else
+        glDisable(GetActiveTarget(i));
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(6)");
+    GLenum eTarget    = GetActiveTarget(i);
+    unsigned int iID  = GetTextureID(i);
+
+    FAIL_RETURN(pCurrent->SetTexture(i, eTarget, iID));
+    glBindTexture(eTarget, iID);
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(5)");
+    GLenum paramValue = GetTextureParameter(i, GL_TEXTURE_WRAP_S);
+    FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_WRAP_S, paramValue));
+    glTexParameteri(eTarget, GL_TEXTURE_WRAP_S, paramValue);
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(4)");
+    paramValue = GetTextureParameter(i, GL_TEXTURE_WRAP_T);
+    FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_WRAP_T, paramValue));
+    glTexParameteri(eTarget, GL_TEXTURE_WRAP_T, paramValue);
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(3)");
+    paramValue = GetTextureParameter(i, GL_TEXTURE_WRAP_R);
+    FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_WRAP_R, paramValue));
+    glTexParameteri(eTarget, GL_TEXTURE_WRAP_R, paramValue);
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(2)");
+    paramValue = GetTextureParameter(i, GL_TEXTURE_MIN_FILTER);
+    FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_MIN_FILTER, paramValue));
+    glTexParameteri(eTarget, GL_TEXTURE_MIN_FILTER, paramValue);
+
+    //GLVU::CheckForGLError("SkyTextureState::Activate(1)");
+    paramValue = GetTextureParameter(i, GL_TEXTURE_MAG_FILTER);
+    FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_MAG_FILTER, paramValue));
+    glTexParameteri(eTarget, GL_TEXTURE_MIN_FILTER, paramValue);
+
 #ifdef GL_ARB_multitexture
     if (s_iNumTextureUnits > 1)
       glActiveTextureARB(GL_TEXTURE0_ARB);

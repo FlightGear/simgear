@@ -51,6 +51,7 @@ public:
   ~SkyMaterial();
   
   SKYRESULT     Activate();
+  SKYRESULT     Force();
 
   // Getters for basic material properties
 

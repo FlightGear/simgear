@@ -56,8 +56,11 @@ void fgGeocToGeod( double lat_geoc, double radius, double
 	*sea_level_r = EQUATORIAL_RADIUS_M*E;
 	*alt = radius - *sea_level_r;
     } else {
+	// cout << "  lat_geoc = " << lat_geoc << endl;
 	t_lat = tan(lat_geoc);
+	// cout << "  tan(t_lat) = " << t_lat << endl;
 	x_alpha = E*EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
+	// cout << "  x_alpha = " << x_alpha << endl;
 	double tmp = RESQ_M - x_alpha * x_alpha;
 	if ( tmp < 0.0 ) { tmp = 0.0; }
 	mu_alpha = atan2(sqrt(tmp),E*x_alpha);

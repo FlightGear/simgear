@@ -127,7 +127,10 @@
 // Microsoft compilers.
 //
 #ifdef _MSC_VER
-#  if _MSC_VER == 1200 // msvc++ 6.0
+#  define bcopy(from, to, n) memcpy(to, from, n)
+#  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
+
+#  if _MSC_VER == 1200  // msvc++ 6.0
 #    define FG_NAMESPACES
 #    define FG_HAVE_STD
 #    define FG_HAVE_STD_INCLUDES
@@ -147,7 +150,25 @@
 #    pragma warning(disable: 4305) //
 
 #  elif _MSC_VER == 1100 // msvc++ 5.0
-#    error MSVC++ 5.0 still to be supported...
+#    define NEEDNAMESPACESTD
+#    define FG_NAMESPACES
+#    define FG_HAVE_STD
+#    define FG_HAVE_STD_INCLUDES
+#    define FG_HAVE_STREAMBUF
+
+#    define STL_ALGORITHM  <algorithm>
+#    define STL_FUNCTIONAL <functional>
+#    define STL_IOMANIP    <iomanip>
+#    define STL_IOSTREAM   <iostream>
+#    define STL_FSTREAM    <fstream>
+#    define STL_STDEXCEPT  <stdexcept>
+#    define STL_STRING     <string>
+#    define STL_STRSTREAM  <strstream>
+
+#    pragma warning(disable: 4786) // identifier was truncated to '255' characters
+#    pragma warning(disable: 4244) // conversion from double to float
+#    pragma warning(disable: 4305) //
+
 #  else
 #    error What version of MSVC++ is this?
 #  endif

@@ -30,7 +30,7 @@
 #endif                                   
 
 
-#include <ssg.h>		// plib include
+#include <plib/ssg.h>		// plib include
 
 
 class fgSky : ssgLeaf

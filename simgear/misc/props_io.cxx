@@ -30,7 +30,7 @@ SG_USING_STD(string);
 SG_USING_STD(vector);
 SG_USING_STD(map);
 
-#define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE|SGPropertyNode::ARCHIVE)
+#define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE)
 
 
 
@@ -108,18 +108,20 @@ PropsVisitor::endXML ()
 
 
 /**
- * Check a yes/no flag that defaults to 'yes'.
+ * Check a yes/no flag, with default.
  */
 static bool
-checkFlag (const char * flag)
+checkFlag (const char * flag, bool defaultState = true)
 {
-  if (flag == 0 || string(flag) == "y")
+  if (flag == 0)
+    return defaultState;
+  else if (string(flag) == "y")
     return true;
   else if (string(flag) == "n")
     return false;
   else {
     SG_LOG(SG_INPUT, SG_ALERT, "Unrecognized flag value '" << flag
-	   << "', assuming 'y'");
+	   << "', assuming yes");
     return true;
   }
 }
@@ -161,13 +163,13 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     int mode = 0;
 
     attval = atts.getValue("read");
-    if (checkFlag(attval))
+    if (checkFlag(attval, true))
       mode |= SGPropertyNode::READ;
     attval = atts.getValue("write");
-    if (checkFlag(attval))
+    if (checkFlag(attval, true))
       mode |= SGPropertyNode::WRITE;
     attval = atts.getValue("archive");
-    if (checkFlag(attval))
+    if (checkFlag(attval, false))
       mode |= SGPropertyNode::ARCHIVE;
 
 				// Check for an alias.
@@ -382,17 +384,38 @@ writeAtts (ostream &output, const SGPropertyNode * node)
   int index = node->getIndex();
 
   if (index != 0)
-    output << " n = \"" << index << '"';
+    output << " n=\"" << index << '"';
 
+#if 0
   if (!node->getAttribute(SGPropertyNode::READ))
     output << " read=\"n\"";
 
   if (!node->getAttribute(SGPropertyNode::WRITE))
     output << " write=\"n\"";
 
-  if (!node->getAttribute(SGPropertyNode::ARCHIVE))
-    output << " archive=\"n\"";
+  if (node->getAttribute(SGPropertyNode::ARCHIVE))
+    output << " archive=\"y\"";
+#endif
 
+}
+
+
+/**
+ * Test whether a node is archivable or has archivable descendants.
+ */
+static bool
+isArchivable (const SGPropertyNode * node)
+{
+  // FIXME: it's inefficient to do this all the time
+  if (node->getAttribute(SGPropertyNode::ARCHIVE))
+    return true;
+  else {
+    int nChildren = node->nChildren();
+    for (int i = 0; i < nChildren; i++)
+      if (isArchivable(node->getChild(i)))
+	return true;
+  }
+  return false;
 }
 
 
@@ -402,7 +425,7 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// Don't write the node or any of
 				// its descendants unless it is
 				// allowed to be archived.
-  if (!node->getAttribute(SGPropertyNode::ARCHIVE))
+  if (!isArchivable(node))
     return true;		// Everything's OK, but we won't write.
 
   const string &name = node->getName();
@@ -411,7 +434,7 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 
 				// If there is a literal value,
 				// write it first.
-  if (node->hasValue()) {
+  if (node->hasValue() && node->getAttribute(SGPropertyNode::ARCHIVE)) {
     doIndent(output, indent);
     output << '<' << name;
     writeAtts(output, node);

@@ -255,9 +255,9 @@ bool SGBinObject::read_bin( const string& file ) {
 
 		double *dptr = (double *)ptr;
 		if ( sgIsBigEndian() ) {
-		    sgEndianSwap( (unsigned long long *)&(dptr[0]) );
-		    sgEndianSwap( (unsigned long long *)&(dptr[1]) );
-		    sgEndianSwap( (unsigned long long *)&(dptr[2]) );
+		    sgEndianSwap( (uint64 *)&(dptr[0]) );
+		    sgEndianSwap( (uint64 *)&(dptr[1]) );
+		    sgEndianSwap( (uint64 *)&(dptr[2]) );
 		}
 		gbs_center = Point3D( dptr[0], dptr[1], dptr[2] );
 		// cout << "Center = " << gbs_center << endl;

@@ -38,6 +38,13 @@
 
 #include <plib/sg.h>
 
+#ifdef _MSC_VER
+typedef __int64 int64;
+typedef __int64 uint64;
+#else
+typedef long long int64;
+typedef unsigned long long uint64;
+#endif
 
 // Note that output is written in little endian form (and converted as
 // necessary for big endian machines)
@@ -54,8 +61,8 @@ void sgReadInt ( gzFile fd, int *var ) ;
 void sgWriteInt ( gzFile fd, const int var ) ;
 void sgReadLong ( gzFile fd, long int *var ) ;
 void sgWriteLong ( gzFile fd, const long int var ) ;
-void sgReadLongLong ( gzFile fd, long long int *var ) ;
-void sgWriteLongLong ( gzFile fd, const long long int var ) ;
+void sgReadLongLong ( gzFile fd, int64 *var ) ;
+void sgWriteLongLong ( gzFile fd, const int64 var ) ;
 void sgReadUShort ( gzFile fd, unsigned short *var ) ;
 void sgWriteUShort ( gzFile fd, const unsigned short var ) ;
 void sgReadShort ( gzFile fd, short *var ) ;
@@ -143,7 +150,8 @@ inline void sgEndianSwap(unsigned int *x) {
         (( *x << 24 ) & 0xFF000000 ) ;
 }
   
-inline void sgEndianSwap(unsigned long long *x) {
+inline void sgEndianSwap(uint64 *x) {
+#ifndef _MSC_VER
     *x =
         (( *x >> 56 ) & 0x00000000000000FFULL ) | 
         (( *x >> 40 ) & 0x000000000000FF00ULL ) | 
@@ -153,7 +161,17 @@ inline void sgEndianSwap(unsigned long long *x) {
         (( *x << 24 ) & 0x0000FF0000000000ULL ) |
         (( *x << 40 ) & 0x00FF000000000000ULL ) |
         (( *x << 56 ) & 0xFF00000000000000ULL ) ;
+#else
+    *x =
+        (( *x >> 56 ) & 0x00000000000000FF ) | 
+        (( *x >> 40 ) & 0x000000000000FF00 ) | 
+        (( *x >> 24 ) & 0x0000000000FF0000 ) | 
+        (( *x >>  8 ) & 0x00000000FF000000 ) | 
+        (( *x <<  8 ) & 0x000000FF00000000 ) | 
+        (( *x << 24 ) & 0x0000FF0000000000 ) |
+        (( *x << 40 ) & 0x00FF000000000000 ) |
+        (( *x << 56 ) & 0xFF00000000000000 ) ;
+#endif
 }
-  
 
 #endif // _SG_LOWLEVEL_HXX

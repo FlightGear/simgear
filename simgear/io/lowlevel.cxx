@@ -79,7 +79,7 @@ void sgReadDouble ( gzFile fd, double *var )
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (unsigned long long*)var);
+        sgEndianSwap( (uint64*)var);
     }
 }
 
@@ -87,7 +87,7 @@ void sgReadDouble ( gzFile fd, double *var )
 void sgWriteDouble ( gzFile fd, const double var )
 {
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (unsigned long long*)&var);
+        sgEndianSwap( (uint64*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) != sizeof(double) ) {
         write_error = true ;
@@ -165,24 +165,24 @@ void sgWriteLong ( gzFile fd, const long int var )
 }
 
 
-void sgReadLongLong ( gzFile fd, long long int *var )
+void sgReadLongLong ( gzFile fd, int64 *var )
 {
-    if ( gzread ( fd, var, sizeof(long long int) ) != sizeof(long long int) ) {
+    if ( gzread ( fd, var, sizeof(int64) ) != sizeof(int64) ) {
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (unsigned long long int*)var);
+        sgEndianSwap( (uint64*)var);
     }
 }
 
 
-void sgWriteLongLong ( gzFile fd, const long long int var )
+void sgWriteLongLong ( gzFile fd, const int64 var )
 {
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (unsigned long long*)&var);
+        sgEndianSwap( (uint64*)&var);
     }
-    if ( gzwrite ( fd, (void *)(&var), sizeof(long long int) )
-         != sizeof(long long int) )
+    if ( gzwrite ( fd, (void *)(&var), sizeof(int64) )
+         != sizeof(int64) )
     {
         write_error = true ;
     }
@@ -273,7 +273,7 @@ void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
-            sgEndianSwap( (unsigned long long*)var++);
+            sgEndianSwap( (uint64*)var++);
         }
     }
 }
@@ -286,7 +286,7 @@ void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
         double *ptr = swab;
         memcpy( swab, var, sizeof(double) * n );
         for ( unsigned int i = 0; i < n; ++i ) {
-            sgEndianSwap( (unsigned long long*)ptr++);
+            sgEndianSwap( (uint64*)ptr++);
         }
         var = swab;
     }

@@ -25,7 +25,9 @@ typedef enum {
     SG_NETWORK   = 0x00004000,
     SG_ATC       = 0x00008000,
     SG_NASAL     = 0x00010000,
-    SG_UNDEFD    = 0x00020000, // For range checking
+    SG_INSTR     = 0x00020000,
+    SG_SYSTEMS   = 0x00040000,
+    SG_UNDEFD    = 0x00080000, // For range checking
 
     SG_ALL     = 0xFFFFFFFF
 } sgDebugClass;

@@ -1,13 +1,5 @@
-#pragma comment(compiler)
-#pragma comment(date)
-#pragma comment(timestamp)
- 
 #include <stdlib.h>
  
-#pragma title("antoi - char array to integer")
-#pragma pagesize (80)
- 
-#pragma page(1)
 /********************************************************************/
 /*                                                                  */
 /*  Title:         antoi                                            */
@@ -78,4 +70,3 @@ int antoi(char * string, int len)
  
 } /* end antoi */
  
-#pragma page(1)

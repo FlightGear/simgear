@@ -1,9 +1,6 @@
 #include "Local.h"     /* standard header file */
 #include "Metar.h"
  
-#pragma subtitle(" ")
-#pragma page(1)
-#pragma subtitle("subtitle - description                       ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         fracPart                                         */
@@ -26,7 +23,6 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
  
 float fracPart( char *string )
 {

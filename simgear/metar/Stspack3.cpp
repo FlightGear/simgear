@@ -1,13 +1,5 @@
-#pragma comment (compiler)
-//#pragma comment (date)
-//#pragma comment (timestamp)
-#pragma pagesize(80)
- 
 #include "Local.h"     /* standard header file */
  
-#pragma page(1)
-#pragma subtitle(" ")
-#pragma subtitle("stspack3 - Local string test functions       ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         stspack3                                         */
@@ -75,7 +67,6 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
 char *nxtalnum(char *s) {
  
    for (; !isalnum(*s) && *s; s++) ;
@@ -208,4 +199,3 @@ char *nxtxdigi(char *s) {
 } /* end nxtxdigi */
  
  
-#pragma page(1)

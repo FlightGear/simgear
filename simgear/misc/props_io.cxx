@@ -343,6 +343,9 @@ getTypeName (SGPropertyNode::Type type)
     return "double";
   case SGPropertyNode::STRING:
     return "string";
+  case SGPropertyNode::ALIAS:
+  case SGPropertyNode::NONE:
+    return "unspecified";
   }
 
   // keep the compiler from squawking
@@ -434,7 +437,6 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
     return true;		// Everything's OK, but we won't write.
 
   const string &name = node->getName();
-  int index = node->getIndex();
   int nChildren = node->nChildren();
 
 				// If there is a literal value,

@@ -1,13 +1,5 @@
-#pragma comment (compiler)
-//#pragma comment (date)
-//#pragma comment (timestamp)
-#pragma pagesize(80)
- 
 #include "Local.h"     /* standard header file */
  
-#pragma page(1)
-#pragma subtitle(" ")
-#pragma subtitle("stspack2 - Local string test functions       ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         stspack2                                         */
@@ -75,7 +67,6 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
  
 int nisalnum(char *s, int n) {
  
@@ -208,4 +199,3 @@ int nisxdigi(char *s, int n) {
  
 } /* end nisxdigi */
  
-#pragma page(1)

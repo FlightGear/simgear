@@ -1,8 +1,5 @@
 #include "Metar.h"
  
-#pragma page(1)
-#pragma subtitle(" ")
-#pragma subtitle("subtitle - description                       ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         dRVMETAR                                         */
@@ -29,10 +26,8 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
-main()
+int main()
 {
-   char bltn_prefix[20];
    static char *string[] =
   {
   "KAST 221156Z COR 09005KT 7SM -RA OVC026 09/08 A2996 RMK "
@@ -516,7 +511,6 @@ NULL,
    Decoded_METAR *Mptr = &Metar;
    int j,
        ErReturn;
-   static char *synopRTRN = NULL;
  
  
    /***************************************************/
@@ -541,4 +535,5 @@ NULL,
  
    }
  
+   return 0;
 }

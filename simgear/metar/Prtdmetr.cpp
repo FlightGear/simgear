@@ -1,7 +1,5 @@
 #include "Local.h"     /* standard header file */
 #include "Metar.h"
-#pragma page(1)
-#pragma subtitle("subtitle - description                       ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         prtDMETR                                         */
@@ -25,7 +23,6 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
 void prtDMETR( Decoded_METAR *Mptr )
 {
  

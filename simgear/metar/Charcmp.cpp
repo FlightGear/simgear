@@ -1,13 +1,5 @@
-#pragma comment (compiler)
-//#pragma comment (date)
-//#pragma comment (timestamp)
-#pragma pagesize(80)
- 
 #include "Local.h"     /* standard header file */
  
-#pragma subtitle(" ")
-#pragma page(1)
-#pragma subtitle("charcmp - characters compare with patterns  ")
 /********************************************************************/
 /*                                                                  */
 /*  Title:         charcmp                                          */
@@ -34,7 +26,6 @@
 /*                 None.                                            */
 /*                                                                  */
 /********************************************************************/
-#pragma page(1)
  
 bool charcmp(char *str, char *pattern)
 {

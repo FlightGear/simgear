@@ -1,26 +1,21 @@
-// props.hxx -- class to manage global FlightGear properties.
+// props.hxx -- declaration of SimGear Property Manager.
 //
-// Copyright (C) 2000  David Megginson - david@megginson.com
+// Written by David Megginson - david@megginson.com
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This module is in the PUBLIC DOMAIN.
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+// See props.html for documentation [replace with URL when available].
 //
 // $Id$
 
-
 #ifndef __PROPS_HXX
 #define __PROPS_HXX
+
+#include <stdio.h>
 
 #include <string>
 #include <map>
@@ -93,6 +88,7 @@ public:
   virtual bool setFloatValue (float value);
   virtual bool setDoubleValue (double value);
   virtual bool setStringValue (const string &value);
+  virtual bool setUnknownValue (const string &value);
 
 				// Tie to external variables.
   virtual bool tieBool (bool_getter getter,
@@ -112,11 +108,7 @@ public:
 			  bool useDefault = true);
 
 				// Untie from external variables.
-  virtual bool untieBool ();
-  virtual bool untieInt ();
-  virtual bool untieFloat ();
-  virtual bool untieDouble ();
-  virtual bool untieString ();
+  virtual bool untie ();
 
 protected:
 
@@ -137,6 +129,8 @@ private:
   Type _type;
   bool _tied;
 
+  mutable string string_val;
+
 				// The value is one of the following...
   union {
 
@@ -144,7 +138,6 @@ private:
     int int_val;
     float float_val;
     double double_val;
-    string * string_val;
 
     struct {
       bool_setter setter;
@@ -249,6 +242,7 @@ public:
   virtual bool setFloatValue (const string &name, float value);
   virtual bool setDoubleValue (const string &name, double value);
   virtual bool setStringValue (const string &name, const string &value);
+  virtual bool setUnknownValue (const string &name, const string &value);
 
   virtual bool tieBool (const string &name,
 			bool_getter getter,
@@ -271,16 +265,80 @@ public:
 			  string_setter setter = 0,
 			  bool useDefault = true);
 
-  virtual bool untieBool (const string &name);
-  virtual bool untieInt (const string &name);
-  virtual bool untieFloat (const string &name);
-  virtual bool untieDouble (const string &name);
-  virtual bool untieString (const string &name);
-
-  virtual void dumpToLog () const;
+  virtual bool untie (const string &name);
 
 private:
   value_map _props;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Tree/node/directory view.
+////////////////////////////////////////////////////////////////////////
+
+
+/**
+ * Tree view of a property list.
+ *
+ * This class provides a virtual tree view of a property list, without
+ * actually constructing a tree -- the view always stays in sync with
+ * the property list itself.
+ *
+ * This class is designed to be used for setup and configuration; it is
+ * optimized for ease of use rather than performance, and shouldn't be
+ * used inside a tight loop.
+ *
+ * Every node is actually just a path together with a pointer to
+ * the real property list and a few convenient operations; to the
+ * user, however, it looks like a node in a tree or a file system,
+ * with the regular operations such as getChild and getParent.
+ *
+ * Note that a node may be both a branch and a leaf -- that is, it
+ * may have a value itself and it may have children.  Here is a simple
+ * example that prints the names of all of the different nodes inside 
+ * "/controls":
+ *
+ *   FGPropertyNode controls("/controls", current_property_list);
+ *   FGPropertyNode child;
+ *   int size = controls.size();
+ *   for (int i = 0; i < size; i++) {
+ *     if (controls.getChild(child, i))
+ *       cout << child.getName() << endl;
+ *     else
+ *       cerr << "Failed to read child " << i << endl;
+ *   }
+ */
+class FGPropertyNode
+{
+public:
+				// Constructor and destructor
+  FGPropertyNode (const string &path = "", FGPropertyList * props = 0);
+  virtual ~FGPropertyNode ();
+
+				// Accessor and setter for the internal
+				// path.
+  virtual const string &getPath () const { return _path; }
+  virtual void setPath (const string &path);
+
+				// Accessor and setter for the real
+				// property list.
+  virtual FGPropertyList * getPropertyList () { return _props; }
+  virtual void setPropertyList (FGPropertyList * props) {
+    _props = props;
+  }
+
+				// Accessors for derived information.
+  virtual int size () const;
+  virtual const string &getName () const;
+  virtual FGValue * getValue ();
+  virtual bool getParent (FGPropertyNode &parent) const;
+  virtual bool getChild (FGPropertyNode &child, int n) const;
+
+private:
+  string _path;
+  mutable string _name;		// for pointer persistence only
+  FGPropertyList * _props;
 };
 
 
@@ -293,3 +351,5 @@ extern FGPropertyList current_properties;
 
 
 #endif __PROPS_HXX
+
+// end of props.hxx

@@ -5,7 +5,7 @@ SGTHREAD_DIR =
 endif
 
 # METAR_DIRS =
-METAR_DIRS = metar environment
+METAR_DIRS = environment
 
 EXTRA_DIST = simgear_config.h.vc5 version.h.in
 
@@ -35,4 +35,4 @@ SUBDIRS = \
 	timing \
 	xgl
 
-DIST_SUBDIRS = $(SUBDIRS) compatibility metar threads
+DIST_SUBDIRS = $(SUBDIRS) compatibility threads

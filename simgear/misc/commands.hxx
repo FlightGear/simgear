@@ -11,15 +11,17 @@
 #define __COMMANDS_HXX
 
 
-#include <string>
+#include <simgear/compiler.h>
+
+#include STL_STRING
 #include <map>
 #include <vector>
 
 #include "props.hxx"
 
-using std::string;
-using std::map;
-using std::vector;
+SG_USING_STD(string);
+SG_USING_STD(map);
+SG_USING_STD(vector);
 
 
 /**

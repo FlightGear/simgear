@@ -80,6 +80,12 @@ public:
     void append( const string& p );
 
     /**
+     * Append a new piece to the existing path.  Inserts a search path
+     * separator to the existing path and the new patch component.
+     * @param p additional path component */
+    void add( const string& p );
+
+    /**
      * Concatenate a string to the end of the path without inserting a
      * path separator.
      * @param p addtional path suffix

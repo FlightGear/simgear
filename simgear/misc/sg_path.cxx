@@ -112,6 +112,11 @@ void SGPath::append( const string& p ) {
     fix();
 }
 
+//add a new path component to the existing path string
+void SGPath::add( const string& p ) {
+    append( sgSearchPathSep+p );
+}
+
 
 // concatenate a string to the end of the path without inserting a
 // path separator

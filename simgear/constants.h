@@ -123,7 +123,7 @@
 
 /** Highest binobj format version we know how to read/write.  This starts at
  *  0 and can go up to 65535 */
-#define SG_BINOBJ_VERSION 5
+#define SG_BINOBJ_VERSION 6
 
 /** for backwards compatibility */
 #define SG_SCENERY_FILE_FORMAT "0.4"

@@ -320,8 +320,8 @@ bool SGBinObject::read_bin( const string& file ) {
     if ( (fp = gzopen( file.c_str(), "rb" )) == NULL ) {
 	string filegz = file + ".gz";
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
-	    // cout << "ERROR: opening " << file << " or " << filegz
-	    //      << "for reading!" << endl;
+	    cout << "ERROR: opening " << file << " or " << filegz
+	         << "for reading!" << endl;
 
 	    return false;
 	}

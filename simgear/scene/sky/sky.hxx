@@ -80,10 +80,10 @@ typedef layer_list_type::const_iterator layer_list_const_iterator;
  * texture_path() method.
 
  * The arguments you pass to the build() method allow you to specify
- * the size of your sun sphere and moon sphere, a number of planets,
- * and a multitude of stars.  For the planets and stars you pass in an
- * array of right ascensions, declinations, magnitudes, and the
- * distance from the view point.
+ * the horizontal and vertical radiuses of the sky dome, the size of
+ * your sun sphere and moon sphere, a number of planets, and a
+ * multitude of stars.  For the planets and stars you pass in an array
+ * of right ascensions, declinations, and magnitudes.
 
  * Cloud Layers 
 
@@ -223,19 +223,21 @@ public:
      * Initialize the sky and connect the components to the scene
      * graph at the provided branch.  See discussion in detailed class
      * description.
+     * @param h_radius_m horizontal radius of sky dome
+     * @param v_radius_m vertical radius of sky dome
      * @param sun_size size of sun
      * @param moon_size size of moon
      * @param nplanets number of planets
      * @param planet_data an array of planet right ascensions, declinations,
      *        and magnitudes
-     * @param planet_dist distance from viewer to put the planets
      * @param nstars number of stars
      * @param star_data an array of star right ascensions, declinations,
      *        and magnitudes
-     * @param star_dist distance from viewer to put the stars */
-    void build( double sun_size, double moon_size,
-		int nplanets, sgdVec3 *planet_data, double planet_dist,
-		int nstars, sgdVec3 *star_data, double star_dist );
+     */
+    void build( double h_radius_m, double v_radius_m,
+                double sun_size, double moon_size,
+		int nplanets, sgdVec3 *planet_data,
+		int nstars, sgdVec3 *star_data );
 
     /**
      * Repaint the sky components based on current value of sun_angle,

@@ -33,6 +33,11 @@
  *   planets for a given time, date, season, earth location, etc.
  *   (SGEphemeris)
  *
+ * - Code to render a realistic sky dome, cloud layers, sun, moon,
+ *   stars, and planets all with realistic day/night/sunset/sunrise
+ *   effects.  Includes things like correct moon phase, textured moon,
+ *   sun halo, etc. (SGSky is built on top of SGCloudLayer ...)
+ *
  * - Simple serial (SGSerial), file (SGFile), socket (SGSocket), and
  *   UDP socket (SGSocketUDP) I/O abstractions.
  *

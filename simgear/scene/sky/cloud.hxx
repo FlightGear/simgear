@@ -1,5 +1,8 @@
-// cloud.hxx -- model a single cloud layer
-//
+/**
+ * \file cloud.hxx
+ * Provides a class to model a single cloud layer
+ */
+
 // Written by Curtis Olson, started June 2000.
 //
 // Copyright (C) 2000  Curtis L. Olson  - curt@flightgear.org
@@ -33,10 +36,15 @@
 SG_USING_STD(string);
 
 
+/**
+ * A class layer to model a single cloud layer
+ */
 class SGCloudLayer {
-
 public:
 
+    /**
+     * This is the list of available cloud coverages/textures
+     */
     enum Coverage {
 	SG_CLOUD_OVERCAST = 0,
 	SG_CLOUD_BROKEN,
@@ -47,48 +55,85 @@ public:
 	SG_MAX_CLOUD_COVERAGES
     };
 
-    // Constructors
+    /**
+     * Constructor
+     * @param tex_path the path to the set of cloud textures
+     */
     SGCloudLayer( const string &tex_path );
 
-    // Destructor
+    /**
+     * Destructor
+     */
     ~SGCloudLayer( void );
 
+    /** get the cloud span (in meters) */
     float getSpan_m () const;
+    /**
+     * set the cloud span
+     * @param span_m the cloud span in meters
+     */
     void setSpan_m (float span_m);
 
+    /** get the layer elevation (in meters) */
     float getElevation_m () const;
+    /**
+     * set the layer elevation.  Note that this specifies the bottom
+     * of the cloud layer.  The elevation of the top of the layer is
+     * elevation_m + thickness_m.
+     * @param elevation_m the layer elevation in meters
+     */
     void setElevation_m (float elevation_m);
 
+    /** get the layer thickness */
     float getThickness_m () const;
+    /**
+     * set the layer thickness.
+     * @param thickness_m the layer thickness in meters.
+     */
     void setThickness_m (float thickness_m);
 
+    /**
+     * get the transition/boundary layer depth in meters.  This
+     * allows gradual entry/exit from the cloud layer via adjusting
+     * visibility.
+     */
     float getTransition_m () const;
+    /**
+     * set the transition layer size in meters
+     * @param transition_m the transition layer size in meters
+     */
     void setTransition_m (float transition_m);
 
+    /** get coverage type */
     Coverage getCoverage () const;
+    /**
+     * set coverage type
+     * @param coverage the coverage type
+     */
     void setCoverage (Coverage coverage);
 
-    // build the cloud object
+    /** build the cloud object */
     void rebuild();
 
-    // repaint the cloud colors based on current value of sun_angle,
-    // sky, and fog colors.  This updates the color arrays for
-    // ssgVtxTable.
-    // sun angle in degrees relative to verticle
-    // 0 degrees = high noon
-    // 90 degrees = sun rise/set
-    // 180 degrees = darkest midnight
+    /**
+     * repaint the cloud colors based on the specified fog_color
+     * @param fog_color the fog color
+     */
     bool repaint( sgVec3 fog_color );
 
-    // reposition the cloud layer at the specified origin and
-    // orientation
-    // lon specifies a rotation about the Z axis
-    // lat specifies a rotation about the new Y axis
-    // spin specifies a rotation about the new Z axis (and orients the
-    // sunrise/set effects
+    /**
+     * reposition the cloud layer at the specified origin and
+     * orientation.
+     * @param p position vector
+     * @param up the local up vector
+     * @param lon specifies a rotation about the Z axis
+     * @param lat specifies a rotation about the new Y axis
+     * @param spin specifies a rotation about the new Z axis
+     *        (and orients the sunrise/set effects)
+     */
     bool reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt );
 
-    // draw the cloud layer
+    /** draw the cloud layer */
     void draw();
 
 private:

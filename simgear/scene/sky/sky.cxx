@@ -56,10 +56,10 @@ SGSky::~SGSky( void )
 
 // initialize the sky and connect the components to the scene graph at
 // the provided branch
-void SGSky::build(  double sun_size, double moon_size,
-		    int nplanets, sgdVec3 *planet_data,
-		    double planet_dist,
-		    int nstars, sgdVec3 *star_data, double star_dist )
+void SGSky::build( double h_radius_m, double v_radius_m,
+                   double sun_size, double moon_size,
+		   int nplanets, sgdVec3 *planet_data,
+		   int nstars, sgdVec3 *star_data )
 {
     pre_root = new ssgRoot;
     post_root = new ssgRoot;
@@ -71,15 +71,13 @@ void SGSky::build(  double sun_size, double moon_size,
     post_transform = new ssgTransform;
 
     dome = new SGSkyDome;
-    pre_transform -> addKid( dome->build() );
+    pre_transform -> addKid( dome->build( h_radius_m, v_radius_m ) );
 
     planets = new SGStars;
-    pre_transform -> addKid( planets->build(nplanets, planet_data,
-					    planet_dist)
-			     );
+    pre_transform -> addKid(planets->build(nplanets, planet_data, h_radius_m));
 
     stars = new SGStars;
-    pre_transform -> addKid( stars->build(nstars, star_data, star_dist) );
+    pre_transform -> addKid( stars->build(nstars, star_data, h_radius_m) );
     
     moon = new SGMoon;
     pre_transform -> addKid( moon->build(tex_path, moon_size) );

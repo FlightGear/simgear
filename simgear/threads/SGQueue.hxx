@@ -48,6 +48,13 @@ public:
     virtual void push( const T& item ) = 0;
 
     /**
+     * View the item from the head of the queue.
+     *
+     * @return T next available object.
+     */
+    virtual T front() = 0;
+
+    /**
      * Get an item from the head of the queue.
      *
      * @return T next available object.
@@ -97,6 +104,18 @@ public:
     virtual void push( const T& item ) {
 	SGGuard<SGLOCK> g(mutex);
 	fifo.push( item );
+    }
+
+    /**
+     * View the item from the head of the queue.
+     *
+     * @return T next available object.
+     */
+    virtual T front() {
+	SGGuard<SGLOCK> g(mutex);
+	assert( ! fifo.empty() );
+	T item = fifo.front();
+	return item;
     }
 
     /**
@@ -165,6 +184,22 @@ public:
 	SGGuard<SGMutex> g(mutex);
 	fifo.push( item );
 	not_empty.signal();
+    }
+
+    /**
+     * View the item from the head of the queue.
+     * Calling thread is not suspended
+     *
+     * @return T next available object.
+     */
+    virtual T front() {
+	SGGuard<SGMutex> g(mutex);
+
+	assert(fifo.empty() != true);
+	//if (fifo.empty()) throw ??
+
+	T item = fifo.front();
+	return item;
     }
 
     /**

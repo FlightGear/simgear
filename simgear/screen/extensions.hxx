@@ -78,6 +78,17 @@ inline void (*SGLookupFunction(const char *func))()
 #endif
 }
 
+/*
+ * OpenGL 1.2 and 1.3 enumerants
+ */
+
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE                                        0x812F
+#endif
+
+#ifndef GL_TEXTURE_WRAP_R
+#define GL_TEXTURE_WRAP_R                                       0x8072
+#endif
 
 
 /* OpenGL extension declarations */
@@ -144,6 +155,7 @@ typedef void (APIENTRY * glPointParameterfvProc)(GLenum pname, const GLfloat *pa
 #endif
 
 typedef void (APIENTRY * glActiveTextureProc)(GLenum texture);
+typedef void (APIENTRY * glClientActiveTextureProc)(GLenum texture);
 
 /*
  * GL_EXT_separate_specular_color
@@ -153,6 +165,65 @@ typedef void (APIENTRY * glActiveTextureProc)(GLenum texture);
 #define GL_LIGHT_MODEL_COLOR_CONTROL                            0x81F8
 #define GL_SINGLE_COLOR                                         0x81F9
 #define GL_SEPARATE_SPECULAR_COLOR                              0x81FA
+#endif
+
+/*
+ * GL_ARB_texture_cube_map
+ */
+
+#ifndef GL_ARB_texture_cube_map
+#define GL_ARB_texture_cube_map 1
+#define GL_NORMAL_MAP_ARB                                       0x8511
+#define GL_REFLECTION_MAP_ARB                                   0x8512
+#define GL_TEXTURE_CUBE_MAP_ARB                                 0x8513
+#define GL_TEXTURE_BINDING_CUBE_MAP_ARB                         0x8514
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB                      0x8515
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB                      0x8516
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB                      0x8517
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB                      0x8518
+#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB                      0x8519
+#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB                      0x851A
+#define GL_PROXY_TEXTURE_CUBE_MAP_ARB                           0x851B
+#define GL_MAX_CUBE_MAP_TEXTURE_SIZE_ARB                        0x851C
+#endif
+
+/*
+ * GL_ARB_texture_env_combine
+ */
+
+#ifndef GL_ARB_texture_env_combine
+#define GL_ARB_texture_env_combine 1
+#define GL_COMBINE_ARB                                          0x8570
+#define GL_COMBINE_RGB_ARB                                      0x8571
+#define GL_COMBINE_ALPHA_ARB                                    0x8572
+#define GL_RGB_SCALE_ARB                                        0x8573
+#define GL_ADD_SIGNED_ARB                                       0x8574
+#define GL_INTERPOLATE_ARB                                      0x8575
+#define GL_CONSTANT_ARB                                         0x8576
+#define GL_PRIMARY_COLOR_ARB                                    0x8577
+#define GL_PREVIOUS_ARB                                         0x8578
+#define GL_SOURCE0_RGB_ARB                                      0x8580
+#define GL_SOURCE1_RGB_ARB                                      0x8581
+#define GL_SOURCE2_RGB_ARB                                      0x8582
+#define GL_SOURCE0_ALPHA_ARB                                    0x8588
+#define GL_SOURCE1_ALPHA_ARB                                    0x8589
+#define GL_SOURCE2_ALPHA_ARB                                    0x858A
+#define GL_OPERAND0_RGB_ARB                                     0x8590
+#define GL_OPERAND1_RGB_ARB                                     0x8591
+#define GL_OPERAND2_RGB_ARB                                     0x8592
+#define GL_OPERAND0_ALPHA_ARB                                   0x8598
+#define GL_OPERAND1_ALPHA_ARB                                   0x8599
+#define GL_OPERAND2_ALPHA_ARB                                   0x859A
+#endif
+
+/*
+ * GL_ARB_texture_env_dot3
+ */
+
+#ifndef GL_ARB_texture_env_dot3
+#define GL_ARB_texture_env_dot3 1
+#define GL_DOT3_RGB_ARB                                         0x86AE
+#define GL_DOT3_RGBA_ARB                                        0x86AF
 #endif
 
 #if defined(__cplusplus)

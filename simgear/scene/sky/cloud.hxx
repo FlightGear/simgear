@@ -169,7 +169,22 @@ public:
     /** draw the cloud layer */
     void draw( bool top );
 
+    static bool enable_bump_mapping;
+
 private:
+
+    struct CloudVertex {
+        sgVec3 position;
+        sgVec2 texCoord;
+        sgVec3 tangentSpLight;
+        sgVec3 sTangent;
+        sgVec3 tTangent;
+        sgVec3 normal;
+        sgVec4 color;
+    };
+
+    CloudVertex *vertices;
+    unsigned int *indices;
 
     ssgRoot *layer_root;
     ssgTransform *layer_transform;

@@ -38,16 +38,150 @@
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/screen/extensions.hxx>
+#include <simgear/screen/texture.hxx>
 
 #include "cloud.hxx"
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-#define isnan(x) _isnan(x)
-#endif
 
 
 static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;
+static bool bump_mapping = false;
+static int nb_texture_unit = 0;
+static ssgTexture *normal_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
+static ssgTexture *color_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
+static GLuint normalization_cube_map;
+
+static glActiveTextureProc glActiveTextureARB = 0;
+static glClientActiveTextureProc glClientActiveTextureARB = 0;
+
+bool SGCloudLayer::enable_bump_mapping = false;
+
+static void
+generateNormalizationCubeMap()
+{
+    unsigned char data[ 32 * 32 * 3 ];
+    const int size = 32;
+    const float half_size = 16.0f,
+                offset = 0.5f;
+    sgVec3 zero_normal;
+    sgSetVec3( zero_normal, 0.5f, 0.5f, 0.5f );
+    int i, j;
+
+    unsigned char *ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, half_size,
+                            -( j + offset - half_size ),
+                            -( i + offset - half_size ) );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, -half_size,
+                            -( j + offset - half_size ),
+                            ( i + offset - half_size ) );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_NEGATIVE_X_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, ( i + offset - half_size ),
+                            half_size,
+                            ( j + offset - half_size ) );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_Y_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, ( i + offset - half_size ),
+                            -half_size,
+                            -( j + offset - half_size ) );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, ( i + offset - half_size ),
+                            -( j + offset - half_size ),
+                            half_size );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_Z_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    ptr = data;
+    for ( j = 0; j < size; j++ ) {
+        for ( i = 0; i < size; i++ ) {
+            sgVec3 tmp;
+            sgSetVec3( tmp, -( i + offset - half_size ),
+                            -( j + offset - half_size ),
+                            -half_size );
+            sgNormalizeVec3( tmp );
+            sgScaleVec3( tmp, 0.5f );
+            sgAddVec3( tmp, zero_normal );
+
+            *ptr++ = (unsigned char)( tmp[ 0 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 1 ] * 255 );
+            *ptr++ = (unsigned char)( tmp[ 2 ] * 255 );
+        }
+    }
+    glTexImage2D( GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB,
+                  0, GL_RGBA8, 32, 32, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+}
 
 
 // Constructor
@@ -65,7 +199,9 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     speed(0.0),
     direction(0.0),
     last_lon(0.0),
-    last_lat(0.0)
+    last_lat(0.0),
+    vertices(0),
+    indices(0)
 {
     cl[0] = cl[1] = cl[2] = cl[3] = NULL;
     vl[0] = vl[1] = vl[2] = vl[3] = NULL;
@@ -79,6 +215,8 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
 // Destructor
 SGCloudLayer::~SGCloudLayer()
 {
+    delete vertices;
+    delete indices;
     delete layer_root;		// deletes layer_transform and layer as well
 }
 
@@ -166,172 +304,324 @@ SGCloudLayer::rebuild()
 
         SG_LOG(SG_ASTRO, SG_INFO, "initializing cloud layers");
 
-        SGPath cloud_path;
-        ssgStateSelector *state_sel;
-        ssgSimpleState *state;
+        bump_mapping = SGIsOpenGLExtensionSupported("GL_ARB_multitexture") &&
+                       SGIsOpenGLExtensionSupported("GL_ARB_texture_cube_map") &&
+                       SGIsOpenGLExtensionSupported("GL_ARB_texture_env_combine") &&
+                       SGIsOpenGLExtensionSupported("GL_ARB_texture_env_dot3") && true;
 
-        state_sel = new ssgStateSelector( 2 );
-        state_sel->ref();
-        cloud_path.set(texture_path.str());
-        cloud_path.append("overcast.rgb");
-        state_sel->setStep( 0, sgCloudMakeState(cloud_path.str()) );
-        cloud_path.set(texture_path.str());
-        cloud_path.append("overcast_top.rgb");
-        state_sel->setStep( 1, sgCloudMakeState(cloud_path.str()) );
-        layer_states[SG_CLOUD_OVERCAST] = state_sel;
-
-        state_sel = new ssgStateSelector( 2 );
-        state_sel->ref();
-        cloud_path.set(texture_path.str());
-        cloud_path.append("broken.rgba");
-        state = sgCloudMakeState(cloud_path.str());
-        state_sel->setStep( 0, state );
-        state_sel->setStep( 1, state );
-        layer_states[SG_CLOUD_BROKEN] = state_sel;
-
-        state_sel = new ssgStateSelector( 2 );
-        state_sel->ref();
-        cloud_path.set(texture_path.str());
-        cloud_path.append("scattered.rgba");
-        state = sgCloudMakeState(cloud_path.str());
-        state_sel->setStep( 0, state );
-        state_sel->setStep( 1, state );
-        layer_states[SG_CLOUD_SCATTERED] = state_sel;
-
-        state_sel = new ssgStateSelector( 2 );
-        state_sel->ref();
-        cloud_path.set(texture_path.str());
-        cloud_path.append("few.rgba");
-        state = sgCloudMakeState(cloud_path.str());
-        state_sel->setStep( 0, state );
-        state_sel->setStep( 1, state );
-        layer_states[SG_CLOUD_FEW] = state_sel;
-
-        state_sel = new ssgStateSelector( 2 );
-        state_sel->ref();
-        cloud_path.set(texture_path.str());
-        cloud_path.append("cirrus.rgba");
-        state = sgCloudMakeState(cloud_path.str());
-        state_sel->setStep( 0, state );
-        state_sel->setStep( 1, state );
-        layer_states[SG_CLOUD_CIRRUS] = state_sel;
-
-        layer_states[SG_CLOUD_CLEAR] = 0;
-    }
-
-    scale = 4000.0;
-    last_lon = last_lat = -999.0f;
-
-    sgVec2 base;
-    sgSetVec2( base, sg_random(), sg_random() );
-
-    // build the cloud layer
-    sgVec4 color;
-    sgVec3 vertex;
-    sgVec2 tc;
-
-    const float layer_scale = layer_span / scale;
-    const float mpi = SG_PI/4;
-
-    // caclculate the difference between a flat-earth model and 
-    // a round earth model given the span and altutude ASL of
-    // the cloud layer. This is the difference in altitude between
-    // the top of the inverted bowl and the edge of the bowl.
-    // const float alt_diff = layer_asl * 0.8;
-    const float layer_to_core = (SG_EARTH_RAD * 1000 + layer_asl);
-    const float layer_angle = acos( 0.5*layer_span / layer_to_core);
-    const float border_to_core = layer_to_core * sin(layer_angle);
-    const float alt_diff = layer_to_core - border_to_core;
-
-    for (int i = 0; i < 4; i++)
-    {
-        if ( layer[i] != NULL ) {
-            layer_transform->removeKid(layer[i]); // automatic delete
+        if ( bump_mapping ) {
+            glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &nb_texture_unit );
+            if ( nb_texture_unit < 2 ) {
+                bump_mapping = false;
+            }
         }
 
-        vl[i] = new ssgVertexArray( 10 );
-        cl[i] = new ssgColourArray( 10 );
-        tl[i] = new ssgTexCoordArray( 10 );
+        if ( bump_mapping ) {
 
+            // This bump mapping code was inspired by the tutorial available at 
+            // http://www.paulsprojects.net/tutorials/simplebump/simplebump.html
+            // and a NVidia white paper 
+            //  http://developer.nvidia.com/object/bumpmappingwithregistercombiners.html
+            // The normal map textures were generated by the normal map Gimp plugin :
+            //  http://nifelheim.dyndns.org/~cocidius/normalmap/
+            //
+            SGPath cloud_path;
 
-        sgSetVec3( vertex, layer_span*(i-2)/2, -layer_span,
-                           alt_diff * (sin(i*mpi) - 2) );
+            glActiveTextureARB = (glActiveTextureProc)SGLookupFunction("glActiveTextureARB");
+            glClientActiveTextureARB = (glClientActiveTextureProc)SGLookupFunction("glClientActiveTextureARB");
 
-        sgSetVec2( tc, base[0] + layer_scale * i/4, base[1] );
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast.rgb");
+            color_map[ SG_CLOUD_OVERCAST ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_OVERCAST ][ 0 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast_n.rgb");
+            normal_map[ SG_CLOUD_OVERCAST ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_OVERCAST ][ 0 ]->ref();
 
-        sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f );
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast_top.rgb");
+            color_map[ SG_CLOUD_OVERCAST ][ 1 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_OVERCAST ][ 1 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast_top_n.rgb");
+            normal_map[ SG_CLOUD_OVERCAST ][ 1 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_OVERCAST ][ 1 ]->ref();
 
-        cl[i]->add( color );
-        vl[i]->add( vertex );
-        tl[i]->add( tc );
+            cloud_path.set(texture_path.str());
+            cloud_path.append("broken.rgba");
+            color_map[ SG_CLOUD_BROKEN ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_BROKEN ][ 0 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("broken_n.rgb");
+            normal_map[ SG_CLOUD_BROKEN ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_BROKEN ][ 0 ]->ref();
 
-        for (int j = 0; j < 4; j++)
+            cloud_path.set(texture_path.str());
+            cloud_path.append("scattered.rgba");
+            color_map[ SG_CLOUD_SCATTERED ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_SCATTERED ][ 0 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("scattered_n.rgb");
+            normal_map[ SG_CLOUD_SCATTERED ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_SCATTERED ][ 0 ]->ref();
+
+            cloud_path.set(texture_path.str());
+            cloud_path.append("few.rgba");
+            color_map[ SG_CLOUD_FEW ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_FEW ][ 0 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("few_n.rgb");
+            normal_map[ SG_CLOUD_FEW ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_FEW ][ 0 ]->ref();
+
+            cloud_path.set(texture_path.str());
+            cloud_path.append("cirrus.rgba");
+            color_map[ SG_CLOUD_CIRRUS ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            color_map[ SG_CLOUD_CIRRUS ][ 0 ]->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("cirrus_n.rgb");
+            normal_map[ SG_CLOUD_CIRRUS ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
+            normal_map[ SG_CLOUD_CIRRUS ][ 0 ]->ref();
+
+            glGenTextures( 1, &normalization_cube_map );
+            glBindTexture( GL_TEXTURE_CUBE_MAP_ARB, normalization_cube_map );
+            generateNormalizationCubeMap();
+            glTexParameteri( GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+            glTexParameteri( GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+            glTexParameteri( GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+            glTexParameteri( GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+            glTexParameteri( GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+        } /* else */ {
+            SGPath cloud_path;
+            ssgStateSelector *state_sel;
+            ssgSimpleState *state;
+
+            state_sel = new ssgStateSelector( 2 );
+            state_sel->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast.rgb");
+            state_sel->setStep( 0, sgCloudMakeState(cloud_path.str()) );
+            cloud_path.set(texture_path.str());
+            cloud_path.append("overcast_top.rgb");
+            state_sel->setStep( 1, sgCloudMakeState(cloud_path.str()) );
+            layer_states[SG_CLOUD_OVERCAST] = state_sel;
+
+            state_sel = new ssgStateSelector( 2 );
+            state_sel->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("broken.rgba");
+            state = sgCloudMakeState(cloud_path.str());
+            state_sel->setStep( 0, state );
+            state_sel->setStep( 1, state );
+            layer_states[SG_CLOUD_BROKEN] = state_sel;
+
+            state_sel = new ssgStateSelector( 2 );
+            state_sel->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("scattered.rgba");
+            state = sgCloudMakeState(cloud_path.str());
+            state_sel->setStep( 0, state );
+            state_sel->setStep( 1, state );
+            layer_states[SG_CLOUD_SCATTERED] = state_sel;
+
+            state_sel = new ssgStateSelector( 2 );
+            state_sel->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("few.rgba");
+            state = sgCloudMakeState(cloud_path.str());
+            state_sel->setStep( 0, state );
+            state_sel->setStep( 1, state );
+            layer_states[SG_CLOUD_FEW] = state_sel;
+
+            state_sel = new ssgStateSelector( 2 );
+            state_sel->ref();
+            cloud_path.set(texture_path.str());
+            cloud_path.append("cirrus.rgba");
+            state = sgCloudMakeState(cloud_path.str());
+            state_sel->setStep( 0, state );
+            state_sel->setStep( 1, state );
+            layer_states[SG_CLOUD_CIRRUS] = state_sel;
+
+            layer_states[SG_CLOUD_CLEAR] = 0;
+        }
+    }
+
+    if ( bump_mapping ) {
+
+        if ( !vertices ) {
+            vertices = new CloudVertex[ 25 ];
+            indices = new unsigned int[ 40 ];
+        }
+
+        sgVec2 base;
+        sgSetVec2( base, sg_random(), sg_random() );
+
+        const float layer_scale = layer_span / scale;
+        const float layer_to_core = (SG_EARTH_RAD * 1000 + layer_asl);
+        const float half_angle = 0.5 * layer_span / layer_to_core;
+
+        int i;
+        for ( i = -2; i <= 2; i++ ) {
+            for ( int j = -2; j <= 2; j++ ) {
+                CloudVertex &v1 = vertices[ (i+2)*5 + (j+2) ];
+                sgSetVec3( v1.position,
+                           0.5 * i * layer_span,
+                           0.5 * j * layer_span,
+                           -layer_to_core * ( 1 - cos( i * half_angle ) * cos( j * half_angle ) ) );
+                sgSetVec2( v1.texCoord,
+                           base[0] + layer_scale * i * 0.25,
+                           base[1] + layer_scale * j * 0.25 );
+                sgSetVec3( v1.sTangent,
+                           cos( i * half_angle ),
+                           0.f,
+                           -sin( i * half_angle ) );
+                sgSetVec3( v1.tTangent,
+                           0.f,
+                           cos( j * half_angle ),
+                           -sin( j * half_angle ) );
+                sgVectorProductVec3( v1.normal, v1.tTangent, v1.sTangent );
+                sgSetVec4( v1.color, 1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f );
+            }
+        }
+        /*
+         * 0 1 5 6 10 11 15 16 20 21
+         * 1 2 6 7 11 12 16 17 21 22
+         * 2 3 7 8 12 13 17 18 22 23
+         * 3 4 8 9 13 14 18 19 23 24
+         */
+        for ( i = 0; i < 4; i++ ) {
+            for ( int j = 0; j < 5; j++ ) {
+                indices[ i*10 + (j*2) ]     =     i + 5 * j;
+                indices[ i*10 + (j*2) + 1 ] = 1 + i + 5 * j;
+            }
+        }
+
+    } /* else */ {
+
+        scale = 4000.0;
+        last_lon = last_lat = -999.0f;
+
+        sgVec2 base;
+        sgSetVec2( base, sg_random(), sg_random() );
+
+        // build the cloud layer
+        sgVec4 color;
+        sgVec3 vertex;
+        sgVec2 tc;
+
+        const float layer_scale = layer_span / scale;
+        const float mpi = SG_PI/4;
+
+        // caclculate the difference between a flat-earth model and 
+        // a round earth model given the span and altutude ASL of
+        // the cloud layer. This is the difference in altitude between
+        // the top of the inverted bowl and the edge of the bowl.
+        // const float alt_diff = layer_asl * 0.8;
+        const float layer_to_core = (SG_EARTH_RAD * 1000 + layer_asl);
+        const float layer_angle = 0.5*layer_span / layer_to_core; // The angle is half the span
+        const float border_to_core = layer_to_core * cos(layer_angle);
+        const float alt_diff = layer_to_core - border_to_core;
+
+        for (int i = 0; i < 4; i++)
         {
-            sgSetVec3( vertex, layer_span*(i-1)/2, layer_span*(j-2)/2,
-                               alt_diff * (sin((i+1)*mpi) + sin(j*mpi) - 2) );
+            if ( layer[i] != NULL ) {
+                layer_transform->removeKid(layer[i]); // automatic delete
+            }
+
+            vl[i] = new ssgVertexArray( 10 );
+            cl[i] = new ssgColourArray( 10 );
+            tl[i] = new ssgTexCoordArray( 10 );
+
+
+            sgSetVec3( vertex, layer_span*(i-2)/2, -layer_span,
+                            alt_diff * (sin(i*mpi) - 2) );
+
+            sgSetVec2( tc, base[0] + layer_scale * i/4, base[1] );
+
+            sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f );
+
+            cl[i]->add( color );
+            vl[i]->add( vertex );
+            tl[i]->add( tc );
+
+            for (int j = 0; j < 4; j++)
+            {
+                sgSetVec3( vertex, layer_span*(i-1)/2, layer_span*(j-2)/2,
+                                alt_diff * (sin((i+1)*mpi) + sin(j*mpi) - 2) );
+
+                sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
+                            base[1] + layer_scale * j/4 );
+
+                sgSetVec4( color, 1.0f, 1.0f, 1.0f,
+                                ( (j == 0) || (i == 3)) ?  
+                                ( (j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f );
+
+                cl[i]->add( color );
+                vl[i]->add( vertex );
+                tl[i]->add( tc );
+
+
+                sgSetVec3( vertex, layer_span*(i-2)/2, layer_span*(j-1)/2,
+                                alt_diff * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
+
+                sgSetVec2( tc, base[0] + layer_scale * i/4,
+                            base[1] + layer_scale * (j+1)/4 );
+
+                sgSetVec4( color, 1.0f, 1.0f, 1.0f,
+                                ((j == 3) || (i == 0)) ?
+                                ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f );
+                cl[i]->add( color );
+                vl[i]->add( vertex );
+                tl[i]->add( tc );
+            }
+
+            sgSetVec3( vertex, layer_span*(i-1)/2, layer_span, 
+                            alt_diff * (sin((i+1)*mpi) - 2) );
 
             sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
-                           base[1] + layer_scale * j/4 );
+                        base[1] + layer_scale );
 
-            sgSetVec4( color, 1.0f, 1.0f, 1.0f,
-                              ( (j == 0) || (i == 3)) ?  
-                              ( (j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f );
+            sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 3) ? 0.0f : 0.15f );
 
             cl[i]->add( color );
             vl[i]->add( vertex );
             tl[i]->add( tc );
 
+            layer[i] = new ssgVtxTable(GL_TRIANGLE_STRIP, vl[i], NULL, tl[i], cl[i]);
+            layer_transform->addKid( layer[i] );
 
-            sgSetVec3( vertex, layer_span*(i-2)/2, layer_span*(j-1)/2,
-                               alt_diff * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
-
-            sgSetVec2( tc, base[0] + layer_scale * i/4,
-                           base[1] + layer_scale * (j+1)/4 );
-
-            sgSetVec4( color, 1.0f, 1.0f, 1.0f,
-                              ((j == 3) || (i == 0)) ?
-                              ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f );
-            cl[i]->add( color );
-            vl[i]->add( vertex );
-            tl[i]->add( tc );
+            if ( layer_states[layer_coverage] != NULL ) {
+                layer[i]->setState( layer_states[layer_coverage] );
+            }
+            state_sel = layer_states[layer_coverage];
         }
 
-        sgSetVec3( vertex, layer_span*(i-1)/2, layer_span, 
-                           alt_diff * (sin((i+1)*mpi) - 2) );
-
-        sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
-                       base[1] + layer_scale );
-
-        sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 3) ? 0.0f : 0.15f );
-
-        cl[i]->add( color );
-        vl[i]->add( vertex );
-        tl[i]->add( tc );
-
-        layer[i] = new ssgVtxTable(GL_TRIANGLE_STRIP, vl[i], NULL, tl[i], cl[i]);
-        layer_transform->addKid( layer[i] );
-
-        if ( layer_states[layer_coverage] != NULL ) {
-            layer[i]->setState( layer_states[layer_coverage] );
-        }
-        state_sel = layer_states[layer_coverage];
+        // force a repaint of the sky colors with arbitrary defaults
+        repaint( color );
     }
-
-    // force a repaint of the sky colors with arbitrary defaults
-    repaint( color );
-
 }
 
 
 // repaint the cloud layer colors
 bool SGCloudLayer::repaint( sgVec3 fog_color ) {
-    float *color;
 
-    for ( int i = 0; i < 4; i++ )
-        for ( int j = 0; j < 10; ++j ) {
-            color = cl[i]->get( j );
-            sgCopyVec3( color, fog_color );
+    if ( bump_mapping && enable_bump_mapping ) {
+
+        for ( int i = 0; i < 25; i++ ) {
+            sgCopyVec3( vertices[ i ].color, fog_color );
         }
+
+    } else {
+        float *color;
+
+        for ( int i = 0; i < 4; i++ ) {
+            for ( int j = 0; j < 10; ++j ) {
+                color = cl[i]->get( j );
+                sgCopyVec3( color, fog_color );
+            }
+        }
+    }
 
     return true;
 }
@@ -365,7 +655,6 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
     // Translate to zero elevation
     // Point3D zero_elev = current_view.get_cur_zero_elev();
-    // xglTranslatef( zero_elev.x(), zero_elev.y(), zero_elev.z() );
     sgMakeTransMat4( T1, asl_offset );
 
     // printf("  Translated to %.2f %.2f %.2f\n", 
@@ -375,12 +664,9 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
     // printf("  lon = %.2f  lat = %.2f\n", 
     //        lon * SGD_RADIANS_TO_DEGREES,
     //        lat * SGD_RADIANS_TO_DEGREES);
-    // xglRotatef( lon * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
     sgMakeRotMat4( LON, lon * SGD_RADIANS_TO_DEGREES, axis );
 
-    // xglRotatef( 90.0 - f->get_Latitude() * SGD_RADIANS_TO_DEGREES,
-    //             0.0, 1.0, 0.0 );
     sgSetVec3( axis, 0.0, 1.0, 0.0 );
     sgMakeRotMat4( LAT, 90.0 - lat * SGD_RADIANS_TO_DEGREES, axis );
 
@@ -443,9 +729,12 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
         // cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
 
-        float *base, *tc;
-
-        base = tl[0]->get( 0 );
+        float *base;
+        if ( bump_mapping && enable_bump_mapping ) {
+            base = vertices[12].texCoord;
+        } else {
+            base = tl[0]->get( 0 );
+        }
         base[0] += xoff;
 
         // the while loops can lead to *long* pauses if base[0] comes
@@ -456,8 +745,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
             base[0] -= (int)base[0];
         } else {
             SG_LOG(SG_ASTRO, SG_DEBUG,
-                   "Error: base = " << base[0] << "," << base[1] <<
-                   " course = " << course << " dist = " << dist );
+                "Error: base = " << base[0] << "," << base[1] <<
+                " course = " << course << " dist = " << dist );
             base[0] = 0.0;
         }
 
@@ -467,37 +756,52 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         // while ( base[1] > 1.0 ) { base[1] -= 1.0; }
         // while ( base[1] < 0.0 ) { base[1] += 1.0; }
         if ( base[1] > -10.0 && base[1] < 10.0 ) {
-           base[1] -= (int)base[1];
+            base[1] -= (int)base[1];
         } else {
-           SG_LOG(SG_ASTRO, SG_ALERT,
-                  "Error: base = " << base[0] << "," << base[1] <<
-                  " course = " << course << " dist = " << dist );
-           base[1] = 0.0;
+            SG_LOG(SG_ASTRO, SG_ALERT,
+                    "Error: base = " << base[0] << "," << base[1] <<
+                    " course = " << course << " dist = " << dist );
+            base[1] = 0.0;
         }
 
-        // cout << "base = " << base[0] << "," << base[1] << endl;
+        if ( bump_mapping && enable_bump_mapping ) {
 
-        for (int i = 0; i < 4; i++)
-        {
-            tc = tl[i]->get( 0 );
-            sgSetVec2( tc, base[0] + layer_scale * i/4, base[1] );
-            
-            for (int j = 0; j < 4; j++)
-            {
-                tc = tl[i]->get( j*2+1 );
-                sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
-                               base[1] + layer_scale * j/4 );
- 
-        	tc = tl[i]->get( (j+1)*2 );
-                sgSetVec2( tc, base[0] + layer_scale * i/4,
-                               base[1] + layer_scale * (j+1)/4 );
+            for ( int i = -2; i <= 2; i++ ) {
+                for ( int j = -2; j <= 2; j++ ) {
+                    if ( i == 0 && j == 0 )
+                        continue; // Already done on base
+                    CloudVertex &v1 = vertices[ (i+2)*5 + (j+2) ];
+                    sgSetVec2( v1.texCoord,
+                            base[0] + layer_scale * i * 0.25,
+                            base[1] + layer_scale * j * 0.25 );
+                }
             }
- 
-            tc = tl[i]->get( 9 );
-            sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
-                           base[1] + layer_scale );
+
+        } else {
+                // cout << "base = " << base[0] << "," << base[1] << endl;
+
+            float *tc;
+            for (int i = 0; i < 4; i++) {
+                tc = tl[i]->get( 0 );
+                sgSetVec2( tc, base[0] + layer_scale * i/4, base[1] );
+                
+                for (int j = 0; j < 4; j++)
+                {
+                    tc = tl[i]->get( j*2+1 );
+                    sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
+                                base[1] + layer_scale * j/4 );
+        
+        	    tc = tl[i]->get( (j+1)*2 );
+                    sgSetVec2( tc, base[0] + layer_scale * i/4,
+                                base[1] + layer_scale * (j+1)/4 );
+                }
+        
+                tc = tl[i]->get( 9 );
+                sgSetVec2( tc, base[0] + layer_scale * (i+1)/4,
+                            base[1] + layer_scale );
+            }
         }
- 
+
         last_lon = lon;
         last_lat = lat;
     }
@@ -508,8 +812,229 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
 void SGCloudLayer::draw( bool top ) {
     if ( layer_coverage != SG_CLOUD_CLEAR ) {
-        state_sel->selectStep( top ? 1 : 0 );
-        ssgCullAndDraw( layer_root );
+
+        if ( bump_mapping && enable_bump_mapping ) {
+
+            sgMat4 modelview,
+                   tmp,
+                   transform;
+            ssgGetModelviewMatrix( modelview );
+            layer_transform->getTransform( transform );
+
+            sgInvertMat4( tmp, transform );
+
+            sgPostMultMat4( transform, modelview );
+            ssgLoadModelviewMatrix( transform );
+
+            sgVec3 lightVec;
+            ssgGetLight( 0 )->getPosition( lightVec );
+            sgNegateVec3( lightVec );
+            sgXformVec3( lightVec, tmp );
+
+            for ( int i = 0; i < 25; i++ ) {
+                CloudVertex &v = vertices[ i ];
+                sgSetVec3( v.tangentSpLight,
+                           sgScalarProductVec3( v.sTangent, lightVec ),
+                           sgScalarProductVec3( v.tTangent, lightVec ),
+                           sgScalarProductVec3( v.normal, lightVec ) );
+            }
+
+            ssgTexture *decal = color_map[ layer_coverage ][ top ? 1 : 0 ];
+            if ( top && decal == 0 ) {
+                decal = color_map[ layer_coverage ][ 0 ];
+            }
+            ssgTexture *normal = normal_map[ layer_coverage ][ top ? 1 : 0 ];
+            if ( top && normal == 0 ) {
+                normal = normal_map[ layer_coverage ][ 0 ];
+            }
+
+            glDisable( GL_LIGHTING );
+            glDisable( GL_CULL_FACE );
+            glEnable( GL_ALPHA_TEST );
+            glAlphaFunc ( GL_GREATER, 0.1 ) ;
+            glEnable( GL_BLEND ); 
+            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+            glPolygonMode( GL_FILL, GL_FRONT_AND_BACK );
+            glShadeModel( GL_SMOOTH );
+            glEnable( GL_COLOR_MATERIAL ); 
+            sgVec4 color;
+            sgSetVec4( color, 0.05, 0.05, 0.05, 0.0 );
+            glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, color );
+            sgSetVec4( color, 0.8, 0.8, 0.8, 0.0 );
+            glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, color );
+            sgSetVec4( color, 0.5, 0.5, 0.5, 0.0 );
+            glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, color );
+            sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+            glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
+
+            glActiveTextureARB( GL_TEXTURE0_ARB );
+            glBindTexture( GL_TEXTURE_2D, normal->getHandle() );
+            glEnable( GL_TEXTURE_2D );
+
+            //Bind normalisation cube map to texture unit 1
+            glActiveTextureARB( GL_TEXTURE1_ARB );
+            glBindTexture( GL_TEXTURE_CUBE_MAP_ARB, normalization_cube_map );
+            glEnable( GL_TEXTURE_CUBE_MAP_ARB );
+            glActiveTextureARB( GL_TEXTURE0_ARB );
+
+            //Set vertex arrays for cloud
+            glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
+            glEnableClientState( GL_VERTEX_ARRAY );
+
+            if ( nb_texture_unit >= 3 ) {
+                glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
+                glEnableClientState( GL_COLOR_ARRAY );
+            }
+
+            //Send texture coords for normal map to unit 0
+            glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
+            glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+            //Send tangent space light vectors for normalisation to unit 1
+            glClientActiveTextureARB( GL_TEXTURE1_ARB );
+            glTexCoordPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].tangentSpLight );
+            glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+            //Set up texture environment to do (tex0 dot tex1)*color
+            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE );
+            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE );
+            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
+
+            glActiveTextureARB( GL_TEXTURE1_ARB );
+
+            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGB_ARB );
+            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+
+            if ( nb_texture_unit >= 3 ) {
+                glActiveTextureARB( GL_TEXTURE2_ARB );
+                glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
+
+                glClientActiveTextureARB( GL_TEXTURE2_ARB );
+                glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
+                glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+                sgVec4 factors;
+                if ( top || layer_coverage != SG_CLOUD_OVERCAST ) {
+                    sgSetVec4( factors, 0.5f, 0.5f, 0.3f, 1.0f );
+                } else {
+                    sgSetVec4( factors, 0.1f, 0.1f, 0.0f, 1.0f );
+                }
+                glTexEnvfv( GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, factors );
+
+                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+                glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE_ARB );
+                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_CONSTANT_ARB );
+
+                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+                glActiveTextureARB( GL_TEXTURE0_ARB );
+
+                //Draw cloud layer
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
+
+                glDisable( GL_TEXTURE_2D );
+                glActiveTextureARB( GL_TEXTURE1_ARB );
+                glDisable( GL_TEXTURE_CUBE_MAP_ARB );
+                glActiveTextureARB( GL_TEXTURE2_ARB );
+                glDisable( GL_TEXTURE_2D );
+                glActiveTextureARB( GL_TEXTURE0_ARB );
+
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                glClientActiveTextureARB( GL_TEXTURE1_ARB );
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                glClientActiveTextureARB( GL_TEXTURE2_ARB );
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+
+                glDisableClientState( GL_COLOR_ARRAY );
+
+            } else {
+                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+                glActiveTextureARB( GL_TEXTURE0_ARB );
+
+                //Draw cloud layer
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
+
+
+                //Disable textures
+                glDisable( GL_TEXTURE_2D );
+
+                glActiveTextureARB( GL_TEXTURE1_ARB );
+                glDisable( GL_TEXTURE_CUBE_MAP_ARB );
+                glActiveTextureARB( GL_TEXTURE0_ARB );
+
+                //disable vertex arrays
+                glDisableClientState( GL_VERTEX_ARRAY );
+
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                glClientActiveTextureARB( GL_TEXTURE1_ARB );
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+                glClientActiveTextureARB( GL_TEXTURE0_ARB );
+
+                //Return to standard modulate texenv
+                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+	        glDepthFunc(GL_LEQUAL);
+                //Enable multiplicative blending
+                glBlendFunc( GL_DST_COLOR, GL_ZERO );
+
+                //Perform a second pass to color the torus
+                //Bind decal texture
+                glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
+                glEnable(GL_TEXTURE_2D);
+
+                //Set vertex arrays for torus
+                glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
+                glEnableClientState( GL_VERTEX_ARRAY );
+
+                //glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
+                //glEnableClientState( GL_COLOR_ARRAY );
+
+                glNormalPointer( GL_FLOAT, sizeof(CloudVertex), &vertices[0].normal );
+                glEnableClientState( GL_NORMAL_ARRAY );
+
+                glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
+                glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+                //Draw cloud layer
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
+                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
+
+                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+            }
+            //Disable texture
+            glDisable( GL_TEXTURE_2D );
+
+            glDisableClientState( GL_VERTEX_ARRAY );
+            glDisableClientState( GL_NORMAL_ARRAY );
+
+            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+            glEnable( GL_LIGHTING );
+            glEnable( GL_CULL_FACE );
+	    glDepthFunc(GL_LESS);
+
+            ssgLoadModelviewMatrix( modelview );
+
+        } else {
+            state_sel->selectStep( top ? 1 : 0 );
+            ssgCullAndDraw( layer_root );
+        }
     }
 }
 

@@ -193,6 +193,7 @@ SGTexture::read_alpha_texture(const char *name)
     }
 
     texture_data = new GLubyte[ image->xsize * image->ysize ];
+    num_colors = 1;
     if (!texture_data)
         return;
 
@@ -227,6 +228,7 @@ SGTexture::read_rgb_texture(const char *name)
     }
 
     texture_data = new GLubyte[ image->xsize * image->ysize * 3 ];
+    num_colors = 3;
     rbuf = new GLubyte[ image->xsize ];
     gbuf = new GLubyte[ image->xsize ];
     bbuf = new GLubyte[ image->xsize ];
@@ -290,6 +292,7 @@ SGTexture::read_rgba_texture(const char *name)
     }
 
     texture_data = new GLubyte[ image->xsize * image->ysize * 4 ];
+    num_colors = 4;
     rbuf = new GLubyte[ image->xsize ];
     gbuf = new GLubyte[ image->xsize ];
     bbuf = new GLubyte[ image->xsize ];

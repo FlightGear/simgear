@@ -109,9 +109,9 @@ public:
 
     void bind();
     inline void select(bool keep_data = false) {
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB,
+        glTexImage2D( GL_TEXTURE_2D, 0, num_colors,
                       texture_width, texture_height, 0,
-                      GL_RGB, GL_UNSIGNED_BYTE, texture_data );
+                      (num_colors==1)?GL_LUMINANCE:(num_colors==3)?GL_RGB:GL_RGBA, GL_UNSIGNED_BYTE, texture_data );
 
         if (!keep_data) {
             delete[] texture_data;
@@ -125,7 +125,7 @@ public:
     inline bool is_resident() {
         GLboolean is_res;
         glAreTexturesResident(1, &texture_id, &is_res);
-        return is_res;
+        return is_res != 0;
     }
 };
 

@@ -362,7 +362,7 @@ bool FGSkyDome::repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle ) 
 	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
 	    if ( middle_color[i][j] < 0.1 ) { middle_color[i][j] = 0.1; }
 	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
-	    if ( lower_color[i][j] < 35 ) { lower_color[i][j] = 35; }
+	    if ( lower_color[i][j] < 0.1 ) { lower_color[i][j] = 0.1; }
 	}
 	// upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
 	//                     (GLubyte)(sky_color[3] * 1.0);

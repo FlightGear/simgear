@@ -11,6 +11,7 @@ lib_LIBRARIES = libsgmisc.a
 include_HEADERS = \
 	fgpath.hxx \
 	fgstream.hxx \
+	props.hxx \
 	stopwatch.hxx \
 	strutils.hxx \
 	texcoord.hxx \
@@ -19,6 +20,7 @@ include_HEADERS = \
 libsgmisc_a_SOURCES = \
 	fgpath.cxx \
 	fgstream.cxx \
+	props.cxx \
 	strutils.cxx \
 	texcoord.cxx \
 	zfstream.cxx

@@ -42,13 +42,20 @@
 /*
  * Changelog:
  *
- * Jan. 2005, Removed GLEW dependencies, Erik Hofman
+ * Jan. 2005, Removed GLEW dependencies, Erik Hofman, Fred Bouvier
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
 
 #include <simgear/compiler.h>
-#include <simgear/screen/RenderTexture.h>
 #include <simgear/screen/extensions.hxx>
+#include <simgear/screen/RenderTexture.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +67,22 @@
 #endif
 
 using namespace std;
+
+#ifdef _WIN32
+static bool fctPtrInited = false;
+/* WGL_ARB_pixel_format */
+static wglChoosePixelFormatARBProc wglChoosePixelFormatARBPtr = 0;
+static wglGetPixelFormatAttribivARBProc wglGetPixelFormatAttribivARBPtr = 0;
+/* WGL_ARB_pbuffer */
+static wglCreatePbufferARBProc wglCreatePbufferARBPtr = 0;
+static wglGetPbufferDCARBProc wglGetPbufferDCARBPtr = 0;
+static wglQueryPbufferARBProc wglQueryPbufferARBPtr = 0;
+static wglReleasePbufferDCARBProc wglReleasePbufferDCARBPtr = 0;
+static wglDestroyPbufferARBProc wglDestroyPbufferARBPtr = 0;
+/* WGL_ARB_render_texture */
+static wglBindTexImageARBProc wglBindTexImageARBPtr = 0;
+static wglReleaseTexImageARBProc wglReleaseTexImageARBPtr = 0;
+#endif
 
 //---------------------------------------------------------------------------
 // Function      : RenderTexture::RenderTexture
@@ -296,7 +319,7 @@ bool RenderTexture::Initialize(int width, int height,
     }
     else 
     {
-        if (!wglChoosePixelFormatARB(hdc, &_pixelFormatAttribs[0], NULL, 
+        if (!wglChoosePixelFormatARBPtr(hdc, &_pixelFormatAttribs[0], NULL, 
                                      1, &iFormat, &iNumFormats))
         {
             fprintf(stderr, 
@@ -315,7 +338,7 @@ bool RenderTexture::Initialize(int width, int height,
     }
     
     // Create the p-buffer.    
-    _hPBuffer = wglCreatePbufferARB(hdc, iFormat, _iWidth, _iHeight, 
+    _hPBuffer = wglCreatePbufferARBPtr(hdc, iFormat, _iWidth, _iHeight, 
                                     &_pbufferAttribs[0]);
     if (!_hPBuffer)
     {
@@ -326,7 +349,7 @@ bool RenderTexture::Initialize(int width, int height,
     }
     
     // Get the device context.
-    _hDC = wglGetPbufferDCARB( _hPBuffer);
+    _hDC = wglGetPbufferDCARBPtr( _hPBuffer);
     if ( !_hDC )
     {
         fprintf(stderr, 
@@ -368,8 +391,8 @@ bool RenderTexture::Initialize(int width, int height,
     }
     
     // Determine the actual width and height we were able to create.
-    wglQueryPbufferARB( _hPBuffer, WGL_PBUFFER_WIDTH_ARB, &_iWidth );
-    wglQueryPbufferARB( _hPBuffer, WGL_PBUFFER_HEIGHT_ARB, &_iHeight );
+    wglQueryPbufferARBPtr( _hPBuffer, WGL_PBUFFER_WIDTH_ARB, &_iWidth );
+    wglQueryPbufferARBPtr( _hPBuffer, WGL_PBUFFER_HEIGHT_ARB, &_iHeight );
     
     _bInitialized = true;
     
@@ -378,31 +401,31 @@ bool RenderTexture::Initialize(int width, int height,
     //int bits[6];
     int value;
     _iNumColorBits[0] = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0;
     attrib = WGL_GREEN_BITS_ARB;
     _iNumColorBits[1] = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0;
     attrib = WGL_BLUE_BITS_ARB;
     _iNumColorBits[2] = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0;
     attrib = WGL_ALPHA_BITS_ARB;
     _iNumColorBits[3] = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0; 
     attrib = WGL_DEPTH_BITS_ARB;
     _iNumDepthBits = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0; 
     attrib = WGL_STENCIL_BITS_ARB;
     _iNumStencilBits = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? value : 0; 
     attrib = WGL_DOUBLE_BUFFER_ARB;
     _bDoubleBuffered = 
-        (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value)) 
+        (wglGetPixelFormatAttribivARBPtr(_hDC, iFormat, 0, 1, &attrib, &value)) 
         ? (value?true:false) : false; 
     
 #if defined(_DEBUG) | defined(DEBUG)
@@ -567,8 +590,8 @@ bool RenderTexture::_Invalidate()
             wglMakeCurrent(0,0);
         if (!_bCopyContext) 
             wglDeleteContext( _hGLContext);
-        wglReleasePbufferDCARB( _hPBuffer, _hDC);
-        wglDestroyPbufferARB( _hPBuffer );
+        wglReleasePbufferDCARBPtr( _hPBuffer, _hDC);
+        wglDestroyPbufferARBPtr( _hPBuffer );
         _hPBuffer = 0;
         return true;
     }
@@ -706,8 +729,8 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
             wglMakeCurrent(0,0);
         if (!_bCopyContext) 
             wglDeleteContext( _hGLContext);
-        wglReleasePbufferDCARB( _hPBuffer, _hDC);
-        wglDestroyPbufferARB( _hPBuffer );
+        wglReleasePbufferDCARBPtr( _hPBuffer, _hDC);
+        wglDestroyPbufferARBPtr( _hPBuffer );
         _hPBuffer = 0;
         return true;
     }
@@ -934,7 +957,7 @@ bool RenderTexture::BindBuffer( int iBuffer )
         if (RT_RENDER_TO_TEXTURE == _eUpdateMode && _bIsTexture &&
             (!_bIsBufferBound || _iCurrentBoundBuffer != iBuffer))
         {
-            if (FALSE == wglBindTexImageARB(_hPBuffer, iBuffer))
+            if (FALSE == wglBindTexImageARBPtr(_hPBuffer, iBuffer))
             {
                 //  WVB: WGL API considers binding twice to the same buffer
                 //  to be an error.  But we don't want to 
@@ -966,7 +989,7 @@ bool RenderTexture::_BindDepthBuffer() const
         RT_RENDER_TO_TEXTURE == _eUpdateMode)
     {
         glBindTexture(_iTextureTarget, _iDepthTextureID);
-        if (FALSE == wglBindTexImageARB(_hPBuffer, WGL_DEPTH_COMPONENT_NV))
+        if (FALSE == wglBindTexImageARBPtr(_hPBuffer, WGL_DEPTH_COMPONENT_NV))
         {
             _wglGetLastError();
             return false;
@@ -1622,6 +1645,28 @@ vector<int> RenderTexture::_ParseBitVector(string bitVector)
 bool RenderTexture::_VerifyExtensions()
 {
 #ifdef _WIN32
+    if ( !fctPtrInited )
+    {
+        fctPtrInited = true;
+        if ( SGIsOpenGLExtensionSupported("WGL_ARB_pixel_format" ) )
+        {
+            wglChoosePixelFormatARBPtr = (wglChoosePixelFormatARBProc)SGLookupFunction("wglChoosePixelFormatARB");
+            wglGetPixelFormatAttribivARBPtr = (wglGetPixelFormatAttribivARBProc)SGLookupFunction("wglGetPixelFormatAttribivARB");
+        }
+        if ( SGIsOpenGLExtensionSupported("WGL_ARB_pbuffer" ) )
+        {
+            wglCreatePbufferARBPtr = (wglCreatePbufferARBProc)SGLookupFunction("wglCreatePbufferARB");
+            wglGetPbufferDCARBPtr = (wglGetPbufferDCARBProc)SGLookupFunction("wglGetPbufferDCARB");
+            wglQueryPbufferARBPtr = (wglQueryPbufferARBProc)SGLookupFunction("wglQueryPbufferARB");
+            wglReleasePbufferDCARBPtr = (wglReleasePbufferDCARBProc)SGLookupFunction("wglReleasePbufferDCARB");
+            wglDestroyPbufferARBPtr = (wglDestroyPbufferARBProc)SGLookupFunction("wglDestroyPbufferARB");
+        }
+        if ( SGIsOpenGLExtensionSupported("WGL_ARB_render_texture" ) )
+        {
+            wglBindTexImageARBPtr = (wglBindTexImageARBProc)SGLookupFunction("wglBindTexImageARB");
+            wglReleaseTexImageARBPtr = (wglReleaseTexImageARBProc)SGLookupFunction("wglReleaseTexImageARB");
+        }
+    }
     if (!WGL_ARB_pbuffer)
     {
         PrintExtensionError("WGL_ARB_pbuffer");
@@ -1944,7 +1989,7 @@ bool RenderTexture::_ReleaseBoundBuffers()
         // release the pbuffer from the render texture object
         if (0 != _iCurrentBoundBuffer && _bIsBufferBound)
         {
-            if (FALSE == wglReleaseTexImageARB(_hPBuffer, _iCurrentBoundBuffer))
+            if (FALSE == wglReleaseTexImageARBPtr(_hPBuffer, _iCurrentBoundBuffer))
             {
                 _wglGetLastError();
                 return false;
@@ -1958,7 +2003,7 @@ bool RenderTexture::_ReleaseBoundBuffers()
         glBindTexture(_iTextureTarget, _iDepthTextureID);
         
         // release the pbuffer from the render texture object
-        if (FALSE == wglReleaseTexImageARB(_hPBuffer, WGL_DEPTH_COMPONENT_NV))
+        if (FALSE == wglReleaseTexImageARBPtr(_hPBuffer, WGL_DEPTH_COMPONENT_NV))
         {
             _wglGetLastError();
             return false;

@@ -49,10 +49,12 @@
 #include <simgear/compiler.h>
 
 #ifndef _WIN32
-#include <X11/Xlib.h>
+#  include <X11/Xlib.h>
 #endif
 #include SG_GL_H
-#include SG_GLX_H
+#ifndef _WIN32
+#  include SG_GLX_H
+#endif
 
 #include <string>
 #include <vector>

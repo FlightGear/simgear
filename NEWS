@@ -1,0 +1,9 @@
+New in 0.0.5
+* Restructured directory layout to facilitate windows/mac IDE builds.
+
+New in 0.0.4
+* Removed mat3.h and friends (we now use plib's sg lib for these sorts of 
+  things.)
+
+New in 0.0.3
+* Release that conincides with FlightGear-0.7.2

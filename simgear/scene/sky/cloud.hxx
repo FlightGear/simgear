@@ -35,6 +35,10 @@
 #include STL_STRING
 SG_USING_STD(string);
 
+// #include <iostream>
+// SG_USING_STD(cout);
+// SG_USING_STD(endl);
+
 
 /**
  * A class layer to model a single cloud layer
@@ -119,7 +123,10 @@ public:
      * set the cloud movement direction
      * @param dir the cloud movement direction
      */
-    inline void setDirection(float dir) { direction = dir; }
+    inline void setDirection(float dir) { 
+        // cout << "cloud dir = " << dir << endl;
+        direction = dir;
+    }
 
     /** get the cloud movement direction */
     inline float getDirection() { return direction; }
@@ -128,7 +135,10 @@ public:
      * set the cloud movement speed 
      * @param sp the cloud movement speed
      */
-    inline void setSpeed(float sp) { speed = sp; }
+    inline void setSpeed(float sp) {
+        // cout << "cloud speed = " << sp << endl;
+        speed = sp;
+    }
 
     /** get the cloud movement speed */
     inline float getSpeed() { return speed; }

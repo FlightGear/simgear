@@ -360,11 +360,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         Point3D dest( lon, lat, 0.0 );
         double course = 0.0, dist = 0.0;
 
-        if (dest != start) {
-            calc_gc_course_dist( dest, start, &course, &dist );
-         }
+        calc_gc_course_dist( dest, start, &course, &dist );
         // cout << "course = " << course << ", dist = " << dist << endl;
-
 
         // calculate cloud movement due to external forces
         double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
@@ -417,7 +414,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 	   	"Error: base = " << base[0] << "," << base[1]);
         }
 
-       // cout << "base = " << base[0] << "," << base[1] << endl;
+        // cout << "base = " << base[0] << "," << base[1] << endl;
 
         for (int i = 0; i < 4; i++)
         {

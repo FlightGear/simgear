@@ -33,8 +33,11 @@
 #  include <windows.h>
 #endif
 
-#include <GL/glu.h>
 #include <plib/ul.h>
+
+#include <simgear/compiler.h>
+
+#include SG_GLU_H
 
 #include "SkyCloud.hpp"
 #include "SkyRenderableInstance.hpp" 

@@ -36,7 +36,9 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 #include "screen-dump.hxx"
 

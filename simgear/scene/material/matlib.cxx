@@ -33,11 +33,11 @@
 #  include <windows.h>
 #endif
 
-#include <GL/gl.h>
-
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
+
+#include SG_GL_H
 
 #include <string.h>
 #include STL_STRING

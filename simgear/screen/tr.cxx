@@ -2,8 +2,13 @@
 
 /*
  * $Log$
- * Revision 1.1  2002/09/07 02:58:19  curt
- * Initial revision
+ * Revision 1.2  2004/11/18 19:10:34  curt
+ * Abstract out location of gl.h, glut.h, and glu.h includes so that we can
+ * make the Mac platform happy since they put these in a different place compared
+ * to the rest of the world.
+ *
+ * Revision 1.1.1.1  2002/09/07 02:58:19  curt
+ * Initial revsion of Simgear-0.3.0
  *
  * Revision 1.3  2001/07/30 20:34:21  curt
  * Various MSVC fixes.
@@ -62,8 +67,9 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
-#include <GL/gl.h>
-#include <GL/glu.h>
+
+#include SG_GLU_H
+
 #include <plib/ssg.h>
 #include "tr.h"
 

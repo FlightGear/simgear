@@ -48,10 +48,13 @@ OpenGL(TM) is a trademark of Silicon Graphics, Inc.
 #  include <simgear_config.h>
 #endif
 
-#include "glut_shapes.h"
-
 #include <math.h>
-#include <GL/glu.h>
+
+#include <simgear/compiler.h>
+
+#include SG_GLU_H
+
+#include "glut_shapes.h"
 
 
 /* Some <math.h> files do not define M_PI... */

@@ -2,8 +2,13 @@
 
 /*
  * $Log$
- * Revision 1.1  2002/09/07 02:58:19  curt
- * Initial revision
+ * Revision 1.2  2004/11/18 19:10:34  curt
+ * Abstract out location of gl.h, glut.h, and glu.h includes so that we can
+ * make the Mac platform happy since they put these in a different place compared
+ * to the rest of the world.
+ *
+ * Revision 1.1.1.1  2002/09/07 02:58:19  curt
+ * Initial revsion of Simgear-0.3.0
  *
  * Revision 1.1  2001/06/26 15:19:39  curt
  * Added tr.cxx / tr.h, Brian Paul's LGPL'd tiled rendering support libs for
@@ -75,8 +80,9 @@
 #ifndef TR_H
 #define TR_H
 
+#include <simgear/compiler.h>
 
-#include <GL/gl.h>
+#include SG_GL_H
 
 
 //#ifdef __cplusplus

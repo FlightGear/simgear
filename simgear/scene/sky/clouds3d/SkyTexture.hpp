@@ -33,7 +33,9 @@
 #  include <windows.h>
 #endif
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 #define __glext_h_
 #define __GLEXT_H_

@@ -13,7 +13,8 @@
 #ifndef __SG_TEXTURE_HXX
 #define __SG_TEXTURE_HXX 1
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+#include SG_GL_H
 #include <zlib.h>
 
 #include <plib/sg.h>

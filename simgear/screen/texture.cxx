@@ -12,10 +12,13 @@
  */
 
 #include <simgear/compiler.h>
+
 #ifdef WIN32
 # include <windows.h>
 #endif
-#include <GL/glu.h>
+
+#include SG_GLU_H
+
 #include <zlib.h>
 
 #include "texture.hxx"

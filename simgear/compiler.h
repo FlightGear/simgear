@@ -365,6 +365,23 @@
 #endif // __ICC
 
 //
+// Platform dependent gl.h and glut.h definitions
+//
+
+#ifdef __APPLE__
+#  define SG_GL_H <OpenGL/gl.h>
+#  define SG_GLU_H <OpenGL/glu.h>
+#  define SG_GLUT_H <OpenGL/glut.h>
+#  define SG_GLEXT_H <OpenGL/glext.h>
+#else
+#  define SG_GL_H <GL/gl.h>
+#  define SG_GLU_H <GL/glu.h>
+#  define SG_GLUT_H <GL/glut.h>
+#  define SG_GLEXT_H <GL/glext.h>
+#endif
+
+
+//
 // No user modifiable definitions beyond here.
 //
 

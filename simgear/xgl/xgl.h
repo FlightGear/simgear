@@ -14,8 +14,10 @@
 # include <windows.h>
 #endif
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include <simgear/compiler.h>
+#include SG_GLU_H
+#include SG_GL_H
+
 #include <stdio.h>
 
 

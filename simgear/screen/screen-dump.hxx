@@ -22,8 +22,9 @@
 //
 // $Id$
 
+#include <simgear/compiler.h>
 
-#include <GL/gl.h>
+#include SG_GL_H
 
 /**
  * Dump the screen buffer to a ppm file.

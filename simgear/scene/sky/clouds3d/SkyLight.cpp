@@ -28,7 +28,9 @@
 #  include <windows.h>
 #endif
 
-#include <GL/glu.h>
+#include <simgear/compiler.h>
+
+#include SG_GLU_H
 
 #include "glut_shapes.h"
 

@@ -14,7 +14,9 @@
 # include <windows.h>
 #endif
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 #ifdef __cplusplus
 extern "C" {

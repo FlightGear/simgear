@@ -33,7 +33,9 @@
 
 #include <math.h>
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 #include <plib/sg.h>
 

@@ -15,7 +15,9 @@
 #include <limits.h>
 #include <string.h>		// memcpy()
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 #include "GLBitmaps.h"
 

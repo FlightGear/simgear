@@ -36,7 +36,9 @@
 # include <dlfcn.h>
 #endif
 
-#include <GL/gl.h>
+#include <simgear/compiler.h>
+
+#include SG_GL_H
 
 
 #if defined(__cplusplus)

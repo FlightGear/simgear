@@ -9,6 +9,7 @@ include_HEADERS = \
 	sg_file.hxx \
 	sg_serial.hxx \
 	sg_socket.hxx
+	sg_socket_udp.hxx
 
 libsgio_a_SOURCES = \
 	iochannel.cxx \
@@ -16,7 +17,8 @@ libsgio_a_SOURCES = \
 	sg_binobj.cxx \
 	sg_file.cxx \
 	sg_serial.cxx \
-	sg_socket.cxx 
+	sg_socket.cxx \
+	sg_socket_udp.cxx 
 
 INCLUDES += -I$(top_srcdir)
 

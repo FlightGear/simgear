@@ -158,6 +158,7 @@ public:
     inline void set_dir( const SGProtocolDir d ) { dir = d; }
     inline SGProtocolDir get_dir() const { return dir; }
     inline bool isvalid() const { return valid; }
+    inline void set_valid( const bool v ) { valid = v; }
 };
 
 

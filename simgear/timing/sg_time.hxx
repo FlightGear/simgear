@@ -125,7 +125,7 @@ public:
      * @param root root path point to data file location (timezone, etc.)
      * @param init_time provide an initialization time, 0 means use
               current clock time */
-    SGTime( double lon, double lat, const string& root, time_t init_time = 0 );
+    SGTime( double lon, double lat, const string& root, time_t init_time /* = 0 */ );
 
     /**
      * Create an instance given a data file path.
@@ -135,6 +135,9 @@ public:
 
     /** Destructor */
     ~SGTime();
+
+    /** init common constructor code */
+    void init( double lon, double lat, const string& root, time_t init_time /* = 0 */ );
 
     /** 
      * Update the time related variables.
@@ -149,7 +152,7 @@ public:
               clock time
      * @param warp an optional time offset specified in seconds.  This
      *        allows us to advance or rewind "time" if we choose to.  */
-    void update( double lon, double lat, time_t ct = 0, long int warp = 0 );
+    void update( double lon, double lat, time_t ct /* = 0 */, long int warp /* = 0 */ );
 
     /**
      * Given lon/lat, update timezone information and local_offset
@@ -244,7 +247,7 @@ double sgTimeCalcMJD(int mn, double dy, int yr);
  * @param warp number of seconds to offset from current time (0 if no offset)
  * @return current modified Julian date (number of days elapsed
  * since 1900 jan 0.5), mjd. */
-double sgTimeCurrentMJD( time_t ct = 0, long int warp = 0 );
+double sgTimeCurrentMJD( time_t ct /* = 0 */, long int warp /* = 0 */ );
 
 /**
  * \relates SGTime

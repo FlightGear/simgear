@@ -70,7 +70,8 @@ static const double J2000   = 2451545.0 - MJD0;
 static const double SIDRATE = 0.9972695677;
 
 
-SGTime::SGTime( double lon, double lat, const string& root, time_t init_time )
+void SGTime::init( double lon, double lat,
+                   const string& root, time_t init_time )
 {
     SG_LOG( SG_EVENT, SG_INFO, "Initializing Time" );
 
@@ -108,14 +109,19 @@ SGTime::SGTime( double lon, double lat, const string& root, time_t init_time )
     }
 }
 
+SGTime::SGTime( double lon, double lat, const string& root, time_t init_time )
+{
+    init( lon, lat, root, init_time );
+}
+
 
 SGTime::SGTime( const string& root ) {
-    SGTime( 0.0, 0.0, root );
+    init( 0.0, 0.0, root, 0 );
 }
 
 
 SGTime::SGTime() {
-    SGTime( 0.0, 0.0, "" );
+    init( 0.0, 0.0, "", 0 );
 }
 
 
@@ -158,7 +164,7 @@ static double sidereal_precise( double mjd, double lng )
 
 
 // return a courser but cheaper estimate of sidereal time
-static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
+static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng )
 {
     time_t start_gmt, now;
     double diff, part, days, hours, lstTmp;
@@ -228,7 +234,7 @@ void SGTime::update( double lon, double lat, time_t ct, long int warp ) {
 	    << gmt->tm_sec );
 
     // calculate modified Julian date starting with current
-    mjd = sgTimeCurrentMJD( warp );
+    mjd = sgTimeCurrentMJD( ct, warp );
 
     // add in partial day
     mjd += (gmt->tm_hour / 24.0) + (gmt->tm_min / (24.0 * 60.0)) +
@@ -379,7 +385,12 @@ double sgTimeCurrentMJD( time_t ct, long int warp ) {
 
     // get current Unix calendar time (in seconds)
     // warp += warp_delta;
-    time_t cur_time = time(NULL) + warp;
+    time_t cur_time;
+    if ( ct ) {
+        cur_time = ct + warp;
+    } else {
+        cur_time = time(NULL) + warp;
+    }
     SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current Unix calendar time = " << cur_time 
 	    << "  warp = " << warp );

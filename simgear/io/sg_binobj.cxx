@@ -205,11 +205,18 @@ bool SGBinObject::read_bin( const string& file ) {
     // read creation time
     time_t calendar_time;
     sgReadLong( fp, &calendar_time );
+
+#if 0
+    // The following code has a global effect on the host application
+    // and can screws up the time elsewhere.  It should be avoided
+    // unless you need this for debugging in which case you should
+    // disable it again once the debugging task is finished.
     struct tm *local_tm;
     local_tm = localtime( &calendar_time );
     char time_str[256];
     strftime( time_str, 256, "%a %b %d %H:%M:%S %Z %Y", local_tm);
-    // cout << "File created on " << time_str << endl;
+    cout << "File created on " << time_str << endl;
+#endif
 
     // read number of top level objects
     short nobjects;

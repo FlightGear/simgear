@@ -1,5 +1,5 @@
 New in 0.0.15
-* June 22, 2001
+* June 20, 2001
 * Various bug fixes, tweaks, and optimizations.
 * Added a command manager (analogous to the property manager)
 * Better Irix Mips support.

@@ -22,6 +22,8 @@
 
 #pragma warning( disable : 4786)
 
+#include <GL/glu.h>
+
 #include "SkyTextureManager.hpp"
 #include "SkyContext.hpp"
 //#include "glvu.hpp"

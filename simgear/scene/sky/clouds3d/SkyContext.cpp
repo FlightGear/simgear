@@ -28,7 +28,7 @@
 #  include <windows.h>
 #endif
 
-#include GLUT_H
+// #include GLUT_H
 
 #ifndef WIN32
 #include <GL/glx.h>
@@ -52,8 +52,10 @@
  */ 
 SkyContext::SkyContext()
 {
-  _iWidth  = glutGet(GLUT_WINDOW_WIDTH);
-  _iHeight = glutGet(GLUT_WINDOW_HEIGHT);
+  // _iWidth  = glutGet(GLUT_WINDOW_WIDTH);
+  // _iHeight = glutGet(GLUT_WINDOW_HEIGHT);
+  _iWidth  = 640;
+  _iHeight = 480;
   
   // materials and structure classes
   AddCurrentGLContext();

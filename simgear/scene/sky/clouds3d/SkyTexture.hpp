@@ -33,7 +33,7 @@
 #  include <windows.h>
 #endif
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #define __glext_h_
 #define __GLEXT_H_

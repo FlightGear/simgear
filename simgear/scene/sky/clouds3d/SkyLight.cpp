@@ -28,7 +28,9 @@
 #  include <windows.h>
 #endif
 
-#include GLUT_H
+#include <GL/glu.h>
+
+#include "glut_shapes.h"
 
 #ifdef WIN32
 # ifdef _MSC_VER

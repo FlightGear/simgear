@@ -36,7 +36,7 @@
 
 #include <map>
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #include "SkyUtil.hpp"
 #include "SkySingleton.hpp"

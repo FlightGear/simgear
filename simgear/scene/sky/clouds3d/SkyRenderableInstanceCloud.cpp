@@ -19,6 +19,9 @@
  * 
  * Implementation of class SkyRenderableInstanceCloud.
  */
+
+#include <GL/glu.h>
+
 #include "SkyUtil.hpp"
 #include "SkyCloud.hpp"
 #include "SkyMaterial.hpp"

@@ -25,6 +25,7 @@ libsgclouds3d_a_SOURCES = \
 	plane.cpp plane.hpp \
 	camera.cpp camera.hpp \
 	camutils.cpp camutils.hpp \
+	glut_shapes.c glut_shapes.h \
 	minmaxbox.cpp minmaxbox.hpp \
 	SkyAABBTree.hpp \
 	SkyArchive.cpp SkyArchive.hpp \

@@ -25,6 +25,7 @@
 // warning for truncation of template name for browse info
 #pragma warning( disable : 4786)
 
+#include <GL/glu.h>
 #include <plib/ul.h>
 
 #include "SkyCloud.hpp"

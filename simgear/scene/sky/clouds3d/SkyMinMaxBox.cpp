@@ -29,7 +29,7 @@
 #  include <windows.h>
 #endif
 
-#include GLUT_H
+#include <GL/gl.h>
 
 #include "SkyMinMaxBox.hpp"
 #include "camutils.hpp"

@@ -24,14 +24,12 @@
 
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include STL_IOSTREAM
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
-
-SG_USING_STD(cout);
-SG_USING_STD(endl);
 
 
 // return a sphere object as an ssgBranch
@@ -112,11 +110,11 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
 
 	if ( vl->getNum() != nl->getNum() ) {
-	    cout << "bad sphere1" << endl;
+            SG_LOG( SG_EVENT, SG_ALERT, "bad sphere1");
 	    exit(-1);
 	}
 	if ( vl->getNum() != tl->getNum() ) {
-	    cout << "bad sphere2" << endl;
+            SG_LOG( SG_EVENT, SG_ALERT, "bad sphere2");
 	    exit(-1);
 	}
 	slice->setState( state );

@@ -26,6 +26,7 @@
 
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
 #include STL_IOSTREAM
@@ -34,9 +35,6 @@
 #include <plib/ssg.h>
 
 #include "stars.hxx"
-
-SG_USING_STD(cout);
-SG_USING_STD(endl);
 
 
 // Set up star rendering call backs
@@ -85,9 +83,9 @@ SGStars::~SGStars( void ) {
 ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
     sgVec4 color;
 
-    if ( star_data == NULL ) {
-        cout << "WARNING: null star data passed to SGStars::build()" << endl;
-    }
+    if ( star_data == NULL )
+        SG_LOG( SG_EVENT, SG_WARN, "null star data passed to SGStars::build()");
+
 
     // set up the orb state
     state = new ssgSimpleState();
@@ -137,7 +135,7 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
 
     stars_transform->addKid( stars_obj );
 
-    cout << "stars = " << stars_transform << endl;
+    SG_LOG( SG_EVENT, SG_INFO, "stars = " << stars_transform);
 
     return stars_transform;
 }

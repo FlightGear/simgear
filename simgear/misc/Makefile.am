@@ -33,6 +33,6 @@ props_test_SOURCES = props_test.cxx
 props_test_LDADD = libsgmisc.a ../xml/libsgxml.a ../debug/libsgdebug.a
 
 tabbed_value_test_SOURCES = tabbed_values_test.cxx
-tabbed_value_test_LDADD = libsgmisc.a ../debug/libsgdebug.a
+tabbed_value_test_LDADD = libsgmisc.a ../xml/libsgxml.a ../debug/libsgdebug.a
 
 INCLUDES = -I$(top_srcdir)

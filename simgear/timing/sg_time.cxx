@@ -83,10 +83,10 @@ void SGTime::init( double lon, double lat,
 	cur_time = time(NULL); 
     }
 
-    cout << "Current greenwich mean time = " << asctime(gmtime(&cur_time))
-         << endl;
-    cout << "Current local time          = " 
-         << asctime(localtime(&cur_time)) << endl;
+    SG_LOG( SG_EVENT, SG_INFO,
+                "Current greenwich mean time = " << asctime(gmtime(&cur_time)));
+    SG_LOG( SG_EVENT, SG_INFO,
+             "Current local time          = " << asctime(localtime(&cur_time)));
 
     if ( !root.empty()) {
         SGPath zone( root );

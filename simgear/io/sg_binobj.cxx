@@ -27,6 +27,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
 #include <time.h>
@@ -42,8 +43,6 @@
 
 SG_USING_STD( string );
 SG_USING_STD( vector );
-SG_USING_STD( cout );
-SG_USING_STD( endl );
 
 
 enum {
@@ -90,7 +89,7 @@ public:
 	while ( size < s ) {
 	    size *= 2;
 	}
-	cout << "Creating a new buffer of size = " << size << endl;
+        SG_LOG(SG_EVENT, SG_DEBUG, "Creating a new buffer of size = " << size);
 	ptr = new char[size];
     }
 
@@ -108,7 +107,7 @@ public:
 	    while ( size < s ) {
 		size *= 2;
 	    }
-	    cout << "resizing buffer to size = " << size << endl;
+            SG_LOG(SG_EVENT, SG_DEBUG, "resizing buffer to size = " << size);
 	    ptr = new char[size];
 	}
     }
@@ -322,8 +321,8 @@ bool SGBinObject::read_bin( const string& file ) {
     if ( (fp = gzopen( file.c_str(), "rb" )) == NULL ) {
 	string filegz = file + ".gz";
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
-	    cout << "ERROR: opening " << file << " or " << filegz
-	         << "for reading!" << endl;
+            SG_LOG( SG_EVENT, SG_ALERT,
+               "ERROR: opening " << file << " or " << filegz << "for reading!");
 
 	    return false;
 	}
@@ -361,7 +360,7 @@ bool SGBinObject::read_bin( const string& file ) {
     local_tm = localtime( &calendar_time );
     char time_str[256];
     strftime( time_str, 256, "%a %b %d %H:%M:%S %Z %Y", local_tm);
-    cout << "File created on " << time_str << endl;
+    SG_LOG( SG_EVENT, SG_DEBUG, "File created on " << time_str);
 #endif
 
     // read number of top level objects

@@ -48,7 +48,7 @@ mgcLinInterp2D<T>::mgcLinInterp2D (int _numPoints, double* x, double* y,
         return;
     }
 
-    cout << "[ 20%] allocating memory                                              \r";
+    // cout << "[ 20%] allocating memory                                              \r";
 
     point = new double*[numPoints];
     tmppoint = new double*[numPoints+3];
@@ -66,7 +66,7 @@ mgcLinInterp2D<T>::mgcLinInterp2D (int _numPoints, double* x, double* y,
 	f[i] = _f[i];
     }
 
-    cout << "[ 30%] creating delaunay diagram                                      \r";
+    // cout << "[ 30%] creating delaunay diagram                                      \r";
 
     Delaunay2D();
 }
@@ -279,7 +279,7 @@ int mgcLinInterp2D<T>::Delaunay2D ()
     nts = 1;  // number of triangles
     i4 = 1;
 
-    cout << "[ 40%] create triangulation                                     \r";
+    // cout << "[ 40%] create triangulation                                     \r";
 
     // compute triangulation
     for (i0 = 0; i0 < numPoints; i0++)
@@ -372,7 +372,7 @@ Corner3:;
     }
 
     // count the number of triangles
-    cout << "[ 50%] count the number of triangles                                  \r";
+    // cout << "[ 50%] count the number of triangles                                  \r";
 
     numTriangles = 0;
     i0 = -1;
@@ -394,7 +394,7 @@ Corner3:;
     }
 
     // create the triangles
-    cout << "[ 60%] create the triangles                                         \r";
+    // cout << "[ 60%] create the triangles                                         \r";
 
     triangle = new Triangle[numTriangles];
 
@@ -428,7 +428,7 @@ Corner3:;
     }
 
     // build edge table
-    cout << "[ 70%] build the edge table                                       \r";
+    // cout << "[ 70%] build the edge table                                       \r";
 
     numEdges = 0;
     edge = new Edge[3*numTriangles];
@@ -436,8 +436,8 @@ Corner3:;
     int j, j0, j1;
     for (i = 0; i < numTriangles; i++)
     {
-	if ( (i%500) == 0)
-	    cout << "[ 7" << 10*i/numTriangles << "%] build the edge table                                       \r";
+	// if ( (i%500) == 0)
+	    // cout << "[ 7" << 10*i/numTriangles << "%] build the edge table                                       \r";
 
         Triangle& t = triangle[i];
 
@@ -470,7 +470,7 @@ Corner3:;
     }
 
     // establish links between adjacent triangles
-    cout << "[ 80%] establishing links between adjacent triangles                                       \r";
+    // cout << "[ 80%] establishing links between adjacent triangles                                       \r";
 
     for (i = 0; i < numEdges; i++)
     {
@@ -494,7 +494,7 @@ ExitDelaunay:;
     delete[] ccr[0];
     delete[] ccr;
 
-    cout << "[ 90%] finsishes delauney triangulation                            \r";
+    // cout << "[ 90%] finsishes delauney triangulation                            \r";
 
     return result;
 }

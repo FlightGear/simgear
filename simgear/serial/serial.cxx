@@ -46,9 +46,6 @@
 
 #include "serial.hxx"
 
-SG_USING_STD(cout);
-SG_USING_STD(endl);
-
 FGSerialPort::FGSerialPort()
     : dev_open(false)
 {
@@ -108,7 +105,7 @@ bool FGSerialPort::open_port(const string& device) {
     struct termios config;
 
     fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
-    cout << "Serial fd created = " << fd << endl;
+    SG_LOG( SG_EVENT, SG_DEBUG, "Serial fd created = " << fd);
 
     if ( fd  == -1 ) {
 	SG_LOG( SG_IO, SG_ALERT, "Cannot open " << device

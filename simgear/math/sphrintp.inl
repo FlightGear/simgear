@@ -45,8 +45,8 @@ SphereInterpolate<T>::SphereInterpolate (int n, const double* x,
     // For complete spherical coverage, include the two antipodal points
     // (0,0,1,f(0,0,1)) and (0,0,-1,f(0,0,-1)) in the data set.
     
-    cout << "Initialising spherical interpolator.\n";
-    cout << "[  0%] Allocating memory                                           \r";
+    // cout << "Initialising spherical interpolator.\n";
+    // cout << "[  0%] Allocating memory                                           \r";
 
     theta = new double[3*n];
     phi = new double[3*n];
@@ -63,7 +63,7 @@ SphereInterpolate<T>::SphereInterpolate (int n, const double* x,
     }
     
     // use periodicity to get wrap-around in the Delaunay triangulation
-    cout << "[ 10%] copying vertices for wrap-around\r";
+    // cout << "[ 10%] copying vertices for wrap-around\r";
     int j, k;
     for (i = 0, j = n, k = 2*n; i < n; i++, j++, k++)
     {
@@ -77,7 +77,7 @@ SphereInterpolate<T>::SphereInterpolate (int n, const double* x,
     
     pInterp = new mgcLinInterp2D<T>(3*n,theta,phi,func);
 
-    cout << "[100%] Finished initialising spherical interpolator.                   \n";
+    // cout << "[100%] Finished initialising spherical interpolator.                   \n";
 }
 
 template<class T>
@@ -86,15 +86,15 @@ SphereInterpolate<T>::SphereInterpolate (int n, const sgVec2* p, const T* f)
     // Assumes (x[i],y[i],z[i]) is unit length for all 0 <= i < n.
     // For complete spherical coverage, include the two antipodal points
     // (0,0,1,f(0,0,1)) and (0,0,-1,f(0,0,-1)) in the data set.
-    cout << "Initialising spherical interpolator.\n";
-    cout << "[  0%] Allocating memory                                           \r";
+    // cout << "Initialising spherical interpolator.\n";
+    // cout << "[  0%] Allocating memory                                           \r";
 
     theta = new double[3*n];
     phi = new double[3*n];
     func = new T[3*n];
 
     // convert data to spherical coordinates
-    cout << "[ 10%] copying vertices for wrap-around                              \r";
+    // cout << "[ 10%] copying vertices for wrap-around                              \r";
 
     int i, j, k;
     for (i = 0, j = n, k = 2*n; i < n; i++, j++, k++)
@@ -114,7 +114,7 @@ SphereInterpolate<T>::SphereInterpolate (int n, const sgVec2* p, const T* f)
     
     pInterp = new mgcLinInterp2D<T>(3*n,theta,phi,func);
 
-    cout << "[100%] Finished initialising spherical interpolator.                   \n";
+    // cout << "[100%] Finished initialising spherical interpolator.                   \n";
 }
 //---------------------------------------------------------------------------
 template<class T>

@@ -149,7 +149,8 @@ static GLuint makeHalo( GLubyte *sun_texbuf, int width ) {
     texSize = width * width;
   
     if ( !sun_texbuf ) {
-	cout << "ouch ..." << endl;
+        SG_LOG( SG_EVENT, SG_ALERT,
+                               "Could not allocate memroy for the sun texture");
 	exit(-1);  // Ugly!
     }
 

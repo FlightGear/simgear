@@ -46,8 +46,8 @@ AR="ar"
 ARFLAGS="cru"
 case "${host}" in
 *-*-irix*)
-    if test "$CXX" = "CC"; then
-        AR="CC -ar"
+    if test "x$CXX" = "xCC" -o "x$CXX" = "xccache CC"; then
+        AR="$CXX -ar"
         ARFLAGS="-o"
         CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility"
     fi
@@ -178,7 +178,6 @@ dnl check for some default libraries
 AC_SEARCH_LIBS(cos, m)
 
 base_LIBS="$LIBS"
-LIBS=""
 
 dnl check for glut location
 AC_CHECK_HEADER(GL/glut.h)

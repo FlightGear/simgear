@@ -308,7 +308,7 @@
 #  define STL_FSTREAM    <fstream>
 #  define STL_STDEXCEPT  <stdexcept>
 #if (_COMPILER_VERSION < 740)
-#  define STL_STRING     <simgear/compatibility/irix_string>
+#  define STL_STRING     <irix_string>
 #else
 #  define STL_STRING     <string>
 #endif
@@ -319,6 +319,9 @@
 
 #ifdef __cplusplus
 #pragma set woff 1682,3303
+#if (_COMPILER_VERSION >= 740)
+#  pragma set woff 3624
+#endif
 #endif
 
 #  define SG_COMPILER_STR "SGI MipsPro compiler version " SG_STRINGIZE(_COMPILER_VERSION)

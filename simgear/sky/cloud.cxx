@@ -42,6 +42,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path )
     layer_transform(new ssgTransform),
     layer(0),
     texture_path(tex_path),
+    layer_span(0),
     layer_asl(0),
     layer_thickness(0),
     layer_transition(0),

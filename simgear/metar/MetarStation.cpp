@@ -9,7 +9,7 @@
 // options is too tightly integrated into FlightGear to use in a test program
 #include <Main/options.hxx>
 #endif
-#include <Misc/fgpath.hxx>
+#include <simgear/misc/fgpath.hxx>
 
 
 std::vector< CMetarStation *> METAR_Stations;

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>		// memcpy()
 
 #include <GL/glut.h>
 #include <simgear/xgl/xgl.h>

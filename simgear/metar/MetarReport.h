@@ -10,8 +10,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <Math/point3d.hxx>
-#include <Math/polar3d.hxx>
+#include <simgear/math/point3d.hxx>
+#include <simgear/math/polar3d.hxx>
 
 class CMetarReport
 {

@@ -80,7 +80,9 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
     Point3D tmin, tmax, p, t;
     bool first = true;
 
-    for ( int i = 0; i < (int)fan.size(); ++i ) {
+    int i;
+
+    for ( i = 0; i < (int)fan.size(); ++i ) {
 	p = geod_nodes[ fan[i] ];
 	// cout << "point p = " << p << endl;
 
@@ -162,7 +164,7 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
     Point3D adjusted_t;
     point_list tex;
     tex.clear();
-    for ( int i = 0; i < (int)fan.size(); ++i ) {
+    for ( i = 0; i < (int)fan.size(); ++i ) {
 	p = geod_nodes[ fan[i] ];
 	t = basic_tex_coord( p, degree_width, degree_height, scale );
 	// cout << "second t = " << t << endl;

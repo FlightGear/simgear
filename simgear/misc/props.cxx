@@ -8,6 +8,10 @@
 
 #include "props.hxx"
 
+#include <algorithm>
+#include <stdio.h>
+#include <string.h>
+
 #if PROPS_STANDALONE
 
 #include <iostream>
@@ -17,16 +21,12 @@ using std::sort;
 
 #else
 
-#include <algorithm>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 
 SG_USING_STD(sort);
 
 #endif
-
-#include <stdio.h>
-#include <string.h>
 
 
 
@@ -418,7 +418,7 @@ SGPropertyNode::set_string (const char * val)
   if (_tied) {
     return _value.string_val->setValue(val);
   } else {
-    delete (char *)_local_val.string_val;
+    delete [] (char *)_local_val.string_val;
     _local_val.string_val = copy_string(val);
     return true;
   }
@@ -474,7 +474,7 @@ SGPropertyNode::clear_value ()
       delete _value.string_val;
       _value.string_val = 0;
     } else {
-      delete (char *)_local_val.string_val;
+      delete [] (char *)_local_val.string_val;
     }
     _local_val.string_val = 0;
     break;
@@ -676,7 +676,7 @@ SGPropertyNode::SGPropertyNode (const char * name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  delete (char *)_name;
+  delete [] (char *)_name;
   for (int i = 0; i < (int)_children.size(); i++) {
     delete _children[i];
   }

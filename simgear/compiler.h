@@ -307,7 +307,11 @@
 #  define STL_ITERATOR   <iterator>
 #  define STL_FSTREAM    <fstream>
 #  define STL_STDEXCEPT  <stdexcept>
+#if (_COMPILER_VERSION < 740)
 #  define STL_STRING     <simgear/compatibility/irix_string>
+#else
+#  define STL_STRING     <string>
+#endif
 #  define STL_STRSTREAM  <strstream>
 
 #pragma set woff 1001,1012,1014,1116,1155,1172,1174

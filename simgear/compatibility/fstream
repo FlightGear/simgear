@@ -8,8 +8,28 @@
 
   namespace std {
     using ::fstream;
-    using ::ifstream;
     using ::ofstream;
+
+# ifdef SG_HAVE_NATIVE_SGI_COMPILERS
+    using ::ifstream;
+# else
+    class ifstream : public ::ifstream {
+    private:
+       ::ifstream *ifs;
+    public:
+       ifstream() { ifs = new ::ifstream(); }
+       ifstream(int fd) { ifs = new ::ifstream(fd); }
+       ifstream(int fd, char*  p, int l) { ifs = new ::ifstream(fd, p, l); }
+       ifstream(const char* name, int mode=ios::in, int prot=filebuf::openprot)
+          { ifs = new ::ifstream(name, mode, prot); };
+       ~ifstream() { delete ifs; }
+
+       filebuf* rdbuf() { return ifs->rdbuf(); }
+       void open(const char* name, int mode=ios::in, int prot=filebuf::openprot)
+          { ifs->open(name, mode, prot); }
+       int is_open() { return (!ifs->fail() && !ifs->eof()); }
+    };
+# endif
   };
 
 

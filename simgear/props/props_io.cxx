@@ -368,7 +368,6 @@ getTypeName (SGPropertyNode::Type type)
   case SGPropertyNode::STRING:
     return "string";
   case SGPropertyNode::ALIAS:
-    return "alias";
   case SGPropertyNode::NONE:
     return "unspecified";
   }
@@ -551,7 +550,7 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 				// First, copy the actual value,
 				// if any.
   if (in->hasValue()) {
-    switch (in->getType(false)) {
+    switch (in->getType()) {
     case SGPropertyNode::BOOL:
       if (!out->setBoolValue(in->getBoolValue()))
 	retval = false;
@@ -580,13 +579,9 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
       if (!out->setUnspecifiedValue(in->getStringValue()))
 	retval = false;
       break;
-    case SGPropertyNode::ALIAS: {
-      const char *path = in->getAliasTarget()->getPath();
-      SGPropertyNode *node = out->getRootNode()->getNode(path, true);
-      out->alias(node);
-      break;
-    }
     default:
+      if (in->isAlias())
+	break;
       string message = "Unknown internal SGPropertyNode type";
       message += in->getType();
       throw sg_error(message, "SimGear Property Reader");

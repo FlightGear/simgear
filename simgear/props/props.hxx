@@ -850,10 +850,8 @@ public:
 
   /**
    * Get the type of leaf value, if any, for this node.
-   * When applied to an ALIAS node, deref_alias decides if the type
-   * of the referred node is to be returned (default), or ALIAS.
    */
-  Type getType (bool deref_alias = true) const;
+  Type getType () const;
 
 
   /**

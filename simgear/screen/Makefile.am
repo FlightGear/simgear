@@ -12,10 +12,10 @@ IMAGE_SERVER_INCL =
 IMAGE_SERVER_SRCS = 
 endif
 
-noinst_HEADERS = \
-        colours.h
+noinst_HEADERS = colours.h
 
 include_HEADERS = \
+	colors.hxx \
 	texture.hxx \
 	$(IMAGE_SERVER_INCL) \
 	screen-dump.hxx \

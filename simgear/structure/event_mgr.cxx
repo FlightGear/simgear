@@ -71,12 +71,12 @@ SGEvent::SGEvent( const char* name,
 }
 
 SGEvent::SGEvent( const char* name,
-                  const SGSubsystem* subsystem,
+                  SGSubsystem* subsystem,
                   interval_type repeat_value,
                   interval_type initial_value )
     : _name(name),
       _callback(NULL),
-      _subsystem((SGSubsystem*)&subsystem),
+      _subsystem(subsystem),
       _repeat_value(repeat_value),
       _initial_value(initial_value),
       _cum_time(0),

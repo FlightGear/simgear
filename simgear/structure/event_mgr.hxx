@@ -71,7 +71,7 @@ public:
              interval_type initial_value );
 
     SGEvent( const char* desc,
-             const SGSubsystem* subsystem,
+             SGSubsystem* subsystem,
              interval_type repeat_value,
              interval_type initial_value );
 
@@ -176,7 +176,7 @@ public:
      * -1 means run immediately.
      */
     inline void add( const char* name,
-                     const SGSubsystem* subsystem,
+                     SGSubsystem* subsystem,
                      interval_type repeat_value,
                      interval_type initial_value = -1 )
     {

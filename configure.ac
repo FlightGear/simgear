@@ -303,6 +303,17 @@ case "${host}" in
 
 esac
 
+if test "x$OPENAL_OK" != "xyes"; then
+    echo
+    echo "You *must* have the openal library installed on your system to build"
+    echo "SimGear!"
+    echo
+    echo "Please see README.OpenAL for more details."
+    echo
+    echo "configure aborted."
+    exit
+fi
+
 openal_LIBS="$LIBS"
 LIBS="$base_LIBS"
 

@@ -13,12 +13,6 @@ libsgtiming_a_SOURCES = \
 	geocoord.cxx \
 	lowleveltime.cxx \
 	sg_time.cxx \
-	timezone.cxx \
-	# event.cxx event.hxx \
-	# fg_timer.cxx fg_timer.hxx \
-	# light.cxx light.hxx \
-	# moonpos.cxx moonpos.hxx \
-	# sunpos.cxx sunpos.hxx \
-	# timestamp.hxx
+	timezone.cxx
 
 INCLUDES += -I$(top_srcdir)

@@ -376,6 +376,7 @@ public:
 
 
 /**
+ * @relates XMLVisitor
  * Read an XML document.
  *
  * This function reads an XML document from the input stream provided,

@@ -38,6 +38,7 @@ SUBDIRS = \
 	screen \
 	$(SERIAL_DIRS) \
 	sky \
+        threads \
 	timing \
 	xgl \
 	$(ZLIB_DIRS)

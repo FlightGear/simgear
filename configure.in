@@ -279,6 +279,7 @@ AC_OUTPUT( \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sky/Makefile \
+	simgear/threads/Makefile \
 	simgear/timing/Makefile \
 	simgear/xgl/Makefile \
 	simgear/xml/Makefile \

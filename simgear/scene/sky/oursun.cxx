@@ -349,9 +349,10 @@ bool SGSun::repaint( double sun_angle ) {
         sun_factor = sun_factor/2 + 0.5;
 
         sgVec4 color;
-        color[0] = pow(sun_factor, 0.25);
-        color[1] = pow(sun_factor, 0.50);
-        color[2] = pow(sun_factor, 4.0);
+        color[1] = sqrt(sun_factor);
+        color[0] = sqrt(color[1]);
+        color[2] = sun_factor * sun_factor;
+        color[2] *= color[2];
         color[3] = 1.0;
 
         gamma_correct_rgb( color );

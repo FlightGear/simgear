@@ -67,7 +67,7 @@ protected:
 #else
         glDeleteTexturesEXT(1, &texture_id);
 #endif
-        texture_id = -1;
+        texture_id = 0;
     }
 
 
@@ -83,7 +83,7 @@ public:
     void read_raw_texture(const char *name);
     void read_r8_texture(const char *name);
 
-    inline bool usable() { return texture_data ? true : false; }
+    inline bool usable() { return (texture_id > 0) ? true : false; }
 
     inline GLuint id() { return texture_id; }
     inline GLubyte *texture() { return texture_data; }
@@ -99,20 +99,15 @@ public:
     void prepare(unsigned int width = 256, unsigned int height = 256);
     void finish(unsigned int width, unsigned int height);
 
-#if 0
     // texture pixel manipulation functions.
     void set_pixel(GLuint x, GLuint y, sgVec3 &c);
     sgVec3 *get_pixel(GLuint x, GLuint y);
-#endif
 
     void bind();
     inline void select() {
         glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB,
                       texture_width, texture_height, 0,
                       GL_RGB, GL_UNSIGNED_BYTE, texture_data );
-
-        delete texture_data;
-        texture_data = 0;
     }
 
     // Nowhere does it say that resident textures have to be in video memory!

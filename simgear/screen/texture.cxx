@@ -39,7 +39,7 @@ SGTexture::~SGTexture()
         delete texture_data;
     }
 
-    if ( texture_id >= 0 ) {
+    if ( texture_id != 0 ) {
         free_id();
     }
 }
@@ -331,7 +331,6 @@ SGTexture::read_r8_texture(const char *name)
 }
 
 
-#if 0
 void
 SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
 {
@@ -352,8 +351,6 @@ SGTexture::get_pixel(GLuint x, GLuint y)
 
     return &c;
 }
-#endif
-
 
 SGTexture::ImageRec *
 SGTexture::ImageOpen(const char *fileName)

@@ -40,14 +40,14 @@
 #  include <stdlib.h>
 #endif
 
+#ifdef HAVE_SYS_TIME_H
+#  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
+#endif
 #ifdef HAVE_SYS_TIMEB_H
 #  include <sys/timeb.h> // for ftime() and struct timeb
 #endif
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>    // for gettimeofday()
-#endif
-#ifdef HAVE_SYS_TIME_H
-#  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
 #endif
 
 #include <math.h>        // for NAN

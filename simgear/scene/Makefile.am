@@ -1,6 +1,6 @@
 includedir = @includedir@/scene
 
-SUBDIRS = fgsg material model sky tgdb
+SUBDIRS = material model sky tgdb
 
 # lib_LIBRARIES = libsgscene.a
 

@@ -39,6 +39,7 @@
 #include "saturn.hxx"
 #include "uranus.hxx"
 #include "neptune.hxx"
+#include "stars.hxx"
 
 
 class FGEphemeris {
@@ -59,11 +60,13 @@ class FGEphemeris {
     // planets[i][2] = Magnitude
     int nplanets;
     sgdVec3 planets[7];
-    
+
+    FGStars *stars;
+
 public:
 
     // Constructor
-    FGEphemeris( void );
+    FGEphemeris( const string &path );
 
     // Destructor
     ~FGEphemeris( void );
@@ -93,6 +96,10 @@ public:
     // planets
     inline int getNumPlanets() const { return nplanets; }
     inline sgdVec3 *getPlanets() { return planets; }
+
+    // planets
+    inline int getNumStars() const { return stars->getNumStars(); }
+    inline sgdVec3 *getStars() { return stars->getStars(); }
 };
 
 

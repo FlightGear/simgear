@@ -26,7 +26,7 @@
 
 
 // Constructor
-FGEphemeris::FGEphemeris( void ) {
+FGEphemeris::FGEphemeris( const string &path ) {
     our_sun = new Star;
     moon = new Moon;
     mercury = new Mercury;
@@ -36,6 +36,7 @@ FGEphemeris::FGEphemeris( void ) {
     saturn = new Saturn;
     uranus = new Uranus;
     neptune = new Neptune;
+    stars = new FGStars( FGPath(path) );
 }
 
 
@@ -50,6 +51,7 @@ FGEphemeris::~FGEphemeris( void ) {
     delete saturn;
     delete uranus;
     delete neptune;
+    delete stars;
 }
 
 

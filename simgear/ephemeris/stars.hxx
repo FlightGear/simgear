@@ -1,8 +1,8 @@
-// stars.hxx -- data structures and routines for managing and rendering stars.
+// stars.hxx -- manage star data
 //
-// Written by Curtis Olson, started August 1997.
+// Written by Curtis Olson, started March 2000.
 //
-// Copyright (C) 1997  Curtis L. Olson  - curt@me.umn.edu
+// Copyright (C) 2000  Curtis L. Olson - curt@flightgear.org
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -25,23 +25,37 @@
 #define _STARS_HXX
 
 
-#ifndef __cplusplus                                                          
-# error This library requires C++
-#endif                                   
+#include <plib/sg.h>
 
-#include <Time/fg_time.hxx>
+#include <simgear/misc/fgpath.hxx>
 
-#define FG_STAR_LEVELS 8         // how many star transitions
 
-// Initialize the Star Management Subsystem
-int fgStarsInit( void );
+#define FG_MAX_STARS 3500
 
-// Draw the Stars
-void fgStarsRender( void );
 
-// [no longer used?] extern FGTime cur_time_params;
+class FGStars {
+
+    int nstars;
+    sgdVec3 *stars;
+    
+    FGPath data_path;
+
+public:
+
+    // Constructor
+    FGStars();
+    FGStars( FGPath path );
+
+    // Destructor
+    ~FGStars();
+
+    // load the stars database
+    bool load();
+
+    // stars
+    inline int getNumStars() const { return nstars; }
+    inline sgdVec3 *getStars() { return stars; }
+};
 
 
 #endif // _STARS_HXX
-
-

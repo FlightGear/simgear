@@ -10,7 +10,6 @@ libAstro_a_SOURCES = \
 	neptune.cxx neptune.hxx \
 	pluto.hxx \
 	saturn.cxx saturn.hxx \
-	solarsystem.cxx solarsystem.hxx \
 	star.cxx star.hxx \
 	stars.cxx stars.hxx \
 	uranus.cxx uranus.hxx \

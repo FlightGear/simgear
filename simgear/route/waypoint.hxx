@@ -34,33 +34,48 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
+#include STL_STRING
+
+FG_USING_STD(string);
+
 
 class SGWayPoint {
 
 public:
 
     enum modetype { 
-	LATLON = 0,
-	XY = 1,
+	WGS84 = 0,
+	SPHERICAL = 1,
+	CARTESIAN = 2
     };
 
 private:
 
     modetype mode;
 
-    double lon;
-    double lat;
+    double target_lon;
+    double target_lat;
+
+    string id;
 
 public:
 
     SGWayPoint();
-    SGWayPoint( const double _lon, const double _lat );
-    SGWayPoint( const double _lon, const double _lat, const modetype _mode );
+    SGWayPoint( const double lon, const double lat,
+		const modetype m = WGS84, const string s = "" );
     ~SGWayPoint();
 
+    // Calculate course and distances.  Lat, lon, and azimuth are in
+    // degrees.  distance in meters
+    void CourseAndDistance( const double cur_lon, const double cur_lat,
+			    double *course, double *distance );
+
     inline modetype get_mode() const { return mode; }
-    inline double get_lon() const { return lon; }
-    inline double get_lat() const { return lat; }
+    inline double get_target_lon() const { return target_lon; }
+    inline double get_target_lat() const { return target_lat; }
+    inline string get_id() const { return id; }
 };
 
 

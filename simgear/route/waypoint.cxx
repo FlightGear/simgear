@@ -21,28 +21,57 @@
 // $Id$
 
 
+#include <simgear/math/polar3d.hxx>
+#include <simgear/math/sg_geodesy.hxx>
+
 #include "waypoint.hxx"
 
 
 // Constructor
-SGWayPoint::SGWayPoint( const double _lon, const double _lat,
-			const modetype _mode ) {
-    lon = _lon;
-    lat = _lat;
-    mode = _mode;
-}
-
-
-SGWayPoint::SGWayPoint( const double _lon, const double _lat ) {
-    SGWayPoint( _lon, _lat, LATLON );
+SGWayPoint::SGWayPoint( const double lon, const double lat,
+			const modetype m, const string s ) {
+    target_lon = lon;
+    target_lat = lat;
+    mode = m;
+    id = s;
 }
 
 
 SGWayPoint::SGWayPoint() {
-    SGWayPoint( 0.0, 0.0, LATLON );
+    SGWayPoint( 0.0, 0.0, WGS84, "" );
 }
 
 
 // Destructor
 SGWayPoint::~SGWayPoint() {
+}
+
+
+// Calculate course and distances.  For WGS84 and SPHERICAL
+// coordinates lat, lon, and course are in degrees and distance in
+// meters.  For CARTESIAN coordinates x = lon, y = lat.  Course is in
+// degrees and distance is in what ever units x and y are in.
+void SGWayPoint::CourseAndDistance( const double cur_lon, const double cur_lat,
+				    double *course, double *distance ) {
+    if ( mode == WGS84 ) {
+	double reverse;
+	geo_inverse_wgs_84( 0.0, cur_lat, cur_lon, target_lat, target_lon,
+			    course, &reverse, distance );
+    } else if ( mode == SPHERICAL ) {
+	Point3D current( cur_lon * DEG_TO_RAD, cur_lat * DEG_TO_RAD, 0.0 );
+	Point3D target( target_lon * DEG_TO_RAD, target_lat * DEG_TO_RAD, 0.0 );
+	calc_gc_course_dist( current, target, course, distance );
+	*course = 360.0 - *course * RAD_TO_DEG;
+    } else if ( mode == CARTESIAN ) {
+	double dx = target_lon - cur_lon;
+	double dy = target_lat - cur_lat;
+	*course = -atan2( dy, dx ) * RAD_TO_DEG - 90;
+	while ( *course < 0 ) {
+	    *course += 360.0;
+	}
+	while ( *course > 360.0 ) {
+	    *course -= 360.0;
+	}
+	*distance = sqrt( dx * dx + dy * dy );
+    }
 }

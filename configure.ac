@@ -363,7 +363,6 @@ AC_CONFIG_FILES([ \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \
-	simgear/interpreter/Makefile \
 	simgear/io/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \

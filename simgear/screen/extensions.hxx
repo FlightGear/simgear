@@ -70,8 +70,15 @@ inline void (*SGLookupFunction(const char *func))() {
 
 
 /* OpenGL extension declarations */
+#ifndef GL_EXT_point_parameters
 #define GL_POINT_SIZE_MIN_EXT                                   0x8126
 #define GL_DISTANCE_ATTENUATION_EXT                             0x8129
+#endif
+
+#ifndef GL_ARB_point_parameters
+#define GL_POINT_SIZE_MIN_ARB					0x8126
+#define GL_DISTANCE_ATTENUATION_ARB				0x8129
+#endif
 
 typedef void (APIENTRY * glPointParameterfProc)(GLenum pname, GLfloat param);
 typedef void (APIENTRY * glPointParameterfvProc)(GLenum pname, const GLfloat *params);

@@ -1726,7 +1726,7 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
     if (result != 0)
       _path_cache->put(relative_path, result);
   }
-  
+
   return result;
 }
 

@@ -13,7 +13,7 @@
 #define __PROPS_IO_HXX
 
 #include <simgear/compiler.h>
-#include <simgear/misc/props.hxx>
+#include <simgear/props/props.hxx>
 
 #include <stdio.h>
 

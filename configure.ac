@@ -415,7 +415,10 @@ AC_CONFIG_FILES([ \
 	simgear/math/Makefile \
 	simgear/metar/Makefile \
 	simgear/misc/Makefile \
+	simgear/props/Makefile \
 	simgear/route/Makefile \
+	simgear/scene/Makefile \
+	simgear/scene/model/Makefile \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sky/Makefile \

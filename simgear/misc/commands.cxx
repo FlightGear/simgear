@@ -4,8 +4,9 @@
 //
 // $Id$
 
+#include <simgear/props/props_io.hxx>
+
 #include "commands.hxx"
-#include "props_io.hxx"
 
 
 

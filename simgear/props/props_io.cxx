@@ -5,9 +5,9 @@
 
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/xml/easyxml.hxx>
 
-#include "sg_path.hxx"
 #include "props.hxx"
 #include "props_io.hxx"
 

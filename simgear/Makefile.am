@@ -23,7 +23,9 @@ SUBDIRS = \
 	magvar \
 	math \
 	$(METAR_DIRS) \
+	props \
 	route \
+	scene \
 	screen \
 	serial \
 	sky \

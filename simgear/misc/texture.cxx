@@ -12,9 +12,10 @@
  * $Id$
  */
 
-#include <GL/glu.h>
-
 #include <stdlib.h>	// malloc()
+
+#include <GL/glu.h>
+#include <zlib.h>
 
 #include "texture.hxx"
 #include "colours.h"
@@ -274,7 +275,7 @@ SGTexture::read_raw_texture(const char *name)
 
     ptr = texture_data;
     for(y=0; y<256; y++) {
-                sgread(image->file, ptr, 256*3);
+                gzread(image->file, ptr, 256*3);
                 ptr+=256*3;
     }
     ImageClose(image);
@@ -306,7 +307,7 @@ SGTexture::read_r8_texture(const char *name)
 
     ptr = texture_data;
     for(xy=0; xy<(256*256); xy++) {
-        sgread(image->file,c,1);
+        gzread(image->file, c, 1);
 
         //look in the table for the right colours
         ptr[0]=msfs_colour[c[0]][0];
@@ -343,12 +344,11 @@ SGTexture::ImageOpen(const char *fileName)
         // fprintf(stderr, "Out of memory!\n");
         exit(1);
     }
-    if ((image->file = sgopen(fileName, "rb")) == NULL) {
+    if ((image->file = gzopen(fileName, "rb")) == NULL) {
       return NULL;
     }
 
-    // fread(image, 1, 12, image->file);
-    sgread(image->file, image, 12);
+    gzread(image->file, image, 12);
 
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
@@ -369,11 +369,9 @@ SGTexture::ImageOpen(const char *fileName)
             exit(1);
         }
         image->rleEnd = 512 + (2 * x);
-        sgseek(image->file, 512, SEEK_SET);
-        // fread(image->rowStart, 1, x, image->file);
-        sgread(image->file, image->rowStart, x);
-        // fread(image->rowSize, 1, x, image->file);
-        sgread(image->file, image->rowSize, x);
+        gzseek(image->file, 512, SEEK_SET);
+        gzread(image->file, image->rowStart, x);
+        gzread(image->file, image->rowSize, x);
         if (swapFlag) {
             ConvertUint(image->rowStart, x/(int) sizeof(unsigned));
             ConvertUint((unsigned *)image->rowSize, x/(int) sizeof(int));
@@ -385,7 +383,7 @@ SGTexture::ImageOpen(const char *fileName)
 
 void
 SGTexture::ImageClose(SGTexture::ImageRec *image) {
-    sgclose(image->file);
+    gzclose(image->file);
     free(image->tmp);
     free(image);
 }
@@ -414,11 +412,11 @@ SGTexture::RawImageOpen(const char *fileName)
         // fprintf(stderr, "Out of memory!\n");
         exit(1);
     }
-    if ((image->file = sgopen(fileName, "rb")) == NULL) {
+    if ((image->file = gzopen(fileName, "rb")) == NULL) {
       return NULL;
     }
 
-    sgread(image->file, image, 12);
+    gzread(image->file, image, 12);
 
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
@@ -442,9 +440,8 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
     int count;
 
     if ((image->type & 0xFF00) == 0x0100) {
-        sgseek(image->file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);        // fread(image->tmp, 1, (unsigned int)image->rowSize[y+z*image->ysize],
-        //      image->file);
-        sgread(image->file, image->tmp,
+        gzseek(image->file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
+        gzread(image->file, image->tmp,
                (unsigned int)image->rowSize[y+z*image->ysize]);
 
         iPtr = image->tmp;
@@ -467,10 +464,9 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
             }
         }
     } else {
-        sgseek(image->file, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
+        gzseek(image->file, 512+(y*image->xsize)+(z*image->xsize*image->ysize),
               SEEK_SET);
-        // fread(buf, 1, image->xsize, image->file);
-        sgread(image->file, buf, image->xsize);
+        gzread(image->file, buf, image->xsize);
     }
 }
 

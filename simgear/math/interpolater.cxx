@@ -30,7 +30,6 @@
 
 #include STL_STRING
 
-// depricated - #include <simgear/sg_zlib.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sgstream.hxx>
 

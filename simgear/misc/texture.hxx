@@ -3,8 +3,7 @@
 #define __SG_TEXTURE_HXX 1
 
 #include <GL/gl.h>
-
-#include <simgear/sg_zlib.h>
+#include <zlib.h>
 
 class SGTexture {
 
@@ -29,7 +28,7 @@ protected:
         unsigned int wasteBytes;
         char name[80];
         unsigned long colorMap;
-        sgFile file;
+        gzFile file;
         GLubyte *tmp;
         unsigned long rleEnd;
         unsigned int *rowStart;

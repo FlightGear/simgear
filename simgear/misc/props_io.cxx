@@ -30,6 +30,8 @@ SG_USING_STD(string);
 SG_USING_STD(vector);
 SG_USING_STD(map);
 
+#define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE|SGPropertyNode::ARCHIVE)
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -57,21 +59,22 @@ private:
 
   struct State
   {
-    State () : node(0), type("") {}
-    State (SGPropertyNode * _node, const char * _type)
-      : node(_node), type(_type) {}
+    State () : node(0), type(""), mode(DEFAULT_MODE) {}
+    State (SGPropertyNode * _node, const char * _type, int _mode)
+      : node(_node), type(_type), mode(_mode) {}
     SGPropertyNode * node;
     string type;
+    int mode;
     map<string,int> counters;
   };
 
   State &state () { return _state_stack[_state_stack.size() - 1]; }
 
-  void push_state (SGPropertyNode * node, const char * type) {
+  void push_state (SGPropertyNode * node, const char * type, int mode) {
     if (type == 0)
-      _state_stack.push_back(State(node, "unknown"));
+      _state_stack.push_back(State(node, "unspecified", mode));
     else
-      _state_stack.push_back(State(node, type));
+      _state_stack.push_back(State(node, type, mode));
     _level++;
     _data = "";
   }
@@ -103,6 +106,24 @@ PropsVisitor::endXML ()
   _state_stack.resize(0);
 }
 
+
+/**
+ * Check a yes/no flag that defaults to 'yes'.
+ */
+static bool
+checkFlag (const char * flag)
+{
+  if (flag == 0 || string(flag) == "y")
+    return true;
+  else if (string(flag) == "n")
+    return false;
+  else {
+    SG_LOG(SG_INPUT, SG_ALERT, "Unrecognized flag value '" << flag
+	   << "', assuming 'y'");
+    return true;
+  }
+}
+
 void
 PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 {
@@ -114,44 +135,63 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 	     name << "; expected PropertyList");
       _ok = false;
     }
-    push_state(_root, "");
+    push_state(_root, "", DEFAULT_MODE);
   }
 
   else {
+
+    const char * attval;
 				// Get the index.
-    const char * att_n = atts.getValue("n");
+    attval = atts.getValue("n");
     int index = 0;
-    if (att_n != 0) {
-      index = atoi(att_n);
+    if (attval != 0) {
+      index = atoi(attval);
       st.counters[name] = SG_MAX2(st.counters[name], index+1);
     } else {
       index = st.counters[name];
       st.counters[name]++;
     }
 
-				// Check for an alias.
+				// Got the index, so grab the node.
     SGPropertyNode * node = st.node->getChild(name, index, true);
-    const char * att_alias = atts.getValue("alias");
-    if (att_alias != 0) {
-      if (!node->alias(att_alias))
-	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << att_alias);
+
+				// Get the access-mode attributes,
+				// but don't set yet (in case they
+				// prevent us from recording the value).
+    int mode = 0;
+
+    attval = atts.getValue("read");
+    if (checkFlag(attval))
+      mode |= SGPropertyNode::READ;
+    attval = atts.getValue("write");
+    if (checkFlag(attval))
+      mode |= SGPropertyNode::WRITE;
+    attval = atts.getValue("archive");
+    if (checkFlag(attval))
+      mode |= SGPropertyNode::ARCHIVE;
+
+				// Check for an alias.
+    attval = atts.getValue("alias");
+    if (attval != 0) {
+      if (!node->alias(attval))
+	SG_LOG(SG_INPUT, SG_ALERT, "Failed to set alias to " << attval);
     }
 
 				// Check for an include.
-    const char * att_include = atts.getValue("include");
-    if (att_include != 0) {
+    attval = atts.getValue("include");
+    if (attval != 0) {
       SGPath path(SGPath(_base).dir());
       cerr << "Base is " << _base << endl;
       cerr << "Dir is " << SGPath(_base).dir() << endl;
-      path.append(att_include);
+      path.append(attval);
       if (!readProperties(path.str(), node)) {
 	SG_LOG(SG_INPUT, SG_ALERT, "Failed to read include file "
-	       << att_include);
+	       << attval);
 	_ok = false;
       }
     }
 
-    push_state(node, atts.getValue("type"));
+    push_state(node, atts.getValue("type"), mode);
   }
 }
 
@@ -179,18 +219,23 @@ PropsVisitor::endElement (const char * name)
       ret = st.node->setDoubleValue(strtod(_data.c_str(), 0));
     } else if (st.type == "string") {
       ret = st.node->setStringValue(_data);
-    } else if (st.type == "unknown") {
-      ret = st.node->setUnknownValue(_data);
+    } else if (st.type == "unspecified") {
+      ret = st.node->setUnspecifiedValue(_data);
     } else {
-      SG_LOG(SG_INPUT, SG_ALERT, "Unknown data type " << st.type
-	     << " assuming 'unknown'");
-      ret = st.node->setUnknownValue(_data);
+      SG_LOG(SG_INPUT, SG_ALERT, "Unrecognized data type " << st.type
+	     << " assuming 'unspecified'");
+      ret = st.node->setUnspecifiedValue(_data);
     }
     if (!ret)
       SG_LOG(SG_INPUT, SG_ALERT, "readProperties: Failed to set "
 	     << st.node->getPath() << " to value \""
 	     << _data << "\" with type " << st.type);
   }
+
+				// Set the access-mode attributes now,
+				// once the value has already been 
+				// assigned.
+  st.node->setAttributes(st.mode);
 
   pop_state();
 }
@@ -277,24 +322,24 @@ static const char *
 getTypeName (SGPropertyNode::Type type)
 {
   switch (type) {
-  case SGValue::UNKNOWN:
-    return "unknown";
-  case SGValue::BOOL:
+  case SGPropertyNode::UNSPECIFIED:
+    return "unspecified";
+  case SGPropertyNode::BOOL:
     return "bool";
-  case SGValue::INT:
+  case SGPropertyNode::INT:
     return "int";
-  case SGValue::LONG:
+  case SGPropertyNode::LONG:
     return "long";
-  case SGValue::FLOAT:
+  case SGPropertyNode::FLOAT:
     return "float";
-  case SGValue::DOUBLE:
+  case SGPropertyNode::DOUBLE:
     return "double";
-  case SGValue::STRING:
+  case SGPropertyNode::STRING:
     return "string";
   }
 
   // keep the compiler from squawking
-  return "unknown";
+  return "unspecified";
 }
 
 
@@ -331,9 +376,35 @@ doIndent (ostream &output, int indent)
 }
 
 
+static void
+writeAtts (ostream &output, const SGPropertyNode * node)
+{
+  int index = node->getIndex();
+
+  if (index != 0)
+    output << " n = \"" << index << '"';
+
+  if (!node->getAttribute(SGPropertyNode::READ))
+    output << " read=\"n\"";
+
+  if (!node->getAttribute(SGPropertyNode::WRITE))
+    output << " write=\"n\"";
+
+  if (!node->getAttribute(SGPropertyNode::ARCHIVE))
+    output << " archive=\"n\"";
+
+}
+
+
 static bool
 writeNode (ostream &output, const SGPropertyNode * node, int indent)
 {
+				// Don't write the node or any of
+				// its descendants unless it is
+				// allowed to be archived.
+  if (!node->getAttribute(SGPropertyNode::ARCHIVE))
+    return true;		// Everything's OK, but we won't write.
+
   const string &name = node->getName();
   int index = node->getIndex();
   int nChildren = node->nChildren();
@@ -342,11 +413,13 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// write it first.
   if (node->hasValue()) {
     doIndent(output, indent);
-    output << '<' << name << " n=\"" << index << '"';
-    if (node->isAlias() && node->getAliasTarget() != 0)
-      output << " alias=\"" << node->getAliasTarget()->getPath() << "\"/>";
-    else {
-      if (node->getType() != SGPropertyNode::UNKNOWN)
+    output << '<' << name;
+    writeAtts(output, node);
+    if (node->isAlias() && node->getAliasTarget() != 0) {
+      output << " alias=\"" << node->getAliasTarget()->getPath()
+	     << "\"/>" << endl;
+    } else {
+      if (node->getType() != SGPropertyNode::UNSPECIFIED)
 	output << " type=\"" << getTypeName(node->getType()) << '"';
       output << '>';
       writeData(output, node->getStringValue());
@@ -358,23 +431,14 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// next.
   if (nChildren > 0 || node->isAlias()) {
     doIndent(output, indent);
-    output << '<' << name << " n=\"" << index << '"';
-    if (node->isAlias() && node->getAliasTarget() != 0)
-      output << " alias=\"" << node->getAliasTarget()->getPath() << '"';
+    output << '<' << name;
+    writeAtts(output, node);
     output << '>' << endl;
     for (int i = 0; i < nChildren; i++)
       writeNode(output, node->getChild(i), indent + INDENT_STEP);
     doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }
-
-				// If there were no children and no
-				// value, at least note the presence
-				// of the node.
-//   if (nChildren == 0 && !node->isAlias() && !node->hasValue()) {
-//     doIndent(output, indent);
-//     output << '<' << name << " n=\"" << index << "\"/>" << endl;
-//   }
 
   return true;
 }
@@ -449,36 +513,36 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 				// if any.
   if (in->hasValue()) {
     switch (in->getType()) {
-    case SGValue::BOOL:
+    case SGPropertyNode::BOOL:
       if (!out->setBoolValue(in->getBoolValue()))
 	retval = false;
       break;
-    case SGValue::INT:
+    case SGPropertyNode::INT:
       if (!out->setIntValue(in->getIntValue()))
 	retval = false;
       break;
-    case SGValue::LONG:
+    case SGPropertyNode::LONG:
       if (!out->setLongValue(in->getLongValue()))
 	retval = false;
       break;
-    case SGValue::FLOAT:
+    case SGPropertyNode::FLOAT:
       if (!out->setFloatValue(in->getFloatValue()))
 	retval = false;
       break;
-    case SGValue::DOUBLE:
+    case SGPropertyNode::DOUBLE:
       if (!out->setDoubleValue(in->getDoubleValue()))
 	retval = false;
       break;
-    case SGValue::STRING:
+    case SGPropertyNode::STRING:
       if (!out->setStringValue(in->getStringValue()))
 	retval = false;
       break;
-    case SGValue::UNKNOWN:
-      if (!out->setUnknownValue(in->getStringValue()))
+    case SGPropertyNode::UNSPECIFIED:
+      if (!out->setUnspecifiedValue(in->getStringValue()))
 	retval = false;
       break;
     default:
-      throw string("Unknown SGValue type");
+      throw string("Unrecognized SGPropertyNode type");
     }
   }
 

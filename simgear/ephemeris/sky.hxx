@@ -33,19 +33,82 @@
 #include <plib/ssg.h>		// plib include
 
 
-class fgSky : ssgLeaf
-{
+class FGSky {
+    double sun_angle;		// sun angle in degrees relative to verticle
+				// 0 degrees = high noon
+				// 90 degrees = sun rise/set
+				// 180 degrees = darkest midnight
+
+    sgVec3 sky_color;		// base sky color
+    sgVec3 fog_color;		// fog color
+
+    sgVec3 origin;		// coordinates of sky placement origin
+				// I recommend (lon, lat, 0) relative to
+				// your world coordinate scheme
+
+    double lon, lat;		// current lon and lat (for properly rotating
+				// sky)
+
+
+    ssgVertexArray *upper_ring_vl;
+    ssgColourArray *upper_ring_cl;
+
+    ssgVertexArray *middle_ring_vl;
+    ssgColourArray *middle_ring_cl;
+
+    ssgVertexArray *lower_ring_vl;
+    ssgColourArray *lower_ring_cl;
+
+    ssgVertexArray *bottom_ring_vl;
+    ssgColourArray *bottom_ring_cl;
+
+public:
+
+    // Constructor
+    FGSky( void );
+
+    // Destructor
+    ~FGSky( void );
+
+    // initialize the sky object and connect it into the scene graph
+    bool initialize();
+
+    // rebuild the sky colors based on current value of sun_angle,
+    // sky, and fog colors.  This updates the color arrays for
+    // ssgVtxTable.
+    bool rebuild();
+
+    // enable the sky in the scene graph (default)
+    bool enable();
+
+    // disable the sky in the scene graph.  The leaf node is still
+    // there, how ever it won't be traversed on the cullandrender
+    // phase.
+    bool disable();
+
+    inline void set_sun_angle( double a ) { sun_angle = a; }
+    inline void set_sky_color( sgVec3 color ) { 
+	sgCopyVec3(sky_color, color);
+    }
+    inline void set_fog_color( sgVec3 color ) { 
+	sgCopyVec3(fog_color, color);
+    }
+    inline void set_origin( sgVec3 p ) { 
+	sgCopyVec3(origin, p);
+    }
+    inline void set_lon( double l ) { lon = l; }
+    inline void set_lat( double l ) { lat = l; }
 };
 
 
 // (Re)generate the display list
-void fgSkyInit( void );
+void fgSkyInit();
 
 // (Re)calculate the sky colors at each vertex
-void fgSkyColorsInit( void );
+void fgSkyColorsInit();
 
 // Draw the Sky
-void fgSkyRender( void );
+void fgSkyRender();
 
 
 #endif // _SKY_HXX

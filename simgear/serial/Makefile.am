@@ -1,12 +1,12 @@
 includedir = @includedir@/serial
 
-noinst_PROGRAMS = testserial
-
 lib_LIBRARIES = libsgserial.a
 
 include_HEADERS = serial.hxx
 
 libsgserial_a_SOURCES = serial.cxx
+
+noinst_PROGRAMS = testserial
 
 testserial_SOURCES = testserial.cxx
 

@@ -1,6 +1,11 @@
 #include <simgear/compiler.h>
 #include STL_IOSTREAM
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <simgear/debug/logstream.hxx>
 
@@ -72,7 +77,11 @@ main()
     for (int i = 0; i < 3; ++i)
     {
 	client.process();
+#ifdef _WIN32
+        Sleep(1000);
+#else
 	sleep(1);
+#endif
     }
 
     //client.close();

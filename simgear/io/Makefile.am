@@ -38,7 +38,7 @@ tcp_server_LDADD = \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
-	-lplibnet -lz
+	-lplibnet -lplibul -lz $(NETWORK_LIB)
 
 tcp_client_SOURCES = tcp_client.cxx
 
@@ -48,7 +48,7 @@ tcp_client_LDADD = \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
         $(top_builddir)/simgear/xml/libsgxml.a \
-	-lplibnet -lz
+	-lplibnet -lplibul -lz $(NETWORK_LIB)
 
 socktest_SOURCES = socktest.cxx
 
@@ -58,7 +58,7 @@ socktest_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
-	-lplibnet -lz
+	-lplibnet -lplibul -lz $(NETWORK_LIB)
 
 lowtest_SOURCES = lowtest.cxx
 
@@ -73,4 +73,4 @@ decode_binobj_LDADD = \
         $(top_builddir)/simgear/misc/libsgmisc.a \
         $(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
-	$(NETWORK_LIB) -lz
+	-lz

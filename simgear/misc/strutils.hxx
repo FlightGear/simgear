@@ -3,9 +3,9 @@
  * String utilities.
  */
 
-// Written by Bernie Bright, 1998
+// Written by Bernie Bright, started 1998
 //
-// Copyright (C) 1998  Bernie Bright - bbright@c031.aone.net.au
+// Copyright (C) 1998  Bernie Bright - bbright@bigpond.net.au
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -32,6 +32,9 @@
 
 #include STL_STRING
 
+#include <vector>
+SG_USING_STD(vector);
+
 #ifdef SG_HAVE_STD_INCLUDES
 #  include <cstdlib>
 #else
@@ -40,32 +43,54 @@
 
 SG_USING_STD(string);
 
+namespace simgear {
+    namespace strutils {
 
-/** Default characters to remove. */
-extern const string whitespace;
+// 	/** 
+// 	 * atof() wrapper for "string" type
+// 	 */
+// 	inline double
+// 	atof( const string& str )
+// 	{
+// 	    return ::atof( str.c_str() );
+// 	}
 
-/** Returns a string with trailing characters removed. */
-string trimleft( const string& s, const string& trimmings = whitespace );
+// 	/**
+// 	 * atoi() wrapper for "string" type
+// 	 */
+// 	inline int
+// 	atoi( const string& str )
+// 	{
+// 	    return ::atoi( str.c_str() );
+// 	}
 
-/** Returns a string with leading characters removed. */
-string trimright( const string& s, const string& trimmings = whitespace );
+	/**
+	 * Strip leading and/or trailing whitespace from s.
+	 * @param s String to strip.
+	 * @return The stripped string.
+	 */
+	string lstrip( const string& s );
+	string rstrip( const string& s );
+	string strip( const string& s );
 
-/** Returns a string with leading and trailing characters removed. */
-string trim( const string& s, const string& trimmings = whitespace );
+	/**
+	 * Split a string into a words using 'sep' as the delimiter string.
+	 * Produces a result similar to the perl and python functions of the
+	 * same name.
+	 * 
+	 * @param s The string to split into words,
+	 * @param sep Word delimiters.  If not specified then any whitespace is a separator,
+	 * @param maxsplit If given, splits at no more than maxsplit places,
+	 * resulting in at most maxsplit+1 words.
+	 * @return Array of words.
+	 */
+	vector<string>
+	split( const string& s,
+	       const char* sep = 0,
+	       int maxsplit = 0 );
 
-/** atof() wrapper for "string" type */
-inline double
-atof( const string& str )
-{
-    return ::atof( str.c_str() );
-}
-
-/** atoi() wrapper for "string" type */
-inline int
-atoi( const string& str )
-{
-    return ::atoi( str.c_str() );
-}
+    } // end namespace strutils
+} // end namespace simgear
 
 #endif // STRUTILS_H
 

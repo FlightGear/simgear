@@ -1,8 +1,8 @@
 // String utilities.
 //
-// Written by Bernie Bright, 1998
+// Written by Bernie Bright, started 1998
 //
-// Copyright (C) 1998  Bernie Bright - bbright@c031.aone.net.au
+// Copyright (C) 1998  Bernie Bright - bbright@bigpond.net.au
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -21,48 +21,163 @@
 //
 // $Id$
 
+#include <ctype.h>
 #include "strutils.hxx"
 
-const string whitespace = " \n\r\t";
+namespace simgear {
+    namespace strutils {
 
-//
-string
-trimleft( const string& s, const string& trimmings )
-{
-    string result;
-    string::size_type pos = s.find_first_not_of( trimmings );
-    if ( pos != string::npos )
-    {
-        result.assign( s.substr( pos ) );
-    }
+	/**
+	 * 
+	 */
+	static vector<string>
+	split_whitespace( const string& str, int maxsplit )
+	{
+	    vector<string> result;
+	    string::size_type len = str.length();
+	    string::size_type i = 0;
+	    string::size_type j;
+	    int countsplit = 0;
 
-    return result;
-}
+	    while (i < len)
+	    {
+		while (i < len && isspace(str[i]))
+		{
+		    ++i;
+		}
 
-//
-string
-trimright( const string& s, const string& trimmings )
-{
-    string result;
+		j = i;
 
-    string::size_type pos = s.find_last_not_of( trimmings );
-    if ( pos == string::npos )
-    {
-	// Not found, return the original string.
-	result = s;
-    }
-    else
-    {
-        result.assign( s.substr( 0, pos+1 ) );
-    }
+		while (i < len && !isspace(str[i]))
+		{
+		    ++i;
+		}
 
-    return result;
-}
+		if (j < i)
+		{
+		    result.push_back( str.substr(j, i-j) );
+		    ++countsplit;
+		    while (i < len && isspace(str[i]))
+		    {
+			++i;
+		    }
 
-//
-string
-trim( const string& s, const string& trimmings )
-{
-    return trimright( trimleft( s, trimmings ), trimmings );
-}
+		    if (maxsplit && (countsplit >= maxsplit) && i < len)
+		    {
+			result.push_back( str.substr( i, len-i ) );
+			i = len;
+		    }
+		}
+	    }
 
+	    return result;
+	}
+
+	/**
+	 * 
+	 */
+	vector<string>
+	split( const string& str, const char* sep, int maxsplit )
+	{
+	    if (sep == 0)
+		return split_whitespace( str, maxsplit );
+
+	    vector<string> result;
+	    int n = strlen( sep );
+	    if (n == 0)
+	    {
+		// Error: empty separator string
+		return result;
+	    }
+	    const char* s = str.c_str();
+	    string::size_type len = str.length();
+	    string::size_type i = 0;
+	    string::size_type j = 0;
+	    int splitcount = 0;
+
+	    while (i+n <= len)
+	    {
+		if (s[i] == sep[0] && (n == 1 || memcmp(s+i, sep, n) == 0))
+		{
+		    result.push_back( str.substr(j,i-j) );
+		    i = j = i + n;
+		    ++splitcount;
+		    if (maxsplit && (splitcount >= maxsplit))
+			break;
+		}
+		else
+		{
+		    ++i;
+		}
+	    }
+
+	    result.push_back( str.substr(j,len-j) );
+	    return result;
+	}
+
+	/**
+	 * The lstrip(), rstrip() and strip() functions are implemented
+	 * in do_strip() which uses an additional parameter to indicate what
+	 * type of strip should occur.
+	 */
+	const int LEFTSTRIP = 0;
+	const int RIGHTSTRIP = 1;
+	const int BOTHSTRIP = 2;
+
+	static string
+	do_strip( const string& s, int striptype )
+	{
+	    //     if (s.empty())
+	    //      return s;
+
+	    string::size_type len = s.length();
+	    string::size_type i = 0;
+	    if (striptype != RIGHTSTRIP)
+	    {
+		while (i < len && isspace(s[i]))
+		{
+		    ++i;
+		}
+	    }
+
+	    string::size_type j = len;
+	    if (striptype != LEFTSTRIP)
+	    {
+		do
+		{
+		    --j;
+		}
+		while (j >= 1 && isspace(s[j]));
+		++j;
+	    }
+
+	    if (i == 0 && j == len)
+	    {
+		return s;
+	    }
+	    else
+	    {
+		return s.substr( i, j - i );
+	    }
+	}
+
+	string
+	lstrip( const string& s )
+	{
+	    return do_strip( s, LEFTSTRIP );
+	}
+
+	string
+	rstrip( const string& s )
+	{
+	    return do_strip( s, RIGHTSTRIP );
+	}
+
+	string
+	strip( const string& s )
+	{
+	    return do_strip( s, BOTHSTRIP );
+	}
+
+    } // end namespace strutils
+} // end namespace simgear

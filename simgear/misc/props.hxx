@@ -529,9 +529,18 @@ private:
 class SGPropertyChangeListener
 {
 public:
+  virtual ~SGPropertyChangeListener ();
+  virtual void valueChanged (SGPropertyNode * node);
+  virtual void childAdded (SGPropertyNode * parent, SGPropertyNode * child);
+  virtual void childRemoved (SGPropertyNode * parent, SGPropertyNode * child);
 
-  virtual void propertyChanged (SGPropertyNode * node) = 0;
+protected:
+  friend class SGPropertyNode;
+  virtual void register_property (SGPropertyNode * node);
+  virtual void unregister_property (SGPropertyNode * node);
 
+private:
+  vector<SGPropertyNode *> _properties;
 };
 
 
@@ -1127,22 +1136,34 @@ public:
 
 
   /**
-   * Fire a property change to all listeners.
+   * Remove a change listener from the property.
    */
-  void firePropertyChange ()
-  {
-    firePropertyChange(this);
-  }
+  void removeChangeListener (SGPropertyChangeListener * listener);
+
+
+  /**
+   * Fire a value change event to all listeners.
+   */
+  void fireValueChanged ();
+
+
+  /**
+   * Fire a child-added event to all listeners.
+   */
+  void fireChildAdded (SGPropertyNode * child);
+
+
+  /**
+   * Fire a child-removed event to all listeners.
+   */
+  void fireChildRemoved (SGPropertyNode * child);
 
 
 protected:
 
-
-  /**
-   * Fire a property change with an explicit target node.
-   */
-  void firePropertyChange (SGPropertyNode * node);
-
+  void fireValueChanged (SGPropertyNode * node);
+  void fireChildAdded (SGPropertyNode * parent, SGPropertyNode * child);
+  void fireChildRemoved (SGPropertyNode * parent, SGPropertyNode * child);
 
   /**
    * Protected constructor for making new nodes on demand.

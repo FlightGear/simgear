@@ -17,6 +17,7 @@
 #include <iostream>
 using std::cerr;
 using std::endl;
+using std::find;
 using std::sort;
 
 #else
@@ -361,14 +362,14 @@ SGPropertyNode::set_bool (bool val)
 {
   if (_tied) {
     if (_value.bool_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
     }
   } else {
     _local_val.bool_val = val;
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -378,14 +379,14 @@ SGPropertyNode::set_int (int val)
 {
   if (_tied) {
     if (_value.int_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
     }
   } else {
     _local_val.int_val = val;
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -395,14 +396,14 @@ SGPropertyNode::set_long (long val)
 {
   if (_tied) {
     if (_value.long_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
     }
   } else {
     _local_val.long_val = val;
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -412,14 +413,14 @@ SGPropertyNode::set_float (float val)
 {
   if (_tied) {
     if (_value.float_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
     }
   } else {
     _local_val.float_val = val;
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -429,14 +430,14 @@ SGPropertyNode::set_double (double val)
 {
   if (_tied) {
     if (_value.double_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
     }
   } else {
     _local_val.double_val = val;
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -446,7 +447,7 @@ SGPropertyNode::set_string (const char * val)
 {
   if (_tied) {
     if (_value.string_val->setValue(val)) {
-      firePropertyChange();
+      fireValueChanged();
       return true;
     } else {
       return false;
@@ -454,7 +455,7 @@ SGPropertyNode::set_string (const char * val)
   } else {
     delete [] _local_val.string_val;
     _local_val.string_val = copy_string(val);
-    firePropertyChange();
+    fireValueChanged();
     return true;
   }
 }
@@ -852,9 +853,8 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
       node = new SGPropertyNode(name, index, this);
     }
     _children.push_back(node);
-    if (_parent != 0)
-      _parent->firePropertyChange();
-    return _children[_children.size()-1];
+    fireChildAdded(node);
+    return node;
   } else {
     return 0;
   }
@@ -911,9 +911,8 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     }
     node->setAttribute(REMOVED, true);
     ret = node;
+    fireChildRemoved(node);
   }
-  if (_parent != 0)
-    _parent->firePropertyChange();
   return ret;
 }
 
@@ -1989,18 +1988,79 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener)
   if (_listeners == 0)
     _listeners = new vector<SGPropertyChangeListener *>;
   _listeners->push_back(listener);
+  listener->register_property(this);
 }
 
 void
-SGPropertyNode::firePropertyChange (SGPropertyNode * node)
+SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
+{
+  vector<SGPropertyChangeListener *>::iterator it =
+    find(_listeners->begin(), _listeners->end(), listener);
+  if (it != _listeners->end()) {
+    _listeners->erase(it);
+    listener->unregister_property(this);
+    if (_listeners->empty()) {
+      vector<SGPropertyChangeListener *> * tmp = _listeners;
+      _listeners = 0;
+      delete tmp;
+    }
+  }
+}
+
+void
+SGPropertyNode::fireValueChanged ()
+{
+  fireValueChanged(this);
+}
+
+void
+SGPropertyNode::fireChildAdded (SGPropertyNode * child)
+{
+  fireChildAdded(this, child);
+}
+
+void
+SGPropertyNode::fireChildRemoved (SGPropertyNode * child)
+{
+  fireChildRemoved(this, child);
+}
+
+void
+SGPropertyNode::fireValueChanged (SGPropertyNode * node)
 {
   if (_listeners != 0) {
     for (int i = 0; i < _listeners->size(); i++) {
-      (*_listeners)[i]->propertyChanged(node);
+      (*_listeners)[i]->valueChanged(node);
     }
   }
   if (_parent != 0)
-    _parent->firePropertyChange(node);
+    _parent->fireValueChanged(node);
+}
+
+void
+SGPropertyNode::fireChildAdded (SGPropertyNode * parent,
+				SGPropertyNode * child)
+{
+  if (_listeners != 0) {
+    for (int i = 0; i < _listeners->size(); i++) {
+      (*_listeners)[i]->childAdded(parent, child);
+    }
+  }
+  if (_parent != 0)
+    _parent->fireChildAdded(parent, child);
+}
+
+void
+SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
+				  SGPropertyNode * child)
+{
+  if (_listeners != 0) {
+    for (int i = 0; i < _listeners->size(); i++) {
+      (*_listeners)[i]->childRemoved(parent, child);
+    }
+  }
+  if (_parent != 0)
+    _parent->fireChildRemoved(parent, child);
 }
 
 
@@ -2223,6 +2283,57 @@ bool
 SGPropertyNode_ptr::valid() const
 {
   return _ptr != 0;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGPropertyChangeListener.
+////////////////////////////////////////////////////////////////////////
+
+SGPropertyChangeListener::~SGPropertyChangeListener ()
+{
+				// This will come back and remove
+				// the current item each time.  Is
+				// that OK?
+  vector<SGPropertyNode *>::iterator it;
+  for (it = _properties.begin(); it != _properties.end(); it++)
+    (*it)->removeChangeListener(this);
+}
+
+void
+SGPropertyChangeListener::valueChanged (SGPropertyNode * node)
+{
+  // NO-OP
+}
+
+void
+SGPropertyChangeListener::childAdded (SGPropertyNode * node,
+				      SGPropertyNode * child)
+{
+  // NO-OP
+}
+
+void
+SGPropertyChangeListener::childRemoved (SGPropertyNode * parent,
+					SGPropertyNode * child)
+{
+  // NO-OP
+}
+
+void
+SGPropertyChangeListener::register_property (SGPropertyNode * node)
+{
+  _properties.push_back(node);
+}
+
+void
+SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
+{
+  vector<SGPropertyNode *>::iterator it =
+    find(_properties.begin(), _properties.end(), node);
+  if (it != _properties.end())
+    _properties.erase(it);
 }
 
 

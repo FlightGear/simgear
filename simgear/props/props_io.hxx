@@ -42,6 +42,13 @@ void readProperties (const string &file, SGPropertyNode * start_node);
 
 
 /**
+ * Read properties from an in-memory buffer.
+ */
+void readProperties (const char *buf, const int size,
+                     SGPropertyNode * start_node);
+
+
+/**
  * Write properties to an XML output stream.
  */
 void writeProperties (ostream &output, const SGPropertyNode * start_node,

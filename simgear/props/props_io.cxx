@@ -322,6 +322,23 @@ readProperties (const string &file, SGPropertyNode * start_node)
 }
 
 
+/**
+ * Read properties from an in-memory buffer.
+ *
+ * @param buf A character buffer containing the xml data.
+ * @param size The size/length of the buffer in bytes
+ * @param start_node The root node for reading properties.
+ * @return true if the read succeeded, false otherwise.
+ */
+void readProperties (const char *buf, const int size,
+                     SGPropertyNode * start_node)
+{
+  PropsVisitor visitor(start_node, "");
+  readXML(buf, size, visitor);
+  if (visitor.hasException())
+    throw visitor.getException();
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // Property list writer.

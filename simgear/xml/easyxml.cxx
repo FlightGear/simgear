@@ -274,4 +274,27 @@ readXML (const string &path, XMLVisitor &visitor)
   input.close();
 }
 
+void
+readXML (const char *buf, const int size, XMLVisitor &visitor)
+{
+  XML_Parser parser = XML_ParserCreate(0);
+  XML_SetUserData(parser, &visitor);
+  XML_SetElementHandler(parser, start_element, end_element);
+  XML_SetCharacterDataHandler(parser, character_data);
+  XML_SetProcessingInstructionHandler(parser, processing_instruction);
+
+  visitor.startXML();
+
+  if (!XML_Parse(parser, buf, size, false)) {
+      XML_ParserFree(parser);
+      throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+			    sg_location("In-memory XML buffer",
+					XML_GetCurrentLineNumber(parser),
+					XML_GetCurrentColumnNumber(parser)),
+			    "SimGear XML Parser");
+  }
+
+  XML_ParserFree(parser);
+}
+
 // end of easyxml.cxx

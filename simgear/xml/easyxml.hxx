@@ -401,5 +401,27 @@ extern void readXML (istream &input, XMLVisitor &visitor,
 extern void readXML (const string &path, XMLVisitor &visitor);
 
 
+/**
+ * @relates XMLVisitor
+ * Read an XML document.
+ *
+ * This function reads an XML document from the buffer provided,
+ * and invokes the callback methods in the visitor object to pass the 
+ * parsing events back to the application.  When this function
+ * returns, the parser will have reported all of the data in the XML
+ * document to the application through the visitor callback methods,
+ * and XML processing will be complete.
+ *
+ * @param buf The xml data buffer.
+ * @param size The size of the data buffer in bytes
+ * @param visitor An object that contains callbacks for XML parsing
+ * events.
+ * @exception Throws sg_io_exception or sg_xml_exception if there
+ * is a problem reading the file.
+ * @see XMLVisitor
+ */
+extern void readXML (const char *buf, const int size, XMLVisitor &visitor);
+
+
 #endif // __EASYXML_HXX
 

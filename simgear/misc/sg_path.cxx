@@ -189,7 +189,8 @@ string_list sgPathSplit( const string &search_path ) {
             result.push_back( tmp.substr(0, index) );
             tmp = tmp.substr( index + 1 );
         } else {
-            result.push_back( tmp );
+            if ( !tmp.empty() )
+                result.push_back( tmp );
             done = true;
         }
     }

@@ -129,7 +129,7 @@ bool SGSerialPort::open_port(const string& device) {
 
     // config.c_cflag |= CLOCAL;
 
-#if ! defined( sgi )    
+#if !defined( sgi ) && !defined(_AIX)
     // disable hardware flow control
     config.c_cflag &= ~(CRTSCTS);
 #endif
@@ -234,11 +234,11 @@ bool SGSerialPort::set_baud(int baud) {
 	speed = B19200;
     } else if ( baud == 38400 ) {
 	speed = B38400;
+#if defined( linux ) || defined( __FreeBSD__ )
     } else if ( baud == 57600 ) {
 	speed = B57600;
     } else if ( baud == 115200 ) {
 	speed = B115200;
-#if defined( linux ) || defined( __FreeBSD__ )
     } else if ( baud == 230400 ) {
 	speed = B230400;
 #endif

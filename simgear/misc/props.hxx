@@ -634,6 +634,12 @@ public:
 
 
   /**
+   * Get the node's pretty display name, with subscript when needed.
+   */
+  const char * getDisplayName (bool simplify = false) const;
+
+
+  /**
    * Get the node's integer index.
    */
   int getIndex () const { return _index; }
@@ -1241,6 +1247,7 @@ private:
   class hash_table;
 
   char * _name;
+  mutable char * _display_name;
   int _index;
   SGPropertyNode * _parent;
   vector<SGPropertyNode_ptr> _children;

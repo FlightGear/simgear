@@ -54,18 +54,6 @@ else
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
          
-# Determine version of automake ... important because of
-# incompatibilities between versions
-AUTO_MAKE_VERSION=`automake --version | head -1 | awk '{print $4}' | sed -e 's/\.\([0-9]*\).*/\1/'`
-if test $AUTO_MAKE_VERSION -lt 15; then\
-    echo ""
-    echo "You need to upgrade to automake version 1.5 or greater."
-    echo "Most distributions have packages available to install or you can"
-    echo "find the source for the most recent version at"
-    echo "ftp://ftp.gnu.org/gnu/automake"
-    exit 1
-fi
-
 # set logging default value
 # with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])

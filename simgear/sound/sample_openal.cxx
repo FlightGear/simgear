@@ -71,7 +71,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
         samplepath.append( file );
     }
      
-    SG_LOG( SG_GENERAL, SG_ALERT, "From file sounds sample = "
+    SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
             << samplepath.str() );
 
     ALuint error;
@@ -88,8 +88,6 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     if ( error != AL_NO_ERROR ) {
         print_openal_error( error );
         throw sg_exception("Failed to gen OpenAL buffer.");
-    } else {
-        SG_LOG( SG_GENERAL, SG_ALERT, "Buffer created ok!" );
     }
 
     // Load the sample file
@@ -133,7 +131,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     volume(1.0),
     loop(AL_FALSE)
 {
-    SG_LOG( SG_GENERAL, SG_ALERT, "In memory sounds sample" );
+    SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
 
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;

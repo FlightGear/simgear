@@ -561,7 +561,7 @@ public:
    * Property value types.
    */
   enum Type {
-    NONE,
+    NONE = 0,
     ALIAS,
     BOOL,
     INT,

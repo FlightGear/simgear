@@ -97,6 +97,7 @@ SGSoundMgr::SGSoundMgr() {
     listener_ori[4] = 1.0;
     listener_ori[5] = 0.0;
 
+    alListenerf( AL_GAIN, 0.0f );
     alListenerfv( AL_POSITION, listener_pos );
     alListenerfv( AL_VELOCITY, listener_vel );
     alListenerfv( AL_ORIENTATION, listener_ori );

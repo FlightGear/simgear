@@ -140,10 +140,12 @@ public:
     inline const char *err_str() { return errstr; }
     inline void clear_err_str() { errstr = ""; }
 
+    void make_maxcolorwindow();
     void make_grayscale(float contrast = 1.0);
     void make_monochrome(float contrast = 1.0,
                          GLubyte r=255, GLubyte g=255, GLubyte b=255);
     void make_normalmap(float brightness = 1.0, float contrast = 1.0);
+    void make_bumpmap(float brightness = 1.0, float contrast = 1.0);
 };
 
 #endif

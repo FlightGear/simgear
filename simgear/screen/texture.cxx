@@ -826,7 +826,8 @@ SGTexture::make_grayscale(float contrast) {
    if (num_colors < 3)
       return;
 
-   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height);
+   int colors = (num_colors == 3) ? 1 : 2;
+   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * colors);
 
    for (int y=0; y<texture_height; y++)
       for (int x=0; x<texture_width; x++)
@@ -839,25 +840,113 @@ SGTexture::make_grayscale(float contrast) {
             avg = 128 + 128*powf(pixcol, contrast);
          }
 
-         map[x + y*texture_height] = avg;
+         int pos = (x + y*texture_width)*colors;
+         map[pos] = avg;
+         if (colors > 1)
+            map[pos+1] = rgb[3];
       }
 
    free (texture_data);
    texture_data = map;
-   num_colors = 1;
+   num_colors = colors;
+}
+
+
+void
+SGTexture::make_maxcolorwindow() {
+   GLubyte minmaxc[2] = {255, 0};
+
+   unsigned int pos = 0;
+   unsigned int max = num_colors;
+   if (num_colors == 2) max = 1;
+   if (num_colors == 4) max = 3; 
+   while (pos < texture_width * texture_height * num_colors) {
+      for (int i=0; i < max; i++) {
+         GLubyte c = texture_data[pos+i];
+         if (c < minmaxc[0]) minmaxc[0] = c;
+         if (c > minmaxc[1]) minmaxc[1] = c;
+      }
+      pos += num_colors;
+   }
+
+   GLubyte offs = minmaxc[0];
+   float factor = 255.0 / float(minmaxc[1] - minmaxc[0]);
+   // printf("Min: %i, Max: %i, Factor: %f\n", offs, minmaxc[1], factor);
+
+   pos = 0;
+   while (pos < texture_width * texture_height * num_colors) {
+      for (int i=0; i < max; i++) {
+         texture_data[pos+i] -= offs;
+         texture_data[pos+i] *= factor;
+      }
+      pos += num_colors;
+   }
 }
 
 
 void
 SGTexture::make_normalmap(float brightness, float contrast) {
    make_grayscale(contrast);
+   make_maxcolorwindow();
 
-   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * 3);
+   int colors = (num_colors == 1) ? 3 : 4;
+   bool alpha = (colors > 3);
+   int tsize = texture_width * texture_height * colors;
+   GLubyte *map = (GLubyte *)malloc (tsize);
+
+   int mpos = 0, dpos = 0;
+   for (int y=0; y<texture_height; y++) {
+      int ytw = y*texture_width;
+
+      for (int x=0; x<texture_width; x++)
+      {
+         int xp1 = (x < (texture_width-1)) ? x+1 : 0;
+         int yp1 = (y < (texture_height-1)) ? y+1 : 0;
+         int posxp1 = (xp1 + ytw)*num_colors;
+         int posyp1 = (x + yp1*texture_width)*num_colors;
+
+         GLubyte c = texture_data[dpos];
+         GLubyte cx1 = texture_data[posxp1];
+         GLubyte cy1 = texture_data[posyp1];
+
+         if (alpha) {
+            GLubyte a = texture_data[dpos+1];
+            GLubyte ax1 = texture_data[posxp1+1];
+            GLubyte ay1 = texture_data[posyp1+1];
+
+            c = (c + a)/2;
+            cx1 = (cx1 + ax1)/2;
+            cy1 = (cy1 + ay1)/2;
+
+            map[mpos+3] = a;
+         }
+
+         map[mpos+0] = (128+(cx1-c)/2);
+         map[mpos+1] = (128+(cy1-c)/2);
+         map[mpos+2] = 127+brightness*128; // 255-c/2;
+
+         mpos += colors;
+         dpos += num_colors;
+      }
+   }
+
+   free (texture_data);
+   texture_data = map;
+   num_colors = colors;
+}
+
+
+void
+SGTexture::make_bumpmap(float brightness, float contrast) {
+   make_grayscale(contrast);
+
+   int colors = (num_colors == 1) ? 1 : 2;
+   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * colors);
 
    for (int y=0; y<texture_height; y++)
       for (int x=0; x<texture_width; x++)
       {
-         int mpos = (x + y*texture_width)*3;
+         int mpos = (x + y*texture_width)*colors;
          int dpos = (x + y*texture_width)*num_colors;
 
          int xp1 = (x < (texture_width-1)) ? x+1 : 0;
@@ -865,12 +954,14 @@ SGTexture::make_normalmap(float brightness, float contrast) {
          int posxp1 = (xp1 + y*texture_width)*num_colors;
          int posyp1 = (x + yp1*texture_width)*num_colors;
 
-         map[mpos+0] = (128+(texture_data[posxp1]-texture_data[dpos])/2);
-         map[mpos+1] = (128+(texture_data[posyp1]-texture_data[dpos])/2);
-         map[mpos+2] = 127 + GLubyte(128*brightness);
+         map[mpos] = (127 - ((texture_data[dpos]-texture_data[posxp1]) -
+                            ((texture_data[dpos]-texture_data[posyp1]))/4))/2;
+         if (colors > 1)
+            map[mpos+1] = texture_data[dpos+1];
       }
 
    free (texture_data);
    texture_data = map;
-   num_colors = 3;
+   num_colors = colors;
 }
+

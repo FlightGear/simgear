@@ -795,7 +795,7 @@ SGTexture::ConvertUint(unsigned *array, unsigned int length) {
 
 
 void
-SGTexture::make_monochrome(GLubyte r, GLubyte g, GLubyte b) {
+SGTexture::make_monochrome(float contrast, GLubyte r, GLubyte g, GLubyte b) {
 
    if (num_colors >= 3)
       return;
@@ -815,8 +815,32 @@ SGTexture::make_monochrome(GLubyte r, GLubyte g, GLubyte b) {
       }
 }
 
+
 void
-SGTexture::make_normalmap(float brightness) {
+SGTexture::make_grayscale(float contrast) {
+   if (num_colors >= 3)
+      return;
+
+   GLubyte *map = (GLubyte *)malloc (texture_width * texture_height);
+   for (int y=0; y<texture_height; y++)
+      for (int x=0; x<texture_width; x++)
+      {
+         GLubyte *rgb = get_pixel(x,y);
+         GLubyte avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
+
+         map[x +y*texture_height] = avg;
+      }
+
+   free (texture_data);
+   texture_data = map;
+   num_colors = 1;
+}
+
+
+void
+SGTexture::make_normalmap(float brightness, float contrast) {
+   make_grayscale(contrast);
+
    GLubyte *map = (GLubyte *)malloc (texture_width * texture_height * 3);
 
    for (int y=0; y<texture_height; y++)

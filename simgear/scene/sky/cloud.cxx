@@ -40,10 +40,6 @@ SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_root(new ssgRoot),
     layer_transform(new ssgTransform),
-    layer(NULL),
-    cl(NULL),
-    vl(NULL),
-    tl(NULL),
     texture_path(tex_path),
     layer_span(0.0),
     layer_asl(0.0),
@@ -54,6 +50,11 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     last_lon(0.0),
     last_lat(0.0)
 {
+    cl[0] = cl[1] = cl[2] = cl[3] = NULL;
+    vl[0] = vl[1] = vl[2] = vl[3] = NULL;
+    tl[0] = tl[1] = tl[2] = tl[3] = NULL;
+    layer[0] = layer[1] = layer[2] = layer[3] = NULL;
+
     for ( int i = 0; i < SG_MAX_CLOUD_COVERAGES; ++i ) {
         layer_states[i] = NULL;
     }
@@ -77,8 +78,8 @@ void
 SGCloudLayer::setSpan_m (float span_m)
 {
     if (span_m != layer_span) {
-	layer_span = span_m;
-	rebuild();
+        layer_span = span_m;
+        rebuild();
     }
 }
 
@@ -128,8 +129,8 @@ void
 SGCloudLayer::setCoverage (Coverage coverage)
 {
     if (coverage != layer_coverage) {
-	layer_coverage = coverage;
-	rebuild();
+        layer_coverage = coverage;
+        rebuild();
     }
 }
 
@@ -138,7 +139,7 @@ SGCloudLayer::setCoverage (Coverage coverage)
 void
 SGCloudLayer::rebuild()
 {
-				// Initialize states and sizes if necessary.
+        			// Initialize states and sizes if necessary.
     if ( layer_states[0] == NULL ) {
         SGPath cloud_path;
 
@@ -170,53 +171,92 @@ SGCloudLayer::rebuild()
     }
 
     scale = 4000.0;
-
     last_lon = last_lat = -999.0f;
 
-    if ( layer != NULL ) {
-        layer_transform->removeKid(layer); // automatic delete
-    }
-
-    cl = new ssgColourArray( 4 );
-    vl = new ssgVertexArray( 4 );
-    tl = new ssgTexCoordArray( 4 );
+    sgVec2 base;
+    sgSetVec2( base, sg_random(), sg_random() );
 
     // build the cloud layer
     sgVec4 color;
     sgVec3 vertex;
     sgVec2 tc;
-    sgSetVec4( color, 1.0f, 1.0f, 1.0f, 1.0f );
 
-    sgSetVec3( vertex, -layer_span, -layer_span, 0.0f );
-    sgVec2 base;
-    sgSetVec2( base, sg_random(), sg_random() );
-    sgSetVec2( tc, base[0], base[1] );
-    cl->add( color );
-    vl->add( vertex );
-    tl->add( tc );
+    const float layer_scale = layer_span / scale;
+    const float mpi = SG_PI/2;
 
-    sgSetVec3( vertex, layer_span, -layer_span, 0.0f );
-    sgSetVec2( tc, base[0] + layer_span / scale, base[1] );
-    cl->add( color );
-    vl->add( vertex );
-    tl->add( tc );
+    for (int i = -2; i < 2; i++)
+    {
+        int row = i + 2;
 
-    sgSetVec3( vertex, -layer_span, layer_span, 0.0f );
-    sgSetVec2( tc, base[0], base[1] + layer_span / scale );
-    cl->add( color );
-    vl->add( vertex );
-    tl->add( tc );
+        if ( layer[row] != NULL ) {
+            layer_transform->removeKid(layer[row]); // automatic delete
+        }
 
-    sgSetVec3( vertex, layer_span, layer_span, 0.0f );
-    sgSetVec2( tc, base[0] + layer_span / scale, base[1] + layer_span / scale );
-    cl->add( color );
-    vl->add( vertex );
-    tl->add( tc );
+        vl[row] = new ssgVertexArray( 10 );
+        cl[row] = new ssgColourArray( 10 );
+        tl[row] = new ssgTexCoordArray( 10 );
 
-    layer = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, NULL, tl, cl );
-    layer_transform->addKid( layer );
-    if ( layer_states[layer_coverage] != NULL ) {
-        layer->setState( layer_states[layer_coverage] );
+
+        sgSetVec3( vertex, layer_span*i/2, -layer_span,
+                           -250 * (cos((i+2)*mpi) + 3) );
+
+        sgSetVec2( tc, base[0] + layer_scale * (i+2)/4, base[1] );
+
+        sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == -2) ? 0.0f : 0.15f );
+
+        cl[row]->add( color );
+        vl[row]->add( vertex );
+        tl[row]->add( tc );
+
+        for (int j = -2; j < 2; j++)
+        {
+            sgSetVec3( vertex, layer_span*(i+1)/2, layer_span*j/2,
+                               -250 * (cos((i+3)*mpi) + cos((j+2)*mpi) + 2) );
+
+            sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
+                           base[1] + layer_scale * (j+2)/4 );
+
+            sgSetVec4( color, 1.0f, 1.0f, 1.0f,
+                              ((j == -2) || (i == 1)) ?  
+                              ((j == -2) && (i == 1)) ? 0.0f : 0.15f : 1.0f );
+
+            cl[row]->add( color );
+            vl[row]->add( vertex );
+            tl[row]->add( tc );
+
+
+            sgSetVec3( vertex, layer_span*i/2, layer_span*(j+1)/2,
+                               -250 * (cos((i+2)*mpi) + cos((j+3)*mpi) + 2) );
+
+            sgSetVec2( tc, base[0] + layer_scale * (i+2)/4,
+                           base[1] + layer_scale * (j+3)/4 );
+
+            sgSetVec4( color, 1.0f, 1.0f, 1.0f,
+                              ((j == 1) || (i == -2)) ?
+                              ((j == 1) && (i == -2)) ? 0.0f : 0.15f : 1.0f );
+            cl[row]->add( color );
+            vl[row]->add( vertex );
+            tl[row]->add( tc );
+        }
+
+        sgSetVec3( vertex, layer_span*(i+1)/2, layer_span, 
+                           -250 * (cos((i+3)*mpi) + 3) );
+
+        sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
+                       base[1] + layer_scale );
+
+        sgSetVec4( color, 1.0f, 1.0f, 1.0f, (i == 1) ? 0.0f : 0.15f );
+
+        cl[row]->add( color );
+        vl[row]->add( vertex );
+        tl[row]->add( tc );
+
+        layer[row] = new ssgVtxTable ( GL_TRIANGLE_STRIP, vl[row], NULL, tl[row], cl[row] );
+        layer_transform->addKid( layer[row] );
+
+        if ( layer_states[layer_coverage] != NULL ) {
+            layer[row]->setState( layer_states[layer_coverage] );
+        }
     }
 
     // force a repaint of the sky colors with arbitrary defaults
@@ -229,10 +269,11 @@ SGCloudLayer::rebuild()
 bool SGCloudLayer::repaint( sgVec3 fog_color ) {
     float *color;
 
-    for ( int i = 0; i < 4; ++i ) {
-	color = cl->get( i );
-	sgCopyVec4( color, fog_color );
-    }
+    for ( int row = 0; row < 4; row++ )
+        for ( int i = 0; i < 10; ++i ) {
+            color = cl[row]->get( i );
+            sgCopyVec3( color, fog_color );
+        }
 
     return true;
 }
@@ -244,7 +285,7 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
 bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
-			       double alt )
+        		       double alt )
 {
     sgMat4 T1, LON, LAT;
     sgVec3 axis;
@@ -254,9 +295,9 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
     sgCopyVec3( asl_offset, up );
     sgNormalizeVec3( asl_offset );
     if ( alt <= layer_asl ) {
-	sgScaleVec3( asl_offset, layer_asl );
+        sgScaleVec3( asl_offset, layer_asl );
     } else {
-	sgScaleVec3( asl_offset, layer_asl + layer_thickness );
+        sgScaleVec3( asl_offset, layer_asl + layer_thickness );
     }
     // cout << "asl_offset = " << asl_offset[0] << "," << asl_offset[1]
     //      << "," << asl_offset[2] << endl;
@@ -298,65 +339,81 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
     // now calculate update texture coordinates
     if ( last_lon < -900 ) {
-	last_lon = lon;
-	last_lat = lat;
+        last_lon = lon;
+        last_lat = lat;
     }
 
     if ( lon != last_lon || lat != last_lat ) {
-	Point3D start( last_lon, last_lat, 0.0 );
-	Point3D dest( lon, lat, 0.0 );
-	double course, dist;
-	calc_gc_course_dist( dest, start, &course, &dist );
-	// cout << "course = " << course << ", dist = " << dist << endl;
+        Point3D start( last_lon, last_lat, 0.0 );
+        Point3D dest( lon, lat, 0.0 );
+        double course, dist;
+        calc_gc_course_dist( dest, start, &course, &dist );
+        // cout << "course = " << course << ", dist = " << dist << endl;
 
-	double xoff = cos( course ) * dist / (2 * scale);
-	double yoff = sin( course ) * dist / (2 * scale);
+        double xoff = cos( course ) * dist / (2 * scale);
+        double yoff = sin( course ) * dist / (2 * scale);
 
-	// cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
+        const float layer_scale = layer_span / scale;
 
-	float *base, *tc;
-	base = tl->get( 0 );
+        // cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
 
-	base[0] += xoff;
+        float *base, *tc;
 
-	// the while loops can lead to *long* pauses if base[0] comes
-	// with a bogus value.
+        base = tl[0]->get( 0 );
+        base[0] += xoff;
+
+        // the while loops can lead to *long* pauses if base[0] comes
+        // with a bogus value.
         // while ( base[0] > 1.0 ) { base[0] -= 1.0; }
-	// while ( base[0] < 0.0 ) { base[0] += 1.0; }
+        // while ( base[0] < 0.0 ) { base[0] += 1.0; }
         if ( base[0] > -10.0 && base[0] < 10.0 ) {
             base[0] -= (int)base[0];
         } else {
             base[0] = 0.0;
-	    SG_LOG(SG_ASTRO, SG_DEBUG,
-		   "Error: base = " << base[0] << "," << base[1]);
+            SG_LOG(SG_ASTRO, SG_DEBUG,
+       		"Error: base = " << base[0] << "," << base[1]);
         }
 
-	base[1] += yoff;
-	// the while loops can lead to *long* pauses if base[0] comes
-	// with a bogus value.
-	// while ( base[1] > 1.0 ) { base[1] -= 1.0; }
-	// while ( base[1] < 0.0 ) { base[1] += 1.0; }
+        base[1] += yoff;
+        // the while loops can lead to *long* pauses if base[0] comes
+        // with a bogus value.
+        // while ( base[1] > 1.0 ) { base[1] -= 1.0; }
+        // while ( base[1] < 0.0 ) { base[1] += 1.0; }
         if ( base[1] > -10.0 && base[1] < 10.0 ) {
-            base[1] -= (int)base[1];
+           base[1] -= (int)base[1];
         } else {
-            base[1] = 0.0;
-	    SG_LOG(SG_ASTRO, SG_ALERT,
-		   "Error: base = " << base[0] << "," << base[1]);
+           base[1] = 0.0;
+           SG_LOG(SG_ASTRO, SG_ALERT,
+	   	"Error: base = " << base[0] << "," << base[1]);
         }
 
-	// cout << "base = " << base[0] << "," << base[1] << endl;
+       // cout << "base = " << base[0] << "," << base[1] << endl;
 
-	tc = tl->get( 1 );
-	sgSetVec2( tc, base[0] + layer_span / scale, base[1] );
+        for (int i = -2; i < 2; i++)
+        {
+            int row = i + 2;
+
+            tc = tl[row]->get( 0 );
+            sgSetVec2( tc, base[0] + layer_scale * (i+2)/4, base[1] );
+            
+            for (int j = -2; j < 2; j++)
+            {
+                tc = tl[row]->get( (j+2)*2+1 );
+                sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
+                               base[1] + layer_scale * (j+2)/4 );
  
-	tc = tl->get( 2 );
-	sgSetVec2( tc, base[0], base[1] + layer_span / scale );
+        	tc = tl[row]->get( (j+3)*2 );
+                sgSetVec2( tc, base[0] + layer_scale * (i+2)/4,
+                               base[1] + layer_scale * (j+3)/4 );
+            }
  
-	tc = tl->get( 3 );
-	sgSetVec2( tc, base[0] + layer_span / scale, base[1] + layer_span / scale );
+            tc = tl[row]->get( 9 );
+            sgSetVec2( tc, base[0] + layer_scale * (i+3)/4,
+                           base[1] + layer_scale );
+        }
  
-	last_lon = lon;
-	last_lat = lat;
+        last_lon = lon;
+        last_lat = lat;
     }
 
     return true;

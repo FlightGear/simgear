@@ -98,11 +98,11 @@ private:
 
     ssgRoot *layer_root;
     ssgTransform *layer_transform;
-    ssgLeaf * layer;
+    ssgLeaf * layer[4];
 
-    ssgColourArray *cl; 
-    ssgVertexArray *vl;
-    ssgTexCoordArray *tl;
+    ssgColourArray *cl[4]; 
+    ssgVertexArray *vl[4];
+    ssgTexCoordArray *tl[4];
 
     // height above sea level (meters)
     SGPath texture_path;

@@ -44,8 +44,10 @@
 
 #if defined( __APPLE__ )
 # include <OpenAL/al.h>
+# include <OpenAL/alc.h>
 #else
 # include <AL/al.h>
+# include <AL/alc.h>
 #endif
 
 #include "sample_openal.hxx"
@@ -64,6 +66,9 @@ typedef sample_map::const_iterator const_sample_map_iterator;
  */
 class SGSoundMgr
 {
+
+    ALCdevice *dev;
+    ALCcontext *context;
 
     // Position of the listener.
     ALfloat listener_pos[3];

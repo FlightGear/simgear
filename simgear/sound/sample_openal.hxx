@@ -93,6 +93,8 @@ private:
     double max_dist;
     ALboolean loop;
 
+    bool playing;
+    bool bind_source();
 
 public:
 
@@ -149,15 +151,7 @@ public:
      * Test if a sample is curretnly playing.
      * @return true if is is playing, false otherwise.
      */
-    inline bool is_playing( ) {
-        ALint result;
-        alGetSourcei( source, AL_SOURCE_STATE, &result );
-        if ( alGetError() != AL_NO_ERROR) {
-            SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample is_playing(): " << sample_name );
-        }
-        return (result == AL_PLAYING) ;
-    }
+    bool is_playing( );
 
     /**
      * Get the current pitch setting of this sample.
@@ -167,18 +161,7 @@ public:
     /**
      * Set the pitch of this sample.
      */
-    inline void set_pitch( double p ) {
-        // clamp in the range of 0.01 to 2.0
-        if ( p < 0.01 ) { p = 0.01; }
-        if ( p > 2.0 ) { p = 2.0; }
-        pitch = p;
-        alSourcef( source, AL_PITCH, pitch );
-        if ( alGetError() != AL_NO_ERROR) {
-            SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample set_pitch()! " << p
-                    << " for " << sample_name );
-        }
-    }
+    void set_pitch( double p );
 
     /**
      * Get the current volume setting of this sample.
@@ -188,15 +171,7 @@ public:
     /**
      * Set the volume of this sample.
      */
-    inline void set_volume( double v ) {
-        volume = v;
-        alSourcef( source, AL_GAIN, volume );
-        if ( alGetError() != AL_NO_ERROR) {
-            SG_LOG( SG_GENERAL, SG_ALERT,
-                    "Oops AL error in sample set_volume()! " << v
-                    << " for " << sample_name  );
-        }
-    }
+    void set_volume( double v );
 
     /**
      * Returns the size of the sounds sample
@@ -215,78 +190,40 @@ public:
     /**
      * Set position of sound source (uses same coordinate system as opengl)
      */
-    inline void set_source_pos( ALfloat *pos ) {
-        source_pos[0] = pos[0];
-        source_pos[1] = pos[1];
-        source_pos[2] = pos[2];
-
-        sgVec3 final_pos;
-        sgAddVec3( final_pos, source_pos, offset_pos );
-
-        alSourcefv( source, AL_POSITION, final_pos );
-    }
+    void set_source_pos( ALfloat *pos );
 
     /**
      * Set "constant" offset position of sound source (uses same
      * coordinate system as opengl)
      */
-    inline void set_offset_pos( ALfloat *pos ) {
-        offset_pos[0] = pos[0];
-        offset_pos[1] = pos[1];
-        offset_pos[2] = pos[2];
-
-        sgVec3 final_pos;
-        sgAddVec3( final_pos, source_pos, offset_pos );
-
-        alSourcefv( source, AL_POSITION, final_pos );
-    }
+    void set_offset_pos( ALfloat *pos );
 
     /**
      * Set the orientation of the sound source, both for direction
      * and audio cut-off angles.
      */
-    inline void set_orientation( ALfloat *dir, ALfloat inner_angle=360.0,
+    void set_orientation( ALfloat *dir, ALfloat inner_angle=360.0,
                                                ALfloat outer_angle=360.0,
-                                               ALfloat outer_gain=0.0)
-    {
-        inner = inner_angle;
-        outer = outer_angle;
-        outergain = outer_gain;
-        alSourcefv( source, AL_DIRECTION, dir);
-        alSourcef( source, AL_CONE_INNER_ANGLE, inner );
-        alSourcef( source, AL_CONE_OUTER_ANGLE, outer );
-        alSourcef( source, AL_CONE_OUTER_GAIN, outergain );
-    }
+                                               ALfloat outer_gain=0.0);
 
     /**
      * Set velocity of sound source (uses same coordinate system as opengl)
      */
-    inline void set_source_vel( ALfloat *vel ) {
-        source_vel[0] = vel[0];
-        source_vel[1] = vel[1];
-        source_vel[2] = vel[2];
-        alSourcefv( source, AL_VELOCITY, source_vel );
-    }
+    void set_source_vel( ALfloat *vel );
 
 
     /**
      * Set reference distance of sound (the distance where the gain
      * will be half.)
      */
-    inline void set_reference_dist( ALfloat dist ) {
-        reference_dist = dist;
-        alSourcef( source, AL_REFERENCE_DISTANCE, reference_dist );
-    }
+    void set_reference_dist( ALfloat dist );
 
 
     /**
      * Set maximume distance of sound (the distance where the sound is
      * no longer audible.
      */
-    inline void set_max_dist( ALfloat dist ) {
-        max_dist = dist;
-        alSourcef( source, AL_MAX_DISTANCE, max_dist );
-    }
+    void set_max_dist( ALfloat dist );
 };
 
 

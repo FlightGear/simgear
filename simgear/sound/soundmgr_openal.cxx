@@ -27,11 +27,9 @@
 
 #if defined(__APPLE__)
 # include <OpenAL/al.h>
-# include <OpenAL/alut.h>
 # include <OpenAL/alc.h>
 #else
 # include <AL/al.h>
-# include <AL/alut.h>
 # include <AL/alc.h>
 #endif
 
@@ -71,11 +69,13 @@ SGSoundMgr::SGSoundMgr() {
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     // initialize OpenAL
-    alutInit( 0, NULL );
-    atexit(alutExit);
+    if ( (dev = alcOpenDevice( NULL )) != NULL) {
+        context = alcCreateContext( dev, NULL );
+    }
 
-    if ( alGetError() == AL_NO_ERROR) {
+    if ( (dev != NULL) && (context != NULL) ) {
         working = true;
+         alcMakeContextCurrent( context );
     } else {
         working = false;
 	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
@@ -115,6 +115,7 @@ SGSoundMgr::SGSoundMgr() {
 
 SGSoundMgr::~SGSoundMgr() {
 
+    alcDestroyContext( context );
     //
     // Remove the samples from the sample manager.
     //
@@ -162,8 +163,7 @@ void SGSoundMgr::update( double dt ) {
 void
 SGSoundMgr::pause ()
 {
-    ALCcontext *pCurContext = alcGetCurrentContext();
-    alcSuspendContext( pCurContext );
+    alcSuspendContext( context );
     if ( alGetError() != AL_NO_ERROR) {
 	SG_LOG( SG_GENERAL, SG_ALERT,
                 "Oops AL error after soundmgr pause()!" );
@@ -174,8 +174,7 @@ SGSoundMgr::pause ()
 void
 SGSoundMgr::resume ()
 {
-    ALCcontext *pCurContext = alcGetCurrentContext();
-    alcProcessContext( pCurContext );
+    alcProcessContext( context );
     if ( alGetError() != AL_NO_ERROR) {
 	SG_LOG( SG_GENERAL, SG_ALERT,
                 "Oops AL error after soundmgr resume()!" );

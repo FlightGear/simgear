@@ -1,3 +1,15 @@
+New in 0.0.7
+* March 29, 2000
+* Added support for RedHat package building contributed by Habibie 
+  <habibie@MailandNews.com>
+* Added gdbm to SimGear.  Many systems will already have gdbm installed so
+  it is only built if it doesn't already exist on the user's platform.
+  gdbm is a set of database routines that use extendible hashing and works
+  similar to the standard UNIX dbm routines.  This guarantees the availability
+  of gdbm to any application that uses SimGear.
+* Optimizations and bullet proofing of magnetic variation code by Norman 
+  Vine and Ed Williams
+
 New in 0.0.6
 * March 27, 2000
 * Added Nima World Magnetic Model 2000 contributed by Ed Williams

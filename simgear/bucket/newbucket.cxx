@@ -42,13 +42,13 @@ SGBucket::SGBucket() {
 
 
 // constructor for specified location
-inline SGBucket::SGBucket(const double dlon, const double dlat) {
+SGBucket::SGBucket(const double dlon, const double dlat) {
     set_bucket(dlon, dlat);
 }
 
 
 // create an impossible bucket if false
-inline SGBucket::SGBucket(const bool is_good) {
+SGBucket::SGBucket(const bool is_good) {
     set_bucket(0.0, 0.0);
     if ( !is_good ) {
 	lon = -1000;
@@ -57,7 +57,7 @@ inline SGBucket::SGBucket(const bool is_good) {
 
 
 // Parse a unique scenery tile index and find the lon, lat, x, and y
-inline SGBucket::SGBucket(const long int bindex) {
+SGBucket::SGBucket(const long int bindex) {
     long int index = bindex;
 	
     lon = index >> 14;
@@ -76,7 +76,7 @@ inline SGBucket::SGBucket(const long int bindex) {
 
 
 // default destructor
-inline SGBucket::~SGBucket() {
+SGBucket::~SGBucket() {
 }
 
 

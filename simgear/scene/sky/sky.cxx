@@ -266,10 +266,7 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
 	double ratio = 1.0;
 
-        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
-             cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_FEW ||
-             cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_SCATTERED)
-        {
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ) {
 	    // less than 50% coverage -- assume we're in the clear for now
 	    ratio = 1.0;
         } else if ( alt < asl - transition ) {
@@ -289,13 +286,33 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	    ratio = 1.0;
 	}
 
-        // set the alpha fade value for the cloud layer
-        float temp = ratio * 2.0;
-        if ( temp > 1.0 ) { temp = 1.0; }
-        cloud_layers[i]->setAlpha( temp );
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ) {
+            // do nothing, clear layers aren't drawn, don't affect
+            // visibility andn dont' need to be faded in or out.
+        } else if ( (cloud_layers[i]->getCoverage() == 
+                     SGCloudLayer::SG_CLOUD_FEW)
+                    || (cloud_layers[i]->getCoverage() ==
+                        SGCloudLayer::SG_CLOUD_SCATTERED) )
+        {
+            // set the alpha fade value for the cloud layer.  For less
+            // dense cloud layers we fade the layer to nothing as we
+            // approach it because we stay clear visibility-wise as we
+            // pass through it.
+            float temp = ratio * 2.0;
+            if ( temp > 1.0 ) { temp = 1.0; }
+            cloud_layers[i]->setAlpha( temp );
 
-	// accumulate effects from multiple cloud layers
-	effvis *= ratio;
+            // don't touch visibility
+        } else {
+            // maintain full alpha for denser cloud layer types.
+            // Let's set the value explicitly in case someone changed
+            // the layer type.
+            cloud_layers[i]->setAlpha( 1.0 );
+
+            // lower visibility as we approach the cloud layer.
+            // accumulate effects from multiple cloud layers
+            effvis *= ratio;
+        }
 
 #if 0
 	if ( ratio < 1.0 ) {

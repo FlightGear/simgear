@@ -633,25 +633,25 @@ bool SGCloudLayer::repaint( sgVec3 fog_color ) {
         for ( int i = 0; i < 4; i++ ) {
             color = cl[i]->get( 0 );
             sgCopyVec3( color, fog_color );
-            color[3] = (i == 0) ? 0.0f : 0.15f;
+            color[3] = (i == 0) ? 0.0f : cloud_alpha * 0.15f;
 
             for ( int j = 0; j < 4; ++j ) {
-                color = cl[i]->get( (2*j) );
-                sgCopyVec3( color, fog_color );
-                color[3] = 
-                    ((j == 0) || (i == 3)) ?
-                    ((j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f;
-
                 color = cl[i]->get( (2*j) + 1 );
                 sgCopyVec3( color, fog_color );
                 color[3] = 
+                    ((j == 0) || (i == 3)) ?
+                    ((j == 0) && (i == 3)) ? 0.0f : cloud_alpha * 0.15f : cloud_alpha;
+
+                color = cl[i]->get( (2*j) + 2 );
+                sgCopyVec3( color, fog_color );
+                color[3] = 
                     ((j == 3) || (i == 0)) ?
-                    ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f;
+                    ((j == 3) && (i == 0)) ? 0.0f : cloud_alpha * 0.15f : cloud_alpha;
             }
 
             color = cl[i]->get( 9 );
             sgCopyVec3( color, fog_color );
-            color[3] = (i == 3) ? 0.0f : 0.15f;
+            color[3] = (i == 3) ? 0.0f : cloud_alpha * 0.15f;
         }
     }
 

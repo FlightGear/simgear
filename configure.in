@@ -268,6 +268,7 @@ AC_OUTPUT( \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/bucket/Makefile \
+	simgear/camera/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \
 	simgear/io/Makefile \

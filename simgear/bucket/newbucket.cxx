@@ -36,8 +36,109 @@
 #include "newbucket.hxx"
 
 
+// default constructor
+SGBucket::SGBucket() {
+}
+
+
+// constructor for specified location
+inline SGBucket::SGBucket(const double dlon, const double dlat) {
+    set_bucket(dlon, dlat);
+}
+
+
+// create an impossible bucket if false
+inline SGBucket::SGBucket(const bool is_good) {
+    set_bucket(0.0, 0.0);
+    if ( !is_good ) {
+	lon = -1000;
+    }
+}
+
+
+// Parse a unique scenery tile index and find the lon, lat, x, and y
+inline SGBucket::SGBucket(const long int bindex) {
+    long int index = bindex;
+	
+    lon = index >> 14;
+    index -= lon << 14;
+    lon -= 180;
+
+    lat = index >> 6;
+    index -= lat << 6;
+    lat -= 90;
+
+    y = index >> 3;
+    index -= y << 3;
+
+    x = index;
+}
+
+
+// default destructor
+inline SGBucket::~SGBucket() {
+}
+
+
+// Set the bucket params for the specified lat and lon
+void SGBucket::set_bucket( double *lonlat ) {
+    set_bucket( lonlat[0], lonlat[1] );
+}	
+
+
+// Set the bucket params for the specified lat and lon
+void SGBucket::set_bucket( double dlon, double dlat ) {
+    //
+    // latitude first
+    //
+    double span = sg_bucket_span( dlat );
+    double diff = dlon - (double)(int)dlon;
+
+    // cout << "diff = " << diff << "  span = " << span << endl;
+
+    if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
+	lon = (int)dlon;
+    } else {
+	lon = (int)dlon - 1;
+    }
+
+    // find subdivision or super lon if needed
+    if ( span < FG_EPSILON ) {
+	// polar cap
+	lon = 0;
+	x = 0;
+    } else if ( span <= 1.0 ) {
+	x = (int)((dlon - lon) / span);
+    } else {
+	if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
+	    lon = (int)( (int)(lon / span) * span);
+	} else {
+	    // cout << " lon = " << lon 
+	    //  << "  tmp = " << (int)((lon-1) / span) << endl;
+	    lon = (int)( (int)((lon + 1) / span) * span - span);
+	    if ( lon < -180 ) {
+		lon = -180;
+	    }
+	}
+	x = 0;
+    }
+
+    //
+    // then latitude
+    //
+    diff = dlat - (double)(int)dlat;
+
+    if ( (dlat >= 0) || (fabs(diff) < FG_EPSILON) ) {
+	lat = (int)dlat;
+    } else {
+	lat = (int)dlat - 1;
+    }
+    y = (int)((dlat - lat) * 8);
+}
+
+
 // Build the path name for this bucket
-string FGBucket::gen_base_path() const {
+string SGBucket::gen_base_path() const {
     // long int index;
     int top_lon, top_lat, main_lon, main_lat;
     char hem, pole;
@@ -85,8 +186,20 @@ string FGBucket::gen_base_path() const {
 }
 
 
+// return width of the tile in degrees
+double SGBucket::get_width() const {
+    return sg_bucket_span( get_center_lat() );
+}
+
+
+// return height of the tile in degrees
+double SGBucket::get_height() const {
+    return SG_BUCKET_SPAN;
+}
+
+
 // return width of the tile in meters
-double FGBucket::get_width_m() const {
+double SGBucket::get_width_m() const {
     double clat = (int)get_center_lat();
     if ( clat > 0 ) {
 	clat = (int)clat + 0.5;
@@ -99,16 +212,16 @@ double FGBucket::get_width_m() const {
     double local_perimeter = 2.0 * local_radius * FG_PI;
     double degree_width = local_perimeter / 360.0;
 
-    return bucket_span( get_center_lat() ) * degree_width;
+    return sg_bucket_span( get_center_lat() ) * degree_width;
 }
 
 
 // return height of the tile in meters
-double FGBucket::get_height_m() const {
+double SGBucket::get_height_m() const {
     double perimeter = 2.0 * EQUATORIAL_RADIUS_M * FG_PI;
     double degree_height = perimeter / 360.0;
 
-    return FG_BUCKET_SPAN * degree_height;
+    return SG_BUCKET_SPAN * degree_height;
 }
 
 
@@ -116,15 +229,15 @@ double FGBucket::get_height_m() const {
 // X & Y direction.  We need the current lon and lat to resolve
 // ambiguities when going from a wider tile to a narrower one above or
 // below.  This assumes that we are feeding in
-FGBucket fgBucketOffset( double dlon, double dlat, int dx, int dy ) {
-    FGBucket result( dlon, dlat );
-    double clat = result.get_center_lat() + dy * FG_BUCKET_SPAN;
+SGBucket sgBucketOffset( double dlon, double dlat, int dx, int dy ) {
+    SGBucket result( dlon, dlat );
+    double clat = result.get_center_lat() + dy * SG_BUCKET_SPAN;
 
     // walk dy units in the lat direction
     result.set_bucket( dlon, clat );
 
     // find the lon span for the new latitude
-    double span = bucket_span( clat );
+    double span = sg_bucket_span( clat );
 
     // walk dx units in the lon direction
     double tmp = dlon + dx * span;
@@ -141,7 +254,7 @@ FGBucket fgBucketOffset( double dlon, double dlat, int dx, int dy ) {
 
 
 // calculate the offset between two buckets
-void fgBucketDiff( const FGBucket& b1, const FGBucket& b2, int *dx, int *dy ) {
+void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy ) {
 
     // Latitude difference
     double c1_lat = b1.get_center_lat();
@@ -149,12 +262,12 @@ void fgBucketDiff( const FGBucket& b1, const FGBucket& b2, int *dx, int *dy ) {
     double diff_lat = c2_lat - c1_lat;
 
 #ifdef HAVE_RINT
-    *dy = (int)rint( diff_lat / FG_BUCKET_SPAN );
+    *dy = (int)rint( diff_lat / SG_BUCKET_SPAN );
 #else
     if ( diff_lat > 0 ) {
-	*dy = (int)( diff_lat / FG_BUCKET_SPAN + 0.5 );
+	*dy = (int)( diff_lat / SG_BUCKET_SPAN + 0.5 );
     } else {
-	*dy = (int)( diff_lat / FG_BUCKET_SPAN - 0.5 );
+	*dy = (int)( diff_lat / SG_BUCKET_SPAN - 0.5 );
     }
 #endif
 
@@ -163,10 +276,10 @@ void fgBucketDiff( const FGBucket& b1, const FGBucket& b2, int *dx, int *dy ) {
     double c2_lon = b2.get_center_lon();
     double diff_lon = c2_lon - c1_lon;
     double span;
-    if ( bucket_span(c1_lat) <= bucket_span(c2_lat) ) {
-	span = bucket_span(c1_lat);
+    if ( sg_bucket_span(c1_lat) <= sg_bucket_span(c2_lat) ) {
+	span = sg_bucket_span(c1_lat);
     } else {
-	span = bucket_span(c2_lat);
+	span = sg_bucket_span(c2_lat);
     }
 
 #ifdef HAVE_RINT

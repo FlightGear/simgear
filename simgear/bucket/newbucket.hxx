@@ -57,83 +57,16 @@ FG_USING_STD(ostream);
 
 
 
-#define FG_BUCKET_SPAN      0.125   // 1/8 of a degree
-#define FG_HALF_BUCKET_SPAN 0.0625  // 1/2 of 1/8 of a degree = 1/16 = 0.0625
+#define SG_BUCKET_SPAN      0.125   // 1/8 of a degree
+#define SG_HALF_BUCKET_SPAN 0.0625  // 1/2 of 1/8 of a degree = 1/16 = 0.0625
 
-class FGBucket;
-ostream& operator<< ( ostream&, const FGBucket& );
-bool operator== ( const FGBucket&, const FGBucket& );
-
-class FGBucket {
-
-private:
-    double cx, cy;  // centerpoint (lon, lat) in degrees of bucket
-    int lon;        // longitude index (-180 to 179)
-    int lat;        // latitude index (-90 to 89)
-    int x;          // x subdivision (0 to 7)
-    int y;          // y subdivision (0 to 7)
-
-public:
-
-    // default constructor
-    FGBucket();
-
-    // create a bucket which would contain the specified lon/lat
-    FGBucket(const double lon, const double lat);
-
-    // create a bucket based on "long int" index
-    FGBucket(const long int bindex);
-
-    // create an impossible bucket if false
-    FGBucket(const bool is_good);
-
-    ~FGBucket();
-
-    // Set the bucket params for the specified lat and lon
-    void set_bucket( double dlon, double dlat );
-    void set_bucket( double *lonlat ) {
-	set_bucket( lonlat[0], lonlat[1] );
-    }	
-
-    void make_bad ( void );
-
-    // Generate the unique scenery tile index for this bucket
-    long int gen_index() const;
-    string gen_index_str() const;
-
-    // Build the path name for this bucket
-    string gen_base_path() const;
-
-    // return the center lon of a tile
-    double get_center_lon() const;
-
-    // return width of the tile in degrees
-    double get_width() const;
-    // return width of the tile in meters
-    double get_width_m() const; 
-    // return height of the tile in degrees
-    double get_height() const;
-    // return height of the tile in meters
-    double get_height_m() const;
-
-    // return the center lat of a tile
-    double get_center_lat() const;
-
-
-    // Informational methods
-    inline int get_lon() const { return lon; }
-    inline int get_lat() const { return lat; }
-    inline int get_x() const { return x; }
-    inline int get_y() const { return y; }
-
-    // friends
-    friend ostream& operator<< ( ostream&, const FGBucket& );
-    friend bool operator== ( const FGBucket&, const FGBucket& );
-};
+class SGBucket;
+ostream& operator<< ( ostream&, const SGBucket& );
+bool operator== ( const SGBucket&, const SGBucket& );
 
 
 // return the horizontal tile span factor based on latitude
-inline double bucket_span( double l ) {
+inline double sg_bucket_span( double l ) {
     if ( l >= 89.0 ) {
 	return 360.0;
     } else if ( l >= 88.0 ) {
@@ -168,179 +101,125 @@ inline double bucket_span( double l ) {
 }
 
 
-// Set the bucket params for the specified lat and lon
-inline void FGBucket::set_bucket( double dlon, double dlat ) {
-    //
-    // latitude first
-    //
-    double span = bucket_span( dlat );
-    double diff = dlon - (double)(int)dlon;
+class SGBucket {
 
-    // cout << "diff = " << diff << "  span = " << span << endl;
+private:
+    double cx, cy;  // centerpoint (lon, lat) in degrees of bucket
+    int lon;        // longitude index (-180 to 179)
+    int lat;        // latitude index (-90 to 89)
+    int x;          // x subdivision (0 to 7)
+    int y;          // y subdivision (0 to 7)
 
-    if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
-	lon = (int)dlon;
-    } else {
-	lon = (int)dlon - 1;
-    }
+public:
 
-    // find subdivision or super lon if needed
-    if ( span < FG_EPSILON ) {
-	// polar cap
-	lon = 0;
-	x = 0;
-    } else if ( span <= 1.0 ) {
-	x = (int)((dlon - lon) / span);
-    } else {
-	if ( (dlon >= 0) || (fabs(diff) < FG_EPSILON) ) {
-	    lon = (int)( (int)(lon / span) * span);
-	} else {
-	    // cout << " lon = " << lon 
-	    //  << "  tmp = " << (int)((lon-1) / span) << endl;
-	    lon = (int)( (int)((lon + 1) / span) * span - span);
-	    if ( lon < -180 ) {
-		lon = -180;
-	    }
-	}
-	x = 0;
-    }
+    // default constructor
+    inline SGBucket();
 
-    //
-    // then latitude
-    //
-    diff = dlat - (double)(int)dlat;
+    // constructor for specified location
+    inline SGBucket(const double dlon, const double dlat);
 
-    if ( (dlat >= 0) || (fabs(diff) < FG_EPSILON) ) {
-	lat = (int)dlat;
-    } else {
-	lat = (int)dlat - 1;
-    }
-    y = (int)((dlat - lat) * 8);
-}
+    // create an impossible bucket if false
+    inline SGBucket(const bool is_good);
 
+    // Parse a unique scenery tile index and find the lon, lat, x, and y
+    inline SGBucket(const long int bindex);
 
-// default constructor
-inline FGBucket::FGBucket() {}
+    // default destructor
+    inline ~SGBucket();
 
+    // Set the bucket params for the specified lat and lon
+    void set_bucket( double dlon, double dlat );
+    void set_bucket( double *lonlat );
 
-// constructor for specified location
-inline FGBucket::FGBucket(const double dlon, const double dlat) {
-    set_bucket(dlon, dlat);
-}
-
-
-// create an impossible bucket if false
-inline FGBucket::FGBucket(const bool is_good) {
-    set_bucket(0.0, 0.0);
-    if ( !is_good ) {
+    // create an impossible bucket
+    inline void SGBucket::make_bad( void ) {
+	set_bucket(0.0, 0.0);
 	lon = -1000;
     }
-}
 
+    // Generate the unique scenery tile index for this bucket
+    // 
+    // The index is constructed as follows:
+    // 
+    // 9 bits - to represent 360 degrees of longitude (-180 to 179)
+    // 8 bits - to represent 180 degrees of latitude (-90 to 89)
+    //
+    // Each 1 degree by 1 degree tile is further broken down into an 8x8
+    // grid.  So we also need:
+    //
+    // 3 bits - to represent x (0 to 7)
+    // 3 bits - to represent y (0 to 7)
 
-// Parse a unique scenery tile index and find the lon, lat, x, and y
-inline FGBucket::FGBucket(const long int bindex) {
-    long int index = bindex;
-
-    lon = index >> 14;
-    index -= lon << 14;
-    lon -= 180;
-
-    lat = index >> 6;
-    index -= lat << 6;
-    lat -= 90;
-
-    y = index >> 3;
-    index -= y << 3;
-
-    x = index;
-}
-
-
-// default destructor
-inline FGBucket::~FGBucket() {}
-
-
-// Generate the unique scenery tile index for this bucket
-// 
-// The index is constructed as follows:
-// 
-// 9 bits - to represent 360 degrees of longitude (-180 to 179)
-// 8 bits - to represent 180 degrees of latitude (-90 to 89)
-//
-// Each 1 degree by 1 degree tile is further broken down into an 8x8
-// grid.  So we also need:
-//
-// 3 bits - to represent x (0 to 7)
-// 3 bits - to represent y (0 to 7)
-
-inline long int FGBucket::gen_index() const {
-    return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
-}
-
-inline string FGBucket::gen_index_str() const {
-    char tmp[20];
-    sprintf(tmp, "%ld", 
-	    (((long)lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x);
-    return (string)tmp;
-}
-
-
-// return the center lon of a tile
-inline double FGBucket::get_center_lon() const {
-    double span = bucket_span( lat + y / 8.0 + FG_HALF_BUCKET_SPAN );
-
-    if ( span >= 1.0 ) {
-	return lon + span / 2.0;
-    } else {
-	return lon + x * span + span / 2.0;
+    inline long int gen_index() const {
+	return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
     }
-}
 
+    inline string gen_index_str() const {
+	char tmp[20];
+	sprintf(tmp, "%ld", 
+		(((long)lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x);
+	return (string)tmp;
+    }
 
-// return the center lat of a tile
-inline double FGBucket::get_center_lat() const {
-    return lat + y / 8.0 + FG_HALF_BUCKET_SPAN;
-}
+    // Build the path name for this bucket
+    string gen_base_path() const;
 
+    // return the center lon of a tile
+    inline double get_center_lon() const {
+	double span = sg_bucket_span( lat + y / 8.0 + SG_HALF_BUCKET_SPAN );
 
-// return width of the tile in degrees
-inline double FGBucket::get_width() const {
-    return bucket_span( get_center_lat() );
-}
+	if ( span >= 1.0 ) {
+	    return lon + span / 2.0;
+	} else {
+	    return lon + x * span + span / 2.0;
+	}
+    }
 
+    // return the center lat of a tile
+    inline double get_center_lat() const {
+	return lat + y / 8.0 + SG_HALF_BUCKET_SPAN;
+    }
 
-// return height of the tile in degrees
-inline double FGBucket::get_height() const {
-    return FG_BUCKET_SPAN;
-}
+    // return width of the tile in degrees
+    double get_width() const;
+    // return height of the tile in degrees
+    double get_height() const;
 
+    // return width of the tile in meters
+    double get_width_m() const; 
+    // return height of the tile in meters
+    double get_height_m() const;
+ 
+    // Informational methods
+    inline int get_lon() const { return lon; }
+    inline int get_lat() const { return lat; }
+    inline int get_x() const { return x; }
+    inline int get_y() const { return y; }
 
-// create an impossible bucket
-inline void FGBucket::make_bad( void ) {
-    set_bucket(0.0, 0.0);
-    lon = -1000;
-}
+    // friends
+    friend ostream& operator<< ( ostream&, const SGBucket& );
+    friend bool operator== ( const SGBucket&, const SGBucket& );
+};
 
 
 // offset a bucket specified by dlon, dlat by the specified tile units
 // in the X & Y direction
-FGBucket fgBucketOffset( double dlon, double dlat, int x, int y );
+SGBucket sgBucketOffset( double dlon, double dlat, int x, int y );
 
 
 // calculate the offset between two buckets
-void fgBucketDiff( const FGBucket& b1, const FGBucket& b2, int *dx, int *dy );
+void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy );
 
 
 inline ostream&
-operator<< ( ostream& out, const FGBucket& b )
+operator<< ( ostream& out, const SGBucket& b )
 {
     return out << b.lon << ":" << b.x << ", " << b.lat << ":" << b.y;
 }
 
 
 inline bool
-operator== ( const FGBucket& b1, const FGBucket& b2 )
+operator== ( const SGBucket& b1, const SGBucket& b2 )
 {
     return ( b1.lon == b2.lon &&
 	     b1.lat == b2.lat &&

@@ -37,7 +37,7 @@
 
 // traverse the specified fan/strip/list of vertices and attempt to
 // calculate "none stretching" texture coordinates
-point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
+point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 
 

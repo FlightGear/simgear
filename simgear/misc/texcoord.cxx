@@ -155,7 +155,7 @@ inline Point3D basic_tex_coord( const Point3D& p,
 {
     return Point3D( p.x() * ( degree_width * scale / 
 			      FG_STANDARD_TEXTURE_DIMENSION ),
-		    p.y() * ( degree_width * scale /
+		    p.y() * ( degree_height * scale /
 			      FG_STANDARD_TEXTURE_DIMENSION ),
 		    0.0 );
 }
@@ -163,7 +163,7 @@ inline Point3D basic_tex_coord( const Point3D& p,
 
 // traverse the specified fan/strip/list of vertices and attempt to
 // calculate "none stretching" texture coordinates
-point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
+point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale )
 {
     // cout << "calculating texture coordinates for a specific fan of size = "

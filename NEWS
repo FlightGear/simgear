@@ -1,3 +1,12 @@
+New in 0.3.7-pre1
+* September 10, 2004
+
+* Add support for parsing xml from an in memory buffer, not just a file.
+* Don't reduce visibility for a "clear" cloud layer.
+* Add support for audio orientation (direction and cone) for internal
+  view and tower view.
+
+
 New in 0.3.6
 * July 29, 2004
 

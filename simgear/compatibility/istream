@@ -2,10 +2,14 @@
 #ifndef __SG_ISTREAM
 #define __SG_ISTREAM 1
 
+# include <iostream>
+
 #if defined(sgi) && !defined(__GNUC__)
 
 # include <stream.h>
-# include <iostream>
+# include <string>
+
+  using std::getline;
 
 #endif
 

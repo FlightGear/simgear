@@ -16,9 +16,7 @@
 #include STL_STRING
 #include <vector>
 
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
-#endif
 SG_USING_STD(string);
 SG_USING_STD(vector);
 

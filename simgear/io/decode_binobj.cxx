@@ -3,12 +3,10 @@
 #include <unistd.h>
 #include STL_IOSTREAM
 
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
+#include "sg_binobj.hxx"
+
 SG_USING_STD(cout);
 SG_USING_STD(endl);
-#endif
-
-#include "sg_binobj.hxx"
 
 
 int main( int argc, char **argv ) {

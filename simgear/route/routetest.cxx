@@ -6,10 +6,8 @@
 #include "route.hxx"
 #include "waypoint.hxx"
 
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(cout);
 SG_USING_STD(endl);
-#endif
  
 int main() {
     SGRoute route;

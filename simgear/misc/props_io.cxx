@@ -12,21 +12,15 @@
 #include "props_io.hxx"
 
 #include STL_IOSTREAM
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
-#  include <fstream>
-#else
-#  include <fstream.h>
-#endif
+#include STL_FSTREAM
 #include STL_STRING
 #include <vector>
 #include <map>
 
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
 SG_USING_STD(ifstream);
 SG_USING_STD(ostream);
 SG_USING_STD(ofstream);
-#endif
 SG_USING_STD(string);
 SG_USING_STD(vector);
 SG_USING_STD(map);

@@ -3,6 +3,7 @@
 #define __SG_IOSTREAM 1
 
 # include <iostream.h>
+# include <fstream.h>
 
 #if defined(sgi) && !defined(__GNUC__)
 
@@ -20,7 +21,14 @@
     using ::cout;
     using ::cerr;
     using ::clog;
+    using ::endl;
+
     using ::ios_base;
+    using ::istream;
+    using ::ostream;
+
+    using ::ifstream;
+    using ::ofstream;
   };
 
 #endif

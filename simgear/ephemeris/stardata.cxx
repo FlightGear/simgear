@@ -27,7 +27,7 @@
 
 #include "stardata.hxx"
 
-#if defined (_MSC_VER) || defined (SG_HAVE_NATIVE_SGI_COMPILERS)
+#if defined (_MSC_VER)
   SG_USING_STD(getline);
 #endif
 

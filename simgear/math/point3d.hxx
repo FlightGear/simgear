@@ -61,10 +61,8 @@
 SG_USING_NAMESPACE(std);
 #endif
 
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 SG_USING_STD(ostream);
 SG_USING_STD(istream);
-#endif
 
 
 const double fgPoint3_Epsilon = 0.0000001;

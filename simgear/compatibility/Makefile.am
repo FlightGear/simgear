@@ -27,3 +27,32 @@ include_HEADERS	= \
 	ctime \
 	iomanip \
 	streambuf
+includedir = @includedir@/compatibility
+
+EXTRA_DIST = README
+
+include_HEADERS	= \
+	cfloat \
+	csetjmp \
+	cstdio \
+	cwchar \
+	iostream \
+	strstream \
+	cassert \
+	climits \
+	csignal \
+	cstdlib \
+	cwctype \
+	istream \
+	cctype \
+	clocale \
+	cstdarg \
+	cstring \
+	fstream \
+	iterator \
+	cerrno \
+	cmath \
+	cstddef \
+	ctime \
+	iomanip \
+	streambuf

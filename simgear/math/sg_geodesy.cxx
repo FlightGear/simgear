@@ -27,9 +27,7 @@
 #include "localconsts.hxx"
 
 
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 SG_USING_STD(cout);
-#endif
 
 
 #define DOMAIN_ERR_DEBUG 1

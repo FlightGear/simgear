@@ -3,15 +3,13 @@
 #include STL_IOSTREAM
 #include "lowlevel.hxx"
 
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
-SG_USING_STD(cout);
-SG_USING_STD(endl);
-#endif
-
 
 static const int sgEndianTest = 1;
 #define sgIsLittleEndian (*((char *) &sgEndianTest ) != 0)
 #define sgIsBigEndian    (*((char *) &sgEndianTest ) == 0)
+
+SG_USING_STD(cout);
+SG_USING_STD(endl);
 
 
 int main() {

@@ -32,12 +32,6 @@
 
 #include <zlib.h>
 
-// At least Irix needs this
-#ifdef SG_HAVE_NATIVE_SGI_COMPILERS
-#include <char_traits.h>
-SG_USING_STD(char_traits);
-#endif
-
 #ifdef SG_HAVE_STD_INCLUDES
 
 #  include <streambuf>
@@ -76,8 +70,6 @@ SG_USING_STD(streamoff);
 
 #if defined(__GNUC__) && __GNUC_MINOR__ < 8
 #  define ios_binary   ios::bin
-#elif defined( SG_HAVE_NATIVE_SGI_COMPILERS )
-#  define ios_binary   0
 #else
 #  define ios_binary   ios::binary
 #endif
@@ -94,7 +86,11 @@ SG_USING_STD(streamoff);
 /**
  * A C++ I/O streams interface to the zlib gz* functions.
  */
+#ifdef SG_NEED_STREAMBUF_HACK
+class gzfilebuf : public __streambuf
+#else
 class gzfilebuf : public streambuf
+#endif
 {
 public:
 

@@ -11,9 +11,6 @@
 
 #include "sg_socket.hxx"
 
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
-using std::cout;
-#endif
 
 class TcpClient
 {

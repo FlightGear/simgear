@@ -36,10 +36,8 @@ using std::ostream;
 #include STL_IOSTREAM
 SG_USING_STD(string);
 SG_USING_STD(vector);
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
 SG_USING_STD(ostream);
-#endif
 
 #endif
 

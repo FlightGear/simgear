@@ -7,10 +7,8 @@
 #include "MetarReport.h"
 #include "Metar.h"
 
-#if !defined (SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(endl);
 SG_USING_STD(ostream);
-#endif
 
 CMetarReport::CMetarReport(
    char *s ) :

@@ -54,10 +54,7 @@ SG_USING_STD(fabs);
 #include STL_STRING
 
 SG_USING_STD(string);
-
-#if ! defined( SG_HAVE_NATIVE_SGI_COMPILERS )
 SG_USING_STD(ostream);
-#endif
 
 
 /**

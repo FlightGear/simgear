@@ -36,8 +36,6 @@
 
 #if defined( SG_HAVE_STD_INCLUDES )
 #  include <istream>
-#elif defined ( SG_HAVE_NATIVE_SGI_COMPILERS )
-#  include <CC/stream.h>
 #elif defined ( __BORLANDC__ )
 #  include <iostream>
 #else
@@ -49,10 +47,7 @@
 #include <simgear/misc/zfstream.hxx>
 
 SG_USING_STD(string);
-
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 SG_USING_STD(istream);
-#endif
 
 
 /**

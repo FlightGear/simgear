@@ -5,10 +5,8 @@
 
 #include "sg_socket.hxx"
 
-using std::string;
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
-using std::cout;
-#endif
+SG_USING_STD(string);
+SG_USING_STD(cout);
 
 class TcpServer
 {

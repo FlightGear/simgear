@@ -28,11 +28,6 @@
 
 #include <simgear/compiler.h>
 
-// At least Irix needs this
-#ifdef SG_HAVE_NATIVE_SGI_COMPILERS
-#include <char_traits.h>
-#endif
-
 #ifdef SG_HAVE_STD_INCLUDES
 # include <streambuf>
 # include <iostream>
@@ -43,15 +38,11 @@
 
 #include <simgear/debug/debug_types.h>
 
-#ifndef SG_HAVE_NATIVE_SGI_COMPILERS
 SG_USING_STD(streambuf);
 SG_USING_STD(ostream);
 SG_USING_STD(cout);
 SG_USING_STD(cerr);
 SG_USING_STD(endl);
-#else
-SG_USING_STD(char_traits);
-#endif
 
 #ifdef __MWERKS__
 SG_USING_STD(iostream);
@@ -70,7 +61,11 @@ SG_USING_STD(iostream);
  * messages at runtime. Only messages with priority >= logbuf::logPriority
  * and debugClass == logbuf::logClass are output.
  */
+#ifdef SG_NEED_STREAMBUF_HACK
+class logbuf : public __streambuf
+#else
 class logbuf : public streambuf
+#endif
 {
 public:
 

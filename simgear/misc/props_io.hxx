@@ -25,10 +25,8 @@
 SG_USING_STD(string);
 SG_USING_STD(vector);
 SG_USING_STD(map);
-#if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
 SG_USING_STD(ostream);
-#endif
 
 /**
  * Read properties from an XML input stream.

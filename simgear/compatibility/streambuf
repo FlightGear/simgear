@@ -2,27 +2,36 @@
 #ifndef __SG_STREAMBUF
 #define __SG_STREAMBUF 1
 
-#if defined(sgi) && !defined(__GNUC__)
-
-# include <char_traits.h>
 # include <iostream>
+# include <char_traits.h>
 
-# define pubsync sync
+//
+// Until we find a good way to rename the original streambuf class
+// and derive our own streambuf class from that, define this variable
+// for now so the code can inherit our streambuf class instead.
+//
+# define SG_NEED_STREAMBUF_HACK  1
 
-  using std::char_traits;
+class __streambuf : virtual public streambuf {
+public:
 
-  typedef char_traits<char>            traits_type;
-  typedef char_traits<char>::int_type  int_type;
+  typedef std::char_traits<char>            traits_type;
+  typedef std::char_traits<char>::int_type  int_type;
 
   typedef streampos  pos_type;
   typedef streamoff  off_type;
+};
+
+
+#if defined(sgi) && !defined(__GNUC__)
+
+# define pubsync  sync
 
   namespace std {
     using ::streambuf;
     using ::streampos;
     using ::streamoff;
   };
-
 #endif
 
 #endif // !__SG_STREAMBUF

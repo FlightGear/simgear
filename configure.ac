@@ -168,7 +168,17 @@ if test "x$ac_cv_lib_pthread_pthread_exit" != "xyes" -a "x$ac_cv_header_pthread_
 fi
 AM_CONDITIONAL(HAVE_THREADS, test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes")
 
-AC_CHECK_LIB(socket, socket)
+case "${host}" in
+*-*-irix*)
+    ;;
+*-*-solaris*)
+    AC_CHECK_LIB(xnet,inet_addr)
+    AC_CHECK_LIB(socket, socket)
+    ;;
+*)
+    AC_CHECK_LIB(socket, socket)
+    ;;
+esac
 
 dnl check for glut location
 AC_CHECK_HEADER(GL/glut.h)

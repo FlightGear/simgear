@@ -20,8 +20,11 @@
 //----------------------------------------------------------------------------
 // $Id$
 //============================================================================
+
+#include <simgear/compiler.h>
+
 #include "camera.hpp"
-#include <iostream>
+#include STL_IOSTREAM
 
 //----------------------------------------------------------------------------
 // CONSTRUCTOR: defines a default camera system defined as (45 DEG FOV)

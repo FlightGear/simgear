@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 // File : SkyTextureState.cpp
 //------------------------------------------------------------------------------
@@ -42,11 +43,13 @@ SkyTextureState::SkyTextureState()
   if (0 == s_iNumTextureUnits)
   {
     int iNumTextureUnits = 0;
+#ifdef GL_ARB_multitexture
     glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &iNumTextureUnits);
     if (iNumTextureUnits > 0)
       s_iNumTextureUnits = iNumTextureUnits;
     else
       s_iNumTextureUnits = 1;
+#endif
   }
   
   _pTextureUnitState = new TexState[s_iNumTextureUnits];
@@ -84,8 +87,10 @@ SKYRESULT SkyTextureState::Activate()
   //GLVU::CheckForGLError("SkyTextureState::Activate(8)");
   for (unsigned int i = 0; i < s_iNumTextureUnits; ++i)
   {
+#ifdef GL_ARB_multitexture
     if (s_iNumTextureUnits > 1)
       glActiveTextureARB(GL_TEXTURE0_ARB + i);
+#endif
     bool bEnabled = IsTextureEnabled(i);
     if (pCurrent->IsTextureEnabled(i) != bEnabled)
     {
@@ -144,8 +149,10 @@ SKYRESULT SkyTextureState::Activate()
       }
       //GLVU::CheckForGLError("SkyTextureState::Activate()");
     }
+#ifdef GL_ARB_multitexture
     if (s_iNumTextureUnits > 1)
       glActiveTextureARB(GL_TEXTURE0_ARB);
+#endif
   }
   return SKYRESULT_OK;
 }

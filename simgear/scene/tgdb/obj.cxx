@@ -327,6 +327,10 @@ bool sgBinObjLoad( const string& path, const bool is_base,
         return false;
     }
 
+    ssgBranch *local_terrain = new ssgBranch;
+    local_terrain->setName( "LocalTerrain" );
+    geometry->addKid( local_terrain );
+
     geometry->setName( (char *)path.c_str() );
 
     // reference point (center offset/bounding sphere)
@@ -375,7 +379,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                         nodes, normals, texcoords,
                                         pts_v[i], pts_n[i], tex_index,
                                         false, ground_lights );
-            geometry->addKid( leaf );
+            local_terrain->addKid( leaf );
         }
     }
 
@@ -415,7 +419,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                             center, mat );
             }
         }
-        geometry->addKid( leaf );
+        local_terrain->addKid( leaf );
     }
 
     // generate strips
@@ -441,7 +445,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                             center, mat );
             }
         }
-        geometry->addKid( leaf );
+        local_terrain->addKid( leaf );
     }
 
     // generate fans
@@ -467,7 +471,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
             }
         }
 
-        geometry->addKid( leaf );
+        local_terrain->addKid( leaf );
     }
 
     return true;

@@ -759,7 +759,8 @@ SGPropertyNode::SGPropertyNode (const char * name,
 SGPropertyNode::~SGPropertyNode ()
 {
   delete [] _name;
-  delete _path;
+  delete [] _display_name;
+  delete [] _path;
   delete _path_cache;
   clear_value();
   delete _listeners;

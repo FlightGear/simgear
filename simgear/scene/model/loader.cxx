@@ -9,15 +9,15 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGSSGLoader.
+// Implementation of SGssgLoader.
 ////////////////////////////////////////////////////////////////////////
 
-FGSSGLoader::FGSSGLoader ()
+SGssgLoader::SGssgLoader ()
 {
     // no op
 }
 
-FGSSGLoader::~FGSSGLoader ()
+SGssgLoader::~SGssgLoader ()
 {
     std::map<string, ssgBase *>::iterator it = _table.begin();
     while (it != _table.end()) {
@@ -27,7 +27,7 @@ FGSSGLoader::~FGSSGLoader ()
 }
 
 void
-FGSSGLoader::flush ()
+SGssgLoader::flush ()
 {
     std::map<string, ssgBase *>::iterator it = _table.begin();
     while (it != _table.end()) {
@@ -45,19 +45,19 @@ FGSSGLoader::flush ()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGModelLoader.
+// Implementation of SGModelLoader.
 ////////////////////////////////////////////////////////////////////////
 
-FGModelLoader::FGModelLoader ()
+SGModelLoader::SGModelLoader ()
 {
 }
 
-FGModelLoader::~FGModelLoader ()
+SGModelLoader::~SGModelLoader ()
 {
 }
 
 ssgEntity *
-FGModelLoader::load_model( const string &fg_root,
+SGModelLoader::load_model( const string &fg_root,
                            const string &path,
                            SGPropertyNode *prop_root,
                            double sim_time_sec )
@@ -66,7 +66,7 @@ FGModelLoader::load_model( const string &fg_root,
                                 // avoid duplicates.
     std::map<string, ssgBase *>::iterator it = _table.find(path);
     if (it == _table.end()) {
-        _table[path] = fgLoad3DModel( fg_root, path, prop_root, sim_time_sec );
+        _table[path] = sgLoad3DModel( fg_root, path, prop_root, sim_time_sec );
         it = _table.find(path);
         it->second->ref();      // add one reference to keep it around
     }

@@ -1,4 +1,4 @@
-// newmat.cxx -- class to handle material properties
+// mat.cxx -- class to handle material properties
 //
 // Written by Curtis Olson, started May 1998.
 //
@@ -68,10 +68,10 @@ local_file_exists( const string& path ) {
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGNewMat::Object.
+// Implementation of SGMaterial::Object.
 ////////////////////////////////////////////////////////////////////////
 
-FGNewMat::Object::Object (const SGPropertyNode * node, double range_m)
+SGMaterial::Object::Object (const SGPropertyNode * node, double range_m)
   : _models_loaded(false),
     _coverage_m2(node->getDoubleValue("coverage-m2", 1000000)),
     _range_m(range_m)
@@ -106,7 +106,7 @@ FGNewMat::Object::Object (const SGPropertyNode * node, double range_m)
   // load_models();
 }
 
-FGNewMat::Object::~Object ()
+SGMaterial::Object::~Object ()
 {
   for (unsigned int i = 0; i < _models.size(); i++) {
     if (_models[i] != 0) {
@@ -117,7 +117,7 @@ FGNewMat::Object::~Object ()
 }
 
 int
-FGNewMat::Object::get_model_count( FGModelLoader *loader,
+SGMaterial::Object::get_model_count( SGModelLoader *loader,
                                    const string &fg_root,
                                    SGPropertyNode *prop_root,
                                    double sim_time_sec )
@@ -127,7 +127,7 @@ FGNewMat::Object::get_model_count( FGModelLoader *loader,
 }
 
 inline void
-FGNewMat::Object::load_models ( FGModelLoader *loader,
+SGMaterial::Object::load_models ( SGModelLoader *loader,
                                 const string &fg_root,
                                 SGPropertyNode *prop_root,
                                 double sim_time_sec )
@@ -163,8 +163,8 @@ FGNewMat::Object::load_models ( FGModelLoader *loader,
 }
 
 ssgEntity *
-FGNewMat::Object::get_model( int index,
-                             FGModelLoader *loader,
+SGMaterial::Object::get_model( int index,
+                             SGModelLoader *loader,
                              const string &fg_root,
                              SGPropertyNode *prop_root,
                              double sim_time_sec )
@@ -174,7 +174,7 @@ FGNewMat::Object::get_model( int index,
 }
 
 ssgEntity *
-FGNewMat::Object::get_random_model( FGModelLoader *loader,
+SGMaterial::Object::get_random_model( SGModelLoader *loader,
                                     const string &fg_root,
                                     SGPropertyNode *prop_root,
                                     double sim_time_sec )
@@ -188,13 +188,13 @@ FGNewMat::Object::get_random_model( FGModelLoader *loader,
 }
 
 double
-FGNewMat::Object::get_coverage_m2 () const
+SGMaterial::Object::get_coverage_m2 () const
 {
   return _coverage_m2;
 }
 
-FGNewMat::Object::HeadingType
-FGNewMat::Object::get_heading_type () const
+SGMaterial::Object::HeadingType
+SGMaterial::Object::get_heading_type () const
 {
   return _heading_type;
 }
@@ -202,10 +202,10 @@ FGNewMat::Object::get_heading_type () const
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGNewMat::ObjectGroup.
+// Implementation of SGMaterial::ObjectGroup.
 ////////////////////////////////////////////////////////////////////////
 
-FGNewMat::ObjectGroup::ObjectGroup (SGPropertyNode * node)
+SGMaterial::ObjectGroup::ObjectGroup (SGPropertyNode * node)
   : _range_m(node->getDoubleValue("range-m", 2000))
 {
 				// Load the object subnodes
@@ -220,7 +220,7 @@ FGNewMat::ObjectGroup::ObjectGroup (SGPropertyNode * node)
   }
 }
 
-FGNewMat::ObjectGroup::~ObjectGroup ()
+SGMaterial::ObjectGroup::~ObjectGroup ()
 {
   for (unsigned int i = 0; i < _objects.size(); i++) {
     delete _objects[i];
@@ -229,19 +229,19 @@ FGNewMat::ObjectGroup::~ObjectGroup ()
 }
 
 double
-FGNewMat::ObjectGroup::get_range_m () const
+SGMaterial::ObjectGroup::get_range_m () const
 {
   return _range_m;
 }
 
 int
-FGNewMat::ObjectGroup::get_object_count () const
+SGMaterial::ObjectGroup::get_object_count () const
 {
   return _objects.size();
 }
 
-FGNewMat::Object *
-FGNewMat::ObjectGroup::get_object (int index) const
+SGMaterial::Object *
+SGMaterial::ObjectGroup::get_object (int index) const
 {
   return _objects[index];
 }
@@ -253,7 +253,7 @@ FGNewMat::ObjectGroup::get_object (int index) const
 ////////////////////////////////////////////////////////////////////////
 
 
-FGNewMat::FGNewMat( const string &fg_root,
+SGMaterial::SGMaterial( const string &fg_root,
                     const SGPropertyNode *props,
                     bool smooth_shading,
                     bool use_textures )
@@ -263,7 +263,7 @@ FGNewMat::FGNewMat( const string &fg_root,
     build_ssg_state( false, smooth_shading, use_textures );
 }
 
-FGNewMat::FGNewMat( const string &texpath,
+SGMaterial::SGMaterial( const string &texpath,
                     bool smooth_shading,
                     bool use_textures )
 {
@@ -272,7 +272,7 @@ FGNewMat::FGNewMat( const string &texpath,
     build_ssg_state( true, smooth_shading, use_textures );
 }
 
-FGNewMat::FGNewMat( ssgSimpleState *s,
+SGMaterial::SGMaterial( ssgSimpleState *s,
                     bool smooth_shading,
                     bool use_textures )
 {
@@ -280,7 +280,7 @@ FGNewMat::FGNewMat( ssgSimpleState *s,
     set_ssg_state( s, smooth_shading, use_textures );
 }
 
-FGNewMat::~FGNewMat (void)
+SGMaterial::~SGMaterial (void)
 {
   for (unsigned int i = 0; i < object_groups.size(); i++) {
     delete object_groups[i];
@@ -295,7 +295,7 @@ FGNewMat::~FGNewMat (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-FGNewMat::read_properties( const string &fg_root, const SGPropertyNode * props )
+SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props )
 {
 				// Get the path to the texture
   string tname = props->getStringValue("texture", "unknown.rgb");
@@ -351,7 +351,7 @@ FGNewMat::read_properties( const string &fg_root, const SGPropertyNode * props )
 ////////////////////////////////////////////////////////////////////////
 
 void 
-FGNewMat::init ()
+SGMaterial::init ()
 {
     texture_path = "";
     state = 0;
@@ -372,7 +372,7 @@ FGNewMat::init ()
 }
 
 bool
-FGNewMat::load_texture ()
+SGMaterial::load_texture ()
 {
     if (texture_loaded) {
         return false;
@@ -388,7 +388,7 @@ FGNewMat::load_texture ()
 
 
 void 
-FGNewMat::build_ssg_state( bool defer_tex_load,
+SGMaterial::build_ssg_state( bool defer_tex_load,
                            bool smooth_shading,
                            bool use_textures )
 {
@@ -473,7 +473,7 @@ FGNewMat::build_ssg_state( bool defer_tex_load,
 }
 
 
-void FGNewMat::set_ssg_state( ssgSimpleState *s,
+void SGMaterial::set_ssg_state( ssgSimpleState *s,
                               bool smooth_shading, bool use_textures )
 {
     GLenum shade_model = ( smooth_shading ? GL_SMOOTH : GL_FLAT);

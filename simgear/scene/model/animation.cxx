@@ -101,55 +101,55 @@ read_interpolation_table (SGPropertyNode_ptr props)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of Animation
+// Implementation of SGAnimation
 ////////////////////////////////////////////////////////////////////////
 
 // Initialize the static data member
-double Animation::sim_time_sec = 0.0;
+double SGAnimation::sim_time_sec = 0.0;
 
-Animation::Animation (SGPropertyNode_ptr props, ssgBranch * branch)
+SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
     : _branch(branch)
 {
     _branch->setName(props->getStringValue("name", 0));
 }
 
-Animation::~Animation ()
+SGAnimation::~SGAnimation ()
 {
 }
 
 void
-Animation::init ()
+SGAnimation::init ()
 {
 }
 
 void
-Animation::update()
+SGAnimation::update()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of NullAnimation
+// Implementation of SGNullAnimation
 ////////////////////////////////////////////////////////////////////////
 
-NullAnimation::NullAnimation (SGPropertyNode_ptr props)
-  : Animation(props, new ssgBranch)
+SGNullAnimation::SGNullAnimation (SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgBranch)
 {
 }
 
-NullAnimation::~NullAnimation ()
+SGNullAnimation::~SGNullAnimation ()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of RangeAnimation
+// Implementation of SGRangeAnimation
 ////////////////////////////////////////////////////////////////////////
 
-RangeAnimation::RangeAnimation (SGPropertyNode_ptr props)
-  : Animation(props, new ssgRangeSelector)
+SGRangeAnimation::SGRangeAnimation (SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgRangeSelector)
 {
     float ranges[] = { props->getFloatValue("min-m", 0),
                        props->getFloatValue("max-m", 5000) };
@@ -157,48 +157,48 @@ RangeAnimation::RangeAnimation (SGPropertyNode_ptr props)
                        
 }
 
-RangeAnimation::~RangeAnimation ()
+SGRangeAnimation::~SGRangeAnimation ()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of BillboardAnimation
+// Implementation of SGBillboardAnimation
 ////////////////////////////////////////////////////////////////////////
 
-BillboardAnimation::BillboardAnimation (SGPropertyNode_ptr props)
-    : Animation(props, new ssgCutout(props->getBoolValue("spherical", true)))
+SGBillboardAnimation::SGBillboardAnimation (SGPropertyNode_ptr props)
+    : SGAnimation(props, new ssgCutout(props->getBoolValue("spherical", true)))
 {
 }
 
-BillboardAnimation::~BillboardAnimation ()
+SGBillboardAnimation::~SGBillboardAnimation ()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SelectAnimation
+// Implementation of SGSelectAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SelectAnimation::SelectAnimation( SGPropertyNode *prop_root,
+SGSelectAnimation::SGSelectAnimation( SGPropertyNode *prop_root,
                                   SGPropertyNode_ptr props )
-  : Animation(props, new ssgSelector),
+  : SGAnimation(props, new ssgSelector),
     _condition(0)
 {
   SGPropertyNode_ptr node = props->getChild("condition");
   if (node != 0)
-    _condition = fgReadCondition(prop_root, node);
+    _condition = sgReadCondition(prop_root, node);
 }
 
-SelectAnimation::~SelectAnimation ()
+SGSelectAnimation::~SGSelectAnimation ()
 {
   delete _condition;
 }
 
 void
-SelectAnimation::update()
+SGSelectAnimation::update()
 {
   if (_condition != 0 && _condition->test()) 
       ((ssgSelector *)_branch)->select(0xffff);
@@ -209,13 +209,13 @@ SelectAnimation::update()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SpinAnimation
+// Implementation of SGSpinAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SpinAnimation::SpinAnimation( SGPropertyNode *prop_root,
+SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
                               SGPropertyNode_ptr props,
                               double sim_time_sec )
-  : Animation(props, new ssgTransform),
+  : SGAnimation(props, new ssgTransform),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _factor(props->getDoubleValue("factor", 1.0)),
     _position_deg(props->getDoubleValue("starting-position-deg", 0)),
@@ -230,12 +230,12 @@ SpinAnimation::SpinAnimation( SGPropertyNode *prop_root,
     sgNormalizeVec3(_axis);
 }
 
-SpinAnimation::~SpinAnimation ()
+SGSpinAnimation::~SGSpinAnimation ()
 {
 }
 
 void
-SpinAnimation::update()
+SGSpinAnimation::update()
 {
   double dt = sim_time_sec - _last_time_sec;
   _last_time_sec = sim_time_sec;
@@ -253,23 +253,23 @@ SpinAnimation::update()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of TimedAnimation
+// Implementation of SGTimedAnimation
 ////////////////////////////////////////////////////////////////////////
 
-TimedAnimation::TimedAnimation (SGPropertyNode_ptr props)
-  : Animation(props, new ssgSelector),
+SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgSelector),
     _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
     _last_time_sec(0),
     _step(-1)
 {
 }
 
-TimedAnimation::~TimedAnimation ()
+SGTimedAnimation::~SGTimedAnimation ()
 {
 }
 
 void
-TimedAnimation::update()
+SGTimedAnimation::update()
 {
     if ((sim_time_sec - _last_time_sec) >= _duration_sec) {
         _last_time_sec = sim_time_sec;
@@ -283,12 +283,12 @@ TimedAnimation::update()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of RotateAnimation
+// Implementation of SGRotateAnimation
 ////////////////////////////////////////////////////////////////////////
 
-RotateAnimation::RotateAnimation( SGPropertyNode *prop_root,
+SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
                                   SGPropertyNode_ptr props )
-    : Animation(props, new ssgTransform),
+    : SGAnimation(props, new ssgTransform),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
       _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
       _factor(props->getDoubleValue("factor", 1.0)),
@@ -308,13 +308,13 @@ RotateAnimation::RotateAnimation( SGPropertyNode *prop_root,
   sgNormalizeVec3(_axis);
 }
 
-RotateAnimation::~RotateAnimation ()
+SGRotateAnimation::~SGRotateAnimation ()
 {
   delete _table;
 }
 
 void
-RotateAnimation::update()
+SGRotateAnimation::update()
 {
   if (_table == 0) {
    _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
@@ -332,12 +332,12 @@ RotateAnimation::update()
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of TranslateAnimation
+// Implementation of SGTranslateAnimation
 ////////////////////////////////////////////////////////////////////////
 
-TranslateAnimation::TranslateAnimation( SGPropertyNode *prop_root,
+SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : Animation(props, new ssgTransform),
+  : SGAnimation(props, new ssgTransform),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _offset_m(props->getDoubleValue("offset-m", 0.0)),
     _factor(props->getDoubleValue("factor", 1.0)),
@@ -354,13 +354,13 @@ TranslateAnimation::TranslateAnimation( SGPropertyNode *prop_root,
   sgNormalizeVec3(_axis);
 }
 
-TranslateAnimation::~TranslateAnimation ()
+SGTranslateAnimation::~SGTranslateAnimation ()
 {
   delete _table;
 }
 
 void
-TranslateAnimation::update()
+SGTranslateAnimation::update()
 {
   if (_table == 0) {
     _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;

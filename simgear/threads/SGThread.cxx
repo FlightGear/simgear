@@ -75,7 +75,7 @@ int gettimeofday(struct timeval* tp, void* tzp) {
 #endif
 
 bool
-SGCondition::wait( SGMutex& mutex, unsigned long ms )
+SGPthreadCond::wait( SGMutex& mutex, unsigned long ms )
 {
     struct timeval now;
     ::gettimeofday( &now, 0 );

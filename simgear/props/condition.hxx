@@ -1,8 +1,11 @@
-// condition.hxx - Declarations and inline methods for property conditions.
-// Written by David Megginson, started 2000.
-// CLO May 2003 - Split out condition specific code.
-//
-// This file is in the Public Domain, and comes with no warranty.
+/**
+ * \file condition.hxx
+ * Declarations and inline methods for property conditions.
+ * Written by David Megginson, started 2000.
+ * CLO May 2003 - Split out condition specific code.
+ *
+ * This file is in the Public Domain, and comes with no warranty.
+ */
 
 #ifndef __SG_CONDITION_HXX
 #define __SG_CONDITION_HXX
@@ -25,11 +28,11 @@
  *
  * This class should migrate to somewhere more general.
  */
-class FGCondition
+class SGCondition
 {
 public:
-  FGCondition ();
-  virtual ~FGCondition ();
+  SGCondition ();
+  virtual ~SGCondition ();
   virtual bool test () const = 0;
 };
 
@@ -40,12 +43,12 @@ public:
  * This condition is true only if the property returns a boolean
  * true value.
  */
-class FGPropertyCondition : public FGCondition
+class SGPropertyCondition : public SGCondition
 {
 public:
-  FGPropertyCondition ( SGPropertyNode *prop_root,
+  SGPropertyCondition ( SGPropertyNode *prop_root,
                         const char * propname  );
-  virtual ~FGPropertyCondition ();
+  virtual ~SGPropertyCondition ();
   virtual bool test () const { return _node->getBoolValue(); }
 private:
   const SGPropertyNode * _node;
@@ -57,15 +60,15 @@ private:
  *
  * This condition is true only if the child condition is false.
  */
-class FGNotCondition : public FGCondition
+class SGNotCondition : public SGCondition
 {
 public:
 				// transfer pointer ownership
-  FGNotCondition (FGCondition * condition);
-  virtual ~FGNotCondition ();
+  SGNotCondition (SGCondition * condition);
+  virtual ~SGNotCondition ();
   virtual bool test () const;
 private:
-  FGCondition * _condition;
+  SGCondition * _condition;
 };
 
 
@@ -75,16 +78,16 @@ private:
  * This condition is true only if all of the conditions
  * in the group are true.
  */
-class FGAndCondition : public FGCondition
+class SGAndCondition : public SGCondition
 {
 public:
-  FGAndCondition ();
-  virtual ~FGAndCondition ();
+  SGAndCondition ();
+  virtual ~SGAndCondition ();
   virtual bool test () const;
 				// transfer pointer ownership
-  virtual void addCondition (FGCondition * condition);
+  virtual void addCondition (SGCondition * condition);
 private:
-  vector<FGCondition *> _conditions;
+  vector<SGCondition *> _conditions;
 };
 
 
@@ -94,23 +97,23 @@ private:
  * This condition is true if at least one of the conditions in the
  * group is true.
  */
-class FGOrCondition : public FGCondition
+class SGOrCondition : public SGCondition
 {
 public:
-  FGOrCondition ();
-  virtual ~FGOrCondition ();
+  SGOrCondition ();
+  virtual ~SGOrCondition ();
   virtual bool test () const;
 				// transfer pointer ownership
-  virtual void addCondition (FGCondition * condition);
+  virtual void addCondition (SGCondition * condition);
 private:
-  vector<FGCondition *> _conditions;
+  vector<SGCondition *> _conditions;
 };
 
 
 /**
  * Abstract base class for property comparison conditions.
  */
-class FGComparisonCondition : public FGCondition
+class SGComparisonCondition : public SGCondition
 {
 public:
   enum Type {
@@ -118,8 +121,8 @@ public:
     GREATER_THAN,
     EQUALS
   };
-  FGComparisonCondition (Type type, bool reverse = false);
-  virtual ~FGComparisonCondition ();
+  SGComparisonCondition (Type type, bool reverse = false);
+  virtual ~SGComparisonCondition ();
   virtual bool test () const;
   virtual void setLeftProperty( SGPropertyNode *prop_root,
                                 const char * propname );
@@ -143,17 +146,17 @@ private:
  * invoke the test() method whenever it needs to decide whether to
  * active itself, draw itself, and so on.
  */
-class FGConditional
+class SGConditional
 {
 public:
-  FGConditional ();
-  virtual ~FGConditional ();
+  SGConditional ();
+  virtual ~SGConditional ();
 				// transfer pointer ownership
-  virtual void setCondition (FGCondition * condition);
-  virtual const FGCondition * getCondition () const { return _condition; }
+  virtual void setCondition (SGCondition * condition);
+  virtual const SGCondition * getCondition () const { return _condition; }
   virtual bool test () const;
 private:
-  FGCondition * _condition;
+  SGCondition * _condition;
 };
 
 
@@ -168,8 +171,8 @@ private:
  *         responsibility of the caller to delete the condition when
  *         it is no longer needed.
  */
-FGCondition * fgReadCondition( SGPropertyNode *prop_root,
-                               const SGPropertyNode *node );
+SGCondition *sgReadCondition( SGPropertyNode *prop_root,
+                              const SGPropertyNode *node );
 
 
 #endif // __SG_CONDITION_HXX

@@ -38,7 +38,7 @@
 #include <plib/ssg.h>		// plib include
 
 
-class FGNewMat;
+class SGMaterial;
 
 SG_USING_STD(string);
 SG_USING_STD(map);
@@ -47,12 +47,12 @@ SG_USING_STD(less);
 
 
 // Material management class
-class FGMaterialLib {
+class SGMaterialLib {
 
 private:
 
     // associative array of materials
-    typedef map < string, FGNewMat *, less<string> > material_map;
+    typedef map < string, SGMaterial *, less<string> > material_map;
     typedef material_map::iterator material_map_iterator;
     typedef material_map::const_iterator const_material_map_iterator;
 
@@ -61,7 +61,7 @@ private:
 public:
 
     // Constructor
-    FGMaterialLib ( void );
+    SGMaterialLib ( void );
 
     // Load a library of material properties
     bool load( const string &fg_root, const string& mpath );
@@ -72,7 +72,7 @@ public:
     bool add_item( const string &mat_name, ssgSimpleState *state );
 
     // find a material record by material name
-    FGNewMat *find( const string& material );
+    SGMaterial *find( const string& material );
 
     void set_step (int step);
     int get_step ();
@@ -89,12 +89,12 @@ public:
     const_material_map_iterator end() const { return matlib.end(); }
 
     // Destructor
-    ~FGMaterialLib ( void );
+    ~SGMaterialLib ( void );
 };
 
 
 // global material management class
-extern FGMaterialLib material_lib;
+extern SGMaterialLib material_lib;
 
 
 #endif // _MATLIB_HXX 

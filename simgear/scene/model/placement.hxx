@@ -23,7 +23,7 @@ SG_USING_STD(vector);
 
 
 // Don't pull in the headers, since we don't need them here.
-class FGLocation;
+class SGLocation;
 
 
 // Has anyone done anything *really* stupid, like making min and max macros?
@@ -42,14 +42,14 @@ class FGLocation;
 /**
  * A wrapper for a model with a definite placement.
  */
-class FGModelPlacement
+class SGModelPlacement
 {
 public:
 
-  FGModelPlacement ();
-  virtual ~FGModelPlacement ();
+  SGModelPlacement ();
+  virtual ~SGModelPlacement ();
 
-    virtual void FGModelPlacement::init( ssgBranch * model );
+    virtual void SGModelPlacement::init( ssgBranch * model );
   /* virtual void init( const string &fg_root,
                      const string &path,
                      SGPropertyNode *prop_root,
@@ -58,7 +58,7 @@ public:
 
   virtual ssgEntity * getSceneGraph () { return (ssgEntity *)_selector; }
 
-  virtual FGLocation * getFGLocation () { return _location; }
+  virtual SGLocation * getSGLocation () { return _location; }
 
   virtual bool getVisible () const;
   virtual void setVisible (bool visible);
@@ -102,7 +102,7 @@ private:
   ssgTransform * _position;
 
                                 // Location
-  FGLocation * _location;
+  SGLocation * _location;
 
 
   // Addition by Diarmuid Tyson for Multiplayer Support

@@ -37,16 +37,16 @@
 
 
 // Define a structure containing view information
-class FGLocation
+class SGLocation
 {
 
 public:
 
     // Constructor
-    FGLocation( void );
+    SGLocation( void );
 
     // Destructor
-    virtual ~FGLocation( void );
+    virtual ~SGLocation( void );
 
     //////////////////////////////////////////////////////////////////////
     // Part 1: standard FGSubsystem implementation.

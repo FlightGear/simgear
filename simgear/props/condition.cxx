@@ -1,4 +1,5 @@
-// condition.hxx - Declarations and inline methods for property conditions.
+// condition.cxx - Declarations and inline methods for property conditions.
+//
 // Written by David Megginson, started 2000.
 // CLO May 2003 - Split out condition specific code.
 //
@@ -25,51 +26,51 @@ SG_USING_STD(ostream);
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGCondition.
+// Implementation of SGCondition.
 ////////////////////////////////////////////////////////////////////////
 
-FGCondition::FGCondition ()
+SGCondition::SGCondition ()
 {
 }
 
-FGCondition::~FGCondition ()
+SGCondition::~SGCondition ()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGPropertyCondition.
+// Implementation of SGPropertyCondition.
 ////////////////////////////////////////////////////////////////////////
 
-FGPropertyCondition::FGPropertyCondition ( SGPropertyNode *prop_root,
+SGPropertyCondition::SGPropertyCondition ( SGPropertyNode *prop_root,
                                            const char *propname )
     : _node( prop_root->getNode(propname, true) )
 {
 }
 
-FGPropertyCondition::~FGPropertyCondition ()
+SGPropertyCondition::~SGPropertyCondition ()
 {
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGNotCondition.
+// Implementation of SGNotCondition.
 ////////////////////////////////////////////////////////////////////////
 
-FGNotCondition::FGNotCondition (FGCondition * condition)
+SGNotCondition::SGNotCondition (SGCondition * condition)
   : _condition(condition)
 {
 }
 
-FGNotCondition::~FGNotCondition ()
+SGNotCondition::~SGNotCondition ()
 {
   delete _condition;
 }
 
 bool
-FGNotCondition::test () const
+SGNotCondition::test () const
 {
   return !(_condition->test());
 }
@@ -77,21 +78,21 @@ FGNotCondition::test () const
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGAndCondition.
+// Implementation of SGAndCondition.
 ////////////////////////////////////////////////////////////////////////
 
-FGAndCondition::FGAndCondition ()
+SGAndCondition::SGAndCondition ()
 {
 }
 
-FGAndCondition::~FGAndCondition ()
+SGAndCondition::~SGAndCondition ()
 {
   for (unsigned int i = 0; i < _conditions.size(); i++)
     delete _conditions[i];
 }
 
 bool
-FGAndCondition::test () const
+SGAndCondition::test () const
 {
   int nConditions = _conditions.size();
   for (int i = 0; i < nConditions; i++) {
@@ -102,7 +103,7 @@ FGAndCondition::test () const
 }
 
 void
-FGAndCondition::addCondition (FGCondition * condition)
+SGAndCondition::addCondition (SGCondition * condition)
 {
   _conditions.push_back(condition);
 }
@@ -110,21 +111,21 @@ FGAndCondition::addCondition (FGCondition * condition)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGOrCondition.
+// Implementation of SGOrCondition.
 ////////////////////////////////////////////////////////////////////////
 
-FGOrCondition::FGOrCondition ()
+SGOrCondition::SGOrCondition ()
 {
 }
 
-FGOrCondition::~FGOrCondition ()
+SGOrCondition::~SGOrCondition ()
 {
   for (unsigned int i = 0; i < _conditions.size(); i++)
     delete _conditions[i];
 }
 
 bool
-FGOrCondition::test () const
+SGOrCondition::test () const
 {
   int nConditions = _conditions.size();
   for (int i = 0; i < nConditions; i++) {
@@ -135,7 +136,7 @@ FGOrCondition::test () const
 }
 
 void
-FGOrCondition::addCondition (FGCondition * condition)
+SGOrCondition::addCondition (SGCondition * condition)
 {
   _conditions.push_back(condition);
 }
@@ -143,7 +144,7 @@ FGOrCondition::addCondition (FGCondition * condition)
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGComparisonCondition.
+// Implementation of SGComparisonCondition.
 ////////////////////////////////////////////////////////////////////////
 
 static int
@@ -154,55 +155,55 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
     bool v1 = left->getBoolValue();
     bool v2 = right->getBoolValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   case SGPropertyNode::INT: {
     int v1 = left->getIntValue();
     int v2 = right->getIntValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   case SGPropertyNode::LONG: {
     long v1 = left->getLongValue();
     long v2 = right->getLongValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   case SGPropertyNode::FLOAT: {
     float v1 = left->getFloatValue();
     float v2 = right->getFloatValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   case SGPropertyNode::DOUBLE: {
     double v1 = left->getDoubleValue();
     double v2 = right->getDoubleValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   case SGPropertyNode::STRING: 
@@ -211,11 +212,11 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
     string v1 = left->getStringValue();
     string v2 = right->getStringValue();
     if (v1 < v2)
-      return FGComparisonCondition::LESS_THAN;
+      return SGComparisonCondition::LESS_THAN;
     else if (v1 > v2)
-      return FGComparisonCondition::GREATER_THAN;
+      return SGComparisonCondition::GREATER_THAN;
     else
-      return FGComparisonCondition::EQUALS;
+      return SGComparisonCondition::EQUALS;
     break;
   }
   }
@@ -224,7 +225,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
 }
 
 
-FGComparisonCondition::FGComparisonCondition (Type type, bool reverse)
+SGComparisonCondition::SGComparisonCondition (Type type, bool reverse)
   : _type(type),
     _reverse(reverse),
     _left_property(0),
@@ -233,13 +234,13 @@ FGComparisonCondition::FGComparisonCondition (Type type, bool reverse)
 {
 }
 
-FGComparisonCondition::~FGComparisonCondition ()
+SGComparisonCondition::~SGComparisonCondition ()
 {
   delete _right_value;
 }
 
 bool
-FGComparisonCondition::test () const
+SGComparisonCondition::test () const
 {
 				// Always fail if incompletely specified
   if (_left_property == 0 ||
@@ -257,14 +258,14 @@ FGComparisonCondition::test () const
 }
 
 void
-FGComparisonCondition::setLeftProperty( SGPropertyNode *prop_root,
+SGComparisonCondition::setLeftProperty( SGPropertyNode *prop_root,
                                         const char * propname )
 {
   _left_property = prop_root->getNode(propname, true);
 }
 
 void
-FGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
+SGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
                                          const char * propname )
 {
   delete _right_value;
@@ -273,7 +274,7 @@ FGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
 }
 
 void
-FGComparisonCondition::setRightValue (const SGPropertyNode *node)
+SGComparisonCondition::setRightValue (const SGPropertyNode *node)
 {
   _right_property = 0;
   delete _right_value;
@@ -287,65 +288,65 @@ FGComparisonCondition::setRightValue (const SGPropertyNode *node)
 ////////////////////////////////////////////////////////////////////////
 
                                 // Forward declaration
-static FGCondition * readCondition( SGPropertyNode *prop_root,
+static SGCondition * readCondition( SGPropertyNode *prop_root,
                                     const SGPropertyNode *node );
 
-static FGCondition *
+static SGCondition *
 readPropertyCondition( SGPropertyNode *prop_root,
                        const SGPropertyNode *node )
 {
-  return new FGPropertyCondition( prop_root, node->getStringValue() );
+  return new SGPropertyCondition( prop_root, node->getStringValue() );
 }
 
-static FGCondition *
+static SGCondition *
 readNotCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
   int nChildren = node->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * child = node->getChild(i);
-    FGCondition * condition = readCondition(prop_root, child);
+    SGCondition * condition = readCondition(prop_root, child);
     if (condition != 0)
-      return new FGNotCondition(condition);
+      return new SGNotCondition(condition);
   }
   SG_LOG(SG_COCKPIT, SG_ALERT, "Panel: empty 'not' condition");
   return 0;
 }
 
-static FGCondition *
+static SGCondition *
 readAndConditions( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
-  FGAndCondition * andCondition = new FGAndCondition;
+  SGAndCondition * andCondition = new SGAndCondition;
   int nChildren = node->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * child = node->getChild(i);
-    FGCondition * condition = readCondition(prop_root, child);
+    SGCondition * condition = readCondition(prop_root, child);
     if (condition != 0)
       andCondition->addCondition(condition);
   }
   return andCondition;
 }
 
-static FGCondition *
+static SGCondition *
 readOrConditions( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
-  FGOrCondition * orCondition = new FGOrCondition;
+  SGOrCondition * orCondition = new SGOrCondition;
   int nChildren = node->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * child = node->getChild(i);
-    FGCondition * condition = readCondition(prop_root, child);
+    SGCondition * condition = readCondition(prop_root, child);
     if (condition != 0)
       orCondition->addCondition(condition);
   }
   return orCondition;
 }
 
-static FGCondition *
+static SGCondition *
 readComparison( SGPropertyNode *prop_root,
                 const SGPropertyNode *node,
-                FGComparisonCondition::Type type,
+                SGComparisonCondition::Type type,
 		bool reverse)
 {
-  FGComparisonCondition * condition = new FGComparisonCondition(type, reverse);
+  SGComparisonCondition * condition = new SGComparisonCondition(type, reverse);
   condition->setLeftProperty(prop_root, node->getStringValue("property[0]"));
   if (node->hasValue("property[1]"))
     condition->setRightProperty(prop_root, node->getStringValue("property[1]"));
@@ -355,7 +356,7 @@ readComparison( SGPropertyNode *prop_root,
   return condition;
 }
 
-static FGCondition *
+static SGCondition *
 readCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
   const string &name = node->getName();
@@ -368,22 +369,22 @@ readCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
   else if (name == "or")
     return readOrConditions(prop_root, node);
   else if (name == "less-than")
-    return readComparison(prop_root, node, FGComparisonCondition::LESS_THAN,
+    return readComparison(prop_root, node, SGComparisonCondition::LESS_THAN,
                           false);
   else if (name == "less-than-equals")
-    return readComparison(prop_root, node, FGComparisonCondition::GREATER_THAN,
+    return readComparison(prop_root, node, SGComparisonCondition::GREATER_THAN,
                           true);
   else if (name == "greater-than")
-    return readComparison(prop_root, node, FGComparisonCondition::GREATER_THAN,
+    return readComparison(prop_root, node, SGComparisonCondition::GREATER_THAN,
                           false);
   else if (name == "greater-than-equals")
-    return readComparison(prop_root, node, FGComparisonCondition::LESS_THAN,
+    return readComparison(prop_root, node, SGComparisonCondition::LESS_THAN,
                           true);
   else if (name == "equals")
-    return readComparison(prop_root, node, FGComparisonCondition::EQUALS,
+    return readComparison(prop_root, node, SGComparisonCondition::EQUALS,
                           false);
   else if (name == "not-equals")
-    return readComparison(prop_root, node, FGComparisonCondition::EQUALS, true);
+    return readComparison(prop_root, node, SGComparisonCondition::EQUALS, true);
   else
     return 0;
 }
@@ -391,28 +392,28 @@ readCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGConditional.
+// Implementation of SGConditional.
 ////////////////////////////////////////////////////////////////////////
 
-FGConditional::FGConditional ()
+SGConditional::SGConditional ()
   : _condition (0)
 {
 }
 
-FGConditional::~FGConditional ()
+SGConditional::~SGConditional ()
 {
   delete _condition;
 }
 
 void
-FGConditional::setCondition (FGCondition * condition)
+SGConditional::setCondition (SGCondition * condition)
 {
   delete _condition;
   _condition = condition;
 }
 
 bool
-FGConditional::test () const
+SGConditional::test () const
 {
   return ((_condition == 0) || _condition->test());
 }
@@ -420,11 +421,11 @@ FGConditional::test () const
 
 
 // The top-level is always an implicit 'and' group
-FGCondition *
-fgReadCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
+SGCondition *
+sgReadCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
 {
   return readAndConditions(prop_root, node);
 }
 
 
-// end of fg_props.cxx
+// end of condition.cxx

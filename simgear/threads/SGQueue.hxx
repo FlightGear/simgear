@@ -197,7 +197,7 @@ private:
     /**
      * Condition to signal when queue not empty.
      */
-    SGCondition not_empty;
+    SGPthreadCond not_empty;
 
 private:
     // Prevent copying.

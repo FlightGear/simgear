@@ -21,11 +21,11 @@ SG_USING_STD(string);
 /**
  * Base class for loading and managing SSG things.
  */
-class FGSSGLoader
+class SGssgLoader
 {
 public:
-    FGSSGLoader ();
-    virtual ~FGSSGLoader ();
+    SGssgLoader ();
+    virtual ~SGssgLoader ();
     virtual void flush ();
 protected:
     std::map<string,ssgBase *> _table;
@@ -35,11 +35,11 @@ protected:
 /**
  * Class for loading and managing models with XML wrappers.
  */
-class FGModelLoader : public FGSSGLoader
+class SGModelLoader : public SGssgLoader
 {
 public:
-    FGModelLoader ();
-    virtual ~FGModelLoader ();
+    SGModelLoader ();
+    virtual ~SGModelLoader ();
 
     virtual ssgEntity *load_model( const string &fg_root,
                                    const string &path,

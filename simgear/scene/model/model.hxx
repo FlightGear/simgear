@@ -41,22 +41,23 @@ SG_USING_STD(vector);
  * Subsystems should not normally invoke this function directly;
  * instead, they should use the FGModelLoader declared in loader.hxx.
  */
-ssgBranch * fgLoad3DModel( const string& fg_root, const string &path,
-                           SGPropertyNode *prop_root, double sim_time_sec );
+ssgBranch *
+sgLoad3DModel( const string& fg_root, const string &path,
+                          SGPropertyNode *prop_root, double sim_time_sec );
 
 
 /**
  * Make an offset matrix from rotations and position offset.
  */
 void
-fgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
+sgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
                      double x_off, double y_off, double z_off );
 
 /**
  * Make the animation
  */
 void
-fgMakeAnimation( ssgBranch * model,
+sgMakeAnimation( ssgBranch * model,
                  const char * name,
                  vector<SGPropertyNode_ptr> &name_nodes,
                  SGPropertyNode *prop_root,

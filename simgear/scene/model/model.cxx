@@ -39,7 +39,7 @@ SG_USING_STD(vector);
 static int
 animation_callback (ssgEntity * entity, int mask)
 {
-    ((Animation *)entity->getUserData())->update();
+    ((SGAnimation *)entity->getUserData())->update();
     return true;
 }
 
@@ -83,7 +83,7 @@ splice_branch (ssgBranch * branch, ssgEntity * child)
  * Make an offset matrix from rotations and position offset.
  */
 void
-fgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
+sgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
                      double x_off, double y_off, double z_off )
 {
   sgMat4 rot_matrix;
@@ -95,33 +95,33 @@ fgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
 
 
 void
-fgMakeAnimation( ssgBranch * model,
+sgMakeAnimation( ssgBranch * model,
                  const char * name,
                  vector<SGPropertyNode_ptr> &name_nodes,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
                  double sim_time_sec )
 {
-  Animation * animation = 0;
+  SGAnimation * animation = 0;
   const char * type = node->getStringValue("type", "none");
   if (!strcmp("none", type)) {
-    animation = new NullAnimation(node);
+    animation = new SGNullAnimation(node);
   } else if (!strcmp("range", type)) {
-    animation = new RangeAnimation(node);
+    animation = new SGRangeAnimation(node);
   } else if (!strcmp("billboard", type)) {
-    animation = new BillboardAnimation(node);
+    animation = new SGBillboardAnimation(node);
   } else if (!strcmp("select", type)) {
-    animation = new SelectAnimation(prop_root, node);
+    animation = new SGSelectAnimation(prop_root, node);
   } else if (!strcmp("spin", type)) {
-    animation = new SpinAnimation(prop_root, node, sim_time_sec );
+    animation = new SGSpinAnimation(prop_root, node, sim_time_sec );
   } else if (!strcmp("timed", type)) {
-    animation = new TimedAnimation(node);
+    animation = new SGTimedAnimation(node);
   } else if (!strcmp("rotate", type)) {
-    animation = new RotateAnimation(prop_root, node);
+    animation = new SGRotateAnimation(prop_root, node);
   } else if (!strcmp("translate", type)) {
-    animation = new TranslateAnimation(prop_root, node);
+    animation = new SGTranslateAnimation(prop_root, node);
   } else {
-    animation = new NullAnimation(node);
+    animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);
   }
 
@@ -170,7 +170,7 @@ fgMakeAnimation( ssgBranch * model,
 ////////////////////////////////////////////////////////////////////////
 
 ssgBranch *
-fgLoad3DModel( const string &fg_root, const string &path,
+sgLoad3DModel( const string &fg_root, const string &path,
                SGPropertyNode *prop_root,
                double sim_time_sec )
 {
@@ -213,7 +213,7 @@ fgLoad3DModel( const string &fg_root, const string &path,
   ssgTransform * alignmainmodel = new ssgTransform;
   alignmainmodel->addKid(model);
   sgMat4 res_matrix;
-  fgMakeOffsetsMatrix(&res_matrix,
+  sgMakeOffsetsMatrix(&res_matrix,
                       props.getFloatValue("/offsets/heading-deg", 0.0),
                       props.getFloatValue("/offsets/roll-deg", 0.0),
                       props.getFloatValue("/offsets/pitch-deg", 0.0),
@@ -230,7 +230,7 @@ fgLoad3DModel( const string &fg_root, const string &path,
     const char * name = animation_nodes[i]->getStringValue("name", 0);
     vector<SGPropertyNode_ptr> name_nodes =
       animation_nodes[i]->getChildren("object-name");
-    fgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
+    sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
                      sim_time_sec);
   }
 
@@ -240,7 +240,7 @@ fgLoad3DModel( const string &fg_root, const string &path,
     SGPropertyNode_ptr node = model_nodes[i];
     ssgTransform * align = new ssgTransform;
     sgMat4 res_matrix;
-    fgMakeOffsetsMatrix(&res_matrix,
+    sgMakeOffsetsMatrix(&res_matrix,
                         node->getFloatValue("offsets/heading-deg", 0.0),
                         node->getFloatValue("offsets/roll-deg", 0.0),
                         node->getFloatValue("offsets/pitch-deg", 0.0),
@@ -249,7 +249,7 @@ fgLoad3DModel( const string &fg_root, const string &path,
                         node->getFloatValue("offsets/z-m", 0.0));
     align->setTransform(res_matrix);
 
-    ssgBranch * kid = fgLoad3DModel( fg_root, node->getStringValue("path"),
+    ssgBranch * kid = sgLoad3DModel( fg_root, node->getStringValue("path"),
                                      prop_root, sim_time_sec );
     align->addKid(kid);
     model->addKid(align);

@@ -157,7 +157,7 @@ SGThread::cancel()
  */
 class SGMutex
 {
-    friend class SGCondition;
+    friend class SGPthreadCond;
 
 public:
 
@@ -239,18 +239,18 @@ inline void SGMutex::unlock()
  * A condition variable is always associated with a mutex to avoid race
  * conditions. 
  */
-class SGCondition
+class SGPthreadCond
 {
 public:
     /**
      * Create a new condition variable.
      */
-    SGCondition();
+    SGPthreadCond();
 
     /**
      * Destroy the condition object.
      */
-    ~SGCondition();
+    ~SGPthreadCond();
 
     /**
      * Wait for this condition variable to be signaled.
@@ -286,8 +286,8 @@ public:
 
 private:
     // Disable copying.
-    SGCondition(const SGCondition& );
-    SGCondition& operator=(const SGCondition& );
+    SGPthreadCond(const SGPthreadCond& );
+    SGPthreadCond& operator=(const SGPthreadCond& );
 
 private:
 
@@ -297,31 +297,31 @@ private:
     pthread_cond_t cond;
 };
 
-inline SGCondition::SGCondition()
+inline SGPthreadCond::SGPthreadCond()
 {
     int status = pthread_cond_init( &cond, 0 );
     assert( status == 0 );
 }
 
-inline SGCondition::~SGCondition()
+inline SGPthreadCond::~SGPthreadCond()
 {
     int status = pthread_cond_destroy( &cond );
     assert( status == 0 );
 }
 
-inline void SGCondition::signal()
+inline void SGPthreadCond::signal()
 {
     int status = pthread_cond_signal( &cond );
     assert( status == 0 );
 }
 
-inline void SGCondition::broadcast()
+inline void SGPthreadCond::broadcast()
 {
     int status = pthread_cond_broadcast( &cond );
     assert( status == 0 );
 }
 
-inline void SGCondition::wait( SGMutex& mutex )
+inline void SGPthreadCond::wait( SGMutex& mutex )
 {
     int status = pthread_cond_wait( &cond, &mutex.mutex );
     assert( status == 0 );

@@ -1,4 +1,4 @@
-// newmat.hxx -- a material in the scene graph.
+// mat.hxx -- a material in the scene graph.
 // TODO: this class needs to be renamed.
 //
 // Written by Curtis Olson, started May 1998.
@@ -23,8 +23,8 @@
 // $Id$
 
 
-#ifndef _NEWMAT_HXX
-#define _NEWMAT_HXX
+#ifndef _SG_MAT_HXX
+#define _SG_MAT_HXX
 
 #ifndef __cplusplus                                                          
 # error This library requires C++
@@ -52,7 +52,7 @@ SG_USING_STD(string);
  * defined in the $FG_ROOT/materials.xml file, and can be changed
  * at runtime.
  */
-class FGNewMat {
+class SGMaterial {
 
 public:
 
@@ -66,7 +66,7 @@ public:
   /**
    * A randomly-placeable object.
    *
-   * FGNewMat uses this class to keep track of the model(s) and
+   * SGMaterial uses this class to keep track of the model(s) and
    * parameters for a single instance of a randomly-placeable object.
    * The object can have more than one variant model (i.e. slightly
    * different shapes of trees), but they are considered equivalent
@@ -91,7 +91,7 @@ public:
      *
      * @return The number of variant models.
      */
-    int get_model_count( FGModelLoader *loader,
+    int get_model_count( SGModelLoader *loader,
                          const string &fg_root,
                          SGPropertyNode *prop_root,
                          double sim_time_sec );
@@ -104,7 +104,7 @@ public:
      * @return The model.
      */
     ssgEntity *get_model( int index,
-                          FGModelLoader *loader,
+                          SGModelLoader *loader,
                           const string &fg_root,
                           SGPropertyNode *prop_root,
                           double sim_time_sec );
@@ -115,7 +115,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    ssgEntity *get_random_model( FGModelLoader *loader,
+    ssgEntity *get_random_model( SGModelLoader *loader,
                                  const string &fg_root,
                                  SGPropertyNode *prop_root,
                                  double sim_time_sec );
@@ -152,7 +152,7 @@ public:
      * This class uses lazy loading so that models won't be held
      * in memory for materials that are never referenced.
      */
-    void load_models( FGModelLoader *loader,
+    void load_models( SGModelLoader *loader,
                       const string &fg_root,
                       SGPropertyNode *prop_root,
                       double sim_time_sec );
@@ -171,7 +171,7 @@ public:
    *
    * Grouping objects with the same range together significantly
    * reduces the memory requirements of randomly-placed objects.
-   * Each FGNewMat instance keeps a (possibly-empty) list of
+   * Each SGMaterial instance keeps a (possibly-empty) list of
    * object groups for placing randomly on the scenery.
    */
   class ObjectGroup
@@ -206,7 +206,7 @@ public:
 
   protected:
 
-    friend class FGNewMat;
+    friend class SGMaterial;
 
     ObjectGroup (SGPropertyNode * node);
 
@@ -231,7 +231,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  FGNewMat( const string &fg_root, const SGPropertyNode *props,
+  SGMaterial( const string &fg_root, const SGPropertyNode *props,
             bool smooth_shading, bool use_textures );
 
 
@@ -241,7 +241,7 @@ public:
    * @param texture_path A string containing an absolute path
    * to a texture file (usually RGB).
    */
-  FGNewMat( const string &texpath, bool smooth_shading, bool use_textures );
+  SGMaterial( const string &texpath, bool smooth_shading, bool use_textures );
 
 
   /**
@@ -253,12 +253,12 @@ public:
    *
    * @param s The SSG state for this material.
    */
-  FGNewMat( ssgSimpleState *s, bool smooth_shading, bool use_textures );
+  SGMaterial( ssgSimpleState *s, bool smooth_shading, bool use_textures );
 
   /**
    * Destructor.
    */
-  virtual ~FGNewMat( void );
+  virtual ~SGMaterial( void );
 
 
 
@@ -404,7 +404,7 @@ private:
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  FGNewMat( const string &fg_root, const FGNewMat &mat ); // unimplemented
+  SGMaterial( const string &fg_root, const SGMaterial &mat ); // unimplemented
 
   void read_properties( const string &fg_root, const SGPropertyNode *props );
   void build_ssg_state( bool defer_tex_load,
@@ -416,4 +416,4 @@ private:
 
 };
 
-#endif // _NEWMAT_HXX 
+#endif // _SG_MAT_HXX 

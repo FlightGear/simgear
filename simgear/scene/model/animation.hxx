@@ -23,7 +23,7 @@ SG_USING_STD(vector);
 
 // Don't pull in the headers, since we don't need them here.
 class SGInterpTable;
-class FGCondition;
+class SGCondition;
 
 
 // Has anyone done anything *really* stupid, like making min and max macros?
@@ -43,13 +43,13 @@ class FGCondition;
 /**
  * Abstract base class for all animations.
  */
-class Animation :  public ssgBase
+class SGAnimation :  public ssgBase
 {
 public:
 
-  Animation (SGPropertyNode_ptr props, ssgBranch * branch);
+  SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch);
 
-  virtual ~Animation ();
+  virtual ~SGAnimation ();
 
   /**
    * Get the SSG branch holding the animation.
@@ -84,48 +84,48 @@ protected:
 /**
  * A no-op animation.
  */
-class NullAnimation : public Animation
+class SGNullAnimation : public SGAnimation
 {
 public:
-  NullAnimation (SGPropertyNode_ptr props);
-  virtual ~NullAnimation ();
+  SGNullAnimation (SGPropertyNode_ptr props);
+  virtual ~SGNullAnimation ();
 };
 
 
 /**
  * A range, or level-of-detail (LOD) animation.
  */
-class RangeAnimation : public Animation
+class SGRangeAnimation : public SGAnimation
 {
 public:
-  RangeAnimation (SGPropertyNode_ptr props);
-  virtual ~RangeAnimation ();
+  SGRangeAnimation (SGPropertyNode_ptr props);
+  virtual ~SGRangeAnimation ();
 };
 
 
 /**
  * Animation to turn and face the screen.
  */
-class BillboardAnimation : public Animation
+class SGBillboardAnimation : public SGAnimation
 {
 public:
-  BillboardAnimation (SGPropertyNode_ptr props);
-  virtual ~BillboardAnimation ();
+  SGBillboardAnimation (SGPropertyNode_ptr props);
+  virtual ~SGBillboardAnimation ();
 };
 
 
 /**
  * Animation to select alternative versions of the same object.
  */
-class SelectAnimation : public Animation
+class SGSelectAnimation : public SGAnimation
 {
 public:
-  SelectAnimation( SGPropertyNode *prop_root,
+  SGSelectAnimation( SGPropertyNode *prop_root,
                    SGPropertyNode_ptr props );
-  virtual ~SelectAnimation ();
+  virtual ~SGSelectAnimation ();
   virtual void update();
 private:
-  FGCondition * _condition;
+  SGCondition * _condition;
 };
 
 
@@ -134,13 +134,13 @@ private:
  *
  * This animation rotates at a specific velocity.
  */
-class SpinAnimation : public Animation
+class SGSpinAnimation : public SGAnimation
 {
 public:
-  SpinAnimation( SGPropertyNode *prop_root,
+  SGSpinAnimation( SGPropertyNode *prop_root,
                  SGPropertyNode_ptr props,
                  double sim_time_sec );
-  virtual ~SpinAnimation ();
+  virtual ~SGSpinAnimation ();
   virtual void update();
 private:
   SGPropertyNode_ptr _prop;
@@ -156,11 +156,11 @@ private:
 /**
  * Animation to draw objects for a specific amount of time each.
  */
-class TimedAnimation : public Animation
+class SGTimedAnimation : public SGAnimation
 {
 public:
-    TimedAnimation (SGPropertyNode_ptr props);
-    virtual ~TimedAnimation ();
+    SGTimedAnimation (SGPropertyNode_ptr props);
+    virtual ~SGTimedAnimation ();
     virtual void update();
 private:
     double _duration_sec;
@@ -174,11 +174,11 @@ private:
  *
  * This animation rotates to a specific position.
  */
-class RotateAnimation : public Animation
+class SGRotateAnimation : public SGAnimation
 {
 public:
-  RotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
-  virtual ~RotateAnimation ();
+  SGRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
+  virtual ~SGRotateAnimation ();
   virtual void update();
 private:
   SGPropertyNode_ptr _prop;
@@ -199,12 +199,12 @@ private:
 /**
  * Animation to slide along an axis.
  */
-class TranslateAnimation : public Animation
+class SGTranslateAnimation : public SGAnimation
 {
 public:
-  TranslateAnimation( SGPropertyNode *prop_root,
+  SGTranslateAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
-  virtual ~TranslateAnimation ();
+  virtual ~SGTranslateAnimation ();
   virtual void update();
 private:
   SGPropertyNode_ptr _prop;

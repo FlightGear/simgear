@@ -76,7 +76,7 @@ private:
   SGSoundMgr * _mgr;
   SGSimpleSound * _sample;
 
-  FGCondition * _condition;
+  SGCondition * _condition;
   SGPropertyNode * _property;
 
   bool _active;

@@ -119,7 +119,7 @@ SGSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    _property = root->getNode(node->getStringValue("property", ""), true);
    SGPropertyNode *condition = node->getChild("condition");
    if (condition != NULL)
-      _condition = fgReadCondition(root, condition);
+      _condition = sgReadCondition(root, condition);
 
    if (!_property && !_condition)
       SG_LOG(SG_GENERAL, SG_WARN,

@@ -101,11 +101,11 @@ static void MakeTRANS( sgMat4 dst, const double Theta,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGLocation.
+// Implementation of SGLocation.
 ////////////////////////////////////////////////////////////////////////
 
 // Constructor
-FGLocation::FGLocation( void ):
+SGLocation::SGLocation( void ):
     _dirty(true),
     _lon_deg(0),
     _lat_deg(0),
@@ -125,26 +125,26 @@ FGLocation::FGLocation( void ):
 
 
 // Destructor
-FGLocation::~FGLocation( void ) {
+SGLocation::~SGLocation( void ) {
 }
 
 void
-FGLocation::init ()
+SGLocation::init ()
 {
 }
 
 void
-FGLocation::bind ()
+SGLocation::bind ()
 {
 }
 
 void
-FGLocation::unbind ()
+SGLocation::unbind ()
 {
 }
 
 void
-FGLocation::setPosition (double lon_deg, double lat_deg, double alt_ft)
+SGLocation::setPosition (double lon_deg, double lat_deg, double alt_ft)
 {
   _dirty = true;
   _lon_deg = lon_deg;
@@ -153,7 +153,7 @@ FGLocation::setPosition (double lon_deg, double lat_deg, double alt_ft)
 }
 
 void
-FGLocation::setOrientation (double roll_deg, double pitch_deg, double heading_deg)
+SGLocation::setOrientation (double roll_deg, double pitch_deg, double heading_deg)
 {
   _dirty = true;
   _roll_deg = roll_deg;
@@ -162,7 +162,7 @@ FGLocation::setOrientation (double roll_deg, double pitch_deg, double heading_de
 }
 
 double *
-FGLocation::get_absolute_view_pos( const Point3D scenery_center ) 
+SGLocation::get_absolute_view_pos( const Point3D scenery_center ) 
 {
     if ( _dirty ) {
         recalc( scenery_center );
@@ -171,7 +171,7 @@ FGLocation::get_absolute_view_pos( const Point3D scenery_center )
 }
 
 float *
-FGLocation::getRelativeViewPos( const Point3D scenery_center ) 
+SGLocation::getRelativeViewPos( const Point3D scenery_center ) 
 {
     if ( _dirty ) {
         recalc( scenery_center );
@@ -180,7 +180,7 @@ FGLocation::getRelativeViewPos( const Point3D scenery_center )
 }
 
 float *
-FGLocation::getZeroElevViewPos( const Point3D scenery_center ) 
+SGLocation::getZeroElevViewPos( const Point3D scenery_center ) 
 {
     if ( _dirty ) {
         recalc( scenery_center );
@@ -193,7 +193,7 @@ FGLocation::getZeroElevViewPos( const Point3D scenery_center )
 // cached data "dirty") on the next "get".  It calculates all the outputs 
 // for viewer.
 void
-FGLocation::recalc( const Point3D scenery_center )
+SGLocation::recalc( const Point3D scenery_center )
 {
 
   recalcPosition( _lon_deg, _lat_deg, _alt_ft, scenery_center );
@@ -231,7 +231,7 @@ FGLocation::recalc( const Point3D scenery_center )
 }
 
 void
-FGLocation::recalcPosition( double lon_deg, double lat_deg, double alt_ft,
+SGLocation::recalcPosition( double lon_deg, double lat_deg, double alt_ft,
                             const Point3D scenery_center ) const
 {
   double sea_level_radius_m;
@@ -278,6 +278,6 @@ FGLocation::recalcPosition( double lon_deg, double lat_deg, double alt_ft,
 }
 
 void
-FGLocation::update (int dt)
+SGLocation::update (int dt)
 {
 }

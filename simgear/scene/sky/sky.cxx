@@ -119,7 +119,9 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color,
 	stars->repaint( sun_angle, nstars, star_data );
 
 	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-	    cloud_layers[i]->repaint( fog_color );
+            if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
+                cloud_layers[i]->repaint( fog_color );
+            }
 	}
     } else {
 	// turn off sky
@@ -151,7 +153,9 @@ bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
     stars->reposition( view_pos, angle );
 
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-	cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt );
+        if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
+            cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt );
+        }
     }
 
     return true;

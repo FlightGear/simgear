@@ -26,10 +26,10 @@ SG_USING_STD(vector);
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of FGModelPlacement.
+// Implementation of SGModelPlacement.
 ////////////////////////////////////////////////////////////////////////
 
-FGModelPlacement::FGModelPlacement ()
+SGModelPlacement::SGModelPlacement ()
   : _lon_deg(0),
     _lat_deg(0),
     _elev_ft(0),
@@ -38,16 +38,16 @@ FGModelPlacement::FGModelPlacement ()
     _heading_deg(0),
     _selector(new ssgSelector),
     _position(new ssgTransform),
-    _location(new FGLocation)
+    _location(new SGLocation)
 {
 }
 
-FGModelPlacement::~FGModelPlacement ()
+SGModelPlacement::~SGModelPlacement ()
 {
 }
 
 void
-FGModelPlacement::init( ssgBranch * model )
+SGModelPlacement::init( ssgBranch * model )
 {
   if (model != 0) {
       _position->addKid(model);
@@ -57,7 +57,7 @@ FGModelPlacement::init( ssgBranch * model )
 }
 
 void
-FGModelPlacement::update( const Point3D scenery_center )
+SGModelPlacement::update( const Point3D scenery_center )
 {
   _location->setPosition( _lon_deg, _lat_deg, _elev_ft );
   _location->setOrientation( _roll_deg, _pitch_deg, _heading_deg );
@@ -77,37 +77,37 @@ FGModelPlacement::update( const Point3D scenery_center )
 }
 
 bool
-FGModelPlacement::getVisible () const
+SGModelPlacement::getVisible () const
 {
   return (_selector->getSelect() != 0);
 }
 
 void
-FGModelPlacement::setVisible (bool visible)
+SGModelPlacement::setVisible (bool visible)
 {
   _selector->select(visible);
 }
 
 void
-FGModelPlacement::setLongitudeDeg (double lon_deg)
+SGModelPlacement::setLongitudeDeg (double lon_deg)
 {
   _lon_deg = lon_deg;
 }
 
 void
-FGModelPlacement::setLatitudeDeg (double lat_deg)
+SGModelPlacement::setLatitudeDeg (double lat_deg)
 {
   _lat_deg = lat_deg;
 }
 
 void
-FGModelPlacement::setElevationFt (double elev_ft)
+SGModelPlacement::setElevationFt (double elev_ft)
 {
   _elev_ft = elev_ft;
 }
 
 void
-FGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
+SGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
 {
   _lon_deg = lon_deg;
   _lat_deg = lat_deg;
@@ -115,25 +115,25 @@ FGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
 }
 
 void
-FGModelPlacement::setRollDeg (double roll_deg)
+SGModelPlacement::setRollDeg (double roll_deg)
 {
   _roll_deg = roll_deg;
 }
 
 void
-FGModelPlacement::setPitchDeg (double pitch_deg)
+SGModelPlacement::setPitchDeg (double pitch_deg)
 {
   _pitch_deg = pitch_deg;
 }
 
 void
-FGModelPlacement::setHeadingDeg (double heading_deg)
+SGModelPlacement::setHeadingDeg (double heading_deg)
 {
   _heading_deg = heading_deg;
 }
 
 void
-FGModelPlacement::setOrientation (double roll_deg, double pitch_deg,
+SGModelPlacement::setOrientation (double roll_deg, double pitch_deg,
                                   double heading_deg)
 {
   _roll_deg = roll_deg;

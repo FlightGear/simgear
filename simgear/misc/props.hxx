@@ -13,6 +13,7 @@
 #define __PROPS_HXX
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
 
@@ -1060,6 +1061,22 @@ protected:
 
 private:
 
+				// Get the raw value
+  bool get_bool () const;
+  int get_int () const;
+  long get_long () const;
+  float get_float () const;
+  double get_double () const;
+  const string get_string () const;
+
+				// Set the raw value
+  bool set_bool (bool value);
+  bool set_int (int value);
+  bool set_long (long value);
+  bool set_float (float value);
+  bool set_double (double value);
+  bool set_string (const string &value);
+
 
   /**
    * Clear any existing value and set the type to NONE.
@@ -1070,19 +1087,19 @@ private:
   /**
    * Get the value as a string.
    */
-  string get_string () const;
+  string make_string () const;
 
 
   /**
    * Trace a read access.
    */
-  void trace_read (Type accessType) const;
+  void trace_read () const;
 
 
   /**
    * Trace a write access.
    */
-  void trace_write (Type accessType) const;
+  void trace_write () const;
 
   string _name;
   int _index;
@@ -1104,6 +1121,15 @@ private:
     SGRawValue<double> * double_val;
     SGRawValue<string> * string_val;
   } _value;
+
+  union {
+    bool bool_val;
+    int int_val;
+    long long_val;
+    float float_val;
+    double double_val;
+    string * string_val;
+  } _local_val;
 
 
 };

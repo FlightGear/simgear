@@ -43,23 +43,6 @@ public:
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
 
-#define DO_TRACE_READ(type) if(getAttribute(TRACE_READ)) trace_read(type)
-#define DO_TRACE_WRITE(type) if (getAttribute(TRACE_WRITE)) trace_write(type)
-
-#define GET_BOOL (_value.bool_val->getValue())
-#define GET_INT (_value.int_val->getValue())
-#define GET_LONG (_value.long_val->getValue())
-#define GET_FLOAT (_value.float_val->getValue())
-#define GET_DOUBLE (_value.double_val->getValue())
-#define GET_STRING (_value.string_val->getValue())
-
-#define SET_BOOL(val) (_value.bool_val->setValue(val))
-#define SET_INT(val) (_value.int_val->setValue(val))
-#define SET_LONG(val) (_value.long_val->setValue(val))
-#define SET_FLOAT(val) (_value.float_val->setValue(val))
-#define SET_DOUBLE(val) (_value.double_val->setValue(val))
-#define SET_STRING(val) (_value.string_val->setValue(val))
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -288,9 +271,239 @@ find_node (SGPropertyNode * current,
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGPropertyNode.
+// Private methods from SGPropertyNode (may be inlined for speed).
 ////////////////////////////////////////////////////////////////////////
 
+inline bool
+SGPropertyNode::get_bool () const
+{
+  if (_tied)
+    return _value.bool_val->getValue();
+  else
+    return _local_val.bool_val;
+}
+
+inline int
+SGPropertyNode::get_int () const
+{
+  if (_tied)
+    return _value.int_val->getValue();
+  else
+    return _local_val.int_val;
+}
+
+inline long
+SGPropertyNode::get_long () const
+{
+  if (_tied)
+    return _value.long_val->getValue();
+  else
+    return _local_val.long_val;
+}
+
+inline float
+SGPropertyNode::get_float () const
+{
+  if (_tied)
+    return _value.float_val->getValue();
+  else
+    return _local_val.float_val;
+}
+
+inline double
+SGPropertyNode::get_double () const
+{
+  if (_tied)
+    return _value.double_val->getValue();
+  else
+    return _local_val.double_val;
+}
+
+inline const string
+SGPropertyNode::get_string () const
+{
+  if (_tied)
+    return _value.string_val->getValue();
+  else
+    return *(_local_val.string_val);
+}
+
+inline bool
+SGPropertyNode::set_bool (bool val)
+{
+  if (_tied) {
+    return _value.bool_val->setValue(val);
+  } else {
+    _local_val.bool_val = val;
+    return true;
+  }
+}
+
+inline bool
+SGPropertyNode::set_int (int val)
+{
+  if (_tied) {
+    return _value.int_val->setValue(val);
+  } else {
+    _local_val.int_val = val;
+    return true;
+  }
+}
+
+inline bool
+SGPropertyNode::set_long (long val)
+{
+  if (_tied) {
+    return _value.long_val->setValue(val);
+  } else {
+    _local_val.long_val = val;
+    return true;
+  }
+}
+
+inline bool
+SGPropertyNode::set_float (float val)
+{
+  if (_tied) {
+    return _value.float_val->setValue(val);
+  } else {
+    _local_val.float_val = val;
+    return true;
+  }
+}
+
+inline bool
+SGPropertyNode::set_double (double val)
+{
+  if (_tied) {
+    return _value.double_val->setValue(val);
+  } else {
+    _local_val.double_val = val;
+    return true;
+  }
+}
+
+inline bool
+SGPropertyNode::set_string (const string &val)
+{
+  if (_tied) {
+    return _value.string_val->setValue(val);
+  } else {
+    (*_local_val.string_val) = val;
+    return true;
+  }
+}
+
+void
+SGPropertyNode::clear_value ()
+{
+  switch (_type) {
+  case NONE:
+  case ALIAS:
+    _value.alias = 0;
+    break;
+  case BOOL:
+    delete _value.bool_val;
+    _value.bool_val = 0;
+    _local_val.bool_val = SGRawValue<bool>::DefaultValue;
+    break;
+  case INT:
+    delete _value.int_val;
+    _value.int_val = 0;
+    _local_val.int_val = SGRawValue<int>::DefaultValue;
+    break;
+  case LONG:
+    delete _value.long_val;
+    _value.long_val = 0L;
+    _local_val.long_val = SGRawValue<long>::DefaultValue;
+    break;
+  case FLOAT:
+    delete _value.float_val;
+    _value.float_val = 0;
+    _local_val.float_val = SGRawValue<float>::DefaultValue;
+    break;
+  case DOUBLE:
+    delete _value.double_val;
+    _value.double_val = 0;
+    _local_val.double_val = SGRawValue<double>::DefaultValue;
+    break;
+  case STRING:
+  case UNSPECIFIED:
+    delete _value.string_val;
+    _value.string_val = 0;
+    delete _local_val.string_val;
+    _local_val.string_val = 0;
+    break;
+  }
+  _tied = false;
+  _type = NONE;
+}
+
+
+/**
+ * Get the value as a string.
+ */
+string
+SGPropertyNode::make_string () const
+{
+  if (!getAttribute(READ))
+    return "";
+  char buf[128];
+
+  switch (_type) {
+  case ALIAS:
+    return _value.alias->getStringValue();
+  case BOOL:
+    if (get_bool())
+      return "true";
+    else
+      return "false";
+  case INT:
+    sprintf(buf, "%d", get_int());
+    return buf;
+  case LONG:
+    sprintf(buf, "%ld", get_long());
+    return buf;
+  case FLOAT:
+    sprintf(buf, "%f", get_float());
+    return buf;
+  case DOUBLE:
+    sprintf(buf, "%f", get_double());
+    return buf;
+  case STRING:
+  case UNSPECIFIED:
+    return get_string();
+  case NONE:
+  default:
+    return "";
+  }
+}
+
+/**
+ * Trace a write access for a property.
+ */
+void
+SGPropertyNode::trace_write () const
+{
+  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Write node " << getPath()
+	 << ", value\"" << make_string() << '"');
+}
+
+/**
+ * Trace a read access for a property.
+ */
+void
+SGPropertyNode::trace_read () const
+{
+  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Read node " << getPath()
+	 << ", value \"" << make_string() << '"');
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Public methods from SGPropertyNode.
+////////////////////////////////////////////////////////////////////////
 
 /**
  * Default constructor: always creates a root node.
@@ -324,25 +537,63 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
     break;
   case ALIAS:
     _value.alias = node._value.alias;
+    _tied = false;
     break;
   case BOOL:
-    _value.bool_val = node._value.bool_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.bool_val = node._value.bool_val->clone();
+    } else {
+      _tied = false;
+      set_bool(node.get_bool());
+    }
     break;
   case INT:
-    _value.int_val = node._value.int_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.int_val = node._value.int_val->clone();
+    } else {
+      _tied = false;
+      set_int(node.get_int());
+    }
     break;
   case LONG:
-    _value.long_val = node._value.long_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.long_val = node._value.long_val->clone();
+    } else {
+      _tied = false;
+      set_long(node.get_long());
+    }
     break;
   case FLOAT:
-    _value.float_val = node._value.float_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.float_val = node._value.float_val->clone();
+    } else {
+      _tied = false;
+      set_float(node.get_float());
+    }
     break;
   case DOUBLE:
-    _value.double_val = node._value.double_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.double_val = node._value.double_val->clone();
+    } else {
+      _tied = false;
+      set_double(node.get_double());
+    }
     break;
   case STRING:
   case UNSPECIFIED:
-    _value.string_val = node._value.string_val->clone();
+    if (_tied) {
+      _tied = true;
+      _value.string_val = node._value.string_val->clone();
+    } else {
+      _tied = false;
+      _local_val.string_val = new string;
+      set_string(node.get_string());
+    }
     break;
   }
 }
@@ -374,108 +625,6 @@ SGPropertyNode::~SGPropertyNode ()
   }
   delete _path_cache;
   clear_value();
-}
-
-
-/**
- * Delete and clear the current value.
- */
-void
-SGPropertyNode::clear_value ()
-{
-  switch (_type) {
-  case NONE:
-  case ALIAS:
-    _value.alias = 0;
-    break;
-  case BOOL:
-    delete _value.bool_val;
-    _value.bool_val = 0;
-    break;
-  case INT:
-    delete _value.int_val;
-    _value.int_val = 0;
-    break;
-  case LONG:
-    delete _value.long_val;
-    _value.long_val = 0L;
-    break;
-  case FLOAT:
-    delete _value.float_val;
-    _value.float_val = 0;
-    break;
-  case DOUBLE:
-    delete _value.double_val;
-    _value.double_val = 0;
-    break;
-  case STRING:
-  case UNSPECIFIED:
-    delete _value.string_val;
-    _value.string_val = 0;
-    break;
-  }
-  _type = NONE;
-}
-
-
-/**
- * Get the value as a string.
- */
-string
-SGPropertyNode::get_string () const
-{
-  TEST_READ("");
-  char buf[128];
-
-  switch (_type) {
-  case ALIAS:
-    return _value.alias->getStringValue();
-  case BOOL:
-    if (GET_BOOL)
-      return "true";
-    else
-      return "false";
-  case INT:
-    sprintf(buf, "%d", GET_INT);
-    return buf;
-  case LONG:
-    sprintf(buf, "%ld", GET_LONG);
-    return buf;
-  case FLOAT:
-    sprintf(buf, "%f", GET_FLOAT);
-    return buf;
-  case DOUBLE:
-    sprintf(buf, "%f", GET_DOUBLE);
-    return buf;
-  case STRING:
-  case UNSPECIFIED:
-    return GET_STRING;
-  case NONE:
-  default:
-    return "";
-  }
-}
-
-
-/**
- * Trace a read access for a property.
- */
-void
-SGPropertyNode::trace_read (SGPropertyNode::Type accessType) const
-{
-  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Read node " << getPath()
-	 << ", value \"" << get_string() << '"');
-}
-
-
-/**
- * Trace a write access for a property.
- */
-void
-SGPropertyNode::trace_write (SGPropertyNode::Type accessType) const
-{
-  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Write node " << getPath()
-	 << ", value\"" << get_string() << '"');
 }
 
 
@@ -659,153 +808,195 @@ SGPropertyNode::getType () const
 bool 
 SGPropertyNode::getBoolValue () const
 {
-  DO_TRACE_READ(BOOL);
-  TEST_READ(false);
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == BOOL)
+    return get_bool();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<bool>::DefaultValue;
   switch (_type) {
   case ALIAS:
     return _value.alias->getBoolValue();
   case BOOL:
-    return GET_BOOL;
+    return get_bool();
   case INT:
-    return GET_INT == 0 ? false : true;
+    return get_int() == 0 ? false : true;
   case LONG:
-    return GET_LONG == 0L ? false : true;
+    return get_long() == 0L ? false : true;
   case FLOAT:
-    return GET_FLOAT == 0.0 ? false : true;
+    return get_float() == 0.0 ? false : true;
   case DOUBLE:
-    return GET_DOUBLE == 0.0L ? false : true;
+    return get_double() == 0.0L ? false : true;
   case STRING:
   case UNSPECIFIED:
-    return (GET_STRING == "true" || getDoubleValue() != 0.0L);
+    return (get_string() == "true" || getDoubleValue() != 0.0L);
   case NONE:
   default:
-    return false;
+    return SGRawValue<bool>::DefaultValue;
   }
 }
 
 int 
 SGPropertyNode::getIntValue () const
 {
-  DO_TRACE_READ(INT);
-  TEST_READ(0);
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == INT)
+    return get_int();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<int>::DefaultValue;
   switch (_type) {
   case ALIAS:
     return _value.alias->getIntValue();
   case BOOL:
-    return int(GET_BOOL);
+    return int(get_bool());
   case INT:
-    return GET_INT;
+    return get_int();
   case LONG:
-    return int(GET_LONG);
+    return int(get_long());
   case FLOAT:
-    return int(GET_FLOAT);
+    return int(get_float());
   case DOUBLE:
-    return int(GET_DOUBLE);
+    return int(get_double());
   case STRING:
   case UNSPECIFIED:
-    return atoi(GET_STRING.c_str());
+    return atoi(get_string().c_str());
   case NONE:
   default:
-    return 0;
+    return SGRawValue<int>::DefaultValue;
   }
 }
 
 long 
 SGPropertyNode::getLongValue () const
 {
-  DO_TRACE_READ(LONG);
-  TEST_READ(0L);
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == LONG)
+    return get_long();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<long>::DefaultValue;
   switch (_type) {
   case ALIAS:
     return _value.alias->getLongValue();
   case BOOL:
-    return long(GET_BOOL);
+    return long(get_bool());
   case INT:
-    return long(GET_INT);
+    return long(get_int());
   case LONG:
-    return GET_LONG;
+    return get_long();
   case FLOAT:
-    return long(GET_FLOAT);
+    return long(get_float());
   case DOUBLE:
-    return long(GET_DOUBLE);
+    return long(get_double());
   case STRING:
   case UNSPECIFIED:
-    return strtol(GET_STRING.c_str(), 0, 0);
+    return strtol(get_string().c_str(), 0, 0);
   case NONE:
   default:
-    return 0L;
+    return SGRawValue<long>::DefaultValue;
   }
 }
 
 float 
 SGPropertyNode::getFloatValue () const
 {
-  DO_TRACE_READ(FLOAT);
-  TEST_READ(0.0);
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == FLOAT)
+    return get_float();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<float>::DefaultValue;
   switch (_type) {
   case ALIAS:
     return _value.alias->getFloatValue();
   case BOOL:
-    return float(GET_BOOL);
+    return float(get_bool());
   case INT:
-    return float(GET_INT);
+    return float(get_int());
   case LONG:
-    return float(GET_LONG);
+    return float(get_long());
   case FLOAT:
-    return GET_FLOAT;
+    return get_float();
   case DOUBLE:
-    return float(GET_DOUBLE);
+    return float(get_double());
   case STRING:
   case UNSPECIFIED:
-    return atof(GET_STRING.c_str());
+    return atof(get_string().c_str());
   case NONE:
   default:
-    return 0.0;
+    return SGRawValue<float>::DefaultValue;
   }
 }
 
 double 
 SGPropertyNode::getDoubleValue () const
 {
-  DO_TRACE_READ(DOUBLE);
-  TEST_READ(0.0L);
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == DOUBLE)
+    return get_double();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<double>::DefaultValue;
+
   switch (_type) {
   case ALIAS:
     return _value.alias->getDoubleValue();
   case BOOL:
-    return double(GET_BOOL);
+    return double(get_bool());
   case INT:
-    return double(GET_INT);
+    return double(get_int());
   case LONG:
-    return double(GET_LONG);
+    return double(get_long());
   case FLOAT:
-    return double(GET_FLOAT);
+    return double(get_float());
   case DOUBLE:
-    return GET_DOUBLE;
+    return get_double();
   case STRING:
   case UNSPECIFIED:
-    return strtod(GET_STRING.c_str(), 0);
+    return strtod(get_string().c_str(), 0);
   case NONE:
   default:
-    return 0.0L;
+    return SGRawValue<double>::DefaultValue;
   }
 }
 
 string
 SGPropertyNode::getStringValue () const
 {
-  DO_TRACE_READ(STRING);
-  return get_string();
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == STRING)
+    return get_string();
+
+  if (getAttribute(TRACE_READ))
+    trace_read();
+  if (!getAttribute(READ))
+    return SGRawValue<string>::DefaultValue;
+  return make_string();
 }
 
 bool
 SGPropertyNode::setBoolValue (bool value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == BOOL)
+    return set_bool(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.bool_val = new SGRawValueInternal<bool>;
+    _tied = false;
     _type = BOOL;
   }
 
@@ -814,36 +1005,41 @@ SGPropertyNode::setBoolValue (bool value)
     result = _value.alias->setBoolValue(value);
     break;
   case BOOL:
-    result = SET_BOOL(value);
+    result = set_bool(value);
     break;
   case INT:
-    result = SET_INT(int(value));
+    result = set_int(int(value));
     break;
   case LONG:
-    result = SET_LONG(long(value));
+    result = set_long(long(value));
     break;
   case FLOAT:
-    result = SET_FLOAT(float(value));
+    result = set_float(float(value));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(double(value));
+    result = set_double(double(value));
     break;
   case STRING:
   case UNSPECIFIED:
-    result = SET_STRING(value ? "true" : "false");
+    result = set_string(value ? "true" : "false");
     break;
   case NONE:
   default:
     break;
   }
 
-  DO_TRACE_WRITE(BOOL);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
 bool
 SGPropertyNode::setIntValue (int value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == INT)
+    return set_int(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
@@ -857,25 +1053,25 @@ SGPropertyNode::setIntValue (int value)
     result = _value.alias->setIntValue(value);
     break;
   case BOOL:
-    result = SET_BOOL(value == 0 ? false : true);
+    result = set_bool(value == 0 ? false : true);
     break;
   case INT:
-    result = SET_INT(value);
+    result = set_int(value);
     break;
   case LONG:
-    result = SET_LONG(long(value));
+    result = set_long(long(value));
     break;
   case FLOAT:
-    result = SET_FLOAT(float(value));
+    result = set_float(float(value));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(double(value));
+    result = set_double(double(value));
     break;
   case STRING:
   case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%d", value);
-    result = SET_STRING(buf);
+    result = set_string(buf);
     break;
   }
   case NONE:
@@ -883,13 +1079,18 @@ SGPropertyNode::setIntValue (int value)
     break;
   }
 
-  DO_TRACE_WRITE(INT);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
 bool
 SGPropertyNode::setLongValue (long value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == LONG)
+    return set_long(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
@@ -903,25 +1104,25 @@ SGPropertyNode::setLongValue (long value)
     result = _value.alias->setLongValue(value);
     break;
   case BOOL:
-    result = SET_BOOL(value == 0L ? false : true);
+    result = set_bool(value == 0L ? false : true);
     break;
   case INT:
-    result = SET_INT(int(value));
+    result = set_int(int(value));
     break;
   case LONG:
-    result = SET_LONG(value);
+    result = set_long(value);
     break;
   case FLOAT:
-    result = SET_FLOAT(float(value));
+    result = set_float(float(value));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(double(value));
+    result = set_double(double(value));
     break;
   case STRING:
   case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%ld", value);
-    result = SET_STRING(buf);
+    result = set_string(buf);
     break;
   }
   case NONE:
@@ -929,13 +1130,18 @@ SGPropertyNode::setLongValue (long value)
     break;
   }
 
-  DO_TRACE_WRITE(LONG);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
 bool
 SGPropertyNode::setFloatValue (float value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == FLOAT)
+    return set_float(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
@@ -949,25 +1155,25 @@ SGPropertyNode::setFloatValue (float value)
     result = _value.alias->setFloatValue(value);
     break;
   case BOOL:
-    result = SET_BOOL(value == 0.0 ? false : true);
+    result = set_bool(value == 0.0 ? false : true);
     break;
   case INT:
-    result = SET_INT(int(value));
+    result = set_int(int(value));
     break;
   case LONG:
-    result = SET_LONG(long(value));
+    result = set_long(long(value));
     break;
   case FLOAT:
-    result = SET_FLOAT(value);
+    result = set_float(value);
     break;
   case DOUBLE:
-    result = SET_DOUBLE(double(value));
+    result = set_double(double(value));
     break;
   case STRING:
   case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%f", value);
-    result = SET_STRING(buf);
+    result = set_string(buf);
     break;
   }
   case NONE:
@@ -975,18 +1181,23 @@ SGPropertyNode::setFloatValue (float value)
     break;
   }
 
-  DO_TRACE_WRITE(FLOAT);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
 bool
 SGPropertyNode::setDoubleValue (double value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == DOUBLE)
+    return set_double(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.double_val = new SGRawValueInternal<double>;
+    _local_val.double_val = value;
     _type = DOUBLE;
   }
 
@@ -995,25 +1206,25 @@ SGPropertyNode::setDoubleValue (double value)
     result = _value.alias->setDoubleValue(value);
     break;
   case BOOL:
-    result = SET_BOOL(value == 0.0L ? false : true);
+    result = set_bool(value == 0.0L ? false : true);
     break;
   case INT:
-    result = SET_INT(int(value));
+    result = set_int(int(value));
     break;
   case LONG:
-    result = SET_LONG(long(value));
+    result = set_long(long(value));
     break;
   case FLOAT:
-    result = SET_FLOAT(float(value));
+    result = set_float(float(value));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(value);
+    result = set_double(value);
     break;
   case STRING:
   case UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%f", value);
-    result = SET_STRING(buf);
+    result = set_string(buf);
     break;
   }
   case NONE:
@@ -1021,18 +1232,23 @@ SGPropertyNode::setDoubleValue (double value)
     break;
   }
 
-  DO_TRACE_WRITE(DOUBLE);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
 bool
 SGPropertyNode::setStringValue (string value)
 {
+				// Shortcut for common case
+  if (_attr == (READ|WRITE) && _type == STRING)
+    return set_string(value);
+
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
     clear_value();
-    _value.string_val = new SGRawValueInternal<string>;
+    _local_val.string_val = new string;
     _type = STRING;
   }
 
@@ -1041,30 +1257,31 @@ SGPropertyNode::setStringValue (string value)
     result = _value.alias->setStringValue(value);
     break;
   case BOOL:
-    result = SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    result = set_bool((value == "true" || atoi(value.c_str())) ? true : false);
     break;
   case INT:
-    result = SET_INT(atoi(value.c_str()));
+    result = set_int(atoi(value.c_str()));
     break;
   case LONG:
-    result = SET_LONG(strtol(value.c_str(), 0, 0));
+    result = set_long(strtol(value.c_str(), 0, 0));
     break;
   case FLOAT:
-    result = SET_FLOAT(atof(value.c_str()));
+    result = set_float(atof(value.c_str()));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(strtod(value.c_str(), 0));
+    result = set_double(strtod(value.c_str(), 0));
     break;
   case STRING:
   case UNSPECIFIED:
-    result = SET_STRING(value);
+    result = set_string(value);
     break;
   case NONE:
   default:
     break;
   }
 
-  DO_TRACE_WRITE(STRING);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
@@ -1075,7 +1292,7 @@ SGPropertyNode::setUnspecifiedValue (string value)
   TEST_WRITE;
   if (_type == NONE) {
     clear_value();
-    _value.string_val = new SGRawValueInternal<string>;
+    _local_val.string_val = new string;
     _type = UNSPECIFIED;
   }
 
@@ -1084,30 +1301,31 @@ SGPropertyNode::setUnspecifiedValue (string value)
     result = _value.alias->setUnspecifiedValue(value);
     break;
   case BOOL:
-    result = SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
+    result = set_bool((value == "true" || atoi(value.c_str())) ? true : false);
     break;
   case INT:
-    result = SET_INT(atoi(value.c_str()));
+    result = set_int(atoi(value.c_str()));
     break;
   case LONG:
-    result = SET_LONG(strtol(value.c_str(), 0, 0));
+    result = set_long(strtol(value.c_str(), 0, 0));
     break;
   case FLOAT:
-    result = SET_FLOAT(atof(value.c_str()));
+    result = set_float(atof(value.c_str()));
     break;
   case DOUBLE:
-    result = SET_DOUBLE(strtod(value.c_str(), 0));
+    result = set_double(strtod(value.c_str(), 0));
     break;
   case STRING:
   case UNSPECIFIED:
-    result = SET_STRING(value);
+    result = set_string(value);
     break;
   case NONE:
   default:
     break;
   }
 
-  DO_TRACE_WRITE(UNSPECIFIED);
+  if (getAttribute(TRACE_WRITE))
+    trace_write();
   return result;
 }
 
@@ -1256,7 +1474,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = BOOL;
     _value.bool_val = new SGRawValueInternal<bool>;
-    SET_BOOL(val);
+    set_bool(val);
     break;
   }
   case INT: {
@@ -1264,7 +1482,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = INT;
     _value.int_val = new SGRawValueInternal<int>;
-    SET_INT(val);
+    set_int(val);
     break;
   }
   case LONG: {
@@ -1272,7 +1490,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = LONG;
     _value.long_val = new SGRawValueInternal<long>;
-    SET_LONG(val);
+    set_long(val);
     break;
   }
   case FLOAT: {
@@ -1280,7 +1498,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = FLOAT;
     _value.float_val = new SGRawValueInternal<float>;
-    SET_FLOAT(val);
+    set_float(val);
     break;
   }
   case DOUBLE: {
@@ -1288,7 +1506,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = DOUBLE;
     _value.double_val = new SGRawValueInternal<double>;
-    SET_DOUBLE(val);
+    set_double(val);
     break;
   }
   case STRING:
@@ -1297,7 +1515,7 @@ SGPropertyNode::untie ()
     clear_value();
     _type = STRING;
     _value.string_val = new SGRawValueInternal<string>;
-    SET_STRING(val);
+    set_string(val);
     break;
   }
   case NONE:

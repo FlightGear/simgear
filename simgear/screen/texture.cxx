@@ -19,6 +19,7 @@
 
 #include SG_GLU_H
 
+#include <math.h>
 #include <zlib.h>
 
 #include "texture.hxx"
@@ -806,6 +807,11 @@ SGTexture::make_monochrome(float contrast, GLubyte r, GLubyte g, GLubyte b) {
          GLubyte *rgb = get_pixel(x,y);
          GLubyte avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
 
+         if (contrast != 1.0) {
+            float pixcol = -1.0 + (avg/128);
+            avg = 128 + 128*powf(pixcol, contrast);
+         }
+
          ap[0] = avg*r/255;
          ap[1] = avg*g/255;
          ap[2] = avg*b/255;
@@ -817,17 +823,23 @@ SGTexture::make_monochrome(float contrast, GLubyte r, GLubyte g, GLubyte b) {
 
 void
 SGTexture::make_grayscale(float contrast) {
-   if (num_colors >= 3)
+   if (num_colors < 3)
       return;
 
    GLubyte *map = (GLubyte *)malloc (texture_width * texture_height);
+
    for (int y=0; y<texture_height; y++)
       for (int x=0; x<texture_width; x++)
       {
          GLubyte *rgb = get_pixel(x,y);
          GLubyte avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
 
-         map[x +y*texture_height] = avg;
+         if (contrast != 1.0) {
+            float pixcol = -1.0 + (avg/128);
+            avg = 128 + 128*powf(pixcol, contrast);
+         }
+
+         map[x + y*texture_height] = avg;
       }
 
    free (texture_data);

@@ -70,13 +70,18 @@ static const double J2000   = 2451545.0 - MJD0;
 static const double SIDRATE = 0.9972695677;
 
 
-SGTime::SGTime( double lon, double lat, const string& root )
+SGTime::SGTime( double lon, double lat, const string& root, time_t init_time )
 {
     SG_LOG( SG_EVENT, SG_INFO, "Initializing Time" );
 
     gst_diff = -9999.0;
 
-    cur_time = time(NULL); 
+    if ( init_time ) {
+	cur_time = init_time;
+    } else {
+	cur_time = time(NULL); 
+    }
+
     cout << "Current greenwich mean time = " << asctime(gmtime(&cur_time))
          << endl;
     cout << "Current local time          = " 
@@ -190,7 +195,7 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 
 
 // Update the time related variables
-void SGTime::update( double lon, double lat, long int warp ) {
+void SGTime::update( double lon, double lat, time_t ct, long int warp ) {
     double gst_precise, gst_course;
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -201,7 +206,11 @@ void SGTime::update( double lon, double lat, long int warp ) {
 
     // get current Unix calendar time (in seconds)
     // warp += warp_delta;
-    cur_time = time(NULL) + warp;
+    if ( ct ) {
+	cur_time = ct + warp;
+    } else {
+	cur_time = time(NULL) + warp;
+    }
     SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current Unix calendar time = " << cur_time 
 	    << "  warp = " << warp );
@@ -359,7 +368,7 @@ double sgTimeCalcMJD(int mn, double dy, int yr) {
 
 // return the current modified Julian date (number of days elapsed
 // since 1900 jan 0.5), mjd.
-double sgTimeCurrentMJD( long int warp ) {
+double sgTimeCurrentMJD( time_t ct, long int warp ) {
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
     struct tm m_gmt;    // copy of system gmtime(&time_t) structure

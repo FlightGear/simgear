@@ -39,11 +39,9 @@
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
 
-SG_USING_STD(string);
+#include <plib/netSocket.h>
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-#  include <winsock.h>
-#endif
+SG_USING_STD(string);
 
 #define SG_MAX_SOCKET_QUEUE 32
 
@@ -53,13 +51,6 @@ SG_USING_STD(string);
  */
 class SGSocket : public SGIOChannel {
 public:
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    typedef SOCKET SocketType;
-#else
-    typedef int SocketType;
-#   define INVALID_SOCKET (-1)
-#endif
-
 private:
     string hostname;
     string port_str;
@@ -67,31 +58,23 @@ private:
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
     int save_len;
 
-    SocketType sock;
-    SocketType msgsock;
-    short unsigned int port;
-    int sock_style;			// SOCK_STREAM or SOCK_DGRAM
-
+    netSocket sock;
+    netSocket* client;
+    unsigned short port;
+    bool is_tcp;
+    bool is_server;
     bool first_read;
 
+    static bool init;
+
     // make a server (master listening) socket
-    SocketType make_server_socket();
+    bool make_server_socket();
 
     // make a client socket
-    SocketType make_client_socket();
+    bool  make_client_socket();
 
-    // wrapper functions
-    int readsocket( int fd, void *buf, size_t count );
-    int writesocket( int fd, const void *buf, size_t count );
-#if !defined(_MSC_VER) && !defined(__MINGW32__)
-    int closesocket(int fd);
-#endif
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    // Ensure winsock has been initialised.
-    static bool wsock_init;
-    static bool wsastartup();
-#endif
+    // Poll for new connections or data to read.
+    int poll();
 
 public:
 

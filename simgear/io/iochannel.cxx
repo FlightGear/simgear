@@ -22,8 +22,6 @@
 
 
 #include "iochannel.hxx"
-// #include "garmin.hxx"
-// #include "nmea.hxx"
 
 
 // constructor

@@ -32,8 +32,9 @@
 
 #include "cloud.hxx"
 
-ssgSimpleState *
-SGCloudLayer::layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
+
+static ssgSimpleState *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
+static bool state_initialized = false;
 
 
 // Constructor
@@ -55,9 +56,6 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     tl[0] = tl[1] = tl[2] = tl[3] = NULL;
     layer[0] = layer[1] = layer[2] = layer[3] = NULL;
 
-    for ( int i = 0; i < SG_MAX_CLOUD_COVERAGES; ++i ) {
-        layer_states[i] = NULL;
-    }
     layer_root->addKid(layer_transform);
     rebuild();
 }
@@ -139,33 +137,37 @@ SGCloudLayer::setCoverage (Coverage coverage)
 void
 SGCloudLayer::rebuild()
 {
-        			// Initialize states and sizes if necessary.
-    if ( layer_states[0] == NULL ) {
+    // Initialize states and sizes if necessary.
+    if ( !state_initialized ) { 
+        state_initialized = true;
+
+        cout << "initializing cloud layers" << endl;
+
         SGPath cloud_path;
 
         cloud_path.set(texture_path.str());
         cloud_path.append("overcast.rgb");
-        layer_states[SG_CLOUD_OVERCAST] = SGCloudMakeState(cloud_path.str());
+        layer_states[SG_CLOUD_OVERCAST] = sgCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
         cloud_path.append("broken.rgba");
         layer_states[SG_CLOUD_BROKEN]
-            = SGCloudMakeState(cloud_path.str());
+            = sgCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
         cloud_path.append("scattered.rgba");
         layer_states[SG_CLOUD_SCATTERED]
-            = SGCloudMakeState(cloud_path.str());
+            = sgCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
         cloud_path.append("few.rgba");
         layer_states[SG_CLOUD_FEW]
-            = SGCloudMakeState(cloud_path.str());
+            = sgCloudMakeState(cloud_path.str());
 
         cloud_path.set(texture_path.str());
         cloud_path.append("cirrus.rgba");
         layer_states[SG_CLOUD_CIRRUS]
-            = SGCloudMakeState(cloud_path.str());
+            = sgCloudMakeState(cloud_path.str());
 
         layer_states[SG_CLOUD_CLEAR] = 0;
     }
@@ -424,8 +426,10 @@ void SGCloudLayer::draw() {
 
 
 // make an ssgSimpleState for a cloud layer given the named texture
-ssgSimpleState *SGCloudMakeState( const string &path ) {
+ssgSimpleState *sgCloudMakeState( const string &path ) {
     ssgSimpleState *state = new ssgSimpleState();
+
+    cout << " texture = " << path << endl;
 
     state->setTexture( (char *)path.c_str() );
     state->setShadeModel( GL_SMOOTH );

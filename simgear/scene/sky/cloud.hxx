@@ -93,12 +93,9 @@ public:
 
 private:
 
-    static ssgSimpleState *layer_states[SG_MAX_CLOUD_COVERAGES];
-    static int layer_sizes[SG_MAX_CLOUD_COVERAGES];
-
     ssgRoot *layer_root;
     ssgTransform *layer_transform;
-    ssgLeaf * layer[4];
+    ssgLeaf *layer[4];
 
     ssgColourArray *cl[4]; 
     ssgVertexArray *vl[4];
@@ -123,7 +120,7 @@ private:
 
 
 // make an ssgSimpleState for a cloud layer given the named texture
-ssgSimpleState *SGCloudMakeState( const string &path );
+ssgSimpleState *sgCloudMakeState( const string &path );
 
 
 #endif // _SG_CLOUD_HXX_

@@ -5,6 +5,7 @@
 
 
 #include <string.h>             // for strcmp()
+#include <math.h>
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -478,6 +479,7 @@ SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _offset_m(props->getDoubleValue("offset-m", 0.0)),
     _factor(props->getDoubleValue("factor", 1.0)),
+    _step(props->getDoubleValue("step",0.0)),
     _table(read_interpolation_table(props)),
     _has_min(props->hasValue("min-m")),
     _min_m(props->getDoubleValue("min-m")),
@@ -500,7 +502,15 @@ void
 SGTexTranslateAnimation::update()
 {
   if (_table == 0) {
-    _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+    if(_step > 0) {
+      // apply stepping of input value
+      if(_prop->getDoubleValue() > 0) 
+       _position_m = ((floor(_prop->getDoubleValue()/_step) * _step) + _offset_m) * _factor;
+     else
+      _position_m = ((ceil(_prop->getDoubleValue()/_step) * _step) + _offset_m) * _factor;
+    } else {
+       _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+    }
     if (_has_min && _position_m < _min_m)
       _position_m = _min_m;
     if (_has_max && _position_m > _max_m)

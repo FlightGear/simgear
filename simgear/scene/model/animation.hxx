@@ -1,3 +1,4 @@
+
 // animation.hxx - classes to manage model animation.
 // Written by David Megginson, started 2002.
 //
@@ -261,6 +262,7 @@ private:
   SGPropertyNode_ptr _prop;
   double _offset_m;
   double _factor;
+  double _step;
   SGInterpTable * _table;
   bool _has_min;
   double _min_m;

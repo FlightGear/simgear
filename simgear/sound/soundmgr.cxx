@@ -34,11 +34,11 @@
 #define MAX_SOUND_SAFETY ( 1.0 / SOUND_SAFETY_MULT )
 
 //
-// SimpleSound
+// SGSimpleSound
 //
 
 // constructor
-SimpleSound::SimpleSound( const char *path, const char *file )
+SGSimpleSound::SGSimpleSound( const char *path, const char *file )
   : sample(NULL),
     pitch_envelope(NULL),
     volume_envelope(NULL),
@@ -56,7 +56,7 @@ SimpleSound::SimpleSound( const char *path, const char *file )
     volume_envelope->setStep ( 0, 0.01, 1.0 );
 }
 
-SimpleSound::SimpleSound( unsigned char *buffer, int len )
+SGSimpleSound::SGSimpleSound( unsigned char *buffer, int len )
   : pitch(1.0),
     volume(1.0)
 {
@@ -68,13 +68,13 @@ SimpleSound::SimpleSound( unsigned char *buffer, int len )
 }
 
 // destructor
-SimpleSound::~SimpleSound() {
+SGSimpleSound::~SGSimpleSound() {
     delete pitch_envelope;
     delete volume_envelope;
     delete sample;
 }
 
-void SimpleSound::play( slScheduler *sched, bool looped ) {
+void SGSimpleSound::play( slScheduler *sched, bool looped ) {
     
     // make sure sound isn't already playing
     if ( sample->getPlayCount() > 0 ) {
@@ -92,7 +92,7 @@ void SimpleSound::play( slScheduler *sched, bool looped ) {
     sched->addSampleEnvelope(sample, 0, 1, volume_envelope, SL_VOLUME_ENVELOPE);
 }
 
-void SimpleSound::stop( slScheduler *sched, bool quick ) {
+void SGSimpleSound::stop( slScheduler *sched, bool quick ) {
 
     sched->stopSample( sample );
 }
@@ -102,7 +102,7 @@ void SimpleSound::stop( slScheduler *sched, bool quick ) {
 //
 
 // constructor
-SoundMgr::SoundMgr() {
+SGSoundMgr::SGSoundMgr() {
     audio_sched = new slScheduler( 8000 );
     if ( audio_sched->notWorking() ) {
 	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
@@ -120,7 +120,7 @@ SoundMgr::SoundMgr() {
 
 // destructor
 
-SoundMgr::~SoundMgr() {
+SGSoundMgr::~SGSoundMgr() {
 
     //
     // Remove the samples from the sample manager.
@@ -141,7 +141,7 @@ SoundMgr::~SoundMgr() {
     sound_map_iterator sound_current = sounds.begin();
     sound_map_iterator sound_end = sounds.end();
     for ( ; sound_current != sound_end; ++sound_current ) {
-        SimpleSound *s = sound_current->second;
+        SGSimpleSound *s = sound_current->second;
 
         audio_sched->stopSample(s->get_sample());
         delete s->get_sample();
@@ -154,7 +154,7 @@ SoundMgr::~SoundMgr() {
 
 
 // initialize the sound manager
-void SoundMgr::init() {
+void SGSoundMgr::init() {
     safety = MAX_SOUND_SAFETY;
 
     // audio_mixer -> setMasterVolume ( 80 ) ;  /* 80% of max volume. */
@@ -181,7 +181,7 @@ void SoundMgr::init() {
     sound_map_iterator sound_current = sounds.begin();
     sound_map_iterator sound_end = sounds.end();
     for ( ; sound_current != sound_end; ++sound_current ) {
-	SimpleSound *s = sound_current->second;
+	SGSimpleSound *s = sound_current->second;
 
         audio_sched->stopSample(s->get_sample());
 	delete s->get_sample();
@@ -192,20 +192,20 @@ void SoundMgr::init() {
 }
 
 
-void SoundMgr::bind ()
+void SGSoundMgr::bind ()
 {
   // no properties yet
 }
 
 
-void SoundMgr::unbind ()
+void SGSoundMgr::unbind ()
 {
   // no properties yet
 }
 
 
 // run the audio scheduler
-void SoundMgr::update( double dt ) {
+void SGSoundMgr::update( double dt ) {
     if ( dt > safety ) {
 	safety = dt;
     } else {
@@ -223,21 +223,21 @@ void SoundMgr::update( double dt ) {
 
 
 void
-SoundMgr::pause ()
+SGSoundMgr::pause ()
 {
   audio_sched->pauseSample(0, 0);
 }
 
 
 void
-SoundMgr::resume ()
+SGSoundMgr::resume ()
 {
   audio_sched->resumeSample(0, 0);
 }
 
 
 // add a sound effect, return true if successful
-bool SoundMgr::add( SimpleSound *sound, const string& refname ) {
+bool SGSoundMgr::add( SGSimpleSound *sound, const string& refname ) {
 
     sound_map_iterator sound_it = sounds.find( refname );
     if ( sound_it != sounds.end() ) {
@@ -265,9 +265,9 @@ bool SoundMgr::add( SimpleSound *sound, const string& refname ) {
 
 
 // add a sound from a file, return the sample if successful, else return NULL
-SimpleSound *SoundMgr::add( const string &refname,
+SGSimpleSound *SGSoundMgr::add( const string &refname,
                             const char *path, const char *file ) {
-     SimpleSound *sound;
+     SGSimpleSound *sound;
 
     SGPath slfile( path );
     if ( file )
@@ -279,7 +279,7 @@ SimpleSound *SoundMgr::add( const string &refname,
     sample_map_iterator it = samples.find(slfile.str());
     if (it == samples.end()) {
 
-       sound = new SimpleSound(slfile.c_str());
+       sound = new SGSimpleSound(slfile.c_str());
        sounds[refname] = sound;
 
        sample_ref *sr = new sample_ref;
@@ -293,7 +293,7 @@ SimpleSound *SoundMgr::add( const string &refname,
 
        sr->n++;
        sound =
-           new SimpleSound(sr->sample->getBuffer(), sr->sample->getLength());
+           new SGSimpleSound(sr->sample->getBuffer(), sr->sample->getLength());
        sounds[refname] = sound;
 
     }
@@ -303,13 +303,13 @@ SimpleSound *SoundMgr::add( const string &refname,
 
 
 // remove a sound effect, return true if successful
-bool SoundMgr::remove( const string &refname ) {
+bool SGSoundMgr::remove( const string &refname ) {
 
     sound_map_iterator it = sounds.find( refname );
     if ( it != sounds.end() ) {
 	// first stop the sound from playing (so we don't bomb the
 	// audio scheduler)
-	SimpleSound *sample = it->second;
+	SGSimpleSound *sample = it->second;
 
 	// cout << "Playing " << sample->get_sample()->getPlayCount()
 	//      << " instances!" << endl;
@@ -346,7 +346,7 @@ bool SoundMgr::remove( const string &refname ) {
 
 
 // return true of the specified sound exists in the sound manager system
-bool SoundMgr::exists( const string &refname ) {
+bool SGSoundMgr::exists( const string &refname ) {
     sound_map_iterator it = sounds.find( refname );
     if ( it != sounds.end() ) {
 	return true;
@@ -356,9 +356,9 @@ bool SoundMgr::exists( const string &refname ) {
 }
 
 
-// return a pointer to the SimpleSound if the specified sound exists
+// return a pointer to the SGSimpleSound if the specified sound exists
 // in the sound manager system, otherwise return NULL
-SimpleSound *SoundMgr::find( const string &refname ) {
+SGSimpleSound *SGSoundMgr::find( const string &refname ) {
     sound_map_iterator it = sounds.find( refname );
     if ( it != sounds.end() ) {
 	return it->second;
@@ -370,8 +370,8 @@ SimpleSound *SoundMgr::find( const string &refname ) {
 
 // tell the scheduler to play the indexed sample in a continuous
 // loop
-bool SoundMgr::play_looped( const string &refname ) {
-   SimpleSound *sample;
+bool SGSoundMgr::play_looped( const string &refname ) {
+   SGSimpleSound *sample;
 
     if ((sample = find( refname )) == NULL)
        return false;
@@ -382,8 +382,8 @@ bool SoundMgr::play_looped( const string &refname ) {
 
 
 // tell the scheduler to play the indexed sample once
-bool SoundMgr::play_once( const string& refname ) {
-    SimpleSound *sample;
+bool SGSoundMgr::play_once( const string& refname ) {
+    SGSimpleSound *sample;
 
     if ((sample = find( refname )) == NULL)
        return false;
@@ -394,8 +394,8 @@ bool SoundMgr::play_once( const string& refname ) {
 
 
 // return true of the specified sound is currently being played
-bool SoundMgr::is_playing( const string& refname ) {
-    SimpleSound *sample;
+bool SGSoundMgr::is_playing( const string& refname ) {
+    SGSimpleSound *sample;
 
     if ((sample = find( refname )) == NULL)
        return false;
@@ -405,8 +405,8 @@ bool SoundMgr::is_playing( const string& refname ) {
 
 
 // immediate stop playing the sound
-bool SoundMgr::stop( const string& refname ) {
-    SimpleSound *sample;
+bool SGSoundMgr::stop( const string& refname ) {
+    SGSimpleSound *sample;
 
     if ((sample = find( refname )) == NULL)
        return false;

@@ -45,7 +45,7 @@ SG_USING_STD(string);
 
 
 // manages everything we need to know for an individual sound sample
-class SimpleSound {
+class SGSimpleSound {
 
 private:
 
@@ -57,9 +57,9 @@ private:
 
 public:
 
-    SimpleSound( const char *path, const char *file = NULL );
-    SimpleSound( unsigned char *buffer, int len );
-    ~SimpleSound();
+    SGSimpleSound( const char *path, const char *file = NULL );
+    SGSimpleSound( unsigned char *buffer, int len );
+    ~SGSimpleSound();
 
     void play( slScheduler *sched, bool looped );
     void stop( slScheduler *sched, bool quick = true );
@@ -96,13 +96,12 @@ typedef map < string, sample_ref * > sample_map;
 typedef sample_map::iterator sample_map_iterator;
 typedef sample_map::const_iterator const_sample_map_iterator;
 
-
-typedef map < string, SimpleSound * > sound_map;
+typedef map < string, SGSimpleSound * > sound_map;
 typedef sound_map::iterator sound_map_iterator;
 typedef sound_map::const_iterator const_sound_map_iterator;
 
 
-class SoundMgr
+class SGSoundMgr
 {
 
     slScheduler *audio_sched;
@@ -115,8 +114,8 @@ class SoundMgr
 
 public:
 
-    SoundMgr();
-    ~SoundMgr();
+    SGSoundMgr();
+    ~SGSoundMgr();
 
 
     /**
@@ -162,10 +161,10 @@ public:
     inline void reinit() { init(); }
 
     // add a sound effect, return true if successful
-    bool add( SimpleSound *sound, const string& refname);
+    bool add( SGSimpleSound *sound, const string& refname);
 
     // add a sound file, return the sample if successful, else return NULL
-    SimpleSound *add( const string& refname,
+    SGSimpleSound *add( const string& refname,
                       const char *path, const char *file = NULL );
 
     // remove a sound effect, return true if successful
@@ -174,9 +173,9 @@ public:
     // return true of the specified sound exists in the sound manager system
     bool exists( const string& refname );
 
-    // return a pointer to the SimpleSound if the specified sound
+    // return a pointer to the SGSimpleSound if the specified sound
     // exists in the sound manager system, otherwise return NULL
-    SimpleSound *find( const string& refname );
+    SGSimpleSound *find( const string& refname );
 
     // tell the scheduler to play the indexed sample in a continuous
     // loop

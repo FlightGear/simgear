@@ -39,15 +39,15 @@ static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
  * Class for handling one sound event.
  *
  */
-class Sound
+class SGSound
 {
 
 public:
 
-  Sound();
-  virtual ~Sound();
+  SGSound();
+  virtual ~SGSound();
 
-  virtual void init (SGPropertyNode *, SGPropertyNode *, SoundMgr *,
+  virtual void init (SGPropertyNode *, SGPropertyNode *, SGSoundMgr *,
                      const string &);
   virtual void update (double dt);
 
@@ -59,7 +59,7 @@ protected:
   enum { ONCE=0, LOOPED, IN_TRANSIT };
   enum { LEVEL=0, INVERTED, FLIPFLOP };
 
-  // Sound properties
+  // SGSound properties
   typedef struct {
         SGPropertyNode * prop;
         double (*fn)(double);
@@ -73,8 +73,8 @@ protected:
 
 private:
 
-  SoundMgr * _mgr;
-  SimpleSound * _sample;
+  SGSoundMgr * _mgr;
+  SGSimpleSound * _sample;
 
   FGCondition * _condition;
   SGPropertyNode * _property;

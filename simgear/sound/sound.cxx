@@ -61,13 +61,13 @@ static const struct {
 	{"", NULL}
 };
 
-Sound::Sound()
+SGSound::SGSound()
   : _sample(NULL),
     _condition(NULL),
     _property(NULL),
     _active(false),
     _name(""),
-    _mode(Sound::ONCE),
+    _mode(SGSound::ONCE),
     _prev_value(0),
     _dt_play(0.0),
     _dt_stop(0.0),
@@ -75,7 +75,7 @@ Sound::Sound()
 {
 }
 
-Sound::~Sound()
+SGSound::~SGSound()
 {
    _mgr->get_scheduler()->stopSample(_sample->get_sample());
 
@@ -91,8 +91,8 @@ Sound::~Sound()
 }
 
 void
-Sound::init(SGPropertyNode *root, SGPropertyNode *node, SoundMgr *sndmgr,
-            const string &path)
+SGSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
+              const string &path)
 {
 
    //
@@ -104,13 +104,13 @@ Sound::init(SGPropertyNode *root, SGPropertyNode *node, SoundMgr *sndmgr,
 
    const char *mode_str = node->getStringValue("mode", "");
    if ( !strcmp(mode_str, "looped") ) {
-       _mode = Sound::LOOPED;
+       _mode = SGSound::LOOPED;
 
    } else if ( !strcmp(mode_str, "in-transit") ) {
-       _mode = Sound::IN_TRANSIT;
+       _mode = SGSound::IN_TRANSIT;
 
    } else {
-      _mode = Sound::ONCE;
+      _mode = SGSound::ONCE;
 
       if ( strcmp(mode_str, "") )
          SG_LOG(SG_GENERAL,SG_INFO, "  Unknown sound mode, default to 'once'");
@@ -131,7 +131,7 @@ Sound::init(SGPropertyNode *root, SGPropertyNode *node, SoundMgr *sndmgr,
    unsigned int i;
    float v = 0.0;
    vector<SGPropertyNode_ptr> kids = node->getChildren("volume");
-   for (i = 0; (i < kids.size()) && (i < Sound::MAXPROP); i++) {
+   for (i = 0; (i < kids.size()) && (i < SGSound::MAXPROP); i++) {
       _snd_prop volume = {NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
 
       if (strcmp(kids[i]->getStringValue("property"), ""))
@@ -185,7 +185,7 @@ Sound::init(SGPropertyNode *root, SGPropertyNode *node, SoundMgr *sndmgr,
    //
    float p = 0.0;
    kids = node->getChildren("pitch");
-   for (i = 0; (i < kids.size()) && (i < Sound::MAXPROP); i++) {
+   for (i = 0; (i < kids.size()) && (i < SGSound::MAXPROP); i++) {
       _snd_prop pitch = {NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
 
       if (strcmp(kids[i]->getStringValue("property", ""), ""))
@@ -244,7 +244,7 @@ Sound::init(SGPropertyNode *root, SGPropertyNode *node, SoundMgr *sndmgr,
 }
 
 void
-Sound::update (double dt)
+SGSound::update (double dt)
 {
    double curr_value = 0.0;
 
@@ -259,12 +259,12 @@ Sound::update (double dt)
        (!_condition && _property &&
         (
          !curr_value ||
-         ( (_mode == Sound::IN_TRANSIT) && (curr_value == _prev_value) )
+         ( (_mode == SGSound::IN_TRANSIT) && (curr_value == _prev_value) )
          )
         )
        )
    {
-       if ((_mode != Sound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME)) {
+       if ((_mode != SGSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME)) {
            if (_sample->is_playing()) {
                SG_LOG(SG_GENERAL, SG_INFO, "Stopping audio after " << _dt_play
                       << " sec: " << _name );
@@ -286,7 +286,7 @@ Sound::update (double dt)
    // If the mode is ONCE and the sound is still playing,
    //  we have nothing to do anymore.
    //
-   if (_active && (_mode == Sound::ONCE)) {
+   if (_active && (_mode == SGSound::ONCE)) {
 
       if (!_sample->is_playing()) {
          _dt_stop += dt;
@@ -391,7 +391,7 @@ Sound::update (double dt)
    //
    if (!_active) {
 
-      if (_mode == Sound::ONCE)
+      if (_mode == SGSound::ONCE)
          _sample->play(_mgr->get_scheduler(), false);
 
       else

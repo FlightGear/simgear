@@ -55,6 +55,21 @@ typedef vector < SGCloudLayer* > layer_list_type;
 typedef layer_list_type::iterator layer_list_iterator;
 typedef layer_list_type::const_iterator layer_list_const_iterator;
 
+typedef struct {
+	float *view_pos, *zero_elev, *view_up;
+	double lon, lat, alt, spin;
+	double gst;
+	double sun_ra, sun_dec, sun_dist;
+	double moon_ra, moon_dec, moon_dist;
+} SGSkyState;
+
+typedef struct {
+	float *sky_color, *fog_color, *cloud_color;
+	double sun_angle, moon_angle;
+	int nplanets, nstars;
+	sgdVec3 *planet_data, *star_data;
+} SGSkyColor;
+
 /**
  * A class to model a realistic (time/date/position) based sky.
  *
@@ -263,10 +278,7 @@ public:
      * @param star_data an array of star right ascensions, declinations,
      *        and magnitudes
      */
-    bool repaint( sgVec4 sky_color, sgVec4 fog_color, sgVec4 cloud_color,
-		  double sun_angle, double moon_angle,
-		  int nplanets, sgdVec3 *planet_data,
-		  int nstars, sgdVec3 *star_data );
+    bool repaint( const SGSkyColor &sc );
 
     /**
      * Reposition the sky at the specified origin and orientation
@@ -296,11 +308,7 @@ public:
      * @param moon_dec the moon's current declination
      * @param moon_dist the moon's distance from the current view point. 
      */
-    bool reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
-		     double lon, double lat, double alt, double spin,
-		     double gst, 
-		     double sun_ra, double sun_dec, double sun_dist,
-		     double moon_ra, double moon_dec, double moon_dist );
+    bool reposition( SGSkyState &st );
 
     /**
      * Modify the given visibility based on cloud layers, thickness,

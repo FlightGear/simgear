@@ -103,22 +103,24 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color, sgVec4 cloud_color,
-		     double sun_angle, double moon_angle,
-		     int nplanets, sgdVec3 *planet_data,
-		     int nstars, sgdVec3 *star_data )
+bool SGSky::repaint( const SGSkyColor &sc )
 {
     if ( effective_visibility > 1000.0 ) {
 	enable();
-	dome->repaint( sky_color, fog_color, sun_angle, effective_visibility );
-	oursun->repaint( sun_angle );
-	moon->repaint( moon_angle );
-	planets->repaint( sun_angle, nplanets, planet_data );
-	stars->repaint( sun_angle, nstars, star_data );
+	dome->repaint( sc.sky_color, sc.fog_color, sc.sun_angle,
+                       effective_visibility );
+
+	oursun->repaint( sc.sun_angle );
+
+	moon->repaint( sc.moon_angle );
+
+	planets->repaint( sc.sun_angle, sc.nplanets, sc.planet_data );
+
+	stars->repaint( sc.sun_angle, sc.nstars, sc.star_data );
 
 	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
             if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
-                cloud_layers[i]->repaint( cloud_color );
+                cloud_layers[i]->repaint( sc.cloud_color );
             }
 	}
     } else {
@@ -137,22 +139,27 @@ bool SGSky::repaint( sgVec4 sky_color, sgVec4 fog_color, sgVec4 cloud_color,
 // spin specifies a rotation about the new Z axis (this allows
 // additional orientation for the sunrise/set effects and is used by
 // the skydome and perhaps clouds.
-bool SGSky::reposition( sgVec3 view_pos, sgVec3 zero_elev, sgVec3 view_up,
-			double lon, double lat, double alt, double spin,
-			double gst, 
-			double sun_ra, double sun_dec, double sun_dist,
-			double moon_ra, double moon_dec, double moon_dist )
+bool SGSky::reposition( SGSkyState &st )
 {
-    double angle = gst * 15;	// degrees
-    dome->reposition( zero_elev, lon, lat, spin );
-    oursun->reposition( view_pos, angle, sun_ra, sun_dec, sun_dist );
-    moon->reposition( view_pos, angle, moon_ra, moon_dec, moon_dist );
-    planets->reposition( view_pos, angle );
-    stars->reposition( view_pos, angle );
+
+    double angle = st.gst * 15;	// degrees
+
+    dome->reposition( st.zero_elev, st.lon, st.lat, st.spin );
+
+    oursun->reposition( st.view_pos, angle,
+                        st.sun_ra, st.sun_dec, st.sun_dist );
+
+    moon->reposition( st.view_pos, angle,
+                      st.moon_ra, st.moon_dec, st.moon_dist );
+
+    planets->reposition( st.view_pos, angle );
+
+    stars->reposition( st.view_pos, angle );
 
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
-            cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt );
+            cloud_layers[i]->reposition( st.zero_elev, st.view_up,
+                                         st.lon, st.lat, st.alt );
         }
     }
 

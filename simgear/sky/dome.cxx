@@ -1,4 +1,4 @@
-// skydome.cxx -- model sky with an upside down "bowl"
+// dome.cxx -- model sky with an upside down "bowl"
 //
 // Written by Curtis Olson, started December 1997.
 // SSG-ified by Curtis Olson, February 2000.
@@ -39,13 +39,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/fg_random.h>
 
-// #include <Aircraft/aircraft.hxx>
-// #include <FDM/flight.hxx>
-// #include <Main/views.hxx>
-// #include <Time/event.hxx>
-// #include <Time/fg_time.hxx>
-
-#include "skydome.hxx"
+#include "dome.hxx"
 
 
 #ifdef __MWERKS__
@@ -69,26 +63,42 @@
 #define BOTTOM_ELEV   -2000.0
 
 
+// Set up dome rendering callbacks
+static int sgSkyDomePreDraw( ssgEntity *e ) {
+    /* cout << endl << "Dome Pre Draw" << endl << "----------------" 
+	 << endl << endl; */
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_FOG );
+
+    return true;
+}
+
+static int sgSkyDomePostDraw( ssgEntity *e ) {
+    /* cout << endl << "Dome Post Draw" << endl << "----------------" 
+	 << endl << endl; */
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_FOG );
+
+    return true;
+}
+
+
 // Constructor
-FGSkyDome::FGSkyDome( void ) {
+SGSkyDome::SGSkyDome( void ) {
 }
 
 
 // Destructor
-FGSkyDome::~FGSkyDome( void ) {
+SGSkyDome::~SGSkyDome( void ) {
 }
 
 
 // initialize the sky object and connect it into our scene graph
-bool FGSkyDome::initialize( ) {
+ssgBranch * SGSkyDome::build( ) {
     sgVec4 color;
 
     float theta;
     int i;
-
-    // create the scene graph for the dome
-    dome = new ssgRoot;
-    dome->setName( "Sky Dome" );
 
     // set up the state
     dome_state = new ssgSimpleState();
@@ -209,9 +219,6 @@ bool FGSkyDome::initialize( ) {
 
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
-    dome_selector = new ssgSelector;
-    dome_transform = new ssgTransform;
-
     ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
 
     center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
@@ -231,17 +238,27 @@ bool FGSkyDome::initialize( ) {
     middle_ring->setState( dome_state );
     lower_ring->setState( dome_state );
 
+    dome_transform = new ssgTransform;
     dome_transform->addKid( center_disk );
     dome_transform->addKid( upper_ring );
     dome_transform->addKid( middle_ring );
     dome_transform->addKid( lower_ring );
 
-    dome_selector->addKid( dome_transform );
-    dome_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+    // not entirely satisfying.  We are depending here that the first
+    // thing we add to a parent is the first drawn
+    center_disk->setCallback( SSG_CALLBACK_PREDRAW, sgSkyDomePreDraw );
+    center_disk->setCallback( SSG_CALLBACK_POSTDRAW, sgSkyDomePostDraw );
 
-    dome->addKid( dome_selector );
+    upper_ring->setCallback( SSG_CALLBACK_PREDRAW, sgSkyDomePreDraw );
+    upper_ring->setCallback( SSG_CALLBACK_POSTDRAW, sgSkyDomePostDraw );
 
-    return true;
+    middle_ring->setCallback( SSG_CALLBACK_PREDRAW, sgSkyDomePreDraw );
+    middle_ring->setCallback( SSG_CALLBACK_POSTDRAW, sgSkyDomePostDraw );
+
+    lower_ring->setCallback( SSG_CALLBACK_PREDRAW, sgSkyDomePreDraw );
+    lower_ring->setCallback( SSG_CALLBACK_POSTDRAW, sgSkyDomePostDraw );
+
+    return dome_transform;
 }
 
 
@@ -251,7 +268,7 @@ bool FGSkyDome::initialize( ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool FGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle )
+bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle )
 {
     double diff;
     sgVec3 outer_param, outer_amt, outer_diff;
@@ -452,7 +469,7 @@ bool FGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle )
 // lat specifies a rotation about the new Y axis
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
-bool FGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
+bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
     sgMat4 T, LON, LAT, SPIN;
     sgVec3 axis;
 
@@ -493,316 +510,3 @@ bool FGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
 
     return true;
 }
-
-
-// Draw the skydome
-bool FGSkyDome::draw() {
-    ssgCullAndDraw( dome );
-
-    return true;
-}
-
-
-#if 0
-
-// depricated code from here to the end 
-
-
-// Calculate the sky structure vertices
-void fgSkyVerticesInit() {
-    float theta;
-    int i;
-
-    FG_LOG(FG_ASTRO, FG_INFO, "  Generating the sky dome vertices.");
-
-    for ( i = 0; i < 12; i++ ) {
-	theta = (i * 30.0) * DEG_TO_RAD;
-	
-	inner_vertex[i][0] = cos(theta) * UPPER_RADIUS;
-	inner_vertex[i][1] = sin(theta) * UPPER_RADIUS;
-	inner_vertex[i][2] = UPPER_ELEV;
-	
-	// printf("    %.2f %.2f\n", cos(theta) * UPPER_RADIUS, 
-	//        sin(theta) * UPPER_RADIUS);
-
-	middle_vertex[i][0] = cos((double)theta) * MIDDLE_RADIUS;
-	middle_vertex[i][1] = sin((double)theta) * MIDDLE_RADIUS;
-	middle_vertex[i][2] = MIDDLE_ELEV;
-	    
-	outer_vertex[i][0] = cos((double)theta) * LOWER_RADIUS;
-	outer_vertex[i][1] = sin((double)theta) * LOWER_RADIUS;
-	outer_vertex[i][2] = LOWER_ELEV;
-	    
-	bottom_vertex[i][0] = cos((double)theta) * BOTTOM_RADIUS;
-	bottom_vertex[i][1] = sin((double)theta) * BOTTOM_RADIUS;
-	bottom_vertex[i][2] = BOTTOM_ELEV;
-    }
-}
-
-
-// (Re)calculate the sky colors at each vertex
-void fgSkyColorsInit() {
-    fgLIGHT *l;
-    double sun_angle, diff;
-    double outer_param[3], outer_amt[3], outer_diff[3];
-    double middle_param[3], middle_amt[3], middle_diff[3];
-    int i, j;
-
-    l = &cur_light_params;
-
-    FG_LOG( FG_ASTRO, FG_INFO, 
-	    "  Generating the sky colors for each vertex." );
-
-    // setup for the possibility of sunset effects
-    sun_angle = l->sun_angle * RAD_TO_DEG;
-    // fgPrintf( FG_ASTRO, FG_INFO, 
-    //           "  Sun angle in degrees = %.2f\n", sun_angle);
-
-    if ( (sun_angle > 80.0) && (sun_angle < 100.0) ) {
-	// 0.0 - 0.4
-	outer_param[0] = (10.0 - fabs(90.0 - sun_angle)) / 20.0;
-	outer_param[1] = (10.0 - fabs(90.0 - sun_angle)) / 40.0;
-	outer_param[2] = -(10.0 - fabs(90.0 - sun_angle)) / 30.0;
-	// outer_param[2] = 0.0;
-
-	middle_param[0] = (10.0 - fabs(90.0 - sun_angle)) / 40.0;
-	middle_param[1] = (10.0 - fabs(90.0 - sun_angle)) / 80.0;
-	middle_param[2] = 0.0;
-
-	outer_diff[0] = outer_param[0] / 6.0;
-	outer_diff[1] = outer_param[1] / 6.0;
-	outer_diff[2] = outer_param[2] / 6.0;
-
-	middle_diff[0] = middle_param[0] / 6.0;
-	middle_diff[1] = middle_param[1] / 6.0;
-	middle_diff[2] = middle_param[2] / 6.0;
-    } else {
-	outer_param[0] = outer_param[1] = outer_param[2] = 0.0;
-	middle_param[0] = middle_param[1] = middle_param[2] = 0.0;
-
-	outer_diff[0] = outer_diff[1] = outer_diff[2] = 0.0;
-	middle_diff[0] = middle_diff[1] = middle_diff[2] = 0.0;
-    }
-    // printf("  outer_red_param = %.2f  outer_red_diff = %.2f\n", 
-    //        outer_red_param, outer_red_diff);
-
-    // calculate transition colors between sky and fog
-    for ( j = 0; j < 3; j++ ) {
-	outer_amt[j] = outer_param[j];
-	middle_amt[j] = middle_param[j];
-    }
-
-    for ( i = 0; i < 6; i++ ) {
-	for ( j = 0; j < 3; j++ ) {
-	    diff = l->sky_color[j] - l->fog_color[j];
-
-	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-	    //        l->sky_color[j], l->fog_color[j], diff);
-
-	    upper_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.3) * 255);
-	    middle_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.9 
-					   + middle_amt[j]) * 255);
-	    lower_color[i][j] = (GLubyte)((l->fog_color[j] + outer_amt[j]) 
-					  * 255);
-
-	    if ( upper_color[i][j] > 255 ) { upper_color[i][j] = 255; }
-	    if ( upper_color[i][j] < 25 ) { upper_color[i][j] = 25; }
-	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
-	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
-	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
-	    if ( lower_color[i][j] < 25 ) { lower_color[i][j] = 25; }
-	}
-	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	    (GLubyte)(l->sky_color[3] * 255);
-
-	for ( j = 0; j < 3; j++ ) {
-	    outer_amt[j] -= outer_diff[j];
-	    middle_amt[j] -= middle_diff[j];
-	}
-
-	/*
-	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-	       middle_color[i][3]);
-	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-	       lower_color[i][3]);
-	*/
-    }
-
-    for ( j = 0; j < 3; j++ ) {
-	outer_amt[j] = 0.0;
-	middle_amt[j] = 0.0;
-    }
-
-    for ( i = 6; i < 12; i++ ) {
-
-	for ( j = 0; j < 3; j++ ) {
-	    diff = l->sky_color[j] - l->fog_color[j];
-
-	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-	    //        l->sky_color[j], l->fog_color[j], diff);
-
-	    upper_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.3) * 255);
-	    middle_color[i][j] = (GLubyte)((l->sky_color[j] - diff * 0.9 
-					    + middle_amt[j]) * 255);
-	    lower_color[i][j] = (GLubyte)((l->fog_color[j] + outer_amt[j]) 
-					  * 255);
-
-	    if ( upper_color[i][j] > 255 ) { upper_color[i][j] = 255; }
-	    if ( upper_color[i][j] < 25 ) { upper_color[i][j] = 25; }
-	    if ( middle_color[i][j] > 255 ) { middle_color[i][j] = 255; }
-	    if ( middle_color[i][j] < 25 ) { middle_color[i][j] = 25; }
-	    if ( lower_color[i][j] > 255 ) { lower_color[i][j] = 255; }
-	    if ( lower_color[i][j] < 35 ) { lower_color[i][j] = 35; }
-	}
-	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 
-	    (GLubyte)(l->sky_color[3] * 255);
-
-	for ( j = 0; j < 3; j++ ) {
-	    outer_amt[j] += outer_diff[j];
-	    middle_amt[j] += middle_diff[j];
-	}
-
-	/*
-	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-	       middle_color[i][3]);
-	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-	       lower_color[i][3]);
-	*/
-    }
-}
-
-
-// Initialize the sky structure and colors
-void fgSkyInit() {
-    FG_LOG( FG_ASTRO, FG_INFO, "Initializing the sky" );
-
-    fgSkyVerticesInit();
-
-    // regester fgSkyColorsInit() as an event to be run periodically
-    global_events.Register( "fgSkyColorsInit()", fgSkyColorsInit, 
-		            fgEVENT::FG_EVENT_READY, 30000);
-}
-
-
-// Draw the Sky
-void fgSkyRender() {
-    FGInterface *f;
-    fgLIGHT *l;
-    GLubyte sky_color[4];
-    GLubyte upper_color[4];
-    GLubyte middle_color[4];
-    GLubyte lower_color[4];
-    double diff;
-    int i;
-
-    f = current_aircraft.fdm_state;
-    l = &cur_light_params;
-
-    // printf("Rendering the sky.\n");
-
-    // calculate the proper colors
-    for ( i = 0; i < 3; i++ ) {
-	diff = l->sky_color[i] - l->adj_fog_color[i];
-
-	// printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-	//        l->sky_color[j], l->adj_fog_color[j], diff);
-
-	upper_color[i] = (GLubyte)((l->sky_color[i] - diff * 0.3) * 255);
-	middle_color[i] = (GLubyte)((l->sky_color[i] - diff * 0.9) * 255);
-	lower_color[i] = (GLubyte)(l->adj_fog_color[i] * 255);
-    }
-    upper_color[3] = middle_color[3] = lower_color[3] = 
-	(GLubyte)(l->adj_fog_color[3] * 255);
-
-    xglPushMatrix();
-
-    // Translate to view position
-    Point3D zero_elev = current_view.get_cur_zero_elev();
-    xglTranslatef( zero_elev.x(), zero_elev.y(), zero_elev.z() );
-    // printf("  Translated to %.2f %.2f %.2f\n", 
-    //        zero_elev.x, zero_elev.y, zero_elev.z );
-
-    // Rotate to proper orientation
-    // printf("  lon = %.2f  lat = %.2f\n", FG_Longitude * RAD_TO_DEG,
-    //        FG_Latitude * RAD_TO_DEG);
-    xglRotatef( f->get_Longitude() * RAD_TO_DEG, 0.0, 0.0, 1.0 );
-    xglRotatef( 90.0 - f->get_Latitude() * RAD_TO_DEG, 0.0, 1.0, 0.0 );
-    xglRotatef( l->sun_rotation * RAD_TO_DEG, 0.0, 0.0, 1.0 );
-
-    // Draw inner/center section of sky*/
-    xglBegin( GL_TRIANGLE_FAN );
-    for ( i = 0; i < 4; i++ ) {
-	sky_color[i] = (GLubyte)(l->sky_color[i] * 255);
-    }
-    xglColor4fv(l->sky_color);
-    xglVertex3f(0.0, 0.0, CENTER_ELEV);
-    for ( i = 11; i >= 0; i-- ) {
-	xglColor4ubv( upper_color );
-	xglVertex3fv( inner_vertex[i] );
-    }
-    xglColor4ubv( upper_color );
-    xglVertex3fv( inner_vertex[11] );
-    xglEnd();
-
-    // Draw the middle ring
-    xglBegin( GL_TRIANGLE_STRIP );
-    for ( i = 0; i < 12; i++ ) {
-	xglColor4ubv( middle_color );
-	// printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	//        middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-	//        middle_color[i][3]);
-	// xglColor4f(1.0, 0.0, 0.0, 1.0);
-	xglVertex3fv( middle_vertex[i] );
-	xglColor4ubv( upper_color );
-	// printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	//        upper_color[i][0], upper_color[i][1], upper_color[i][2], 
-	//        upper_color[i][3]);
-	// xglColor4f(0.0, 0.0, 1.0, 1.0);
-	xglVertex3fv( inner_vertex[i] );
-    }
-    xglColor4ubv( middle_color );
-    // xglColor4f(1.0, 0.0, 0.0, 1.0);
-    xglVertex3fv( middle_vertex[0] );
-    xglColor4ubv( upper_color );
-    // xglColor4f(0.0, 0.0, 1.0, 1.0);
-    xglVertex3fv( inner_vertex[0] );
-    xglEnd();
-
-    // Draw the outer ring
-    xglBegin( GL_TRIANGLE_STRIP );
-    for ( i = 0; i < 12; i++ ) {
-	xglColor4ubv( lower_color );
-	xglVertex3fv( outer_vertex[i] );
-	xglColor4ubv( middle_color );
-	xglVertex3fv( middle_vertex[i] );
-    }
-    xglColor4ubv( lower_color );
-    xglVertex3fv( outer_vertex[0] );
-    xglColor4ubv( middle_color );
-    xglVertex3fv( middle_vertex[0] );
-    xglEnd();
-
-    // Draw the bottom skirt
-    xglBegin( GL_TRIANGLE_STRIP );
-    xglColor4ubv( lower_color );
-    for ( i = 0; i < 12; i++ ) {
-	xglVertex3fv( bottom_vertex[i] );
-	xglVertex3fv( outer_vertex[i] );
-    }
-    xglVertex3fv( bottom_vertex[0] );
-    xglVertex3fv( outer_vertex[0] );
-    xglEnd();
-
-    xglPopMatrix();
-}
-
-
-#endif

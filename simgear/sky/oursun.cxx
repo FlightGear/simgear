@@ -1,4 +1,4 @@
-// skysun.hxx -- draw a sun object
+// oursun.hxx -- model earth's sun
 //
 // Written by Durk Talsma. Originally started October 1997, for distribution  
 // with the FlightGear project. Version 2 was written in August and 
@@ -30,19 +30,57 @@
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
-#include <simgear/misc/fgpath.hxx>
 
 #include "sphere.hxx"
-#include "skysun.hxx"
+#include "oursun.hxx"
+
+
+// Set up sun rendering call backs
+static int sgSunOrbPreDraw( ssgEntity *e ) {
+    /* cout << endl << "Sun orb pre draw" << endl << "----------------" 
+	 << endl << endl; */
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_FOG );
+
+    return true;
+}
+
+static int sgSunOrbPostDraw( ssgEntity *e ) {
+    /* cout << endl << "Sun orb post draw" << endl << "----------------" 
+	 << endl << endl; */
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_FOG );
+
+    return true;
+}
+
+static int sgSunHaloPreDraw( ssgEntity *e ) {
+    /* cout << endl << "Sun halo pre draw" << endl << "----------------" 
+	 << endl << endl; */
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_FOG );
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+
+    return true;
+}
+
+static int sgSunHaloPostDraw( ssgEntity *e ) {
+    /* cout << endl << "Sun halo post draw" << endl << "----------------" 
+	 << endl << endl; */
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_FOG );
+
+    return true;
+}
 
 
 // Constructor
-FGSkySun::FGSkySun( void ) {
+SGSun::SGSun( void ) {
 }
 
 
 // Destructor
-FGSkySun::~FGSkySun( void ) {
+SGSun::~SGSun( void ) {
 }
 
 
@@ -156,10 +194,7 @@ void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 
 
 // initialize the sun object and connect it into our scene graph root
-bool FGSkySun::initialize( const FGPath& path ) {
-    // create the scene graph for the sun/halo
-    skysun = new ssgRoot;
-    skysun->setName( "Sky Sun" );
+ssgBranch * SGSun::build( FGPath path, double sun_size ) {
 
     // set up the orb state
     orb_state = new ssgSimpleState();
@@ -177,7 +212,8 @@ bool FGSkySun::initialize( const FGPath& path ) {
     sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
     cl->add( color );
 
-    ssgBranch *orb = ssgMakeSphere( orb_state, cl, 550.0, 10, 10 );
+    ssgBranch *orb = ssgMakeSphere( orb_state, cl, sun_size, 10, 10, 
+				    sgSunOrbPreDraw, sgSunOrbPostDraw );
 
     // force a repaint of the sun colors with arbitrary defaults
     repaint( 0.0 );
@@ -188,40 +224,31 @@ bool FGSkySun::initialize( const FGPath& path ) {
     // my_glWritePPMFile("sunhalo.ppm", sun_texbuf, 64, 64, RGB);
 
     // set up the halo state
-    FGPath halo_path = path;
-    halo_path.append( "halo.rgba" );
-
+    path.append( "halo.rgba" );
     halo_state = new ssgSimpleState();
-    halo_state->setTexture( (char *)halo_path.c_str() );
+    halo_state->setTexture( (char *)path.c_str() );
     // halo_state->setTexture( sun_texid );
     halo_state->enable( GL_TEXTURE_2D );
     halo_state->disable( GL_LIGHTING );
     halo_state->setShadeModel( GL_SMOOTH );
     halo_state->disable( GL_CULL_FACE );
-
-    halo_state->disable( GL_COLOR_MATERIAL );
+    halo_state->enable( GL_COLOR_MATERIAL );
     halo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    halo_state->setMaterial ( GL_AMBIENT_AND_DIFFUSE, 1, 1, 1, 1 ) ;
-    halo_state -> setMaterial ( GL_EMISSION, 0, 0, 0, 1 ) ;
-    halo_state -> setMaterial ( GL_SPECULAR, 0, 0, 0, 1 ) ;
-    // halo_state -> setShininess ( 0 ) ;
-
-    halo_state->setTranslucent();
     halo_state->enable( GL_ALPHA_TEST );
     halo_state->setAlphaClamp(0.01);
     halo_state->enable ( GL_BLEND ) ;
 
-
     // Build ssg structure
+    double size = sun_size * 10.0;
     sgVec3 v3;
     halo_vl = new ssgVertexArray;
-    sgSetVec3( v3, -5000.0, 0.0, -5000.0 );
+    sgSetVec3( v3, -size, 0.0, -size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, 5000.0, 0.0, -5000.0 );
+    sgSetVec3( v3, size, 0.0, -size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, -5000.0, 0.0,  5000.0 );
+    sgSetVec3( v3, -size, 0.0,  size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, 5000.0, 0.0,  5000.0 );
+    sgSetVec3( v3, size, 0.0,  size );
     halo_vl->add( v3 );
 
     sgVec2 v2;
@@ -241,18 +268,14 @@ bool FGSkySun::initialize( const FGPath& path ) {
 
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
-    sun_selector = new ssgSelector;
     sun_transform = new ssgTransform;
 
-    sun_selector->addKid( sun_transform );
-    sun_selector->clrTraversalMaskBits( SSGTRAV_HOT );
-
-    skysun->addKid( sun_selector );
-
     sun_transform->addKid( halo );
+    halo->setCallback( SSG_CALLBACK_PREDRAW, sgSunHaloPreDraw );
+    halo->setCallback( SSG_CALLBACK_POSTDRAW, sgSunHaloPostDraw );
     sun_transform->addKid( orb );
 
-    return true;
+    return sun_transform;
 }
 
 
@@ -261,7 +284,7 @@ bool FGSkySun::initialize( const FGPath& path ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool FGSkySun::repaint( double sun_angle ) {
+bool SGSun::repaint( double sun_angle ) {
     if ( sun_angle * RAD_TO_DEG < 100 ) {
 	// else sun is well below horizon (so no point in repainting it)
     
@@ -300,8 +323,9 @@ bool FGSkySun::repaint( double sun_angle ) {
 // declination, offset by our current position (p) so that it appears
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
-bool FGSkySun::reposition( sgVec3 p, double angle,
-			   double rightAscension, double declination )
+bool SGSun::reposition( sgVec3 p, double angle,
+			double rightAscension, double declination, 
+			double sun_dist )
 {
     sgMat4 T1, T2, GST, RA, DEC;
     sgVec3 axis;
@@ -335,14 +359,6 @@ bool FGSkySun::reposition( sgVec3 p, double angle,
     sgSetCoord( &skypos, TRANSFORM );
 
     sun_transform->setTransform( &skypos );
-
-    return true;
-}
-
-
-// Draw the sun
-bool FGSkySun::draw() {
-    ssgCullAndDraw( skysun );
 
     return true;
 }

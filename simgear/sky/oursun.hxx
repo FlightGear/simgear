@@ -1,4 +1,4 @@
-// skysun.hxx -- draw a sun object
+// oursun.hxx -- model earth's sun
 //
 // Written by Durk Talsma. Originally started October 1997, for distribution  
 // with the FlightGear project. Version 2 was written in August and 
@@ -25,19 +25,17 @@
 // $Id$
 
 
-#ifndef _SKYSUN_HXX_
-#define _SKYSUN_HXX_
+#ifndef _SG_SUN_HXX_
+#define _SG_SUN_HXX_
 
 
 #include <plib/ssg.h>
+
 #include <simgear/misc/fgpath.hxx>
 
-class FGSkySun {
 
-    // scene graph root for the skysun
-    ssgRoot *skysun;
+class SGSun {
 
-    ssgSelector *sun_selector;
     ssgTransform *sun_transform;
     ssgSimpleState *orb_state;
     ssgSimpleState *halo_state;
@@ -53,15 +51,13 @@ class FGSkySun {
 public:
 
     // Constructor
-    FGSkySun( void );
+    SGSun( void );
 
     // Destructor
-    ~FGSkySun( void );
+    ~SGSun( void );
 
-    // initialize the sun object and connect it into our scene graph
-    // root.  Pass in the path to your texture directory so
-    // initialize() can find the halo.rgba texture
-    bool initialize( const FGPath& path );
+    // return the sun object
+    ssgBranch *build( FGPath path, double sun_size );
 
     // repaint the sun colors based on current value of sun_anglein
     // degrees relative to verticle
@@ -75,89 +71,9 @@ public:
     // appears fixed at a great distance from the viewer.  Also add in
     // an optional rotation (i.e. for the current time of day.)
     bool reposition( sgVec3 p, double angle,
-		     double rightAscension, double declination );
-
-    // Draw the sun
-    bool draw();
-
-    // enable the sun in the scene graph (default)
-    void enable() { sun_selector->select( 1 ); }
-
-    // disable the sun in the scene graph.  The leaf node is still
-    // there, how ever it won't be traversed on the cullandrender
-    // phase.
-    void disable() { sun_selector->select( 0 ); }
-
+		     double rightAscension, double declination,
+		     double sun_dist );
 };
 
 
-#if 0
-class Star : public CelestialBody
-{
-private:
-  //double longitude;  // the sun's true longitude - this is depreciated by
-                       // CelestialBody::lonEcl 
-  double xs, ys;     // the sun's rectangular geocentric coordinates
-  double distance;   // the sun's distance to the earth
-   GLUquadricObj *SunObject;
-  GLuint sun_texid;
-  GLubyte *sun_texbuf;
-
-  void setTexture();
-public:
-  Star (FGTime *t);
-  ~Star();
-  void updatePosition(FGTime *t);
-  double getM();
-  double getw();
-  //double getLon();
-  double getxs();
-  double getys();
-  double getDistance();
-  void newImage();
-};
-
-
-
-inline double Star::getM()
-{
-  return M;
-}
-
-inline double Star::getw()
-{
-  return w;
-}
-
-inline double Star::getxs()
-{
-  return xs;
-}
-
-inline double Star::getys()
-{
-  return ys;
-}
-
-inline double Star::getDistance()
-{
-  return distance;
-}
-#endif
-
-
-#endif // _SKYSUN_HXX_
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // _SG_SUN_HXX_

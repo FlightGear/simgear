@@ -1,4 +1,4 @@
-// skydome.hxx -- model sky with an upside down "bowl"
+// dome.hxx -- model sky with an upside down "bowl"
 //
 // Written by Curtis Olson, started December 1997.
 // SSG-ified by Curtis Olson, February 2000.
@@ -34,11 +34,7 @@
 #include <plib/ssg.h>		// plib include
 
 
-class FGSkyDome {
-    // scene graph root for the skydome
-    ssgRoot *dome;
-
-    ssgSelector *dome_selector;
+class SGSkyDome {
     ssgTransform *dome_transform;
     ssgSimpleState *dome_state;
 
@@ -57,14 +53,14 @@ class FGSkyDome {
 public:
 
     // Constructor
-    FGSkyDome( void );
+    SGSkyDome( void );
 
     // Destructor
-    ~FGSkyDome( void );
+    ~SGSkyDome( void );
 
     // initialize the sky object and connect it into our scene graph
     // root
-    bool initialize();
+    ssgBranch *build();
 
     // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
@@ -81,31 +77,7 @@ public:
     // spin specifies a rotation about the new Z axis (and orients the
     // sunrise/set effects
     bool reposition( sgVec3 p, double lon, double lat, double spin );
-
-    // Draw the skydome
-    bool draw();
-
-    // enable the sky in the scene graph (default)
-    void enable() { dome_selector->select( 1 ); }
-
-    // disable the sky in the scene graph.  The leaf node is still
-    // there, how ever it won't be traversed on the cullandrender
-    // phase.
-    void disable() { dome_selector->select( 0 ); }
-
 };
 
 
-// (Re)generate the display list
-// void fgSkyInit();
-
-// (Re)calculate the sky colors at each vertex
-// void fgSkyColorsInit();
-
-// Draw the Sky
-// void fgSkyRender();
-
-
-#endif // _SKYDOM_HXX
-
-
+#endif // _SKYDOME_HXX

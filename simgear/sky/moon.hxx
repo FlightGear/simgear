@@ -1,4 +1,4 @@
-// skymoon.hxx -- draw a moon object
+// moon.hxx -- model earth's moon
 //
 // Written by Durk Talsma. Originally started October 1997, for distribution  
 // with the FlightGear project. Version 2 was written in August and 
@@ -25,20 +25,17 @@
 // $Id$
 
 
-#ifndef _SKYMOON_HXX_
-#define _SKYMOON_HXX_
+#ifndef _SG_MOON_HXX_
+#define _SG_MOON_HXX_
 
 
 #include <plib/ssg.h>
+
 #include <simgear/misc/fgpath.hxx>
 
 
-class FGSkyMoon {
+class SGMoon {
 
-    // scene graph root for the skymoon
-    ssgRoot *skymoon;
-
-    ssgSelector *moon_selector;
     ssgTransform *moon_transform;
     ssgSimpleState *orb_state;
     ssgSimpleState *halo_state;
@@ -48,20 +45,16 @@ class FGSkyMoon {
     ssgVertexArray *halo_vl;
     ssgTexCoordArray *halo_tl;
 
-    GLuint moon_texid;
-    GLubyte *moon_texbuf;
-
 public:
 
     // Constructor
-    FGSkyMoon( void );
+    SGMoon( void );
 
     // Destructor
-    ~FGSkyMoon( void );
+    ~SGMoon( void );
 
-    // initialize the moon object and connect it into our scene graph
-    // root
-    bool initialize( const FGPath& path );
+    // build the moon object
+    ssgBranch *build( FGPath path, double moon_size );
 
     // repaint the moon colors based on current value of moon_anglein
     // degrees relative to verticle
@@ -75,34 +68,9 @@ public:
     // appears fixed at a great distance from the viewer.  Also add in
     // an optional rotation (i.e. for the current time of day.)
     bool reposition( sgVec3 p, double angle,
-		     double rightAscension, double declination );
-
-    // Draw the moon
-    bool draw();
-
-    // enable the moon in the scene graph (default)
-    void enable() { moon_selector->select( 1 ); }
-
-    // disable the moon in the scene graph.  The leaf node is still
-    // there, how ever it won't be traversed on the cullandrender
-    // phase.
-    void disable() { moon_selector->select( 0 ); }
-
+		     double rightAscension, double declination,
+		     double moon_dist  );
 };
 
 
-#endif // _SKYMOON_HXX_
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif // _SG_MOON_HXX_

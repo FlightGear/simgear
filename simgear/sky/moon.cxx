@@ -1,4 +1,4 @@
-// skymoon.hxx -- draw a moon object
+// moon.hxx -- model earth's moon
 //
 // Written by Durk Talsma. Originally started October 1997, for distribution  
 // with the FlightGear project. Version 2 was written in August and 
@@ -30,43 +30,81 @@
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
-#include <simgear/misc/fgpath.hxx>
 
 #include "sphere.hxx"
-#include "skymoon.hxx"
+#include "moon.hxx"
+
+
+// Set up moon rendering call backs
+static int sgMoonOrbPreDraw( ssgEntity *e ) {
+    /* cout << endl << "Moon orb pre draw" << endl << "----------------" 
+	 << endl << endl; */
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_FOG );
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE ) ;
+    // sgVec4 color;
+    // sgSetVec4( color, 0.0, 0.0, 0.0, 1.0 );
+    // glMaterialfv ( GL_FRONT_AND_BACK, GL_AMBIENT, color ) ;
+
+    return true;
+}
+
+static int sgMoonOrbPostDraw( ssgEntity *e ) {
+    /* cout << endl << "Moon orb post draw" << endl << "----------------" 
+	 << endl << endl; */
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_FOG );
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+
+    return true;
+}
+
+static int sgMoonHaloPreDraw( ssgEntity *e ) {
+    /* cout << endl << "Moon halo pre draw" << endl << "----------------" 
+	 << endl << endl; */
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_FOG );
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+
+    return true;
+}
+
+static int sgMoonHaloPostDraw( ssgEntity *e ) {
+    /* cout << endl << "Moon halo post draw" << endl << "----------------" 
+	 << endl << endl; */
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_FOG );
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+
+    return true;
+}
 
 
 // Constructor
-FGSkyMoon::FGSkyMoon( void ) {
+SGMoon::SGMoon( void ) {
 }
 
 
 // Destructor
-FGSkyMoon::~FGSkyMoon( void ) {
+SGMoon::~SGMoon( void ) {
 }
 
 
-// initialize the moon object and connect it into our scene graph root
-bool FGSkyMoon::initialize( const FGPath& path ) {
-
-    // create the scene graph for the moon/halo
-    FGPath moontex = path;
-    moontex.append( "moon.rgba" );
-
-    skymoon = new ssgRoot;
-    skymoon->setName( "Sky Moon" );
+// build the moon object
+ssgBranch * SGMoon::build( FGPath path, double moon_size ) {
 
     // set up the orb state
+    path.append( "moon.rgba" );
     orb_state = new ssgSimpleState();
-    orb_state->setTexture( (char *)moontex.c_str() );
+    orb_state->setTexture( (char *)path.c_str() );
     orb_state->setShadeModel( GL_SMOOTH );
     orb_state->enable( GL_LIGHTING );
     orb_state->enable( GL_CULL_FACE );
     orb_state->enable( GL_TEXTURE_2D );
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_DIFFUSE );
-    orb_state->setMaterial( GL_AMBIENT, 0.0, 0.0, 0.0, 0.0 );
-    orb_state->setMaterial( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
+    orb_state->setMaterial( GL_AMBIENT, 0.0, 0.0, 0.0, 1.0 );
+    orb_state->setMaterial( GL_SPECULAR, 0.0, 0.0, 0.0, 1.0 );
     orb_state->enable( GL_BLEND );
     orb_state->enable( GL_ALPHA_TEST );
     orb_state->setAlphaClamp( 0.01 );
@@ -76,7 +114,8 @@ bool FGSkyMoon::initialize( const FGPath& path ) {
     sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
     cl->add( color );
 
-    ssgBranch *orb = ssgMakeSphere( orb_state, cl, 550.0, 15, 15 );
+    ssgBranch *orb = ssgMakeSphere( orb_state, cl, moon_size, 15, 15,
+				    sgMoonOrbPreDraw, sgMoonOrbPostDraw );
 
     // force a repaint of the moon colors with arbitrary defaults
     repaint( 0.0 );
@@ -86,9 +125,10 @@ bool FGSkyMoon::initialize( const FGPath& path ) {
     // moon_texid = makeHalo( moon_texbuf, 64 );
     // my_glWritePPMFile("moonhalo.ppm", moon_texbuf, 64, 64, RGB);
 
+#if 0
     // set up the halo state
     halo_state = new ssgSimpleState();
-    halo_state->setTexture( "halo.rgba" );
+    halo_state->setTexture( "halo.rgb" );
     // halo_state->setTexture( moon_texid );
     halo_state->enable( GL_TEXTURE_2D );
     halo_state->disable( GL_LIGHTING );
@@ -101,23 +141,22 @@ bool FGSkyMoon::initialize( const FGPath& path ) {
     halo_state -> setMaterial ( GL_EMISSION, 0, 0, 0, 1 ) ;
     halo_state -> setMaterial ( GL_SPECULAR, 0, 0, 0, 1 ) ;
     // halo_state -> setShininess ( 0 ) ;
-
-    halo_state->setTranslucent();
     halo_state->enable( GL_ALPHA_TEST );
     halo_state->setAlphaClamp(0.01);
     halo_state->enable ( GL_BLEND ) ;
 
 
     // Build ssg structure
+    double size = moon_size * 10.0;
     sgVec3 v3;
     halo_vl = new ssgVertexArray;
-    sgSetVec3( v3, -5000.0, 0.0, -5000.0 );
+    sgSetVec3( v3, -size, 0.0, -size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, 5000.0, 0.0, -5000.0 );
+    sgSetVec3( v3, size, 0.0, -size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, -5000.0, 0.0,  5000.0 );
+    sgSetVec3( v3, -size, 0.0,  size );
     halo_vl->add( v3 );
-    sgSetVec3( v3, 5000.0, 0.0,  5000.0 );
+    sgSetVec3( v3, size, 0.0,  size );
     halo_vl->add( v3 );
 
     sgVec2 v2;
@@ -134,21 +173,16 @@ bool FGSkyMoon::initialize( const FGPath& path ) {
     ssgLeaf *halo = 
 	new ssgVtxTable ( GL_TRIANGLE_STRIP, halo_vl, NULL, halo_tl, cl );
     halo->setState( halo_state );
+#endif
 
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
-    moon_selector = new ssgSelector;
     moon_transform = new ssgTransform;
-
-    moon_selector->addKid( moon_transform );
-    moon_selector->clrTraversalMaskBits( SSGTRAV_HOT );
-
-    skymoon->addKid( moon_selector );
 
     // moon_transform->addKid( halo );
     moon_transform->addKid( orb );
 
-    return true;
+    return moon_transform;
 }
 
 
@@ -157,7 +191,7 @@ bool FGSkyMoon::initialize( const FGPath& path ) {
 // 0 degrees = high noon
 // 90 degrees = moon rise/set
 // 180 degrees = darkest midnight
-bool FGSkyMoon::repaint( double moon_angle ) {
+bool SGMoon::repaint( double moon_angle ) {
     if ( moon_angle * RAD_TO_DEG < 100 ) {
 	// else moon is well below horizon (so no point in repainting it)
     
@@ -197,8 +231,9 @@ bool FGSkyMoon::repaint( double moon_angle ) {
 // declination, offset by our current position (p) so that it appears
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
-bool FGSkyMoon::reposition( sgVec3 p, double angle,
-			   double rightAscension, double declination )
+bool SGMoon::reposition( sgVec3 p, double angle,
+			 double rightAscension, double declination,
+			 double moon_dist )
 {
     sgMat4 T1, T2, GST, RA, DEC;
     sgVec3 axis;
@@ -232,14 +267,6 @@ bool FGSkyMoon::reposition( sgVec3 p, double angle,
     sgSetCoord( &skypos, TRANSFORM );
 
     moon_transform->setTransform( &skypos );
-
-    return true;
-}
-
-
-// Draw the moon
-bool FGSkyMoon::draw() {
-    ssgCullAndDraw( skymoon );
 
     return true;
 }

@@ -47,8 +47,25 @@ case "${host}" in
     if test "x$CXX" = "xCC" -o "x$CXX" = "xccache CC"; then
         AR="$CXX -ar"
         ARFLAGS="-o"
-        CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility"
+        CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility/MIPSpro740"
         compatibility_DIR="compatibility"
+        MIPSpro_DIRS="MIPSpro740"
+        AC_MSG_CHECKING([for MIPSpro compiler version 7.4 or newer])
+        AC_TRY_RUN([
+           int main() {
+              if ( _COMPILER_VERSION < 740 ) {
+                 return -1;
+              }
+              return 0;
+           }
+
+        ], AC_MSG_RESULT(yes),
+        [  AC_MSG_RESULT(no)
+           CXXFLAGS="$CXXFLAGS -I$(top_srcdir)/simgear/compatibility/MIPSpro721"
+           MIPSpro_DIRS="$(MIPSpro_DIRS) MIPSpro721"
+           AC_MSG_WARN([Using our own subset of the STL headers])
+        ], AC_MSG_RESULT(yes))
+        AC_SUBST(MIPSpro_DIRS)
     fi
     ;;
 *)
@@ -348,6 +365,8 @@ AC_CONFIG_FILES([ \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/compatibility/Makefile \
+	simgear/compatibility/MIPSpro721/Makefile \
+	simgear/compatibility/MIPSpro740/Makefile \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \

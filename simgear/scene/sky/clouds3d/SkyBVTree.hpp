@@ -214,9 +214,9 @@ class SkyBVTree : public SkyBaseBVTree<Object, BoundingVolume>
 {
 public:
   typedef SkyBaseBVTree<Object, BoundingVolume> BaseTree;
-  typedef BaseTree::BV BV;
-  typedef BaseTree::NodeObject NodeObject;
-  typedef BaseTree::Node Node;
+  typedef typename SkyBaseBVTree<Object, BoundingVolume>::BV BV;
+  typedef typename BaseTree::NodeObject NodeObject;
+  typedef typename BaseTree::Node Node;
   
   void Clear()
   {

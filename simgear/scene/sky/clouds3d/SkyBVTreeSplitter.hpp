@@ -52,7 +52,7 @@ template<class Object>
 class SkyBoundingBoxSplitter
 {
 public:
-	typedef SkyBaseBVTree<Object, SkyMinMaxBox>::NodeObject NodeObjectBox;
+	typedef typename SkyBaseBVTree<Object, SkyMinMaxBox>::NodeObject NodeObjectBox;
 	//typedef SkyBaseBVTree<Object, SkyBoundingSphere>::NodeObject NodeObjectSphere;
 
 #if _MSC_VER == 1200
@@ -183,7 +183,7 @@ class SkyAABBTreeSplitter
 {
 public:
 	typedef SkyMinMaxBox BV;
-	typedef SkyBaseBVTree<Object, BV>::NodeObject NodeObject;
+	typedef typename SkyBaseBVTree<Object, BV>::NodeObject NodeObject;
 
 	SkyAABBTreeSplitter(const NodeObject* pObjs, unsigned int iNumObjs) : _splitter(pObjs, iNumObjs) {}
 

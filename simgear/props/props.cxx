@@ -71,12 +71,12 @@ public:
 // Default values for every type.
 ////////////////////////////////////////////////////////////////////////
 
-const bool SGRawValue<bool>::DefaultValue = false;
-const int SGRawValue<int>::DefaultValue = 0;
-const long SGRawValue<long>::DefaultValue = 0L;
-const float SGRawValue<float>::DefaultValue = 0.0;
-const double SGRawValue<double>::DefaultValue = 0.0L;
-const char * const SGRawValue<const char *>::DefaultValue = "";
+template<> const bool SGRawValue<bool>::DefaultValue = false;
+template<> const int SGRawValue<int>::DefaultValue = 0;
+template<> const long SGRawValue<long>::DefaultValue = 0L;
+template<> const float SGRawValue<float>::DefaultValue = 0.0;
+template<> const double SGRawValue<double>::DefaultValue = 0.0L;
+template<> const char * const SGRawValue<const char *>::DefaultValue = "";
 
 
 

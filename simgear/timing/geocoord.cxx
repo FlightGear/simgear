@@ -22,7 +22,7 @@
 /*************************************************************************
  *
  * This file defines a small and simple class to store geocentric 
- * coordinates. Basically, class GeoCoord is intended as a base class for
+ * coordinates. Basically, class SGGeoCoord is intended as a base class for
  * any kind of of object, that can be categorized according to its 
  * location on earth, be it navaids, or aircraft. This class for originally
  * written for FlightGear, in order to store Timezone control points. 
@@ -31,13 +31,13 @@
 #include "geocoord.h"
 #include <plib/sg.h>
 
-GeoCoord::GeoCoord(const GeoCoord& other)
+SGGeoCoord::SGGeoCoord(const SGGeoCoord& other)
 {
   lat = other.lat;
   lon = other.lon;
 }
 
-// double GeoCoord::getAngle(const GeoCoord& other) const
+// double SGGeoCoord::getAngle(const SGGeoCoord& other) const
 // {
 //   Vector first(      getX(),       getY(),       getZ());
 //   Vector secnd(other.getX(), other.getY(), other.getZ());
@@ -57,11 +57,11 @@ GeoCoord::GeoCoord(const GeoCoord& other)
 //     return angle;
 // }
 
-// GeoCoord* GeoCoordContainer::getNearest(const GeoCoord& ref) const
+// SGGeoCoord* SGGeoCoordContainer::getNearest(const SGGeoCoord& ref) const
 // {
 //   float angle, maxAngle = 180;
 
-//   GeoCoordVectorConstIterator i, nearest;
+//   SGGeoCoordVectorConstIterator i, nearest;
 //   for (i = data.begin(); i != data.end(); i++)
 //     {
 //       angle = SGD_RADIANS_TO_DEGREES * (*i)->getAngle(ref);
@@ -75,12 +75,12 @@ GeoCoord::GeoCoord(const GeoCoord& other)
 // }
 
 
-GeoCoord* GeoCoordContainer::getNearest(const GeoCoord& ref) const
+SGGeoCoord* SGGeoCoordContainer::getNearest(const SGGeoCoord& ref) const
 {
   sgVec3 first, secnd;
   float dist, maxDist=SG_MAX;
   sgSetVec3( first, ref.getX(), ref.getY(), ref.getZ());
-  GeoCoordVectorConstIterator i, nearest;
+  SGGeoCoordVectorConstIterator i, nearest;
   for (i = data.begin(); i != data.end(); i++)
     {
       sgSetVec3(secnd, (*i)->getX(), (*i)->getY(), (*i)->getZ());
@@ -95,9 +95,9 @@ GeoCoord* GeoCoordContainer::getNearest(const GeoCoord& ref) const
 }
 
 
-GeoCoordContainer::~GeoCoordContainer()
+SGGeoCoordContainer::~SGGeoCoordContainer()
 {
-    GeoCoordVectorIterator i = data.begin();
+    SGGeoCoordVectorIterator i = data.begin();
   while (i != data.end())
     delete *i++;
 }

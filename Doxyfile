@@ -308,12 +308,14 @@ INPUT                  = \
 	simgear/magvar \
 	simgear/math \
 	simgear/misc \
+        simgear/props \
 	simgear/route \
 	simgear/scene \
 	simgear/screen \
 	simgear/serial \
 	simgear/sg_inlines.h \
 	simgear/sg_traits.hxx \
+        simgear/sound \
 	simgear/threads \
 	simgear/timing \
 	simgear/xml

@@ -1,3 +1,14 @@
+/**
+ * \file texture.hxx
+ * Texture manipulation routines
+ *
+ * Copyright (c) Mark J. Kilgard, 1997.
+ * Code added in april 2003 by Erik Hofman
+ *
+ * This program is freely distributable without licensing fees 
+ * and is provided without guarantee or warrantee expressed or 
+ * implied. This program is -not- in the public domain.
+ */
 
 #ifndef __SG_TEXTURE_HXX
 #define __SG_TEXTURE_HXX 1
@@ -7,6 +18,10 @@
 
 #include <plib/sg.h>
 
+/**
+ * A class to encapsulate all the info surrounding an OpenGL texture
+ * and also query various info and load various file formats
+ */
 class SGTexture {
 
 private:

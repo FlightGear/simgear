@@ -1,5 +1,4 @@
-/**
- * \file texture.cxx
+/*
  * Texture manipulation routines
  *
  * Copyright (c) Mark J. Kilgard, 1997.

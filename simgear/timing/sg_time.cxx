@@ -94,10 +94,10 @@ void SGTime::init( double lon, double lat,
         zone.append( "zone.tab" );
         SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
                 << zone.str() );
-        tzContainer = new TimezoneContainer( zone.c_str() );
+        tzContainer = new SGTimeZoneContainer( zone.c_str() );
 
-        GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
-        GeoCoord* nearestTz = tzContainer->getNearest(location);
+        SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+        SGGeoCoord* nearestTz = tzContainer->getNearest(location);
 
         SGPath name( root );
         name.append( nearestTz->getDescription() );
@@ -129,7 +129,7 @@ SGTime::SGTime() {
 SGTime::~SGTime()
 {
     if ( tzContainer != NULL ) {
-        TimezoneContainer *tmp = tzContainer;
+        SGTimeZoneContainer *tmp = tzContainer;
         tzContainer = NULL;
 	delete tmp;
     }
@@ -290,8 +290,8 @@ void SGTime::updateLocal( double lon, double lat, const string& root ) {
     }
     time_t currGMT;
     time_t aircraftLocalTime;
-    GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
-    GeoCoord* nearestTz = tzContainer->getNearest(location);
+    SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+    SGGeoCoord* nearestTz = tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );
     zonename = zone.str();

@@ -19,13 +19,11 @@
  *
  **************************************************************************/
 
-/*************************************************************************
+/** \file timezone.h
  *
- * Timezone is derived from geocoord, and stores the timezone centerpoint,
- * as well as the countrycode and the timezone descriptor. The latter is 
- * used in order to get the local time. 
+ * Provides SGTimeZone and SGTimeZoneContainer
  *
- ************************************************************************/
+ */
 
 #ifndef _TIMEZONE_H_
 #define _TIMEZONE_H_
@@ -34,39 +32,81 @@
 
 #include <simgear/timing/geocoord.h>
 
-class Timezone : public GeoCoord
+/**
+ * SGTimeZone is derived from geocoord, and stores the timezone centerpoint,
+ * as well as the countrycode and the timezone descriptor. The latter is 
+ * used in order to get the local time. 
+ *
+ */
+
+class SGTimeZone : public SGGeoCoord
 {
+
 private:
+
   string countryCode;
   string descriptor;
 
 public:
-  Timezone() :
-    GeoCoord()
-    { 
-      countryCode.erase(); 
-      descriptor.erase();
-    };
-  Timezone(float la, float lo, char* cc, char* desc);
-  Timezone(const char *infoString);
-  Timezone(const Timezone &other);
-  virtual ~Timezone() { };
-  
 
-  virtual void print() { printf("%s", descriptor.c_str());};
-  virtual const char * getDescription() { return descriptor.c_str(); };
+    /**
+     * Default constructor.
+     */
+    SGTimeZone() : SGGeoCoord()
+    {
+        countryCode.erase(); 
+        descriptor.erase();
+    };
+
+    /**
+     * Build a timezone object with a specifed latitude, longitude, country
+     * code, and descriptor
+     * @param la latitude
+     * @param lo longitude
+     * @param cc country code
+     * @param desc descriptor
+     */
+    SGTimeZone(float la, float lo, char* cc, char* desc);
+
+    /**
+     * Build a timezone object from a textline in zone.tab
+     * @param infoString the textline from zone.tab
+     */
+    SGTimeZone(const char *infoString);
+
+    /**
+     * The copy constructor
+     * @param other the source object
+     */
+    SGTimeZone(const SGTimeZone &other);
+
+    /**
+     * Virutal destructor 
+     */
+    virtual ~SGTimeZone() { };
+  
+    /**
+     * Print the descriptor string
+     */
+    virtual void print() { printf("%s", descriptor.c_str()); }
+
+    /**
+     * Return the descriptor string
+     * @return descriptor string (char array)
+     */
+    virtual const char * getDescription() { return descriptor.c_str(); };
 };
 
-/************************************************************************
- * Timezone container is derived from GeoCoordContainer, and has some 
+/**
+ * SGTimeZoneContainer is derived from SGGeoCoordContainer, and has some 
  * added functionality.
- ************************************************************************/
+ */
 
-class TimezoneContainer : public GeoCoordContainer
+class SGTimeZoneContainer : public SGGeoCoordContainer
 {
  public:
-  TimezoneContainer(const char *filename);
-  virtual ~TimezoneContainer();
+  SGTimeZoneContainer(const char *filename);
+  virtual ~SGTimeZoneContainer();
 };
 
 

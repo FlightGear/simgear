@@ -21,7 +21,7 @@
 
 /*************************************************************************
  *
- * Timezone is derived from geocoord, and stores the timezone centerpoint,
+ * SGTimeZone is derived from geocoord, and stores the timezone centerpoint,
  * as well as the countrycode and the timezone descriptor. The latter is 
  * used in order to get the local time. 
  *
@@ -32,16 +32,16 @@
 #include <stdio.h>
 #include "timezone.h"
 
-Timezone::Timezone(float la, float lo, char* cc, char* desc) :
-    GeoCoord(la, lo)
+SGTimeZone::SGTimeZone(float la, float lo, char* cc, char* desc) :
+    SGGeoCoord(la, lo)
 { 
     countryCode = cc;
     descriptor = desc;
 }
 
 /* Build a timezone object from a textline in zone.tab */
-Timezone::Timezone(const char *infoString) :
-    GeoCoord()
+SGTimeZone::SGTimeZone(const char *infoString) :
+    SGGeoCoord()
 {
     int i = 0;
     while (infoString[i] != '\t')
@@ -111,7 +111,7 @@ Timezone::Timezone(const char *infoString) :
 }
 
 /* the copy constructor */
-Timezone::Timezone(const Timezone& other)
+SGTimeZone::SGTimeZone(const SGTimeZone& other)
 {
     lat = other.getLat();
     lon = other.getLon();
@@ -120,9 +120,9 @@ Timezone::Timezone(const Timezone& other)
 }
 
 
-/********* Member functions for TimezoneContainer class ********/
+/********* Member functions for SGTimeZoneContainer class ********/
 
-TimezoneContainer::TimezoneContainer(const char *filename)
+SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
 {
     char buffer[256];
     FILE* infile = fopen(filename, "rb");
@@ -144,16 +144,16 @@ TimezoneContainer::TimezoneContainer(const char *filename)
                 }    
             }
             if (buffer[0]) {
-                data.push_back(new Timezone(buffer));
+                data.push_back(new SGTimeZone(buffer));
             }
         }
         if ( errno ) {
-            perror( "TimezoneContainer()" );
+            perror( "SGTimeZoneContainer()" );
             errno = 0;
         }
     }
 }
 
-TimezoneContainer::~TimezoneContainer()
+SGTimeZoneContainer::~SGTimeZoneContainer()
 {
 }

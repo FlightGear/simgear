@@ -69,7 +69,7 @@ class SGTime {
 
 private:
     // tzContainer stores all the current Timezone control points/
-    TimezoneContainer* tzContainer;
+    SGTimeZoneContainer* tzContainer;
 
     // Points to the current local timezone name;
     string zonename;

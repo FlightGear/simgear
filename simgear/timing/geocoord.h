@@ -47,17 +47,17 @@ SG_USING_NAMESPACE(std);
 
 #include <simgear/constants.h>
 
-class GeoCoord
+class SGGeoCoord
 {
 protected:
   float lat;
   float lon;
 
 public:
-  GeoCoord() { lat = 0.0; lon = 0.0;};
-  GeoCoord(float la, float lo) { lat = la; lon = lo;};
-  GeoCoord(const GeoCoord& other);
-  virtual ~GeoCoord() {};
+  SGGeoCoord() { lat = 0.0; lon = 0.0;};
+  SGGeoCoord(float la, float lo) { lat = la; lon = lo;};
+  SGGeoCoord(const SGGeoCoord& other);
+  virtual ~SGGeoCoord() {};
   
   void set(float la, float lo) { lat = la; lon = lo; }; 
   float getLat() const { return lat; };
@@ -67,32 +67,32 @@ public:
   float getZ()   const { return sin(SGD_DEGREES_TO_RADIANS*lat); };
 
 
-  //double getAngle(const GeoCoord& other) const;
+  //double getAngle(const SGGeoCoord& other) const;
   virtual void print() {} ; 
   virtual const char * getDescription() {return 0;};
 };
 
-typedef vector<GeoCoord*> GeoCoordVector;
-typedef vector<GeoCoord*>::iterator GeoCoordVectorIterator;
-typedef vector<GeoCoord*>::const_iterator GeoCoordVectorConstIterator;
+typedef vector<SGGeoCoord*> SGGeoCoordVector;
+typedef vector<SGGeoCoord*>::iterator SGGeoCoordVectorIterator;
+typedef vector<SGGeoCoord*>::const_iterator SGGeoCoordVectorConstIterator;
 
 /************************************************************************
- * GeoCoordContainer is a simple container class, that stores objects
- * derived from GeoCoord. Basically, it is a wrapper around an STL vector,
+ * SGGeoCoordContainer is a simple container class, that stores objects
+ * derived from SGGeoCoord. Basically, it is a wrapper around an STL vector,
  * with some added functionality
  ***********************************************************************/
 
-class GeoCoordContainer
+class SGGeoCoordContainer
 {
 protected:
-  GeoCoordVector data;
+  SGGeoCoordVector data;
 
 public:
-  GeoCoordContainer() {};
-  virtual ~GeoCoordContainer();
+  SGGeoCoordContainer() {};
+  virtual ~SGGeoCoordContainer();
 
-  const GeoCoordVector& getData() const { return data; };
-  GeoCoord* getNearest(const GeoCoord& ref) const;
+  const SGGeoCoordVector& getData() const { return data; };
+  SGGeoCoord* getNearest(const SGGeoCoord& ref) const;
 };
 
 

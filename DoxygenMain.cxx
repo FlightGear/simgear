@@ -18,29 +18,59 @@
  * Some of the functionality provide includes
  *
  * - Compiler and platform abstractions for many tricky differences.
- * - A whole earth tiling/indexing scheme.
+ *   (compiler.h)
+ *
+ * - A whole earth tiling/indexing scheme.  (SGBucket)
+ *
  * - A console debugging output scheme that tracks severity and
  *   category that can be completely compiled out for a final build release.
- * - Code to manage "real" time and time zones.
+ *   (logstream.hxx)
+ *
+ * - Code to manage "real" time (SGTime), time zones (SGTimeZone), and
+ *   millesecond time differences (SGTimeStamp).
+ *
  * - Code to calculate accurate positions of sun, moon, stars, and
  *   planets for a given time, date, season, earth location, etc.
- * - Simple serial, file, and network I/O abstractions
- * - Code to calculate magnetic variation.
- * - A variety of coordinate conversion, vector, matrix type math routines.
- * - An abstraction to hide platform dependent path naming schemes.
+ *   (SGEphemeris)
+ *
+ * - Simple serial (SGSerial), file (SGFile), socket (SGSocket), and
+ *   UDP socket (SGSocketUDP) I/O abstractions.
+ *
+ * - Code to calculate magnetic variation. (SGMagVar)
+ *
+ * - A variety of classes and functions for interpolation tables
+ *   (SGInterpTable), least squares computation (leastsqs.hxx), 3D
+ *   point/vectors (Point3D), 3D polar math and conversions (polar3d.hxx),
+ *   WGS-84 math and conversions (sg_geodesy.hxx), random number abstraction
+ *   (sg_random.h), STL conglomerates for common list types (sg_types.hxx),
+ *   and other vector and linear algebra routines (vector.hxx)
+ *
+ * - An abstraction to hide platform dependent path naming schemes. (SGPath)
+ *
  * - A C++ streams wrapper to handle compress input/output streams.
+ *   (sg_gzifstream)
+ *
  * - An optimized "property manager" which associates ascii property
  *   names with their corresponding value.  This can be a great way to build
  *   loose linkages between modules, or build linkages/connections that can
- *   be determined from config files or at runtime.
+ *   be determined from config files or at runtime.  (SGPropertyNode)
+ *   Also included is a set of functions to dump the property tree into a
+ *   standard xml file and subsequently read/parse a standard xml file and
+ *   rebuild the associated property tree.  (props_io.hxx)
+ *
  * - Scene management and drawing routines:
  *   - material property management
  *   - object management
  *   - terrain tile management and paging
  *   - sky dome rendering (with ephemeral objects)
- * - Code to handle screen dumps (and ultra-hires tile rendered screen dumps)
- * - A sound effects manager.
+ *
+ * - Code to handle screen dumps (screen-dump.hxx) and ultra-hires
+ *   tile rendered screen dumps (tr.h)
+ *
+ * - A sound effects manager.  (SGSoundMgr, SGSimpleSound, SGSound)
+ *
  * - A threading abstraction.
+ *
  * - A simple but highly functional XML parser that interfaces nicely
  *   with the property manager.
 
@@ -69,10 +99,5 @@
  *
  * SimGear is licensed under the terms of the LGPL
 
- * \section install Installation
- *
- * \subsection step1 Step 1: Opening the box
- *  
- * etc...
  */
 

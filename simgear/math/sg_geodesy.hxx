@@ -88,9 +88,18 @@ int geo_direct_wgs_84 ( const double& alt, const double& lat1,
                         double *az2 );
 
 
-// given alt, lat1, lon1, lat2, lon2, calculate starting and ending
-// az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
-// distance in meters
+/**
+ * Given an altitude and two sets of (lat, lon) calculate great circle
+ * distance between them as well as the starting and ending azimuths.
+ * @param alt (in) meters
+ * @param lat1 (in) degrees
+ * @param lon1 (in) degrees
+ * @param lat2 (in) degrees
+ * @param lon2 (in) degrees
+ * @param az1 (out) start heading degrees
+ * @param az2 (out) end heading degrees
+ * @param s (out) distance meters
+ */
 int geo_inverse_wgs_84( const double& alt, const double& lat1,
                         const double& lon1, const double& lat2,
 			const double& lon2, double *az1, double *az2,

@@ -132,11 +132,16 @@ TimezoneContainer::TimezoneContainer(const char *filename)
             if (feof(infile)) {
                 break;
             }
+#ifdef _MSC_VER
+            if( buffer[0] == '#' )
+               continue;
+#else
             for (int i = 0; i < 256; i++) {
                 if (buffer[i] == '#') {
                     buffer[i] = 0;
                 }
             }
+#endif
             if (buffer[0]) {
                 data.push_back(new Timezone(buffer));
             }

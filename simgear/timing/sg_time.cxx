@@ -22,6 +22,10 @@
 // $Id$
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/compiler.h>
 
 #include <errno.h>		// for errno
@@ -184,6 +188,9 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 // Update the time related variables
 void SGTime::update( double lon, double lat, long int warp ) {
     double gst_precise, gst_course;
+#ifdef _MSC_VER
+    tm * gmt = &m_gmt;
+#endif
 
     SG_LOG( SG_EVENT, SG_DEBUG, "Updating time" );
 
@@ -195,10 +202,14 @@ void SGTime::update( double lon, double lat, long int warp ) {
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
+#ifdef _MSC_VER
+    memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
+#else
     gmt = gmtime(&cur_time);
+#endif
     SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
-	    << gmt->tm_mday << "/" << gmt->tm_year << " "
+	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "
 	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
 	    << gmt->tm_sec );
 

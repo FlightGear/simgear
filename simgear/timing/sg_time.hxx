@@ -78,7 +78,11 @@ private:
     time_t cur_time;
 
     // Break down of equivalent GMT time
+#ifdef _MSC_VER
+    struct tm m_gmt;    // copy of system gmtime(&time_t) structure
+#else
     struct tm *gmt;
+#endif
 
     // offset of local time relative to GMT
     time_t local_offset;
@@ -162,7 +166,11 @@ public:
     inline char* get_zonename() const { return zonename; }
 
     /** @return GMT in a "brokent down" tm structure */
+#ifdef _MSC_VER
+    inline struct tm* getGmt()const { return (struct tm *)&m_gmt; };
+#else
     inline struct tm* getGmt()const { return gmt; };
+#endif
 
     /** @return julian date */
     inline double getJD() const { return jd; };

@@ -31,8 +31,8 @@
  * @param sea_level_r (out) radius from earth center to sea level at
  *        local vertical (surface normal) of C.G. (meters)
  */
-void sgGeocToGeod( double lat_geoc, double radius, double
-		   *lat_geod, double *alt, double *sea_level_r );
+void sgGeocToGeod( const double& lat_geoc, const double& radius,
+                   double *lat_geod, double *alt, double *sea_level_r );
 
 
 /**
@@ -43,8 +43,8 @@ void sgGeocToGeod( double lat_geoc, double radius, double
  *        (add Altitude to get true distance from earth center.
  * @param lat_geoc (out) Geocentric latitude, radians, + = North
  */
-void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
-		      double *lat_geoc );
+void sgGeodToGeoc( const double& lat_geod, const double& alt,
+                   double *sl_radius, double *lat_geoc );
 
 
 /**
@@ -82,15 +82,19 @@ inline Point3D sgGeodToCart(const Point3D& geod) {
  * @param lon2 (out) degrees
  * @param az2 (out) return course in degrees
  */
-int geo_direct_wgs_84 ( double alt, double lat1, double lon1, double az1, 
-			double s, double *lat2, double *lon2,  double *az2 );
+int geo_direct_wgs_84 ( const double& alt, const double& lat1,
+                        const double& lon1, const double& az1, 
+			const double& s, double *lat2, double *lon2,
+                        double *az2 );
 
 
 // given alt, lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters
-int geo_inverse_wgs_84( double alt, double lat1, double lon1, double lat2,
-			double lon2, double *az1, double *az2, double *s );
+int geo_inverse_wgs_84( const double& alt, const double& lat1,
+                        const double& lon1, const double& lat2,
+			const double& lon2, double *az1, double *az2,
+                        double *s );
 
 
 /***************************************************************************

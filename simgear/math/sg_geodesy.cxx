@@ -30,7 +30,7 @@
 SG_USING_STD(cout);
 
 
-#define DOMAIN_ERR_DEBUG 1
+// #define DOMAIN_ERR_DEBUG 1
 
 
 // sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
@@ -45,8 +45,8 @@ SG_USING_STD(cout);
 //                      local vertical (surface normal) of C.G. (meters)
 
 
-void sgGeocToGeod( double lat_geoc, double radius, double
-		   *lat_geod, double *alt, double *sea_level_r )
+void sgGeocToGeod( const double& lat_geoc, const double& radius,
+                   double *lat_geod, double *alt, double *sea_level_r )
 {
 #ifdef DOMAIN_ERR_DEBUG
     errno = 0;			// start with error zero'd
@@ -132,7 +132,7 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 //
 
 
-void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
+void sgGeodToGeoc( const double& lat_geod, const double& alt, double *sl_radius,
 		      double *lat_geoc )
 {
     double lambda_sl, sin_lambda_sl, cos_lambda_sl, sin_mu, cos_mu, px, py;
@@ -182,7 +182,7 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 
 // for WGS_84 a = 6378137.000, rf = 298.257223563;
 
-static double M0( double e2 ) {
+static inline double M0( double e2 ) {
     //double e4 = e2*e2;
     return GEOD_INV_PI*(1.0 - e2*( 1.0/4.0 + e2*( 3.0/64.0 + 
 						  e2*(5.0/256.0) )))/2.0;
@@ -191,8 +191,10 @@ static double M0( double e2 ) {
 
 // given, alt, lat1, lon1, az1 and distance (s), calculate lat2, lon2
 // and az2.  Lat, lon, and azimuth are in degrees.  distance in meters
-int geo_direct_wgs_84 ( double alt, double lat1, double lon1, double az1, 
-			double s, double *lat2, double *lon2,  double *az2 )
+int geo_direct_wgs_84 ( const double& alt, const double& lat1,
+                        const double& lon1, const double& az1,
+                        const double& s, double *lat2, double *lon2,
+                        double *az2 )
 {
     double a = 6378137.000, rf = 298.257223563;
     double RADDEG = (GEOD_INV_PI)/180.0, testv = 1.0E-10;
@@ -273,7 +275,8 @@ int geo_direct_wgs_84 ( double alt, double lat1, double lon1, double az1,
     } else {			// phi1 == 90 degrees, polar origin
 	double dM = a*M0(e2) - s;
 	double paz = ( phi1 < 0.0 ? 180.0 : 0.0 );
-	return geo_direct_wgs_84( alt, 0.0, lon1, paz, dM,lat2,lon2,az2 );
+        double zero = 0.0f;
+	return geo_direct_wgs_84( alt, zero, lon1, paz, dM, lat2, lon2, az2 );
     } 
 }
 
@@ -281,8 +284,10 @@ int geo_direct_wgs_84 ( double alt, double lat1, double lon1, double az1,
 // given alt, lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters
-int geo_inverse_wgs_84( double alt, double lat1, double lon1, double lat2,
-			double lon2, double *az1, double *az2, double *s )
+int geo_inverse_wgs_84( const double& alt, const double& lat1,
+                        const double& lon1, const double& lat2,
+			const double& lon2, double *az1, double *az2,
+                        double *s )
 {
     double a = 6378137.000, rf = 298.257223563;
     int iter=0;
@@ -309,8 +314,9 @@ int geo_inverse_wgs_84( double alt, double lat1, double lon1, double lat2,
 	return 0;
     } else if( fabs(cosphi2) < testv ) {
 	// terminal point is polar
-	int k = geo_inverse_wgs_84( alt, lat1,lon1,lat1,lon1+180.0, 
-				    az1,az2,s );
+        double _lon1 = lon1 + 180.0f;
+	int k = geo_inverse_wgs_84( alt, lat1, lon1, lat1, _lon1, 
+				    az1, az2, s );
 	k = k; // avoid compiler error since return result is unused
 	*s /= 2.0;
 	*az2 = *az1 + 180.0;

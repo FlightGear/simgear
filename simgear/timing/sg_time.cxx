@@ -413,7 +413,7 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 #       define TIMEZONE_OFFSET_WORKS 1
 #   endif
 
-    long int start = mktime(&mt);
+    time_t start = mktime(&mt);
 
     FG_LOG( FG_EVENT, FG_DEBUG, "start1 = " << start );
     // the ctime() call can screw up time progression on some versions

@@ -1,4 +1,6 @@
-New in 0.3.6-pre3
+New in 0.3.6
+* July 29, 2004
+
 * Better MinGW support
 * A bit better handling of OpenAL under Cygwin
 * Switched audio system from plib's "sl/sm" to OpenAL.

@@ -1,7 +1,7 @@
 // magvar.cxx -- compute local magnetic variation given position,
 //               altitude, and date
 //
-// This is an implimentation of the NIMA WMM 2000
+// This is an implementation of the NIMA (formerly DMA) WMM2000
 //
 //    http://www.nima.mil/GandG/ngdc-wmm2000.html
 //
@@ -20,6 +20,32 @@
 // save many sqrt() calls on subsequent invocations
 // left old code as SGMagVarOrig() for testing purposes
 // 3/28/2000  Norman Vine -- nhv@yahoo.com
+//
+// Put in some bullet-proofing to handle magnetic and geographic poles.
+// 3/28/2000 EAW
+
+//  The routine uses a spherical harmonic expansion of the magnetic
+// potential up to twelfth order, together with its time variation, as
+// described in Chapter 4 of "Geomagnetism, Vol 1, Ed. J.A.Jacobs,
+// Academic Press (London 1987)". The program first converts geodetic
+// coordinates (lat/long on elliptic earth and altitude) to spherical
+// geocentric (spherical lat/long and radius) coordinates. Using this,
+// the spherical (B_r, B_theta, B_phi) magnetic field components are
+// computed from the model. These are finally referred to surface (X, Y,
+// Z) coordinates.
+//
+//   Fields are accurate to better than 200nT, variation and dip to
+// better than 0.5 degrees, with the exception of the declination near
+// the magnetic poles (where it is ill-defined) where the error may reach
+// 4 degrees or more.
+//
+//   Variation is undefined at both the geographic and  
+// magnetic poles, even though the field itself is well-behaved. To
+// avoid the routine blowing up, latitude entries corresponding to
+// the geographic poles are slightly offset. At the magnetic poles,
+// the routine returns zero variation.
+
+
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -180,7 +206,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
     double sinpsi, cospsi, inv_s;
 
     static int been_here = 0;
-	
+
     double sinlat = sin(lat);
     double coslat = cos(lat);
 
@@ -201,9 +227,10 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
     /* r is geocentric radial distance */
     c = cos(theta);
     s = sin(theta);
-    inv_s = 1.0 / s;
+    /* protect against zero divide at geographic poles */
+    inv_s =  1.0 / (s + (s == 0.)*1.0e-8); 
 
-    /*zero out arrays */
+    /* zero out arrays */
     for ( n = 0; n <= nmax; n++ ) {
 	for ( m = 0; m <= n; m++ ) {
 	    P[n][m] = 0;
@@ -224,7 +251,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
 	for ( n = 2; n <= nmax; n++ ) {
 	    root[n] = sqrt((2.0*n-1) / (2.0*n));
 	}
-	
+
 	for ( m = 0; m <= nmax; m++ ) {
 	    double mm = m*m;
 	    for ( n = max(m + 1, 2); n <= nmax; n++ ) {
@@ -234,7 +261,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
 	}
 	been_here = 1;
     }
-	
+
     for ( n=2; n <= nmax; n++ ) {
 	// double root = sqrt((2.0*n-1) / (2.0*n));
 	P[n][n] = P[n-1][n-1] * s * root[n];
@@ -251,7 +278,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
 	    P[n][m] = (P[n-1][m] * c * (2.0*n-1) -
 		       P[n-2][m] * roots[m][n][0]) *
 		roots[m][n][1];
-				  
+
 	    DP[n][m] = ((DP[n-1][m] * c - P[n-1][m] * s) *
 			(2.0*n-1) - DP[n-2][m] * roots[m][n][0]) *
 		roots[m][n][1];
@@ -280,7 +307,7 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
     B_phi = 0.0;
     fn_0 = r_0/r;
     fn = fn_0 * fn_0;
-	
+
     for ( n = 1; n <= nmax; n++ ) {
 	double c1_n=0;
 	double c2_n=0;
@@ -313,8 +340,10 @@ double SGMagVar( double lat, double lon, double h, long dat, double* field )
     field[4]=Y;
     field[5]=Z;   /* output fields */
 
-    /* find variation, leave in radians! */
-    return atan2(Y, X);  /* E is positive */
+    /* find variation in radians */
+    /* return zero variation at magnetic pole X=Y=0. */
+    /* E is positive */
+    return (X != 0. || Y != 0.) ? atan2(Y, X) : (double) 0.;  
 }
 
 
@@ -341,11 +370,11 @@ double SGMagVarOrig( double lat, double lon, double h, long dat, double* field )
 
     r = sqrt(r);
 
-	/* r is geocentric radial distance */
+    /* r is geocentric radial distance */
     c = cos(theta);
     s = sin(theta);
 
-	/*zero out arrays */
+    /* zero out arrays */
     for ( n = 0; n <= nmax; n++ ) {
 	for ( m = 0; m <= n; m++ ) {
 	    P[n][m] = 0;
@@ -429,7 +458,7 @@ double SGMagVarOrig( double lat, double lon, double h, long dat, double* field )
     field[4]=Y;
     field[5]=Z;   /* output fields */
 
-	/* find variation, leave in radians! */
+    /* find variation, leave in radians! */
     return atan2(Y, X);  /* E is positive */
 }
 #endif // TEST_NHV_HACKS

@@ -219,7 +219,7 @@ static int decprint(int val, unsigned char* s)
 {
     int p=1, i=0;
     if(val == 0) { *s = '0'; return 1; }
-    while(p < 1000000000 && p*10 < val) p *= 10;
+    while(p < 999999999 && p*10 < val) p *= 10;
     while(p > 0) {
         int count = 0;
         while(val >= p) { val -= p; count++; }

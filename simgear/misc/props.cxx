@@ -240,9 +240,9 @@ FGValue::getBoolValue () const
     return (getRawDouble() == 0.0 ? false : true);
   case STRING:
     return (getRawString() == "false" ? false : true);
-  default:
-    return false;
   }
+
+  return false;
 }
 
 
@@ -265,9 +265,9 @@ FGValue::getIntValue () const
     return (int)(getRawDouble());
   case STRING:
     return atoi(getRawString().c_str());
-  default:
-    return 0;
   }
+
+  return 0;
 }
 
 
@@ -290,9 +290,9 @@ FGValue::getFloatValue () const
     return (float)(getRawDouble());
   case STRING:
     return (float)atof(getRawString().c_str());
-  default:
-    return 0.0;
   }
+
+  return 0.0;
 }
 
 
@@ -315,9 +315,9 @@ FGValue::getDoubleValue () const
     return getRawDouble();
   case STRING:
     return atof(getRawString().c_str());
-  default:
-    return 0.0;
   }
+
+  return 0.0;
 }
 
 
@@ -336,9 +336,9 @@ FGValue::getStringValue () const
     return empty_string;
   case STRING:
     return getRawString();
-  default:
-    return empty_string;
   }
+
+  return empty_string;
 }
 
 

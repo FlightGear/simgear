@@ -33,6 +33,7 @@ SUBDIRS = \
 	misc \
 	screen \
 	$(SERIAL_DIRS) \
+	sky \
 	xgl \
 	$(ZLIB_DIRS)
 

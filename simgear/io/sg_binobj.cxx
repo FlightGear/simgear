@@ -30,7 +30,6 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <zlib.h>
 
 #include <vector>
 #include STL_STRING

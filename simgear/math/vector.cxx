@@ -35,18 +35,13 @@ double sgPointLineDistSquared( const sgVec3 p, const sgVec3 p0,
 			       const sgVec3 d ) {
 
     sgVec3 u, u1, v;
-    double ud, dd, tmp;
     
     // u = p - p0
     sgSubVec3(u, p, p0);
 
     // calculate the projection, u1, of u along d.
     // u1 = ( dot_prod(u, d) / dot_prod(d, d) ) * d;
-    ud = sgScalarProductVec3(u, d);
-    dd = sgScalarProductVec3(d, d);
-    tmp = ud / dd;
-
-    sgScaleVec3(u1, d, tmp);;
+    sgScaleVec3( u1, d, sgScalarProductVec3(u,d) / sgScalarProductVec3(d,d) );
 
     // v = u - u1 = vector from closest point on line, p1, to the
     // original point, p.
@@ -81,3 +76,18 @@ double sgdPointLineDistSquared( const sgdVec3 p, const sgdVec3 p0,
 
     return ( sgdScalarProductVec3(v, v) );
 }
+
+
+// This is a quicker form of
+// sgMakeMatTrans4( sgMat4 sgTrans, sgVec3 trans )
+// sgPostMultMat4( sgMat, sgTRANS );
+void sgPostMultMat4ByTransMat4( sgMat4 src, const sgVec3 trans )
+{
+    for( int i=0; i<4; i++) {
+	for( int j=0; j<3; j++ ) {
+	    src[i][j] += (src[i][3] * trans[j]);
+	}
+    }
+}
+
+

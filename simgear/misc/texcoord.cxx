@@ -113,17 +113,40 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
     // cout << "dx = " << dx << " dy = " << dy << endl;
 
     bool do_shift = false;
-    Point3D mod_shift;
+    // Point3D mod_shift;
     if ( (dx > HALF_MAX_TEX_COORD) || (dy > HALF_MAX_TEX_COORD) ) {
 	// structure is too big, we'll just have to shift it so that
 	// tmin = (0,0).  This messes up subsequent texture scaling,
 	// but is the best we can do.
 	// cout << "SHIFTING" << endl;
 	do_shift = true;
-	tmin.setx( (double)( (int)tmin.x() + 1 ) );
-	tmin.sety( (double)( (int)tmin.y() + 1 ) );
+	if ( tmin.x() < 0 ) {
+	    tmin.setx( (double)( (int)tmin.x() - 1 ) );
+	} else {
+	    tmin.setx( (int)tmin.x() );
+	}
+	if ( tmin.y() < 0 ) {
+	    tmin.sety( (double)( (int)tmin.y() - 1 ) );
+	} else {
+	    tmin.sety( (int)tmin.y() );
+	}
 	// cout << "found tmin = " << tmin << endl;
     } else {
+	if ( tmin.x() < 0 ) {
+	    tmin.setx( ( (int)(tmin.x() / HALF_MAX_TEX_COORD) - 1 )
+		       * HALF_MAX_TEX_COORD );
+	} else {
+	    tmin.setx( ( (int)(tmin.x() / HALF_MAX_TEX_COORD) )
+		       * HALF_MAX_TEX_COORD );
+	}
+	if ( tmin.y() < 0 ) {
+	    tmin.sety( ( (int)(tmin.y() / HALF_MAX_TEX_COORD) - 1 )
+		       * HALF_MAX_TEX_COORD );
+	} else {
+	    tmin.sety( ( (int)(tmin.y() / HALF_MAX_TEX_COORD) )
+		       * HALF_MAX_TEX_COORD );
+	}
+#if 0
 	// structure is small enough ... we can mod it so we can
 	// properly scale the texture coordinates later.
 	// cout << "MODDING" << endl;
@@ -142,7 +165,7 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
 	// At this point we know that the object is < 16 wide in
 	// texture coordinate space.  If the modulo of the tmin is >
 	// the mod of the tmax at this point, then we know that the
-	// starting tex coordinate for the tmin > 16 so we can shift
+	// starting tex coordinate for the tmax > 16 so we can shift
 	// everything down by 16 and get it within the 0-32 range.
 
 	if ( x1 > x2 ) {
@@ -156,7 +179,7 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
 	} else {
 	    mod_shift.sety( 0.0 );
 	}
-
+#endif
 	// cout << "mod_shift = " << mod_shift << endl;
     }
 
@@ -169,8 +192,9 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
 	t = basic_tex_coord( p, degree_width, degree_height, scale );
 	// cout << "second t = " << t << endl;
 
-	if ( do_shift ) {
-	    adjusted_t = t - tmin;
+	// if ( do_shift ) {
+	adjusted_t = t - tmin;
+#if 0
 	} else {
 	    adjusted_t.setx( fmod(t.x() + mod_shift.x(), MAX_TEX_COORD) );
 	    while ( adjusted_t.x() < 0 ) { 
@@ -182,7 +206,7 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
 	    }
 	    // cout << "adjusted_t " << adjusted_t << endl;
 	}
-
+#endif
 	if ( adjusted_t.x() < FG_EPSILON ) {
 	    adjusted_t.setx( 0.0 );
 	}

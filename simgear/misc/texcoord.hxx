@@ -41,5 +41,3 @@ point_list calc_tex_coords( const FGBucket& b, const point_list& geod_nodes,
 
 
 #endif // _TEXCOORD_HXX
-
-

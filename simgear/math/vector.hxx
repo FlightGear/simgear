@@ -83,6 +83,14 @@ inline void sgmap_vec_onto_cur_surface_plane( sgVec3 normal,
 }
 
 
+inline void sgCopyNegateVec4( sgVec4 dst, sgVec4 src )
+{
+	dst [ 0 ] = -src [ 0 ] ;
+	dst [ 1 ] = -src [ 1 ] ;
+	dst [ 2 ] = -src [ 2 ] ;
+	dst [ 3 ] = -src [ 3 ] ;
+}
+
 // Given a point p, and a line through p0 with direction vector d,
 // find the shortest distance (squared) from the point to the line
 double sgPointLineDistSquared( const sgVec3 p, const sgVec3 p0,
@@ -93,6 +101,10 @@ double sgPointLineDistSquared( const sgVec3 p, const sgVec3 p0,
 double sgdPointLineDistSquared( const sgdVec3 p, const sgdVec3 p0,
 				const sgdVec3 d );
 
+// This is same as
+// sgMakeMatTrans4( sgMat4 sgTrans, sgVec3 trans )
+// sgPostMultMat4( sgMat, sgTRANS );
+void sgPostMultMat4ByTransMat4( sgMat4 src, const sgVec3 trans );
 
 #endif // _VECTOR_HXX
 

@@ -73,7 +73,7 @@ private:
     int y;          // y subdivision (0 to 7)
 
 public:
-    
+
     // default constructor
     FGBucket();
 
@@ -90,6 +90,10 @@ public:
 
     // Set the bucket params for the specified lat and lon
     void set_bucket( double dlon, double dlat );
+    void set_bucket( double *lonlat ) {
+	set_bucket( lonlat[0], lonlat[1] );
+    }	
+
     void make_bad ( void );
 
     // Generate the unique scenery tile index for this bucket
@@ -227,7 +231,7 @@ inline FGBucket::FGBucket(const bool is_good) {
 	lon = -1000;
     }
 }
-    
+
 
 // Parse a unique scenery tile index and find the lon, lat, x, and y
 inline FGBucket::FGBucket(const long int bindex) {
@@ -236,11 +240,11 @@ inline FGBucket::FGBucket(const long int bindex) {
     lon = index >> 14;
     index -= lon << 14;
     lon -= 180;
-    
+
     lat = index >> 6;
     index -= lat << 6;
     lat -= 90;
-    
+
     y = index >> 3;
     index -= y << 3;
 
@@ -310,9 +314,9 @@ inline double FGBucket::get_height() const {
 // create an impossible bucket
 inline void FGBucket::make_bad( void ) {
     set_bucket(0.0, 0.0);
-	lon = -1000;
+    lon = -1000;
 }
-    
+
 
 // offset a bucket struct by the specified tile units in the X & Y
 // direction
@@ -321,12 +325,6 @@ FGBucket fgBucketOffset( double dlon, double dlat, int x, int y );
 
 // calculate the offset between two buckets
 void fgBucketDiff( const FGBucket& b1, const FGBucket& b2, int *dx, int *dy );
-
-
-/*
-// Given a lat/lon, fill in the local tile index array
-void fgBucketGenIdxArray(fgBUCKET *p1, fgBUCKET *tiles, int width, int height);
-*/
 
 
 inline ostream&

@@ -148,7 +148,12 @@ protected:
 class SGMetar {
 public:
 	SGMetar(const char *m);
-	SGMetar(const string m) { SGMetar(m.c_str()); }
+
+        // The following contructor is tempting, but it is not
+        // correct, it creates an anonymous instance of SGMetar and
+        // then immediately throws it away.
+        // SGMetar(const string m) { SGMetar(m.c_str()); }
+
 	~SGMetar();
 
 	enum ReportType {

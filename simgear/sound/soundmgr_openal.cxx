@@ -61,7 +61,7 @@ inline int (isnan)(double r) { return isnan(r); }
 // constructor
 SGSoundMgr::SGSoundMgr() {
 
-    SG_LOG( SG_GENERAL, SG_ALERT, "Initializing OpenAL sound manager" );
+    SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     // initialize OpenAL
     alutInit( 0, NULL );

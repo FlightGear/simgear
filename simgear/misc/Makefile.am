@@ -2,9 +2,6 @@ includedir = @includedir@/misc
 
 lib_LIBRARIES = libsgmisc.a
 
-noinst_HEADERS = \
-	colours.h
-
 include_HEADERS = \
         commands.hxx \
         exception.hxx \

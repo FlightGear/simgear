@@ -12,6 +12,9 @@ IMAGE_SERVER_INCL =
 IMAGE_SERVER_SRCS = 
 endif
 
+noinst_HEADERS = \
+        colours.h
+
 include_HEADERS = \
 	texture.hxx \
 	$(IMAGE_SERVER_INCL) \

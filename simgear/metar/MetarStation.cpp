@@ -82,10 +82,10 @@ CMetarStation::CMetarStation(
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double ulongitude = decodeDMS( s );
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
-	double altitude = atoi( s ) * FEET_TO_METER;
+	double altitude = atoi( s ) * SG_FEET_TO_METER;
 	m_altitude = altitude;
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
-	double ualtitude = atoi( s ) * FEET_TO_METER;
+	double ualtitude = atoi( s ) * SG_FEET_TO_METER;
 	Point3D p( longitude, latitude, altitude+SG_EQUATORIAL_RADIUS_M );
 	m_locationPolar = p;
 	m_locationCart = sgPolarToCart3d( p );

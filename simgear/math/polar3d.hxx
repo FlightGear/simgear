@@ -83,7 +83,7 @@ inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
     // printf("calc_lon_lat()  offset.theta = %.2f offset.dist = %.2f\n",
     //        offset.theta, offset.dist);
 
-    dist *= METER_TO_NM * NM_TO_RAD;
+    dist *= SG_METER_TO_NM * SG_NM_TO_RAD;
     
     result.sety( asin( sin(orig.y()) * cos(dist) + 
 		       cos(orig.y()) * sin(dist) * cos(course) ) );
@@ -154,7 +154,7 @@ inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest,
     }
 
     *course = tc1;
-    *dist = d * RAD_TO_NM * NM_TO_METER;
+    *dist = d * SG_RAD_TO_NM * SG_NM_TO_METER;
 }
 
 #endif // _POLAR_HXX

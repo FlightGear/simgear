@@ -216,17 +216,17 @@ int CMetarReport::VerticalVisibility() // Meters
 
 int CMetarReport::Ceiling()
 {
-	return FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Ceiling;
+	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Ceiling;
 }
 
 int CMetarReport::EstimatedCeiling()
 {
-	return FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Estimated_Ceiling;
+	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->Estimated_Ceiling;
 }
 
 int CMetarReport::VariableSkyLayerHeight()
 {
-	return FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->VrbSkyLayerHgt;
+	return SG_FEET_TO_METER * ((Decoded_METAR *)m_DecodedReport)->VrbSkyLayerHgt;
 }
 
 int CMetarReport::SnowDepthInches()

@@ -14,12 +14,12 @@ int main() {
 
     a1.CourseAndDistance( cur_lon, cur_lat, cur_alt, &course, &distance );
     cout << "Course to " << a1.get_id() << " is " << course << endl;
-    cout << "Distance to " << a1.get_id() << " is " << distance * METER_TO_NM
+    cout << "Distance to " << a1.get_id() << " is " << distance * SG_METER_TO_NM
 	 << endl;
 
     a2.CourseAndDistance( cur_lon, cur_lat, cur_alt, &course, &distance );
     cout << "Course to " << a2.get_id() << " is " << course << endl;
-    cout << "Distance to " << a2.get_id() << " is " << distance * METER_TO_NM
+    cout << "Distance to " << a2.get_id() << " is " << distance * SG_METER_TO_NM
 	 << endl;
     cout << endl;
 
@@ -28,12 +28,12 @@ int main() {
 
     b1.CourseAndDistance( cur_lon, cur_lat, cur_alt, &course, &distance );
     cout << "Course to " << b1.get_id() << " is " << course << endl;
-    cout << "Distance to " << b1.get_id() << " is " << distance * METER_TO_NM
+    cout << "Distance to " << b1.get_id() << " is " << distance * SG_METER_TO_NM
 	 << endl;
 
     b2.CourseAndDistance( cur_lon, cur_lat, cur_alt, &course, &distance );
     cout << "Course to " << b2.get_id() << " is " << course << endl;
-    cout << "Distance to " << b2.get_id() << " is " << distance * METER_TO_NM
+    cout << "Distance to " << b2.get_id() << " is " << distance * SG_METER_TO_NM
 	 << endl;
     cout << endl;
 

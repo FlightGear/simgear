@@ -90,28 +90,28 @@
 // Conversions
 
 // Arc seconds to radians                     // (arcsec*pi)/(3600*180) = rad
-#define ARCSEC_TO_RAD    4.84813681109535993589e-06 
+#define SG_ARCSEC_TO_RAD    4.84813681109535993589e-06 
 
 // Radians to arc seconds                     // (rad*3600*180)/pi = arcsec
-#define RAD_TO_ARCSEC    206264.806247096355156
+#define SG_RAD_TO_ARCSEC    206264.806247096355156
 
 // Feet to Meters
-#define FEET_TO_METER    0.3048
+#define SG_FEET_TO_METER    0.3048
 
 // Meters to Feet
-#define METER_TO_FEET    3.28083989501312335958  
+#define SG_METER_TO_FEET    3.28083989501312335958  
 
 // Meters to Nautical Miles, 1 nm = 6076.11549 feet
-#define METER_TO_NM      0.00053995680
+#define SG_METER_TO_NM      0.00053995680
 
 // Nautical Miles to Meters
-#define NM_TO_METER      1852.0000
+#define SG_NM_TO_METER      1852.0000
 
 // Radians to Nautical Miles, 1 nm = 1/60 of a degree
-#define NM_TO_RAD        0.00029088820866572159
+#define SG_NM_TO_RAD        0.00029088820866572159
 
 // Nautical Miles to Radians
-#define RAD_TO_NM        3437.7467707849392526
+#define SG_RAD_TO_NM        3437.7467707849392526
 
 // For divide by zero avoidance, this will be close enough to zero
 #define SG_EPSILON 0.0000001

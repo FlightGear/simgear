@@ -341,11 +341,18 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
     if (prev_sun_angle != sun_angle) {
         prev_sun_angle = sun_angle;
 
-        float sun_factor = 4*cos(sun_angle);
+        double vis_factor = (new_visibility - 5000.0) / 10000.0;
+        if ( vis_factor < 0.0 ) {
+            vis_factor = 0.0;
+        } else if ( vis_factor > 1.0) {
+            vis_factor = 1.0;
+        }
+
+        float sun_factor = 4 * (cos(sun_angle) + cos(sun_angle)/2) * vis_factor;
 
         if (sun_factor > 1) sun_factor = 1.0;
         if (sun_factor < -1) sun_factor = -1.0;
-        sun_factor = sun_factor/2 + 0.5;
+        sun_factor = (sun_factor/2) + 0.5;
 
         sgVec4 color;
         color[1] = sqrt(sun_factor);

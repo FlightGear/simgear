@@ -18,10 +18,12 @@
 
 #include STL_STRING
 #include <vector>
+#include <map>
 #include STL_IOSTREAM
 
 SG_USING_STD(string);
 SG_USING_STD(vector);
+SG_USING_STD(map);
 #if !defined(SG_HAVE_NATIVE_SGI_COMPILERS)
 SG_USING_STD(istream);
 SG_USING_STD(ostream);
@@ -689,9 +691,33 @@ public:
 
 
   /**
+   * Get a pointer to another node by relative path.
+   *
+   * This method leaves the index off the last member of the path,
+   * so that the user can specify it separately (and save some
+   * string building).  For example, getNode("/bar[1]/foo", 3) is
+   * exactly equivalent to getNode("bar[1]/foo[3]").  The index
+   * provided overrides any given in the path itself for the last
+   * component.
+   */
+  SGPropertyNode * getNode (const string &relative_path, int index,
+			    bool create = false);
+
+
+  /**
    * Get a const pointer to another node by relative path.
    */
   const SGPropertyNode * getNode (const string &relative_path) const;
+
+
+  /**
+   * Get a const pointer to another node by relative path.
+   *
+   * This method leaves the index off the last member of the path,
+   * so that the user can specify it separate.
+   */
+  const SGPropertyNode * getNode (const string &relative_path,
+				  int index) const;
 
 
   //
@@ -1062,8 +1088,8 @@ private:
   int _index;
   SGPropertyNode * _parent;
   vector<SGPropertyNode *> _children;
-
-
+  typedef map<const string,SGPropertyNode *> cache_map;
+  cache_map * _path_cache;
   Type _type;
   bool _tied;
   int _attr;

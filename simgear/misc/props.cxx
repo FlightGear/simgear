@@ -299,6 +299,7 @@ SGPropertyNode::SGPropertyNode ()
   : _name(""),
     _index(0),
     _parent(0),
+    _path_cache(0),
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE)
@@ -313,6 +314,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   : _name(node._name),
     _index(node._index),
     _parent(0),			// don't copy the parent
+    _path_cache(0),
     _type(node._type),
     _tied(node._tied),
     _attr(node._attr)
@@ -351,8 +353,13 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
  */
 SGPropertyNode::SGPropertyNode (const string &name,
 				int index, SGPropertyNode * parent)
-  : _name(name), _index(index), _parent(parent), _type(NONE),
-    _tied(false), _attr(READ|WRITE)
+  : _name(name),
+    _index(index),
+    _parent(parent),
+    _path_cache(0),
+    _type(NONE),
+    _tied(false),
+    _attr(READ|WRITE)
 {
 }
 
@@ -365,6 +372,7 @@ SGPropertyNode::~SGPropertyNode ()
   for (int i = 0; i < (int)_children.size(); i++) {
     delete _children[i];
   }
+  delete _path_cache;
   clear_value();
 }
 
@@ -1279,20 +1287,41 @@ SGPropertyNode::getRootNode () const
 SGPropertyNode *
 SGPropertyNode::getNode (const string &relative_path, bool create)
 {
+  if (_path_cache == 0)
+    _path_cache = new cache_map;
+
+  SGPropertyNode * result = (*_path_cache)[relative_path];
+  if (result == 0) {
+    vector<PathComponent> components;
+    parse_path(relative_path, components);
+    result = find_node(this, components, 0, create);
+    (*_path_cache)[relative_path] = result;
+  }
+  
+  return result;
+}
+
+SGPropertyNode *
+SGPropertyNode::getNode (const string &relative_path, int index, bool create)
+{
   vector<PathComponent> components;
   parse_path(relative_path, components);
+  if (components.size() > 0)
+    components[components.size()-1].index = index;
   return find_node(this, components, 0, create);
 }
 
 const SGPropertyNode *
 SGPropertyNode::getNode (const string &relative_path) const
 {
-  vector<PathComponent> components;
-  parse_path(relative_path, components);
-				// FIXME: cast away const
-  return find_node((SGPropertyNode *)this, components, 0, false);
+  return ((SGPropertyNode *)this)->getNode(relative_path, false);
 }
 
+const SGPropertyNode *
+SGPropertyNode::getNode (const string &relative_path, int index) const
+{
+  return ((SGPropertyNode *)this)->getNode(relative_path, index, false);
+}
 
 
 ////////////////////////////////////////////////////////////////////////

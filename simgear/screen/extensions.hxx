@@ -49,7 +49,7 @@ extern "C" {
 #define APIENTRY
 #endif
 
-    // static bool SGSearchExtensionsString(char *extString, char *extName);
+bool SGSearchExtensionsString(const char *extString, const char *extName);
 bool SGIsOpenGLExtensionSupported(char *extName);
 
 #ifdef __APPLE__
@@ -266,13 +266,25 @@ typedef void (APIENTRY * glClientActiveTextureProc)(GLenum texture);
 
 #endif
 
-
+#ifndef GL_SGIS_generate_mipmap
+#define GL_SGIS_generate_mipmap 1
+#define GL_GENERATE_MIPMAP_SGIS					0x8191
+#define GL_GENERATE_MIPMAP_HINT_SGIS				0x8192
+#endif
 
 /* WGL spcific OpenGL extenstions */
 #ifdef WIN32
 
 /*
- * ARB_pbuffer
+ * WGL_ARB_extensions_string
+ */
+#ifndef WGL_ARB_extensions_string
+#define WGL_ARB_extensions_string 1
+typedef const char * (APIENTRY * wglGetExtensionsStringARBProc) (HDC hDC);
+#endif
+
+/*
+ * WGL_ARB_pbuffer
  */
 #ifndef WGL_ARB_pbuffer
 #define WGL_ARB_pbuffer 1

@@ -27,11 +27,11 @@
 #include "extensions.hxx"
 #include <simgear/debug/logstream.hxx>
 
-static bool SGSearchExtensionsString(char *extString, char *extName) {
+bool SGSearchExtensionsString(const char *extString, const char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
     // surrounded by white spaces, or GL_FALSE otherwise.
 
-    char *p, *end;
+    const char *p, *end;
     int n, extNameLen;
 
     if ((extString == NULL) || (extName == NULL))
@@ -60,7 +60,7 @@ bool SGIsOpenGLExtensionSupported(char *extName) {
    // The *extName string must follow the OpenGL extensions naming scheme
    // (ie: "GL_type_extension", like GL_EXT_convolution)
 
-    return SGSearchExtensionsString((char *)glGetString(GL_EXTENSIONS),extName);
+    return SGSearchExtensionsString((const char *)glGetString(GL_EXTENSIONS),extName);
 }
 
 #ifdef __APPLE__

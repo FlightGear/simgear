@@ -1648,12 +1648,24 @@ bool RenderTexture::_VerifyExtensions()
     if ( !fctPtrInited )
     {
         fctPtrInited = true;
-        if ( SGIsOpenGLExtensionSupported("WGL_ARB_pixel_format" ) )
+        wglGetExtensionsStringARBProc wglGetExtensionsStringARBPtr = (wglGetExtensionsStringARBProc)wglGetProcAddress( "wglGetExtensionsStringARB" );
+        if ( wglGetExtensionsStringARBPtr == 0 )
+        {
+            PrintExtensionError("WGL_ARB_extensions_string");
+            return false;
+        }
+        string wglExtensionsString = wglGetExtensionsStringARBPtr( wglGetCurrentDC() );
+        if ( SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ARB_pixel_format" ) )
         {
             wglChoosePixelFormatARBPtr = (wglChoosePixelFormatARBProc)SGLookupFunction("wglChoosePixelFormatARB");
             wglGetPixelFormatAttribivARBPtr = (wglGetPixelFormatAttribivARBProc)SGLookupFunction("wglGetPixelFormatAttribivARB");
         }
-        if ( SGIsOpenGLExtensionSupported("WGL_ARB_pbuffer" ) )
+        else
+        {
+            PrintExtensionError("WGL_ARB_pixel_format");
+            return false;
+        }
+        if ( SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ARB_pbuffer" ) )
         {
             wglCreatePbufferARBPtr = (wglCreatePbufferARBProc)SGLookupFunction("wglCreatePbufferARB");
             wglGetPbufferDCARBPtr = (wglGetPbufferDCARBProc)SGLookupFunction("wglGetPbufferDCARB");
@@ -1661,57 +1673,52 @@ bool RenderTexture::_VerifyExtensions()
             wglReleasePbufferDCARBPtr = (wglReleasePbufferDCARBProc)SGLookupFunction("wglReleasePbufferDCARB");
             wglDestroyPbufferARBPtr = (wglDestroyPbufferARBProc)SGLookupFunction("wglDestroyPbufferARB");
         }
-        if ( SGIsOpenGLExtensionSupported("WGL_ARB_render_texture" ) )
+        else
+        {
+            PrintExtensionError("WGL_ARB_pbuffer");
+            return false;
+        }
+        if ( SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ARB_render_texture" ) )
         {
             wglBindTexImageARBPtr = (wglBindTexImageARBProc)SGLookupFunction("wglBindTexImageARB");
             wglReleaseTexImageARBPtr = (wglReleaseTexImageARBProc)SGLookupFunction("wglReleaseTexImageARB");
         }
-    }
-    if (!WGL_ARB_pbuffer)
-    {
-        PrintExtensionError("WGL_ARB_pbuffer");
-        return false;
-    }
-    if (!WGL_ARB_pixel_format)
-    {
-        PrintExtensionError("WGL_ARB_pixel_format");
-        return false;
-    }
-    if (_bIsTexture && !WGL_ARB_render_texture)
-    {
-        PrintExtensionError("WGL_ARB_render_texture");
-        return false;
-    }
-    if (_bRectangle && !GL_NV_texture_rectangle)
-    {
-        PrintExtensionError("GL_NV_texture_rectangle");
-        return false;
-    }
-    if (_bFloat && !(GL_NV_float_buffer || WGL_ATI_pixel_format_float))
-    {
-        PrintExtensionError("GL_NV_float_buffer or GL_ATI_pixel_format_float");
-        return false;
-    
-    }
-    if (_bFloat && _bIsTexture && !(GL_NV_float_buffer || GL_ATI_texture_float))
-    {
-        PrintExtensionError("NV_float_buffer or ATI_texture_float");
-    }
-    if (_bIsDepthTexture && !GL_ARB_depth_texture)
-    {
-        // [Redge]
+        else if ( _bIsTexture )
+        {
+            PrintExtensionError("WGL_ARB_render_texture");
+            return false;
+        }
+        if (_bRectangle && !SGIsOpenGLExtensionSupported( "GL_NV_texture_rectangle" ))
+        {
+            PrintExtensionError("GL_NV_texture_rectangle");
+            return false;
+        }
+        if (_bFloat && !(SGIsOpenGLExtensionSupported( "GL_NV_float_buffer" ) || SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ATI_pixel_format_float" )))
+        {
+            PrintExtensionError("GL_NV_float_buffer or GL_ATI_pixel_format_float");
+            return false;
+        
+        }
+        if (_bFloat && _bIsTexture && !(SGIsOpenGLExtensionSupported( "GL_NV_float_buffer" ) || SGIsOpenGLExtensionSupported( "GL_ATI_texture_float" )))
+        {
+            PrintExtensionError("NV_float_buffer or ATI_texture_float");
+        }
+        if (_bIsDepthTexture && !SGIsOpenGLExtensionSupported( "GL_ARB_depth_texture" ))
+        {
+            // [Redge]
 #if defined(_DEBUG) | defined(DEBUG)
-        fprintf(stderr, 
-                "RenderTexture Warning: "
-                "OpenGL extension GL_ARB_depth_texture not available.\n"
-                "         Using glReadPixels() to emulate behavior.\n");
+            fprintf(stderr, 
+                    "RenderTexture Warning: "
+                    "OpenGL extension GL_ARB_depth_texture not available.\n"
+                    "         Using glReadPixels() to emulate behavior.\n");
 #endif   
-        _bHasARBDepthTexture = false;
-        //PrintExtensionError("GL_ARB_depth_texture");
-        //return false;
-        // [/Redge]
+            _bHasARBDepthTexture = false;
+            //PrintExtensionError("GL_ARB_depth_texture");
+            //return false;
+            // [/Redge]
+        }
+        SetLastError(0);
     }
-    SetLastError(0);
 #else
     if (!GLX_SGIX_pbuffer)
     {

@@ -1,10 +1,18 @@
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear/simgear_config.h>
+#endif
+
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
+
 #include <simgear/compiler.h>
 
 #include SG_GL_H
 #include <GL/glut.h>
-#include <simgear/screen/RenderTexture.h>
 #include <simgear/screen/extensions.hxx>
+#include <simgear/screen/RenderTexture.h>
 
 #include <assert.h>
 #include <stdio.h>

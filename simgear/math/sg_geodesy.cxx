@@ -1,4 +1,4 @@
-// fg_geodesy.cxx -- routines to convert between geodetic and geocentric 
+// sg_geodesy.cxx -- routines to convert between geodetic and geocentric 
 //                   coordinate systems.
 //
 // Copied and adapted directly from LaRCsim/ls_geodesy.c
@@ -21,7 +21,9 @@
 #include <simgear/debug/logstream.hxx>
 
 #include "point3d.hxx"
-#include "fg_geodesy.hxx"
+#include "sg_geodesy.hxx"
+#include "localconsts.hxx"
+
 
 #ifndef FG_HAVE_NATIVE_SGI_COMPILERS
 FG_USING_STD(cout);
@@ -31,7 +33,7 @@ FG_USING_STD(cout);
 #define ONE_SECOND 4.848136811E-6
 
 
-// fgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
+// sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
 //     INPUTS:	
 //         lat_geoc	Geocentric latitude, radians, + = North
 //         radius	C.G. radius to earth center (meters)
@@ -43,7 +45,7 @@ FG_USING_STD(cout);
 //                      local vertical (surface normal) of C.G. (meters)
 
 
-void fgGeocToGeod( double lat_geoc, double radius, double
+void sgGeocToGeod( double lat_geoc, double radius, double
 		   *lat_geod, double *alt, double *sea_level_r )
 {
     double t_lat, x_alpha, mu_alpha, delt_mu, r_alpha, l_point, rho_alpha;
@@ -89,7 +91,7 @@ void fgGeocToGeod( double lat_geoc, double radius, double
 
 	// check for domain error
 	if ( errno == EDOM ) {
-	    FG_LOG( FG_GENERAL, FG_ALERT, "Domain ERROR in fgGeocToGeod!!!!" );
+	    FG_LOG( FG_GENERAL, FG_ALERT, "Domain ERROR in sgGeocToGeod!!!!" );
 	    *sea_level_r = 0.0;
 	}
     }
@@ -97,7 +99,7 @@ void fgGeocToGeod( double lat_geoc, double radius, double
 }
 
 
-// fgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
+// sgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
 //     INPUTS:	
 //         lat_geod	Geodetic latitude, radians, + = North
 //         alt		C.G. altitude above mean sea level (meters)
@@ -109,7 +111,7 @@ void fgGeocToGeod( double lat_geoc, double radius, double
 //
 
 
-void fgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
+void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 		      double *lat_geoc )
 {
     double lambda_sl, sin_lambda_sl, cos_lambda_sl, sin_mu, cos_mu, px, py;

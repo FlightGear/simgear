@@ -86,13 +86,14 @@
 #define RESQ_FT 437882827922500.          // ft
 #define RESQ_M   40680645877797.1344      // meter
 
+#if 0
 // Value of earth flattening parameter from ref [8] 
 //
 //      Note: FP = f
 //            E  = 1-f
 //            EPS = sqrt(1-(1-f)^2)
 //
-              
+
 #define FP    0.003352813178
 #define E     0.996647186
 #define EPS   0.081819221
@@ -103,7 +104,7 @@
 #define MJD0  2415020.0
 #define J2000 (2451545.0 - MJD0)
 #define SIDRATE         .9972695677
-
+#endif
 
 // Conversions
 

@@ -215,15 +215,29 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	// this means client for now
 
 	sock = make_client_socket();
-    // TODO: check for error.
+	// TODO: check for error.
 
 	if ( sock_style == SOCK_DGRAM ) {
 	    // Non-blocking UDP
 	    nonblock();
 	}
+    } else if ( dir == SG_IO_BI && sock_style == SOCK_STREAM ) {
+	// this means server for TCP sockets
+
+	// Setup socket to listen on.  Set "port" before making this
+	// call.  A port of "0" indicates that we want to let the os
+	// pick any available port.
+	sock = make_server_socket();
+	// TODO: check for error.
+
+	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
+
+	// Blocking TCP
+	// Specify the maximum length of the connection queue
+	listen( sock, SG_MAX_SOCKET_QUEUE );
     } else {
 	FG_LOG( FG_IO, FG_ALERT, 
-		"Error:  bidirection mode not available yet for sockets." );
+		"Error:  bidirection mode not available for UDP sockets." );
 	return false;
     }
 

@@ -46,6 +46,8 @@
 # include <math.h>
 #endif
 
+#include "localconsts.hxx"
+
 // I don't understand ... <math.h> or <cmath> should be included
 // already depending on how you defined FG_HAVE_STD_INCLUDES, but I
 // can go ahead and add this -- CLO

@@ -1,4 +1,4 @@
-// fg_geodesy.hxx -- routines to convert between geodetic and geocentric 
+// sg_geodesy.hxx -- routines to convert between geodetic and geocentric 
 //                   coordinate systems.
 //
 // Copied and adapted directly from LaRCsim/ls_geodesy.c
@@ -8,8 +8,8 @@
 // $Id$
 
 
-#ifndef _FG_GEODESY_HXX
-#define _FG_GEODESY_HXX
+#ifndef _SG_GEODESY_HXX
+#define _SG_GEODESY_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -21,7 +21,7 @@
 #include <simgear/math/polar3d.hxx>
 
 
-// fgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
+// sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
 //     INPUTS:	
 //         lat_geoc	Geocentric latitude, radians, + = North
 //         radius	C.G. radius to earth center (meters)
@@ -32,11 +32,11 @@
 //         sea_level_r	radius from earth center to sea level at
 //                      local vertical (surface normal) of C.G. (meters)
 
-void fgGeocToGeod( double lat_geoc, double radius, double
+void sgGeocToGeod( double lat_geoc, double radius, double
 		   *lat_geod, double *alt, double *sea_level_r );
 
 
-// fgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
+// sgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
 //     INPUTS:	
 //         lat_geod	Geodetic latitude, radians, + = North
 //         alt		C.G. altitude above mean sea level (meters)
@@ -47,27 +47,27 @@ void fgGeocToGeod( double lat_geoc, double radius, double
 //         lat_geoc	Geocentric latitude, radians, + = North
 //
 
-void fgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
+void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 		      double *lat_geoc );
 
 
 // convert a geodetic point lon(radians), lat(radians), elev(meter) to
 // a cartesian point
 
-inline Point3D fgGeodToCart(const Point3D& geod) {
+inline Point3D sgGeodToCart(const Point3D& geod) {
     double gc_lon, gc_lat, sl_radius;
 
     // printf("A geodetic point is (%.2f, %.2f, %.2f)\n", 
     //        geod[0], geod[1], geod[2]);
 
     gc_lon = geod.lon();
-    fgGeodToGeoc(geod.lat(), geod.radius(), &sl_radius, &gc_lat);
+    sgGeodToGeoc(geod.lat(), geod.radius(), &sl_radius, &gc_lat);
 
     // printf("A geocentric point is (%.2f, %.2f, %.2f)\n", gc_lon, 
     //        gc_lat, sl_radius+geod[2]);
 
     Point3D pp = Point3D( gc_lon, gc_lat, sl_radius + geod.radius());
-    return fgPolarToCart3d(pp);
+    return sgPolarToCart3d(pp);
 }
 
 
@@ -172,4 +172,4 @@ $Header$
 --------------------------------------------------------------------------*/
 
 
-#endif // _FG_GEODESY_HXX
+#endif // _SG_GEODESY_HXX

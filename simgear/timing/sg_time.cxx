@@ -63,6 +63,11 @@
 #define RADHR(x)        DEGHR(x*RAD_TO_DEG)
 
 
+static const double MJD0    = 2415020.0;
+static const double J2000   = 2451545.0 - MJD0;
+static const double SIDRATE = 0.9972695677;
+
+
 SGTime::SGTime( double lon, double lat, const string& root )
 {
     FG_LOG( FG_EVENT, FG_INFO, "Initializing Time" );

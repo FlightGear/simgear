@@ -40,13 +40,13 @@
 // Find the Altitude above the Ellipsoid (WGS84) given the Earth
 // Centered Cartesian coordinate vector Distances are specified in
 // meters.
-double fgGeodAltFromCart(const Point3D& cp);
+double sgGeodAltFromCart(const Point3D& cp);
 
 
 // Convert a polar coordinate to a cartesian coordinate.  Lon and Lat
-// must be specified in radians.  The FG convention is for distances
+// must be specified in radians.  The SG convention is for distances
 // to be specified in meters
-inline Point3D fgPolarToCart3d(const Point3D& p) {
+inline Point3D sgPolarToCart3d(const Point3D& p) {
     double tmp = cos( p.lat() ) * p.radius();
 
     return Point3D( cos( p.lon() ) * tmp,
@@ -57,7 +57,7 @@ inline Point3D fgPolarToCart3d(const Point3D& p) {
 
 // Convert a cartesian coordinate to polar coordinates (lon/lat
 // specified in radians.  Distances are specified in meters.
-inline Point3D fgCartToPolar3d(const Point3D& cp) {
+inline Point3D sgCartToPolar3d(const Point3D& cp) {
     return Point3D( atan2( cp.y(), cp.x() ),
 		    FG_PI_2 - 
 		    atan2( sqrt(cp.x()*cp.x() + cp.y()*cp.y()), cp.z() ),

@@ -43,7 +43,7 @@ model_filter = true;
 static int
 model_filter_callback (ssgEntity * entity, int mask)
 {
-  return model_filter;
+  return model_filter ? 1 : 0;
 }
 
 /**

@@ -59,8 +59,7 @@ SGMaterial::SGMaterial( const string &texpath )
 {
     init();
 
-    _internal_state st = { NULL, "", false };
-    st.texture_path = texpath;
+    _internal_state st( NULL, texpath, false );
     _status.push_back( st );
 
     build_ssg_state( true );
@@ -105,7 +104,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
       tpath.append("Textures");
       tpath.append(tname);
     }
-    _internal_state st = { NULL, tpath.str(), false };
+    _internal_state st( NULL, tpath.str(), false );
     _status.push_back( st );
   }
 
@@ -114,7 +113,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
     SGPath tpath( fg_root );
     tpath.append("Textures");
     tpath.append(tname);
-    _internal_state st = { NULL, tpath.str(), true };
+    _internal_state st( NULL, tpath.str(), true );
     _status.push_back( st );
   }
 
@@ -164,6 +163,7 @@ void
 SGMaterial::init ()
 {
     _status.clear();
+    _current_ptr = 0;
     xsize = 0;
     ysize = 0;
     wrapu = true;
@@ -201,19 +201,17 @@ SGMaterial::load_texture ( int n )
 }
 
 ssgSimpleState *
-SGMaterial::get_state (int n) const
+SGMaterial::get_state (int n)
 {
-    static unsigned current = 0;
-
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No state available.");
         return NULL;
     }
 
-    if ( ++current >= _status.size())
-        current = 0;
+    if ( _current_ptr >= _status.size())
+        _current_ptr = 0;
 
-    return (n >= 0) ? _status[n].state : _status[current].state;
+    return (n >= 0) ? _status[n].state : _status[_current_ptr++].state;
 }
 
 
@@ -266,7 +264,7 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 
 void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
-    _internal_state st = { s, "", true };
+    _internal_state st( s, "", true );
     st.state->ref();
     _status.push_back( st );
 }

@@ -117,7 +117,7 @@ public:
   /**
    * Get the textured state.
    */
-  virtual ssgSimpleState *get_state (int n = -1) const;
+  virtual ssgSimpleState *get_state (int n = -1);
 
 
   /**
@@ -198,11 +198,13 @@ protected:
 
 protected:
 
-  typedef struct {
+  struct _internal_state {
+     _internal_state( ssgSimpleState *s, const string &t, bool l )
+                  : state(s), texture_path(t), texture_loaded(l) {}
       ssgSimpleState *state;
       string texture_path;
       bool texture_loaded;
-  } _internal_state;
+  };
 
 private:
 
@@ -213,6 +215,9 @@ private:
 
   // texture status
   vector<_internal_state> _status;
+
+  // Round-robin counter
+  int _current_ptr;
 
   // texture size
   double xsize, ysize;

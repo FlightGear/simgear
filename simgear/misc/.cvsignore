@@ -2,3 +2,4 @@
 Makefile
 Makefile.in
 props_test
+tabbed_value_test

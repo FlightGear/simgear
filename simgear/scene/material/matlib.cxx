@@ -175,7 +175,7 @@ static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
 
 
 // generate the directional vasi light environment texture map
-static int gen_vasi_light_map() {
+static int gen_vasi_light_map_old() {
     const int env_tex_res = 256;
     int half_res = env_tex_res / 2;
 
@@ -514,6 +514,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
         = new SGMaterial( taxiway_blue_low_lights );
 
     // hard coded runway vasi light state
+    tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
     ssgSimpleState *rwy_vasi_lights = new ssgSimpleState();
     rwy_vasi_lights->ref();
     rwy_vasi_lights->disable( GL_LIGHTING );
@@ -526,7 +527,8 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
     rwy_vasi_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
     rwy_vasi_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_vasi_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_vasi_lights->setTexture( gen_vasi_light_map() );
+    // rwy_vasi_lights->setTexture( gen_vasi_light_map_old() );
+    rwy_vasi_lights->setTexture( tex_name );
     matlib["RWY_VASI_LIGHTS"] = new SGMaterial( rwy_vasi_lights );
 
     return true;

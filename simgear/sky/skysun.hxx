@@ -30,6 +30,7 @@
 
 
 #include <plib/ssg.h>
+#include <simgear/misc/fgpath.hxx>
 
 class FGSkySun {
 
@@ -58,8 +59,9 @@ public:
     ~FGSkySun( void );
 
     // initialize the sun object and connect it into our scene graph
-    // root
-    bool initialize();
+    // root.  Pass in the path to your texture directory so
+    // initialize() can find the halo.rgba texture
+    bool initialize( const FGPath& path );
 
     // repaint the sun colors based on current value of sun_anglein
     // degrees relative to verticle

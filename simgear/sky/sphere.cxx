@@ -44,8 +44,8 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 	cl = new ssgColourArray( 1 );
     }
 
-    sgVec3 color;
-    sgSetVec3( color, 1.0, 1.0, 1.0 );
+    sgVec4 color;
+    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
 
     if ( cl->getNum() > 1 ) {
 	cl->removeAll();
@@ -86,10 +86,11 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 
 	    // glNormal3f( x*nsign, y*nsign, z*nsign );
 	    sgSetVec3( vec3, x*nsign, y*nsign, z*nsign );
+	    sgNormalizeVec3( vec3 );
 	    nl->add( vec3 );
 
 	    // glTexCoord2f(s,t);
-	    sgSetVec2( vec2, 2, t );
+	    sgSetVec2( vec2, s, t );
 	    tl->add( vec2 );
 
 	    // glVertex3f( x*radius, y*radius, z*radius );
@@ -102,6 +103,7 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 
 	    // glNormal3f( x*nsign, y*nsign, z*nsign );
 	    sgSetVec3( vec3, x*nsign, y*nsign, z*nsign );
+	    sgNormalizeVec3( vec3 );
 	    nl->add( vec3 );
 
 	    // glTexCoord2f(s,t-dt);

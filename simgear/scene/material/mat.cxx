@@ -209,9 +209,11 @@ SGMaterial::get_state (int n)
     }
 
     if ( _current_ptr >= _status.size())
-        _current_ptr = 0;
+        ((SGMaterial *)this)->_current_ptr = 0;
 
-    return (n >= 0) ? _status[n].state : _status[_current_ptr++].state;
+    ssgSimpleState *st = (n >= 0) ? _status[n].state : _status[_current_ptr].state;
+    ((SGMaterial *)this)->_current_ptr += 1;
+    return st;
 }
 
 

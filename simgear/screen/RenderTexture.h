@@ -48,7 +48,7 @@
  */
 #include <simgear/compiler.h>
 
-#ifndef _WIN32
+#if !defined( _WIN32 ) && !defined( __APPLE__ )
 #  include <X11/Xlib.h>
 #endif
 #include SG_GL_H

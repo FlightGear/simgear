@@ -35,6 +35,8 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
+#include <compiler.h>
+
 #include "stars.hxx"
 
 #ifdef _MSC_VER

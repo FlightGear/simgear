@@ -193,8 +193,10 @@ void SGSky::postDraw( float alt ) {
 
     int in_cloud = -1;		// cloud we are in
 
+    int i;
+
     // check where we are relative to the cloud layers
-    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
 	float asl = cloud_layers[i]->get_asl();
 	float thickness = cloud_layers[i]->get_thickness();
 
@@ -220,14 +222,14 @@ void SGSky::postDraw( float alt ) {
 
     if ( pos == 0 ) {
 	// we are below all the cloud layers, draw top to bottom
-	for ( int i = cloud_layers.size() - 1; i >= 0; --i ) {
+	for ( i = cloud_layers.size() - 1; i >= 0; --i ) {
 	    if ( i != in_cloud ) {
 		cloud_layers[i]->draw();
 	    }
 	}
     } else if ( pos >= (int)cloud_layers.size() ) {
 	// we are above all the cloud layers, draw bottom to top
-	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+	for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
 	    if ( i != in_cloud ) {
 		cloud_layers[i]->draw();
 	    }
@@ -235,12 +237,12 @@ void SGSky::postDraw( float alt ) {
     } else {
 	// we are between cloud layers, draw lower layers bottom to
 	// top and upper layers top to bottom
-	for ( int i = 0; i < pos; ++i ) {
+	for ( i = 0; i < pos; ++i ) {
 	    if ( i != in_cloud ) {
 		cloud_layers[i]->draw();
 	    }
 	}
-	for ( int i = cloud_layers.size() - 1; i >= pos; --i ) {
+	for ( i = cloud_layers.size() - 1; i >= pos; --i ) {
 	    if ( i != in_cloud ) {
 		cloud_layers[i]->draw();
 	    }

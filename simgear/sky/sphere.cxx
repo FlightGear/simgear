@@ -114,11 +114,11 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
 
 	if ( vl->getNum() != nl->getNum() ) {
-	    cout << "bad sphere1\n";
+	    std::cout << "bad sphere1\n";
 	    exit(-1);
 	}
 	if ( vl->getNum() != tl->getNum() ) {
-	    cout << "bad sphere2\n";
+	    std::cout << "bad sphere2\n";
 	    exit(-1);
 	}
 	slice->setState( state );

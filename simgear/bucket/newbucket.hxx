@@ -98,7 +98,7 @@ public:
     void make_bad ( void );
 
     // Generate the unique scenery tile index for this bucket
-    long int gen_index();
+    long int gen_index() const;
     string gen_index_str() const;
 
     // Build the path name for this bucket
@@ -270,7 +270,7 @@ inline FGBucket::~FGBucket() {}
 // 3 bits - to represent x (0 to 7)
 // 3 bits - to represent y (0 to 7)
 
-inline long int FGBucket::gen_index() {
+inline long int FGBucket::gen_index() const {
     return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
 }
 
@@ -319,8 +319,8 @@ inline void FGBucket::make_bad( void ) {
 }
 
 
-// offset a bucket struct by the specified tile units in the X & Y
-// direction
+// offset a bucket specified by dlon, dlat by the specified tile units
+// in the X & Y direction
 FGBucket fgBucketOffset( double dlon, double dlat, int x, int y );
 
 

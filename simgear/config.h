@@ -1,5 +1,5 @@
 /* simgear/config.h.  Generated automatically by configure.  */
-/* simgear/include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* simgear/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define to empty if the keyword does not work.  */
 /* #undef const */
@@ -47,6 +47,9 @@
 
 /* Define if you have the vprintf function.  */
 #define HAVE_VPRINTF 1
+
+/* Define if you have gdbm installed system wide.  */
+#define HAVE_GDBM 1
 
 /* Define if you have zlib installed system wide.  */
 #define HAVE_ZLIB 1

@@ -63,6 +63,7 @@ static void print_openal_error( ALuint error ) {
 // constructor
 SGSoundSample::SGSoundSample( const char *path, const char *file,
                               bool cleanup ) :
+    data(NULL),
     pitch(1.0),
     volume(1.0),
     loop(AL_FALSE)
@@ -133,6 +134,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
 
 // constructor
 SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
+    data(NULL),
     pitch(1.0),
     volume(1.0),
     loop(AL_FALSE)
@@ -177,7 +179,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
 SGSoundSample::~SGSoundSample() {
     SG_LOG( SG_GENERAL, SG_INFO, "Deleting a sample" );
     if ( data != NULL ) {
-        delete data;
+        free(data);
     }
     alDeleteSources(1, &source);
     alDeleteBuffers(1, &buffer);

@@ -105,7 +105,7 @@ void SGTimeStamp::stamp() {
 
 // increment the time stamp by the number of microseconds (usec)
 SGTimeStamp operator + (const SGTimeStamp& t, const long& m) {
-#ifdef WIN32
+#if defined( WIN32 )
     return SGTimeStamp( 0, t.usec + m );
 #else
     return SGTimeStamp( t.seconds + ( t.usec + m ) / 1000000,

@@ -38,7 +38,6 @@
 #include <plib/sg.h>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/sky/sunsky/sunsky.hxx>
 
 #include "dome.hxx"
 
@@ -67,7 +66,7 @@ static const float bottom_elev = -0.0250;
 // Set up dome rendering callbacks
 static int sgSkyDomePreDraw( ssgEntity *e ) {
     /* cout << endl << "Dome Pre Draw" << endl << "----------------" 
-         << endl << endl; */
+	 << endl << endl; */
 
     ssgLeaf *f = (ssgLeaf *)e;
     if ( f -> hasState () ) f->getState()->apply() ;
@@ -83,7 +82,7 @@ static int sgSkyDomePreDraw( ssgEntity *e ) {
 
 static int sgSkyDomePostDraw( ssgEntity *e ) {
     /* cout << endl << "Dome Post Draw" << endl << "----------------" 
-         << endl << endl; */
+	 << endl << endl; */
 
     glPopAttrib();
     // cout << "pop error = " << glGetError() << endl;
@@ -104,7 +103,7 @@ SGSkyDome::~SGSkyDome( void ) {
 
 // initialize the sky object and connect it into our scene graph
 ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
-//  sgVec4 color;
+    sgVec4 color;
 
     float theta;
     int i;
@@ -114,8 +113,8 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     dome_state->setShadeModel( GL_SMOOTH );
     dome_state->disable( GL_LIGHTING );
     dome_state->disable( GL_CULL_FACE );
-    dome_state->enable( GL_TEXTURE_2D );
-    dome_state->disable( GL_COLOR_MATERIAL );
+    dome_state->disable( GL_TEXTURE_2D );
+    dome_state->enable( GL_COLOR_MATERIAL );
     dome_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
     dome_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
     dome_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
@@ -125,7 +124,7 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     // initialize arrays
     center_disk_vl = new ssgVertexArray( 14 );
     center_disk_cl = new ssgColourArray( 14 );
-        			       
+				       
     upper_ring_vl = new ssgVertexArray( 26 );
     upper_ring_cl = new ssgColourArray( 26 );
 
@@ -136,7 +135,7 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     lower_ring_cl = new ssgColourArray( 26 );
 
     // initially seed to all blue
-//  sgSetVec4( color, 0.0, 0.0, 1.0, 1.0 );
+    sgSetVec4( color, 0.0, 0.0, 1.0, 1.0 );
 
     // generate the raw vertex data
     sgVec3 center_vertex;
@@ -148,101 +147,101 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     sgSetVec3( center_vertex, 0.0, 0.0, center_elev * vscale );
 
     for ( i = 0; i < 12; i++ ) {
-        theta = (i * 30.0) * SGD_DEGREES_TO_RADIANS;
+	theta = (i * 30.0) * SGD_DEGREES_TO_RADIANS;
 
-        sgSetVec3( upper_vertex[i],
-        	   cos(theta) * upper_radius * hscale,
-        	   sin(theta) * upper_radius * hscale,
-        	   upper_elev * vscale );
-        
-        sgSetVec3( middle_vertex[i],
-        	   cos((double)theta) * middle_radius * hscale,
-        	   sin((double)theta) * middle_radius * hscale,
-        	   middle_elev * vscale );
+	sgSetVec3( upper_vertex[i],
+		   cos(theta) * upper_radius * hscale,
+		   sin(theta) * upper_radius * hscale,
+		   upper_elev * vscale );
+	
+	sgSetVec3( middle_vertex[i],
+		   cos((double)theta) * middle_radius * hscale,
+		   sin((double)theta) * middle_radius * hscale,
+		   middle_elev * vscale );
 
-        sgSetVec3( lower_vertex[i],
-        	   cos((double)theta) * lower_radius * hscale,
-        	   sin((double)theta) * lower_radius * hscale,
-        	   lower_elev * vscale );
+	sgSetVec3( lower_vertex[i],
+		   cos((double)theta) * lower_radius * hscale,
+		   sin((double)theta) * lower_radius * hscale,
+		   lower_elev * vscale );
 
-        sgSetVec3( bottom_vertex[i],
-        	   cos((double)theta) * bottom_radius * hscale,
-        	   sin((double)theta) * bottom_radius * hscale,
-        	   bottom_elev * vscale );
+	sgSetVec3( bottom_vertex[i],
+		   cos((double)theta) * bottom_radius * hscale,
+		   sin((double)theta) * bottom_radius * hscale,
+		   bottom_elev * vscale );
     }
 
     // generate the center disk vertex/color arrays
     center_disk_vl->add( center_vertex );
-//  center_disk_cl->add( color );
+    center_disk_cl->add( color );
     for ( i = 11; i >= 0; i-- ) {
-        center_disk_vl->add( upper_vertex[i] );
-//      center_disk_cl->add( color );
+	center_disk_vl->add( upper_vertex[i] );
+	center_disk_cl->add( color );
     }
     center_disk_vl->add( upper_vertex[11] );
-//  center_disk_cl->add( color );
+    center_disk_cl->add( color );
 
     // generate the upper ring
     for ( i = 0; i < 12; i++ ) {
-        upper_ring_vl->add( middle_vertex[i] );
-//      upper_ring_cl->add( color );
+	upper_ring_vl->add( middle_vertex[i] );
+	upper_ring_cl->add( color );
 
-        upper_ring_vl->add( upper_vertex[i] );
-//      upper_ring_cl->add( color );
+	upper_ring_vl->add( upper_vertex[i] );
+	upper_ring_cl->add( color );
     }
     upper_ring_vl->add( middle_vertex[0] );
-//  upper_ring_cl->add( color );
+    upper_ring_cl->add( color );
 
     upper_ring_vl->add( upper_vertex[0] );
-//  upper_ring_cl->add( color );
+    upper_ring_cl->add( color );
 
     // generate middle ring
     for ( i = 0; i < 12; i++ ) {
-        middle_ring_vl->add( lower_vertex[i] );
-//      middle_ring_cl->add( color );
+	middle_ring_vl->add( lower_vertex[i] );
+	middle_ring_cl->add( color );
 
-        middle_ring_vl->add( middle_vertex[i] );
-//      middle_ring_cl->add( color );
+	middle_ring_vl->add( middle_vertex[i] );
+	middle_ring_cl->add( color );
     }
     middle_ring_vl->add( lower_vertex[0] );
-//  middle_ring_cl->add( color );
+    middle_ring_cl->add( color );
 
     middle_ring_vl->add( middle_vertex[0] );
-//  middle_ring_cl->add( color );
+    middle_ring_cl->add( color );
 
     // generate lower ring
     for ( i = 0; i < 12; i++ ) {
-        lower_ring_vl->add( bottom_vertex[i] );
-//      lower_ring_cl->add( color );
+	lower_ring_vl->add( bottom_vertex[i] );
+	lower_ring_cl->add( color );
 
-        lower_ring_vl->add( lower_vertex[i] );
-//      lower_ring_cl->add( color );
+	lower_ring_vl->add( lower_vertex[i] );
+	lower_ring_cl->add( color );
     }
     lower_ring_vl->add( bottom_vertex[0] );
-//  lower_ring_cl->add( color );
+    lower_ring_cl->add( color );
 
     lower_ring_vl->add( lower_vertex[0] );
-//  lower_ring_cl->add( color );
+    lower_ring_cl->add( color );
 
     // force a repaint of the sky colors with ugly defaults
-//  sgVec4 fog_color;
-//  sgSetVec4( fog_color, 1.0, 1.0, 1.0, 1.0 );
-//  repaint( color, fog_color, 0.0, 5000.0 );
+    sgVec4 fog_color;
+    sgSetVec4( fog_color, 1.0, 1.0, 1.0, 1.0 );
+    repaint( color, fog_color, 0.0, 5000.0 );
 
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
     ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
 
     center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
-        			   center_disk_vl, NULL, NULL, center_disk_cl );
+				   center_disk_vl, NULL, NULL, center_disk_cl );
 
     upper_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-        			  upper_ring_vl, NULL, NULL, upper_ring_cl );
+				  upper_ring_vl, NULL, NULL, upper_ring_cl );
 
     middle_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-        			   middle_ring_vl, NULL, NULL, middle_ring_cl );
+				   middle_ring_vl, NULL, NULL, middle_ring_cl );
 
     lower_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-        			  lower_ring_vl, NULL, NULL, lower_ring_cl );
+				  lower_ring_vl, NULL, NULL, lower_ring_cl );
 
     center_disk->setState( dome_state );
     upper_ring->setState( dome_state );
@@ -273,86 +272,6 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
 }
 
 
-/**
- * regenerate the sky texture based on the current position and time
- *
- * lat: the current latitude (0 ... 360)
- * lon: the current longitude (-90 ... 90) south to north
- * zone: standard meredian
- * julianDay: julian day (1 ... 365)
- * time: time of day (0.0 ... 23.99 - 14.25 = 2:15pm)
- * turbidity: (1.0 ... 30+) 2-6 are most useful for clear days.
- * atmEffects: if atm effects are not initialized, bad things will
- *              happen if you try to use them....
- */
-#define SG_SKYTEXTURE_WIDTH	128
-#define SG_SKYTEXTURE_HEIGHT	128
-
-// produce theta-distorted map suitable for texture mapping
-static const bool thetaMap = false;
-
-bool SGSkyDome::repaint( float lat, float lon, int zone, int julianDay,
-                         int time, float turbidity, bool atmEffects )
-{
-    SGSunSky sunSky(lat, lon, zone, julianDay, time, turbidity, atmEffects);
-
-    float  sunAngle = sqrt(sunSky.GetSunSolidAngle() / SG_PI);
-    sgVec3 *sunColour = sunSky.GetSunSpectralRadiance().To_XYZ();
-    sgVec3 *sunDir = sunSky.GetSunPosition();
-
-    for (unsigned int i = 0; i < 128; i++ ) {
-        for (unsigned int j = 0; j < 128; j++ ) {
-
-           sgVec2 hemiPos, normVec2;
-           sgVec3 hemiDir;
-           sgVec3 *hemiColour;
-
-           sgSetVec2( normVec2, 1.0, 1.0 );
-           sgSetVec2( hemiPos, (j + 0.5)/SG_SKYTEXTURE_WIDTH,
-                               (i + 0.5)/SG_SKYTEXTURE_WIDTH );
-
-           sgScaleVec2(hemiPos, 2.0);
-           sgAddVec2(hemiPos, normVec2);
-
-           if (sgDistanceSquaredVec2(hemiPos, normVec2) <= 1.0)
-           {
-               // North = Up, East = left, so hemisphere is 'above' viewer:
-               // imagine lying on your back looking up at the sky,
-               // head oriented towards north
-
-               if (thetaMap)
-               {
-                   // remap to theta-based coords
-                   float  r = sgLengthVec2(hemiPos);
-                   sgScaleVec2(hemiPos, cos(SG_PI * (1 - r) / 2.0) / r);
-               }
-
-               sgSetVec3( hemiDir, -hemiPos[1], -hemiPos[0],
-                          sqrt(1.0-sgDistanceSquaredVec2(hemiPos, normVec2)) );
-
-               if (acos(sgScalarProductVec2(hemiDir, *sunDir)) < sunAngle)
-               {
-                   // this is actually a little beside the point: as
-                   // the sun subtends about 0.5 degrees, at an image
-                   // size of 400x400 pixels, the sun will only cover a
-                   // pixel or so.
-                   hemiColour = sunColour;
-               }
-               else
-               {
-                   hemiColour = sunSky.GetSkyXYZRadiance(&hemiDir);
-                   // hemiColour = csDisplay.ToGamut(hemiColour);
-               }
-
-               radImage.SetPixel(j, i, hemiColour);
-           }
-           else
-               radImage.SetPixel(j, i, cBlack);
-       }
-   }
-}
-
-
 // repaint the sky colors based on current value of sun_angle, sky,
 // and fog colors.  This updates the color arrays for ssgVtxTable.
 // sun angle in degrees relative to verticle
@@ -360,9 +279,8 @@ bool SGSkyDome::repaint( float lat, float lon, int zone, int julianDay,
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
-                         double vis )
+			 double vis )
 {
-#if 0
     double diff;
     sgVec3 outer_param, outer_amt, outer_diff;
     sgVec3 middle_param, middle_amt, middle_diff;
@@ -370,26 +288,26 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 
     // Check for sunrise/sunset condition
     if ( (sun_angle > 80.0) && (sun_angle < 100.0) ) {
-        // 0.0 - 0.4
-        sgSetVec3( outer_param,
-        	   (10.0 - fabs(90.0 - sun_angle)) / 20.0,
-        	   (10.0 - fabs(90.0 - sun_angle)) / 40.0,
-        	   -(10.0 - fabs(90.0 - sun_angle)) / 30.0 );
+	// 0.0 - 0.4
+	sgSetVec3( outer_param,
+		   (10.0 - fabs(90.0 - sun_angle)) / 20.0,
+		   (10.0 - fabs(90.0 - sun_angle)) / 40.0,
+		   -(10.0 - fabs(90.0 - sun_angle)) / 30.0 );
 
-        sgSetVec3( middle_param,
-        	   (10.0 - fabs(90.0 - sun_angle)) / 40.0,
-        	   (10.0 - fabs(90.0 - sun_angle)) / 80.0,
-        	   0.0 );
+	sgSetVec3( middle_param,
+		   (10.0 - fabs(90.0 - sun_angle)) / 40.0,
+		   (10.0 - fabs(90.0 - sun_angle)) / 80.0,
+		   0.0 );
 
-        sgScaleVec3( outer_diff, outer_param, 1.0 / 6.0 );
+	sgScaleVec3( outer_diff, outer_param, 1.0 / 6.0 );
 
-        sgScaleVec3( middle_diff, middle_param, 1.0 / 6.0 );
+	sgScaleVec3( middle_diff, middle_param, 1.0 / 6.0 );
     } else {
-        sgSetVec3( outer_param, 0.0, 0.0, 0.0 );
-        sgSetVec3( middle_param, 0.0, 0.0, 0.0 );
+	sgSetVec3( outer_param, 0.0, 0.0, 0.0 );
+	sgSetVec3( middle_param, 0.0, 0.0, 0.0 );
 
-        sgSetVec3( outer_diff, 0.0, 0.0, 0.0 );
-        sgSetVec3( middle_diff, 0.0, 0.0, 0.0 );
+	sgSetVec3( outer_diff, 0.0, 0.0, 0.0 );
+	sgSetVec3( middle_diff, 0.0, 0.0, 0.0 );
     }
     // printf("  outer_red_param = %.2f  outer_red_diff = %.2f\n", 
     //        outer_red_param, outer_red_diff);
@@ -411,101 +329,101 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     double vis_factor;
 
     if ( vis < 3000.0 ) {
-        vis_factor = (vis - 1000.0) / 2000.0;
-        if ( vis_factor < 0.0 ) {
-            vis_factor = 0.0;
-        }
+	vis_factor = (vis - 1000.0) / 2000.0;
+	if ( vis_factor < 0.0 ) {
+	    vis_factor = 0.0;
+	}
     } else {
-        vis_factor = 1.0;
+	vis_factor = 1.0;
     }
 
     for ( j = 0; j < 3; j++ ) {
-        diff = sky_color[j] - fog_color[j];
-        center_color[j] = sky_color[j] - diff * ( 1.0 - vis_factor );
+	diff = sky_color[j] - fog_color[j];
+	center_color[j] = sky_color[j] - diff * ( 1.0 - vis_factor );
     }
     center_color[3] = 1.0;
 
     for ( i = 0; i < 6; i++ ) {
-        for ( j = 0; j < 3; j++ ) {
-            diff = sky_color[j] - fog_color[j];
+	for ( j = 0; j < 3; j++ ) {
+	    diff = sky_color[j] - fog_color[j];
 
-            // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-            //        l->sky_color[j], l->fog_color[j], diff);
+	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
+	    //        l->sky_color[j], l->fog_color[j], diff);
 
-            upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
-            middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
-        	+ middle_amt[j];
-            lower_color[i][j] = fog_color[j] + outer_amt[j];
+	    upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
+	    middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
+		+ middle_amt[j];
+	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
-            if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
-            if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
-            if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
-            if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
-            if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
-            if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
-        }
-        upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 1.0;
+	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
+	    if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
+	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
+	    if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
+	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
+	    if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
+	}
+	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 1.0;
 
-        for ( j = 0; j < 3; j++ ) {
-            outer_amt[j] -= outer_diff[j];
-            middle_amt[j] -= middle_diff[j];
-        }
+	for ( j = 0; j < 3; j++ ) {
+	    outer_amt[j] -= outer_diff[j];
+	    middle_amt[j] -= middle_diff[j];
+	}
 
-        /*
-        printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-               upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-        printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-               middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-               middle_color[i][3]);
-        printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-               lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-               lower_color[i][3]);
-        */
+	/*
+	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
+	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
+	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
+	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
+	       middle_color[i][3]);
+	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
+	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
+	       lower_color[i][3]);
+	*/
     }
 
     sgSetVec3( outer_amt, 0.0, 0.0, 0.0 );
     sgSetVec3( middle_amt, 0.0, 0.0, 0.0 );
 
     for ( i = 6; i < 12; i++ ) {
-        for ( j = 0; j < 3; j++ ) {
-            diff = sky_color[j] - fog_color[j];
+	for ( j = 0; j < 3; j++ ) {
+	    diff = sky_color[j] - fog_color[j];
 
-            // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-            //        sky_color[j], fog_color[j], diff);
+	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
+	    //        sky_color[j], fog_color[j], diff);
 
-            upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
-            middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
-        	+ middle_amt[j];
-            lower_color[i][j] = fog_color[j] + outer_amt[j];
+	    upper_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.7);
+	    middle_color[i][j] = sky_color[j] - diff * ( 1.0 - vis_factor * 0.1)
+		+ middle_amt[j];
+	    lower_color[i][j] = fog_color[j] + outer_amt[j];
 
-            if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
-            if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
-            if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
-            if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
-            if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
-            if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
-        }
-        upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 1.0;
+	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
+	    if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
+	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
+	    if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
+	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
+	    if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
+	}
+	upper_color[i][3] = middle_color[i][3] = lower_color[i][3] = 1.0;
 
-        for ( j = 0; j < 3; j++ ) {
-            outer_amt[j] += outer_diff[j];
-            middle_amt[j] += middle_diff[j];
-        }
+	for ( j = 0; j < 3; j++ ) {
+	    outer_amt[j] += outer_diff[j];
+	    middle_amt[j] += middle_diff[j];
+	}
 
-        /*
-        printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-               upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-        printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-               middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-               middle_color[i][3]);
-        printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-               lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-               lower_color[i][3]);
+	/*
+	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
+	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
+	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
+	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
+	       middle_color[i][3]);
+	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
+	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
+	       lower_color[i][3]);
  	*/
    }
 
     for ( i = 0; i < 12; i++ ) {
-        sgCopyVec4( bottom_color[i], fog_color );
+	sgCopyVec4( bottom_color[i], fog_color );
     }
 
     //
@@ -522,8 +440,8 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     // sgSetVec4( red, 1.0, 0.0, 0.0, 1.0 );
     sgCopyVec4( slot, center_color );
     for ( i = 11; i >= 0; i-- ) {
-        slot = center_disk_cl->get( counter++ );
-        sgCopyVec4( slot, upper_color[i] );
+	slot = center_disk_cl->get( counter++ );
+	sgCopyVec4( slot, upper_color[i] );
     }
     slot = center_disk_cl->get( counter++ );
     sgCopyVec4( slot, upper_color[11] );
@@ -531,11 +449,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     // generate the upper ring
     counter = 0;
     for ( i = 0; i < 12; i++ ) {
-        slot = upper_ring_cl->get( counter++ );
-        sgCopyVec4( slot, middle_color[i] );
+	slot = upper_ring_cl->get( counter++ );
+	sgCopyVec4( slot, middle_color[i] );
 
-        slot = upper_ring_cl->get( counter++ );
-        sgCopyVec4( slot, upper_color[i] );
+	slot = upper_ring_cl->get( counter++ );
+	sgCopyVec4( slot, upper_color[i] );
     }
     slot = upper_ring_cl->get( counter++ );
     sgCopyVec4( slot, middle_color[0] );
@@ -546,11 +464,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     // generate middle ring
     counter = 0;
     for ( i = 0; i < 12; i++ ) {
-        slot = middle_ring_cl->get( counter++ );
-        sgCopyVec4( slot, lower_color[i] );
+	slot = middle_ring_cl->get( counter++ );
+	sgCopyVec4( slot, lower_color[i] );
 
-        slot = middle_ring_cl->get( counter++ );
-        sgCopyVec4( slot, middle_color[i] );
+	slot = middle_ring_cl->get( counter++ );
+	sgCopyVec4( slot, middle_color[i] );
     }
     slot = middle_ring_cl->get( counter++ );
     sgCopyVec4( slot, lower_color[0] );
@@ -561,18 +479,18 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
     // generate lower ring
     counter = 0;
     for ( i = 0; i < 12; i++ ) {
-        slot = lower_ring_cl->get( counter++ );
-        sgCopyVec4( slot, bottom_color[i] );
+	slot = lower_ring_cl->get( counter++ );
+	sgCopyVec4( slot, bottom_color[i] );
 
-        slot = lower_ring_cl->get( counter++ );
-        sgCopyVec4( slot, lower_color[i] );
+	slot = lower_ring_cl->get( counter++ );
+	sgCopyVec4( slot, lower_color[i] );
     }
     slot = lower_ring_cl->get( counter++ );
     sgCopyVec4( slot, bottom_color[0] );
 
     slot = lower_ring_cl->get( counter++ );
     sgCopyVec4( slot, lower_color[0] );
-#endif
+
     return true;
 }
 
@@ -583,7 +501,6 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 // spin specifies a rotation about the new Z axis (and orients the
 // sunrise/set effects
 bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
-#if 0
     sgMat4 T, LON, LAT, SPIN;
     sgVec3 axis;
 
@@ -623,6 +540,6 @@ bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
     sgSetCoord( &skypos, TRANSFORM );
 
     dome_transform->setTransform( &skypos );
-#endif
+
     return true;
 }

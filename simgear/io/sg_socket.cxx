@@ -132,6 +132,10 @@ SGSocket::SocketType SGSocket::make_client_socket () {
 
     // get the hosts official name/info
     hp = gethostbyname( hostname.c_str() );
+    if (hp == NULL) {
+	SG_LOG( SG_IO, SG_ALERT, "Error: hostname lookup failed" );
+	return INVALID_SOCKET;
+    }
 
     // Connect this socket to the host and the port specified on the
     // command line

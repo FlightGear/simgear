@@ -60,8 +60,7 @@ bool SGIsOpenGLExtensionSupported(char *extName) {
    // The *extName string must follow the OpenGL extensions naming scheme
    // (ie: "GL_type_extension", like GL_EXT_convolution)
 
-    return SGSearchExtensionsString((char *)glGetString(GL_EXTENSIONS),
-extName);
+    return SGSearchExtensionsString((char *)glGetString(GL_EXTENSIONS),extName);
 }
 
 #ifdef __APPLE__
@@ -97,7 +96,7 @@ void* macosxGetGLProcAddress(const char *func) {
   return function;
 }
 
-#else if !defined( WIN32 )
+#elif !defined( WIN32 )
 
 void *SGGetGLProcAddress(const char *func) {
     static void *libHandle = NULL;

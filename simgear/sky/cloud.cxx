@@ -344,7 +344,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 
 
 void SGCloudLayer::draw() {
-    ssgCullAndDraw( layer_root );
+    if (layer_type != SG_CLOUD_CLEAR)
+      ssgCullAndDraw( layer_root );
 }
 
 

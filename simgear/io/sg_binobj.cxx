@@ -108,27 +108,15 @@ double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes ) {
 
 
 // read a binary file and populate the provided structures.
-bool sgReadBinObj( const string& file, SGBinObject* obj ) {
+bool SGBinObject::read_bin( const string& file ) {
     Point3D p;
     int i, j, k;
     char material[256];
 
-    Point3D gbs_center = Point3D( 0 );
-    float gbs_radius = 0.0;
-    point_list wgs84_nodes;
-    point_list normals;
-    point_list texcoords;
-    group_list tris_v;
-    group_list tris_tc; 
-    string_list tri_materials;
-    group_list strips_v;
-    group_list strips_tc; 
-    string_list strip_materials;
-    group_list fans_v;
-    group_list fans_tc;
-    string_list fan_materials;
-
     // zero out structures
+    gbs_center = Point3D( 0 );
+    gbs_radius = 0.0;
+
     wgs84_nodes.clear();
     normals.clear();
     texcoords.clear();
@@ -481,21 +469,6 @@ bool sgReadBinObj( const string& file, SGBinObject* obj ) {
     // close the file
     gzclose(fp);
 
-    obj->set_gbs_center( gbs_center );
-    obj->set_gbs_radius( gbs_radius );
-    obj->set_wgs84_nodes( wgs84_nodes );
-    obj->set_normals( normals );
-    obj->set_texcoords( texcoords );
-    obj->set_tris_v( tris_v );
-    obj->set_tris_tc( tris_tc ); 
-    obj->set_tri_materials( tri_materials );
-    obj->set_strips_v( strips_v );
-    obj->set_strips_tc( strips_tc ); 
-    obj->set_strip_materials( strip_materials );
-    obj->set_fans_v( fans_v );
-    obj->set_fans_tc( fans_tc );
-    obj->set_fan_materials( fan_materials );
-
     if ( sgReadError() ) {
 	cout << "We detected an error while reading the file." << endl;
 	return false;
@@ -508,28 +481,13 @@ bool sgReadBinObj( const string& file, SGBinObject* obj ) {
 // write out the structures to a binary file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
-		    const SGBinObject* obj ) 
+bool SGBinObject::write_bin( const string& base, const string& name,
+			     const SGBucket& b )
 {
     Point3D p;
     sgVec2 t;
     sgVec3 pt;
     int i, j;
-
-    Point3D gbs_center = obj->get_gbs_center();
-    float gbs_radius = obj->get_gbs_radius();
-    point_list wgs84_nodes = obj->get_wgs84_nodes();
-    point_list normals = obj->get_normals();
-    point_list texcoords = obj->get_texcoords();
-    group_list tris_v = obj->get_tris_v();
-    group_list tris_tc = obj->get_tris_tc(); 
-    string_list tri_materials = obj->get_tri_materials();
-    group_list strips_v = obj->get_strips_v();
-    group_list strips_tc = obj->get_strips_tc(); 
-    string_list strip_materials = obj->get_strip_materials();
-    group_list fans_v = obj->get_fans_v();
-    group_list fans_tc = obj->get_fans_tc();
-    string_list fan_materials = obj->get_fan_materials();
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
@@ -802,26 +760,11 @@ bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
 // write out the structures to an ASCII file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
-bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
-		      SGBinObject *obj )
+bool SGBinObject::write_ascii( const string& base, const string& name,
+			       const SGBucket& b )
 {
     Point3D p;
     int i, j;
-
-    Point3D gbs_center = obj->get_gbs_center();
-    float gbs_radius = obj->get_gbs_radius();
-    point_list wgs84_nodes = obj->get_wgs84_nodes();
-    point_list normals = obj->get_normals();
-    point_list texcoords = obj->get_texcoords();
-    group_list tris_v = obj->get_tris_v();
-    group_list tris_tc = obj->get_tris_tc(); 
-    string_list tri_materials = obj->get_tri_materials();
-    group_list strips_v = obj->get_strips_v();
-    group_list strips_tc = obj->get_strips_tc(); 
-    string_list strip_materials = obj->get_strip_materials();
-    group_list fans_v = obj->get_fans_v();
-    group_list fans_tc = obj->get_fans_tc();
-    string_list fan_materials = obj->get_fan_materials();
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;

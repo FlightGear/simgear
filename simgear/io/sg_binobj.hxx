@@ -53,6 +53,25 @@ typedef group_list::const_iterator const_group_list_iterator;
 #define SG_FILE_MAGIC_NUMBER  ( ('S'<<24) + ('G'<<16) + SG_BINOBJ_VERSION )
 
 
+/*
+   scenery-file: magic, nobjects, object+
+   magic: "TG" + version
+   object: obj_typecode, nproperties, nelements, property+, element+
+   element: nbytes, BYTE+
+   property: prop_typecode, nbytes, BYTE+
+   obj_typecode: bounding sphere | vertices | normals | texcoords | triangles |
+                fans | strips 
+   prop_typecode: material_name | ???
+   nelements: SHORT (Gives us 65536 which ought to be enough, right?)
+   nproperties: SHORT
+   *_typecode: CHAR
+   nbytes: INTEGER (If we used short here that would mean 65536 bytes = 16384
+                    floats = 5461 vertices which is not enough for future
+		    growth)
+   vertex: FLOAT, FLOAT, FLOAT
+*/
+
+
 class SGBinObject {
     Point3D gbs_center;
     float gbs_radius;
@@ -106,47 +125,26 @@ public:
     inline void set_fans_tc( group_list g ) { fans_tc = g; }
     inline string_list get_fan_materials() const { return fan_materials; }
     inline void set_fan_materials( string_list s ) { fan_materials = s; }
+
+    // read a binary file object and populate the provided structures.
+    bool read_bin( const string& file );
+
+    // write out the structures to a binary file.  We assume that the
+    // groups come to us sorted by material property.  If not, things
+    // don't break, but the result won't be as optimal.
+    bool write_bin( const string& base, const string& name, const SGBucket& b );
+
+    // write out the structures to an ASCII file.  We assume that the
+    // groups come to us sorted by material property.  If not, things
+    // don't break, but the result won't be as optimal.
+    bool write_ascii( const string& base, const string& name,
+		      const SGBucket& b );
 };
-
-
-/*
-   scenery-file: magic, nobjects, object+
-   magic: "TG" + version
-   object: obj_typecode, nproperties, nelements, property+, element+
-   element: nbytes, BYTE+
-   property: prop_typecode, nbytes, BYTE+
-   obj_typecode: bounding sphere | vertices | normals | texcoords | triangles |
-                fans | strips 
-   prop_typecode: material_name | ???
-   nelements: SHORT (Gives us 65536 which ought to be enough, right?)
-   nproperties: SHORT
-   *_typecode: CHAR
-   nbytes: INTEGER (If we used short here that would mean 65536 bytes = 16384
-                    floats = 5461 vertices which is not enough for future
-		    growth)
-   vertex: FLOAT, FLOAT, FLOAT
-*/
 
 
 // calculate the bounding sphere.  Center is the center of the
 // tile and zero elevation
 double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes );
-
-
-// read a binary file object and populate the provided structures.
-bool sgReadBinObj( const string& file, SGBinObject* obj );
-
-// write out the structures to a binary file.  We assume that the
-// groups come to us sorted by material property.  If not, things
-// don't break, but the result won't be as optimal.
-bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
-		    const SGBinObject* obj );
-
-// write out the structures to an ASCII file.  We assume that the
-// groups come to us sorted by material property.  If not, things
-// don't break, but the result won't be as optimal.
-bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
-		      SGBinObject* obj );
 
 
 #endif // _SG_BINOBJ_HXX

@@ -27,6 +27,7 @@ SG_USING_STD(map);
 // Don't pull in the headers, since we don't need them here.
 class SGInterpTable;
 class SGCondition;
+class SGPersonalityBranch;
 
 
 // Has anyone done anything *really* stupid, like making min and max macros?
@@ -84,7 +85,7 @@ public:
    * Current personality branch : enable animation to behave differently
    * for similar objects
    */
-  static ssgBranch *current_object;
+  static SGPersonalityBranch *current_object;
 
 protected:
 
@@ -188,9 +189,11 @@ public:
     virtual ~SGTimedAnimation ();
     virtual int update();
 private:
+    bool _use_personality;
+    enum PersonalityVar { INIT, LAST_TIME_SEC, TOTAL_DURATION_SEC, BRANCH_DURATION_SEC, STEP };
     double _duration_sec;
-    map<ssgBranch *,double> _last_time_sec;
-    map<ssgBranch *,double> _total_duration_sec;
+    double _last_time_sec;
+    double _total_duration_sec;
     int _step;
     struct DurationSpec {
         DurationSpec( double m = 0.0 ) : _min(m), _max(m) {}
@@ -198,9 +201,7 @@ private:
         double _min, _max;
     };
     vector<DurationSpec> _branch_duration_specs;
-    bool _use_personality;
-    typedef map<ssgBranch *,vector<double> > PersonalityMap;
-    PersonalityMap _branch_duration_sec;
+    vector<double> _branch_duration_sec;
 };
 
 

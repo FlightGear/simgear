@@ -2,6 +2,9 @@
  * $Id$
  */
 
+#ifndef _SG_FLASH_HXX
+#define _SG_FLASH_HXX 1
+
 class SGFlash : public ssgBranch
 {
 public:
@@ -30,3 +33,5 @@ private:
     float _power, _factor, _offset, _min_v, _max_v;
     bool _two_sides;
 };
+
+#endif // _SG_FLASH_HXX

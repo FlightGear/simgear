@@ -5,6 +5,7 @@
 
 #include "model.hxx"
 #include "animation.hxx"
+#include "personality.hxx"
 
 #include "modellib.hxx"
 
@@ -61,15 +62,11 @@ SGModelLib::flush1()
     }
 }
 
-struct SGPersonalityBranch : public ssgBranch {
-    ssgBranch *_old_current;
-};
-
 static int
 personality_pretrav_callback(ssgEntity * entity, int mask)
 {
     ((SGPersonalityBranch *)entity)->_old_current = SGAnimation::current_object;
-    SGAnimation::current_object = (ssgBranch *)entity;
+    SGAnimation::current_object = (SGPersonalityBranch *)entity;
     return 1;
 }
 

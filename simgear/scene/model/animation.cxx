@@ -18,6 +18,7 @@
 
 #include "animation.hxx"
 #include "flash.hxx"
+#include "personality.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -175,7 +176,7 @@ read_interpolation_table (SGPropertyNode_ptr props)
 
 // Initialize the static data member
 double SGAnimation::sim_time_sec = 0.0;
-ssgBranch *SGAnimation::current_object = 0;
+SGPersonalityBranch *SGAnimation::current_object = 0;
 
 SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
     : _branch(branch)
@@ -418,9 +419,12 @@ SGSpinAnimation::update()
 
 SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgSelector),
+    _use_personality( props->getBoolValue("use-personality",false) ),
     _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
-    _step( 0 ),
-    _use_personality( props->getBoolValue("use-personality",false) )
+    _last_time_sec( sim_time_sec ),
+    _total_duration_sec( 0 ),
+    _step( 0 )
+    
 {
     vector<SGPropertyNode_ptr> nodes = props->getChildren( "branch-duration-sec" );
     size_t nb = nodes.size();
@@ -437,6 +441,14 @@ SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
                                                           rNode->getDoubleValue( "max", 1.0 ) );
         }
     }
+    if ( !_use_personality ) {
+        for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
+            DurationSpec &sp = _branch_duration_specs[ i ];
+            double v = sp._min + sg_random() * ( sp._max - sp._min );
+            _branch_duration_sec.push_back( v );
+            _total_duration_sec += v;
+        }
+    }
     ((ssgSelector *)getBranch())->selectStep(_step);
 }
 
@@ -447,35 +459,56 @@ SGTimedAnimation::~SGTimedAnimation ()
 int
 SGTimedAnimation::update()
 {
-    ssgBranch *key = ( _use_personality ? current_object : 0 );
-    PersonalityMap::iterator it = _branch_duration_sec.find( key );
-    if ( it == _branch_duration_sec.end() ) {
-        vector<double> durations;
-        double total = 0;
-        for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
-            DurationSpec &sp = _branch_duration_specs[ i ];
-            double v = sp._min + sg_random() * ( sp._max - sp._min );
-            durations.push_back( v );
-            total += v;
+    if ( _use_personality ) {
+        SGPersonalityBranch *key = current_object;
+        if ( !key->getIntValue( this, INIT ) ) {
+            double total = 0;
+            for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
+                DurationSpec &sp = _branch_duration_specs[ i ];
+                double v = sp._min + sg_random() * ( sp._max - sp._min );
+                key->setDoubleValue( v, this, BRANCH_DURATION_SEC, i );
+                total += v;
+            }
+            key->setDoubleValue( sim_time_sec, this, LAST_TIME_SEC );
+            key->setDoubleValue( total, this, TOTAL_DURATION_SEC );
+            key->setIntValue( 0, this, STEP );
+            key->setIntValue( 1, this, INIT );
         }
-        it = _branch_duration_sec.insert( PersonalityMap::value_type( key, durations ) ).first;
-        _last_time_sec[ key ] = sim_time_sec;
-        _total_duration_sec[ key ] = total;
-    }
 
-    while ( ( sim_time_sec - _last_time_sec[ key ] ) >= _total_duration_sec[ key ] ) {
-        _last_time_sec[ key ] += _total_duration_sec[ key ];
-    }
-    double duration = _duration_sec;
-    if ( _step < (int)it->second.size() ) {
-        duration = it->second[ _step ];
-    }
-    if ( ( sim_time_sec - _last_time_sec[ key ] ) >= duration ) {
-        _last_time_sec[ key ] += duration;
-        _step += 1;
-        if ( _step >= getBranch()->getNumKids() )
-            _step = 0;
+        _step = key->getIntValue( this, STEP );
+        _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC );
+        _total_duration_sec = key->getDoubleValue( this, TOTAL_DURATION_SEC );
+        while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
+            _last_time_sec += _total_duration_sec;
+        }
+        double duration = _duration_sec;
+        if ( _step < (int)_branch_duration_specs.size() ) {
+            duration = key->getDoubleValue( this, BRANCH_DURATION_SEC, _step );
+        }
+        if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
+            _last_time_sec += duration;
+            _step += 1;
+            if ( _step >= getBranch()->getNumKids() )
+                _step = 0;
+        }
         ((ssgSelector *)getBranch())->selectStep( _step );
+        key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC );
+        key->setIntValue( _step, this, STEP );
+    } else {
+        while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
+            _last_time_sec += _total_duration_sec;
+        }
+        double duration = _duration_sec;
+        if ( _step < (int)_branch_duration_sec.size() ) {
+            duration = _branch_duration_sec[ _step ];
+        }
+        if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
+            _last_time_sec += duration;
+            _step += 1;
+            if ( _step >= getBranch()->getNumKids() )
+                _step = 0;
+            ((ssgSelector *)getBranch())->selectStep( _step );
+        }
     }
     return 1;
 }

@@ -10,6 +10,7 @@ include_HEADERS = \
 	location.hxx \
 	model.hxx \
 	modellib.hxx \
+	personality.hxx \
 	placement.hxx
 
 libsgmodel_a_SOURCES = \
@@ -18,6 +19,7 @@ libsgmodel_a_SOURCES = \
 	location.cxx \
 	model.cxx \
 	modellib.cxx \
+	personality.cxx \
 	placement.cxx
 
 INCLUDES = -I$(top_srcdir)

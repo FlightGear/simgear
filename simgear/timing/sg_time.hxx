@@ -71,14 +71,17 @@ private:
     // tzContainer stores all the current Timezone control points/
     TimezoneContainer* tzContainer;
 
-    //Store the current local timezone name;
+    // Points to the current local timezone name;
     char *zonename;
 
     // Unix "calendar" time in seconds
     time_t cur_time;
 
-    // Break down of GMT time
+    // Break down of equivalent GMT time
     struct tm *gmt;
+
+    // offset of local time relative to GMT
+    time_t local_offset;
 
     // Julian date
     double jd;
@@ -86,30 +89,20 @@ private:
     // modified Julian date
     double mjd;
 
-    double last_mjd, last_dy;
-    int last_mn, last_yr;
-
     // side real time at prime meridian
     double gst;
 
     // local sidereal time
     double lst;
 
-    // local offset to GMT
-    time_t localOffset;
-
     // the difference between the precise sidereal time algorithm
-    // result and the course result.  course + diff has good accuracy
-    // for the short term
+    // result and the course result.  course_gst + diff has good
+    // accuracy for the short term
     double gst_diff;
 
-    // An offset in seconds from the true time.  Allows us to adjust
-    // the effective time of day.
-    long int warp;
-
-    // How much to change the value of warp each iteration.  Allows us
-    // to make time progress faster than normal.
-    long int warp_delta;
+    // internal book keeping data
+    double last_mjd, last_dy;
+    int last_mn, last_yr;
 
 public:
 
@@ -123,15 +116,15 @@ public:
     inline time_t get_cur_time() const { return cur_time; };
     inline struct tm* getGmt()const { return gmt; };
   
-    void adjust_warp(int val) { warp += val; };
-    void adjust_warp_delta(int val) { warp_delta += val; };
+    // void adjust_warp(int val) { warp += val; };
+    // void adjust_warp_delta(int val) { warp_delta += val; };
 
     // Initialize the time dependent variables
-    void init( double lon, double lat, const string& root, 
-	       time_t timeOffset, sgTimingOffsetType offsetType );
+    void init( double lon, double lat, const string& root );
+    // time_t timeOffset, sgTimingOffsetType offsetType );
 
     // Update the time dependent variables
-    void update( double lon, double lat, double alt_m );
+    void update( double lon, double lat, double alt_m, long int warp );
     void updateLocal( double lon, double lat, const string& root );
 
     void cal_mjd (int mn, double dy, int yr);
@@ -146,11 +139,13 @@ public:
     time_t get_gmt(int year, int month, int day, 
 		   int hour, int minute, int second);
     time_t get_gmt(struct tm* the_time);
-  
+
+    inline char* get_zonename() const { return zonename; }
+
     char* format_time( const struct tm* p, char* buf );
     long int fix_up_timezone( long int timezone_orig );
 
-    inline int get_warp_delta() const { return warp_delta; }
+    // inline int get_warp_delta() const { return warp_delta; }
 };
 
 

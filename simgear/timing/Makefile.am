@@ -4,12 +4,13 @@ lib_LIBRARIES = libsgtiming.a
 
 include_HEADERS = \
 	geocoord.h \
+	lowleveltime.h \
 	sg_time.hxx \
 	timezone.h
 
 libsgtiming_a_SOURCES = \
 	geocoord.cxx \
-	lowleveltime.cxx lowleveltime.h \
+	lowleveltime.cxx \
 	sg_time.cxx \
 	timezone.cxx \
 	# event.cxx event.hxx \

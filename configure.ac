@@ -5,8 +5,8 @@ dnl $Id$
 
 AC_INIT(simgear/bucket/newbucket.cxx)
 
-# Require at least automake 2.13
-AC_PREREQ(2.13)
+# Require at least automake 2.53
+AC_PREREQ(2.53)
 
 dnl Initialize the automake stuff
 AM_INIT_AUTOMAKE(SimGear, 0.0.19pre1)
@@ -63,7 +63,7 @@ AM_CONDITIONAL(OLD_AUTOMAKE, test $AUTO_MAKE_VERSION -lt 15)
 # with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
 if test "x$with_logging" = "xno" ; then
-    AC_DEFINE(FG_NDEBUG)
+    AC_DEFINE([FG_NDEBUG], 1, [Define for no logging output])
 fi
 
 # Specify if we want to build with Norman's jpeg image server support.
@@ -189,8 +189,8 @@ elif test "x$ac_cv_header_windows_h" != "xyes" ; then
     if test "x$ac_cv_lib_MesaGL_glNewList" = "xyes" ; then
 	AC_CHECK_HEADER(GL/fxmesa.h)
 	if test "x$ac_cv_header_GL_fxmesa_h" = "xyes"; then
-	    AC_DEFINE(XMESA)
-            AC_DEFINE(FX)
+	    AC_DEFINE([XMESA], 1, [Define for fxmesa])
+            AC_DEFINE([FX], 1, [Define for fxmesa])
         fi
     fi
 
@@ -212,7 +212,7 @@ else
     dnl Win32 libs
 
     echo Win32 specific hacks...
-    AC_DEFINE(WIN32)
+    AC_DEFINE([WIN32], 1, [Define for Win32 platforms])
 
     dnl force a failed check since we will be building under windoze
     AM_CONDITIONAL(ENABLE_XMESA_FX, test "no" = "yes")
@@ -280,6 +280,11 @@ if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
     exit
 fi
 
+AC_CHECK_HEADER(plib/ssgaLensFlare.h)
+if test "x$ac_cv_header_plib_ssgaLensFlare_h" = "xyes"; then
+    AC_DEFINE([FG_CHEESY_LENS_FLARE], 1, [Define for cheesy lens flare effect])
+fi
+
 dnl Check for system installed metakit
 AC_CHECK_HEADER(mk4.h)
 if test "x$ac_cv_header_mk4_h" != "xyes"; then
@@ -308,7 +313,7 @@ AC_CHECK_HEADERS( \
 	sys/stat.h sys/time.h sys/timeb.h unistd.h windows.h winbase.h values.h )
 
 if test "x$ac_cv_header_stdint_h" = "xyes"; then
-    AC_DEFINE(HAVE_STDINT_H)
+    AC_DEFINE([HAVE_STDINT_H], 1, [Define if stdint.h exists])
 fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.

@@ -28,6 +28,7 @@ SUBDIRS = \
 	bucket \
 	debug \
 	ephemeris \
+	io \
 	magvar \
 	math \
 	$(METAR_DIRS) \

@@ -253,6 +253,7 @@ AC_OUTPUT( \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \
+	simgear/io/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/misc/Makefile \

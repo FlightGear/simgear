@@ -75,6 +75,9 @@ public:
     // path separator
     void concat( const string p );
 
+    // get the directory part of the path
+    string dir();
+  
     // get the path string
     inline string str() const { return path; }
     inline const char *c_str() { return path.c_str(); }

@@ -28,6 +28,11 @@ FG_USING_STD(istream);
 FG_USING_STD(ostream);
 #endif
 
+#ifdef ALIAS
+#pragma warn A sloppy coder has defined ALIAS as a macro!
+#undef ALIAS
+#endif
+
 #ifdef UNKNOWN
 #pragma warn A sloppy coder has defined UNKNOWN as a macro!
 #undef UNKNOWN
@@ -41,6 +46,11 @@ FG_USING_STD(ostream);
 #ifdef INT
 #pragma warn A sloppy coder has defined INT as a macro!
 #undef INT
+#endif
+
+#ifdef LONG
+#pragma warn A sloppy coder has defined LONG as a macro!
+#undef LONG
 #endif
 
 #ifdef FLOAT
@@ -294,6 +304,7 @@ public:
   enum Type {
     BOOL,
     INT,
+    LONG,
     FLOAT,
     DOUBLE,
     STRING,
@@ -303,16 +314,24 @@ public:
   SGValue (const SGValue &value);
   ~SGValue ();
 
-  Type getType () const { return _type; }
+  Type getType () const;
+
+  SGValue * getAlias ();
+  const SGValue * getAlias () const;
+  bool alias (SGValue * alias);
+  bool unalias ();
+  bool isAlias () const { return _type == ALIAS; }
 
   bool getBoolValue () const;
   int getIntValue () const;
+  long getLongValue () const;
   float getFloatValue () const;
   double getDoubleValue () const;
   string getStringValue () const;
 
   bool setBoolValue (bool value);
   bool setIntValue (int value);
+  bool setLongValue (long value);
   bool setFloatValue (float value);
   bool setDoubleValue (double value);
   bool setStringValue (string value);
@@ -322,6 +341,7 @@ public:
 
   bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<long> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
@@ -330,15 +350,21 @@ public:
 
 private:
 
+  enum {
+    ALIAS = -1
+  };
+
   void clear_value ();
 
-  Type _type;
+  int _type;
   bool _tied;
 
 				// The right kind of pointer...
   union {
+    SGValue * alias;
     SGRawValue<bool> * bool_val;
     SGRawValue<int> * int_val;
+    SGRawValue<long> * long_val;
     SGRawValue<float> * float_val;
     SGRawValue<double> * double_val;
     SGRawValue<string> * string_val;
@@ -358,16 +384,25 @@ class SGPropertyNode
 public:
 
   SGPropertyNode ();
-  virtual ~SGPropertyNode ();
+   virtual ~SGPropertyNode ();
 
 				// Basic properties.
   bool hasValue () const { return (_value != 0); }
   SGValue * getValue () { return _value; }
+  SGValue * getValue (bool create);
   const SGValue * getValue () const { return _value; }
   const string &getName () const { return _name; }
   const int getIndex () const { return _index; }
   SGPropertyNode * getParent () { return _parent; }
   const SGPropertyNode * getParent () const { return _parent; }
+
+				// Alias support.
+  bool alias (SGPropertyNode * target);
+  bool alias (const string &path);
+  bool unalias ();
+  bool isAlias () const;
+  SGPropertyNode * getAliasTarget ();
+  const SGPropertyNode * getAliasTarget () const;
 
 				// Children.
   const int nChildren () const { return _children.size(); }
@@ -394,12 +429,14 @@ public:
   
   bool getBoolValue () const;
   int getIntValue () const;
+  long getLongValue () const;
   float getFloatValue () const;
   double getDoubleValue () const;
   string getStringValue () const;
 
   bool setBoolValue (bool value);
   bool setIntValue (int value);
+  bool setLongValue (long value);
   bool setFloatValue (float value);
   bool setDoubleValue (double value);
   bool setStringValue (string value);
@@ -409,6 +446,7 @@ public:
 
   bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
+  bool tie (const SGRawValue<long> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
   bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
@@ -426,6 +464,8 @@ public:
 		     bool defaultValue = false) const;
   int getIntValue (const string &relative_path,
 		   int defaultValue = 0) const;
+  long getLongValue (const string &relative_path,
+		     long defaultValue = 0L) const;
   float getFloatValue (const string &relative_path,
 		       float defaultValue = 0.0) const;
   double getDoubleValue (const string &relative_path,
@@ -435,6 +475,7 @@ public:
 
   bool setBoolValue (const string &relative_path, bool value);
   bool setIntValue (const string &relative_path, int value);
+  bool setLongValue (const string &relative_path, long value);
   bool setFloatValue (const string &relative_path, float value);
   bool setDoubleValue (const string &relative_path, double value);
   bool setStringValue (const string &relative_path, string value);
@@ -445,6 +486,8 @@ public:
   bool tie (const string &relative_path, const SGRawValue<bool> &rawValue,
 	    bool useDefault = true);
   bool tie (const string &relative_path, const SGRawValue<int> &rawValue,
+	    bool useDefault = true);
+  bool tie (const string &relative_path, const SGRawValue<long> &rawValue,
 	    bool useDefault = true);
   bool tie (const string &relative_path, const SGRawValue<float> &rawValue,
 	    bool useDefault = true);
@@ -468,6 +511,7 @@ private:
   int _index;
   SGPropertyNode * _parent;
   vector<SGPropertyNode *> _children;
+  mutable SGPropertyNode * _target;
 
 };
 
@@ -477,7 +521,8 @@ private:
 // I/O functions.
 ////////////////////////////////////////////////////////////////////////
 
-bool readProperties (istream &input, SGPropertyNode * start_node);
+bool readProperties (istream &input, SGPropertyNode * start_node,
+		     const string &base = "");
 bool readProperties (const string &file, SGPropertyNode * start_node);
 bool writeProperties (ostream &output, const SGPropertyNode * start_node);
 bool writeProperties (const string &file, const SGPropertyNode * start_node);

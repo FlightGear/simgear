@@ -10,6 +10,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/xml/easyxml.hxx>
 
+#include "fgpath.hxx"
 #include "props.hxx"
 
 #include STL_IOSTREAM
@@ -42,7 +43,8 @@ class PropsVisitor : public XMLVisitor
 {
 public:
 
-  PropsVisitor (SGPropertyNode * root) : _ok(true), _root(root), _level(0) {}
+  PropsVisitor (SGPropertyNode * root, const string &base)
+    : _ok(true), _root(root), _level(0), _base(base) {}
 
   void startXML ();
   void endXML ();
@@ -87,7 +89,7 @@ private:
   SGPropertyNode * _root;
   int _level;
   vector<State> _state_stack;
-
+  string _base;
 };
 
 void
@@ -110,10 +112,16 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   State &st = state();
 
   if (_level == 0) {
+    if (string(name) != "PropertyList") {
+      FG_LOG(FG_INPUT, FG_ALERT, "Root element name is " <<
+	     name << "; expected PropertyList");
+      _ok = false;
+    }
     push_state(_root, "");
   }
 
   else {
+				// Get the index.
     const char * att_n = atts.getValue("n");
     int index = 0;
     if (att_n != 0) {
@@ -123,8 +131,30 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       index = st.counters[name];
       st.counters[name]++;
     }
-    push_state(st.node->getChild(name, index, true),
-	       atts.getValue("type"));
+
+				// Check for an alias.
+    SGPropertyNode * node = st.node->getChild(name, index, true);
+    const char * att_alias = atts.getValue("alias");
+    if (att_alias != 0) {
+      if (!node->alias(att_alias))
+	FG_LOG(FG_INPUT, FG_ALERT, "Failed to set alias to " << att_alias);
+    }
+
+				// Check for an include.
+    const char * att_include = atts.getValue("include");
+    if (att_include != 0) {
+      FGPath path(FGPath(_base).dir());
+      cerr << "Base is " << _base << endl;
+      cerr << "Dir is " << FGPath(_base).dir() << endl;
+      path.append(att_include);
+      if (!readProperties(path.str(), node)) {
+	FG_LOG(FG_INPUT, FG_ALERT, "Failed to read include file "
+	       << att_include);
+	_ok = false;
+      }
+    }
+
+    push_state(node, atts.getValue("type"));
   }
 }
 
@@ -134,9 +164,9 @@ PropsVisitor::endElement (const char * name)
   State &st = state();
   bool ret;
 
-				// If there are no children, then
-				// it is a leaf value.
-  if (st.node->nChildren() == 0) {
+				// If there are no children and it's
+				// not an alias, then it's a leaf value.
+  if (st.node->nChildren() == 0 && !st.node->isAlias()) {
     if (st.type == "bool") {
       if (_data == "true" || atoi(_data.c_str()) != 0)
 	ret = st.node->setBoolValue(true);
@@ -183,8 +213,8 @@ PropsVisitor::warning (const char * message, int line, int column)
 void
 PropsVisitor::error (const char * message, int line, int column)
 {
-  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: FATAL: "
-	 << message << " at line " << line << ", column " << column);
+  FG_LOG(FG_INPUT, FG_ALERT, "readProperties: FATAL: " <<
+	 message << " at line " << line << ", column " << column);
   _ok = false;
 }
 
@@ -194,19 +224,38 @@ PropsVisitor::error (const char * message, int line, int column)
 // Property list reader.
 ////////////////////////////////////////////////////////////////////////
 
+
+/**
+ * Read properties from an input stream.
+ *
+ * @param input The input stream containing an XML property file.
+ * @param start_node The root node for reading properties.
+ * @param base A base path for resolving external include references.
+ * @return true if the read succeeded, false otherwise.
+ */
 bool
-readProperties (istream &input, SGPropertyNode * start_node)
+readProperties (istream &input, SGPropertyNode * start_node,
+		const string &base)
 {
-  PropsVisitor visitor(start_node);
+  PropsVisitor visitor(start_node, base);
   return readXML(input, visitor) && visitor.isOK();
 }
 
+
+/**
+ * Read properties from a file.
+ *
+ * @param file A string containing the file path.
+ * @param start_node The root node for reading properties.
+ * @return true if the read succeeded, false otherwise.
+ */
 bool
 readProperties (const string &file, SGPropertyNode * start_node)
 {
+  cerr << "Reading properties from " << file << endl;
   ifstream input(file.c_str());
   if (input.good()) {
-    return readProperties(input, start_node);
+    return readProperties(input, start_node, file);
   } else {
     FG_LOG(FG_INPUT, FG_ALERT, "Error reading property list from file "
 	   << file);
@@ -292,10 +341,17 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
 				// write it first.
   if (node->hasValue()) {
     doIndent(output, indent);
-    output << '<' << name << " n=\"" << index
-	   << "\" type=\"" << getTypeName(node->getType()) << "\">";
-    writeData(output, node->getStringValue());
-    output << "</" << name << '>' << endl;;
+    output << '<' << name << " n=\"" << index;
+    if (node->isAlias() && node->getAliasTarget() != 0) {
+      output << "\" alias=\""
+	     << node->getAliasTarget()->getPath() << "\"/>" << endl;
+    } else {
+      if (node->getType() != SGValue::UNKNOWN)
+	output << "\" type=\"" << getTypeName(node->getType()) << '"';
+      output << '>';
+      writeData(output, node->getStringValue());
+      output << "</" << name << '>' << endl;;
+    }
   }
 
 				// If there are children, write them
@@ -320,6 +376,14 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
   return true;
 }
 
+
+/**
+ * Write a property tree to an output stream in XML format.
+ *
+ * @param output The output stream.
+ * @param start_node The root node to write.
+ * @return true if the write succeeded, false otherwise.
+ */
 bool
 writeProperties (ostream &output, const SGPropertyNode * start_node)
 {
@@ -337,6 +401,14 @@ writeProperties (ostream &output, const SGPropertyNode * start_node)
   return true;
 }
 
+
+/**
+ * Write a property tree to a file in XML format.
+ *
+ * @param file The destination file.
+ * @param start_node The root node to write.
+ * @return true if the write succeeded, false otherwise.
+ */
 bool
 writeProperties (const string &file, const SGPropertyNode * start_node)
 {
@@ -351,8 +423,19 @@ writeProperties (const string &file, const SGPropertyNode * start_node)
 }
 
 
+
+////////////////////////////////////////////////////////////////////////
+// Copy properties from one tree to another.
+////////////////////////////////////////////////////////////////////////
+
+
 /**
- * Copy one property list to another.
+ * Copy one property tree to another.
+ * 
+ * @param in The source property tree.
+ * @param out The destination property tree.
+ * @return true if all properties were copied, false if some failed
+ *  (for example, if the property's value is tied read-only).
  */
 bool
 copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
@@ -388,7 +471,7 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 	retval = false;
       break;
     default:
-      throw string("Unknown SGValue type"); // FIXME!!!
+      throw string("Unknown SGValue type");
     }
   }
 

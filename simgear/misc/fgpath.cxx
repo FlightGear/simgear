@@ -100,3 +100,14 @@ void FGPath::concat( const string p ) {
 	path += part;
     }
 }
+
+
+// get the directory part of the path.
+string FGPath::dir() {
+    int index = path.rfind(FG_PATH_SEP);
+    if (index >= 0) {
+	return path.substr(0, index);
+    } else {
+	return "";
+    }
+}

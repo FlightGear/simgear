@@ -228,6 +228,10 @@ readXML (istream &input, XMLVisitor &visitor)
     }
   }
 
+				// Verify end of document.
+  if (!XML_Parse(parser, buf, 0, true))
+    retval = false;
+
   if (retval)
     visitor.endXML();
 

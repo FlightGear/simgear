@@ -18,11 +18,24 @@
 #include <algorithm>
 #include "props.hxx"
 
-#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
-FG_USING_STD(cerr);
-FG_USING_STD(endl);
-#endif
 FG_USING_STD(sort);
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Local classes.
+////////////////////////////////////////////////////////////////////////
+
+/**
+ * Comparator class for sorting by index.
+ */
+class CompareIndices
+{
+public:
+  int operator() (const SGPropertyNode * n1, const SGPropertyNode *n2) const {
+    return (n1->getIndex() < n2->getIndex());
+  }
+};
 
 
 
@@ -32,12 +45,14 @@ FG_USING_STD(sort);
 
 #define GET_BOOL (_value.bool_val->getValue())
 #define GET_INT (_value.int_val->getValue())
+#define GET_LONG (_value.long_val->getValue())
 #define GET_FLOAT (_value.float_val->getValue())
 #define GET_DOUBLE (_value.double_val->getValue())
 #define GET_STRING (_value.string_val->getValue())
 
 #define SET_BOOL(val) (_value.bool_val->setValue(val))
 #define SET_INT(val) (_value.int_val->setValue(val))
+#define SET_LONG(val) (_value.long_val->setValue(val))
 #define SET_FLOAT(val) (_value.float_val->setValue(val))
 #define SET_DOUBLE(val) (_value.double_val->setValue(val))
 #define SET_STRING(val) (_value.string_val->setValue(val))
@@ -50,6 +65,7 @@ FG_USING_STD(sort);
 
 const bool SGRawValue<bool>::DefaultValue = false;
 const int SGRawValue<int>::DefaultValue = 0;
+const long SGRawValue<long>::DefaultValue = 0L;
 const float SGRawValue<float>::DefaultValue = 0.0;
 const double SGRawValue<double>::DefaultValue = 0.0L;
 const string SGRawValue<string>::DefaultValue = "";
@@ -227,22 +243,27 @@ find_node (SGPropertyNode * current,
 	   int position,
 	   bool create)
 {
+				// Run off the end of the list
   if (current == 0) {
     return 0;
   }
 
+				// Success! This is the one we want.
   else if (position >= components.size()) {
     return current;
   }
 
+				// Empty component means root.
   else if (components[position].name == "") {
     return find_node(current->getRootNode(), components, position + 1, create);
   }
 
+				// . means current directory
   else if (components[position].name == ".") {
     return find_node(current, components, position + 1, create);
   }
 
+				// .. means parent directory
   else if (components[position].name == "..") {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
@@ -251,6 +272,7 @@ find_node (SGPropertyNode * current,
       return find_node(parent, components, position + 1, create);
   }
 
+				// Otherwise, a child name
   else {
     SGPropertyNode * child =
       current->getChild(components[position].name,
@@ -287,11 +309,18 @@ SGValue::SGValue (const SGValue &source)
   _type = source._type;
   _tied = source._tied;
   switch (source._type) {
+  case ALIAS:
+				// FIXME!!!
+    _value.alias = (SGValue *)(source.getAlias());
+    break;
   case BOOL:
     _value.bool_val = source._value.bool_val->clone();
     break;
   case INT:
     _value.int_val = source._value.int_val->clone();
+    break;
+  case LONG:
+    _value.long_val = source._value.long_val->clone();
     break;
   case FLOAT:
     _value.float_val = source._value.float_val->clone();
@@ -312,7 +341,8 @@ SGValue::SGValue (const SGValue &source)
  */
 SGValue::~SGValue ()
 {
-  clear_value();
+  if (_type != ALIAS)
+    clear_value();
 }
 
 
@@ -323,6 +353,8 @@ void
 SGValue::clear_value ()
 {
   switch (_type) {
+  case ALIAS:
+    _value.alias->clear_value();
   case BOOL:
     delete _value.bool_val;
     _value.bool_val = 0;
@@ -330,6 +362,10 @@ SGValue::clear_value ()
   case INT:
     delete _value.int_val;
     _value.int_val = 0;
+    break;
+  case LONG:
+    delete _value.long_val;
+    _value.long_val = 0L;
     break;
   case FLOAT:
     delete _value.float_val;
@@ -349,16 +385,86 @@ SGValue::clear_value ()
 
 
 /**
+ * Get the current type.
+ *
+ * Does not return a type of ALIAS.
+ */
+SGValue::Type
+SGValue::getType () const
+{
+  if (_type == ALIAS)
+    return _value.alias->getType();
+  else
+    return (Type)_type;
+}
+
+
+/**
+ * Get the current aliased value.
+ */
+SGValue *
+SGValue::getAlias ()
+{
+  return (_type == ALIAS ? _value.alias : 0);
+}
+
+
+/**
+ * Get the current aliased value.
+ */
+const SGValue *
+SGValue::getAlias () const
+{
+  return (_type == ALIAS ? _value.alias : 0);
+}
+
+
+/**
+ * Alias to another value.
+ */
+bool
+SGValue::alias (SGValue * alias)
+{
+  if (alias == 0 || _type == ALIAS || _tied)
+    return false;
+  clear_value();
+  _value.alias = alias;
+  _type = ALIAS;
+  return true;
+}
+
+
+/**
+ * Unalias from another value.
+ */
+bool
+SGValue::unalias ()
+{
+				// FIXME: keep copy of previous value,
+				// as with untie()
+  if (_type != ALIAS)
+    return false;
+  _value.string_val = new SGRawValueInternal<string>;
+  _type = UNKNOWN;
+  return true;
+}
+
+
+/**
  * Get a boolean value.
  */
 bool
 SGValue::getBoolValue () const
 {
   switch (_type) {
+  case ALIAS:
+    return _value.alias->getBoolValue();
   case BOOL:
     return GET_BOOL;
   case INT:
     return GET_INT == 0 ? false : true;
+  case LONG:
+    return GET_LONG == 0L ? false : true;
   case FLOAT:
     return GET_FLOAT == 0.0 ? false : true;
   case DOUBLE:
@@ -377,17 +483,47 @@ int
 SGValue::getIntValue () const
 {
   switch (_type) {
+  case ALIAS:
+    return _value.alias->getIntValue();
   case BOOL:
-    return (int)GET_BOOL;
+    return int(GET_BOOL);
   case INT:
     return GET_INT;
+  case LONG:
+    return int(GET_LONG);
   case FLOAT:
-    return (int)GET_FLOAT;
+    return int(GET_FLOAT);
   case DOUBLE:
-    return (int)GET_DOUBLE;
+    return int(GET_DOUBLE);
   case STRING:
   case UNKNOWN:
     return atoi(GET_STRING.c_str());
+  }
+}
+
+
+/**
+ * Get a long integer value.
+ */
+long
+SGValue::getLongValue () const
+{
+  switch (_type) {
+  case ALIAS:
+    return _value.alias->getLongValue();
+  case BOOL:
+    return long(GET_BOOL);
+  case INT:
+    return long(GET_INT);
+  case LONG:
+    return GET_LONG;
+  case FLOAT:
+    return long(GET_FLOAT);
+  case DOUBLE:
+    return long(GET_DOUBLE);
+  case STRING:
+  case UNKNOWN:
+    return strtol(GET_STRING.c_str(), 0, 0);
   }
 }
 
@@ -399,14 +535,18 @@ float
 SGValue::getFloatValue () const
 {
   switch (_type) {
+  case ALIAS:
+    return _value.alias->getFloatValue();
   case BOOL:
-    return (float)GET_BOOL;
+    return float(GET_BOOL);
   case INT:
-    return (float)GET_INT;
+    return float(GET_INT);
+  case LONG:
+    return float(GET_LONG);
   case FLOAT:
     return GET_FLOAT;
   case DOUBLE:
-    return GET_DOUBLE;
+    return float(GET_DOUBLE);
   case STRING:
   case UNKNOWN:
     return atof(GET_STRING.c_str());
@@ -421,17 +561,21 @@ double
 SGValue::getDoubleValue () const
 {
   switch (_type) {
+  case ALIAS:
+    return _value.alias->getDoubleValue();
   case BOOL:
-    return (double)GET_BOOL;
+    return double(GET_BOOL);
   case INT:
-    return (double)GET_INT;
+    return double(GET_INT);
+  case LONG:
+    return double(GET_LONG);
   case FLOAT:
-    return (double)GET_FLOAT;
+    return double(GET_FLOAT);
   case DOUBLE:
     return GET_DOUBLE;
   case STRING:
   case UNKNOWN:
-    return (double)atof(GET_STRING.c_str());
+    return strtod(GET_STRING.c_str(), 0);
   }
 }
 
@@ -445,6 +589,8 @@ SGValue::getStringValue () const
   char buf[128];
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->getStringValue();
   case BOOL:
     if (GET_BOOL)
       return "true";
@@ -452,6 +598,9 @@ SGValue::getStringValue () const
       return "false";
   case INT:
     sprintf(buf, "%d", GET_INT);
+    return buf;
+  case LONG:
+    sprintf(buf, "%ld", GET_LONG);
     return buf;
   case FLOAT:
     sprintf(buf, "%f", GET_FLOAT);
@@ -479,14 +628,18 @@ SGValue::setBoolValue (bool value)
   }
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setBoolValue(value);
   case BOOL:
     return SET_BOOL(value);
   case INT:
-    return SET_INT((int)value);
+    return SET_INT(int(value));
+  case LONG:
+    return SET_LONG(long(value));
   case FLOAT:
-    return SET_FLOAT((float)value);
+    return SET_FLOAT(float(value));
   case DOUBLE:
-    return SET_DOUBLE((double)value);
+    return SET_DOUBLE(double(value));
   case STRING:
     return SET_STRING(value ? "true" : "false");
   }
@@ -508,14 +661,54 @@ SGValue::setIntValue (int value)
   }
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setIntValue(value);
   case BOOL:
     return SET_BOOL(value == 0 ? false : true);
   case INT:
     return SET_INT(value);
+  case LONG:
+    return SET_LONG(long(value));
   case FLOAT:
-    return SET_FLOAT((float)value);
+    return SET_FLOAT(float(value));
   case DOUBLE:
-    return SET_DOUBLE((double)value);
+    return SET_DOUBLE(double(value));
+  case STRING: {
+    char buf[128];
+    sprintf(buf, "%d", value);
+    return SET_STRING(buf);
+  }
+  }
+
+  return false;
+}
+
+
+/**
+ * Set a long value.
+ */
+bool
+SGValue::setLongValue (long value)
+{
+  if (_type == UNKNOWN) {
+    clear_value();
+    _value.long_val = new SGRawValueInternal<long>;
+    _type = LONG;
+  }
+
+  switch (_type) {
+  case ALIAS:
+    return _value.alias->setLongValue(value);
+  case BOOL:
+    return SET_BOOL(value == 0L ? false : true);
+  case INT:
+    return SET_INT(int(value));
+  case LONG:
+    return SET_LONG(value);
+  case FLOAT:
+    return SET_FLOAT(float(value));
+  case DOUBLE:
+    return SET_DOUBLE(double(value));
   case STRING: {
     char buf[128];
     sprintf(buf, "%d", value);
@@ -540,14 +733,18 @@ SGValue::setFloatValue (float value)
   }
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setFloatValue(value);
   case BOOL:
     return SET_BOOL(value == 0.0 ? false : true);
   case INT:
-    return SET_INT((int)value);
+    return SET_INT(int(value));
+  case LONG:
+    return SET_LONG(long(value));
   case FLOAT:
     return SET_FLOAT(value);
   case DOUBLE:
-    return SET_DOUBLE((double)value);
+    return SET_DOUBLE(double(value));
   case STRING: {
     char buf[128];
     sprintf(buf, "%f", value);
@@ -572,12 +769,16 @@ SGValue::setDoubleValue (double value)
   }
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setDoubleValue(value);
   case BOOL:
     return SET_BOOL(value == 0.0L ? false : true);
   case INT:
-    return SET_INT((int)value);
+    return SET_INT(int(value));
+  case LONG:
+    return SET_LONG(long(value));
   case FLOAT:
-    return SET_FLOAT((float)value);
+    return SET_FLOAT(float(value));
   case DOUBLE:
     return SET_DOUBLE(value);
   case STRING: {
@@ -604,14 +805,18 @@ SGValue::setStringValue (string value)
   }
 
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setStringValue(value);
   case BOOL:
     return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
   case INT:
     return SET_INT(atoi(value.c_str()));
+  case LONG:
+    return SET_LONG(strtol(value.c_str(), 0, 0));
   case FLOAT:
     return SET_FLOAT(atof(value.c_str()));
   case DOUBLE:
-    return SET_DOUBLE((double)atof(value.c_str()));
+    return SET_DOUBLE(strtod(value.c_str(), 0));
   case STRING:
     return SET_STRING(value);
   }
@@ -627,14 +832,18 @@ bool
 SGValue::setUnknownValue (string value)
 {
   switch (_type) {
+  case ALIAS:
+    return _value.alias->setUnknownValue(value);
   case BOOL:
     return SET_BOOL((value == "true" || atoi(value.c_str())) ? true : false);
   case INT:
     return SET_INT(atoi(value.c_str()));
+  case LONG:
+    return SET_LONG(strtol(value.c_str(), 0, 0));
   case FLOAT:
     return SET_FLOAT(atof(value.c_str()));
   case DOUBLE:
-    return SET_DOUBLE((double)atof(value.c_str()));
+    return SET_DOUBLE(strtod(value.c_str(), 0));
   case STRING:
   case UNKNOWN:
     return SET_STRING(value);
@@ -650,7 +859,9 @@ SGValue::setUnknownValue (string value)
 bool
 SGValue::tie (const SGRawValue<bool> &value, bool use_default)
 {
-  if (_tied)
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
     return false;
 
   bool old_val;
@@ -675,7 +886,9 @@ SGValue::tie (const SGRawValue<bool> &value, bool use_default)
 bool
 SGValue::tie (const SGRawValue<int> &value, bool use_default)
 {
-  if (_tied)
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
     return false;
 
   int old_val;
@@ -695,12 +908,41 @@ SGValue::tie (const SGRawValue<int> &value, bool use_default)
 
 
 /**
+ * Tie a long value.
+ */
+bool
+SGValue::tie (const SGRawValue<long> &value, bool use_default)
+{
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
+    return false;
+
+  long old_val;
+  if (use_default)
+    old_val = getLongValue();
+
+  clear_value();
+  _type = LONG;
+  _tied = true;
+  _value.long_val = value.clone();
+
+  if (use_default)
+    setLongValue(old_val);
+
+  return true;
+}
+
+
+/**
  * Tie a float value.
  */
 bool
 SGValue::tie (const SGRawValue<float> &value, bool use_default)
 {
-  if (_tied)
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
     return false;
 
   float old_val;
@@ -725,7 +967,9 @@ SGValue::tie (const SGRawValue<float> &value, bool use_default)
 bool
 SGValue::tie (const SGRawValue<double> &value, bool use_default)
 {
-  if (_tied)
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
     return false;
 
   double old_val;
@@ -750,7 +994,9 @@ SGValue::tie (const SGRawValue<double> &value, bool use_default)
 bool
 SGValue::tie (const SGRawValue<string> &value, bool use_default)
 {
-  if (_tied)
+  if (_type == ALIAS)
+    return _value.alias->tie(value, use_default);
+  else if (_tied)
     return false;
 
   string old_val;
@@ -779,6 +1025,9 @@ SGValue::untie ()
     return false;
 
   switch (_type) {
+  case ALIAS: {
+    return _value.alias->untie();
+  }
   case BOOL: {
     bool val = getBoolValue();
     clear_value();
@@ -791,6 +1040,13 @@ SGValue::untie ()
     clear_value();
     _value.int_val = new SGRawValueInternal<int>;
     SET_INT(val);
+    break;
+  }
+  case LONG: {
+    long val = getLongValue();
+    clear_value();
+    _value.long_val = new SGRawValueInternal<long>;
+    SET_LONG(val);
     break;
   }
   case FLOAT: {
@@ -828,10 +1084,28 @@ SGValue::untie ()
 
 
 /**
+ * Utility function: given a value, find the property node.
+ */
+static SGPropertyNode *
+find_node_by_value (SGPropertyNode * start_node, const SGValue * value)
+{
+  if (start_node->getValue() == value) {
+    return start_node;
+  } else for (int i = 0; i < start_node->nChildren(); i++) {
+    SGPropertyNode * child =
+      find_node_by_value(start_node->getChild(i), value);
+    if (child != 0)
+      return child;
+  }
+  return 0;
+}
+
+
+/**
  * Default constructor: always creates a root node.
  */
 SGPropertyNode::SGPropertyNode ()
-  : _value(0), _name(""), _index(0), _parent(0)
+  : _value(0), _name(""), _index(0), _parent(0), _target(0)
 {
 }
 
@@ -841,10 +1115,14 @@ SGPropertyNode::SGPropertyNode ()
  */
 SGPropertyNode::SGPropertyNode (const string &name,
 				int index, SGPropertyNode * parent)
-  : _value(0), _name(name), _index(index), _parent(parent)
+  : _value(0), _name(name), _index(index), _parent(parent), _target(0)
 {
 }
 
+
+/**
+ * Destructor.
+ */
 SGPropertyNode::~SGPropertyNode ()
 {
   delete _value;
@@ -852,6 +1130,104 @@ SGPropertyNode::~SGPropertyNode ()
     delete _children[i];
 }
 
+
+/**
+ * Get a value, optionally creating it if not present.
+ */
+SGValue *
+SGPropertyNode::getValue (bool create)
+{
+  if (_value == 0 && create)
+    _value = new SGValue();
+  return _value;
+}
+
+
+/**
+ * Alias to another node.
+ */
+bool
+SGPropertyNode::alias (SGPropertyNode * target)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  _target = target;
+  return _value->alias(target->getValue(true));
+}
+
+
+/**
+ * Alias to another node by path.
+ */
+bool
+SGPropertyNode::alias (const string &path)
+{
+  return alias(getNode(path, true));
+}
+
+
+/**
+ * Remove an alias.
+ */
+bool
+SGPropertyNode::unalias ()
+{
+  _target = 0;
+  return (_value != 0 ? _value->unalias() : false);
+}
+
+
+/**
+ * Test whether this node is aliased.
+ */
+bool
+SGPropertyNode::isAlias () const
+{
+  return (_value != 0 ? _value->isAlias() : false);
+}
+
+
+/**
+ * Get the target of an alias.
+ *
+ * This is tricky, because it is actually the value that is aliased,
+ * and someone could realias or unalias the value directly without
+ * going through the property node.  The node caches its best guess,
+ * but it may have to search the whole property tree.
+ *
+ * @return The target node for the alias, or 0 if the node is not aliased.
+ */
+SGPropertyNode *
+SGPropertyNode::getAliasTarget ()
+{
+  if (_value == 0 || !_value->isAlias()) {
+    return 0;
+  } else if (_target != 0 && _target->getValue() == _value->getAlias()) {
+    return _target;
+  } else {
+    _target = find_node_by_value(getRootNode(), _value->getAlias());
+  }
+}
+
+
+const SGPropertyNode *
+SGPropertyNode::getAliasTarget () const
+{
+  if (_value == 0 || !_value->isAlias()) {
+    return 0;
+  } else if (_target != 0 && _target->getValue() == _value->getAlias()) {
+    return _target;
+  } else {
+				// FIXME: const cast
+    _target =
+      find_node_by_value((SGPropertyNode *)getRootNode(), _value->getAlias());
+  }
+}
+
+
+/**
+ * Get a non-const child by index.
+ */
 SGPropertyNode *
 SGPropertyNode::getChild (int position)
 {
@@ -861,6 +1237,10 @@ SGPropertyNode::getChild (int position)
     return 0;
 }
 
+
+/**
+ * Get a const child by index.
+ */
 const SGPropertyNode *
 SGPropertyNode::getChild (int position) const
 {
@@ -870,12 +1250,16 @@ SGPropertyNode::getChild (int position) const
     return 0;
 }
 
+
+/**
+ * Get a non-const child by name and index, creating if necessary.
+ */
 SGPropertyNode *
 SGPropertyNode::getChild (const string &name, int index, bool create)
 {
   int pos = find_child(name, index, _children);
   if (pos >= 0) {
-    return getChild(pos);
+    return _children[pos];
   } else if (create) {
     _children.push_back(new SGPropertyNode(name, index, this));
     return _children[_children.size()-1];
@@ -884,24 +1268,19 @@ SGPropertyNode::getChild (const string &name, int index, bool create)
   }
 }
 
+
+/**
+ * Get a const child by name and index.
+ */
 const SGPropertyNode *
 SGPropertyNode::getChild (const string &name, int index) const
 {
   int pos = find_child(name, index, _children);
   if (pos >= 0)
-    _children[_children.size()-1];
+    return _children[pos];
   else
     return 0;
 }
-
-
-class CompareIndices
-{
-public:
-  int operator() (const SGPropertyNode * n1, const SGPropertyNode *n2) const {
-    return (n1->getIndex() < n2->getIndex());
-  }
-};
 
 
 /**
@@ -923,7 +1302,7 @@ SGPropertyNode::getChildren (const string &name)
 
 
 /**
- * Get all children with the same name (but different indices).
+ * Get all children const with the same name (but different indices).
  */
 vector<const SGPropertyNode *>
 SGPropertyNode::getChildren (const string &name) const
@@ -966,6 +1345,7 @@ SGPropertyNode::getType () const
     return SGValue::UNKNOWN;
 }
 
+
 bool 
 SGPropertyNode::getBoolValue () const
 {
@@ -978,6 +1358,13 @@ SGPropertyNode::getIntValue () const
 {
   return (_value == 0 ? SGRawValue<int>::DefaultValue
 	  : _value->getIntValue());
+}
+
+long 
+SGPropertyNode::getLongValue () const
+{
+  return (_value == 0 ? SGRawValue<long>::DefaultValue
+	  : _value->getLongValue());
 }
 
 float 
@@ -1015,6 +1402,14 @@ SGPropertyNode::setIntValue (int val)
   if (_value == 0)
     _value = new SGValue();
   return _value->setIntValue(val);
+}
+
+bool
+SGPropertyNode::setLongValue (long val)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->setLongValue(val);
 }
 
 bool
@@ -1065,6 +1460,14 @@ SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
 
 bool
 SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
+{
+  if (_value == 0)
+    _value = new SGValue();
+  return _value->tie(rawValue, useDefault);
+}
+
+bool
+SGPropertyNode::tie (const SGRawValue<long> &rawValue, bool useDefault)
 {
   if (_value == 0)
     _value = new SGValue();
@@ -1163,7 +1566,7 @@ SGPropertyNode::getValue (const string &relative_path, bool create)
   SGPropertyNode * node = getNode(relative_path, create);
   if (node != 0 && !node->hasValue())
     node->setUnknownValue("");
-  return (node == 0 ? 0 : node->getValue());
+  return (node == 0 ? 0 : node->getValue(create));
 }
 
 
@@ -1210,6 +1613,18 @@ SGPropertyNode::getIntValue (const string &relative_path,
 {
   const SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? defaultValue : node->getIntValue());
+}
+
+
+/**
+ * Get a long value for another node.
+ */
+long
+SGPropertyNode::getLongValue (const string &relative_path,
+			      long defaultValue) const
+{
+  const SGPropertyNode * node = getNode(relative_path);
+  return (node == 0 ? defaultValue : node->getLongValue());
 }
 
 
@@ -1266,6 +1681,16 @@ bool
 SGPropertyNode::setIntValue (const string &relative_path, int value)
 {
   return getNode(relative_path, true)->setIntValue(value);
+}
+
+
+/**
+ * Set a long value for another node.
+ */
+bool
+SGPropertyNode::setLongValue (const string &relative_path, long value)
+{
+  return getNode(relative_path, true)->setLongValue(value);
 }
 
 
@@ -1338,6 +1763,18 @@ SGPropertyNode::tie (const string &relative_path,
 bool
 SGPropertyNode::tie (const string &relative_path,
 		     const SGRawValue<int> &rawValue,
+		     bool useDefault)
+{
+  return getNode(relative_path, true)->tie(rawValue, useDefault);
+}
+
+
+/**
+ * Tie a node reached by a relative path, creating it if necessary.
+ */
+bool
+SGPropertyNode::tie (const string &relative_path,
+		     const SGRawValue<long> &rawValue,
 		     bool useDefault)
 {
   return getNode(relative_path, true)->tie(rawValue, useDefault);

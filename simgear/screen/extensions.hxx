@@ -54,7 +54,7 @@ bool SGIsOpenGLExtensionSupported(char *extName);
   // don't use an inline function for symbol lookup, since it is too big
   void* macosxGetGLProcAddress(const char *func);
 
-#else if !defined( WIN32 )
+#elif !defined( WIN32 )
 
   void *SGGetGLProcAddress(const char *func);
   

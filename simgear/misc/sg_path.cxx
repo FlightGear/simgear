@@ -40,7 +40,7 @@ static const char sgDirPathSep = ':';
 static const char sgDirPathSepBad = '/';
 #else
 static const char sgDirPathSep = '/';
-static const char sgDirPathSepBad = ':';
+static const char sgDirPathSepBad = '\\';
 #endif
 
 #if defined( WIN32 )

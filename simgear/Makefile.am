@@ -38,5 +38,6 @@ SUBDIRS = \
 	sky \
 	timing \
 	xgl \
+	xml \
 	$(ZLIB_DIRS)
 

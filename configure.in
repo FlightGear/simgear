@@ -345,7 +345,7 @@ if test "x$ac_cv_header_zlib_h" != "xyes"; then
 fi
 
 if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -a "x$ac_cv_header_pthread_h" = "xyes"; then
-   echo "Threads: pthread is supported."
+   echo "Threads: pthread lib found."
 else
-   echo "Threads: no threads (pthreads not found.)"
+   echo "Threads: no threads (pthread lib not found.)"
 fi

@@ -43,6 +43,8 @@ SGSky::SGSky( void ) {
     ramp_down = 0.15;
     // ramp_up = 4.0;
     // ramp_down = 4.0;
+
+    in_cloud  = -1;
 }
 
 
@@ -172,11 +174,8 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 void SGSky::preDraw( float alt ) {
     ssgCullAndDraw( pre_root );
 
-    float slop = 5.0;          // if we are closer than this to a cloud layer,
-                               // don't draw clouds
-
-    int in_cloud = -1;         // cloud we are in
-
+    	// if we are closer than this to a cloud layer, don't draw clouds
+    static const float slop = 5.0;
     int i;
 
     // check where we are relative to the cloud layers
@@ -205,40 +204,25 @@ void SGSky::preDraw( float alt ) {
     }
 
     // draw the cloud layers that are above us, top to bottom
-    for ( i = cloud_layers.size() - 1; i >= 0; --i ) {
+ 
+    glDepthMask( GL_FALSE );
+    for ( i = (int)cloud_layers.size() - 1; i >= 0; --i ) {
         if ( i != in_cloud ) {
             cloud_layers[i]->draw();
         }
     }
+    glDepthMask( GL_TRUE );
 }
 
 
 // draw translucent clouds ... do this after you've drawn all the
 // oapaque elements of your scene.
 void SGSky::postDraw( float alt ) {
-    float slop = 5.0;		// if we are closer than this to a cloud layer,
-				// don't draw clouds
 
-    int in_cloud = -1;		// cloud we are in
+    	// if we are closer than this to  a cloud layer, don't draw clouds
+    static const float slop = 5.0;
 
     int i;
-
-    // check where we are relative to the cloud layers
-    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
-	float asl = cloud_layers[i]->getElevation_m();
-	float thickness = cloud_layers[i]->getThickness_m();
-
-	if ( alt < asl - slop ) {
-	    // below cloud layer
-	} else if ( alt < asl + thickness + slop ) {
-	    // in cloud layer
-
-	    // bail now and don't draw any clouds
-	    in_cloud = i;
-	} else {
-	    // above cloud layer
-	}
-    }
 
     // determine rendering order
     int pos = 0;
@@ -249,11 +233,16 @@ void SGSky::postDraw( float alt ) {
     }
 
     // draw the cloud layers that are below us, bottom to top
+
+    glDepthMask( GL_FALSE );
     for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
         if ( i != in_cloud ) {
             cloud_layers[i]->draw();
         }
     }
+    glDepthMask( GL_TRUE );
+
+    in_cloud = -1;
 }
 
 void

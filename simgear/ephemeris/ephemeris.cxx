@@ -27,17 +27,19 @@
 
 // Constructor
 FGEphemeris::FGEphemeris( void ) {
+    our_sun = new Star;
 }
 
 
 // Destructor
 FGEphemeris::~FGEphemeris( void ) {
+    delete our_sun;
 }
 
 
 // Update (recalculate) the positions of all objects for the specified
 // time
 void FGEphemeris::update( FGTime *t ) {
-    our_sun.updatePosition( t );
+    our_sun->updatePosition( t );
 }
 

@@ -26,8 +26,9 @@
 
 
 // return a sphere object as an ssgBranch
-ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
-			  int stacks ) {
+ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
+			  double radius, int slices, int stacks )
+{
     float rho, drho, theta, dtheta;
     float x, y, z;
     float s, t, ds, dt;
@@ -36,6 +37,24 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
     ssgBranch *sphere = new ssgBranch;
     sgVec2 vec2;
     sgVec3 vec3;
+
+    // handle cl whether it is preinitialized or not
+    if ( cl == NULL ) {
+	// create a new array if needed
+	cl = new ssgColourArray( 1 );
+    }
+
+    sgVec3 color;
+    sgSetVec3( color, 1.0, 1.0, 1.0 );
+
+    if ( cl->getNum() > 1 ) {
+	cl->removeAll();
+	cl->add( color );
+    } else if ( cl->getNum() == 0 ) {
+	cl->add( color );
+    } else {
+	// accept value as given to us in
+    }
 
     drho = M_PI / (float) stacks;
     dtheta = 2.0 * M_PI / (float) slices;
@@ -96,7 +115,7 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
 	}
 
 	ssgLeaf *slice = 
-	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, NULL );
+	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
 	slice->setState( state );
 
 	sphere->addKid( slice );

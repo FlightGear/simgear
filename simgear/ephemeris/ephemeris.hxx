@@ -33,7 +33,7 @@
 
 class FGEphemeris {
 
-    Star our_sun;
+    Star *our_sun;
 
 public:
 
@@ -49,10 +49,10 @@ public:
 
     // sun position
     inline double getSunRightAscension() {
-	return our_sun.getRightAscension();
+	return our_sun->getRightAscension();
     }
     inline double getSunDeclination() {
-	return our_sun.getDeclination();
+	return our_sun->getDeclination();
     }
 
 };

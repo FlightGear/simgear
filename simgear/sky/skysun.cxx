@@ -24,6 +24,8 @@
 // $Id$
 
 
+#include <iostream>
+
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
@@ -56,10 +58,12 @@ bool FGSkySun::initialize() {
     orb_state->disable( GL_DEPTH_TEST );
     orb_state->disable( GL_CULL_FACE );
     orb_state->disable( GL_TEXTURE_2D );
-    orb_state->disable( GL_COLOR_MATERIAL );
-    orb_state->setMaterial( GL_AMBIENT_AND_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
+    orb_state->enable( GL_COLOR_MATERIAL );
+    orb_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
 
-    ssgBranch *orb = ssgMakeSphere( orb_state, 550.0, 10, 10 );
+    cl = new ssgColourArray( 1 );
+
+    ssgBranch *orb = ssgMakeSphere( orb_state, cl, 550.0, 10, 10 );
 
     // force a repaint of the sun colors with arbitrary defaults
     repaint( 0.0 );
@@ -110,19 +114,32 @@ bool FGSkySun::repaint( double sun_angle ) {
 	if (color[1] > 1.0) color[1] = 1.0;
 	if (color[2] > 1.0) color[2] = 1.0;
 
-	orb_state->setMaterial( GL_AMBIENT_AND_DIFFUSE, 
-				color[0], color[1], color[2], 1.0 );
+	cout << "color = " << color[0] << " " << color[1] << " " << color[2] << endl;
+
+	float *ptr;
+	ptr = cl->get( 0 );
+	sgCopyVec3( ptr, color );
     }
 
     return true;
 }
 
 
-// reposition the sun at the specified right ascension and declination
-bool FGSkySun::reposition( double rightAscension, double declination ) {
-    sgMat4 T, RA, DEC;
+// reposition the sun at the specified right ascension and
+// declination, offset by our current position (p) so that it appears
+// fixed at a great distance from the viewer.  Also add in an optional
+// rotation (i.e. for the current time of day.)
+bool FGSkySun::reposition( sgVec3 p, double angle,
+			   double rightAscension, double declination )
+{
+    sgMat4 T1, T2, GST, RA, DEC;
     sgVec3 axis;
     sgVec3 v;
+
+    sgMakeTransMat4( T1, p );
+
+    sgSetVec3( axis, 0.0, 0.0, -1.0 );
+    sgMakeRotMat4( GST, angle, axis );
 
     // xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
@@ -134,12 +151,14 @@ bool FGSkySun::reposition( double rightAscension, double declination ) {
 
     // xglTranslatef(0,60000,0);
     sgSetVec3( v, 0.0, 60000.0, 0.0 );
-    sgMakeTransMat4( T, v );
+    sgMakeTransMat4( T2, v );
 
     sgMat4 TRANSFORM;
-    sgCopyMat4( TRANSFORM, RA );
+    sgCopyMat4( TRANSFORM, T1 );
+    sgPreMultMat4( TRANSFORM, GST );
+    sgPreMultMat4( TRANSFORM, RA );
     sgPreMultMat4( TRANSFORM, DEC );
-    sgPreMultMat4( TRANSFORM, T );
+    sgPreMultMat4( TRANSFORM, T2 );
 
     sgCoord skypos;
     sgSetCoord( &skypos, TRANSFORM );

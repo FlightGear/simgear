@@ -27,7 +27,7 @@
 
 // return a sphere object as an ssgBranch (and connect in the
 // specified ssgSimpleState
-ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
-			  int stacks );
+ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl, 
+			  double radius, int slices, int stacks );
 
 

@@ -41,6 +41,8 @@ class FGSkySun {
     ssgSimpleState *orb_state;
     ssgSimpleState *halo_state;
 
+    ssgColourArray *cl;
+
 public:
 
     // Constructor
@@ -61,8 +63,11 @@ public:
     bool repaint( double sun_angle );
 
     // reposition the sun at the specified right ascension and
-    // declination
-    bool reposition( double rightAscension, double declination );
+    // declination, offset by our current position (p) so that it
+    // appears fixed at a great distance from the viewer.  Also add in
+    // an optional rotation (i.e. for the current time of day.)
+    bool reposition( sgVec3 p, double angle,
+		     double rightAscension, double declination );
 
     // Draw the sun
     bool draw();

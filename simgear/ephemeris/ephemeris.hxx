@@ -51,6 +51,9 @@
 
 /** Ephemeris class
  *
+ * Written by Durk Talsma <d.talsma@direct.a2000.nl> and Curtis Olson
+ * <curt@flightgear.org>
+ *
  * Introduction 
  *
  * The SGEphemeris class computes and stores the positions of the Sun,

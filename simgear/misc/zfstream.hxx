@@ -92,7 +92,7 @@ SG_USING_STD(streamoff);
 #  define ios_badbit   ios::badbit
 #  define ios_failbit  ios::failbit
 
-#  include <simgear/fg_traits.hxx>
+#  include <simgear/sg_traits.hxx>
 
 #endif // SG_HAVE_STD_INCLUDES
 

@@ -42,7 +42,7 @@
 # include <iostream>
 #else
 # include <iostream.h>
-# include <simgear/fg_traits.hxx>
+# include <simgear/sg_traits.hxx>
 #endif
 
 #include <simgear/debug/debug_types.h>
@@ -92,13 +92,24 @@ public:
     /** Is logging enabled? */
     bool enabled() { return logging_enabled; }
 
-    /** Set the logging level of subsequent messages. */
+    /**
+     * Set the logging level of subsequent messages.
+     * @param c debug class
+     * @param p priority
+     */
     void set_log_state( sgDebugClass c, sgDebugPriority p );
 
-    /** Set the global logging level. */
+    /**
+     * Set the global logging level.
+     * @param c debug class
+     * @param p priority
+     */
     static void set_log_level( sgDebugClass c, sgDebugPriority p );
 
-    /** Set the stream buffer */
+    /**
+     * Set the stream buffer
+     * @param sb stream buffer
+     */
     void set_sb( streambuf* sb );
 
 protected:
@@ -181,19 +192,32 @@ struct logstream_base
 class logstream : private logstream_base, public ostream
 {
 public:
-    /** The default is to send messages to cerr. */
+    /**
+     * The default is to send messages to cerr.
+     * @param out output stream
+     */
     logstream( ostream& out )
 	// : logstream_base(out.rdbuf()),
 	: logstream_base(),
 	  ostream(&lbuf) { lbuf.set_sb(out.rdbuf());}
 
-    /** Set the output stream */
+    /**
+     * Set the output stream
+     * @param out output stream
+     */
     void set_output( ostream& out ) { lbuf.set_sb( out.rdbuf() ); }
 
-    /** Set the global log class and priority level. */
+    /**
+     * Set the global log class and priority level.
+     * @param c debug class
+     * @param p priority
+     */
     void setLogLevels( sgDebugClass c, sgDebugPriority p );
 
-    /** Output operator to capture the debug level and priority of a message. */
+    /**
+     * Output operator to capture the debug level and priority of a message.
+     * @param l log level
+     */
     inline ostream& operator<< ( const loglevel& l );
 };
 
@@ -219,7 +243,10 @@ sglog()
 
 
 /** \def SG_LOG(C,P,M)
- * Log a message = M of class = C and priority = P
+ * Log a message.
+ * @param C debug class
+ * @param P priority
+ * @param M message
  */
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)

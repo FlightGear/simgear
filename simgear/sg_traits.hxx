@@ -1,5 +1,10 @@
-#ifndef _FG_TRAITS_HXX
-#define _FG_TRAITS_HXX
+/** \file sg_traits.hxx
+ * Provides a char_traits declaration for systems without it.
+ * \internal
+ */
+
+#ifndef _SG_TRAITS_HXX
+#define _SG_TRAITS_HXX
 
 #include <simgear/compiler.h>
 
@@ -20,4 +25,4 @@ struct char_traits<char>
 };
 #endif // SG_HAVE_TRAITS
 
-#endif // _FG_TRAITS_HXX
+#endif // _SG_TRAITS_HXX

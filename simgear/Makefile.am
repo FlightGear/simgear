@@ -30,4 +30,4 @@ SUBDIRS = \
 	timing \
 	xgl
 
-DIST_SUBDIRS = $(SUBDIRS) interpreter
+DIST_SUBDIRS = $(SUBDIRS)

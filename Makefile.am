@@ -1,7 +1,6 @@
 EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
-	mksymlinks.sh \
 	README.MSVC \
 	README.metakit \
 	README.zlib \

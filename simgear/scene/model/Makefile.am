@@ -4,8 +4,8 @@ lib_LIBRARIES = libsgmodel.a
 
 noinst_HEADERS =
 
-include_HEADERS = location.hxx
+include_HEADERS = animation.hxx location.hxx
 
-libsgmodel_a_SOURCES = location.cxx
+libsgmodel_a_SOURCES = animation.cxx location.cxx
 
 INCLUDES = -I$(top_srcdir)

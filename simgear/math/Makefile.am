@@ -12,11 +12,11 @@ include_HEADERS = \
 	fg_geodesy.hxx \
 	fg_memory.h \
 	fg_random.h \
-	fg_types.hxx \
 	interpolater.hxx \
 	leastsqs.hxx \
 	point3d.hxx \
 	polar3d.hxx \
+	sg_types.hxx \
 	vector.hxx
 
 EXTRA_DIST = linintp2.h linintp2.inl sphrintp.h sphrintp.inl

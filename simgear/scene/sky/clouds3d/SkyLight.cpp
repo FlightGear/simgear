@@ -167,7 +167,7 @@ void SkyLight::Display() const
         mat.invLookAt(vecPos + 50 * vecDir, vecPos + 51 * vecDir, vecUp);
 
         glMultMatrixf(mat);   
-        float rAlpha= acos(pow(10, (-12 / _rSpotExponent)));
+        float rAlpha= acos(pow(10.0, (-12.0 / _rSpotExponent)));
         //glutWireCone(50 * tan(SKYDEGREESTORADS * rAlpha), 50, 16, 8);
         glutWireCone(50 * tan(SKYDEGREESTORADS * _rSpotCutoff), 50, 16, 8);
       }

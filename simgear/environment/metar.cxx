@@ -815,8 +815,8 @@ double SGMetar::getRelHumidity() const
 {
 	if (_temp == NaN || _dewp == NaN)
 		return NaN;
-	double dewp = pow(10, 7.5 * _dewp / (237.7 + _dewp));
-	double temp = pow(10, 7.5 * _temp / (237.7 + _temp));
+	double dewp = pow(10.0, 7.5 * _dewp / (237.7 + _dewp));
+	double temp = pow(10.0, 7.5 * _temp / (237.7 + _temp));
 	return dewp * 100 / temp;
 }
 

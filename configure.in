@@ -5,6 +5,9 @@ dnl $Id$
 
 AC_INIT(simgear/bucket/newbucket.cxx)
 
+# Require at least automake 2.13
+AC_PREREQ(2.13)
+
 dnl Initialize the automake stuff
 AM_INIT_AUTOMAKE(SimGear, 0.0.17)
 
@@ -103,7 +106,7 @@ AC_EGREP_CPP(yes,
  #endif
 ],is_mingw=yes, is_mingw=no)
 
-echo "IS_MINGW =" $is_mingw
+echo "IS_MINGW = $is_mingw"
 AM_CONDITIONAL(IS_MINGW, test "x$is_mingw" = "xyes")
 
 AC_EGREP_CPP(yes,
@@ -112,7 +115,7 @@ AC_EGREP_CPP(yes,
  #endif
 ],is_cygwin=yes, is_cygwin=no)
 
-echo "IS_CYGWIN =" $is_cygwin
+echo "IS_CYGWIN = $is_cygwin"
 AM_CONDITIONAL(IS_CYGWIN, test "x$is_cygwin" = "xyes")
 
 if test "x$HOSTTYPE" != "xmacintosh" -a "x$is_mingw" != "xyes"; then

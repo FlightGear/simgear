@@ -27,7 +27,7 @@
 #endif
 #include <math.h>
 
-#include <simgear/logstream.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #include <Time/sunpos.hxx>
 #include <Time/light.hxx>

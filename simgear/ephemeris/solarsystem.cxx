@@ -36,9 +36,9 @@
 #include <math.h>
 
 #include <GL/glut.h>
-#include <simgear/xgl.h>
+#include <simgear/xgl/xgl.h>
 
-#include <simgear/logstream.hxx>
+#include <simgear/debug/logstream.hxx>
 
 #include <Time/sunpos.hxx>
 #include <Time/moonpos.hxx>

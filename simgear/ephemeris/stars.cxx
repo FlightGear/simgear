@@ -47,13 +47,13 @@
 #include <string>
 
 #include <GL/glut.h>
-#include <simgear/xgl.h>
+#include <simgear/xgl/xgl.h>
 
-#include <simgear/logstream.hxx>
 #include <simgear/constants.h>
-#include <simgear/fgpath.hxx>
-#include <simgear/fgstream.hxx>
-#include <simgear/stopwatch.hxx>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/misc/fgpath.hxx>
+#include <simgear/misc/fgstream.hxx>
+#include <simgear/misc/stopwatch.hxx>
 
 #include <Aircraft/aircraft.hxx>
 #include <Main/options.hxx>

@@ -32,11 +32,11 @@
 #include <math.h>
 
 #include <GL/glut.h>
-#include <simgear/xgl.h>
+#include <simgear/xgl/xgl.h>
 
-#include <simgear/logstream.hxx>
 #include <simgear/constants.h>
-#include <simgear/fg_random.h>
+#include <simgear/debug/logstream.hxx>
+#include <simgear/math/fg_random.h>
 
 #include <Aircraft/aircraft.hxx>
 #include <FDM/flight.hxx>

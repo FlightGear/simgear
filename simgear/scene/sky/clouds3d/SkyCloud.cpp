@@ -24,7 +24,6 @@
 // warning for truncation of template name for browse info
 #pragma warning( disable : 4786)
 
-//#include "glvu.hpp"
 #include "SkyCloud.hpp"
 #include "SkyRenderableInstance.hpp" 
 #include "SkyContext.hpp"
@@ -670,29 +669,28 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   // we need to develop out own scheme for loading and positioning clouds
   Mat33f rot_mat;
   Vec3f  moveit;
-  
-  //moveit.Set( -10000.0, 1500.0, 1500.0  );
-  moveit.Set( 0.0, 0.0, 1050.0  );
-  
+
   rot_mat.Set( 1, 0, 0,
   						 0, 0, -1,
   						 0, 1, 0);
-  // flip the y and z axis
+  // flip the y and z axis, clouds now sit in the x-y plane
   Rotate( rot_mat ); 
     
    // adjust for lon af KSFO		-122.357				 
-  rot_mat.Set( -0.5352f, 0.8447f, 0.0f,
-  						 -0.8447f, -0.5352f, 0.0f,
-  						 -0.0f, 0.0f, 1.0f);
+  rot_mat.Set( -0.76604f, 0.64277f, 0.0f,
+  						 -0.64277f, -0.76604f, 0.0f,
+  						 0.0f, 0.0f, 1.0f);
   						 
-  Rotate( rot_mat );
+  //Rotate( rot_mat );
 
    // and about x for latitude 37.6135
   rot_mat.Set( 1.0f, 0.0, 0.0f,
   						 0.0f, 0.7921f, -0.6103f,
   						 0.0f, 0.6103f, 0.7921f);		
    
-  Rotate( rot_mat ); 
+  Rotate( rot_mat );
+    
+  moveit.Set( 0.0, 0.0, 4050.0  );
   
   Translate( moveit );
   

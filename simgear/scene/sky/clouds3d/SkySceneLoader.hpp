@@ -46,12 +46,11 @@ public:
   
   void Set_Cloud_Orig( Point3D *posit );
   
-  //void Update();
-  void Update( sgMat4 viewmat, Point3D *posit );
+  void Update( double *view_pos );
   
   void Resize( double w, double h);
   
-  void Draw();
+  void Draw( sgMat4 mat );
   
 };
 

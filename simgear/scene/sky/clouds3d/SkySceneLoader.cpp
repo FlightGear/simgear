@@ -24,7 +24,10 @@
  */
 
 #include <plib/ssg.h>
+#include <plib/sg.h>
 #include <simgear/math/point3d.hxx>
+#include <simgear/math/polar3d.hxx>
+#include <simgear/math/vector.hxx>
 
 #include "SkySceneLoader.hpp"
 #include "SkySceneManager.hpp"
@@ -32,20 +35,28 @@
 #include "SkySceneManager.hpp"
 #include "SkyDynamicTextureManager.hpp"
 #include "SkyContext.hpp"
-//#include "SkyViewManager.hpp"
-//#include "SkyRenderableInstanceGroup.hpp" 
 #include "SkyLight.hpp"
 #include "camera.hpp"
 
 ssgLight _sky_ssgLights [ 8 ] ;
-static Point3D origin;
-Point3D offset;
-//int      _ssgFrameCounter = 0 ;
+
+sgdVec3 cam_pos;
+static sgdVec3 delta;
+Point3D origin;
+
 Camera *pCam = new Camera();
 // Need to add a light here until we figure out how to use the sun position and color
 SkyLight::SkyLightType eType = SkyLight::SKY_LIGHT_DIRECTIONAL;
 SkyLight *pLight = new SkyLight(eType);
 
+// hack
+sgMat4 my_copy_of_ssgOpenGLAxisSwapMatrix =
+{
+  {  1.0f,  0.0f,  0.0f,  0.0f },
+  {  0.0f,  0.0f, -1.0f,  0.0f },
+  {  0.0f,  1.0f,  0.0f,  0.0f },
+  {  0.0f,  0.0f,  0.0f,  1.0f }
+};
 //------------------------------------------------------------------------------
 // Function     	  : SkySceneLoader::SkySceneLoader
 // Description	    : 
@@ -110,7 +121,7 @@ bool SkySceneLoader::Load(std::string filename)
       FAIL_RETURN(archive.FindString("CloudFile", &pFilename, i));  
       float rScale = 1.0;
       FAIL_RETURN(archive.FindFloat32("CloudScale", &rScale, i));
-      rScale = 5.0;
+      rScale = 20.0;
       SkyArchive cloudArchive;
       FAIL_RETURN(cloudArchive.Load(pFilename));
       FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(cloudArchive, rScale)); 
@@ -118,7 +129,7 @@ bool SkySceneLoader::Load(std::string filename)
   }
   
   Vec3f dir(0, 0, 1);
-  pLight->SetPosition(Vec3f(0, 0, 7000));
+  pLight->SetPosition(Vec3f(3000, 0, 7000));
   pLight->SetDirection(dir);
   pLight->SetAmbient(Vec4f( 0.0f, 0.0f, 0.0f, 0.0f));
   pLight->SetDiffuse(Vec4f(1.0f, 1.0f, 1.0f, 0.0f));
@@ -137,16 +148,18 @@ bool SkySceneLoader::Load(std::string filename)
 void SkySceneLoader::Set_Cloud_Orig( Point3D *posit )
 { // use this to adjust camera position for a new tile center
 
-	origin = *posit; // set origin to current tile center
-	printf("Cloud marker %f %f %f\n", origin.x(), origin.y(), origin.z() );
+	// set origin for cloud coordinates to initial tile center
+	origin = *posit;
+	sgdSetVec3( delta, origin[0], origin[1], origin[2]);	
+	//printf("Cloud marker %f %f %f\n", origin[0], origin[1], origin[2] );
 	
 }
 
-void SkySceneLoader::Update( sgMat4  viewmat, Point3D *posit )
-//void SkySceneLoader::Update()
+void SkySceneLoader::Update( double *view_pos )
 {
-	offset = *posit - origin;
-	cout << "X: " << offset.x() << "Y: " <<  offset.y() << "Z: " << offset.z() << endl;
+	sgdSubVec3( cam_pos, view_pos, delta );
+	//cout << "ORIGIN: " << delta[0] << " " << delta[1] << " " << delta[2] << endl;
+	//cout << "CAM   : " << cam_pos[0] << " " << cam_pos[1] << " "  << cam_pos[2] << endl;
 	
 	SceneManager::InstancePtr()->Update(*pCam);
 	
@@ -162,69 +175,53 @@ void SkySceneLoader::Resize(  double w, double h )
  
 }
 
-void SkySceneLoader::Draw()
-{ // this is a clone of the plib ssgCullAndDraw except there is no scene graph
+void SkySceneLoader::Draw( sgMat4 mat )
+{/* need this if you want to look at FG matrix
 	if ( _ssgCurrentContext == NULL )
   {
     cout<< "ssg: No Current Context: Did you forgot to call ssgInit()?" ; char x; cin >> x;
   }
   
-  //ssgForceBasicState () ;
-  
-  sgMat4 test;
-
-  //glMatrixMode ( GL_PROJECTION );
-  //glLoadIdentity();
-  //_ssgCurrentContext->loadProjectionMatrix ();
-  // test/debug section
- 
-  //_ssgCurrentContext->getProjectionMatrix( test );
-  /*
-  printf( "\nFG Projection matrix\n" );
-  cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
-  cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
-  cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
-  cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
+  ssgForceBasicState () ;
   */
-	sgMat4 m, *pm;
-	sgVec3 temp;
-	pm = &m;
-	
-	 // this is the cameraview matrix used by flightgear to render scene
-  // need to play with this to build a new matrix that accounts for tile crossings
-  // for now it resets the clouds when a boundary is crossed
-	 _ssgCurrentContext->getModelviewMatrix( m );
-	
-	///pCam->GetProjectionMatrix( (float *) pm );
-	//sgCopyMat4( test, m );
-	/*printf( "\nSkyworks Projection matrix\n" );
-	cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
-  cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
-  cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
-  cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
-   */  
-  glMatrixMode ( GL_MODELVIEW ) ;
-  glLoadIdentity () ;
-  glLoadMatrixf( (float *) pm );
-  
-  //sgCopyMat4( test, m );
+  sgMat4 test, m, *pm, viewmat,  cameraMatrix;
+  pm = &m;
+  sgSetVec4(mat[3], cam_pos[0], cam_pos[1], cam_pos[2], SG_ONE);
+  // at this point the view matrix has the cloud camera position relative to cloud origin
+  // now transform to screen coordinates
+  sgTransposeNegateMat4 ( viewmat, mat ) ;
 
-	pCam->SetModelviewMatrix( (float *) pm );
- 
- //printf( "\nFG modelview matrix\n" );
-  //cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
+  sgCopyMat4    ( cameraMatrix, my_copy_of_ssgOpenGLAxisSwapMatrix ) ;
+  sgPreMultMat4 ( cameraMatrix, viewmat ) ;
+  
+  //sgCopyMat4 ( test, cameraMatrix );
+  
+  //printf( "\nSkyworks ViewModel matrix\n" );
+	//cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
   //cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
   //cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
   //cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
 	
-	//pCam->Print();
+	 // this is the cameraview matrix used by flightgear to render scene
+	//_ssgCurrentContext->getModelviewMatrix( m );
 	
-  //_ssgCurrentContext->cull(r) ;
-  //_ssgDrawDList () ;
+  glMatrixMode ( GL_MODELVIEW ) ;
+  glLoadIdentity () ;
+  glLoadMatrixf( (float *) cameraMatrix );
+  
+  //sgCopyMat4( test, m );
 
-  SceneManager::InstancePtr()->Display(*pCam);
+	pCam->SetModelviewMatrix( (float *) cameraMatrix );
+  
+  //printf( "\nFG modelview matrix\n" );
+  //cout << test[0][0] << " " << test[1][0] << " " << test[2][0] << " " << test[3][0] << endl;
+  //cout << test[0][1] << " " << test[1][1] << " " << test[2][1] << " " << test[3][1] << endl;
+  //cout << test[0][2] << " " << test[1][2] << " " << test[2][2] << " " << test[3][2] << endl;
+  //cout << test[0][3] << " " << test[1][3] << " " << test[2][3] << " " << test[3][3] << endl;
+
+	SceneManager::InstancePtr()->Display(*pCam);
 	
-  //pLight->Display(); // draw the light position to  debug with sun position
+	//pLight->Display(); // draw the light position to  debug with sun position
 
   glMatrixMode ( GL_MODELVIEW ) ;
   glLoadIdentity () ;

@@ -957,27 +957,23 @@ bool SkyArchive::IsEmpty() const
  * @fn SkyArchive::Load(const char* pFileName)
  * @brief Load the contents of a SkyArchive from file storage.
  */ 
-SKYRESULT SkyArchive::Load(const char* pFileName)
+bool SkyArchive::Load(const char* pFileName)
 {
-  if (!pFileName)
+  if (!pFileName) {
     FAIL_RETURN_MSG(SKYRESULT_FAIL, "Error: SkyArchive::Load(): file name is NULL.");
-  
+  	}
   FILE* pSrcFile = NULL;
-  
-  char buf[512];
-  sprintf(buf,"SkyArchive::Load(%s)",pFileName);
-  SkyTrace(buf);
   if (NULL == (pSrcFile = fopen(pFileName, "rb"))) // file opened successfully   
   {
     SkyTrace("Error: SkyArchive::Load(): failed to open file for reading.");
-    return SKYRESULT_FAIL;
+    return false;
   }
     
   SKYRESULT retVal = _Load(pSrcFile);
   fclose(pSrcFile);
 
   FAIL_RETURN(retVal);
-  return SKYRESULT_OK;
+  return true;
 }
 
 //------------------------------------------------------------------------------

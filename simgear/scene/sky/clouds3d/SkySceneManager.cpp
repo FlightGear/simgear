@@ -411,7 +411,7 @@ SKYRESULT SkySceneManager::Display( const Camera &cam )
   }
  
   //if (_bDrawTree)// force the issue and draw
-    _VisualizeCloudBVTree(cam, _cloudBVTree.GetRoot());
+    //_VisualizeCloudBVTree(cam, _cloudBVTree.GetRoot());
     
   glLineWidth(2.0);
   glBegin(GL_LINES);

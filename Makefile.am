@@ -75,7 +75,10 @@ distclean:
 dist-hook:
 	(cd $(top_srcdir); \
 		$(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl --lib)
-	tar cf - simgear/metar | (cd $(distdir); tar xvf -)
+	pwd
+	echo "copying simgear/metar"
+	(cd $(top_srcdir); tar cf - simgear/metar) | (cd $(distdir); tar xvf -)
+	echo "other stuff"
 	@list='@subdirs@'; \
 	target=distclean; \
 	for subdir in $$list; do \
@@ -89,7 +92,8 @@ dist-hook:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
 	   || case "$$amf" in *=*) echo "distclean error ignored...";; *k*) fail=yes;; *) echo "distclean error ignored...";; esac; \
 	done
-	tar cf - simgear/metakit | (cd $(distdir); tar xvf -)
+	(cd $(top_srcdir); tar cf - simgear/metakit) | \
+                (cd $(distdir); tar xvf -)
 	
 
 #

@@ -44,7 +44,7 @@ SG_USING_STD(endl);
 // Set up star rendering call backs
 static int sgStarPreDraw( ssgEntity *e ) {
     /* cout << endl << "Star pre draw" << endl << "----------------" 
-	 << endl << endl; */
+       << endl << endl; */
 
     ssgLeaf *f = (ssgLeaf *)e;
     if ( f -> hasState () ) f->getState()->apply() ;
@@ -60,7 +60,7 @@ static int sgStarPreDraw( ssgEntity *e ) {
 
 static int sgStarPostDraw( ssgEntity *e ) {
     /* cout << endl << "Star post draw" << endl << "----------------" 
-	 << endl << endl; */
+       << endl << endl; */
 
     glPopAttrib();
 
@@ -86,7 +86,7 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
     sgVec4 color;
 
     if ( star_data == NULL ) {
-	cout << "WARNING: null star data passed to SGStars::build()" << endl;
+        cout << "WARNING: null star data passed to SGStars::build()" << endl;
     }
 
     // set up the orb state
@@ -106,27 +106,27 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
     // cl = new ssgColourArray( 1 );
     // sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
     // cl->add( color );
-   
+
     // Build ssg structure
     sgVec3 p;
     for ( int i = 0; i < num; ++i ) {
-	// position seeded to arbitrary values
-	sgSetVec3( p, 
-		   star_dist * cos( star_data[i][0] )
-		       * cos( star_data[i][1] ),
+        // position seeded to arbitrary values
+        sgSetVec3( p, 
+                   star_dist * cos( star_data[i][0] )
+                   * cos( star_data[i][1] ),
                    star_dist * sin( star_data[i][0] )
-		       * cos( star_data[i][1] ),
+                   * cos( star_data[i][1] ),
                    star_dist * sin( star_data[i][1] )
-		   );
-	vl->add( p );
+                   );
+        vl->add( p );
 
-	// color (magnitude)
-	sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-	cl->add( color );
+        // color (magnitude)
+        sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+        cl->add( color );
     }
 
     ssgLeaf *stars_obj = 
-	new ssgVtxTable ( GL_POINTS, vl, NULL, NULL, cl );
+        new ssgVtxTable ( GL_POINTS, vl, NULL, NULL, cl );
     stars_obj->setState( state );
     stars_obj->setCallback( SSG_CALLBACK_PREDRAW, sgStarPreDraw );
     stars_obj->setCallback( SSG_CALLBACK_POSTDRAW, sgStarPostDraw );
@@ -154,62 +154,77 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
     double mag, nmag, alpha, factor, cutoff;
     float *color;
 
+    static int old_phase = -1;
+    int phase;
+
     // determine which star structure to draw
     if ( sun_angle > (0.5 * SGD_PI + 10.0 * SGD_DEGREES_TO_RADIANS ) ) {
-	// deep night
-	factor = 1.0;
-	cutoff = 4.5;
+        // deep night
+        factor = 1.0;
+        cutoff = 4.5;
+        phase = 0;
     } else if ( sun_angle > (0.5 * SGD_PI + 8.8 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 1.0;
-	cutoff = 3.8;
+        factor = 1.0;
+        cutoff = 3.8;
+        phase = 1;
     } else if ( sun_angle > (0.5 * SGD_PI + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 0.95;
-	cutoff = 3.1;
+        factor = 0.95;
+        cutoff = 3.1;
+        phase = 2;
     } else if ( sun_angle > (0.5 * SGD_PI + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 0.9;
-	cutoff = 2.4;
+        factor = 0.9;
+        cutoff = 2.4;
+        phase = 3;
     } else if ( sun_angle > (0.5 * SGD_PI + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 0.85;
-	cutoff = 1.8;
+        factor = 0.85;
+        cutoff = 1.8;
+        phase = 4;
     } else if ( sun_angle > (0.5 * SGD_PI + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 0.8;
-	cutoff = 1.2;
+        factor = 0.8;
+        cutoff = 1.2;
+        phase = 5;
     } else if ( sun_angle > (0.5 * SGD_PI + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
-	factor = 0.75;
-	cutoff = 0.6;
+        factor = 0.75;
+        cutoff = 0.6;
+        phase = 6;
     } else {
-	// early dusk or late dawn
-	factor = 0.7;
-	cutoff = 0.0;
+        // early dusk or late dawn
+        factor = 0.7;
+        cutoff = 0.0;
+        phase = 7;
     }
 
-    for ( int i = 0; i < num; ++i ) {
-	// if ( star_data[i][2] < min ) { min = star_data[i][2]; }
-	// if ( star_data[i][2] > max ) { max = star_data[i][2]; }
+    if( phase != old_phase ) {
+        old_phase = phase;
+        for ( int i = 0; i < num; ++i ) {
+            // if ( star_data[i][2] < min ) { min = star_data[i][2]; }
+            // if ( star_data[i][2] > max ) { max = star_data[i][2]; }
 
-	// magnitude ranges from -1 (bright) to 4 (dim).  The range of
-	// star and planet magnitudes can actually go outside of this,
-	// but for our purpose, if it is brighter that -1, we'll color
-	// it full white/alpha anyway and 4 is a convenient cutoff
-	// point which keeps the number of stars drawn at about 500.
+            // magnitude ranges from -1 (bright) to 4 (dim).  The
+            // range of star and planet magnitudes can actually go
+            // outside of this, but for our purpose, if it is brighter
+            // that -1, we'll color it full white/alpha anyway and 4
+            // is a convenient cutoff point which keeps the number of
+            // stars drawn at about 500.
 
-	// color (magnitude)
-	mag = star_data[i][2];
-	if ( mag < cutoff ) {
-	    nmag = ( 4.5 - mag ) / 5.5; // translate to 0 ... 1.0 scale
-	    // alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
-	    alpha = nmag * 0.85 + 0.15; // translate to a 0.15 ... 1.0 scale
-	    alpha *= factor;          // dim when the sun is brighter
-	} else {
-	    alpha = 0.0;
-	}
+            // color (magnitude)
+            mag = star_data[i][2];
+            if ( mag < cutoff ) {
+                nmag = ( 4.5 - mag ) / 5.5; // translate to 0 ... 1.0 scale
+                // alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
+                alpha = nmag * 0.85 + 0.15; // translate to a 0.15 ... 1.0 scale
+                alpha *= factor;          // dim when the sun is brighter
+            } else {
+                alpha = 0.0;
+            }
 
-	if (alpha > 1.0) { alpha = 1.0; }
-	if (alpha < 0.0) { alpha = 0.0; }
+            if (alpha > 1.0) { alpha = 1.0; }
+            if (alpha < 0.0) { alpha = 0.0; }
 
-	color = cl->get( i );
-	sgSetVec4( color, 1.0, 1.0, 1.0, alpha );
-	// cout << "alpha[" << i << "] = " << alpha << endl;
+            color = cl->get( i );
+            sgSetVec4( color, 1.0, 1.0, 1.0, alpha );
+            // cout << "alpha[" << i << "] = " << alpha << endl;
+        }
     }
 
     // cout << "min = " << min << " max = " << max << " count = " << num 

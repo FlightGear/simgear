@@ -121,7 +121,7 @@ fi
 
 dnl Determine an extra directories to add to include/lib search paths
 case "${host}" in
-*-apple-darwin* | *-*-mingw32*)
+*-apple-darwin* | *-*-cygwin* | *-*-mingw32*)
     echo no EXTRA_DIRS for $host
     ;;
 
@@ -258,7 +258,8 @@ OPENAL_OK="no"
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
-
+    INCLUDES="$INCLUDES -I/usr/local/include"
+    LIBS="$LIBS -L/usr/local/lib"
     AC_SEARCH_LIBS(alGenBuffers, openal32)
     AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"

@@ -90,8 +90,4 @@ public:
 };
 
 
-// global material management class
-extern SGMaterialLib material_lib;
-
-
 #endif // _MATLIB_HXX 

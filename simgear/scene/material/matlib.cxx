@@ -55,15 +55,12 @@ SG_USING_NAMESPACE(std);
 SG_USING_STD(string);
 
 
-// global material management class
-SGMaterialLib material_lib;
-
-
 // Constructor
 SGMaterialLib::SGMaterialLib ( void ) {
 }
 
 
+#if 0 // debugging infrastructure
 static int gen_test_light_map() {
     static const int env_tex_res = 32;
     int half_res = env_tex_res / 2;
@@ -99,6 +96,7 @@ static int gen_test_light_map() {
 
     return tex_name;
 }
+#endif
 
 
 // generate standard colored directional light environment texture map
@@ -553,7 +551,7 @@ bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
     SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material " 
 	    << mat_name << " (" << full_path << ")");
 
-    material_lib.matlib[mat_name] = new SGMaterial( full_path );
+    matlib[mat_name] = new SGMaterial( full_path );
 
     return true;
 }
@@ -567,7 +565,7 @@ bool SGMaterialLib::add_item ( const string &mat_name, ssgSimpleState *state )
     SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material given a premade "
 	    << "ssgSimpleState = " << mat_name );
 
-    material_lib.matlib[mat_name] = m;
+    matlib[mat_name] = m;
 
     return true;
 }

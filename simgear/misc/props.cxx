@@ -360,9 +360,15 @@ inline bool
 SGPropertyNode::set_bool (bool val)
 {
   if (_tied) {
-    return _value.bool_val->setValue(val);
+    if (_value.bool_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     _local_val.bool_val = val;
+    firePropertyChange();
     return true;
   }
 }
@@ -371,9 +377,15 @@ inline bool
 SGPropertyNode::set_int (int val)
 {
   if (_tied) {
-    return _value.int_val->setValue(val);
+    if (_value.int_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     _local_val.int_val = val;
+    firePropertyChange();
     return true;
   }
 }
@@ -382,9 +394,15 @@ inline bool
 SGPropertyNode::set_long (long val)
 {
   if (_tied) {
-    return _value.long_val->setValue(val);
+    if (_value.long_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     _local_val.long_val = val;
+    firePropertyChange();
     return true;
   }
 }
@@ -393,9 +411,15 @@ inline bool
 SGPropertyNode::set_float (float val)
 {
   if (_tied) {
-    return _value.float_val->setValue(val);
+    if (_value.float_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     _local_val.float_val = val;
+    firePropertyChange();
     return true;
   }
 }
@@ -404,9 +428,15 @@ inline bool
 SGPropertyNode::set_double (double val)
 {
   if (_tied) {
-    return _value.double_val->setValue(val);
+    if (_value.double_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     _local_val.double_val = val;
+    firePropertyChange();
     return true;
   }
 }
@@ -415,10 +445,16 @@ inline bool
 SGPropertyNode::set_string (const char * val)
 {
   if (_tied) {
-    return _value.string_val->setValue(val);
+    if (_value.string_val->setValue(val)) {
+      firePropertyChange();
+      return true;
+    } else {
+      return false;
+    }
   } else {
     delete [] _local_val.string_val;
     _local_val.string_val = copy_string(val);
+    firePropertyChange();
     return true;
   }
 }
@@ -592,7 +628,8 @@ SGPropertyNode::SGPropertyNode ()
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE),
-    _count(0)
+    _count(0),
+    _listeners(0)
 {
   _local_val.string_val = 0;
 }
@@ -608,7 +645,8 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
     _type(node._type),
     _tied(node._tied),
     _attr(node._attr),
-    _count(0)
+    _count(0),
+    _listeners(0)		// CHECK!!
 {
   _name = copy_string(node._name);
   _local_val.string_val = 0;
@@ -690,7 +728,8 @@ SGPropertyNode::SGPropertyNode (const char * name,
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE),
-    _count(0)
+    _count(0),
+    _listeners(0)
 {
   _name = copy_string(name);
   _local_val.string_val = 0;
@@ -705,6 +744,7 @@ SGPropertyNode::~SGPropertyNode ()
   delete [] _name;
   delete _path_cache;
   clear_value();
+  delete _listeners;
 }
 
 
@@ -812,6 +852,8 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
       node = new SGPropertyNode(name, index, this);
     }
     _children.push_back(node);
+    if (_parent != 0)
+      _parent->firePropertyChange();
     return _children[_children.size()-1];
   } else {
     return 0;
@@ -870,6 +912,8 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     node->setAttribute(REMOVED, true);
     ret = node;
   }
+  if (_parent != 0)
+    _parent->firePropertyChange();
   return ret;
 }
 
@@ -1937,6 +1981,26 @@ SGPropertyNode::untie (const char * relative_path)
 {
   SGPropertyNode * node = getNode(relative_path);
   return (node == 0 ? false : node->untie());
+}
+
+void
+SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener)
+{
+  if (_listeners == 0)
+    _listeners = new vector<SGPropertyChangeListener *>;
+  _listeners->push_back(listener);
+}
+
+void
+SGPropertyNode::firePropertyChange (SGPropertyNode * node)
+{
+  if (_listeners != 0) {
+    for (int i = 0; i < _listeners->size(); i++) {
+      (*_listeners)[i]->propertyChanged(node);
+    }
+  }
+  if (_parent != 0)
+    _parent->firePropertyChange(node);
 }
 
 

@@ -504,6 +504,11 @@ public:
   operator const SGPropertyNode *() const;
 
   /**
+   * Return the pointer.
+   */
+  SGPropertyNode * ptr () { return _ptr; }
+
+  /**
    * Validity test
    */
   bool valid() const;
@@ -512,6 +517,23 @@ private:
 
   SGPropertyNode *_ptr;
 };
+
+
+
+/**
+ * The property change listener interface.
+ *
+ * <p>Any class that needs to listen for property changes must implement
+ * this interface.</p>
+ */
+class SGPropertyChangeListener
+{
+public:
+
+  virtual void propertyChanged (SGPropertyNode * node) = 0;
+
+};
+
 
 
 /**
@@ -1098,7 +1120,28 @@ public:
   bool untie (const char * relative_path);
 
 
+  /**
+   * Add a change listener to the property.
+   */
+  void addChangeListener (SGPropertyChangeListener * listener);
+
+
+  /**
+   * Fire a property change to all listeners.
+   */
+  void firePropertyChange ()
+  {
+    firePropertyChange(this);
+  }
+
+
 protected:
+
+
+  /**
+   * Fire a property change with an explicit target node.
+   */
+  void firePropertyChange (SGPropertyNode * node);
 
 
   /**
@@ -1197,6 +1240,8 @@ private:
     double double_val;
     char * string_val;
   } _local_val;
+
+  vector <SGPropertyChangeListener *> * _listeners;
 
 
 

@@ -240,7 +240,7 @@ SKYRESULT SkyRenderableInstanceCloud::Display(bool bDisplayFrontOfSplit /* = fal
   else
   {//cout << "Using impostor image\n";
       if (!_pBackTexture || (bDisplayFrontOfSplit && !_pFrontTexture)) {
-          cout << "texture id failure" << endl;
+          // cout << "texture id failure" << endl;
           FAIL_RETURN_MSG(SKYRESULT_FAIL, "SkyRenderableInstanceCloud::Display(): missing texture!");
       }
 

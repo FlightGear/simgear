@@ -1,8 +1,9 @@
 //------------------------------------------------------------------------------
 // File : SkyCloud.cpp
 //------------------------------------------------------------------------------
-// SkyWorks : Copyright 2002 Mark J. Harris and
+// SkyWorks : Adapted from skyworks program writen by Mark J. Harris and
 //						The University of North Carolina at Chapel Hill
+//					: by J. Wojnaroski Sep 2002
 //------------------------------------------------------------------------------
 // Permission to use, copy, modify, distribute and sell this software and its 
 // documentation for any purpose is hereby granted without fee, provided that 
@@ -622,8 +623,8 @@ SkyMinMaxBox* SkyCloud::CopyBoundingVolume() const
 }
 
 SKYRESULT SkyCloud::Load(const SkyArchive &archive, 
-                         float rScale /* = 1.0f */, 
-                         double latitude, double longitude)
+                         float rScale, /* = 1.0f */ 
+                         double latitude, double longitude )
 {
   unsigned int iNumParticles;
   Vec3f vecCenter = Vec3f::ZERO;
@@ -638,7 +639,7 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
   archive.FindUInt32("CldNumParticles", &iNumParticles);
   //if (!bLocal)
     archive.FindVec3f("CldCenter", &vecCenter);
-  
+
   Vec3f *pParticlePositions = new Vec3f[iNumParticles];
   float *pParticleRadii     = new float[iNumParticles];
   Vec4f *pParticleColors    = new Vec4f[iNumParticles];
@@ -657,21 +658,23 @@ SKYRESULT SkyCloud::Load(const SkyArchive &archive,
     
     _particles.push_back(pParticle);
   }
-  
-// This is an interim solution to transform clouds specified in SkyWorks files that are loaded relative to the fgfs
-// earth-centered Cartesian system to new fgfs coordinates that place and orient the cloud field for proper
-// viewing based on the center of the local tile center and local vertical specified at init time.
- 
+  // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
+  // this "almost" works not quite the right solution okay to get some up and running
+  // we need to develop our own scheme for loading and positioning clouds
   Mat33f R;
   Vec3f  moveit;
-  // invert cloud height vector
-  R.Set( 1, 0, 0, 0, -1, 0, 0, 0, 1 );
-  Rotate( R );
+
+  R.Set( 0, 1, 0,
+  			 1, 0, 0,
+  			 0, 0, 1);
+  // clouds sit in the y-z plane and x-axis is the vertical cloud height
+  Rotate( R ); 
   
-float ex = 1.0;
+// rotate the cloud field about the fgfs z-axis based on initial longitude
+float ex = 0.0;
 float ey = 0.0;
-float ez = 0.0;
-float phi = -latitude / 57.29578;
+float ez = 1.0;
+float phi = longitude / 57.29578;
 float one_min_cos = 1 - cos(phi);
   
 R.Set(
@@ -681,10 +684,12 @@ one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one
   			
 Rotate( R );
 
-ex = 0.0;
-ey = sin( latitude );
-ez = cos( latitude );
-phi = (longitude + 90.0)/ 57.29578;
+// okay now that let's rotate about a vector for latitude where longitude forms the 
+// components of a unit vector in the x-y plane
+ex = sin( longitude  / 57.29578 );
+ey = -cos( longitude  / 57.29578 );
+ez = 0.0;
+phi = latitude / 57.29578;
 one_min_cos = 1 - cos(phi);
 
 R.Set(
@@ -693,11 +698,18 @@ one_min_cos*ex*ey + ez*sin(phi), cos(phi) + one_min_cos*ey*ey, one_min_cos*ey*ez
 one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one_min_cos*ez*ez );
   			
 Rotate( R );
-// this sets the cloud height to around 3500 feet MSL @ KSFO   
-moveit.Set( 13000.0, 0.0, 10500.0  );
-  
-Translate( moveit ); 
+// need to calculate an offset to place the clouds at ~3000 feet MSL  ATM this is an approximation 
+// to move the clouds to some altitude above sea level. At some locations this could be underground
+// will need a better scheme to position clouds per user preferences
+float cloud_level_msl = 3000.0f;
 
+float x_offset = ex * cloud_level_msl;
+float y_offset = ey * cloud_level_msl; 
+float z_offset = cloud_level_msl * 0.5;
+moveit.Set( x_offset, y_offset, z_offset  );
+  
+  Translate( moveit );
+  
   return SKYRESULT_OK;
 }
 

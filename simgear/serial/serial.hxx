@@ -1,5 +1,8 @@
-// serial.hxx -- Unix serial I/O support
-//
+/**
+ * \file serial.hxx
+ * Low level serial I/O support (for unix/cygwin and windows)
+ */
+
 // Written by Curtis Olson, started November 1998.
 //
 // Copyright (C) 1998  Curtis L. Olson - curt@flightgear.org
@@ -46,6 +49,9 @@ SG_USING_STD(string);
 // #include <stdio.h>
 
 
+/**
+ * A class to encapsulate low level serial port IO.
+ */
 class FGSerialPort
 {
 #if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
@@ -61,19 +67,62 @@ private:
 
 public:
 
+    /** Default constructor */
     FGSerialPort();
+
+    /**
+     * Constructor
+     * @param device device name
+     * @param baud baud rate
+     */
     FGSerialPort(const string& device, int baud);
 
+    /** Destructor */
     ~FGSerialPort();
 
+    /** Open a the serial port
+     * @param device name of device
+     * @return success/failure
+     */
     bool open_port(const string& device);
+
+    /** Close the serial port
+     * @return success/failure 
+     */
     bool close_port();
+
+    /** Set baud rate
+     * @param baud baud rate
+     * @return success/failure
+     */
     bool set_baud(int baud);
+
+    /** Read from the serial port
+     * @return line of data
+     */
     string read_port();
+
+    /** Read from the serial port
+     * @param buf input buffer
+     * @param len length of buffer (i.e. max number of bytes to read
+     * @return number of bytes read
+     */
     int read_port(char *buf, int len);
+
+    /** Write to the serial port
+     * @param value output string
+     * @return number of bytes written
+     */
     int write_port(const string& value);
+
+    /** Write to the serial port
+     * @param buf pointer to character buffer containing output data
+     * @param len number of bytes to write from the buffer
+     * @return number of bytes written
+     */
     int write_port(const char *buf, int len);
 
+    /** @return true if device open */
     inline bool is_enabled() { return dev_open; }
 };
 

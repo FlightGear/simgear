@@ -1,5 +1,8 @@
-// screen-dump.hxx -- dump a copy of the opengl screen buffer to a file
-//
+/**
+ * \file screen-dump.hxx
+ * Dump a copy of the opengl screen buffer to a file.
+ */
+
 // Contributed by Richard Kaszeta <bofh@me.umn.edu>, started October 1999.
 //
 // This library is free software; you can redistribute it and/or
@@ -20,8 +23,22 @@
 // $Id$
 
 
-// dump the screen buffer to a ppm file
+/**
+ * Dump the screen buffer to a ppm file.
+ * @param filename name of file
+ * @param win_width width of our opengl window
+ * @param win_height height of our opengl window
+ */
 void my_glDumpWindow( const char *filename, int win_width, int win_height );
 
+
+/**
+ * Given a GLubyte *buffer, write it out to a ppm file.
+ * @param filename name of file
+ * @param buffer pointer to opengl buffer
+ * @param win_width width of buffer
+ * @param win_height height of buffer
+ * @param mode one of GL_RGBA, GL_RGB, etc.
+ */
 void my_glWritePPMFile( const char *filename, GLubyte *buffer, int win_width, 
 		        int win_height, int mode);

@@ -188,7 +188,7 @@ struct gzifstream_base
 {
     gzifstream_base() {}
 
-    Gzfilebuf gzbuf;
+    gzfilebuf gzbuf;
 };
 
 #endif // _zfstream_hxx

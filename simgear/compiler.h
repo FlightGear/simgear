@@ -269,7 +269,7 @@
 #  define STL_FSTREAM    <fstream.h>
 #  define STL_STDEXCEPT  <stdexcept>
 #  define STL_STRING     <string>
-#  define STL_STRSTREAM  <strstream>
+#  define STL_STRSTREAM  <strstream.h>
 
 #endif // Native SGI compilers
 

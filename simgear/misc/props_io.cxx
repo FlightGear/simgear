@@ -112,7 +112,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   State &st = state();
 
   if (_level == 0) {
-    if (string(name) != "PropertyList") {
+    if (string(name) != (string)"PropertyList") {
       SG_LOG(SG_INPUT, SG_ALERT, "Root element name is " <<
 	     name << "; expected PropertyList");
       _ok = false;

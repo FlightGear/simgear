@@ -108,7 +108,7 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
   }
 
   FV = RAD_TO_DEG * acos( tmp );
-};
+}
 
 /****************************************************************************
  * double CelestialBody::sgCalcEccAnom(double M, double e)

@@ -94,6 +94,25 @@
 #  endif
 #endif
 
+/* KAI C++ */
+#if defined(__KCC)
+
+#  define FG_NAMESPACES
+#  define FG_HAVE_STD
+#  define FG_HAVE_STREAMBUF
+#  define FG_HAVE_TRAITS
+#  define FG_HAVE_STD_INCLUDES
+
+#  define STL_ALGORITHM  <algorithm>
+#  define STL_FUNCTIONAL <functional>
+#  define STL_IOMANIP    <iomanip>
+#  define STL_IOSTREAM   <iostream>
+#  define STL_FSTREAM    <fstream>
+#  define STL_STDEXCEPT  <stdexcept>
+#  define STL_STRING     <string>
+#  define STL_STRSTREAM  <strstream>
+#endif
+
 //
 // Metrowerks 
 //

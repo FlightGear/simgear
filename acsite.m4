@@ -392,3 +392,24 @@ if test "$have_timezone" = no; then
          AC_MSG_RESULT(no))
 fi
 ])dnl
+
+## AC_BZ_SET_COMPILER: Addition by Theodore Papadopoulo
+## Patch by Jim McKelvey: change sed -e 's/ /@/g' to sed -e 's/ /@/'
+AC_DEFUN(AC_SG_SET_COMPILER,
+  [cxxwith=`echo $1 | sed -e 's/ /@/'`
+   case "$cxxwith" in
+     *:*@*)                 # Full initialization syntax
+       CXX=`echo "$cxxwith" | sed  -n -e 's/.*:\(.*\)@.*/\1/p'`
+       CXXFLAGS=`echo "$cxxwith" | sed  -n -e 's/.*:.*@\(.*\)/\1/p'`
+     ;;
+     *:*)                   # Simple initialization syntax
+       CXX=`echo "$cxxwith" | sed  -n -e 's/.*:\(.*\)/\1/p'`
+       CXXFLAGS=$3
+     ;;
+     *)                     # Default values
+       CXX=$2
+       CXXFLAGS=$3
+       CC="$2 --c"
+##       CFLAGS=
+     ;;
+   esac])

@@ -50,19 +50,13 @@ SGFile::~SGFile() {
 bool SGFile::open( SGProtocolDir dir ) {
     if ( dir == SG_IO_OUT ) {
 #ifdef _MSC_VER
-	fp = _open( file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-			00666 );
+        int mode = 00666;
 #else
-	fp = std::open( file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC,
-			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | 
-			S_IROTH | S_IWOTH );
+        mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 #endif
+	fp = ::open( file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, mode );
     } else if ( dir == SG_IO_IN ) {
-#ifdef _MSC_VER
-	fp = _open( file_name.c_str(), O_RDONLY );
-#else
-	fp = std::open( file_name.c_str(), O_RDONLY );
-#endif
+	fp = ::open( file_name.c_str(), O_RDONLY );
     } else {
 	FG_LOG( FG_IO, FG_ALERT, 
 		"Error:  bidirection mode not available for files." );
@@ -81,13 +75,7 @@ bool SGFile::open( SGProtocolDir dir ) {
 // read a block of data of specified size
 int SGFile::read( char *buf, int length ) {
     // read a chunk
-#ifdef _MSC_VER
-    int result = _read( fp, buf, length );
-#else
-    int result = std::read( fp, buf, length );
-#endif
-
-    return result;
+    return ::read( fp, buf, length );
 }
 
 
@@ -97,11 +85,7 @@ int SGFile::readline( char *buf, int length ) {
     int pos = lseek( fp, 0, SEEK_CUR );
 
     // read a chunk
-#ifdef _MSC_VER
-    int result = _read( fp, buf, length );
-#else
-    int result = std::read( fp, buf, length );
-#endif
+    int result = ::read( fp, buf, length );
 
     // find the end of line and reset position
     int i;
@@ -122,11 +106,7 @@ int SGFile::readline( char *buf, int length ) {
 
 // write data to a file
 int SGFile::write( char *buf, int length ) {
-#ifdef _MSC_VER
-    int result = _write( fp, buf, length );
-#else
-    int result = std::write( fp, buf, length );
-#endif
+    int result = ::write( fp, buf, length );
     if ( result != length ) {
 	FG_LOG( FG_IO, FG_ALERT, "Error writing data: " << file_name );
     }
@@ -144,11 +124,7 @@ int SGFile::writestring( char *str ) {
 
 // close the port
 bool SGFile::close() {
-#ifdef _MSC_VER
-    if ( _close( fp ) == -1 ) {
-#else
-    if ( std::close( fp ) == -1 ) {
-#endif
+    if ( ::close( fp ) == -1 ) {
 	return false;
     }
 

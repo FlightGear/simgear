@@ -8,6 +8,23 @@ AC_INIT(simgear/bucket/newbucket.cxx)
 dnl Initialize the automake stuff
 AM_INIT_AUTOMAKE(SimGear, 0.0.14)
 
+dnl Specify KAI C++ compiler and flags.
+dnl Borrowed with slight modification from blitz distribution.
+AC_ARG_WITH(cxx,
+  [  --with-cxx=COMPILER[:name-flags] set options for COMPILER (KCC)],
+  [case "$withval" in
+    KCC*)    # KAI C++ http://www.kai.com/
+      echo "Configuring for KAI C++"
+      AC_SG_SET_COMPILER($withval,"KCC","--restrict --strict_warnings")
+      CXX_OPTIMIZE_FLAGS=="+K3 -O3"
+      CXX_DEBUG_FLAGS="-g +K0"
+    ;;
+  esac
+])
+
+echo CXX = $CXX
+echo CC = $CC
+
 dnl Checks for programs.
 AC_PROG_MAKE_SET
 AC_PROG_CC

@@ -121,7 +121,7 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
   eFirst = ef;     eSec = es;
   MFirst = Mf;     MSec = Ms;
   updateOrbElements(mjd);
-};
+}
 
 inline CelestialBody::CelestialBody(double Nf, double Ns,
 				    double If, double Is,
@@ -136,7 +136,7 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
   aFirst = af;     aSec = as;
   eFirst = ef;     eSec = es;
   MFirst = Mf;     MSec = Ms;
-};
+}
 
 /****************************************************************************
  * inline void CelestialBody::updateOrbElements(double mjd)

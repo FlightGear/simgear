@@ -374,7 +374,7 @@ FGValue::getStringValue () const
     string_val = buf;
     return string_val;
   case DOUBLE:
-    sprintf(buf, "%lf", getRawDouble());
+    sprintf(buf, "%f", getRawDouble());
     string_val = buf;
     return string_val;
   case STRING:
@@ -1024,7 +1024,7 @@ get_base (const string &parent, const string &child,
 
   basename = child.substr(parent.size());
 
-  int pos = basename.find('/');
+  string::size_type pos = basename.find('/');
   if (pos != string::npos) {
     basename.resize(pos);
   }
@@ -1079,7 +1079,7 @@ FGPropertyNode::setPath (const string &path)
 const string &
 FGPropertyNode::getName () const
 {
-  int pos = _path.rfind('/');
+  string::size_type pos = _path.rfind('/');
   if (pos != string::npos) {
     _name = _path.substr(pos+1);
     return _name;
@@ -1146,7 +1146,7 @@ FGPropertyNode::size () const
 bool
 FGPropertyNode::getParent (FGPropertyNode &parent) const
 {
-  int pos = _path.rfind('/');
+  string::size_type pos = _path.rfind('/');
   if (pos != string::npos) {
     parent.setPath(_path.substr(0, pos-1));
     parent.setPropertyList(_props);

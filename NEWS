@@ -1,3 +1,35 @@
+New in 0.3.2
+* June 2, 2003
+
+* Moved quite a bit of low level model management and "state"
+  management code from FlightGear into SimGear and did a substantial
+  amount of restructuring and dependency clean up in the process.
+  Created a "scene" subdirectory with sub-subdirectories for material
+  management, basic model and model animation management, sky
+  rendering, and low level loaders for the "TerraGear" tile object format.
+* Removed support of the flat shaded and non-textured material
+  property varients.  You can still do these things, but extra states
+  are no longer set up automatically.
+* Removed 3d clouds from the default build ... these need a maintainer
+  or better yet, a complete plib-based rewrite.
+* Moved the FlightGear sound effect manager code over to SimGear.
+* Updated the cloud layer surface to better follow the inverted bowl
+  shape.
+* Much work on cloud/sky coloring, and also much work on
+  sunset/sunrise coloring.
+* Fixed an obscure bug in cloud texture loading which caused each
+  cloud texture to be loaded 5 times.  Ouch!
+* Various class and function renaming to make them better fit into the
+  standard SimGear naming scheme.
+* Added some additional convenience functions to the SGPath class.
+* Upgraded the distributed version of metakit.
+* FreeBSD fixes.
+* Irix fixes (better STL/ISO C++ header support.)
+* Mingwin fixes.
+* Better MacOS support
+* MSVC fixes.
+
+
 New in 0.3.1
 * December 4, 2002
 

@@ -91,6 +91,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
 	// cout << "Using zonename = " << zonename << endl;
     } else {
 	tzContainer = NULL;
+	zonename = NULL;
     }
 }
 

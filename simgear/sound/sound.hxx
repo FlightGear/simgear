@@ -20,6 +20,12 @@
 //
 // $Id$
 
+/** 
+ * \file sound.hxx 
+ * Provides a class to manage a single sound event including things
+ * like looping, volume and pitch changes.
+ */
+
 #ifndef _SG_SOUND_HXX
 #define _SG_SOUND_HXX 1
 

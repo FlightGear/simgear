@@ -23,6 +23,12 @@
 //
 // $Id$
 
+/**
+ * \file soundmgr.hxx
+ * Provides a sound manager class to keep track of
+ * multiple sounds and manage playing them with different effects and
+ * timings.
+ */
 
 #ifndef _SG_SOUNDMGR_HXX
 #define _SG_SOUNDMGR_HXX 1
@@ -44,7 +50,9 @@ SG_USING_STD(map);
 SG_USING_STD(string);
 
 
-// manages everything we need to know for an individual sound sample
+/**
+ * manages everything we need to know for an individual sound sample
+ */
 class SGSimpleSound {
 
 private:
@@ -101,6 +109,9 @@ typedef sound_map::iterator sound_map_iterator;
 typedef sound_map::const_iterator const_sound_map_iterator;
 
 
+/**
+ * Manage a collection of SGSimpleSound instances
+ */
 class SGSoundMgr
 {
 
@@ -154,43 +165,67 @@ public:
     void resume ();
 
 
-    // is audio working?
+    /**
+     * is audio working?
+     */
     inline bool is_working() const { return !audio_sched->notWorking(); }
 
-    // reinitialize the sound manager
+    /**
+     * reinitialize the sound manager
+     */
     inline void reinit() { init(); }
 
-    // add a sound effect, return true if successful
+    /**
+     * add a sound effect, return true if successful
+     */
     bool add( SGSimpleSound *sound, const string& refname);
 
-    // add a sound file, return the sample if successful, else return NULL
+    /**
+     * add a sound file, return the sample if successful, else return NULL
+     */
     SGSimpleSound *add( const string& refname,
                       const char *path, const char *file = NULL );
 
-    // remove a sound effect, return true if successful
+    /** 
+     * remove a sound effect, return true if successful
+     */
     bool remove( const string& refname );
 
-    // return true of the specified sound exists in the sound manager system
+    /**
+     * return true of the specified sound exists in the sound manager system
+     */
     bool exists( const string& refname );
 
-    // return a pointer to the SGSimpleSound if the specified sound
-    // exists in the sound manager system, otherwise return NULL
-    SGSimpleSound *find( const string& refname );
+    /**
+     * return a pointer to the SGSimpleSound if the specified sound
+     * exists in the sound manager system, otherwise return NULL
+     */
+     SGSimpleSound *find( const string& refname );
 
-    // tell the scheduler to play the indexed sample in a continuous
-    // loop
+    /**
+     * tell the scheduler to play the indexed sample in a continuous
+     * loop
+     */
     bool play_looped( const string& refname );
 
-    // tell the scheduler to play the indexed sample once
+    /**
+     * tell the scheduler to play the indexed sample once
+     */
     bool play_once( const string& refname );
 
-    // return true of the specified sound is currently being played
+    /**
+     * return true of the specified sound is currently being played
+     */
     bool is_playing( const string& refname );
 
-    // immediate stop playing the sound
+    /**
+     * immediate stop playing the sound
+     */
     bool stop( const string& refname );
 
-    // return the audio scheduler 
+    /** 
+     * return the audio scheduler 
+     */
     inline slScheduler *get_scheduler( ) { return audio_sched; };
 };
 

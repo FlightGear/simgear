@@ -201,7 +201,7 @@ SGMaterial::load_texture ( int n )
 }
 
 ssgSimpleState *
-SGMaterial::get_state (int n)
+SGMaterial::get_state (int n) const
 {
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No state available.");

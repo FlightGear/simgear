@@ -117,7 +117,7 @@ public:
   /**
    * Get the textured state.
    */
-  virtual ssgSimpleState *get_state (int n = -1);
+  virtual ssgSimpleState *get_state (int n = -1) const;
 
 
   /**

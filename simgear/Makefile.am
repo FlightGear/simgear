@@ -21,7 +21,8 @@ METAR_DIRS =
 
 EXTRA_DIST = version.h.in
 
-include_HEADERS = compiler.h constants.h fg_traits.hxx fg_zlib.h version.h
+include_HEADERS = \
+	compiler.h constants.h fg_traits.hxx fg_zlib.h inlines.h version.h
 
 SUBDIRS = \
 	bucket \

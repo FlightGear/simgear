@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _SUPPORTGEAR_CONSTANTS_H
-#define _SUPPORTGEAR_CONSTANTS_H
+#ifndef _SG_CONSTANTS_H
+#define _SG_CONSTANTS_H
 
 
 #ifdef HAVE_CONFIG_H
@@ -140,4 +140,4 @@
 #define FG_EPSILON 0.0000001
 
 
-#endif // _SUPPORTGEAR_CONSTANTS_H
+#endif // _SG_CONSTANTS_H

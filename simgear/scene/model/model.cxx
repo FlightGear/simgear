@@ -192,10 +192,11 @@ sgMakeAnimation( ssgBranch * model,
           SG_LOG(SG_INPUT, SG_WARN, "Object " << name << " not found");
           delete animation;
           animation = 0;
+      } else {
+          ssgBranch * oldParent = object->getParent(0);
+          branch->addKid(object);
+          oldParent->removeKid(object);
       }
-      ssgBranch * oldParent = object->getParent(0);
-      branch->addKid(object);
-      oldParent->removeKid(object);
   }
 
   animation->init();

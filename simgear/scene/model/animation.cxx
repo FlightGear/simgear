@@ -441,19 +441,33 @@ SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
                                                           rNode->getDoubleValue( "max", 1.0 ) );
         }
     }
-    if ( !_use_personality ) {
-        for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
-            DurationSpec &sp = _branch_duration_specs[ i ];
-            double v = sp._min + sg_random() * ( sp._max - sp._min );
-            _branch_duration_sec.push_back( v );
-            _total_duration_sec += v;
-        }
-    }
-    ((ssgSelector *)getBranch())->selectStep(_step);
 }
 
 SGTimedAnimation::~SGTimedAnimation ()
 {
+}
+
+void
+SGTimedAnimation::init()
+{
+    if ( !_use_personality ) {
+        for ( size_t i = 0; i < getBranch()->getNumKids(); i++ ) {
+            double v;
+            if ( i < _branch_duration_specs.size() ) {
+                DurationSpec &sp = _branch_duration_specs[ i ];
+                v = sp._min + sg_random() * ( sp._max - sp._min );
+            } else {
+                v = _duration_sec;
+            }
+            _branch_duration_sec.push_back( v );
+            _total_duration_sec += v;
+        }
+        // Sanity check : total duration shouldn't equal zero
+        if ( _total_duration_sec < 0.01 ) {
+            _total_duration_sec = 0.01;
+        }
+    }
+    ((ssgSelector *)getBranch())->selectStep(_step);
 }
 
 int
@@ -471,6 +485,10 @@ SGTimedAnimation::update()
                 if ( i == 0 )
                     offset = v;
                 total += v;
+            }
+            // Sanity check : total duration shouldn't equal zero
+            if ( total < 0.01 ) {
+                total = 0.01;
             }
             offset *= sg_random();
             key->setDoubleValue( sim_time_sec - offset, this, LAST_TIME_SEC );

@@ -187,6 +187,7 @@ class SGTimedAnimation : public SGAnimation
 public:
     SGTimedAnimation (SGPropertyNode_ptr props);
     virtual ~SGTimedAnimation ();
+    virtual void init();
     virtual int update();
 private:
     bool _use_personality;

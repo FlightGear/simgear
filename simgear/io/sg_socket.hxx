@@ -63,8 +63,11 @@ private:
     int save_len;
 
     SocketType sock;
+    SocketType msgsock;
     short unsigned int port;
     int sock_style;			// SOCK_STREAM or SOCK_DGRAM
+
+    bool first_read;
 
     // make a server (master listening) socket
     SocketType make_server_socket();
@@ -93,7 +96,7 @@ public:
     // If specified as a server (in direction for now) open the master
     // listening socket.  If specified as a client (out direction),
     // open a connection to a server.
-    bool open( SGProtocolDir dir );
+    bool open( const SGProtocolDir d );
 
     // read data from socket
     int read( char *buf, int length );
@@ -102,10 +105,10 @@ public:
     int readline( char *buf, int length );
 
     // write data to a socket
-    int write( char *buf, int length );
+    int write( const char *buf, const int length );
 
     // write null terminated string to a socket
-    int writestring( char *str );
+    int writestring( const char *str );
 
     // close file
     bool close();

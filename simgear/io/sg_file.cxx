@@ -47,15 +47,17 @@ SGFile::~SGFile() {
 
 
 // open the file based on specified direction
-bool SGFile::open( SGProtocolDir dir ) {
-    if ( dir == SG_IO_OUT ) {
+bool SGFile::open( const SGProtocolDir d ) {
+    set_dir( d );
+
+    if ( get_dir() == SG_IO_OUT ) {
 #ifdef _MSC_VER
         int mode = 00666;
 #else
         mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 #endif
 	fp = ::open( file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, mode );
-    } else if ( dir == SG_IO_IN ) {
+    } else if ( get_dir() == SG_IO_IN ) {
 	fp = ::open( file_name.c_str(), O_RDONLY );
     } else {
 	FG_LOG( FG_IO, FG_ALERT, 
@@ -105,7 +107,7 @@ int SGFile::readline( char *buf, int length ) {
 
 
 // write data to a file
-int SGFile::write( char *buf, int length ) {
+int SGFile::write( const char *buf, const int length ) {
     int result = ::write( fp, buf, length );
     if ( result != length ) {
 	FG_LOG( FG_IO, FG_ALERT, "Error writing data: " << file_name );
@@ -116,7 +118,7 @@ int SGFile::write( char *buf, int length ) {
 
 
 // write null terminated string to a file
-int SGFile::writestring( char *str ) {
+int SGFile::writestring( const char *str ) {
     int length = strlen( str );
     return write( str, length );
 }

@@ -182,7 +182,9 @@ int SGSocket::closesocket( int fd ) {
 // If specified as a server (in direction for now) open the master
 // listening socket.  If specified as a client (out direction), open a
 // connection to a server.
-bool SGSocket::open( SGProtocolDir dir ) {
+bool SGSocket::open( const SGProtocolDir d ) {
+    set_dir( d );
+
     if ( port_str == "" || port_str == "any" ) {
 	port = 0; 
     } else {
@@ -191,14 +193,17 @@ bool SGSocket::open( SGProtocolDir dir ) {
     
     // client_connections.clear();
 
-    if ( dir == SG_IO_IN ) {
+    if ( get_dir() == SG_IO_IN ) {
 	// this means server for now
 
 	// Setup socket to listen on.  Set "port" before making this
 	// call.  A port of "0" indicates that we want to let the os
 	// pick any available port.
 	sock = make_server_socket();
-	// TODO: check for error.
+	if ( sock == INVALID_SOCKET ) {
+	    FG_LOG( FG_IO, FG_ALERT, "socket creation failed" );
+	    return false;
+	}
 
 	FG_LOG( FG_IO, FG_INFO, "socket is connected to port = " << port );
 
@@ -211,7 +216,7 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	    listen( sock, SG_MAX_SOCKET_QUEUE );
 	}
 
-    } else if ( dir == SG_IO_OUT ) {
+    } else if ( get_dir() == SG_IO_OUT ) {
 	// this means client for now
 
 	sock = make_client_socket();
@@ -221,7 +226,7 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	    // Non-blocking UDP
 	    nonblock();
 	}
-    } else if ( dir == SG_IO_BI && sock_style == SOCK_STREAM ) {
+    } else if ( get_dir() == SG_IO_BI && sock_style == SOCK_STREAM ) {
 	// this means server for TCP sockets
 
 	// Setup socket to listen on.  Set "port" before making this
@@ -247,6 +252,10 @@ bool SGSocket::open( SGProtocolDir dir ) {
 	return false;
     }
 
+    // extra SOCK_STREAM stuff
+    msgsock = INVALID_SOCKET;
+    first_read = false;
+
     return true;
 }
 
@@ -254,8 +263,11 @@ bool SGSocket::open( SGProtocolDir dir ) {
 // read data from socket (server)
 // read a block of data of specified size
 int SGSocket::read( char *buf, int length ) {
-    int result = 0;
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
+    }
 
+    int result = 0;
     // check for potential input
     fd_set ready;
     FD_ZERO(&ready);
@@ -269,7 +281,20 @@ int SGSocket::read( char *buf, int length ) {
     select(32, &ready, 0, 0, &tv);
 
     if ( FD_ISSET(sock, &ready) ) {
-	result = readsocket( sock, buf, length );
+	// cout << "data ready" << endl;
+
+	if ( sock_style == SOCK_STREAM ) {
+	    if ( msgsock == INVALID_SOCKET ) {
+		msgsock = accept(sock, 0, 0);
+		closesocket(sock);
+		sock = msgsock;
+	    } else {
+		result = readsocket( sock, buf, length );
+	    }
+	} else {
+	    result = readsocket( sock, buf, length );
+	}
+
 	if ( result != length ) {
 	    FG_LOG( FG_IO, FG_INFO, 
 		    "Warning: read() not enough bytes." );
@@ -282,7 +307,11 @@ int SGSocket::read( char *buf, int length ) {
 
 // read a line of data, length is max size of input buffer
 int SGSocket::readline( char *buf, int length ) {
-    int result = 0;
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
+    }
+
+    // cout << "sock = " << sock << endl;
 
     // check for potential input
     fd_set ready;
@@ -294,19 +323,55 @@ int SGSocket::readline( char *buf, int length ) {
 
     // test for any input read on sock (returning immediately, even if
     // nothing)
-    int rc = select(32, &ready, 0, 0, &tv);
-    // FG_LOG( FG_IO, FG_DEBUG, "select returned " << rc );
+    int result = select(32, &ready, 0, 0, &tv);
+    // cout << "result = " << result << endl;
 
     if ( FD_ISSET(sock, &ready) ) {
+	// cout << "fd change state\n";
 	// read a chunk, keep in the save buffer until we have the
 	// requested amount read
 
-	char *buf_ptr = save_buf + save_len;
-	result = readsocket( sock, buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );
-	save_len += result;
+	if ( sock_style == SOCK_STREAM ) {
+	    // cout << "sock_stream\n";
+	    if ( msgsock == INVALID_SOCKET ) {
+		// cout << "msgsock == invalid\n";
+		msgsock = accept(sock, 0, 0);
+		closesocket(sock);
+		sock = msgsock;
+	    } else {
+		// cout << "ready to read\n";
+		char *buf_ptr = save_buf + save_len;
+		result = readsocket( sock, buf_ptr, SG_IO_MAX_MSG_SIZE
+				     - save_len );
+		// cout << "read result = " << result << endl;
+
+		if ( result > 0 ) {
+		    first_read = true;
+		}
+
+		save_len += result;
+
+		// Try and detect that the remote end died.  This
+		// could cause problems so if you see connections
+		// dropping for unexplained reasons, LOOK HERE!
+		if ( result == 0 && save_len == 0 && first_read == true ) {
+		    FG_LOG( FG_IO, FG_ALERT, 
+			    "Connection closed by foreign host." );
+		    closesocket(sock);
+		    open( get_dir() );
+		}
+	    }
+	} else {
+	    char *buf_ptr = save_buf + save_len;
+	    result = readsocket( sock, buf_ptr, SG_IO_MAX_MSG_SIZE - save_len );
+	    save_len += result;
+	}
+
 	// cout << "current read = " << buf_ptr << endl;
 	// cout << "current save_buf = " << save_buf << endl;
 	// cout << "save_len = " << save_len << endl;
+    } else {
+	// cout << "no data ready\n";
     }
 
     // look for the end of line in save_buf
@@ -339,7 +404,11 @@ int SGSocket::readline( char *buf, int length ) {
 
 
 // write data to socket (client)
-int SGSocket::write( char *buf, int length ) {
+int SGSocket::write( const char *buf, const int length ) {
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
+    }
+
     bool error_condition = false;
 
     if ( writesocket(sock, buf, length) < 0 ) {
@@ -404,7 +473,11 @@ int SGSocket::write( char *buf, int length ) {
 
 
 // write null terminated string to socket (server)
-int SGSocket::writestring( char *str ) {
+int SGSocket::writestring( const char *str ) {
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
+    }
+
     int length = strlen( str );
     return write( str, length );
 }
@@ -412,12 +485,9 @@ int SGSocket::writestring( char *str ) {
 
 // close the port
 bool SGSocket::close() {
-#if 0
-    for ( int i = 0; i < (int)client_connections.size(); ++i ) {
-	int msgsock = client_connections[i];
-	closesocket( msgsock );
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
     }
-#endif
 
     closesocket( sock );
     return true;
@@ -426,6 +496,10 @@ bool SGSocket::close() {
 
 // configure the socket as non-blocking
 bool SGSocket::nonblock() {
+    if ( sock == INVALID_SOCKET ) {
+	return 0;
+    }
+
 #if defined(_MSC_VER)
     u_long arg = 1;
     if (ioctlsocket( sock, FIONBIO, &arg ) != 0) {

@@ -61,7 +61,7 @@ public:
     ~SGSerial();
 
     // open the serial port based on specified direction
-    bool open( SGProtocolDir dir );
+    bool open( const SGProtocolDir d );
 
     // read a block of data of specified size
     int read( char *buf, int length );
@@ -70,10 +70,10 @@ public:
     int readline( char *buf, int length );
 
     // write data to port
-    int write( char *buf, int length );
+    int write( const char *buf, const int length );
 
     // write null terminated string to port
-    int writestring( char *str );
+    int writestring( const char *str );
 
     // close port
     bool close();

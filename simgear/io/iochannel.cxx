@@ -39,7 +39,7 @@ SGIOChannel::~SGIOChannel()
 
 
 // dummy configure routine
-bool SGIOChannel::open( SGProtocolDir dir ) {
+bool SGIOChannel::open( const SGProtocolDir d ) {
     return false;
 }
 
@@ -57,13 +57,13 @@ int SGIOChannel::readline( char *buf, int length ) {
 
 
 // dummy process routine
-int SGIOChannel::write( char *buf, int length ) {
+int SGIOChannel::write( const char *buf, const int length ) {
     return false;
 }
 
 
 // dummy process routine
-int SGIOChannel::writestring( char *str ) {
+int SGIOChannel::writestring( const char *str ) {
     return false;
 }
 

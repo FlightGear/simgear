@@ -56,7 +56,7 @@ public:
     ~SGFile();
 
     // open the file based on specified direction
-    bool open( SGProtocolDir dir );
+    bool open( const SGProtocolDir dir );
 
     // read a block of data of specified size
     int read( char *buf, int length );
@@ -65,10 +65,10 @@ public:
     int readline( char *buf, int length );
 
     // write data to a file
-    int write( char *buf, int length );
+    int write( const char *buf, const int length );
 
     // write null terminated string to a file
-    int writestring( char *str );
+    int writestring( const char *str );
 
     // close file
     bool close();

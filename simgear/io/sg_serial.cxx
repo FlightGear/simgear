@@ -47,7 +47,9 @@ SGSerial::~SGSerial() {
 
 
 // open the serial port based on specified direction
-bool SGSerial::open( SGProtocolDir dir ) {
+bool SGSerial::open( const SGProtocolDir d ) {
+    set_dir( d );
+
     if ( ! port.open_port( device ) ) {
 	FG_LOG( FG_IO, FG_ALERT, "Error opening device: " << device );
 	return false;
@@ -127,7 +129,7 @@ int SGSerial::readline( char *buf, int length ) {
 
 
 // write data to port
-int SGSerial::write( char *buf, int length ) {
+int SGSerial::write( const char *buf, const int length ) {
     int result = port.write_port( buf, length );
 
     if ( result != length ) {
@@ -139,7 +141,7 @@ int SGSerial::write( char *buf, int length ) {
 
 
 // write null terminated string to port
-int SGSerial::writestring( char *str ) {
+int SGSerial::writestring( const char *str ) {
     int length = strlen( str );
     return write( str, length );
 }

@@ -15,3 +15,11 @@ libsgio_a_SOURCES = \
 	sg_socket.cxx 
 
 INCLUDES += -I$(top_srcdir)
+
+noinst_PROGRAMS = socktest
+
+socktest_SOURCES = socktest.cxx
+
+socktest_LDADD = \
+	$(top_builddir)/simgear/io/libsgio.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a 

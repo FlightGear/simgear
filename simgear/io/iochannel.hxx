@@ -55,21 +55,27 @@ enum SGChannelType {
 class SGIOChannel {
 
     SGChannelType type;
+    SGProtocolDir dir;
+    bool valid;
 
 public:
 
     SGIOChannel();
     virtual ~SGIOChannel();
 
-    virtual bool open( SGProtocolDir dir );
+    virtual bool open( const SGProtocolDir d );
     virtual int read( char *buf, int length );
     virtual int readline( char *buf, int length );
-    virtual int write( char *buf, int length );
-    virtual int writestring( char *str );
+    virtual int write( const char *buf, const int length );
+    virtual int writestring( const char *str );
     virtual bool close();
 
-    virtual void set_type( SGChannelType t ) { type = t; }
-    virtual SGChannelType get_type() const { return type; }
+    inline void set_type( SGChannelType t ) { type = t; }
+    inline SGChannelType get_type() const { return type; }
+
+    inline void set_dir( const SGProtocolDir d ) { dir = d; }
+    inline SGProtocolDir get_dir() const { return dir; }
+    inline bool isvalid() const { return valid; }
 };
 
 

@@ -26,7 +26,8 @@
 
 
 // return a sphere object as an ssgBranch
-ssgBranch *ssgMakeSphere( double radius, int slices, int stacks ) {
+ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
+			  int stacks ) {
     float rho, drho, theta, dtheta;
     float x, y, z;
     float s, t, ds, dt;
@@ -96,6 +97,7 @@ ssgBranch *ssgMakeSphere( double radius, int slices, int stacks ) {
 
 	ssgLeaf *slice = 
 	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, NULL );
+	slice->setState( state );
 
 	sphere->addKid( slice );
 

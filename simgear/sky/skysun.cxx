@@ -24,18 +24,11 @@
 // $Id$
 
 
-// #ifdef __BORLANDC__
-// #  define exception c_exception
-// #endif
-// #include <math.h>
+#include <plib/ssg.h>
 
-// #include <simgear/debug/logstream.hxx>
+#include <simgear/constants.h>
 
-// #include <Time/sunpos.hxx>
-// #include <Time/light.hxx>
-// #include <Main/options.hxx>
-
-
+#include "sphere.hxx"
 #include "skysun.hxx"
 
 
@@ -51,151 +44,115 @@ FGSkySun::~FGSkySun( void ) {
 
 // initialize the sun object and connect it into our scene graph root
 bool FGSkySun::initialize() {
-    sgVec3 color;
-
-    float theta;
-    int i;
 
     // create the scene graph for the dome
     skysun = new ssgRoot;
     skysun->setName( "Sky Sun" );
 
     // set up the state
-    sun_state = new ssgSimpleState();
-    sun_state->setShadeModel( GL_SMOOTH );
-    sun_state->disable( GL_LIGHTING );
-    sun_state->disable( GL_DEPTH_TEST );
-    sun_state->disable( GL_CULL_FACE );
-    sun_state->disable( GL_TEXTURE_2D );
-    sun_state->disable( GL_COLOR_MATERIAL );
-    sun_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    orb_state = new ssgSimpleState();
+    orb_state->setShadeModel( GL_SMOOTH );
+    orb_state->disable( GL_LIGHTING );
+    orb_state->disable( GL_DEPTH_TEST );
+    orb_state->disable( GL_CULL_FACE );
+    orb_state->disable( GL_TEXTURE_2D );
+    orb_state->disable( GL_COLOR_MATERIAL );
+    orb_state->setMaterial( GL_AMBIENT_AND_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
 
-    // initially seed to all white
-    sgSetVec3( color, 1.0, 1.0, 1.0 );
+    ssgBranch *orb = ssgMakeSphere( orb_state, 550.0, 10, 10 );
 
-    // generate the raw vertex data
-    sgVec3 center_vertex;
-    sgVec3 upper_vertex[12];
-    sgVec3 middle_vertex[12];
-    sgVec3 lower_vertex[12];
-    sgVec3 bottom_vertex[12];
-
-    sgSetVec3( center_vertex, 0.0, 0.0, CENTER_ELEV );
-
-    for ( i = 0; i < 12; i++ ) {
-	theta = (i * 30.0) * DEG_TO_RAD;
-
-	sgSetVec3( upper_vertex[i],
-		   cos(theta) * UPPER_RADIUS,
-		   sin(theta) * UPPER_RADIUS,
-		   UPPER_ELEV );
-	
-	sgSetVec3( middle_vertex[i],
-		   cos((double)theta) * MIDDLE_RADIUS,
-		   sin((double)theta) * MIDDLE_RADIUS,
-		   MIDDLE_ELEV );
-
-	sgSetVec3( lower_vertex[i],
-		   cos((double)theta) * LOWER_RADIUS,
-		   sin((double)theta) * LOWER_RADIUS,
-		   LOWER_ELEV );
-
-	sgSetVec3( bottom_vertex[i],
-		   cos((double)theta) * BOTTOM_RADIUS,
-		   sin((double)theta) * BOTTOM_RADIUS,
-		   BOTTOM_ELEV );
-    }
-
-    // generate the center disk vertex/color arrays
-    center_disk_vl->add( center_vertex );
-    center_disk_cl->add( color );
-    for ( i = 11; i >= 0; i-- ) {
-	center_disk_vl->add( upper_vertex[i] );
-	center_disk_cl->add( color );
-    }
-    center_disk_vl->add( upper_vertex[11] );
-    center_disk_cl->add( color );
-
-    // generate the upper ring
-    for ( i = 0; i < 12; i++ ) {
-	upper_ring_vl->add( middle_vertex[i] );
-	upper_ring_cl->add( color );
-
-	upper_ring_vl->add( upper_vertex[i] );
-	upper_ring_cl->add( color );
-    }
-    upper_ring_vl->add( middle_vertex[0] );
-    upper_ring_cl->add( color );
-
-    upper_ring_vl->add( upper_vertex[0] );
-    upper_ring_cl->add( color );
-
-    // generate middle ring
-    for ( i = 0; i < 12; i++ ) {
-	middle_ring_vl->add( lower_vertex[i] );
-	middle_ring_cl->add( color );
-
-	middle_ring_vl->add( middle_vertex[i] );
-	middle_ring_cl->add( color );
-    }
-    middle_ring_vl->add( lower_vertex[0] );
-    middle_ring_cl->add( color );
-
-    middle_ring_vl->add( middle_vertex[0] );
-    middle_ring_cl->add( color );
-
-    // generate lower ring
-    for ( i = 0; i < 12; i++ ) {
-	lower_ring_vl->add( bottom_vertex[i] );
-	lower_ring_cl->add( color );
-
-	lower_ring_vl->add( lower_vertex[i] );
-	lower_ring_cl->add( color );
-    }
-    lower_ring_vl->add( bottom_vertex[0] );
-    lower_ring_cl->add( color );
-
-    lower_ring_vl->add( lower_vertex[0] );
-    lower_ring_cl->add( color );
-
-    // force a repaint of the sky colors with ugly defaults
-    sgVec3 fog_color;
-    sgSetVec3( fog_color, 1.0, 1.0, 1.0 );
-    repaint( color, fog_color, 0.0 );
+    // force a repaint of the sun colors with arbitrary defaults
+    repaint( 0.0 );
 
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
-    dome_selector = new ssgSelector;
-    dome_transform = new ssgTransform;
+    sun_selector = new ssgSelector;
+    sun_transform = new ssgTransform;
 
-    ssgVtxTable *center_disk, *upper_ring, *middle_ring, *lower_ring;
+    // orb->setState( orb_state );
 
-    center_disk = new ssgVtxTable( GL_TRIANGLE_FAN, 
-				   center_disk_vl, NULL, NULL, center_disk_cl );
+    sun_transform->addKid( orb );
 
-    upper_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				  upper_ring_vl, NULL, NULL, upper_ring_cl );
+    sun_selector->addKid( sun_transform );
+    sun_selector->clrTraversalMaskBits( SSGTRAV_HOT );
 
-    middle_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				   middle_ring_vl, NULL, NULL, middle_ring_cl );
+    skysun->addKid( sun_selector );
 
-    lower_ring = new ssgVtxTable( GL_TRIANGLE_STRIP, 
-				  lower_ring_vl, NULL, NULL, lower_ring_cl );
+    return true;
+}
 
-    center_disk->setState( dome_state );
-    upper_ring->setState( dome_state );
-    middle_ring->setState( dome_state );
-    lower_ring->setState( dome_state );
 
-    dome_transform->addKid( center_disk );
-    dome_transform->addKid( upper_ring );
-    dome_transform->addKid( middle_ring );
-    dome_transform->addKid( lower_ring );
+// repaint the sun colors based on current value of sun_angle in
+// degrees relative to verticle
+// 0 degrees = high noon
+// 90 degrees = sun rise/set
+// 180 degrees = darkest midnight
+bool FGSkySun::repaint( double sun_angle ) {
+    if ( sun_angle * RAD_TO_DEG < 100 ) {
+	// else sun is well below horizon (so no point in repainting it)
+    
+	// x_10 = sun_angle^10
+	double x_10 = sun_angle * sun_angle * sun_angle * sun_angle * sun_angle
+	    * sun_angle * sun_angle * sun_angle * sun_angle * sun_angle;
 
-    dome_selector->addKid( dome_transform );
-    dome_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+	float ambient = (float)(0.4 * pow (1.1, - x_10 / 30.0));
+	if (ambient < 0.3) { ambient = 0.3; }
+	if (ambient > 1.0) { ambient = 1.0; }
 
-    dome->addKid( dome_selector );
+	sgVec3 color;
+	sgSetVec3( color,
+		   (ambient * 6.0)  - 1.0, // minimum value = 0.8
+		   (ambient * 11.0) - 3.0, // minimum value = 0.3
+		   (ambient * 12.0) - 3.6  // minimum value = 0.0
+		   );
+    
+	if (color[0] > 1.0) color[0] = 1.0;
+	if (color[1] > 1.0) color[1] = 1.0;
+	if (color[2] > 1.0) color[2] = 1.0;
+
+	orb_state->setMaterial( GL_AMBIENT_AND_DIFFUSE, 
+				color[0], color[1], color[2], 1.0 );
+    }
+
+    return true;
+}
+
+
+// reposition the sun at the specified right ascension and declination
+bool FGSkySun::reposition( double rightAscension, double declination ) {
+    sgMat4 T, RA, DEC;
+    sgVec3 axis;
+    sgVec3 v;
+
+    // xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
+    sgSetVec3( axis, 0.0, 0.0, 1.0 );
+    sgMakeRotMat4( RA, (rightAscension * RAD_TO_DEG) - 90.0, axis );
+
+    // xglRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
+    sgSetVec3( axis, 1.0, 0.0, 0.0 );
+    sgMakeRotMat4( DEC, declination * RAD_TO_DEG, axis );
+
+    // xglTranslatef(0,60000,0);
+    sgSetVec3( v, 0.0, 60000.0, 0.0 );
+    sgMakeTransMat4( T, v );
+
+    sgMat4 TRANSFORM;
+    sgCopyMat4( TRANSFORM, RA );
+    sgPreMultMat4( TRANSFORM, DEC );
+    sgPreMultMat4( TRANSFORM, T );
+
+    sgCoord skypos;
+    sgSetCoord( &skypos, TRANSFORM );
+
+    sun_transform->setTransform( &skypos );
+
+    return true;
+}
+
+
+// Draw the sun
+bool FGSkySun::draw() {
+    ssgCullAndDraw( skysun );
 
     return true;
 }

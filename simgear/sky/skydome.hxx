@@ -96,9 +96,6 @@ public:
 };
 
 
-extern FGSkyDome current_sky;
-
-
 // (Re)generate the display list
 // void fgSkyInit();
 

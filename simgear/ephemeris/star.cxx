@@ -45,56 +45,38 @@
  * problems on sun systems 
  ************************************************************************/
 Star::Star(FGTime *t) :
-  CelestialBody (0.000000,  0.0000000000,
-		 0.0000,    0.00000,
-		 282.9404,  4.7093500E-5,	
-		 1.0000000, 0.000000,	
-		 0.016709,  -1.151E-9,
-		 356.0470,  0.98560025850, t)
+    CelestialBody (0.000000,  0.0000000000,
+		   0.0000,    0.00000,
+		   282.9404,  4.7093500E-5,	
+		   1.0000000, 0.000000,	
+		   0.016709,  -1.151E-9,
+		   356.0470,  0.98560025850, t)
 {
-    
-  FG_LOG( FG_GENERAL, FG_INFO, "Initializing Sun Texture");
-#ifdef GL_VERSION_1_1
-  xglGenTextures(1, &sun_texid);
-  xglBindTexture(GL_TEXTURE_2D, sun_texid);
-#elif GL_EXT_texture_object
-  xglGenTexturesEXT(1, &sun_texid);
-  xglBindTextureEXT(GL_TEXTURE_2D, sun_texid);
-#else
-#  error port me
-#endif
+    distance = 0.0;
+}
 
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  setTexture();
-  glTexImage2D( GL_TEXTURE_2D,
-		0,
-		GL_RGBA,
-		256, 256,
-		0,
-		GL_RGBA, GL_UNSIGNED_BYTE,
-		sun_texbuf);
-     
-  SunObject = gluNewQuadric();
-  if(SunObject == NULL)
-    {
-      printf("gluNewQuadric(SunObject) failed  !\n");
-      exit(0);
-    }
-  
-  //SunList = 0;
-  distance = 0.0;
+Star::Star() :
+    CelestialBody (0.000000,  0.0000000000,
+		   0.0000,    0.00000,
+		   282.9404,  4.7093500E-5,	
+		   1.0000000, 0.000000,	
+		   0.016709,  -1.151E-9,
+		   356.0470,  0.98560025850)
+{
+    distance = 0.0;
 }
 
 Star::~Star()
 {
+#if 0
   //delete SunObject;
   delete [] sun_texbuf;
+#endif
 }
 
 
 
+#if 0
 static int texWidth = 256;	/* 64x64 is plenty */
 
 void Star::setTexture()
@@ -142,6 +124,9 @@ void Star::setTexture()
   //	    GL_UNSIGNED_BYTE, textureBuf);
   //free(textureBuf);
 }
+#endif
+
+
 /*************************************************************************
  * void Jupiter::updatePosition(FGTime *t, Star *ourSun)
  * 
@@ -184,7 +169,9 @@ void Star::updatePosition(FGTime *t)
   rightAscension = atan2 (ye, xe);
   declination = atan2 (ze, sqrt (xe*xe + ye*ye));
 }
-  
+
+
+#if 0  
 void Star::newImage(void)
 {
   /*static float stars[3];
@@ -268,3 +255,4 @@ void Star::newImage(void)
     glDisable(GL_BLEND);	// BLEND DISABLED  
   }
 }
+#endif

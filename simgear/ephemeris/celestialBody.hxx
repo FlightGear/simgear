@@ -39,8 +39,8 @@ class Star;
 
 class CelestialBody
 {
-protected:              // make the data protected, in order to give the inherited
-                        // classes direct access to the data
+protected:              // make the data protected, in order to give the
+                        //  inherited classes direct access to the data
   double NFirst;       	/* longitude of the ascending node first part */
   double NSec;		/* longitude of the ascending node second part */
   double iFirst;       	/* inclination to the ecliptic first part */
@@ -72,8 +72,17 @@ public:
 		double af, double as,
 		double ef, double es,
 		double Mf, double Ms, FGTime *t);
+  CelestialBody(double Nf, double Ns,
+		double If, double Is,
+		double wf, double ws,
+		double af, double as,
+		double ef, double es,
+		double Mf, double Ms);
   void getPos(double *ra, double *dec);
   void getPos(double *ra, double *dec, double *magnitude);
+  double getRightAscension();
+  double getDeclination();
+  double getMagnitude();
   double getLon();
   double getLat(); 
   void updatePosition(FGTime *t, Star *ourSun);
@@ -113,6 +122,21 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
   eFirst = ef;     eSec = es;
   MFirst = Mf;     MSec = Ms;
   updateOrbElements(t);
+};
+
+inline CelestialBody::CelestialBody(double Nf, double Ns,
+				    double If, double Is,
+				    double wf, double ws,
+				    double af, double as,
+				    double ef, double es,
+				    double Mf, double Ms)
+{
+  NFirst = Nf;     NSec = Ns;
+  iFirst = If;     iSec = Is;
+  wFirst = wf;     wSec = ws;
+  aFirst = af;     aSec = as;
+  eFirst = ef;     eSec = es;
+  MFirst = Mf;     MSec = Ms;
 };
 
 /****************************************************************************
@@ -170,6 +194,10 @@ inline void CelestialBody::getPos(double* ra, double* dec, double* magn)
   *dec = declination;
   *magn = magnitude;
 }
+
+inline double CelestialBody::getRightAscension() { return rightAscension; }
+inline double CelestialBody::getDeclination() { return declination; }
+inline double CelestialBody::getMagnitude() { return magnitude; }
 
 inline double CelestialBody::getLon()
 {

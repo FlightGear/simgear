@@ -79,10 +79,6 @@
 // static GLubyte lower_color[12][4];
 
 
-// Defined the shared sky object here
-FGSkyDome current_sky;
-
-
 // Constructor
 FGSkyDome::FGSkyDome( void ) {
 }

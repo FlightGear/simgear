@@ -25,5 +25,9 @@
 #include <plib/ssg.h>
 
 
-// return a sphere object as an ssgBranch
-ssgBranch *ssgMakeSphere( double radius, int slices, int stacks );
+// return a sphere object as an ssgBranch (and connect in the
+// specified ssgSimpleState
+ssgBranch *ssgMakeSphere( ssgSimpleState *state, double radius, int slices,
+			  int stacks );
+
+

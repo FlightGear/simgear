@@ -141,7 +141,7 @@ void SolarSystem::rebuild()
 
     earthsMoon->newImage();
     // Step 2b:  Add the sun
-    ourSun->newImage();
+    // ourSun->newImage();
     // Step 2c: Add the planets
     xglBegin(GL_POINTS);
     mercury->getPos(&ra, &dec, &magnitude);addPlanetToList(ra, dec, magnitude);

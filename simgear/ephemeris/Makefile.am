@@ -2,6 +2,7 @@ noinst_LIBRARIES = libAstro.a
 
 libAstro_a_SOURCES = \
 	celestialBody.cxx celestialBody.hxx \
+	ephemeris.cxx ephemeris.hxx \
 	jupiter.cxx jupiter.hxx \
 	mars.cxx mars.hxx \
 	mercury.cxx mercury.hxx \

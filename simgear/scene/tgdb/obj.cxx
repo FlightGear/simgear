@@ -351,8 +351,8 @@ bool sgBinObjLoad( const string& path, const bool is_base,
         // cout << "pts_v.size() = " << pts_v.size() << endl;
         if ( pt_materials[i].substr(0, 3) == "RWY" ) {
             // airport environment lighting
-            sgVec3 up;
-            sgSetVec3( up, center->x(), center->y(), center->z() );
+            sgdVec3 up;
+            sgdSetVec3( up, center->x(), center->y(), center->z() );
             // returns a transform -> lod -> leaf structure
             ssgBranch *branch = sgMakeDirectionalLights( nodes, normals,
                                                          pts_v[i], pts_n[i],

@@ -9,7 +9,8 @@ include_HEADERS = \
 	leaf.hxx \
 	obj.hxx \
 	pt_lights.hxx \
-	userdata.hxx
+	userdata.hxx \
+	vasi.hxx
 
 libsgtgdb_a_SOURCES = \
 	apt_signs.cxx \

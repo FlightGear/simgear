@@ -87,7 +87,7 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
                                     const int_list &nml_i,
                                     SGMaterialLib *matlib,
                                     const string &material,
-                                    sgVec3 up );
+                                    sgdVec3 dup );
 
 
 #endif // _SG_PT_LIGHTS_HXX

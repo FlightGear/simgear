@@ -26,6 +26,8 @@
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
+#include "vasi.hxx"
+
 #include "pt_lights.hxx"
 
 
@@ -161,7 +163,7 @@ static ssgTransform *gen_dir_light_group( const point_list &nodes,
                                           const int_list &pnt_i,
                                           const int_list &nml_i,
                                           const SGMaterial *mat,
-                                          sgVec3 up, bool vertical = false )
+                                          sgVec3 up, bool vertical )
 {
     sgVec3 center;
     calc_center_point( nodes, pnt_i, center );
@@ -548,7 +550,8 @@ static ssgTransform *gen_rabbit_lights( const point_list &nodes,
 #if 0 // debugging infrastructure
 // Generate a normal line 
 static ssgLeaf *gen_normal_line( SGMaterialLib *matlib,
-                                 sgVec3 pt, sgVec3 dir, sgVec3 up ) {
+                                 sgVec3 pt, sgVec3 dir, sgVec3 up )
+{
 
     ssgVertexArray *vl = new ssgVertexArray( 3 );
     ssgColourArray *cl = new ssgColourArray( 3 );
@@ -581,8 +584,11 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
                                     const int_list &nml_i,
                                     SGMaterialLib *matlib,
                                     const string &material,
-                                    sgVec3 up )
+                                    sgdVec3 dup )
 {
+    sgVec3 up;
+    sgSetVec3( up, dup );
+
     sgVec3 nup;
     sgNormalizeVec3( nup, up );
 
@@ -604,6 +610,35 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
                                                   pnt_i, nml_i,
                                                   matlib, up );
         return rabbit;
+    } else if ( material == "RWY_VASI_LIGHTS" ) {
+        ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
+                                                         nml_i, mat, up,
+                                                         false );
+
+        // calculate the geocentric position of this vasi and use it
+        // to init the vasi structure and save it in the userdata slot
+        sgdVec3 pos;
+        sgdSetVec3( pos, nodes[pnt_i[0]][0], nodes[pnt_i[0]][1],
+                    nodes[pnt_i[0]][2] );
+        // dup is the double version of the "up" vector which is also
+        // the reference center point of this tile.  The reference
+        // center + the coordinate of the first light gives the actual
+        // location of the first light.
+        sgdAddVec3( pos, dup );
+
+        // extract a pointer to the leaf node so a) we can set the
+        // phat light call back and b) we can pass this to the vasi
+        // structure.
+        ssgRangeSelector *lod = (ssgRangeSelector *)light_group->getKid(0);
+        ssgLeaf *leaf = (ssgLeaf *)lod->getKid(0);
+        leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
+        leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+
+        SGVASIUserData *vasi = new SGVASIUserData( pos, leaf );
+
+        light_group->setUserData( vasi );
+
+        return light_group;
     } else if ( material == "RWY_BLUE_TAXIWAY_LIGHTS" ) {
         ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
                                                          nml_i, mat, up,
@@ -611,7 +646,8 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
         return light_group;
     } else {
         ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
-                                                         nml_i, mat, up );
+                                                         nml_i, mat, up,
+                                                         false );
         return light_group;
     }
 

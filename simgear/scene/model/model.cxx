@@ -150,6 +150,9 @@ sgMakeAnimation( ssgBranch * model,
   } else {
     object = model;
   }
+
+  if ( animation == 0 )
+     return;
   
   ssgBranch * branch = animation->getBranch();
   splice_branch(branch, object);

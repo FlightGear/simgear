@@ -121,7 +121,7 @@
 #      define STL_STRSTREAM  <strstream>
 
 #    endif
-#  elif __GNUC__ == 3
+#  elif __GNUC__ >= 3
        // g++-3.0.x
 #      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #      define SG_NEED_AUTO_PTR

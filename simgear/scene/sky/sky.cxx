@@ -112,13 +112,11 @@ bool SGSky::repaint( const SGSkyColor &sc )
 	dome->repaint( sc.sky_color, sc.fog_color, sc.sun_angle,
                        effective_visibility );
 
+        stars->repaint( sc.sun_angle, sc.nstars, sc.star_data );
+        planets->repaint( sc.sun_angle, sc.nplanets, sc.planet_data );
+
 	oursun->repaint( sc.sun_angle, effective_visibility );
-
 	moon->repaint( sc.moon_angle );
-
-	planets->repaint( sc.sun_angle, sc.nplanets, sc.planet_data );
-
-	stars->repaint( sc.sun_angle, sc.nstars, sc.star_data );
 
 	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
             if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
@@ -148,15 +146,14 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 
     dome->reposition( st.zero_elev, st.lon, st.lat, st.spin );
 
+    stars->reposition( st.view_pos, angle );
+    planets->reposition( st.view_pos, angle );
+
     oursun->reposition( st.view_pos, angle,
                         st.sun_ra, st.sun_dec, st.sun_dist );
 
     moon->reposition( st.view_pos, angle,
                       st.moon_ra, st.moon_dec, st.moon_dist );
-
-    planets->reposition( st.view_pos, angle );
-
-    stars->reposition( st.view_pos, angle );
 
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
@@ -176,7 +173,7 @@ void SGSky::preDraw( float alt, float fog_exp2_density ) {
 
     // FIXME: This should not be needed, but at this time (08/15/2003)
     //        certain NVidia drivers don't seem to implement
-    //        fgPushAttrib(FG_FOG_BIT) properly. The result is that
+    //        glPushAttrib(FG_FOG_BIT) properly. The result is that
     //        there is not fog when looking at the sun.
     glFogf ( GL_FOG_DENSITY, fog_exp2_density );
 

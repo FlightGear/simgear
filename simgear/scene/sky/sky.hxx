@@ -416,7 +416,7 @@ public:
      * @param v visibility in meters
      */
     inline void set_visibility( float v ) {
-	effective_visibility = visibility = v;
+	effective_visibility = visibility = (v <= 25.0) ? 25.0 : v;
     }
 };
 

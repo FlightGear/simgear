@@ -1117,14 +1117,14 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 
 SGEmissionAnimation::SGEmissionAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props)
   : SGAnimation(props, new ssgBranch),
-   _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
+   _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+  _color0(props->getFloatValue("emiss-red", 0.0)),
+  _color1(props->getFloatValue("emiss-green", 0.0)),
+  _color2(props->getFloatValue("emiss-blue", 0.0)),
+  _old_brightness(0.0),
+  _cached_material(0),
+  _cloned_material(0)
 {
-  _color0 = props->getFloatValue("emiss-red", 0.0);
-  _color1 = props->getFloatValue("emiss-green", 0.0);
-  _color2 = props->getFloatValue("emiss-blue", 0.0);
-  _old_brightness = 0;
-  ssgSimpleState* _cached_material;
-  ssgSimpleState* _cloned_material;
 }
 
 SGEmissionAnimation::~SGEmissionAnimation ()
@@ -1193,7 +1193,6 @@ void SGEmissionAnimation::setEmissionBranch(ssgBranch *b, float color0, float co
     ssgEntity *e = b->getKid(i);
     if (e->isAKindOf(ssgTypeLeaf())) {
       ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
-      s->enable( GL_ALPHA_TEST );
       s->setMaterial( GL_EMISSION, color0, color1, color2, 0.0 );
     } else if (e->isAKindOf(ssgTypeBranch())) {
       setEmissionBranch((ssgBranch*)e, color0, color1, color2);

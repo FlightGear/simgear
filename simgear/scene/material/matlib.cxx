@@ -178,7 +178,8 @@ static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
 static int gen_vasi_light_map() {
     const int env_tex_res = 256;
     int half_res = env_tex_res / 2;
-    unsigned char env_map[env_tex_res][env_tex_res][4];
+
+    static unsigned char env_map[env_tex_res][env_tex_res][4];
     GLuint tex_name;
 
     for ( int i = 0; i < env_tex_res; ++i ) {

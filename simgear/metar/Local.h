@@ -1107,7 +1107,7 @@ char *rptstrip(char *);
 char *rptfmt(char *);
 char *rptfmti(char *, unsigned short int);
 
-#ifndef __FreeBSD__  // strnstr is already defined on FreeBSD
+#if !defined(__FreeBSD__) && !defined(__APPLE__)  // strnstr is already defined on FreeBSD / Darwin
 char *strnstr(char *, char *, size_t);
 #endif
  

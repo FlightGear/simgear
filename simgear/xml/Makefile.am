@@ -9,7 +9,7 @@ noinst_HEADERS = \
 	xmltok_impl.c xmltok_ns.c
 
 libsgxml_a_SOURCES = \
-        asciitab.h \
+	asciitab.h \
 	easyxml.cxx \
 	hashtable.h hashtable.c \
 	iasciitab.h latin1tab.h nametab.h utf8tab.h xmldef.h \

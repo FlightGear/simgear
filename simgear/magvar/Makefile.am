@@ -12,6 +12,8 @@ noinst_PROGRAMS = testmagvar
 
 testmagvar_SOURCES = testmagvar.cxx
 
-testmagvar_LDADD = $(top_builddir)/simgear/magvar/libsgmagvar.a
+testmagvar_LDADD = \
+	$(top_builddir)/simgear/magvar/libsgmagvar.a \
+	$(base_LIBS)
 
 INCLUDES = -I$(top_srcdir)

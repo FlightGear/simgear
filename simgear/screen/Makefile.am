@@ -27,7 +27,7 @@ libsgscreen_a_SOURCES = \
 	GLBitmaps.cxx GLBitmaps.h \
 	$(IMAGE_SERVER_SRCS) \
 	screen-dump.cxx \
-        tr.cxx \
+	tr.cxx \
 	extensions.cxx \
 	win32-printer.h
 

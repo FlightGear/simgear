@@ -10,7 +10,7 @@ include_HEADERS = \
 libsgprops_a_SOURCES = \
 	condition.cxx \
 	props.cxx \
-        props_io.cxx
+	props_io.cxx
 
 noinst_PROGRAMS = props_test
 

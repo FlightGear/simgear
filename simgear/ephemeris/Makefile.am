@@ -4,7 +4,7 @@ lib_LIBRARIES = libsgephem.a
 
 include_HEADERS = \
 	celestialBody.hxx \
-        ephemeris.hxx \
+	ephemeris.hxx \
 	jupiter.hxx \
 	mars.hxx \
 	mercury.hxx \

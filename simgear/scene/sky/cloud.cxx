@@ -41,6 +41,10 @@
 
 #include "cloud.hxx"
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+#define isnan(x) _isnan(x)
+#endif
+
 
 static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;

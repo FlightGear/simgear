@@ -36,6 +36,10 @@
 
 #include STL_STRING
 
+#include <simgear/debug/logstream.hxx>
+
+#include <plib/sg.h>
+
 #if defined(__APPLE__)
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
@@ -46,12 +50,7 @@
 # include <AL/alut.h>
 #endif
 
-#include <plib/sg.h>
-
-#include <simgear/debug/logstream.hxx>
-
 SG_USING_STD(string);
-
 
 /**
  * manages everything we need to know for an individual sound sample

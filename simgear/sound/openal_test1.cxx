@@ -1,5 +1,12 @@
 #include <stdio.h>
+
+#ifdef __MINGW32__
+// This is broken, but allows the file to compile without a POSIX
+// environment.
+static unsigned int sleep(unsigned int secs) { return 0; }
+#else
 #include <unistd.h>	// sleep()
+#endif
 
 #if defined( __APPLE__ )
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM

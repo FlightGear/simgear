@@ -26,6 +26,10 @@
 #define _EPHEMERIS_HXX
 
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <plib/sg.h>
 
 #include <Time/fg_time.hxx>

@@ -789,36 +789,6 @@ SOURCE=.\simgear\misc\exception.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\misc\props.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmisc"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmisc"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\misc\props_io.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmisc"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmisc"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\misc\sg_path.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -864,6 +834,21 @@ SOURCE=.\simgear\misc\strutils.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\misc\tabbed_values.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\misc\texcoord.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -888,6 +873,55 @@ SOURCE=.\simgear\misc\zfstream.cxx
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
 # PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "Lib_sgprops"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\props\condition.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgprops"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgprops"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\props\props.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgprops"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgprops"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\props\props_io.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgprops"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgprops"
 
 !ENDIF 
 
@@ -927,9 +961,340 @@ SOURCE=.\simgear\route\waypoint.cxx
 
 # End Source File
 # End Group
+# Begin Group "Lib_sgmaterial"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\material\mat.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmaterial"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmaterial"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\material\matlib.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmaterial"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmaterial"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\material\matmodel.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmaterial"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmaterial"
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "Lib_sgmodel"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\animation.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\location.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\model.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\modellib.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\placement.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "Lib_sgsky"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\cloud.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\dome.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\moon.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\oursun.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\sky.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\sphere.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\stars.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "Lib_sgtgdb"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\apt_signs.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\leaf.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\obj.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\pt_lights.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\userdata.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# End Group
 # Begin Group "Lib_sgscreen"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\screen\texture.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgscreen"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgscreen"
+
+!ENDIF 
+
+# End Source File
 # Begin Source File
 
 SOURCE=.\simgear\screen\GLBitmaps.cxx
@@ -1025,969 +1390,35 @@ SOURCE=.\simgear\serial\serial.cxx
 
 # End Source File
 # End Group
-# Begin Group "Lib_sgsky"
+# Begin Group "Lib_sgsound"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\simgear\sky\cloud.cxx
+SOURCE=.\simgear\sound\sound.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
-# PROP Intermediate_Dir "Release\Lib_sgsky"
+# PROP Intermediate_Dir "Release\Lib_sgsound"
 
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\dome.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgsky"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
+# PROP Intermediate_Dir "Debug\Lib_sgsound"
 
 !ENDIF 
 
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\sky\moon.cxx
+SOURCE=.\simgear\sound\soundmgr.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
-# PROP Intermediate_Dir "Release\Lib_sgsky"
+# PROP Intermediate_Dir "Release\Lib_sgsound"
 
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\oursun.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgsky"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\sky.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgsky"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\sphere.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgsky"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\stars.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgsky"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgsky"
-
-!ENDIF 
-
-# End Source File
-# End Group
-# Begin Group "Lib_sgclouds3d"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\vec3fv.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\vec3fv.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\vec3f.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\vec4f.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\vec2f.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat16fv.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat16fv.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat33.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat33impl.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat44.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\mat44impl.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\tri.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\tri.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\plane.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\plane.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\camera.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\camera.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\camutils.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\camutils.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\minmaxbox.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\minmaxbox.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyAABBTree.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyArchive.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyArchive.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyBoundingVolume.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyBVTree.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyBVTreeSplitter.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyCloud.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyCloud.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyCloudParticle.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyContext.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyContext.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyDynamicTextureManager.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyDynamicTextureManager.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyLight.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyLight.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyMaterial.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyMaterial.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyMinMaxBox.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyMinMaxBox.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderable.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstance.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstanceCloud.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstanceCloud.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstanceGeneric.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstanceGroup.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyRenderableInstanceGroup.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkySceneLoader.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkySceneManager.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkySceneManager.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkySingleton.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyTexture.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyTextureManager.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyTextureManager.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyTextureState.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyTextureState.hpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\sky\clouds3d\SkyUtil.cpp
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgclouds3d"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgclouds3d"
+# PROP Intermediate_Dir "Debug\Lib_sgsound"
 
 !ENDIF 
 

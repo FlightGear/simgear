@@ -180,6 +180,7 @@ bool SGBinObject::read_bin( const string& file ) {
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
 	    // cout << "ERROR: opening " << file << " or " << filegz
 	    //      << "for reading!" << endl;
+
 	    return false;
 	}
     }
@@ -197,6 +198,9 @@ bool SGBinObject::read_bin( const string& file ) {
 	version = (header & 0x0000FFFF);
 	// cout << "File version = " << version << endl;
     } else {
+	// close the file before we return
+	gzclose(fp);
+
 	return false;
     }
 

@@ -23,14 +23,12 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <plib/sg.h>
 #include <plib/ssg.h>
 
-#include <simgear/constants.h>
 #include <simgear/math/fg_random.h>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
-
-#include <Objects/matlib.hxx>
 
 #include "cloud.hxx"
 
@@ -46,8 +44,8 @@ SGCloudLayer::~SGCloudLayer( void ) {
 
 
 // build the moon object
-void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
-			  double transition, SGCloudType type )
+void SGCloudLayer::build( double s, double asl, double thickness,
+			  double transition, ssgSimpleState *state )
 {
     scale = 4000.0;
 
@@ -58,27 +56,7 @@ void SGCloudLayer::build( FGPath path, double s, double asl, double thickness,
     size = s;
     last_lon = last_lat = -999.0f;
 
-    // look up the appropriate cloud state
-    FGNewMat *m;
-
-    switch ( type ) {
-    case SG_CLOUD_OVERCAST:
-	m = material_lib.find( "CloudOvercast" );
-	layer_state = m->get_state();
-	break;
-    case SG_CLOUD_MOSTLY_CLOUDY:
-	m = material_lib.find( "CloudMostlyCloudy" );
-	layer_state = m->get_state();
-	break;
-    case SG_CLOUD_MOSTLY_SUNNY:
-	m = material_lib.find( "CloudMostlySunny" );
-	layer_state = m->get_state();
-	break;
-    case SG_CLOUD_CIRRUS:
-	m = material_lib.find( "CloudCirrus" );
-	layer_state = m->get_state();
-	break;
-    }
+    layer_state = state;
 
     cl = new ssgColourArray( 4 );
     vl = new ssgVertexArray( 4 );
@@ -183,15 +161,17 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
     //        zero_elev.x, zero_elev.y, zero_elev.z );
 
     // Rotate to proper orientation
-    // printf("  lon = %.2f  lat = %.2f\n", FG_Longitude * RAD_TO_DEG,
-    //        FG_Latitude * RAD_TO_DEG);
-    // xglRotatef( f->get_Longitude() * RAD_TO_DEG, 0.0, 0.0, 1.0 );
+    // printf("  lon = %.2f  lat = %.2f\n", 
+    //        FG_Longitude * SGD_RADIANS_TO_DEGREES,
+    //        FG_Latitude * SGD_RADIANS_TO_DEGREES);
+    // xglRotatef( f->get_Longitude() * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( LON, lon * RAD_TO_DEG, axis );
+    sgMakeRotMat4( LON, lon * SGD_RADIANS_TO_DEGREES, axis );
 
-    // xglRotatef( 90.0 - f->get_Latitude() * RAD_TO_DEG, 0.0, 1.0, 0.0 );
+    // xglRotatef( 90.0 - f->get_Latitude() * SGD_RADIANS_TO_DEGREES,
+    //             0.0, 1.0, 0.0 );
     sgSetVec3( axis, 0.0, 1.0, 0.0 );
-    sgMakeRotMat4( LAT, 90.0 - lat * RAD_TO_DEG, axis );
+    sgMakeRotMat4( LAT, 90.0 - lat * SGD_RADIANS_TO_DEGREES, axis );
 
     sgMat4 TRANSFORM;
 

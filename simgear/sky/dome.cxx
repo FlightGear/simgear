@@ -35,7 +35,8 @@
 #include <GL/glut.h>
 #include <simgear/xgl/xgl.h>
 
-#include <simgear/constants.h>
+#include <plib/sg.h>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/fg_random.h>
 
@@ -139,7 +140,7 @@ ssgBranch * SGSkyDome::build( ) {
     sgSetVec3( center_vertex, 0.0, 0.0, CENTER_ELEV );
 
     for ( i = 0; i < 12; i++ ) {
-	theta = (i * 30.0) * DEG_TO_RAD;
+	theta = (i * 30.0) * SGD_DEGREES_TO_RADIANS;
 
 	sgSetVec3( upper_vertex[i],
 		   cos(theta) * UPPER_RADIUS,
@@ -484,19 +485,21 @@ bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
     //        zero_elev.x, zero_elev.y, zero_elev.z );
 
     // Rotate to proper orientation
-    // printf("  lon = %.2f  lat = %.2f\n", FG_Longitude * RAD_TO_DEG,
-    //        FG_Latitude * RAD_TO_DEG);
-    // xglRotatef( f->get_Longitude() * RAD_TO_DEG, 0.0, 0.0, 1.0 );
+    // printf("  lon = %.2f  lat = %.2f\n",
+    //        FG_Longitude * SGD_RADIANS_TO_DEGREES,
+    //        FG_Latitude * SGD_RADIANS_TO_DEGREES);
+    // xglRotatef( f->get_Longitude() * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( LON, lon * RAD_TO_DEG, axis );
+    sgMakeRotMat4( LON, lon * SGD_RADIANS_TO_DEGREES, axis );
 
-    // xglRotatef( 90.0 - f->get_Latitude() * RAD_TO_DEG, 0.0, 1.0, 0.0 );
+    // xglRotatef( 90.0 - f->get_Latitude() * SGD_RADIANS_TO_DEGREES,
+    //             0.0, 1.0, 0.0 );
     sgSetVec3( axis, 0.0, 1.0, 0.0 );
-    sgMakeRotMat4( LAT, 90.0 - lat * RAD_TO_DEG, axis );
+    sgMakeRotMat4( LAT, 90.0 - lat * SGD_RADIANS_TO_DEGREES, axis );
 
-    // xglRotatef( l->sun_rotation * RAD_TO_DEG, 0.0, 0.0, 1.0 );
+    // xglRotatef( l->sun_rotation * SGD_RADIANS_TO_DEGREES, 0.0, 0.0, 1.0 );
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( SPIN, spin * RAD_TO_DEG, axis );
+    sgMakeRotMat4( SPIN, spin * SGD_RADIANS_TO_DEGREES, axis );
 
     sgMat4 TRANSFORM;
 

@@ -62,6 +62,7 @@ private:
     SGMoon *moon;
     SGStars *planets;
     SGStars *stars;
+    ssgSimpleState *cloud_mats[SG_MAX_CLOUD_TYPES];
     layer_list_type cloud_layers;
 
     ssgRoot *pre_root, *post_root;
@@ -152,6 +153,10 @@ public:
     // add a cloud layer (above sea level in meters)
     void add_cloud_layer( double asl, double thickness, double transition,
 			  SGCloudType type );
+    void add_cloud_layer( double asl, double thickness, double transition,
+			  const string &tex_path );
+    void add_cloud_layer( double asl, double thickness, double transition,
+			  ssgSimpleState *state );
 
     inline int get_num_layers() const { return cloud_layers.size(); }
     inline SGCloudLayer *get_cloud_layer( int i ) const {

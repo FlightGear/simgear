@@ -31,9 +31,8 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <plib/sg.h>
 #include <plib/ssg.h>
-
-#include <simgear/constants.h>
 
 #include "stars.hxx"
 
@@ -41,6 +40,7 @@
 FG_USING_STD(cout);
 FG_USING_STD(endl);
 #endif 
+
 
 // Set up star rendering call backs
 static int sgStarPreDraw( ssgEntity *e ) {
@@ -147,26 +147,26 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
     float *color;
 
     // determine which star structure to draw
-    if ( sun_angle > (FG_PI_2 + 10.0 * DEG_TO_RAD ) ) {
+    if ( sun_angle > (2 * SGD_PI + 10.0 * SGD_DEGREES_TO_RADIANS ) ) {
 	// deep night
 	factor = 1.0;
 	cutoff = 4.5;
-    } else if ( sun_angle > (FG_PI_2 + 8.8 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 8.8 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 1.0;
 	cutoff = 3.8;
-    } else if ( sun_angle > (FG_PI_2 + 7.5 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 0.95;
 	cutoff = 3.1;
-    } else if ( sun_angle > (FG_PI_2 + 7.0 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 0.9;
 	cutoff = 2.4;
-    } else if ( sun_angle > (FG_PI_2 + 6.5 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 0.85;
 	cutoff = 1.8;
-    } else if ( sun_angle > (FG_PI_2 + 6.0 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 0.8;
 	cutoff = 1.2;
-    } else if ( sun_angle > (FG_PI_2 + 5.5 * DEG_TO_RAD ) ) {
+    } else if ( sun_angle > (2 * SGD_PI + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
 	factor = 0.75;
 	cutoff = 0.6;
     } else {

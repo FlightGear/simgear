@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <plib/sg.h>
 #include <plib/ssg.h>
 
 #include <simgear/constants.h>
@@ -202,7 +203,7 @@ ssgBranch * SGMoon::build( FGPath path, double moon_size ) {
 // 90 degrees = moon rise/set
 // 180 degrees = darkest midnight
 bool SGMoon::repaint( double moon_angle ) {
-    if ( moon_angle * RAD_TO_DEG < 100 ) {
+    if ( moon_angle * SGD_RADIANS_TO_DEGREES < 100 ) {
 	// else moon is well below horizon (so no point in repainting it)
     
 	// x_10 = moon_angle^10
@@ -257,13 +258,14 @@ bool SGMoon::reposition( sgVec3 p, double angle,
     sgSetVec3( axis, 0.0, 0.0, -1.0 );
     sgMakeRotMat4( GST, angle, axis );
 
-    // xglRotatef(((RAD_TO_DEG * rightAscension)- 90.0), 0.0, 0.0, 1.0);
+    // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
+    //             0.0, 0.0, 1.0);
     sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( RA, (rightAscension * RAD_TO_DEG) - 90.0, axis );
+    sgMakeRotMat4( RA, (rightAscension * SGD_RADIANS_TO_DEGREES) - 90.0, axis );
 
-    // xglRotatef((RAD_TO_DEG * declination), 1.0, 0.0, 0.0);
+    // xglRotatef((SGD_RADIANS_TO_DEGREES * declination), 1.0, 0.0, 0.0);
     sgSetVec3( axis, 1.0, 0.0, 0.0 );
-    sgMakeRotMat4( DEC, declination * RAD_TO_DEG, axis );
+    sgMakeRotMat4( DEC, declination * SGD_RADIANS_TO_DEGREES, axis );
 
     // xglTranslatef(0,moon_dist);
     sgSetVec3( v, 0.0, moon_dist, 0.0 );

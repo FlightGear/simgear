@@ -26,12 +26,10 @@
 #  include <config.h>
 #endif
 
-#include <plib/ssg.h>		// plib include
+#include <plib/sg.h>
+#include <plib/ssg.h>
 
-#include <simgear/constants.h>
 #include <simgear/math/fg_random.h>
-
-#include <Objects/matlib.hxx>
 
 #include "sky.hxx"
 
@@ -98,27 +96,22 @@ void SGSky::build(  double sun_size, double moon_size,
 
     // add the cloud ssgStates to the material lib
     FGPath cloud_path;
-    ssgSimpleState *cloud_state;
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "cirrus.rgba" );
-    cloud_state = SGCloudMakeState( cloud_path.str() );
-    material_lib.add_item( "CloudCirrus", cloud_state );
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "mostlycloudy.rgba" );
-    cloud_state = SGCloudMakeState( cloud_path.str() );
-    material_lib.add_item( "CloudMostlyCloudy", cloud_state );
-
-    cloud_path.set( tex_path.str() );
-    cloud_path.append( "mostlysunny.rgba" );
-    cloud_state = SGCloudMakeState( cloud_path.str() );
-    material_lib.add_item( "CloudMostlySunny", cloud_state );
 
     cloud_path.set( tex_path.str() );
     cloud_path.append( "overcast.rgb" );
-    cloud_state = SGCloudMakeState( cloud_path.str() );
-    material_lib.add_item( "CloudOvercast", cloud_state );
+    cloud_mats[SG_CLOUD_OVERCAST] = SGCloudMakeState( cloud_path.str() );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "mostlycloudy.rgba" );
+    cloud_mats[SG_CLOUD_MOSTLY_CLOUDY] = SGCloudMakeState( cloud_path.str() );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "mostlysunny.rgba" );
+    cloud_mats[SG_CLOUD_MOSTLY_SUNNY] = SGCloudMakeState( cloud_path.str() );
+
+    cloud_path.set( tex_path.str() );
+    cloud_path.append( "cirrus.rgba" );
+    cloud_mats[SG_CLOUD_CIRRUS] = SGCloudMakeState( cloud_path.str() );
 }
 
 
@@ -228,9 +221,9 @@ void SGSky::draw_scene( float alt ) {
 
  
 void SGSky::add_cloud_layer( double asl, double thickness, double transition,
-			     SGCloudType type ) {
+			     ssgSimpleState *state ) {
     SGCloudLayer *layer = new SGCloudLayer;
-    layer->build(tex_path, 40000.0f, asl, thickness, transition, type );
+    layer->build( 40000.0f, asl, thickness, transition, state );
 
     layer_list_iterator current = cloud_layers.begin();
     layer_list_iterator last = cloud_layers.end();
@@ -248,6 +241,21 @@ void SGSky::add_cloud_layer( double asl, double thickness, double transition,
 	cout << "layer " << i << " = " << cloud_layers[i]->get_asl() << endl;
     }
     cout << endl;
+}
+
+
+void SGSky::add_cloud_layer( double asl, double thickness, double transition,
+			     const string &tex_path ) {
+    ssgSimpleState *state = SGCloudMakeState( tex_path );
+    add_cloud_layer( asl, thickness, transition, state );
+}
+
+
+void SGSky::add_cloud_layer( double asl, double thickness, double transition,
+			     SGCloudType type ) {
+    if ( type > 0 && type < SG_MAX_CLOUD_TYPES ) {
+	add_cloud_layer( asl, thickness, transition, cloud_mats[type] );
+    }
 }
 
 
@@ -301,11 +309,11 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		// modify actual_visibility based on puff envelope
 	    
 		if ( puff_progression <= ramp_up ) {
-		    double x = FG_PI_2 * puff_progression / ramp_up;
+		    double x = 2 * SGD_PI * puff_progression / ramp_up;
 		    double factor = 1.0 - sin( x );
 		    effvis = effvis * factor;
 		} else if ( puff_progression >= ramp_up + puff_length ) {
-		    double x = FG_PI_2 * 
+		    double x = 2 * SGD_PI * 
 			(puff_progression - (ramp_up + puff_length)) /
 			ramp_down;
 		    double factor = sin( x );

@@ -24,17 +24,26 @@
 #ifndef _SG_CLOUD_HXX_
 #define _SG_CLOUD_HXX_
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#include <simgear/compiler.h>
 
 #include <plib/ssg.h>
 
-#include <simgear/misc/fgpath.hxx>
+#include STL_STRING
+FG_USING_STD(string);
 
+
+#define SG_MAX_CLOUD_TYPES 4	// change this if we add/remove cloud
+				// types en the enum below
 
 enum SGCloudType {
     SG_CLOUD_OVERCAST = 0,
-    SG_CLOUD_MOSTLY_CLOUDY,
-    SG_CLOUD_MOSTLY_SUNNY,
-    SG_CLOUD_CIRRUS,
+    SG_CLOUD_MOSTLY_CLOUDY = 1,
+    SG_CLOUD_MOSTLY_SUNNY = 2,
+    SG_CLOUD_CIRRUS = 3,
 };
 
 
@@ -72,8 +81,8 @@ public:
     ~SGCloudLayer( void );
 
     // build the cloud object
-    void build( FGPath path, double size, double asl, double thickness,
-		double transition, SGCloudType type );
+    void build( double size, double asl, double thickness,
+		double transition, ssgSimpleState *state );
 
     // repaint the cloud colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for

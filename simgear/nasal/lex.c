@@ -58,7 +58,6 @@ static int* findLines(struct Parser* p)
 
         // Skip over the \r of a \r\n pair.
         if(buf[i] == '\r' && (i+1)<p->len && buf[i+1] == '\n') {
-            i++;
             continue;
         }
         // Reallocate if necessary

@@ -447,34 +447,30 @@ SGTexture::write_texture(const char *name) {
 
 
 void
-SGTexture::set_pixel(GLuint x, GLuint y, sgVec3 &c)
+SGTexture::set_pixel(GLuint x, GLuint y, GLubyte *c)
 {
     if (!texture_data) {
         errstr = NO_TEXTURE;
         return;
     }
 
-    unsigned int pos = (x + y*texture_width)*3;
-    texture_data[pos]   = (unsigned char)(c[0] * 256);
-    texture_data[pos+1] = (unsigned char)(c[1] * 256);
-    texture_data[pos+2] = (unsigned char)(c[2] * 256);
+    unsigned int pos = (x + y*texture_width) * num_colors;
+    memcpy(texture_data+pos, c, num_colors);
 }
 
 
-float *
+GLubyte *
 SGTexture::get_pixel(GLuint x, GLuint y)
 {
-    static sgVec3 c;
+    static GLubyte c[4] = {0, 0, 0, 0};
 
-    sgSetVec3(c, 0, 0, 0);
     if (!texture_data) {
         errstr = NO_TEXTURE;
         return c;
     }
 
-    unsigned int pos = (x + y*texture_width)*3;
-
-    sgSetVec3(c, texture_data[pos], texture_data[pos+1], texture_data[pos+2]);
+    unsigned int pos = (x + y*texture_width)*num_colors;
+    memcpy(c, texture_data + pos, num_colors);
 
     return c;
 }
@@ -796,3 +792,24 @@ SGTexture::ConvertUint(unsigned *array, unsigned int length) {
     }
 }
 
+
+void
+SGTexture::make_monochrome(GLubyte r, GLubyte g, GLubyte b) {
+
+   if (num_colors != 3)
+      return;
+
+   GLubyte ap[3];
+   for (int y=0; y<texture_height; y++)
+      for (int x=0; x<texture_width; x++)
+      {
+         GLubyte *rgb = get_pixel(x,y);
+         GLubyte avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
+
+         ap[0] = avg*r/255;
+         ap[1] = avg*g/255;
+         ap[2] = avg*b/255;
+
+         set_pixel(x,y,ap);
+      }
+}

@@ -111,8 +111,8 @@ public:
     void finish(unsigned int width, unsigned int height);
 
     // texture pixel manipulation functions.
-    void set_pixel(GLuint x, GLuint y, sgVec3 &c);
-    float *get_pixel(GLuint x, GLuint y);
+    void set_pixel(GLuint x, GLuint y, GLubyte *c);
+    GLubyte *get_pixel(GLuint x, GLuint y);
 
     void bind();
     inline void select(bool keep_data = false) {
@@ -137,6 +137,8 @@ public:
 
     inline const char *err_str() { return errstr; }
     inline void clear_err_str() { errstr = ""; }
+
+    void make_monochrome(GLubyte r=255, GLubyte g=255, GLubyte b=255);
 };
 
 #endif

@@ -88,12 +88,12 @@ void Moon::updatePosition(double mjd, double lst, double lat, Star *ourSun)
     geoRa, geoDec;
   
   updateOrbElements(mjd);
-  actTime = fgCalcActTime(mjd);
+  actTime = sgCalcActTime(mjd);
 
   // calculate the angle between ecliptic and equatorial coordinate system
   // in Radians
   ecl = ((DEG_TO_RAD * 23.4393) - (DEG_TO_RAD * 3.563E-7) * actTime);  
-  eccAnom = fgCalcEccAnom(M, e);  // Calculate the eccentric anomaly
+  eccAnom = sgCalcEccAnom(M, e);  // Calculate the eccentric anomaly
   xv = a * (cos(eccAnom) - e);
   yv = a * (sqrt(1.0 - e*e) * sin(eccAnom));
   v = atan2(yv, xv);               // the moon's true anomaly

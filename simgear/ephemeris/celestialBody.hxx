@@ -60,8 +60,8 @@ protected:              // make the data protected, in order to give the
   double magnitude;
   double lonEcl, latEcl;
 
-  double fgCalcEccAnom(double M, double e);
-  double fgCalcActTime(double mjd);
+  double sgCalcEccAnom(double M, double e);
+  double sgCalcActTime(double mjd);
   void updateOrbElements(double mjd);
 
 public:
@@ -149,7 +149,7 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
  ***************************************************************************/
 inline void CelestialBody::updateOrbElements(double mjd)
 {
-  double actTime = fgCalcActTime(mjd);
+  double actTime = sgCalcActTime(mjd);
    M = DEG_TO_RAD * (MFirst + (MSec * actTime));
    w = DEG_TO_RAD * (wFirst + (wSec * actTime));
    N = DEG_TO_RAD * (NFirst + (NSec * actTime));
@@ -158,7 +158,7 @@ inline void CelestialBody::updateOrbElements(double mjd)
    a = aFirst + (aSec * actTime);
 }
 /*****************************************************************************
- * inline double CelestialBody::fgCalcActTime(double mjd)
+ * inline double CelestialBody::sgCalcActTime(double mjd)
  * this private member function returns the offset in days from the epoch for
  * wich the orbital elements are calculated (Jan, 1st, 2000).
  * 
@@ -166,7 +166,7 @@ inline void CelestialBody::updateOrbElements(double mjd)
  *
  * return value: the (fractional) number of days until Jan 1, 2000.
  ****************************************************************************/
-inline double CelestialBody::fgCalcActTime(double mjd)
+inline double CelestialBody::sgCalcActTime(double mjd)
 {
   return (mjd - 36523.5);
 }

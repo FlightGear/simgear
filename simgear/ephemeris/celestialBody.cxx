@@ -59,12 +59,12 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
     xv, yv, xh, yh, zh, xg, yg, zg, xe, ye, ze;
 
   updateOrbElements(mjd);
-  actTime = fgCalcActTime(mjd);
+  actTime = sgCalcActTime(mjd);
 
   // calcualate the angle bewteen ecliptic and equatorial coordinate system
   ecl = DEG_TO_RAD * (23.4393 - 3.563E-7 *actTime);
   
-  eccAnom = fgCalcEccAnom(M, e);  //calculate the eccentric anomaly
+  eccAnom = sgCalcEccAnom(M, e);  //calculate the eccentric anomaly
   xv = a * (cos(eccAnom) - e);
   yv = a * (sqrt (1.0 - e*e) * sin(eccAnom));
   v = atan2(yv, xv);           // the planet's true anomaly
@@ -111,7 +111,7 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
 };
 
 /****************************************************************************
- * double CelestialBody::fgCalcEccAnom(double M, double e)
+ * double CelestialBody::sgCalcEccAnom(double M, double e)
  * this private member calculates the eccentric anomaly of a celestial body, 
  * given its mean anomaly and eccentricity.
  * 
@@ -136,7 +136,7 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
  * the eccentric anomaly
  *
  ****************************************************************************/
-double CelestialBody::fgCalcEccAnom(double M, double e)
+double CelestialBody::sgCalcEccAnom(double M, double e)
 {
   double 
     eccAnom, E0, E1, diff;

@@ -67,7 +67,7 @@ void Saturn::updatePosition(double mjd, Star *ourSun)
 {
   CelestialBody::updatePosition(mjd, ourSun);
   
-  double actTime = fgCalcActTime(mjd);
+  double actTime = sgCalcActTime(mjd);
   double ir = 0.4897394;
   double Nr = 2.9585076 + 6.6672E-7*actTime;
   double B = asin (sin(declination) * cos(ir) - 

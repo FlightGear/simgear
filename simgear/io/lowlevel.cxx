@@ -521,29 +521,3 @@ void sgWriteString ( gzFile fd, const char *var )
 }
 
 
-void sgReadVec2  ( gzFile fd, sgVec2 var ) { sgReadFloat  ( fd, 2, var ) ; }
-void sgWriteVec2 ( gzFile fd, const sgVec2 var ) {
-    sgWriteFloat ( fd, 2, var ) ;
-}
-
-void sgReadVec3  ( gzFile fd, sgVec3 var ) { sgReadFloat  ( fd, 3, var ) ; }
-void sgWriteVec3 ( gzFile fd, const sgVec3 var ) {
-    sgWriteFloat ( fd, 3, var ) ;
-}
-
-void sgReaddVec3  ( gzFile fd, sgdVec3 var ) { sgReadDouble  ( fd, 3, var ) ; }
-void sgWritedVec3 ( gzFile fd, const sgdVec3 var ) {
-    sgWriteDouble ( fd, 3, var ) ;
-}
-
-void sgReadVec4  ( gzFile fd, sgVec4 var ) { sgReadFloat  ( fd, 4, var ) ; }
-void sgWriteVec4 ( gzFile fd, const sgVec4 var ) {
-    sgWriteFloat ( fd, 4, var ) ;
-}
-
-void sgReadMat4  ( gzFile fd, sgMat4 var ) {
-    sgReadFloat  ( fd, 16, (float *)var ) ;
-}
-void sgWriteMat4 ( gzFile fd, const sgMat4 var ) {
-    sgWriteFloat ( fd, 16, (float *)var ) ;
-}

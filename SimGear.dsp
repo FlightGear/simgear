@@ -1103,6 +1103,25 @@ SOURCE=.\simgear\sky\stars.cxx
 
 # End Source File
 # End Group
+# Begin Group "Lib_sgthreads"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\threads\SGThread.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgthreads"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgthreads"
+
+!ENDIF 
+
+# End Source File
+# End Group
 # Begin Group "Lib_sgtiming"
 
 # PROP Default_Filter ""
@@ -1154,261 +1173,6 @@ SOURCE=.\simgear\timing\sg_time.cxx
 # Begin Source File
 
 SOURCE=.\simgear\timing\timezone.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\event.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\event.hxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\fg_timer.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\fg_timer.hxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\light.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\light.hxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\moonpos.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\moonpos.hxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\sunpos.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\sunpos.hxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\#
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtiming"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtiming"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\timing\timestamp.hxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

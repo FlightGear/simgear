@@ -500,6 +500,29 @@ SKYRESULT SkySceneManager::ShadeClouds()
 
 
 //------------------------------------------------------------------------------
+// Function               : SkySceneManager::LoadClouds
+// Description      :
+//------------------------------------------------------------------------------
+/**
+ * @fn SkySceneManager::LoadClouds(SkyArchive& cloudArchive, float rScale)
+ * @brief @todo <WRITE BRIEF SkySceneManager::LoadClouds DOCUMENTATION>
+ *
+ * @todo <WRITE EXTENDED SkySceneManager::LoadClouds FUNCTION DOCUMENTATION>
+ */
+SKYRESULT SkySceneManager::LoadClouds(unsigned char *data, unsigned int size, float rScale, double latitude, double longitude)
+{
+  SkyCloud *pCloud = new SkyCloud();
+  pCloud->Load(data, size, rScale, latitude, longitude);
+  SkyRenderableInstanceCloud *pInstance = new SkyRenderableInstanceCloud(pCloud, false);
+  AddCloud(pCloud);
+  AddCloudInstance(pInstance);
+
+  RebuildCloudBVTree();
+  return SKYRESULT_OK;
+}
+
+
+//------------------------------------------------------------------------------
 // Function     	  : SkySceneManager::LoadClouds
 // Description	    : 
 //------------------------------------------------------------------------------

@@ -89,6 +89,52 @@ SkySceneLoader::~SkySceneLoader()
 }
 
 
+
+//------------------------------------------------------------------------------
+// Function               : SkySceneLoader::Load
+// Description      :
+//------------------------------------------------------------------------------
+/**
+ * @fn SkySceneLoader::Load(std::string filename)
+ * @brief Loads a SkyWorks scene.
+ *
+ * This is a temporary fix, as it loads only limited scenes
+ *  It can however, load any number of Cloud
+ +
+ */
+//bool SkySceneLoader::Load(std::string filepath)
+bool SkySceneLoader::Load( unsigned char *data, unsigned int size, double latitude, double longitude )
+{
+  // Need to create the managers
+  cout << "GraphicsContext::Instantiate();" << endl;
+  GraphicsContext::Instantiate();
+  cout << "  TextureManager::Instantiate();" << endl;
+  TextureManager::Instantiate();
+  cout << "  DynamicTextureManager::Instantiate();" << endl;
+  DynamicTextureManager::Instantiate();
+  cout << "  SceneManager::Instantiate();" << endl;
+  SceneManager::Instantiate();
+
+  float rScale = 40.0;
+  FAIL_RETURN(SceneManager::InstancePtr()->LoadClouds(data, size, rScale, latitude, longitude));
+
+  Vec3f dir(0, 0, 1);
+  pLight->SetPosition(Vec3f(0, 0, 17000));
+  pLight->SetDirection(dir);
+  pLight->SetAmbient(Vec4f( 0.0f, 0.0f, 0.0f, 0.0f));
+  pLight->SetDiffuse(Vec4f(1.0f, 1.0f, 1.0f, 0.0f));
+  //pLight->SetDiffuse(Vec4f(0.0f, 0.0f, 0.0f, 0.0f));
+  //pLight->SetSpecular(Vec4f(1.0f, 1.0f, 1.0f, 0.0f));
+ 
+   // No attenuation
+  pLight->SetAttenuation(1.0f, 0.0f, 0.0f);
+  SceneManager::InstancePtr()->AddLight(pLight);
+ 
+  SceneManager::InstancePtr()->ShadeClouds();
+
+  return true;
+}
+
 //------------------------------------------------------------------------------
 // Function     	  : SkySceneLoader::Load
 // Description	    : 

@@ -99,6 +99,7 @@ public:
   
   SKYRESULT                   Save(SkyArchive &archive) const;
   SKYRESULT                   Load(const SkyArchive &archive, float rScale = 1.0f,double latitude=0.0, double longitude=0.0);
+  SKYRESULT                   Load(const unsigned char *data, unsigned int size, float rScale = 1.0f,double latitude=0.0,double longitude=0.0);
   
   void                        Rotate(const Mat33f& rot);
   void                        Translate(const Vec3f& trans);

@@ -624,6 +624,102 @@ SkyMinMaxBox* SkyCloud::CopyBoundingVolume() const
   return pBox; 
 }
 
+SKYRESULT SkyCloud::Load(const unsigned char *data, unsigned int size,
+                         float rScale, /* = 1.0f */
+                         double latitude, double longitude )
+{
+  unsigned int iNumParticles;
+  Vec3f vecCenter = Vec3f::ZERO;
+  //Vec3f vecCenter;
+  //float rRadius;
+
+  //_boundingBox.SetMin(vecCenter - Vec3f(rRadius, rRadius, rRadius));
+  //_boundingBox.SetMax(vecCenter + Vec3f(rRadius, rRadius, rRadius));
+
+  for (unsigned int i = 0; i < size*size*4; i += 4)
+  {
+    Vec3f pos;
+    Vec4f color;
+    float radius;
+
+    color.x = data[i];			// FIXME: Which unit?
+    color.y = data[i+1];
+    color.z = data[i+2];
+    color.w = data[i+3];
+
+    radius = (color.w/255) * rScale;
+    //radius = (color.x * color.y * color.z * color.w * rScale) /  4096;
+    
+
+    pos.x = (i / (size*4)) * 10;	// FIXME: Which unit?
+    pos.y = (i % (size*4)) * 10;
+    pos.z = radius / 2;
+
+    if (radius > 0)
+    {
+      SkyCloudParticle *pParticle = new SkyCloudParticle((pos + vecCenter) * rScale, radius * rScale, color);
+      _boundingBox.AddPoint(pParticle->GetPosition());
+
+      _particles.push_back(pParticle);
+    }
+  }
+
+  // this is just a bad hack to align cloud field from skyworks with local horizon at KSFO
+  // this "almost" works not quite the right solution okay to get some up and running
+  // we need to develop our own scheme for loading and positioning clouds
+  Mat33f R;
+  Vec3f  moveit;
+
+  R.Set( 0, 1, 0,
+         1, 0, 0,
+         0, 0, 1);
+  // clouds sit in the y-z plane and x-axis is the vertical cloud height
+  Rotate( R );
+ 
+// rotate the cloud field about the fgfs z-axis based on initial longitude
+float ex = 1.0;
+float ey = 1.0;
+float ez = 1.0;
+float phi = longitude / 57.29578;
+float one_min_cos = 1 - cos(phi);
+ 
+R.Set(
+cos(phi) + one_min_cos*ex*ex, one_min_cos*ex*ey - ez*sin(phi), one_min_cos*ex*ez + ey*sin(phi),
+one_min_cos*ex*ey + ez*sin(phi), cos(phi) + one_min_cos*ey*ey, one_min_cos*ey*ez - ex*sin(phi),
+one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one_min_cos*ez*ez );
+
+Rotate( R );
+
+// okay now that let's rotate about a vector for latitude where longitude forms the
+// components of a unit vector in the x-y plane
+ex = sin( longitude  / 57.29578 );
+ey = -cos( longitude  / 57.29578 );
+ez = 0.0;
+phi = latitude / 57.29578;
+one_min_cos = 1 - cos(phi);
+
+R.Set(
+cos(phi) + one_min_cos*ex*ex, one_min_cos*ex*ey - ez*sin(phi), one_min_cos*ex*ez + ey*sin(phi),
+one_min_cos*ex*ey + ez*sin(phi), cos(phi) + one_min_cos*ey*ey, one_min_cos*ey*ez - ex*sin(phi),
+one_min_cos*ex*ez - ey*sin(phi), one_min_cos*ey*ez + ex*sin(phi), cos(phi) + one_min_cos*ez*ez );
+
+Rotate( R );
+// need to calculate an offset to place the clouds at ~3000 feet MSL  ATM this is an approximation
+// to move the clouds to some altitude above sea level. At some locations this could be underground
+// will need a better scheme to position clouds per user preferences
+float cloud_level_msl = 3000.0f;
+
+float x_offset = ex * cloud_level_msl;
+float y_offset = ey * cloud_level_msl;
+float z_offset = cloud_level_msl * 0.5;
+moveit.Set( x_offset, y_offset, z_offset  );
+
+  Translate( moveit );
+
+  return SKYRESULT_OK;
+}
+
+
 SKYRESULT SkyCloud::Load(const SkyArchive &archive, 
                          float rScale, /* = 1.0f */ 
                          double latitude, double longitude )

@@ -26,16 +26,6 @@
 
 #include <assert.h>
 
-// FIXME: Remove this section whenever plib has it's own endian conversion
-//        funcrtions for 64-bit data types.
-#ifndef ulEndianLittleDouble
-// This hack doesn't actually do anything, but it's pressence
-// marks the places that need endiannes attention.
-inline double ulEndianLittleDouble(double x) {
-   return x;
-}
-#endif
-
 struct SkyArchiveEntry
 {
   SkyArchiveEntry() : type(0), pData(NULL), iDataSize(0) {}

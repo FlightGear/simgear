@@ -1,0 +1,12 @@
+
+#ifndef __SG_NEW
+#define __SG_NEW 1
+
+#if defined(sgi) && !defined(__GNUC__)
+
+# include <new.h>
+
+#endif
+
+#endif // !__SG_NEW
+

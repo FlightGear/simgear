@@ -29,6 +29,7 @@ SUBDIRS = \
 	screen \
 	serial \
 	sky \
+	sound \
 	$(SGTHREAD_DIR) \
 	timing \
 	xgl

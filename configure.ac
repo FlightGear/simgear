@@ -423,6 +423,7 @@ AC_CONFIG_FILES([ \
 	simgear/serial/Makefile \
 	simgear/sky/Makefile \
 	simgear/sky/clouds3d/Makefile \
+	simgear/sound/Makefile \
 	simgear/threads/Makefile \
 	simgear/timing/Makefile \
 	simgear/xgl/Makefile \

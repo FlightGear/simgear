@@ -27,4 +27,5 @@ include_HEADERS	= \
 	cstddef \
 	ctime \
 	iomanip \
+	new \
 	streambuf

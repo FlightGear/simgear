@@ -23,6 +23,8 @@
 // $Id$
 
 
+#include <string.h>		// for memcpy()
+
 #include "lowlevel.hxx" 
 
 

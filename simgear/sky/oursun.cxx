@@ -43,6 +43,13 @@
 static int sgSunOrbPreDraw( ssgEntity *e ) {
     /* cout << endl << "Sun orb pre draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
+    // cout << "push error = " << glGetError() << endl;
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
 
@@ -52,8 +59,12 @@ static int sgSunOrbPreDraw( ssgEntity *e ) {
 static int sgSunOrbPostDraw( ssgEntity *e ) {
     /* cout << endl << "Sun orb post draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
+
+    glPopAttrib();
+    // cout << "pop error = " << glGetError() << endl;
+
+    // glEnable( GL_DEPTH_TEST );
+    // glEnable( GL_FOG );
 
     return true;
 }
@@ -61,6 +72,13 @@ static int sgSunOrbPostDraw( ssgEntity *e ) {
 static int sgSunHaloPreDraw( ssgEntity *e ) {
     /* cout << endl << "Sun halo pre draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
+    // cout << "push error = " << glGetError() << endl;
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
@@ -71,8 +89,12 @@ static int sgSunHaloPreDraw( ssgEntity *e ) {
 static int sgSunHaloPostDraw( ssgEntity *e ) {
     /* cout << endl << "Sun halo post draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
+
+    glPopAttrib();
+    // cout << "pop error = " << glGetError() << endl;
+
+    // glEnable( GL_DEPTH_TEST );
+    // glEnable( GL_FOG );
 
     return true;
 }

@@ -69,6 +69,13 @@
 static int sgSkyDomePreDraw( ssgEntity *e ) {
     /* cout << endl << "Dome Pre Draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
+    // cout << "push error = " << glGetError() << endl;
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
 
@@ -78,9 +85,10 @@ static int sgSkyDomePreDraw( ssgEntity *e ) {
 static int sgSkyDomePostDraw( ssgEntity *e ) {
     /* cout << endl << "Dome Post Draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
 
+    glPopAttrib();
+    // cout << "pop error = " << glGetError() << endl;
+    
     return true;
 }
 

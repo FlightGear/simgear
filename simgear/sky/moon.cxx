@@ -45,6 +45,13 @@
 static int sgMoonOrbPreDraw( ssgEntity *e ) {
     /* cout << endl << "Moon orb pre draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT );
+    // cout << "push error = " << glGetError() << endl;
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE ) ;
@@ -55,10 +62,13 @@ static int sgMoonOrbPreDraw( ssgEntity *e ) {
 static int sgMoonOrbPostDraw( ssgEntity *e ) {
     /* cout << endl << "Moon orb post draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    // glEnable( GL_DEPTH_TEST );
+    // glEnable( GL_FOG );
+    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
+    glPopAttrib();
+    // cout << "pop error = " << glGetError() << endl;
+    
     /* test
     glDisable( GL_LIGHTING );
     glDisable( GL_CULL_FACE );
@@ -73,6 +83,13 @@ static int sgMoonOrbPostDraw( ssgEntity *e ) {
 static int sgMoonHaloPreDraw( ssgEntity *e ) {
     /* cout << endl << "Moon halo pre draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT | GL_COLOR_BUFFER_BIT);
+    cout << "push error = " << glGetError() << endl;
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
@@ -83,9 +100,12 @@ static int sgMoonHaloPreDraw( ssgEntity *e ) {
 static int sgMoonHaloPostDraw( ssgEntity *e ) {
     /* cout << endl << "Moon halo post draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    // glEnable( GL_DEPTH_TEST );
+    // glEnable( GL_FOG );
+    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    
+    glPopAttrib();
+    cout << "pop error = " << glGetError() << endl;
 
     return true;
 }

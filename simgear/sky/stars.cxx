@@ -47,9 +47,15 @@ FG_USING_STD(endl);
 static int sgStarPreDraw( ssgEntity *e ) {
     /* cout << endl << "Star pre draw" << endl << "----------------" 
 	 << endl << endl; */
+
+    ssgLeaf *f = (ssgLeaf *)e;
+    if ( f -> hasState () ) f->getState()->apply() ;
+
+    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
+
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     return true;
 }
@@ -57,8 +63,11 @@ static int sgStarPreDraw( ssgEntity *e ) {
 static int sgStarPostDraw( ssgEntity *e ) {
     /* cout << endl << "Star post draw" << endl << "----------------" 
 	 << endl << endl; */
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_FOG );
+
+    glPopAttrib();
+
+    // glEnable( GL_DEPTH_TEST );
+    // glEnable( GL_FOG );
 
     return true;
 }

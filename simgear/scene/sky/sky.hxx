@@ -143,22 +143,27 @@ typedef struct {
 
  * Rendering the Sky 
 
- * The sky is designed to be rendered in two stages. The first stage
+ * The sky is designed to be rendered in three stages. The first stage
  * renders the parts that form your back drop - the sky dome, the
  * stars and planets, the sun, and the moon.  These should be rendered
  * before the rest of your scene by calling the preDraw() method. The
- * second stage renders the clouds which are likely to be translucent
- * (depending on type) and should be drawn after your scene has been
- * rendered.  Use the postDraw() method to draw the second stage of
- * the sky.
+ * second stage renders the clouds that are above the viewer. This stage 
+ * is done before translucent objects in the main scene are drawn. It 
+ * is seperated from the preDraw routine to enable to implement a 
+ * multi passes technique and is located in the drawUpperClouds() method.
+ * The third stage renders the clouds that are below the viewer an which 
+ * are likely to be translucent (depending on type) and should be drawn 
+ * after your scene has been rendered.  Use the drawLowerClouds() method 
+ * to draw the second stage of the sky.
 
  * A typical application might do the following: 
 
- * <li> thesky->preDraw();
+ * <li> thesky->preDraw( my_altitude );
+ * <li> thesky->drawUpperClouds();
  * <li> ssgCullAndDraw ( myscene ) ;
- * <li> thesky->postDraw( my_altitude );
+ * <li> thesky->drawLowerClouds();
 
- * The current altitude in meters is passed to the postDraw() method
+ * The current altitude in meters is passed to the preDraw() method
  * so the clouds layers can be rendered correction from most distant
  * to closest.
 
@@ -329,15 +334,22 @@ public:
      * class description.
      * @param alt current altitude
      */
-    void preDraw( float alt, float fog_exp2_density );
+    void preDraw( float alt );
 
     /**
-     * Draw translucent clouds ... do this after you've drawn all the
-     * oapaque elements of your scene.  See discussion in detailed
-     * class description.
-     * @param alt current altitude
+     * Draw upper translucent clouds ... do this before you've drawn 
+     * all the translucent elements of your scene.  See discussion in 
+     * detailed class description.
+     * @param fog_exp2_density fog density of the current cloud layer
      */
-    void postDraw( float alt );
+    void drawUpperClouds( float fog_exp2_density );
+
+    /**
+     * Draw lower translucent clouds ... do this after you've drawn 
+     * all the opaque elements of your scene.  See discussion in detailed
+     * class description.
+     */
+    void drawLowerClouds();
 
     /** 
      * Specify the texture path (optional, defaults to current directory)

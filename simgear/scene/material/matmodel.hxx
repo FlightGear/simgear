@@ -1,8 +1,6 @@
-// matobj.hxx -- a material in the scene graph.
-// TODO: this class needs to be renamed.
+// matmodel.hxx -- class to handle models tied to a material property
 //
-// Written by Curtis Olson, started May 1998.
-// Overhauled by David Megginson, December 2001
+// Written by David Megginson, December 2001
 //
 // Copyright (C) 1998 - 2003  Curtis L. Olson  - curt@flightgear.org
 //
@@ -23,8 +21,8 @@
 // $Id$
 
 
-#ifndef _SG_MAT_OBJ_HXX
-#define _SG_MAT_OBJ_HXX
+#ifndef _SG_MAT_MODEL_HXX
+#define _SG_MAT_MODEL_HXX
 
 #ifndef __cplusplus                                                          
 # error This library requires C++
@@ -43,7 +41,7 @@
 SG_USING_STD(string);
 
 
-class SGMatObjectGroup;
+class SGMatModelGroup;
 
 
 /**
@@ -55,7 +53,7 @@ class SGMatObjectGroup;
  * different shapes of trees), but they are considered equivalent
  * and interchangeable.
  */
-class SGMatObject {
+class SGMatModel {
 
 public:
 
@@ -120,11 +118,11 @@ public:
 
 protected:
 
-    friend class SGMatObjectGroup;
+    friend class SGMatModelGroup;
 
-    SGMatObject (const SGPropertyNode * node, double range_m);
+    SGMatModel (const SGPropertyNode * node, double range_m);
 
-    virtual ~SGMatObject ();
+    virtual ~SGMatModel ();
 
 private:
 
@@ -156,11 +154,11 @@ private:
  * Each SGMaterial instance keeps a (possibly-empty) list of
  * object groups for placing randomly on the scenery.
  */
-class SGMatObjectGroup {
+class SGMatModelGroup {
 
 public:
 
-    virtual ~SGMatObjectGroup ();
+    virtual ~SGMatModelGroup ();
 
 
     /**
@@ -185,21 +183,20 @@ public:
      * @param index The object's index, zero-based.
      * @return The object selected.
      */
-    SGMatObject * get_object (int index) const;
+    SGMatModel * get_object (int index) const;
 
 protected:
 
     friend class SGMaterial;
 
-    SGMatObjectGroup (SGPropertyNode * node);
+    SGMatModelGroup (SGPropertyNode * node);
 
 private:
 
     double _range_m;
-    vector<SGMatObject *> _objects;
+    vector<SGMatModel *> _objects;
 
 };
 
 
-
-#endif // _SG_MAT_OBJ_HXX 
+#endif // _SG_MAT_MODEL_HXX 

@@ -153,7 +153,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   vector<SGPropertyNode_ptr> object_group_nodes =
     ((SGPropertyNode *)props)->getChildren("object-group");
   for (unsigned int i = 0; i < object_group_nodes.size(); i++)
-    object_groups.push_back(new SGMatObjectGroup(object_group_nodes[i]));
+    object_groups.push_back(new SGMatModelGroup(object_group_nodes[i]));
 }
 
 

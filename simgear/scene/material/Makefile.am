@@ -7,11 +7,11 @@ noinst_HEADERS =
 include_HEADERS = \
 	mat.hxx \
 	matlib.hxx \
-	matobj.hxx
+	matmodel.hxx
 
 libsgmaterial_a_SOURCES = \
 	mat.cxx \
 	matlib.cxx \
-	matobj.cxx
+	matmodel.cxx
 
 INCLUDES = -I$(top_srcdir)

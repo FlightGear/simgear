@@ -1,4 +1,4 @@
-// matobj.cxx -- class to handle material properties
+// matmodel.cxx -- class to handle models tied to a material property
 //
 // Written by Curtis Olson, started May 1998.
 //
@@ -42,7 +42,7 @@ SG_USING_STD(map);
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/model/loader.hxx>
 
-#include "matobj.hxx"
+#include "matmodel.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -68,10 +68,10 @@ local_file_exists( const string& path ) {
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGMatObject.
+// Implementation of SGMatModel.
 ////////////////////////////////////////////////////////////////////////
 
-SGMatObject::SGMatObject (const SGPropertyNode * node, double range_m)
+SGMatModel::SGMatModel (const SGPropertyNode * node, double range_m)
   : _models_loaded(false),
     _coverage_m2(node->getDoubleValue("coverage-m2", 1000000)),
     _range_m(range_m)
@@ -106,7 +106,7 @@ SGMatObject::SGMatObject (const SGPropertyNode * node, double range_m)
   // load_models();
 }
 
-SGMatObject::~SGMatObject ()
+SGMatModel::~SGMatModel ()
 {
   for (unsigned int i = 0; i < _models.size(); i++) {
     if (_models[i] != 0) {
@@ -117,7 +117,7 @@ SGMatObject::~SGMatObject ()
 }
 
 int
-SGMatObject::get_model_count( SGModelLoader *loader,
+SGMatModel::get_model_count( SGModelLoader *loader,
                                    const string &fg_root,
                                    SGPropertyNode *prop_root,
                                    double sim_time_sec )
@@ -127,7 +127,7 @@ SGMatObject::get_model_count( SGModelLoader *loader,
 }
 
 inline void
-SGMatObject::load_models ( SGModelLoader *loader,
+SGMatModel::load_models ( SGModelLoader *loader,
                                 const string &fg_root,
                                 SGPropertyNode *prop_root,
                                 double sim_time_sec )
@@ -163,7 +163,7 @@ SGMatObject::load_models ( SGModelLoader *loader,
 }
 
 ssgEntity *
-SGMatObject::get_model( int index,
+SGMatModel::get_model( int index,
                                SGModelLoader *loader,
                                const string &fg_root,
                                SGPropertyNode *prop_root,
@@ -174,7 +174,7 @@ SGMatObject::get_model( int index,
 }
 
 ssgEntity *
-SGMatObject::get_random_model( SGModelLoader *loader,
+SGMatModel::get_random_model( SGModelLoader *loader,
                                       const string &fg_root,
                                       SGPropertyNode *prop_root,
                                       double sim_time_sec )
@@ -188,13 +188,13 @@ SGMatObject::get_random_model( SGModelLoader *loader,
 }
 
 double
-SGMatObject::get_coverage_m2 () const
+SGMatModel::get_coverage_m2 () const
 {
   return _coverage_m2;
 }
 
-SGMatObject::HeadingType
-SGMatObject::get_heading_type () const
+SGMatModel::HeadingType
+SGMatModel::get_heading_type () const
 {
   return _heading_type;
 }
@@ -202,10 +202,10 @@ SGMatObject::get_heading_type () const
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGMatObjectGroup.
+// Implementation of SGMatModelGroup.
 ////////////////////////////////////////////////////////////////////////
 
-SGMatObjectGroup::SGMatObjectGroup (SGPropertyNode * node)
+SGMatModelGroup::SGMatModelGroup (SGPropertyNode * node)
   : _range_m(node->getDoubleValue("range-m", 2000))
 {
 				// Load the object subnodes
@@ -214,13 +214,13 @@ SGMatObjectGroup::SGMatObjectGroup (SGPropertyNode * node)
   for (unsigned int i = 0; i < object_nodes.size(); i++) {
     const SGPropertyNode * object_node = object_nodes[i];
     if (object_node->hasChild("path"))
-      _objects.push_back(new SGMatObject(object_node, _range_m));
+      _objects.push_back(new SGMatModel(object_node, _range_m));
     else
       SG_LOG(SG_INPUT, SG_ALERT, "No path supplied for object");
   }
 }
 
-SGMatObjectGroup::~SGMatObjectGroup ()
+SGMatModelGroup::~SGMatModelGroup ()
 {
   for (unsigned int i = 0; i < _objects.size(); i++) {
     delete _objects[i];
@@ -229,22 +229,22 @@ SGMatObjectGroup::~SGMatObjectGroup ()
 }
 
 double
-SGMatObjectGroup::get_range_m () const
+SGMatModelGroup::get_range_m () const
 {
   return _range_m;
 }
 
 int
-SGMatObjectGroup::get_object_count () const
+SGMatModelGroup::get_object_count () const
 {
   return _objects.size();
 }
 
-SGMatObject *
-SGMatObjectGroup::get_object (int index) const
+SGMatModel *
+SGMatModelGroup::get_object (int index) const
 {
   return _objects[index];
 }
 
 
-// end of matobj.cxx
+// end of matmodel.cxx

@@ -40,7 +40,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/loader.hxx>
 
-#include "matobj.hxx"
+#include "matmodel.hxx"
 
 SG_USING_STD(string);
 
@@ -150,7 +150,7 @@ public:
   /**
    * Get a randomly-placed object for this material.
    */
-  virtual SGMatObjectGroup * get_object_group (int index) const {
+  virtual SGMatModelGroup * get_object_group (int index) const {
     return object_groups[index];
   }
 
@@ -222,7 +222,7 @@ private:
   // true if texture loading deferred, and not yet loaded
   bool texture_loaded;
 
-  vector<SGMatObjectGroup *> object_groups;
+  vector<SGMatModelGroup *> object_groups;
 
   // ref count so we can properly delete if we have multiple
   // pointers to this record

@@ -796,7 +796,7 @@ SGTexture::ConvertUint(unsigned *array, unsigned int length) {
 void
 SGTexture::make_monochrome(GLubyte r, GLubyte g, GLubyte b) {
 
-   if (num_colors != 3)
+   if (num_colors >= 3)
       return;
 
    GLubyte ap[3];

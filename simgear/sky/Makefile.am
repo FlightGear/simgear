@@ -20,4 +20,4 @@ libsgsky_a_SOURCES = \
 	sphere.cxx \
 	stars.cxx
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_srcdir)

@@ -1,7 +1,7 @@
 if HAVE_ZLIB
 ZLIB_INCL =
 else
-XLIB_INCL = -I$(top_builddir)/src/zlib
+XLIB_INCL = -I$(top_srcdir)/src/zlib
 endif
 
 lib_LIBRARIES = libsgxml.a
@@ -22,4 +22,4 @@ libsgxml_a_SOURCES = \
 	xmltok.h xmltok.c \
 	xmltok_impl.h
 
-INCLUDES += -I$(top_builddir) $(ZLIB_INCL)
+INCLUDES += -I$(top_srcdir) $(ZLIB_INCL)

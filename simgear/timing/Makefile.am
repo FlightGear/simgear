@@ -20,4 +20,4 @@ libsgtiming_a_SOURCES = \
 	# sunpos.cxx sunpos.hxx \
 	# timestamp.hxx
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_srcdir)

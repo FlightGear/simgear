@@ -14,4 +14,4 @@ libsgio_a_SOURCES = \
 	sg_serial.cxx \
 	sg_socket.cxx 
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_srcdir)

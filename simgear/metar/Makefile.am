@@ -9,4 +9,4 @@ libsgmetar_a_SOURCES = \
 	MetarStation.cpp MetarStation.h \
 	Prtdmetr.cpp Stspack2.cpp Stspack3.cpp
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_srcdir)

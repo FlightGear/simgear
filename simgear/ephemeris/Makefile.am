@@ -31,4 +31,4 @@ libsgephem_a_SOURCES = \
 	uranus.cxx \
 	venus.cxx
 
-INCLUDES += -I$(top_builddir)
+INCLUDES += -I$(top_srcdir)

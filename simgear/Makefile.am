@@ -33,6 +33,7 @@ SUBDIRS = \
 	math \
 	$(METAR_DIRS) \
 	misc \
+	route \
 	screen \
 	$(SERIAL_DIRS) \
 	sky \

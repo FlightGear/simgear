@@ -50,6 +50,10 @@ class SGPersonalityBranch;
 class SGAnimation :  public ssgBase
 {
 public:
+  enum PersonalityVar { INIT_SPIN, LAST_TIME_SEC_SPIN, FACTOR_SPIN,
+                        POSITION_DEG_SPIN, INIT_TIMED, LAST_TIME_SEC_TIMED,
+                        TOTAL_DURATION_SEC_TIMED, BRANCH_DURATION_SEC_TIMED,
+                        STEP_TIMED };
 
   SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch);
 
@@ -168,9 +172,14 @@ public:
   virtual ~SGSpinAnimation ();
   virtual int update();
 private:
+  bool _use_personality;
   SGPropertyNode_ptr _prop;
   double _factor;
+  double _factor_min;
+  double _factor_max;
   double _position_deg;
+  double _position_deg_min;
+  double _position_deg_max;
   double _last_time_sec;
   sgMat4 _matrix;
   sgVec3 _center;
@@ -191,7 +200,6 @@ public:
     virtual int update();
 private:
     bool _use_personality;
-    enum PersonalityVar { INIT, LAST_TIME_SEC, TOTAL_DURATION_SEC, BRANCH_DURATION_SEC, STEP };
     double _duration_sec;
     double _last_time_sec;
     double _total_duration_sec;

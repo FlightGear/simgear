@@ -352,9 +352,8 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
                               SGPropertyNode_ptr props,
                               double sim_time_sec )
   : SGAnimation(props, new ssgTransform),
+    _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _factor(props->getDoubleValue("factor", 1.0)),
-    _position_deg(props->getDoubleValue("starting-position-deg", 0)),
     _last_time_sec( sim_time_sec ),
     _condition(0)
 {
@@ -391,6 +390,37 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
        _center[2] = props->getFloatValue("center/z-m", 0);
     }
     sgNormalizeVec3(_axis);
+
+    //_factor(props->getDoubleValue("factor", 1.0)),
+    _factor = 1.0;
+    _factor_min = 1.0;
+    _factor_max = 1.0;
+    SGPropertyNode_ptr factor_n = props->getNode( "factor" );
+    if ( factor_n != 0 ) {
+       SGPropertyNode_ptr rand_n = factor_n->getNode( "random" );
+       if ( rand_n != 0 ) {
+          _factor_min = rand_n->getDoubleValue( "min", 0.0 );
+          _factor_max = rand_n->getDoubleValue( "max", 1.0 );
+          _factor = _factor_min + sg_random() * ( _factor_max - _factor_min );
+       } else {
+          _factor = _factor_min = _factor_max = props->getDoubleValue("factor", 1.0);
+       }
+    }
+    //_position_deg(props->getDoubleValue("starting-position-deg", 0)),
+    _position_deg_min = 0.0;
+    _position_deg_max = 0.0;
+    SGPropertyNode_ptr position_deg_n = props->getNode( "starting-position-deg" );
+    if ( position_deg_n != 0 ) {
+       SGPropertyNode_ptr rand_n = position_deg_n->getNode( "random" );
+       if ( rand_n != 0 ) {
+          _position_deg_min = rand_n->getDoubleValue( "min", 0.0 );
+          _position_deg_max = rand_n->getDoubleValue( "max", 1.0 );
+          _position_deg = _position_deg_min + sg_random() * ( _position_deg_max - _position_deg_min );
+       } else {
+          _position_deg = _position_deg_min = _position_deg_max = 
+                  props->getDoubleValue("starting-position-deg", 1.0);
+       }
+    }
 }
 
 SGSpinAnimation::~SGSpinAnimation ()
@@ -401,15 +431,47 @@ int
 SGSpinAnimation::update()
 {
   if ( _condition == 0 || _condition->test() ) {
-    double dt = sim_time_sec - _last_time_sec;
-    _last_time_sec = sim_time_sec;
+    double dt;
+    float velocity_rpms;
+    if ( _use_personality ) {
+      SGPersonalityBranch *key = current_object;
+      if ( !key->getIntValue( this, INIT_SPIN ) ) {
+        double v = _factor_min + sg_random() * ( _factor_max - _factor_min );
+        key->setDoubleValue( v, this, FACTOR_SPIN );
 
-    float velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
-    _position_deg += (dt * velocity_rpms * 360);
-    while (_position_deg < 0)
-        _position_deg += 360.0;
-    while (_position_deg >= 360.0)
-        _position_deg -= 360.0;
+        key->setDoubleValue( sim_time_sec, this, LAST_TIME_SEC_SPIN );
+        key->setIntValue( 1, this, INIT_SPIN );
+
+        v = _position_deg_min + sg_random() * ( _position_deg_max - _position_deg_min );
+        key->setDoubleValue( v, this, POSITION_DEG_SPIN );
+      }
+
+      _factor = key->getDoubleValue( this, FACTOR_SPIN );
+      _position_deg = key->getDoubleValue( this, POSITION_DEG_SPIN );
+      _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC_SPIN );
+      dt = sim_time_sec - _last_time_sec;
+      _last_time_sec = sim_time_sec;
+      key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC_SPIN );
+
+      velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
+      _position_deg += (dt * velocity_rpms * 360);
+      while (_position_deg < 0)
+         _position_deg += 360.0;
+      while (_position_deg >= 360.0)
+         _position_deg -= 360.0;
+      key->setDoubleValue( _position_deg, this, POSITION_DEG_SPIN );
+    } else {
+      dt = sim_time_sec - _last_time_sec;
+      _last_time_sec = sim_time_sec;
+
+      velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
+      _position_deg += (dt * velocity_rpms * 360);
+      while (_position_deg < 0)
+         _position_deg += 360.0;
+      while (_position_deg >= 360.0)
+         _position_deg -= 360.0;
+    }
+
     set_rotation(_matrix, _position_deg, _center, _axis);
     ((ssgTransform *)_branch)->setTransform(_matrix);
   }
@@ -480,13 +542,13 @@ SGTimedAnimation::update()
 {
     if ( _use_personality ) {
         SGPersonalityBranch *key = current_object;
-        if ( !key->getIntValue( this, INIT ) ) {
+        if ( !key->getIntValue( this, INIT_TIMED ) ) {
             double total = 0;
             double offset = 1.0;
             for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
                 DurationSpec &sp = _branch_duration_specs[ i ];
                 double v = sp._min + sg_random() * ( sp._max - sp._min );
-                key->setDoubleValue( v, this, BRANCH_DURATION_SEC, i );
+                key->setDoubleValue( v, this, BRANCH_DURATION_SEC_TIMED, i );
                 if ( i == 0 )
                     offset = v;
                 total += v;
@@ -496,21 +558,21 @@ SGTimedAnimation::update()
                 total = 0.01;
             }
             offset *= sg_random();
-            key->setDoubleValue( sim_time_sec - offset, this, LAST_TIME_SEC );
-            key->setDoubleValue( total, this, TOTAL_DURATION_SEC );
-            key->setIntValue( 0, this, STEP );
-            key->setIntValue( 1, this, INIT );
+            key->setDoubleValue( sim_time_sec - offset, this, LAST_TIME_SEC_TIMED );
+            key->setDoubleValue( total, this, TOTAL_DURATION_SEC_TIMED );
+            key->setIntValue( 0, this, STEP_TIMED );
+            key->setIntValue( 1, this, INIT_TIMED );
         }
 
-        _step = key->getIntValue( this, STEP );
-        _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC );
-        _total_duration_sec = key->getDoubleValue( this, TOTAL_DURATION_SEC );
+        _step = key->getIntValue( this, STEP_TIMED );
+        _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC_TIMED );
+        _total_duration_sec = key->getDoubleValue( this, TOTAL_DURATION_SEC_TIMED );
         while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
             _last_time_sec += _total_duration_sec;
         }
         double duration = _duration_sec;
         if ( _step < (int)_branch_duration_specs.size() ) {
-            duration = key->getDoubleValue( this, BRANCH_DURATION_SEC, _step );
+            duration = key->getDoubleValue( this, BRANCH_DURATION_SEC_TIMED, _step );
         }
         if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
             _last_time_sec += duration;
@@ -519,8 +581,8 @@ SGTimedAnimation::update()
                 _step = 0;
         }
         ((ssgSelector *)getBranch())->selectStep( _step );
-        key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC );
-        key->setIntValue( _step, this, STEP );
+        key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC_TIMED );
+        key->setIntValue( _step, this, STEP_TIMED );
     } else {
         while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
             _last_time_sec += _total_duration_sec;

@@ -2,6 +2,10 @@
 
 /*
  * $Log$
+ * Revision 1.2  2001/06/27 02:48:01  curt
+ * Fixed a type conversion bug that could trip up some of the pickier compilers
+ * out there.
+ *
  * Revision 1.1  2001/06/26 15:19:39  curt
  * Added tr.cxx / tr.h, Brian Paul's LGPL'd tiled rendering support libs for
  * rendering ultra high res "tiled" screen shots.
@@ -377,7 +381,7 @@ void trBeginTile(TRcontext *tr)
    ssgSetFrustum ( left, right, bottom, top, tr->Near, tr->Far );
 
    /* restore user's matrix mode */
-   glMatrixMode(matrixMode);
+   glMatrixMode( (GLenum)matrixMode );
 }
 
 

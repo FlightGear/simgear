@@ -49,7 +49,7 @@ Point3D origin;
 Camera *pCam = new Camera();
 // Need to add a light here until we figure out how to use the sun position and color
 SkyLight::SkyLightType eType = SkyLight::SKY_LIGHT_DIRECTIONAL;
-SkyLight *pLight = new SkyLight(eType);
+SkyLight *pLight = 0;
 
 // hack
 sgMat4 my_copy_of_ssgOpenGLAxisSwapMatrix =
@@ -105,6 +105,7 @@ SkySceneLoader::~SkySceneLoader()
 //bool SkySceneLoader::Load(std::string filepath)
 bool SkySceneLoader::Load( unsigned char *data, unsigned int size, double latitude, double longitude )
 {
+  pLight = new SkyLight(eType);
   // Need to create the managers
   cout << "GraphicsContext::Instantiate();" << endl;
   GraphicsContext::Instantiate();

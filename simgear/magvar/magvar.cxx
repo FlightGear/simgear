@@ -51,6 +51,9 @@ void SGMagVar::update( double lon, double lat, double alt_m, double jd ) {
 
 
 double sgGetMagVar( double lon, double lat, double alt_m, double jd ) {
+    // cout << "lat = " << lat << " lon = " << lon << " elev = " << alt_m
+    //      << " JD = " << jd << endl;
+
     double field[6];
     return calc_magvar( lat, lon, alt_m / 1000.0, (long)jd, field );
 }

@@ -20,6 +20,7 @@
 #endif
 #include STL_STRING
 #include <vector>
+#include <map>
 
 #if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
 FG_USING_STD(istream);
@@ -29,6 +30,7 @@ FG_USING_STD(ofstream);
 #endif
 FG_USING_STD(string);
 FG_USING_STD(vector);
+FG_USING_STD(map);
 
 
 
@@ -61,6 +63,7 @@ private:
       : node(_node), type(_type) {}
     SGPropertyNode * node;
     string type;
+    map<string,int> counters;
   };
 
   State &state () { return _state_stack[_state_stack.size() - 1]; }
@@ -104,6 +107,8 @@ PropsVisitor::endXML ()
 void
 PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 {
+  State &st = state();
+
   if (_level == 0) {
     push_state(_root, "");
   }
@@ -111,9 +116,14 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
   else {
     const char * att_n = atts.getValue("n");
     int index = 0;
-    if (att_n != 0)
+    if (att_n != 0) {
       index = atoi(att_n);
-    push_state(state().node->getChild(name, index, true),
+      st.counters[name] = max(st.counters[name], index+1);
+    } else {
+      index = st.counters[name];
+      st.counters[name]++;
+    }
+    push_state(st.node->getChild(name, index, true),
 	       atts.getValue("type"));
   }
 }
@@ -232,6 +242,9 @@ getTypeName (SGValue::Type type)
   case SGValue::STRING:
     return "string";
   }
+
+  // keep the compiler from squawking
+  return "unknown";
 }
 
 
@@ -241,7 +254,7 @@ getTypeName (SGValue::Type type)
 static void
 writeData (ostream &output, const string &data)
 {
-  for (int i = 0; i < data.size(); i++) {
+  for (int i = 0; i < (int)data.size(); i++) {
     switch (data[i]) {
     case '&':
       output << "&amp;";

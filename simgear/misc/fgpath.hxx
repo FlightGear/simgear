@@ -39,7 +39,7 @@
 FG_USING_STD(string);
 
 
-#ifdef MACOS
+#ifdef macintosh
 #  define FG_PATH_SEP ':'
 #  define FG_BAD_PATH_SEP '/'
 #else

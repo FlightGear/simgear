@@ -41,9 +41,9 @@
  *       supports calling a function template by providing its template
  *       arguments explicitly.
  *
- *  (7)  Defines FG_NEED_AUTO_PTR if STL doesn't provide auto_ptr<>.
+ *  (7)  Defines SG_NEED_AUTO_PTR if STL doesn't provide auto_ptr<>.
  *
- *  (8)  Defines FG_NO_ARROW_OPERATOR if the compiler is unable
+ *  (8)  Defines SG_NO_ARROW_OPERATOR if the compiler is unable
  *       to support operator->() for iterators.
  *
  *  (9)  Defines FG_USE_EXCEPTIONS if the compiler supports exceptions.
@@ -83,16 +83,16 @@
 #      define STL_STRING     <string>
 #      define STL_STRSTREAM  <strstream.h>
 
-#      define FG_NEED_AUTO_PTR
+#      define SG_NEED_AUTO_PTR
 #      define FG_NO_DEFAULT_TEMPLATE_ARGS
 #      define FG_INCOMPLETE_FUNCTIONAL
-#      define FG_NO_ARROW_OPERATOR
+#      define SG_NO_ARROW_OPERATOR
 
 #    elif __GNUC_MINOR__ >= 8
 
        // g++-2.8.x and egcs-1.x
 #      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#      define FG_NEED_AUTO_PTR
+#      define SG_NEED_AUTO_PTR
 #      define FG_MEMBER_TEMPLATES
 #      define FG_NAMESPACES
 #      define FG_HAVE_STD
@@ -253,7 +253,7 @@
 #  define FG_HAVE_NATIVE_SGI_COMPILERS
 
 #  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#  define FG_NEED_AUTO_PTR
+#  define SG_NEED_AUTO_PTR
 #  define FG_MEMBER_TEMPLATES
 #  define FG_NAMESPACES
 #  define FG_HAVE_STD

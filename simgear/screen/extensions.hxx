@@ -82,13 +82,24 @@ inline void (*SGLookupFunction(const char *func))()
  * OpenGL 1.2 and 1.3 enumerants
  */
 
-#ifndef GL_CLAMP_TO_EDGE
+#ifndef GL_VERSION_1_2
 #define GL_CLAMP_TO_EDGE                                        0x812F
+#define GL_TEXTURE_WRAP_R                                       0x8072
+#define GL_BLEND_EQUATION                                       0x8009
+#define GL_MIN                                                  0x8007
+#define GL_MAX                                                  0x8008
+#define GL_FUNC_ADD                                             0x8006
+#define GL_FUNC_SUBTRACT                                        0x800A
+#define GL_FUNC_REVERSE_SUBTRACT                                0x800B
+#define GL_BLEND_COLOR                                          0x8005
+#define GL_CONSTANT_COLOR                                       0x8001
+#define GL_ONE_MINUS_CONSTANT_COLOR                             0x8002
+#define GL_CONSTANT_ALPHA                                       0x8003
+#define GL_ONE_MINUS_CONSTANT_ALPHA                             0x8004
 #endif
 
-#ifndef GL_TEXTURE_WRAP_R
-#define GL_TEXTURE_WRAP_R                                       0x8072
-#endif
+typedef void (APIENTRY * glBlendEquationProc) (GLenum mode );
+typedef void (APIENTRY * glBlendColorProc) (GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha );
 
 
 /* OpenGL extension declarations */

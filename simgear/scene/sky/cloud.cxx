@@ -54,6 +54,7 @@ static GLuint normalization_cube_map;
 
 static glActiveTextureProc glActiveTexturePtr = 0;
 static glClientActiveTextureProc glClientActiveTexturePtr = 0;
+static glBlendColorProc glBlendColorPtr = 0;
 
 bool SGCloudLayer::enable_bump_mapping = false;
 
@@ -307,13 +308,15 @@ SGCloudLayer::rebuild()
         bump_mapping = SGIsOpenGLExtensionSupported("GL_ARB_multitexture") &&
                        SGIsOpenGLExtensionSupported("GL_ARB_texture_cube_map") &&
                        SGIsOpenGLExtensionSupported("GL_ARB_texture_env_combine") &&
-                       SGIsOpenGLExtensionSupported("GL_ARB_texture_env_dot3") && true;
+                       SGIsOpenGLExtensionSupported("GL_ARB_texture_env_dot3") && 
+                       SGIsOpenGLExtensionSupported("GL_ARB_imaging");
 
         if ( bump_mapping ) {
             glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &nb_texture_unit );
             if ( nb_texture_unit < 2 ) {
                 bump_mapping = false;
             }
+            nb_texture_unit = 2; // Force the number of units for now
         }
 
         if ( bump_mapping ) {
@@ -329,6 +332,7 @@ SGCloudLayer::rebuild()
 
             glActiveTexturePtr = (glActiveTextureProc)SGLookupFunction("glActiveTextureARB");
             glClientActiveTexturePtr = (glClientActiveTextureProc)SGLookupFunction("glClientActiveTextureARB");
+            glBlendColorPtr = (glBlendColorProc)SGLookupFunction("glBlendColor");
 
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast.rgb");
@@ -850,8 +854,10 @@ void SGCloudLayer::draw( bool top ) {
 
             glDisable( GL_LIGHTING );
             glDisable( GL_CULL_FACE );
-            glEnable( GL_ALPHA_TEST );
-            glAlphaFunc ( GL_GREATER, 0.1 ) ;
+            if ( layer_coverage == SG_CLOUD_FEW ) {
+                glEnable( GL_ALPHA_TEST );
+                glAlphaFunc ( GL_GREATER, 0.01 );
+            }
             glEnable( GL_BLEND ); 
             glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
@@ -909,6 +915,8 @@ void SGCloudLayer::draw( bool top ) {
             glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
             glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGB_ARB );
             glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
+            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
 
             if ( nb_texture_unit >= 3 ) {
                 glActiveTexturePtr( GL_TEXTURE2_ARB );
@@ -956,6 +964,9 @@ void SGCloudLayer::draw( bool top ) {
                 glClientActiveTexturePtr( GL_TEXTURE0_ARB );
 
                 glDisableClientState( GL_COLOR_ARRAY );
+                glEnable( GL_LIGHTING );
+
+                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
             } else {
                 glClientActiveTexturePtr( GL_TEXTURE0_ARB );
@@ -966,7 +977,6 @@ void SGCloudLayer::draw( bool top ) {
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
-
 
                 //Disable textures
                 glDisable( GL_TEXTURE_2D );
@@ -987,8 +997,17 @@ void SGCloudLayer::draw( bool top ) {
                 glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
 
 	        glDepthFunc(GL_LEQUAL);
-                //Enable multiplicative blending
-                glBlendFunc( GL_DST_COLOR, GL_ZERO );
+
+                glEnable( GL_LIGHTING );
+                sgVec4 color;
+                ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
+                float average = ( color[0] + color[1] + color[2] ) / 3.0f;
+                sgVec4 averageColor;
+                sgSetVec4( averageColor, average, average, average, 1.0f );
+                ssgGetLight( 0 )->setColour( GL_DIFFUSE, averageColor );
+
+                glBlendColorPtr( average, average, average, 1.0f );
+                glBlendFunc( GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_COLOR );
 
                 //Perform a second pass to color the torus
                 //Bind decal texture
@@ -1014,6 +1033,8 @@ void SGCloudLayer::draw( bool top ) {
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
                 glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
 
+                ssgGetLight( 0 )->setColour( GL_DIFFUSE, color );
+
                 glDisableClientState( GL_TEXTURE_COORD_ARRAY );
             }
             //Disable texture
@@ -1022,10 +1043,7 @@ void SGCloudLayer::draw( bool top ) {
             glDisableClientState( GL_VERTEX_ARRAY );
             glDisableClientState( GL_NORMAL_ARRAY );
 
-            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-
             glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-            glEnable( GL_LIGHTING );
             glEnable( GL_CULL_FACE );
 	    glDepthFunc(GL_LESS);
 

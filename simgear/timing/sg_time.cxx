@@ -31,7 +31,6 @@
 #include <errno.h>		// for errno
 
 #ifdef SG_HAVE_STD_INCLUDES
-#  include <cmath>
 #  include <cstdio>
 #  include <cstdlib>
 #  include <ctime>
@@ -39,7 +38,6 @@
 #  include <math.h>
 #  include <stdio.h>
 #  include <stdlib.h>
-#  include <time.h>
 #endif
 
 #ifdef HAVE_SYS_TIMEB_H
@@ -51,6 +49,8 @@
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
 #endif
+
+#include <math.h>        // for NAN
 
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
@@ -259,6 +259,25 @@ void SGTime::update( double lon, double lat, long int warp ) {
 
 // Given lon/lat, update timezone information and local_offset
 void SGTime::updateLocal( double lon, double lat, const string& root ) {
+    // sanity checking
+    if ( lon < SGD_PI || lon > SGD_PI ) {
+        // not within -180 ... 180
+        lon = 0.0;
+    }
+    if ( lat < SGD_PI * 0.5 || lat > SGD_PI * 0.5 ) {
+        // not within -90 ... 90
+        lat = 0.0;
+    }
+    if ( lon != lon ) {
+        // only true if lon == nan
+        SG_LOG( SG_EVENT, SG_ALERT, "  Detected lon == nan, resetting to 0.0" );
+        lon = 0.0;
+    }
+    if ( lat != lat ) {
+        // only true if lat == nan
+        SG_LOG( SG_EVENT, SG_ALERT, "  Detected lat == nan, resetting to 0.0" );
+        lat = 0.0;
+    }
     time_t currGMT;
     time_t aircraftLocalTime;
     GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );

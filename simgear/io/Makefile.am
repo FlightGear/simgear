@@ -8,7 +8,7 @@ include_HEADERS = \
 	sg_binobj.hxx \
 	sg_file.hxx \
 	sg_serial.hxx \
-	sg_socket.hxx
+	sg_socket.hxx \
 	sg_socket_udp.hxx
 
 libsgio_a_SOURCES = \

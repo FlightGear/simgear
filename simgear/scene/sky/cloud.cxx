@@ -18,10 +18,17 @@
 
 #include <simgear/compiler.h>
 
-#include <stdio.h>
-#include STL_IOSTREAM
-
+// #include <stdio.h>
 #include <math.h>
+
+// #if defined (__APPLE__) 
+// // any C++ header file undefines isinf and isnan
+// // so this should be included before <iostream>
+// inline int (isinf)(Real r) { return isinf(r); }
+// inline int (isnan)(Real r) { return isnan(r); }
+// #endif
+
+// #include STL_IOSTREAM
 
 #include <plib/sg.h>
 #include <plib/ssg.h>

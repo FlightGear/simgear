@@ -331,3 +331,9 @@ fi
 if test "x$ac_cv_header_zlib_h" != "xyes"; then
    echo "Building zlib"
 fi
+
+if test "x$ac_cv_lib_pthread_pthread_exit" = "xyes" -o "x$ac_cv_header_pthread_h" = "xyes"; then
+   echo "Threads: pthread is supported."
+else
+   echo "Threads: no threads (pthreads not found.)"
+fi

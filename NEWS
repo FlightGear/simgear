@@ -1,4 +1,12 @@
-New in 0.0.17
+New in 0.0.17pre2
+* February 13, 2002
+
+* Replaced some cout's with SG_LOG's
+
+
+New in 0.0.17pre1
+* February 12, 2002
+
 * Removed metakit and zlib from build process.  Tarballs are still included
   for those who's systems don't provide these packages.
 * MSVC fixes.
@@ -19,6 +27,7 @@ New in 0.0.17
 * Property manager fixes and improvements including node path caching
   and debug tracing of property reads/writes.
 * Updates/fixes to xml handling.
+
 
 New in 0.0.16
 * July 12, 2001

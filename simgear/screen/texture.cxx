@@ -351,7 +351,7 @@ SGTexture::get_pixel(GLuint x, GLuint y)
 {
     static sgVec3 c;
 
-    sgSetVec3(c, 0.0, 0.0, 0.0);
+    sgSetVec3(c, 0, 0, 0);
     if (!texture_data)
         return;
 

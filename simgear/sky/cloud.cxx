@@ -27,6 +27,7 @@
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 #include <simgear/math/sg_random.h>
+#include <simgear/debug/logstream.hxx>
 
 #include "cloud.hxx"
 
@@ -213,7 +214,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
             base[0] -= (int)base[0];
         } else {
             base[0] = 0.0;
-            cout << "Error: base = " << base[0] << "," << base[1] << endl;
+	    SG_LOG(SG_ASTRO, SG_ALERT,
+		   "Error: base = " << base[0] << "," << base[1]);
         }
 
 	base[1] += yoff;
@@ -225,7 +227,8 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
             base[1] -= (int)base[1];
         } else {
             base[1] = 0.0;
-            cout << "Error: base = " << base[0] << "," << base[1] << endl;
+	    SG_LOG(SG_ASTRO, SG_ALERT,
+		   "Error: base = " << base[0] << "," << base[1]);
         }
 
 	// cout << "base = " << base[0] << "," << base[1] << endl;

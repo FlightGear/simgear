@@ -24,6 +24,12 @@
 #include "SkyTextureState.hpp"
 //#include "glvu.hpp"
 
+#include <simgear/screen/extensions.hxx>
+
+
+glActiveTextureProc glActiveTexturePtr = 0;
+bool glActiveTextureIsSupported = false;
+
 
 
 //------------------------------------------------------------------------------
@@ -45,13 +51,19 @@ SkyTextureState::SkyTextureState()
   if (0 == s_iNumTextureUnits)
   {
     int iNumTextureUnits = 0;
-#ifdef GL_ARB_multitexture
+    if (SGIsOpenGLExtensionSupported("GL_ARB_multitexture")) {
+       glActiveTextureIsSupported = true;
+
+       glActiveTexturePtr = (glActiveTextureProc)
+                            SGLookupFunction("glActiveTextureARB");
+
+    }
+
     glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &iNumTextureUnits);
     if (iNumTextureUnits > 0)
       s_iNumTextureUnits = iNumTextureUnits;
     else
       s_iNumTextureUnits = 1;
-#endif
   }
   
   _pTextureUnitState = new TexState[s_iNumTextureUnits];
@@ -89,10 +101,9 @@ SKYRESULT SkyTextureState::Activate()
   //GLVU::CheckForGLError("SkyTextureState::Activate(8)");
   for (unsigned int i = 0; i < s_iNumTextureUnits; ++i)
   {
-#ifdef GL_ARB_multitexture
-    if (s_iNumTextureUnits > 1)
-      glActiveTextureARB(GL_TEXTURE0_ARB + i);
-#endif
+    if (glActiveTextureIsSupported && (s_iNumTextureUnits > 1))
+      glActiveTexturePtr(GL_TEXTURE0_ARB + i);
+
     bool bEnabled = IsTextureEnabled(i);
     if (pCurrent->IsTextureEnabled(i) != bEnabled)
     {
@@ -151,10 +162,8 @@ SKYRESULT SkyTextureState::Activate()
       }
       //GLVU::CheckForGLError("SkyTextureState::Activate()");
     }
-#ifdef GL_ARB_multitexture
-    if (s_iNumTextureUnits > 1)
-      glActiveTextureARB(GL_TEXTURE0_ARB);
-#endif
+    if (glActiveTextureIsSupported && (s_iNumTextureUnits > 1))
+      glActiveTexturePtr(GL_TEXTURE0_ARB);
   }
   return SKYRESULT_OK;
 }
@@ -177,10 +186,9 @@ SKYRESULT SkyTextureState::Force()
   //GLVU::CheckForGLError("SkyTextureState::Activate(8)");
   for (unsigned int i = 0; i < s_iNumTextureUnits; ++i)
   {
-#ifdef GL_ARB_multitexture
-    if (s_iNumTextureUnits > 1)
-      glActiveTextureARB(GL_TEXTURE0_ARB + i);
-#endif
+    if (glActiveTextureIsSupported && (s_iNumTextureUnits > 1))
+      glActiveTexturePtr(GL_TEXTURE0_ARB + i);
+
     bool bEnabled = IsTextureEnabled(i);
     FAIL_RETURN(pCurrent->EnableTexture(i, bEnabled));
     //GLVU::CheckForGLError("SkyTextureState::Activate(7)");
@@ -221,10 +229,8 @@ SKYRESULT SkyTextureState::Force()
     FAIL_RETURN(pCurrent->SetTextureParameter(i, GL_TEXTURE_MAG_FILTER, paramValue));
     glTexParameteri(eTarget, GL_TEXTURE_MIN_FILTER, paramValue);
 
-#ifdef GL_ARB_multitexture
-    if (s_iNumTextureUnits > 1)
-      glActiveTextureARB(GL_TEXTURE0_ARB);
-#endif
+    if(glActiveTextureIsSupported && (s_iNumTextureUnits > 1))
+      glActiveTexturePtr(GL_TEXTURE0_ARB);
   }
   return SKYRESULT_OK;
 }

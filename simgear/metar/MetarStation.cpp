@@ -48,7 +48,7 @@ double CMetarStation::decodeDMS( char *b )
 		// Direction (E W N S)
 		if ( *b == 'W' || *b == 'S' ) r = -r;
 	}
-	return r * DEG_TO_RAD;
+	return r * SGD_DEGREES_TO_RADIANS;
 }
 
 // Constructor
@@ -86,10 +86,10 @@ CMetarStation::CMetarStation(
 	m_altitude = altitude;
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double ualtitude = atoi( s ) * FEET_TO_METER;
-	Point3D p( longitude, latitude, altitude+EQUATORIAL_RADIUS_M );
+	Point3D p( longitude, latitude, altitude+SG_EQUATORIAL_RADIUS_M );
 	m_locationPolar = p;
 	m_locationCart = sgPolarToCart3d( p );
-	Point3D up( ulongitude, ulatitude, ualtitude+EQUATORIAL_RADIUS_M );
+	Point3D up( ulongitude, ulatitude, ualtitude+SG_EQUATORIAL_RADIUS_M );
 	m_upperLocationPolar = up;
 	m_upperLocationCart = sgPolarToCart3d( up );
 	s = t;

@@ -85,7 +85,7 @@ void Star::updatePosition(double mjd)
   updateOrbElements(mjd);
   
   actTime = sgCalcActTime(mjd);
-  ecl = DEG_TO_RAD * (23.4393 - 3.563E-7 * actTime); // Angle in Radians
+  ecl = SGD_DEGREES_TO_RADIANS * (23.4393 - 3.563E-7 * actTime); // Angle in Radians
   eccAnom = sgCalcEccAnom(M, e);  // Calculate the eccentric Anomaly (also known as solving Kepler's equation)
   
   xv = cos(eccAnom) - e;

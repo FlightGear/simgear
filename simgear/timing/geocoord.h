@@ -62,9 +62,9 @@ public:
   void set(float la, float lo) { lat = la; lon = lo; }; 
   float getLat() const { return lat; };
   float getLon() const { return lon; };
-  float getX()   const { return cos(DEG_TO_RAD*lat) * cos(DEG_TO_RAD*lon); };
-  float getY()   const { return cos(DEG_TO_RAD*lat) * sin(DEG_TO_RAD*lon); };
-  float getZ()   const { return sin(DEG_TO_RAD*lat); };
+  float getX()   const { return cos(SGD_DEGREES_TO_RADIANS*lat) * cos(SGD_DEGREES_TO_RADIANS*lon); };
+  float getY()   const { return cos(SGD_DEGREES_TO_RADIANS*lat) * sin(SGD_DEGREES_TO_RADIANS*lon); };
+  float getZ()   const { return sin(SGD_DEGREES_TO_RADIANS*lat); };
 
 
   //double getAngle(const GeoCoord& other) const;

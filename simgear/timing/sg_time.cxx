@@ -62,7 +62,7 @@
 
 
 #define DEGHR(x)        ((x)/15.)
-#define RADHR(x)        DEGHR(x*RAD_TO_DEG)
+#define RADHR(x)        DEGHR(x*SGD_RADIANS_TO_DEGREES)
 
 
 static const double MJD0    = 2415020.0;
@@ -89,7 +89,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
 		<< zone.str() );
 	tzContainer = new TimezoneContainer( zone.c_str() );
 
-	GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
+	GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
 	GeoCoord* nearestTz = tzContainer->getNearest(location);
 
 	FGPath name( root );
@@ -135,7 +135,7 @@ static double sidereal_precise( double mjd, double lng )
        mjd + MJD0, lng); */
 
     // convert to required internal units
-    lng *= DEG_TO_RAD;
+    lng *= SGD_DEGREES_TO_RADIANS;
 
     // compute LST and print
     double gst = sgTimeCalcGST( mjd );
@@ -219,7 +219,7 @@ void SGTime::update( double lon, double lat, long int warp ) {
     jd = mjd + MJD0;
     FG_LOG( FG_EVENT, FG_DEBUG, "  Current Julian Date = " << jd );
 
-    // printf("  Current Longitude = %.3f\n", FG_Longitude * RAD_TO_DEG);
+    // printf("  Current Longitude = %.3f\n", FG_Longitude * SGD_RADIANS_TO_DEGREES);
 
     // Calculate local side real time
     if ( gst_diff < -100.0 ) {
@@ -231,18 +231,18 @@ void SGTime::update( double lon, double lat, long int warp ) {
       
 	gst_diff = gst_precise - gst_course;
 
-	lst = sidereal_course( cur_time, gmt, -(lon * RAD_TO_DEG) ) + gst_diff;
+	lst = sidereal_course( cur_time, gmt, -(lon * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
     } else {
 	// course + difference should drift off very slowly
 	gst = sidereal_course( cur_time, gmt, 0.00 ) + gst_diff;
-	lst = sidereal_course( cur_time, gmt, -(lon * RAD_TO_DEG) ) + gst_diff;
+	lst = sidereal_course( cur_time, gmt, -(lon * SGD_RADIANS_TO_DEGREES) ) + gst_diff;
     }
 
     FG_LOG( FG_EVENT, FG_DEBUG,
 	    "  Current lon=0.00 Sidereal Time = " << gst );
     FG_LOG( FG_EVENT, FG_DEBUG,
 	    "  Current LOCAL Sidereal Time = " << lst << " (" 
-	    << sidereal_precise( mjd, -(lon * RAD_TO_DEG) ) 
+	    << sidereal_precise( mjd, -(lon * SGD_RADIANS_TO_DEGREES) ) 
 	    << ") (diff = " << gst_diff << ")" );
 }
 
@@ -252,7 +252,7 @@ void SGTime::updateLocal( double lon, double lat, const string& root )
 {
   time_t currGMT;
   time_t aircraftLocalTime;
-  GeoCoord location( RAD_TO_DEG * lat, RAD_TO_DEG * lon );
+  GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
   GeoCoord* nearestTz = tzContainer->getNearest(location);
   FGPath zone( root );
   zone.append ( nearestTz->getDescription() );

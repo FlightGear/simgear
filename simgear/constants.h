@@ -81,39 +81,13 @@
 // Earth parameters for WGS 84, taken from LaRCsim/ls_constants.h
 
 // Value of earth radius from [8]
-#define EQUATORIAL_RADIUS_FT 20925650.    // ft
-#define EQUATORIAL_RADIUS_M   6378138.12  // meter
+#define SG_EQUATORIAL_RADIUS_FT 20925650.    // ft
+#define SG_EQUATORIAL_RADIUS_M   6378138.12  // meter
 // Radius squared
-#define RESQ_FT 437882827922500.          // ft
-#define RESQ_M   40680645877797.1344      // meter
-
-#if 0
-// Value of earth flattening parameter from ref [8] 
-//
-//      Note: FP = f
-//            E  = 1-f
-//            EPS = sqrt(1-(1-f)^2)
-//
-
-#define FP    0.003352813178
-#define E     0.996647186
-#define EPS   0.081819221
-#define INVG  0.031080997
-
-// Time Related Parameters
-
-#define MJD0  2415020.0
-#define J2000 (2451545.0 - MJD0)
-#define SIDRATE         .9972695677
-#endif
+#define SG_EQ_RAD_SQUARE_FT 437882827922500.          // ft
+#define SG_EQ_RAD_SQUARE_M   40680645877797.1344      // meter
 
 // Conversions
-
-// Degrees to Radians
-#define DEG_TO_RAD       0.017453292          // deg*pi/180 = rad
-
-// Radians to Degrees
-#define RAD_TO_DEG       57.29577951          // rad*180/pi = deg
 
 // Arc seconds to radians                     // (arcsec*pi)/(3600*180) = rad
 #define ARCSEC_TO_RAD    4.84813681109535993589e-06 

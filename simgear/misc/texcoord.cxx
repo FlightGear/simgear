@@ -178,9 +178,9 @@ point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
 	clat = (int)clat - 0.5;
     }
 
-    double clat_rad = clat * DEG_TO_RAD;
+    double clat_rad = clat * SGD_DEGREES_TO_RADIANS;
     double cos_lat = cos( clat_rad );
-    double local_radius = cos_lat * EQUATORIAL_RADIUS_M;
+    double local_radius = cos_lat * SG_EQUATORIAL_RADIUS_M;
     double local_perimeter = 2.0 * local_radius * SGD_PI;
     double degree_width = local_perimeter / 360.0;
 
@@ -191,7 +191,7 @@ point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
     // cout << "local_perimeter = " << local_perimeter << endl;
     // cout << "degree_width = " << degree_width << endl;
 
-    double perimeter = 2.0 * EQUATORIAL_RADIUS_M * SGD_PI;
+    double perimeter = 2.0 * SG_EQUATORIAL_RADIUS_M * SGD_PI;
     double degree_height = perimeter / 360.0;
     // cout << "degree_height = " << degree_height << endl;
 

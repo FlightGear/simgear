@@ -62,7 +62,7 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
   actTime = sgCalcActTime(mjd);
 
   // calcualate the angle bewteen ecliptic and equatorial coordinate system
-  ecl = DEG_TO_RAD * (23.4393 - 3.563E-7 *actTime);
+  ecl = SGD_DEGREES_TO_RADIANS * (23.4393 - 3.563E-7 *actTime);
   
   eccAnom = sgCalcEccAnom(M, e);  //calculate the eccentric anomaly
   xv = a * (cos(eccAnom) - e);
@@ -107,7 +107,7 @@ void CelestialBody::updatePosition(double mjd, Star *ourSun)
       tmp = -1.0;
   }
 
-  FV = RAD_TO_DEG * acos( tmp );
+  FV = SGD_RADIANS_TO_DEGREES * acos( tmp );
 }
 
 /****************************************************************************
@@ -152,7 +152,7 @@ double CelestialBody::sgCalcEccAnom(double M, double e)
 	  diff = fabs(E0 - E1);
 	  E0 = E1;
 	}
-      while (diff > (DEG_TO_RAD * 0.001));
+      while (diff > (SGD_DEGREES_TO_RADIANS * 0.001));
       return E0;
     }
   return eccAnom;

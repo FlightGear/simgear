@@ -42,15 +42,15 @@ if (argc == 8){
 }
 
 
-var = calc_magvar( DEG_TO_RAD * lat_deg, DEG_TO_RAD * lon_deg, h,
+var = calc_magvar( SGD_DEGREES_TO_RADIANS * lat_deg, SGD_DEGREES_TO_RADIANS * lon_deg, h,
 		   yymmdd_to_julian_days(yy,mm,dd), field );
 
 fprintf(stdout,"%6.0lf %6.0lf %6.0lf\n", field[0], field[1], field[2] );
 fprintf(stdout,"%6.0lf %6.0lf %6.0lf\n", field[3], field[4], field[5] );
 fprintf(stdout,"%6.0lf %6.0lf %6.0lf %4.2lf %4.2lf \n",
   field[3],field[4],field[5],
-  RAD_TO_DEG * (atan(field[5]/pow(field[3]*field[3]+field[4]*field[4],0.5))),
-  RAD_TO_DEG * var);
+  SGD_RADIANS_TO_DEGREES * (atan(field[5]/pow(field[3]*field[3]+field[4]*field[4],0.5))),
+  SGD_RADIANS_TO_DEGREES * var);
 exit(0);
 }
   

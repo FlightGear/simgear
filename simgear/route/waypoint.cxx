@@ -61,14 +61,14 @@ void SGWayPoint::CourseAndDistance( const double cur_lon,
 	geo_inverse_wgs_84( cur_alt, cur_lat, cur_lon, target_lat, target_lon,
 			    course, &reverse, distance );
     } else if ( mode == SPHERICAL ) {
-	Point3D current( cur_lon * DEG_TO_RAD, cur_lat * DEG_TO_RAD, 0.0 );
-	Point3D target( target_lon * DEG_TO_RAD, target_lat * DEG_TO_RAD, 0.0 );
+	Point3D current( cur_lon * SGD_DEGREES_TO_RADIANS, cur_lat * SGD_DEGREES_TO_RADIANS, 0.0 );
+	Point3D target( target_lon * SGD_DEGREES_TO_RADIANS, target_lat * SGD_DEGREES_TO_RADIANS, 0.0 );
 	calc_gc_course_dist( current, target, course, distance );
-	*course = 360.0 - *course * RAD_TO_DEG;
+	*course = 360.0 - *course * SGD_RADIANS_TO_DEGREES;
     } else if ( mode == CARTESIAN ) {
 	double dx = target_lon - cur_lon;
 	double dy = target_lat - cur_lat;
-	*course = -atan2( dy, dx ) * RAD_TO_DEG - 90;
+	*course = -atan2( dy, dx ) * SGD_RADIANS_TO_DEGREES - 90;
 	while ( *course < 0 ) {
 	    *course += 360.0;
 	}

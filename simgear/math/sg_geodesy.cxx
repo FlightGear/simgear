@@ -61,13 +61,13 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 	|| ( (SGD_PI_2 + lat_geoc) < SG_ONE_SECOND ) )   // near South pole
     {
 	*lat_geod = lat_geoc;
-	*sea_level_r = EQUATORIAL_RADIUS_M*E;
+	*sea_level_r = SG_EQUATORIAL_RADIUS_M*E;
 	*alt = radius - *sea_level_r;
     } else {
 	// cout << "  lat_geoc = " << lat_geoc << endl;
 	t_lat = tan(lat_geoc);
 	// cout << "  tan(t_lat) = " << t_lat << endl;
-	x_alpha = E*EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
+	x_alpha = E*SG_EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
@@ -75,12 +75,12 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 	}
 #endif
 	// cout << "  x_alpha = " << x_alpha << endl;
-	double tmp = sqrt(RESQ_M - x_alpha * x_alpha);
+	double tmp = sqrt(SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha);
 	if ( tmp < 0.0 ) { tmp = 0.0; }
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
-	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << RESQ_M - x_alpha * x_alpha
+	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" << SG_EQ_RAD_SQUARE_M - x_alpha * x_alpha
 		    << ")" );
 	}
 #endif
@@ -100,19 +100,19 @@ void sgGeocToGeod( double lat_geoc, double radius, double
 		    1-EPS*EPS*sin_mu_a*sin_mu_a << ")" );
 	}
 #endif
-	rho_alpha = EQUATORIAL_RADIUS_M*(1-EPS)/
+	rho_alpha = SG_EQUATORIAL_RADIUS_M*(1-EPS)/
 	    (denom*denom*denom);
 	delt_mu = atan2(l_point*sin(delt_lambda),rho_alpha + *alt);
 	*lat_geod = mu_alpha - delt_mu;
 	lambda_sl = atan( E*E * tan(*lat_geod) ); // SL geoc. latitude
 	sin_lambda_sl = sin( lambda_sl );
 	*sea_level_r = 
-	    sqrt(RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
+	    sqrt(SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeocToGeod()");
 	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
-		    RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
+		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
 		    << ")" );
 	}
 #endif
@@ -149,12 +149,12 @@ void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
     sin_mu = sin(lat_geod);                  // Geodetic (map makers') latitude
     cos_mu = cos(lat_geod);
     *sl_radius = 
-	sqrt(RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
+	sqrt(SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl));
 #ifdef DOMAIN_ERR_DEBUG
 	if ( errno ) {
 	    perror("fgGeodToGeoc()");
 	    FG_LOG( FG_GENERAL, FG_ALERT, "sqrt(" <<
-		    RESQ_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
+		    SG_EQ_RAD_SQUARE_M / (1 + ((1/(E*E))-1)*sin_lambda_sl*sin_lambda_sl)
 		    << ")" );
 	}
 #endif

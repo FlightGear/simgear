@@ -92,7 +92,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 
   // calculate the angle between ecliptic and equatorial coordinate system
   // in Radians
-  ecl = ((DEG_TO_RAD * 23.4393) - (DEG_TO_RAD * 3.563E-7) * actTime);  
+  ecl = ((SGD_DEGREES_TO_RADIANS * 23.4393) - (SGD_DEGREES_TO_RADIANS * 3.563E-7) * actTime);  
   eccAnom = sgCalcEccAnom(M, e);  // Calculate the eccentric anomaly
   xv = a * (cos(eccAnom) - e);
   yv = a * (sqrt(1.0 - e*e) * sin(eccAnom));
@@ -116,7 +116,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   D = Lm - Ls;
   F = Lm - N;
   
-  lonEcl += DEG_TO_RAD * (-1.274 * sin (M - 2*D)
+  lonEcl += SGD_DEGREES_TO_RADIANS * (-1.274 * sin (M - 2*D)
 			  +0.658 * sin (2*D)
 			  -0.186 * sin(ourSun->getM())
 			  -0.059 * sin(2*M - 2*D)
@@ -129,7 +129,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
 			  -0.015 * sin(2*F - 2*D)
 			  +0.011 * sin(M - 4*D)
 			  );
-  latEcl += DEG_TO_RAD * (-0.173 * sin(F-2*D)
+  latEcl += SGD_DEGREES_TO_RADIANS * (-0.173 * sin(F-2*D)
 			  -0.055 * sin(M - F - 2*D)
 			  -0.046 * sin(M + F - 2*D)
 			  +0.033 * sin(F + 2*D)
@@ -151,8 +151,8 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   geoDec = atan2(ze, sqrt(xe*xe + ye*ye));
 
   /* FG_LOG( FG_GENERAL, FG_INFO, 
-	  "(geocentric) geoRa = (" << (RAD_TO_DEG * geoRa) 
-	  << "), geoDec= (" << (RAD_TO_DEG * geoDec) << ")" ); */
+	  "(geocentric) geoRa = (" << (SGD_RADIANS_TO_DEGREES * geoRa) 
+	  << "), geoDec= (" << (SGD_RADIANS_TO_DEGREES * geoDec) << ")" ); */
 
 
   // Given the moon's geocentric ra and dec, calculate its 
@@ -166,10 +166,10 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // FG_LOG( FG_GENERAL, FG_INFO, "lat = " << f->get_Latitude() );
 
   gclat = lat - 0.003358 * 
-      sin (2 * DEG_TO_RAD * lat );
+      sin (2 * SGD_DEGREES_TO_RADIANS * lat );
   // FG_LOG( FG_GENERAL, FG_INFO, "gclat = " << gclat );
 
-  rho = 0.99883 + 0.00167 * cos(2 * DEG_TO_RAD * lat);
+  rho = 0.99883 + 0.00167 * cos(2 * SGD_DEGREES_TO_RADIANS * lat);
   // FG_LOG( FG_GENERAL, FG_INFO, "rho = " << rho );
   
   if (geoRa < 0)
@@ -186,6 +186,6 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   declination = geoDec - mpar * rho * sin (gclat) * sin (g - geoDec) / sin(g);
 
   /* FG_LOG( FG_GENERAL, FG_INFO, 
-	  "Ra = (" << (RAD_TO_DEG *rightAscension) 
-	  << "), Dec= (" << (RAD_TO_DEG *declination) << ")" ); */
+	  "Ra = (" << (SGD_RADIANS_TO_DEGREES *rightAscension) 
+	  << "), Dec= (" << (SGD_RADIANS_TO_DEGREES *declination) << ")" ); */
 }

@@ -150,10 +150,10 @@ inline CelestialBody::CelestialBody(double Nf, double Ns,
 inline void CelestialBody::updateOrbElements(double mjd)
 {
   double actTime = sgCalcActTime(mjd);
-   M = DEG_TO_RAD * (MFirst + (MSec * actTime));
-   w = DEG_TO_RAD * (wFirst + (wSec * actTime));
-   N = DEG_TO_RAD * (NFirst + (NSec * actTime));
-   i = DEG_TO_RAD * (iFirst + (iSec * actTime));
+   M = SGD_DEGREES_TO_RADIANS * (MFirst + (MSec * actTime));
+   w = SGD_DEGREES_TO_RADIANS * (wFirst + (wSec * actTime));
+   N = SGD_DEGREES_TO_RADIANS * (NFirst + (NSec * actTime));
+   i = SGD_DEGREES_TO_RADIANS * (iFirst + (iSec * actTime));
    e = eFirst + (eSec * actTime);
    a = aFirst + (aSec * actTime);
 }

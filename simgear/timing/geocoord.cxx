@@ -64,7 +64,7 @@ GeoCoord::GeoCoord(const GeoCoord& other)
 //   GeoCoordVectorConstIterator i, nearest;
 //   for (i = data.begin(); i != data.end(); i++)
 //     {
-//       angle = RAD_TO_DEG * (*i)->getAngle(ref);
+//       angle = SGD_RADIANS_TO_DEGREES * (*i)->getAngle(ref);
 //       if (angle < maxAngle)
 // 	{
 // 	  maxAngle = angle;

@@ -32,9 +32,9 @@ SG_USING_STD(ostream);
 #undef ALIAS
 #endif
 
-#ifdef UNKNOWN
-#pragma warn A sloppy coder has defined UNKNOWN as a macro!
-#undef UNKNOWN
+#ifdef UNSPECIFIED
+#pragma warn A sloppy coder has defined UNSPECIFIED as a macro!
+#undef UNSPECIFIED
 #endif
 
 #ifdef BOOL
@@ -473,78 +473,579 @@ private:
 
 
 /**
- * A cooked value.
- *
- * This is the value that property-list clients see.  It is a 
- * persistent layer over the possibly-changing raw value; once a
- * client gets an SGValue from the property manager, the pointer
- * will be good for the life of the property manager itself, no
- * matter how often the pointer is tied or untied.
+ * A node in a property tree.
  */
-class SGValue
+class SGPropertyNode
 {
+
 public:
+
+
+  /**
+   * Property value types.
+   */
   enum Type {
+    NONE,
+    ALIAS,
     BOOL,
     INT,
     LONG,
     FLOAT,
     DOUBLE,
     STRING,
-    UNKNOWN
+    UNSPECIFIED
   };
-  SGValue ();
-  SGValue (const SGValue &value);
-  ~SGValue ();
 
+
+  /**
+   * Access mode attributes.
+   *
+   * <p>The ARCHIVE attribute is strictly advisory, and controls
+   * whether the property should normally be saved and restored.</p>
+   */
+  enum Attribute {
+    READ = 1,
+    WRITE = 2,
+    ARCHIVE = 4
+  };
+
+
+  /**
+   * Default constructor.
+   */
+  SGPropertyNode ();
+
+
+  /**
+   * Copy constructor.
+   */
+  SGPropertyNode (const SGPropertyNode &node);
+
+
+  /**
+   * Destructor.
+   */
+  virtual ~SGPropertyNode ();
+
+
+
+  //
+  // Basic properties.
+  //
+
+  /**
+   * Test whether this node contains a primitive leaf value.
+   */
+  bool hasValue () const { return (_type != NONE); }
+
+
+  /**
+   * Get the node's simple (XML) name.
+   */
+  const string &getName () const { return _name; }
+
+
+  /**
+   * Get the node's integer index.
+   */
+  const int getIndex () const { return _index; }
+
+
+  /**
+   * Get a non-const pointer to the node's parent.
+   */
+  SGPropertyNode * getParent () { return _parent; }
+
+
+  /**
+   * Get a const pointer to the node's parent.
+   */
+  const SGPropertyNode * getParent () const { return _parent; }
+
+
+  //
+  // Children.
+  //
+
+
+  /**
+   * Get the number of child nodes.
+   */
+  const int nChildren () const { return _children.size(); }
+
+
+  /**
+   * Get a child node by position (*NOT* index).
+   */
+  SGPropertyNode * getChild (int position);
+
+
+  /**
+   * Get a const child node by position (*NOT* index).
+   */
+  const SGPropertyNode * getChild (int position) const;
+
+
+  /**
+   * Get a child node by name and index.
+   */
+  SGPropertyNode * getChild (const string &name, int index = 0,
+			     bool create = false);
+
+
+  /**
+   * Get a const child node by name and index.
+   */
+  const SGPropertyNode * getChild (const string &name, int index = 0) const;
+
+
+  /**
+   * Get a vector of all children with the specified name.
+   */
+  vector<SGPropertyNode *> getChildren (const string &name);
+
+
+  /**
+   * Get a vector all all children (const) with the specified name.
+   */
+  vector<const SGPropertyNode *> getChildren (const string &name) const;
+
+
+  //
+  // Alias support.
+  //
+
+
+  /**
+   * Alias this node's leaf value to another's.
+   */
+  bool alias (SGPropertyNode * target);
+
+
+  /**
+   * Alias this node's leaf value to another's by relative path.
+   */
+  bool alias (const string &path);
+
+
+  /**
+   * Remove any alias for this node.
+   */
+  bool unalias ();
+
+
+  /**
+   * Test whether the node's leaf value is aliased to another's.
+   */
+  bool isAlias () const { return (_type == ALIAS); }
+
+
+  /**
+   * Get a non-const pointer to the current alias target, if any.
+   */
+  SGPropertyNode * getAliasTarget ();
+
+
+  /**
+   * Get a const pointer to the current alias target, if any.
+   */
+  const SGPropertyNode * getAliasTarget () const;
+
+
+  //
+  // Path information.
+  //
+
+
+  /**
+   * Get the path to this node from the root.
+   */
+  string getPath (bool simplify = false) const;
+
+
+  /**
+   * Get a pointer to the root node.
+   */
+  SGPropertyNode * getRootNode ();
+
+
+  /**
+   * Get a const pointer to the root node.
+   */
+  const SGPropertyNode * getRootNode () const;
+
+
+  /**
+   * Get a pointer to another node by relative path.
+   */
+  SGPropertyNode * getNode (const string &relative_path, bool create = false);
+
+
+  /**
+   * Get a const pointer to another node by relative path.
+   */
+  const SGPropertyNode * getNode (const string &relative_path) const;
+
+
+  //
+  // Access Mode.
+  //
+
+  /**
+   * Check a single mode attribute for the property node.
+   */
+  bool getAttribute (Attribute attr) const { return (_attr & attr); }
+
+
+  /**
+   * Set a single mode attribute for the property node.
+   */
+  void setAttribute (Attribute attr, bool state) {
+    (state ? _attr |= attr : _attr &= ~attr);
+  }
+
+
+  /**
+   * Get all of the mode attributes for the property node.
+   */
+  int getAttributes () const { return _attr; }
+
+
+  /**
+   * Set all of the mode attributes for the property node.
+   */
+  void setAttributes (int attr) { _attr = attr; }
+  
+
+  //
+  // Leaf Value (primitive).
+  //
+
+
+  /**
+   * Get the type of leaf value, if any, for this node.
+   */
   Type getType () const;
 
-  SGValue * getAlias ();
-  const SGValue * getAlias () const;
-  bool alias (SGValue * alias);
-  bool unalias ();
-  bool isAlias () const { return _type == ALIAS; }
 
+  /**
+   * Get a bool value for this node.
+   */
   bool getBoolValue () const;
+
+
+  /**
+   * Get an int value for this node.
+   */
   int getIntValue () const;
+
+
+  /**
+   * Get a long int value for this node.
+   */
   long getLongValue () const;
+
+
+  /**
+   * Get a float value for this node.
+   */
   float getFloatValue () const;
+
+
+  /**
+   * Get a double value for this node.
+   */
   double getDoubleValue () const;
+
+
+  /**
+   * Get a string value for this node.
+   */
   string getStringValue () const;
 
-  bool setBoolValue (bool value);
-  bool setIntValue (int value);
-  bool setLongValue (long value);
-  bool setFloatValue (float value);
-  bool setDoubleValue (double value);
-  bool setStringValue (string value);
-  bool setUnknownValue (string value);
 
+
+  /**
+   * Set a bool value for this node.
+   */
+  bool setBoolValue (bool value);
+
+
+  /**
+   * Set an int value for this node.
+   */
+  bool setIntValue (int value);
+
+
+  /**
+   * Set a long int value for this node.
+   */
+  bool setLongValue (long value);
+
+
+  /**
+   * Set a float value for this node.
+   */
+  bool setFloatValue (float value);
+
+
+  /**
+   * Set a double value for this node.
+   */
+  bool setDoubleValue (double value);
+
+
+  /**
+   * Set a string value for this node.
+   */
+  bool setStringValue (string value);
+
+
+  /**
+   * Set a value of unspecified type for this node.
+   */
+  bool setUnspecifiedValue (string value);
+
+
+  //
+  // Data binding.
+  //
+
+
+  /**
+   * Test whether this node is bound to an external data source.
+   */
   bool isTied () const { return _tied; }
 
+
+  /**
+   * Bind this node to an external bool source.
+   */
   bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
+
+
+  /**
+   * Bind this node to an external int source.
+   */
   bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
+
+
+  /**
+   * Bind this node to an external long int source.
+   */
   bool tie (const SGRawValue<long> &rawValue, bool useDefault = true);
+
+
+  /**
+   * Bind this node to an external float source.
+   */
   bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
+
+
+  /**
+   * Bind this node to an external double source.
+   */
   bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
+
+
+  /**
+   * Bind this node to an external string source.
+   */
   bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
 
+
+  /**
+   * Unbind this node from any external data source.
+   */
   bool untie ();
+
+
+  //
+  // Convenience methods using paths.
+  // TODO: add attribute methods
+  //
+
+
+  /**
+   * Get another node's type.
+   */
+  Type getType (const string &relative_path) const;
+
+
+  /**
+   * Test whether another node has a leaf value.
+   */
+  bool hasValue (const string &relative_path) const;
+
+
+  /**
+   * Get another node's value as a bool.
+   */
+  bool getBoolValue (const string &relative_path,
+		     bool defaultValue = false) const;
+
+
+  /**
+   * Get another node's value as an int.
+   */
+  int getIntValue (const string &relative_path,
+		   int defaultValue = 0) const;
+
+
+  /**
+   * Get another node's value as a long int.
+   */
+  long getLongValue (const string &relative_path,
+		     long defaultValue = 0L) const;
+
+
+  /**
+   * Get another node's value as a float.
+   */
+  float getFloatValue (const string &relative_path,
+		       float defaultValue = 0.0) const;
+
+
+  /**
+   * Get another node's value as a double.
+   */
+  double getDoubleValue (const string &relative_path,
+			 double defaultValue = 0.0L) const;
+
+
+  /**
+   * Get another node's value as a string.
+   */
+  string getStringValue (const string &relative_path,
+			 string defaultValue = "") const;
+
+
+  /**
+   * Set another node's value as a bool.
+   */
+  bool setBoolValue (const string &relative_path, bool value);
+
+
+  /**
+   * Set another node's value as an int.
+   */
+  bool setIntValue (const string &relative_path, int value);
+
+
+  /**
+   * Set another node's value as a long int.
+   */
+  bool setLongValue (const string &relative_path, long value);
+
+
+  /**
+   * Set another node's value as a float.
+   */
+  bool setFloatValue (const string &relative_path, float value);
+
+
+  /**
+   * Set another node's value as a double.
+   */
+  bool setDoubleValue (const string &relative_path, double value);
+
+
+  /**
+   * Set another node's value as a string.
+   */
+  bool setStringValue (const string &relative_path, string value);
+
+
+  /**
+   * Set another node's value with no specified type.
+   */
+  bool setUnspecifiedValue (const string &relative_path, string value);
+
+
+  /**
+   * Test whether another node is bound to an external data source.
+   */
+  bool isTied (const string &relative_path) const;
+
+
+  /**
+   * Bind another node to an external bool source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<bool> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Bind another node to an external int source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<int> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Bind another node to an external long int source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<long> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Bind another node to an external float source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<float> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Bind another node to an external double source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<double> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Bind another node to an external string source.
+   */
+  bool tie (const string &relative_path, const SGRawValue<string> &rawValue,
+	    bool useDefault = true);
+
+
+  /**
+   * Unbind another node from any external data source.
+   */
+  bool untie (const string &relative_path);
+
+
+protected:
+
+
+  /**
+   * Protected constructor for making new nodes on demand.
+   */
+  SGPropertyNode (const string &name, int index, SGPropertyNode * parent);
+
 
 private:
 
-  enum {
-    ALIAS = -1
-  };
 
+  /**
+   * Clear any existing value and set the type to NONE.
+   */
   void clear_value ();
 
-  int _type;
+  string _name;
+  int _index;
+  SGPropertyNode * _parent;
+  vector<SGPropertyNode *> _children;
+
+
+  Type _type;
   bool _tied;
+  int _attr;
 
 				// The right kind of pointer...
   union {
-    SGValue * alias;
+    SGPropertyNode * alias;
     SGRawValue<bool> * bool_val;
     SGRawValue<int> * int_val;
     SGRawValue<long> * long_val;
@@ -553,163 +1054,6 @@ private:
     SGRawValue<string> * string_val;
   } _value;
 
-};
-
-
-
-/**
- * A node in a property tree.
- */
-class SGPropertyNode
-{
-
-public:
-
-  /**
-   * Property value types.
-   *
-   * Right now, this duplicates SGValue::Type, but SGValue will be
-   * disappearing soon.
-   */
-  enum Type {
-    BOOL,
-    INT,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    STRING,
-    UNKNOWN
-  };
-
-  SGPropertyNode ();
-   virtual ~SGPropertyNode ();
-
-				// Basic properties.
-  bool hasValue () const { return (_value != 0); }
-  SGValue * getValue () { return _value; }
-  SGValue * getValue (bool create);
-  const SGValue * getValue () const { return _value; }
-  const string &getName () const { return _name; }
-  const int getIndex () const { return _index; }
-  SGPropertyNode * getParent () { return _parent; }
-  const SGPropertyNode * getParent () const { return _parent; }
-
-				// Alias support.
-  bool alias (SGPropertyNode * target);
-  bool alias (const string &path);
-  bool unalias ();
-  bool isAlias () const;
-  SGPropertyNode * getAliasTarget ();
-  const SGPropertyNode * getAliasTarget () const;
-
-				// Children.
-  const int nChildren () const { return _children.size(); }
-  SGPropertyNode * getChild (int position);
-  const SGPropertyNode * getChild (int position) const;
-  SGPropertyNode * getChild (const string &name, int index = 0,
-			     bool create = false);
-  const SGPropertyNode * getChild (const string &name, int index = 0) const;
-
-  vector<SGPropertyNode *> getChildren (const string &name);
-  vector<const SGPropertyNode *> getChildren (const string &name) const;
-
-				// Path information.
-  string getPath (bool simplify = false) const;
-
-				// Relative or absolute paths.
-  SGPropertyNode * getRootNode ();
-  const SGPropertyNode * getRootNode () const;
-  SGPropertyNode * getNode (const string &relative_path, bool create = false);
-  const SGPropertyNode * getNode (const string &relative_path) const;
-
-				// Value-related stuff.
-  Type getType () const;
-  
-  bool getBoolValue () const;
-  int getIntValue () const;
-  long getLongValue () const;
-  float getFloatValue () const;
-  double getDoubleValue () const;
-  string getStringValue () const;
-
-  bool setBoolValue (bool value);
-  bool setIntValue (int value);
-  bool setLongValue (long value);
-  bool setFloatValue (float value);
-  bool setDoubleValue (double value);
-  bool setStringValue (string value);
-  bool setUnknownValue (string value);
-
-  bool isTied () const;
-
-  bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
-  bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
-  bool tie (const SGRawValue<long> &rawValue, bool useDefault = true);
-  bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
-  bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
-  bool tie (const SGRawValue<string> &rawValue, bool useDefault = true);
-
-  bool untie ();
-
-				// Values from paths.
-  Type getType (const string &relative_path) const;
-  
-  bool getBoolValue (const string &relative_path,
-		     bool defaultValue = false) const;
-  int getIntValue (const string &relative_path,
-		   int defaultValue = 0) const;
-  long getLongValue (const string &relative_path,
-		     long defaultValue = 0L) const;
-  float getFloatValue (const string &relative_path,
-		       float defaultValue = 0.0) const;
-  double getDoubleValue (const string &relative_path,
-			 double defaultValue = 0.0L) const;
-  string getStringValue (const string &relative_path,
-			 string defaultValue = "") const;
-
-  bool setBoolValue (const string &relative_path, bool value);
-  bool setIntValue (const string &relative_path, int value);
-  bool setLongValue (const string &relative_path, long value);
-  bool setFloatValue (const string &relative_path, float value);
-  bool setDoubleValue (const string &relative_path, double value);
-  bool setStringValue (const string &relative_path, string value);
-  bool setUnknownValue (const string &relative_path, string value);
-
-  bool isTied (const string &relative_path) const;
-
-  bool tie (const string &relative_path, const SGRawValue<bool> &rawValue,
-	    bool useDefault = true);
-  bool tie (const string &relative_path, const SGRawValue<int> &rawValue,
-	    bool useDefault = true);
-  bool tie (const string &relative_path, const SGRawValue<long> &rawValue,
-	    bool useDefault = true);
-  bool tie (const string &relative_path, const SGRawValue<float> &rawValue,
-	    bool useDefault = true);
-  bool tie (const string &relative_path, const SGRawValue<double> &rawValue,
-	    bool useDefault = true);
-  bool tie (const string &relative_path, const SGRawValue<string> &rawValue,
-	    bool useDefault = true);
-
-  bool untie (const string &relative_path);
-
-protected:
-
-  SGPropertyNode (const string &name, int index, SGPropertyNode * parent);
-
-private:
-
-  bool hasValue (const string &relative_path) const;
-  SGValue * getValue (const string &relative_path, bool create = false);
-  const SGValue * getValue (const string &relative_path) const;
-
-  SGPropertyNode (const SGPropertyNode &node) {}
-
-  SGValue * _value;
-  string _name;
-  int _index;
-  SGPropertyNode * _parent;
-  vector<SGPropertyNode *> _children;
-  mutable SGPropertyNode * _target;
 
 };
 
@@ -719,11 +1063,35 @@ private:
 // I/O functions.
 ////////////////////////////////////////////////////////////////////////
 
+
+/**
+ * Read properties from an XML input stream.
+ */
 bool readProperties (istream &input, SGPropertyNode * start_node,
 		     const string &base = "");
+
+
+/**
+ * Read properties from an XML file.
+ */
 bool readProperties (const string &file, SGPropertyNode * start_node);
+
+
+/**
+ * Write properties to an XML output stream.
+ */
 bool writeProperties (ostream &output, const SGPropertyNode * start_node);
+
+
+/**
+ * Write properties to an XML file.
+ */
 bool writeProperties (const string &file, const SGPropertyNode * start_node);
+
+
+/**
+ * Copy properties from one node to another.
+ */
 bool copyProperties (const SGPropertyNode *in, SGPropertyNode *out);
 
 

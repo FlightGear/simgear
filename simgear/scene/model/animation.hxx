@@ -434,6 +434,29 @@ private:
 
 
 /**
+ * An "animation" to modify emissive values on leaf nodes
+ */
+class SGEmissionAnimation : public SGAnimation
+{
+public:
+  SGEmissionAnimation(SGPropertyNode *prop_root, SGPropertyNode_ptr props);
+  virtual ~SGEmissionAnimation ();
+  virtual void init();
+  virtual int update();
+private:
+  SGPropertyNode_ptr _prop;
+  ssgSimpleState* _cached_material;
+  ssgSimpleState* _cloned_material;
+  void cloneMaterials(ssgBranch *b);
+  void setEmissionBranch(ssgBranch *b, float color0, float color1, float color2);
+  float _color0;
+  float _color1;
+  float _color2;
+  float _old_brightness;
+};
+
+
+/**
  * An "animation" that compute a scale according to 
  * the angle between an axis and the view direction
  */

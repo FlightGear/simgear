@@ -159,6 +159,8 @@ sgMakeAnimation( ssgBranch * model,
     ignore = true;
   } else if (!strcmp("alpha-test", type)) {
     animation = new SGAlphaTestAnimation(node);
+  } else if (!strcmp("material-emission", type)) {
+    animation = new SGEmissionAnimation(prop_root, node);
   } else if (!strcmp("flash", type)) {
     animation = new SGFlashAnimation(node);
   } else if (!strcmp("dist-scale", type)) {

@@ -1112,6 +1112,97 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 
 
 ////////////////////////////////////////////////////////////////////////
+// Implementation of SGEmissionAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGEmissionAnimation::SGEmissionAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgBranch),
+   _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
+{
+  _color0 = props->getFloatValue("emiss-red", 0.0);
+  _color1 = props->getFloatValue("emiss-green", 0.0);
+  _color2 = props->getFloatValue("emiss-blue", 0.0);
+  _old_brightness = 0;
+  ssgSimpleState* _cached_material;
+  ssgSimpleState* _cloned_material;
+}
+
+SGEmissionAnimation::~SGEmissionAnimation ()
+{
+}
+
+void SGEmissionAnimation::init()
+{
+    // clone material state(s) for this branch
+    cloneMaterials(_branch);
+}
+
+void SGEmissionAnimation::cloneMaterials(ssgBranch *b)
+{
+    // clone material state(s) for this branch
+    int nb = b->getNumKids();
+
+    // Traverse the branch(es) and make clones of material settings for the leaves on 
+    // this branch (ssgSimpleState objects). 
+    // Try to be efficient (only make a new clone if the original is different
+    // than the previous).
+
+    for (int i = 0; i<nb; i++) {
+      ssgEntity *e = b->getKid(i);
+      if (e->isAKindOf(ssgTypeLeaf())) {
+        ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
+        // if this is a new material state, then make a copy of it...
+        if (!_cached_material || _cached_material != s) {
+           _cached_material = s;
+           _cloned_material = (ssgSimpleState*)s->clone(SSG_CLONE_STATE);
+        }
+        // set the material to the clone...
+        ((ssgLeaf*)e)->setState( _cloned_material );
+      } else if (e->isAKindOf(ssgTypeBranch())) {
+        cloneMaterials( (ssgBranch*)e );
+      }
+    }
+
+}
+
+int SGEmissionAnimation::update()
+{
+  float brightness = _prop->getFloatValue();
+
+  // clamp brightness 0 ~ 1
+  if (brightness < 0.00) brightness = 0.00;
+  if (brightness > 1.00) brightness = 1.00;
+
+  // no need to update states unless something changes...
+  if (brightness != _old_brightness) {
+    _old_brightness = brightness; // save it
+    float rd,gr,bl;
+    rd = _color0 * brightness;
+    gr = _color1 * brightness;
+    bl = _color2 * brightness;
+    setEmissionBranch(_branch, rd, gr, bl);
+  }
+  return 1;
+}
+
+void SGEmissionAnimation::setEmissionBranch(ssgBranch *b, float color0, float color1, float color2)
+{
+  int nb = b->getNumKids();
+
+  for (int i = 0; i<nb; i++) {
+    ssgEntity *e = b->getKid(i);
+    if (e->isAKindOf(ssgTypeLeaf())) {
+      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
+      s->enable( GL_ALPHA_TEST );
+      s->setMaterial( GL_EMISSION, color0, color1, color2, 0.0 );
+    } else if (e->isAKindOf(ssgTypeBranch())) {
+      setEmissionBranch((ssgBranch*)e, color0, color1, color2);
+    }
+  }
+}
+
+ 
+////////////////////////////////////////////////////////////////////////
 // Implementation of SGFlashAnimation
 ////////////////////////////////////////////////////////////////////////
 SGFlashAnimation::SGFlashAnimation(SGPropertyNode_ptr props)

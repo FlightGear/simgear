@@ -14,14 +14,11 @@ namespace std {
 
    public:
       ostringstream() { sstr = new std::ostrstream; }
-      ostringstream(const string &str, int=ios::out) {
-         sstr = new ostrstream((char *)str.c_str(), str.size(), ios::out);
+      ostringstream(const string &str, int mode=ios::out) {
+         sstr = new ostrstream((char *)str.c_str(), str.size(), mode);
       }
-      ~ostringstream() { delete sstr->str(); delete sstr; }
-      std::string str() {
-         std::string _str = std::string(sstr->str()); _str.append('\0');
-         return _str;
-      }
+      ~ostringstream() { delete sstr; }
+      std::string str() { return std::string(sstr->str()); }
       int pcount() { return sstr->pcount(); }
    };
 

@@ -49,7 +49,7 @@ SGTexture::SGTexture(unsigned int width, unsigned int height)
 
 SGTexture::~SGTexture()
 {
-    delete texture_data;
+    delete[] texture_data;
 
     if ( texture_id != 0 ) {
         free_id();

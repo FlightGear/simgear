@@ -42,8 +42,11 @@
 
 FG_USING_STD( string );
 FG_USING_STD( vector );
+
+#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
 FG_USING_STD( cout );
 FG_USING_STD( endl );
+#endif
 
 
 enum {

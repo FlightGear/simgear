@@ -1,13 +1,21 @@
 #ifndef __EASYXML_HXX
 #define __EASYXML_HXX
 
-#include <iostream>
-#include <string>
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
+#include STL_STRING
 #include <vector>
 
-using std::istream;
-using std::string;
-using std::vector;
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(istream);
+#endif
+FG_USING_STD(string);
+FG_USING_STD(vector);
 
 
 /**

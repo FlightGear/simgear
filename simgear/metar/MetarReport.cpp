@@ -45,6 +45,21 @@ char *CMetarReport::StationID()
 	return ((Decoded_METAR *)m_DecodedReport)->stnid;
 }
 
+int CMetarReport::Day() 
+{
+  return ((Decoded_METAR*)m_DecodedReport)->ob_date;
+}
+
+int CMetarReport::Hour() 
+{
+  return ((Decoded_METAR*)m_DecodedReport)->ob_hour;
+}
+
+int CMetarReport::Minutes() 
+{
+  return ((Decoded_METAR*)m_DecodedReport)->ob_minute;
+}
+
 int CMetarReport::WindDirection()
 {
 	return ((Decoded_METAR *)m_DecodedReport)->winData.windDir;
@@ -253,7 +268,29 @@ operator << ( ostream& out, CMetarReport& p )
 }
 
 
+double CMetarReport::AirPressure() 
+{
+  return ((Decoded_METAR *)m_DecodedReport)->inches_altstng;
+}
+
 void CMetarReport::dump()
 {
 	prtDMETR( (Decoded_METAR *)m_DecodedReport );
+}
+
+double CMetarReport::PrevailVisibility() {
+  //Values from each visibility field converted to meters.
+  double smiles;
+  double km;
+  double meters;
+  smiles = ((Decoded_METAR*) m_DecodedReport)->prevail_vsbySM  * 621 ;
+  km =  ((Decoded_METAR*) m_DecodedReport)->prevail_vsbyKM * 1000;
+  meters =  ((Decoded_METAR*) m_DecodedReport)->prevail_vsbyM;
+  
+  /* Return the smallest one. If the field is specified it should have been
+     set to MAX_INT */
+  if(smiles < km && smiles < meters) 
+    return smiles;
+  else 
+    return km < meters ? km : meters; 
 }

@@ -3,11 +3,19 @@
 // Test harness.
 ////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+
+#include STL_IOSTREAM
 #include "props.hxx"
 
-using std::cout;
-using std::endl;
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(cout);
+FG_USING_STD(endl);
+#endif
 
 
 

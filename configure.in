@@ -273,6 +273,7 @@ AC_OUTPUT( \
 	simgear/io/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
+	simgear/metar/Makefile \
 	simgear/misc/Makefile \
 	simgear/route/Makefile \
 	simgear/screen/Makefile \

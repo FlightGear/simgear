@@ -6,15 +6,23 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
+#include STL_IOSTREAM
 #include <algorithm>
 #include "props.hxx"
 
-using std::cerr;
-using std::endl;
-using std::sort;
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(cerr);
+FG_USING_STD(endl);
+#endif
+FG_USING_STD(sort);
 
 
 

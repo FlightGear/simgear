@@ -4,19 +4,8 @@
 
 #include "MetarStation.h"
 #include <algorithm>
-#define TESTPROG
-#ifndef TESTPROG
-// options is too tightly integrated into FlightGear to use in a test program
-#include <Main/options.hxx>
-#endif
+
 #include <simgear/misc/fgpath.hxx>
-
-
-std::vector< CMetarStation *> METAR_Stations;
-
-int CMetarStation::initialized( CMetarStation::initialize() );
-
-std::string CMetarStation::tempName;
 
 
 double CMetarStation::decodeDMS( char *b )
@@ -53,6 +42,9 @@ double CMetarStation::decodeDMS( char *b )
 	return r * DEG_TO_RAD;
 }
 
+// Constructor
+// Decodes METAR station string of this format:
+// KPUB;72;464;Pueblo, Pueblo Memorial Airport;CO;United States;4;38-17-24N;104-29-54W;38-17-03N;104-29-43W;1440;1420;P
 
 CMetarStation::CMetarStation( 
 	char *s )
@@ -82,6 +74,7 @@ CMetarStation::CMetarStation(
 	double ulongitude = decodeDMS( s );
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double altitude = atoi( s ) * FEET_TO_METER;
+	m_altitude = altitude;
 	s = t; t = strchr( s, ';' ); *t = 0; t++;
 	double ualtitude = atoi( s ) * FEET_TO_METER;
 	Point3D p( longitude, latitude, altitude+EQUATORIAL_RADIUS_M );
@@ -93,95 +86,7 @@ CMetarStation::CMetarStation(
 	s = t;
 	m_pFlag = s[0];
 }
-		// Constructor
-		// Decodes METAR station string of this format:
-		// KPUB;72;464;Pueblo, Pueblo Memorial Airport;CO;United States;4;38-17-24N;104-29-54W;38-17-03N;104-29-43W;1440;1420;P
-
-
-int CMetarStation::initialize()
-{
-    // Read the list of metar stations, decoding and adding to global list.
-
-    CMetarStation *m;
-    char buf[256];
-
-    // Goto the Flight Gear installation directory
-#ifdef TESTPROG
-    //FGPath weatherPath( "/mkv/Build/FlightGear" );
-    FGPath weatherPath( ":Data" );
-#else
-    FGPath weatherPath( current_options.get_fg_root() );
-#endif
-
-    weatherPath.append( "Weather" );
-    weatherPath.append( "MetarStations" );
-    // Open the metar station list
-    FILE *f = fopen( weatherPath.c_str(), "r" );
-	
-
-    if ( f != NULL ) {
-	// Read each line, create an instance of a station, and add it to the vector
-	while ( fgets( buf, 256, f) != NULL && feof( f ) == 0 ) {
-	    //std::cout << buf << std::endl;
-	    m = new CMetarStation( buf );
-	    //m->dump();
-	    METAR_Stations.push_back( m );
-	}
-	
-	// Close the list
-	fclose( f );
-	// std::cout << METAR_Stations.size() << " Metar stations" << std::endl;
-	return 1;
-    } else {
-	// std::cout << "Could not open MetarStations file " << std::endl;
-	return 0;
-    }
-}
-
-
-int CMetarStation::sameName( CMetarStation *m )
-{
-	return m->m_ID == tempName;
-}
-
-
-CMetarStation *CMetarStation::find( std::string stationID )
-{
-	tempName = stationID;
-	CMetarStation **m = std::find_if( METAR_Stations.begin(), METAR_Stations.end(), sameName );
-	if ( m != METAR_Stations.end() ) return *m;
-	return 0;
-}
-
-double bestDist;
-CMetarStation *bestStation;
-Point3D curLocation;
-
-void findHelper( CMetarStation *s )
-{
-	double dist = s->locationCart().distance3Dsquared( curLocation );
-	if (dist < bestDist )
-	{
-		bestDist = dist;
-		bestStation = s;
-	}
-}
-
-CMetarStation *CMetarStation::find( Point3D locationCart )
-{
-	bestDist = 99999999;
-	bestStation = 0;
-	curLocation = locationCart;
-
-	for_each( findHelper );
-	return bestStation;
-}
-
-
-void CMetarStation::for_each( void f( CMetarStation *s ) )
-{
-	std::for_each( METAR_Stations.begin(), METAR_Stations.end(), f );
-}
+		
 
 
 void CMetarStation::dump()
@@ -208,6 +113,83 @@ void CMetarStation::dump()
 	std::cout << std::endl;
 	std::cout << "P flag:" << pFlag();
 	std::cout << std::endl;
+}
+
+
+
+CMetarStationDB::CMetarStationDB(const char * dbPath) 
+{
+    // Read the list of metar stations, decoding and adding to global list.
+
+    CMetarStation *m;
+    char buf[256];
+
+
+    // Open the metar station list
+    FILE *f = fopen( dbPath, "r" );
+	
+
+    if ( f != NULL ) {
+	// Read each line, create an instance of a station, and add it to the vector
+	while ( fgets( buf, 256, f) != NULL && feof( f ) == 0 ) {
+	    //std::cout << buf << std::endl;
+	    m = new CMetarStation( buf );
+	    //m->dump();
+	    METAR_Stations[m->ID()]=( m );
+	}
+	
+	// Close the list
+	fclose( f );
+	// std::cout << METAR_Stations.size() << " Metar stations" << std::endl;
+	
+    } else {
+	// std::cout << "Could not open MetarStations file " << std::endl;
+	
+    }
+}
+
+
+
+CMetarStation * CMetarStationDB::find( std::string stationID )
+{
+    std::map<std::string,CMetarStation*>::iterator target;
+    target = METAR_Stations.find(stationID);
+  if(target!= METAR_Stations.end() )
+      return target->second;
+  else 
+      return NULL;
+}
+
+
+
+CMetarStation * CMetarStationDB::find( Point3D locationCart )
+{
+    std::map<std::string,CMetarStation*>::iterator itr;
+    double bestDist = 99999999;
+    CMetarStation * bestStation;
+    Point3D curLocation = locationCart;
+    itr = METAR_Stations.begin(); 
+    while(itr != METAR_Stations.end()) 
+      {
+	double dist = itr->second->locationCart().distance3Dsquared( curLocation );
+	if (dist < bestDist )
+	  {
+	    bestDist = dist;
+	    bestStation = itr->second;
+	  }
+	itr++;
+      }
+    
+    return bestStation;
+}
+
+
+CMetarStationDB::~CMetarStationDB() {
+    std::map<std::string,CMetarStation*>::iterator itr;
+    for(itr = METAR_Stations.begin(); itr != METAR_Stations.end(); itr++) 
+      {
+	delete itr->second;
+    }
 }
 
 std::ostream&

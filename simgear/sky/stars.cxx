@@ -29,8 +29,10 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
 #include <stdio.h>
-#include <iostream>
+#include STL_IOSTREAM
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -39,8 +41,10 @@
 
 #include "stars.hxx"
 
+#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
 FG_USING_STD(cout);
 FG_USING_STD(endl);
+#endif
 
 
 // Set up star rendering call backs

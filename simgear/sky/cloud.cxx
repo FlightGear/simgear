@@ -20,8 +20,10 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
 #include <stdio.h>
-#include <iostream>
+#include STL_IOSTREAM
 
 #include <plib/sg.h>
 #include <plib/ssg.h>

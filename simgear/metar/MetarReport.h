@@ -38,6 +38,10 @@ public:
 
 	char *StationID();
 
+	int Day();    // The day of month on which the report was issued.
+	int Hour();   // The hour of the day the report was issued.
+	int Minutes();  //Minutes past the hour of the report issue time.
+
 	// Directions in degrees
 	// Speed in knots
 	// Altitude in meters
@@ -93,7 +97,9 @@ public:
 	int VariableSkyLayerHeight();
 
 	int SnowDepthInches();
- 
+
+	double AirPressure();  //Return the air pressure in InchesHg.
+	double PrevailVisibility(); // Prevailing Visibility in meters.
  	void dump();
 
 private:

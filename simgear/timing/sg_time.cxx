@@ -80,7 +80,7 @@ SGTime::SGTime( double lon, double lat, const string& root )
     // cout << "Current local time          = " 
     //      << asctime(localtime(&cur_time)) << endl;
 
-    if ( root != "" ) {
+    if ( root != (string)"" ) {
 	FGPath zone( root );
 	zone.append( "zone.tab" );
 	FG_LOG( FG_EVENT, FG_DEBUG, "Reading timezone info from: "

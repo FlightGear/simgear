@@ -3,7 +3,7 @@
 // METAR station information is kept in this file:
 //   http://www.nws.noaa.gov/pub/stninfo/nsd_cccc.gz
 //   http://www.nws.noaa.gov/pub/stninfo/nsd_cccc.txt
-// This class looks for the file FG_ROOT/Weather/MetarStations instread of nsd_cccc.
+
 
 #ifndef _MetarStation_
 #define _MetarStation_
@@ -11,9 +11,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
 //using namespace std;
+
+class CMetarStationDB;
 
 class CMetarStation
 {
@@ -32,14 +35,12 @@ private:
 	int m_altitude;
 	int m_upperAltitude;
 	char m_pFlag;
-
-	static int initialized;
-	static std::string tempName;
-
+	
 	// Operations
 private:
 	double decodeDMS( char *b );
-	static int sameName( CMetarStation *m );
+
+
 
 	CMetarStation( 
 		char *s );
@@ -57,6 +58,8 @@ public:
 	std::string &state() { return m_state; }
 	std::string &country() { return m_country; }
 	int region() { return m_region; }
+	unsigned int Altitude() { //Returns the stations height above MSL in M.
+			return m_altitude;}
 	Point3D &locationPolar() { return m_locationPolar; }
 	Point3D &upperLocationPolar() { return m_upperLocationPolar; }
 	Point3D &locationCart() { return m_locationCart; }
@@ -67,9 +70,8 @@ public:
     friend std::ostream& operator << ( std::ostream&, const CMetarStation& );
 	void dump();
 	
-	static CMetarStation *find( std::string stationID );
-	static CMetarStation *find( Point3D locationCart );
-	static void for_each( void f( CMetarStation *s ) );
+
+	
 
 private:
 	CMetarStation(
@@ -80,8 +82,23 @@ private:
 		const CMetarStation &rObj );
 			// Assignment operator.  Not implemented.
 
-	static int initialize();
+	friend CMetarStationDB;
 };
 
+
+class CMetarStationDB 
+{
+
+ private:
+    std::string databasePath;  //The path of the database file.
+    std::map<std::string , CMetarStation *> METAR_Stations;
+    CMetarStation * bestStation;
+
+ public:
+     CMetarStation *find( std::string stationID );
+     CMetarStation * find( Point3D locationCart );
+     CMetarStationDB(const char * dbFile);
+     ~CMetarStationDB();
+};
 
 #endif

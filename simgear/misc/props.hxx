@@ -9,16 +9,24 @@
 #ifndef __PROPS_HXX
 #define __PROPS_HXX
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <simgear/compiler.h>
+
 #include <stdio.h>
 
-#include <string>
+#include STL_STRING
 #include <vector>
-#include <iostream>
+#include STL_IOSTREAM
 
-using std::string;
-using std::vector;
-using std::istream;
-using std::ostream;
+FG_USING_STD(string);
+FG_USING_STD(vector);
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(istream);
+FG_USING_STD(ostream);
+#endif
 
 #ifdef UNKNOWN
 #pragma warn A sloppy coder has defined UNKNOWN as a macro!

@@ -16,8 +16,8 @@ else
 ZLIB_DIRS = zlib
 endif
 
-METAR_DIRS =
-# METAR_DIRS = metar
+# METAR_DIRS =
+METAR_DIRS = metar
 
 EXTRA_DIST = version.h.in
 

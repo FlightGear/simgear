@@ -3,6 +3,8 @@
 #  include <config.h>
 #endif
 
+#include <simgear/compiler.h>
+
 #include <stdlib.h>		// atof() atoi()
 
 #include <simgear/debug/logstream.hxx>
@@ -10,17 +12,23 @@
 
 #include "props.hxx"
 
-#include <iostream>
-#include <fstream>
-#include <string>
+#include STL_IOSTREAM
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+#  include <fstream>
+#else
+#  include <fstream.h>
+#endif
+#include STL_STRING
 #include <vector>
 
-using std::istream;
-using std::ifstream;
-using std::ostream;
-using std::ofstream;
-using std::string;
-using std::vector;
+#if !defined(FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(istream);
+FG_USING_STD(ifstream);
+FG_USING_STD(ostream);
+FG_USING_STD(ofstream);
+#endif
+FG_USING_STD(string);
+FG_USING_STD(vector);
 
 
 

@@ -34,7 +34,11 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
-FG_USING_NAMESPACE(std);
+#if !defined (FG_HAVE_NATIVE_SGI_COMPILERS)
+FG_USING_STD(cout);
+FG_USING_STD(endl);
+#endif
+
 
 // return a sphere object as an ssgBranch
 ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
@@ -114,11 +118,11 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
 
 	if ( vl->getNum() != nl->getNum() ) {
-	    std::cout << "bad sphere1\n";
+	    cout << "bad sphere1" << endl;
 	    exit(-1);
 	}
 	if ( vl->getNum() != tl->getNum() ) {
-	    std::cout << "bad sphere2\n";
+	    cout << "bad sphere2" << endl;
 	    exit(-1);
 	}
 	slice->setState( state );

@@ -375,10 +375,10 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
 	       middle_color[i][3]);
-	*/
 	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
 	       lower_color[i][3]);
+	*/
     }
 
     sgSetVec3( outer_amt, 0.0, 0.0, 0.0 );
@@ -416,11 +416,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
 	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
 	       middle_color[i][3]);
-	*/
 	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
 	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
 	       lower_color[i][3]);
-    }
+ 	*/
+   }
 
     for ( i = 0; i < 12; i++ ) {
 	sgCopyVec4( bottom_color[i], fog_color );

@@ -260,11 +260,11 @@ void SGTime::update( double lon, double lat, long int warp ) {
 // Given lon/lat, update timezone information and local_offset
 void SGTime::updateLocal( double lon, double lat, const string& root ) {
     // sanity checking
-    if ( lon < SGD_PI || lon > SGD_PI ) {
+    if ( lon < -SGD_PI || lon > SGD_PI ) {
         // not within -180 ... 180
         lon = 0.0;
     }
-    if ( lat < SGD_PI * 0.5 || lat > SGD_PI * 0.5 ) {
+    if ( lat < -SGD_PI * 0.5 || lat > SGD_PI * 0.5 ) {
         // not within -90 ... 90
         lat = 0.0;
     }

@@ -1,3 +1,29 @@
+New in 0.0.19pre1
+* August 31, 2002
+
+* Modernized the autoconf/make scripts.
+* Removed efence support (in favor of valgrind.)
+
+* Added a javascript interpreter.
+* SGSocket reimplimented on top of plib/net libs.
+* Added a new random number generation algorithm.
+* Total rewrite of the strutils package.
+
+* Patch for the random number seed.
+* IA-64 w/ Intel compiler fixes.
+* MSVC/MINGW fixes.
+* Mac OS X fixes.
+* Irix fixes.
+* Code clean ups to remove warning messages.
+* Optimizations in sg_binobj to reduce the amout of memory copying
+  needed when loading a binobj format file.
+* Fixed a couple places where variables could be used before they were
+  initialized.
+* Various property manager fixes and improvements.
+* Fixes to cloud layer management code.
+* Made the sky dome more flexible to facilitate use in other applications.
+
+
 New in 0.0.18
 * April 20, 2002
 

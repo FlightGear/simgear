@@ -6,7 +6,7 @@ dnl $Id$
 AC_INIT(simgear/bucket/newbucket.cxx)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.0.7)
+AM_INIT_AUTOMAKE(SimGear, 0.0.8)
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET
@@ -255,7 +255,11 @@ AC_OUTPUT( \
 	simgear/zlib/Makefile \
 )
 
-# AC_OUTPUT_COMMANDS([./mksymlinks.sh])
+AC_OUTPUT_COMMANDS([
+	if test "x$ac_cv_header_windows_h" = "xyes" ; then
+		cp simgear/gdbm/autoconf.h.cygwin32 simgear/gdbm/autoconf.h
+	fi
+])
 
 echo ""
 echo "Configure Summary"

@@ -1106,8 +1106,10 @@ char *strlwr(char *);
 char *rptstrip(char *);
 char *rptfmt(char *);
 char *rptfmti(char *, unsigned short int);
- 
+
+#ifndef __FreeBSD__  // strnstr is already defined on FreeBSD
 char *strnstr(char *, char *, size_t);
+#endif
  
 int stregion(int);
 int ccregion(char *);

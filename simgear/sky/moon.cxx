@@ -46,9 +46,6 @@ static int sgMoonOrbPreDraw( ssgEntity *e ) {
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE ) ;
-    // sgVec4 color;
-    // sgSetVec4( color, 0.0, 0.0, 0.0, 1.0 );
-    // glMaterialfv ( GL_FRONT_AND_BACK, GL_AMBIENT, color ) ;
 
     return true;
 }

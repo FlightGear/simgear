@@ -91,7 +91,7 @@ static int sgSunHaloPreDraw( ssgEntity *e ) {
     // cout << "push error = " << glGetError() << endl;
 
     glDisable( GL_DEPTH_TEST );
-    glDisable( GL_FOG );
+//    glDisable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
     return true;

@@ -334,10 +334,8 @@ int main (int ac, char ** av)
   for (int i = 1; i < ac; i++) {
     cout << "Reading " << av[i] << endl;
     SGPropertyNode root;
-    if (!readProperties(av[i], &root))
-      cerr << "Failed to read properties from " << av[i] << endl;
-    else
-      writeProperties(cout, &root);
+    readProperties(av[i], &root);
+    writeProperties(cout, &root);
     cout << endl;
   }
 

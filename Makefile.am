@@ -1,4 +1,4 @@
-EXTRA_DIST	= mksymlinks.sh acsite.m4 acconfig.h
+EXTRA_DIST	= mksymlinks.sh acsite.m4 acconfig.h SimGear.dsp SimGear.dsw
 
 SUBDIRS		= simgear
 
@@ -73,6 +73,7 @@ distclean:
 #
 
 dist-hook:
+	(cd $(top_srcdir); $(HOME)/projects/FlightGear-0.7/admin/am2dsp.pl)
 	tar cf - simgear/metar | (cd $(distdir); tar xvf -)
 	@list='@subdirs@'; \
 	target=distclean; \

@@ -6,7 +6,7 @@ dnl $Id$
 AC_INIT(simgear/bucket/newbucket.cxx)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.0.14)
+AM_INIT_AUTOMAKE(SimGear, 0.0.15)
 
 dnl Specify KAI C++ compiler and flags.
 dnl Borrowed with slight modification from blitz distribution.
@@ -268,7 +268,6 @@ AC_OUTPUT( \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/bucket/Makefile \
-	simgear/camera/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \
 	simgear/io/Makefile \

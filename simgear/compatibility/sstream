@@ -2,11 +2,29 @@
 #ifndef __SG_SSTREAM
 #define __SG_SSTREAM 1
 
+# include <iostream>
 # include <strstream>
+# include <string>
 
 namespace std {
-   typedef ::ostrstream ostringstream;
-   typedef ::istrstream istringstream;
+
+   class ostringstream : public strstreambase, public iostream {
+   private:
+      std::ostrstream *sstr;
+
+   public:
+      ostringstream() { sstr = new std::ostrstream; }
+      ostringstream(const string &str, int=ios::out) {
+         sstr = new ostrstream((char *)str.c_str(), str.size(), ios::out);
+      }
+      ~ostringstream() { delete sstr; }
+      std::string str() { return std::string(sstr->str()); }
+      int pcount() { return sstr->pcount(); }
+   };
+
+   class istringstream : public istrstream {
+   };
+
 };
 
 #endif // !__SG_SSTREAM

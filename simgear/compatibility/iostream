@@ -31,7 +31,20 @@
     using ::ostream;
 
     using ::dec;
+    using ::oct;
     using ::hex;
+
+    enum  { skipws=ios::skipws,
+            left=ios::left, right=ios::right, internal=ios::internal,
+            showbase=ios::showbase, showpoint=ios::showpoint,
+            uppercase=ios::uppercase, showpos=ios::showpos,
+            scientific=ios::scientific, fixed=ios::fixed,
+            unitbuf=ios::unitbuf, stdio=ios::stdio
+#if _BOOL && __EDG_ABI_COMPATIBILITY_VERSION>227 /* bool support */
+            ,boolalpha=ios::boolalpha
+#endif /* bool support */
+          };
+
   };
 
 # endif

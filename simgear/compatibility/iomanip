@@ -6,6 +6,8 @@
 
 namespace std {
    using ::setw;
+
+   inline int  setfill(int f) { ::setfill(f); }
 };
 
 #endif // !__SG_IOMANIP

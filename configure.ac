@@ -420,6 +420,7 @@ AC_CONFIG_FILES([ \
 	simgear/scene/Makefile \
 	simgear/scene/material/Makefile \
 	simgear/scene/model/Makefile \
+	simgear/scene/tgdb/Makefile \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sky/Makefile \

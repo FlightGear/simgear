@@ -21,8 +21,8 @@
 // $Id$
 
 
-#ifndef _LOCATION_HXX
-#define _LOCATION_HXX
+#ifndef _SG_LOCATION_HXX
+#define _SG_LOCATION_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -34,8 +34,6 @@
 #include <simgear/math/point3d.hxx>
 
 #include <plib/sg.h>		// plib include
-
-// #include "fgfs.hxx"
 
 
 // Define a structure containing view information
@@ -184,4 +182,4 @@ private:
 };
 
 
-#endif // _LOCATION_HXX
+#endif // _SG_LOCATION_HXX

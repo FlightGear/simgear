@@ -25,6 +25,7 @@
 
 #ifdef SG_HAVE_STD_INCLUDES
 # include <cerrno>
+# include <string>
 #else
 # include <errno.h>
 #endif

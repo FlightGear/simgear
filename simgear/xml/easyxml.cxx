@@ -2,6 +2,7 @@
 
 #include <simgear/compiler.h>
 
+#include <ostream>
 #include <string.h>		// strcmp()
 
 #include "easyxml.hxx"

@@ -233,10 +233,18 @@ double sgTimeCalcMJD(int mn, double dy, int yr);
 
 /**
  * \relates SGTime
+ * Given an optional offset from current time calculate the current
+ * modified julian date.
+ * @param warp number of seconds to offset from current time (0 if no offset)
+ * @return current modified Julian date (number of days elapsed
+ * since 1900 jan 0.5), mjd. */
+double sgTimeCurrentMJD( long int warp );
+
+/**
+ * \relates SGTime
  * Given an mjd, calculate greenwich mean sidereal time, gst
  * @param mjd modified julian date
- * @return greenwich mean sidereal time (gst)
- */
+ * @return greenwich mean sidereal time (gst) */
 double sgTimeCalcGST( double mjd );
 
 /**

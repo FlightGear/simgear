@@ -117,11 +117,15 @@ SGTime::SGTime() {
 SGTime::~SGTime()
 {
     if ( tzContainer != NULL ) {
-	delete tzContainer;
+        TimezoneContainer *tmp = tzContainer;
+        tzContainer = NULL;
+	delete tmp;
     }
 
     if ( zonename != NULL ) {
-	delete zonename;
+        char *tmp = zonename;
+        zonename = NULL;
+	delete tmp;
     }
 }
 
@@ -188,6 +192,7 @@ static double sidereal_course( time_t cur_time, struct tm *gmt, double lng )
 // Update the time related variables
 void SGTime::update( double lon, double lat, long int warp ) {
     double gst_precise, gst_course;
+
 #ifdef _MSC_VER
     tm * gmt = &m_gmt;
 #endif
@@ -213,11 +218,8 @@ void SGTime::update( double lon, double lat, long int warp ) {
 	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
 	    << gmt->tm_sec );
 
-    // calculate modified Julian date
-    // t->mjd = cal_mjd ((int)(t->gmt->tm_mon+1), (double)t->gmt->tm_mday, 
-    //     (int)(t->gmt->tm_year + 1900));
-    mjd = sgTimeCalcMJD( (int)(gmt->tm_mon+1), (double)gmt->tm_mday, 
-			 (int)(gmt->tm_year + 1900) );
+    // calculate modified Julian date starting with current
+    mjd = sgTimeCurrentMJD( warp );
 
     // add in partial day
     mjd += (gmt->tm_hour / 24.0) + (gmt->tm_min / (24.0 * 60.0)) +
@@ -256,23 +258,24 @@ void SGTime::update( double lon, double lat, long int warp ) {
 
 
 // Given lon/lat, update timezone information and local_offset
-void SGTime::updateLocal( double lon, double lat, const string& root )
-{
-  time_t currGMT;
-  time_t aircraftLocalTime;
-  GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
-  GeoCoord* nearestTz = tzContainer->getNearest(location);
-  SGPath zone( root );
-  zone.append ( nearestTz->getDescription() );
-  if ( zonename ) {
-      delete zonename;
-  }
-  zonename = strdup( zone.c_str() );
-  currGMT = sgTimeGetGMT( gmtime(&cur_time) );
-  aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zone.c_str())) );
-  local_offset = aircraftLocalTime - currGMT;
-  // cout << "Using " << local_offset << " as local time offset Timezone is " 
-  //      << zonename << endl;
+void SGTime::updateLocal( double lon, double lat, const string& root ) {
+    time_t currGMT;
+    time_t aircraftLocalTime;
+    GeoCoord location( SGD_RADIANS_TO_DEGREES * lat, SGD_RADIANS_TO_DEGREES * lon );
+    GeoCoord* nearestTz = tzContainer->getNearest(location);
+    SGPath zone( root );
+    zone.append ( nearestTz->getDescription() );
+    if ( zonename ) {
+        char *ptr = zonename;
+        zonename = NULL;
+        delete ptr;
+    }
+    zonename = strdup( zone.c_str() );
+    currGMT = sgTimeGetGMT( gmtime(&cur_time) );
+    aircraftLocalTime = sgTimeGetGMT( (fgLocaltime(&cur_time, zone.c_str())) );
+    local_offset = aircraftLocalTime - currGMT;
+    // cout << "Using " << local_offset << " as local time offset Timezone is " 
+    //      << zonename << endl;
 }
 
 
@@ -322,6 +325,48 @@ double sgTimeCalcMJD(int mn, double dy, int yr) {
     last_dy = dy;
     last_yr = yr;
     last_mjd = mjd;
+
+    return mjd;
+}
+
+
+// return the current modified Julian date (number of days elapsed
+// since 1900 jan 0.5), mjd.
+double sgTimeCurrentMJD( long int warp ) {
+#ifdef _MSC_VER
+    struct tm m_gmt;    // copy of system gmtime(&time_t) structure
+#else
+    struct tm *gmt;
+#endif
+
+#ifdef _MSC_VER
+    tm * gmt = &m_gmt;
+#endif
+
+    // get current Unix calendar time (in seconds)
+    // warp += warp_delta;
+    time_t cur_time = time(NULL) + warp;
+    SG_LOG( SG_EVENT, SG_DEBUG, 
+	    "  Current Unix calendar time = " << cur_time 
+	    << "  warp = " << warp );
+
+    // get GMT break down for current time
+#ifdef _MSC_VER
+    memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
+#else
+    gmt = gmtime(&cur_time);
+#endif
+    SG_LOG( SG_EVENT, SG_DEBUG, 
+	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
+	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "
+	    << gmt->tm_hour << ":" << gmt->tm_min << ":" 
+	    << gmt->tm_sec );
+
+    // calculate modified Julian date
+    // t->mjd = cal_mjd ((int)(t->gmt->tm_mon+1), (double)t->gmt->tm_mday, 
+    //     (int)(t->gmt->tm_year + 1900));
+    double mjd = sgTimeCalcMJD( (int)(gmt->tm_mon+1), (double)gmt->tm_mday, 
+                                (int)(gmt->tm_year + 1900) );
 
     return mjd;
 }

@@ -153,6 +153,7 @@
 #if defined( __MINGW32__ )
 #  define bcopy(from, to, n) memcpy(to, from, n)
 #  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
+#  define snprintf _snprintf
 #endif
 
 /* KAI C++ */
@@ -235,18 +236,7 @@
 #    define STL_STRING     <string>
 #    define STL_STRSTREAM  <strstream>
 
-#    define SG_NO_INCLASS_MEMBER_INITIALIZATION
-
-// disable min/max macros if defined:
-// #    ifdef min
-// #      undef min
-// #    endif
-// #    ifdef max
-// #      undef max
-// #    endif
-// #    ifndef NOMINMAX
-// #      define NOMINMAX
-// #    endif
+#    define snprintf _snprintf
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float

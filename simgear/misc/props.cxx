@@ -1212,6 +1212,7 @@ SGPropertyNode::getAliasTarget ()
     return _target;
   } else {
     _target = find_node_by_value(getRootNode(), _value->getAlias());
+    return _target;
   }
 }
 
@@ -1227,6 +1228,7 @@ SGPropertyNode::getAliasTarget () const
 				// FIXME: const cast
     _target =
       find_node_by_value((SGPropertyNode *)getRootNode(), _value->getAlias());
+    return _target;
   }
 }
 
@@ -1342,13 +1344,13 @@ SGPropertyNode::getPath (bool simplify) const
   return path;
 }
 
-SGValue::Type
+SGPropertyNode::Type
 SGPropertyNode::getType () const
 {
   if (_value != 0)
-    return _value->getType();
+    return (Type)(_value->getType());
   else
-    return SGValue::UNKNOWN;
+    return UNKNOWN;
 }
 
 
@@ -1590,11 +1592,11 @@ SGPropertyNode::getValue (const string &relative_path) const
 /**
  * Get the value type for another node.
  */
-SGValue::Type
+SGPropertyNode::Type
 SGPropertyNode::getType (const string &relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? SGValue::UNKNOWN : node->getType());
+  return (node == 0 ? UNKNOWN : (Type)(node->getType()));
 }
 
 

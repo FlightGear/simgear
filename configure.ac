@@ -179,7 +179,7 @@ case "${host}" in
     dnl add -lwsock32 for mingwin
     case "${host}" in
     *-*-mingw32*)
-        LIBS="$LIBS -lws2_32"
+        base_LIBS="$base_LIBS -lws2_32"
         ;;
     esac
 

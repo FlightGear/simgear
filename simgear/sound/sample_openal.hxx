@@ -189,6 +189,27 @@ public:
     inline char *get_data() {
         return (char *)data;
     }
+
+    /**
+     * Set position of sound source (uses same coordinate system as opengl)
+     */
+    inline void set_source_pos( ALfloat *pos ) {
+        source_pos[0] = pos[0];
+        source_pos[1] = pos[1];
+        source_pos[2] = pos[2];
+        alSourcefv( source, AL_POSITION, source_pos );
+    }
+
+    /**
+     * Set velocity of sound source (uses same coordinate system as opengl)
+     */
+    inline void set_source_vel( ALfloat *vel ) {
+        source_vel[0] = vel[0];
+        source_vel[1] = vel[1];
+        source_vel[2] = vel[2];
+        alSourcefv( source, AL_VELOCITY, source_vel );
+    }
+
 };
 
 

@@ -173,6 +173,57 @@ public:
      * immediate stop playing the sound
      */
     bool stop( const string& refname );
+
+    /**
+     * set the position of the listener (in opengl coordinates)
+     */
+    inline void set_listener_pos( ALfloat *pos ) {
+        listener_pos[0] = pos[0];
+        listener_pos[1] = pos[1];
+        listener_pos[2] = pos[2];
+        alListenerfv( AL_POSITION, listener_pos );
+    }
+
+    /**
+     * set the velocity of the listener (in opengl coordinates)
+     */
+    inline void set_listener_vel( ALfloat *vel ) {
+        listener_vel[0] = vel[0];
+        listener_vel[1] = vel[1];
+        listener_vel[2] = vel[2];
+        alListenerfv( AL_VELOCITY, listener_vel );
+    }
+
+    /**
+     * set the orientation of the listener (in opengl coordinates)
+     *
+     * Description: ORIENTATION is a pair of 3-tuples representing the
+     * 'at' direction vector and 'up' direction of the Object in
+     * Cartesian space. AL expects two vectors that are orthogonal to
+     * each other. These vectors are not expected to be normalized. If
+     * one or more vectors have zero length, implementation behavior
+     * is undefined. If the two vectors are linearly dependent,
+     * behavior is undefined.
+     */
+    inline void set_listener_orientation( ALfloat *ori ) {
+        listener_ori[0] = ori[0];
+        listener_ori[1] = ori[1];
+        listener_ori[2] = ori[2];
+        listener_ori[3] = ori[3];
+        listener_ori[4] = ori[4];
+        listener_ori[5] = ori[5];
+        alListenerfv( AL_ORIENTATION, listener_ori );
+    }
+
+    /**
+     * set the positions of all managaged sound sources 
+     */
+    void set_source_pos_all( ALfloat *pos );
+
+    /**
+     * set the velocities of all managaged sound sources 
+     */
+    void set_source_vel_all( ALfloat *pos );
 };
 
 

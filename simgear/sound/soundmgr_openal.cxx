@@ -83,6 +83,9 @@ SGSoundMgr::SGSoundMgr() {
 	SG_LOG( SG_GENERAL, SG_ALERT,
                 "Oops AL error after audio initialization!" );
     }
+
+    // exaggerate the ear candy?
+    alDopplerFactor(1.0);
 }
 
 // destructor
@@ -265,5 +268,27 @@ bool SGSoundMgr::stop( const string& refname ) {
     } else {
         sample->stop();
         return true;
+    }
+}
+
+
+// set source position of all managed sounds
+void SGSoundMgr::set_source_pos_all( ALfloat *pos ) {
+    sample_map_iterator sample_current = samples.begin();
+    sample_map_iterator sample_end = samples.end();
+    for ( ; sample_current != sample_end; ++sample_current ) {
+	SGSoundSample *sample = sample_current->second;
+        sample->set_source_pos( pos );
+    }
+}
+
+
+// set source velocity of all managed sounds
+void SGSoundMgr::set_source_vel_all( ALfloat *vel ) {
+    sample_map_iterator sample_current = samples.begin();
+    sample_map_iterator sample_end = samples.end();
+    for ( ; sample_current != sample_end; ++sample_current ) {
+	SGSoundSample *sample = sample_current->second;
+        sample->set_source_vel( vel );
     }
 }

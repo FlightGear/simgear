@@ -1,3 +1,18 @@
+New in 0.3.8-pre1
+* December 15, 2004
+
+* Configure script does a sanity check for the existance of openal.
+* Better pthreads detection for FreeBSD.
+* Abstract out the location of gl.h, glu.h, and glut.h so we can more
+  easily support MacOS which puts these in an oddball location.
+* Added two new debug output types for instrumentation and systems.
+* Add a name parameter to the waypoint class for supporting a route
+  manager in the flightgear gps module.
+* Make display list usage optional.
+* Event manager: specifying a zero delay will force event execution in
+  the next frame rather than entering an infinite loop.
+
+
 New in 0.3.7
 * October 12, 2004
 

@@ -229,8 +229,11 @@ const string
 sg_io_exception::getFormattedMessage () const
 {
   string ret = getMessage();
-  ret += "\n at ";
-  ret += getLocation().asString();
+  string loc = getLocation().asString();
+  if (loc.length()) {
+    ret += "\n at ";
+    ret += loc;
+  }
   return ret;
 }
 

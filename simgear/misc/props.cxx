@@ -429,39 +429,53 @@ SGPropertyNode::clear_value ()
 {
   switch (_type) {
   case NONE:
+    break;
   case ALIAS:
     _value.alias = 0;
     break;
   case BOOL:
-    delete _value.bool_val;
-    _value.bool_val = 0;
+    if (_tied) {
+      delete _value.bool_val;
+      _value.bool_val = 0;
+    }
     _local_val.bool_val = SGRawValue<bool>::DefaultValue;
     break;
   case INT:
-    delete _value.int_val;
-    _value.int_val = 0;
+    if (_tied) {
+      delete _value.int_val;
+      _value.int_val = 0;
+    }
     _local_val.int_val = SGRawValue<int>::DefaultValue;
     break;
   case LONG:
-    delete _value.long_val;
-    _value.long_val = 0L;
+    if (_tied) {
+      delete _value.long_val;
+      _value.long_val = 0L;
+    }
     _local_val.long_val = SGRawValue<long>::DefaultValue;
     break;
   case FLOAT:
-    delete _value.float_val;
-    _value.float_val = 0;
+    if (_tied) {
+      delete _value.float_val;
+      _value.float_val = 0;
+    }
     _local_val.float_val = SGRawValue<float>::DefaultValue;
     break;
   case DOUBLE:
-    delete _value.double_val;
-    _value.double_val = 0;
+    if (_tied) {
+      delete _value.double_val;
+      _value.double_val = 0;
+    }
     _local_val.double_val = SGRawValue<double>::DefaultValue;
     break;
   case STRING:
   case UNSPECIFIED:
-    delete _value.string_val;
-    _value.string_val = 0;
-    delete (char *)_local_val.string_val;
+    if (_tied) {
+      delete _value.string_val;
+      _value.string_val = 0;
+    } else {
+      delete (char *)_local_val.string_val;
+    }
     _local_val.string_val = 0;
     break;
   }

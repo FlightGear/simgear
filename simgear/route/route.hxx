@@ -67,6 +67,14 @@ public:
     // add a waypoint
     inline void add_waypoint( const SGWayPoint &wp ) {
 	route.push_back( wp );
+
+	int size = route.size();
+	if ( size > 1 ) {
+	    SGWayPoint next_to_last = route[ size - 2 ];
+	    double tmpd, tmpc;
+	    wp.CourseAndDistance( next_to_last, &tmpc, &tmpd );
+	    route[size - 1].set_distance( tmpd );
+	}
     }
 
     // get the number of waypoints

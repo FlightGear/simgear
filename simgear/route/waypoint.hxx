@@ -58,6 +58,7 @@ private:
     double target_lon;
     double target_lat;
     double target_alt;
+    double distance;
 
     string id;
 
@@ -75,13 +76,20 @@ public:
     // and y are in.
     void CourseAndDistance( const double cur_lon, const double cur_lat,
 			    const double cur_alt,
-			    double *course, double *distance );
+			    double *course, double *distance ) const;
+
+    // Calculate course and distances between two waypoints
+    void CourseAndDistance( const SGWayPoint &wp,
+			    double *course, double *distance ) const;
 
     inline modetype get_mode() const { return mode; }
     inline double get_target_lon() const { return target_lon; }
     inline double get_target_lat() const { return target_lat; }
     inline double get_target_alt() const { return target_alt; }
+    inline double get_distance() const { return distance; }
     inline string get_id() const { return id; }
+
+    inline void set_distance( double d ) { distance = d; }
 };
 
 

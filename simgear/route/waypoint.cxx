@@ -55,7 +55,7 @@ SGWayPoint::~SGWayPoint() {
 void SGWayPoint::CourseAndDistance( const double cur_lon,
 				    const double cur_lat,
 				    const double cur_alt,
-				    double *course, double *distance ) {
+				    double *course, double *distance ) const {
     if ( mode == WGS84 ) {
 	double reverse;
 	geo_inverse_wgs_84( cur_alt, cur_lat, cur_lon, target_lat, target_lon,
@@ -77,4 +77,13 @@ void SGWayPoint::CourseAndDistance( const double cur_lon,
 	}
 	*distance = sqrt( dx * dx + dy * dy );
     }
+}
+
+// Calculate course and distances between two waypoints
+void SGWayPoint::CourseAndDistance( const SGWayPoint &wp,
+			double *course, double *distance ) const {
+    CourseAndDistance( wp.get_target_lon(),
+		       wp.get_target_lat(),
+		       wp.get_target_alt(),
+		       course, distance );
 }

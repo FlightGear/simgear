@@ -23,10 +23,26 @@
 // $Id$
 
 
+#include <simgear/compiler.h>
+
 #include <simgear_config.h>
 #include <stdio.h>
 
 #include "sg_path.hxx"
+
+
+/**
+ * define directory path separators
+ */
+
+#ifdef macintosh
+static const char sgDirPathSep = ':';
+static const char sgDirPathSepBad = '/';
+#else
+static const char sgDirPathSep = '/';
+static const char sgDirPathSepBad = ':';
+#endif
+static const char sgSearchPathSep = ';';
 
 
 // If Unix, replace all ":" with "/".  If MacOS, replace all "/" with
@@ -44,8 +60,8 @@ SGPath::fix()
 	    continue;
 	}
 #endif
-	if ( path[i] == SG_BAD_PATH_SEP ) {
-	    path[i] = SG_PATH_SEP;
+	if ( path[i] == sgDirPathSepBad ) {
+	    path[i] = sgDirPathSep;
 	}
     }
 }
@@ -83,8 +99,8 @@ void SGPath::append( const string& p ) {
     if ( path.size() == 0 ) {
 	path = p;
     } else {
-	if ( p[0] != SG_PATH_SEP ) {
-	    path += SG_PATH_SEP;
+	if ( p[0] != sgDirPathSep ) {
+	    path += sgDirPathSep;
 	}
 	path += p;
     }
@@ -106,7 +122,7 @@ void SGPath::concat( const string& p ) {
 
 // Get the file part of the path (everything after the last path sep)
 string SGPath::file() const {
-    int index = path.rfind(SG_PATH_SEP);
+    int index = path.rfind(sgDirPathSep);
     if (index >= 0) {
 	return path.substr(index + 1);
     } else {
@@ -117,7 +133,7 @@ string SGPath::file() const {
 
 // get the directory part of the path.
 string SGPath::dir() const {
-    int index = path.rfind(SG_PATH_SEP);
+    int index = path.rfind(sgDirPathSep);
     if (index >= 0) {
 	return path.substr(0, index);
     } else {
@@ -152,4 +168,26 @@ bool SGPath::exists() const {
     }
     fclose(fp);
     return true;
+}
+
+
+string_list sgPathSplit( const string &search_path ) {
+    string tmp = search_path;
+    string_list result;
+    result.clear();
+
+    bool done = false;
+
+    while ( !done ) {
+        int index = tmp.find(sgSearchPathSep);
+        if (index >= 0) {
+            result.push_back( tmp.substr(0, index) );
+            tmp = tmp.substr( index + 1 );
+        } else {
+            result.push_back( tmp );
+            done = true;
+        }
+    }
+
+    return result;
 }

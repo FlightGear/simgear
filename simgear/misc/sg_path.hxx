@@ -31,19 +31,11 @@
 
 
 #include <simgear/compiler.h>
-
 #include STL_STRING
 
+#include <simgear/math/sg_types.hxx>
+
 SG_USING_STD(string);
-
-
-#ifdef macintosh
-#  define SG_PATH_SEP ':'
-#  define SG_BAD_PATH_SEP '/'
-#else
-#  define SG_PATH_SEP '/'
-#  define SG_BAD_PATH_SEP ':'
-#endif
 
 
 /**
@@ -139,6 +131,12 @@ private:
     void fix();
 
 };
+
+
+/**
+ * Split a directory search path into a vector of individual paths
+ */
+string_list sgPathSplit( const string &search_path );
 
 
 #endif // _SG_PATH_HXX

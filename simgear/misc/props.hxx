@@ -1,10 +1,13 @@
-// props.hxx - interface definition for a property list.
-// Started Fall 2000 by David Megginson, david@megginson.com
-// This code is released into the Public Domain.
-//
-// See props.html for documentation [replace with URL when available].
-//
-// $Id$
+/**
+ * \file props.hxx
+ * Interface definition for a property list.
+ * Started Fall 2000 by David Megginson, david@megginson.com
+ * This code is released into the Public Domain.
+ *
+ * See props.html for documentation [replace with URL when available].
+ *
+ * $Id$
+ */
 
 #ifndef __PROPS_HXX
 #define __PROPS_HXX
@@ -288,16 +291,15 @@ private:
 
 
 
-////////////////////////////////////////////////////////////////////////
-// A cooked value.
-//
-// This is the value that property-list clients see.  It is a 
-// persistent layer over the possibly-changing raw value; once a
-// client gets an SGValue from the property manager, the pointer
-// will be good for the life of the property manager itself, no
-// matter how often the pointer is tied or untied.
-////////////////////////////////////////////////////////////////////////
-
+/**
+ * A cooked value.
+ *
+ * This is the value that property-list clients see.  It is a 
+ * persistent layer over the possibly-changing raw value; once a
+ * client gets an SGValue from the property manager, the pointer
+ * will be good for the life of the property manager itself, no
+ * matter how often the pointer is tied or untied.
+ */
 class SGValue
 {
 public:
@@ -374,10 +376,9 @@ private:
 
 
 
-////////////////////////////////////////////////////////////////////////
-// A node in a property tree.
-////////////////////////////////////////////////////////////////////////
-
+/**
+ * A node in a property tree.
+ */
 class SGPropertyNode
 {
 

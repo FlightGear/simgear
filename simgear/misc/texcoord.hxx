@@ -1,5 +1,8 @@
-// texcoord.hxx -- routine(s) to handle texture coordinate generation
-//
+/**
+ * \file texcoord.hxx
+ * Routine to handle texture coordinate generation.
+ */
+
 // Written by Curtis Olson, started March 1999.
 //
 // Copyright (C) 1999  Curtis L. Olson  - curt@flightgear.org
@@ -35,8 +38,15 @@
 #include <simgear/math/sg_types.hxx>
 
 
-// traverse the specified fan/strip/list of vertices and attempt to
-// calculate "none stretching" texture coordinates
+/**
+ * Traverse the specified fan/strip/list of vertices and attempt to
+ * calculate "none stretching" texture coordinates.
+ * @param b the bucket containing the structure
+ * @param geod_nodes vertices in geodetic coordinates
+ * @param fan integer list of indices pointing into the vertex list
+ * @param scale (default = 1.0) scaling factor
+ * @return list of texture coordinates
+ */
 point_list calc_tex_coords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 

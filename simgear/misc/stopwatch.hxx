@@ -1,11 +1,19 @@
-/***************************************************************************
- * stopwatch.hxx        Timer class, for use in benchmarking
- *
+/**
+ * \file stopwatch.hxx
+ * Timer class, for use in benchmarking
  * Based on blitz/Timer.h
  *
- * $Id$
- *
  * Copyright (C) 1997,1998 Todd Veldhuizen <tveldhui@seurat.uwaterloo.ca>
+ *
+ * Suggestions:          blitz-suggest@cybervision.com
+ * Bugs:                 blitz-bugs@cybervision.com
+ *
+ * For more information, please see the Blitz++ Home Page:
+ *    http://seurat.uwaterloo.ca/blitz/
+ */
+
+/*
+ * $Id$
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,12 +29,6 @@
  * License along with this library; if not, write to the
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA  02111-1307, USA.
- *
- * Suggestions:          blitz-suggest@cybervision.com
- * Bugs:                 blitz-bugs@cybervision.com
- *
- * For more information, please see the Blitz++ Home Page:
- *    http://seurat.uwaterloo.ca/blitz/
  *
  */
 
@@ -66,30 +68,34 @@
 #  include <time.h>
 #endif
 
+/**
+ * A high resolutions timing class
+ */
 class StopWatch {
 
 public:
-    StopWatch() 
-    { 
-//         state_ = uninitialized;
+    /** Constructor */
+    StopWatch() { 
+	// state_ = uninitialized;
     }
 
-    void start()
-    { 
-//         state_ = running;
+    /** Start counting time */
+    void start() { 
+	// state_ = running;
         t1_ = systemTime();
     }
 
-    void stop()
-    {
+    /** Stop counting time */
+    void stop() {
         t2_ = systemTime();
-// 	BZPRECONDITION(state_ == running);
-// 	state_ = stopped;
+	// BZPRECONDITION(state_ == running);
+	// state_ = stopped;
     }
 
+    /** @return the elapsed time between start and stop */
     double elapsedSeconds()
     {
-//         BZPRECONDITION(state_ == stopped);
+	// BZPRECONDITION(state_ == stopped);
         return t2_ - t1_;
     }
 

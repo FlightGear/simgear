@@ -1,5 +1,8 @@
-// String utilities.
-//
+/**
+ * \file strutils.hxx
+ * String utilities.
+ */
+
 // Written by Bernie Bright, 1998
 //
 // Copyright (C) 1998  Bernie Bright - bbright@c031.aone.net.au
@@ -21,6 +24,7 @@
 //
 // $Id$
 
+
 #ifndef STRUTILS_H
 #define STRUTILS_H
 
@@ -36,26 +40,27 @@
 
 SG_USING_STD(string);
 
-// Default characters to remove.
+
+/** Default characters to remove. */
 extern const string whitespace;
 
-// Returns a string with trailing characters removed.
+/** Returns a string with trailing characters removed. */
 string trimleft( const string& s, const string& trimmings = whitespace );
 
-// Returns a string with leading characters removed.
+/** Returns a string with leading characters removed. */
 string trimright( const string& s, const string& trimmings = whitespace );
 
-// Returns a string with leading and trailing characters removed.
+/** Returns a string with leading and trailing characters removed. */
 string trim( const string& s, const string& trimmings = whitespace );
 
-//-----------------------------------------------------------------------------
-
+/** atof() wrapper for "string" type */
 inline double
 atof( const string& str )
 {
     return ::atof( str.c_str() );
 }
 
+/** atoi() wrapper for "string" type */
 inline int
 atoi( const string& str )
 {

@@ -1,5 +1,8 @@
-//  A C++ I/O streams interface to the zlib gz* functions
-//
+/**
+ * \file zfstream.hxx
+ * A C++ I/O streams interface to the zlib gz* functions.
+ */
+
 // Written by Bernie Bright, 1998
 // Based on zlib/contrib/iostream/ by Kevin Ruland <kevin@rodin.wustl.edu>
 //
@@ -96,10 +99,9 @@ SG_USING_STD(streamoff);
 
 #endif // SG_HAVE_STD_INCLUDES
 
-//-----------------------------------------------------------------------------
-//
-//
-//
+/**
+ * A C++ I/O streams interface to the zlib gz* functions.
+ */
 class gzfilebuf : public streambuf
 {
 public:
@@ -111,17 +113,41 @@ public:
     // typedef char_traits<char>::off_type off_type;
 #endif
 
+    /** Constructor */
     gzfilebuf();
+
+    /** Destructor */
     virtual ~gzfilebuf();
 
+    /**
+     * Open a stream
+     * @param name file name
+     * @param io_mode mdoe flags
+     * @return file stream
+     */
     gzfilebuf* open( const char* name, ios_openmode io_mode );
+
+    /** 
+     * Attach to an existing file descriptor
+     * @param file_descriptor file descriptor
+     * @param io_mode mode flags
+     * @return file stream
+     */
     gzfilebuf* attach( int file_descriptor, ios_openmode io_mode );
+
+    /** Close stream */
     gzfilebuf* close();
 
-//     int setcompressionlevel( int comp_level );
-//     int setcompressionstrategy( int comp_strategy );
+    // int setcompressionlevel( int comp_level );
+    // int setcompressionstrategy( int comp_strategy );
+
+    /** @return true if open, false otherwise */
     bool is_open() const { return (file != NULL); }
+
+    /** @return stream position */
     virtual streampos seekoff( streamoff off, ios_seekdir way, int which );
+
+    /** sync the stream */
     virtual int sync();
 
 protected:
@@ -155,15 +181,14 @@ private:
     void operator= ( const gzfilebuf& );
 };
 
-//-----------------------------------------------------------------------------
-//
-// 
-//
+/**
+ * document me
+ */
 struct gzifstream_base
 {
     gzifstream_base() {}
 
-    gzfilebuf gzbuf;
+    Gzfilebuf gzbuf;
 };
 
 #endif // _zfstream_hxx

@@ -100,6 +100,12 @@ public:
      */
     string dir();
   
+    /**
+     * Return the filename part of the path.
+     * @return file name string
+     */
+    string filename();
+	
     /** Get the path string
      * @return path string
      */

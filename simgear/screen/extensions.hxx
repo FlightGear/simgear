@@ -139,6 +139,16 @@ typedef void (APIENTRY * glPointParameterfvProc)(GLenum pname, const GLfloat *pa
 
 typedef void (APIENTRY * glActiveTextureProc)(GLenum texture);
 
+/*
+ * GL_EXT_separate_specular_color
+ */
+
+#ifndef GL_LIGHT_MODEL_COLOR_CONTROL
+#define GL_LIGHT_MODEL_COLOR_CONTROL                            0x81F8
+#define GL_SINGLE_COLOR                                         0x81F9
+#define GL_SEPARATE_SPECULAR_COLOR                              0x81FA
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

@@ -630,13 +630,12 @@ SGTexture::ImageWriteOpen(const char *fileName)
     image->ysize = texture_height;
     image->zsize = num_colors;
 
-    fwrite(image, 1, 12, file);
-
-    fseek(file, 512, SEEK_SET);
-
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
     }
+
+    fwrite(image, 1, 12, file);
+    fseek(file, 512, SEEK_SET);
 
     image->tmp = new GLubyte[ image->xsize * 256 ];
     if (image->tmp == 0) {
@@ -654,8 +653,8 @@ SGTexture::ImageWriteOpen(const char *fileName)
         }
         image->rleEnd = 512 + (2 * x);
         fseek(file, 512, SEEK_SET);
-        fwrite(image->rowStart, 1, x, file);
-        fwrite(image->rowSize, 1, x, file);
+        fread(image->rowStart, 1, x, file);
+        fread(image->rowSize, 1, x, file);
         if (swapFlag) {
             ConvertUint(image->rowStart, x/(int) sizeof(unsigned));
             ConvertUint((unsigned *)image->rowSize, x/(int) sizeof(int));

@@ -16,7 +16,7 @@
 #include <simgear/props/props.hxx>
 
 #include "animation.hxx"
-
+#include "flash.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -190,8 +190,14 @@ SGAnimation::init ()
 {
 }
 
-void
+int
 SGAnimation::update()
+{
+    return 1;
+}
+
+void
+SGAnimation::restore()
 {
 }
 
@@ -255,7 +261,7 @@ SGRangeAnimation::~SGRangeAnimation ()
 {
 }
 
-void
+int
 SGRangeAnimation::update()
 {
     float ranges[2];
@@ -275,6 +281,7 @@ SGRangeAnimation::update()
     if (upd) {
        ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
     }
+  return 1;
 }
 
 
@@ -313,13 +320,14 @@ SGSelectAnimation::~SGSelectAnimation ()
   delete _condition;
 }
 
-void
+int
 SGSelectAnimation::update()
 {
   if (_condition != 0 && _condition->test()) 
       ((ssgSelector *)_branch)->select(0xffff);
   else
       ((ssgSelector *)_branch)->select(0x0000);
+  return 1;
 }
 
 
@@ -372,7 +380,7 @@ SGSpinAnimation::~SGSpinAnimation ()
 {
 }
 
-void
+int
 SGSpinAnimation::update()
 {
   double dt = sim_time_sec - _last_time_sec;
@@ -386,6 +394,7 @@ SGSpinAnimation::update()
     _position_deg -= 360.0;
   set_rotation(_matrix, _position_deg, _center, _axis);
   ((ssgTransform *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -406,7 +415,7 @@ SGTimedAnimation::~SGTimedAnimation ()
 {
 }
 
-void
+int
 SGTimedAnimation::update()
 {
     if ((sim_time_sec - _last_time_sec) >= _duration_sec) {
@@ -416,6 +425,7 @@ SGTimedAnimation::update()
             _step = 0;
         ((ssgSelector *)getBranch())->selectStep(_step);
     }
+  return 1;
 }
 
 
@@ -473,7 +483,7 @@ SGRotateAnimation::~SGRotateAnimation ()
   delete _table;
 }
 
-void
+int
 SGRotateAnimation::update()
 {
   if (_table == 0) {
@@ -487,6 +497,7 @@ SGRotateAnimation::update()
   }
   set_rotation(_matrix, _position_deg, _center, _axis);
   ((ssgTransform *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -514,7 +525,7 @@ SGBlendAnimation::~SGBlendAnimation ()
     delete _table;
 }
 
-void
+int
 SGBlendAnimation::update()
 {
   double _blend;
@@ -534,6 +545,7 @@ SGBlendAnimation::update()
     _prev_value = _blend;
     change_alpha( _branch, _blend );
   }
+  return 1;
 }
 
 
@@ -566,7 +578,7 @@ SGTranslateAnimation::~SGTranslateAnimation ()
   delete _table;
 }
 
-void
+int
 SGTranslateAnimation::update()
 {
   if (_table == 0) {
@@ -580,6 +592,7 @@ SGTranslateAnimation::update()
   }
   set_translation(_matrix, _position_m, _axis);
   ((ssgTransform *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -619,7 +632,7 @@ SGScaleAnimation::~SGScaleAnimation ()
   delete _table;
 }
 
-void
+int
 SGScaleAnimation::update()
 {
   if (_table == 0) {
@@ -654,6 +667,7 @@ SGScaleAnimation::update()
 
   set_scale(_matrix, _x_scale, _y_scale, _z_scale );
   ((ssgTransform *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -688,7 +702,7 @@ SGTexRotateAnimation::~SGTexRotateAnimation ()
   delete _table;
 }
 
-void
+int
 SGTexRotateAnimation::update()
 {
   if (_table == 0) {
@@ -702,6 +716,7 @@ SGTexRotateAnimation::update()
   }
   set_rotation(_matrix, _position_deg, _center, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -735,7 +750,7 @@ SGTexTranslateAnimation::~SGTexTranslateAnimation ()
   delete _table;
 }
 
-void
+int
 SGTexTranslateAnimation::update()
 {
   if (_table == 0) {
@@ -749,6 +764,7 @@ SGTexTranslateAnimation::update()
   }
   set_translation(_matrix, _position, _axis);
   ((ssgTexTrans *)_branch)->setTransform(_matrix);
+  return 1;
 }
 
 
@@ -825,7 +841,7 @@ SGTexMultipleAnimation::~SGTexMultipleAnimation ()
   delete _transform;
 }
 
-void
+int
 SGTexMultipleAnimation::update()
 {
   int i;
@@ -866,6 +882,7 @@ SGTexMultipleAnimation::update()
     }
   }
   ((ssgTexTrans *)_branch)->setTransform(tmatrix);
+  return 1;
 }
 
 
@@ -902,6 +919,41 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
       setAlphaClampToBranch( (ssgBranch*)e, clamp );
     }
   }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGFlashAnimation
+////////////////////////////////////////////////////////////////////////
+SGFlashAnimation::SGFlashAnimation(SGPropertyNode_ptr props)
+  : SGAnimation( props, new SGFlash )
+{
+  sgVec3 axis;
+  axis[0] = props->getFloatValue("axis/x", 0);
+  axis[1] = props->getFloatValue("axis/y", 0);
+  axis[2] = props->getFloatValue("axis/z", 1);
+  ((SGFlash *)_branch)->setAxis( axis );
+
+  sgVec3 center;
+  center[0] = props->getFloatValue("center/x-m", 0);
+  center[1] = props->getFloatValue("center/y-m", 0);
+  center[2] = props->getFloatValue("center/z-m", 0);
+  ((SGFlash *)_branch)->setCenter( center );
+
+  float offset = props->getFloatValue("offset", 0.0);
+  float factor = props->getFloatValue("factor", 1.0);
+  float power = props->getFloatValue("power", 1.0);
+  bool two_sides = props->getBoolValue("two-sides", false);
+  ((SGFlash *)_branch)->setParameters( power, factor, offset, two_sides );
+
+  float v_min = props->getFloatValue("min", 0.0);
+  float v_max = props->getFloatValue("max", 1.0);
+  ((SGFlash *)_branch)->setClampValues( v_min, v_max );
+}
+
+SGFlashAnimation::~SGFlashAnimation()
+{
 }
 
 // end of animation.cxx

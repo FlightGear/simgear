@@ -52,8 +52,17 @@ model_filter_callback (ssgEntity * entity, int mask)
 static int
 animation_callback (ssgEntity * entity, int mask)
 {
-    ((SGAnimation *)entity->getUserData())->update();
-    return true;
+    return ((SGAnimation *)entity->getUserData())->update();
+}
+
+/**
+ * Callback to restore the state after an animation.
+ */
+static int
+restore_callback (ssgEntity * entity, int mask)
+{
+    ((SGAnimation *)entity->getUserData())->restore();
+    return 1;
 }
 
 
@@ -145,6 +154,8 @@ sgMakeAnimation( ssgBranch * model,
     animation = new SGBlendAnimation(prop_root, node);
   } else if (!strcmp("alpha-test", type)) {
     animation = new SGAlphaTestAnimation(node);
+  } else if (!strcmp("flash", type)) {
+    animation = new SGFlashAnimation(node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);
@@ -188,6 +199,7 @@ sgMakeAnimation( ssgBranch * model,
   animation->init();
   branch->setUserData(animation);
   branch->setTravCallback(SSG_CALLBACK_PRETRAV, animation_callback);
+  branch->setTravCallback(SSG_CALLBACK_POSTTRAV, restore_callback);
 }
 
 

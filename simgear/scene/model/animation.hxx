@@ -65,7 +65,12 @@ public:
   /**
    * Update the animation.
    */
-  virtual void update();
+  virtual int update();
+
+  /**
+   * Restore the state after the animation.
+   */
+  virtual void restore();
 
   /**
    * Set the value of sim_time_sec.  This needs to be called every
@@ -102,7 +107,7 @@ public:
   SGRangeAnimation (SGPropertyNode *prop_root,
                     SGPropertyNode_ptr props);
   virtual ~SGRangeAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _min_prop;
   SGPropertyNode_ptr _max_prop;
@@ -133,7 +138,7 @@ public:
   SGSelectAnimation( SGPropertyNode *prop_root,
                    SGPropertyNode_ptr props );
   virtual ~SGSelectAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGCondition * _condition;
 };
@@ -151,7 +156,7 @@ public:
                  SGPropertyNode_ptr props,
                  double sim_time_sec );
   virtual ~SGSpinAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _factor;
@@ -171,7 +176,7 @@ class SGTimedAnimation : public SGAnimation
 public:
     SGTimedAnimation (SGPropertyNode_ptr props);
     virtual ~SGTimedAnimation ();
-    virtual void update();
+    virtual int update();
 private:
     double _duration_sec;
     double _last_time_sec;
@@ -189,7 +194,7 @@ class SGRotateAnimation : public SGAnimation
 public:
   SGRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
   virtual ~SGRotateAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
@@ -215,7 +220,7 @@ public:
   SGTranslateAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTranslateAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _offset_m;
@@ -239,7 +244,7 @@ public:
   SGBlendAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGBlendAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   SGInterpTable * _table;
@@ -261,7 +266,7 @@ public:
   SGScaleAnimation( SGPropertyNode *prop_root,
                         SGPropertyNode_ptr props );
   virtual ~SGScaleAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _x_factor;
@@ -299,7 +304,7 @@ class SGTexRotateAnimation : public SGAnimation
 public:
   SGTexRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
   virtual ~SGTexRotateAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
@@ -325,7 +330,7 @@ public:
   SGTexTranslateAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTexTranslateAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   SGPropertyNode_ptr _prop;
   double _offset;
@@ -354,7 +359,7 @@ public:
   SGTexMultipleAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTexMultipleAnimation ();
-  virtual void update();
+  virtual int update();
 private:
   class TexTransform
     {
@@ -382,7 +387,7 @@ private:
 
 
 /**
- * An animation to enable the alpha test 
+ * An "animation" to enable the alpha test 
  */
 class SGAlphaTestAnimation : public SGAnimation
 {
@@ -393,6 +398,18 @@ public:
 private:
   void setAlphaClampToBranch(ssgBranch *b, float clamp);
   float _alpha_clamp;
+};
+
+
+/**
+ * An "animation" that compute a scale according to 
+ * the angle between an axis and the view direction
+ */
+class SGFlashAnimation : public SGAnimation
+{
+public:
+  SGFlashAnimation(SGPropertyNode_ptr props);
+  virtual ~SGFlashAnimation ();
 };
 
 

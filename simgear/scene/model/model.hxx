@@ -74,4 +74,9 @@ sgMakeAnimation( ssgBranch * model,
 bool
 sgSetModelFilter( bool filter );
 
+/**
+ * Enable or disable Display list usage
+ */
+extern bool sgUseDisplayList;
+
 #endif // __MODEL_HXX

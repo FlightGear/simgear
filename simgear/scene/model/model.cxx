@@ -29,7 +29,7 @@
 SG_USING_STD(vector);
 SG_USING_STD(set);
 
-
+bool sgUseDisplayList = true;
 
 ////////////////////////////////////////////////////////////////////////
 // Global state
@@ -329,7 +329,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 
 #if PLIB_VERSION > 183
-  if ( model != 0 ) {
+  if ( model != 0 && sgUseDisplayList ) {
      makeDList( model, ignore_branches );
   }
 #endif

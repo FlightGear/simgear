@@ -2,9 +2,10 @@ includedir = @includedir@/route
 
 lib_LIBRARIES = libsgroute.a
 
-include_HEADERS = waypoint.hxx
+include_HEADERS = route.hxx waypoint.hxx
 
 libsgroute_a_SOURCES = \
+	route.cxx \
 	waypoint.cxx
 
 INCLUDES += -I$(top_srcdir)

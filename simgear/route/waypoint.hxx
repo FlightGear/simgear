@@ -57,24 +57,30 @@ private:
 
     double target_lon;
     double target_lat;
+    double target_alt;
 
     string id;
 
 public:
 
     SGWayPoint();
-    SGWayPoint( const double lon, const double lat,
+    SGWayPoint( const double lon, const double lat, const double alt,
 		const modetype m = WGS84, const string s = "" );
     ~SGWayPoint();
 
-    // Calculate course and distances.  Lat, lon, and azimuth are in
-    // degrees.  distance in meters
+    // Calculate course and distances.  For WGS84 and SPHERICAL
+    // coordinates lat, lon, and course are in degrees, alt and
+    // distance are in meters.  For CARTESIAN coordinates x = lon, y =
+    // lat.  Course is in degrees and distance is in what ever units x
+    // and y are in.
     void CourseAndDistance( const double cur_lon, const double cur_lat,
+			    const double cur_alt,
 			    double *course, double *distance );
 
     inline modetype get_mode() const { return mode; }
     inline double get_target_lon() const { return target_lon; }
     inline double get_target_lat() const { return target_lat; }
+    inline double get_target_alt() const { return target_alt; }
     inline string get_id() const { return id; }
 };
 

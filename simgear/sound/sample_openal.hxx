@@ -46,6 +46,8 @@
 # include <AL/alut.h>
 #endif
 
+#include <plib/sg.h>
+
 #include <simgear/debug/logstream.hxx>
 
 SG_USING_STD(string);
@@ -70,6 +72,9 @@ private:
     // Position of the source sound.
     ALfloat source_pos[3];
 
+    // A constant offset to be applied to the final source_pos
+    ALfloat offset_pos[3];
+
     // Velocity of the source sound.
     ALfloat source_vel[3];
 
@@ -84,6 +89,7 @@ private:
     double reference_dist;
     double max_dist;
     ALboolean loop;
+
 
 public:
 
@@ -199,7 +205,26 @@ public:
         source_pos[0] = pos[0];
         source_pos[1] = pos[1];
         source_pos[2] = pos[2];
-        alSourcefv( source, AL_POSITION, source_pos );
+
+        sgVec3 final_pos;
+        sgAddVec3( final_pos, source_pos, offset_pos );
+
+        alSourcefv( source, AL_POSITION, final_pos );
+    }
+
+    /**
+     * Set "constant" offset position of sound source (uses same
+     * coordinate system as opengl)
+     */
+    inline void set_offset_pos( ALfloat *pos ) {
+        offset_pos[0] = pos[0];
+        offset_pos[1] = pos[1];
+        offset_pos[2] = pos[2];
+
+        sgVec3 final_pos;
+        sgAddVec3( final_pos, source_pos, offset_pos );
+
+        alSourcefv( source, AL_POSITION, final_pos );
     }
 
     /**

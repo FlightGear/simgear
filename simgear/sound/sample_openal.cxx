@@ -80,9 +80,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
             << samplepath.str() );
 
-    ALuint error;
-
-    source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
+   source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
+    offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
     // clear errors from elsewhere?
@@ -90,7 +89,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
 
     // create an OpenAL buffer handle
     alGenBuffers(1, &buffer);
-    error = alGetError();
+    ALuint error = alGetError();
     if ( error != AL_NO_ERROR ) {
         print_openal_error( error );
         throw sg_exception("Failed to gen OpenAL buffer.");
@@ -152,11 +151,17 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     sample_name = "unknown, generated from data";
 
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
+    offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
+
+    // clear errors from elsewhere?
+    alGetError();
 
     // Load wav data into a buffer.
     alGenBuffers(1, &buffer);
-    if (alGetError() != AL_NO_ERROR) {
+    ALuint error = alGetError();
+    if ( error != AL_NO_ERROR ) {
+        print_openal_error( error );
         throw sg_exception("Failed to gen buffer." );
         return;
     }

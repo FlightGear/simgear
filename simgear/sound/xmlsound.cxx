@@ -236,6 +236,18 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    }
 
    //
+   // Relative position
+   //
+   sgVec3 offset_pos;
+   sgSetVec3( offset_pos, 0.0, 0.0, 0.0 );
+   SGPropertyNode_ptr pos = node->getChild("position");
+   if ( pos != NULL ) {
+       offset_pos[0] = pos->getDoubleValue("x", 0.0);
+       offset_pos[1] = pos->getDoubleValue("y", 0.0);
+       offset_pos[2] = pos->getDoubleValue("z", 0.0);
+   }
+
+   //
    // Initialize the sample
    //
    _mgr = sndmgr;
@@ -247,6 +259,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
        _mgr->add( _sample, _name );
    }
 
+   _sample->set_offset_pos( offset_pos );
    _sample->set_volume(v);
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );

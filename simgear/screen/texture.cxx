@@ -429,50 +429,16 @@ SGTexture::read_r8_texture(const char *name)
 
 void
 SGTexture::write_texture(const char *name) {
-   SGTexture::ImageRec *image;
-   int x, y;
+   SGTexture::ImageRec *image = ImageWriteOpen(name);
 
-   image=ImageWriteOpen(name);
-
-   GLubyte *ptr = texture_data;
-   for (y=0; y<texture_height; y++) {
-       for (x=0; x<texture_width; x++) {
-	   image->tmp[x]=*ptr;
-           ptr = ptr + num_colors;
-       }
-       fwrite(image->tmp, 1, texture_width, image->file);
-   }
-
-   if (num_colors > 1) {
-      ptr = texture_data + 1;
-      for (y=0; y<texture_height; y++) {
-          for (x=0; x<texture_width; x++) {
-	     image->tmp[x]=*ptr;
-             ptr = ptr + num_colors;
-          }
-          fwrite(image->tmp, 1, texture_width, image->file);
-      }
-
-      if (num_colors > 2) {
-         ptr = texture_data + 2;
-         for (y=0; y<texture_height; y++) {
-             for (x=0; x<texture_width; x++) {
-	         image->tmp[x]=*ptr;
-                  ptr = ptr + num_colors;
-             }
-             fwrite(image->tmp, 1, texture_width, image->file);
+   for (int c=0; c<num_colors; c++) {
+      GLubyte *ptr = texture_data + c;
+      for (int y=0; y<texture_height; y++) {
+         for (int x=0; x<texture_width; x++) {
+	    image->tmp[x]=*ptr;
+            ptr = ptr + num_colors;
          }
-
-         if (num_colors > 3) {
-            ptr = texture_data + 3;
-            for (y=0; y<texture_height; y++) {
-                for (x=0; x<texture_width; x++) {
-	            image->tmp[x]=*ptr;
-                    ptr = ptr + num_colors;
-                }
-                fwrite(image->tmp, 1, texture_width, image->file);
-            }
-         }
+         fwrite(image->tmp, 1, texture_width, image->file);
       }
    }
 
@@ -655,14 +621,14 @@ SGTexture::ImageWriteOpen(const char *fileName)
         errstr = OUT_OF_MEMORY;
         return 0;
     }
-    if ((image->file = fopen(fileName, "w")) == 0) {
+    if ((image->file = fopen(fileName, "wb")) == 0) {
         errstr = FILE_OPEN_ERROR;
         return 0;
     }
 
     image->imagic = 474;
     image->type = 0x0001;
-    image->dim = 0;
+    image->dim = (num_colors > 1) ? 3 : 2;
     image->xsize = texture_width;
     image->ysize = texture_height;
     image->zsize = num_colors;
@@ -670,6 +636,7 @@ SGTexture::ImageWriteOpen(const char *fileName)
     fwrite(image, 1, 12, image->file);
 
     fseek(image->file, 512, SEEK_SET);
+
     if (swapFlag) {
         ConvertShort(&image->imagic, 6);
     }
@@ -690,13 +657,14 @@ SGTexture::ImageWriteOpen(const char *fileName)
         }
         image->rleEnd = 512 + (2 * x);
         fseek(image->file, 512, SEEK_SET);
-        fread(image->rowStart, 1, x, image->file);
-        fread(image->rowSize, 1, x, image->file);
+        fwrite(image->rowStart, 1, x, image->file);
+        fwrite(image->rowSize, 1, x, image->file);
         if (swapFlag) {
             ConvertUint(image->rowStart, x/(int) sizeof(unsigned));
             ConvertUint((unsigned *)image->rowSize, x/(int) sizeof(int));
         }
     }
+
     return image;
 
 }

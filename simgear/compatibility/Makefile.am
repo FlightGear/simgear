@@ -9,6 +9,7 @@ include_HEADERS	= \
 	cwchar \
 	iostream \
 	strstream \
+	sstream \
 	cassert \
 	climits \
 	csignal \

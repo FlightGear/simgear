@@ -1,0 +1,13 @@
+
+#ifndef __SG_SSTREAM
+#define __SG_SSTREAM 1
+
+# include <strstream>
+
+namespace std {
+   typedef ::ostrstream ostringstream;
+   typedef ::istrstream istringstream;
+};
+
+#endif // !__SG_SSTREAM
+

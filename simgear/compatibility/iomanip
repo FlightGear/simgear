@@ -4,5 +4,9 @@
 
 # include <iomanip.h>
 
+namespace std {
+   using ::setw;
+};
+
 #endif // !__SG_IOMANIP
 

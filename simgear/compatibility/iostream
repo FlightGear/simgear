@@ -2,10 +2,11 @@
 #ifndef __SG_IOSTREAM
 #define __SG_IOSTREAM 1
 
-# include <iostream.h>
-# include <fstream.h>
+# include <fstream>
 
 # if defined(sgi) && !defined(__GNUC__)
+
+# include <iostream.h>
 
   class ios_base : public ios {
   public:
@@ -29,8 +30,8 @@
     using ::istream;
     using ::ostream;
 
-    using ::ifstream;
-    using ::ofstream;
+    using ::dec;
+    using ::hex;
   };
 
 # endif

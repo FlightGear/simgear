@@ -1977,7 +1977,7 @@ SGPropertyNode::hash_table::hash_table ()
 
 SGPropertyNode::hash_table::~hash_table ()
 {
-  for (int i = 0; i < _data_length; i++)
+  for (unsigned int i = 0; i < _data_length; i++)
     delete _data[i];
 }
 

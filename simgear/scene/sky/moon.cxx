@@ -118,7 +118,9 @@ static int sgMoonHaloPostDraw( ssgEntity *e ) {
 
 
 // Constructor
-SGMoon::SGMoon( void ) {
+SGMoon::SGMoon( void ) :
+    prev_moon_angle(-1)
+{
 }
 
 

@@ -1117,6 +1117,7 @@ SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   bool old_val = false;
   if (useDefault)
     old_val = getBoolValue();
@@ -1138,6 +1139,7 @@ SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   int old_val = 0;
   if (useDefault)
     old_val = getIntValue();
@@ -1159,6 +1161,7 @@ SGPropertyNode::tie (const SGRawValue<long> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   long old_val = 0;
   if (useDefault)
     old_val = getLongValue();
@@ -1180,6 +1183,7 @@ SGPropertyNode::tie (const SGRawValue<float> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   float old_val = 0.0;
   if (useDefault)
     old_val = getFloatValue();
@@ -1201,6 +1205,7 @@ SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   double old_val = 0.0;
   if (useDefault)
     old_val = getDoubleValue();
@@ -1223,6 +1228,7 @@ SGPropertyNode::tie (const SGRawValue<string> &rawValue, bool useDefault)
   if (_type == ALIAS || _tied)
     return false;
 
+  useDefault = useDefault && hasValue();
   string old_val;
   if (useDefault)
     old_val = getStringValue();

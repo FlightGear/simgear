@@ -341,11 +341,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
     if ( visibility != new_visibility ) {
         static double sqrt_m_log01 = sqrt( -log( 0.01 ) );
         visibility = new_visibility;
-        if ( visibility < 8000 ) {
-            sun_exp2_punch_through = sqrt_m_log01 / (visibility * 10);
-        } else {
-            sun_exp2_punch_through = sqrt_m_log01 / (8000 * 10);
-        }
+        sun_exp2_punch_through = sqrt_m_log01 / (visibility * 15);
     }
 
     if (prev_sun_angle != sun_angle)

@@ -30,6 +30,8 @@
 #endif                                   
 
 
+#include <math.h>
+
 #include <simgear/constants.h>
 #include <simgear/math/point3d.hxx>
 
@@ -66,7 +68,8 @@ inline Point3D fgCartToPolar3d(const Point3D& cp) {
 // distance.  NOTE: starting point is specifed in radians, distance is
 // specified in meters (and converted internally to radians)
 // ... assumes a spherical world
-inline Point3D calc_lon_lat( const Point3D& orig, double course, double dist ) {
+inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
+				double dist ) {
     Point3D result;
 
     // lat=asin(sin(lat1)*cos(d)+cos(lat1)*sin(d)*cos(tc))
@@ -96,6 +99,60 @@ inline Point3D calc_lon_lat( const Point3D& orig, double course, double dist ) {
 }
 
 
+// calc course/dist
+inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest, 
+				 double *course, double *dist ) {
+    // d = 2*asin(sqrt((sin((lat1-lat2)/2))^2 + 
+    //            cos(lat1)*cos(lat2)*(sin((lon1-lon2)/2))^2))
+    double tmp1 = sin( (start.y() - dest.y()) / 2 );
+    double tmp2 = sin( (start.x() - dest.x()) / 2 );
+    double d = 2.0 * asin( sqrt( tmp1 * tmp1 + 
+				 cos(start.y()) * cos(dest.y()) * tmp2 * tmp2));
+
+    // We obtain the initial course, tc1, (at point 1) from point 1 to
+    // point 2 by the following. The formula fails if the initial
+    // point is a pole. We can special case this with:
+    //
+    // IF (cos(lat1) < EPS)   // EPS a small number ~ machine precision
+    //   IF (lat1 > 0)
+    //     tc1= pi        //  starting from N pole
+    //   ELSE
+    //     tc1= 0         //  starting from S pole
+    //   ENDIF
+    // ENDIF
+    //
+    // For starting points other than the poles: 
+    // 
+    // IF sin(lon2-lon1)<0       
+    //   tc1=acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+    // ELSE       
+    //   tc1=2*pi-acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+    // ENDIF 
+
+    double tc1;
+
+    if ( cos(start.y()) < FG_EPSILON ) {
+	// EPS a small number ~ machine precision
+	if ( start.y() > 0 ) {
+	    tc1 = FG_PI;        // starting from N pole
+	} else {
+	    tc1 = 0;		// starting from S pole
+	}
+    }
+
+    // For starting points other than the poles: 
+
+    double tmp3 = sin(d)*cos(start.y());
+    double tmp4 = sin(dest.y())-sin(start.y())*cos(d);
+    double tmp5 = acos(tmp4/tmp3);
+    if ( sin( dest.x() - start.x() ) < 0 ) {
+	 tc1 = tmp5;
+    } else {
+	 tc1 = 2 * FG_PI - tmp5;
+    }
+
+    *course = tc1;
+    *dist = d * RAD_TO_NM * NM_TO_METER;
+}
+
 #endif // _POLAR_HXX
-
-

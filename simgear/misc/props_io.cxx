@@ -274,7 +274,7 @@ readProperties (const string &file, SGPropertyNode * start_node)
  * Return the type name.
  */
 static const char *
-getTypeName (SGValue::Type type)
+getTypeName (SGPropertyNode::Type type)
 {
   switch (type) {
   case SGValue::UNKNOWN:
@@ -346,7 +346,7 @@ writeNode (ostream &output, const SGPropertyNode * node, int indent)
     if (node->isAlias() && node->getAliasTarget() != 0)
       output << " alias=\"" << node->getAliasTarget()->getPath() << "\"/>";
     else {
-      if (node->getType() != SGValue::UNKNOWN)
+      if (node->getType() != SGPropertyNode::UNKNOWN)
 	output << " type=\"" << getTypeName(node->getType()) << '"';
       output << '>';
       writeData(output, node->getStringValue());

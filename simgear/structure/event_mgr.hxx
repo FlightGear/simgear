@@ -63,6 +63,7 @@ class SGEventMgr : public SGSubsystem
 {
 public:
     SGEventMgr() { _freezeProp = 0; }
+    ~SGEventMgr() { _freezeProp = 0; }
 
     virtual void init() {}
     virtual void update(double delta_time_sec);

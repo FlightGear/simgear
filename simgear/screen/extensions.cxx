@@ -26,9 +26,11 @@
 
 #ifndef WIN32
 #include <dlfcn.h>
+#else
+#include <windows.h>
 #endif
 
-#include <extensions.hxx>
+#include "extensions.hxx"
 
 bool SGSearchExtensionsString(char *extString, char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
@@ -64,3 +66,37 @@ bool SGIsOpenGLExtensionSupported(char *extName) {
 extName);
 }
 
+#ifdef __APPLE__
+
+#include <CoreFoundation/CoreFoundation.h>
+
+void* macosxGetGLProcAddress(const char *func) {
+
+  /* We may want to cache the bundleRef at some point */
+  static CFBundleRef bundle = 0;
+
+  if (!bundle) {
+
+    CFURLRef bundleURL = CFURLCreateWithFileSystemPath (kCFAllocatorDefault,
+							CFSTR("/System/Library/Frameworks/OpenGL.framework"), kCFURLPOSIXPathStyle, true);
+
+    bundle = CFBundleCreate (kCFAllocatorDefault, bundleURL);
+    CFRelease (bundleURL);
+  }
+
+  if (!bundle)
+    return 0;
+
+  CFStringRef functionName = CFStringCreateWithCString
+    (kCFAllocatorDefault, func, kCFStringEncodingASCII);
+  
+  void *function;
+  
+  function = CFBundleGetFunctionPointerForName (bundle, functionName);
+
+  CFRelease (functionName);
+
+  return function;
+}
+
+#endif

@@ -37,11 +37,18 @@ extern "C" {
 static bool SGSearchExtensionsString(char *extString, char *extName);
 bool SGIsOpenGLExtensionSupported(char *extName);
 
+#ifdef __APPLE__
+  // don't use an inline function for symbol lookup, since it is too big
+  void* macosxGetGLProcAddress(const char *func);
+#endif
+
 inline void (*SGLookupFunction(const char *func))() {
 
 #if defined( WIN32 )
         return (void (*)()) wglGetProcAddress(func);
 
+#elif defined( __APPLE__ )
+	return (void (*)()) macosxGetGLProcAddress(func);
 #else
 
   // If the target system s UNIX and the ARB_get_proc_address
@@ -63,6 +70,9 @@ inline void (*SGLookupFunction(const char *func))() {
 
 
 /* OpenGL extension declarations */
+#define GL_POINT_SIZE_MIN_EXT                                   0x8126
+#define GL_DISTANCE_ATTENUATION_EXT                             0x8129
+
 typedef void (APIENTRY * glPointParameterfProc)(GLenum pname, GLfloat param);
 typedef void (APIENTRY * glPointParameterfvProc)(GLenum pname, const GLfloat *params);
 

@@ -19,6 +19,7 @@ using std::cerr;
 using std::endl;
 using std::find;
 using std::sort;
+using std::vector;
 
 #else
 
@@ -28,6 +29,13 @@ using std::sort;
 SG_USING_STD(sort);
 SG_USING_STD(find);
 SG_USING_STD(vector);
+
+#ifdef _MSC_VER
+// MSVC is buggy, and needs something strange here
+SG_USING_STD(vector<SGPropertyNode_ptr>);
+SG_USING_STD(vector<SGPropertyChangeListener *>);
+SG_USING_STD(vector<SGPropertyNode *>);
+#endif
 
 #endif
 

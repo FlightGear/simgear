@@ -53,6 +53,62 @@ typedef group_list::const_iterator const_group_list_iterator;
 #define SG_FILE_MAGIC_NUMBER  ( ('S'<<24) + ('G'<<16) + SG_BINOBJ_VERSION )
 
 
+class SGBinObject {
+    Point3D gbs_center;
+    float gbs_radius;
+    point_list wgs84_nodes;
+    point_list normals;
+    point_list texcoords;
+    group_list tris_v;
+    group_list tris_tc; 
+    string_list tri_materials;
+    group_list strips_v;
+    group_list strips_tc; 
+    string_list strip_materials;
+    group_list fans_v;
+    group_list fans_tc;
+    string_list fan_materials;
+
+public:
+
+    inline Point3D get_gbs_center() const { return gbs_center; }
+    inline void set_gbs_center( Point3D p ) { gbs_center = p; }
+
+    inline float get_gbs_radius() const { return gbs_radius; }
+    inline void set_gbs_radius( float r ) { gbs_radius = r; }
+
+    inline point_list get_wgs84_nodes() const { return wgs84_nodes; }
+    inline void set_wgs84_nodes( point_list n ) { wgs84_nodes = n; }
+
+    inline point_list get_normals() const { return normals; }
+    inline void set_normals( point_list n ) { normals = n; }
+
+    inline point_list get_texcoords() const { return texcoords; }
+    inline void set_texcoords( point_list t ) { texcoords = t; }
+
+    inline group_list get_tris_v() const { return tris_v; }
+    inline void set_tris_v( group_list g ) { tris_v = g; }
+    inline group_list get_tris_tc() const { return tris_tc; }
+    inline void set_tris_tc( group_list g ) { tris_tc = g; }
+    inline string_list get_tri_materials() const { return tri_materials; }
+    inline void set_tri_materials( string_list s ) { tri_materials = s; }
+    
+    inline group_list get_strips_v() const { return strips_v; }
+    inline void set_strips_v( group_list g ) { strips_v = g; }
+    inline group_list get_strips_tc() const { return strips_tc; }
+    inline void set_strips_tc( group_list g ) { strips_tc = g; }
+    inline string_list get_strip_materials() const { return strip_materials; }
+    inline void set_strip_materials( string_list s ) { strip_materials = s; }
+    
+    inline group_list get_fans_v() const { return fans_v; }
+    inline void set_fans_v( group_list g ) { fans_v = g; }
+    inline group_list get_fans_tc() const { return fans_tc; }
+    inline void set_fans_tc( group_list g ) { fans_tc = g; }
+    inline string_list get_fan_materials() const { return fan_materials; }
+    inline void set_fan_materials( string_list s ) { fan_materials = s; }
+};
+
+
 /*
    scenery-file: magic, nobjects, object+
    magic: "TG" + version
@@ -77,46 +133,20 @@ typedef group_list::const_iterator const_group_list_iterator;
 double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes );
 
 
-// write out the structures to an ASCII file.  We assume that the
-// groups come to us sorted by material property.  If not, things
-// don't break, but the result won't be as optimal.
-bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
-		      Point3D gbs_center, float gbs_radius,
-		      const point_list& wgs84_nodes, const point_list& normals,
-		      const point_list& texcoords, 
-		      const group_list& tris_v, const group_list& tris_tc, 
-		      const string_list& tri_materials,
-		      const group_list& strips_v, const group_list& strips_tc, 
-		      const string_list& strip_materials,
-		      const group_list& fans_v, const group_list& fans_tc,
-		      const string_list& fan_materials );
-
-
 // read a binary file object and populate the provided structures.
-bool sgReadBinObj( const string& file,
-		    Point3D &gbs_center, float *gbs_radius,
-		    point_list& wgs84_nodes, point_list& normals,
-		    point_list& texcoords, 
-		    group_list& tris_v, group_list& tris_tc, 
-		    string_list& tri_materials,
-		    group_list& strips_v, group_list& strips_tc, 
-		    string_list& strip_materials,
-		    group_list& fans_v, group_list& fans_tc,
-		    string_list& fan_materials );
+bool sgReadBinObj( const string& file, SGBinObject* obj );
 
 // write out the structures to a binary file.  We assume that the
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
 bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
-		    Point3D gbs_center, float gbs_radius,
-		    const point_list& wgs84_nodes, const point_list& normals,
-		    const point_list& texcoords, 
-		    const group_list& tris_v, const group_list& tris_tc, 
-		    const string_list& tri_materials,
-		    const group_list& strips_v, const group_list& strips_tc, 
-		    const string_list& strip_materials,
-		    const group_list& fans_v, const group_list& fans_tc,
-		    const string_list& fan_materials );
+		    const SGBinObject* obj );
+
+// write out the structures to an ASCII file.  We assume that the
+// groups come to us sorted by material property.  If not, things
+// don't break, but the result won't be as optimal.
+bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
+		      SGBinObject* obj );
 
 
 #endif // _SG_BINOBJ_HXX

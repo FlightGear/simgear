@@ -107,218 +107,26 @@ double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes ) {
 }
 
 
-// write out the structures to an ASCII file.  We assume that the
-// groups come to us sorted by material property.  If not, things
-// don't break, but the result won't be as optimal.
-bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
-		      Point3D gbs_center, float gbs_radius,
-		      const point_list& wgs84_nodes, const point_list& normals,
-		      const point_list& texcoords, 
-		      const group_list& tris_v, const group_list& tris_tc, 
-		      const string_list& tri_materials,
-		      const group_list& strips_v, const group_list& strips_tc, 
-		      const string_list& strip_materials,
-		      const group_list& fans_v, const group_list& fans_tc,
-		      const string_list& fan_materials )
-{
-    Point3D p;
-    int i, j;
-
-    string dir = base + "/" + b.gen_base_path();
-    string command = "mkdir -p " + dir;
-#ifdef _MSC_VER
-    fg_mkdir( dir.c_str() );
-#else
-    system(command.c_str());
-#endif
-
-    // string file = dir + "/" + b.gen_index_str();
-    string file = dir + "/" + name;
-    cout << "Output file = " << file << endl;
-
-    FILE *fp;
-    if ( (fp = fopen( file.c_str(), "w" )) == NULL ) {
-	cout << "ERROR: opening " << file << " for writing!" << endl;
-	return false;
-    }
-
-    cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
-	 << tri_materials.size() << endl;
-    cout << "strips size = " << strips_v.size() << "  strip_materials = " 
-	 << strip_materials.size() << endl;
-    cout << "fans size = " << fans_v.size() << "  fan_materials = " 
-	 << fan_materials.size() << endl;
-
-    cout << "points = " << wgs84_nodes.size() << endl;
-    cout << "tex coords = " << texcoords.size() << endl;
-    // write headers
-    fprintf(fp, "# FGFS Scenery\n");
-    fprintf(fp, "# Version %s\n", SG_SCENERY_FILE_FORMAT);
-
-    time_t calendar_time = time(NULL);
-    struct tm *local_tm;
-    local_tm = localtime( &calendar_time );
-    char time_str[256];
-    strftime( time_str, 256, "%a %b %d %H:%M:%S %Z %Y", local_tm);
-    fprintf(fp, "# Created %s\n", time_str );
-    fprintf(fp, "\n");
-
-    // write bounding sphere
-    fprintf(fp, "# gbs %.5f %.5f %.5f %.2f\n",
-	    gbs_center.x(), gbs_center.y(), gbs_center.z(), gbs_radius);
-    fprintf(fp, "\n");
-
-    // dump vertex list
-    fprintf(fp, "# vertex list\n");
-    for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-	p = wgs84_nodes[i] - gbs_center;
-	
-	fprintf(fp,  "v %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
-    }
-    fprintf(fp, "\n");
-
-    fprintf(fp, "# vertex normal list\n");
-    for ( i = 0; i < (int)normals.size(); ++i ) {
-	p = normals[i];
-	fprintf(fp,  "vn %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
-    }
-    fprintf(fp, "\n");
-
-    // dump texture coordinates
-    fprintf(fp, "# texture coordinate list\n");
-    for ( i = 0; i < (int)texcoords.size(); ++i ) {
-	p = texcoords[i];
-	fprintf(fp,  "vt %.5f %.5f\n", p.x(), p.y() );
-    }
-    fprintf(fp, "\n");
-
-    // dump individual triangles if they exist
-    if ( tris_v.size() > 0 ) {
-	fprintf(fp, "# triangle groups\n");
-
-	int start = 0;
-	int end = 1;
-	string material;
-	while ( start < (int)tri_materials.size() ) {
-	    // find next group
-	    material = tri_materials[start];
-	    while ( (end < (int)tri_materials.size()) && 
-		    (material == tri_materials[end]) )
-	    {
-		// cout << "end = " << end << endl;
-		end++;
-	    }
-	    // cout << "group = " << start << " to " << end - 1 << endl;
-
-	    // make a list of points for the group
-	    point_list group_nodes;
-	    group_nodes.clear();
-	    Point3D bs_center;
-	    double bs_radius = 0;
-	    for ( i = start; i < end; ++i ) {
-		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
-		    group_nodes.push_back( wgs84_nodes[ tris_v[i][j] ] );
-		    bs_center = calc_center( group_nodes );
-		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
-		}
-	    }
-
-	    // write group headers
-	    fprintf(fp, "\n");
-	    fprintf(fp, "# usemtl %s\n", material.c_str());
-	    fprintf(fp, "# bs %.4f %.4f %.4f %.2f\n",
-		    bs_center.x(), bs_center.y(), bs_center.z(), bs_radius);
-
-	    // write groups
-	    for ( i = start; i < end; ++i ) {
-		fprintf(fp, "f");
-		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
-		    fprintf(fp, " %d/%d", tris_v[i][j], tris_tc[i][j] );
-		}
-		fprintf(fp, "\n");
-	    }
-
-	    start = end;
-	    end = start + 1;
-	}
-    }
-
-    // dump triangle groups
-    if ( strips_v.size() > 0 ) {
-	fprintf(fp, "# triangle strips\n");
-
-	int start = 0;
-	int end = 1;
-	string material;
-	while ( start < (int)strip_materials.size() ) {
-	    // find next group
-	    material = strip_materials[start];
-	    while ( (end < (int)strip_materials.size()) && 
-		    (material == strip_materials[end]) )
-		{
-		    // cout << "end = " << end << endl;
-		    end++;
-		}
-	    // cout << "group = " << start << " to " << end - 1 << endl;
-
-	    // make a list of points for the group
-	    point_list group_nodes;
-	    group_nodes.clear();
-	    Point3D bs_center;
-	    double bs_radius = 0;
-	    for ( i = start; i < end; ++i ) {
-		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-		    group_nodes.push_back( wgs84_nodes[ strips_v[i][j] ] );
-		    bs_center = calc_center( group_nodes );
-		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
-		}
-	    }
-
-	    // write group headers
-	    fprintf(fp, "\n");
-	    fprintf(fp, "# usemtl %s\n", material.c_str());
-	    fprintf(fp, "# bs %.4f %.4f %.4f %.2f\n",
-		    bs_center.x(), bs_center.y(), bs_center.z(), bs_radius);
-
-	    // write groups
-	    for ( i = start; i < end; ++i ) {
-		fprintf(fp, "ts");
-		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-		    fprintf(fp, " %d/%d", strips_v[i][j], strips_tc[i][j] );
-		}
-		fprintf(fp, "\n");
-	    }
-	    
-	    start = end;
-	    end = start + 1;
-	}
-    }
-
-    // close the file
-    fclose(fp);
-
-    command = "gzip --force --best " + file;
-    system(command.c_str());
-
-    return true;
-}
-
-
 // read a binary file and populate the provided structures.
-bool sgReadBinObj( const string& file,
-		   Point3D &gbs_center, float *gbs_radius,
-		   point_list& wgs84_nodes, point_list& normals,
-		   point_list& texcoords, 
-		   group_list& tris_v, group_list& tris_tc, 
-		   string_list& tri_materials,
-		   group_list& strips_v, group_list& strips_tc, 
-		   string_list& strip_materials,
-		   group_list& fans_v, group_list& fans_tc,
-		   string_list& fan_materials )
-{
+bool sgReadBinObj( const string& file, SGBinObject* obj ) {
     Point3D p;
     int i, j, k;
     char material[256];
+
+    Point3D gbs_center = Point3D( 0 );
+    float gbs_radius = 0.0;
+    point_list wgs84_nodes;
+    point_list normals;
+    point_list texcoords;
+    group_list tris_v;
+    group_list tris_tc; 
+    string_list tri_materials;
+    group_list strips_v;
+    group_list strips_tc; 
+    string_list strip_materials;
+    group_list fans_v;
+    group_list fans_tc;
+    string_list fan_materials;
 
     // zero out structures
     wgs84_nodes.clear();
@@ -419,8 +227,8 @@ bool sgReadBinObj( const string& file,
 		ptr += sizeof(double) * 3;
 		
 		float *fptr = (float *)ptr;
-		*gbs_radius = fptr[0];
-		cout << "Bounding radius = " << *gbs_radius << endl;
+		gbs_radius = fptr[0];
+		cout << "Bounding radius = " << gbs_radius << endl;
 	    }
 	} else if ( obj_type == SG_VERTEX_LIST ) {
 	    // read vertex list properties
@@ -473,7 +281,7 @@ bool sgReadBinObj( const string& file,
 		sgReadInt( fp, &nbytes );
 		cout << "element size = " << nbytes << endl;
 		char buf[nbytes];
-		char *ptr = buf;
+		unsigned char *ptr = (unsigned char *)buf;
 		sgReadBytes( fp, nbytes, ptr );
 		int count = nbytes / 3;
 		for ( k = 0; k < count; ++k ) {
@@ -673,6 +481,21 @@ bool sgReadBinObj( const string& file,
     // close the file
     gzclose(fp);
 
+    obj->set_gbs_center( gbs_center );
+    obj->set_gbs_radius( gbs_radius );
+    obj->set_wgs84_nodes( wgs84_nodes );
+    obj->set_normals( normals );
+    obj->set_texcoords( texcoords );
+    obj->set_tris_v( tris_v );
+    obj->set_tris_tc( tris_tc ); 
+    obj->set_tri_materials( tri_materials );
+    obj->set_strips_v( strips_v );
+    obj->set_strips_tc( strips_tc ); 
+    obj->set_strip_materials( strip_materials );
+    obj->set_fans_v( fans_v );
+    obj->set_fans_tc( fans_tc );
+    obj->set_fan_materials( fan_materials );
+
     if ( sgReadError() ) {
 	cout << "We detected an error while reading the file." << endl;
 	return false;
@@ -686,20 +509,27 @@ bool sgReadBinObj( const string& file,
 // groups come to us sorted by material property.  If not, things
 // don't break, but the result won't be as optimal.
 bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
-		    Point3D gbs_center, float gbs_radius,
-		    const point_list& wgs84_nodes, const point_list& normals,
-		    const point_list& texcoords, 
-		    const group_list& tris_v, const group_list& tris_tc, 
-		    const string_list& tri_materials,
-		    const group_list& strips_v, const group_list& strips_tc, 
-		    const string_list& strip_materials,
-		    const group_list& fans_v, const group_list& fans_tc,
-		    const string_list& fan_materials )
+		    const SGBinObject* obj ) 
 {
     Point3D p;
     sgVec2 t;
     sgVec3 pt;
     int i, j;
+
+    Point3D gbs_center = obj->get_gbs_center();
+    float gbs_radius = obj->get_gbs_radius();
+    point_list wgs84_nodes = obj->get_wgs84_nodes();
+    point_list normals = obj->get_normals();
+    point_list texcoords = obj->get_texcoords();
+    group_list tris_v = obj->get_tris_v();
+    group_list tris_tc = obj->get_tris_tc(); 
+    string_list tri_materials = obj->get_tri_materials();
+    group_list strips_v = obj->get_strips_v();
+    group_list strips_tc = obj->get_strips_tc(); 
+    string_list strip_materials = obj->get_strip_materials();
+    group_list fans_v = obj->get_fans_v();
+    group_list fans_tc = obj->get_fans_tc();
+    string_list fan_materials = obj->get_fan_materials();
 
     string dir = base + "/" + b.gen_base_path();
     string command = "mkdir -p " + dir;
@@ -964,6 +794,210 @@ bool sgWriteBinObj( const string& base, const string& name, const SGBucket& b,
 	cout << "We detected an error while writing the file." << endl;
 	return false;
     }
+
+    return true;
+}
+
+
+// write out the structures to an ASCII file.  We assume that the
+// groups come to us sorted by material property.  If not, things
+// don't break, but the result won't be as optimal.
+bool sgWriteAsciiObj( const string& base, const string& name, const SGBucket& b,
+		      SGBinObject *obj )
+{
+    Point3D p;
+    int i, j;
+
+    Point3D gbs_center = obj->get_gbs_center();
+    float gbs_radius = obj->get_gbs_radius();
+    point_list wgs84_nodes = obj->get_wgs84_nodes();
+    point_list normals = obj->get_normals();
+    point_list texcoords = obj->get_texcoords();
+    group_list tris_v = obj->get_tris_v();
+    group_list tris_tc = obj->get_tris_tc(); 
+    string_list tri_materials = obj->get_tri_materials();
+    group_list strips_v = obj->get_strips_v();
+    group_list strips_tc = obj->get_strips_tc(); 
+    string_list strip_materials = obj->get_strip_materials();
+    group_list fans_v = obj->get_fans_v();
+    group_list fans_tc = obj->get_fans_tc();
+    string_list fan_materials = obj->get_fan_materials();
+
+    string dir = base + "/" + b.gen_base_path();
+    string command = "mkdir -p " + dir;
+#ifdef _MSC_VER
+    fg_mkdir( dir.c_str() );
+#else
+    system(command.c_str());
+#endif
+
+    // string file = dir + "/" + b.gen_index_str();
+    string file = dir + "/" + name;
+    cout << "Output file = " << file << endl;
+
+    FILE *fp;
+    if ( (fp = fopen( file.c_str(), "w" )) == NULL ) {
+	cout << "ERROR: opening " << file << " for writing!" << endl;
+	return false;
+    }
+
+    cout << "triangles size = " << tris_v.size() << "  tri_materials = " 
+	 << tri_materials.size() << endl;
+    cout << "strips size = " << strips_v.size() << "  strip_materials = " 
+	 << strip_materials.size() << endl;
+    cout << "fans size = " << fans_v.size() << "  fan_materials = " 
+	 << fan_materials.size() << endl;
+
+    cout << "points = " << wgs84_nodes.size() << endl;
+    cout << "tex coords = " << texcoords.size() << endl;
+    // write headers
+    fprintf(fp, "# FGFS Scenery\n");
+    fprintf(fp, "# Version %s\n", SG_SCENERY_FILE_FORMAT);
+
+    time_t calendar_time = time(NULL);
+    struct tm *local_tm;
+    local_tm = localtime( &calendar_time );
+    char time_str[256];
+    strftime( time_str, 256, "%a %b %d %H:%M:%S %Z %Y", local_tm);
+    fprintf(fp, "# Created %s\n", time_str );
+    fprintf(fp, "\n");
+
+    // write bounding sphere
+    fprintf(fp, "# gbs %.5f %.5f %.5f %.2f\n",
+	    gbs_center.x(), gbs_center.y(), gbs_center.z(), gbs_radius);
+    fprintf(fp, "\n");
+
+    // dump vertex list
+    fprintf(fp, "# vertex list\n");
+    for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
+	p = wgs84_nodes[i] - gbs_center;
+	
+	fprintf(fp,  "v %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
+    }
+    fprintf(fp, "\n");
+
+    fprintf(fp, "# vertex normal list\n");
+    for ( i = 0; i < (int)normals.size(); ++i ) {
+	p = normals[i];
+	fprintf(fp,  "vn %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
+    }
+    fprintf(fp, "\n");
+
+    // dump texture coordinates
+    fprintf(fp, "# texture coordinate list\n");
+    for ( i = 0; i < (int)texcoords.size(); ++i ) {
+	p = texcoords[i];
+	fprintf(fp,  "vt %.5f %.5f\n", p.x(), p.y() );
+    }
+    fprintf(fp, "\n");
+
+    // dump individual triangles if they exist
+    if ( tris_v.size() > 0 ) {
+	fprintf(fp, "# triangle groups\n");
+
+	int start = 0;
+	int end = 1;
+	string material;
+	while ( start < (int)tri_materials.size() ) {
+	    // find next group
+	    material = tri_materials[start];
+	    while ( (end < (int)tri_materials.size()) && 
+		    (material == tri_materials[end]) )
+	    {
+		// cout << "end = " << end << endl;
+		end++;
+	    }
+	    // cout << "group = " << start << " to " << end - 1 << endl;
+
+	    // make a list of points for the group
+	    point_list group_nodes;
+	    group_nodes.clear();
+	    Point3D bs_center;
+	    double bs_radius = 0;
+	    for ( i = start; i < end; ++i ) {
+		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
+		    group_nodes.push_back( wgs84_nodes[ tris_v[i][j] ] );
+		    bs_center = calc_center( group_nodes );
+		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
+		}
+	    }
+
+	    // write group headers
+	    fprintf(fp, "\n");
+	    fprintf(fp, "# usemtl %s\n", material.c_str());
+	    fprintf(fp, "# bs %.4f %.4f %.4f %.2f\n",
+		    bs_center.x(), bs_center.y(), bs_center.z(), bs_radius);
+
+	    // write groups
+	    for ( i = start; i < end; ++i ) {
+		fprintf(fp, "f");
+		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
+		    fprintf(fp, " %d/%d", tris_v[i][j], tris_tc[i][j] );
+		}
+		fprintf(fp, "\n");
+	    }
+
+	    start = end;
+	    end = start + 1;
+	}
+    }
+
+    // dump triangle groups
+    if ( strips_v.size() > 0 ) {
+	fprintf(fp, "# triangle strips\n");
+
+	int start = 0;
+	int end = 1;
+	string material;
+	while ( start < (int)strip_materials.size() ) {
+	    // find next group
+	    material = strip_materials[start];
+	    while ( (end < (int)strip_materials.size()) && 
+		    (material == strip_materials[end]) )
+		{
+		    // cout << "end = " << end << endl;
+		    end++;
+		}
+	    // cout << "group = " << start << " to " << end - 1 << endl;
+
+	    // make a list of points for the group
+	    point_list group_nodes;
+	    group_nodes.clear();
+	    Point3D bs_center;
+	    double bs_radius = 0;
+	    for ( i = start; i < end; ++i ) {
+		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
+		    group_nodes.push_back( wgs84_nodes[ strips_v[i][j] ] );
+		    bs_center = calc_center( group_nodes );
+		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
+		}
+	    }
+
+	    // write group headers
+	    fprintf(fp, "\n");
+	    fprintf(fp, "# usemtl %s\n", material.c_str());
+	    fprintf(fp, "# bs %.4f %.4f %.4f %.2f\n",
+		    bs_center.x(), bs_center.y(), bs_center.z(), bs_radius);
+
+	    // write groups
+	    for ( i = start; i < end; ++i ) {
+		fprintf(fp, "ts");
+		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
+		    fprintf(fp, " %d/%d", strips_v[i][j], strips_tc[i][j] );
+		}
+		fprintf(fp, "\n");
+	    }
+	    
+	    start = end;
+	    end = start + 1;
+	}
+    }
+
+    // close the file
+    fclose(fp);
+
+    command = "gzip --force --best " + file;
+    system(command.c_str());
 
     return true;
 }

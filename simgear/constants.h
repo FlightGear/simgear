@@ -135,7 +135,7 @@
 /** Miles per hour to Miles per second */
 #define SG_MPH_TO_MPS       0.44704
 
-/** Miles per second to Kilometers per hour */
+/** Meters per second to Kilometers per hour */
 #define SG_MPS_TO_KMH       3.6
 
 /** Kilometers per hour to Miles per second */

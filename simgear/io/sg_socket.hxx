@@ -64,6 +64,7 @@ private:
     bool is_tcp;
     bool is_server;
     bool first_read;
+    int timeout;
 
     static bool init;
 
@@ -155,6 +156,9 @@ public:
      * @return success/failure
      */
     bool nonblock();
+
+    // set timeout (default: 0)
+    inline void set_timeout(int i) { timeout = i; }
 
     /** @return the remote host name */
     inline string get_hostname() const { return hostname; }

@@ -42,7 +42,8 @@ SGSocket::SGSocket( const string& host, const string& port_,
     client(0),
     is_tcp(false),
     is_server(false),
-    first_read(false)
+    first_read(false),
+    timeout(0)
 {
     if (!init)
     {
@@ -386,7 +387,7 @@ SGSocket::poll()
     netSocket* writers[1];
     writers[0] = 0;
 
-    int result = netSocket::select( readers, writers, 0 );
+    int result = netSocket::select( readers, writers, timeout );
 
     if (result > 0 && is_server && client == 0)
     {

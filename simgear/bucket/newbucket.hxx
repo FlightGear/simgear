@@ -133,7 +133,7 @@ public:
     void set_bucket( double *lonlat );
 
     // create an impossible bucket
-    inline void SGBucket::make_bad( void ) {
+    inline void make_bad( void ) {
 	set_bucket(0.0, 0.0);
 	lon = -1000;
     }

@@ -54,7 +54,7 @@ public:
     {
 	CANCEL_DISABLE = 0,
 	CANCEL_DEFERRED,
-	CANCEL_IMMEDIATE,
+	CANCEL_IMMEDIATE
     };
 public:
 

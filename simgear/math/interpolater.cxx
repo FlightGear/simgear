@@ -106,7 +106,7 @@ double SGInterpTable::interpolate(double x) {
 
 
 // Destructor
-SGInterpTable::~SGInterpTable( void ) {
+SGInterpTable::~SGInterpTable() {
 }
 
 

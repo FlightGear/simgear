@@ -86,10 +86,13 @@ public:
     // logbuf( streambuf* sb ) : sbuf(sb) {}
     /** Constructor */
     logbuf();
+
     /** Destructor */
     ~logbuf();
 
-    /** Is logging enabled? */
+    /**
+     * Is logging enabled?
+     * @return true or false*/
     bool enabled() { return logging_enabled; }
 
     /**
@@ -230,9 +233,11 @@ logstream::operator<< ( const loglevel& l )
 
 
 /**
+ * \relates logstream
  * Return the one and only logstream instance.
  * We use a function instead of a global object so we are assured that cerr
  * has been initialised.
+ * @return current logstream
  */
 inline logstream&
 sglog()

@@ -1,5 +1,8 @@
-// polar.hxx -- routines to deal with polar math and transformations
-//
+/**
+ * \file polar3d.hxx
+ * Routines to deal with polar math and transformations.
+ */
+
 // Written by Curtis Olson, started June 1997.
 //
 // Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
@@ -22,8 +25,8 @@
 // $Id$
 
 
-#ifndef _POLAR_HXX
-#define _POLAR_HXX
+#ifndef _POLAR3D_HXX
+#define _POLAR3D_HXX
 
 
 #ifndef __cplusplus                                                          
@@ -37,15 +40,23 @@
 #include <simgear/math/point3d.hxx>
 
 
-// Find the Altitude above the Ellipsoid (WGS84) given the Earth
-// Centered Cartesian coordinate vector Distances are specified in
-// meters.
+/** 
+ * Find the Altitude above the Ellipsoid (WGS84) given the Earth
+ * Centered Cartesian coordinate vector Distances are specified in
+ * meters.
+ * @param cp point specified in cartesian coordinates
+ * @return altitude above the (wgs84) earth in meters
+ */
 double sgGeodAltFromCart(const Point3D& cp);
 
 
-// Convert a polar coordinate to a cartesian coordinate.  Lon and Lat
-// must be specified in radians.  The SG convention is for distances
-// to be specified in meters
+/**
+ * Convert a polar coordinate to a cartesian coordinate.  Lon and Lat
+ * must be specified in radians.  The SG convention is for distances
+ * to be specified in meters
+ * @param p point specified in polar coordinates
+ * @return the same point in cartesian coordinates
+ */
 inline Point3D sgPolarToCart3d(const Point3D& p) {
     double tmp = cos( p.lat() ) * p.radius();
 
@@ -55,8 +66,12 @@ inline Point3D sgPolarToCart3d(const Point3D& p) {
 }
 
 
-// Convert a cartesian coordinate to polar coordinates (lon/lat
-// specified in radians.  Distances are specified in meters.
+/**
+ * Convert a cartesian coordinate to polar coordinates (lon/lat
+ * specified in radians.  Distances are specified in meters.
+ * @param cp point specified in cartesian coordinates
+ * @return the same point in polar coordinates
+ */
 inline Point3D sgCartToPolar3d(const Point3D& cp) {
     return Point3D( atan2( cp.y(), cp.x() ),
 		    SGD_PI_2 - 
@@ -65,10 +80,16 @@ inline Point3D sgCartToPolar3d(const Point3D& cp) {
 }
 
 
-// calc new lon/lat given starting lon/lat, and offset radial, and
-// distance.  NOTE: starting point is specifed in radians, distance is
-// specified in meters (and converted internally to radians)
-// ... assumes a spherical world
+/**
+ * Calculate new lon/lat given starting lon/lat, and offset radial, and
+ * distance.  NOTE: starting point is specifed in radians, distance is
+ * specified in meters (and converted internally to radians)
+ * ... assumes a spherical world.
+ * @param orig specified in polar coordinates
+ * @param course offset radial
+ * @param dist offset distance
+ * @return destination point in polar coordinates
+ */
 inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
 				double dist ) {
     Point3D result;
@@ -101,7 +122,13 @@ inline Point3D calc_gc_lon_lat( const Point3D& orig, double course,
 }
 
 
-// calc course/dist
+/**
+ * Calculate course/dist given two spherical points.
+ * @param start starting point
+ * @param dest ending point
+ * @param course resulting course
+ * @param dist resulting distance
+ */
 inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest, 
 				 double *course, double *dist ) {
     // d = 2*asin(sqrt((sin((lat1-lat2)/2))^2 + 
@@ -157,4 +184,4 @@ inline void calc_gc_course_dist( const Point3D& start, const Point3D& dest,
     *dist = d * SG_RAD_TO_NM * SG_NM_TO_METER;
 }
 
-#endif // _POLAR_HXX
+#endif // _POLAR3D_HXX

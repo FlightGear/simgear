@@ -1,5 +1,8 @@
-// leastsqs.h -- Implements a simple linear least squares best fit routine
-//
+/**
+ * \file leastsqs.hxx
+ * Implements a simple linear least squares best fit routine.
+ */
+
 // Written by Curtis Olson, started September 1997.
 //
 // Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
@@ -20,7 +23,6 @@
 // Boston, MA  02111-1307, USA.
 //
 // $Id$
-///
 
 
 #ifndef _LEASTSQS_H
@@ -32,39 +34,47 @@
 #endif                                   
 
 
-/* 
-Least squares fit:
+/**
+Classical least squares fit:
 
-y = b0 + b1x
+\f[
+    y = b_0 + b_1 * x
+\f]
 
-     n*sum(xi*yi) - (sum(xi)*sum(yi))
-b1 = --------------------------------
-     n*sum(xi^2) - (sum(xi))^2
+\f[
+    b_1 = \frac{n * \sum_0^i (x_i*y_i) - \sum_0^i x_i* \sum_0^i y_i}
+          {n*\sum_0^i x_i^2 - (\sum_0^i x_i)^2}
+\f]
 
-
-b0 = sum(yi)/n - b1*(sum(xi)/n)
+\f[
+    b_0 = \frac{\sum_0^i y_i}{n} - b_1 * \frac{\sum_0^i x_i}{n}
+\f]
 */
-
 void least_squares(double *x, double *y, int n, double *m, double *b);
 
-/* incrimentally update existing values with a new data point */
+
+/**
+ * Incrimentally update existing values with a new data point.
+ */
 void least_squares_update(double x, double y, double *m, double *b);
 
 
-/* 
-  return the least squares error:
+/**
+  @return the least squares error:.
+\f[
 
-              (y[i] - y_hat[i])^2
-              -------------------
-                      n
+    \frac{(y_i - \hat{y}_i)^2}{n}
+\f]
 */
 double least_squares_error(double *x, double *y, int n, double m, double b);
 
 
-/* 
-  return the maximum least squares error:
+/**
+  @return the maximum least squares error.
 
-              (y[i] - y_hat[i])^2
+\f[
+    (y_i - \hat{y}_i)^2
+\f]
 */
 double least_squares_max_error(double *x, double *y, int n, double m, double b);
 

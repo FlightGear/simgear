@@ -118,38 +118,38 @@ public:
     void update(double mjd, double lst, double lat);
 
     /**
-     * Returns a pointer to a Star class containing all the positional
+     * @return a pointer to a Star class containing all the positional
      * information for Earth's Sun.
      */
     inline Star *get_sun() const { return our_sun; }
 
-    /** Returns the right ascension of the Sun. */
+    /** @return the right ascension of the Sun. */
     inline double getSunRightAscension() const {
 	return our_sun->getRightAscension();
     }
 
-    /** Returns the declination of the Sun. */
+    /** @return the declination of the Sun. */
     inline double getSunDeclination() const {
 	return our_sun->getDeclination();
     }
 
     /**
-     * Returns a pointer to a Moon class containing all the positional
+     * @return a pointer to a Moon class containing all the positional
      * information for Earth's Moon.
      */
     inline MoonPos *get_moon() const { return moon; }
 
-    /** Returns the right ascension of the Moon. */
+    /** @return the right ascension of the Moon. */
     inline double getMoonRightAscension() const {
 	return moon->getRightAscension();
     }
 
-    /** Returns the declination of the Moon. */
+    /** @return the declination of the Moon. */
     inline double getMoonDeclination() const {
 	return moon->getDeclination();
     }
 
-    /** Returns the numbers of defined planets. */
+    /** @return the numbers of defined planets. */
     inline int getNumPlanets() const { return nplanets; }
 
     /**
@@ -158,10 +158,11 @@ public:
      * the ``sg'' package.) An sgdVec3 is a 3 element double
      * array. The first element is the right ascension of the planet,
      * the second is the declination, and the third is the magnitude.
+     * @return planets array
      */
     inline sgdVec3 *getPlanets() { return planets; }
 
-    /** Returns the numbers of defined stars. */
+    /** @return the numbers of defined stars. */
     inline int getNumStars() const { return stars->getNumStars(); }
 
     /**
@@ -169,6 +170,7 @@ public:
      * format. An The first element of the sgdVec3 is the right
      * ascension of the planet, the second is the declination, and the
      * third is the magnitude.
+     * @returns star array
      */
     inline sgdVec3 *getStars() { return stars->getStars(); }
 };

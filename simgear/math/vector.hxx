@@ -1,5 +1,8 @@
-// vector.hxx -- additional vector routines
-//
+/**
+ * \file vector.hxx
+ * Additional vector routines.
+ */
+
 // Written by Curtis Olson, started December 1997.
 //
 // Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
@@ -39,6 +42,13 @@
 #include <plib/sg.h>
 
 
+/**
+ * Map a vector onto a plane.
+ * @param normal (in) normal vector for the plane
+ * @param v0 (in) a point on the plane
+ * @param vec (in) the vector to map onto the plane
+ * @param result (out) the result vector
+ */
 inline void sgmap_vec_onto_cur_surface_plane( sgVec3 normal, 
 					      sgVec3 v0, 
 					      sgVec3 vec,
@@ -84,6 +94,11 @@ inline void sgmap_vec_onto_cur_surface_plane( sgVec3 normal,
 }
 
 
+/**
+ * Copy and negate a vector.
+ * @param dst (out) result vector
+ * @param src (in) input vector
+ */
 inline void sgCopyNegateVec4( sgVec4 dst, sgVec4 src )
 {
 	dst [ 0 ] = -src [ 0 ] ;
@@ -92,30 +107,63 @@ inline void sgCopyNegateVec4( sgVec4 dst, sgVec4 src )
 	dst [ 3 ] = -src [ 3 ] ;
 }
 
-// Given a point p, and a line through p0 with direction vector d,
-// find the closest point (p1) on the line
+/**
+ * Given a point p, and a line through p0 with direction vector d,
+ * find the closest point (p1) on the line (float version).
+ * @param p1 (out) closest point to p on the line
+ * @param p (in) original point
+ * @param p0 (in) point on the line
+ * @param d (in) vector defining line direction
+ */
 void sgClosestPointToLine( sgVec3 p1, const sgVec3 p, const sgVec3 p0,
 			   const sgVec3 d );
 
-// Given a point p, and a line through p0 with direction vector d,
-// find the closest point (p1) on the line
+/**
+ * Given a point p, and a line through p0 with direction vector d,
+ * find the closest point (p1) on the line (double version).
+ * @param p1 (out) closest point to p on the line
+ * @param p (in) original point
+ * @param p0 (in) point on the line
+ * @param d (in) vector defining line direction
+ */
 void sgdClosestPointToLine( sgdVec3 p1, const sgdVec3 p, const sgdVec3 p0,
 			    const sgdVec3 d );
 
-// Given a point p, and a line through p0 with direction vector d,
-// find the shortest distance (squared) from the point to the line
+/**
+ * Given a point p, and a line through p0 with direction vector d,
+ * find the shortest distance (squared) from the point to the line (float
+ * version.)
+ * @param p (in) original point
+ * @param p0 (in) point on the line
+ * @param d (in) vector defining line direction
+ * @return shortest distance (squared) from p to line
+ */
 double sgClosestPointToLineDistSquared( const sgVec3 p, const sgVec3 p0,
 					const sgVec3 d );
 
-// Given a point p, and a line through p0 with direction vector d,
-// find the shortest distance (squared) from the point to the line
+/**
+ * Given a point p, and a line through p0 with direction vector d,
+ * find the shortest distance (squared) from the point to the line (double
+ * version.)
+ * @param p (in) original point
+ * @param p0 (in) point on the line
+ * @param d (in) vector defining line direction
+ * @return shortest distance (squared) from p to line
+ */
 double sgdClosestPointToLineDistSquared( const sgdVec3 p, const sgdVec3 p0,
 					 const sgdVec3 d );
 
-// This is same as
-// sgMakeMatTrans4( sgMat4 sgTrans, sgVec3 trans )
-// sgPostMultMat4( sgMat, sgTRANS );
+/**
+ * This is same as:
+ *
+ * <li> sgMakeMatTrans4( sgMat4 sgTrans, sgVec3 trans )
+ * <li> sgPostMultMat4( sgMat4 src, sgTRANS );
+ *
+ * @param src starting sgMat4 matrix
+ * @param trans translation vector
+ */
 void sgPostMultMat4ByTransMat4( sgMat4 src, const sgVec3 trans );
+
 
 #endif // _VECTOR_HXX
 

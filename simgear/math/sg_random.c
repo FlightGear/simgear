@@ -41,7 +41,7 @@
 
 #ifdef __SUNPRO_CC
     extern "C" {
-	long int random(void);
+	long int random();
 	void srandom(unsigned int seed);
     }
 #endif
@@ -49,7 +49,7 @@
 
 // Seed the random number generater with time() so we don't see the
 // same sequence every time
-void sg_srandom_time(void) {
+void sg_srandom_time() {
 #ifdef HAVE_RAND
     srand(time(NULL));
 #else
@@ -70,7 +70,7 @@ void sg_srandom( unsigned int seed ) {
 
 
 // return a random number between [0.0, 1.0)
-double sg_random(void) {
+double sg_random() {
 #ifdef HAVE_RAND
     return(rand() / (double)RAND_MAX);
 #else

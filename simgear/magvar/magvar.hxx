@@ -1,5 +1,8 @@
-// magvar.hxx -- magnetic variation wrapper class
-//
+/** 
+ * \file magvar.hxx
+ * Magnetic variation wrapper class.
+ */
+
 // Written by Curtis Olson, started July 2000.
 //
 // Copyright (C) 2000  Curtis L. Olson  - curt@flightgear.org
@@ -34,7 +37,21 @@
 #  include <config.h>
 #endif
 
-
+/**
+ * Magnetic variation wrapper class.
+ *
+ * The SGMagVar class calculates the magnetic variation and dip for
+ * any position, altitude, and time. It is a complete
+ * re-implimentation of the NIMA WMM 2000 (not derived from their demo
+ * code.)
+ *
+ * The SGMagVar class is really a simple wrapper around the core Ed
+ * Williams code which does all the hard work.  This class allows you
+ * to crunch the math once and then do multiple polls of the
+ * data. However, if your position, altitude, or time has changed
+ * significantly, you should call the update() method to recrunch new
+ * numbers.
+ */
 class SGMagVar {
 
 private:
@@ -44,19 +61,42 @@ private:
 
 public:
 
+    /**
+     * This creates an instance of the SGMagVar object.
+     * You must call the update() method before any queries will be valid.
+     */
     SGMagVar();
+
+    /** Destructor */
     ~SGMagVar();
 
-    // recalculate the magnetic offset and dip
+    /** Recalculate the magnetic offset and dip.
+     * The update() method requires you to pass in your position and
+     * the julian date. Lon and lat are specified in radians, altitude
+     * is specified in meters. Julian date can be conveniently
+     * calculated by using an instance of the SGTime class.
+     * @param lon longitude in radians
+     * @param lat latitude in radians
+     * @param alt_m altitude above sea level in meters
+     * @param jd julian date
+     */
     void update( double lon, double lat, double alt_m, double jd );
 
+    /** @return the current magnetic variation in radians. */
     double get_magvar() const { return magvar; }
+
+    /** @return the current magnetic dip in radians. */
     double get_magdip() const { return magdip; }
 };
 
 
-// lookup the magvar for any arbitrary location (doesn't save state
-// and note that this is a fair amount of cpu work)
+/**
+ * \relates SGMagVar
+ * Lookup the magvar for any arbitrary location (This function doesn't
+ * save state like the SGMagVar class.  This function triggers a fair
+ * amount of CPU work, so use it cautiously.
+ * @return the magvar in radians
+ */
 double sgGetMagVar( double lon, double lat, double alt_m, double jd );
 
 

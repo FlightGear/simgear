@@ -167,13 +167,16 @@ public:
     // close file
     bool close();
 
-    /** Enable non-blocking mode. */
+    /**
+     * Enable non-blocking mode.
+     * @return success/failure
+     */
     bool nonblock();
 
-    /** Return the remote host name */
+    /** @return the remote host name */
     inline string get_hostname() const { return hostname; }
 
-    /** Return the port number (in string form) */
+    /** @return the port number (in string form) */
     inline string get_port_str() const { return port_str; }
 };
 

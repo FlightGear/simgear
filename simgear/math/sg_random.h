@@ -1,5 +1,8 @@
-// sg_random.h -- routines to handle random number generation
-//
+/**
+ * \file sg_random.h
+ * Routines to handle random number generation and hide platform differences.
+ */
+
 // Written by Curtis Olson, started July 1997.
 //
 // Copyright (C) 1997  Curtis L. Olson  - curt@infoplane.com
@@ -31,16 +34,24 @@ extern "C" {
 #endif                                   
 
 
-// Seed the random number generater with time() so we don't see the
-// same sequence every time
-void sg_srandom_time(void);
+/**
+ * Seed the random number generater with time() so we don't see the
+ * same sequence every time.
+ */
+void sg_srandom_time();
 
-// Seed the random number generater with your own seed so can set up
-// repeatable randomization.
+/**
+ * Seed the random number generater with your own seed so can set up
+ * repeatable randomization.
+ * @param seed random number generator seed
+ */
 void sg_srandom( unsigned int seed );
 
-// return a random number between [0.0, 1.0)
-double sg_random(void);
+/**
+ * Return a random number between [0.0, 1.0)
+ * @return next "random" number in the "random" sequence
+ */
+double sg_random();
 
 
 #ifdef __cplusplus

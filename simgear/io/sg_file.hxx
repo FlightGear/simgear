@@ -87,7 +87,7 @@ public:
     // close file
     bool close();
 
-    /** Return the name of the file being manipulated. */
+    /** @return the name of the file being manipulated. */
     inline string get_file_name() const { return file_name; }
 };
 

@@ -1,7 +1,13 @@
-// point3d.hxx -- a 3d point class.  
-//
-// Adapted from algebra3 by Jean-Francois Doue, started October 1998.
-//
+/**
+ * \file point3d.hxx
+ * A 3d point class (depricated).  This class is depricated and we are
+ * in the process of removing all usage of it in favor of plib's "sg"
+ * library of point, vector, and math routines.  Plib's sg lib is less
+ * object oriented, but integrates more seamlessly with opengl.
+ *
+ * Adapted from algebra3 by Jean-Francois Doue, started October 1998.
+ */
+
 // Copyright (C) 1998  Curtis L. Olson  - curt@me.umn.edu
 //
 // This library is free software; you can redistribute it and/or
@@ -73,11 +79,9 @@ Point3D operator- (const Point3D& p);	            // -p1
 bool operator== (const Point3D& a, const Point3D& b);  // p1 == p2?
 
 
-///////////////////////////
-//
-// 3D Point
-//
-///////////////////////////
+/**
+ * 3D Point class.
+ */
 
 class Point3D {
 
@@ -87,8 +91,7 @@ protected:
 
 public:
 
-    // Constructors
-
+    /** Default constructor */
     Point3D();
     Point3D(const double x, const double y, const double z);
     explicit Point3D(const double d);

@@ -193,6 +193,7 @@ public:
      *
      * 3 bits - to represent x (0 to 7)
      * 3 bits - to represent y (0 to 7)
+     * @return tile index
      */
     inline long int gen_index() const {
 	return ((lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x;
@@ -201,6 +202,7 @@ public:
     /**
      * Generate the unique scenery tile index for this bucket in ascii
      * string form.
+     * @return tile index in string form
      */
     inline string gen_index_str() const {
 	char tmp[20];
@@ -211,11 +213,12 @@ public:
 
     /**
      * Build the base path name for this bucket.
+     * @return base path in string form
      */
     string gen_base_path() const;
 
     /**
-     * Return the center lon of a tile.
+     * @return the center lon of a tile.
      */
     inline double get_center_lon() const {
 	double span = sg_bucket_span( lat + y / 8.0 + SG_HALF_BUCKET_SPAN );
@@ -228,51 +231,51 @@ public:
     }
 
     /**
-     * Return the center lat of a tile.
+     * @return the center lat of a tile.
      */
     inline double get_center_lat() const {
 	return lat + y / 8.0 + SG_HALF_BUCKET_SPAN;
     }
 
     /**
-     * Return width of the tile in degrees.
+     * @return the width of the tile in degrees.
      */
     double get_width() const;
 
     /**
-     * Return height of the tile in degrees.
+     * @return the height of the tile in degrees.
      */
     double get_height() const;
 
     /**
-     * Return width of the tile in meters.
+     * @return the width of the tile in meters.
      */
     double get_width_m() const; 
 
     /**
-     * Return height of the tile in meters.
+     * @return the height of the tile in meters.
      */
     double get_height_m() const;
  
     // Informational methods.
 
     /**
-     * Return the lon of the lower left corner of this tile.
+     * @return the lon of the lower left corner of this tile.
      */
     inline int get_lon() const { return lon; }
 
     /**
-     * Return the lat of the lower left corner of this tile.
+     * @return the lat of the lower left corner of this tile.
      */
     inline int get_lat() const { return lat; }
 
     /**
-     * Return the x coord within the 1x1 degree chunk this tile.
+     * @return the x coord within the 1x1 degree chunk this tile.
      */
     inline int get_x() const { return x; }
 
     /**
-     * Return the y coord within the 1x1 degree chunk this tile.
+     * @return the y coord within the 1x1 degree chunk this tile.
      */
     inline int get_y() const { return y; }
 
@@ -284,17 +287,20 @@ public:
 
 
 /**
+ * \relates SGBucket
  * Return the bucket which is offset from the specified dlon, dlat by
  * the specified tile units in the X & Y direction.
  * @param dlon starting lon in degrees
  * @param dlat starting lat in degrees
  * @param x number of bucket units to offset in x (lon) direction
  * @param y number of bucket units to offset in y (lat) direction
+ * @return offset bucket
  */
 SGBucket sgBucketOffset( double dlon, double dlat, int x, int y );
 
 
 /**
+ * \relates SGBucket
  * Calculate the offset between two buckets (in quantity of buckets).
  * @param b1 bucket 1
  * @param b2 bucket 2
@@ -320,6 +326,7 @@ operator<< ( ostream& out, const SGBucket& b )
  * Compare two bucket structures for equality.
  * @param b1 bucket 1
  * @param b2 bucket 2
+ * @return comparison result
  */
 inline bool
 operator== ( const SGBucket& b1, const SGBucket& b2 )

@@ -96,6 +96,7 @@ public:
      *  - SG_IO_BI - data will be flowing in both directions. 
      *  - SG_IO_NONE - data will not be flowing in either direction.
      *                 This is here for the sake of completeness. 
+     * @return result of open
      */
     virtual bool open( const SGProtocolDir d );
 
@@ -109,6 +110,7 @@ public:
      * accomodate your input message
      * @param buf a char pointer to your input buffer 
      * @param length max number of bytes to read
+     * @return number of bytes read
      */
     virtual int read( char *buf, int length );
 
@@ -117,6 +119,7 @@ public:
      * stop at the first end of line encountered in the input buffer.
      * @param buf a char pointer to your input buffer 
      * @param length max number of bytes to read
+     * @return number of bytes read
      */
     virtual int readline( char *buf, int length );
 
@@ -128,6 +131,7 @@ public:
      * written out. The number of bytes written is returned.
      * @param buf a char pointer to your output buffer 
      * @param length number of bytes to write
+     * @return number of bytes written
      */
     virtual int write( const char *buf, const int length );
 
@@ -136,6 +140,7 @@ public:
      * calculate the length of a null terminated character array and
      * write it to the output channel.
      * @param buf a char pointer to your output buffer 
+     * @return number of bytes written
      */
     virtual int writestring( const char *str );
 
@@ -143,6 +148,7 @@ public:
      * The close() method is modeled after the close() Unix system
      * call and will close an open device. You should call this method
      * when you are done using your IO class, before it is destructed.
+     * @return result of close
      */
     virtual bool close();
 

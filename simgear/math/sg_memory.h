@@ -1,5 +1,9 @@
-// fg_memory.h -- memcpy/bcopy portability declarations
-//
+/**
+ * \file sg_memory.h
+ * memcpy/bcopy portability declarations (not actually used by anything
+ * as best as I can tell.
+ */
+
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
 // License as published by the Free Software Foundation; either
@@ -18,8 +22,8 @@
 // $Id$
 
 
-#ifndef _FG_MEMORY_H
-#define _FG_MEMORY_H
+#ifndef _SG_MEMORY_H
+#define _SG_MEMORY_H
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -31,15 +35,15 @@
 #    include <memory.h>
 #  endif
 
-#  define fgmemcmp            memcmp
-#  define fgmemcpy            memcpy
-#  define fgmemzero(dest,len) memset(dest,0,len)
+#  define sgmemcmp            memcmp
+#  define sgmemcpy            memcpy
+#  define sgmemzero(dest,len) memset(dest,0,len)
 
 #elif defined(HAVE_BCOPY)
 
-#  define fgmemcmp              bcmp
-#  define fgmemcpy(dest,src,n)  bcopy(src,dest,n)
-#  define fgmemzero             bzero
+#  define sgmemcmp              bcmp
+#  define sgmemcpy(dest,src,n)  bcopy(src,dest,n)
+#  define sgmemzero             bzero
 
 #else
 
@@ -49,12 +53,12 @@
  */
 
 #  include <zutil.h>
-#  define fgmemcmp zmemcmp
-#  define fgmemcpy zmemcpy
-#  define fgmemzero zmemzero
+#  define sgmemcmp zmemcmp
+#  define sgmemcpy zmemcpy
+#  define sgmemzero zmemzero
 
 #endif
 
-#endif // _FG_MEMORY_H
+#endif // _SG_MEMORY_H
 
 

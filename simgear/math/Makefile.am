@@ -9,13 +9,13 @@ endif
 lib_LIBRARIES = libsgmath.a
 
 include_HEADERS = \
-	fg_memory.h \
 	interpolater.hxx \
 	leastsqs.hxx \
 	localconsts.hxx \
 	point3d.hxx \
 	polar3d.hxx \
 	sg_geodesy.hxx \
+	sg_memory.h \
 	sg_random.h \
 	sg_types.hxx \
 	vector.hxx

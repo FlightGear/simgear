@@ -1,8 +1,9 @@
-// sg_geodesy.hxx -- routines to convert between geodetic and geocentric 
-//                   coordinate systems.
-//
-// Copied and adapted directly from LaRCsim/ls_geodesy.c
-//
+/**
+ * \file sg_geodesy.hxx
+ * Routines to convert between geodetic and geocentric coordinate systems.
+ * Copied and adapted directly from LaRCsim/ls_geodesy.c
+ */
+
 // See below for the complete original LaRCsim comments.
 //
 // $Id$
@@ -21,39 +22,37 @@
 #include <simgear/math/polar3d.hxx>
 
 
-// sgGeocToGeod(lat_geoc, radius, *lat_geod, *alt, *sea_level_r)
-//     INPUTS:	
-//         lat_geoc	Geocentric latitude, radians, + = North
-//         radius	C.G. radius to earth center (meters)
-//
-//     OUTPUTS:
-//         lat_geod	Geodetic latitude, radians, + = North
-//         alt		C.G. altitude above mean sea level (meters)
-//         sea_level_r	radius from earth center to sea level at
-//                      local vertical (surface normal) of C.G. (meters)
-
+/** 
+ * Convert from geocentric coordinates to geodetic coordinates
+ * @param lat_geoc (in) Geocentric latitude, radians, + = North
+ * @param radius (in) C.G. radius to earth center (meters)
+ * @param lat_geod (out) Geodetic latitude, radians, + = North
+ * @param alt (out) C.G. altitude above mean sea level (meters)
+ * @param sea_level_r (out) radius from earth center to sea level at
+ *        local vertical (surface normal) of C.G. (meters)
+ */
 void sgGeocToGeod( double lat_geoc, double radius, double
 		   *lat_geod, double *alt, double *sea_level_r );
 
 
-// sgGeodToGeoc( lat_geod, alt, *sl_radius, *lat_geoc )
-//     INPUTS:	
-//         lat_geod	Geodetic latitude, radians, + = North
-//         alt		C.G. altitude above mean sea level (meters)
-//
-//     OUTPUTS:
-//         sl_radius	SEA LEVEL radius to earth center (meters)
-//                      (add Altitude to get true distance from earth center.
-//         lat_geoc	Geocentric latitude, radians, + = North
-//
-
+/**
+ * Convert from geodetic coordinates to geocentric coordinates
+ * @param lat_geod (in) Geodetic latitude, radians, + = North
+ * @param alt (in) C.G. altitude above mean sea level (meters)
+ * @param sl_radius (out) SEA LEVEL radius to earth center (meters)
+ *        (add Altitude to get true distance from earth center.
+ * @param lat_geoc (out) Geocentric latitude, radians, + = North
+ */
 void sgGeodToGeoc( double lat_geod, double alt, double *sl_radius,
 		      double *lat_geoc );
 
 
-// convert a geodetic point lon(radians), lat(radians), elev(meter) to
-// a cartesian point
-
+/**
+ * Convert a geodetic point lon(radians), lat(radians), elev(meter) to
+ * a cartesian point.
+ * @param geodetic point
+ * @return cartesian point
+ */
 inline Point3D sgGeodToCart(const Point3D& geod) {
     double gc_lon, gc_lat, sl_radius;
 
@@ -71,8 +70,18 @@ inline Point3D sgGeodToCart(const Point3D& geod) {
 }
 
 
-// given, alt, lat1, lon1, az1 and distance (s), calculate lat2, lon2
-// and az2.  Lat, lon, and azimuth are in degrees.  distance in meters
+/**
+ * Given a starting position and an offset radial and distance,
+ * calculate an ending positon on a wgs84 ellipsoid.
+ * @param alt (in) meters
+ * @param lat1 (in) degrees
+ * @param lon1 (in) degrees
+ * @param az1 (in) degrees
+ * @param s (in) distance in meters
+ * @param lat2 (out) degrees
+ * @param lon2 (out) degrees
+ * @param az2 (out) return course in degrees
+ */
 int geo_direct_wgs_84 ( double alt, double lat1, double lon1, double az1, 
 			double s, double *lat2, double *lon2,  double *az2 );
 

@@ -97,10 +97,10 @@ public:
     // close port
     bool close();
 
-    /** Return the serial port device name */
+    /** @return the serial port device name */
     inline string get_device() const { return device; }
 
-    /** Return the baud rate */
+    /** @return the baud rate */
     inline string get_baud() const { return baud; }
 };
 

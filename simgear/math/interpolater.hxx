@@ -1,7 +1,9 @@
-//
-// interpolater.hxx -- routines to handle linear interpolation from a table of
-//                     x,y   The table must be sorted by "x" in ascending order
-//
+/**
+ * \file interpolater.hxx
+ * Routines to handle linear interpolation from a table of x,y The
+ * table must be sorted by "x" in ascending order
+ */
+
 // Written by Curtis Olson, started April 1998.
 //
 // Copyright (C) 1998  Curtis L. Olson  - curt@me.umn.edu
@@ -39,22 +41,33 @@ SG_USING_STD(string);
 
 #define MAX_TABLE_SIZE 32
 
-
+/**
+ * A class that provids a simple linear 2d interpolation lookup table.
+ * The actual table is expected to be loaded from a file.  The
+ * independant variable must be strictly ascending.  The dependent
+ * variable can be anything.
+ */
 class SGInterpTable {
     int size;
     double table[MAX_TABLE_SIZE][2];
 
 public:
 
-    // Constructor -- loads the interpolation table from the specified
-    // file
+    /**
+     * Constructor. Loads the interpolation table from the specified file.
+     * @param file name of interpolation file
+     */
     SGInterpTable( const string& file );
 
-    // Given an x value, linearly interpolate the y value from the table
+    /**
+     * Given an x value, linearly interpolate the y value from the table.
+     * @param x independent variable
+     * @return interpolated dependent variable
+     */
     double interpolate(double x);
 
-    // Destructor
-    ~SGInterpTable( void );
+    /** Destructor */
+    ~SGInterpTable();
 };
 
 

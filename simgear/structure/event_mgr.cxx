@@ -59,7 +59,14 @@ SGTimerQueue::SGTimerQueue(int size)
 
 SGTimerQueue::~SGTimerQueue()
 {
+    for(int i=0; i<_numEntries; i++) {
+        delete _table[i].timer;
+        _table[i].timer = 0;
+    }
+    _numEntries = 0;
     delete[] _table;
+    _table = 0;
+    _tableSize = 0;
 }
 
 void SGTimerQueue::update(double deltaSecs)

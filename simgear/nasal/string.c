@@ -147,8 +147,7 @@ static int readdec(unsigned char* s, int len, int i, double* v)
 
 // Reads a signed integer out of the string starting at i, stores it
 // in v, and returns the next index to start at.  Zero-length
-// decimal numbers (and length-1 strings like '+') are allowed, and
-// are returned as zero.
+// decimal numbers are allowed, and are returned as zero.
 static int readsigned(unsigned char* s, int len, int i, double* v)
 {
     int i0 = i, i2;
@@ -157,10 +156,12 @@ static int readsigned(unsigned char* s, int len, int i, double* v)
     if(s[i] == '+')      { i++; }
     else if(s[i] == '-') { i++; sgn = -1; }
     i2 = readdec(s, len, i, &val);
-    if(i2 == i)
-        return i0; // don't parse "+" or "-" as zero.
+    if(i0 == i && i2 == i) {
+        *v = 0;
+        return i0; // don't successfully parse bare "+" or "-"
+    }
     *v = sgn*val;
-    return i;
+    return i2;
 }
 
 
@@ -182,6 +183,10 @@ static int tonum(unsigned char* s, int len, double* result)
 {
     int i=0, fraclen=0;
     double sgn=1, val, frac=0, exp=0;
+
+    // Special case, "." is not a number, even though "1." and ".0" are.
+    if(len == 1 && s[0] == '.')
+        return 0;
 
     // Read the integer part
     i = readsigned(s, len, i, &val);

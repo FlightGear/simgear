@@ -55,15 +55,25 @@ static naRef getConstant(struct Parser* p, int idx)
 // Interns a scalar (!) constant and returns its index
 static int internConstant(struct Parser* p, naRef c)
 {
-    int i, n = naVec_size(p->cg->consts);
+    int i, j, n = naVec_size(p->cg->consts);
     for(i=0; i<n; i++) {
         naRef b = naVec_get(p->cg->consts, i);
         if(IS_NUM(b) && IS_NUM(c) && b.num == c.num)
             return i;
-        if(IS_REF(b) && IS_REF(c) && b.ref.ptr.obj->type != c.ref.ptr.obj->type)
-            continue;
-        if(naEqual(b, c))
-            return i;
+        if(IS_STR(b) && IS_STR(c)) {
+            int len = naStr_len(c);
+            char* cs = naStr_data(c);
+            char* bs = naStr_data(b);
+            if(naStr_len(b) != len)
+                continue;
+            for(j=0; j<len; j++)
+                if(cs[j] != bs[j])
+                    continue;
+        }
+        if(IS_REF(b) && IS_REF(c))
+            if(b.ref.ptr.obj->type == c.ref.ptr.obj->type)
+                if(naEqual(b, c))
+                    return i;
     }
     return newConstant(p, c);
 }

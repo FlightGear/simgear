@@ -43,7 +43,7 @@ static const char sgDirPathSep = '/';
 static const char sgDirPathSepBad = '\\';
 #endif
 
-#if defined( WIN32 )
+#if defined( WIN32 ) && !defined(__CYGWIN__)
 static const char sgSearchPathSep = ';';
 #else
 static const char sgSearchPathSep = ':';

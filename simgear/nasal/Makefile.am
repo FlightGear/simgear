@@ -5,8 +5,9 @@ lib_LIBRARIES = libsgnasal.a
 include_HEADERS = nasal.h
 
 libsgnasal_a_SOURCES = \
-	code.c \
+	code.c code.h \
 	codegen.c \
+        data.h \
 	debug.c \
 	gc.c \
 	hash.c \
@@ -14,7 +15,8 @@ libsgnasal_a_SOURCES = \
 	lib.c \
 	mathlib.c \
 	misc.c \
-	parse.c \
+	nasal.h \
+	parse.c parse.h \
 	string.c \
 	vector.c
 

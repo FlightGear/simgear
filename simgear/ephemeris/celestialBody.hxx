@@ -32,8 +32,7 @@
 
 
 #include <simgear/constants.h>
-#include <simgear/timing/sg_time.hxx>
-
+g
 class Star;
 
 class CelestialBody

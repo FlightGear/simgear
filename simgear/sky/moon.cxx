@@ -57,6 +57,14 @@ static int sgMoonOrbPostDraw( ssgEntity *e ) {
     glEnable( GL_FOG );
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
 
+    /* test
+    glDisable( GL_LIGHTING );
+    glDisable( GL_CULL_FACE );
+    glEnable( GL_COLOR_MATERIAL );
+    glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE );
+    glEnable( GL_CULL_FACE );
+    glEnable( GL_LIGHTING ); */
+
     return true;
 }
 
@@ -104,8 +112,9 @@ ssgBranch * SGMoon::build( FGPath path, double moon_size ) {
     orb_state->enable( GL_TEXTURE_2D );
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_DIFFUSE );
-    orb_state->setMaterial( GL_AMBIENT, 0.0, 0.0, 0.0, 1.0 );
-    orb_state->setMaterial( GL_SPECULAR, 0.0, 0.0, 0.0, 1.0 );
+    orb_state->setMaterial( GL_AMBIENT, 0, 0, 0, 1.0 );
+    orb_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    orb_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     orb_state->enable( GL_BLEND );
     orb_state->enable( GL_ALPHA_TEST );
     orb_state->setAlphaClamp( 0.01 );
@@ -139,8 +148,8 @@ ssgBranch * SGMoon::build( FGPath path, double moon_size ) {
     halo_state->disable( GL_COLOR_MATERIAL );
     halo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
     halo_state->setMaterial ( GL_AMBIENT_AND_DIFFUSE, 1, 1, 1, 1 ) ;
-    halo_state -> setMaterial ( GL_EMISSION, 0, 0, 0, 1 ) ;
-    halo_state -> setMaterial ( GL_SPECULAR, 0, 0, 0, 1 ) ;
+    halo_state->setMaterial ( GL_EMISSION, 0, 0, 0, 1 ) ;
+    halo_state->setMaterial ( GL_SPECULAR, 0, 0, 0, 1 ) ;
     // halo_state -> setShininess ( 0 ) ;
     halo_state->enable( GL_ALPHA_TEST );
     halo_state->setAlphaClamp(0.01);
@@ -253,8 +262,8 @@ bool SGMoon::reposition( sgVec3 p, double angle,
     sgSetVec3( axis, 1.0, 0.0, 0.0 );
     sgMakeRotMat4( DEC, declination * RAD_TO_DEG, axis );
 
-    // xglTranslatef(0,60000,0);
-    sgSetVec3( v, 0.0, 60000.0, 0.0 );
+    // xglTranslatef(0,moon_dist);
+    sgSetVec3( v, 0.0, moon_dist, 0.0 );
     sgMakeTransMat4( T2, v );
 
     sgMat4 TRANSFORM;
@@ -271,3 +280,4 @@ bool SGMoon::reposition( sgVec3 p, double angle,
 
     return true;
 }
+

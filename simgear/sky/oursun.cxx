@@ -204,10 +204,13 @@ ssgBranch * SGSun::build( FGPath path, double sun_size ) {
     orb_state = new ssgSimpleState();
     orb_state->setShadeModel( GL_SMOOTH );
     orb_state->disable( GL_LIGHTING );
+    // orb_state->enable( GL_LIGHTING );
     orb_state->disable( GL_CULL_FACE );
     orb_state->disable( GL_TEXTURE_2D );
     orb_state->enable( GL_COLOR_MATERIAL );
     orb_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    orb_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    orb_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     orb_state->disable( GL_BLEND );
     orb_state->disable( GL_ALPHA_TEST );
 
@@ -233,10 +236,13 @@ ssgBranch * SGSun::build( FGPath path, double sun_size ) {
     halo_state->setTexture( (char *)path.c_str() );
     halo_state->enable( GL_TEXTURE_2D );
     halo_state->disable( GL_LIGHTING );
+    // halo_state->enable( GL_LIGHTING );
     halo_state->setShadeModel( GL_SMOOTH );
     halo_state->disable( GL_CULL_FACE );
     halo_state->enable( GL_COLOR_MATERIAL );
     halo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    halo_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    halo_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     halo_state->enable( GL_ALPHA_TEST );
     halo_state->setAlphaClamp(0.01);
     halo_state->enable ( GL_BLEND ) ;
@@ -273,9 +279,9 @@ ssgBranch * SGSun::build( FGPath path, double sun_size ) {
     // into the provide scene graph branch
     sun_transform = new ssgTransform;
 
-    sun_transform->addKid( halo );
     halo->setCallback( SSG_CALLBACK_PREDRAW, sgSunHaloPreDraw );
     halo->setCallback( SSG_CALLBACK_POSTDRAW, sgSunHaloPostDraw );
+    sun_transform->addKid( halo );
     sun_transform->addKid( orb );
 
     return sun_transform;
@@ -347,8 +353,8 @@ bool SGSun::reposition( sgVec3 p, double angle,
     sgSetVec3( axis, 1.0, 0.0, 0.0 );
     sgMakeRotMat4( DEC, declination * RAD_TO_DEG, axis );
 
-    // xglTranslatef(0,60000,0);
-    sgSetVec3( v, 0.0, 60000.0, 0.0 );
+    // xglTranslatef(0,sun_dist);
+    sgSetVec3( v, 0.0, sun_dist, 0.0 );
     sgMakeTransMat4( T2, v );
 
     sgMat4 TRANSFORM;

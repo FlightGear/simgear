@@ -88,6 +88,8 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
     state->disable( GL_TEXTURE_2D );
     state->enable( GL_COLOR_MATERIAL );
     state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     state->enable( GL_BLEND );
     state->disable( GL_ALPHA_TEST );
 

@@ -108,6 +108,8 @@ ssgBranch * SGSkyDome::build( ) {
     dome_state->disable( GL_TEXTURE_2D );
     dome_state->enable( GL_COLOR_MATERIAL );
     dome_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
+    dome_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
+    dome_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
     dome_state->disable( GL_BLEND );
     dome_state->disable( GL_ALPHA_TEST );
 

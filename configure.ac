@@ -3,7 +3,8 @@ dnl working configure script.
 dnl
 dnl $Id$
 
-AC_INIT(simgear/bucket/newbucket.cxx)
+AC_INIT
+AC_CONFIG_SRCDIR([simgear/bucket/newbucket.cxx])
 
 # Require at least automake 2.53
 AC_PREREQ(2.53)
@@ -328,9 +329,9 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS( ftime gettimeofday timegm memcpy bcopy mktime strstr rand \
 	random drand48 setitimer getitimer signal GetLocalTime rint getrusage )
 
-AM_CONFIG_HEADER(simgear/simgear_config.h)
+AM_CONFIG_HEADER([simgear/simgear_config.h])
 
-AC_OUTPUT( \
+AC_CONFIG_FILES([ \
 	Makefile \
 	SimGear.spec \
 	src-libs/Makefile \
@@ -353,9 +354,9 @@ AC_OUTPUT( \
 	simgear/timing/Makefile \
 	simgear/xgl/Makefile \
 	simgear/xml/Makefile \
-)
+])
+AC_OUTPUT
 
-# AC_OUTPUT_COMMANDS([])
 
 echo ""
 echo "Configure Summary"

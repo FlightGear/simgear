@@ -3,7 +3,7 @@
 // Written by Curtis Olson, started November 1999.
 // Modified by Bernie Bright <bbright@bigpond.net.au>, May 2002.
 //
-// Copyright (C) 1999  Curtis L. Olson - curt@flightgear.org
+// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as

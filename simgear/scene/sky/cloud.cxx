@@ -2,7 +2,7 @@
 //
 // Written by Curtis Olson, started June 2000.
 //
-// Copyright (C) 2000  Curtis L. Olson  - curt@flightgear.org
+// Copyright (C) 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of

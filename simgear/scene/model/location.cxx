@@ -3,7 +3,7 @@
 // Written by Jim Wilson, David Megginson, started April 2002.
 // Based largely on code by Curtis Olson and Norman Vine.
 //
-// Copyright (C) 2002  Curtis L. Olson - curt@flightgear.org
+// Copyright (C) 2002  Curtis L. Olson - http://www.flightgear.org/~curt
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as

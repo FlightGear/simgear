@@ -7,7 +7,7 @@
 // All the core code underneath this is written by Durk Talsma.  See
 // the headers of all the other individual files for details.
 //
-// Copyright (C) 2000  Curtis L. Olson - curt@flightgear.org
+// Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -48,7 +48,7 @@
 /** Ephemeris class
  *
  * Written by Durk Talsma <d.talsma@direct.a2000.nl> and Curtis Olson
- * <curt@flightgear.org>
+ * <http://www.flightgear.org/~curt>
  *
  * Introduction 
  *

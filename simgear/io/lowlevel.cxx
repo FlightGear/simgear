@@ -4,7 +4,7 @@
 // Shamelessly adapted from plib (plib.sourceforge.net) January 2001
 //
 // Original version Copyright (C) 2000  the plib team
-// Local changes Copyright (C) 2000  Curtis L. Olson  - curt@flightgear.org
+// Local changes Copyright (C) 2000  Curtis L. Olson  - http://www.flightgear.org/~curt
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

@@ -6,7 +6,7 @@
 // Written by Curtis Olson, started December 1997.
 // SSG-ified by Curtis Olson, February 2000.
 //
-// Copyright (C) 1997-2000  Curtis L. Olson  - curt@flightgear.org
+// Copyright (C) 1997-2000  Curtis L. Olson  - http://www.flightgear.org/~curt
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public

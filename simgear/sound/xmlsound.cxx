@@ -248,6 +248,25 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    }
 
    //
+   // Orientation
+   //
+   sgVec3 dir;
+   float inner, outer, outer_gain;
+   sgSetVec3( dir, 0.0, 0.0, 0.0 );
+   inner = outer = 360.0;
+   outer_gain = 0.0;
+   pos = node->getChild("orientation");
+   if ( pos != NULL ) {
+      dir[0] = pos->getDoubleValue("x", 0.0);
+      dir[1] = pos->getDoubleValue("y", 0.0);
+      dir[2] = pos->getDoubleValue("z", 0.0);
+      inner = pos->getDoubleValue("inner-angle", 360.0);
+      outer = pos->getDoubleValue("outer-angle", 360.0);
+      outer_gain = pos->getDoubleValue("outer-gain", 0.0);
+   }
+   
+
+   //
    // Initialize the sample
    //
    _mgr = sndmgr;
@@ -260,6 +279,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    }
 
    _sample->set_offset_pos( offset_pos );
+   _sample->set_orientation(dir, inner, outer, outer_gain);
    _sample->set_volume(v);
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );

@@ -74,6 +74,10 @@ private:
     // A constant offset to be applied to the final source_pos
     ALfloat offset_pos[3];
 
+    // The orientation of the sound (direction and cut-off angles)
+    ALfloat direction[3];
+    ALfloat inner, outer, outergain;
+
     // Velocity of the source sound.
     ALfloat source_vel[3];
 
@@ -235,6 +239,23 @@ public:
         sgAddVec3( final_pos, source_pos, offset_pos );
 
         alSourcefv( source, AL_POSITION, final_pos );
+    }
+
+    /**
+     * Set the orientation of the sound source, both for direction
+     * and audio cut-off angles.
+     */
+    inline void set_orientation( ALfloat *dir, ALfloat inner_angle=360.0,
+                                               ALfloat outer_angle=360.0,
+                                               ALfloat outer_gain=0.0)
+    {
+        inner = inner_angle;
+        outer = outer_angle;
+        outergain = outer_gain;
+        alSourcefv( source, AL_DIRECTION, dir);
+        alSourcef( source, AL_CONE_INNER_ANGLE, inner );
+        alSourcef( source, AL_CONE_OUTER_ANGLE, outer );
+        alSourcef( source, AL_CONE_OUTER_GAIN, outergain );
     }
 
     /**

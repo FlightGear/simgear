@@ -83,6 +83,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
+    inner = outer = 360.0; outergain = 0.0;
 
     // clear errors from elsewhere?
     alGetError();
@@ -128,6 +129,10 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     alSourcef( source, AL_PITCH, pitch );
     alSourcef( source, AL_GAIN, volume );
     alSourcefv( source, AL_POSITION, source_pos );
+    alSourcefv( source, AL_DIRECTION, direction );
+    alSourcef( source, AL_CONE_INNER_ANGLE, inner );
+    alSourcef( source, AL_CONE_OUTER_ANGLE, outer );
+    alSourcef( source, AL_CONE_OUTER_GAIN, outergain);
     alSourcefv( source, AL_VELOCITY, source_vel );
     alSourcei( source, AL_LOOPING, loop );
 
@@ -154,6 +159,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     offset_pos[0] = 0.0; offset_pos[1] = 0.0; offset_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
+    inner = outer = 360.0; outergain = 0.0;
 
     // clear errors from elsewhere?
     alGetError();
@@ -192,6 +198,10 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
     alSourcef( source, AL_PITCH, pitch );
     alSourcef( source, AL_GAIN, volume );
     alSourcefv( source, AL_POSITION, source_pos );
+    alSourcefv( source, AL_DIRECTION, direction );
+    alSourcef( source, AL_CONE_INNER_ANGLE, inner );
+    alSourcef( source, AL_CONE_OUTER_ANGLE, outer );
+    alSourcef( source, AL_CONE_OUTER_GAIN, outergain );
     alSourcefv( source, AL_VELOCITY, source_vel );
     alSourcei( source, AL_LOOPING, loop );
 

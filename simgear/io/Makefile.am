@@ -4,12 +4,16 @@ lib_LIBRARIES = libsgio.a
 
 include_HEADERS = \
 	iochannel.hxx \
+	lowlevel.hxx \
+	sg_binobj.hxx \
 	sg_file.hxx \
 	sg_serial.hxx \
 	sg_socket.hxx
 
 libsgio_a_SOURCES = \
 	iochannel.cxx \
+	lowlevel.cxx \
+	sg_binobj.cxx \
 	sg_file.cxx \
 	sg_serial.cxx \
 	sg_socket.cxx 

@@ -142,4 +142,11 @@
 #define FG_EPSILON 0.0000001
 
 
+// Highest binobj format version we know how to read/write.  This starts at
+// 0 and can go up to 65535
+#define SG_BINOBJ_VERSION 5
+// for backwards compatibility
+#define SG_SCENERY_FILE_FORMAT "0.4"
+
+
 #endif // _SG_CONSTANTS_H

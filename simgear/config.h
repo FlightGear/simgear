@@ -49,7 +49,7 @@
 #define HAVE_VPRINTF 1
 
 /* Define if you have zlib installed system wide.  */
-/* #undef HAVE_ZLIB */
+#define HAVE_ZLIB 1
 
 /* Define as the return type of signal handlers (int or void).  */
 #define RETSIGTYPE void

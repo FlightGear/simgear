@@ -24,6 +24,10 @@ else
 fi
 
 
+dnl Run configure in the gdbm subdir
+dnl AC_CONFIG_SUBDIRS( simgear/gdbm )
+
+
 dnl Specify if we want logging (testing build) or not (release build)
 # set logging default value
 # with_logging=yes
@@ -196,6 +200,15 @@ if test "x$ac_cv_header_plib_pu_h" != "xyes"; then
     exit
 fi
 
+dnl Check for system installed gdbm
+AC_CHECK_HEADER(gdbm.h)
+if test "x$ac_cv_header_gdbm_h" = "xyes"; then
+    AC_DEFINE( HAVE_GDBM )
+else
+    echo "no gdbm found, configuring and building."
+fi
+AM_CONDITIONAL(HAVE_GDBM, test "x$ac_cv_header_gdbm_h" = "xyes" )
+
 dnl Check for system installed zlib
 AC_CHECK_HEADER(zlib.h)
 if test "x$ac_cv_header_zlib_h" = "xyes"; then
@@ -232,6 +245,7 @@ AC_OUTPUT( \
 	simgear/version.h \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
+	simgear/gdbm/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \
 	simgear/misc/Makefile \
@@ -259,4 +273,12 @@ if test "x$with_efence" != "x"; then
     echo "Electric fence: $with_efence"
 else
     echo "Electric fence: no"
+fi
+
+if test "x$ac_cv_header_gdbm_h" != "xyes"; then
+   echo "Building gdbm"
+fi
+
+if test "x$ac_cv_header_zlib_h" != "xyes"; then
+   echo "Building zlib"
 fi

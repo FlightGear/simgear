@@ -4,6 +4,12 @@ else
 SERIAL_DIRS =
 endif
 
+if HAVE_GDBM
+GDBM_DIRS =
+else
+GDBM_DIRS = gdbm
+endif
+
 if HAVE_ZLIB
 ZLIB_DIRS =
 else
@@ -20,6 +26,7 @@ include_HEADERS = compiler.h constants.h fg_traits.hxx fg_zlib.h version.h
 SUBDIRS = \
 	bucket \
 	debug \
+	$(GDBM_DIRS) \
 	magvar \
 	math \
 	$(METAR_DIRS) \

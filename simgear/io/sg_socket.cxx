@@ -28,6 +28,8 @@
 #include <strings.h>
 #endif
 
+#include <ostream>
+
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_socket.hxx"

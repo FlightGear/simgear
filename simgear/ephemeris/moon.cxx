@@ -206,7 +206,7 @@ void Moon::setHalo()
  * the position of the moon as seen from the current position on the surface
  * of the moon. 
  ****************************************************************************/
-void Moon::updatePosition(FGTime *t, Star *ourSun)
+void Moon::updatePosition(FGTime *t, double lat, Star *ourSun)
 {
   double 
     eccAnom, ecl, actTime,
@@ -298,11 +298,11 @@ void Moon::updatePosition(FGTime *t, Star *ourSun)
   // FG_LOG( FG_GENERAL, FG_INFO, "r = " << r << " mpar = " << mpar );
   // FG_LOG( FG_GENERAL, FG_INFO, "lat = " << f->get_Latitude() );
 
-  gclat = f->get_Latitude() - 0.003358 * 
-      sin (2 * DEG_TO_RAD * f->get_Latitude() );
+  gclat = lat - 0.003358 * 
+      sin (2 * DEG_TO_RAD * lat );
   // FG_LOG( FG_GENERAL, FG_INFO, "gclat = " << gclat );
 
-  rho = 0.99883 + 0.00167 * cos(2 * DEG_TO_RAD * f->get_Latitude());
+  rho = 0.99883 + 0.00167 * cos(2 * DEG_TO_RAD * lat);
   // FG_LOG( FG_GENERAL, FG_INFO, "rho = " << rho );
   
   if (geoRa < 0)

@@ -55,7 +55,7 @@ public:
     Moon( FGTime *t);
     Moon();
     ~Moon();
-    void updatePosition(FGTime *t, Star *ourSun);
+    void updatePosition(FGTime *t, double lat, Star *ourSun);
     // void newImage();
 };
 

@@ -140,7 +140,7 @@ void SolarSystem::rebuild()
     // solar eclipse. This is yet untested though...
     // Euhh, actually the ecplise doesn't work...
 
-    earthsMoon->newImage();
+    // earthsMoon->newImage();
     // Step 2b:  Add the sun
     // ourSun->newImage();
     // Step 2c: Add the planets

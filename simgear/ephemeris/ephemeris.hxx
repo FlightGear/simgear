@@ -53,12 +53,13 @@ class FGEphemeris {
     Uranus *uranus;
     Neptune *neptune;
 
-    // 9 planets - earth - pluto which we don't draw = 7
+    // 9 planets, minus earth, minus pluto which we don't draw = 7
     // planets[i][0] = Right Ascension
     // planets[i][1] = Declination
     // planets[i][2] = Magnitude
+    int nplanets;
     sgdVec3 planets[7];
-
+    
 public:
 
     // Constructor
@@ -69,9 +70,10 @@ public:
 
     // Update (recalculate) the positions of all objects for the
     // specified time
-    void update(FGTime *t);
+    void update(FGTime *t, double lat);
 
-    // sun position
+    // sun
+    inline Star *get_sun() const { return our_sun; }
     inline double getSunRightAscension() const {
 	return our_sun->getRightAscension();
     }
@@ -79,7 +81,8 @@ public:
 	return our_sun->getDeclination();
     }
 
-    // moon position
+    // moon
+    inline Moon *get_moon() const { return moon; }
     inline double getMoonRightAscension() const {
 	return moon->getRightAscension();
     }
@@ -88,9 +91,8 @@ public:
     }
 
     // planets
-    inline sgdVec3 *getPlanets() const {
-	return planets;
-    }
+    inline int getNumPlanets() const { return nplanets; }
+    inline sgdVec3 *getPlanets() { return planets; }
 };
 
 

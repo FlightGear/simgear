@@ -45,7 +45,6 @@ public:
     void updatePosition(FGTime *t);
     double getM();
     double getw();
-    //double getLon();
     double getxs();
     double getys();
     double getDistance();

@@ -457,17 +457,4 @@ inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
 
 #endif // SG_INCOMPLETE_FUNCTIONAL
 
-/**
- * SG_STATIC_CONSTANT workaround.
- * On compilers which don't allow in-class initialization of static integral
- * constant members, we must use enums as a workaround if we want the constants
- * to be available at compile-time. This macro gives us a convenient way to
- * declare such constants.
- */
-#ifdef SG_NO_INCLASS_MEMBER_INITIALIZATION
-#  define SG_STATIC_CONST(type,assignment) enum { assignment }
-#else
-#  define SG_STATIC_CONST(type,assignment) static const type assignment
-#endif
-
 #endif // _SG_COMPILER_H

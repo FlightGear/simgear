@@ -12,14 +12,16 @@ struct precedence {
     int rule;
 } PRECEDENCE[] = {
     { { TOK_SEMI, TOK_COMMA },                 PREC_REVERSE },
-    { { TOK_COLON },                           PREC_BINARY },
+    { { TOK_ELLIPSIS },                        PREC_SUFFIX  },
     { { TOK_RETURN, TOK_BREAK, TOK_CONTINUE }, PREC_PREFIX  },
     { { TOK_ASSIGN },                          PREC_REVERSE },
+    { { TOK_COLON, TOK_QUESTION },             PREC_REVERSE },
+    { { TOK_VAR },                             PREC_PREFIX  },
     { { TOK_OR },                              PREC_BINARY  },
     { { TOK_AND },                             PREC_BINARY  },
     { { TOK_EQ, TOK_NEQ },                     PREC_BINARY  },
     { { TOK_LT, TOK_LTE, TOK_GT, TOK_GTE },    PREC_BINARY  },
-    { { TOK_PLUS, TOK_MINUS, TOK_CAT },        PREC_REVERSE  },
+    { { TOK_PLUS, TOK_MINUS, TOK_CAT },        PREC_REVERSE },
     { { TOK_MUL, TOK_DIV },                    PREC_BINARY  },
     { { TOK_MINUS, TOK_NEG, TOK_NOT },         PREC_PREFIX  },
     { { TOK_LPAR, TOK_LBRA },                  PREC_SUFFIX  },
@@ -210,7 +212,15 @@ static void fixBlockStructure(struct Parser* p, struct Token* start)
     t = start;
     while(t) {
         switch(t->type) {
-        case TOK_ELSE: case TOK_FUNC:
+        case TOK_FUNC:
+            // Slurp an optional paren block containing an arglist, then
+            // fall through to parse the curlies...
+            if(t->next && t->next->type == TOK_LPAR) {
+                c = t->next;
+                addNewChild(t, c);
+                fixBlockStructure(p, c);
+            }
+        case TOK_ELSE: // and TOK_FUNC!
             // These guys precede a single curly block
             if(!t->next || t->next->type != TOK_LCURL) oops(p, t);
             c = t->next;
@@ -276,6 +286,8 @@ static void fixBlockStructure(struct Parser* p, struct Token* start)
                 addSemi = 1;
             break;
         }
+        if(t->next && t->next->type == TOK_SEMI)
+            addSemi = 0; // don't bother if it's already there!
         if(addSemi) {
             struct Token* semi = emptyToken(p);
             semi->type = TOK_SEMI;
@@ -519,7 +531,7 @@ naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
     p.tree.lastChild = t;
 
     // Generate code!
-    codeObj = naCodeGen(&p, &(p.tree));
+    codeObj = naCodeGen(&p, &(p.tree), 0);
 
     // Clean up our mess
     naParseDestroy(&p);

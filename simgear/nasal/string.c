@@ -8,11 +8,6 @@
 // double.
 #define DIGITS 16
 
-// The minimum size we'll allocate for a string.  Since a string
-// structure is already 12 bytes, and each naRef that points to it is
-// 8, there isn't much point in being stingy.
-#define MINLEN 16
-
 static int tonum(unsigned char* s, int len, double* result);
 static int fromnum(double val, unsigned char* s);
 
@@ -30,16 +25,10 @@ char* naStr_data(naRef s)
 
 static void setlen(struct naStr* s, int sz)
 {
-    int currSz, waste;
-    sz += 1; // Allow for an extra nul terminator
-    currSz = s->len+1 < MINLEN ? MINLEN : s->len+1;
-    waste = currSz - sz; // how much extra if we don't reallocate?
-    if(s->data == 0 || waste < 0 || waste > MINLEN) {
-        naFree(s->data);
-        s->data = naAlloc(sz < MINLEN ? MINLEN : sz);
-    }
-    s->len = sz - 1;
-    s->data[s->len] = 0; // nul terminate
+    if(s->data) naFree(s->data);
+    s->len = sz;
+    s->data = naAlloc(sz+1);
+    s->data[sz] = 0; // nul terminate
 }
 
 naRef naStr_fromdata(naRef dst, char* data, int len)
@@ -110,10 +99,8 @@ int naStr_numeric(naRef str)
 
 void naStr_gcclean(struct naStr* str)
 {
-    if(str->len > MINLEN) {
-        naFree(str->data);
-        str->data = 0;
-    }
+    naFree(str->data);
+    str->data = 0;
     str->len = 0;
 }
 
@@ -203,8 +190,11 @@ static int tonum(unsigned char* s, int len, double* result)
     if(i == 0) return 0;
 
     // Read the exponent, if any
-    if(i < len && (s[i] == 'e' || s[i] == 'E'))
+    if(i < len && (s[i] == 'e' || s[i] == 'E')) {
+        int i0 = i+1;
         i = readsigned(s, len, i+1, &exp);
+        if(i == i0) return 0; // Must have a number after the "e"
+    }
     
     // compute the result
     *result = sgn * (val + frac * decpow(-fraclen)) * decpow(exp);
@@ -281,7 +271,7 @@ static int fromnum(double val, unsigned char* s)
         if(raw[i] != '0') break;
     digs = i+1;
 
-    if(exp > 0 || exp < -(DIGITS+2)) {
+    if(exp > 0 || exp < -(DIGITS+3)) {
         // Standard scientific notation
         exp += DIGITS-1;
         *ptr++ = raw[0];

@@ -40,7 +40,10 @@ struct Lexeme {
     {"return",   TOK_RETURN},
     {"break",    TOK_BREAK},
     {"continue", TOK_CONTINUE},
-    {"func", TOK_FUNC}
+    {"func", TOK_FUNC},
+    {"...", TOK_ELLIPSIS},
+    {"?", TOK_QUESTION},
+    {"var", TOK_VAR},
 };
 
 // Build a table of where each line ending is

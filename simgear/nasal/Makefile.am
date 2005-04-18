@@ -8,7 +8,6 @@ libsgnasal_a_SOURCES = \
 	code.c code.h \
 	codegen.c \
         data.h \
-	debug.c \
 	gc.c \
 	hash.c \
 	lex.c \
@@ -18,6 +17,8 @@ libsgnasal_a_SOURCES = \
 	nasal.h \
 	parse.c parse.h \
 	string.c \
-	vector.c
+	vector.c \
+	thread-posix.c \
+	thread-win32.c
 
 INCLUDES = -I$(top_srcdir)

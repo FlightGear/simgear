@@ -62,7 +62,6 @@ typedef union {
             struct naHash* hash;
             struct naCode* code;
             struct naFunc* func;
-            struct naClosure* closure;
             struct naCCode* ccode;
             struct naGhost* ghost;
         } ptr;
@@ -75,10 +74,11 @@ typedef union {
 typedef struct Context* naContext;
     
 // The function signature for an extension function:
-typedef naRef (*naCFunction)(naContext ctx, naRef args);
+typedef naRef (*naCFunction)(naContext ctx, naRef me, int argc, naRef* args);
 
 // All Nasal code runs under the watch of a naContext:
 naContext naNewContext();
+void naFreeContext(naContext c);
 
 // Save this object in the context, preventing it (and objects
 // referenced by it) from being garbage collected.
@@ -94,6 +94,10 @@ naRef naParseCode(naContext c, naRef srcFile, int firstLine,
 // closures, and allow for extracting the closure and namespace
 // information from function objects.
 naRef naBindFunction(naContext ctx, naRef code, naRef closure);
+
+// Similar, but it binds to the current context's closure (i.e. the
+// namespace at the top of the current call stack).
+naRef naBindToContext(naContext ctx, naRef code);
 
 // Call a code or function object with the specifed arguments "on" the
 // specified object and using the specified hash for the local
@@ -146,6 +150,7 @@ naRef naNewCCode(naContext c, naCFunction fptr);
 
 // Some useful conversion/comparison routines
 int naEqual(naRef a, naRef b);
+int naStrEqual(naRef a, naRef b);
 int naTrue(naRef b);
 naRef naNumValue(naRef n);
 naRef naStringValue(naContext c, naRef n);
@@ -156,6 +161,7 @@ char* naStr_data(naRef s);
 naRef naStr_fromdata(naRef dst, char* data, int len);
 naRef naStr_concat(naRef dest, naRef s1, naRef s2);
 naRef naStr_substr(naRef dest, naRef str, int start, int len);
+naRef naInternSymbol(naRef sym);
 
 // Vector utilities:
 int naVec_size(naRef v);
@@ -182,6 +188,20 @@ naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);
 int          naIsGhost(naRef r);
+
+// Acquires a "modification lock" on a context, allowing the C code to
+// modify Nasal data without fear that such data may be "lost" by the
+// garbage collector (the C stack is not examined in GC!).  This
+// disallows garbage collection until the current thread can be
+// blocked.  The lock should be acquired whenever modifications to
+// Nasal objects are made.  It need not be acquired when only read
+// access is needed.  It MUST NOT be acquired by naCFunction's, as
+// those are called with the lock already held; acquiring two locks
+// for the same thread will cause a deadlock when the GC is invoked.
+// It should be UNLOCKED by naCFunction's when they are about to do
+// any long term non-nasal processing and/or blocking I/O.
+void naModLock();
+void naModUnlock();
 
 #ifdef __cplusplus
 } // extern "C"

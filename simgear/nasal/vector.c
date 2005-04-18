@@ -3,82 +3,88 @@
 
 static void realloc(struct naVec* v)
 {
-    int i, newsz = 1 + ((v->size*3)>>1);
-    naRef* na = naAlloc(sizeof(naRef) * newsz);
-    v->alloced = newsz;
-    for(i=0; i<v->size; i++)
-        na[i] = v->array[i];
-    naFree(v->array);
-    v->array = na;
-}
-
-void naVec_init(naRef vec)
-{
-    struct naVec* v = vec.ref.ptr.vec;
-    v->array = 0;
-    v->size = 0;
-    v->alloced = 0;
+    struct VecRec* old = v->rec;
+    int i, oldsz = old ? old->size : 0, newsz = 1 + ((oldsz*3)>>1);
+    struct VecRec* vr = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * newsz);
+    if(oldsz > newsz) oldsz = newsz; // race protection
+    vr->alloced = newsz;
+    vr->size = oldsz;
+    for(i=0; i<oldsz; i++)
+        vr->array[i] = old->array[i];
+    naGC_swapfree((void**)&(v->rec), vr);
 }
 
 void naVec_gcclean(struct naVec* v)
 {
-    naFree(v->array);
-    v->size = 0;
-    v->alloced = 0;
-    v->array = 0;
+    naFree(v->rec);
+    v->rec = 0;
 }
 
 naRef naVec_get(naRef v, int i)
 {
-    if(!IS_VEC(v)) return naNil();
-    if(i >= v.ref.ptr.vec->size) return naNil();
-    return v.ref.ptr.vec->array[i];
+    if(IS_VEC(v)) {
+        struct VecRec* r = v.ref.ptr.vec->rec;
+        if(r && i < r->size) return r->array[i];
+    }
+    return naNil();
 }
 
 void naVec_set(naRef vec, int i, naRef o)
 {
-    struct naVec* v = vec.ref.ptr.vec;
-    if(!IS_VEC(vec) || i >= v->size) return;
-    v->array[i] = o;
+    if(IS_VEC(vec)) {
+        struct VecRec* r = vec.ref.ptr.vec->rec;
+        if(r && i >= r->size) return;
+        r->array[i] = o;
+    }
 }
 
 int naVec_size(naRef v)
 {
-    if(!IS_VEC(v)) return 0;
-    return v.ref.ptr.vec->size;
+    if(IS_VEC(v)) {
+        struct VecRec* r = v.ref.ptr.vec->rec;
+        return r ? r->size : 0;
+    }
+    return 0;
 }
 
 int naVec_append(naRef vec, naRef o)
 {
-    struct naVec* v = vec.ref.ptr.vec;
-    if(!IS_VEC(vec)) return 0;
-    if(v->size >= v->alloced)
-        realloc(v);
-    v->array[v->size] = o;
-    return v->size++;
+    if(IS_VEC(vec)) {
+        struct VecRec* r = vec.ref.ptr.vec->rec;
+        if(!r || r->size >= r->alloced) {
+            realloc(vec.ref.ptr.vec);
+            r = vec.ref.ptr.vec->rec;
+        }
+        r->array[r->size] = o;
+        return r->size++;
+    }
+    return 0;
 }
 
 void naVec_setsize(naRef vec, int sz)
 {
     int i;
-    struct naVec* v = vec.ref.ptr.vec;
-    naRef* na = naAlloc(sizeof(naRef) * sz);
+    struct VecRec* v = vec.ref.ptr.vec->rec;
+    struct VecRec* nv = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * sz);
+    nv->size = sz;
+    nv->alloced = sz;
     for(i=0; i<sz; i++)
-        na[i] = (i < v->size) ? v->array[i] : naNil();
-    naFree(v->array);
-    v->array = na;
-    v->size = sz;
-    v->alloced = sz;
+        nv->array[i] = (v && i < v->size) ? v->array[i] : naNil();
+    naFree(v);
+    vec.ref.ptr.vec->rec = nv;
 }
 
 naRef naVec_removelast(naRef vec)
 {
     naRef o;
-    struct naVec* v = vec.ref.ptr.vec;
-    if(!IS_VEC(vec) || v->size == 0) return naNil();
-    o = v->array[v->size - 1];
-    v->size--;
-    if(v->size < (v->alloced >> 1))
-        realloc(v);
-    return o;
+    if(IS_VEC(vec)) {
+        struct VecRec* v = vec.ref.ptr.vec->rec;
+        if(!v || v->size == 0) return naNil();
+        o = v->array[v->size - 1];
+        v->size--;
+        if(v->size < (v->alloced >> 1))
+            realloc(vec.ref.ptr.vec);
+        return o;
+    }
+    return naNil();
 }

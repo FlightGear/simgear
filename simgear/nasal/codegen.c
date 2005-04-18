@@ -1,6 +1,8 @@
 #include "parse.h"
 #include "code.h"
 
+#define MAX_FUNARGS 32
+
 // These are more sensical predicate names in most contexts in this file
 #define LEFT(tok)   ((tok)->children)
 #define RIGHT(tok)  ((tok)->lastChild)
@@ -9,24 +11,24 @@
 // Forward references for recursion
 static void genExpr(struct Parser* p, struct Token* t);
 static void genExprList(struct Parser* p, struct Token* t);
+static naRef newLambda(struct Parser* p, struct Token* t);
 
-static void emit(struct Parser* p, int byte)
+static void emit(struct Parser* p, int val)
 {
-    if(p->cg->nBytes >= p->cg->codeAlloced) {
+    if(p->cg->codesz >= p->cg->codeAlloced) {
         int i, sz = p->cg->codeAlloced * 2;
-        unsigned char* buf = naParseAlloc(p, sz);
+        unsigned short* buf = naParseAlloc(p, sz*sizeof(unsigned short));
         for(i=0; i<p->cg->codeAlloced; i++) buf[i] = p->cg->byteCode[i];
         p->cg->byteCode = buf;
         p->cg->codeAlloced = sz;
     }
-    p->cg->byteCode[p->cg->nBytes++] = (unsigned char)byte;
+    p->cg->byteCode[p->cg->codesz++] = (unsigned short)val;
 }
 
-static void emitImmediate(struct Parser* p, int byte, int arg)
+static void emitImmediate(struct Parser* p, int val, int arg)
 {
-    emit(p, byte);
-    emit(p, arg >> 8);
-    emit(p, arg & 0xff);
+    emit(p, val);
+    emit(p, arg);
 }
 
 static void genBinOp(int op, struct Parser* p, struct Token* t)
@@ -55,36 +57,87 @@ static naRef getConstant(struct Parser* p, int idx)
 // Interns a scalar (!) constant and returns its index
 static int internConstant(struct Parser* p, naRef c)
 {
-    int i, j, n = naVec_size(p->cg->consts);
+    int i, n = naVec_size(p->cg->consts);
+    if(IS_CODE(c)) return newConstant(p, c);
     for(i=0; i<n; i++) {
         naRef b = naVec_get(p->cg->consts, i);
-        if(IS_NUM(b) && IS_NUM(c) && b.num == c.num)
-            return i;
-        if(IS_STR(b) && IS_STR(c)) {
-            int len = naStr_len(c);
-            char* cs = naStr_data(c);
-            char* bs = naStr_data(b);
-            if(naStr_len(b) != len)
-                continue;
-            for(j=0; j<len; j++)
-                if(cs[j] != bs[j])
-                    continue;
-        }
-        if(IS_REF(b) && IS_REF(c))
-            if(b.ref.ptr.obj->type == c.ref.ptr.obj->type)
-                if(naEqual(b, c))
-                    return i;
+        if(IS_NUM(b) && IS_NUM(c) && b.num == c.num) return i;
+        else if(IS_NIL(b) && IS_NIL(c)) return i;
+        else if(naStrEqual(b, c)) return i;
     }
     return newConstant(p, c);
 }
 
+naRef naInternSymbol(naRef sym)
+{
+    naRef result;
+    if(naHash_get(globals->symbols, sym, &result))
+        return result;
+    naHash_set(globals->symbols, sym, sym);
+    return sym;
+}
+
+static int findConstantIndex(struct Parser* p, struct Token* t)
+{
+    naRef c;
+    if(t->type == TOK_NIL) c = naNil();
+    else if(t->str) {
+        c = naStr_fromdata(naNewString(p->context), t->str, t->strlen);
+        if(t->type == TOK_SYMBOL) c = naInternSymbol(c);
+    } else if(t->type == TOK_FUNC) c = newLambda(p, t);
+    else if(t->type == TOK_LITERAL) c = naNum(t->num);
+    else naParseError(p, "invalid/non-constant constant", t->line);
+    return internConstant(p, c);
+}
+
+static int lastExprInBlock(struct Token* t)
+{
+    if(!t->parent) return 1;
+    if(t->parent->type == TOK_TOP || t->parent->type == TOK_LCURL) return 1;
+    if(t->parent->type == TOK_SEMI)
+        if(!t->next || t->next->type == TOK_EMPTY)
+            return 1;
+    return 0;
+}
+
+// Returns true if the node is in "tail context" -- either a child of
+// a return, the last child of a func block, or else the
+// last child of an if/elsif/if that is itself in tail context.
+static int tailContext(struct Token* t)
+{
+    if(t->parent && t->parent->type == TOK_RETURN)
+        return 1;
+    else if(!lastExprInBlock(t))
+        return 0;
+
+    // Walk up the tree.  It is ok to see semicolons, else's, elsifs
+    // and curlies.  If we reach the top or a func, then we are in
+    // tail context.  If we hit an if, then we are in tail context
+    // only if the "if" node is.
+    while((t = t->parent) != 0)
+        switch(t->type) {
+        case TOK_SEMI: case TOK_LCURL: break;
+        case TOK_ELSE: case TOK_ELSIF: break;
+        case TOK_TOP:  case TOK_FUNC:  return 1;
+        case TOK_IF:                   return tailContext(t);
+        default:                       return 0;
+        }
+    return 0;
+}
+
 static void genScalarConstant(struct Parser* p, struct Token* t)
 {
-    naRef c = (t->str
-               ? naStr_fromdata(naNewString(p->context), t->str, t->strlen)
-               : naNum(t->num));
-    int idx = internConstant(p, c);
-    emitImmediate(p, OP_PUSHCONST, idx);
+    // These opcodes are for special-case use in other constructs, but
+    // we might as well use them here to save a few bytes in the
+    // instruction stream.
+    if(t->str == 0 && t->num == 1) {
+        emit(p, OP_PUSHONE);
+    } else if(t->str == 0 && t->num == 0) {
+        emit(p, OP_PUSHZERO);
+    } else {
+        int idx = findConstantIndex(p, t);
+        emitImmediate(p, OP_PUSHCONST, idx);
+    }
 }
 
 static int genLValue(struct Parser* p, struct Token* t)
@@ -93,7 +146,7 @@ static int genLValue(struct Parser* p, struct Token* t)
         return genLValue(p, LEFT(t)); // Handle stuff like "(a) = 1"
     } else if(t->type == TOK_SYMBOL) {
         genScalarConstant(p, t);
-        return OP_SETLOCAL;
+        return OP_SETSYM;
     } else if(t->type == TOK_DOT && RIGHT(t) && RIGHT(t)->type == TOK_SYMBOL) {
         genExpr(p, LEFT(t));
         genScalarConstant(p, RIGHT(t));
@@ -102,40 +155,85 @@ static int genLValue(struct Parser* p, struct Token* t)
         genExpr(p, LEFT(t));
         genExpr(p, RIGHT(t));
         return OP_INSERT;
+    } else if(t->type == TOK_VAR && RIGHT(t)->type == TOK_SYMBOL) {
+        genScalarConstant(p, RIGHT(t));
+        return OP_SETLOCAL;
     } else {
         naParseError(p, "bad lvalue", t->line);
         return -1;
     }
 }
 
-static void genLambda(struct Parser* p, struct Token* t)
+static int defArg(struct Parser* p, struct Token* t)
 {
-    int idx;
+    if(t->type == TOK_LPAR) return defArg(p, RIGHT(t));
+    return findConstantIndex(p, t);
+}
+
+static void genArgList(struct Parser* p, struct naCode* c, struct Token* t)
+{
+    naRef sym;
+    if(t->type == TOK_EMPTY) return;
+    if(!IDENTICAL(c->restArgSym, globals->argRef))
+            naParseError(p, "remainder must be last", t->line);
+    if(t->type == TOK_ELLIPSIS) {
+        if(LEFT(t)->type != TOK_SYMBOL)
+            naParseError(p, "bad function argument expression", t->line);
+        sym = naStr_fromdata(naNewString(p->context),
+                             LEFT(t)->str, LEFT(t)->strlen);
+        c->restArgSym = naInternSymbol(sym);
+        c->needArgVector = 1;
+    } else if(t->type == TOK_ASSIGN) {
+        if(LEFT(t)->type != TOK_SYMBOL)
+            naParseError(p, "bad function argument expression", t->line);
+        c->optArgSyms[c->nOptArgs] = findConstantIndex(p, LEFT(t));
+        c->optArgVals[c->nOptArgs++] = defArg(p, RIGHT(t));
+    } else if(t->type == TOK_SYMBOL) {
+        if(c->nOptArgs)
+            naParseError(p, "optional arguments must be last", t->line);
+        if(c->nArgs >= MAX_FUNARGS)
+            naParseError(p, "too many named function arguments", t->line);
+        c->argSyms[c->nArgs++] = findConstantIndex(p, t);
+    } else if(t->type == TOK_COMMA) {
+        genArgList(p, c, LEFT(t));
+        genArgList(p, c, RIGHT(t));
+    } else
+        naParseError(p, "bad function argument expression", t->line);
+}
+
+static naRef newLambda(struct Parser* p, struct Token* t)
+{
     struct CodeGenerator* cgSave;
     naRef codeObj;
-    if(LEFT(t)->type != TOK_LCURL)
+    struct Token* arglist;
+    if(RIGHT(t)->type != TOK_LCURL)
         naParseError(p, "bad function definition", t->line);
 
     // Save off the generator state while we do the new one
     cgSave = p->cg;
-    codeObj = naCodeGen(p, LEFT(LEFT(t)));
+    arglist = LEFT(t)->type == TOK_LPAR ? LEFT(LEFT(t)) : 0;
+    codeObj = naCodeGen(p, LEFT(RIGHT(t)), arglist);
     p->cg = cgSave;
-
-    idx = newConstant(p, codeObj);
-    emitImmediate(p, OP_PUSHCONST, idx);
+    return codeObj;
 }
 
-static void genList(struct Parser* p, struct Token* t)
+static void genLambda(struct Parser* p, struct Token* t)
+{
+    emitImmediate(p, OP_PUSHCONST, newConstant(p, newLambda(p, t)));
+}
+
+static int genList(struct Parser* p, struct Token* t, int doAppend)
 {
     if(t->type == TOK_COMMA) {
         genExpr(p, LEFT(t));
-        emit(p, OP_VAPPEND);
-        genList(p, RIGHT(t));
+        if(doAppend) emit(p, OP_VAPPEND);
+        return 1 + genList(p, RIGHT(t), doAppend);
     } else if(t->type == TOK_EMPTY) {
-        return;
+        return 0;
     } else {
         genExpr(p, t);
-        emit(p, OP_VAPPEND);
+        if(doAppend) emit(p, OP_VAPPEND);
+        return 1;
     }
 }
 
@@ -165,18 +263,19 @@ static void genHash(struct Parser* p, struct Token* t)
 static void genFuncall(struct Parser* p, struct Token* t)
 {
     int op = OP_FCALL;
+    int nargs = 0;
     if(LEFT(t)->type == TOK_DOT) {
         genExpr(p, LEFT(LEFT(t)));
         emit(p, OP_DUP);
-        genScalarConstant(p, RIGHT(LEFT(t)));
-        emit(p, OP_MEMBER);
+        emitImmediate(p, OP_MEMBER, findConstantIndex(p, RIGHT(LEFT(t))));
         op = OP_MCALL;
     } else {
         genExpr(p, LEFT(t));
     }
-    emit(p, OP_NEWVEC);
-    if(RIGHT(t)) genList(p, RIGHT(t));
-    emit(p, op);
+    if(RIGHT(t)) nargs = genList(p, RIGHT(t), 0);
+    if(tailContext(t))
+        op = op == OP_FCALL ? OP_FTAIL : OP_MTAIL;
+    emitImmediate(p, op, nargs);
 }
 
 static void pushLoop(struct Parser* p, struct Token* label)
@@ -202,17 +301,15 @@ static int emitJump(struct Parser* p, int op)
 {
     int ip;
     emit(p, op);
-    ip = p->cg->nBytes;
-    emit(p, 0xff); // dummy address
-    emit(p, 0xff);
+    ip = p->cg->codesz;
+    emit(p, 0xffff); // dummy address
     return ip;
 }
 
 // Points a previous jump instruction at the current "end-of-bytecode"
 static void fixJumpTarget(struct Parser* p, int spot)
 {
-    p->cg->byteCode[spot]   = p->cg->nBytes >> 8;
-    p->cg->byteCode[spot+1] = p->cg->nBytes & 0xff;
+    p->cg->byteCode[spot] = p->cg->codesz;
 }
 
 static void genShortCircuit(struct Parser* p, struct Token* t)
@@ -251,6 +348,20 @@ static void genIfElse(struct Parser* p, struct Token* t)
     genIf(p, t, t->children->next->next);
 }
 
+static void genQuestion(struct Parser* p, struct Token* t)
+{
+    int jumpNext, jumpEnd;
+    if(!RIGHT(t) || RIGHT(t)->type != TOK_COLON)
+        naParseError(p, "invalid ?: expression", t->line);
+    genExpr(p, LEFT(t)); // the test
+    jumpNext = emitJump(p, OP_JIFNOT);
+    genExpr(p, LEFT(RIGHT(t))); // the "if true" expr
+    jumpEnd = emitJump(p, OP_JMP);
+    fixJumpTarget(p, jumpNext);
+    genExpr(p, RIGHT(RIGHT(t))); // the "else" expr
+    fixJumpTarget(p, jumpEnd);
+}
+
 static int countSemis(struct Token* t)
 {
     if(!t || t->type != TOK_SEMI) return 0;
@@ -266,7 +377,7 @@ static void genLoop(struct Parser* p, struct Token* body,
     p->cg->loops[p->cg->loopTop-1].breakIP = jumpEnd-1;
 
     jumpOverContinue = emitJump(p, OP_JMP);
-    p->cg->loops[p->cg->loopTop-1].contIP = p->cg->nBytes;
+    p->cg->loops[p->cg->loopTop-1].contIP = p->cg->codesz;
     cont = emitJump(p, OP_JMP);
     fixJumpTarget(p, jumpOverContinue);
 
@@ -274,7 +385,7 @@ static void genLoop(struct Parser* p, struct Token* body,
     emit(p, OP_POP);
     fixJumpTarget(p, cont);
     if(update) { genExpr(p, update); emit(p, OP_POP); }
-    emitImmediate(p, OP_JMP, loopTop);
+    emitImmediate(p, OP_JMPLOOP, loopTop);
     fixJumpTarget(p, jumpEnd);
     popLoop(p);
     emit(p, OP_PUSHNIL); // Leave something on the stack
@@ -287,7 +398,7 @@ static void genForWhile(struct Parser* p, struct Token* init,
     int loopTop, jumpEnd;
     if(init) { genExpr(p, init); emit(p, OP_POP); }
     pushLoop(p, label);
-    loopTop = p->cg->nBytes;
+    loopTop = p->cg->codesz;
     genExpr(p, test);
     jumpEnd = emitJump(p, OP_JIFNOT);
     genLoop(p, body, update, label, loopTop, jumpEnd);
@@ -352,7 +463,7 @@ static void genForEach(struct Parser* p, struct Token* t)
     pushLoop(p, label);
     genExpr(p, vec);
     emit(p, OP_PUSHZERO);
-    loopTop = p->cg->nBytes;
+    loopTop = p->cg->codesz;
     emit(p, OP_EACH);
     jumpEnd = emitJump(p, OP_JIFNIL);
     assignOp = genLValue(p, elem);
@@ -393,17 +504,33 @@ static void genBreakContinue(struct Parser* p, struct Token* t)
     emitImmediate(p, OP_JMP, t->type == TOK_BREAK ? bp : cp);
 }
 
+static void newLineEntry(struct Parser* p, int line)
+{
+    int i;
+    if(p->cg->nextLineIp >= p->cg->nLineIps) {
+        int nsz = p->cg->nLineIps*2 + 1;
+        unsigned short* n = naParseAlloc(p, sizeof(unsigned short)*2*nsz);
+        for(i=0; i<(p->cg->nextLineIp*2); i++)
+            n[i] = p->cg->lineIps[i];
+        p->cg->lineIps = n;
+        p->cg->nLineIps = nsz;
+    }
+    p->cg->lineIps[p->cg->nextLineIp++] = (unsigned short) p->cg->codesz;
+    p->cg->lineIps[p->cg->nextLineIp++] = (unsigned short) line;
+}
+
 static void genExpr(struct Parser* p, struct Token* t)
 {
     int i;
-    if(t == 0)
-        naParseError(p, "BUG: null subexpression", -1);
     if(t->line != p->cg->lastLine)
-        emitImmediate(p, OP_LINE, t->line);
+        newLineEntry(p, t->line);
     p->cg->lastLine = t->line;
     switch(t->type) {
     case TOK_IF:
         genIfElse(p, t);
+        break;
+    case TOK_QUESTION:
+        genQuestion(p, t);
         break;
     case TOK_WHILE:
         genWhile(p, t);
@@ -432,7 +559,7 @@ static void genExpr(struct Parser* p, struct Token* t)
             genBinOp(OP_EXTRACT, p, t); // a[i]
         } else {
             emit(p, OP_NEWVEC);
-            genList(p, LEFT(t));
+            genList(p, LEFT(t), 1);
         }
         break;
     case TOK_LCURL:
@@ -447,6 +574,7 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_RETURN:
         if(RIGHT(t)) genExpr(p, RIGHT(t));
         else emit(p, OP_PUSHNIL);
+        for(i=0; i<p->cg->loopTop; i++) emit(p, OP_UNMARK);
         emit(p, OP_RETURN);
         break;
     case TOK_NOT:
@@ -454,8 +582,7 @@ static void genExpr(struct Parser* p, struct Token* t)
         emit(p, OP_NOT);
         break;
     case TOK_SYMBOL:
-        genScalarConstant(p, t);
-        emit(p, OP_LOCAL);
+        emitImmediate(p, OP_LOCAL, findConstantIndex(p, t));
         break;
     case TOK_LITERAL:
         genScalarConstant(p, t);
@@ -479,8 +606,7 @@ static void genExpr(struct Parser* p, struct Token* t)
         genExpr(p, LEFT(t));
         if(RIGHT(t)->type != TOK_SYMBOL)
             naParseError(p, "object field not symbol", RIGHT(t)->line);
-        genScalarConstant(p, RIGHT(t));
-        emit(p, OP_MEMBER);
+        emitImmediate(p, OP_MEMBER, findConstantIndex(p, RIGHT(t)));
         break;
     case TOK_EMPTY: case TOK_NIL:
         emit(p, OP_PUSHNIL); break; // *NOT* a noop!
@@ -515,7 +641,7 @@ static void genExprList(struct Parser* p, struct Token* t)
     }
 }
 
-naRef naCodeGen(struct Parser* p, struct Token* t)
+naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist)
 {
     int i;
     naRef codeObj;
@@ -524,26 +650,62 @@ naRef naCodeGen(struct Parser* p, struct Token* t)
 
     cg.lastLine = 0;
     cg.codeAlloced = 1024; // Start fairly big, this is a cheap allocation
-    cg.byteCode = naParseAlloc(p, cg.codeAlloced);
-    cg.nBytes = 0;
+    cg.byteCode = naParseAlloc(p, cg.codeAlloced *sizeof(unsigned short));
+    cg.codesz = 0;
     cg.consts = naNewVector(p->context);
     cg.loopTop = 0;
+    cg.lineIps = 0;
+    cg.nLineIps = 0;
+    cg.nextLineIp = 0;
     p->cg = &cg;
 
-    genExprList(p, t);
+    genExprList(p, block);
+    emit(p, OP_RETURN);
 
     // Now make a code object
     codeObj = naNewCode(p->context);
     code = codeObj.ref.ptr.code;
-    code->nBytes = cg.nBytes;
-    code->byteCode = naAlloc(cg.nBytes);
-    for(i=0; i < cg.nBytes; i++)
+
+    // Parse the argument list, if any
+    code->restArgSym = globals->argRef;
+    code->nArgs = code->nOptArgs = 0;
+    code->argSyms = code->optArgSyms = code->optArgVals = 0;
+    code->needArgVector = 1;
+    if(arglist) {
+        code->argSyms    = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        code->optArgSyms = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        code->optArgVals = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        code->needArgVector = 0;
+        genArgList(p, code, arglist);
+        if(code->nArgs) {
+            int i, *nsyms;
+            nsyms = naAlloc(sizeof(int) * code->nArgs);
+            for(i=0; i<code->nArgs; i++) nsyms[i] = code->argSyms[i];
+            code->argSyms = nsyms;
+        } else code->argSyms = 0;
+        if(code->nOptArgs) {
+            int i, *nsyms, *nvals;
+            nsyms = naAlloc(sizeof(int) * code->nOptArgs);
+            nvals = naAlloc(sizeof(int) * code->nOptArgs);
+            for(i=0; i<code->nOptArgs; i++) nsyms[i] = code->optArgSyms[i];
+            for(i=0; i<code->nOptArgs; i++) nvals[i] = code->optArgVals[i];
+            code->optArgSyms = nsyms;
+            code->optArgVals = nvals;
+        } else code->optArgSyms = code->optArgVals = 0;
+    }
+
+    code->codesz = cg.codesz;
+    code->byteCode = naAlloc(cg.codesz * sizeof(unsigned short));
+    for(i=0; i < cg.codesz; i++)
         code->byteCode[i] = cg.byteCode[i];
     code->nConstants = naVec_size(cg.consts);
     code->constants = naAlloc(code->nConstants * sizeof(naRef));
     code->srcFile = p->srcFile;
     for(i=0; i<code->nConstants; i++)
         code->constants[i] = getConstant(p, i);
-
+    code->nLines = p->cg->nextLineIp;
+    code->lineIps = naAlloc(sizeof(unsigned short)*p->cg->nLineIps*2);
+    for(i=0; i<p->cg->nLineIps*2; i++)
+        code->lineIps[i] = p->cg->lineIps[i];
     return codeObj;
 }

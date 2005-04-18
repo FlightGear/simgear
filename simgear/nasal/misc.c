@@ -49,7 +49,10 @@ naRef naStringValue(naContext c, naRef r)
 
 naRef naNew(struct Context* c, int type)
 {
-    naRef result = naObj(type, naGC_get(&(c->pools[type])));
+    if(c->nfree[type] == 0)
+        c->free[type] = naGC_get(&globals->pools[type],
+                                 OBJ_CACHE_SZ, &c->nfree[type]);
+    naRef result = naObj(type, c->free[type][--c->nfree[type]]);
     naVec_append(c->temps, result);
     return result;
 }
@@ -59,20 +62,21 @@ naRef naNewString(struct Context* c)
     naRef s = naNew(c, T_STR);
     s.ref.ptr.str->len = 0;
     s.ref.ptr.str->data = 0;
+    s.ref.ptr.str->hashcode = 0;
     return s;
 }
 
 naRef naNewVector(struct Context* c)
 {
     naRef r = naNew(c, T_VEC);
-    naVec_init(r);
+    r.ref.ptr.vec->rec = 0;
     return r;
 }
 
 naRef naNewHash(struct Context* c)
 {
     naRef r = naNew(c, T_HASH);
-    naHash_init(r);
+    r.ref.ptr.hash->rec = 0;
     return r;
 }
 
@@ -92,16 +96,9 @@ naRef naNewFunc(struct Context* c, naRef code)
 {
     naRef func = naNew(c, T_FUNC);
     func.ref.ptr.func->code = code;
-    func.ref.ptr.func->closure = naNil();
+    func.ref.ptr.func->namespace = naNil();
+    func.ref.ptr.func->next = naNil();
     return func;
-}
-
-naRef naNewClosure(struct Context* c, naRef namespace, naRef next)
-{
-    naRef closure = naNew(c, T_CLOSURE);
-    closure.ref.ptr.closure->namespace = namespace;
-    closure.ref.ptr.closure->next = next;
-    return closure;
 }
 
 naRef naNewGhost(naContext c, naGhostType* type, void* ptr)
@@ -162,6 +159,19 @@ int naEqual(naRef a, naRef b)
     return na == nb ? 1 : 0;
 }
 
+int naStrEqual(naRef a, naRef b)
+{
+    int i;
+    if(!(IS_STR(a) && IS_STR(b)))
+        return 0;
+    if(a.ref.ptr.str->len != b.ref.ptr.str->len)
+        return 0;
+    for(i=0; i<a.ref.ptr.str->len; i++)
+        if(a.ref.ptr.str->data[i] != b.ref.ptr.str->data[i])
+            return 0;
+    return 1;
+}
+
 int naTypeSize(int type)
 {
     switch(type) {
@@ -170,7 +180,6 @@ int naTypeSize(int type)
     case T_HASH: return sizeof(struct naHash);
     case T_CODE: return sizeof(struct naCode);
     case T_FUNC: return sizeof(struct naFunc);
-    case T_CLOSURE: return sizeof(struct naClosure);
     case T_CCODE: return sizeof(struct naCCode);
     case T_GHOST: return sizeof(struct naGhost);
     };

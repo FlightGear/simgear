@@ -14,7 +14,7 @@ enum {
     TOK_ASSIGN, TOK_LT, TOK_LTE, TOK_EQ, TOK_NEQ, TOK_GT, TOK_GTE,
     TOK_IF, TOK_ELSIF, TOK_ELSE, TOK_FOR, TOK_FOREACH, TOK_WHILE,
     TOK_RETURN, TOK_BREAK, TOK_CONTINUE, TOK_FUNC, TOK_SYMBOL,
-    TOK_LITERAL, TOK_EMPTY, TOK_NIL
+    TOK_LITERAL, TOK_EMPTY, TOK_NIL, TOK_ELLIPSIS, TOK_QUESTION, TOK_VAR
 };
 
 struct Token {
@@ -58,7 +58,7 @@ struct Parser {
     // Computed line number table for the lexer
     int* lines;
     int  nLines;
-
+    
     struct CodeGenerator* cg;
 };
 
@@ -66,9 +66,14 @@ struct CodeGenerator {
     int lastLine;
 
     // Accumulated byte code array
-    unsigned char* byteCode;
-    int nBytes;
+    unsigned short* byteCode;
+    int codesz;
     int codeAlloced;
+
+    // Inst. -> line table, stores pairs of {ip, line}
+    unsigned short* lineIps;
+    int nLineIps; // number of pairs
+    int nextLineIp;
 
     // Stack of "loop" frames for break/continue statements
     struct {
@@ -87,7 +92,7 @@ void naParseInit(struct Parser* p);
 void* naParseAlloc(struct Parser* p, int bytes);
 void naParseDestroy(struct Parser* p);
 void naLex(struct Parser* p);
-naRef naCodeGen(struct Parser* p, struct Token* tok);
+naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist);
 
 void naParse(struct Parser* p);
 

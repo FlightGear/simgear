@@ -155,7 +155,7 @@ static int genLValue(struct Parser* p, struct Token* t)
         genExpr(p, LEFT(t));
         genExpr(p, RIGHT(t));
         return OP_INSERT;
-    } else if(t->type == TOK_VAR && RIGHT(t)->type == TOK_SYMBOL) {
+    } else if(t->type == TOK_VAR && RIGHT(t) && RIGHT(t)->type == TOK_SYMBOL) {
         genScalarConstant(p, RIGHT(t));
         return OP_SETLOCAL;
     } else {

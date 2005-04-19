@@ -49,8 +49,9 @@ static naRef pop(naContext c, naRef me, int argc, naRef* args)
 
 static naRef setsize(naContext c, naRef me, int argc, naRef* args)
 {
+    int sz;
     if(argc < 2) return naNil();
-    int sz = (int)naNumValue(args[1]).num;
+    sz = (int)naNumValue(args[1]).num;
     if(!naIsVector(args[0])) return naNil();
     naVec_setsize(args[0], sz);
     return args[0];

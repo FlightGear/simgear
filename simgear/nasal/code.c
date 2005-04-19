@@ -107,13 +107,14 @@ static void initContext(struct Context* c)
 
 static void initGlobals()
 {
+    int i;
+    struct Context* c;
     globals = (struct Globals*)naAlloc(sizeof(struct Globals));
     naBZero(globals, sizeof(struct Globals));
 
     globals->sem = naNewSem();
     globals->lock = naNewLock();
 
-    int i;
     globals->allocCount = 256; // reasonable starting value
     for(i=0; i<NUM_NASAL_TYPES; i++)
         naGC_init(&(globals->pools[i]), i);
@@ -124,7 +125,7 @@ static void initGlobals()
     // Initialize a single context
     globals->freeContexts = 0;
     globals->allContexts = 0;
-    struct Context* c = naNewContext();
+    c = naNewContext();
 
     globals->symbols = naNewHash(c);
     globals->save = naNewVector(c);
@@ -140,11 +141,12 @@ static void initGlobals()
 struct Context* naNewContext()
 {
     int dummy;
+    struct Context* c;
     if(globals == 0)
         initGlobals();
 
     LOCK();
-    struct Context* c = globals->freeContexts;
+    c = globals->freeContexts;
     if(c) {
         globals->freeContexts = c->nextFree;
         c->nextFree = 0;

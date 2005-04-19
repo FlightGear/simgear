@@ -49,10 +49,11 @@ naRef naStringValue(naContext c, naRef r)
 
 naRef naNew(struct Context* c, int type)
 {
+    naRef result;
     if(c->nfree[type] == 0)
         c->free[type] = naGC_get(&globals->pools[type],
                                  OBJ_CACHE_SZ, &c->nfree[type]);
-    naRef result = naObj(type, c->free[type][--c->nfree[type]]);
+    result = naObj(type, c->free[type][--c->nfree[type]]);
     naVec_append(c->temps, result);
     return result;
 }

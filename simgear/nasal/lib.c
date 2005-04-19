@@ -128,7 +128,7 @@ static naRef f_strc(naContext c, naRef me, int argc, naRef* args)
     int idx;
     struct naStr* str = args[0].ref.ptr.str;
     naRef idr = argc > 1 ? naNumValue(args[1]) : naNum(0);
-    if(argc < 2 || IS_NIL(idr) || !IS_STR(args[0]))
+    if(argc < 1 || IS_NIL(idr) || !IS_STR(args[0]))
         naRuntimeError(c, "bad arguments to strc");
     idx = (int)naNumValue(idr).num;
     if(idx > str->len) naRuntimeError(c, "strc index out of bounds");
@@ -357,20 +357,23 @@ static int match(char* a, char* b, int l)
     return 1;
 }
 
-static int find(char* a, int al, char* s, int sl)
+static int find(char* a, int al, char* s, int sl, int start)
 {
     int i;
     if(al == 0) return 0;
-    for(i=0; i<sl-al+1; i++) if(match(a, s+i, al)) return i;
+    for(i=start; i<sl-al+1; i++) if(match(a, s+i, al)) return i;
     return -1;
 }
 
 static naRef f_find(naContext ctx, naRef me, int argc, naRef* args)
 {
+    int start = 0;
     if(argc < 2 || !IS_STR(args[0]) || !IS_STR(args[1]))
         naRuntimeError(ctx, "bad/missing argument to split");
+    if(argc > 2) start = (int)(naNumValue(args[2]).num);
     return naNum(find(args[0].ref.ptr.str->data, args[0].ref.ptr.str->len,
-                      args[1].ref.ptr.str->data, args[1].ref.ptr.str->len));
+                      args[1].ref.ptr.str->data, args[1].ref.ptr.str->len,
+                      start));
 }
 
 static naRef f_split(naContext ctx, naRef me, int argc, naRef* args)

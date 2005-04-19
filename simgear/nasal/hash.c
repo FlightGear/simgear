@@ -54,6 +54,7 @@ static struct HashRec* realloc(struct naHash* hash)
     struct HashRec *h, *h0 = hash->rec;
     int lga, cols, need = h0 ? h0->size - h0->dels : MIN_HASH_SIZE;
 
+    if(need < MIN_HASH_SIZE) need = MIN_HASH_SIZE;
     for(lga=0; 1<<lga <= need; lga++);
     cols = 1<<lga;
     h = naAlloc(sizeof(struct HashRec) +

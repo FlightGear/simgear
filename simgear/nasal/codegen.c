@@ -125,7 +125,7 @@ static int tailContext(struct Token* t)
     return 0;
 }
 
-static void genScalarConstant(struct Parser* p, struct Token* t)
+static int genScalarConstant(struct Parser* p, struct Token* t)
 {
     // These opcodes are for special-case use in other constructs, but
     // we might as well use them here to save a few bytes in the
@@ -137,31 +137,50 @@ static void genScalarConstant(struct Parser* p, struct Token* t)
     } else {
         int idx = findConstantIndex(p, t);
         emitImmediate(p, OP_PUSHCONST, idx);
+        return idx;
     }
+    return 0;
 }
 
-static int genLValue(struct Parser* p, struct Token* t)
+static int genLValue(struct Parser* p, struct Token* t, int* cidx)
 {
     if(t->type == TOK_LPAR) {
-        return genLValue(p, LEFT(t)); // Handle stuff like "(a) = 1"
+        return genLValue(p, LEFT(t), cidx); // Handle stuff like "(a) = 1"
     } else if(t->type == TOK_SYMBOL) {
-        genScalarConstant(p, t);
+        *cidx = genScalarConstant(p, t);
         return OP_SETSYM;
     } else if(t->type == TOK_DOT && RIGHT(t) && RIGHT(t)->type == TOK_SYMBOL) {
         genExpr(p, LEFT(t));
-        genScalarConstant(p, RIGHT(t));
+        *cidx = genScalarConstant(p, RIGHT(t));
         return OP_SETMEMBER;
     } else if(t->type == TOK_LBRA) {
         genExpr(p, LEFT(t));
         genExpr(p, RIGHT(t));
         return OP_INSERT;
     } else if(t->type == TOK_VAR && RIGHT(t) && RIGHT(t)->type == TOK_SYMBOL) {
-        genScalarConstant(p, RIGHT(t));
+        *cidx = genScalarConstant(p, RIGHT(t));
         return OP_SETLOCAL;
     } else {
         naParseError(p, "bad lvalue", t->line);
         return -1;
     }
+}
+
+static void genEqOp(int op, struct Parser* p, struct Token* t)
+{
+    int cidx, setop = genLValue(p, LEFT(t), &cidx);
+    if(setop == OP_SETMEMBER) {
+        emit(p, OP_DUP2);
+        emit(p, OP_POP);
+        emitImmediate(p, OP_MEMBER, cidx);
+    } else if(setop == OP_INSERT) {
+        emit(p, OP_DUP2);
+        emit(p, OP_EXTRACT);
+    } else // OP_SETSYM, OP_SETLOCAL
+        emitImmediate(p, OP_LOCAL, cidx);
+    genExpr(p, RIGHT(t));
+    emit(p, op);
+    emit(p, setop);
 }
 
 static int defArg(struct Parser* p, struct Token* t)
@@ -444,7 +463,7 @@ static void genFor(struct Parser* p, struct Token* t)
 
 static void genForEach(struct Parser* p, struct Token* t)
 {
-    int loopTop, jumpEnd, assignOp;
+    int loopTop, jumpEnd, assignOp, dummy;
     struct Token *elem, *body, *vec, *label=0;
     struct Token *h = LEFT(LEFT(t));
     int semis = countSemis(h);
@@ -464,9 +483,9 @@ static void genForEach(struct Parser* p, struct Token* t)
     genExpr(p, vec);
     emit(p, OP_PUSHZERO);
     loopTop = p->cg->codesz;
-    emit(p, OP_EACH);
+    emit(p, t->type == TOK_FOREACH ? OP_EACH : OP_INDEX);
     jumpEnd = emitJump(p, OP_JIFNIL);
-    assignOp = genLValue(p, elem);
+    assignOp = genLValue(p, elem, &dummy);
     emit(p, OP_XCHG);
     emit(p, assignOp);
     emit(p, OP_POP);
@@ -521,7 +540,7 @@ static void newLineEntry(struct Parser* p, int line)
 
 static void genExpr(struct Parser* p, struct Token* t)
 {
-    int i;
+    int i, dummy;
     if(t->line != p->cg->lastLine)
         newLineEntry(p, t->line);
     p->cg->lastLine = t->line;
@@ -539,6 +558,7 @@ static void genExpr(struct Parser* p, struct Token* t)
         genFor(p, t);
         break;
     case TOK_FOREACH:
+    case TOK_FORINDEX:
         genForEach(p, t);
         break;
     case TOK_BREAK: case TOK_CONTINUE:
@@ -567,7 +587,7 @@ static void genExpr(struct Parser* p, struct Token* t)
         genHash(p, LEFT(t));
         break;
     case TOK_ASSIGN:
-        i = genLValue(p, LEFT(t));
+        i = genLValue(p, LEFT(t), &dummy);
         genExpr(p, RIGHT(t));
         emit(p, i); // use the op appropriate to the lvalue
         break;
@@ -623,6 +643,11 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_NEQ:   genBinOp(OP_NEQ,    p, t); break;
     case TOK_GT:    genBinOp(OP_GT,     p, t); break;
     case TOK_GTE:   genBinOp(OP_GTE,    p, t); break;
+    case TOK_PLUSEQ:  genEqOp(OP_PLUS, p, t);  break;
+    case TOK_MINUSEQ: genEqOp(OP_MINUS, p, t); break;
+    case TOK_MULEQ:   genEqOp(OP_MUL, p, t);   break;
+    case TOK_DIVEQ:   genEqOp(OP_DIV, p, t);   break;
+    case TOK_CATEQ:   genEqOp(OP_CAT, p, t);   break;
     default:
         naParseError(p, "parse error", t->line);
     };

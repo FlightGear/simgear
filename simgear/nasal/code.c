@@ -357,7 +357,7 @@ static int getMember(struct Context* ctx, naRef obj, naRef fld,
 // OP_EACH works like a vector get, except that it leaves the vector
 // and index on the stack, increments the index after use, and pops
 // the arguments and pushes a nil if the index is beyond the end.
-static void evalEach(struct Context* ctx)
+static void evalEach(struct Context* ctx, int useIndex)
 {
     int idx = (int)(ctx->opStack[ctx->opTop-1].num);
     naRef vec = ctx->opStack[ctx->opTop-2];
@@ -368,7 +368,7 @@ static void evalEach(struct Context* ctx)
         return;
     }
     ctx->opStack[ctx->opTop-1].num = idx+1; // modify in place
-    PUSH(naVec_get(vec, idx));
+    PUSH(useIndex ? naNum(idx) : naVec_get(vec, idx));
 }
 
 #define ARG() cd->byteCode[f->ip++]
@@ -396,6 +396,10 @@ static naRef run(struct Context* ctx)
             break;
         case OP_DUP:
             PUSH(ctx->opStack[ctx->opTop-1]);
+            break;
+        case OP_DUP2:
+            PUSH(ctx->opStack[ctx->opTop-2]);
+            PUSH(ctx->opStack[ctx->opTop-2]);
             break;
         case OP_XCHG:
             a = STK(1); STK(1) = STK(2); STK(2) = a;
@@ -551,7 +555,10 @@ static naRef run(struct Context* ctx)
             FIXFRAME();
             break;
         case OP_EACH:
-            evalEach(ctx);
+            evalEach(ctx, 0);
+            break;
+        case OP_INDEX:
+            evalEach(ctx, 1);
             break;
         case OP_MARK: // save stack state (e.g. "setjmp")
             if(ctx->markTop >= MAX_MARK_DEPTH)

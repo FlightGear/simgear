@@ -321,7 +321,7 @@ static naRef f_caller(naContext ctx, naRef me, int argc, naRef* args)
 {
     int fidx;
     struct Frame* frame;
-    naRef result, fr = argc ? naNumValue(args[0]) : naNil();
+    naRef result, fr = argc ? naNumValue(args[0]) : naNum(1);
     if(IS_NIL(fr)) naRuntimeError(ctx, "non numeric argument to caller()");
     fidx = (int)fr.num;
     if(fidx > ctx->fTop - 1) return naNil();
@@ -419,6 +419,19 @@ static naRef f_rand(naContext ctx, naRef me, int argc, naRef* args)
     return naNum(r);
 }
 
+static naRef f_bind(naContext ctx, naRef me, int argc, naRef* args)
+{
+    naRef func = argc > 0 ? args[0] : naNil();
+    naRef hash = argc > 1 ? args[1] : naNewHash(ctx);
+    naRef next = argc > 2 ? args[2] : naNil();
+    if(!IS_FUNC(func) || (!IS_NIL(next) && !IS_FUNC(next)) || !IS_HASH(hash))
+        naRuntimeError(ctx, "bad argument to bind");
+    func = naNewFunc(ctx, func.ref.ptr.func->code);
+    func.ref.ptr.func->namespace = hash;
+    func.ref.ptr.func->next = next;
+    return func;
+}
+
 struct func { char* name; naCFunction func; };
 static struct func funcs[] = {
     { "size", size },
@@ -445,6 +458,7 @@ static struct func funcs[] = {
     { "find", f_find },
     { "split", f_split },
     { "rand", f_rand },
+    { "bind", f_bind },
 };
 
 naRef naStdLib(naContext c)

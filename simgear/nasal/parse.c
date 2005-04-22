@@ -6,7 +6,7 @@
 // (tight binding, do last).
 enum { PREC_BINARY, PREC_REVERSE, PREC_PREFIX, PREC_SUFFIX };
 
-#define MAX_PREC_TOKS 5
+#define MAX_PREC_TOKS 6
 struct precedence {
     int toks[MAX_PREC_TOKS];
     int rule;
@@ -14,7 +14,8 @@ struct precedence {
     { { TOK_SEMI, TOK_COMMA },                 PREC_REVERSE },
     { { TOK_ELLIPSIS },                        PREC_SUFFIX  },
     { { TOK_RETURN, TOK_BREAK, TOK_CONTINUE }, PREC_PREFIX  },
-    { { TOK_ASSIGN },                          PREC_REVERSE },
+    { { TOK_ASSIGN, TOK_PLUSEQ, TOK_MINUSEQ,
+        TOK_MULEQ, TOK_DIVEQ, TOK_CATEQ     }, PREC_REVERSE },
     { { TOK_COLON, TOK_QUESTION },             PREC_REVERSE },
     { { TOK_VAR },                             PREC_PREFIX  },
     { { TOK_OR },                              PREC_BINARY  },
@@ -227,7 +228,7 @@ static void fixBlockStructure(struct Parser* p, struct Token* start)
             addNewChild(t, c);
             fixBlockStructure(p, c);
             break;
-        case TOK_FOR: case TOK_FOREACH: case TOK_WHILE:
+        case TOK_FOR: case TOK_FOREACH: case TOK_FORINDEX: case TOK_WHILE:
         case TOK_IF: case TOK_ELSIF:
             // Expect a paren and then a curly
             if(!t->next || t->next->type != TOK_LPAR) oops(p, t);
@@ -278,7 +279,7 @@ static void fixBlockStructure(struct Parser* p, struct Token* start)
                || t->prev->type == TOK_LCURL)
                 addSemi = 1;
             break;
-        case TOK_FOR: case TOK_FOREACH: case TOK_WHILE:
+        case TOK_FOR: case TOK_FOREACH: case TOK_FORINDEX: case TOK_WHILE:
             addSemi = 1;
             break;
         case TOK_FUNC:
@@ -323,7 +324,7 @@ static int isBlock(int t)
 {
     return t == TOK_IF  || t == TOK_ELSIF   || t == TOK_ELSE
         || t == TOK_FOR || t == TOK_FOREACH || t == TOK_WHILE
-        || t == TOK_FUNC;
+        || t == TOK_FUNC || t == TOK_FORINDEX;
 }
 
 static void precChildren(struct Parser* p, struct Token* t);

@@ -11,7 +11,10 @@ include_HEADERS = \
 	oursun.hxx \
 	sky.hxx \
 	sphere.hxx \
-	stars.hxx
+	stars.hxx \
+	bbcache.hxx \
+	cloudfield.hxx \
+	newcloud.hxx
 
 libsgsky_a_SOURCES = \
 	cloud.cxx \
@@ -20,6 +23,9 @@ libsgsky_a_SOURCES = \
 	oursun.cxx \
 	sky.cxx \
 	sphere.cxx \
-	stars.cxx
+	stars.cxx \
+	bbcache.cxx \
+	cloudfield.cxx \
+	newcloud.cxx
 
 INCLUDES = -I$(top_srcdir)

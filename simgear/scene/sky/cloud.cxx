@@ -39,6 +39,8 @@ inline int (isnan)(double r) { return isnan(r); }
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/texture.hxx>
 
+#include "newcloud.hxx"
+#include "cloudfield.hxx"
 #include "cloud.hxx"
 
 #if defined(__MINGW32__)
@@ -221,12 +223,14 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer[0] = layer[1] = layer[2] = layer[3] = NULL;
 
     layer_root->addKid(layer_transform);
+	layer3D = new SGCloudField;
     rebuild();
 }
 
 // Destructor
 SGCloudLayer::~SGCloudLayer()
 {
+	delete layer3D;
     delete vertices;
     delete indices;
     delete layer_root;		// deletes layer_transform and layer as well
@@ -460,6 +464,8 @@ SGCloudLayer::rebuild()
 
             layer_states[SG_CLOUD_CLEAR] = 0;
         }
+		SGNewCloud::loadTextures(texture_path.str());
+		layer3D->buildTestLayer();
     }
 
     if ( bump_mapping ) {
@@ -837,6 +843,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         last_lat = lat;
     }
 
+	layer3D->reposition( p, up, lon, lat, alt, dt);
     return true;
 }
 
@@ -844,6 +851,9 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 void SGCloudLayer::draw( bool top ) {
     if ( layer_coverage != SG_CLOUD_CLEAR ) {
 
+		if ( SGCloudField::enable3D )
+			layer3D->Render();
+		else
         if ( bump_mapping && enable_bump_mapping ) {
 
             sgMat4 modelview,

@@ -1,0 +1,114 @@
+// a layer of 3d clouds
+//
+// Written by Harald JOHNSEN, started April 2005.
+//
+// Copyright (C) 2005  Harald JOHNSEN - hjohnsen@evc.net
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
+//
+//
+
+#ifndef _CLOUDFIELD_HXX
+#define _CLOUDFIELD_HXX
+
+#include <plib/sg.h>
+#include <simgear/compiler.h>
+#include <vector>
+
+
+SG_USING_STD(vector);
+
+class SGNewCloud;
+
+class culledCloud {
+public:
+	SGNewCloud	*aCloud;
+	sgVec3		eyePos;
+	float		dist;
+	bool operator<(const culledCloud &b) const {
+		return (this->dist < b.dist);
+	}
+};
+typedef vector<culledCloud> list_of_culledCloud;
+
+class SGCloudField {
+
+private:
+	class Cloud  {
+	public:
+		SGNewCloud	*aCloud;
+		sgVec3		pos;
+//		float		dist;
+//		bool		culled;
+
+//		bool operator<(const Cloud &b) {
+//			return this->dist < b.dist;
+//		}
+	};
+
+
+	typedef vector<Cloud> list_of_Cloud;
+
+	// cull all clouds of a tiled field
+	void cullClouds(sgVec3 eyePos, sgMat4 mat);
+
+	list_of_Cloud theField;
+	// this is a relative position only, with that we can move all clouds at once
+	sgVec3 relative_position;
+//	double lon, lat;
+
+	sgFrustum frustum;
+
+	sgMat4 transform;
+	double deltax, deltay, alt;
+
+public:
+
+	SGCloudField();
+	~SGCloudField();
+
+	// add one cloud, data is not copied, ownership given
+	void addCloud( sgVec3 pos, SGNewCloud *cloud);
+
+	// for debug only
+	void buildTestLayer(void);
+
+	// Render a cloud field
+	void Render(void);
+
+	// reposition the cloud layer at the specified origin and orientation
+	void reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt);
+
+	// visibility distance for clouds in meters
+	static float CloudVis;
+
+	static float density;
+
+	static double fieldSize;
+	static bool enable3D;
+
+	// return the size of the memory pool used by texture impostors
+	static int get_CacheSize(void);
+	static float get_CloudVis(void) { return CloudVis; }
+	static float get_density(void) { return density; }
+	static bool get_enable3dClouds(void) { return enable3D; }
+
+	static void set_CacheSize(int sizeKb);
+	static void set_CloudVis(float distance);
+	static void set_density(float density);
+	static void set_enable3dClouds(bool enable);
+};
+
+#endif // _CLOUDFIELD_HXX

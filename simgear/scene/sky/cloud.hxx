@@ -39,6 +39,7 @@ SG_USING_STD(string);
 // SG_USING_STD(cout);
 // SG_USING_STD(endl);
 
+class SGCloudField;
 
 /**
  * A class layer to model a single cloud layer
@@ -225,6 +226,8 @@ private:
     // position, not view position
     // double xoff, yoff;
     double last_lon, last_lat, last_course;
+
+	SGCloudField *layer3D;
 };
 
 

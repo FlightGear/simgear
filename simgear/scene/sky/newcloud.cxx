@@ -31,7 +31,7 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include STL_ALGORITHM
-#include SG_GLUT_H
+#include SG_GLU_H
 
 #include "newcloud.hxx"
 

@@ -30,7 +30,7 @@
 #include <plib/ssg.h>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
-#include SG_GLUT_H
+#include SG_GLU_H
 
 #include "bbcache.hxx"
 

@@ -31,7 +31,6 @@
 #include <simgear/math/sg_geodesy.hxx>
 
 #include STL_ALGORITHM
-#include SG_GLUT_H
 #include <vector>
 
 SG_USING_STD(vector);

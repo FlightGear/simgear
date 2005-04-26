@@ -33,6 +33,7 @@
 #include STL_ALGORITHM
 #include SG_GLU_H
 
+#include "cloudfield.hxx"
 #include "newcloud.hxx"
 
 
@@ -45,7 +46,7 @@ static ssgTexture *cloudTextures[SGNewCloud::CLTexture_max];
 bool SGNewCloud::useAnisotropic = true;
 SGBbCache *SGNewCloud::cldCache = 0;
 static bool texturesLoaded = false;
-float SGNewCloud::nearRadius = 2500.0f;
+float SGNewCloud::nearRadius = 3500.0f;
 bool SGNewCloud::lowQuality = false;
 sgVec3 SGNewCloud::sunlight = {0.5f, 0.5f, 0.5f};
 sgVec3 SGNewCloud::ambLight = {0.5f, 0.5f, 0.5f};
@@ -67,7 +68,7 @@ SGNewCloud::SGNewCloud() :
 //	if( ! texturesLoaded ) {}
 	if( cldCache == 0 ) {
 		cldCache = new SGBbCache;
-		cldCache->init( 20 );
+		cldCache->init( 64 );
 	}
 }
 
@@ -309,7 +310,7 @@ void SGNewCloud::genSprites( void ) {
 
 // definition of a cu cloud, only for testing
 void SGNewCloud::new_cu(void) {
-	float s = 150.0f;
+	float s = 250.0f;
 	float r = Rnd(1.0) + 0.5;
 	if( r < 0.5f ) {
 		addContainer(0.0f, 0.0f, 0.0f, s, CLbox_cumulus);
@@ -332,7 +333,7 @@ void SGNewCloud::new_cu(void) {
 
 	} else {
 		// cb
-		s = 475.0f;
+		s = 675.0f;
 		addContainer(0, 0, 0, s, CLbox_cumulus);
 		addContainer(0, 0, s, s, CLbox_cumulus);
 		addContainer(s, 0, s, s, CLbox_cumulus);
@@ -368,43 +369,12 @@ void SGNewCloud::SetPos(sgVec3 newPos) {
 
 
 
-/*
-Public Sub drawContainers()
-    Dim N As Integer, i As Integer
-    N = UBound(tbSpriteCont())
-
-    Call glPolygonMode(faceFrontAndBack, pgmLine)
-
-    Call glColor3f(0.9, 0.9, 0.9)
-
-    For i = 0 To N - 1
-        With tbSpriteCont(i)
-            Call glPushMatrix
-            Call glTranslatef(.x * c_scale + cloudpos(0), .y * c_scale + cloudpos(1), .z * c_scale + cloudpos(2))
-            Call gCtl.Shapes.box(.r * c_scale, .r * c_scale, .r * c_scale)
-            Call glPopMatrix
-        End With
-    Next i
-If 0 Then
-    Call glPushMatrix
-        Call glTranslatef(ccenter(0), ccenter(1), ccenter(2))
-        Call gCtl.Shapes.Sphere(cradius, 8, 8)
-    Call glPopMatrix
-End If
-End Sub
-*/
 void SGNewCloud::drawContainers() {
 
 
 }
 
 
-/*
-*/
-
-//bool SGNewCloud::compareSpriteFunction(const spriteDef &a, const spriteDef &b) {
-//	return (a.dist > b.dist);
-//}
 
 // sort on distance to eye because of transparency
 void SGNewCloud::sortSprite( sgVec3 eye ) {
@@ -424,7 +394,12 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 
 /*    int clrank		 = fadingrank / 10;
 	int clfadeinrank = fadingrank - clrank * 10;*/
+	float CloudVisFade = 1.0 / (1.5 * SGCloudField::get_CloudVis());
 
+    computeSimpleLight( FakeEyePos );
+
+    // view point sort, we sort because of transparency
+	sortSprite( FakeEyePos );
 
 	GLint previousTexture = -1, thisTexture;
 	list_of_spriteDef::iterator iSprite;
@@ -491,8 +466,7 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 			sgCopyVec4 ( l3, iSprite->l3 );
 			if( ! drawBB ) {
 				// blend clouds with sky based on distance to limit the contrast of distant cloud
-				// TODO:use cloudfield vis, not hardcoded value
-				float t = 1.0f - dist_center / (15000.0f * 2.0 );
+				float t = 1.0f - dist_center * CloudVisFade;
 				if ( t < 0.0f ) 
 					t = 0.0f;	// no, it should have been culled
 				// now clouds at the far plane are half blended
@@ -591,8 +565,9 @@ void SGNewCloud::RenderBB(sgVec3 deltaPos, float angleY, float angleX, float dis
         glRotatef(angleX, 1.0f, 0.0f, 0.0f);
  
 		// blend clouds with sky based on distance to limit the contrast of distant cloud
-		// TODO:use cloudfield vis, not hardcoded value
-		float t = 1.0f - dist_center / (15000.0f * 2.0 );
+		float CloudVisFade = (1.5 * SGCloudField::get_CloudVis());
+
+		float t = 1.0f - dist_center / CloudVisFade;
 		// err the alpha value is not good for impostor, debug that
 		t *= 1.65;
 		if ( t < 0.0f ) 
@@ -611,7 +586,7 @@ void SGNewCloud::RenderBB(sgVec3 deltaPos, float angleY, float angleX, float dis
 			glVertex2f(-r, -r);
 		glEnd();
 
-#if 1	// debug only
+#if 0	// debug only
 		int age = cldCache->queryImpostorAge(bbId);
 		// draw a red border for the newly generated BBs else draw a white border
         if( age < 200 )
@@ -646,36 +621,21 @@ bool SGNewCloud::isBillboardable(float dist) {
         // near clouds we don't want to use BB
         return false;
 	}
-//	return false;
 	return true;
 }
 
 
 
 // render the cloud, fakepos is a relative position inside the cloud field
-void SGNewCloud::Render(sgVec3 fakepos) {
-	sgVec3 eyePos, FakeEyePos;
+void SGNewCloud::Render(sgVec3 FakeEyePos) {
 	sgVec3 dist;
 
 
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	// obsolete code
-	sgCopyVec3( eyePos, fakepos );
-
-    sgCopyVec3( FakeEyePos, fakepos);
 	sgVec3 deltaPos;
-//    sgSubVec3( deltaPos, eyePos, FakeEyePos);
 	sgCopyVec3( deltaPos, FakeEyePos);
     sgSubVec3( dist, center, FakeEyePos);
     float dist_center = sgLengthVec3(dist);
 
-	// eeeek don't do that so early, perhaps we will use an impostor
-    computeSimpleLight( FakeEyePos );
-
-    // view point sort, we sort because of transparency
-	// eeeek don't do that so early, perhaps we will use an impostor
-	sortSprite( FakeEyePos );
 
 
 	if( !isBillboardable(dist_center) ) {

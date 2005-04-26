@@ -26,10 +26,36 @@
 
 SGEnviro sgEnviro;
 
-SGEnviro::SGEnviro(void) {
+SGEnviro::SGEnviro(void) :
+	view_in_cloud(false),
+	precipitation_enable_state(false),
+	precipitation_density(100.0)
+
+{
 }
 
 SGEnviro::~SGEnviro(void) {
+}
+
+void SGEnviro::startOfFrame(void) {
+	view_in_cloud = false;
+	if(SGNewCloud::cldCache)
+		SGNewCloud::cldCache->startNewFrame();
+}
+
+void SGEnviro::endOfFrame(void) {
+}
+
+// this can be queried to add some turbulence for example
+bool SGEnviro::is_view_in_cloud(void) const {
+	return view_in_cloud;
+}
+void SGEnviro::set_view_in_cloud(bool incloud) {
+	view_in_cloud = incloud;
+}
+
+int SGEnviro::get_CacheResolution(void) const {
+	return SGCloudField::get_CacheResolution();
 }
 
 int SGEnviro::get_clouds_CacheSize(void) const {
@@ -43,6 +69,10 @@ float SGEnviro::get_clouds_density(void) const {
 }
 bool SGEnviro::get_clouds_enable_state(void) const {
 	return SGCloudField::get_enable3dClouds();
+}
+
+void SGEnviro::set_CacheResolution(int resolutionPixels) {
+	SGCloudField::set_CacheResolution(resolutionPixels);
 }
 
 void SGEnviro::set_clouds_CacheSize(int sizeKb) {
@@ -60,15 +90,17 @@ void SGEnviro::set_clouds_enable_state(bool enable) {
 
 // rain/snow
 float SGEnviro::get_precipitation_density(void) const {
-	return 0.0;
+	return precipitation_density;
 }
 bool SGEnviro::get_precipitation_enable_state(void) const {
-	return false;
+	return precipitation_enable_state;
 }
 
 void SGEnviro::set_precipitation_density(float density) {
+	precipitation_density = density;
 }
 void SGEnviro::set_precipitation_enable_state(bool enable) {
+	precipitation_enable_state = enable;
 }
 
 // others

@@ -29,12 +29,14 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 #include <simgear/math/sg_geodesy.hxx>
+#include <simgear/math/polar3d.hxx>
 
 #include STL_ALGORITHM
 #include <vector>
 
 SG_USING_STD(vector);
 
+#include <simgear/environment/visual_enviro.hxx>
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
 
@@ -45,9 +47,26 @@ float SGCloudField::CloudVis = 25000.0f;
 bool SGCloudField::enable3D = true;
 // fieldSize must be > CloudVis or we can destroy the impostor cache
 // a cloud must only be seen once or the impostor will be generated for each of his positions
-double SGCloudField::fieldSize = 30000.0;
+double SGCloudField::fieldSize = 27000.0;
 float SGCloudField::density = 100.0;
-static int last_cache_size = 4*1024;
+static int last_cache_size = 1*1024;
+static int cacheResolution = 64;
+
+int SGCloudField::get_CacheResolution(void) {
+	return cacheResolution;
+}
+
+void SGCloudField::set_CacheResolution(int resolutionPixels) {
+	if(cacheResolution == resolutionPixels)
+		return;
+	cacheResolution = resolutionPixels;
+	if(enable3D) {
+		int count = last_cache_size * 1024 / (cacheResolution * cacheResolution * 4);
+		if(count == 0)
+			count = 1;
+		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
+	}
+}
 
 int SGCloudField::get_CacheSize(void) { 
 	return SGNewCloud::cldCache->queryCacheSize(); 
@@ -61,10 +80,17 @@ void SGCloudField::set_CacheSize(int sizeKb) {
 		return;
 	if(sizeKb)
 		last_cache_size = sizeKb;
-	SGNewCloud::cldCache->setCacheSize(sizeKb);
+	if(enable3D) {
+		int count = last_cache_size * 1024 / (cacheResolution * cacheResolution * 4);
+		if(count == 0)
+			count = 1;
+//		SGNewCloud::cldCache->setCacheSize(sizeKb);
+		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
+	}
 }
 void SGCloudField::set_CloudVis(float distance) {
-	SGCloudField::CloudVis = distance;
+	if( distance <= fieldSize )
+		SGCloudField::CloudVis = distance;
 }
 void SGCloudField::set_density(float density) {
 	SGCloudField::density = density;
@@ -104,15 +130,7 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 
 	sgMakeCoordMat4( transform, &layerpos );
 
-	// TODO:use a simple sphere earth
-	double az1, az2, s;
-	geo_inverse_wgs_84( 0.0, 0.0, 0.0, lat*SG_RADIANS_TO_DEGREES , lon*SG_RADIANS_TO_DEGREES, &az1, &az2, &s);
-	az1 = az1 * SG_DEGREES_TO_RADIANS;
-	// compute the view position on a 'flat' earth
-	deltay = -cos(SG_PI/2+az1) * s;
-	deltax = -sin(SG_PI/2+az1) * s;
-//	deltax = cos(0.0) * s;
-//	deltay = sin(0.0) * s;
+
 	this->alt = alt;
 
 	// simulate clouds movement from wind
@@ -126,13 +144,51 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 		relative_position[SG_Y] += by;
     }
 
+    if ( lon != last_lon || lat != last_lat || sp_dist != 0 ) {
+        Point3D start( last_lon, last_lat, 0.0 );
+        Point3D dest( lon, lat, 0.0 );
+        double course = 0.0, dist = 0.0;
+
+        calc_gc_course_dist( dest, start, &course, &dist );
+        // if start and dest are too close together,
+        // calc_gc_course_dist() can return a course of "nan".  If
+        // this happens, lets just use the last known good course.
+        // This is a hack, and it would probably be better to make
+        // calc_gc_course_dist() more robust.
+        if ( isnan(course) ) {
+            course = last_course;
+        } else {
+            last_course = course;
+        }
+
+        // calculate cloud movement due to external forces
+        double ax = 0.0, ay = 0.0;
+
+        if (dist > 0.0) {
+            ax = cos(course) * dist;
+            ay = sin(course) * dist;
+        }
+
+		deltax += ax;
+		deltay += ay;
+
+        last_lon = lon;
+        last_lat = lat;
+    }
+
+
 	// correct the frustum with the right far plane
 	ssgContext *context = ssgGetCurrentContext();
 	frustum = *context->getFrustum();
 	frustum.setNearFar(1.0, CloudVis);
 }
 
-SGCloudField::SGCloudField() {
+SGCloudField::SGCloudField() :
+	last_density(0.0),
+	deltax(0.0),
+	deltay(0.0),
+	last_course(0.0)
+{
 	sgSetVec3( relative_position, 0,0,0);
 	theField.reserve(200);
 	inViewClouds.reserve(200);
@@ -147,11 +203,43 @@ SGCloudField::~SGCloudField() {
 }
 
 
+// use a table or else we see poping when moving the slider...
+static int densTable[][10] = {
+	{0,0,0,0,0,0,0,0,0,0},
+	{1,0,0,0,0,0,0,0,0,0},
+	{1,0,0,0,1,0,0,0,0,0},
+	{1,0,0,0,1,0,0,1,0,0}, // 30%
+	{1,0,1,0,1,0,0,1,0,0},
+	{1,0,1,0,1,0,1,1,0,0}, // 50%
+	{1,0,1,0,1,0,1,1,0,1},
+	{1,0,1,1,1,0,1,1,0,1}, // 70%
+	{1,1,1,1,1,0,1,1,0,1},
+	{1,1,1,1,1,0,1,1,1,1}, // 90%
+	{1,1,1,1,1,1,1,1,1,1}
+};
+
+// set the visible flag depending on density
+void SGCloudField::applyDensity(void) {
+	int row = (int) (density / 10.0);
+	int col = 0;
+	list_of_Cloud::iterator iCloud;
+	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
+		if(++col > 9)
+			col = 0;
+		if( densTable[row][col] ) {
+			iCloud->visible = true;
+		} else
+			iCloud->visible = false;
+	}
+	last_density = density;
+}
+
 // add one cloud, data is not copied, ownership given
 void SGCloudField::addCloud( sgVec3 pos, SGNewCloud *cloud) {
 	Cloud cl;
 	sgCopyVec3( cl.pos, pos );
 	cl.aCloud = cloud;
+	cl.visible = true;
 	cloud->SetPos( pos );
 	theField.push_back( cl );
 }
@@ -165,7 +253,7 @@ static float Rnd(float n) {
 // build a field of cloud of size 25x25 km, its a grid of 11x11 clouds
 void SGCloudField::buildTestLayer(void) {
 
-	const float s = 2200.0f;
+	const float s = 2250.0f;
 
 	for( int z = -5 ; z <= 5 ; z++) {
 		for( int x = -5 ; x <= 5 ; x++ ) {
@@ -175,21 +263,23 @@ void SGCloudField::buildTestLayer(void) {
             addCloud(pos, cloud);
 		}
 	}
-
+	applyDensity();
 }
 
 // cull all clouds of a tiled field
 void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 	list_of_Cloud::iterator iCloud;
-//	const float distVisCompare = CloudVis * CloudVis;
 
 	// TODO:cull the field before culling the clouds in the field (should eliminate 3 fields)
 	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
 		sgVec3 dist;
 		sgSphere sphere;
+		if( ! iCloud->visible )
+			continue;
 		sgSubVec3( dist, iCloud->pos, eyePos );
 		sphere.setCenter(dist[0], dist[2], dist[1]);
-		sphere.setRadius(iCloud->aCloud->getRadius());
+		float radius = iCloud->aCloud->getRadius();
+		sphere.setRadius(radius);
 		sphere.orthoXform(mat);
 		if( frustum.contains( & sphere ) != SG_OUTSIDE ) {
 			float squareDist = dist[0]*dist[0] + dist[1]*dist[1] + dist[2]*dist[2];
@@ -199,16 +289,13 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 			// save distance for later sort, opposite distance because we want back to front
 			tmp.dist   =  - squareDist;
 			inViewClouds.push_back(tmp);
+			if( squareDist - radius*radius < 100*100 )
+				sgEnviro.set_view_in_cloud(true);
 		}
 	}
 
 }
 
-static inline void myswap(float &a, float &b) {
-	float tmp = a;
-	a = b;
-	b = tmp;
-}
 
 // Render a cloud field
 // because no field can have an infinite size (and we don't want to reach his border)
@@ -221,30 +308,29 @@ void SGCloudField::Render(void) {
 	if( ! enable3D )
 		return;
 
+	if( last_density != density ) {
+		last_density = density;
+		applyDensity();
+	}
+
 	// ask the impostor cache to do some cleanup
 	// TODO:don't do that for every field
 	SGNewCloud::cldCache->startNewFrame();
 
 	inViewClouds.clear();
 
-	// cloud fields are tiled on the flat earth
-	// compute the position in the tile
-	relx = -fmod( deltax + relative_position[SG_X], fieldSize );
-	rely = -fmod( deltay + relative_position[SG_Y], fieldSize );
  
 	glPushMatrix();
  
 	sgMat4 modelview, tmp, invtrans;
 
-	// try to find the sun position (buggy)
+	// try to find the sun position
 	sgTransposeNegateMat4( invtrans, transform );
     sgVec3 lightVec;
     ssgGetLight( 0 )->getPosition( lightVec );
-    sgNegateVec3( lightVec );
     sgXformVec3( lightVec, invtrans );
-	sgNormaliseVec3( lightVec );
 	sgCopyVec3( SGNewCloud::modelSunDir, lightVec );
-
+	sgSetVec3(  SGNewCloud::modelSunDir, lightVec[0], lightVec[2], lightVec[1]);
 	// try to find the lighting data (buggy)
 	sgVec4 diffuse, ambient;
 	ssgGetLight( 0 )->getColour( GL_DIFFUSE, diffuse );
@@ -257,11 +343,12 @@ void SGCloudField::Render(void) {
 	sgCopyMat4( tmp, transform );
     sgPostMultMat4( tmp, modelview );
 
-	sgSetVec3( eyePos, -relx, -tmp[3][2], -rely);
-	sgSetVec3( eyePos, -relx, 0, -rely);
+	// cloud fields are tiled on the flat earth
+	// compute the position in the tile
+	relx = -fmod( deltax + relative_position[SG_X] + tmp[3][0], fieldSize );
+	rely = -fmod( deltay + relative_position[SG_Y] + tmp[3][1], fieldSize );
+
 	sgSetVec3( eyePos, -relx, alt, -rely);
-//	sgSetVec3( eyePos, 0, - tmp[3][2], 0);
-//	sgSetVec3( eyePos, 20000, - tmp[3][2], 20000);
 
 	tmp[3][2] = 0;
 	tmp[3][0] = 0;
@@ -296,12 +383,10 @@ void SGCloudField::Render(void) {
     glEnable(GL_ALPHA_TEST);
     glAlphaFunc(GL_GREATER, 0.0f);
 	glDisable(GL_CULL_FACE);
-//	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_SMOOTH);
     glEnable(GL_BLEND);
 	glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-//	glEnable( GL_COLOR_MATERIAL ); 
 	glEnable( GL_TEXTURE_2D );
 	glDisable( GL_FOG );
     glDisable(GL_LIGHTING);
@@ -316,11 +401,13 @@ void SGCloudField::Render(void) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+	glEnable( GL_FOG );
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 
 	ssgLoadModelviewMatrix( modelview );
 
 	glPopMatrix();
-//	glEnable(GL_DEPTH_TEST);
 
 }
 

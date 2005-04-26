@@ -71,8 +71,8 @@ bool SGBbCache::allocTextureMemory(int cacheCount, int textureDimension) {
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
     glBindTexture(GL_TEXTURE_2D, 0);
 	cacheSizeKb = (textureDimension * textureDimension * 4);
@@ -94,7 +94,7 @@ SGBbCache::SGBbCache(void) :
 	rt(0),
 	rtAvailable(false),
 	frameNumber(0),
-	maxImpostorRegenFrame(10)
+	maxImpostorRegenFrame(20)
 {
 }
 
@@ -139,11 +139,11 @@ void SGBbCache::init(int cacheCount) {
 		}
 	}
 	if( cacheCount )
-		allocTextureMemory( cacheCount, 256 );
+		allocTextureMemory( cacheCount, 64 );
 
 }
 
-// TODO:not callable atm, texture size not handled correctly
+
 bool SGBbCache::setCacheSize(int count, int textureDimension) {
 	if( count < 0 || count > 500)
 		return false;
@@ -172,7 +172,7 @@ bool SGBbCache::setCacheSize(int count, int textureDimension) {
 	return allocTextureMemory( count, textureDimension);
 }
 
-// TODO:not callable atm, texture size not handled correctly
+
 bool SGBbCache::setCacheSize(int sizeKb) {
 	if( sizeKb < 0 || sizeKb > 256*1024)
 		return false;
@@ -181,10 +181,10 @@ bool SGBbCache::setCacheSize(int sizeKb) {
 		return true;
 	int count = 1;
 	int textureDimension = 256;
-	if( cacheSizeKb >= 8*1024 ) {
+	if( sizeKb >= 8*1024 ) {
 		// more than 32 256x256 textures
 		textureDimension = 256;
-	} else 	if( cacheSizeKb >= 2*1024 ) {
+	} else 	if( sizeKb >= 2*1024 ) {
 		// more than 32 128x128 textures
 		textureDimension = 128;
 	} else 	{
@@ -305,10 +305,10 @@ bool SGBbCache::isBbValid( int cldId, int bbId, float angleY, float angleX) {
 	if( builtBBframe >= maxImpostorRegenFrame )
 		return true;
 
-    if( fabs(angleY - bbList[bbId].angleY) >= 5.0 )
+    if( fabs(angleY - bbList[bbId].angleY) >= 4.0 )
         return false;
 
-    if( fabs(angleX - bbList[bbId].angleX) >= 5.0 )
+    if( fabs(angleX - bbList[bbId].angleX) >= 4.0 )
         return false;
 
 	bbList[bbId].frameUsed = frameNumber;

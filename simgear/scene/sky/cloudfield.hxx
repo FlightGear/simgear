@@ -38,7 +38,7 @@ public:
 	sgVec3		eyePos;
 	float		dist;
 	bool operator<(const culledCloud &b) const {
-		return (this->dist < b.dist);
+		return this->dist < b.dist;
 	}
 };
 typedef vector<culledCloud> list_of_culledCloud;
@@ -50,6 +50,7 @@ private:
 	public:
 		SGNewCloud	*aCloud;
 		sgVec3		pos;
+		bool		visible;
 //		float		dist;
 //		bool		culled;
 
@@ -64,6 +65,8 @@ private:
 	// cull all clouds of a tiled field
 	void cullClouds(sgVec3 eyePos, sgMat4 mat);
 
+	void applyDensity(void);
+
 	list_of_Cloud theField;
 	// this is a relative position only, with that we can move all clouds at once
 	sgVec3 relative_position;
@@ -73,6 +76,9 @@ private:
 
 	sgMat4 transform;
 	double deltax, deltay, alt;
+    double last_lon, last_lat, last_course;
+
+	float	last_density;
 
 public:
 
@@ -101,11 +107,13 @@ public:
 
 	// return the size of the memory pool used by texture impostors
 	static int get_CacheSize(void);
+	static int get_CacheResolution(void);
 	static float get_CloudVis(void) { return CloudVis; }
 	static float get_density(void) { return density; }
 	static bool get_enable3dClouds(void) { return enable3D; }
 
 	static void set_CacheSize(int sizeKb);
+	static void set_CacheResolution(int resolutionPixels);
 	static void set_CloudVis(float distance);
 	static void set_density(float density);
 	static void set_enable3dClouds(bool enable);

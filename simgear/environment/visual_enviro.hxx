@@ -24,18 +24,32 @@
 
 class SGEnviro {
 
+private:
+	bool view_in_cloud;
+	bool precipitation_enable_state;
+	float precipitation_density;
+
 public:
 	SGEnviro();
 	~SGEnviro();
 
+	void startOfFrame(void);
+	void endOfFrame(void);
+
+	// this can be queried to add some turbulence for example
+	bool is_view_in_cloud(void) const;
+	void set_view_in_cloud(bool incloud);
+
 	// Clouds
 	// return the size of the memory pool used by texture impostors
 	int get_clouds_CacheSize(void) const;
+	int get_CacheResolution(void) const;
 	float get_clouds_visibility(void) const;
 	float get_clouds_density(void) const;
 	bool get_clouds_enable_state(void) const;
 
 	void set_clouds_CacheSize(int sizeKb);
+	void set_CacheResolution(int resolutionPixels);
 	void set_clouds_visibility(float distance);
 	void set_clouds_density(float density);
 	void set_clouds_enable_state(bool enable);
@@ -55,4 +69,3 @@ public:
 extern SGEnviro sgEnviro;
 
 #endif // _VISUAL_ENVIRO_HXX
-

@@ -180,6 +180,7 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 	// correct the frustum with the right far plane
 	ssgContext *context = ssgGetCurrentContext();
 	frustum = *context->getFrustum();
+	frustum.setFOV(55.0,0);
 	frustum.setNearFar(1.0, CloudVis);
 }
 

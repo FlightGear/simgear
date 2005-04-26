@@ -386,7 +386,7 @@ void SGNewCloud::sortSprite( sgVec3 eye ) {
 		sgSubVec3( dist, iSprite->pos, eye );
 		iSprite->dist = -(dist[0]*dist[0] + dist[1]*dist[1] + dist[2]*dist[2]);
 	}
-	sort( list_spriteDef.begin(), list_spriteDef.end() );
+	std::sort( list_spriteDef.begin(), list_spriteDef.end() );
 }
 
 // render the cloud on screen or on the RTT texture to build the impostor

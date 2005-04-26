@@ -376,7 +376,7 @@ void SGCloudField::Render(void) {
 			cullClouds(fieldPos, tmp);
 		}
 	// sort all visible clouds back to front (because of transparency)
-	sort( inViewClouds.begin(), inViewClouds.end() );
+	std::sort( inViewClouds.begin(), inViewClouds.end() );
  
 	// TODO:push states
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

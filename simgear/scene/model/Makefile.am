@@ -11,7 +11,8 @@ include_HEADERS = \
 	model.hxx \
 	modellib.hxx \
 	personality.hxx \
-	placement.hxx
+	placement.hxx \
+	placementtrans.hxx
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
@@ -20,6 +21,7 @@ libsgmodel_a_SOURCES = \
 	model.cxx \
 	modellib.cxx \
 	personality.cxx \
-	placement.cxx
+	placement.cxx \
+	placementtrans.cxx
 
 INCLUDES = -I$(top_srcdir)

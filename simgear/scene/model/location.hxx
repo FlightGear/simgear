@@ -109,19 +109,21 @@ public:
     void set_cur_elev_m ( double elev ) { _cur_elev_m = elev; }
     inline double get_cur_elev_m () { return _cur_elev_m; }
     // Interface to current buckets for use with tilemgr...
-    void set_tile_center ( Point3D tile_center ) { _tile_center = tile_center; }
+    void set_tile_center ( Point3D tile_center ) { set_dirty(); _tile_center = tile_center; }
     inline Point3D get_tile_center () { return _tile_center; }
 
     // Matrices...
     virtual const sgVec4 *getTransformMatrix( const Point3D scenery_center ) {
-        if ( _dirty ) {
+        if ( _dirty || scenery_center != _scenery_center ) {
+            _scenery_center = scenery_center;
             recalc( scenery_center );
         }
 	return TRANS;
     }
     virtual const sgVec4 *getCachedTransformMatrix() { return TRANS; }
     virtual const sgVec4 *getUpMatrix( const Point3D scenery_center )  {
-        if ( _dirty ) {
+        if ( _dirty || scenery_center != _scenery_center ) {
+            _scenery_center = scenery_center;
             recalc( scenery_center );
         }
 	return UP;
@@ -153,6 +155,7 @@ private:
     // elevation of ground under this location...
     double _cur_elev_m;
     Point3D _tile_center;
+    Point3D _scenery_center;
 
     // surface vector heading south
     sgVec3 _surface_south;

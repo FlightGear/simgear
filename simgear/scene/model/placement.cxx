@@ -11,17 +11,14 @@
 
 #include <string.h>             // for strcmp()
 
-#include <vector>
-
 #include <plib/sg.h>
 #include <plib/ssg.h>
 #include <plib/ul.h>
 
 #include "location.hxx"
+#include "placementtrans.hxx"
 
 #include "placement.hxx"
-
-SG_USING_STD(vector);
 
 
 
@@ -37,7 +34,7 @@ SGModelPlacement::SGModelPlacement ()
     _pitch_deg(0),
     _heading_deg(0),
     _selector(new ssgSelector),
-    _position(new ssgTransform),
+    _position(new ssgPlacementTransform),
     _location(new SGLocation)
 {
 }
@@ -73,7 +70,12 @@ SGModelPlacement::update( const Point3D scenery_center )
       POS[i][j] += (tmp * trans[j]);
     }
   }
-  _position->setTransform(POS);
+//   _position->setTransform(POS);
+  _position->setTransform(_location->get_absolute_view_pos(scenery_center), POS);
+  sgdVec3 center;
+  sgdSetVec3(center,
+             scenery_center.x(), scenery_center.y(), scenery_center.z());
+  _position->setSceneryCenter(center);
 }
 
 bool

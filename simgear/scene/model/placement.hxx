@@ -11,10 +11,6 @@
 # error This library requires C++
 #endif
 
-#include <vector>
-
-SG_USING_STD(vector);
-
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
@@ -24,6 +20,7 @@ SG_USING_STD(vector);
 
 // Don't pull in the headers, since we don't need them here.
 class SGLocation;
+class ssgPlacementTransform;
 
 
 // Has anyone done anything *really* stupid, like making min and max macros?
@@ -86,6 +83,9 @@ public:
   // Allows multiplayer to get players position transform
   virtual const sgVec4 *get_POS() { return POS; }
 
+  ssgPlacementTransform * getTransform(void)
+  { return _position; }
+
 private:
 
                                 // Geodetic position
@@ -99,7 +99,8 @@ private:
   double _heading_deg;
 
   ssgSelector * _selector;
-  ssgTransform * _position;
+//   ssgTransform * _position;
+  ssgPlacementTransform * _position;
 
                                 // Location
   SGLocation * _location;

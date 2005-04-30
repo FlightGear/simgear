@@ -28,6 +28,7 @@
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
+#include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 
 #include STL_ALGORITHM
@@ -240,7 +241,7 @@ void SGNewCloud::addSprite(float x, float y, float z, float r, CLbox_type type, 
 
 // return a random number between -n/2 and n/2
 static float Rnd(float n) {
-	return n * (-0.5f + rand() / (float) RAND_MAX);
+	return n * (-0.5f + sg_random());
 }
 
 // generate all sprite with defined boxes

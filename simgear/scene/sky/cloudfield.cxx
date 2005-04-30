@@ -28,6 +28,7 @@
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
+#include <simgear/math/sg_random.h>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/polar3d.hxx>
 
@@ -193,6 +194,7 @@ SGCloudField::SGCloudField() :
 	sgSetVec3( relative_position, 0,0,0);
 	theField.reserve(200);
 	inViewClouds.reserve(200);
+        sg_srandom_time_10();
 }
 
 SGCloudField::~SGCloudField() {
@@ -247,7 +249,7 @@ void SGCloudField::addCloud( sgVec3 pos, SGNewCloud *cloud) {
 
 
 static float Rnd(float n) {
-	return n * (-0.5f + rand() / (float) RAND_MAX);
+	return n * (-0.5f + sg_random());
 }
 
 // for debug only

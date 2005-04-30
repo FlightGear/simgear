@@ -41,6 +41,13 @@ extern "C" {
 void sg_srandom_time();
 
 /**
+ * Seed the random number generater with time() in 10 minute intervals
+ * so we get the same sequence within 10 minutes interval.
+ * This is useful for synchronizing two display systems.
+ */
+void sg_srandom_time_10();
+
+/**
  * Seed the random number generater with your own seed so can set up
  * repeatable randomization.
  * @param seed random number generator seed

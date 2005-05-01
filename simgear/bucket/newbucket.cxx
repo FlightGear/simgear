@@ -271,15 +271,31 @@ void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy ) {
 #endif
 
     // longitude difference
-    double c1_lon = b1.get_center_lon();
-    double c2_lon = b2.get_center_lon();
-    double diff_lon = c2_lon - c1_lon;
-    double span;
-    if ( sg_bucket_span(c1_lat) <= sg_bucket_span(c2_lat) ) {
+    double diff_lon=0.0;
+    double span=0.0;
+
+    SGBucket tmp_bucket;
+    // To handle crossing the bucket size boundary
+    //  we need to account for different size buckets.
+
+    if ( sg_bucket_span(c1_lat) <= sg_bucket_span(c2_lat) )
+    {
 	span = sg_bucket_span(c1_lat);
     } else {
 	span = sg_bucket_span(c2_lat);
     }
+
+    diff_lon = b2.get_center_lon() - b1.get_center_lon();
+
+    if (diff_lon <0.0)
+    {
+       diff_lon -= b1.get_width()*0.5 + b2.get_width()*0.5 - span;
+    } 
+    else
+    {
+       diff_lon += b1.get_width()*0.5 + b2.get_width()*0.5 - span;
+    }
+
 
 #ifdef HAVE_RINT
     *dx = (int)rint( diff_lon / span );

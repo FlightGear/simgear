@@ -678,8 +678,10 @@ naRef naCall(naContext ctx, naRef func, naRef args, naRef obj, naRef locals)
     // Return early if an error occurred.  It will be visible to the
     // caller via naGetError().
     ctx->error = 0;
-    if(setjmp(ctx->jumpHandle))
+    if(setjmp(ctx->jumpHandle)) {
+        if(!ctx->callParent) naModUnlock(ctx);
         return naNil();
+    }
 
     if(IS_CCODE(func.ref.ptr.func->code)) {
         naCFunction fp = func.ref.ptr.func->code.ref.ptr.ccode->fptr;

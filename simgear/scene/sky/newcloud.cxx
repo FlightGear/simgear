@@ -113,7 +113,7 @@ static float rayleighCoeffAngular(float cosAngle) {
 // cp is normalized (len==1)
 static void CartToPolar3d(sgVec3 cp, sgVec3 polar) {
     polar[0] = atan2(cp[1], cp[0]);
-    polar[1] = SG_PI / 2.0f - atan2(sqrtf (cp[0] * cp[0] + cp[1] * cp[1]), cp[2]);
+    polar[1] = SG_PI / 2.0f - atan2(sqrt (cp[0] * cp[0] + cp[1] * cp[1]), cp[2]);
 	polar[2] = 1.0f;
 }
 

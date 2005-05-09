@@ -471,7 +471,7 @@ SGPropertyNode::set_string (const char * val)
 }
 
 void
-SGPropertyNode::clear_value ()
+SGPropertyNode::clearValue ()
 {
   switch (_type) {
   case NONE:
@@ -762,7 +762,7 @@ SGPropertyNode::~SGPropertyNode ()
   delete [] _display_name;
   delete [] _path;
   delete _path_cache;
-  clear_value();
+  clearValue();
   delete _listeners;
 }
 
@@ -775,7 +775,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
 {
   if (target == 0 || _type == ALIAS || _tied)
     return false;
-  clear_value();
+  clearValue();
   _value.alias = target;
   _type = ALIAS;
   return true;
@@ -928,6 +928,7 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
       _removedChildren.push_back(node);
     }
     node->setAttribute(REMOVED, true);
+    node->clearValue();
     ret = node;
     fireChildRemoved(node);
   }
@@ -1168,7 +1169,7 @@ SGPropertyNode::setBoolValue (bool value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _tied = false;
     _type = BOOL;
   }
@@ -1216,7 +1217,7 @@ SGPropertyNode::setIntValue (int value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _type = INT;
     _local_val.int_val = 0;
   }
@@ -1267,7 +1268,7 @@ SGPropertyNode::setLongValue (long value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _type = LONG;
     _local_val.long_val = 0L;
   }
@@ -1318,7 +1319,7 @@ SGPropertyNode::setFloatValue (float value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _type = FLOAT;
     _local_val.float_val = 0;
   }
@@ -1369,7 +1370,7 @@ SGPropertyNode::setDoubleValue (double value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _local_val.double_val = value;
     _type = DOUBLE;
   }
@@ -1420,7 +1421,7 @@ SGPropertyNode::setStringValue (const char * value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE || _type == UNSPECIFIED) {
-    clear_value();
+    clearValue();
     _type = STRING;
   }
 
@@ -1464,7 +1465,7 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   bool result = false;
   TEST_WRITE;
   if (_type == NONE) {
-    clear_value();
+    clearValue();
     _type = UNSPECIFIED;
   }
 
@@ -1513,7 +1514,7 @@ SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getBoolValue();
 
-  clear_value();
+  clearValue();
   _type = BOOL;
   _tied = true;
   _value.bool_val = rawValue.clone();
@@ -1535,7 +1536,7 @@ SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getIntValue();
 
-  clear_value();
+  clearValue();
   _type = INT;
   _tied = true;
   _value.int_val = rawValue.clone();
@@ -1557,7 +1558,7 @@ SGPropertyNode::tie (const SGRawValue<long> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getLongValue();
 
-  clear_value();
+  clearValue();
   _type = LONG;
   _tied = true;
   _value.long_val = rawValue.clone();
@@ -1579,7 +1580,7 @@ SGPropertyNode::tie (const SGRawValue<float> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getFloatValue();
 
-  clear_value();
+  clearValue();
   _type = FLOAT;
   _tied = true;
   _value.float_val = rawValue.clone();
@@ -1601,7 +1602,7 @@ SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getDoubleValue();
 
-  clear_value();
+  clearValue();
   _type = DOUBLE;
   _tied = true;
   _value.double_val = rawValue.clone();
@@ -1624,7 +1625,7 @@ SGPropertyNode::tie (const SGRawValue<const char *> &rawValue, bool useDefault)
   if (useDefault)
     old_val = getStringValue();
 
-  clear_value();
+  clearValue();
   _type = STRING;
   _tied = true;
   _value.string_val = rawValue.clone();
@@ -1644,35 +1645,35 @@ SGPropertyNode::untie ()
   switch (_type) {
   case BOOL: {
     bool val = getBoolValue();
-    clear_value();
+    clearValue();
     _type = BOOL;
     _local_val.bool_val = val;
     break;
   }
   case INT: {
     int val = getIntValue();
-    clear_value();
+    clearValue();
     _type = INT;
     _local_val.int_val = val;
     break;
   }
   case LONG: {
     long val = getLongValue();
-    clear_value();
+    clearValue();
     _type = LONG;
     _local_val.long_val = val;
     break;
   }
   case FLOAT: {
     float val = getFloatValue();
-    clear_value();
+    clearValue();
     _type = FLOAT;
     _local_val.float_val = val;
     break;
   }
   case DOUBLE: {
     double val = getDoubleValue();
-    clear_value();
+    clearValue();
     _type = DOUBLE;
     _local_val.double_val = val;
     break;
@@ -1680,7 +1681,7 @@ SGPropertyNode::untie ()
   case STRING:
   case UNSPECIFIED: {
     string val = getStringValue();
-    clear_value();
+    clearValue();
     _type = STRING;
     _local_val.string_val = copy_string(val.c_str());
     break;

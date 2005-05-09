@@ -173,6 +173,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 
 				// Got the index, so grab the node.
     SGPropertyNode * node = st.node->getChild(name, index, true);
+    node->clearValue();
 
 				// Get the access-mode attributes,
 				// but don't set yet (in case they

@@ -1172,6 +1172,12 @@ public:
   void fireChildRemoved (SGPropertyNode * child);
 
 
+  /**
+   * Clear any existing value and set the type to NONE.
+   */
+  void clearValue ();
+
+
 protected:
 
   void fireValueChanged (SGPropertyNode * node);
@@ -1201,12 +1207,6 @@ private:
   bool set_float (float value);
   bool set_double (double value);
   bool set_string (const char * value);
-
-
-  /**
-   * Clear any existing value and set the type to NONE.
-   */
-  void clear_value ();
 
 
   /**

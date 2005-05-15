@@ -45,13 +45,17 @@ static list_of_culledCloud inViewClouds;
 
 // visibility distance for clouds in meters
 float SGCloudField::CloudVis = 25000.0f;
-bool SGCloudField::enable3D = true;
+bool SGCloudField::enable3D = false;
 // fieldSize must be > CloudVis or we can destroy the impostor cache
 // a cloud must only be seen once or the impostor will be generated for each of his positions
-double SGCloudField::fieldSize = 27000.0;
+double SGCloudField::fieldSize = 50000.0;
 float SGCloudField::density = 100.0;
+double SGCloudField::timer_dt = 0.0;
+sgVec3 SGCloudField::view_vec;
+
 static int last_cache_size = 1*1024;
 static int cacheResolution = 64;
+static sgVec3 last_sunlight={0.0f, 0.0f, 0.0f};
 
 int SGCloudField::get_CacheResolution(void) {
 	return cacheResolution;
@@ -85,7 +89,6 @@ void SGCloudField::set_CacheSize(int sizeKb) {
 		int count = last_cache_size * 1024 / (cacheResolution * cacheResolution * 4);
 		if(count == 0)
 			count = 1;
-//		SGNewCloud::cldCache->setCacheSize(sizeKb);
 		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
 	}
 }
@@ -101,14 +104,17 @@ void SGCloudField::set_enable3dClouds(bool enable) {
 		return;
 	enable3D = enable;
 	if(enable) {
-		SGNewCloud::cldCache->setCacheSize(last_cache_size);
+		int count = last_cache_size * 1024 / (cacheResolution * cacheResolution * 4);
+		if(count == 0)
+			count = 1;
+		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
 	} else {
 		SGNewCloud::cldCache->setCacheSize(0);
 	}
 }
 
 // reposition the cloud layer at the specified origin and orientation
-void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt) {
+void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt, float direction, float speed) {
     sgMat4 T1, LON, LAT;
     sgVec3 axis;
 
@@ -135,8 +141,6 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 	this->alt = alt;
 
 	// simulate clouds movement from wind
-	double speed = 10.0f;
-	double direction = 45.0;
     double sp_dist = speed*dt;
     if (sp_dist > 0) {
         double bx = cos((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
@@ -181,11 +185,16 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 	// correct the frustum with the right far plane
 	ssgContext *context = ssgGetCurrentContext();
 	frustum = *context->getFrustum();
-	frustum.setFOV(55.0,0);
+
+	float w, h;
+	sgEnviro.getFOV( w, h );
+	frustum.setFOV( w, h );
 	frustum.setNearFar(1.0, CloudVis);
+	timer_dt = dt;
 }
 
 SGCloudField::SGCloudField() :
+	draw_in_3d(true),
 	last_density(0.0),
 	deltax(0.0),
 	deltay(0.0),
@@ -205,6 +214,18 @@ SGCloudField::~SGCloudField() {
 	theField.clear();
 }
 
+
+void SGCloudField::clear(void) {
+	list_of_Cloud::iterator iCloud;
+	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
+		delete iCloud->aCloud;
+	}
+	theField.clear();
+	// force a recompute of density on first redraw
+	last_density = 0.0;
+	// true to come back in set density after layer is built
+	draw_in_3d = true;
+}
 
 // use a table or else we see poping when moving the slider...
 static int densTable[][10] = {
@@ -235,15 +256,16 @@ void SGCloudField::applyDensity(void) {
 			iCloud->visible = false;
 	}
 	last_density = density;
+	draw_in_3d = ( theField.size() != 0);
 }
 
 // add one cloud, data is not copied, ownership given
 void SGCloudField::addCloud( sgVec3 pos, SGNewCloud *cloud) {
 	Cloud cl;
-	sgCopyVec3( cl.pos, pos );
 	cl.aCloud = cloud;
 	cl.visible = true;
 	cloud->SetPos( pos );
+	sgCopyVec3( cl.pos, *cloud->getCenter() );
 	theField.push_back( cl );
 }
 
@@ -260,7 +282,7 @@ void SGCloudField::buildTestLayer(void) {
 
 	for( int z = -5 ; z <= 5 ; z++) {
 		for( int x = -5 ; x <= 5 ; x++ ) {
-            SGNewCloud *cloud = new SGNewCloud;
+			SGNewCloud *cloud = new SGNewCloud(SGNewCloud::CLFamilly_cu);
 			cloud->new_cu();
 			sgVec3 pos = {(x+Rnd(0.7)) * s, 750.0f, (z+Rnd(0.7)) * s};
             addCloud(pos, cloud);
@@ -291,6 +313,8 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 			sgCopyVec3( tmp.eyePos, eyePos ); 
 			// save distance for later sort, opposite distance because we want back to front
 			tmp.dist   =  - squareDist;
+			tmp.heading = -SG_PI/2.0 - atan2( dist[0], dist[2] ); // + SG_PI;
+			tmp.alt		= iCloud->pos[1];
 			inViewClouds.push_back(tmp);
 			if( squareDist - radius*radius < 100*100 )
 				sgEnviro.set_view_in_cloud(true);
@@ -316,9 +340,11 @@ void SGCloudField::Render(void) {
 		applyDensity();
 	}
 
-	// ask the impostor cache to do some cleanup
-	// TODO:don't do that for every field
-	SGNewCloud::cldCache->startNewFrame();
+	if( ! draw_in_3d )
+		return;
+
+	if( ! SGNewCloud::cldCache->isRttAvailable() )
+		return;
 
 	inViewClouds.clear();
 
@@ -332,14 +358,22 @@ void SGCloudField::Render(void) {
     sgVec3 lightVec;
     ssgGetLight( 0 )->getPosition( lightVec );
     sgXformVec3( lightVec, invtrans );
-	sgCopyVec3( SGNewCloud::modelSunDir, lightVec );
+
 	sgSetVec3(  SGNewCloud::modelSunDir, lightVec[0], lightVec[2], lightVec[1]);
-	// try to find the lighting data (buggy)
+	// try to find the lighting data (not accurate)
 	sgVec4 diffuse, ambient;
 	ssgGetLight( 0 )->getColour( GL_DIFFUSE, diffuse );
 	ssgGetLight( 0 )->getColour( GL_AMBIENT, ambient );
-	sgScaleVec3 ( SGNewCloud::sunlight, diffuse , 0.70f);
-	sgScaleVec3 ( SGNewCloud::ambLight, ambient , 0.60f);
+	sgScaleVec3 ( SGNewCloud::sunlight, diffuse , 1.0f);
+	sgScaleVec3 ( SGNewCloud::ambLight, ambient , 1.0f);
+
+	sgVec3 delta_light;
+	sgSubVec3(delta_light, last_sunlight, SGNewCloud::sunlight);
+	if( (fabs(delta_light[0]) + fabs(delta_light[1]) + fabs(delta_light[2])) > 0.05f ) {
+		sgCopyVec3( last_sunlight, SGNewCloud::sunlight );
+		// force the redraw of all the impostors
+		SGNewCloud::cldCache->invalidateCache();
+	}
 
 	// voodoo things on the matrix stack
     ssgGetModelviewMatrix( modelview );
@@ -348,10 +382,13 @@ void SGCloudField::Render(void) {
 
 	// cloud fields are tiled on the flat earth
 	// compute the position in the tile
-	relx = -fmod( deltax + relative_position[SG_X] + tmp[3][0], fieldSize );
-	rely = -fmod( deltay + relative_position[SG_Y] + tmp[3][1], fieldSize );
+	relx = fmod( deltax + relative_position[SG_X] + tmp[3][0], fieldSize );
+	rely = fmod( deltay + relative_position[SG_Y] + tmp[3][1], fieldSize );
 
-	sgSetVec3( eyePos, -relx, alt, -rely);
+	relx = fmod( relx + fieldSize, fieldSize );
+	rely = fmod( rely + fieldSize, fieldSize );
+	sgSetVec3( eyePos, relx, alt, rely);
+	sgCopyVec3( view_vec, tmp[1] );
 
 	tmp[3][2] = 0;
 	tmp[3][0] = 0;
@@ -400,6 +437,8 @@ void SGCloudField::Render(void) {
 	for( iCloud = inViewClouds.begin() ; iCloud != inViewClouds.end() ; iCloud++ ) {
 //		iCloud->aCloud->drawContainers();
 		iCloud->aCloud->Render(iCloud->eyePos);
+		sgEnviro.callback_cloud(iCloud->heading, iCloud->alt, 
+			iCloud->aCloud->getRadius(), iCloud->aCloud->getFamilly(), - iCloud->dist);
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);

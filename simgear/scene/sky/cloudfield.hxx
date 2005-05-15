@@ -37,12 +37,17 @@ public:
 	SGNewCloud	*aCloud;
 	sgVec3		eyePos;
 	float		dist;
+	float		heading;
+	float		alt;
 	bool operator<(const culledCloud &b) const {
-		return this->dist < b.dist;
+		return (this->dist < b.dist);
 	}
 };
 typedef vector<culledCloud> list_of_culledCloud;
 
+/**
+ * A layer of 3D clouds.
+ */
 class SGCloudField {
 
 private:
@@ -51,12 +56,6 @@ private:
 		SGNewCloud	*aCloud;
 		sgVec3		pos;
 		bool		visible;
-//		float		dist;
-//		bool		culled;
-
-//		bool operator<(const Cloud &b) {
-//			return this->dist < b.dist;
-//		}
 	};
 
 
@@ -79,11 +78,14 @@ private:
     double last_lon, last_lat, last_course;
 
 	float	last_density;
+	bool	draw_in_3d;
 
 public:
 
 	SGCloudField();
 	~SGCloudField();
+
+	void clear(void);
 
 	// add one cloud, data is not copied, ownership given
 	void addCloud( sgVec3 pos, SGNewCloud *cloud);
@@ -95,13 +97,17 @@ public:
 	void Render(void);
 
 	// reposition the cloud layer at the specified origin and orientation
-	void reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt);
+	void reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt, float direction, float speed);
+
+	bool is3D(void) { return draw_in_3d; }
 
 	// visibility distance for clouds in meters
 	static float CloudVis;
 
-	static float density;
+	static sgVec3 view_vec;
 
+	static float density;
+	static double timer_dt;
 	static double fieldSize;
 	static bool enable3D;
 

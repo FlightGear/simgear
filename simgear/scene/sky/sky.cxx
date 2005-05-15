@@ -29,7 +29,7 @@
 #include <simgear/math/sg_random.h>
 
 #include "sky.hxx"
-
+#include "cloudfield.hxx"
 
 // Constructor
 SGSky::SGSky( void ) {
@@ -187,6 +187,8 @@ void SGSky::preDraw( float alt, float fog_exp2_density ) {
             // in cloud layer
 
             // bail now and don't draw any clouds
+			if( cloud_layers[i]->get_layer3D()->is3D() && SGCloudField::enable3D )
+				continue;
             in_cloud = i;
         } else {
             // above cloud layer
@@ -286,7 +288,8 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	    ratio = 1.0;
 	}
 
-        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ) {
+        if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
+			cloud_layers[i]->get_layer3D()->is3D() && SGCloudField::enable3D) {
             // do nothing, clear layers aren't drawn, don't affect
             // visibility andn dont' need to be faded in or out.
         } else if ( (cloud_layers[i]->getCoverage() == 

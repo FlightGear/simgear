@@ -47,6 +47,8 @@ static ssgTexture *cloudTextures[SGNewCloud::CLTexture_max];
 bool SGNewCloud::useAnisotropic = true;
 SGBbCache *SGNewCloud::cldCache = 0;
 static bool texturesLoaded = false;
+static float minx, maxx, miny, maxy, minz, maxz;
+
 float SGNewCloud::nearRadius = 3500.0f;
 bool SGNewCloud::lowQuality = false;
 sgVec3 SGNewCloud::sunlight = {0.5f, 0.5f, 0.5f};
@@ -54,23 +56,58 @@ sgVec3 SGNewCloud::ambLight = {0.5f, 0.5f, 0.5f};
 sgVec3 SGNewCloud::modelSunDir = {0,1,0};
 
 
-// constructor
-SGNewCloud::SGNewCloud() :
-	bbId(-1),
-//	rank(-1),
-	minx(999), miny(999), minz(999), maxx(-999), maxy(-999), maxz(-999)
-
-{
+void SGNewCloud::init(void) {
+	bbId = -1;
+	fadeActive = false;
+	duration = 100.0f;
+	fadetimer = 100.0f;
+	pauseLength = 0.0f;
+	last_step = -1.0f;
+	familly = CLFamilly_nn;
 	cloudId = (int) this;
 	sgSetVec3(center, 0.0f, 0.0f, 0.0f);
 	sgSetVec3(cloudpos, 0.0f, 0.0f, 0.0f);
+	radius = 0.0f;
+	delta_base = 0.0f;
 	list_spriteContainer.reserve(8);
 	list_spriteDef.reserve(40);
-//	if( ! texturesLoaded ) {}
+
 	if( cldCache == 0 ) {
 		cldCache = new SGBbCache;
 		cldCache->init( 64 );
 	}
+}
+
+// constructor
+SGNewCloud::SGNewCloud(CLFamilly_type classification)
+{
+	init();
+	familly = classification;
+}
+
+SGNewCloud::SGNewCloud(string classification)
+{
+	init();
+	if( classification == "cu" )
+		familly = CLFamilly_cu;
+	else if( classification == "cb" )
+		familly = CLFamilly_cb;
+	else if( classification == "st" )
+		familly = CLFamilly_st;
+	else if( classification == "ns" )
+		familly = CLFamilly_ns;
+	else if( classification == "sc" )
+		familly = CLFamilly_sc;
+	else if( classification == "as" )
+		familly = CLFamilly_as;
+	else if( classification == "ac" )
+		familly = CLFamilly_ac;
+	else if( classification == "ci" )
+		familly = CLFamilly_ci;
+	else if( classification == "cc" )
+		familly = CLFamilly_cc;
+	else if( classification == "cs" )
+		familly = CLFamilly_cs;
 }
 
 SGNewCloud::~SGNewCloud() {
@@ -101,12 +138,26 @@ void SGNewCloud::loadTextures(const string &tex_path) {
 }
 
 void SGNewCloud::startFade(bool direction, float duration, float pauseLength) {
+      if(duration <= 0.0) {
+              fadeActive = false;
+              return;
+      }
+      this->direction = direction;
+      fadetimer = 0.0;
+      this->duration = duration;
+      this->pauseLength = pauseLength;
+      last_step = -1.0;
+      fadeActive = true;
 }
 void SGNewCloud::setFade(float howMuch) {
+      duration = 100.0;
+      fadetimer = howMuch;
+      fadeActive = false;
+      last_step = -1.0;
 }
 
 
-static float rayleighCoeffAngular(float cosAngle) {
+static inline float rayleighCoeffAngular(float cosAngle) {
 	return 3.0f / 4.0f * (1.0f + cosAngle * cosAngle);
 }
 
@@ -128,10 +179,10 @@ static void PolarToCart3d(sgVec3 p, sgVec3 cart) {
 // compute the light for a cloud sprite corner
 // from the normal and the sun, scaled by the Rayleigh factor
 // and finaly added to the ambient light
-static void lightFunction(sgVec3 normal, sgVec4 light, float pf) {
+static inline void lightFunction(sgVec3 normal, sgVec4 light, float pf) {
 	float cosAngle = sgScalarProductVec3( normal, SGNewCloud::modelSunDir);
-	float vl = (1.0f - 0.1f + cosAngle / 10.0f) * pf;
-	sgScaleVec3( light, SGNewCloud::sunlight, vl );
+	float vl = (1.0f - 0.5f + cosAngle * 0.5f) * pf;
+	sgScaleVec3( light, SGNewCloud::sunlight, 0.25f + 0.75f * vl );
 	sgAddVec3( light, SGNewCloud::ambLight );
 	// we need to clamp or else the light will bug when adding transparency
 	if( light[0] > 1.0 )	light[0] = 1.0;
@@ -142,11 +193,10 @@ static void lightFunction(sgVec3 normal, sgVec4 light, float pf) {
 
 // compute the light for a cloud sprite
 // we use ambient light and orientation versus sun position
-// TODO:check sun pos and check code
 void SGNewCloud::computeSimpleLight(sgVec3 FakeEyePos) {
 	// constant Rayleigh factor if we are not doing Anisotropic lighting
 	float pf = 1.0f;
-	const float ang = 45.0f * SG_PI / 180.0f;
+
 	list_of_spriteDef::iterator iSprite;
 	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
 		if( useAnisotropic ) {
@@ -156,44 +206,11 @@ void SGNewCloud::computeSimpleLight(sgVec3 FakeEyePos) {
             float cosAngle = sgScalarProductVec3(eyeDir, modelSunDir);
             pf = rayleighCoeffAngular(cosAngle);
 		}
-		// compute the vector going from the container box center to the sprite
-		// TODO : this is a constant except for cloudpos, compute the normal in setpos function
-		sgVec3 normal;
-		spriteContainer *thisSpriteContainer = &list_spriteContainer[iSprite->box];
-        sgSubVec3(normal, iSprite->pos, thisSpriteContainer->pos);
-        sgSubVec3(normal, thisSpriteContainer->center);
-        sgSubVec3(normal, cloudpos);
-        sgNormaliseVec3(normal);
-		if( lowQuality ) {
-			// juste use the traditional normal to compute some lightning
-			sgVec4 centerColor;
-			lightFunction(normal, centerColor, pf);
-			sgCopyVec4(iSprite->l0, centerColor);
-			sgCopyVec4(iSprite->l1, centerColor);
-			sgCopyVec4(iSprite->l2, centerColor);
-			sgCopyVec4(iSprite->l3, centerColor);
+		lightFunction(iSprite->n0, iSprite->l0, pf);
+		lightFunction(iSprite->n1, iSprite->l1, pf);
+		lightFunction(iSprite->n2, iSprite->l2, pf);
+		lightFunction(iSprite->n3, iSprite->l3, pf);
 
-		} else {
-			// use exotic lightning function, this will give more 'relief' to the clouds
-			// compute a normal for each vextex this will simulate a smooth shading for a round shape
-			sgVec3 polar, cart, pt;
-			// I suspect this code to be bugged...
-            CartToPolar3d(normal, polar);
-
-			// offset the normal vector by some angle for each vertex
-            sgSetVec3(pt, polar[0] - ang, polar[1] - ang, polar[2]);
-            PolarToCart3d(pt, cart);
-            lightFunction(cart, iSprite->l0, pf);
-            sgSetVec3(pt, polar[0] + ang, polar[1] - ang, polar[2]);
-            PolarToCart3d(pt, cart);
-            lightFunction(cart, iSprite->l1, pf);
-            sgSetVec3(pt, polar[0] + ang, polar[1] + ang, polar[2]);
-            PolarToCart3d(pt, cart);
-            lightFunction(cart, iSprite->l2, pf);
-            sgSetVec3(pt, polar[0] - ang, polar[1] + ang, polar[2]);
-            PolarToCart3d(pt, cart);
-            lightFunction(cart, iSprite->l3, pf);
-		}
 	}
 }
 
@@ -206,13 +223,16 @@ void SGNewCloud::addContainer (float x, float y, float z, float r, CLbox_type ty
 	cont.cont_type = type;
 	sgSetVec3( cont.center, 0.0f, 0.0f, 0.0f);
 	list_spriteContainer.push_back( cont );
+	// don't place cloud below his base
+	if( y - r*0.50 < delta_base )
+		delta_base = y - r*0.50;
 }
 
 // add a sprite inside a box
 void SGNewCloud::addSprite(float x, float y, float z, float r, CLbox_type type, int box) {
 	spriteDef newSpriteDef;
 	int rank = list_spriteDef.size();
-	sgSetVec3( newSpriteDef.pos, x, y, z);
+	sgSetVec3( newSpriteDef.pos, x, y - delta_base, z);
 	newSpriteDef.box = box;
 	newSpriteDef.sprite_type = type;
 	newSpriteDef.rank = rank;
@@ -223,7 +243,7 @@ void SGNewCloud::addSprite(float x, float y, float z, float r, CLbox_type type, 
 	sgSubVec3( deltaPos, newSpriteDef.pos, thisBox->pos );
 	sgAddVec3( thisBox->center, deltaPos );
 
-	r = r * 0.6f;	// 0.5 * 1.xxx
+	r = r * 0.65f;	// 0.5 * 1.xxx
     if( x - r < minx )
 		minx = x - r;
     if( y - r < miny )
@@ -248,19 +268,21 @@ static float Rnd(float n) {
 void SGNewCloud::genSprites( void ) {
 	float x, y, z, r;
     int N, sc;
+	minx = miny = minz = 99999.0;
+	maxx = maxy = maxz = -99999.0;
+
     N = list_spriteContainer.size();
 	for(int i = 0 ; i < N ; i++ ) {
 		spriteContainer *thisBox = & list_spriteContainer[i];
 		// the type defines how the sprites can be positioned inside the box, their size, etc
 		switch(thisBox->cont_type) {
 			case CLbox_sc:
-				for( sc = 0 ; sc <= 4 ; sc ++ ) {
-					r = thisBox->r + Rnd(0.2f);
-					x = thisBox->pos[SG_X] + Rnd(thisBox->r);
-					y = thisBox->pos[SG_Y] + Rnd(thisBox->r * 0.2f);
-					z = thisBox->pos[SG_Z] + Rnd(thisBox->r);
-					addSprite(x, y, z, r, thisBox->cont_type, i);
-				}
+				sc = 1;
+				r = thisBox->r + Rnd(0.2f);
+				x = thisBox->pos[SG_X] + Rnd(thisBox->r * 0.75f);
+				y = thisBox->pos[SG_Y] + Rnd(thisBox->r * 0.75f);
+				z = thisBox->pos[SG_Z] + Rnd(thisBox->r * 0.75f);
+				addSprite(x, y, z, r, thisBox->cont_type, i);
 				break;
 			case CLbox_stratus:
 				sc = 1;
@@ -302,10 +324,46 @@ void SGNewCloud::genSprites( void ) {
     radius /= 2.0f;
     sgSetVec3( center, (maxx + minx) / 2.0f, (maxy + miny) / 2.0f, (maxz + minz) / 2.0f );
 
-/*    fadingrank = 0
-'    fadingrank = UBound(tbSpriteDef()) * 10
-    fadingdir = 0*/
-	// TODO : compute initial sprite normals for lighting function
+	const float ang = 45.0f * SG_PI / 180.0f;
+
+	// compute normals
+	list_of_spriteDef::iterator iSprite;
+	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
+		sgVec3 normal;
+		spriteContainer *thisSpriteContainer = &list_spriteContainer[iSprite->box];
+		if( familly == CLFamilly_sc || familly == CLFamilly_cu || familly == CLFamilly_cb) {
+			sgSubVec3(normal, iSprite->pos, center);
+		} else {
+			sgSubVec3(normal, iSprite->pos, thisSpriteContainer->pos);
+			sgSubVec3(normal, thisSpriteContainer->center);
+			sgSubVec3(normal, cloudpos);
+		}
+		if( normal[0] == 0.0f && normal[1] == 0.0f && normal[2] == 0.0f )
+			sgSetVec3( normal, 0.0f, 1.0f, 0.0f );
+        sgNormaliseVec3(normal);
+		// use exotic lightning function, this will give more 'relief' to the clouds
+		// compute a normal for each vextex this will simulate a smooth shading for a round shape
+		sgVec3 polar, pt;
+		// I suspect this code to be bugged...
+        CartToPolar3d(normal, polar);
+		sgCopyVec3(iSprite->normal, normal);
+
+		// offset the normal vector by some angle for each vertex
+        sgSetVec3(pt, polar[0] - ang, polar[1] - ang, polar[2]);
+        PolarToCart3d(pt, iSprite->n0);
+        sgSetVec3(pt, polar[0] + ang, polar[1] - ang, polar[2]);
+        PolarToCart3d(pt, iSprite->n1);
+        sgSetVec3(pt, polar[0] + ang, polar[1] + ang, polar[2]);
+        PolarToCart3d(pt, iSprite->n2);
+        sgSetVec3(pt, polar[0] - ang, polar[1] + ang, polar[2]);
+        PolarToCart3d(pt, iSprite->n3);
+	}
+
+	// experimental : clouds are dissipating with time
+	if( familly == CLFamilly_cu ) {
+		startFade(true, 300.0f, 30.0f);
+		fadetimer = sg_random() * 300.0f;
+	}
 }
 
 
@@ -364,7 +422,6 @@ void SGNewCloud::SetPos(sgVec3 newPos) {
 	}
 	sgAddVec3( center, deltaPos );
     sgSetVec3( cloudpos, newPos[SG_X], newPos[SG_Y], newPos[SG_Z]);
-	// TODO : recompute sprite normal so we don't have to redo that each frame
 }
 
 
@@ -393,18 +450,30 @@ void SGNewCloud::sortSprite( sgVec3 eye ) {
 // render the cloud on screen or on the RTT texture to build the impostor
 void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos, float dist_center ) {
 
-/*    int clrank		 = fadingrank / 10;
-	int clfadeinrank = fadingrank - clrank * 10;*/
-	float CloudVisFade = 1.0 / (1.5 * SGCloudField::get_CloudVis());
+	float step = ( list_spriteDef.size() * (direction ? fadetimer : duration-fadetimer)) / duration;
+	int clrank = (int) step;
+	float clfadeinrank = (step - clrank);
+	last_step = step;
+
+	float CloudVisFade = 1.0 / (0.7f * SGCloudField::get_CloudVis());
+	// blend clouds with sky based on distance to limit the contrast of distant cloud
+	float t = 1.0f - dist_center * CloudVisFade;
+//	if ( t < 0.0f ) 
+//		return;
 
     computeSimpleLight( FakeEyePos );
 
     // view point sort, we sort because of transparency
 	sortSprite( FakeEyePos );
 
+	float dark = (familly == CLFamilly_cb ? 0.9f : 1.0f);
+
 	GLint previousTexture = -1, thisTexture;
 	list_of_spriteDef::iterator iSprite;
 	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
+		// skip this sprite if faded
+		if(iSprite->rank > clrank)
+			continue;
 		// choose texture to use depending on sprite type
 		switch(iSprite->sprite_type) {
 			case CLbox_stratus:
@@ -421,36 +490,40 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 		}
 
 			sgVec3 translate;
-			if( drawBB ) {
-				sgCopyVec3( translate, iSprite->pos);
-				sgSubVec3( translate, iSprite->pos, deltaPos );
-			}
-			else
-				sgSubVec3( translate, iSprite->pos, deltaPos);
+			sgSubVec3( translate, iSprite->pos, deltaPos);
 
 
 			// flipx and flipy are random texture flip flags, this gives more random clouds
 			float flipx = (float) ( iSprite->rank & 1 );
 			float flipy = (float) ( (iSprite->rank >> 1) & 1 );
 			// cu texture have a flat bottom so we can't do a vertical flip
-			if( iSprite->sprite_type == CLbox_cumulus || iSprite->sprite_type == CLbox_stratus )
+			if( iSprite->sprite_type == CLbox_cumulus )
 				flipy = 0.0f;
-			if( iSprite->sprite_type == CLbox_stratus )
-				flipx = 0.0f;
+//			if( iSprite->sprite_type == CLbox_stratus )
+//				flipx = 0.0f;
 			// adjust colors depending on cloud type
 			// TODO : rewrite that later, still experimental
 			switch(iSprite->sprite_type) {
 				case CLbox_cumulus:
 					// dark bottom
-                    sgScaleVec3(iSprite->l0, 0.6f);
-                    sgScaleVec3(iSprite->l1, 0.6f);
+                    sgScaleVec3(iSprite->l0, 0.8f * dark);
+                    sgScaleVec3(iSprite->l1, 0.8f * dark);
+					sgScaleVec3(iSprite->l2, dark);
+					sgScaleVec3(iSprite->l3, dark);
 					break;
 				case CLbox_stratus:
 					// usually dark grey
-                    sgScaleVec3(iSprite->l0, 0.8f);
-                    sgScaleVec3(iSprite->l1, 0.8f);
-                    sgScaleVec3(iSprite->l2, 0.8f);
-                    sgScaleVec3(iSprite->l3, 0.8f);
+					if( familly == CLFamilly_st ) {
+						sgScaleVec3(iSprite->l0, 0.8f);
+						sgScaleVec3(iSprite->l1, 0.8f);
+						sgScaleVec3(iSprite->l2, 0.8f);
+						sgScaleVec3(iSprite->l3, 0.8f);
+					} else {
+						sgScaleVec3(iSprite->l0, 0.7f);
+						sgScaleVec3(iSprite->l1, 0.7f);
+						sgScaleVec3(iSprite->l2, 0.7f);
+						sgScaleVec3(iSprite->l3, 0.7f);
+					}
 					break;
 				default:
 					// darker bottom than top
@@ -466,27 +539,40 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 			sgCopyVec4 ( l2, iSprite->l2 );
 			sgCopyVec4 ( l3, iSprite->l3 );
 			if( ! drawBB ) {
-				// blend clouds with sky based on distance to limit the contrast of distant cloud
-				float t = 1.0f - dist_center * CloudVisFade;
-				if ( t < 0.0f ) 
-					t = 0.0f;	// no, it should have been culled
 				// now clouds at the far plane are half blended
 				sgScaleVec4( l0, t );
 				sgScaleVec4( l1, t );
 				sgScaleVec4( l2, t );
 				sgScaleVec4( l3, t );
 			}
+			if( iSprite->rank == clrank ) {
+				sgScaleVec4( l0, clfadeinrank );
+				sgScaleVec4( l1, clfadeinrank );
+				sgScaleVec4( l2, clfadeinrank );
+				sgScaleVec4( l3, clfadeinrank );
+			}
 			// compute the rotations so that the quad is facing the camera
 			sgVec3 pos;
 			sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
 			sgCopyVec3( translate, pos );
 			sgNormaliseVec3( translate );
+#if 0
+			// change view angle when near a sprite
+			sgVec3 trans={translate[0], translate[2], translate[1]};
+			float angle = sgScalarProductVec3( SGCloudField::view_vec, trans );
+			if( fabs(angle) < 0.85f ) {
+				// view not ok from under
+				sgSetVec3( translate, -SGCloudField::view_vec[0],-SGCloudField::view_vec[2],-SGCloudField::view_vec[1] );
+//				sgSetVec3( l0,1,0,0 );
+//				sgSetVec3( l1,1,0,0 );
+//				sgSetVec3( l2,1,0,0 );
+//				sgSetVec3( l3,1,0,0 );
+			}
+#endif
 			sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
 			sgVectorProductVec3(x, translate, up);
-			sgNormaliseVec3(x);
-			sgScaleVec3(x, r);
 			sgVectorProductVec3(y, x, translate);
-			sgNormaliseVec3(y);
+			sgScaleVec3(x, r);
 			sgScaleVec3(y, r);
  
 			sgVec3 left, right;
@@ -558,33 +644,61 @@ void SGNewCloud::CalcAngles(sgVec3 refpos, sgVec3 FakeEyePos, float *angleY, flo
 }
 
 // draw a cloud but this time we use the impostor texture
-void SGNewCloud::RenderBB(sgVec3 deltaPos, float angleY, float angleX, float dist_center) {
-	// TODO:glrotate is not needed
-    glPushMatrix();
-        glTranslatef(center[SG_X] - deltaPos[SG_X], center[SG_Z] - deltaPos[SG_Z], center[SG_Y] - deltaPos[SG_Y]);
-        glRotatef(angleY, 0.0f, 0.0f, 1.0f);
-        glRotatef(angleX, 1.0f, 0.0f, 0.0f);
- 
-		// blend clouds with sky based on distance to limit the contrast of distant cloud
-		float CloudVisFade = (1.5 * SGCloudField::get_CloudVis());
+void SGNewCloud::RenderBB(sgVec3 deltaPos, bool first_time, float dist_center) {
 
-		float t = 1.0f - dist_center / CloudVisFade;
-		// err the alpha value is not good for impostor, debug that
-		t *= 1.65;
+		sgVec3 translate;
+		sgSubVec3( translate, center, deltaPos);
+
+		// blend clouds with sky based on distance to limit the contrast of distant cloud
+		float CloudVisFade = (1.0f * SGCloudField::get_CloudVis());
+
+		float t = 1.0f - (dist_center - 1.0*radius) / CloudVisFade;
 		if ( t < 0.0f ) 
-			t = 0.0f;
-  
+			return;
+		if( t > 1.0f )
+			t = 1.0f;
+		if( t > 0.50f )
+			t *= 1.1f;
         glColor4f(t, t, t, t);
         float r = radius;
+		// compute the rotations so that the quad is facing the camera
+		sgVec3 pos;
+		sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
+		sgCopyVec3( translate, pos );
+		sgNormaliseVec3( translate );
+		sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
+		sgVectorProductVec3(x, translate, up);
+		sgVectorProductVec3(y, x, translate);
+		if(first_time) {
+			sgCopyVec3( rotX, x );
+			sgCopyVec3( rotY, y );
+		} else if(fabs(sgScalarProductVec3(rotX, x)) < 0.93f || fabs(sgScalarProductVec3(rotY, y)) < 0.93f ) {
+			// ask for a redraw of this impostor if the view angle changed too much
+			sgCopyVec3( rotX, x );
+			sgCopyVec3( rotY, y );
+			cldCache->invalidate(cloudId, bbId);
+		}
+		sgScaleVec3(x, r);
+		sgScaleVec3(y, r);
+
+		sgVec3 left, right;
+		sgCopyVec3( left, pos );
+		sgSubVec3 (left, y);
+		sgAddVec3 (right, left, x);
+		sgSubVec3 (left, x);
+
 		glBegin(GL_QUADS);
-			glTexCoord2f(0.0f, 1.0f);
-			glVertex2f(-r, r);
-			glTexCoord2f(1.0f, 1.0f);
-			glVertex2f(r, r);
-			glTexCoord2f(1.0f, 0.0f);
-			glVertex2f(r, -r);
 			glTexCoord2f(0.0f, 0.0f);
-			glVertex2f(-r, -r);
+            glVertex3fv(left);
+			glTexCoord2f(1.0f, 0.0f);
+            glVertex3fv(right);
+			sgScaleVec3( y, 2.0 );
+			sgAddVec3( left, y);
+			sgAddVec3( right, y);
+			glTexCoord2f(1.0f, 1.0f);
+            glVertex3fv(right);
+			glTexCoord2f(0.0f, 1.0f);
+            glVertex3fv(left);
 		glEnd();
 
 #if 0	// debug only
@@ -606,8 +720,6 @@ void SGNewCloud::RenderBB(sgVec3 deltaPos, float angleY, float angleX, float dis
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 #endif
-
-	glPopMatrix();
 
 }
 
@@ -631,19 +743,26 @@ bool SGNewCloud::isBillboardable(float dist) {
 void SGNewCloud::Render(sgVec3 FakeEyePos) {
 	sgVec3 dist;
 
-
 	sgVec3 deltaPos;
 	sgCopyVec3( deltaPos, FakeEyePos);
     sgSubVec3( dist, center, FakeEyePos);
     float dist_center = sgLengthVec3(dist);
 
-
+	if( fadeActive ) {
+		fadetimer += SGCloudField::timer_dt;
+		if( fadetimer > duration + pauseLength ) {
+			// fade out after fade in, and vice versa
+			direction = ! direction;
+			fadetimer = 0.0;
+		}
+	}
 
 	if( !isBillboardable(dist_center) ) {
 		// not a good candidate for impostors, draw a real cloud
 		Render3Dcloud(false, FakeEyePos, deltaPos, dist_center);
 	} else {
 		GLuint texID = 0;
+			bool first_time = false;
 			// lets use our impostor
 			if( bbId >= 0)
 				texID = cldCache->QueryTexID(cloudId, bbId);
@@ -653,14 +772,20 @@ void SGNewCloud::Render(sgVec3 FakeEyePos) {
                 // allocate a new Impostor
                 bbId = cldCache->alloc(cloudId);
 				texID = cldCache->QueryTexID(cloudId, bbId);
+				first_time = true;
 			}
 			if( texID == 0 ) {
                 // no more free texture in the pool
                 Render3Dcloud(false, FakeEyePos, deltaPos, dist_center);
 			} else {
-                float angleX, angleY;
-                CalcAngles(center, FakeEyePos, &angleY, &angleX);
-				if( ! cldCache->isBbValid( cloudId, bbId, angleY, angleX) ) {
+                float angleX=0.0f, angleY=0.0f;
+
+				// force a redraw of the impostor if the cloud shape has changed enought
+				float step = ( list_spriteDef.size() * (direction ? fadetimer : duration-fadetimer)) / duration;
+				if( fabs(step - last_step) > 0.5f )
+					cldCache->invalidate(cloudId, bbId);
+
+				if( ! cldCache->isBbValid( cloudId, bbId, angleY, angleX)) {
                     // we must build or rebuild this billboard
 					// start render to texture
                     cldCache->beginCapture();
@@ -679,7 +804,7 @@ void SGNewCloud::Render(sgVec3 FakeEyePos) {
 				}
                 // draw the newly built BB or an old one
                 glBindTexture(GL_TEXTURE_2D, texID);
-                RenderBB(deltaPos, angleY, angleX, dist_center);
+                RenderBB(deltaPos, first_time, dist_center);
 			}
 	}
 

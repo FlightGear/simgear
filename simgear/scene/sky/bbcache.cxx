@@ -47,6 +47,7 @@ void SGBbCache::freeTextureMemory(void) {
 
 	if( bbListCount ) {
 		for(int i = 0 ; i < bbListCount ; i++) {
+			bbList[i].cldID = 0;
 			if(bbList[i].texID)
 				glDeleteTextures(1, & bbList[i].texID);
 		}
@@ -78,10 +79,11 @@ bool SGBbCache::allocTextureMemory(int cacheCount, int textureDimension) {
 	cacheSizeKb = (textureDimension * textureDimension * 4);
 	cacheSizeKb *= cacheCount;
 	cacheSizeKb /= 1024;
-	if(rt) {
-		rt->BeginCapture();
-		glViewport(0, 0, textureDimension, textureDimension);
-		rt->EndCapture();
+	if(rtAvailable) {
+		if( rt->BeginCapture() ) {
+			glViewport(0, 0, textureDimension, textureDimension);
+			rt->EndCapture();
+		}
 	}
 	return true;
 }
@@ -113,9 +115,9 @@ void SGBbCache::init(int cacheCount) {
 	rt->Reset("rgba tex2D ctt");
 //	rt->Reset("rgba tex2D");
 	if( rt->Initialize(256, 256, true) ) {
-		rtAvailable = true;
 		if (rt->BeginCapture())
 		{
+			rtAvailable = true;
 			glViewport(0, 0, 256, 256);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -219,6 +221,7 @@ int SGBbCache::alloc(int cldId) {
 			bbList[i].angleX = -999;
 			bbList[i].angleY = -999;
 			bbList[i].frameUsed = 0;
+			bbList[i].needRedraw = true;
 			return i;
 		}
 	}
@@ -279,6 +282,7 @@ void SGBbCache::setTextureData(int bbId) {
 //    bbList[bbId].angleY = angleY;
     bbList[bbId].frame = frameNumber;
 	bbList[bbId].frameUsed = frameNumber;
+	bbList[bbId].needRedraw = false;
     builtBBCount ++;
 	builtBBframe ++;
 }
@@ -305,11 +309,14 @@ bool SGBbCache::isBbValid( int cldId, int bbId, float angleY, float angleX) {
 	if( builtBBframe >= maxImpostorRegenFrame )
 		return true;
 
-    if( fabs(angleY - bbList[bbId].angleY) >= 4.0 )
-        return false;
+	if( bbList[bbId].needRedraw )
+		return false;
 
-    if( fabs(angleX - bbList[bbId].angleX) >= 4.0 )
-        return false;
+//    if( fabs(angleY - bbList[bbId].angleY) >= 4.0 )
+//        return false;
+
+//    if( fabs(angleX - bbList[bbId].angleX) >= 4.0 )
+//        return false;
 
 	bbList[bbId].frameUsed = frameNumber;
 	return true;
@@ -328,7 +335,7 @@ void SGBbCache::setReference( int cldId, int bbId, float angleY, float angleX) {
 void SGBbCache::startNewFrame(void) {
 	builtBBframe = 0;
 	// TOTO:find reasonable value
-	int minFrameNumber = frameNumber - 500;
+	int minFrameNumber = frameNumber - 100;
 	frameNumber++;
 	// cleanup of unused enties
 	for( int bbId = 0 ; bbId < bbListCount ; bbId++)
@@ -337,3 +344,21 @@ void SGBbCache::startNewFrame(void) {
 			bbList[bbId].cldID = 0;
 		}
 }
+
+// force all impostors to be rebuilt, this will enventually be done over several frames
+void SGBbCache::invalidateCache(void) {
+
+	for( int bbId = 0 ; bbId < bbListCount ; bbId++)
+//		bbList[bbId].cldID = 0;
+		bbList[bbId].needRedraw = true;
+}
+
+// flag the impostor for a lazy update
+void SGBbCache::invalidate(int cldId, int bbId) {
+	if( bbId < 0 || bbId >= bbListCount )
+		return;
+	if( bbList[bbId].cldID != cldId )
+		return;
+	bbList[bbId].needRedraw = true;
+}
+

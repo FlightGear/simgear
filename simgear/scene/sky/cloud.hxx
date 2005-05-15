@@ -184,6 +184,9 @@ public:
 
     static bool enable_bump_mapping;
 
+	/** return the 3D layer cloud associated with this 2D layer */
+	SGCloudField *get_layer3D(void) { return layer3D; }
+
 private:
 
     struct CloudVertex {

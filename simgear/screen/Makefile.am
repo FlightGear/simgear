@@ -12,7 +12,7 @@ IMAGE_SERVER_INCL =
 IMAGE_SERVER_SRCS = 
 endif
 
-noinst_HEADERS = colours.h RenderTexture.h
+noinst_HEADERS = colours.h GLBitmaps.h
 
 include_HEADERS = \
 	colors.hxx \
@@ -20,11 +20,12 @@ include_HEADERS = \
 	$(IMAGE_SERVER_INCL) \
 	screen-dump.hxx \
 	extensions.hxx \
+	RenderTexture.h \
 	tr.h
 
 libsgscreen_a_SOURCES = \
 	texture.cxx \
-	GLBitmaps.cxx GLBitmaps.h \
+	GLBitmaps.cxx \
 	$(IMAGE_SERVER_SRCS) \
 	screen-dump.cxx \
 	tr.cxx \

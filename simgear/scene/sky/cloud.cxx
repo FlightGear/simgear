@@ -843,7 +843,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         last_lat = lat;
     }
 
-	layer3D->reposition( p, up, lon, lat, alt, dt);
+	layer3D->reposition( p, up, lon, lat, alt, dt, direction, speed);
     return true;
 }
 
@@ -851,7 +851,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
 void SGCloudLayer::draw( bool top ) {
     if ( layer_coverage != SG_CLOUD_CLEAR ) {
 
-		if ( SGCloudField::enable3D )
+		if ( SGCloudField::enable3D && layer3D->is3D())
 			layer3D->Render();
 		else
         if ( bump_mapping && enable_bump_mapping ) {

@@ -1312,6 +1312,7 @@ private:
       bucket ();
       virtual ~bucket ();
       virtual entry * get_entry (const char * key, bool create = false);
+      virtual void erase(const char * key);
     private:
       int _length;
       entry ** _entries;
@@ -1323,6 +1324,7 @@ private:
     virtual ~hash_table ();
     virtual SGPropertyNode * get (const char * key);
     virtual void put (const char * key, SGPropertyNode * value);
+    virtual void erase(const char * key);
 
   private:
     unsigned int hashcode (const char * key);

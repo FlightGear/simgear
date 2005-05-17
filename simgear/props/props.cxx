@@ -275,7 +275,7 @@ find_node (SGPropertyNode * current,
 
 				// Success! This is the one we want.
   else if (position >= (int)components.size()) {
-    return current;
+    return (current->getAttribute(SGPropertyNode::REMOVED) ? 0 : current);
   }
 
 				// Empty component means root.
@@ -927,6 +927,7 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     if (keep) {
       _removedChildren.push_back(node);
     }
+    _path_cache->erase(name); // EMH - TODO: Take "index" into account!
     node->setAttribute(REMOVED, true);
     node->clearValue();
     ret = node;
@@ -1737,7 +1738,7 @@ SGPropertyNode::getNode (const char * relative_path, int index, bool create)
   vector<PathComponent> components;
   parse_path(relative_path, components);
   if (components.size() > 0)
-    components[components.size()-1].index = index;
+    components.back().index = index;
   return find_node(this, components, 0, create);
 }
 
@@ -2167,6 +2168,23 @@ SGPropertyNode::hash_table::bucket::get_entry (const char * key, bool create)
   }
 }
 
+void
+SGPropertyNode::hash_table::bucket::erase (const char * key)
+{
+  int i;
+  for (i = 0; i < _length; i++) {
+    if (!strcmp(_entries[i]->get_key(), key))
+       break;
+  }
+
+  if (i < _length) {
+    for (++i; i < _length; i++) {
+      _entries[i-1] = _entries[i];
+    }
+     _length--;
+  }
+}
+
 
 SGPropertyNode::hash_table::hash_table ()
   : _data_length(0),
@@ -2210,6 +2228,17 @@ SGPropertyNode::hash_table::put (const char * key, SGPropertyNode * value)
   }
   entry * e = _data[index]->get_entry(key, true);
   e->set_value(value);
+}
+
+void
+SGPropertyNode::hash_table::erase (const char * key)
+{
+   if (_data_length == 0)
+    return;
+  unsigned int index = hashcode(key) % _data_length;
+  if (_data[index] == 0)
+    return;
+  _data[index]->erase(key);
 }
 
 unsigned int

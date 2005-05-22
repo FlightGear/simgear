@@ -41,14 +41,14 @@ namespace simgear {
 
 	    while (i < len)
 	    {
-		while (i < len && isspace(str[i]))
+		while (i < len && isspace((unsigned char)str[i]))
 		{
 		    ++i;
 		}
 
 		j = i;
 
-		while (i < len && !isspace(str[i]))
+		while (i < len && !isspace((unsigned char)str[i]))
 		{
 		    ++i;
 		}
@@ -57,7 +57,7 @@ namespace simgear {
 		{
 		    result.push_back( str.substr(j, i-j) );
 		    ++countsplit;
-		    while (i < len && isspace(str[i]))
+		    while (i < len && isspace((unsigned char)str[i]))
 		    {
 			++i;
 		    }

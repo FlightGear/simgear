@@ -34,7 +34,7 @@ class SGSoundMgr;
  * Visual environment helper class.
  */
 class SGEnviro {
-friend struct SGLightning;
+friend class SGLightning;
 private:
 	void DrawCone2(float baseRadius, float height, int slices, bool down, double rain_norm, double speed);
 	void lt_update(void);

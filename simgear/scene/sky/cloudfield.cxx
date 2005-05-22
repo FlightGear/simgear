@@ -38,8 +38,11 @@
 SG_USING_STD(vector);
 
 #include <simgear/environment/visual_enviro.hxx>
+#include "sky.hxx"
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
+
+extern SGSky *thesky;
 
 static list_of_culledCloud inViewClouds;
 
@@ -51,7 +54,7 @@ bool SGCloudField::enable3D = false;
 double SGCloudField::fieldSize = 50000.0;
 float SGCloudField::density = 100.0;
 double SGCloudField::timer_dt = 0.0;
-sgVec3 SGCloudField::view_vec;
+sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
 static int last_cache_size = 1*1024;
 static int cacheResolution = 64;
@@ -364,8 +367,13 @@ void SGCloudField::Render(void) {
 	sgVec4 diffuse, ambient;
 	ssgGetLight( 0 )->getColour( GL_DIFFUSE, diffuse );
 	ssgGetLight( 0 )->getColour( GL_AMBIENT, ambient );
-	sgScaleVec3 ( SGNewCloud::sunlight, diffuse , 1.0f);
-	sgScaleVec3 ( SGNewCloud::ambLight, ambient , 1.0f);
+//	sgScaleVec3 ( SGNewCloud::sunlight, diffuse , 1.0f);
+	sgScaleVec3 ( SGNewCloud::ambLight, ambient , 1.1f);
+	// trying something else : clouds are more yellow/red at dawn/dusk
+	// and added a bit of blue ambient
+    float *sun_color = thesky->get_sun_color();
+	sgScaleVec3 ( SGNewCloud::sunlight, sun_color , 0.4f);
+	SGNewCloud::ambLight[2] += 0.1f;
 
 	sgVec3 delta_light;
 	sgSubVec3(delta_light, last_sunlight, SGNewCloud::sunlight);
@@ -389,6 +397,8 @@ void SGCloudField::Render(void) {
 	rely = fmod( rely + fieldSize, fieldSize );
 	sgSetVec3( eyePos, relx, alt, rely);
 	sgCopyVec3( view_vec, tmp[1] );
+	sgCopyVec3( view_X, tmp[0] );
+	sgCopyVec3( view_Y, tmp[2] );
 
 	tmp[3][2] = 0;
 	tmp[3][0] = 0;
@@ -424,9 +434,10 @@ void SGCloudField::Render(void) {
     glAlphaFunc(GL_GREATER, 0.0f);
 	glDisable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	glDepthMask( GL_FALSE );
 	glEnable(GL_SMOOTH);
     glEnable(GL_BLEND);
-	glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
 	glEnable( GL_TEXTURE_2D );
 	glDisable( GL_FOG );
     glDisable(GL_LIGHTING);

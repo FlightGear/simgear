@@ -25,6 +25,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -115,8 +116,10 @@ void SGBbCache::init(int cacheCount) {
 	rt->Reset("rgba tex2D ctt");
 //	rt->Reset("rgba tex2D");
 	if( rt->Initialize(256, 256, true) ) {
+		SG_LOG(SG_ALL, SG_INFO, "bbcache:Initialize sucessfull");
 		if (rt->BeginCapture())
 		{
+			SG_LOG(SG_ALL, SG_INFO, "bbcache:BeginCapture sucessfull, RTT available");
 			rtAvailable = true;
 			glViewport(0, 0, 256, 256);
 			glMatrixMode(GL_PROJECTION);
@@ -138,8 +141,10 @@ void SGBbCache::init(int cacheCount) {
 			glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
 
 			rt->EndCapture();
-		}
-	}
+		} else
+			SG_LOG(SG_ALL, SG_WARN, "bbcache:BeginCapture failed, RTT not available for 3D clouds");
+	} else
+		SG_LOG(SG_ALL, SG_WARN, "bbcache:Initialize failed, RTT not available for 3D clouds");
 	if( cacheCount )
 		allocTextureMemory( cacheCount, 64 );
 

@@ -104,7 +104,7 @@ public:
 	// visibility distance for clouds in meters
 	static float CloudVis;
 
-	static sgVec3 view_vec;
+	static sgVec3 view_vec, view_X, view_Y;
 
 	static float density;
 	static double timer_dt;

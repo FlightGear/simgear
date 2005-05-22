@@ -77,7 +77,7 @@ public:
      */
 	void callback_cloud(float heading, float alt, float radius, int familly, float dist);
 
-	void drawRain(double pitch, double roll, double speed, double rain_norm);
+	void drawRain(double pitch, double roll, double heading, double speed, double rain_norm);
     /**
      * Draw rain or snow precipitation around the viewer.
      * @param rain_norm rain normalized intensity given by metar class
@@ -88,7 +88,7 @@ public:
      * @param speed moving speed of viewer in kt
      */
 	void drawPrecipitation(double rain_norm, double snow_norm, double hail_norm,
-							double pitch, double roll, double speed);
+							double pitch, double roll, double heading, double speed);
 
     /**
      * Draw the lightnings spawned by cumulo nimbus.

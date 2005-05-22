@@ -388,14 +388,14 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 }
 
 // TODO:check alt vs layer
-void SGEnviro::drawRain(double pitch, double roll, double speed, double rain_norm) {
+void SGEnviro::drawRain(double pitch, double roll, double heading, double speed, double rain_norm) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glDisable(GL_DEPTH_TEST);
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_BLEND);
-	glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_FOG );
 	glDisable(GL_LIGHTING);
 
@@ -411,11 +411,12 @@ void SGEnviro::drawRain(double pitch, double roll, double speed, double rain_nor
 		angle = -pitch - angle;
 		glRotatef(angle, 1.0, 0.0, 0.0);
 		glRotatef(roll, 0.0, 1.0, 0.0);
+		glRotatef(heading, 0.0, 0.0, 1.0);
 
 		// up cone
 		DrawCone2(15.0, 30.0, slice_count, true, rain_norm, speed);
 		// down cone (usually not visible)
-		if(angle > 0.0)
+		if(angle > 0.0 || heading != 0.0)
 			DrawCone2(15.0, -30.0, slice_count, false, rain_norm, speed);
 
 	glPopMatrix();
@@ -431,10 +432,10 @@ void SGEnviro::set_soundMgr(SGSoundMgr *mgr) {
 	soundMgr = mgr;
 }
 
-void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double speed) {
+void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double speed) {
 	// TODO:check alt with right layer (wich layer ?)
 	if( precipitation_enable_state && rain_norm > 0.0)
-		drawRain(pitch, roll, speed, rain_norm);
+		drawRain(pitch, roll, heading, speed, rain_norm);
 }
 
 

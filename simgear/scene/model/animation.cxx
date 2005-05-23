@@ -1296,16 +1296,21 @@ void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
         return;
 
     ssgSimpleState *s = (ssgSimpleState *)((ssgLeaf *)b)->getState();
-    s->disable(GL_COLOR_MATERIAL);
-    s->setColourMaterial(GL_AMBIENT_AND_DIFFUSE);
 
     if (_update & DIFFUSE) {
         float *v = _diff.rgba();
         SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
+        s->setColourMaterial(GL_DIFFUSE);
+        s->enable(GL_COLOR_MATERIAL);
         s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], alpha);
+        s->disable(GL_COLOR_MATERIAL);
     }
-    if (_update & AMBIENT)
+    if (_update & AMBIENT) {
+        s->setColourMaterial(GL_AMBIENT);
+        s->enable(GL_COLOR_MATERIAL);
         s->setMaterial(GL_AMBIENT, _amb.rgba());
+        s->disable(GL_COLOR_MATERIAL);
+    }
     if (_update & EMISSION)
         s->setMaterial(GL_EMISSION, _emis.rgba());
     if (_update & SPECULAR)
@@ -1324,9 +1329,12 @@ void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
         SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
         ssgTexture *tex = s->getTexture();
         if ((tex && tex->hasAlpha()) || alpha < 0.999) {
+            s->setColourMaterial(GL_DIFFUSE);
+            s->enable(GL_COLOR_MATERIAL);
             s->enable(GL_BLEND);
             s->enable(GL_ALPHA_TEST);
             s->setTranslucent();
+            s->disable(GL_COLOR_MATERIAL);
         } else {
             s->disable(GL_BLEND);
             s->disable(GL_ALPHA_TEST);

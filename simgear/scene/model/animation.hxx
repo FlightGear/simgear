@@ -488,6 +488,21 @@ private:
             return val < 0.0 ? 0.0 : val > 1.0 ? 1.0 : val;
         }
     };
+    struct PropSpec {
+        float value;
+        float factor;
+        float offset;
+        float min;
+	float max;
+        SGPropertyNode_ptr value_prop;
+        SGPropertyNode_ptr factor_prop;
+        SGPropertyNode_ptr offset_prop;
+        inline bool dirty() { return value >= 0.0; }
+        inline bool live() { return value_prop || factor_prop || offset_prop; }
+        inline bool operator!=(PropSpec& a) {
+            return value != a.value || factor != a.factor || offset != a.offset;
+        }
+    };
     SGCondition *_condition;
     SGPropertyNode *_prop_root;
     string _prop_base;
@@ -504,12 +519,11 @@ private:
     ColorSpec _emis;
     ColorSpec _spec;
     float _shi;
-    float _trans;
+    PropSpec _trans;
     float _thresh;	// alpha_clamp (see man glAlphaFunc)
     string _tex;
     string _tmpstr;
     SGPropertyNode_ptr _shi_prop;
-    SGPropertyNode_ptr _trans_prop;
     SGPropertyNode_ptr _thresh_prop;
     SGPropertyNode_ptr _tex_prop;
 

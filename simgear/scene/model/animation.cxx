@@ -1146,9 +1146,25 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     if (_shi >= 0.0)
         _update |= SHININESS;
 
-    _trans = props->getFloatValue("transparency", -1.0);
-    if (_trans >= 0.0)
-        _update |= TRANSPARENCY;
+    SGPropertyNode_ptr group = props->getChild("transparency");
+    if (group) {
+        _trans.value = group->getFloatValue("alpha", -1.0);
+        _trans.factor = group->getFloatValue("factor", 1.0);
+        _trans.offset = group->getFloatValue("offset", 0.0);
+        _trans.min = group->getFloatValue("min", 0.0);
+        _trans.max = group->getFloatValue("max", 1.0);
+        if (_trans.dirty())
+            _update |= TRANSPARENCY;
+
+        n = group->getChild("alpha-prop");
+        _trans.value_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+        n = group->getChild("factor-prop");
+        _trans.factor_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+        n = group->getChild("offset-prop");
+        _trans.offset_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+        if (_trans.live())
+            _read |= TRANSPARENCY;
+    }
 
     _thresh = props->getFloatValue("threshold", -1.0);
     if (_thresh >= 0.0)
@@ -1163,8 +1179,6 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
 
     n = props->getChild("shininess-prop");
     _shi_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = props->getChild("transparency-prop");
-    _trans_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
     n = props->getChild("threshold-prop");
     _thresh_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
     n = props->getChild("texture-prop");
@@ -1226,10 +1240,15 @@ int SGMaterialAnimation::update()
         if (_shi != f)
             _update |= SHININESS;
     }
-    if (_trans_prop) {
-        f = _trans;
-        _trans = _trans_prop->getFloatValue();
-        if (_trans != f)
+    if (_read & TRANSPARENCY) {
+        PropSpec tmp = _trans;
+        if (_trans.value_prop)
+            _trans.value = _trans.value_prop->getFloatValue();
+        if (_trans.factor_prop)
+            _trans.factor = _trans.factor_prop->getFloatValue();
+        if (_trans.offset_prop)
+            _trans.offset = _trans.offset_prop->getFloatValue();
+        if (_trans != tmp)
             _update |= TRANSPARENCY;
     }
     if (_thresh_prop) {
@@ -1319,7 +1338,9 @@ void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
         s->setShininess(clamp(_shi, 0.0, 128.0));
     if (_update & TRANSPARENCY) {
         SGfloat *v = s->getMaterial(GL_DIFFUSE);
-        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], 1.0 - clamp(_trans));
+        float trans = _trans.value * _trans.factor + _trans.offset;
+        trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
+        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], trans);
     }
     if (_update & THRESHOLD)
         s->setAlphaClamp(clamp(_thresh));

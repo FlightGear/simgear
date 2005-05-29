@@ -64,7 +64,7 @@ static naRef stringify(struct Context* ctx, naRef r)
 static int checkVec(struct Context* ctx, naRef vec, naRef idx)
 {
     int i = (int)numify(ctx, idx);
-    if(i < 0 || i >= vec.ref.ptr.vec->rec->size)
+    if(i < 0 || !vec.ref.ptr.vec->rec || i >= vec.ref.ptr.vec->rec->size)
         ERR(ctx, "vector index out of bounds");
     return i;
 }

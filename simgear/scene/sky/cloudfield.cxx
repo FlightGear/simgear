@@ -305,7 +305,7 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 		if( ! iCloud->visible )
 			continue;
 		sgSubVec3( dist, iCloud->pos, eyePos );
-		sphere.setCenter(dist[0], dist[2], dist[1]);
+		sphere.setCenter(dist[0], dist[2], dist[1] + eyePos[1]);
 		float radius = iCloud->aCloud->getRadius();
 		sphere.setRadius(radius);
 		sphere.orthoXform(mat);
@@ -390,19 +390,17 @@ void SGCloudField::Render(void) {
 
 	// cloud fields are tiled on the flat earth
 	// compute the position in the tile
-	relx = fmod( deltax + relative_position[SG_X] + tmp[3][0], fieldSize );
-	rely = fmod( deltay + relative_position[SG_Y] + tmp[3][1], fieldSize );
+	relx = fmod( deltax + relative_position[SG_X], fieldSize );
+	rely = fmod( deltay + relative_position[SG_Y], fieldSize );
 
 	relx = fmod( relx + fieldSize, fieldSize );
 	rely = fmod( rely + fieldSize, fieldSize );
 	sgSetVec3( eyePos, relx, alt, rely);
-	sgCopyVec3( view_vec, tmp[1] );
-	sgCopyVec3( view_X, tmp[0] );
-	sgCopyVec3( view_Y, tmp[2] );
 
-	tmp[3][2] = 0;
-	tmp[3][0] = 0;
-	tmp[3][1] = 0;
+	sgSetVec3( view_X, tmp[0][0], tmp[1][0], tmp[2][0] );
+	sgSetVec3( view_Y, tmp[0][1], tmp[1][1], tmp[2][1] );
+	sgSetVec3( view_vec, tmp[0][2], tmp[1][2], tmp[2][2] );
+
     ssgLoadModelviewMatrix( tmp );
  
 /* flat earth
@@ -449,7 +447,7 @@ void SGCloudField::Render(void) {
 //		iCloud->aCloud->drawContainers();
 		iCloud->aCloud->Render(iCloud->eyePos);
 		sgEnviro.callback_cloud(iCloud->heading, iCloud->alt, 
-			iCloud->aCloud->getRadius(), iCloud->aCloud->getFamilly(), - iCloud->dist);
+			iCloud->aCloud->getRadius(), iCloud->aCloud->getFamilly(), - iCloud->dist, iCloud->aCloud->getId());
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);

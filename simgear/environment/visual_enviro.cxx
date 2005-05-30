@@ -99,12 +99,13 @@ SGEnviro::SGEnviro(void) :
 	min_time_before_lt(0.0),
 	fov_width(55.0),
 	fov_height(55.0),
+	precipitation_max_alt(0.0),
 	precipitation_density(100.0)
 
 {
 	for(int i = 0; i < MAX_RAIN_SLICE ; i++)
 		rainpos[i] = sg_random();
-
+	radarEcho.reserve(100);
 }
 
 SGEnviro::~SGEnviro(void) {
@@ -150,6 +151,9 @@ void SGEnviro::startOfFrame( sgVec3 p, sgVec3 up, double lon, double lat, double
     last_lon = lon;
     last_lat = lat;
 	last_alt = alt;
+
+	radarEcho.clear();
+	precipitation_max_alt = 400.0;
 }
 
 void SGEnviro::endOfFrame(void) {
@@ -241,7 +245,7 @@ void SGEnviro::setLight(sgVec4 adj_fog_color) {
 	}
 }
 
-void SGEnviro::callback_cloud(float heading, float alt, float radius, int familly, float dist) {
+void SGEnviro::callback_cloud(float heading, float alt, float radius, int familly, float dist, int cloudId) {
 	// send data to wx radar
 	// compute turbulence
 	// draw precipitation
@@ -313,11 +317,14 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 			LWC = 0.29*2.0;
 			break;
 	}
-	// TODO:send data to radar antenna
+	// add to the list for the wxRadar instrument
+	if( LWC > 0.0 )
+		radarEcho.push_back( SGWxRadarEcho ( heading, alt, radius, dist, LWC, false, cloudId ) );
+
 	// NB:data valid only from cockpit view
 
 	// spawn a new lightning
-	if(min_time_before_lt <= 0.0 && (familly == SGNewCloud::CLFamilly_cb) &&
+	if(lightning_enable_state && min_time_before_lt <= 0.0 && (familly == SGNewCloud::CLFamilly_cb) &&
 		dist < 15000.0 * 15000.0 && sg_random() > 0.9f) {
 		double lat, lon;
 		Point3D orig, dest;
@@ -333,8 +340,22 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 		// reset timer
 		min_time_before_lt = 5.0 + sg_random() * 30;
 		// DEBUG only
-//		min_time_before_lt = 1.0;
+//		min_time_before_lt = 5.0;
 	}
+	if( (alt - radius * 0.1) > precipitation_max_alt )
+		switch(familly) {
+			case SGNewCloud::CLFamilly_st:
+			case SGNewCloud::CLFamilly_cu:
+			case SGNewCloud::CLFamilly_cb:
+			case SGNewCloud::CLFamilly_ns:
+			case SGNewCloud::CLFamilly_sc:
+				precipitation_max_alt = alt - radius * 0.1;
+				break;
+		}
+}
+
+list_of_SGWxRadarEcho *SGEnviro::get_radar_echo(void) {
+	return &radarEcho;
 }
 
 // precipitation rendering code
@@ -387,7 +408,6 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 	glEnd();
 }
 
-// TODO:check alt vs layer
 void SGEnviro::drawRain(double pitch, double roll, double heading, double speed, double rain_norm) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -433,8 +453,8 @@ void SGEnviro::set_soundMgr(SGSoundMgr *mgr) {
 }
 
 void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double speed) {
-	// TODO:check alt with right layer (wich layer ?)
 	if( precipitation_enable_state && rain_norm > 0.0)
+	  if( precipitation_max_alt >= last_alt )
 		drawRain(pitch, roll, heading, speed, rain_norm);
 }
 
@@ -564,7 +584,8 @@ void SGLightning::lt_Render(void) {
     ay = sin(course) * dist;
 
 	glTranslatef( ax, ay, -sgEnviro.last_alt );
-//	glTranslatef( ax, ay, 0 );
+
+	sgEnviro.radarEcho.push_back( SGWxRadarEcho ( course, 0.0, 0.0, dist, age, true, 0 ) );
 
 	for( int n = 0 ; n < nb_tree ; n++ ) {
         if( lt_tree[n].prev < 0 )

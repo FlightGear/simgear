@@ -243,7 +243,7 @@ void SGNewCloud::addSprite(float x, float y, float z, float r, CLbox_type type, 
 	sgSubVec3( deltaPos, newSpriteDef.pos, thisBox->pos );
 	sgAddVec3( thisBox->center, deltaPos );
 
-	r = r * 0.65f;	// 0.5 * 1.xxx
+	r = r * 0.70f;	// 0.5 * 1.xxx
     if( x - r < minx )
 		minx = x - r;
     if( y - r < miny )
@@ -555,23 +555,18 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 			sgVec3 pos;
 			sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
 			sgCopyVec3( translate, pos );
-			sgNormaliseVec3( translate );
-#if 0
-			// change view angle when near a sprite
-			sgVec3 trans={translate[0], translate[2], translate[1]};
-			float angle = sgScalarProductVec3( SGCloudField::view_vec, trans );
-			if( fabs(angle) < 0.85f ) {
-				// view not ok from under
-				sgSetVec3( translate, -SGCloudField::view_vec[0],-SGCloudField::view_vec[2],-SGCloudField::view_vec[1] );
-//				sgSetVec3( l0,1,0,0 );
-//				sgSetVec3( l1,1,0,0 );
-//				sgSetVec3( l2,1,0,0 );
-//				sgSetVec3( l3,1,0,0 );
-			}
-#endif
+			translate[2] -= FakeEyePos[1];
+//			sgNormaliseVec3( translate );
+			float dist_sprite = sgLengthVec3 ( translate );
+			sgScaleVec3 ( translate, SG_ONE / dist_sprite ) ;
 			sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
-			sgVectorProductVec3(x, translate, up);
-			sgVectorProductVec3(y, x, translate);
+			if( dist_sprite > 2*r ) {
+				sgVectorProductVec3(x, translate, up);
+				sgVectorProductVec3(y, x, translate);
+			} else {
+				sgCopyVec3( x, SGCloudField::view_X );
+				sgCopyVec3( y, SGCloudField::view_Y );
+			}
 			sgScaleVec3(x, r);
 			sgScaleVec3(y, r);
  
@@ -665,6 +660,8 @@ void SGNewCloud::RenderBB(sgVec3 deltaPos, bool first_time, float dist_center) {
 		sgVec3 pos;
 		sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
 		sgCopyVec3( translate, pos );
+		pos[2] += deltaPos[1];
+
 		sgNormaliseVec3( translate );
 		sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
 		sgVectorProductVec3(x, translate, up);
@@ -745,6 +742,7 @@ void SGNewCloud::Render(sgVec3 FakeEyePos) {
 
 	sgVec3 deltaPos;
 	sgCopyVec3( deltaPos, FakeEyePos);
+	deltaPos[1] = 0.0;
     sgSubVec3( dist, center, FakeEyePos);
     float dist_center = sgLengthVec3(dist);
 
@@ -804,7 +802,7 @@ void SGNewCloud::Render(sgVec3 FakeEyePos) {
 				}
                 // draw the newly built BB or an old one
                 glBindTexture(GL_TEXTURE_2D, texID);
-                RenderBB(deltaPos, first_time, dist_center);
+                RenderBB(FakeEyePos, first_time, dist_center);
 			}
 	}
 

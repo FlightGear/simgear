@@ -31,6 +31,35 @@ class SGLightning;
 class SGSoundMgr;
 
 /**
+ * Simulate some echo on a weather radar.
+ * Container class for the wx radar instrument.
+ */
+class SGWxRadarEcho {
+public:
+	SGWxRadarEcho(float _heading, float _alt, float _radius, float _dist, double _LWC, bool _lightning, int _cloudId) :
+	  heading( _heading ),
+	  alt ( _alt ),
+	  radius ( _radius ),
+	  dist ( _dist ),
+	  LWC ( _LWC ),
+	  lightning ( _lightning ),
+	  cloudId ( _cloudId )
+	{}
+
+	/** the heading in radian is versus north */
+	float heading;
+	float alt, radius, dist;
+	/** reflectivity converted to liquid water content. */
+	double LWC;
+	/** if true then this data is for a lightning else it is for water echo. */
+	bool   lightning;
+	/** Unique identifier of cloud */
+	int cloudId;
+};
+
+typedef vector<SGWxRadarEcho> list_of_SGWxRadarEcho;
+
+/**
  * Visual environment helper class.
  */
 class SGEnviro {
@@ -42,6 +71,7 @@ private:
 	bool view_in_cloud;
 	bool precipitation_enable_state;
 	float precipitation_density;
+	float precipitation_max_alt;
 	bool turbulence_enable_state;
 	double last_cloud_turbulence, cloud_turbulence;
 	bool lightning_enable_state;
@@ -55,6 +85,9 @@ private:
 	double		min_time_before_lt;
 
 	float fov_width, fov_height;
+
+	/** a list of all the radar echo. */
+	list_of_SGWxRadarEcho radarEcho;
 
 public:
 	SGEnviro();
@@ -75,7 +108,7 @@ public:
      * @param familly cloud familly
      * @param dist  squared dist to cloud in meters
      */
-	void callback_cloud(float heading, float alt, float radius, int familly, float dist);
+	void callback_cloud(float heading, float alt, float radius, int familly, float dist, int cloudId);
 
 	void drawRain(double pitch, double roll, double heading, double speed, double rain_norm);
     /**
@@ -183,6 +216,7 @@ public:
 	void setFOV( float w, float h );
 	void getFOV( float &w, float &h );
 
+	list_of_SGWxRadarEcho *get_radar_echo(void);
 };
 
 extern SGEnviro sgEnviro;

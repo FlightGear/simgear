@@ -158,6 +158,7 @@ public:
 
 	inline float getRadius() { return radius; }
 	inline sgVec3 *getCenter() { return &center; }
+	inline int getId() { return cloudId; }
 
 	inline CLFamilly_type getFamilly(void) { return familly; }
 

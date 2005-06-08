@@ -927,7 +927,8 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     if (keep) {
       _removedChildren.push_back(node);
     }
-    _path_cache->erase(name); // EMH - TODO: Take "index" into account!
+    if (_path_cache)
+       _path_cache->erase(name); // EMH - TODO: Take "index" into account!
     node->setAttribute(REMOVED, true);
     node->clearValue();
     ret = node;

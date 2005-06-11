@@ -141,6 +141,18 @@ public:
 
 
   /**
+   * Initialize parts that depend on other subsystems having been initialized.
+   *
+   * <p>This method should set up all parts that depend on other
+   * subsystems. One example is the scripting/Nasal subsystem, which
+   * is initialized last. So, if a subsystem wants to execute Nasal
+   * code in subsystem-specific configuration files, it has to do that
+   * in its postinit() method.</p>
+   */
+  virtual void postinit ();
+
+
+  /**
    * Reinitialize the subsystem.
    *
    * <p>This method should cause the subsystem to reinitialize itself,
@@ -243,6 +255,7 @@ public:
     virtual ~SGSubsystemGroup ();
 
     virtual void init ();
+    virtual void postinit ();
     virtual void reinit ();
     virtual void bind ();
     virtual void unbind ();
@@ -315,6 +328,7 @@ public:
     virtual ~SGSubsystemMgr ();
 
     virtual void init ();
+    virtual void postinit ();
     virtual void reinit ();
     virtual void bind ();
     virtual void unbind ();

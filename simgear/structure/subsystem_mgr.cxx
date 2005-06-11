@@ -26,6 +26,11 @@ SGSubsystem::init ()
 }
 
 void
+SGSubsystem::postinit ()
+{
+}
+
+void
 SGSubsystem::reinit ()
 {
 }
@@ -85,6 +90,13 @@ SGSubsystemGroup::init ()
 {
     for (unsigned int i = 0; i < _members.size(); i++)
         _members[i]->subsystem->init();
+}
+
+void
+SGSubsystemGroup::postinit ()
+{
+    for (unsigned int i = 0; i < _members.size(); i++)
+        _members[i]->subsystem->postinit();
 }
 
 void
@@ -248,6 +260,13 @@ SGSubsystemMgr::init ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
             _groups[i].init();
+}
+
+void
+SGSubsystemMgr::postinit ()
+{
+    for (int i = 0; i < MAX_GROUPS; i++)
+            _groups[i].postinit();
 }
 
 void

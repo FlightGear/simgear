@@ -630,14 +630,18 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
     _center[0] = 0;
     _center[1] = 0;
     _center[2] = 0;
-    if (props->hasValue("axis/x1-m")) {
+    if (props->hasValue("axis/x") || props->hasValue("axis/y") || props->hasValue("axis/z")) {
+       _axis[0] = props->getFloatValue("axis/x", 0);
+       _axis[1] = props->getFloatValue("axis/y", 0);
+       _axis[2] = props->getFloatValue("axis/z", 0);
+    } else {
         double x1,y1,z1,x2,y2,z2;
-        x1 = props->getFloatValue("axis/x1-m");
-        y1 = props->getFloatValue("axis/y1-m");
-        z1 = props->getFloatValue("axis/z1-m");
-        x2 = props->getFloatValue("axis/x2-m");
-        y2 = props->getFloatValue("axis/y2-m");
-        z2 = props->getFloatValue("axis/z2-m");
+        x1 = props->getFloatValue("axis/x1-m", 0);
+        y1 = props->getFloatValue("axis/y1-m", 0);
+        z1 = props->getFloatValue("axis/z1-m", 0);
+        x2 = props->getFloatValue("axis/x2-m", 0);
+        y2 = props->getFloatValue("axis/y2-m", 0);
+        z2 = props->getFloatValue("axis/z2-m", 0);
         _center[0] = (x1+x2)/2;
         _center[1]= (y1+y2)/2;
         _center[2] = (z1+z2)/2;
@@ -645,15 +649,12 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
         _axis[0] = (x2-x1)/vector_length;
         _axis[1] = (y2-y1)/vector_length;
         _axis[2] = (z2-z1)/vector_length;
-    } else {
-       _axis[0] = props->getFloatValue("axis/x", 0);
-       _axis[1] = props->getFloatValue("axis/y", 0);
-       _axis[2] = props->getFloatValue("axis/z", 0);
     }
-    if (props->hasValue("center/x-m")) {
-       _center[0] = props->getFloatValue("center/x-m", 0);
-       _center[1] = props->getFloatValue("center/y-m", 0);
-       _center[2] = props->getFloatValue("center/z-m", 0);
+    if (props->hasValue("center/x-m") || props->hasValue("center/y-m")
+            || props->hasValue("center/z-m")) {
+        _center[0] = props->getFloatValue("center/x-m", 0);
+        _center[1] = props->getFloatValue("center/y-m", 0);
+        _center[2] = props->getFloatValue("center/z-m", 0);
     }
     sgNormalizeVec3(_axis);
 }
@@ -1152,7 +1153,11 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
         _trans.factor = group->getFloatValue("factor", 1.0);
         _trans.offset = group->getFloatValue("offset", 0.0);
         _trans.min = group->getFloatValue("min", 0.0);
+        if (_trans.min < 0.0)
+            _trans.min = 0.0;
         _trans.max = group->getFloatValue("max", 1.0);
+        if (_trans.max > 1.0)
+            _trans.max = 1.0;
         if (_trans.dirty())
             _update |= TRANSPARENCY;
 

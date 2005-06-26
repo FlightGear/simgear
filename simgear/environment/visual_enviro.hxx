@@ -24,7 +24,9 @@
 
 #include <simgear/compiler.h>
 #include STL_STRING
+#include <vector>
 
+SG_USING_STD(vector);
 SG_USING_STD(string);
 
 class SGLightning;
@@ -217,6 +219,8 @@ public:
 	void getFOV( float &w, float &h );
 
 	list_of_SGWxRadarEcho *get_radar_echo(void);
+
+	sgMat4 *get_transform(void) { return &transform; }
 };
 
 extern SGEnviro sgEnviro;

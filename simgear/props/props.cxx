@@ -930,7 +930,9 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     if (node->nChildren() && node->removeChildren())
       dirty = true;
 
-    if (node->_count == 1 && !node->nChildren()) {
+    if (node->isTied() || node->_count != 1 || node->nChildren())
+      dirty = true;
+    else {
       if (keep)
         _removedChildren.push_back(node);
 

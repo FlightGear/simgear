@@ -778,6 +778,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
   clearValue();
   _value.alias = target;
   _type = ALIAS;
+  _value.alias->incrementRef();
   return true;
 }
 
@@ -801,6 +802,7 @@ SGPropertyNode::unalias ()
   if (_type != ALIAS)
     return false;
   _type = NONE;
+  _value.alias->decrementRef();
   _value.alias = 0;
   return true;
 }
@@ -912,29 +914,69 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
- * Remove a child node
+ * Remove a child node, and all children that aren't referenced.
+ * "keep" does only apply to the outmost item. Returns "true" if
+ * not all nodes could be removed.
  */
-SGPropertyNode_ptr 
+bool
 SGPropertyNode::removeChild (const char * name, int index, bool keep)
 {
-  SGPropertyNode_ptr ret;
+  bool dirty = false;
   int pos = find_child(name, index, _children);
   if (pos >= 0) {
     vector<SGPropertyNode_ptr>::iterator it = _children.begin();
     it += pos;
-    SGPropertyNode_ptr node = _children[pos];
-    _children.erase(it);
-    if (keep) {
-      _removedChildren.push_back(node);
+    SGPropertyNode *node = _children[pos];
+    if (node->nChildren() && node->removeChildren())
+      dirty = true;
+
+    if (node->_count == 1 && !node->nChildren()) {
+      if (keep)
+        _removedChildren.push_back(node);
+
+      if (_path_cache)
+        _path_cache->erase(name); // EMH - TODO: Take "index" into account!
+
+      node->setAttribute(REMOVED, true);
+      node->clearValue();
+      fireChildRemoved(node);
+      _children.erase(it);
     }
-    if (_path_cache)
-       _path_cache->erase(name); // EMH - TODO: Take "index" into account!
-    node->setAttribute(REMOVED, true);
-    node->clearValue();
-    ret = node;
-    fireChildRemoved(node);
   }
-  return ret;
+  return dirty;
+}
+
+/**
+ * Remove all children nodes, or all with a given name. Returns
+ * "true" if not all nodes could be removed.
+ */
+bool
+SGPropertyNode::removeChildren(const char *name)
+{
+  bool dirty = false;
+  vector<SGPropertyNode_ptr>::iterator it = _children.end();
+  vector<SGPropertyNode_ptr>::iterator begin = _children.begin();
+  while (it-- != begin) {
+    SGPropertyNode *node = *it;
+    if (name && !compare_strings(node->getName(), name))
+      continue;
+
+    if (node->nChildren() && node->removeChildren())
+      dirty = true;
+
+    if (node->isTied() || node->_count != 1 || node->nChildren())
+      dirty = true;
+    else {
+      if (_path_cache)
+        _path_cache->erase(node->getName());
+
+      node->setAttribute(REMOVED, true);
+      node->clearValue();
+      fireChildRemoved(node);
+      _children.erase(it);
+    }
+  }
+  return dirty;
 }
 
 

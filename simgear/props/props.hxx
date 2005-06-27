@@ -707,10 +707,16 @@ public:
 
 
   /**
-   * Remove a child node
+   * Remove a child node (returns true if at least one node had to remain,
+   * because it was tied, aliased, or refcounted through SGPropertyNode_ptr.
    */
-  SGPropertyNode_ptr removeChild (const char * name, int index = 0,
-                                  bool keep = true);
+  bool removeChild (const char * name, int index = 0, bool keep = true);
+
+
+  /**
+   * Remove all children nodes, or all with a given name.
+   */
+  bool removeChildren(const char * name = 0);
 
 
   //

@@ -914,12 +914,38 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
+ * Detach a child node from the tree and return a guarded pointer to it.
+ */
+SGPropertyNode_ptr 
+SGPropertyNode::detachChild (const char * name, int index, bool keep)
+{
+  SGPropertyNode_ptr ret;
+  int pos = find_child(name, index, _children);
+  if (pos >= 0) {
+    vector<SGPropertyNode_ptr>::iterator it = _children.begin();
+    it += pos;
+    SGPropertyNode_ptr node = _children[pos];
+    _children.erase(it);
+    if (keep) {
+      _removedChildren.push_back(node);
+    }
+    if (_path_cache)
+       _path_cache->erase(name); // EMH - TODO: Take "index" into account!
+    node->setAttribute(REMOVED, true);
+    node->clearValue();
+    ret = node;
+    fireChildRemoved(node);
+  }
+  return ret;
+}
+
+
+/**
  * Remove a child node, and all children that aren't referenced.
- * "keep" does only apply to the outmost item. Returns "true" if
- * not all nodes could be removed.
+ * Returns "true" if not all nodes could be deleted.
  */
 bool
-SGPropertyNode::removeChild (const char * name, int index, bool keep)
+SGPropertyNode::removeChild (const char * name, int index)
 {
   bool dirty = false;
   int pos = find_child(name, index, _children);
@@ -933,9 +959,6 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
     if (node->isTied() || node->_count != 1 || node->nChildren())
       dirty = true;
     else {
-      if (keep)
-        _removedChildren.push_back(node);
-
       if (_path_cache)
         _path_cache->erase(name); // EMH - TODO: Take "index" into account!
 
@@ -948,9 +971,10 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
   return dirty;
 }
 
+
 /**
  * Remove all children nodes, or all with a given name. Returns
- * "true" if not all nodes could be removed.
+ * "true" if not all nodes could be deleted.
  */
 bool
 SGPropertyNode::removeChildren(const char *name)

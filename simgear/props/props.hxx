@@ -707,25 +707,10 @@ public:
 
 
   /**
-   * Detach a child node from the tree and return guarded pointr to it.
+   * Remove a child node
    */
-  SGPropertyNode_ptr detachChild (const char * name, int index = 0,
+  SGPropertyNode_ptr removeChild (const char * name, int index = 0,
                                   bool keep = true);
-
-
-  /**
-   * Remove a child node. Returns "true" if the node and all subnodes could
-   * be removed, and "false" if at least one node had to remain, because it
-   * was tied, aliased, or refcounted through SGPropertyNode_ptr.
-   */
-  bool removeChild (const char * name, int index = 0);
-
-
-  /**
-   * Remove all children nodes, or all with a given name. True if all nodes
-   * were removed.
-   */
-  bool removeChildren(const char * name = 0);
 
 
   //

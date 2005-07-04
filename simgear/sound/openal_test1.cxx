@@ -12,9 +12,11 @@ static unsigned int sleep(unsigned int secs) { return 0; }
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
+# include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
 #else
 # include <AL/al.h>
+# include <AL/alc.h>
 # include <AL/alut.h>
 #endif
 
@@ -39,10 +41,16 @@ static void print_openal_error( ALuint error ) {
 
 int main( int argc, char *argv[] ) {
     // initialize OpenAL
-    alutInit( 0, NULL );
-    alGetError();
-    if ( alGetError() != AL_NO_ERROR) {
-	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
+    ALCdevice *dev;
+    ALCcontext *context;
+
+    // initialize OpenAL
+    if ( (dev = alcOpenDevice( NULL )) != NULL
+            && ( context = alcCreateContext( dev, NULL )) != NULL ) {
+        alcMakeContextCurrent( context );
+    } else {
+        context = 0;
+        SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
     }
 
     // Position of the listener.

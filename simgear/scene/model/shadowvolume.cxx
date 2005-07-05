@@ -786,10 +786,10 @@ SGShadowVolume::SGShadowVolume() :
 
 SGShadowVolume::~SGShadowVolume() {
 	SceneryObject_map::iterator iSceneryObject;
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
 		delete iSceneryObject->second;
-		sceneryObjects.erase( iSceneryObject );
 	}
+	sceneryObjects.clear();
 }
 
 void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
@@ -815,14 +815,15 @@ void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
 void SGShadowVolume::startOfFrame(void) {
 }
 void SGShadowVolume::deleteOccluderFromTile(ssgBranch *tile) {
-	SceneryObject_map::iterator iSceneryObject;
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
+	SceneryObject_map::iterator iSceneryObject, iPrevious;
+	iPrevious = sceneryObjects.begin();
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
 		if( iSceneryObject->second->tile == tile ) {
 			delete iSceneryObject->second;
 			sceneryObjects.erase( iSceneryObject );
+			iSceneryObject = iPrevious;
 		}
-		else 
-			iSceneryObject++;
+		iPrevious = iSceneryObject;
 	}
 }
 

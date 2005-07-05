@@ -65,6 +65,13 @@ private:
 	class ShadowCaster
 	{
 	public:
+		typedef struct {
+			sgVec4 planeEquations;
+			int neighbourIndices[3];
+			bool isSilhouetteEdge[3];
+			bool isFacingLight;
+		} triData;
+
 		ssgBranch *geometry_leaf;
 		ssgBranch *scenery_object;
 		ssgBranch *lib_object;
@@ -74,20 +81,16 @@ private:
 
 		int *indices;
 		int numTriangles;
-		sgVec3 * vertices;
+		triData *triangles;
 
-		// plane equation of each face
-		sgVec4 * planeEquations;
+		sgVec4 * vertices;
+		GLushort *silhouetteEdgeIndices;
+		int lastSilhouetteIndicesCount;
 
-		bool * isFacingLight;
-
-		int * neighbourIndices;
-
-		bool * isSilhouetteEdge;
 
 		ShadowCaster( int _num_tri, ssgBranch * _geometry_leaf );
 		~ShadowCaster();
-		void addLeaf( int & tri_idx, ssgLeaf *_geometry_leaf );
+		void addLeaf( int & tri_idx, int & ind_idx, ssgLeaf *_geometry_leaf );
 		void SetConnectivity();
 		void CalculateSilhouetteEdges(sgVec3 lightPosition);
 		void DrawInfiniteShadowVolume(sgVec3 lightPosition, bool drawCaps);
@@ -96,7 +99,6 @@ private:
 		bool isSelected (  ssgBranch * branch );
 
 		bool sameVertex(int edge1, int edge2);
-		void addTri(int p, sgVec3 a, sgVec3 b, sgVec3 c);
 	};
 	typedef vector<ShadowCaster *> ShadowCaster_list;
 
@@ -124,10 +126,13 @@ private:
 	bool	init_done;
 	bool	shadows_enabled;
 	bool	shadowsAC_enabled, shadowsAI_enabled, shadowsTO_enabled, shadowsDebug_enabled;
+	bool	use_alpha;
+	bool	canDoAlpha, canDoStencil;
 	SGPropertyNode *sim_rendering;
 
 	sgVec3 sunPos;
 	int frameNumber;
+	int lastTraverseTreeFrame;
 	sgMat4 CameraViewM;
 	sgMat4 invViewAngle;
 	double	sun_angle;

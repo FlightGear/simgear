@@ -92,12 +92,15 @@ public:
    */
   static SGPersonalityBranch *current_object;
 
+  int get_animation_type(void) { return animation_type; }
+
 protected:
 
   static double sim_time_sec;
 
   ssgBranch * _branch;
 
+  int animation_type;
 };
 
 
@@ -578,6 +581,16 @@ private:
   float _factor, _offset, _min_v, _max_v;
   bool _has_min, _has_max;
   SGInterpTable * _table;
+};
+
+/**
+ * An animation to tell wich objects don't cast shadows.
+ */
+class SGShadowAnimation : public SGAnimation
+{
+public:
+  SGShadowAnimation (SGPropertyNode_ptr props);
+  virtual ~SGShadowAnimation ();
 };
 
 

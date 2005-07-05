@@ -77,6 +77,12 @@ bool
 sgSetModelFilter( bool filter );
 
 /**
+ * Check if the ssg node contains an animation
+ */
+bool 
+sgCheckAnimationBranch (ssgEntity * entity);
+
+/**
  * Enable or disable Display list usage
  */
 extern bool sgUseDisplayList;

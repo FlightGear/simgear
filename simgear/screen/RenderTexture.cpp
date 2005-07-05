@@ -1695,7 +1695,9 @@ vector<int> RenderTexture::_ParseBitVector(string bitVector)
 bool RenderTexture::_VerifyExtensions()
 {
 #ifdef _WIN32
-    if ( !fctPtrInited )
+	// a second call to _VerifyExtensions will allways return true, causing a crash
+	// if the extension is not supported
+    if ( true || !fctPtrInited )
     {
         fctPtrInited = true;
         wglGetExtensionsStringARBProc wglGetExtensionsStringARBPtr = (wglGetExtensionsStringARBProc)wglGetProcAddress( "wglGetExtensionsStringARB" );

@@ -179,7 +179,8 @@ double SGAnimation::sim_time_sec = 0.0;
 SGPersonalityBranch *SGAnimation::current_object = 0;
 
 SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
-    : _branch(branch)
+    : _branch(branch),
+    animation_type(0)
 {
     _branch->setName(props->getStringValue("name", 0));
     if ( props->getBoolValue( "enable-hot", true ) ) {
@@ -1500,5 +1501,20 @@ void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
   sgCopyMat4( r, m );
   sgPreMultMat4( r, transform );
 }
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGShadowAnimation
+////////////////////////////////////////////////////////////////////////
+
+SGShadowAnimation::SGShadowAnimation (SGPropertyNode_ptr props)
+  : SGAnimation(props, new ssgBranch)
+{
+	animation_type = 1;
+}
+
+SGShadowAnimation::~SGShadowAnimation ()
+{
+}
+
 
 // end of animation.cxx

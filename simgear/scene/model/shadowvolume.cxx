@@ -24,6 +24,9 @@
 #include <plib/ssg.h>
 #include <simgear/props/props.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/screen/extensions.hxx>
+#include <simgear/scene/model/animation.hxx>
+#include <simgear/scene/model/model.hxx>
 #include SG_GLU_H
 
 #include "shadowvolume.hxx"
@@ -65,6 +68,8 @@
  - render occluder in stencil buffer with their shadow volumes
  - apply stencil to framebuffer (darkens shadowed parts)
 
+	shadows using the alpha buffer
+	http://wwwvis.informatik.uni-stuttgart.de/~roettger/html/Pages/shadows.html
 */
 
 // TODO
@@ -78,16 +83,15 @@
 //	* add a render property on/off (for aircraft, for scene objects, for ai)
 //	* add a render property in rendering dialog
 //	* filter : halo, light, shadow, disc, disk, flame, (exhaust), noshadow
-// BUG
-//	- ghost objects ?
-//	- no shadow : check static 737/747
-// why has the ggb an alpha animation = 0.01 ?
 
 static int statSilhouette=0;
 static int statGeom=0;
 static int statObj=0;
 
 static SGShadowVolume *states;
+static glBlendEquationProc glBlendEquation = NULL;
+#define GL_MIN_EXT                          0x8007
+#define GL_MAX_EXT                          0x8008
 
 
 SGShadowVolume::ShadowCaster::ShadowCaster( int _num_tri, ssgBranch * _geometry_leaf ) : 
@@ -98,19 +102,15 @@ SGShadowVolume::ShadowCaster::ShadowCaster( int _num_tri, ssgBranch * _geometry_
 	numTriangles ( 0 ),
 	indices ( 0 ),
 	vertices ( 0 ),
-	planeEquations ( 0 ),
-	isFacingLight ( 0 ),
-	neighbourIndices ( 0 ),
-	isSilhouetteEdge ( 0 )
+	lastSilhouetteIndicesCount ( 0 )
 {
 	int num_tri = _num_tri;
 	numTriangles = num_tri;
-	indices = new int[num_tri * 3];
-	vertices = new sgVec3[num_tri * 3];
-	planeEquations = new sgVec4[num_tri];
-	neighbourIndices = new int[num_tri * 3];
-	isSilhouetteEdge = new bool[num_tri * 3];
-	isFacingLight = new bool[num_tri];
+	triangles = new triData[ num_tri ];
+	indices = new int[1 + num_tri * 3];
+	vertices = new sgVec4[1 + num_tri * 3];
+	silhouetteEdgeIndices = new GLushort[(1+num_tri) * 3*3];
+	indices [ num_tri * 3 ] = num_tri * 3;
 	sgSetVec3(last_lightpos, 0.0, 0.0, 0.0);
 	statGeom ++;
 
@@ -124,7 +124,7 @@ SGShadowVolume::ShadowCaster::ShadowCaster( int _num_tri, ssgBranch * _geometry_
 	}
 }
 
-void SGShadowVolume::ShadowCaster::addLeaf( int & tri_idx, ssgLeaf *geometry_leaf ) {
+void SGShadowVolume::ShadowCaster::addLeaf( int & tri_idx, int & ind_idx, ssgLeaf *geometry_leaf ) {
 	int num_tri = geometry_leaf->getNumTriangles();
 	for(int i = 0; i < num_tri ; i ++ ) {
 		short v1, v2, v3;
@@ -133,38 +133,37 @@ void SGShadowVolume::ShadowCaster::addLeaf( int & tri_idx, ssgLeaf *geometry_lea
 		sgCopyVec3(a, geometry_leaf->getVertex(v1));
 		sgCopyVec3(b, geometry_leaf->getVertex(v2));
 		sgCopyVec3(c, geometry_leaf->getVertex(v3));
-		addTri( tri_idx++, a, b, c);
+
+		int p = tri_idx;
+		sgMakePlane ( triangles[p].planeEquations, a, b, c );
+		sgCopyVec3(vertices[ind_idx + v1], a);
+		sgCopyVec3(vertices[ind_idx + v2], b);
+		sgCopyVec3(vertices[ind_idx + v3], c);
+		vertices[ind_idx + v1][SG_W] = 1.0f;
+		vertices[ind_idx + v2][SG_W] = 1.0f;
+		vertices[ind_idx + v3][SG_W] = 1.0f;
+		indices[p*3] = ind_idx + v1;
+		indices[p*3+1] = ind_idx + v2;
+		indices[p*3+2] = ind_idx + v3;
+
+		tri_idx++;
 	}
+	if( num_tri == 0 )
+		return;
+	int num_ind = geometry_leaf->getNumVertices();
+	ind_idx += num_ind;
 }
 
 SGShadowVolume::ShadowCaster::~ShadowCaster() {
 	delete [] indices ;
 	delete [] vertices ;
-	delete [] planeEquations ;
-	delete [] isFacingLight ;
-	delete [] neighbourIndices ;
-	delete [] isSilhouetteEdge ;
+	delete [] triangles;
+	delete [] silhouetteEdgeIndices;
 }
 
 
-void SGShadowVolume::ShadowCaster::addTri(int p, sgVec3 a, sgVec3 b, sgVec3 c) {
-	sgVec4 tri_plane;
-	assert( p >= 0 && p < numTriangles );
-
-	sgMakePlane ( tri_plane, a, b, c );
-	sgCopyVec4(planeEquations[p], tri_plane);
-	sgCopyVec3(vertices[p*3], a);
-	sgCopyVec3(vertices[p*3+1], b);
-	sgCopyVec3(vertices[p*3+2], c);
-	indices[p*3] = p*3;
-	indices[p*3+1] = p*3+1;
-	indices[p*3+2] = p*3+2;
-}
 
 bool SGShadowVolume::ShadowCaster::sameVertex(int edge1, int edge2) {
-//	const float epsilon = 0.01;	// 1cm
-//	const float epsilon = 0.0;	// 1cm
-//return false;
 	if( edge1 == edge2)
 		return true;
 	sgVec3 delta_v;
@@ -183,8 +182,10 @@ void SGShadowVolume::ShadowCaster::SetConnectivity(void)
 	int edgeCount = 0;
 
 	//set the neighbour indices to be -1
-	for(int ii=0; ii<numTriangles*3; ++ii)
-		neighbourIndices[ii]=-1;
+	for(int ii=0; ii<numTriangles; ++ii)
+		triangles[ii].neighbourIndices[0] = 
+		triangles[ii].neighbourIndices[1] = 
+		triangles[ii].neighbourIndices[2] = -1;
 
 	//loop through triangles
 	for(int i=0; i<numTriangles-1; ++i)
@@ -193,12 +194,12 @@ void SGShadowVolume::ShadowCaster::SetConnectivity(void)
 		for(int edgeI=0; edgeI<3; ++edgeI)
 		{
 			//continue if this edge already has a neighbour set
-			if(neighbourIndices[ i*3+edgeI ]!=-1)
+			if(triangles[i].neighbourIndices[ edgeI ]!=-1)
 				continue;
 
 			//get the vertex indices on each edge
 			int edgeI1=indices[i*3+edgeI];
-			int edgeI2=indices[i*3+(edgeI+1)%3];
+			int edgeI2=indices[i*3+(edgeI == 2 ? 0 : edgeI+1)];
 
 			//loop through triangles with greater indices than this one
 			for(int j=i+1; j<numTriangles; ++j)
@@ -206,11 +207,16 @@ void SGShadowVolume::ShadowCaster::SetConnectivity(void)
 				//loop through edges on triangle j
 				for(int edgeJ=0; edgeJ<3; ++edgeJ)
 				{
+					//continue if this edge already has a neighbour set
+					if(triangles[j].neighbourIndices[ edgeJ ]!=-1) {
+						continue;
+					}
 					//get the vertex indices on each edge
 					int edgeJ1=indices[j*3+edgeJ];
 					int edgeJ2=indices[j*3+(edgeJ == 2 ? 0 : edgeJ+1)];
 
 					//if these are the same (possibly reversed order), these faces are neighbours
+#if 0
 					//no, we only use reverse order because same order means that
 					//the triangle is wrongly oriented and that will cause shadow artifact
 					if(	sameVertex(edgeI1, edgeJ1) && sameVertex(edgeI2, edgeJ2) ) {
@@ -218,25 +224,19 @@ void SGShadowVolume::ShadowCaster::SetConnectivity(void)
 //							printf("flipped triangle detected...check your model\n");
 						continue;
 					}
-					if(	false && sameVertex(edgeI1, edgeJ1) && sameVertex(edgeI2, edgeJ2)
-						|| sameVertex(edgeI1, edgeJ2) && sameVertex(edgeI2, edgeJ1) )
+#endif
+					if(	sameVertex(edgeI1, edgeJ2) && sameVertex(edgeI2, edgeJ1) )
 					{
-						int edgeI3=indices[i*3+(edgeI+2)%3];
-						int edgeJ3=indices[j*3+(edgeJ+2)%3];
+						int edgeI3=indices[i*3+(edgeI == 0 ? 2 : edgeI-1)];
+						int edgeJ3=indices[j*3+(edgeJ == 0 ? 2 : edgeJ-1)];
 						if(	sameVertex(edgeI3, edgeJ3) ) {
 							// can happens with 'bad' geometry
 //							printf("duplicated tri...check your model\n");
 							// exit loop
 							break;
 						}
-						//continue if this edge already has a neighbour set
-						// can happens with 'bad' geometry
-						if(neighbourIndices[ j*3+edgeJ ]!=-1) {
-//							printf("bad edge detected\n");
-							continue;
-						}
-						neighbourIndices[i*3+edgeI]=j;
-						neighbourIndices[j*3+edgeJ]=i;
+						triangles[i].neighbourIndices[edgeI]=j;
+						triangles[j].neighbourIndices[edgeJ]=i;
 						edgeCount ++;
 						// exit loop
 						j = numTriangles;
@@ -255,85 +255,51 @@ void SGShadowVolume::ShadowCaster::CalculateSilhouetteEdges(sgVec3 lightPosition
 	//Calculate which faces face the light
 	for(int i=0; i<numTriangles; ++i)
 	{
-		if( sgDistToPlaneVec3 ( planeEquations[i], lightPosition ) > 0.0 )
-			isFacingLight[i]=true;
+		if( sgDistToPlaneVec3 ( triangles[i].planeEquations, lightPosition ) > 0.0 )
+			triangles[i].isFacingLight=true;
 		else
-			isFacingLight[i]=false;
+			triangles[i].isFacingLight=false;
 	}
 
 	//loop through faces
+	int iEdgeIndices = 0;
+	sgVec4 farCap = {-lightPosition[SG_X], -lightPosition[SG_Y], -lightPosition[SG_Z], 1.0f};
+	sgCopyVec4( vertices[ numTriangles*3 ], farCap );
 
 	for(int t=0; t < numTriangles; t++) {
 		int v = t * 3;
 		//if this face is not facing the light, not a silhouette edge
-		if(!isFacingLight[t])
+		if(!triangles[t].isFacingLight)
 		{
-			isSilhouetteEdge[v+0]=false;
-			isSilhouetteEdge[v+1]=false;
-			isSilhouetteEdge[v+2]=false;
+			triangles[t].isSilhouetteEdge[0]=false;
+			triangles[t].isSilhouetteEdge[1]=false;
+			triangles[t].isSilhouetteEdge[2]=false;
 			continue;
 		}
 		//loop through edges
-		for(int i = v ; i < v+3 ; i++) {
+		for(int j = 0 ; j < 3 ; j++) {
 			//this face is facing the light
 			//if the neighbouring face is not facing the light, or there is no neighbouring face,
 			//then this is a silhouette edge
-			if(neighbourIndices[i]==-1 || !isFacingLight[neighbourIndices[i]])
-				isSilhouetteEdge[i]=true;
+			if(triangles[t].neighbourIndices[j]==-1 || 
+				!triangles[triangles[t].neighbourIndices[j]].isFacingLight ) {
+				triangles[t].isSilhouetteEdge[j]=true;
+				silhouetteEdgeIndices[ iEdgeIndices++ ] = indices[v+(j == 2 ? 0 : j+1)];
+				silhouetteEdgeIndices[ iEdgeIndices++ ] = indices[v+j];
+				silhouetteEdgeIndices[ iEdgeIndices++ ] = numTriangles * 3;
+			}
 			else 
-				isSilhouetteEdge[i]=false;
+				triangles[t].isSilhouetteEdge[j]=false;
 		}
 	}
+	lastSilhouetteIndicesCount = iEdgeIndices;
 }
 
-// TODO: everyhting here is constant, store the vertex in a cache buffer and call drawelements
 void SGShadowVolume::ShadowCaster::DrawInfiniteShadowVolume(sgVec3 lightPosition, bool drawCaps)
 {
-  	glColor4f(1.0, 1.0, 0.0, 0.5);
-	//TODO: no need for a quad here
-//	glBegin(GL_QUADS);
-	glBegin(GL_TRIANGLES);
-	{
-		for(int i=0; i<numTriangles; ++i)
-		{
-			//if this face does not face the light, continue
-			if(!isFacingLight[i])
-				continue;
-
-			int v = i*3;
-			//Loop through edges on this face
-			for(int j=0; j<3; ++j)
-			{
-				//Draw the shadow volume "edge" if this is a silhouette edge
-				if(isSilhouetteEdge[v+j])
-				{
-					sgVec3 vertex1, vertex2;
-					sgCopyVec3(vertex1, vertices[indices[v+j]]);
-					sgCopyVec3(vertex2, vertices[indices[v+(j == 2 ? 0 : j+1)]]);
-
-					glVertex3fv(vertex2);
- 					glVertex3fv(vertex1);
-					// w == 0 for infinite shadow
-#if 0
-					glVertex4f(	vertex1[SG_X]-lightPosition[SG_X],
-								vertex1[SG_Y]-lightPosition[SG_Y],
-								vertex1[SG_Z]-lightPosition[SG_Z], 0.0f);
-//					glVertex4f(	vertex2[SG_X]-lightPosition[SG_X],
-//								vertex2[SG_Y]-lightPosition[SG_Y],
-//								vertex2[SG_Z]-lightPosition[SG_Z], 0.0f);
-#else
-					glVertex3f(	vertex1[SG_X]-lightPosition[SG_X],
-								vertex1[SG_Y]-lightPosition[SG_Y],
-								vertex1[SG_Z]-lightPosition[SG_Z]);
-//					glVertex3f(	vertex2[SG_X]-lightPosition[SG_X],
-//								vertex2[SG_Y]-lightPosition[SG_Y],
-//								vertex2[SG_Z]-lightPosition[SG_Z]);
-#endif
-				}
-			}
-		}
-	}
-	glEnd();
+	glEnableClientState ( GL_VERTEX_ARRAY ) ;
+	glVertexPointer ( 4, GL_FLOAT, 0, vertices ) ;
+	glDrawElements ( GL_TRIANGLES, lastSilhouetteIndicesCount, GL_UNSIGNED_SHORT, silhouetteEdgeIndices ) ;
 
 	//Draw caps if required
 	if(drawCaps)
@@ -342,18 +308,11 @@ void SGShadowVolume::ShadowCaster::DrawInfiniteShadowVolume(sgVec3 lightPosition
 		{
 			for(int i=0; i<numTriangles; ++i)
 			{
-				int v = i*3;
-				for(int j=0; j<3; ++j)
-				{
-					sgVec3 vertex;
-					sgCopyVec3(vertex, vertices[indices[v+j]]);
-
-					if(isFacingLight[i])
-						glVertex3fv(vertex);
-					else
-						glVertex4f(	vertex[SG_X]-lightPosition[SG_X],
-									vertex[SG_Y]-lightPosition[SG_Y],
-									vertex[SG_Z]-lightPosition[SG_Z], 0.0f);
+				if(triangles[i].isFacingLight) {
+					int v = i*3;
+					glVertex3fv( vertices[indices[v+0]] );
+					glVertex3fv( vertices[indices[v+1]] );
+					glVertex3fv( vertices[indices[v+2]] );
 				}
 			}
 		}
@@ -366,7 +325,6 @@ void SGShadowVolume::ShadowCaster::getNetTransform ( ssgBranch * branch, sgMat4 
 {
 	// one less matmult...
 	bool first = true;
-//	sgMakeIdentMat4 ( xform ) ;
 	while( branch && branch != lib_object ) {
 		if( branch->isA(ssgTypeTransform()) ) {
 			sgMat4 transform;
@@ -420,7 +378,6 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		sgCopyMat4( transf, transform );
 		sgPostMultMat4( transf, rotation_translation );
 		sgPostMultMat4( transform, rotation );
-//   	 	sgInvertMat4( invTransform, transform ); 
 		sgTransposeNegateMat4 ( invTransform, transform ); 
 
   		glLoadMatrixf ( (float *) states->CameraViewM ) ;
@@ -438,8 +395,7 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		// if the geometry has rotated/moved enought then
 		// we need to recompute the silhouette
 		// but this computation does not need to be done each frame
-		// -6 fps
-   		if( (deltaPos > 0.0) && ( states->frameNumber - frameNumber > 0)) {
+   		if( (deltaPos > 0.0) && ( states->frameNumber - frameNumber > 4)) {
 			CalculateSilhouetteEdges( lightPos );
 			sgCopyVec3( last_lightpos, lightPosNorm );
 			frameNumber = states->frameNumber ;
@@ -453,11 +409,11 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		glDisable( GL_DEPTH_TEST );
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(1, 1, 1, 1);
-  		glColor4f(0.0, 0.0, 1.0, 0.8);
+  		glColor4f(0.0, 0.0, 1.0, 1.0);
 	  	glBegin(GL_LINES);
 		for(int i=0; i<numTriangles; ++i)
 		{
-			if(!isFacingLight[i])
+			if(!triangles[i].isFacingLight)
 				continue;
 			int v = i*3;
 			//Loop through edges on this face
@@ -466,27 +422,26 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 			sgCopyVec3(vertex2, vertices[indices[v+1]]);
 			sgCopyVec3(vertex3, vertices[indices[v+2]]);
 
-			if(isSilhouetteEdge[i*3+0]) {
+			if(triangles[i].isSilhouetteEdge[0]) {
 				glVertex3fv(vertex2);
  				glVertex3fv(vertex1);
 			}
-			if(isSilhouetteEdge[i*3+1]) {
+			if(triangles[i].isSilhouetteEdge[1]) {
 				glVertex3fv(vertex2);
  				glVertex3fv(vertex3);
 			}
-			if(isSilhouetteEdge[i*3+2]) {
+			if(triangles[i].isSilhouetteEdge[2]) {
 				glVertex3fv(vertex3);
  				glVertex3fv(vertex1);
 			}
 		}
-			glEnd();
+		glEnd();
 		glColorMask(0, 0, 0, 0);
  	  	glEnable( GL_CULL_FACE  );
 		glEnable( GL_DEPTH_TEST );
 		glEnable(GL_STENCIL_TEST);
 	}
 
-	// -11 fps
 
 		// TODO:compute intersection with near clip plane...
  		bool needZFail=false;
@@ -511,19 +466,31 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		else	//using zpass
 		{
 			//Increment stencil buffer for front face depth pass
-			glStencilFunc(GL_ALWAYS, 0, ~0);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			if( states->use_alpha ) {
+				glBlendEquation( GL_FUNC_ADD );
+				glBlendFunc( GL_ONE, GL_ONE );
+ 			  	glColor4ub(1, 1, 1, 16);
+			} else {
+			  	glColor4f(1.0f, 1.0f, 0.0f, 0.5f);
+				glStencilFunc(GL_ALWAYS, 0, ~0);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			}
 			glCullFace(GL_BACK);
 
 			DrawInfiniteShadowVolume( lightPos, false);
 
 			//Decrement stencil buffer for back face depth pass
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			if( states->use_alpha ) {
+				glBlendEquation( GL_FUNC_REVERSE_SUBTRACT );
+				glBlendFunc( GL_ONE, GL_ONE );
+			  	glColor4ub(1, 1, 1, 16);
+			} else {
+				glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			}
 			glCullFace(GL_FRONT);
 
 			DrawInfiniteShadowVolume( lightPos, false);
 		}
-	// -15 fps
 }
 
 
@@ -560,11 +527,13 @@ void SGShadowVolume::SceneryObject::computeShadows(void) {
 
  	if( intersect ) {
 		if( !scenery_object ) {
-			find_trans();
-			if( scenery_object )
-				traverseTree( pending_object );
-			else
-				return;
+			if( states->frameNumber - states->lastTraverseTreeFrame > 5 ) {
+				find_trans();
+				if( scenery_object )
+					traverseTree( pending_object );
+					states->lastTraverseTreeFrame = states->frameNumber;
+			}
+			return;
 		}
 		sgMat4 rotation, rotation_translation;
 		scenery_object->getNetTransform ( rotation_translation );
@@ -599,18 +568,23 @@ static bool filterName(const char *leaf_name) {
 		return true;
 	char lname[20];
 	int l = 0;
-	    char *buff;
+	char *buff;
 	for( buff = lname; *leaf_name && l < (sizeof( lname )-1); ++buff, l++ )
 	     *buff = tolower(*leaf_name++);
 	*buff = 0;
-	if( strstr(lname, "shadow") || strstr(lname, "light") || strstr(lname, "disk") ||
-		strstr(lname, "disk") || strstr(lname, "flame") || strstr(lname, "halo"))
+	if( !strncmp(lname, "noshadow", 8) )
 		return false;
 	return true;
 }
 void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 	int num_tri = 0;
 	int num_leaf = 0;
+
+	if( sgCheckAnimationBranch( (ssgEntity *) branch ) ) {
+		if( ((SGAnimation *) branch->getUserData())->get_animation_type() == 1)
+			return;
+	}
+
 	for(int i = 0 ; i < branch->getNumKids() ; i++) {
 		ssgEntity *this_kid = branch->getKid( i );
 		if( this_kid->isAKindOf(ssgTypeLeaf()) ) {
@@ -623,6 +597,7 @@ void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 	}
 	if( num_tri > 0) {
 		int tri_idx = 0;
+		int ind_idx = 0;
 		ShadowCaster *new_part = new ShadowCaster( num_tri, branch);
 		new_part->scenery_object = scenery_object;
 		new_part->lib_object = lib_object;
@@ -630,7 +605,7 @@ void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 			ssgEntity *this_kid = branch->getKid( i );
 			if( this_kid->isAKindOf(ssgTypeLeaf()) ) {
 				if( filterName( this_kid->getName()) )
-					new_part->addLeaf( tri_idx, (ssgLeaf *) this_kid );
+					new_part->addLeaf( tri_idx, ind_idx, (ssgLeaf *) this_kid );
 			}
 		}
 		new_part->SetConnectivity();
@@ -664,16 +639,15 @@ SGShadowVolume::SceneryObject::SceneryObject(ssgBranch *_scenery_object, Occlude
 		lib_object = _scenery_object;
 	else
 		lib_object = (ssgBranch *) ((ssgBranch *)_scenery_object->getKid(0))->getKid(0);
-#if 0
-	find_trans();
-	if( scenery_object )
-		traverseTree( pending_object );
-#endif
 }
 
 SGShadowVolume::SceneryObject::~SceneryObject()
 {
-//	parts.erase();
+	ShadowCaster_list::iterator iParts;
+	for(iParts = parts.begin() ; iParts != parts.end(); iParts++ ) {
+		delete *iParts;
+	}
+	parts.clear();
 }
 
 void SGShadowVolume::computeShadows(void) {
@@ -687,22 +661,38 @@ void SGShadowVolume::computeShadows(void) {
 
 	//Draw shadow volumes
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
-	glClear(GL_STENCIL_BUFFER_BIT);
+ 	glPushClientAttrib ( GL_CLIENT_VERTEX_ARRAY_BIT ) ;
+	glDisableClientState ( GL_COLOR_ARRAY         ) ;
+	glDisableClientState ( GL_NORMAL_ARRAY        ) ;
+	glDisableClientState ( GL_TEXTURE_COORD_ARRAY ) ;
 
+	if( use_alpha ) {
+		glColorMask(0, 0, 0, 1);
+ 		glClearColor(0.0, 0.0, 0.0, 0.0 );
+		glClear(GL_COLOR_BUFFER_BIT);
+ 		glDisable(GL_ALPHA);
+		glEnable(GL_BLEND);
+	} else {
+		glClearStencil( 0 );
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glColorMask(0, 0, 0, 0);
+		glEnable(GL_STENCIL_TEST);
+		glDisable(GL_ALPHA);
+		glDisable(GL_BLEND);
+	}
 	glDisable( GL_LIGHTING );
 	glDisable( GL_FOG );
-	glDisable(GL_ALPHA);
-	glDisable(GL_BLEND);
   	glEnable( GL_CULL_FACE  );
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//    glPolygonOffset(0.0,5.0);
+    glPolygonOffset(0.0,30.0);
+    glEnable(GL_POLYGON_OFFSET_FILL);
 
-	glColorMask(0, 0, 0, 0);
  	glShadeModel(GL_FLAT);
 
 	glDepthMask( false );
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LESS);
-	glEnable(GL_STENCIL_TEST);
 
 	SceneryObject_map::iterator iSceneryObject;
 	// compute shadows for each objects
@@ -714,13 +704,6 @@ void SGShadowVolume::computeShadows(void) {
 				an_occluder->computeShadows();
 	}
 
-	// now the stencil contains 0 for scenery in light and != 0 for parts in shadow
-	// draw a quad covering the screen, the stencil will be the mask
-	// we darken the shadowed parts
-	glStencilFunc(GL_NOTEQUAL, 0, ~0);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	glEnable(GL_STENCIL_TEST);
-	glColorMask(1, 1, 1, 1);
 
 	glMatrixMode   ( GL_PROJECTION ) ;
 	glPushMatrix   () ;
@@ -734,55 +717,112 @@ void SGShadowVolume::computeShadows(void) {
 	glDisable(GL_CULL_FACE);
 //	glBindTexture(GL_TEXTURE_2D, 0);
 	glPolygonMode(GL_FRONT, GL_FILL);
-	glEnable(GL_ALPHA);
-	glAlphaFunc(GL_GREATER, 0.0f);
-	glEnable(GL_BLEND);
-	glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
-  	glColor4f(0.0, 0.0, 0.0, sgLerp(0.1, 0.3, dot_light) );
-	// fixed value is better, the previous line is surely wrong
-  	glColor4f(0.0, 0.0, 0.0, 0.3 );
-//   	glColor4f(1.0, 0.0, 0.0, 0.5);
-	glRectf(-100,-100,100,100);
+	if( use_alpha ) {
+		// there is a flaw in the Roettger paper, this does not work for some geometry
+		// where we increment (multiply) the buffer a few times then we
+		// decrement (divide) a few times. Decrementing more then once will give a
+		// non shadowed parts with mask value < 0.25 because the incrementation was
+		// clamped
+		// Solution : don't use a start value as high as 0.25 but the smallest value
+		// posible ie 1/256. This is not a general solution, a stencil buffer will
+		// support 255 incrementation before clamping, the alpha mask only 7.
+		// => that still does not work with our geometry so use subtractive blend
 
+		// clamp mask = {0,16,32,64,...} => {0,16,16,16,...}
+		glBlendEquation( GL_MIN_EXT );
+   		glBlendFunc( GL_DST_COLOR, GL_ONE );
+ 		glColor4ub(1, 1, 1, 16);
+ 		glRectf(-100,-100,100,100);
+		// scale mask = {0,16} => {0,64}
+		glBlendEquation( GL_FUNC_ADD );
+   		glBlendFunc( GL_DST_COLOR, GL_ONE );
+ 		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+ 		glRectf(-100,-100,100,100);
+		glRectf(-100,-100,100,100);
+		// negate mask => {0,64} => {255, 191}
+		glBlendFunc( GL_ONE_MINUS_DST_COLOR, GL_ZERO );
+		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+ 		glRectf(-100,-100,100,100);
+		// apply mask
+		glColorMask(1, 1, 1, 1);
+   		glBlendFunc( GL_ZERO, GL_DST_ALPHA );
+   		glColor4f(1.0f, 0.5f, 0.2f, 1.0f);
+		glRectf(-100,-100,100,100);
+	} else {
+		// now the stencil contains 0 for scenery in light and != 0 for parts in shadow
+		// draw a quad covering the screen, the stencil will be the mask
+		// we darken the shadowed parts
+		glColorMask(1, 1, 1, 1);
+		glStencilFunc(GL_NOTEQUAL, 0, ~0);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glEnable(GL_STENCIL_TEST);
+		glEnable(GL_ALPHA);
+		glAlphaFunc(GL_GREATER, 0.0f);
+		glEnable(GL_BLEND);
+		glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
+  		glColor4f(0.0, 0.0, 0.0, sgLerp(0.1, 0.3, dot_light) );
+		// fixed value is better, the previous line is surely wrong
+  		glColor4f(0.0, 0.0, 0.0, 0.3 );
+		glRectf(-100,-100,100,100);
+	}
 	glMatrixMode   ( GL_PROJECTION ) ;
 	glPopMatrix    () ;
 	glMatrixMode   ( GL_MODELVIEW ) ;
 	glPopMatrix    () ;
 
 	glDisable(GL_STENCIL_TEST);
+	glPopClientAttrib ( ) ;
 	glPopAttrib();
 }
 
 SGShadowVolume::SGShadowVolume() : 
 	init_done( false ),
 	shadows_enabled( false ),
-	frameNumber( 0 )
+	frameNumber( 0 ),
+	lastTraverseTreeFrame ( 0 )
 {
 	states = this;
 }
 
 SGShadowVolume::~SGShadowVolume() {
-//	sceneryObjects.erase();
+	SceneryObject_map::iterator iSceneryObject;
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
+		delete iSceneryObject->second;
+		iSceneryObject = sceneryObjects.erase( iSceneryObject );
+	}
 }
 
 void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
 	init_done = true;
 	shadows_enabled = true;
 	sim_rendering = sim_rendering_options;
+	int stencilBits = 0, alphaBits = 0;
+	glGetIntegerv( GL_STENCIL_BITS, &stencilBits );
+	glGetIntegerv( GL_ALPHA_BITS, &alphaBits );
+	bool hasSubtractiveBlend = SGIsOpenGLExtensionSupported("GL_EXT_blend_subtract");
+	bool hasMinMaxBlend = SGIsOpenGLExtensionSupported("GL_EXT_blend_minmax");
+	if( hasSubtractiveBlend )
+		glBlendEquation = (glBlendEquationProc ) SGLookupFunction("glBlendEquationEXT");
+	canDoAlpha = (alphaBits >= 8) && hasSubtractiveBlend && hasMinMaxBlend;
+	canDoStencil = (stencilBits >= 3);
+	if( !canDoStencil )
+		if( canDoAlpha )
+			SG_LOG(SG_ALL, SG_WARN, "SGShadowVolume:no stencil buffer, using alpha buffer");
+		else
+			SG_LOG(SG_ALL, SG_WARN, "SGShadowVolume:no stencil buffer and no alpha buffer");
 }
 
 void SGShadowVolume::startOfFrame(void) {
 }
 void SGShadowVolume::deleteOccluderFromTile(ssgBranch *tile) {
-	SceneryObject_map::iterator iSceneryObject, iPrevious;
-	iPrevious = sceneryObjects.begin();
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
+	SceneryObject_map::iterator iSceneryObject;
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
 		if( iSceneryObject->second->tile == tile ) {
 			delete iSceneryObject->second;
-			sceneryObjects.erase( iSceneryObject );
-			iSceneryObject = iPrevious;
+			iSceneryObject = sceneryObjects.erase( iSceneryObject );
 		}
-		iPrevious = iSceneryObject;
+		else 
+			iSceneryObject++;
 	}
 }
 
@@ -828,6 +868,9 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 	shadowsDebug_enabled = sim_rendering->getBoolValue("shadows-debug", false);
 //	shadows_enabled   = sim_rendering->getBoolValue("shadows", false);
 	shadows_enabled = shadowsAC_enabled || shadowsAI_enabled || shadowsTO_enabled;
+	shadows_enabled &= canDoAlpha || canDoStencil;
+	use_alpha = ((!canDoStencil) || sim_rendering->getBoolValue("shadows-alpha", false)) &&
+		canDoAlpha;
 
 	if( ! shadows_enabled )
 		return;
@@ -876,7 +919,6 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 	sgPreMultMat4( TRANSFORM, GST );
 	sgPreMultMat4( TRANSFORM, RA );
 	sgPreMultMat4( TRANSFORM, DEC );
-//   	sgSetVec3( sunPos, 0.0, 99000.0, 0.0);
    	sgSetVec3( sunPos, 0.0, 9900000.0, 0.0);
 	sgXformPnt3( sunPos, TRANSFORM );
 	}

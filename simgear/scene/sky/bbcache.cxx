@@ -109,11 +109,18 @@ SGBbCache::~SGBbCache(void) {
 
 
 void SGBbCache::init(int cacheCount) {
+	int colorBits = 0;
+	glGetIntegerv( GL_BLUE_BITS, &colorBits );
 
 	rt = new RenderTexture();
 	// don't use default rtt on nvidia/win because of poor performance of glCopyTexSubImage2D
 	// wihtout default pattrib params - see opengl forum
-	rt->Reset("rgba tex2D ctt");
+	if( colorBits < 8 )
+		rt->Reset("rgba=5,5,5,1 ctt");
+	else
+		rt->Reset("rgba ctt");
+
+//	rt->Reset("rgba tex2D ctt");
 //	rt->Reset("rgba tex2D");
 	if( rt->Initialize(256, 256, true) ) {
 		SG_LOG(SG_ALL, SG_INFO, "bbcache:Initialize sucessfull");

@@ -89,7 +89,7 @@ static int statGeom=0;
 static int statObj=0;
 
 static SGShadowVolume *states;
-static glBlendEquationProc glBlendEquation = NULL;
+static glBlendEquationProc glBlendEquationPtr = NULL;
 #define GL_MIN_EXT                          0x8007
 #define GL_MAX_EXT                          0x8008
 
@@ -467,7 +467,7 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		{
 			//Increment stencil buffer for front face depth pass
 			if( states->use_alpha ) {
-				glBlendEquation( GL_FUNC_ADD );
+				glBlendEquationPtr( GL_FUNC_ADD );
 				glBlendFunc( GL_ONE, GL_ONE );
  			  	glColor4ub(1, 1, 1, 16);
 			} else {
@@ -481,7 +481,7 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 
 			//Decrement stencil buffer for back face depth pass
 			if( states->use_alpha ) {
-				glBlendEquation( GL_FUNC_REVERSE_SUBTRACT );
+				glBlendEquationPtr( GL_FUNC_REVERSE_SUBTRACT );
 				glBlendFunc( GL_ONE, GL_ONE );
 			  	glColor4ub(1, 1, 1, 16);
 			} else {
@@ -729,12 +729,12 @@ void SGShadowVolume::computeShadows(void) {
 		// => that still does not work with our geometry so use subtractive blend
 
 		// clamp mask = {0,16,32,64,...} => {0,16,16,16,...}
-		glBlendEquation( GL_MIN_EXT );
+		glBlendEquationPtr( GL_MIN_EXT );
    		glBlendFunc( GL_DST_COLOR, GL_ONE );
  		glColor4ub(1, 1, 1, 16);
  		glRectf(-100,-100,100,100);
 		// scale mask = {0,16} => {0,64}
-		glBlendEquation( GL_FUNC_ADD );
+		glBlendEquationPtr( GL_FUNC_ADD );
    		glBlendFunc( GL_DST_COLOR, GL_ONE );
  		glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
  		glRectf(-100,-100,100,100);
@@ -788,7 +788,7 @@ SGShadowVolume::~SGShadowVolume() {
 	SceneryObject_map::iterator iSceneryObject;
 	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
 		delete iSceneryObject->second;
-		iSceneryObject = sceneryObjects.erase( iSceneryObject );
+		sceneryObjects.erase( iSceneryObject );
 	}
 }
 
@@ -802,7 +802,7 @@ void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
 	bool hasSubtractiveBlend = SGIsOpenGLExtensionSupported("GL_EXT_blend_subtract");
 	bool hasMinMaxBlend = SGIsOpenGLExtensionSupported("GL_EXT_blend_minmax");
 	if( hasSubtractiveBlend )
-		glBlendEquation = (glBlendEquationProc ) SGLookupFunction("glBlendEquationEXT");
+		glBlendEquationPtr = (glBlendEquationProc ) SGLookupFunction("glBlendEquationEXT");
 	canDoAlpha = (alphaBits >= 8) && hasSubtractiveBlend && hasMinMaxBlend;
 	canDoStencil = (stencilBits >= 3);
 	if( !canDoStencil )
@@ -819,7 +819,7 @@ void SGShadowVolume::deleteOccluderFromTile(ssgBranch *tile) {
 	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end();  ) {
 		if( iSceneryObject->second->tile == tile ) {
 			delete iSceneryObject->second;
-			iSceneryObject = sceneryObjects.erase( iSceneryObject );
+			sceneryObjects.erase( iSceneryObject );
 		}
 		else 
 			iSceneryObject++;

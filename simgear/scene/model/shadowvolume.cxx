@@ -361,7 +361,8 @@ bool SGShadowVolume::ShadowCaster::isSelected (  ssgBranch * branch ) {
 	             /
 	perso2 *-----
 */
-void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotation_translation) {
+void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotation_translation,
+	OccluderType occluder_type) {
   
 	// check the select and range ssgSelector node
 	// object can't cast shadow if it is not visible
@@ -369,21 +370,19 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
   	if( first_select && ! isSelected( first_select) )
 		return;
 
-		sgMat4 transform ;
-		sgMat4 invTransform;
 		// get the transformations : this comes from animation code for example
 		// or static transf
+	sgMat4 transf;
+ 	sgVec3 lightPos;
+	int deltaFrame = occluder_type == SGShadowVolume::occluderTypeAircraft ? 0 : 9;
+  	if( states->frameNumber - frameNumber > deltaFrame) {
+		sgMat4 transform ;
+		sgMat4 invTransform;
   		getNetTransform( (ssgBranch *) geometry_leaf, transform );
-		sgMat4 transf;
-		sgCopyMat4( transf, transform );
-		sgPostMultMat4( transf, rotation_translation );
+		sgCopyMat4( last_transform, transform );
 		sgPostMultMat4( transform, rotation );
 		sgTransposeNegateMat4 ( invTransform, transform ); 
 
-  		glLoadMatrixf ( (float *) states->CameraViewM ) ;
-   		glMultMatrixf( (float *) transf );
-
- 		sgVec3 lightPos;
   		sgCopyVec3( lightPos, states->sunPos );
  		sgXformPnt3( lightPos, invTransform );
 
@@ -395,12 +394,17 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 		// if the geometry has rotated/moved enought then
 		// we need to recompute the silhouette
 		// but this computation does not need to be done each frame
-   		if( (deltaPos > 0.0) && ( states->frameNumber - frameNumber > 4)) {
+   		if( deltaPos > 0.0 ) {
 			CalculateSilhouetteEdges( lightPos );
 			sgCopyVec3( last_lightpos, lightPosNorm );
 			frameNumber = states->frameNumber ;
 			statSilhouette ++;
 		}
+	}
+	sgCopyMat4( transf, last_transform );
+	sgPostMultMat4( transf, rotation_translation );
+  	glLoadMatrixf ( (float *) states->CameraViewM ) ;
+   	glMultMatrixf( (float *) transf );
 
 	if( states->shadowsDebug_enabled )
 	{
@@ -546,7 +550,7 @@ void SGShadowVolume::SceneryObject::computeShadows(void) {
 
 		ShadowCaster_list::iterator iShadowCaster;
 		for(iShadowCaster = parts.begin() ; iShadowCaster != parts.end() ; iShadowCaster ++ ) {
-			(*iShadowCaster)->computeShadows(rotation, rotation_translation);
+			(*iShadowCaster)->computeShadows(rotation, rotation_translation, occluder_type);
 		}
 	}
 }

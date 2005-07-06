@@ -77,6 +77,7 @@ private:
 		ssgBranch *lib_object;
 		ssgBranch *first_select;
 		sgVec3 last_lightpos;
+		sgMat4 last_transform;
 		int frameNumber;
 
 		int *indices;
@@ -94,7 +95,7 @@ private:
 		void SetConnectivity();
 		void CalculateSilhouetteEdges(sgVec3 lightPosition);
 		void DrawInfiniteShadowVolume(sgVec3 lightPosition, bool drawCaps);
-		void computeShadows(sgMat4 rotation, sgMat4 rotation_translation);
+		void computeShadows(sgMat4 rotation, sgMat4 rotation_translation, OccluderType occluder_type);
 		void getNetTransform ( ssgBranch * branch, sgMat4 xform );
 		bool isSelected (  ssgBranch * branch );
 

@@ -82,6 +82,18 @@ static wglDestroyPbufferARBProc wglDestroyPbufferARBPtr = 0;
 /* WGL_ARB_render_texture */
 static wglBindTexImageARBProc wglBindTexImageARBPtr = 0;
 static wglReleaseTexImageARBProc wglReleaseTexImageARBPtr = 0;
+
+#elif defined( __APPLE__ )
+#else /* !_WIN32 */
+static bool glXVersion1_3Present = false;
+static glXChooseFBConfigProc glXChooseFBConfigPtr = 0;
+static glXCreateGLXPbufferProc glXCreateGLXPbufferPtr = 0;
+static glXGetVisualFromFBConfigProc glXGetVisualFromFBConfigPtr = 0;
+static glXCreateContextWithConfigProc glXCreateContextWithConfigPtr = 0;
+static glXCreateContextProc glXCreateContextPtr = 0;
+static glXDestroyPbufferProc glXDestroyPbufferPtr = 0;
+static glXQueryDrawableProc glXQueryDrawablePtr = 0;
+static glXQueryGLXPbufferSGIXProc glXQueryGLXPbufferSGIXPtr = 0;
 #endif
 
 //---------------------------------------------------------------------------
@@ -449,14 +461,10 @@ bool RenderTexture::Initialize(int width, int height,
     int screen = DefaultScreen(_pDisplay);
     XVisualInfo *visInfo;
     
-    int iFormat = 0;
-    int iNumFormats;
-    int attrib = 0;
-    
-    GLXFBConfigSGIX *fbConfigs;
+    GLXFBConfig *fbConfigs;
     int nConfigs;
     
-    fbConfigs = glXChooseFBConfigSGIX(_pDisplay, screen, 
+    fbConfigs = glXChooseFBConfigPtr(_pDisplay, screen, 
                                       &_pixelFormatAttribs[0], &nConfigs);
     
     if (nConfigs == 0 || !fbConfigs) 
@@ -467,25 +475,55 @@ bool RenderTexture::Initialize(int width, int height,
     }
     
     // Pick the first returned format that will return a pbuffer
-    for (int i=0;i<nConfigs;i++)
+    if (glXVersion1_3Present)
     {
-        _hPBuffer = glXCreateGLXPbufferSGIX(_pDisplay, fbConfigs[i], 
-                                            _iWidth, _iHeight, NULL);
-        if (_hPBuffer) 
+        int pbufAttrib[] = {
+            GLX_PBUFFER_WIDTH,   _iWidth,
+            GLX_PBUFFER_HEIGHT,  _iHeight,
+            GLX_LARGEST_PBUFFER, False,
+            None
+        };
+        for (int i=0;i<nConfigs;i++)
         {
-            _hGLContext = glXCreateContextWithConfigSGIX(_pDisplay, 
-                                                         fbConfigs[i], 
-                                                         GLX_RGBA_TYPE, 
-                                                         _bShareObjects ? context : NULL, 
-                                                         True);
-            break;
+            _hPBuffer = glXCreatePbuffer(_pDisplay, fbConfigs[i], pbufAttrib);
+            if (_hPBuffer)
+            {
+                XVisualInfo *visInfo = glXGetVisualFromFBConfig(_pDisplay, fbConfigs[i]);
+
+                _hGLContext = glXCreateContext(_pDisplay, visInfo,
+                                               _bShareObjects ? context : NULL,
+                                               True);
+                XFree( visInfo );
+                break;
+            }
         }
     }
+    else
+    {
+        int iFormat = 0;
+        int iNumFormats;
+        int attrib = 0;
+        for (int i=0;i<nConfigs;i++)
+        {
+            _hPBuffer = glXCreateGLXPbufferPtr(_pDisplay, fbConfigs[i], 
+                                               _iWidth, _iHeight, NULL);
+            if (_hPBuffer) 
+            {
+                _hGLContext = glXCreateContextWithConfigPtr(_pDisplay, 
+                                                             fbConfigs[i], 
+                                                             GLX_RGBA_TYPE, 
+                                                             _bShareObjects ? context : NULL, 
+                                                             True);
+                break;
+            }
+        }
+    }
+    XFree( fbConfigs );
     
     if (!_hPBuffer)
     {
         fprintf(stderr, 
-                "RenderTexture Error: glXCreateGLXPbufferSGIX() failed.\n");
+                "RenderTexture Error: glXCreateGLXPbufferPtr() failed.\n");
         return false;
     }
     
@@ -502,10 +540,13 @@ bool RenderTexture::Initialize(int width, int height,
         }
     }
     
-    glXQueryGLXPbufferSGIX(_pDisplay, _hPBuffer, GLX_WIDTH_SGIX, 
-                           (GLuint*)&_iWidth);
-    glXQueryGLXPbufferSGIX(_pDisplay, _hPBuffer, GLX_HEIGHT_SGIX, 
-                           (GLuint*)&_iHeight);
+    if (!glXVersion1_3Present)
+    {
+        glXQueryGLXPbufferSGIXPtr(_pDisplay, _hPBuffer, GLX_WIDTH_SGIX, 
+                                  (GLuint*)&_iWidth);
+        glXQueryGLXPbufferSGIXPtr(_pDisplay, _hPBuffer, GLX_HEIGHT_SGIX, 
+                                  (GLuint*)&_iHeight);
+    }
     
     _bInitialized = true;
     
@@ -556,6 +597,12 @@ bool RenderTexture::Initialize(int width, int height,
     {
         return false;
     }
+    if (glXVersion1_3Present)
+    {
+        GLXDrawable draw = glXGetCurrentDrawable();
+        glXQueryDrawablePtr(_pDisplay, draw, GLX_WIDTH, (unsigned int*)&_iWidth);
+        glXQueryDrawablePtr(_pDisplay, draw, GLX_HEIGHT, (unsigned int*)&_iHeight);
+    }
 #endif
 
     return result;
@@ -579,13 +626,13 @@ bool RenderTexture::_Invalidate()
     _iNumStencilBits = 0;
     
     if (_bIsTexture)
-        glDeleteTextures(1, (const GLuint*)&_iTextureID);
+        glDeleteTextures(1, &_iTextureID);
     if (_bIsDepthTexture) 
     {
         // [Redge]
         if (!_bHasARBDepthTexture) delete[] _pPoorDepthTexture;
         // [/Redge]
-        glDeleteTextures(1, (const GLuint*)&_iDepthTextureID);
+        glDeleteTextures(1, &_iDepthTextureID);
     }
     
 #ifdef _WIN32
@@ -608,7 +655,7 @@ bool RenderTexture::_Invalidate()
         if(glXGetCurrentContext() == _hGLContext)
             // XXX I don't know if this is right at all
             glXMakeCurrent(_pDisplay, _hPBuffer, 0);
-        glXDestroyGLXPbufferSGIX(_pDisplay, _hPBuffer);
+        glXDestroyPbufferPtr(_pDisplay, _hPBuffer);
         _hPBuffer = 0;
         return true;
     }
@@ -726,9 +773,9 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
     
     // Do same basic work as _Invalidate, but don't reset all our flags
     if (_bIsTexture)
-        glDeleteTextures(1, (const GLuint*)&_iTextureID);
+        glDeleteTextures(1, &_iTextureID);
     if (_bIsDepthTexture)
-        glDeleteTextures(1, (const GLuint*)&_iDepthTextureID);
+        glDeleteTextures(1, &_iDepthTextureID);
 #ifdef _WIN32
     if ( _hPBuffer )
     {
@@ -749,7 +796,7 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
         if(glXGetCurrentContext() == _hGLContext)
             // XXX I don't know if this is right at all
             glXMakeCurrent(_pDisplay, _hPBuffer, 0);
-        glXDestroyGLXPbufferSGIX(_pDisplay, _hPBuffer);
+        glXDestroyPbufferPtr(_pDisplay, _hPBuffer);
         _hPBuffer = 0;
     }
 #endif
@@ -1255,9 +1302,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(AGL_SAMPLES_ARB);
             pfAttribs.push_back(strtol(kv.second.c_str(), 0, 10));
 #else
-	    pfAttribs.push_back(GL_SAMPLE_BUFFERS_ARB);
+	    pfAttribs.push_back(GLX_SAMPLE_BUFFERS_ARB);
 	    pfAttribs.push_back(1);
-	    pfAttribs.push_back(GL_SAMPLES_ARB);
+	    pfAttribs.push_back(GLX_SAMPLES_ARB);
             pfAttribs.push_back(strtol(kv.second.c_str(), 0, 10));
 #endif
             continue;
@@ -1273,7 +1320,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(AGL_DOUBLEBUFFER);
             pfAttribs.push_back(True);
 #else
-            pfAttribs.push_back(GL_DOUBLEBUFFER);
+            pfAttribs.push_back(GLX_DOUBLEBUFFER);
             pfAttribs.push_back(True);
 #endif
             continue;
@@ -1286,7 +1333,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #elif defined( __APPLE__ )
             pfAttribs.push_back(AGL_AUX_BUFFERS);
 #else
-            pfAttribs.push_back(GL_AUX_BUFFERS);
+            pfAttribs.push_back(GLX_AUX_BUFFERS);
 #endif
             if (kv.second == "")
                 pfAttribs.push_back(0);
@@ -1485,7 +1532,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
         }
 #elif defined( __APPLE__ )
 #else
-        if (GL_NV_float_buffer)
+        if (GLX_NV_float_buffer)
         {
             pfAttribs.push_back(GLX_FLOAT_COMPONENTS_NV);
             pfAttribs.push_back(1);
@@ -1773,29 +1820,72 @@ bool RenderTexture::_VerifyExtensions()
     }
 #elif defined( __APPLE__ )
 #else
-    if (!GLX_SGIX_pbuffer)
-    {
-        PrintExtensionError("GL_SGIX_pbuffer");
+
+    int minor, major;
+    _pDisplay = glXGetCurrentDisplay();
+    if (!glXQueryVersion(_pDisplay, &major, &minor))
         return false;
+
+    glXVersion1_3Present = major >= 1 && minor >= 3;
+    if (glXVersion1_3Present)
+    { 
+        glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
+        glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreatePbuffer");
+        glXGetVisualFromFBConfigPtr = (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfig");
+        glXCreateContextPtr = (glXCreateContextProc)SGLookupFunction("glXCreateContext");
+        glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyPbuffer");
+        glXQueryDrawablePtr = (glXQueryDrawableProc)SGLookupFunction("glXQueryDrawable");
+
+        if (!glXChooseFBConfigPtr ||
+            !glXCreateGLXPbufferPtr ||
+            !glXGetVisualFromFBConfigPtr ||
+            !glXCreateContextPtr ||
+            !glXDestroyPbufferPtr ||
+            !glXQueryDrawablePtr)
+            return false;
     }
-    if (!GLX_SGIX_fbconfig)
+    else
     {
-        PrintExtensionError("GL_SGIX_fbconfig");
-        return false;
+        glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfigSGIX");
+        glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreateGLXPbufferSGIX");
+        glXGetVisualFromFBConfigPtr =  (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfigSGIX");
+        glXCreateContextWithConfigPtr = (glXCreateContextWithConfigProc)SGLookupFunction("glXCreateContextWithConfigSGIX");
+        glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyGLXPbufferSGIX");
+        glXQueryGLXPbufferSGIXPtr = (glXQueryGLXPbufferSGIXProc)SGLookupFunction("glXQueryGLXPbufferSGIX");
+
+
+        if (!glXChooseFBConfigPtr ||
+            !glXCreateGLXPbufferPtr ||
+            !glXGetVisualFromFBConfigPtr ||
+            !glXCreateContextWithConfigPtr ||
+            !glXDestroyPbufferPtr ||
+            !glXQueryGLXPbufferSGIXPtr)
+            return false;
     }
+
+//     if (!GLX_SGIX_pbuffer)
+//     {
+//         PrintExtensionError("GL_SGIX_pbuffer");
+//         return false;
+//     }
+//     if (!GLX_SGIX_fbconfig)
+//     {
+//         PrintExtensionError("GLX_SGIX_fbconfig");
+//         return false;
+//     }
     if (_bIsDepthTexture && !GL_ARB_depth_texture)
     {
         PrintExtensionError("GL_ARB_depth_texture");
         return false;
     }
-    if (_bFloat && _bIsTexture && !GL_NV_float_buffer)
+    if (_bFloat && _bIsTexture && !GLX_NV_float_buffer)
     {
-        PrintExtensionError("GL_NV_float_buffer");
+        PrintExtensionError("GLX_NV_float_buffer");
         return false;
     }
     if (_eUpdateMode == RT_RENDER_TO_TEXTURE)
     {
-        PrintExtensionError("Some GLX render texture extension: FIXME!");
+        PrintExtensionError("Some GLX render texture extension: Please implement me!");
         return false;
     }
 #endif

@@ -359,8 +359,8 @@ protected: // data
     
     // Texture stuff
     GLenum       _iTextureTarget;
-    unsigned int _iTextureID;
-    unsigned int _iDepthTextureID;
+    GLuint       _iTextureID;
+    GLuint       _iDepthTextureID;
     
     unsigned short* _pPoorDepthTexture; // [Redge]
 

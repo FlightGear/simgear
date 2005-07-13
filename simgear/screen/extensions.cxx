@@ -110,6 +110,9 @@ void *SGGetGLProcAddress(const char *func) {
     if (libHandle == NULL)
         libHandle = dlopen("libGL.so", RTLD_LAZY);
 
+    if (libHandle == NULL)
+        libHandle = dlopen("libGL.so.1", RTLD_LAZY);
+
     if (libHandle != NULL) {
         fptr = dlsym(libHandle, func);
 

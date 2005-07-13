@@ -261,9 +261,10 @@ typedef void (APIENTRY * glClientActiveTextureProc)(GLenum texture);
 #define GL_SAMPLE_COVERAGE_VALUE_ARB				0x80AA
 #define GL_SAMPLE_COVERAGE_INVERT_ARB				0x80AB
 #define GL_MULTISAMPLE_BIT_ARB					0x20000000
+#define GL_DOUBLEBUFFER						0x0C32
+#define GL_AUX_BUFFERS						0x0C00
 #define WGL_SAMPLE_BUFFERS_ARB					0x2041
 #define WGL_SAMPLES_ARB						0x2042
-
 #endif
 
 #ifndef GL_SGIS_generate_mipmap
@@ -409,6 +410,39 @@ typedef BOOL (APIENTRY * wglReleaseTexImageARBProc) (HPBUFFERARB hPbuffer, int i
 typedef BOOL (APIENTRY * wglSetPbufferAttribARBProc) (HPBUFFERARB hPbuffer, const int *piAttribList);
 #endif
 
+#elif !defined(__APPLE__) /* !WIN32 */
+
+/* GLX pcific OpenGL extenstions */
+#include <GL/glx.h>
+
+#ifndef GLX_ARB_multisample
+#define GLX_ARB_multisample1
+#define GLX_SAMPLE_BUFFERS_ARB					100001
+#define GLX_SAMPLES_ARB						100000
+#endif
+
+#ifndef GLX_SGIX_pbuffer
+#define GLX_SGIX_pbuffer 1
+#define GLX_DOUBLEBUFFER					5
+#define GLX_AUX_BUFFERS						0x00000010
+#endif
+
+#ifndef GLXPbuffer
+#define GLXPbuffer GLXPbufferSGIX
+#endif
+#ifndef GLXFBConfig
+#define GLXFBConfig GLXFBConfigSGIX
+#endif
+
+typedef GLXFBConfig *(*glXChooseFBConfigProc) (Display *dpy, int screen, int *attribList, int *nitems);
+typedef GLXPbuffer (*glXCreateGLXPbufferProc) (Display *dpy, GLXFBConfig config, unsigned int width, unsigned int height, int *attrib_list);
+typedef GLXPbuffer (*glXCreatePbufferProc) (Display *dpy, GLXFBConfig config, int *attrib_list);
+typedef XVisualInfo *(*glXGetVisualFromFBConfigProc) (Display *dpy, GLXFBConfig config);
+typedef GLXContext (*glXCreateContextWithConfigProc) (Display *dpy,  GLXFBConfig config, int render_type, GLXContext share_list, Bool direct);
+typedef GLXContext (*glXCreateContextProc) (Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct);
+typedef void (*glXDestroyPbufferProc) (Display *dpy, GLXPbuffer pbuf);
+typedef int (*glXQueryGLXPbufferSGIXProc) (Display *, GLXPbufferSGIX, int, unsigned int *);
+typedef void (*glXQueryDrawableProc) (Display *, GLXDrawable, int, unsigned int *);
 #endif /* WIN32 */
 
 

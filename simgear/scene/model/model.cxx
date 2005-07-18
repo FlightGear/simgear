@@ -166,7 +166,7 @@ sgMakeAnimation( ssgBranch * model,
   } else if (!strcmp("dist-scale", type)) {
     animation = new SGDistScaleAnimation(node);
   } else if (!strcmp("noshadow", type)) {
-    animation = new SGShadowAnimation(node);
+    animation = new SGShadowAnimation(prop_root, node);
   } else {
     animation = new SGNullAnimation(node);
     SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);

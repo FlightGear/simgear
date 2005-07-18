@@ -41,7 +41,7 @@ class SGPropertyNode;
 class SGShadowVolume {
 
 public:
-	SGShadowVolume();
+	SGShadowVolume( ssgBranch *root );
 	~SGShadowVolume();
 
 	typedef enum {
@@ -58,7 +58,7 @@ public:
 	void setupShadows(double lon, double lat,
 		double gst, double SunRightAscension, double SunDeclination, double sunAngle );
 	void endOfFrame(void);
-
+	static int ACpostTravCB( ssgEntity *entity, int traversal_mask );
 
 private:
 
@@ -87,7 +87,7 @@ private:
 		sgVec4 * vertices;
 		GLushort *silhouetteEdgeIndices;
 		int lastSilhouetteIndicesCount;
-
+		bool isTranslucent;
 
 		ShadowCaster( int _num_tri, ssgBranch * _geometry_leaf );
 		~ShadowCaster();
@@ -97,7 +97,7 @@ private:
 		void DrawInfiniteShadowVolume(sgVec3 lightPosition, bool drawCaps);
 		void computeShadows(sgMat4 rotation, sgMat4 rotation_translation, OccluderType occluder_type);
 		void getNetTransform ( ssgBranch * branch, sgMat4 xform );
-		bool isSelected (  ssgBranch * branch );
+		bool isSelected (  ssgBranch * branch, float dist);
 
 		bool sameVertex(int edge1, int edge2);
 	};
@@ -123,10 +123,11 @@ private:
 private:
 	void update_light_view(void);
 	void computeShadows(void);
+	void cull ( ssgBranch *b, sgFrustum *f, sgMat4 m, int test_needed );
 
-	bool	init_done;
 	bool	shadows_enabled;
 	bool	shadowsAC_enabled, shadowsAI_enabled, shadowsTO_enabled, shadowsDebug_enabled;
+	bool	shadowsAC_transp_enabled;
 	bool	use_alpha;
 	bool	canDoAlpha, canDoStencil;
 	SGPropertyNode *sim_rendering;
@@ -135,14 +136,10 @@ private:
 	int frameNumber;
 	int lastTraverseTreeFrame;
 	sgMat4 CameraViewM;
-	sgMat4 invViewAngle;
 	double	sun_angle;
 	SceneryObject_map sceneryObjects;
-	/** this sphere contains the visible scene and is used to cull shadow casters */
-	sgSphere frustumSphere;
-	/** this sphere contains the near clip plane and is used to check the need of a zfail */
-	sgSphere nearClipSphere;
-
+	ssgBranch *ssg_root;
+	bool shadows_rendered;
 };
 
 #endif // _SHADOWVOLUME_HXX

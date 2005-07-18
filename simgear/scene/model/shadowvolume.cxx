@@ -27,6 +27,7 @@
 #include <simgear/screen/extensions.hxx>
 #include <simgear/scene/model/animation.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/environment/visual_enviro.hxx>
 #include SG_GLU_H
 
 #include "shadowvolume.hxx"
@@ -116,10 +117,15 @@ SGShadowVolume::ShadowCaster::ShadowCaster( int _num_tri, ssgBranch * _geometry_
 
 	ssgBranch *branch = (ssgBranch *) _geometry_leaf;
 	while( branch && branch->getNumParents() > 0 ) {
-		if( !first_select && branch->isA(ssgTypeSelector())) {
+		if( branch->isAKindOf(ssgTypeSelector())) {
 			first_select = branch;
 			break;
 		}
+		if( sgCheckAnimationBranch( (ssgEntity *) branch ) )
+			if( ((SGAnimation *) branch->getUserData())->get_animation_type() == 1) {
+				first_select = branch;
+				break;
+			}
 		branch = branch->getParent(0);
 	}
 }
@@ -150,6 +156,7 @@ void SGShadowVolume::ShadowCaster::addLeaf( int & tri_idx, int & ind_idx, ssgLea
 	}
 	if( num_tri == 0 )
 		return;
+	isTranslucent |= geometry_leaf->isTranslucent() ? true : false;
 	int num_ind = geometry_leaf->getNumVertices();
 	ind_idx += num_ind;
 }
@@ -302,7 +309,7 @@ void SGShadowVolume::ShadowCaster::DrawInfiniteShadowVolume(sgVec3 lightPosition
 	glDrawElements ( GL_TRIANGLES, lastSilhouetteIndicesCount, GL_UNSIGNED_SHORT, silhouetteEdgeIndices ) ;
 
 	//Draw caps if required
-	if(drawCaps)
+ 	if(drawCaps)
 	{
 		glBegin(GL_TRIANGLES);
 		{
@@ -344,8 +351,19 @@ void SGShadowVolume::ShadowCaster::getNetTransform ( ssgBranch * branch, sgMat4 
 
 // check the value of <select> and <range> animation
 // wich have been computed during the rendering
-bool SGShadowVolume::ShadowCaster::isSelected (  ssgBranch * branch ) {
+bool SGShadowVolume::ShadowCaster::isSelected (  ssgBranch * branch, float dist ) {
 	while( branch && branch != lib_object) {
+		if( sgCheckAnimationBranch( (ssgEntity *) branch ) ) {
+			if( ((SGAnimation *) branch->getUserData())->get_animation_type() == 1)
+				if( ((SGShadowAnimation *) branch->getUserData())->get_condition_value() )
+					return false;
+		}
+		// recompute range check since the value in the branch is shared by multiple objects
+		// we can only have the last value
+		if( branch->isA(ssgTypeRangeSelector()) )
+			if( dist >= ((ssgRangeSelector *) branch)->getRange(1) ||
+				dist < ((ssgRangeSelector *) branch)->getRange(0))
+				return false;
 		if( branch->isA(ssgTypeSelector()) )
 			if( !((ssgSelector *) branch)->isSelected(0) )
 				return false;
@@ -366,8 +384,12 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
   
 	// check the select and range ssgSelector node
 	// object can't cast shadow if it is not visible
+	sgVec4 trans;
+	sgCopyVec4( trans, rotation_translation[3] );
+	sgAddVec4( trans, states->CameraViewM[3] );
+	float dist = sgLengthVec3( trans );
 
-  	if( first_select && ! isSelected( first_select) )
+  	if( first_select && ! isSelected( first_select, dist) )
 		return;
 
 		// get the transformations : this comes from animation code for example
@@ -481,7 +503,7 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 			}
 			glCullFace(GL_BACK);
 
-			DrawInfiniteShadowVolume( lightPos, false);
+			DrawInfiniteShadowVolume( lightPos, states->shadowsAC_transp_enabled & isTranslucent);
 
 			//Decrement stencil buffer for back face depth pass
 			if( states->use_alpha ) {
@@ -493,43 +515,16 @@ void SGShadowVolume::ShadowCaster::computeShadows(sgMat4 rotation, sgMat4 rotati
 			}
 			glCullFace(GL_FRONT);
 
-			DrawInfiniteShadowVolume( lightPos, false);
+			DrawInfiniteShadowVolume( lightPos, states->shadowsAC_transp_enabled & isTranslucent);
 		}
 }
 
 
 void SGShadowVolume::SceneryObject::computeShadows(void) {
 
- 	bool intersect = true;
 	// compute intersection with view frustum
 	// use pending_object (pointer on obj transform) & tile transform
 	// to get position
-	sgMat4 position, CamXpos;
-	sgFrustum *f = ssgGetFrustum();
-	pending_object->getParent(0)->getNetTransform( position );
-	sgCopyMat4 ( CamXpos, states->CameraViewM ) ;
-	sgPreMultMat4 ( CamXpos, position ) ;
-
-   	sgSphere tmp = *(pending_object->getBSphere()) ;
-	if ( tmp.isEmpty () )
-		intersect = false;
-	else {
-		// 7000
-		float max_dist = 5000.0f;
-		tmp . orthoXform ( CamXpos ) ;
-		// cull if too far
-		if ( -tmp.center[2] - tmp.radius > max_dist )
-			intersect = false;
-		else if( tmp.center[2] == 0.0 )
-			intersect = true;
-		// cull if too small on screen
-		else if ( tmp.radius / sgAbs(tmp.center[2]) < 1.0 / 40.0 )
-			intersect = false;
-		else
-			intersect = SSG_OUTSIDE != (ssgCullResult) f -> contains ( &tmp );
-	}
-
- 	if( intersect ) {
 		if( !scenery_object ) {
 			if( states->frameNumber - states->lastTraverseTreeFrame > 5 ) {
 				find_trans();
@@ -552,6 +547,74 @@ void SGShadowVolume::SceneryObject::computeShadows(void) {
 		for(iShadowCaster = parts.begin() ; iShadowCaster != parts.end() ; iShadowCaster ++ ) {
 			(*iShadowCaster)->computeShadows(rotation, rotation_translation, occluder_type);
 		}
+}
+
+static ssgCullResult cull_test ( ssgEntity *e, sgFrustum *f, sgMat4 m, int test_needed )
+{
+  if ( ! test_needed )
+    return SSG_INSIDE ;
+
+  sgSphere tmp = *(e->getBSphere()) ;
+
+  if ( tmp.isEmpty () )
+    return SSG_OUTSIDE ;
+
+  tmp . orthoXform ( m ) ;
+  if( tmp.center[2] == 0.0 )
+	  return SSG_STRADDLE;
+  // cull if too small on screen
+  if ( tmp.radius / sgAbs(tmp.center[2]) < 1.0 / 40.0 )
+    return SSG_OUTSIDE ;
+
+  return (ssgCullResult) f -> contains ( &tmp ) ;
+}
+
+
+void SGShadowVolume::cull ( ssgBranch *b, sgFrustum *f, sgMat4 m, int test_needed )
+{
+	int cull_result = cull_test ( (ssgEntity *) b, f, m, test_needed ) ;
+
+	if ( cull_result == SSG_OUTSIDE )
+		return ;
+	if( b->isA( ssgTypeTransform() ) ) {
+
+		SceneryObject_map::iterator iSceneryObject = sceneryObjects.find( b );
+		if( iSceneryObject != sceneryObjects.end() ) {
+			SceneryObject *an_occluder = iSceneryObject->second;
+			if( shadowsTO_enabled && (an_occluder->occluder_type == occluderTypeTileObject) ||
+				shadowsAI_enabled && (an_occluder->occluder_type == occluderTypeAI ) ||
+				shadowsAC_enabled && (an_occluder->occluder_type == occluderTypeAircraft ) )
+					an_occluder->computeShadows();
+
+			return;
+		}
+		sgMat4 tmp, transform ;
+		sgCopyMat4 ( tmp, m ) ;
+		((ssgTransform *)b)->getTransform( transform );
+		sgPreMultMat4 ( tmp,  transform ) ;
+		glPushMatrix () ;
+		glLoadMatrixf ( (float *) tmp ) ;
+		for ( ssgEntity *e = b->getKid ( 0 ) ; e != NULL ; e = b->getNextKid() )
+			cull ( (ssgBranch *) e, f, tmp, cull_result != SSG_INSIDE ) ;
+		glPopMatrix () ;
+	} else if( b->isAKindOf( ssgTypeSelector() ) ) {
+		int s = ((ssgSelector *) b)->getSelect() ;
+		if( b->isA( ssgTypeRangeSelector() ) ) {
+			float range = sgLengthVec3 ( m [ 3 ] ) ;
+			s = (range < ((ssgRangeSelector *) b)->getRange(1) &&
+				range >= ((ssgRangeSelector *) b)->getRange(0) ) ? 1 : 0;
+		}
+		for ( ssgEntity *e = b->getKid ( 0 ) ; e != NULL ; e = b->getNextKid(), s >>= 1 )
+			if ( s & 1 )
+				cull ( (ssgBranch *) e, f, m, cull_result != SSG_INSIDE ) ;
+	} else if( b->isAKindOf( ssgTypeBranch() ) ) {
+		char *name = b->getName();
+		// quick exit for the hundreds of ground leafs
+		if( name && !strcmp(name, "LocalTerrain") )
+			return;
+		for ( ssgEntity *e = b->getKid ( 0 ) ; e != NULL ; e = b->getNextKid() )
+			if( ! e->isAKindOf( ssgTypeLeaf() ) )
+				cull ( (ssgBranch *) e, f, m, cull_result != SSG_INSIDE ) ;
 	}
 }
 
@@ -567,7 +630,11 @@ void SGShadowVolume::SceneryObject::computeShadows(void) {
 	overhead for matrix computation) and at the end this will reduce the number of
 	silouhette edge by a lot too.
 */
-static bool filterName(const char *leaf_name) {
+static bool filterLeaf(ssgLeaf *this_kid) {
+	const char *leaf_name = this_kid->getName();
+/*	ssgSimpleState *sst = (ssgSimpleState *) this_kid->getState();
+	if( sst && sst->isTranslucent() )
+		return false;*/
 	if( ! leaf_name )
 		return true;
 	char lname[20];
@@ -586,13 +653,14 @@ void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 
 	if( sgCheckAnimationBranch( (ssgEntity *) branch ) ) {
 		if( ((SGAnimation *) branch->getUserData())->get_animation_type() == 1)
-			return;
+			if( ((SGShadowAnimation *) branch->getUserData())->get_condition_value() )
+				return;
 	}
 
 	for(int i = 0 ; i < branch->getNumKids() ; i++) {
 		ssgEntity *this_kid = branch->getKid( i );
 		if( this_kid->isAKindOf(ssgTypeLeaf()) ) {
-			if( filterName( this_kid->getName()) ) {
+			if( filterLeaf( (ssgLeaf *) this_kid ) ) {
 				num_tri += ((ssgLeaf *) this_kid)->getNumTriangles();
 				num_leaf ++;
 			}
@@ -605,13 +673,17 @@ void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 		ShadowCaster *new_part = new ShadowCaster( num_tri, branch);
 		new_part->scenery_object = scenery_object;
 		new_part->lib_object = lib_object;
+		new_part->isTranslucent = false;
 		for(int i = 0 ; i < branch->getNumKids() ; i++) {
 			ssgEntity *this_kid = branch->getKid( i );
 			if( this_kid->isAKindOf(ssgTypeLeaf()) ) {
-				if( filterName( this_kid->getName()) )
+				if( filterLeaf( (ssgLeaf *) this_kid ) )
 					new_part->addLeaf( tri_idx, ind_idx, (ssgLeaf *) this_kid );
 			}
 		}
+		// only do that for aircraft
+		if( occluder_type != SGShadowVolume::occluderTypeAircraft )
+			new_part->isTranslucent = false;
 		new_part->SetConnectivity();
 		parts.push_back( new_part );
 	}
@@ -619,10 +691,8 @@ void SGShadowVolume::SceneryObject::traverseTree(ssgBranch *branch) {
 
 void SGShadowVolume::SceneryObject::find_trans(void) {
 	ssgBranch *branch = pending_object;
-	ssgBranch *prev_branch = pending_object;
 	// check the existence of the root node
 	while( branch && branch->getNumParents() > 0 ) {
-		prev_branch = branch;
 		branch = branch->getParent(0);
 	}
 	// check if we are connected to the scene graph
@@ -688,8 +758,8 @@ void SGShadowVolume::computeShadows(void) {
 	glDisable( GL_FOG );
   	glEnable( GL_CULL_FACE  );
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//    glPolygonOffset(0.0,5.0);
-    glPolygonOffset(0.0,30.0);
+    glPolygonOffset(0.0,2.0);
+//    glPolygonOffset(0.0,30.0);
     glEnable(GL_POLYGON_OFFSET_FILL);
 
  	glShadeModel(GL_FLAT);
@@ -698,14 +768,15 @@ void SGShadowVolume::computeShadows(void) {
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LESS);
 
-	SceneryObject_map::iterator iSceneryObject;
-	// compute shadows for each objects
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
-		SceneryObject *an_occluder = iSceneryObject->second;
-		if( shadowsTO_enabled && (an_occluder->occluder_type == occluderTypeTileObject) ||
-			shadowsAI_enabled && (an_occluder->occluder_type == occluderTypeAI ) ||
-			shadowsAC_enabled && (an_occluder->occluder_type == occluderTypeAircraft ) )
-				an_occluder->computeShadows();
+	{
+		float w, h;
+		sgFrustum frustum;
+		sgEnviro.getFOV( w, h );
+		frustum.setFOV( w, h );
+		frustum.setNearFar(0.1f, 5000.0f);
+		sgMat4 m;
+		ssgGetModelviewMatrix( m );
+		cull( ssg_root, &frustum, m, true);
 	}
 
 
@@ -779,11 +850,12 @@ void SGShadowVolume::computeShadows(void) {
 	glPopAttrib();
 }
 
-SGShadowVolume::SGShadowVolume() : 
-	init_done( false ),
+SGShadowVolume::SGShadowVolume( ssgBranch *root ) : 
 	shadows_enabled( false ),
 	frameNumber( 0 ),
-	lastTraverseTreeFrame ( 0 )
+	lastTraverseTreeFrame ( 0 ),
+	ssg_root( root ),
+	shadows_rendered( false )
 {
 	states = this;
 }
@@ -797,7 +869,6 @@ SGShadowVolume::~SGShadowVolume() {
 }
 
 void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
-	init_done = true;
 	shadows_enabled = true;
 	sim_rendering = sim_rendering_options;
 	int stencilBits = 0, alphaBits = 0;
@@ -819,15 +890,13 @@ void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
 void SGShadowVolume::startOfFrame(void) {
 }
 void SGShadowVolume::deleteOccluderFromTile(ssgBranch *tile) {
-	SceneryObject_map::iterator iSceneryObject, iPrevious;
-	iPrevious = sceneryObjects.begin();
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
-		if( iSceneryObject->second->tile == tile ) {
-			delete iSceneryObject->second;
-			sceneryObjects.erase( iSceneryObject );
-			iSceneryObject = iPrevious;
+	SceneryObject_map::iterator iSceneryObject;
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); ) {
+		SceneryObject_map::iterator iCurrent = iSceneryObject ++;
+		if( iCurrent->second->tile == tile ) {
+			delete iCurrent->second;
+			sceneryObjects.erase( iCurrent );
 		}
-		iPrevious = iSceneryObject;
 	}
 }
 
@@ -868,10 +937,10 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 		double gst, double SunRightAscension, double SunDeclination, double sunAngle) {
 
 	shadowsAC_enabled = sim_rendering->getBoolValue("shadows-ac", false);
+	shadowsAC_transp_enabled = sim_rendering->getBoolValue("shadows-ac-transp", false);
 	shadowsAI_enabled = sim_rendering->getBoolValue("shadows-ai", false);
 	shadowsTO_enabled = sim_rendering->getBoolValue("shadows-to", false);
 	shadowsDebug_enabled = sim_rendering->getBoolValue("shadows-debug", false);
-//	shadows_enabled   = sim_rendering->getBoolValue("shadows", false);
 	shadows_enabled = shadowsAC_enabled || shadowsAI_enabled || shadowsTO_enabled;
 	shadows_enabled &= canDoAlpha || canDoStencil;
 	use_alpha = ((!canDoStencil) || sim_rendering->getBoolValue("shadows-alpha", false)) &&
@@ -880,29 +949,8 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 	if( ! shadows_enabled )
 		return;
 
-	sgMat4 view_angle;
+	shadows_rendered = false;
 	sun_angle = sunAngle;
-	{
-		sgMat4 LON, LAT;
-		sgVec3 axis;
-
-		sgSetVec3( axis, 0.0, 0.0, 1.0 );
-		sgMakeRotMat4( LON, lon, axis );
-
-		sgSetVec3( axis, 0.0, 1.0, 0.0 );
-		sgMakeRotMat4( LAT, 90.0 - lat, axis );
-
-		sgMat4 TRANSFORM;
-
-		sgMakeIdentMat4 ( TRANSFORM );
-		sgPreMultMat4( TRANSFORM, LON );
-		sgPreMultMat4( TRANSFORM, LAT );
-
-		sgCoord pos;
-		sgSetCoord( &pos, TRANSFORM );
-
- 		sgMakeCoordMat4( view_angle, &pos );
-	}
 	{
 	sgMat4 GST, RA, DEC;
 	sgVec3 axis;
@@ -916,8 +964,6 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 
 	sgSetVec3( axis, 1.0, 0.0, 0.0 );
 	sgMakeRotMat4( DEC, SunDeclination * SGD_RADIANS_TO_DEGREES, axis );
-
-	sgInvertMat4( invViewAngle, view_angle); 
 
 	sgMat4 TRANSFORM;
 	sgMakeIdentMat4( TRANSFORM );
@@ -935,13 +981,20 @@ void SGShadowVolume::setupShadows( double lon, double lat,
 void SGShadowVolume::endOfFrame(void) {
 	if( ! shadows_enabled )
 		return;
+	if( shadows_rendered )
+		return;
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindTexture(GL_TEXTURE_1D, 0);
 
 	glMatrixMode(GL_MODELVIEW);
-
 	computeShadows();
-
 	frameNumber ++;
+	shadows_rendered = true;
+}
+
+int SGShadowVolume::ACpostTravCB( ssgEntity *entity, int traversal_mask ) {
+	if( states->shadowsAC_transp_enabled && (SSGTRAV_CULL & traversal_mask) )
+		states->endOfFrame();
+	return 0;
 }
 

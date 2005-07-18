@@ -589,8 +589,14 @@ private:
 class SGShadowAnimation : public SGAnimation
 {
 public:
-  SGShadowAnimation (SGPropertyNode_ptr props);
+  SGShadowAnimation ( SGPropertyNode *prop_root,
+                   SGPropertyNode_ptr props );
   virtual ~SGShadowAnimation ();
+  virtual int update();
+  bool get_condition_value(void);
+private:
+  SGCondition * _condition;
+  bool _condition_value;
 };
 
 

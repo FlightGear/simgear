@@ -1506,15 +1506,35 @@ void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
 // Implementation of SGShadowAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SGShadowAnimation::SGShadowAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgBranch)
+SGShadowAnimation::SGShadowAnimation ( SGPropertyNode *prop_root,
+                   SGPropertyNode_ptr props )
+  : SGAnimation(props, new ssgBranch),
+    _condition(0),
+	_condition_value(true)
 {
 	animation_type = 1;
+	SGPropertyNode_ptr node = props->getChild("condition");
+	if (node != 0) {
+		_condition = sgReadCondition(prop_root, node);
+		_condition_value = false;
+	}
 }
 
 SGShadowAnimation::~SGShadowAnimation ()
 {
+	delete _condition;
 }
 
+int
+SGShadowAnimation::update()
+{
+	if (_condition)
+		_condition_value = _condition->test();
+	return 2;
+}
+
+bool SGShadowAnimation::get_condition_value(void) {
+	return _condition_value;
+}
 
 // end of animation.cxx

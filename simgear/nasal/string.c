@@ -175,6 +175,13 @@ static int tonum(unsigned char* s, int len, double* result)
     if(len == 1 && s[0] == '.')
         return 0;
 
+    // Strip off the leading negative sign first, so we can correctly
+    // parse things like -.xxx which would otherwise confuse
+    // readsigned.
+    if(len > 1 && s[0] == '-' && s[1] != '-') {
+        sgn = -1; s++; len--;
+    }
+
     // Read the integer part
     i = readsigned(s, len, i, &val);
     if(val < 0) { sgn = -1; val = -val; }

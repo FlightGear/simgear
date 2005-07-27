@@ -59,7 +59,7 @@ inline int (isnan)(double r) { return isnan(r); }
 static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;
 static bool bump_mapping = false;
-static int nb_texture_unit = 0;
+static GLint nb_texture_unit = 0;
 static ssgTexture *normal_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
 static ssgTexture *color_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
 static GLuint normalization_cube_map;

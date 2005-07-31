@@ -429,10 +429,14 @@ typedef BOOL (APIENTRY * wglSetPbufferAttribARBProc) (HPBUFFERARB hPbuffer, cons
 #endif
 
 #ifndef GLXPbuffer
-#define GLXPbuffer GLXPbufferSGIX
+# ifdef GLXPbufferSGIX
+#  define GLXPbuffer GLXPbufferSGIX
+# endif
 #endif
 #ifndef GLXFBConfig
-#define GLXFBConfig GLXFBConfigSGIX
+# ifdef GLXFBConfigSGIX
+#  define GLXFBConfig GLXFBConfigSGIX
+# endif
 #endif
 
 typedef GLXFBConfig *(*glXChooseFBConfigProc) (Display *dpy, int screen, int *attribList, int *nitems);

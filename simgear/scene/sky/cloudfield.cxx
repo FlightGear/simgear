@@ -249,17 +249,26 @@ static int densTable[][10] = {
 void SGCloudField::applyDensity(void) {
 	int row = (int) (density / 10.0);
 	int col = 0;
+    sgBox fieldBox;
+
 	list_of_Cloud::iterator iCloud;
 	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
 		if(++col > 9)
 			col = 0;
 		if( densTable[row][col] ) {
 			iCloud->visible = true;
+            fieldBox.extend( *iCloud->aCloud->getCenter() );
 		} else
 			iCloud->visible = false;
 	}
 	last_density = density;
 	draw_in_3d = ( theField.size() != 0);
+    sgVec3 center;
+    sgSubVec3( center, fieldBox.getMax(), fieldBox.getMin() );
+    sgScaleVec3( center, 0.5f );
+    center[1] = 0.0f;
+    field_sphere.setCenter( center );
+    field_sphere.setRadius( fieldSize * 0.5f * 1.414f );
 }
 
 // add one cloud, data is not copied, ownership given
@@ -298,7 +307,15 @@ void SGCloudField::buildTestLayer(void) {
 void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 	list_of_Cloud::iterator iCloud;
 
-	// TODO:cull the field before culling the clouds in the field (should eliminate 3 fields)
+    sgSphere tile_sphere;
+    tile_sphere.setRadius( field_sphere.getRadius() );
+    sgVec3 tile_center;
+    sgSubVec3( tile_center, field_sphere.getCenter(), eyePos );
+    tile_sphere.setCenter( tile_center );
+    tile_sphere.orthoXform(mat);
+    if( frustum.contains( & tile_sphere ) == SG_OUTSIDE )
+        return;
+
 	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
 		sgVec3 dist;
 		sgSphere sphere;

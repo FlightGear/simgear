@@ -76,7 +76,7 @@ private:
 	sgMat4 transform;
 	double deltax, deltay, alt;
     double last_lon, last_lat, last_course;
-
+    sgSphere field_sphere;
 	float	last_density;
 	bool	draw_in_3d;
 

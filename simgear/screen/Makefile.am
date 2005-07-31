@@ -21,6 +21,7 @@ include_HEADERS = \
 	screen-dump.hxx \
 	extensions.hxx \
 	RenderTexture.h \
+	shader.h \
 	tr.h
 
 libsgscreen_a_SOURCES = \
@@ -31,6 +32,7 @@ libsgscreen_a_SOURCES = \
 	tr.cxx \
 	extensions.cxx \
 	RenderTexture.cpp \
+	shader.cpp \
 	win32-printer.h
 
 INCLUDES = -I$(top_srcdir) -DGLX_GLXEXT_PROTOTYPES

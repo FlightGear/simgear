@@ -69,7 +69,7 @@
 
 
 void SGTimeStamp::stamp() {
-#if defined( WIN32 )
+#if defined( WIN32 ) && !defined(__CYGWIN__)
     unsigned int t;
     t = timeGetTime();
     seconds = 0;

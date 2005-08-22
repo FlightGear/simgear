@@ -48,6 +48,7 @@ bool SGNewCloud::useAnisotropic = true;
 SGBbCache *SGNewCloud::cldCache = 0;
 static bool texturesLoaded = false;
 static float minx, maxx, miny, maxy, minz, maxz;
+static int cloudIdCounter = 1;
 
 float SGNewCloud::nearRadius = 3500.0f;
 bool SGNewCloud::lowQuality = false;
@@ -64,7 +65,7 @@ void SGNewCloud::init(void) {
 	pauseLength = 0.0f;
 	last_step = -1.0f;
 	familly = CLFamilly_nn;
-	cloudId = (int) this;
+	cloudId = ++cloudIdCounter;
 	sgSetVec3(center, 0.0f, 0.0f, 0.0f);
 	sgSetVec3(cloudpos, 0.0f, 0.0f, 0.0f);
 	radius = 0.0f;

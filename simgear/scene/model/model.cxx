@@ -226,6 +226,7 @@ static void makeDList( ssgBranch *b, const set<ssgBranch *> &ignore )
   for (int i = 0; i<nb; i++) {
     ssgEntity *e = b->getKid(i);
     if (e->isAKindOf(ssgTypeLeaf())) {
+     if( ((ssgLeaf*)e)->getNumVertices() > 0)
       ((ssgLeaf*)e)->makeDList();
     } else if (e->isAKindOf(ssgTypeBranch()) && ignore.find((ssgBranch *)e) == ignore.end()) {
       makeDList( (ssgBranch*)e, ignore );
@@ -321,6 +322,17 @@ sgLoad3DModel( const string &fg_root, const string &path,
     model->addKid(align);
   }
 
+  if ( load_panel ) {
+                                // Load panels
+    vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
+    for (i = 0; i < panel_nodes.size(); i++) {
+        SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
+        ssgEntity * panel = load_panel(panel_nodes[i]);
+        if (panel_nodes[i]->hasValue("name"))
+            panel->setName((char *)panel_nodes[i]->getStringValue("name"));
+        model->addKid(panel);
+    }
+  }
                                 // Load animations
   set<ssgBranch *> ignore_branches;
   vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
@@ -338,17 +350,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 #endif
 
-  if ( load_panel ) {
-                                // Load panels
-    vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
-    for (i = 0; i < panel_nodes.size(); i++) {
-        SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
-        ssgEntity * panel = load_panel(panel_nodes[i]);
-        if (panel_nodes[i]->hasValue("name"))
-            panel->setName((char *)panel_nodes[i]->getStringValue("name"));
-        model->addKid(panel);
-    }
-  }
 
   return alignmainmodel;
 }

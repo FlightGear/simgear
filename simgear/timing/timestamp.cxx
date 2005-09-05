@@ -105,7 +105,7 @@ void SGTimeStamp::stamp() {
 
 // increment the time stamp by the number of microseconds (usec)
 SGTimeStamp operator + (const SGTimeStamp& t, const long& m) {
-#if defined( WIN32 )
+#if defined( WIN32 ) && !defined(__CYGWIN__)
     return SGTimeStamp( 0, t.usec + m );
 #else
     return SGTimeStamp( t.seconds + ( t.usec + m ) / 1000000,
@@ -116,7 +116,7 @@ SGTimeStamp operator + (const SGTimeStamp& t, const long& m) {
 // difference between time stamps in microseconds (usec)
 long operator - (const SGTimeStamp& a, const SGTimeStamp& b)
 {
-#if defined( WIN32 )
+#if defined( WIN32 ) && !defined(__CYGWIN__)
     return a.usec - b.usec;
 #else
     return 1000000 * (a.seconds - b.seconds) + (a.usec - b.usec);

@@ -871,7 +871,7 @@ SGShadowVolume::~SGShadowVolume() {
 void SGShadowVolume::init(SGPropertyNode *sim_rendering_options) {
 	shadows_enabled = true;
 	sim_rendering = sim_rendering_options;
-	int stencilBits = 0, alphaBits = 0;
+	GLint stencilBits = 0, alphaBits = 0;
 	glGetIntegerv( GL_STENCIL_BITS, &stencilBits );
 	glGetIntegerv( GL_ALPHA_BITS, &alphaBits );
 	bool hasSubtractiveBlend = SGIsOpenGLExtensionSupported("GL_EXT_blend_subtract");

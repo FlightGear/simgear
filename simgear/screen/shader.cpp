@@ -218,7 +218,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 			glGenProgramsPtr(1,&vertex_id);
 			glBindProgramPtr(GL_VERTEX_PROGRAM_ARB,vertex_id);
 			glProgramStringPtr(GL_VERTEX_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)strlen(vertex_src),vertex_src);
-			int pos = -1;
+			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB,&pos);
 			if(pos != -1) {
 				SG_LOG(SG_GL, SG_ALERT, "Shader::Shader(): vertex program error in " << name << " file\n" << get_error(vertex_src,pos));
@@ -291,7 +291,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 			glGenProgramsPtr(1,&fragment_id);
 			glBindProgramPtr(GL_FRAGMENT_PROGRAM_ARB,fragment_id);
 			glProgramStringPtr(GL_FRAGMENT_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)strlen(fragment_src),fragment_src);
-			int pos = -1;
+			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB,&pos);
 			if(pos != -1) {
 				SG_LOG(SG_GL, SG_ALERT, "Shader::Shader(): fragment program error in " << name << " file\n" << get_error(fragment_src,pos));
@@ -305,7 +305,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 			glGenProgramsNVPtr(1,&fragment_id);
 			glBindProgramNVPtr(GL_FRAGMENT_PROGRAM_NV,fragment_id);
 			glLoadProgramNVPtr(GL_FRAGMENT_PROGRAM_NV,fragment_id,(GLsizei)strlen(fragment_src),(GLubyte*)fragment_src);
-			int pos = -1;
+			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_NV,&pos);
 			if(pos != -1) {
 				SG_LOG(SG_GL, SG_ALERT, "Shader::Shader(): fragment program error in " << name << " file\n" << get_error(fragment_src,pos));
@@ -384,7 +384,7 @@ const char *Shader::get_error(char *data,int pos) {
  */
 
 const char *Shader::get_glsl_error() {
-	int length;
+	GLint length;
 	static char error[4096];
 	glGetInfoLogPtr(program,sizeof(error),&length,error);
 	return error;

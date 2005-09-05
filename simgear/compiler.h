@@ -376,6 +376,8 @@
 #  define SG_GLU_H <OpenGL/glu.h>
 #  define SG_GLEXT_H <OpenGL/glext.h>
 #  define SG_GLUT_H <GLUT/glut.h>
+
+inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #else
 #  define SG_GL_H <GL/gl.h>
 #  define SG_GLX_H <GL/glx.h>
@@ -464,5 +466,14 @@ inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
   { return const_mem_fun_ref_t<_Ret,_Tp>(__f); }
 
 #endif // SG_INCOMPLETE_FUNCTIONAL
+
+
+// stdint.h defines
+#if defined( _MSC_VER ) || defined(__MINGW32__) || defined(sun)
+typedef signed short     int16_t;
+typedef signed int       int32_t;
+typedef unsigned short   uint16_t;
+typedef unsigned int     uint32_t;
+#endif
 
 #endif // _SG_COMPILER_H

@@ -21,13 +21,6 @@
 // #include <stdio.h>
 #include <math.h>
 
-#if defined (__APPLE__)
-// any C++ header file undefines isinf and isnan
-// so this should be included before <iostream>
-inline int (isinf)(double r) { return isinf(r); }
-inline int (isnan)(double r) { return isnan(r); } 
-#endif
-
 #include <plib/sg.h>
 #include <plib/ssg.h>
 

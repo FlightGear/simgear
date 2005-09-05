@@ -109,7 +109,7 @@ SGBbCache::~SGBbCache(void) {
 
 
 void SGBbCache::init(int cacheCount) {
-	int colorBits = 0;
+	GLint colorBits = 0;
 	glGetIntegerv( GL_BLUE_BITS, &colorBits );
 
 	rt = new RenderTexture();

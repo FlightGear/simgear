@@ -46,12 +46,9 @@ public:
   SGModelPlacement ();
   virtual ~SGModelPlacement ();
 
-    virtual void SGModelPlacement::init( ssgBranch * model );
-  /* virtual void init( const string &fg_root,
-                     const string &path,
-                     SGPropertyNode *prop_root,
-                     double sim_time_sec, int dummy ); */
-  virtual void update( const Point3D scenery_center );
+  virtual void SGModelPlacement::init( ssgBranch * model );
+
+  virtual void update();
 
   virtual ssgEntity * getSceneGraph () { return (ssgEntity *)_selector; }
 
@@ -79,10 +76,6 @@ public:
   virtual void setOrientation (double roll_deg, double pitch_deg,
                                double heading_deg);
   
-  // Addition by Diarmuid Tyson for Multiplayer Support
-  // Allows multiplayer to get players position transform
-  virtual const sgVec4 *get_POS() { return POS; }
-
   ssgPlacementTransform * getTransform(void)
   { return _position; }
 
@@ -99,18 +92,10 @@ private:
   double _heading_deg;
 
   ssgSelector * _selector;
-//   ssgTransform * _position;
   ssgPlacementTransform * _position;
 
                                 // Location
   SGLocation * _location;
-
-
-  // Addition by Diarmuid Tyson for Multiplayer Support
-  // Moved from update method
-  // POS for transformation Matrix
-  sgMat4 POS;
-
 };
 
 #endif // _SG_PLACEMENT_HXX

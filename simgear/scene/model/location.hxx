@@ -41,22 +41,11 @@ class SGLocation
 {
 
 public:
-
     // Constructor
     SGLocation( void );
 
     // Destructor
     virtual ~SGLocation( void );
-
-    //////////////////////////////////////////////////////////////////////
-    // Part 1: standard FGSubsystem implementation.
-    //////////////////////////////////////////////////////////////////////
-
-    virtual void init ();
-    virtual void bind ();
-    virtual void unbind ();
-    void update (int dt);
-
 
     //////////////////////////////////////////////////////////////////////
     // Part 2: user settings.
@@ -88,48 +77,41 @@ public:
     //////////////////////////////////////////////////////////////////////
 
     // Vectors and positions...
-
-    // Get zero view_pos
-    virtual float * get_view_pos() { return _relative_view_pos; }
-    // Get the absolute view position in fgfs coordinates.
-    virtual double * get_absolute_view_pos( const Point3D scenery_center );
-    // Get zero elev
-    virtual float * get_zero_elev() { return _zero_elev_view_pos; }
+    
+    //! Get the absolute view position in fgfs coordinates.
+    virtual double * get_absolute_view_pos( );
+    
+    //! Return the position relative to the given scenery center.
+    virtual float * get_view_pos( const Point3D& scenery_center );
+    
     // Get world up vector
-    virtual float *get_world_up() { return _world_up; }
-    // Get the relative (to scenery center) view position in fgfs coordinates.
-    virtual float * getRelativeViewPos( const Point3D scenery_center );
-    // Get the absolute zero-elevation view position in fgfs coordinates.
-    virtual float * getZeroElevViewPos( const Point3D scenery_center );
+    virtual float *get_world_up()
+    { recalcAbsolutePosition(); return _world_up; }
+    
     // Get surface east vector
-    virtual float *get_surface_east() {	return _surface_east; }
+    virtual float *get_surface_east()
+    { recalcAbsolutePosition(); return _surface_east; }
+    
     // Get surface south vector
-    virtual float *get_surface_south() { return _surface_south; }
+    virtual float *get_surface_south()
+    { recalcAbsolutePosition(); return _surface_south; }
+    
     // Elevation of ground under location (based on scenery output)...
-    void set_cur_elev_m ( double elev ) { _cur_elev_m = elev; }
-    inline double get_cur_elev_m () { return _cur_elev_m; }
-    // Interface to current buckets for use with tilemgr...
-    void set_tile_center ( Point3D tile_center ) { set_dirty(); _tile_center = tile_center; }
-    inline Point3D get_tile_center () { return _tile_center; }
-
+    void set_cur_elev_m ( double elev )      { _cur_elev_m = elev; }
+    inline double get_cur_elev_m ()          { return _cur_elev_m; }
+    
     // Matrices...
-    virtual const sgVec4 *getTransformMatrix( const Point3D scenery_center ) {
-        if ( _dirty || scenery_center != _scenery_center ) {
-            _scenery_center = scenery_center;
-            recalc( scenery_center );
-        }
-	return TRANS;
+    virtual const sgVec4 *getTransformMatrix() {
+        recalcOrientation();
+        return TRANS;
     }
     virtual const sgVec4 *getCachedTransformMatrix() { return TRANS; }
-    virtual const sgVec4 *getUpMatrix( const Point3D scenery_center )  {
-        if ( _dirty || scenery_center != _scenery_center ) {
-            _scenery_center = scenery_center;
-            recalc( scenery_center );
-        }
-	return UP;
+    
+    virtual const sgVec4 *getUpMatrix(const Point3D& scenery_center)  {
+        recalcAbsolutePosition();
+        return UP;
     }
     virtual const sgVec4 *getCachedUpMatrix() { return UP; }
-
 
 private:
 
@@ -138,11 +120,10 @@ private:
     //////////////////////////////////////////////////////////////////
 
     // flag forcing a recalc of derived view parameters
-    bool _dirty;
+    mutable bool _orientation_dirty, _position_dirty;
 
     mutable sgdVec3 _absolute_view_pos;
     mutable sgVec3 _relative_view_pos;
-    mutable sgVec3 _zero_elev_view_pos;
 
     double _lon_deg;
     double _lat_deg;
@@ -154,34 +135,27 @@ private:
 
     // elevation of ground under this location...
     double _cur_elev_m;
-    Point3D _tile_center;
-    Point3D _scenery_center;
 
     // surface vector heading south
-    sgVec3 _surface_south;
+    mutable sgVec3 _surface_south;
 
     // surface vector heading east (used to unambiguously align sky
     // with sun)
-    sgVec3 _surface_east;
+    mutable sgVec3 _surface_east;
 
     // world up vector (normal to the plane tangent to the earth's
-    // surface at the spot we are directly above
-    sgVec3 _world_up;
+    // surface at the spot we are directly above)
+    mutable sgVec3 _world_up;
 
     // sg versions of our friendly matrices
-    sgMat4 TRANS, UP;
+    mutable sgMat4 TRANS, UP;
 
     //////////////////////////////////////////////////////////////////
     // private functions                                            //
     //////////////////////////////////////////////////////////////////
 
-    void recalc( const Point3D scenery_center );
-    void recalcPosition( double lon_deg, double lat_deg, double alt_ft,
-                         const Point3D scenery_center ) const;
-
-    inline void set_dirty() { _dirty = true; }
-    inline void set_clean() { _dirty = false; }
-
+    void recalcOrientation() const;
+    void recalcAbsolutePosition() const;
 };
 
 

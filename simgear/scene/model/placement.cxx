@@ -54,28 +54,14 @@ SGModelPlacement::init( ssgBranch * model )
 }
 
 void
-SGModelPlacement::update( const Point3D scenery_center )
+SGModelPlacement::update()
 {
   _location->setPosition( _lon_deg, _lat_deg, _elev_ft );
   _location->setOrientation( _roll_deg, _pitch_deg, _heading_deg );
 
-  sgCopyMat4( POS, _location->getTransformMatrix(scenery_center) );
-
-  sgVec3 trans;
-  sgCopyVec3(trans, _location->get_view_pos());
-
-  for(int i = 0; i < 4; i++) {
-    float tmp = POS[i][3];
-    for( int j=0; j<3; j++ ) {
-      POS[i][j] += (tmp * trans[j]);
-    }
-  }
-//   _position->setTransform(POS);
-  _position->setTransform(_location->get_absolute_view_pos(scenery_center), POS);
-  sgdVec3 center;
-  sgdSetVec3(center,
-             scenery_center.x(), scenery_center.y(), scenery_center.z());
-  _position->setSceneryCenter(center);
+  sgMat4 rotation;
+  sgCopyMat4( rotation, _location->getTransformMatrix() );
+  _position->setTransform(_location->get_absolute_view_pos(), rotation);
 }
 
 bool

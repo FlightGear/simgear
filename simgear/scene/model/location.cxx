@@ -93,7 +93,6 @@ static void MakeTRANS( sgMat4 dst, const double Theta,
     dst[1][3] = SG_ZERO ;
     dst[0][3] = SG_ZERO ;
     dst[3][3] = SG_ONE ;
-
 }
 
 
@@ -103,19 +102,16 @@ static void MakeTRANS( sgMat4 dst, const double Theta,
 
 // Constructor
 SGLocation::SGLocation( void ):
-    _dirty(true),
+    _position_dirty(true), _orientation_dirty(true),
     _lon_deg(-1000),
     _lat_deg(0),
     _alt_ft(0),
     _roll_deg(0),
     _pitch_deg(0),
     _heading_deg(0),
-    _cur_elev_m(0),
-    _tile_center(0)
+    _cur_elev_m(0)
 {
     sgdZeroVec3(_absolute_view_pos);
-    sgZeroVec3(_relative_view_pos);
-    sgZeroVec3(_zero_elev_view_pos);
     sgMakeRotMat4( UP, 0.0, 0.0, 0.0 );
     sgMakeRotMat4( TRANS, 0.0, 0.0, 0.0 );
 }
@@ -126,24 +122,9 @@ SGLocation::~SGLocation( void ) {
 }
 
 void
-SGLocation::init ()
-{
-}
-
-void
-SGLocation::bind ()
-{
-}
-
-void
-SGLocation::unbind ()
-{
-}
-
-void
 SGLocation::setPosition (double lon_deg, double lat_deg, double alt_ft)
 {
-  _dirty = true;
+  _position_dirty = true;
   _lon_deg = lon_deg;
   _lat_deg = lat_deg;
   _alt_ft = alt_ft;
@@ -152,105 +133,83 @@ SGLocation::setPosition (double lon_deg, double lat_deg, double alt_ft)
 void
 SGLocation::setOrientation (double roll_deg, double pitch_deg, double heading_deg)
 {
-  _dirty = true;
+  _orientation_dirty = true;
   _roll_deg = roll_deg;
   _pitch_deg = pitch_deg;
   _heading_deg = heading_deg;
 }
 
 double *
-SGLocation::get_absolute_view_pos( const Point3D scenery_center ) 
+SGLocation::get_absolute_view_pos()
 {
-    if ( _dirty ) {
-        recalc( scenery_center );
-    }
+    recalcAbsolutePosition();
     return _absolute_view_pos;
 }
 
 float *
-SGLocation::getRelativeViewPos( const Point3D scenery_center ) 
+SGLocation::get_view_pos( const Point3D& scenery_center ) 
 {
-    if ( _dirty ) {
-        recalc( scenery_center );
-    }
+    recalcAbsolutePosition();
+    for (int i = 0; i < 3; i++)
+        _relative_view_pos[i] = _absolute_view_pos[i] - scenery_center[i];
     return _relative_view_pos;
 }
 
-float *
-SGLocation::getZeroElevViewPos( const Point3D scenery_center ) 
-{
-    if ( _dirty ) {
-        recalc( scenery_center );
-    }
-    return _zero_elev_view_pos;
-}
-
-
-// recalc() is done every time one of the setters is called (making the 
-// cached data "dirty") on the next "get".  It calculates all the outputs 
-// for viewer.
 void
-SGLocation::recalc( const Point3D scenery_center )
+SGLocation::recalcOrientation() const
 {
+  if (_orientation_dirty) {
+    // Make sure UP matrix is up-to-date.
+    recalcAbsolutePosition();
 
-  recalcPosition( _lon_deg, _lat_deg, _alt_ft, scenery_center );
-
-  // Make the world up rotation matrix for eye positioin...
-  sgMakeRotMat4( UP, _lon_deg, 0.0, -_lat_deg );
-
-
-  // get the world up radial vector from planet center for output
-  sgSetVec3( _world_up, UP[0][0], UP[0][1], UP[0][2] );
-
-  // Creat local matrix with current geodetic position.  Converting
-  // the orientation (pitch/roll/heading) to vectors.
-  MakeTRANS( TRANS, _pitch_deg * SG_DEGREES_TO_RADIANS,
+    // Create local matrix with current geodetic position.  Converting
+    // the orientation (pitch/roll/heading) to vectors.
+    MakeTRANS( TRANS, _pitch_deg * SG_DEGREES_TO_RADIANS,
                       _roll_deg * SG_DEGREES_TO_RADIANS,
-                      -_heading_deg * SG_DEGREES_TO_RADIANS,
-                      UP);
-
-  // Given a vector pointing straight down (-Z), map into onto the
-  // local plane representing "horizontal".  This should give us the
-  // local direction for moving "south".
-  sgVec3 minus_z;
-  sgSetVec3( minus_z, 0.0, 0.0, -1.0 );
-
-  sgmap_vec_onto_cur_surface_plane(_world_up, _relative_view_pos, minus_z,
-				     _surface_south);
-  sgNormalizeVec3(_surface_south);
-
-  // now calculate the surface east vector
-  sgVec3 world_down;
-  sgNegateVec3(world_down, _world_up);
-  sgVectorProductVec3(_surface_east, _surface_south, world_down);
-
-  set_clean();
+                     -_heading_deg * SG_DEGREES_TO_RADIANS,
+                      UP );
+    _orientation_dirty = false;
+  }
 }
 
+/*
+ * Update values derived from the longitude, latitude and altitude parameters
+ * of this instance. This encompasses absolute position in cartesian 
+ * coordinates, the local up, east and south vectors and the UP Matrix.
+ */
 void
-SGLocation::recalcPosition( double lon_deg, double lat_deg, double alt_ft,
-                            const Point3D scenery_center ) const
+SGLocation::recalcAbsolutePosition() const
 {
-  double lat = lat_deg * SGD_DEGREES_TO_RADIANS;
-  double lon = lon_deg * SGD_DEGREES_TO_RADIANS;
-  double alt = alt_ft * SG_FEET_TO_METER;
+  if (_position_dirty) {
+    double lat = _lat_deg * SGD_DEGREES_TO_RADIANS;
+    double lon = _lon_deg * SGD_DEGREES_TO_RADIANS;
+    double alt = _alt_ft * SG_FEET_TO_METER;
 
-  sgGeodToCart(lat, lon, alt, _absolute_view_pos);
+    sgGeodToCart(lat, lon, alt, _absolute_view_pos);
+    
+     // Make the world up rotation matrix for eye positioin...
+    sgMakeRotMat4( UP, _lon_deg, 0.0, -_lat_deg );
 
-  int i;
-  double ground[3];
-  sgGeodToCart(lat, lon, 0, ground);
-  for(i=0; i<3; i++)
-      _zero_elev_view_pos[i] = ground[i] - _tile_center[i];
+    // get the world up radial vector from planet center for output
+    sgSetVec3( _world_up, UP[0][0], UP[0][1], UP[0][2] );
 
-  // FIXME: view position should ONLY be calculated in the viewer...
-  // Anything else should calculate their own positions relative to the 
-  // viewer's tile_center.
-  for(i=0; i<3; i++)
-    _relative_view_pos[i] = _absolute_view_pos[i] - scenery_center[i];
-}
+    // Calculate the surface east and south vectors using the (normalized)
+    // partial derivatives of the up vector Could also be fetched and
+    // normalized from the UP rotation matrix, but I doubt this would
+    // be more efficient.
+    float sin_lon = sin(_lon_deg * SGD_DEGREES_TO_RADIANS);
+    float sin_lat = sin(_lat_deg * SGD_DEGREES_TO_RADIANS);
+    float cos_lon = cos(_lon_deg * SGD_DEGREES_TO_RADIANS);
+    float cos_lat = cos(_lat_deg * SGD_DEGREES_TO_RADIANS);
+ 
+    _surface_south[0] = (sin_lat*cos_lon);
+    _surface_south[1] = (sin_lat*sin_lon);
+    _surface_south[2] = - cos_lat;
+  
+    _surface_east[0] = -sin_lon;
+    _surface_east[1] = cos_lon;
+    _surface_east[2] = 0.f;
 
-void
-SGLocation::update (int dt)
-{
+    _position_dirty = false;
+  }
 }

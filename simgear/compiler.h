@@ -470,10 +470,14 @@ inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
 
 // stdint.h defines
 #if defined( _MSC_VER ) || defined(__MINGW32__) || defined(sun)
+typedef signed char      int8_t;
 typedef signed short     int16_t;
 typedef signed int       int32_t;
+typedef signed __int64   int64_t;
+typedef unsigned char    uint8_t;
 typedef unsigned short   uint16_t;
 typedef unsigned int     uint32_t;
+typedef unsigned __int64 uint64_t;
 #endif
 
 #endif // _SG_COMPILER_H

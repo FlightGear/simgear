@@ -1821,29 +1821,21 @@ bool RenderTexture::_VerifyExtensions()
 #elif defined( __APPLE__ )
 #else
 
-    int minor, major;
-    _pDisplay = glXGetCurrentDisplay();
-    if (!glXQueryVersion(_pDisplay, &major, &minor))
-        return false;
+    // First try the glX version 1.3 functions.
+    glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
+    glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreatePbuffer");
+    glXGetVisualFromFBConfigPtr = (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfig");
+    glXCreateContextPtr = (glXCreateContextProc)SGLookupFunction("glXCreateContext");
+    glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyPbuffer");
+    glXQueryDrawablePtr = (glXQueryDrawableProc)SGLookupFunction("glXQueryDrawable");
 
-    glXVersion1_3Present = major >= 1 && minor >= 3;
-    if (glXVersion1_3Present)
-    { 
-        glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
-        glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreatePbuffer");
-        glXGetVisualFromFBConfigPtr = (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfig");
-        glXCreateContextPtr = (glXCreateContextProc)SGLookupFunction("glXCreateContext");
-        glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyPbuffer");
-        glXQueryDrawablePtr = (glXQueryDrawableProc)SGLookupFunction("glXQueryDrawable");
-
-        if (!glXChooseFBConfigPtr ||
-            !glXCreateGLXPbufferPtr ||
-            !glXGetVisualFromFBConfigPtr ||
-            !glXCreateContextPtr ||
-            !glXDestroyPbufferPtr ||
-            !glXQueryDrawablePtr)
-            return false;
-    }
+    if (glXChooseFBConfigPtr &&
+        glXCreateGLXPbufferPtr &&
+        glXGetVisualFromFBConfigPtr &&
+        glXCreateContextPtr &&
+        glXDestroyPbufferPtr &&
+        glXQueryDrawablePtr)
+        glXVersion1_3Present = true;
     else
     {
         glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfigSGIX");
@@ -1863,16 +1855,6 @@ bool RenderTexture::_VerifyExtensions()
             return false;
     }
 
-//     if (!GLX_SGIX_pbuffer)
-//     {
-//         PrintExtensionError("GL_SGIX_pbuffer");
-//         return false;
-//     }
-//     if (!GLX_SGIX_fbconfig)
-//     {
-//         PrintExtensionError("GLX_SGIX_fbconfig");
-//         return false;
-//     }
     if (_bIsDepthTexture && !GL_ARB_depth_texture)
     {
         PrintExtensionError("GL_ARB_depth_texture");

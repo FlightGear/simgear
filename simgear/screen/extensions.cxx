@@ -107,11 +107,14 @@ void *SGGetGLProcAddress(const char *func) {
      */
     dlerror();
 
+    /*
+     * Since libGL must be linked to the binary we run on, this is the
+     * right handle. That 'current binary' handle also avoids conflicts which
+     * arise from linking with a different libGL at link time an than later
+     * use the standard libGL at runtime ...
+     */
     if (libHandle == NULL)
-        libHandle = dlopen("libGL.so", RTLD_LAZY);
-
-    if (libHandle == NULL)
-        libHandle = dlopen("libGL.so.1", RTLD_LAZY);
+        libHandle = dlopen(NULL, RTLD_LAZY);
 
     if (libHandle != NULL) {
         fptr = dlsym(libHandle, func);

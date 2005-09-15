@@ -81,7 +81,7 @@ void sgReadDouble ( gzFile fd, double *var )
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64*)var);
+        sgEndianSwap( (uint64_t*)var);
     }
 }
 
@@ -89,7 +89,7 @@ void sgReadDouble ( gzFile fd, double *var )
 void sgWriteDouble ( gzFile fd, const double var )
 {
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64*)&var);
+        sgEndianSwap( (uint64_t*)&var);
     }
     if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) != sizeof(double) ) {
         write_error = true ;
@@ -143,9 +143,9 @@ void sgWriteInt ( gzFile fd, const int var )
 }
 
 
-void sgReadLong ( gzFile fd, long int *var )
+void sgReadLong ( gzFile fd, int32_t *var )
 {
-    if ( gzread ( fd, var, sizeof(long int) ) != sizeof(long int) ) {
+    if ( gzread ( fd, var, sizeof(int32_t) ) != sizeof(int32_t) ) {
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
@@ -154,37 +154,37 @@ void sgReadLong ( gzFile fd, long int *var )
 }
 
 
-void sgWriteLong ( gzFile fd, const long int var )
+void sgWriteLong ( gzFile fd, const int32_t var )
 {
     if ( sgIsBigEndian() ) {
         sgEndianSwap( (unsigned int*)&var);
     }
-    if ( gzwrite ( fd, (void *)(&var), sizeof(long int) )
-         != sizeof(long int) )
+    if ( gzwrite ( fd, (void *)(&var), sizeof(int32_t) )
+         != sizeof(int32_t) )
     {
         write_error = true ;
     }
 }
 
 
-void sgReadLongLong ( gzFile fd, int64 *var )
+void sgReadLongLong ( gzFile fd, int64_t *var )
 {
-    if ( gzread ( fd, var, sizeof(int64) ) != sizeof(int64) ) {
+    if ( gzread ( fd, var, sizeof(int64_t) ) != sizeof(int64_t) ) {
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64*)var);
+        sgEndianSwap( (uint64_t*)var);
     }
 }
 
 
-void sgWriteLongLong ( gzFile fd, const int64 var )
+void sgWriteLongLong ( gzFile fd, const int64_t var )
 {
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64*)&var);
+        sgEndianSwap( (uint64_t*)&var);
     }
-    if ( gzwrite ( fd, (void *)(&var), sizeof(int64) )
-         != sizeof(int64) )
+    if ( gzwrite ( fd, (void *)(&var), sizeof(int64_t) )
+         != sizeof(int64_t) )
     {
         write_error = true ;
     }
@@ -275,7 +275,7 @@ void sgReadDouble ( gzFile fd, const unsigned int n, double *var )
     }
     if ( sgIsBigEndian() ) {
         for ( unsigned int i = 0; i < n; ++i ) {
-            sgEndianSwap( (uint64*)var++);
+            sgEndianSwap( (uint64_t*)var++);
         }
     }
 }
@@ -288,7 +288,7 @@ void sgWriteDouble ( gzFile fd, const unsigned int n, const double *var )
         double *ptr = swab;
         memcpy( swab, var, sizeof(double) * n );
         for ( unsigned int i = 0; i < n; ++i ) {
-            sgEndianSwap( (uint64*)ptr++);
+            sgEndianSwap( (uint64_t*)ptr++);
         }
         var = swab;
     }

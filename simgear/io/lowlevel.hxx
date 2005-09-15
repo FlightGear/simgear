@@ -29,17 +29,12 @@
 
 
 #include <stdio.h>
+#include <inttypes.h>
 #include <zlib.h>
 
 #include <plib/sg.h>
 
-#ifdef _MSC_VER
-typedef __int64 int64;
-typedef __int64 uint64;
-#else
-typedef long long int64;
-typedef unsigned long long uint64;
-#endif
+#include <simgear/compiler.h>
 
 // Note that output is written in little endian form (and converted as
 // necessary for big endian machines)
@@ -54,10 +49,10 @@ void sgReadUInt ( gzFile fd, unsigned int *var ) ;
 void sgWriteUInt ( gzFile fd, const unsigned int var ) ;
 void sgReadInt ( gzFile fd, int *var ) ;
 void sgWriteInt ( gzFile fd, const int var ) ;
-void sgReadLong ( gzFile fd, long int *var ) ;
-void sgWriteLong ( gzFile fd, const long int var ) ;
-void sgReadLongLong ( gzFile fd, int64 *var ) ;
-void sgWriteLongLong ( gzFile fd, const int64 var ) ;
+void sgReadLong ( gzFile fd, int32_t *var ) ;
+void sgWriteLong ( gzFile fd, const int32_t var ) ;
+void sgReadLongLong ( gzFile fd, int64_t *var ) ;
+void sgWriteLongLong ( gzFile fd, const int64_t var ) ;
 void sgReadUShort ( gzFile fd, unsigned short *var ) ;
 void sgWriteUShort ( gzFile fd, const unsigned short var ) ;
 void sgReadShort ( gzFile fd, short *var ) ;
@@ -145,7 +140,7 @@ inline void sgEndianSwap(unsigned int *x) {
         (( *x << 24 ) & 0xFF000000 ) ;
 }
   
-inline void sgEndianSwap(uint64 *x) {
+inline void sgEndianSwap(uint64_t *x) {
 #ifndef _MSC_VER
     *x =
         (( *x >> 56 ) & 0x00000000000000FFULL ) | 

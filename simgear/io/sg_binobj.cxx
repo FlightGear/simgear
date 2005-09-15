@@ -403,9 +403,9 @@ bool SGBinObject::read_bin( const string& file ) {
 
 		double *dptr = (double *)ptr;
 		if ( sgIsBigEndian() ) {
-		    sgEndianSwap( (uint64 *)&(dptr[0]) );
-		    sgEndianSwap( (uint64 *)&(dptr[1]) );
-		    sgEndianSwap( (uint64 *)&(dptr[2]) );
+		    sgEndianSwap( (uint64_t *)&(dptr[0]) );
+		    sgEndianSwap( (uint64_t *)&(dptr[1]) );
+		    sgEndianSwap( (uint64_t *)&(dptr[2]) );
 		}
 		gbs_center = Point3D( dptr[0], dptr[1], dptr[2] );
 		// cout << "Center = " << gbs_center << endl;
@@ -656,7 +656,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     // write header magic
     sgWriteUInt( fp, SG_FILE_MAGIC_NUMBER );
     time_t calendar_time = time(NULL);
-    sgWriteLong( fp, (long int)calendar_time );
+    sgWriteLong( fp, (int32_t)calendar_time );
 
     // calculate and write number of top level objects
     string material;

@@ -220,34 +220,37 @@ readXML (istream &input, XMLVisitor &visitor, const string &path)
 
 				// FIXME: get proper error string from system
     if (!input.good()) {
-      XML_ParserFree(parser);
-      throw sg_io_exception("Problem reading file",
+      sg_io_exception ex ("Problem reading file",
 			    sg_location(path,
 					XML_GetCurrentLineNumber(parser),
 					XML_GetCurrentColumnNumber(parser)),
 			    "SimGear XML Parser");
+      XML_ParserFree(parser);
+      throw ex;
     }
 
     input.read(buf,16384);
     if (!XML_Parse(parser, buf, input.gcount(), false)) {
-      XML_ParserFree(parser);
-      throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+      sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
 			    sg_location(path,
 					XML_GetCurrentLineNumber(parser),
 					XML_GetCurrentColumnNumber(parser)),
 			    "SimGear XML Parser");
+      XML_ParserFree(parser);
+      throw ex;
     }
 
   }
 
 				// Verify end of document.
   if (!XML_Parse(parser, buf, 0, true)) {
-    XML_ParserFree(parser);
-    throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+    sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
 			  sg_location(path,
 				      XML_GetCurrentLineNumber(parser),
 				      XML_GetCurrentColumnNumber(parser)),
 			  "SimGear XML Parser");
+    XML_ParserFree(parser);
+    throw ex;
   }
 
   XML_ParserFree(parser);
@@ -286,12 +289,13 @@ readXML (const char *buf, const int size, XMLVisitor &visitor)
   visitor.startXML();
 
   if (!XML_Parse(parser, buf, size, false)) {
-      XML_ParserFree(parser);
-      throw sg_io_exception(XML_ErrorString(XML_GetErrorCode(parser)),
+      sg_io_exception ex (XML_ErrorString(XML_GetErrorCode(parser)),
 			    sg_location("In-memory XML buffer",
 					XML_GetCurrentLineNumber(parser),
 					XML_GetCurrentColumnNumber(parser)),
 			    "SimGear XML Parser");
+      XML_ParserFree(parser);
+      throw ex;
   }
 
   XML_ParserFree(parser);

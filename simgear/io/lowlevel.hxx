@@ -27,10 +27,15 @@
 #ifndef _SG_LOWLEVEL_HXX
 #define _SG_LOWLEVEL_HXX
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <stdio.h>
-#include <inttypes.h>
 #include <zlib.h>
+#ifdef HAVE_STDINT_H
+#include <inttypes.h>
+#endif
 
 #include <plib/sg.h>
 

@@ -27,13 +27,9 @@
 #ifndef _SG_LOWLEVEL_HXX
 #define _SG_LOWLEVEL_HXX
 
-#ifdef HAVE_CONFIG_H
-#  include <simgear_config.h>
-#endif
-
 #include <stdio.h>
 #include <zlib.h>
-#ifdef HAVE_STDINT_H
+#ifndef _MSC_VER
 # include <stdint.h>
 #endif
 

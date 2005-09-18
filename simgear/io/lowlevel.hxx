@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #ifdef HAVE_STDINT_H
-#include <inttypes.h>
+# include <stdint.h>
 #endif
 
 #include <plib/sg.h>

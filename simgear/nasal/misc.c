@@ -15,8 +15,9 @@ void naTempSave(naContext c, naRef r)
     int i;
     if(!IS_OBJ(r)) return;
     if(c->ntemps >= c->tempsz) {
+        struct naObj** newtemps;
         c->tempsz *= 2;
-        struct naObj** newtemps = naAlloc(c->tempsz * sizeof(struct naObj*));
+        newtemps = naAlloc(c->tempsz * sizeof(struct naObj*));
         for(i=0; i<c->ntemps; i++)
             newtemps[i] = c->temps[i];
         naFree(c->temps);

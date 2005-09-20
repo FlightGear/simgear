@@ -7,7 +7,23 @@
 
 void naFree(void* m) { free(m); }
 void* naAlloc(int n) { return malloc(n); }
+void* naRealloc(void* b, int n) { return realloc(b, n); }
 void naBZero(void* m, int n) { memset(m, 0, n); }
+
+void naTempSave(naContext c, naRef r)
+{
+    int i;
+    if(!IS_OBJ(r)) return;
+    if(c->ntemps >= c->tempsz) {
+        c->tempsz *= 2;
+        struct naObj** newtemps = naAlloc(c->tempsz * sizeof(struct naObj*));
+        for(i=0; i<c->ntemps; i++)
+            newtemps[i] = c->temps[i];
+        naFree(c->temps);
+        c->temps = newtemps;
+    }
+    c->temps[c->ntemps++] = r.ref.ptr.obj;
+}
 
 naRef naObj(int type, struct naObj* o)
 {
@@ -54,7 +70,7 @@ naRef naNew(struct Context* c, int type)
         c->free[type] = naGC_get(&globals->pools[type],
                                  OBJ_CACHE_SZ, &c->nfree[type]);
     result = naObj(type, c->free[type][--c->nfree[type]]);
-    naVec_append(c->temps, result);
+    naTempSave(c, result);
     return result;
 }
 
@@ -187,52 +203,13 @@ int naTypeSize(int type)
     return 0x7fffffff; // Make sure the answer is nonsense :)
 }
 
-int naIsNil(naRef r)
-{
-    return IS_NIL(r);
-}
-
-int naIsNum(naRef r)
-{
-    return IS_NUM(r);
-}
-
-int naIsString(naRef r)
-{
-    return (!IS_NIL(r))&&IS_STR(r);
-}
-
-int naIsScalar(naRef r)
-{
-    return IS_SCALAR(r);
-}
-
-int naIsVector(naRef r)
-{
-    return (!IS_NIL(r))&&IS_VEC(r);
-}
-
-int naIsHash(naRef r)
-{
-    return (!IS_NIL(r))&&IS_HASH(r);
-}
-
-int naIsFunc(naRef r)
-{
-    return (!IS_NIL(r))&&IS_FUNC(r);
-}
-
-int naIsCode(naRef r)
-{
-    return IS_CODE(r);
-}
-
-int naIsCCode(naRef r)
-{
-    return IS_CCODE(r);
-}
-
-int naIsGhost(naRef r)
-{
-    return IS_GHOST(r);
-}
+int naIsNil(naRef r)    { return IS_NIL(r); }
+int naIsNum(naRef r)    { return IS_NUM(r); }
+int naIsString(naRef r) { return IS_STR(r); }
+int naIsScalar(naRef r) { return IS_SCALAR(r); }
+int naIsVector(naRef r) { return IS_VEC(r); }
+int naIsHash(naRef r)   { return IS_HASH(r); }
+int naIsFunc(naRef r)   { return IS_FUNC(r); }
+int naIsCode(naRef r)   { return IS_CODE(r); }
+int naIsCCode(naRef r)  { return IS_CCODE(r); }
+int naIsGhost(naRef r)  { return IS_GHOST(r); }

@@ -1,9 +1,8 @@
 #include "nasal.h"
 #include "data.h"
 
-static void realloc(struct naVec* v)
+static struct VecRec* newvecrec(struct VecRec* old)
 {
-    struct VecRec* old = v->rec;
     int i, oldsz = old ? old->size : 0, newsz = 1 + ((oldsz*3)>>1);
     struct VecRec* vr = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * newsz);
     if(oldsz > newsz) oldsz = newsz; // race protection
@@ -11,6 +10,12 @@ static void realloc(struct naVec* v)
     vr->size = oldsz;
     for(i=0; i<oldsz; i++)
         vr->array[i] = old->array[i];
+    return vr;
+}
+
+static void realloc(struct naVec* v)
+{
+    struct VecRec* vr = newvecrec(v->rec);
     naGC_swapfree((void**)&(v->rec), vr);
 }
 
@@ -24,7 +29,10 @@ naRef naVec_get(naRef v, int i)
 {
     if(IS_VEC(v)) {
         struct VecRec* r = v.ref.ptr.vec->rec;
-        if(r && i < r->size) return r->array[i];
+        if(r) {
+            if(i < 0) i += r->size;
+            if(i >= 0 && i < r->size) return r->array[i];
+        }
     }
     return naNil();
 }
@@ -51,7 +59,7 @@ int naVec_append(naRef vec, naRef o)
 {
     if(IS_VEC(vec)) {
         struct VecRec* r = vec.ref.ptr.vec->rec;
-        if(!r || r->size >= r->alloced) {
+        while(!r || r->size >= r->alloced) {
             realloc(vec.ref.ptr.vec);
             r = vec.ref.ptr.vec->rec;
         }

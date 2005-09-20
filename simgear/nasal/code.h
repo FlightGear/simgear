@@ -80,7 +80,9 @@ struct Context {
     // GC-findable reference point for objects that may live on the
     // processor ("real") stack during execution.  naNew() places them
     // here, and clears the array each instruction
-    naRef temps;
+    struct naObj** temps;
+    int ntemps;
+    int tempsz;
 
     // Error handling
     jmp_buf jumpHandle;

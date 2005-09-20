@@ -18,3 +18,5 @@ void  naSemDown(void* sem) { WaitForSingleObject((HANDLE)sem, INFINITE); }
 void  naSemUpAll(void* sem, int count) { ReleaseSemaphore(sem, count, 0); }
 
 #endif
+
+extern int GccWarningWorkaround_IsoCForbidsAnEmptySourceFile;

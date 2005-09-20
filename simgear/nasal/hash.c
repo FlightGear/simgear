@@ -118,7 +118,7 @@ static struct HashNode* find(struct naHash* hash, naRef key)
 static void tmpStr(naRef* out, struct naStr* str, char* key)
 {
     str->len = 0;
-    str->data = key;
+    str->data = (unsigned char*)key;
     while(key[str->len]) str->len++;
     *out = naNil();
     out->ref.ptr.str = str;
@@ -170,7 +170,7 @@ void naHash_newsym(struct naHash* hash, naRef* sym, naRef* val)
 {
     int col;
     struct HashRec* h = hash->rec;
-    if(!h || h->size >= 1<<h->lgalloced)
+    while(!h || h->size >= 1<<h->lgalloced)
         h = realloc(hash);
     col = (HASH_MAGIC * sym->ref.ptr.str->hashcode) >> (32 - h->lgalloced);
     INSERT(h, *sym, *val, col);

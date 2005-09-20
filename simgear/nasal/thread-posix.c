@@ -55,3 +55,5 @@ void naSemUpAll(void* sh, int count)
 }
 
 #endif
+
+extern int GccWarningWorkaround_IsoCForbidsAnEmptySourceFile;

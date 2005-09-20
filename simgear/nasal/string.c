@@ -20,7 +20,7 @@ int naStr_len(naRef s)
 char* naStr_data(naRef s)
 {
     if(!IS_STR(s)) return 0;
-    return s.ref.ptr.str->data;
+    return (char*)s.ref.ptr.str->data;
 }
 
 static void setlen(struct naStr* s, int sz)
@@ -29,6 +29,13 @@ static void setlen(struct naStr* s, int sz)
     s->len = sz;
     s->data = naAlloc(sz+1);
     s->data[sz] = 0; // nul terminate
+}
+
+naRef naStr_buf(naRef dst, int len)
+{
+    setlen(dst.ref.ptr.str, len);
+    naBZero(dst.ref.ptr.str->data, len);
+    return dst;
 }
 
 naRef naStr_fromdata(naRef dst, char* data, int len)
@@ -83,7 +90,7 @@ naRef naStr_fromnum(naRef dest, double num)
 
 int naStr_parsenum(char* str, int len, double* result)
 {
-    return tonum(str, len, result);
+    return tonum((unsigned char*)str, len, result);
 }
 
 int naStr_tonum(naRef str, double* out)

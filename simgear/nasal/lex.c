@@ -136,14 +136,19 @@ static void newToken(struct Parser* p, int pos, int type,
     p->tree.lastChild = tok;
 }
 
-// Parse a hex nibble
-static int hexc(char c, struct Parser* p, int index)
+static int hex(char c)
 {
     if(c >= '0' && c <= '9') return c - '0';
     if(c >= 'A' && c <= 'F') return c - 'A' + 10;
     if(c >= 'a' && c <= 'f') return c - 'a' + 10;
-    error(p, "bad hex constant", index);
-    return 0;
+    return -1;
+}
+
+static int hexc(char c, struct Parser* p, int index)
+{
+    int n = hex(c);
+    if(n < 0) error(p, "bad hex constant", index);
+    return n;
 }
 
 // Escape and returns a single backslashed expression in a single
@@ -186,13 +191,19 @@ static void dqEscape(char* buf, int len, int index, struct Parser* p,
     }
 }
 
+// FIXME: should handle UTF8 too
+static void charLiteral(struct Parser* p, int index, char* s, int len)
+{
+    if(len != 1) error(p, "character constant not single character", index);
+    newToken(p, index, TOK_LITERAL, 0, 0, *s);
+}
+
 // Read in a string literal
-static int lexStringLiteral(struct Parser* p, int index, int singleQuote)
+static int lexStringLiteral(struct Parser* p, int index, char q)
 {
     int i, j, len, iteration;
     char* out = 0;
     char* buf = p->buf;
-    char endMark = singleQuote ? '\'' : '"';
 
     for(iteration = 0; iteration<2; iteration++) {
         i = index+1;
@@ -200,11 +211,10 @@ static int lexStringLiteral(struct Parser* p, int index, int singleQuote)
         while(i < p->len) {
             char c = buf[i];
             int eaten = 1;
-            if(c == endMark)
-                break;
+            if(c == q) break;
             if(c == '\\') {
-                if(singleQuote) sqEscape(buf+i, p->len-i, i, p, &c, &eaten);
-                else            dqEscape(buf+i, p->len-i, i, p, &c, &eaten);
+                if(q == '\'') sqEscape(buf+i, p->len-i, i, p, &c, &eaten);
+                else          dqEscape(buf+i, p->len-i, i, p, &c, &eaten);
             }
             if(iteration == 1) out[j++] = c;
             i += eaten;
@@ -213,15 +223,30 @@ static int lexStringLiteral(struct Parser* p, int index, int singleQuote)
         // Finished stage one -- allocate the buffer for stage two
         if(iteration == 0) out = naParseAlloc(p, len);
     }
-    newToken(p, index, TOK_LITERAL, out, len, 0);
+    if(q == '`') charLiteral(p, index, out, len);
+    else         newToken(p, index, TOK_LITERAL, out, len, 0);
     return i+1;
+}
+
+static int lexHexLiteral(struct Parser* p, int index)
+{
+    int nib, i = index;
+    double d = 0;
+    while(i < p->len && (nib = hex(p->buf[i])) >= 0) {
+        d = d*16 + nib;
+        i++;
+    }
+    newToken(p, index, TOK_LITERAL, 0, 0, d);
+    return i;
 }
 
 static int lexNumLiteral(struct Parser* p, int index)
 {
     int len = p->len, i = index;
-    unsigned char* buf = p->buf;
+    unsigned char* buf = (unsigned char*)p->buf;
     double d;
+
+    if(i+1<len && buf[i+1] == 'x') return lexHexLiteral(p, index+2);
 
     while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
     if(i<len && buf[i] == '.') {
@@ -309,12 +334,12 @@ void naLex(struct Parser* p)
         case '#':
             i = lineEnd(p, getLine(p, i));
             break;
-        case '\'': case '"':
-            i = lexStringLiteral(p, i, (c=='"' ? 0 : 1));
+        case '\'': case '"': case '`':
+            i = lexStringLiteral(p, i, c);
             break;
         default:
             if(c >= '0' && c <= '9') i = lexNumLiteral(p, i);
-            else                     handled = 0;
+            else handled = 0;
         }
 
         // Lexemes and symbols are a little more complicated.  Pick
@@ -324,7 +349,7 @@ void naLex(struct Parser* p)
         // symbol (e.g. "orchid").  If neither match, we have a bad
         // character in the mix.
         if(!handled) {
-            int symlen=0, lexlen=0, lexeme;
+            int symlen=0, lexlen=0, lexeme=-1;
             lexlen = tryLexemes(p, i, &lexeme);
             if((c>='A' && c<='Z') || (c>='a' && c<='z') || (c=='_'))
                 symlen = trySymbol(p, i);

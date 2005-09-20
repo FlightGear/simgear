@@ -64,8 +64,16 @@ static naRef stringify(struct Context* ctx, naRef r)
 static int checkVec(struct Context* ctx, naRef vec, naRef idx)
 {
     int i = (int)numify(ctx, idx);
-    if(i < 0 || !vec.ref.ptr.vec->rec || i >= vec.ref.ptr.vec->rec->size)
-        ERR(ctx, "vector index out of bounds");
+    if(i < 0) i += naVec_size(vec);
+    if(i < 0 || i >= naVec_size(vec)) ERR(ctx, "vector index out of bounds");
+    return i;
+}
+
+static int checkStr(struct Context* ctx, naRef str, naRef idx)
+{
+    int i = (int)numify(ctx, idx);
+    if(i < 0) i += naStr_len(str);
+    if(i < 0 || i >= naStr_len(str)) ERR(ctx, "string index out of bounds");
     return i;
 }
 
@@ -78,6 +86,8 @@ static naRef containerGet(struct Context* ctx, naRef box, naRef key)
             ERR(ctx, "undefined value in container");
     } else if(IS_VEC(box)) {
         result = naVec_get(box, checkVec(ctx, box, key));
+    } else if(IS_STR(box)) {
+        result = naNum((unsigned char)naStr_data(box)[checkStr(ctx, box, key)]);
     } else {
         ERR(ctx, "extract from non-container");
     }
@@ -89,7 +99,18 @@ static void containerSet(struct Context* ctx, naRef box, naRef key, naRef val)
     if(!IS_SCALAR(key))   ERR(ctx, "container index not scalar");
     else if(IS_HASH(box)) naHash_set(box, key, val);
     else if(IS_VEC(box))  naVec_set(box, checkVec(ctx, box, key), val);
-    else                  ERR(ctx, "insert into non-container");
+    else if(IS_STR(box)) {
+        if(box.ref.ptr.str->hashcode)
+            ERR(ctx, "cannot change immutable string");
+        naStr_data(box)[checkStr(ctx, box, key)] = (char)numify(ctx, val);
+    } else ERR(ctx, "insert into non-container");
+}
+
+static void initTemps(struct Context* c)
+{
+    c->tempsz = 4;
+    c->temps = naAlloc(c->tempsz * sizeof(struct naObj*));
+    c->ntemps = 0;
 }
 
 static void initContext(struct Context* c)
@@ -98,7 +119,12 @@ static void initContext(struct Context* c)
     c->fTop = c->opTop = c->markTop = 0;
     for(i=0; i<NUM_NASAL_TYPES; i++)
         c->nfree[i] = 0;
-    naVec_setsize(c->temps, 4);
+
+    if(c->tempsz > 32) {
+        naFree(c->temps);
+        initTemps(c);
+    }
+
     c->callParent = 0;
     c->callChild = 0;
     c->dieArg = naNil();
@@ -140,7 +166,6 @@ static void initGlobals()
 
 struct Context* naNewContext()
 {
-    int dummy;
     struct Context* c;
     if(globals == 0)
         initGlobals();
@@ -155,8 +180,7 @@ struct Context* naNewContext()
     } else {
         UNLOCK();
         c = (struct Context*)naAlloc(sizeof(struct Context));
-        // Chicken and egg, can't use naNew because it requires temps to exist
-        c->temps = naObj(T_VEC, (naGC_get(&globals->pools[T_VEC], 1, &dummy))[0]);
+        initTemps(c);
         initContext(c);
         LOCK();
         c->nextAll = globals->allContexts;
@@ -169,7 +193,7 @@ struct Context* naNewContext()
 
 void naFreeContext(struct Context* c)
 {
-    naVec_setsize(c->temps, 0);
+    c->ntemps = 0;
     LOCK();
     c->nextFree = globals->freeContexts;
     globals->freeContexts = c;
@@ -181,12 +205,39 @@ void naFreeContext(struct Context* c)
     ctx->opStack[ctx->opTop++] = r; \
     } while(0)
 
-struct Frame* setupFuncall(struct Context* ctx, int nargs, int mcall, int tail)
+static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
 {
     int i;
+    struct naCode* c = f->func.ref.ptr.func->code.ref.ptr.code;
+
+    // Set the argument symbols, and put any remaining args in a vector
+    if(nargs < c->nArgs) ERR(ctx, "not enough arguments to function call");
+    for(i=0; i<c->nArgs; i++)
+        naHash_newsym(f->locals.ref.ptr.hash,
+                      &c->constants[c->argSyms[i]], &args[i]);
+    args += c->nArgs;
+    nargs -= c->nArgs;
+    for(i=0; i<c->nOptArgs; i++, nargs--) {
+        naRef val = nargs > 0 ? args[i] : c->constants[c->optArgVals[i]];
+        if(IS_CODE(val))
+            val = bindFunction(ctx, &ctx->fStack[ctx->fTop-2], val);
+        naHash_newsym(f->locals.ref.ptr.hash, &c->constants[c->optArgSyms[i]], 
+                      &val);
+    }
+    args += c->nOptArgs;
+    if(c->needArgVector || nargs > 0) {
+        naRef argsv = naNewVector(ctx);
+        naVec_setsize(argsv, nargs > 0 ? nargs : 0);
+        for(i=0; i<nargs; i++)
+            argsv.ref.ptr.vec->rec->array[i] = *args++;
+        naHash_newsym(f->locals.ref.ptr.hash, &c->restArgSym, &argsv);
+    }
+}
+
+struct Frame* setupFuncall(struct Context* ctx, int nargs, int mcall, int tail)
+{
     naRef *frame;
     struct Frame* f;
-    struct naCode* c;
     
     DBG(printf("setupFuncall(nargs:%d, mcall:%d)\n", nargs, mcall);)
 
@@ -221,29 +272,7 @@ struct Frame* setupFuncall(struct Context* ctx, int nargs, int mcall, int tail)
     if(mcall)
         naHash_set(f->locals, globals->meRef, frame[-1]);
 
-    // Set the argument symbols, and put any remaining args in a vector
-    c = (*frame++).ref.ptr.func->code.ref.ptr.code;
-    if(nargs < c->nArgs) ERR(ctx, "not enough arguments to function call");
-    for(i=0; i<c->nArgs; i++)
-        naHash_newsym(f->locals.ref.ptr.hash,
-                      &c->constants[c->argSyms[i]], &frame[i]);
-    frame += c->nArgs;
-    nargs -= c->nArgs;
-    for(i=0; i<c->nOptArgs; i++, nargs--) {
-        naRef val = nargs > 0 ? frame[i] : c->constants[c->optArgVals[i]];
-        if(IS_CODE(val))
-            val = bindFunction(ctx, &ctx->fStack[ctx->fTop-2], val);
-        naHash_newsym(f->locals.ref.ptr.hash, &c->constants[c->optArgSyms[i]], 
-                      &val);
-    }
-    if(c->needArgVector || nargs > 0)
-    {
-        naRef args = naNewVector(ctx);
-        naVec_setsize(args, nargs > 0 ? nargs : 0);
-        for(i=0; i<nargs; i++)
-            args.ref.ptr.vec->rec->array[i] = *frame++;
-        naHash_newsym(f->locals.ref.ptr.hash, &c->restArgSym, &args);
-    }
+    setupArgs(ctx, f, frame+1, nargs);
 
     ctx->opTop = f->bp; // Pop the stack last, to avoid GC lossage
     DBG(printf("Entering frame %d with %d args\n", ctx->fTop-1, nargs);)
@@ -574,7 +603,7 @@ static naRef run(struct Context* ctx)
         default:
             ERR(ctx, "BUG: bad opcode");
         }
-        ctx->temps.ref.ptr.vec->rec->size = 0; // reset GC temp vector
+        ctx->ntemps = 0; // reset GC temp vector
         DBG(printStackDEBUG(ctx);)
     }
     return naNil(); // unreachable
@@ -622,7 +651,7 @@ naRef naGetSourceFile(struct Context* ctx, int frame)
 char* naGetError(struct Context* ctx)
 {
     if(IS_STR(ctx->dieArg))
-        return ctx->dieArg.ref.ptr.str->data;
+        return (char*)ctx->dieArg.ref.ptr.str->data;
     return ctx->error;
 }
 
@@ -643,26 +672,33 @@ naRef naBindToContext(naContext ctx, naRef code)
     return func;
 }
 
-naRef naCall(naContext ctx, naRef func, naRef args, naRef obj, naRef locals)
+naRef naCall(naContext ctx, naRef func, int argc, naRef* args,
+             naRef obj, naRef locals)
 {
+    int i;
     naRef result;
     if(!ctx->callParent) naModLock(ctx);
 
     // We might have to allocate objects, which can call the GC.  But
     // the call isn't on the Nasal stack yet, so the GC won't find our
     // C-space arguments.
-    naVec_append(ctx->temps, func);
-    naVec_append(ctx->temps, args);
-    naVec_append(ctx->temps, obj);
-    naVec_append(ctx->temps, locals);
+    naTempSave(ctx, func);
+    for(i=0; i<argc; i++)
+        naTempSave(ctx, args[i]);
+    naTempSave(ctx, obj);
+    naTempSave(ctx, locals);
+
+    if(IS_CCODE(func.ref.ptr.func->code)) {
+        naCFunction fp = func.ref.ptr.func->code.ref.ptr.ccode->fptr;
+        result = (*fp)(ctx, obj, argc, args);
+        if(!ctx->callParent) naModUnlock(ctx);
+        return result;
+    }
 
     if(IS_NIL(locals))
         locals = naNewHash(ctx);
     if(!IS_FUNC(func))
         func = naNewFunc(ctx, func); // bind bare code objects
-
-    if(!IS_NIL(args))
-        naHash_set(locals, globals->argRef, args);
     if(!IS_NIL(obj))
         naHash_set(locals, globals->meRef, obj);
 
@@ -675,6 +711,8 @@ naRef naCall(naContext ctx, naRef func, naRef args, naRef obj, naRef locals)
     ctx->fStack[0].ip = 0;
     ctx->fStack[0].bp = ctx->opTop;
 
+    setupArgs(ctx, ctx->fStack, args, argc);
+
     // Return early if an error occurred.  It will be visible to the
     // caller via naGetError().
     ctx->error = 0;
@@ -683,12 +721,7 @@ naRef naCall(naContext ctx, naRef func, naRef args, naRef obj, naRef locals)
         return naNil();
     }
 
-    if(IS_CCODE(func.ref.ptr.func->code)) {
-        naCFunction fp = func.ref.ptr.func->code.ref.ptr.ccode->fptr;
-        struct naVec* av = args.ref.ptr.vec;
-        result = (*fp)(ctx, obj, av->rec->size, av->rec->array);
-    } else
-        result = run(ctx);
+    result = run(ctx);
     if(!ctx->callParent) naModUnlock(ctx);
     return result;
 }

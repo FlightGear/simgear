@@ -3,10 +3,6 @@
 
 #include "nasal.h"
 
-// Notes: A CODE object is a compiled set of bytecode instructions.
-// What actually gets executed at runtime is a bound FUNC object,
-// which combines the raw code with a namespace and a pointer to
-// parent function in the lexical closure.
 enum { T_STR, T_VEC, T_HASH, T_CODE, T_FUNC, T_CCODE, T_GHOST,
        NUM_NASAL_TYPES }; // V. important that this come last!
 
@@ -26,6 +22,8 @@ enum { T_STR, T_VEC, T_HASH, T_CODE, T_FUNC, T_CCODE, T_GHOST,
 #define IS_SCALAR(r) (IS_NUM((r)) || IS_STR((r)))
 #define IDENTICAL(a, b) (IS_REF(a) && IS_REF(b) \
                          && a.ref.ptr.obj == b.ref.ptr.obj)
+
+#define MUTABLE(r) (IS_STR(r) && (r).ref.ptr.str->hashcode == 0)
 
 // This is a macro instead of a separate struct to allow compilers to
 // avoid padding.  GCC on x86, at least, will always padd the size of
@@ -125,6 +123,7 @@ struct naPool {
 
 void naFree(void* m);
 void* naAlloc(int n);
+void* naRealloc(void* buf, int sz);
 void naBZero(void* m, int n);
 
 int naTypeSize(int type);
@@ -137,6 +136,7 @@ naRef naStr_fromnum(naRef dest, double num);
 int naStr_numeric(naRef str);
 int naStr_parsenum(char* str, int len, double* result);
 int naStr_tonum(naRef str, double* out);
+naRef naStr_buf(naRef str, int len);
 
 int naHash_tryset(naRef hash, naRef key, naRef val); // sets if exists
 int naHash_sym(struct naHash* h, struct naStr* sym, naRef* out);

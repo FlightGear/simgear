@@ -82,13 +82,14 @@ naRef naMathLib(naContext c)
         naHash_set(namespace, name, naNewFunc(c, code));
     }
 
-    // Set up constants for math.pi and math.e
+    // Set up constants for math.pi and math.e.  Can't use M_PI or
+    // M_E, becuase those aren't technically part of the C standard.  Sigh.
     name = naStr_fromdata(naNewString(c), "pi", 2);
-    naHash_set(namespace, name, naNum(M_PI));
+    naHash_set(namespace, name, naNum(3.14159265358979323846));
 
     name = naStr_fromdata(naNewString(c), "e", 1);
     name = naInternSymbol(name);
-    naHash_set(namespace, name, naNum(M_E));
+    naHash_set(namespace, name, naNum(2.7182818284590452354));
 
     return namespace;
 }

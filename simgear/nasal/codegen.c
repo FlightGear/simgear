@@ -79,10 +79,11 @@ naRef naInternSymbol(naRef sym)
 
 static int findConstantIndex(struct Parser* p, struct Token* t)
 {
-    naRef c;
+    naRef c, dummy;
     if(t->type == TOK_NIL) c = naNil();
     else if(t->str) {
         c = naStr_fromdata(naNewString(p->context), t->str, t->strlen);
+        naHash_get(globals->symbols, c, &dummy); // noop, make c immutable
         if(t->type == TOK_SYMBOL) c = naInternSymbol(c);
     } else if(t->type == TOK_FUNC) c = newLambda(p, t);
     else if(t->type == TOK_LITERAL) c = naNum(t->num);

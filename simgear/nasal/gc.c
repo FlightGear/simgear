@@ -4,9 +4,6 @@
 
 #define MIN_BLOCK_SIZE 256
 
-// "type" for an object freed by the collector
-#define T_GCFREED 123 // DEBUG
-
 static void reap(struct naPool* p);
 static void mark(naRef r);
 
@@ -25,6 +22,15 @@ static void freeDead()
     globals->ndead = 0;
 }
 
+static void marktemps(struct Context* c)
+{
+    int i;
+    naRef r = naNil();
+    for(i=0; i<c->ntemps; i++) {
+        r.ref.ptr.obj = c->temps[i];
+        mark(r);
+    }
+}
 
 // Must be called with the big lock!
 static void garbageCollect()
@@ -43,7 +49,7 @@ static void garbageCollect()
         for(i=0; i < c->opTop; i++)
             mark(c->opStack[i]);
         mark(c->dieArg);
-        mark(c->temps);
+        marktemps(c);
         c = c->nextAll;
     }
 
@@ -72,10 +78,10 @@ static void garbageCollect()
 
 void naModLock()
 {
-    naCheckBottleneck();
     LOCK();
     globals->nThreads++;
     UNLOCK();
+    naCheckBottleneck();
 }
 
 void naModUnlock()
@@ -149,7 +155,6 @@ static void freeelem(struct naPool* p, struct naObj* o)
     }
 
     // And add it to the free list
-    o->type = T_GCFREED; // DEBUG
     p->free[p->nfree++] = o;
 }
 
@@ -173,7 +178,6 @@ static void newBlock(struct naPool* p, int need)
     for(i=0; i < need; i++) {
         struct naObj* o = (struct naObj*)(newb->block + i*p->elemsz);
         o->mark = 0;
-        o->type = T_GCFREED; // DEBUG
         p->free[p->nfree++] = o;
     }
     p->freetop += need;
@@ -218,6 +222,30 @@ struct naObj** naGC_get(struct naPool* p, int n, int* nout)
     return result;
 }
 
+static void markvec(naRef r)
+{
+    int i;
+    struct VecRec* vr = r.ref.ptr.vec->rec;
+    if(!vr) return;
+    for(i=0; i<vr->size; i++)
+        mark(vr->array[i]);
+}
+
+static void markhash(naRef r)
+{
+    int i;
+    struct HashRec* hr = r.ref.ptr.hash->rec;
+    if(!hr) return;
+    for(i=0; i < (1<<hr->lgalloced); i++) {
+        struct HashNode* hn = hr->table[i];
+        while(hn) {
+            mark(hn->key);
+            mark(hn->val);
+            hn = hn->next;
+        }
+    }
+}
+
 // Sets the reference bit on the object, and recursively on all
 // objects reachable from it.  Uses the processor stack for recursion...
 static void mark(naRef r)
@@ -230,29 +258,10 @@ static void mark(naRef r)
     if(r.ref.ptr.obj->mark == 1)
         return;
 
-    // Verify that the object hasn't been freed incorrectly:
-    if(r.ref.ptr.obj->type == T_GCFREED) *(int*)0=0; // DEBUG
-
     r.ref.ptr.obj->mark = 1;
     switch(r.ref.ptr.obj->type) {
-    case T_VEC:
-        if(r.ref.ptr.vec->rec)
-            for(i=0; i<r.ref.ptr.vec->rec->size; i++)
-                mark(r.ref.ptr.vec->rec->array[i]);
-        break;
-    case T_HASH:
-        if(r.ref.ptr.hash->rec != 0) {
-            struct HashRec* hr = r.ref.ptr.hash->rec;
-            for(i=0; i < (1<<hr->lgalloced); i++) {
-                struct HashNode* hn = hr->table[i];
-                while(hn) {
-                    mark(hn->key);
-                    mark(hn->val);
-                    hn = hn->next;
-                }
-            }
-        }
-        break;
+    case T_VEC: markvec(r); break;
+    case T_HASH: markhash(r); break;
     case T_CODE:
         mark(r.ref.ptr.code->srcFile);
         for(i=0; i<r.ref.ptr.code->nConstants; i++)
@@ -304,15 +313,24 @@ static void reap(struct naPool* p)
     p->freetop = p->nfree;
 }
 
+// Does the swap, returning the old value
+static void* doswap(void** target, void* val)
+{
+    void* old = *target;
+    *target = val;
+    return old;
+}
+
 // Atomically replaces target with a new pointer, and adds the old one
 // to the list of blocks to free the next time something holds the
 // giant lock.
 void naGC_swapfree(void** target, void* val)
 {
+    void* old;
     LOCK();
+    old = doswap(target, val);
     while(globals->ndead >= globals->deadsz)
         bottleneck();
-    globals->deadBlocks[globals->ndead++] = *target;
-    *target = val;
+    globals->deadBlocks[globals->ndead++] = old;
     UNLOCK();
 }

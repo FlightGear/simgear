@@ -12,6 +12,7 @@
 #include "code.h"
 
 #define NEWSTR(c, s, l) naStr_fromdata(naNewString(c), s, l)
+#define NEWCSTR(c, s) NEWSTR(c, s, strlen(s))
 
 static naRef size(naContext c, naRef me, int argc, naRef* args)
 {
@@ -103,14 +104,32 @@ static naRef streq(naContext c, naRef me, int argc, naRef* args)
     return argc > 1 ? naNum(naStrEqual(args[0], args[1])) : naNil();
 }
 
+static naRef f_cmp(naContext c, naRef me, int argc, naRef* args)
+{
+    char *a, *b;
+    int i, len;
+    if(argc < 2 || !naIsString(args[0]) || !naIsString(args[1]))
+        naRuntimeError(c, "bad argument to cmp");
+    a = naStr_data(args[0]);
+    b = naStr_data(args[1]);
+    len = naStr_len(args[0]);
+    if(naStr_len(args[1]) < len)
+        len = naStr_len(args[1]);
+    for(i=0; i<len; i++) {
+        int diff = a - b;
+        if(diff < 0) return naNum(-1);
+        else if(diff > 0) return naNum(1);
+    }
+    return naNum(0);
+}
+
 static naRef substr(naContext c, naRef me, int argc, naRef* args)
 {
     naRef src = argc > 1 ? args[0] : naNil();
-    naRef startR = argc > 1 ? args[1] : naNil();
-    naRef lenR = argc > 2 ? args[2] : naNil();
+    naRef startR = argc > 1 ? naNumValue(args[1]) : naNil();
+    naRef lenR = argc > 2 ? naNumValue(args[2]) : naNil();
     int start, len;
     if(!naIsString(src)) return naNil();
-    startR = naNumValue(startR);
     if(naIsNil(startR)) return naNil();
     start = (int)startR.num;
     if(naIsNil(lenR)) {
@@ -122,18 +141,6 @@ static naRef substr(naContext c, naRef me, int argc, naRef* args)
         len = (int)lenR.num;
     }
     return naStr_substr(naNewString(c), src, start, len);
-}
-
-static naRef f_strc(naContext c, naRef me, int argc, naRef* args)
-{
-    int idx;
-    struct naStr* str = args[0].ref.ptr.str;
-    naRef idr = argc > 1 ? naNumValue(args[1]) : naNum(0);
-    if(argc < 1 || IS_NIL(idr) || !IS_STR(args[0]))
-        naRuntimeError(c, "bad arguments to strc");
-    idx = (int)naNumValue(idr).num;
-    if(idx > str->len) naRuntimeError(c, "strc index out of bounds");
-    return naNum(str->data[idx]);
 }
 
 static naRef f_chr(naContext c, naRef me, int argc, naRef* args)
@@ -165,7 +172,7 @@ static naRef typeOf(naContext c, naRef me, int argc, naRef* args)
     else if(naIsHash(r)) t = "hash";
     else if(naIsFunc(r)) t = "func";
     else if(naIsGhost(r)) t = "ghost";
-    r = NEWSTR(c, t, strlen(t));
+    r = NEWCSTR(c, t);
     return r;
 }
 
@@ -175,33 +182,37 @@ static naRef f_compile(naContext c, naRef me, int argc, naRef* args)
     naRef script, code, fname;
     script = argc > 0 ? args[0] : naNil();
     if(!naIsString(script)) return naNil();
-    fname = NEWSTR(c, "<compile>", 9);
+    fname = NEWCSTR(c, "<compile>");
     code = naParseCode(c, fname, 1,
                        naStr_data(script), naStr_len(script), &errLine);
     if(!naIsCode(code)) return naNil(); // FIXME: export error to caller...
     return naBindToContext(c, code);
 }
 
-// Funcation metacall API.  Allows user code to generate an arg vector
-// at runtime and/or call function references on arbitrary objects.
 static naRef f_call(naContext c, naRef me, int argc, naRef* args)
 {
     naContext subc;
-    naRef callargs, callme, result;
+    naRef callargs, callme, callns, result;
+    struct VecRec* vr;
     callargs = argc > 1 ? args[1] : naNil();
     callme = argc > 2 ? args[2] : naNil(); // Might be nil, that's OK
-    if(!naIsFunc(args[0])) naRuntimeError(c, "call() on non-function");
-    if(naIsNil(callargs)) callargs = naNewVector(c);
-    else if(!naIsVector(callargs)) naRuntimeError(c, "call() args not vector");
-    if(!naIsHash(callme)) callme = naNil();
+    callns = argc > 3 ? args[3] : naNil(); // ditto
+    if(!IS_HASH(callme)) callme = naNil();
+    if(!IS_HASH(callns)) callns = naNil();
+    if(!IS_FUNC(args[0]) || (!IS_NIL(callargs) && !IS_VEC(callargs)))
+        naRuntimeError(c, "bad argument to call()");
     subc = naNewContext();
     subc->callParent = c;
     c->callChild = subc;
-    result = naCall(subc, args[0], callargs, callme, naNil());
+    vr = IS_NIL(callargs) ? 0 : callargs.ref.ptr.vec->rec;
+    result = naCall(subc, args[0], vr ? vr->size : 0, vr ? vr->array : 0,
+                    callme, callns);
     c->callChild = 0;
-    if(argc > 2 && !IS_NIL(subc->dieArg))
-        if(naIsVector(args[argc-1]))
-            naVec_append(args[argc-1], subc->dieArg);
+    if(argc > 2 && IS_VEC(args[argc-1])) {
+        if(!IS_NIL(subc->dieArg)) naVec_append(args[argc-1], subc->dieArg);
+        else if(naGetError(subc))
+            naVec_append(args[argc-1], NEWCSTR(subc, naGetError(subc)));
+    }
     naFreeContext(subc);
     return result;
 }
@@ -351,14 +362,14 @@ static naRef f_closure(naContext ctx, naRef me, int argc, naRef* args)
     return f->namespace;
 }
 
-static int match(char* a, char* b, int l)
+static int match(unsigned char* a, unsigned char* b, int l)
 {
     int i;
     for(i=0; i<l; i++) if(a[i] != b[i]) return 0;
     return 1;
 }
 
-static int find(char* a, int al, char* s, int sl, int start)
+static int find(unsigned char* a, int al, unsigned char* s, int sl, int start)
 {
     int i;
     if(al == 0) return 0;
@@ -370,7 +381,7 @@ static naRef f_find(naContext ctx, naRef me, int argc, naRef* args)
 {
     int start = 0;
     if(argc < 2 || !IS_STR(args[0]) || !IS_STR(args[1]))
-        naRuntimeError(ctx, "bad/missing argument to split");
+        naRuntimeError(ctx, "bad/missing argument to find");
     if(argc > 2) start = (int)(naNumValue(args[2]).num);
     return naNum(find(args[0].ref.ptr.str->data, args[0].ref.ptr.str->len,
                       args[1].ref.ptr.str->data, args[1].ref.ptr.str->len,
@@ -393,7 +404,7 @@ static naRef f_split(naContext ctx, naRef me, int argc, naRef* args)
     }
     s0 = s;
     for(i=0; i <= sl-dl; i++) {
-        if(match(s+i, d, dl)) {
+        if(match((unsigned char*)(s+i), (unsigned char*)d, dl)) {
             naVec_append(result, NEWSTR(ctx, s0, s+i-s0));
             s0 = s + i + dl;
             i += dl - 1;
@@ -445,8 +456,8 @@ static struct func funcs[] = {
     { "int", intf },
     { "num", num },
     { "streq", streq },
+    { "cmp", f_cmp },
     { "substr", substr },
-    { "strc", f_strc },
     { "chr", f_chr },
     { "contains", contains },
     { "typeof", typeOf },

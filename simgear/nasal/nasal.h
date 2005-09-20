@@ -84,6 +84,11 @@ void naFreeContext(naContext c);
 // referenced by it) from being garbage collected.
 void naSave(naContext ctx, naRef obj);
 
+// Similar, but the object is automatically released when the
+// context next runs native bytecode.  Useful for saving off C-space
+// temporaries to protect them before passing back into a naCall.
+void naTempSave(naContext c, naRef r);
+
 // Parse a buffer in memory into a code object.
 naRef naParseCode(naContext c, naRef srcFile, int firstLine,
                   char* buf, int len, int* errLine);
@@ -102,7 +107,7 @@ naRef naBindToContext(naContext ctx, naRef code);
 // Call a code or function object with the specifed arguments "on" the
 // specified object and using the specified hash for the local
 // variables.  Any of args, obj or locals may be nil.
-naRef naCall(naContext ctx, naRef func, naRef args, naRef obj, naRef locals);
+naRef naCall(naContext ctx, naRef func, int argc, naRef* args, naRef obj, naRef locals);
 
 // Throw an error from the current call stack.  This function makes a
 // longjmp call to a handler in naCall() and DOES NOT RETURN.  It is
@@ -119,8 +124,12 @@ naRef naMethod(naContext ctx, naRef func, naRef object);
 // Useful for passing as a namespace to an initial function call
 naRef naStdLib(naContext c);
 
-// Ditto, with math functions
+// Ditto, for other core libraries
 naRef naMathLib(naContext c);
+naRef naBitsLib(naContext c);
+naRef naIOLib(naContext c);
+naRef naRegexLib(naContext c);
+naRef naUnixLib(naContext c);
 
 // Current line number & error message
 int naStackDepth(naContext ctx);

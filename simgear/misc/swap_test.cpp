@@ -4,8 +4,8 @@
 
 int main() 
 {
-   uint16_t sui16, ui16 = 0x0123;
-   uint32_t sui32, ui32 = 0x01234567;
+   unsigned short sui16, ui16 = 0x0123;
+   unsigned int sui32, ui32 = 0x01234567;
    uint64_t sui64, ui64 = 0x0123456789ABCDEFLL;
 
    sui16 = ui16; sgEndianSwap(&sui16);

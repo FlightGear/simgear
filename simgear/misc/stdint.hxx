@@ -1,0 +1,106 @@
+
+#ifndef _STDINT_HXX
+#define _STDINT_HXX 1
+
+// Copyright (C) 1999  Curtis L. Olson - http://www.flightgear.org/~curt
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library General Public License for more details.
+//
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the
+// Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+// Boston, MA  02111-1307, USA.
+//
+// $Id$
+
+
+//////////////////////////////////////////////////////////////////////
+//
+//  There are many sick systems out there:
+//
+//  check for sizeof(float) and sizeof(double)
+//  if sizeof(float) != 4 this code must be patched
+//  if sizeof(double) != 8 this code must be patched
+//
+//  Those are comments I fetched out of glibc source:
+//  - s390 is big-endian
+//  - Sparc is big-endian, but v9 supports endian conversion
+//    on loads/stores and GCC supports such a mode.  Be prepared.
+//  - The MIPS architecture has selectable endianness.
+//  - x86_64 is little-endian.
+//  - CRIS is little-endian.
+//  - m68k is big-endian.
+//  - Alpha is little-endian.
+//  - PowerPC can be little or big endian.
+//  - SH is bi-endian but with a big-endian FPU.
+//  - hppa1.1 big-endian.
+//  - ARM is (usually) little-endian but with a big-endian FPU.
+//
+//////////////////////////////////////////////////////////////////////
+
+
+#ifdef _MSC_VER
+typedef signed char      int8_t;
+typedef signed short     int16_t;
+typedef signed int       int32_t;
+typedef signed __int64   int64_t;
+typedef unsigned char    uint8_t;
+typedef unsigned short   uint16_t;
+typedef unsigned int     uint32_t;
+typedef unsigned __int64 uint64_t;
+#else
+# include <stdint.h>
+#endif
+
+#include <plib/ul.h>
+
+
+inline uint16_t sg_bswap_16(uint16_t b) {
+    unsigned short x = b;
+    ulEndianSwap(&x);
+    return x;
+}
+
+inline uint32_t sg_bswap_32(uint32_t b) {
+    unsigned x = b;
+    ulEndianSwap(&x);
+    return x;
+}
+
+inline uint64_t sg_bswap_64(uint64_t b) {
+    uint64_t x = b;
+    x = ((x >>  8) & 0x00FF00FF00FF00FFLL) | ((x <<  8) & 0xFF00FF00FF00FF00LL);    x = ((x >> 16) & 0x0000FFFF0000FFFFLL) | ((x << 16) & 0xFFFF0000FFFF0000LL);    x = (x >> 32) | (x << 32);
+    return x;
+}
+
+
+inline bool sgIsLittleEndian() {
+    static const int sgEndianTest = 1;
+    return (*((char *) &sgEndianTest ) != 0);
+}
+
+inline bool sgIsBigEndian() {
+    static const int sgEndianTest = 1;
+    return (*((char *) &sgEndianTest ) == 0);
+}
+
+inline void sgEndianSwap(unsigned short *x) { ulEndianSwap(x); }
+inline void sgEndianSwap(unsigned int *x) { ulEndianSwap(x); }
+#if (SIZEOF_LONG_INT == 8)
+inline void sgEndianSwap(unsigned long int *x) { *x = sg_bswap_64(*x); }
+#else
+inline void sgEndianSwap(unsigned long long *x) { *x = sg_bswap_64(*x); }
+#endif
+
+
+
+#endif // !_STDINT_HXX
+

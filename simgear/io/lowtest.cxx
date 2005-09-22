@@ -39,8 +39,8 @@ int main() {
 
     double x = 1111111111;
     cout << "double x = " << x << endl;
-    sgEndianSwap((unsigned long long *)&x);
+    sgEndianSwap((uint64_t *)&x);
     cout << "double x = " << x << endl;
-    sgEndianSwap((unsigned long long *)&x);
+    sgEndianSwap((uint64_t *)&x);
     cout << "double x = " << x << endl;
 }

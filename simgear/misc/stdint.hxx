@@ -77,7 +77,9 @@ inline uint32_t sg_bswap_32(uint32_t b) {
 
 inline uint64_t sg_bswap_64(uint64_t b) {
     uint64_t x = b;
-    x = ((x >>  8) & 0x00FF00FF00FF00FFLL) | ((x <<  8) & 0xFF00FF00FF00FF00LL);    x = ((x >> 16) & 0x0000FFFF0000FFFFLL) | ((x << 16) & 0xFFFF0000FFFF0000LL);    x = (x >> 32) | (x << 32);
+    x = ((x >>  8) & 0x00FF00FF00FF00FFLL) | ((x <<  8) & 0xFF00FF00FF00FF00LL);
+    x = ((x >> 16) & 0x0000FFFF0000FFFFLL) | ((x << 16) & 0xFFFF0000FFFF0000LL);
+    x = (x >> 32) | (x << 32);
     return x;
 }
 

@@ -56,27 +56,25 @@ typedef unsigned char    uint8_t;
 typedef unsigned short   uint16_t;
 typedef unsigned int     uint32_t;
 typedef unsigned __int64 uint64_t;
+#elif defined(sgi)
+# include <sys/types.h>
 #else
 # include <stdint.h>
 #endif
 
-#include <plib/ul.h>
 
-
-inline uint16_t sg_bswap_16(uint16_t b) {
-    unsigned short x = b;
-    ulEndianSwap(&x);
+inline uint16_t sg_bswap_16(uint16_t x) {
+    x = (x >> 8) | (x << 8);
     return x;
 }
 
-inline uint32_t sg_bswap_32(uint32_t b) {
-    unsigned x = b;
-    ulEndianSwap(&x);
+inline uint32_t sg_bswap_32(uint32_t x) {
+    x = ((x >>  8) & 0x00FF00FFL) | ((x <<  8) & 0xFF00FF00L);
+    x = (x >> 16) | (x << 16);
     return x;
 }
 
-inline uint64_t sg_bswap_64(uint64_t b) {
-    uint64_t x = b;
+inline uint64_t sg_bswap_64(uint64_t x) {
     x = ((x >>  8) & 0x00FF00FF00FF00FFLL) | ((x <<  8) & 0xFF00FF00FF00FF00LL);
     x = ((x >> 16) & 0x0000FFFF0000FFFFLL) | ((x << 16) & 0xFFFF0000FFFF0000LL);
     x = (x >> 32) | (x << 32);
@@ -94,13 +92,9 @@ inline bool sgIsBigEndian() {
     return (*((char *) &sgEndianTest ) == 0);
 }
 
-inline void sgEndianSwap(unsigned short *x) { ulEndianSwap(x); }
-inline void sgEndianSwap(unsigned int *x) { ulEndianSwap(x); }
-#if (SIZEOF_LONG_INT == 8)
-inline void sgEndianSwap(unsigned long int *x) { *x = sg_bswap_64(*x); }
-#else
-inline void sgEndianSwap(unsigned long long *x) { *x = sg_bswap_64(*x); }
-#endif
+inline void sgEndianSwap(uint16_t *x) { *x = sg_bswap_16(*x); }
+inline void sgEndianSwap(uint32_t *x) { *x = sg_bswap_32(*x); }
+inline void sgEndianSwap(uint64_t *x) { *x = sg_bswap_64(*x); }
 
 
 

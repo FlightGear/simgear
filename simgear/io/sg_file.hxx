@@ -54,6 +54,7 @@ class SGFile : public SGIOChannel {
 
     string file_name;
     int fp;
+    bool eof_flag;
 
 public:
 
@@ -89,6 +90,9 @@ public:
 
     /** @return the name of the file being manipulated. */
     inline string get_file_name() const { return file_name; }
+
+    /** @return true of eof conditions exists */
+    inline bool eof() const { return eof_flag; };
 };
 
 

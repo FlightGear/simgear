@@ -39,6 +39,7 @@ SG_USING_STD(string);
 SGFile::SGFile( const string &file) {
     set_type( sgFileType );
     file_name = file;
+    eof_flag = true;
 }
 
 
@@ -70,6 +71,7 @@ bool SGFile::open( const SGProtocolDir d ) {
 	return false;
     }
 
+    eof_flag = false;
     return true;
 }
 
@@ -77,7 +79,11 @@ bool SGFile::open( const SGProtocolDir d ) {
 // read a block of data of specified size
 int SGFile::read( char *buf, int length ) {
     // read a chunk
-    return ::read( fp, buf, length );
+    ssize_t result = ::read( fp, buf, length );
+    if ( result == 0 ) {
+        eof_flag = true;
+    }
+    return result;
 }
 
 
@@ -87,7 +93,10 @@ int SGFile::readline( char *buf, int length ) {
     int pos = lseek( fp, 0, SEEK_CUR );
 
     // read a chunk
-    int result = ::read( fp, buf, length );
+    ssize_t result = ::read( fp, buf, length );
+    if ( result == 0 ) {
+        eof_flag = true;
+    }
 
     // find the end of line and reset position
     int i;
@@ -130,5 +139,6 @@ bool SGFile::close() {
 	return false;
     }
 
+    eof_flag = true;
     return true;
 }

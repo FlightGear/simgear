@@ -70,3 +70,9 @@ int SGIOChannel::writestring( const char *str ) {
 bool SGIOChannel::close() {
     return false;
 }
+
+
+// dummy eof routine
+bool SGIOChannel::eof() {
+    return false;
+}

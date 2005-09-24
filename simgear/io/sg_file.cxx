@@ -80,7 +80,7 @@ bool SGFile::open( const SGProtocolDir d ) {
 int SGFile::read( char *buf, int length ) {
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
-    if ( result == 0 ) {
+    if ( length > 0 && result == 0 ) {
         eof_flag = true;
     }
     return result;
@@ -94,7 +94,7 @@ int SGFile::readline( char *buf, int length ) {
 
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
-    if ( result == 0 ) {
+    if ( length > 0 && result == 0 ) {
         eof_flag = true;
     }
 

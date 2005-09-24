@@ -152,6 +152,14 @@ public:
      */
     virtual bool close();
 
+    /**
+     * The eof() method returns true if end of file has been reached
+     * in a context where that makes sense.  Otherwise it returns
+     * false.
+     * @return result of eof check
+     */
+    virtual bool eof();
+
     inline void set_type( SGChannelType t ) { type = t; }
     inline SGChannelType get_type() const { return type; }
 

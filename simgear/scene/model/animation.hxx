@@ -599,5 +599,31 @@ private:
   bool _condition_value;
 };
 
+/**
++ * An "animation" that replace fixed opengl pipeline by shaders
++ */
+class SGShaderAnimation : public SGAnimation
+{
+public:
+  SGShaderAnimation ( SGPropertyNode *prop_root,
+                   SGPropertyNode_ptr props );
+  virtual ~SGShaderAnimation ();
+  virtual void init();
+  virtual int update();
+  bool get_condition_value(void);
+private:
+  SGCondition * _condition;
+  bool _condition_value;
+  int _shader_type;
+  float _param_1;
+  sgVec4 _param_color;
+public:
+  bool _depth_test;
+  float _factor;
+  SGPropertyNode_ptr _factor_prop;
+  float _speed;
+  SGPropertyNode_ptr _speed_prop;
+};
+
 
 #endif // _SG_ANIMATION_HXX

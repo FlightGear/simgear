@@ -772,7 +772,7 @@ SGTranslateAnimation::update()
 {
   if (_condition == 0 || _condition->test()) {
     if (_table == 0) {
-      _position_m = (_prop->getDoubleValue() + _offset_m) * _factor;
+      _position_m = (_prop->getDoubleValue() * _factor) + _offset_m;
       if (_has_min && _position_m < _min_m)
         _position_m = _min_m;
       if (_has_max && _position_m > _max_m)
@@ -796,9 +796,9 @@ SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _x_factor(props->getDoubleValue("x-factor", 1.0)),
-    _y_factor(props->getDoubleValue("y-factor", 1.0)),
-    _z_factor(props->getDoubleValue("z-factor", 1.0)),
+    _x_factor(props->getDoubleValue("x-factor", 0)),
+    _y_factor(props->getDoubleValue("y-factor", 0)),
+    _z_factor(props->getDoubleValue("z-factor", 0)),
     _x_offset(props->getDoubleValue("x-offset", 1.0)),
     _y_offset(props->getDoubleValue("y-offset", 1.0)),
     _z_offset(props->getDoubleValue("z-offset", 1.0)),

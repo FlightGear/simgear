@@ -24,6 +24,7 @@ libsgmodel_a_SOURCES = \
 	personality.cxx \
 	placement.cxx \
 	placementtrans.cxx \
-	shadowvolume.cxx
+	shadowvolume.cxx \
+	shadanim.cxx
 
 INCLUDES = -I$(top_srcdir)

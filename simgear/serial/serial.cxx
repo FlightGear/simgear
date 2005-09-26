@@ -102,7 +102,7 @@ bool SGSerialPort::open_port(const string& device) {
 
     struct termios config;
 
-    fd = open(device.c_str(), O_RDWR | O_NONBLOCK);
+    fd = open(device.c_str(), O_RDWR | O_NOCTTY| O_NDELAY);
     SG_LOG( SG_EVENT, SG_DEBUG, "Serial fd created = " << fd);
 
     if ( fd  == -1 ) {
@@ -123,11 +123,11 @@ bool SGSerialPort::open_port(const string& device) {
 
     // cout << "config.c_iflag = " << config.c_iflag << endl;
 
-    // software flow control on
-    config.c_iflag |= IXON;
-    // config.c_iflag |= IXOFF;
+    // disable software flow control
+    config.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-    // config.c_cflag |= CLOCAL;
+    // enable the receiver and set local mode
+    config.c_cflag |= (CLOCAL | CREAD);
 
 #if !defined( sgi ) && !defined(_AIX)
     // disable hardware flow control
@@ -135,6 +135,9 @@ bool SGSerialPort::open_port(const string& device) {
 #endif
 
     // cout << "config.c_iflag = " << config.c_iflag << endl;
+    
+    // Raw (not cooked/canonical) input mode
+    config.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
     if ( tcsetattr( fd, TCSANOW, &config ) != 0 ) {
 	SG_LOG( SG_IO, SG_ALERT, "Unable to update port settings" );

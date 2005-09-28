@@ -1,4 +1,4 @@
-/ ron.cxx - classes to manage model animation.
+// animation.cxx - classes to manage model animation.
 // Written by David Megginson, started 2002.
 //
 // This file is in the Public Domain, and comes with no warranty.

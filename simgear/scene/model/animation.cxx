@@ -1,4 +1,4 @@
-// animation.cxx - classes to manage model animation.
+/ ron.cxx - classes to manage model animation.
 // Written by David Megginson, started 2002.
 //
 // This file is in the Public Domain, and comes with no warranty.
@@ -796,9 +796,9 @@ SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _x_factor(props->getDoubleValue("x-factor", 0)),
-    _y_factor(props->getDoubleValue("y-factor", 0)),
-    _z_factor(props->getDoubleValue("z-factor", 0)),
+    _x_factor(props->getDoubleValue("x-factor", 1.0)),
+    _y_factor(props->getDoubleValue("y-factor", 1.0)),
+    _z_factor(props->getDoubleValue("z-factor", 1.0)),
     _x_offset(props->getDoubleValue("x-offset", 1.0)),
     _y_offset(props->getDoubleValue("y-offset", 1.0)),
     _z_offset(props->getDoubleValue("z-offset", 1.0)),

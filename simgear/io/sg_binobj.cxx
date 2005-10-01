@@ -249,7 +249,7 @@ static void read_object( gzFile fp,
 	for ( k = 0; k < count; ++k ) {
 	    if ( sgIsBigEndian() ) {
 		for ( idx = 0; idx < idx_size; ++idx ) {
-		    sgEndianSwap( (unsigned short *)&(sptr[idx]) );
+		    sgEndianSwap( (uint16_t *)&(sptr[idx]) );
 		}
 	    }
 	    idx = 0;
@@ -413,7 +413,7 @@ bool SGBinObject::read_bin( const string& file ) {
 		
 		float *fptr = (float *)ptr;
 		if ( sgIsBigEndian() ) {
-		    sgEndianSwap( (unsigned int *)fptr );
+		    sgEndianSwap( (uint32_t *)fptr );
 		}
 		gbs_radius = fptr[0];
 		// cout << "Bounding radius = " << gbs_radius << endl;
@@ -443,9 +443,9 @@ bool SGBinObject::read_bin( const string& file ) {
 		wgs84_nodes.reserve( count );
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned int *)&(fptr[0]) );
-			sgEndianSwap( (unsigned int *)&(fptr[1]) );
-			sgEndianSwap( (unsigned int *)&(fptr[2]) );
+			sgEndianSwap( (uint32_t *)&(fptr[0]) );
+			sgEndianSwap( (uint32_t *)&(fptr[1]) );
+			sgEndianSwap( (uint32_t *)&(fptr[2]) );
 		    }
 		    wgs84_nodes.push_back( Point3D(fptr[0], fptr[1], fptr[2]) );
 		    fptr += 3;
@@ -476,10 +476,10 @@ bool SGBinObject::read_bin( const string& file ) {
 		colors.reserve(count);
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned int *)&(fptr[0]) );
-			sgEndianSwap( (unsigned int *)&(fptr[1]) );
-			sgEndianSwap( (unsigned int *)&(fptr[2]) );
-			sgEndianSwap( (unsigned int *)&(fptr[3]) );
+			sgEndianSwap( (uint32_t *)&(fptr[0]) );
+			sgEndianSwap( (uint32_t *)&(fptr[1]) );
+			sgEndianSwap( (uint32_t *)&(fptr[2]) );
+			sgEndianSwap( (uint32_t *)&(fptr[3]) );
 		    }
 		    colors.push_back( Point3D( fptr[0], fptr[1], fptr[2] ) );
 		    fptr += 4;
@@ -544,8 +544,8 @@ bool SGBinObject::read_bin( const string& file ) {
 		texcoords.reserve(count);
 		for ( k = 0; k < count; ++k ) {
 		    if ( sgIsBigEndian() ) {
-			sgEndianSwap( (unsigned int *)&(fptr[0]) );
-			sgEndianSwap( (unsigned int *)&(fptr[1]) );
+			sgEndianSwap( (uint32_t *)&(fptr[0]) );
+			sgEndianSwap( (uint32_t *)&(fptr[1]) );
 		    }
 		    texcoords.push_back( Point3D( fptr[0], fptr[1], 0 ) );
 		    fptr += 2;

@@ -25,16 +25,16 @@ int main() {
 
     short s = 1111;
     cout << "short s = " << s << endl;
-    sgEndianSwap((unsigned short *)&s);
+    sgEndianSwap((uint16_t *)&s);
     cout << "short s = " << s << endl;
-    sgEndianSwap((unsigned short *)&s);
+    sgEndianSwap((uint16_t *)&s);
     cout << "short s = " << s << endl;
 
     int i = 1111111;
     cout << "int i = " << i << endl;
-    sgEndianSwap((unsigned int *)&i);
+    sgEndianSwap((uint32_t *)&i);
     cout << "int i = " << i << endl;
-    sgEndianSwap((unsigned int *)&i);
+    sgEndianSwap((uint32_t *)&i);
     cout << "int i = " << i << endl;
 
     double x = 1111111111;

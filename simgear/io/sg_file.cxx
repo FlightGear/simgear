@@ -29,6 +29,7 @@
 #  include <io.h>
 #endif
 
+#include <simgear/misc/stdint.hxx>
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_file.hxx"

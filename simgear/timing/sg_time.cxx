@@ -530,7 +530,7 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
 #else // ! defined ( MK_TIME_IS_GMT )
 
     // timezone seems to work as a proper offset for Linux & Solaris
-#   if defined( __linux__ ) || defined( __sun__ ) ||defined(__CYGWIN__)
+#   if defined( __linux__ ) || defined(__sun) ||defined(__CYGWIN__)
 #       define TIMEZONE_OFFSET_WORKS 1
 #   endif
 

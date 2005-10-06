@@ -324,7 +324,7 @@
 #endif // Native SGI compilers
 
 
-#if defined ( sun )
+#if defined (__sun)
 #  include <strings.h>
 #  include <memory.h>
 #  if defined ( __cplusplus )

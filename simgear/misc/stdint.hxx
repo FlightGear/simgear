@@ -58,7 +58,7 @@ typedef unsigned int     uint32_t;
 typedef unsigned __int64 uint64_t;
 
 typedef int ssize_t;
-#elif defined(sgi)
+#elif defined(sgi) || defined(__sun)
 # include <sys/types.h>
 #else
 # include <stdint.h>

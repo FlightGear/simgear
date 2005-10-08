@@ -623,6 +623,10 @@ public:
   SGPropertyNode_ptr _factor_prop;
   float _speed;
   SGPropertyNode_ptr _speed_prop;
+  ssgTexture *_effectTexture;
+  unsigned char *_textureData;
+  GLint _texWidth, _texHeight;
+  sgVec4 _envColor;
 };
 
 

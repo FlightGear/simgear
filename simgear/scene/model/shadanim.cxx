@@ -53,6 +53,13 @@
 
     <animation>
         <type>shader</type>
+        <shader>chrome</shader>
+        <texture>...</texture>
+        <object-name>...</object-name>
+    </animation>
+
+    <animation>
+        <type>shader</type>
         <shader></shader>
         <object-name>...</object-name>
         <depth-test>false</depth-test>
@@ -69,6 +76,8 @@ static bool haveBackground = false;
 
 static glActiveTextureProc glActiveTexturePtr = 0;
 static double totalTime = 0.0;
+static sgMat4 shadIdentMatrix;
+
 
 static int null_shader_callback( ssgEntity *e ) {
  	GLuint dlist = 0;
@@ -181,7 +190,7 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
 
         // automatic generation of texture coordinates
         // map to screen space
-        sgMat4 CameraProjM, CameraViewM, textureMatrix;
+        sgMat4 CameraProjM, CameraViewM;
         GLint viewport[4];
         glGetIntegerv( GL_VIEWPORT, viewport );
         const int screen_width = viewport[2];
@@ -200,15 +209,14 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
             glTranslatef( deltaPos, deltaPos, deltaPos );
         glMatrixMode(GL_MODELVIEW);
 
-        sgMakeIdentMat4( textureMatrix );
         glTexGeni( GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR );
         glTexGeni( GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR );
         glTexGeni( GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR );
         glTexGeni( GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR );
-        glTexGenfv( GL_S, GL_EYE_PLANE, textureMatrix[0] );
-        glTexGenfv( GL_T, GL_EYE_PLANE, textureMatrix[1] );
-        glTexGenfv( GL_R, GL_EYE_PLANE, textureMatrix[2] );
-        glTexGenfv( GL_Q, GL_EYE_PLANE, textureMatrix[3] );
+        glTexGenfv( GL_S, GL_EYE_PLANE, shadIdentMatrix[0] );
+        glTexGenfv( GL_T, GL_EYE_PLANE, shadIdentMatrix[1] );
+        glTexGenfv( GL_R, GL_EYE_PLANE, shadIdentMatrix[2] );
+        glTexGenfv( GL_Q, GL_EYE_PLANE, shadIdentMatrix[3] );
         glEnable( GL_TEXTURE_GEN_S );
         glEnable( GL_TEXTURE_GEN_T );
         glEnable( GL_TEXTURE_GEN_R );
@@ -227,7 +235,6 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
         glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_MODULATE);
         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE0_ARB);
         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
-//        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_CONSTANT_ARB );
         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PRIMARY_COLOR_ARB );
         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA ); 
 
@@ -241,7 +248,6 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
         sgVec4 fLight = {0.93f, 0.93f, 1.00f, 0.85f};
         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PRIMARY_COLOR_ARB );
         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR ); 
-//		glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, fLight);
 
         glMatrixMode(GL_TEXTURE);
         glTranslatef( deltaPos*0.7f, deltaPos*1.7f, deltaPos*0.7f );
@@ -350,9 +356,117 @@ static int fresnel_shader_callback( ssgEntity *e ) {
     return false;
 }
 
+
+
+static int chrome_shader_callback( ssgEntity *e ) {
+ 	GLuint dlist = 0;
+    ssgLeaf *leaf = (ssgLeaf *) e;
+#ifdef _SSG_USE_DLIST
+    dlist = leaf->getDListIndex();
+    if( ! dlist ) {
+        leaf->makeDList();
+        dlist = leaf->getDListIndex();
+    }
+#endif
+    if( ! dlist )
+        return true;
+    ssgSimpleState *sst = ((ssgSimpleState *)leaf->getState());
+    if ( sst )
+        sst->apply();
+
+    SGShaderAnimation *my_shader = (SGShaderAnimation *) ( e->getUserData() );
+    if( ! my_shader->_depth_test )
+        glDisable( GL_DEPTH_TEST );
+
+    GLint maskTexComponent = 3;
+    glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_COMPONENTS, &maskTexComponent);
+
+    // The fake env chrome texture
+    glActiveTexturePtr( GL_TEXTURE1_ARB );
+    glEnable(GL_TEXTURE_2D);
+    {
+        // No lighting is computed in spherical mapping mode because the environment
+        // is supposed to be allready lighted. We must reshade our environment texture.
+        sgVec4 sunColor, ambientColor, envColor;
+        ssgGetLight( 0 )->getColour(GL_DIFFUSE, sunColor );
+        ssgGetLight( 0 )->getColour(GL_AMBIENT, ambientColor );
+        sgAddScaledVec3( envColor, ambientColor, sunColor, 0.4f);
+        glBindTexture(GL_TEXTURE_2D, my_shader->_effectTexture->getHandle());
+
+        sgVec3 delta_light;
+        sgSubVec3(delta_light, envColor, my_shader->_envColor);
+        if( (fabs(delta_light[0]) + fabs(delta_light[1]) + fabs(delta_light[2])) > 0.05f ) {
+		    sgCopyVec3( my_shader->_envColor, envColor );
+            // reload the texture data and let the driver reshade it for us
+            glPixelTransferf( GL_RED_SCALE, envColor[0] );
+            glPixelTransferf( GL_GREEN_SCALE, envColor[1] );
+            glPixelTransferf( GL_BLUE_SCALE, envColor[2] );
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, my_shader->_texWidth, my_shader->_texHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, my_shader->_textureData);
+            glPixelTransferf( GL_RED_SCALE, 1.0f );
+            glPixelTransferf( GL_GREEN_SCALE, 1.0f );
+            glPixelTransferf( GL_BLUE_SCALE, 1.0f );
+        }
+    }
+    if( maskTexComponent == 4 ) {
+        // c = lerp(model tex, chrome tex, model tex alpha)
+        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+        glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_INTERPOLATE_ARB ); 
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_PREVIOUS_ARB );
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR ); 
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE );
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR ); 
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE2_RGB_ARB, GL_PREVIOUS_ARB );
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND2_RGB_ARB, GL_SRC_ALPHA ); 
+
+        glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE);
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE);
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
+    } else {
+        // c = chrome tex
+        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR ); 
+
+        glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE);
+        glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE);
+        glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
+    }
+    // automatic generation of texture coordinates
+    // from normals
+
+    glTexGeni( GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP );
+    glTexGeni( GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP );
+    glEnable( GL_TEXTURE_GEN_S );
+    glEnable( GL_TEXTURE_GEN_T );
+
+    glCallList ( dlist ) ;
+
+    glActiveTexturePtr( GL_TEXTURE1_ARB );
+    glDisable( GL_TEXTURE_GEN_S );
+    glDisable( GL_TEXTURE_GEN_T );
+
+    glMatrixMode(GL_TEXTURE);
+        glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+
+    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexturePtr( GL_TEXTURE0_ARB );
+
+    // restore states
+    if( ! my_shader->_depth_test )
+        glEnable( GL_DEPTH_TEST );
+
+    if( sst )
+        sst->force();
+
+   // don't draw !
+    return false;
+}
+
 static void init_shaders(void) {
 	Shader::Init();
-    if( Shader::is_VP_supported() ) {
+    if( false && Shader::is_VP_supported() ) {
 	    shFresnel = new Shader("/FlightGear/data/Textures/fresnel_vp.txt", "fresnel_vp");
 //        shFresnel->bindNames("somedata", 0);
     }
@@ -375,6 +489,8 @@ static void init_shaders(void) {
 	glTexImage1D(GL_TEXTURE_1D, 0, 3, fresnelSize, 0, GL_RGB, GL_UNSIGNED_BYTE, imageFresnel);
 	glBindTexture(GL_TEXTURE_1D, 0 );
 
+    sgMakeIdentMat4( shadIdentMatrix );
+
 	initDone = true;
 }
 
@@ -393,7 +509,11 @@ SGShaderAnimation::SGShaderAnimation ( SGPropertyNode *prop_root,
     _factor(props->getFloatValue("factor", 1.0f)),
     _factor_prop(0),
     _speed(props->getFloatValue("speed", 1.0f)),
-    _speed_prop(0)
+    _speed_prop(0),
+    _effectTexture(0),
+    _textureData(0),
+    _texWidth(0),
+    _texHeight(0)
 
 {
     SGPropertyNode_ptr node = props->getChild("condition");
@@ -408,11 +528,25 @@ SGShaderAnimation::SGShaderAnimation ( SGPropertyNode *prop_root,
     if( node )
         _speed_prop = prop_root->getNode(node->getStringValue(), true);
 
+    sgSetVec4(_envColor, 0.0f, 0.0f, 0.0f, 1.0f);
+    node = props->getChild("texture");
+    if( node ) {
+        _effectTexture = ssgGetCurrentOptions()->createTexture( (char *) node->getStringValue(), 0, 0, 0);
+        glBindTexture(GL_TEXTURE_2D, _effectTexture->getHandle() );
+        glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &_texWidth);
+        glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &_texHeight);
+
+        _textureData = new unsigned char[_texWidth * _texHeight * 3];
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, _textureData);
+        glBindTexture(GL_TEXTURE_2D, 0 );
+    }
     string shader_name = props->getStringValue("shader");
     if( shader_name == "fresnel" || shader_name == "reflection" )
         _shader_type = 1;
     else if( shader_name == "heat-haze" )
         _shader_type = 2;
+    else if( shader_name == "chrome" && _effectTexture)
+        _shader_type = 3;
 }
 
 static void setCallBack(ssgBranch *branch, ssgBase *user_data, ssgCallback cb) {
@@ -431,10 +565,12 @@ void SGShaderAnimation::init()
 {
     if( ! initDone )
         init_shaders();
-    if( _shader_type == 1 && Shader::is_VP_supported() )
+    if( _shader_type == 1 && Shader::is_VP_supported() && shFresnel)
         setCallBack( getBranch(), (ssgBase *) this, fresnel_shader_callback );
     else if( _shader_type == 2 )
         setCallBack( getBranch(), (ssgBase *) this, heat_haze_shader_callback );
+    else if( _shader_type == 3 )
+        setCallBack( getBranch(), (ssgBase *) this, chrome_shader_callback );
     else
         setCallBack( getBranch(), (ssgBase *) this, null_shader_callback );
 }
@@ -442,6 +578,8 @@ void SGShaderAnimation::init()
 SGShaderAnimation::~SGShaderAnimation()
 {
     delete _condition;
+    delete _effectTexture;
+    delete _textureData;
 }
 
 int

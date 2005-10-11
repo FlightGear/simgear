@@ -170,7 +170,7 @@ if test "x$ac_cv_header_pthread_h" = "xyes"; then
 
   if test "x$ac_cv_search_pthread_exit" = "x-lc_r"; then
     CXXFLAGS="-pthread $CXXFLAGS"
-    CFLAGS="-pthread $FLAGS"
+    CFLAGS="-pthread $CFLAGS"
   fi
 fi
 

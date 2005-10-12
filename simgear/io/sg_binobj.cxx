@@ -240,8 +240,8 @@ static void read_object( gzFile fp,
 	if ( nbytes > buf.get_size() ) { buf.resize( nbytes ); }
 	char *ptr = buf.get_ptr();
 	sgReadBytes( fp, nbytes, ptr );
-	int count = nbytes / (idx_size * sizeof(short));
-	short *sptr = (short *)ptr;
+	int count = nbytes / (idx_size * sizeof(unsigned short));
+	unsigned short *sptr = (unsigned short *)ptr;
 	int_list vs; vs.clear();
 	int_list ns; ns.clear();
 	int_list cs; cs.clear();

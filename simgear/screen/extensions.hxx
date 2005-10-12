@@ -446,7 +446,7 @@ typedef XVisualInfo *(*glXGetVisualFromFBConfigProc) (Display *dpy, GLXFBConfig 
 typedef GLXContext (*glXCreateContextWithConfigProc) (Display *dpy,  GLXFBConfig config, int render_type, GLXContext share_list, Bool direct);
 typedef GLXContext (*glXCreateContextProc) (Display *dpy, XVisualInfo *vis, GLXContext shareList, Bool direct);
 typedef void (*glXDestroyPbufferProc) (Display *dpy, GLXPbuffer pbuf);
-typedef int (*glXQueryGLXPbufferSGIXProc) (Display *, GLXPbufferSGIX, int, unsigned int *);
+typedef int (*glXQueryGLXPbufferSGIXProc) (Display *, GLXPbuffer, int, unsigned int *);
 typedef void (*glXQueryDrawableProc) (Display *, GLXDrawable, int, unsigned int *);
 #endif /* WIN32 */
 

@@ -42,6 +42,7 @@ protected:
 
     FILE *file;
     typedef struct _ImageRec {
+        _ImageRec(void) : tmp(0), rowStart(0), rowSize(0) {}
         unsigned short imagic;
         unsigned short type;
         unsigned short dim;

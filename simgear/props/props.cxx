@@ -2143,6 +2143,7 @@ SGPropertyNode::hash_table::bucket::~bucket ()
 {
   for (int i = 0; i < _length; i++)
     delete _entries[i];
+  delete [] _entries;
 }
 
 SGPropertyNode::hash_table::entry *
@@ -2197,6 +2198,7 @@ SGPropertyNode::hash_table::~hash_table ()
 {
   for (unsigned int i = 0; i < _data_length; i++)
     delete _data[i];
+  delete [] _data;
 }
 
 SGPropertyNode *

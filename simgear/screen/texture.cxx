@@ -538,6 +538,8 @@ SGTexture::ImageClose(SGTexture::ImageRec *image) {
     if (image->file)  gzclose(image->file);
     if (file) fclose(file);
     delete[] image->tmp;
+    delete[] image->rowStart;
+    delete[] image->rowSize;
     delete image;
 }
 

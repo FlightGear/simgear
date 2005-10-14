@@ -1293,11 +1293,11 @@ private:
     class entry {
     public:
       entry ();
-      virtual ~entry ();
-      virtual const char * get_key () { return _key; }
-      virtual void set_key (const char * key);
-      virtual SGPropertyNode * get_value () { return _value; }
-      virtual void set_value (SGPropertyNode * value);
+      ~entry ();
+      const char * get_key () { return _key; }
+      void set_key (const char * key);
+      SGPropertyNode * get_value () { return _value; }
+      void set_value (SGPropertyNode * value);
     private:
       char * _key;
       SGPropertyNode * _value;
@@ -1310,9 +1310,9 @@ private:
     class bucket {
     public:
       bucket ();
-      virtual ~bucket ();
-      virtual entry * get_entry (const char * key, bool create = false);
-      virtual void erase(const char * key);
+      ~bucket ();
+      entry * get_entry (const char * key, bool create = false);
+      void erase(const char * key);
     private:
       int _length;
       entry ** _entries;
@@ -1321,10 +1321,10 @@ private:
     friend class bucket;
 
     hash_table ();
-    virtual ~hash_table ();
-    virtual SGPropertyNode * get (const char * key);
-    virtual void put (const char * key, SGPropertyNode * value);
-    virtual void erase(const char * key);
+    ~hash_table ();
+    SGPropertyNode * get (const char * key);
+    void put (const char * key, SGPropertyNode * value);
+    void erase(const char * key);
 
   private:
     unsigned int hashcode (const char * key);

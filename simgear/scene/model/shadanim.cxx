@@ -2,7 +2,7 @@
 //
 // Written by Harald JOHNSEN, started Jully 2005.
 //
-// Copyright (C) 2005  Harald JOHNSEN - hjohnsen@evc.net
+// Copyright (C) 2005  Harald JOHNSEN
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -70,7 +70,10 @@ static Shader *shFresnel=NULL;
 static GLuint texFresnel = 0;
 
 static GLuint texBackground = 0;
-static const int texBackgroundWidth = 1024, texBackgroundHeight = 1024;
+static int texBackgroundWidth = 1024, texBackgroundHeight = 1024;
+static GLenum texBackgroundTarget = GL_TEXTURE_2D;
+static bool isRectangleTextureSupported = false;
+static bool istexBackgroundRectangle = false;
 static bool initDone = false;
 static bool haveBackground = false;
 
@@ -119,12 +122,26 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
 #endif
     if( ! dlist )
         return true;
+
+    GLint viewport[4];
+    glGetIntegerv( GL_VIEWPORT, viewport );
+    const int screen_width = viewport[2];
+    const int screen_height = viewport[3];
     if( ! haveBackground ) {
         // store the backbuffer in a texture
         if( ! texBackground ) {
             // allocate our texture here so we don't waste memory if no model use that effect
+            // check if we need a rectangle texture and if the card support it
+            if( (screen_width > 1024 || screen_height > 1024) && isRectangleTextureSupported ) {
+                // Note that the 3 (same) extensions use the same enumerants
+                texBackgroundTarget = GL_TEXTURE_RECTANGLE_NV;
+                istexBackgroundRectangle = true;
+                texBackgroundWidth = screen_width;
+                texBackgroundHeight = screen_height;
+            }
             glGenTextures(1, &texBackground);
-            glBindTexture(GL_TEXTURE_2D, texBackground);
+            glEnable(texBackgroundTarget);
+            glBindTexture(texBackgroundTarget, texBackground);
             // trying to match the backbuffer pixel format
             GLint internalFormat = GL_RGB8;
             GLint colorBits = 0, alphaBits = 0;
@@ -139,28 +156,31 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
                 if( alphaBits != 0 )
                     internalFormat = GL_RGBA8;
             }
-            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, 
+            glTexImage2D(texBackgroundTarget, 0, internalFormat, 
                             texBackgroundWidth, texBackgroundHeight, 0, GL_RGB, GL_FLOAT, NULL);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            glTexParameteri(texBackgroundTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(texBackgroundTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(texBackgroundTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(texBackgroundTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         }
-        GLint viewport[4];
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        const int screen_width = viewport[2];
-        const int screen_height = viewport[3];
-        glBindTexture(GL_TEXTURE_2D, texBackground);
+        glEnable(texBackgroundTarget);
+        glBindTexture(texBackgroundTarget, texBackground);
         // center of texture = center of screen
         // obviously we don't have the whole screen if screen_width > texBackgroundWidth
-        glCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 
-            (screen_width - texBackgroundWidth) / 2, 
-            (screen_height - texBackgroundHeight) / 2, 
-            texBackgroundWidth, texBackgroundHeight );
+        // if rectangle textures are not supported, this give some artifacts on the borders
+        if( istexBackgroundRectangle ) {
+            glCopyTexSubImage2D( texBackgroundTarget, 0, 0, 0, 
+                0, 0, texBackgroundWidth, texBackgroundHeight );
+        } else {
+            glCopyTexSubImage2D( texBackgroundTarget, 0, 0, 0, 
+                (screen_width - texBackgroundWidth) / 2, 
+                (screen_height - texBackgroundHeight) / 2, 
+                texBackgroundWidth, texBackgroundHeight );
+        }
         haveBackground = true;
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(texBackgroundTarget, 0);
+        glDisable(texBackgroundTarget);
     }
     ssgSimpleState *sst = ((ssgSimpleState *)leaf->getState());
     if ( sst )
@@ -175,7 +195,7 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
         // noise texture, tex coord from the model translated by a time factor
         glActiveTexturePtr( GL_TEXTURE0_ARB );
         glEnable(GL_TEXTURE_2D);
-        const float noiseDist = fmodf(- totalTime * my_shader->_factor * my_shader->_speed, 4.0f);
+        const float noiseDist = fmod(- totalTime * my_shader->_factor * my_shader->_speed, 4.0);
         glMatrixMode(GL_TEXTURE);
             glLoadIdentity();
             glTranslatef( noiseDist, 0.0f, 0.0f );
@@ -185,25 +205,28 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
 
         // background texture
         glActiveTexturePtr( GL_TEXTURE1_ARB );
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texBackground);
+        glEnable(texBackgroundTarget);
+        glBindTexture(texBackgroundTarget, texBackground);
 
         // automatic generation of texture coordinates
         // map to screen space
         sgMat4 CameraProjM, CameraViewM;
-        GLint viewport[4];
-        glGetIntegerv( GL_VIEWPORT, viewport );
-        const int screen_width = viewport[2];
-        const int screen_height = viewport[3];
         glGetFloatv(GL_PROJECTION_MATRIX, (GLfloat *) CameraProjM);
         glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *) CameraViewM);
         const float dummy_scale = 1.0f; //0.95f;
         const float deltaPos = 0.05f;
         glMatrixMode(GL_TEXTURE);
             glLoadIdentity();
-            glTranslatef( 0.5f, 0.5f, 0.0f );
-            glScalef( float( screen_width ) / float( texBackgroundWidth ) * 0.5f * dummy_scale,
-                float( screen_height ) / float( texBackgroundHeight ) * 0.5f * dummy_scale, 1.0f );
+            if( istexBackgroundRectangle ) {
+                // coords go from 0.0 to n, not from 0.0 to 1.0
+                glTranslatef( texBackgroundWidth * 0.5f, texBackgroundHeight * 0.5f, 0.0f );
+                glScalef( texBackgroundWidth * 0.5f,
+                    texBackgroundHeight * 0.5f, 1.0f );
+            } else {
+                glTranslatef( 0.5f, 0.5f, 0.0f );
+                glScalef( float( screen_width ) / float( texBackgroundWidth ) * 0.5f,
+                    float( screen_height ) / float( texBackgroundHeight ) * 0.5f, 1.0f );
+            }
             glMultMatrixf( (GLfloat *) CameraProjM );
             glMultMatrixf( (GLfloat *) CameraViewM );
             glTranslatef( deltaPos, deltaPos, deltaPos );
@@ -264,7 +287,7 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
             glLoadIdentity();
         glMatrixMode(GL_MODELVIEW);
         glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-        glDisable(GL_TEXTURE_2D);
+        glDisable(texBackgroundTarget);
         glActiveTexturePtr( GL_TEXTURE0_ARB );
         glMatrixMode(GL_TEXTURE);
             glLoadIdentity();
@@ -567,8 +590,13 @@ void SGShaderAnimation::init()
         init_shaders();
     if( _shader_type == 1 && Shader::is_VP_supported() && shFresnel)
         setCallBack( getBranch(), (ssgBase *) this, fresnel_shader_callback );
-    else if( _shader_type == 2 )
+    else if( _shader_type == 2 ) {
+        // this is the same extension with different names
+        isRectangleTextureSupported = SGIsOpenGLExtensionSupported("GL_EXT_texture_rectangle") ||
+            SGIsOpenGLExtensionSupported("GL_ARB_texture_rectangle") ||
+            SGIsOpenGLExtensionSupported("GL_NV_texture_rectangle");
         setCallBack( getBranch(), (ssgBase *) this, heat_haze_shader_callback );
+    }
     else if( _shader_type == 3 )
         setCallBack( getBranch(), (ssgBase *) this, chrome_shader_callback );
     else

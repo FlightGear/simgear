@@ -32,7 +32,6 @@ SUBDIRS = \
 	serial \
 	sound \
 	$(SGTHREAD_DIR) \
-	timing \
-	xgl
+	timing
 
 DIST_SUBDIRS = $(SUBDIRS) compatibility threads

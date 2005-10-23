@@ -94,8 +94,12 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
-    if (strncmp(season, "summer", 6) && tname.substr(0,7) == "Terrain")
-       tname.insert(7,"."+string(season));
+    string otname = tname;
+    if (season && strncmp(season, "summer", 6))
+    {
+        if (tname.substr(0,7) == "Terrain")
+            tname.insert(7,"."+string(season));
+    }
 
     if (tname == "") {
         tname = "unknown.rgb";

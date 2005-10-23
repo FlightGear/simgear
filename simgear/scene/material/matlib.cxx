@@ -192,7 +192,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     for (int i = 0; i < nMaterials; i++) {
         const SGPropertyNode * node = materials.getChild(i);
         if (!strcmp(node->getName(), "material")) {
-            SGMaterial *m = new SGMaterial( fg_root, node );
+            SGMaterial *m = new SGMaterial( fg_root, node, season );
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {

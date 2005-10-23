@@ -71,7 +71,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const string &fg_root, const SGPropertyNode *props, const char *season = "summer" );
+  SGMaterial( const string &fg_root, const SGPropertyNode *props, const char *season );
 
 
   /**

@@ -51,6 +51,8 @@ class SGSkyDome {
     ssgVertexArray *lower_ring_vl;
     ssgColourArray *lower_ring_cl;
 
+    float   asl;
+
 public:
 
     // Constructor

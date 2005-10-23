@@ -95,6 +95,7 @@ static int sgSkyDomePostDraw( ssgEntity *e ) {
 
 // Constructor
 SGSkyDome::SGSkyDome( void ) {
+    asl = 0.0f;
 }
 
 
@@ -273,6 +274,13 @@ ssgBranch * SGSkyDome::build( double hscale, double vscale ) {
     return dome_transform;
 }
 
+static void fade_to_black( sgVec4 sky_color[], float asl, int count) {
+    const float ref_asl = 10000.0f;
+    const sgVec3 space_color = {0.0f, 0.0f, 0.0f};
+    float d = exp( - asl / ref_asl );
+    for(int i = 0; i < count ; i++)
+        sgLerpVec3( sky_color[i], sky_color[i], space_color, 1.0 - d);
+}
 
 // repaint the sky colors based on current value of sun_angle, sky,
 // and fog colors.  This updates the color arrays for ssgVtxTable.
@@ -437,6 +445,11 @@ bool SGSkyDome::repaint( sgVec4 sky_color, sgVec4 fog_color, double sun_angle,
  	*/
    }
 
+    fade_to_black( (sgVec4 *) center_color, asl * center_elev, 1);
+    fade_to_black( upper_color, (asl+0.05f) * upper_elev, 12);
+    fade_to_black( middle_color, (asl+0.05f) * middle_elev, 12);
+    fade_to_black( lower_color, (asl+0.05f) * lower_elev, 12);
+
     for ( i = 0; i < 12; i++ ) {
 	sgCopyVec4( bottom_color[i], fog_color );
     }
@@ -555,6 +568,6 @@ bool SGSkyDome::reposition( sgVec3 p, double lon, double lat, double spin ) {
     sgSetCoord( &skypos, TRANSFORM );
 
     dome_transform->setTransform( &skypos );
-
+    asl = - skypos.xyz[2];
     return true;
 }

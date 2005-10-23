@@ -912,6 +912,32 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
+ * Revove child by position.
+ */
+SGPropertyNode_ptr
+SGPropertyNode::removeChild (int pos, bool keep)
+{
+  SGPropertyNode_ptr node;
+  if (pos < 0 || pos > _children.size() - 1)
+    return node;
+
+  vector<SGPropertyNode_ptr>::iterator it = _children.begin();
+  it += pos;
+  node = _children[pos];
+  _children.erase(it);
+  if (keep) {
+    _removedChildren.push_back(node);
+  }
+  if (_path_cache)
+     _path_cache->erase(node->getName()); // EMH - TODO: Take "index" into account!
+  node->setAttribute(REMOVED, true);
+  node->clearValue();
+  fireChildRemoved(node);
+  return node;
+}
+
+
+/**
  * Remove a child node
  */
 SGPropertyNode_ptr 
@@ -919,22 +945,26 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
 {
   SGPropertyNode_ptr ret;
   int pos = find_child(name, index, _children);
-  if (pos >= 0) {
-    vector<SGPropertyNode_ptr>::iterator it = _children.begin();
-    it += pos;
-    SGPropertyNode_ptr node = _children[pos];
-    _children.erase(it);
-    if (keep) {
-      _removedChildren.push_back(node);
-    }
-    if (_path_cache)
-       _path_cache->erase(name); // EMH - TODO: Take "index" into account!
-    node->setAttribute(REMOVED, true);
-    node->clearValue();
-    ret = node;
-    fireChildRemoved(node);
-  }
+  if (pos >= 0)
+    ret = removeChild(pos, keep);
   return ret;
+}
+
+
+/**
+  * Remove all children with the specified name.
+  */
+vector<SGPropertyNode_ptr>
+SGPropertyNode::removeChildren (const char * name, bool keep)
+{
+  vector<SGPropertyNode_ptr> children;
+
+  for (int pos = _children.size() - 1; pos >= 0; pos--)
+    if (compare_strings(_children[pos]->getName(), name))
+      children.push_back(removeChild(pos, keep));
+
+  sort(children.begin(), children.end(), CompareIndices());
+  return children;
 }
 
 

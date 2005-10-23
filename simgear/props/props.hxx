@@ -707,10 +707,22 @@ public:
 
 
   /**
+   * Remove child by position.
+   */
+  SGPropertyNode_ptr removeChild (int pos, bool keep = true);
+
+
+  /**
    * Remove a child node
    */
   SGPropertyNode_ptr removeChild (const char * name, int index = 0,
                                   bool keep = true);
+
+  /**
+   * Remove all children with the specified name.
+   */
+  vector<SGPropertyNode_ptr> removeChildren (const char * name,
+                                             bool keep = true);
 
 
   //

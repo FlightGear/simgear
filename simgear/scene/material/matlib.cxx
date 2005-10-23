@@ -175,7 +175,7 @@ static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
 
 
 // Load a library of material properties
-bool SGMaterialLib::load( const string &fg_root, const string& mpath ) {
+bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char *season ) {
 
     SGPropertyNode materials;
 

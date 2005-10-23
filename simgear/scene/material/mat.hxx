@@ -71,7 +71,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const string &fg_root, const SGPropertyNode *props );
+  SGMaterial( const string &fg_root, const SGPropertyNode *props, const char *season = "summer" );
 
 
   /**
@@ -249,7 +249,7 @@ private:
 
   SGMaterial( const string &fg_root, const SGMaterial &mat ); // unimplemented
 
-  void read_properties( const string &fg_root, const SGPropertyNode *props );
+  void read_properties( const string &fg_root, const SGPropertyNode *props, const char *season );
   void build_ssg_state( bool defer_tex_load );
   void set_ssg_state( ssgSimpleState *s );
 

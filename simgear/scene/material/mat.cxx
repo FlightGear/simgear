@@ -1,4 +1,4 @@
-// mat.cxx -- class to handle material properties
+// e mat.cxx -- class to handle material properties
 //
 // Written by Curtis Olson, started May 1998.
 //
@@ -27,6 +27,7 @@
 
 #include <simgear/compiler.h>
 
+#include <string.h>
 #include <map>
 SG_USING_STD(map);
 
@@ -48,10 +49,10 @@ SG_USING_STD(map);
 ////////////////////////////////////////////////////////////////////////
 
 
-SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
+SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props, const char *season )
 {
     init();
-    read_properties( fg_root, props );
+    read_properties( fg_root, props, season );
     build_ssg_state( false );
 }
 
@@ -86,13 +87,16 @@ SGMaterial::~SGMaterial (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props )
+SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props, const char *season )
 {
 				// Gather the path(s) to the texture(s)
   vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
   for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
+    if (strncmp(season, "summer", 6) && tname.substr(0,7) == "Terrain")
+       tname.insert(7,"."+string(season));
+
     if (tname == "") {
         tname = "unknown.rgb";
     }

@@ -64,7 +64,7 @@ public:
     SGMaterialLib ( void );
 
     // Load a library of material properties
-    bool load( const string &fg_root, const string& mpath );
+    bool load( const string &fg_root, const string& mpath, const char *season = "summer" );
 
     // Add the named texture with default properties
     bool add_item( const string &tex_path );

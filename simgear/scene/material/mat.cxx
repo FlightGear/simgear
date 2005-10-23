@@ -1,4 +1,4 @@
-// e mat.cxx -- class to handle material properties
+// mat.cxx -- class to handle material properties
 //
 // Written by Curtis Olson, started May 1998.
 //

@@ -912,13 +912,13 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
- * Revove child by position.
+ * Remove child by position.
  */
 SGPropertyNode_ptr
 SGPropertyNode::removeChild (int pos, bool keep)
 {
   SGPropertyNode_ptr node;
-  if (pos < 0 || pos > _children.size() - 1)
+  if (pos < 0 || pos >= _children.size())
     return node;
 
   vector<SGPropertyNode_ptr>::iterator it = _children.begin();

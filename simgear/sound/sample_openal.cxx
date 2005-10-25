@@ -107,8 +107,9 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
 
   buffer = alutCreateBufferFromFile(samplepath.c_str());
   if (buffer == AL_NONE) {
+     ALenum error = alutGetError ();
      print_openal_error("constructor (alutCreateBufferFromFile)");
-     throw sg_exception("Failed to load wav file.");
+     throw sg_exception("Failed to load wav file: "+string(alutGetErrorString (error)));
   }
 
 #else

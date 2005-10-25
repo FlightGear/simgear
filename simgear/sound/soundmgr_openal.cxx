@@ -80,6 +80,16 @@ SGSoundMgr::SGSoundMgr() {
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     // initialize OpenAL
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
+    if (!alutInit(NULL, NULL))
+    {
+        ALenum error = alutGetError ();
+        SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
+        SG_LOG( SG_GENERAL, SG_ALERT, "   "+string(alutGetErrorString(error)));
+        working = false;
+    }
+    context = alcGetCurrentContext();
+#else
     if ( (dev = alcOpenDevice( NULL )) != NULL
             && ( context = alcCreateContext( dev, NULL )) != NULL ) {
         working = true;
@@ -89,6 +99,7 @@ SGSoundMgr::SGSoundMgr() {
         context = 0;
 	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
     }
+#endif
 
     listener_pos[0] = 0.0;
     listener_pos[1] = 0.0;
@@ -124,8 +135,12 @@ SGSoundMgr::SGSoundMgr() {
 
 SGSoundMgr::~SGSoundMgr() {
 
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
+    alutExit ();
+#else
     if (context)
         alcDestroyContext( context );
+#endif
     //
     // Remove the samples from the sample manager.
     //

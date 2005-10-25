@@ -27,9 +27,9 @@
  */
 
 
+#include <simgear/constants.h>
 
 #include "fastmath.hxx"
-#define  SGD_PI_2  1.57079632679489661923
 
 /**
  * This function is on avarage 9 times faster than the system exp() function

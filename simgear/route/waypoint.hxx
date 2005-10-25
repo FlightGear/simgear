@@ -153,10 +153,10 @@ public:
     inline void set_distance( double d ) { distance = d; }
 
     /** @return waypoint id */
-    inline string get_id() const { return id; }
+    inline const string& get_id() const { return id; }
 
     /** @return waypoint name */
-    inline string get_name() const { return name; }
+    inline const string& get_name() const { return name; }
 
 };
 

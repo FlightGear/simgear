@@ -185,7 +185,11 @@ operator<< ( ostream& out, const Point3D& p )
 
 // CONSTRUCTORS
 
-inline Point3D::Point3D() {}
+inline Point3D::Point3D()
+{
+   n[PX] = n[PY] = 0.0;
+   n[PZ] = -9999.0;
+}
 
 inline Point3D::Point3D(const double x, const double y, const double z)
 {

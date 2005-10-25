@@ -24,6 +24,7 @@
 
 
 #include <simgear/compiler.h>
+#include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
 
 #include STL_IOSTREAM
@@ -47,7 +48,7 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
     sgVec3 vec3;
 
     drho = SGD_PI / (float) stacks;
-    dtheta = 2.0 * SGD_PI / (float) slices;
+    dtheta = SGD_2PI / (float) slices;
 
     /* texturing: s goes from 0.0/0.25/0.5/0.75/1.0 at +y/+x/-y/-x/+y
        axis t goes from -1.0/+1.0 at z = -radius/+radius (linear along

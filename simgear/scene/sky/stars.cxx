@@ -26,6 +26,7 @@
 
 
 #include <simgear/compiler.h>
+#include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
@@ -153,32 +154,32 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
     int phase;
 
     // determine which star structure to draw
-    if ( sun_angle > (0.5 * SGD_PI + 10.0 * SGD_DEGREES_TO_RADIANS ) ) {
+    if ( sun_angle > (SGD_PI_2 + 10.0 * SGD_DEGREES_TO_RADIANS ) ) {
         // deep night
         factor = 1.0;
         cutoff = 4.5;
         phase = 0;
-    } else if ( sun_angle > (0.5 * SGD_PI + 8.8 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 8.8 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 1.0;
         cutoff = 3.8;
         phase = 1;
-    } else if ( sun_angle > (0.5 * SGD_PI + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 7.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.95;
         cutoff = 3.1;
         phase = 2;
-    } else if ( sun_angle > (0.5 * SGD_PI + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 7.0 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.9;
         cutoff = 2.4;
         phase = 3;
-    } else if ( sun_angle > (0.5 * SGD_PI + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 6.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.85;
         cutoff = 1.8;
         phase = 4;
-    } else if ( sun_angle > (0.5 * SGD_PI + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 6.0 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.8;
         cutoff = 1.2;
         phase = 5;
-    } else if ( sun_angle > (0.5 * SGD_PI + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
+    } else if ( sun_angle > (SGD_PI_2 + 5.5 * SGD_DEGREES_TO_RADIANS ) ) {
         factor = 0.75;
         cutoff = 0.6;
         phase = 6;

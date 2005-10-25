@@ -108,8 +108,8 @@ public:
 	inline const char		*getFrictionString()	const { return _friction_string; }
 	inline const char		*getComment()		const { return _comment; }
 	inline const bool		getWindShear()		const { return _wind_shear; }
-	inline SGMetarVisibility	getMinVisibility()	const { return _min_visibility; }
-	inline SGMetarVisibility	getMaxVisibility()	const { return _max_visibility; }
+	inline const SGMetarVisibility&	getMinVisibility()	const { return _min_visibility; }
+	inline const SGMetarVisibility&	getMaxVisibility()	const { return _max_visibility; }
 
 protected:
 	SGMetarVisibility _min_visibility;
@@ -190,10 +190,10 @@ public:
 	inline int	getWindRangeFrom()	const { return _wind_range_from; }
 	inline int	getWindRangeTo()	const { return _wind_range_to; }
 
-	inline SGMetarVisibility& getMinVisibility()	{ return _min_visibility; }
-	inline SGMetarVisibility& getMaxVisibility()	{ return _max_visibility; }
-	inline SGMetarVisibility& getVertVisibility()	{ return _vert_visibility; }
-	inline SGMetarVisibility *getDirVisibility()	{ return _dir_visibility; }
+	inline const SGMetarVisibility& getMinVisibility()	const { return _min_visibility; }
+	inline const SGMetarVisibility& getMaxVisibility()	const { return _max_visibility; }
+	inline const SGMetarVisibility& getVertVisibility()	const { return _vert_visibility; }
+	inline const SGMetarVisibility *getDirVisibility()	const { return _dir_visibility; }
 
 	inline double	getTemperature_C()	const { return _temp; }
 	inline double	getTemperature_F()	const { return _temp == NaN ? NaN : 1.8 * _temp + 32; }
@@ -209,9 +209,9 @@ public:
 
 	double		getRelHumidity()	const;
 
-	inline vector<SGMetarCloud>& getClouds()	{ return _clouds; }
-	inline map<string, SGMetarRunway>& getRunways()	{ return _runways; }
-	inline vector<string>& getWeather()		{ return _weather; }
+	inline const vector<SGMetarCloud>& getClouds()	const	{ return _clouds; }
+	inline const map<string, SGMetarRunway>& getRunways()	const	{ return _runways; }
+	inline const vector<string>& getWeather()		const	{ return _weather; }
 
 protected:
 	string	_url;

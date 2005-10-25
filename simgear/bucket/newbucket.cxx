@@ -208,7 +208,7 @@ double SGBucket::get_width_m() const {
     double clat_rad = clat * SGD_DEGREES_TO_RADIANS;
     double cos_lat = cos( clat_rad );
     double local_radius = cos_lat * SG_EQUATORIAL_RADIUS_M;
-    double local_perimeter = 2.0 * local_radius * SGD_PI;
+    double local_perimeter = local_radius * SGD_2PI;
     double degree_width = local_perimeter / 360.0;
 
     return sg_bucket_span( get_center_lat() ) * degree_width;
@@ -217,7 +217,7 @@ double SGBucket::get_width_m() const {
 
 // return height of the tile in meters
 double SGBucket::get_height_m() const {
-    double perimeter = 2.0 * SG_EQUATORIAL_RADIUS_M * SGD_PI;
+    double perimeter = SG_EQUATORIAL_RADIUS_M * SGD_2PI;
     double degree_height = perimeter / 360.0;
 
     return SG_BUCKET_SPAN * degree_height;

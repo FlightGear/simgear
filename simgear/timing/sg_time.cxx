@@ -279,7 +279,7 @@ void SGTime::updateLocal( double lon_rad, double lat_rad, const string& root ) {
         // not within -180 ... 180
         lon_rad = 0.0;
     }
-    if ( lat_rad < -SGD_PI * 0.5 || lat_rad > SGD_PI * 0.5 ) {
+    if ( lat_rad < -SGD_PI_2 || lat_rad > SGD_PI_2 ) {
         // not within -90 ... 90
         lat_rad = 0.0;
     }

@@ -172,7 +172,7 @@ void MoonPos::updatePosition(double mjd, double lst, double lat, Star *ourSun)
   // SG_LOG( SG_GENERAL, SG_INFO, "rho = " << rho );
   
   if (geoRa < 0)
-    geoRa += (2*SGD_PI);
+    geoRa += SGD_2PI;
   
   HA = lst - (3.8197186 * geoRa);
   /* SG_LOG( SG_GENERAL, SG_INFO, "t->getLst() = " << t->getLst() 

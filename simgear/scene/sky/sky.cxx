@@ -334,13 +334,13 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 		// modify actual_visibility based on puff envelope
 
 		if ( puff_progression <= ramp_up ) {
-		    double x = 0.5 * SGD_PI * puff_progression / ramp_up;
+		    double x = SGD_PI_2 * puff_progression / ramp_up;
 		    double factor = 1.0 - sin( x );
 		    // cout << "ramp up = " << puff_progression
 		    //      << "  factor = " << factor << endl;
 		    effvis = effvis * factor;
 		} else if ( puff_progression >= ramp_up + puff_length ) {
-		    double x = 0.5 * SGD_PI * 
+		    double x = SGD_PI_2 * 
 			(puff_progression - (ramp_up + puff_length)) /
 			ramp_down;
 		    double factor = sin( x );

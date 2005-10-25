@@ -103,19 +103,32 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     }
 
     // Load the sample file
-#if defined (__APPLE__)
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
+
+  buffer = alutCreateBufferFromFile(samplepath.c_str());
+  if (buffer == AL_NONE) {
+     print_openal_error("constructor (alutCreateBufferFromFile)");
+     throw sg_exception("Failed to load wav file.");
+  }
+
+#else
+        //
+	// pre 1.0 alut version
+        //
+# if defined (__APPLE__)
     alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
                      &format, &data, &size, &freq );
-#else
+# else
     alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
                      &format, &data, &size, &freq, &loop );
-#endif
+# endif
     if ( print_openal_error("constructor (alutLoadWAVFile)") ) {
         throw sg_exception("Failed to load wav file.");
     }
 
     // Copy data to the internal OpenAL buffer
     alBufferData( buffer, format, data, size, freq );
+
     if ( print_openal_error("constructor (alBufferData)") ) {
         throw sg_exception("Failed to buffer data.");
     }
@@ -124,6 +137,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
         alutUnloadWAV( format, data, size, freq );
         data = NULL;
     }
+#endif
 
     print_openal_error("constructor return");
 }

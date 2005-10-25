@@ -115,11 +115,19 @@ int main( int argc, char *argv[] ) {
     }
 
     // Load the sample file
-#if defined (__APPLE__)
-    alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq );
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
+
+  buffer = alutCreateBufferFromFile("jet.wav");
+  if (buffer == AL_NONE) {
+    SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
+  }
+
 #else
+# if defined (__APPLE__)
+    alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq );
+# else
     alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq, &loop );
-#endif
+# endif
     if (alGetError() != AL_NO_ERROR) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to load wav file.");
     }
@@ -131,6 +139,7 @@ int main( int argc, char *argv[] ) {
     }
 
     alutUnloadWAV( format, data, size, freq );
+#endif
 
     alGenSources(1, &source);
     if (alGetError() != AL_NO_ERROR) {

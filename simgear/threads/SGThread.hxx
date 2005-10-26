@@ -222,12 +222,19 @@ protected:
 
 inline SGMutex::SGMutex()
 {
-    pthread_mutexattr_t    mutex_attr;
+#if 0
+    // Note: This will only work if the mutex is in shared memory,
+    // something we don't support enyhow. -EMH-
+    pthread_mutexattr_t mutex_attr = 0;
     pthread_mutexattr_init(&mutex_attr);
     pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
     int status = pthread_mutex_init( &mutex, &mutex_attr );
     assert( status == 0 );
     pthread_mutexattr_destroy(&mutex_attr);
+#else
+    int status = pthread_mutex_init( &mutex, 0 );
+    assert( status == 0 );
+#endif
 }
 
 inline SGMutex::~SGMutex()

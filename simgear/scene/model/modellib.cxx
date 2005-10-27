@@ -23,7 +23,7 @@ SGModelLib::~SGModelLib ()
 {
     map<string, ssgBase *>::iterator it = _table.begin();
     while (it != _table.end()) {
-        it->second->deRef();
+        ssgDeRefDelete(it->second);
         _table.erase(it);
     }
 }
@@ -55,7 +55,7 @@ SGModelLib::flush1()
                                 // If there is only one reference, it's
                                 // ours; no one else is using the item.
         if (item->getRef() == 1) {
-            item->deRef();
+            ssgDeRefDelete(item);
             _table.erase(it);
         }
         it++;

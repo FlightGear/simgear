@@ -110,7 +110,7 @@ SGMatModel::~SGMatModel ()
 {
   for (unsigned int i = 0; i < _models.size(); i++) {
     if (_models[i] != 0) {
-      _models[i]->deRef();
+      ssgDeRefDelete(_models[i]);
       _models[i] = 0;
     }
   }

@@ -32,6 +32,9 @@
 
 #include <simgear/compiler.h>
 
+#ifdef _MSC_VER
+#  define  _USE_MATH_DEFINES
+#endif
 #ifdef SG_HAVE_STD_INCLUDES
 #  include <cmath>
 #else

@@ -433,7 +433,6 @@ AC_CONFIG_FILES([ \
 	simgear/structure/Makefile \
 	simgear/threads/Makefile \
 	simgear/timing/Makefile \
-	simgear/xgl/Makefile \
 	simgear/xml/Makefile \
 ])
 AC_OUTPUT

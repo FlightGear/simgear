@@ -262,13 +262,19 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
       outer_gain = pos->getDoubleValue("outer-gain", 0.0);
    }
    
-
    //
    // Initialize the sample
    //
    _mgr = sndmgr;
    if ( (_sample = _mgr->find(_name)) == NULL ) {
-       _sample = new SGSoundSample( path.c_str(),
+       // FIXME: Does it make sense to overwrite a previous entry's
+       // configuration just because a new entry has the same name?
+       // Note that we can't match on identical "path" because we the
+       // new entry could be at a different location with different
+       // configuration so we need a new sample which creates a new
+       // "alSource".  The semantics of what is going on here seems
+       // confused and needs to be thought through more carefully.
+        _sample = new SGSoundSample( path.c_str(),
                                     node->getStringValue("path", ""),
                                     true );
 

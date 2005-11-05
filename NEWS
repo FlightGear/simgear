@@ -1,25 +1,24 @@
 New in 0.3.9-pre1
 * November 5, 2005
 
-* Add support for OpenAL 1.1 (with a seperate alut library.)
+* Add support for OpenAL 1.1 (with a separate alut library.)
 * Add support for volumetric shadows.  Aircraft can cast shadows on themselves
-  as well as onto the ground (by Harold Johnson.)
-* New 3d volumetric clouds by Harold Johnson (along with several rounds of
+  as well as onto the ground (by Harald Johnsen.)
+* New 3d volumetric clouds by Harald Johnsen (along with several rounds of
   followup fixes and improvements.)
 * Remove Mark Harris's old 3d clouds because they were never properly
   integrated.  And we now have new 3d clouds.
 * Add support for seasonal textures (with a set of winter textures added
   to FlightGear.)
-* Create a metar abstraction layer with support for most of the metar codes.
 * Updated Nasal scripting system.  Adds several new syntax convenience
   features, fixes parser bugs, fixes several internal bugs.
 * Our 3d cockpit jitter problem is fixed (woohoo!)
 * Add code to support rendering to a texture.
 * Various low model level animation fixes and additions ... color,
-  transparancy, 'chrome' effects, randomized spin, etc.
-* Create our own portable stdint.h implimentation.
+  transparency, 'chrome' effects, randomized spin, etc.
+* Create our own portable stdint.h implementation.
 * Fixed several memory leaks.
-* RemoveChildren() fixes in the property system.
+* removeChildren() added to the property system.
 * Fix many cases of 'const'.
 * Fixes for cygwin, solaris/sun, Mac OS X, MSVC, gcc-3.4.x.
 
@@ -27,7 +26,7 @@ New in 0.3.9-pre1
 New in 0.3.8
 * January 18, 2005
 
-* Configure script does a sanity check for the existance of openal.
+* Configure script does a sanity check for the existence of openal.
 * Better pthreads detection for FreeBSD.
 * Abstract out the location of gl.h, glu.h, and glut.h so we can more
   easily support MacOS which puts these in an oddball location.
@@ -41,7 +40,7 @@ New in 0.3.8
 * Fixes to property tree loading and saving.
 * Make volume inaudible at startup.
 * Solaris fixes.
-* For low density cloud coverages, blend the layer to nothing as we pass
+* For low density cloud coverage, blend the layer to nothing as we pass
   through instead of fully engulfing the aircraft in the cloud.
 * Add several new capabilities to the texture management code for building
   normal maps and doing some simple on-the-fly effects on textures.
@@ -84,7 +83,7 @@ New in 0.3.5
 * Support VASI/PAPI lights correctly.
 * Fixes to cloud animation.
 * Updates to sky dome coloring as well as sun/moon coloring.
-* Vary environment lighting with visibility (subtlely.)
+* Vary environment lighting with visibility (subtlety.)
 * Support control of alpha test in model animation.
 * Complete rewrite of the event manager.
 * Updates to low level socket code to make it more flexible.
@@ -135,7 +134,7 @@ New in 0.3.2
   management, basic model and model animation management, sky
   rendering, and low level loaders for the "TerraGear" tile object format.
 * Removed support of the flat shaded and non-textured material
-  property varients.  You can still do these things, but extra states
+  property variants.  You can still do these things, but extra states
   are no longer set up automatically.
 * Removed 3d clouds from the default build ... these need a maintainer
   or better yet, a complete plib-based rewrite.
@@ -180,7 +179,7 @@ New in 0.2.0
 * Removed efence support (in favor of valgrind.)
 
 * Added a javascript interpreter.
-* SGSocket reimplimented on top of plib/net libs.
+* SGSocket reimplemented on top of plib/net libs.
 * Added a new random number generation algorithm.
 * Total rewrite of the strutils package.
 
@@ -190,7 +189,7 @@ New in 0.2.0
 * Mac OS X fixes.
 * Irix fixes.
 * Code clean ups to remove warning messages.
-* Optimizations in sg_binobj to reduce the amout of memory copying
+* Optimizations in sg_binobj to reduce the amount of memory copying
   needed when loading a binobj format file.
 * Fixed a couple places where variables could be used before they were
   initialized.
@@ -210,7 +209,7 @@ New in 0.0.18
 * Upgrade to metakit-2.4.2-32.tar.gz (latest upstream release)
 * Added support for point objects in the scenery file format.
 * Additions to the binary file format to make it *much* more flexible.
-  For each major primative type: points, triangles, fans, and strips, you
+  For each major primitive type: points, triangles, fans, and strips, you
   can specify an index list of vertices, normals, colors, and texture
   coordinates.  You can skip any of these you like to save on space.
 * Added support for new file features in the binary -> ascii scenery file
@@ -261,7 +260,7 @@ New in 0.0.17pre1
 
 New in 0.0.16
 * July 12, 2001
-* Various changes to the property manager implimentation to better support
+* Various changes to the property manager implementation to better support
   dumping out the desired portions of the property tree to file.
 * Don't compile the metakit demos by default (causes problems for Irix)'
 * Other various tweaks for Irix.
@@ -304,7 +303,7 @@ New in 0.0.15
   read/write routines.
 * Added doxygen comments for all public interface code.  Documentation
   can be accessed via the SimGear web page.
-* Many FG -> SG name space changes for better consistancy throughout
+* Many FG -> SG name space changes for better consistency throughout
   this package.
 * Added property aliases, repeated name tags, and a general xml
   inclusion facilities.  Many other property manager clean ups
@@ -395,4 +394,4 @@ New in 0.0.4
 
 
 New in 0.0.3
-* Release that conincides with FlightGear-0.7.2
+* Release that coincides with FlightGear-0.7.2

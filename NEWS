@@ -1,3 +1,29 @@
+New in 0.3.9-pre1
+* November 5, 2005
+
+* Add support for OpenAL 1.1 (with a seperate alut library.)
+* Add support for volumetric shadows.  Aircraft can cast shadows on themselves
+  as well as onto the ground (by Harold Johnson.)
+* New 3d volumetric clouds by Harold Johnson (along with several rounds of
+  followup fixes and improvements.)
+* Remove Mark Harris's old 3d clouds because they were never properly
+  integrated.  And we now have new 3d clouds.
+* Add support for seasonal textures (with a set of winter textures added
+  to FlightGear.)
+* Create a metar abstraction layer with support for most of the metar codes.
+* Updated Nasal scripting system.  Adds several new syntax convenience
+  features, fixes parser bugs, fixes several internal bugs.
+* Our 3d cockpit jitter problem is fixed (woohoo!)
+* Add code to support rendering to a texture.
+* Various low model level animation fixes and additions ... color,
+  transparancy, 'chrome' effects, randomized spin, etc.
+* Create our own portable stdint.h implimentation.
+* Fixed several memory leaks.
+* RemoveChildren() fixes in the property system.
+* Fix many cases of 'const'.
+* Fixes for cygwin, solaris/sun, Mac OS X, MSVC, gcc-3.4.x.
+
+
 New in 0.3.8
 * January 18, 2005
 

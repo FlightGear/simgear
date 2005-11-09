@@ -35,9 +35,10 @@ void SGTimer::run()
 
 void SGEventMgr::update(double delta_time_sec)
 {
-    _rtQueue.update(delta_time_sec);
-    if(!_freezeProp || _freezeProp->getBoolValue() == false)
-        _simQueue.update(delta_time_sec);
+    _simQueue.update(delta_time_sec);
+    
+    double rt = _rtProp ? _rtProp->getDoubleValue() : 0;
+    _rtQueue.update(rt);
 }
 
 ////////////////////////////////////////////////////////////////////////

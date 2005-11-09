@@ -62,13 +62,13 @@ private:
 class SGEventMgr : public SGSubsystem
 {
 public:
-    SGEventMgr() { _freezeProp = 0; }
-    ~SGEventMgr() { _freezeProp = 0; }
+    SGEventMgr() { _rtProp = 0; }
+    ~SGEventMgr() { _rtProp = 0; }
 
     virtual void init() {}
     virtual void update(double delta_time_sec);
 
-    void setFreezeProperty(SGPropertyNode* node) { _freezeProp = node; }
+    void setRealtimeProperty(SGPropertyNode* node) { _rtProp = node; }
 
     /**
      * Add a single function callback event as a repeating task.
@@ -116,6 +116,7 @@ private:
              bool repeat, bool simtime);
 
     SGPropertyNode* _freezeProp;
+    SGPropertyNode* _rtProp;
     SGTimerQueue _rtQueue; 
     SGTimerQueue _simQueue;
 };

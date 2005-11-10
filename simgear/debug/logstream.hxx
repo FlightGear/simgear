@@ -185,7 +185,7 @@ inline logbuf::int_type
 logbuf::overflow( int c )
 {
 #ifdef _MSC_VER
-    static has_console = false;
+    static bool has_console = false;
     if ( logging_enabled ) {
         if ( !has_console ) {
             AllocConsole();

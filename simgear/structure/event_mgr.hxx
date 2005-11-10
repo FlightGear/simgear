@@ -51,7 +51,9 @@ private:
     void siftDown(int n);
     void siftUp(int n);
     void growArray();
-    void check();
+
+    // gcc complains there is no function specification anywhere.
+    // void check();
 
     double _now;
     HeapEntry *_table;

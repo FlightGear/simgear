@@ -35,6 +35,7 @@ class Star : public CelestialBody
 private:
 
     double xs, ys;     // the sun's rectangular geocentric coordinates
+    double ye, ze;     // the sun's rectangularequatorial rectangular geocentric coordinates
     double distance;   // the sun's distance to the earth
 
 public:
@@ -47,6 +48,8 @@ public:
     double getw();
     double getxs();
     double getys();
+    double getye();
+    double getze();
     double getDistance();
 };
 
@@ -69,6 +72,16 @@ inline double Star::getxs()
 inline double Star::getys()
 {
   return ys;
+}
+
+inline double Star::getye()
+{
+   return ye;
+}
+
+inline double Star::getze()
+{
+   return ze;
 }
 
 inline double Star::getDistance()

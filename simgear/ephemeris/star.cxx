@@ -80,7 +80,7 @@ void Star::updatePosition(double mjd)
   double 
     actTime, eccAnom, 
     xv, yv, v, r,
-    xe, ye, ze, ecl;
+    xe, ecl;
 
   updateOrbElements(mjd);
   

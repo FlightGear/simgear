@@ -125,7 +125,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file) :
         //
 	// pre 1.0 alut version
         //
-    ALvoid* data = load_file(path, file)
+    ALvoid* data = load_file(path, file);
 
     // Copy data to the internal OpenAL buffer
     alBufferData( buffer, format, data, size, freq );

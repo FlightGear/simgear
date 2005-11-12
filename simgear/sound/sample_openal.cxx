@@ -141,8 +141,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file) :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
-                              bool cleanup) :
+SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -180,9 +179,7 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
         throw sg_exception("Failed to buffer data.");
     }
 
-    if ( cleanup ) {
-        free(_data);
-    }
+    free(_data);
 
     print_openal_error("constructor return");
 }

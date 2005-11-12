@@ -117,11 +117,10 @@ public:
      * @param _data Pointer to a memory buffer containing the sample data
      * @param len Byte length of array
      * @param _freq Frequency of the provided data (bytes per second)
-     * @param cleanup Request clean up the intermediate data (this
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( unsigned char *_data, int len, int _freq, bool cleanup );
+    SGSoundSample( unsigned char *_data, int len, int _freq );
 
     ~SGSoundSample();
 

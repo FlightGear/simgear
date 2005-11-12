@@ -115,6 +115,7 @@ public:
     /**
      * Constructor.
      * @param _data Pointer to a memory buffer containing the sample data
+       the application is responsible for freeing the buffer data.
      * @param len Byte length of array
      * @param _freq Frequency of the provided data (bytes per second)
        should usually be true unless you want to manipulate the data

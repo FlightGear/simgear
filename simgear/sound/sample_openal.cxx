@@ -179,8 +179,6 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
         throw sg_exception("Failed to buffer data.");
     }
 
-    free(_data);
-
     print_openal_error("constructor return");
 }
 

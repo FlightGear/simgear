@@ -63,11 +63,21 @@ static bool print_openal_error(const string &s = "unknown") {
     return error;
 }
 
+// empry constructor
+SGSoundSample::SGSoundSample() :
+    buffer(0),
+    source(0),
+    pitch(1.0),
+    volume(1.0),
+    reference_dist(500.0),
+    max_dist(3000.),
+    loop(AL_FALSE),
+    playing(false)
+{
+}
 
 // constructor
-SGSoundSample::SGSoundSample( const char *path, const char *file,
-                              bool cleanup ) :
-    data(NULL),
+SGSoundSample::SGSoundSample( const char *path, const char *file) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -81,7 +91,6 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
     if ( strlen(file) ) {
         samplepath.append( file );
     }
-
     sample_name = samplepath.str();
 
     SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
@@ -116,16 +125,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
         //
 	// pre 1.0 alut version
         //
-# if defined (__APPLE__)
-    alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
-                     &format, &data, &size, &freq );
-# else
-    alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
-                     &format, &data, &size, &freq, &loop );
-# endif
-    if ( print_openal_error("constructor (alutLoadWAVFile)") ) {
-        throw sg_exception("Failed to load wav file.");
-    }
+    ALvoid* data = load_file(path, file)
 
     // Copy data to the internal OpenAL buffer
     alBufferData( buffer, format, data, size, freq );
@@ -134,20 +134,15 @@ SGSoundSample::SGSoundSample( const char *path, const char *file,
         throw sg_exception("Failed to buffer data.");
     }
 
-    if ( cleanup ) {
-        alutUnloadWAV( format, data, size, freq );
-        data = NULL;
-    }
+    alutUnloadWAV( format, data, size, freq );
 #endif
 
     print_openal_error("constructor return");
 }
 
-
 // constructor
 SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
                               bool cleanup) :
-    data(NULL),
     buffer(0),
     source(0),
     pitch(1.0),
@@ -178,17 +173,15 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
 
     format = AL_FORMAT_MONO8;
     size = len;
-    data = _data;
     freq = _freq;
 
-    alBufferData( buffer, format, data, size, freq );
+    alBufferData( buffer, format, _data, size, freq );
     if ( print_openal_error("constructor (alBufferData)") ) {
         throw sg_exception("Failed to buffer data.");
     }
 
     if ( cleanup ) {
-        alutUnloadWAV( format, data, size, freq );
-        data = NULL;
+        free(_data);
     }
 
     print_openal_error("constructor return");
@@ -198,7 +191,8 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq,
 // destructor
 SGSoundSample::~SGSoundSample() {
     SG_LOG( SG_GENERAL, SG_INFO, "Deleting a sample" );
-    alDeleteBuffers(1, &buffer);
+    if (buffer)
+        alDeleteBuffers(1, &buffer);
 }
 
 
@@ -238,6 +232,9 @@ SGSoundSample::bind_source() {
 
     if ( playing ) {
         return true;
+    }
+    if ( buffer == 0 ) {
+        return false;
     }
 
     // Bind buffer with a source.
@@ -376,3 +373,37 @@ SGSoundSample::set_max_dist( ALfloat dist ) {
         alSourcef( source, AL_MAX_DISTANCE, max_dist );
     }
 }
+
+ALvoid *
+SGSoundSample::load_file(const char *path, const char *file)
+{
+    ALvoid* data = 0;
+
+    SGPath samplepath( path );
+    if ( strlen(file) ) {
+        samplepath.append( file );
+    }
+
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
+    ALfloat freqf;
+    data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
+    if (data == NULL) {
+        throw sg_exception("Failed to load wav file.");
+    }
+    freq = (ALsizei)freqf;
+#else
+# if defined (__APPLE__)
+    alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
+                     &format, &data, &size, &freq );
+# else
+    alutLoadWAVFile( (ALbyte *)samplepath.c_str(),
+                     &format, &data, &size, &freq, &loop );
+# endif
+    if ( print_openal_error("constructor (alutLoadWAVFile)") ) {
+        throw sg_exception("Failed to load wav file.");
+    }
+#endif
+
+    return data;
+}
+

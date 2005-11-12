@@ -275,8 +275,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
        // "alSource".  The semantics of what is going on here seems
        // confused and needs to be thought through more carefully.
         _sample = new SGSoundSample( path.c_str(),
-                                    node->getStringValue("path", ""),
-                                    true );
+                                    node->getStringValue("path", "") );
 
        _mgr->add( _sample, _name );
    }

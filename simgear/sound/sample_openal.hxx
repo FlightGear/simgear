@@ -84,7 +84,6 @@ private:
     // configuration values
     ALenum format;
     ALsizei size;
-    ALvoid* data;
     ALsizei freq;
 
     double pitch;
@@ -98,15 +97,20 @@ private:
 
 public:
 
+     /**
+      * Empty constructor, can be used to read data to the systems
+      * memory and not to the driver.
+      */
+    SGSoundSample();
+
     /**
      * Constructor
      * @param path Path name to sound
      * @param file File name of sound
-     * @param cleanup Request clean up the intermediate data (this
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( const char *path, const char *file, bool cleanup );
+    SGSoundSample( const char *path, const char *file );
 
     /**
      * Constructor.
@@ -181,13 +185,6 @@ public:
     }
 
     /**
-     * Return a pointer to the raw data
-     */
-    inline char *get_data() {
-        return (char *)data;
-    }
-
-    /**
      * Set position of sound source (uses same coordinate system as opengl)
      */
     void set_source_pos( ALfloat *pos );
@@ -224,6 +221,11 @@ public:
      * no longer audible.
      */
     void set_max_dist( ALfloat dist );
+
+    /**
+     * Load a sound file into a memory buffer only.
+     */
+    ALvoid* load_file(const char *path, const char *file);
 };
 
 

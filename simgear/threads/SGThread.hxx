@@ -134,13 +134,8 @@ SGThread::~SGThread()
 inline int
 SGThread::start( unsigned cpu )
 {
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	  
-    int status = pthread_create( &tid, &attr, start_handler, this );
+    int status = pthread_create( &tid, 0, start_handler, this );
     assert( status == 0 );
-    pthread_attr_destroy(&attr);
 #if defined( sgi )
     if ( !status && !cpu )
         pthread_setrunon_np( cpu );
@@ -222,19 +217,8 @@ protected:
 
 inline SGMutex::SGMutex()
 {
-#if 0
-    // Note: This will only work if the mutex is in shared memory,
-    // something we don't support enyhow. -EMH-
-    pthread_mutexattr_t mutex_attr = 0;
-    pthread_mutexattr_init(&mutex_attr);
-    pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED);
-    int status = pthread_mutex_init( &mutex, &mutex_attr );
-    assert( status == 0 );
-    pthread_mutexattr_destroy(&mutex_attr);
-#else
     int status = pthread_mutex_init( &mutex, 0 );
     assert( status == 0 );
-#endif
 }
 
 inline SGMutex::~SGMutex()

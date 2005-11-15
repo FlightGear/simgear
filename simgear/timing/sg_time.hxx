@@ -200,7 +200,7 @@ public:
 
 /**
  * \relates SGTime
- * Return unix time in seconds for the given data (relative to GMT)
+ * Return unix time in seconds for the given date (relative to GMT)
  * @param year current GMT year
  * @param month current GMT month
  * @param day current GMT day

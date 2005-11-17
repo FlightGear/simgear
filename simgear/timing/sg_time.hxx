@@ -192,6 +192,9 @@ public:
 
     /** @return grenich side real time (lst when longitude == 0) */
     inline double getGst() const { return gst; };
+
+    /** @return offset in seconds to local timezone time */
+    inline time_t get_local_offset() const { return local_offset; };
 };
 
 

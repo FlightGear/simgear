@@ -738,7 +738,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
     char strBuffer[256];
     va_start(args,strMode);
 #if defined _WIN32 && !defined __CYGWIN__
-    _vsnSG_LOG(SG_GL, SG_INFO,  strBuffer, 256, strMode, args );
+    _vsnprintf( strBuffer, 256, strMode, args );
 #else
     vsnprintf( strBuffer, 256, strMode, args );
 #endif

@@ -43,6 +43,7 @@
  * Changelog:
  *
  * Jan. 2005, Removed GLEW dependencies, Erik Hofman, Fred Bouvier
+ * Nov. 2005, Use the simgear logging facility, Erik Hofman
  */
 
 #ifdef HAVE_CONFIG_H
@@ -54,13 +55,14 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #ifdef _WIN32
 #pragma comment(lib, "gdi32.lib") // required for GetPixelFormat()
@@ -87,10 +89,11 @@ static wglReleaseTexImageARBProc wglReleaseTexImageARBPtr = 0;
 #else /* !_WIN32 */
 static bool glXVersion1_3Present = false;
 static glXChooseFBConfigProc glXChooseFBConfigPtr = 0;
+static glXCreatePbufferProc glXCreatePbufferPtr = 0;
 static glXCreateGLXPbufferProc glXCreateGLXPbufferPtr = 0;
 static glXGetVisualFromFBConfigProc glXGetVisualFromFBConfigPtr = 0;
-static glXCreateContextWithConfigProc glXCreateContextWithConfigPtr = 0;
 static glXCreateContextProc glXCreateContextPtr = 0;
+static glXCreateContextWithConfigProc glXCreateContextWithConfigPtr = 0;
 static glXDestroyPbufferProc glXDestroyPbufferPtr = 0;
 static glXQueryDrawableProc glXQueryDrawablePtr = 0;
 static glXQueryGLXPbufferSGIXProc glXQueryGLXPbufferSGIXPtr = 0;
@@ -208,24 +211,24 @@ void _wglGetLastError()
     switch(err)
     {
     case ERROR_INVALID_PIXEL_FORMAT:
-        fprintf(stderr, 
-                "RenderTexture Win32 Error:  ERROR_INVALID_PIXEL_FORMAT\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Win32 Error:  ERROR_INVALID_PIXEL_FORMAT");
         break;
     case ERROR_NO_SYSTEM_RESOURCES:
-        fprintf(stderr, 
-                "RenderTexture Win32 Error:  ERROR_NO_SYSTEM_RESOURCES\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Win32 Error:  ERROR_NO_SYSTEM_RESOURCES");
         break;
     case ERROR_INVALID_DATA:
-        fprintf(stderr, 
-                "RenderTexture Win32 Error:  ERROR_INVALID_DATA\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Win32 Error:  ERROR_INVALID_DATA");
         break;
     case ERROR_INVALID_WINDOW_HANDLE:
-        fprintf(stderr, 
-                "RenderTexture Win32 Error:  ERROR_INVALID_WINDOW_HANDLE\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Win32 Error:  ERROR_INVALID_WINDOW_HANDLE");
         break;
     case ERROR_RESOURCE_TYPE_NOT_FOUND:
-        fprintf(stderr, 
-                "RenderTexture Win32 Error:  ERROR_RESOURCE_TYPE_NOT_FOUND\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Win32 Error:  ERROR_RESOURCE_TYPE_NOT_FOUND");
         break;
     case ERROR_SUCCESS:
         // no error
@@ -242,7 +245,7 @@ void _wglGetLastError()
             0,
             NULL);
         
-        fprintf(stderr, "RenderTexture Win32 Error %d: %s\n", err, lpMsgBuf);
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture Win32 Error %d: %s", err, lpMsgBuf);
         LocalFree( lpMsgBuf );
         break;
     }
@@ -262,9 +265,9 @@ void _wglGetLastError()
 */ 
 void PrintExtensionError( char* strMsg, ... )
 {
-    fprintf(stderr, 
+    SG_LOG(SG_GL, SG_ALERT, 
             "Error: RenderTexture requires the following unsupported "
-            "OpenGL extensions: \n");
+            "OpenGL extensions: ");
     char strBuffer[512];
     va_list args;
     va_start(args, strMsg);
@@ -275,7 +278,7 @@ void PrintExtensionError( char* strMsg, ... )
 #endif
     va_end(args);
     
-    fprintf(stderr, strMsg);
+    SG_LOG(SG_GL, SG_ALERT, strMsg);
 }
 
 
@@ -327,8 +330,8 @@ bool RenderTexture::Initialize(int width, int height,
         iFormat = GetPixelFormat(hdc);
         if (iFormat == 0)
         {
-            fprintf(stderr, 
-                    "RenderTexture Error: GetPixelFormat() failed.\n");
+            SG_LOG(SG_GL, SG_ALERT, 
+                    "RenderTexture Error: GetPixelFormat() failed.");
             return false;
         }
     }
@@ -337,16 +340,16 @@ bool RenderTexture::Initialize(int width, int height,
         if (!wglChoosePixelFormatARBPtr(hdc, &_pixelFormatAttribs[0], NULL, 
                                      1, &iFormat, &iNumFormats))
         {
-            fprintf(stderr, 
-                "RenderTexture Error: wglChoosePixelFormatARB() failed.\n");
+            SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Error: wglChoosePixelFormatARB() failed.");
             _wglGetLastError();
             return false;
         }
         if ( iNumFormats <= 0 )
         {
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Error: Couldn't find a suitable "
-                    "pixel format.\n");
+                    "pixel format.");
             _wglGetLastError();
             return false;
         }
@@ -357,8 +360,8 @@ bool RenderTexture::Initialize(int width, int height,
                                     &_pbufferAttribs[0]);
     if (!_hPBuffer)
     {
-        fprintf(stderr, 
-                "RenderTexture Error: wglCreatePbufferARB() failed.\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Error: wglCreatePbufferARB() failed.");
         _wglGetLastError();
         return false;
     }
@@ -367,8 +370,8 @@ bool RenderTexture::Initialize(int width, int height,
     _hDC = wglGetPbufferDCARBPtr( _hPBuffer);
     if ( !_hDC )
     {
-        fprintf(stderr, 
-                "RenderTexture Error: wglGetGetPbufferDCARB() failed.\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Error: wglGetGetPbufferDCARB() failed.");
         _wglGetLastError();
         return false;
     }
@@ -386,8 +389,8 @@ bool RenderTexture::Initialize(int width, int height,
         _hGLContext = wglCreateContext( _hDC );
         if ( !_hGLContext )
         {
-            fprintf(stderr, 
-                    "RenderTexture Error: wglCreateContext() failed.\n");
+            SG_LOG(SG_GL, SG_ALERT, 
+                    "RenderTexture Error: wglCreateContext() failed.");
             _wglGetLastError();
             return false;
         }
@@ -398,8 +401,8 @@ bool RenderTexture::Initialize(int width, int height,
     {
         if( !wglShareLists(hglrc, _hGLContext) )
         {
-            fprintf(stderr, 
-                    "RenderTexture Error: wglShareLists() failed.\n");
+            SG_LOG(SG_GL, SG_ALERT, 
+                    "RenderTexture Error: wglShareLists() failed.");
             _wglGetLastError();
             return false;
         }
@@ -444,14 +447,14 @@ bool RenderTexture::Initialize(int width, int height,
         ? (value?true:false) : false; 
     
 #if defined(_DEBUG) | defined(DEBUG)
-    fprintf(stderr, "Created a %dx%d RenderTexture with BPP(%d, %d, %d, %d)",
+    SG_LOG(SG_GL, SG_ALERT, "Created a %dx%d RenderTexture with BPP(%d, %d, %d, %d)",
         _iWidth, _iHeight, 
         _iNumColorBits[0], _iNumColorBits[1], 
         _iNumColorBits[2], _iNumColorBits[3]);
-    if (_iNumDepthBits) fprintf(stderr, " depth=%d", _iNumDepthBits);
-    if (_iNumStencilBits) fprintf(stderr, " stencil=%d", _iNumStencilBits);
-    if (_bDoubleBuffered) fprintf(stderr, " double buffered");
-    fprintf(stderr, "\n");
+    if (_iNumDepthBits) SG_LOG(SG_GL, SG_ALERT, " depth=%d", _iNumDepthBits);
+    if (_iNumStencilBits) SG_LOG(SG_GL, SG_ALERT, " stencil=%d", _iNumStencilBits);
+    if (_bDoubleBuffered) SG_LOG(SG_GL, SG_ALERT, " double buffered");
+    SG_LOG(SG_GL, SG_ALERT, "");
 #endif
 
 #elif defined( __APPLE__ )
@@ -469,8 +472,8 @@ bool RenderTexture::Initialize(int width, int height,
     
     if (nConfigs == 0 || !fbConfigs) 
     {
-        fprintf(stderr,
-            "RenderTexture Error: Couldn't find a suitable pixel format.\n");
+        SG_LOG(SG_GL, SG_ALERT,
+            "RenderTexture Error: Couldn't find a suitable pixel format.");
         return false;
     }
     
@@ -485,14 +488,18 @@ bool RenderTexture::Initialize(int width, int height,
         };
         for (int i=0;i<nConfigs;i++)
         {
-            _hPBuffer = glXCreatePbuffer(_pDisplay, fbConfigs[i], pbufAttrib);
+            _hPBuffer = glXCreatePbufferPtr(_pDisplay, fbConfigs[i], pbufAttrib);
             if (_hPBuffer)
             {
-                XVisualInfo *visInfo = glXGetVisualFromFBConfig(_pDisplay, fbConfigs[i]);
+                XVisualInfo *visInfo = glXGetVisualFromFBConfigPtr(_pDisplay, fbConfigs[i]);
 
-                _hGLContext = glXCreateContext(_pDisplay, visInfo,
+                _hGLContext = glXCreateContextPtr(_pDisplay, visInfo,
                                                _bShareObjects ? context : NULL,
-                                               True);
+                                               GL_TRUE);
+                if (!_hGLContext)
+                {
+                    return false;
+                }
                 XFree( visInfo );
                 break;
             }
@@ -522,8 +529,8 @@ bool RenderTexture::Initialize(int width, int height,
     
     if (!_hPBuffer)
     {
-        fprintf(stderr, 
-                "RenderTexture Error: glXCreateGLXPbufferPtr() failed.\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Error: glXCreateGLXPbufferPtr() failed.");
         return false;
     }
     
@@ -534,8 +541,8 @@ bool RenderTexture::Initialize(int width, int height,
                                        _bShareObjects ? context : NULL, False);
         if ( !_hGLContext )
         {
-            fprintf(stderr, 
-                    "RenderTexture Error: glXCreateContext() failed.\n");
+            SG_LOG(SG_GL, SG_ALERT, 
+                    "RenderTexture Error: glXCreateContext() failed.");
             return false;
         }
     }
@@ -704,7 +711,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
 
     if (IsInitialized() && !_Invalidate())
     {
-        fprintf(stderr, "RenderTexture::Reset(): failed to invalidate.\n");
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Reset(): failed to invalidate.");
         return false;
     }
     
@@ -731,7 +738,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
     char strBuffer[256];
     va_start(args,strMode);
 #if defined _WIN32 && !defined __CYGWIN__
-    _vsnprintf( strBuffer, 256, strMode, args );
+    _vsnSG_LOG(SG_GL, SG_INFO,  strBuffer, 256, strMode, args );
 #else
     vsnprintf( strBuffer, 256, strMode, args );
 #endif
@@ -764,7 +771,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
 bool RenderTexture::Resize(int iWidth, int iHeight)
 {
     if (!_bInitialized) {
-        fprintf(stderr, "RenderTexture::Resize(): must Initialize() first.\n");
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Resize(): must Initialize() first.");
         return false;
     }
     if (iWidth == _iWidth && iHeight == _iHeight) {
@@ -801,7 +808,7 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
     }
 #endif
     else {
-        fprintf(stderr, "RenderTexture::Resize(): failed to resize.\n");
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Resize(): failed to resize.");
         return false;
     }
     _bInitialized = false;
@@ -820,8 +827,8 @@ bool RenderTexture::BeginCapture()
 {
     if (!_bInitialized)
     {
-        fprintf(stderr, 
-                "RenderTexture::BeginCapture(): Texture is not initialized!\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture::BeginCapture(): Texture is not initialized!");
         return false;
     }
 #ifdef _WIN32
@@ -856,8 +863,8 @@ bool RenderTexture::EndCapture()
 {    
     if (!_bInitialized)
     {
-        fprintf(stderr, 
-                "RenderTexture::EndCapture() : Texture is not initialized!\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture::EndCapture() : Texture is not initialized!");
         return false;
     }
 
@@ -917,14 +924,14 @@ bool RenderTexture::BeginCapture(RenderTexture* current)
     }
     if (!_bInitialized)
     {
-        fprintf(stderr, 
-            "RenderTexture::BeginCapture(RenderTexture*): Texture is not initialized!\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+            "RenderTexture::BeginCapture(RenderTexture*): Texture is not initialized!");
         return false;
     }
     if (!current->_bInitialized)
     {
-        fprintf(stderr, 
-            "RenderTexture::BeginCapture(RenderTexture): 'current' texture is not initialized!\n");
+        SG_LOG(SG_GL, SG_ALERT, 
+            "RenderTexture::BeginCapture(RenderTexture): 'current' texture is not initialized!");
         return false;
     }
     
@@ -1143,11 +1150,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "rgb") 
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
-                    "(rgb + %d).\n", 
-                    _iNumComponents);
-
+                    "(rgb + " << _iNumComponents << ").");
         
         if (kv.first == "rgba" && (_iNumComponents == 0))
         {
@@ -1195,10 +1200,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "rgba") 
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
-                    "(rgba + %d).\n", 
-                    _iNumComponents);
+                    "(rgba + " << _iNumComponents << ").");
         
         if (kv.first == "r" && (_iNumComponents <= 1))
         {
@@ -1221,10 +1225,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "r") 
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
-                    "(r + %d).\n", 
-                    _iNumComponents);
+                    "(r + " << _iNumComponents << ").");
 
         if (kv.first == "rg" && (_iNumComponents <= 1))
         {
@@ -1258,10 +1261,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "rg") 
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
-                    "(rg + %d).\n", 
-                    _iNumComponents);
+                    "(rg + " << _iNumComponents << ").");
 
         if (kv.first == "depth")
         {
@@ -1402,8 +1404,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 
-        fprintf(stderr, 
-                "RenderTexture Error: Unknown pbuffer attribute: %s\n", 
+        SG_LOG(SG_GL, SG_ALERT, 
+                "RenderTexture Error: Unknown pbuffer attribute: " <<
                 token.c_str());
     }
 
@@ -1412,9 +1414,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
     // Check for inconsistent texture targets
     if (_bIsTexture && _bIsDepthTexture && !(bBind2D ^ bBindRECT ^ bBindCUBE))
     {
-        fprintf(stderr,
+        SG_LOG(SG_GL, SG_ALERT,
                 "RenderTexture Warning: Depth and Color texture targets "
-                "should match.\n");
+                "should match.");
     }
 
     // Apply default bit format if none specified
@@ -1474,8 +1476,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
     if (!WGL_NV_render_depth_texture && _bIsDepthTexture && (RT_RENDER_TO_TEXTURE == _eUpdateMode))
     {
 #if defined(DEBUG) || defined(_DEBUG)
-        fprintf(stderr, "RenderTexture Warning: No support found for "
-                "render to depth texture.\n");
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture Warning: No support found for "
+                "render to depth texture.");
 #endif
         _bIsDepthTexture = false;
     }
@@ -1508,8 +1510,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
         }
 
 #elif defined(DEBUG) || defined(_DEBUG)
-        printf("RenderTexture Error: Render to Texture not "
-               "supported in Linux or MacOS\n");
+        SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: Render to Texture not "
+               "supported in Linux or MacOS");
 #endif  
     }
 
@@ -1587,9 +1589,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
                     pbAttribs.push_back(WGL_TEXTURE_FLOAT_RGBA_NV);
                     break;
                 default:
-                    fprintf(stderr, 
+                    SG_LOG(SG_GL, SG_ALERT, 
                             "RenderTexture Warning: Bad number of components "
-                            "(r=1,rg=2,rgb=3,rgba=4): %d.\n", 
+                            "(r=1,rg=2,rgb=3,rgba=4): %d.", 
                             _iNumComponents);
                     break;
                 }
@@ -1635,14 +1637,14 @@ void RenderTexture::_ParseModeString(const char *modeString,
                 pbAttribs.push_back(WGL_TEXTURE_RGBA_ARB);
                 break;
             default:
-                fprintf(stderr, 
+                SG_LOG(SG_GL, SG_ALERT, 
                         "RenderTexture Warning: Bad number of components "
-                        "(r=1,rg=2,rgb=3,rgba=4): %d.\n", _iNumComponents);
+                        "(r=1,rg=2,rgb=3,rgba=4): %d.", _iNumComponents);
                 break;
             }
         }         
 #elif defined(DEBUG) || defined(_DEBUG)
-        fprintf(stderr, 
+        SG_LOG(SG_GL, SG_ALERT, 
                 "RenderTexture Error: Render to Texture not supported in "
                 "Linux or MacOS\ n");
 #endif  
@@ -1668,8 +1670,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pbAttribs.push_back(WGL_TEXTURE_DEPTH_COMPONENT_NV);
         }
 #elif defined(DEBUG) || defined(_DEBUG)
-        printf("RenderTexture Error: Render to Texture not supported in "
-               "Linux or MacOS\n");
+        SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: Render to Texture not supported in "
+               "Linux or MacOS");
 #endif 
     }
 }
@@ -1718,7 +1720,7 @@ vector<int> RenderTexture::_ParseBitVector(string bitVector)
     string::size_type nextpos = 0;
     do
     { 
-        nextpos = bitVector.find_first_of(", \n", pos);
+        nextpos = bitVector.find_first_of(", ", pos);
         pieces.push_back(string(bitVector, pos, nextpos - pos)); 
         pos = nextpos+1; 
     } while (nextpos != bitVector.npos );
@@ -1806,10 +1808,10 @@ bool RenderTexture::_VerifyExtensions()
         {
             // [Redge]
 #if defined(_DEBUG) | defined(DEBUG)
-            fprintf(stderr, 
+            SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: "
-                    "OpenGL extension GL_ARB_depth_texture not available.\n"
-                    "         Using glReadPixels() to emulate behavior.\n");
+                    "OpenGL extension GL_ARB_depth_texture not available."
+                    "         Using glReadPixels() to emulate behavior.");
 #endif   
             _bHasARBDepthTexture = false;
             //PrintExtensionError("GL_ARB_depth_texture");
@@ -1823,14 +1825,14 @@ bool RenderTexture::_VerifyExtensions()
 
     // First try the glX version 1.3 functions.
     glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
-    glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreatePbuffer");
+    glXCreatePbufferPtr = (glXCreatePbufferProc)SGLookupFunction("glXCreatePbuffer");
     glXGetVisualFromFBConfigPtr = (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfig");
     glXCreateContextPtr = (glXCreateContextProc)SGLookupFunction("glXCreateContext");
     glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyPbuffer");
     glXQueryDrawablePtr = (glXQueryDrawableProc)SGLookupFunction("glXQueryDrawable");
 
     if (glXChooseFBConfigPtr &&
-        glXCreateGLXPbufferPtr &&
+        glXCreatePbufferPtr &&
         glXGetVisualFromFBConfigPtr &&
         glXCreateContextPtr &&
         glXDestroyPbufferPtr &&
@@ -1916,9 +1918,9 @@ bool RenderTexture::_InitializeTextures()
             {                             
                 if (_bMipmap)
                 {
-                    fprintf(stderr, 
+                    SG_LOG(SG_GL, SG_ALERT, 
                         "RenderTexture Error: mipmapped float textures not "
-                        "supported.\n");
+                        "supported.");
                     return false;
                 }
             
@@ -1979,8 +1981,8 @@ bool RenderTexture::_InitializeTextures()
                     iFormat = GL_RGBA;
                     break;
                 default:
-                    printf("RenderTexture Error: "
-                           "Invalid number of components: %d\n", 
+                    SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: "
+                           "Invalid number of components: " <<
                            _iNumComponents);
                     return false;
                 }
@@ -2233,8 +2235,8 @@ RenderTexture::RenderTexture(int width, int height,
 {
     assert(width > 0 && height > 0);
 #if defined DEBUG || defined _DEBUG
-    fprintf(stderr, 
-            "RenderTexture Warning: Deprecated Contructor interface used.\n");
+    SG_LOG(SG_GL, SG_ALERT, 
+            "RenderTexture Warning: Deprecated Contructor interface used.");
 #endif
     
     _iNumColorBits[0] = _iNumColorBits[1] = 
@@ -2270,8 +2272,8 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
         return false;
 
 #if defined DEBUG || defined _DEBUG
-    fprintf(stderr, 
-            "RenderTexture Warning: Deprecated Initialize() interface used.\n");
+    SG_LOG(SG_GL, SG_ALERT, 
+            "RenderTexture Warning: Deprecated Initialize() interface used.");
 #endif   
 
     // create a mode string.
@@ -2294,7 +2296,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
             mode.append("a");
         mode.append("=");
         char bitVector[100];
-        sprintf(bitVector,
+        snprintf( bitVector, 100,
             "%d%s,%d%s,%d%s,%d%s",
             iRBits, (iRBits >= 16) ? "f" : "",
             iGBits, (iGBits >= 16) ? "f" : "",
@@ -2371,12 +2373,12 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
 */ 
 bool RenderTexture::Reset(int iWidth, int iHeight)
 {
-    fprintf(stderr, 
-            "RenderTexture Warning: Deprecated Reset() interface used.\n");
+    SG_LOG(SG_GL, SG_ALERT, 
+            "RenderTexture Warning: Deprecated Reset() interface used.");
 
     if (!_Invalidate())
     {
-        fprintf(stderr, "RenderTexture::Reset(): failed to invalidate.\n");
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Reset(): failed to invalidate.");
         return false;
     }
     _iWidth     = iWidth;

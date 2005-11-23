@@ -245,7 +245,7 @@ void _wglGetLastError()
             0,
             NULL);
         
-        SG_LOG(SG_GL, SG_ALERT, "RenderTexture Win32 Error %d: %s", err, lpMsgBuf);
+        SG_LOG(SG_GL, SG_ALERT, "RenderTexture Win32 Error " <<  err << ":" << lpMsgBuf);
         LocalFree( lpMsgBuf );
         break;
     }
@@ -447,14 +447,13 @@ bool RenderTexture::Initialize(int width, int height,
         ? (value?true:false) : false; 
     
 #if defined(_DEBUG) | defined(DEBUG)
-    SG_LOG(SG_GL, SG_ALERT, "Created a %dx%d RenderTexture with BPP(%d, %d, %d, %d)",
-        _iWidth, _iHeight, 
-        _iNumColorBits[0], _iNumColorBits[1], 
-        _iNumColorBits[2], _iNumColorBits[3]);
-    if (_iNumDepthBits) SG_LOG(SG_GL, SG_ALERT, " depth=%d", _iNumDepthBits);
-    if (_iNumStencilBits) SG_LOG(SG_GL, SG_ALERT, " stencil=%d", _iNumStencilBits);
+    SG_LOG(SG_GL, SG_ALERT, "Created a " << _iWidth << "x" << _iHeight <<
+        " RenderTexture with BPP(" <<
+        _iNumColorBits[0] << "," << _iNumColorBits[1] << "," <<
+        _iNumColorBits[2] << "," << _iNumColorBits[3] << ")");
+    if (_iNumDepthBits) SG_LOG(SG_GL, SG_ALERT, " depth=" << _iNumDepthBits);
+    if (_iNumStencilBits) SG_LOG(SG_GL, SG_ALERT, " stencil=" << _iNumStencilBits);
     if (_bDoubleBuffered) SG_LOG(SG_GL, SG_ALERT, " double buffered");
-    SG_LOG(SG_GL, SG_ALERT, "");
 #endif
 
 #elif defined( __APPLE__ )
@@ -1224,7 +1223,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
 			_iNumComponents++;
             continue;
         }
-		else if (kv.first == "r") 
+	else if (kv.first == "r") 
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
                     "(r + " << _iNumComponents << ").");
@@ -1591,7 +1590,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
                 default:
                     SG_LOG(SG_GL, SG_ALERT, 
                             "RenderTexture Warning: Bad number of components "
-                            "(r=1,rg=2,rgb=3,rgba=4): %d.", 
+                            "(r=1,rg=2,rgb=3,rgba=4): " <<
                             _iNumComponents);
                     break;
                 }
@@ -1639,7 +1638,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
             default:
                 SG_LOG(SG_GL, SG_ALERT, 
                         "RenderTexture Warning: Bad number of components "
-                        "(r=1,rg=2,rgb=3,rgba=4): %d.", _iNumComponents);
+                        "(r=1,rg=2,rgb=3,rgba=4): " << _iNumComponents);
                 break;
             }
         }         

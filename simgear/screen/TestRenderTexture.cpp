@@ -305,8 +305,10 @@ void _Display()
 // Function     	: main
 // Description	    : 
 //---------------------------------------------------------------------------
-int main()
+int main(int argc, char *argv[])
 {
+    int argn = argc;
+    glutInit(&argn, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
     glutInitWindowPosition(50, 50);
     glutInitWindowSize(512, 512);

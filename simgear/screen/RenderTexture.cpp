@@ -1,4 +1,4 @@
-//---------------------------------------------------------------------------
+reateContext//
 // File : RenderTexture.cpp
 //---------------------------------------------------------------------------
 // Copyright (c) 2002-2004 Mark J. Harris
@@ -494,7 +494,7 @@ bool RenderTexture::Initialize(int width, int height,
 
                 _hGLContext = glXCreateContextPtr(_pDisplay, visInfo,
                                                _bShareObjects ? context : NULL,
-                                               GL_TRUE);
+                                               True);
                 if (!_hGLContext)
                 {
                     return false;

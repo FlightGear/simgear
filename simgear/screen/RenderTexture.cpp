@@ -1,4 +1,3 @@
-reateContext//
 // File : RenderTexture.cpp
 //---------------------------------------------------------------------------
 // Copyright (c) 2002-2004 Mark J. Harris

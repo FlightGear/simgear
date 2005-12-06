@@ -34,6 +34,8 @@
 
 ssgPlacementTransform::ssgPlacementTransform(void)
 {
+  sgdSetVec3(_placement_offset, 0, 0, 0);
+  sgdSetVec3(_scenery_center, 0, 0, 0);
 }
 
 ssgPlacementTransform::~ssgPlacementTransform(void)

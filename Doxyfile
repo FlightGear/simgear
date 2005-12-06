@@ -303,16 +303,19 @@ INPUT                  = \
 	simgear/compiler.h \
 	simgear/constants.h \
 	simgear/debug \
+	simgear/environment \
 	simgear/ephemeris \
 	simgear/io \
 	simgear/magvar \
 	simgear/math \
 	simgear/misc \
+	simgear/nasal \
         simgear/props \
 	simgear/route \
 	simgear/scene \
 	simgear/screen \
 	simgear/serial \
+	simgear/structure \
 	simgear/sg_inlines.h \
 	simgear/sg_traits.hxx \
         simgear/sound \

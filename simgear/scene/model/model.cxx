@@ -283,7 +283,8 @@ sgLoad3DModel( const string &fg_root, const string &path,
     ssgTexturePath((char *)texturepath.c_str());
     model = (ssgBranch *)ssgLoad((char *)modelpath.c_str());
     if (model == 0)
-      throw sg_exception("Failed to load 3D model");
+      throw sg_io_exception("Failed to load 3D model", 
+			  sg_location(modelpath.str()));
   }
                                 // Set up the alignment node
   ssgTransform * alignmainmodel = new ssgTransform;

@@ -107,7 +107,7 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
 	scanType();
 	if (!scanId() || !scanDate()) {
 		delete[] _data;
-		throw sg_io_exception("metar data bogus (" + _url + ')');
+		throw sg_io_exception("metar data bogus ", sg_location(_url));
 	}
 	scanModifier();
 
@@ -133,7 +133,7 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
 
 	if (_grpcount < 4) {
 		delete[] _data;
-		throw sg_io_exception("metar data incomplete (" + _url + ')');
+		throw sg_io_exception("metar data incomplete ", sg_location(_url));
 	}
 
 	_url = "";
@@ -196,7 +196,7 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 	sock->set_timeout(10000);
 	if (!sock->open(SG_IO_OUT)) {
 		delete sock;
-		throw sg_io_exception("cannot connect to " + host);
+		throw sg_io_exception("cannot connect to ", sg_location(host));
 	}
 
 	string get = "GET ";
@@ -233,7 +233,8 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 	char *b = buf;
 	scanBoundary(&b);
 	if (*b == '<')
-		throw sg_io_exception("no metar data available from " + _url);
+		throw sg_io_exception("no metar data available from ", 
+				sg_location(_url));
 
 	char *metar = new char[strlen(b) + 2];	// make room for " \0"
 	strcpy(metar, b);

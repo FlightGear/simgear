@@ -185,7 +185,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     } catch (const sg_exception &ex) {
         SG_LOG( SG_INPUT, SG_ALERT, "Error reading materials: "
                 << ex.getMessage() );
-        throw ex;
+        throw;
     }
 
     int nMaterials = materials.nChildren();

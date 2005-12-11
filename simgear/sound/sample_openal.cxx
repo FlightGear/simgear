@@ -118,7 +118,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file) :
   if (buffer == AL_NONE) {
      ALenum error = alutGetError ();
      print_openal_error("constructor (alutCreateBufferFromFile)");
-     throw sg_exception("Failed to load wav file: "+string(alutGetErrorString (error)));
+     throw sg_io_exception("Failed to load wav file: ",
+			 sg_location(string(alutGetErrorString (error))));
   }
 
 #else
@@ -383,7 +384,8 @@ SGSoundSample::load_file(const char *path, const char *file)
     ALfloat freqf;
     data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
     if (data == NULL) {
-        throw sg_exception("Failed to load wav file.");
+        throw sg_io_exception("Failed to load wav file.",
+					sg_location(samplepath.str()));
     }
     freq = (ALsizei)freqf;
 #else
@@ -395,7 +397,8 @@ SGSoundSample::load_file(const char *path, const char *file)
                      &format, &data, &size, &freq, &loop );
 # endif
     if ( print_openal_error("constructor (alutLoadWAVFile)") ) {
-        throw sg_exception("Failed to load wav file.");
+        throw sg_io_exception("Failed to load wav file.",
+					sg_location(samplepath.str()));
     }
 #endif
 

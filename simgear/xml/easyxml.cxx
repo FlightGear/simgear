@@ -263,12 +263,12 @@ readXML (const string &path, XMLVisitor &visitor)
   if (input.good()) {
     try {
       readXML(input, visitor, path);
-    } catch (sg_io_exception &e) {
+    } catch (sg_io_exception &) {
       input.close();
-      throw e;
-    } catch (sg_throwable &t) {
+      throw;
+    } catch (sg_throwable &) {
       input.close();
-      throw t;
+      throw;
     }
   } else {
     throw sg_io_exception("Failed to open file", sg_location(path),

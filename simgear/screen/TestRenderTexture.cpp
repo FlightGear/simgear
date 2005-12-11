@@ -10,7 +10,7 @@
 #include <simgear/compiler.h>
 
 #include SG_GL_H
-#include <GL/glut.h>
+#include SG_GLUT_H
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
 

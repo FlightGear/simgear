@@ -194,7 +194,7 @@ logbuf::overflow( int c )
             freopen("conout$", "w", stderr);
             has_console = true;
         }
-        sbuf->sputc(c);
+        return sbuf->sputc(c);
     }
     else
         return EOF == 0 ? 1: 0;

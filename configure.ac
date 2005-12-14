@@ -250,6 +250,9 @@ case "${host}" in
 
 esac
 
+AC_SEARCH_LIBS(glutGetModifiers, [ glut glut32 freeglut ], have_glut=yes, have_glut=no)
+AM_CONDITIONAL(HAVE_GLUT, test "x$have_glut" = "xyes")
+
 opengl_LIBS="$LIBS"
 LIBS="$base_LIBS"
 

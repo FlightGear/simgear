@@ -1792,7 +1792,8 @@ bool RenderTexture::_VerifyExtensions()
             PrintExtensionError("GL_NV_texture_rectangle");
             return false;
         }
-        if (_bFloat && !(SGIsOpenGLExtensionSupported( "GL_NV_float_buffer" ) || SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ATI_pixel_format_float" )))
+        if (_bFloat && !(SGIsOpenGLExtensionSupported( "GL_NV_float_buffer" ) ||
+            SGSearchExtensionsString( wglExtensionsString.c_str(), "WGL_ATI_pixel_format_float" )))
         {
             PrintExtensionError("GL_NV_float_buffer or GL_ATI_pixel_format_float");
             return false;
@@ -1820,6 +1821,16 @@ bool RenderTexture::_VerifyExtensions()
     }
 #elif defined( __APPLE__ )
 #else
+    Display* dpy = glXGetCurrentDisplay();
+    int minor = 0, major = 0;
+    if (!glXQueryVersion(dpy, &major, &minor))
+        return false;
+
+    int screen = DefaultScreen(dpy);
+    const char* extString = glXQueryExtensionsString(dpy, screen);
+    if (!SGSearchExtensionsString(extString, "GLX_SGIX_fbconfig") ||
+        !SGSearchExtensionsString(extString, "GLX_SGIX_pbuffer"))
+        return false;
 
     // First try the glX version 1.3 functions.
     glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
@@ -1829,7 +1840,8 @@ bool RenderTexture::_VerifyExtensions()
     glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyPbuffer");
     glXQueryDrawablePtr = (glXQueryDrawableProc)SGLookupFunction("glXQueryDrawable");
 
-    if (glXChooseFBConfigPtr &&
+    if (((1 <= major && 3 <= minor) || 2 <= major) &&
+        glXChooseFBConfigPtr &&
         glXCreatePbufferPtr &&
         glXGetVisualFromFBConfigPtr &&
         glXCreateContextPtr &&

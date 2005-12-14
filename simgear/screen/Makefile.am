@@ -35,4 +35,15 @@ libsgscreen_a_SOURCES = \
 	shader.cpp \
 	win32-printer.h
 
-INCLUDES = -I$(top_srcdir) -DGLX_GLXEXT_PROTOTYPES
+if HAVE_GLUT
+noinst_PROGRAMS = TestRenderTexture
+
+TestRenderTexture_SOURCES = TestRenderTexture.cpp
+
+TestRenderTexture_LDADD = \
+	$(top_builddir)/simgear/screen/libsgscreen.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(opengl_LIBS)
+endif
+
+INCLUDES = -I$(top_srcdir) -I$(top_builddir) -DGLX_GLXEXT_PROTOTYPES

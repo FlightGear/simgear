@@ -30,7 +30,9 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/stat.h>
-
+#ifdef _MSC_VER
+#  include <direct.h>
+#endif
 #include "sg_path.hxx"
 
 
@@ -195,7 +197,11 @@ void SGPath::create_dir( mode_t mode ) {
     }
     for(;i < dirlist.size(); i++) {
         string subdir = dirlist[i];
+#ifdef _MSC_VER
+        if ( _mkdir( subdir.c_str()) ) {
+#else
         if ( mkdir( subdir.c_str(), mode) ) {
+#endif
             SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
             break;
         }

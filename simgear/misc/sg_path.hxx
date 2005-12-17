@@ -38,6 +38,9 @@
 
 SG_USING_STD(string);
 
+#ifdef _MSC_VER
+  typedef int mode_t;
+#endif
 
 /**
  * A class to hide path separator difference across platforms and assist

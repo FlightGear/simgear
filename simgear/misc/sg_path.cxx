@@ -196,7 +196,7 @@ void SGPath::create_dir( mode_t mode ) {
         dir.add(dirlist[i]);
     }
     for(;i < dirlist.size(); i++) {
-        string subdir = dirlist[i];
+        dir.add(dirlist[i]);
 #ifdef _MSC_VER
         if ( _mkdir( subdir.c_str()) ) {
 #else
@@ -205,7 +205,6 @@ void SGPath::create_dir( mode_t mode ) {
             SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
             break;
         }
-        dir.add(subdir);
     }
 }
 

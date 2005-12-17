@@ -37,8 +37,8 @@ class PropsVisitor : public XMLVisitor
 {
 public:
 
-  PropsVisitor (SGPropertyNode * root, const string &base)
-    : _root(root), _level(0), _base(base), _hasException(false) {}
+  PropsVisitor (SGPropertyNode * root, const string &base, int default_mode = 0)
+    : _root(root), _level(0), _base(base), _hasException(false), _default_mode(default_mode) {}
 
   virtual ~PropsVisitor () {}
 
@@ -85,6 +85,7 @@ private:
     _level--;
   }
 
+  int _default_mode;
   string _data;
   SGPropertyNode * _root;
   int _level;
@@ -177,7 +178,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 				// Get the access-mode attributes,
 				// but don't set yet (in case they
 				// prevent us from recording the value).
-    int mode = 0;
+    int mode = _default_mode;
 
     attval = atts.getValue("read");
     if (checkFlag(attval, true))
@@ -194,6 +195,9 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     attval = atts.getValue("trace-write");
     if (checkFlag(attval, false))
       mode |= SGPropertyNode::TRACE_WRITE;
+    attval = atts.getValue("userarchive");
+    if (checkFlag(attval, false))
+      mode |= SGPropertyNode::USERARCHIVE;
 
 				// Check for an alias.
     attval = atts.getValue("alias");
@@ -299,9 +303,9 @@ PropsVisitor::warning (const char * message, int line, int column)
  */
 void
 readProperties (istream &input, SGPropertyNode * start_node,
-		const string &base)
+		const string &base, int default_mode)
 {
-  PropsVisitor visitor(start_node, base);
+  PropsVisitor visitor(start_node, base, default_mode);
   readXML(input, visitor, base);
   if (visitor.hasException())
     throw visitor.getException();
@@ -316,9 +320,10 @@ readProperties (istream &input, SGPropertyNode * start_node,
  * @return true if the read succeeded, false otherwise.
  */
 void
-readProperties (const string &file, SGPropertyNode * start_node)
+readProperties (const string &file, SGPropertyNode * start_node,
+                int default_mode)
 {
-  PropsVisitor visitor(start_node, file);
+  PropsVisitor visitor(start_node, file, default_mode);
   readXML(file, visitor);
   if (visitor.hasException())
     throw visitor.getException();
@@ -334,9 +339,9 @@ readProperties (const string &file, SGPropertyNode * start_node)
  * @return true if the read succeeded, false otherwise.
  */
 void readProperties (const char *buf, const int size,
-                     SGPropertyNode * start_node)
+                     SGPropertyNode * start_node, int default_mode)
 {
-  PropsVisitor visitor(start_node, "");
+  PropsVisitor visitor(start_node, "", default_mode);
   readXML(buf, size, visitor);
   if (visitor.hasException())
     throw visitor.getException();
@@ -439,15 +444,15 @@ writeAtts (ostream &output, const SGPropertyNode * node)
  * Test whether a node is archivable or has archivable descendants.
  */
 static bool
-isArchivable (const SGPropertyNode * node)
+isArchivable (const SGPropertyNode * node, SGPropertyNode::Attribute archive_flag)
 {
   // FIXME: it's inefficient to do this all the time
-  if (node->getAttribute(SGPropertyNode::ARCHIVE))
+  if (node->getAttribute(archive_flag))
     return true;
   else {
     int nChildren = node->nChildren();
     for (int i = 0; i < nChildren; i++)
-      if (isArchivable(node->getChild(i)))
+      if (isArchivable(node->getChild(i), archive_flag))
 	return true;
   }
   return false;
@@ -456,12 +461,12 @@ isArchivable (const SGPropertyNode * node)
 
 static bool
 writeNode (ostream &output, const SGPropertyNode * node,
-	   bool write_all, int indent)
+           bool write_all, int indent, SGPropertyNode::Attribute archive_flag)
 {
 				// Don't write the node or any of
 				// its descendants unless it is
 				// allowed to be archived.
-  if (!write_all && !isArchivable(node))
+  if (!write_all && !isArchivable(node, archive_flag))
     return true;		// Everything's OK, but we won't write.
 
   const string name = node->getName();
@@ -469,7 +474,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
 
 				// If there is a literal value,
 				// write it first.
-  if (node->hasValue() && (write_all || node->getAttribute(SGPropertyNode::ARCHIVE))) {
+  if (node->hasValue() && (write_all || node->getAttribute(archive_flag))) {
     doIndent(output, indent);
     output << '<' << name;
     writeAtts(output, node);
@@ -492,7 +497,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
     writeAtts(output, node);
     output << '>' << endl;
     for (int i = 0; i < nChildren; i++)
-      writeNode(output, node->getChild(i), write_all, indent + INDENT_STEP);
+      writeNode(output, node->getChild(i), write_all, indent + INDENT_STEP, archive_flag);
     doIndent(output, indent);
     output << "</" << name << '>' << endl;
   }
@@ -503,7 +508,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
 
 void
 writeProperties (ostream &output, const SGPropertyNode * start_node,
-		 bool write_all)
+                 bool write_all, SGPropertyNode::Attribute archive_flag)
 {
   int nChildren = start_node->nChildren();
 
@@ -511,7 +516,7 @@ writeProperties (ostream &output, const SGPropertyNode * start_node,
   output << "<PropertyList>" << endl;
 
   for (int i = 0; i < nChildren; i++) {
-    writeNode(output, start_node->getChild(i), write_all, INDENT_STEP);
+    writeNode(output, start_node->getChild(i), write_all, INDENT_STEP, archive_flag);
   }
 
   output << "</PropertyList>" << endl;
@@ -520,11 +525,11 @@ writeProperties (ostream &output, const SGPropertyNode * start_node,
 
 void
 writeProperties (const string &file, const SGPropertyNode * start_node,
-		 bool write_all)
+                 bool write_all, SGPropertyNode::Attribute archive_flag)
 {
   ofstream output(file.c_str());
   if (output.good()) {
-    writeProperties(output, start_node, write_all);
+    writeProperties(output, start_node, write_all, archive_flag);
   } else {
     throw sg_io_exception("Cannot open file", sg_location(file));
   }

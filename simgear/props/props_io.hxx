@@ -32,34 +32,37 @@ SG_USING_STD(ostream);
  * Read properties from an XML input stream.
  */
 void readProperties (istream &input, SGPropertyNode * start_node,
-		     const string &base = "");
+		     const string &base = "", int default_mode = 0);
 
 
 /**
  * Read properties from an XML file.
  */
-void readProperties (const string &file, SGPropertyNode * start_node);
+void readProperties (const string &file, SGPropertyNode * start_node,
+                     int default_mode = 0);
 
 
 /**
  * Read properties from an in-memory buffer.
  */
 void readProperties (const char *buf, const int size,
-                     SGPropertyNode * start_node);
+                     SGPropertyNode * start_node, int default_mode = 0);
 
 
 /**
  * Write properties to an XML output stream.
  */
 void writeProperties (ostream &output, const SGPropertyNode * start_node,
-		      bool write_all = false);
+		      bool write_all = false,
+		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);
 
 
 /**
  * Write properties to an XML file.
  */
 void writeProperties (const string &file, const SGPropertyNode * start_node,
-		      bool write_all = false);
+		      bool write_all = false,
+		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);
 
 
 /**

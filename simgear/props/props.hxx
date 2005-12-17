@@ -585,7 +585,8 @@ public:
     ARCHIVE = 4,
     REMOVED = 8,
     TRACE_READ = 16,
-    TRACE_WRITE = 32
+    TRACE_WRITE = 32,
+    USERARCHIVE = 64
   };
 
 

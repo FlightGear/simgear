@@ -29,6 +29,7 @@
 #ifndef _SG_PATH_HXX
 #define _SG_PATH_HXX
 
+#include <sys/types.h>
 
 #include <simgear/compiler.h>
 #include STL_STRING
@@ -131,6 +132,11 @@ public:
      * @return true if file exists, otherwise returns false.
      */
     bool exists() const;
+
+    /**
+     * Create the designated directory.
+     */
+    void create_dir(mode_t mode);
 
 private:
 

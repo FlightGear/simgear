@@ -26,7 +26,10 @@
 #include <simgear/compiler.h>
 
 #include <simgear_config.h>
+#include <simgear/debug/logstream.hxx>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/stat.h>
 
 #include "sg_path.hxx"
 
@@ -182,6 +185,23 @@ bool SGPath::exists() const {
     return true;
 }
 
+
+void SGPath::create_dir( mode_t mode ) {
+    string_list dirlist = sgPathSplit(dir());
+    SGPath dir = dirlist[0];
+    int i;
+    for(i=1; dir.exists() && i < dirlist.size(); i++) {
+        dir.add(dirlist[i]);
+    }
+    for(;i < dirlist.size(); i++) {
+        string subdir = dirlist[i];
+        if ( mkdir( subdir.c_str(), mode) ) {
+            SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
+            break;
+        }
+        dir.add(subdir);
+    }
+}
 
 string_list sgPathSplit( const string &search_path ) {
     string tmp = search_path;

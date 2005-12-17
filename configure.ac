@@ -390,6 +390,7 @@ fi
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_SIZE_T
+AC_TYPE_MODE_T
 AC_HEADER_TIME
 AC_STRUCT_TM
 

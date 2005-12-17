@@ -187,21 +187,50 @@ bool SGPath::exists() const {
     return true;
 }
 
+#ifdef _MSC_VER
+#  define sgMkDir(d,m)       _mkdir(d)
+#else
+#  define sgMkDir(d,m)       mkdir(d,m)
+#endif
+
 
 void SGPath::create_dir( mode_t mode ) {
     string_list dirlist = sgPathSplit(dir());
-    SGPath dir = dirlist[0];
-    int i;
-    for(i=1; dir.exists() && i < dirlist.size(); i++) {
-        dir.add(dirlist[i]);
+    string path = dirlist[0];
+    string_list path_elements;
+    string element;
+    while ( path.size() ) {
+        size_t p = path.find( sgDirPathSep );
+        if ( p != string::npos ) {
+            element = path.substr( 0, p );
+            path.erase( 0, p + 1 );
+        } else {
+            element = path;
+            path = "";
+        }
+        if ( element.size() )
+            path_elements.push_back( element );
     }
-    for(;i < dirlist.size(); i++) {
-        dir.add(dirlist[i]);
-#ifdef _MSC_VER
-        if ( _mkdir( subdir.c_str()) ) {
-#else
-        if ( mkdir( subdir.c_str(), mode) ) {
+
+    int i = 1;
+    SGPath dir = path_elements[0];
+#ifdef WIN32
+    if ( path_elements.size() >= 2 ) {
+        dir.append( path_elements[1] );
+        i = 2;
+    }
 #endif
+    struct stat info;
+    for(; stat( dir.c_str(), &info ) == 0 && i < path_elements.size(); i++) {
+        dir.append(path_elements[i]);
+    }
+    if ( sgMkDir( dir.c_str(), mode) ) {
+        SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
+        return;
+    }
+    for(;i < path_elements.size(); i++) {
+        dir.append(path_elements[i]);
+        if ( sgMkDir( dir.c_str(), mode) ) {
             SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
             break;
         }

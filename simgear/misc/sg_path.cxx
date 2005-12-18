@@ -221,8 +221,12 @@ void SGPath::create_dir( mode_t mode ) {
     }
 #endif
     struct stat info;
-    for(; stat( dir.c_str(), &info ) == 0 && i < path_elements.size(); i++) {
+    int r;
+    for(; ( r = stat( dir.c_str(), &info ) ) == 0 && i < path_elements.size(); i++) {
         dir.append(path_elements[i]);
+    }
+    if ( r == 0 ) {
+        return; // Directory already exists
     }
     if ( sgMkDir( dir.c_str(), mode) ) {
         SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );

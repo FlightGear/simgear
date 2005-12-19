@@ -120,12 +120,14 @@ public:
      */
     string extension() const;
 
-    /** Get the path string
+    /**
+     * Get the path string
      * @return path string
      */
     string str() const { return path; }
 
-    /** Get the path string
+    /**
+     * Get the path string
      * @return path in "C" string (ptr to char array) form.
      */
     const char* c_str() { return path.c_str(); }
@@ -147,6 +149,11 @@ private:
 
 };
 
+
+/**
+ * Split a directory string into a list of it's parent directories.
+ */
+string_list sgPathBranchSplit( const string &path );
 
 /**
  * Split a directory search path into a vector of individual paths

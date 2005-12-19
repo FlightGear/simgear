@@ -197,25 +197,14 @@ bool SGPath::exists() const {
 void SGPath::create_dir( mode_t mode ) {
     string_list dirlist = sgPathSplit(dir());
     string path = dirlist[0];
-    string_list path_elements;
-    string element;
-    while ( path.size() ) {
-        size_t p = path.find( sgDirPathSep );
-        if ( p != string::npos ) {
-            element = path.substr( 0, p );
-            path.erase( 0, p + 1 );
-        } else {
-            element = path;
-            path = "";
-        }
-        if ( element.size() )
-            path_elements.push_back( element );
-    }
+    string_list path_elements = sgPathBranchSplit(path);
+    bool absolute = !path.empty() && path[0] == sgDirPathSep;
 
     int i = 1;
-    SGPath dir = path_elements[0];
-#ifdef WIN32
-    if ( path_elements.size() >= 2 ) {
+    SGPath dir = absolute ? string( 1, sgDirPathSep ) : "";
+    dir.concat( path_elements[0] );
+#ifdef _MSC_VER
+    if ( dir.str().find(':') != string::npos && path_elements.size() >= 2 ) {
         dir.append( path_elements[1] );
         i = 2;
     }
@@ -240,6 +229,25 @@ void SGPath::create_dir( mode_t mode ) {
         }
     }
 }
+
+string_list sgPathBranchSplit( const string &dirpath ) {
+    string_list path_elements;
+    string element, path = dirpath;
+    while ( path.size() ) {
+        size_t p = path.find( sgDirPathSep );
+        if ( p != string::npos ) {
+            element = path.substr( 0, p );
+            path.erase( 0, p + 1 );
+        } else {
+            element = path;
+            path = "";
+        }
+        if ( element.size() )
+            path_elements.push_back( element );
+    }
+    return path_elements;
+}
+
 
 string_list sgPathSplit( const string &search_path ) {
     string tmp = search_path;

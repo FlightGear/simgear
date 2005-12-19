@@ -419,7 +419,8 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double speed,
 	glDisable( GL_FOG );
 	glDisable(GL_LIGHTING);
 
-	int slice_count = (40.0 + rain_norm*150.0)* precipitation_density / 100.0;
+	int slice_count = static_cast<int>(
+				(40.0 + rain_norm*150.0)* precipitation_density / 100.0);
 
 	float angle = speed;
 	if( angle > 90.0 )
@@ -500,7 +501,7 @@ void SGLightning::lt_build_tree_branch(int tree_nr, Point3D &start, float energy
         nseg++;
 		// add a branch
         if( energy * sg_random() > 0.8f )
-			lt_build_tree_branch(tree_nr + 1, pt, energy * 0.9f, nbseg == 50 ? 10 : nbseg * 0.4f, segsize * 0.7f);
+			lt_build_tree_branch(tree_nr + 1, pt, energy * 0.9f, nbseg == 50 ? 10 : static_cast<int>(nbseg * 0.4f), segsize * 0.7f);
 
 		if( nb_tree >= MAX_LT_TREE_SEG )
 			return;

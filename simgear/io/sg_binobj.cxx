@@ -45,7 +45,7 @@ SG_USING_STD( string );
 SG_USING_STD( vector );
 
 
-enum {
+static enum {
     SG_BOUNDING_SPHERE = 0,
 
     SG_VERTEX_LIST = 1,
@@ -60,14 +60,14 @@ enum {
     SG_TRIANGLE_FANS = 12
 } sgObjectTypes;
 
-enum {
+static enum {
     SG_IDX_VERTICES =  0x01,
     SG_IDX_NORMALS =   0x02,
     SG_IDX_COLORS =    0x04,
     SG_IDX_TEXCOORDS = 0x08
 } sgIndexTypes;
 
-enum {
+static enum {
     SG_MATERIAL = 0,
     SG_INDEX_TYPES = 1
 } sgPropertyTypes;

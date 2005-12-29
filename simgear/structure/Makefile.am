@@ -7,7 +7,10 @@ include_HEADERS = \
 	commands.hxx \
 	exception.hxx \
 	event_mgr.hxx \
-	subsystem_mgr.hxx
+	ssgSharedPtr.hxx \
+	subsystem_mgr.hxx \
+	SGReferenced.hxx \
+	SGSharedPtr.hxx
 
 libsgstructure_a_SOURCES = \
 	commands.cxx \

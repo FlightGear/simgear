@@ -200,10 +200,18 @@ void naFreeContext(struct Context* c)
     UNLOCK();
 }
 
-#define PUSH(r) do { \
+#if !defined(sgi)
+# define PUSH(r) do { \
     if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow"); \
     ctx->opStack[ctx->opTop++] = r; \
-    } while(0)
+    } while(0);
+#else
+# define PUSH(r)  _PUSH((ctx), (r))
+void _PUSH(struct Context* ctx, naRef r) {
+   if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow");
+    ctx->opStack[ctx->opTop++] = r;
+}
+#endif
 
 static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
 {

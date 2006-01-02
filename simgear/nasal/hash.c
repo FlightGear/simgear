@@ -49,7 +49,7 @@ static unsigned int hashcolumn(struct HashRec* h, naRef key)
     return (HASH_MAGIC * hashcode(key)) >> (32 - h->lgalloced);
 }
 
-static struct HashRec* realloc(struct naHash* hash)
+static struct HashRec* hashrealloc(struct naHash* hash)
 {
     struct HashRec *h, *h0 = hash->rec;
     int lga, cols, need = h0 ? h0->size - h0->dels : MIN_HASH_SIZE;
@@ -171,7 +171,7 @@ void naHash_newsym(struct naHash* hash, naRef* sym, naRef* val)
     int col;
     struct HashRec* h = hash->rec;
     while(!h || h->size >= 1<<h->lgalloced)
-        h = realloc(hash);
+        h = hashrealloc(hash);
     col = (HASH_MAGIC * sym->ref.ptr.str->hashcode) >> (32 - h->lgalloced);
     INSERT(h, *sym, *val, col);
 }
@@ -198,7 +198,7 @@ void naHash_set(naRef hash, naRef key, naRef val)
     if((n = find(hash.ref.ptr.hash, key))) { n->val = val; return; }
     h = hash.ref.ptr.hash->rec;
     while(!h || h->size >= 1<<h->lgalloced)
-        h = realloc(hash.ref.ptr.hash);
+        h = hashrealloc(hash.ref.ptr.hash);
     col = hashcolumn(h, key);
     INSERT(h, key, val, hashcolumn(h, key));
     chkcycle(h->table[col], h->size - h->dels);

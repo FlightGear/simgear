@@ -200,12 +200,22 @@ void naFreeContext(struct Context* c)
     UNLOCK();
 }
 
-#if !defined(sgi)
+#if 0
+/*
+ * This is the original code which might not work properly on all
+ * platforms since it allows one to work on the same variable in one
+ * statement without the prior knowledge how this will behave.
+ * 
+ * e.g. ctx->opStack[ctx->opTop++] = ctx->opStack[ctx->opTop-1];
+ *                        ^^^^^                        ^^^^^
+ */
 # define PUSH(r) do { \
     if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow"); \
     ctx->opStack[ctx->opTop++] = r; \
-    } while(0);
+    } while(0)
+
 #else
+
 # define PUSH(r)  _PUSH((ctx), (r))
 void _PUSH(struct Context* ctx, naRef r) {
    if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow");

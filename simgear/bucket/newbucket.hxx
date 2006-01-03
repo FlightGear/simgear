@@ -115,10 +115,10 @@ class SGBucket {
 
 private:
     double cx, cy;  // centerpoint (lon, lat) in degrees of bucket
-    int lon;        // longitude index (-180 to 179)
-    int lat;        // latitude index (-90 to 89)
-    int x;          // x subdivision (0 to 7)
-    int y;          // y subdivision (0 to 7)
+    short lon;        // longitude index (-180 to 179)
+    short lat;        // latitude index (-90 to 89)
+    char x;          // x subdivision (0 to 7)
+    char y;          // y subdivision (0 to 7)
 
 public:
 

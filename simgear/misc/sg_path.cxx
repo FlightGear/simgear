@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/stat.h>
-#ifdef _MSC_VER
+#if defined( _MSC_VER) || defined(__MINGW32__)
 #  include <direct.h>
 #endif
 #include "sg_path.hxx"
@@ -187,7 +187,7 @@ bool SGPath::exists() const {
     return true;
 }
 
-#ifdef _MSC_VER
+#if defined( _MSC_VER) || defined(__MINGW32__)
 #  define sgMkDir(d,m)       _mkdir(d)
 #else
 #  define sgMkDir(d,m)       mkdir(d,m)
@@ -203,7 +203,7 @@ void SGPath::create_dir( mode_t mode ) {
     int i = 1;
     SGPath dir = absolute ? string( 1, sgDirPathSep ) : "";
     dir.concat( path_elements[0] );
-#ifdef _MSC_VER
+#if defined( _MSC_VER) || defined(__MINGW32__)
     if ( dir.str().find(':') != string::npos && path_elements.size() >= 2 ) {
         dir.append( path_elements[1] );
         i = 2;

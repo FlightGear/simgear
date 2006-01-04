@@ -46,7 +46,7 @@ public:
   SGModelPlacement ();
   virtual ~SGModelPlacement ();
 
-  virtual void SGModelPlacement::init( ssgBranch * model );
+  virtual void init( ssgBranch * model );
 
   virtual void update();
 

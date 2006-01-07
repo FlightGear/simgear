@@ -36,6 +36,7 @@
 #include STL_STRING
 
 #include <simgear/bucket/newbucket.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "lowlevel.hxx"
 #include "sg_binobj.hxx"
@@ -620,20 +621,13 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     unsigned char idx_mask;
     int idx_size;
 
-    string dir = base + "/" + b.gen_base_path();
-    string command = "mkdir -p " + dir;
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    system( (string("mkdir ") + dir).c_str() );
-#else
-    system(command.c_str());
-#endif
-
-    string file = dir + "/" + name + ".gz";
-    cout << "Output file = " << file << endl;
+    SGPath file = base + "/" + b.gen_base_path() + "/" + name + ".gz";
+    file.create_dir( 0755 );
+    cout << "Output file = " << file.str() << endl;
 
     gzFile fp;
     if ( (fp = gzopen( file.c_str(), "wb9" )) == NULL ) {
-	cout << "ERROR: opening " << file << " for writing!" << endl;
+	cout << "ERROR: opening " << file.str() << " for writing!" << endl;
 	return false;
     }
 
@@ -858,7 +852,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    // find next group
 	    material = tri_materials[start];
 	    while ( (end < (int)tri_materials.size()) && 
-		    (material == tri_materials[end]) )
+		    (material == tri_materials[end]) &&
+		    3*(end-start) < 32760 )
 	    {
 		// cout << "end = " << end << endl;
 		end++;
@@ -1051,21 +1046,13 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     Point3D p;
     int i, j;
 
-    string dir = base + "/" + b.gen_base_path();
-    string command = "mkdir -p " + dir;
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    system( (string("mkdir ") + dir).c_str() );
-#else
-    system(command.c_str());
-#endif
-
-    // string file = dir + "/" + b.gen_index_str();
-    string file = dir + "/" + name;
-    cout << "Output file = " << file << endl;
+    SGPath file = base + "/" + b.gen_base_path() + "/" + name;
+    file.create_dir( 0755 );
+    cout << "Output file = " << file.str() << endl;
 
     FILE *fp;
     if ( (fp = fopen( file.c_str(), "w" )) == NULL ) {
-	cout << "ERROR: opening " << file << " for writing!" << endl;
+	cout << "ERROR: opening " << file.str() << " for writing!" << endl;
 	return false;
     }
 
@@ -1224,7 +1211,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     // close the file
     fclose(fp);
 
-    command = "gzip --force --best " + file;
+    string command = "gzip --force --best " + file.str();
     system(command.c_str());
 
     return true;

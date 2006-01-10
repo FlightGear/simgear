@@ -228,13 +228,14 @@ static naRef f_die(naContext c, naRef me, int argc, naRef* args)
 // until it fits.  Returned buffer should be freed by the caller.
 char* dosprintf(char* f, ...)
 {
+    int l;
     char* buf;
     va_list va;
     int len = 16;
     while(1) {
         buf = naAlloc(len);
         va_start(va, f);
-        if(vsnprintf(buf, len, f, va) < len) {
+        if((l=vsnprintf(buf, len, f, va)) < len && l!=-1) {
             va_end(va);
             return buf;
         }

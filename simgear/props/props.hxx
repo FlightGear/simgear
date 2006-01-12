@@ -41,6 +41,9 @@ SG_USING_STD(ostream);
 
 #endif
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 
 #ifdef NONE
 #pragma warn A sloppy coder has defined NONE as a macro!
@@ -452,70 +455,8 @@ private:
  * The smart pointer that manage reference counting
  */
 class SGPropertyNode;
-class SGPropertyNode_ptr
-{
-public:
-
-  /**
-   * Default constructor
-   */
-  SGPropertyNode_ptr();
-
-  /**
-   * Copy constructor
-   */
-  SGPropertyNode_ptr( const SGPropertyNode_ptr &r );
-
-  /**
-   * Constructor from a pointer to a node
-   */
-  SGPropertyNode_ptr( SGPropertyNode *p );
-
-  /**
-   * Destructor
-   */
-  ~SGPropertyNode_ptr();
-
-  /**
-   * Assignement operator
-   */
-  SGPropertyNode_ptr &operator=( const SGPropertyNode_ptr &r );
-
-  /**
-   * Pointer access operator
-   */
-  SGPropertyNode *operator->();
-
-  /**
-   * Pointer access operator (const)
-   */
-  const SGPropertyNode *operator->() const;
-
-  /**
-   * Conversion to SGPropertyNode * operator
-   */
-  operator SGPropertyNode *();
-
-  /**
-   * Conversion to const SGPropertyNode * operator
-   */
-  operator const SGPropertyNode *() const;
-
-  /**
-   * Return the pointer.
-   */
-  SGPropertyNode * ptr () { return _ptr; }
-
-  /**
-   * Validity test
-   */
-  bool valid() const;
-
-private:
-
-  SGPropertyNode *_ptr;
-};
-
+typedef SGSharedPtr<SGPropertyNode> SGPropertyNode_ptr;
+typedef SGSharedPtr<const SGPropertyNode> SGConstPropertyNode_ptr;
 
 
 /**
@@ -546,7 +487,7 @@ private:
 /**
  * A node in a property tree.
  */
-class SGPropertyNode
+class SGPropertyNode : public SGReferenced
 {
 public:
 
@@ -629,7 +570,7 @@ public:
   /**
    * Get the node's simple (XML) name.
    */
-  const char * getName () const { return _name; }
+  const char * getName () const { return _name.c_str(); }
 
 
   /**
@@ -1240,35 +1181,22 @@ private:
   void trace_write () const;
 
 
-  /**
-   * Increment reference counter
-   */
-  void incrementRef();
-
-  /**
-   * Decrement reference counter
-   */
-  int decrementRef();
-
-  friend class SGPropertyNode_ptr;
-
-
-  mutable char _buffer[MAX_STRING_LEN+1];
-
   class hash_table;
 
-  char * _name;
-  mutable char * _display_name;
+  string _name;
+  mutable string _display_name;
   int _index;
+  /// To avoid cyclic reference counting loops this shall not be a reference
+  /// counted pointer
   SGPropertyNode * _parent;
   vector<SGPropertyNode_ptr> _children;
   vector<SGPropertyNode_ptr> _removedChildren;
-  mutable char * _path;
+  mutable string _path;
+  mutable string _buffer;
   hash_table * _path_cache;
   Type _type;
   bool _tied;
   int _attr;
-  int _count;
 
 				// The right kind of pointer...
   union {
@@ -1307,13 +1235,13 @@ private:
     public:
       entry ();
       ~entry ();
-      const char * get_key () { return _key; }
+      const char * get_key () { return _key.c_str(); }
       void set_key (const char * key);
       SGPropertyNode * get_value () { return _value; }
       void set_value (SGPropertyNode * value);
     private:
-      char * _key;
-      SGPropertyNode * _value;
+      string _key;
+      SGSharedPtr<SGPropertyNode>  _value;
     };
 
 

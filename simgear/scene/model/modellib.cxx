@@ -21,11 +21,6 @@ SGModelLib::SGModelLib ()
 
 SGModelLib::~SGModelLib ()
 {
-    map<string, ssgBase *>::iterator it = _table.begin();
-    while (it != _table.end()) {
-        ssgDeRefDelete(it->second);
-        _table.erase(it);
-    }
 }
 
 void
@@ -49,16 +44,16 @@ SGModelLib::flush1()
 
     return;
 
-    map<string, ssgBase *>::iterator it = _table.begin();
+    map<string, ssgSharedPtr<ssgEntity> >::iterator it = _table.begin();
     while (it != _table.end()) {
-        ssgBase *item = it->second;
                                 // If there is only one reference, it's
                                 // ours; no one else is using the item.
-        if (item->getRef() == 1) {
-            ssgDeRefDelete(item);
+        if (!it->second.isShared()) {
+            string key = it->first;
             _table.erase(it);
-        }
-        it++;
+            it = _table.upper_bound(key);
+        } else
+            it++;
     }
 }
 
@@ -90,15 +85,14 @@ SGModelLib::load_model( const string &fg_root,
 
                                 // FIXME: normalize path to
                                 // avoid duplicates.
-    map<string, ssgBase *>::iterator it = _table.find(path);
+    map<string, ssgSharedPtr<ssgEntity> >::iterator it = _table.find(path);
     if (it == _table.end()) {
-        ssgEntity *model = sgLoad3DModel( fg_root, path, prop_root,
-                                          sim_time_sec );
-        model->ref();
+        ssgSharedPtr<ssgEntity> model = sgLoad3DModel(fg_root, path, prop_root,
+                                                      sim_time_sec );
         _table[path] = model;      // add one reference to keep it around
         personality_branch->addKid( model );
     } else {
-        personality_branch->addKid( (ssgEntity *)it->second );
+        personality_branch->addKid( it->second );
     }
     return personality_branch;
 }

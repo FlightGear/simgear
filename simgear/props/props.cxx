@@ -9,6 +9,7 @@
 #include "props.hxx"
 
 #include <algorithm>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 
@@ -20,6 +21,7 @@ using std::endl;
 using std::find;
 using std::sort;
 using std::vector;
+using std::stringstream;
 
 #else
 
@@ -29,6 +31,7 @@ using std::vector;
 SG_USING_STD(sort);
 SG_USING_STD(find);
 SG_USING_STD(vector);
+SG_USING_STD(stringstream);
 
 #if ( _MSC_VER == 1200 )
 // MSVC 6 is buggy, and needs something strange here
@@ -548,17 +551,33 @@ SGPropertyNode::make_string () const
     else
       return "false";
   case INT:
-    sprintf(_buffer, "%d", get_int());
-    return _buffer;
+    {
+      stringstream sstr;
+      sstr << get_int();
+      _buffer = sstr.str();
+      return _buffer.c_str();
+    }
   case LONG:
-    sprintf(_buffer, "%ld", get_long());
-    return _buffer;
+    {
+      stringstream sstr;
+      sstr << get_long();
+      _buffer = sstr.str();
+      return _buffer.c_str();
+    }
   case FLOAT:
-    sprintf(_buffer, "%f", get_float());
-    return _buffer;
+    {
+      stringstream sstr;
+      sstr << get_float();
+      _buffer = sstr.str();
+      return _buffer.c_str();
+    }
   case DOUBLE:
-    sprintf(_buffer, "%f", get_double());
-    return _buffer;
+    {
+      stringstream sstr;
+      sstr << get_double();
+      _buffer = sstr.str();
+      return _buffer.c_str();
+    }
   case STRING:
   case UNSPECIFIED:
     return get_string();
@@ -598,25 +617,6 @@ SGPropertyNode::trace_read () const
 #endif
 }
 
-/**
- * Increment reference counter
- */
-void
-SGPropertyNode::incrementRef()
-{
-  ++_count;
-}
-
-/**
- * Decrement reference counter
- */
-int
-SGPropertyNode::decrementRef()
-{
-  return --_count;
-}
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Public methods from SGPropertyNode.
@@ -632,16 +632,12 @@ const int SGPropertyNode::LAST_USED_ATTRIBUTE = TRACE_WRITE;
  * Default constructor: always creates a root node.
  */
 SGPropertyNode::SGPropertyNode ()
-  : _name(copy_string("")),
-    _display_name(0),
-    _index(0),
+  : _index(0),
     _parent(0),
-    _path(0),
     _path_cache(0),
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE),
-    _count(0),
     _listeners(0)
 {
   _local_val.string_val = 0;
@@ -652,18 +648,15 @@ SGPropertyNode::SGPropertyNode ()
  * Copy constructor.
  */
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  : _display_name(0),
-    _index(node._index),
+  : _index(node._index),
+    _name(node._name),
     _parent(0),			// don't copy the parent
-    _path(0),
     _path_cache(0),
     _type(node._type),
     _tied(node._tied),
     _attr(node._attr),
-    _count(0),
     _listeners(0)		// CHECK!!
 {
-  _name = copy_string(node._name);
   _local_val.string_val = 0;
   switch (_type) {
   case NONE:
@@ -737,18 +730,15 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 SGPropertyNode::SGPropertyNode (const char * name,
 				int index,
 				SGPropertyNode * parent)
-  : _display_name(0),
-    _index(index),
+  : _index(index),
     _parent(parent),
-    _path(0),
     _path_cache(0),
     _type(NONE),
     _tied(false),
     _attr(READ|WRITE),
-    _count(0),
     _listeners(0)
 {
-  _name = copy_string(name);
+  _name = name;
   _local_val.string_val = 0;
 }
 
@@ -758,9 +748,6 @@ SGPropertyNode::SGPropertyNode (const char * name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
-  delete [] _name;
-  delete [] _display_name;
-  delete [] _path;
   delete _path_cache;
   clearValue();
   delete _listeners;
@@ -971,34 +958,27 @@ SGPropertyNode::removeChildren (const char * name, bool keep)
 const char *
 SGPropertyNode::getDisplayName (bool simplify) const
 {
-  string display = _name;
+  _display_name = _name;
   if (_index != 0 || !simplify) {
-    char buffer[64];
-    sprintf(buffer, "[%d]", _index);
-    display += buffer;
+    stringstream sstr;
+    sstr << '[' << _index << ']';
+    _display_name += sstr.str();
   }
-  _display_name = copy_string(display.c_str());
-  return _display_name;
+  return _display_name.c_str();
 }
 
 
 const char *
 SGPropertyNode::getPath (bool simplify) const
 {
-				// Calculate the complete path only once.
-  if (_path == 0) {
-    string path;
-    if (_parent == 0) {
-      path = "";
-    } else {
-      path = _parent->getPath(simplify);
-      path += '/';
-      path += getDisplayName(simplify);
-    }
-    _path = copy_string(path.c_str());
+  // Calculate the complete path only once.
+  if (_parent != 0 && _path.empty()) {
+    _path = _parent->getPath(simplify);
+    _path += '/';
+    _path += getDisplayName(simplify);
   }
 
-  return _path;
+  return _path.c_str();
 }
 
 SGPropertyNode::Type
@@ -2053,7 +2033,7 @@ void
 SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener)
 {
   if (_listeners == 0)
-    _listeners = new vector<SGPropertyChangeListener *>;
+    _listeners = new vector<SGPropertyChangeListener*>;
   _listeners->push_back(listener);
   listener->register_property(this);
 }
@@ -2061,13 +2041,13 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener)
 void
 SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
 {
-  vector<SGPropertyChangeListener *>::iterator it =
+  vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->begin(), _listeners->end(), listener);
   if (it != _listeners->end()) {
     _listeners->erase(it);
     listener->unregister_property(this);
     if (_listeners->empty()) {
-      vector<SGPropertyChangeListener *> * tmp = _listeners;
+      vector<SGPropertyChangeListener*>* tmp = _listeners;
       _listeners = 0;
       delete tmp;
     }
@@ -2139,8 +2119,7 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
 #define HASH_TABLE_SIZE 199
 
 SGPropertyNode::hash_table::entry::entry ()
-  : _key(0),
-    _value(0)
+  : _value(0)
 {
 }
 
@@ -2148,13 +2127,12 @@ SGPropertyNode::hash_table::entry::~entry ()
 {
 				// Don't delete the value; we don't own
 				// the pointer.
-  delete [] _key;
 }
 
 void
 SGPropertyNode::hash_table::entry::set_key (const char * key)
 {
-  _key = copy_string(key);
+  _key = key;
 }
 
 void
@@ -2283,103 +2261,6 @@ SGPropertyNode::hash_table::hashcode (const char * key)
     key++;
   }
   return hash;
-}
-
-
-
-/**
- * Default constructor
- */
-SGPropertyNode_ptr::SGPropertyNode_ptr()
-{
-  _ptr = 0;
-}
-
-/**
- * Copy constructor
- */
-SGPropertyNode_ptr::SGPropertyNode_ptr( const SGPropertyNode_ptr &r )
-{
-  _ptr = r._ptr;
-  if (_ptr)
-     _ptr->incrementRef();
-}
-
-/**
- * Constructor from a pointer to a node
- */
-SGPropertyNode_ptr::SGPropertyNode_ptr( SGPropertyNode *p )
-{
-  _ptr = p;
-  if (_ptr)
-     _ptr->incrementRef();
-}
-
-/**
- * Destructor
- */
-SGPropertyNode_ptr::~SGPropertyNode_ptr()
-{
-  if (_ptr && _ptr->decrementRef() == 0)
-    delete _ptr;
-}
-
-/**
- * Assignement operator
- */
-SGPropertyNode_ptr &
-SGPropertyNode_ptr::operator=( const SGPropertyNode_ptr &r )
-{
-  if (_ptr && _ptr->decrementRef() == 0)
-    delete _ptr;
-  _ptr = r._ptr;
-  if (_ptr)
-     _ptr->incrementRef();
-
-  return *this;
-}
-
-/**
- * Pointer access operator
- */
-SGPropertyNode *
-SGPropertyNode_ptr::operator->()
-{
-  return _ptr;
-}
-
-/**
- * Pointer access operator (const)
- */
-const SGPropertyNode *
-SGPropertyNode_ptr::operator->() const
-{
-  return _ptr;
-}
-
-/**
- * Conversion to SGPropertyNode * operator
- */
-SGPropertyNode_ptr::operator SGPropertyNode *()
-{
-  return _ptr;
-}
-
-/**
- * Conversion to const SGPropertyNode * operator
- */
-SGPropertyNode_ptr::operator const SGPropertyNode *() const
-{
-  return _ptr;
-}
-
-/**
- * Validity test
- */
-bool 
-SGPropertyNode_ptr::valid() const
-{
-  return _ptr != 0;
 }
 
 

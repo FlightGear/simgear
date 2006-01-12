@@ -14,6 +14,7 @@
 
 #include <plib/ssg.h>
 
+#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
 
 SG_USING_STD(map);
@@ -38,7 +39,7 @@ public:
                                    double sim_time_sec );
 protected:
 
-    map<string,ssgBase *> _table;
+    map<string,ssgSharedPtr<ssgEntity> > _table;
 };
 
 

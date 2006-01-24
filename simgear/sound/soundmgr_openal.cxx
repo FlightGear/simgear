@@ -218,8 +218,6 @@ bool SGSoundMgr::remove( const string &refname ) {
     if ( sample_it != samples.end() ) {
 	// first stop the sound from playing (so we don't bomb the
 	// audio scheduler)
-	SGSoundSample *sample = sample_it->second;
-        delete sample;
         samples.erase( sample_it );
 
         // cout << "sndmgr: removed -> " << refname << endl;

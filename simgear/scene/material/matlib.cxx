@@ -192,12 +192,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     for (int i = 0; i < nMaterials; i++) {
         const SGPropertyNode * node = materials.getChild(i);
         if (!strcmp(node->getName(), "material")) {
-            SGMaterial *m = new SGMaterial( fg_root, node, season );
+            SGSharedPtr<SGMaterial> m = new SGMaterial( fg_root, node, season );
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {
                 string name = names[j]->getStringValue();
-                m->ref();
                 // cerr << "Material " << name << endl;
                 matlib[name] = m;
                 SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material "
@@ -211,7 +210,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     // hard coded ground light state
     ssgSimpleState *gnd_lights = new ssgSimpleState;
-    gnd_lights->ref();
     gnd_lights->disable( GL_TEXTURE_2D );
     gnd_lights->enable( GL_CULL_FACE );
     gnd_lights->enable( GL_COLOR_MATERIAL );
@@ -228,7 +226,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway white light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
     ssgSimpleState *rwy_white_lights = new ssgSimpleState();
-    rwy_white_lights->ref();
     rwy_white_lights->disable( GL_LIGHTING );
     rwy_white_lights->enable ( GL_CULL_FACE ) ;
     rwy_white_lights->enable( GL_TEXTURE_2D );
@@ -249,7 +246,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway medium intensity white light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 205 );
     ssgSimpleState *rwy_white_medium_lights = new ssgSimpleState();
-    rwy_white_medium_lights->ref();
     rwy_white_medium_lights->disable( GL_LIGHTING );
     rwy_white_medium_lights->enable ( GL_CULL_FACE ) ;
     rwy_white_medium_lights->enable( GL_TEXTURE_2D );
@@ -267,7 +263,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway low intensity white light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 155 );
     ssgSimpleState *rwy_white_low_lights = new ssgSimpleState();
-    rwy_white_low_lights->ref();
     rwy_white_low_lights->disable( GL_LIGHTING );
     rwy_white_low_lights->enable ( GL_CULL_FACE ) ;
     rwy_white_low_lights->enable( GL_TEXTURE_2D );
@@ -285,7 +280,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 255 );
     ssgSimpleState *rwy_yellow_lights = new ssgSimpleState();
-    rwy_yellow_lights->ref();
     rwy_yellow_lights->disable( GL_LIGHTING );
     rwy_yellow_lights->enable ( GL_CULL_FACE ) ;
     rwy_yellow_lights->enable( GL_TEXTURE_2D );
@@ -302,7 +296,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway medium intensity yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 205 );
     ssgSimpleState *rwy_yellow_medium_lights = new ssgSimpleState();
-    rwy_yellow_medium_lights->ref();
     rwy_yellow_medium_lights->disable( GL_LIGHTING );
     rwy_yellow_medium_lights->enable ( GL_CULL_FACE ) ;
     rwy_yellow_medium_lights->enable( GL_TEXTURE_2D );
@@ -320,7 +313,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway low intensity yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 155 );
     ssgSimpleState *rwy_yellow_low_lights = new ssgSimpleState();
-    rwy_yellow_low_lights->ref();
     rwy_yellow_low_lights->disable( GL_LIGHTING );
     rwy_yellow_low_lights->enable ( GL_CULL_FACE ) ;
     rwy_yellow_low_lights->enable( GL_TEXTURE_2D );
@@ -338,7 +330,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 255 );
     ssgSimpleState *rwy_red_lights = new ssgSimpleState();
-    rwy_red_lights->ref();
     rwy_red_lights->disable( GL_LIGHTING );
     rwy_red_lights->enable ( GL_CULL_FACE ) ;
     rwy_red_lights->enable( GL_TEXTURE_2D );
@@ -356,7 +347,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded medium intensity runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
     ssgSimpleState *rwy_red_medium_lights = new ssgSimpleState();
-    rwy_red_medium_lights->ref();
     rwy_red_medium_lights->disable( GL_LIGHTING );
     rwy_red_medium_lights->enable ( GL_CULL_FACE ) ;
     rwy_red_medium_lights->enable( GL_TEXTURE_2D );
@@ -374,7 +364,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded low intensity runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
     ssgSimpleState *rwy_red_low_lights = new ssgSimpleState();
-    rwy_red_low_lights->ref();
     rwy_red_low_lights->disable( GL_LIGHTING );
     rwy_red_low_lights->enable ( GL_CULL_FACE ) ;
     rwy_red_low_lights->enable( GL_TEXTURE_2D );
@@ -392,7 +381,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 255 );
     ssgSimpleState *rwy_green_lights = new ssgSimpleState();
-    rwy_green_lights->ref();
     rwy_green_lights->disable( GL_LIGHTING );
     rwy_green_lights->enable ( GL_CULL_FACE ) ;
     rwy_green_lights->enable( GL_TEXTURE_2D );
@@ -410,7 +398,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded medium intensity runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
     ssgSimpleState *rwy_green_medium_lights = new ssgSimpleState();
-    rwy_green_medium_lights->ref();
     rwy_green_medium_lights->disable( GL_LIGHTING );
     rwy_green_medium_lights->enable ( GL_CULL_FACE ) ;
     rwy_green_medium_lights->enable( GL_TEXTURE_2D );
@@ -428,7 +415,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded low intensity runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
     ssgSimpleState *rwy_green_low_lights = new ssgSimpleState();
-    rwy_green_low_lights->ref();
     rwy_green_low_lights->disable( GL_LIGHTING );
     rwy_green_low_lights->enable ( GL_CULL_FACE ) ;
     rwy_green_low_lights->enable( GL_TEXTURE_2D );
@@ -448,7 +434,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded low intensity taxiway blue light state
     tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
     ssgSimpleState *taxiway_blue_low_lights = new ssgSimpleState();
-    taxiway_blue_low_lights->ref();
     taxiway_blue_low_lights->disable( GL_LIGHTING );
     taxiway_blue_low_lights->enable ( GL_CULL_FACE ) ;
     taxiway_blue_low_lights->enable( GL_TEXTURE_2D );
@@ -466,7 +451,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // hard coded runway vasi light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
     ssgSimpleState *rwy_vasi_lights = new ssgSimpleState();
-    rwy_vasi_lights->ref();
     rwy_vasi_lights->disable( GL_LIGHTING );
     rwy_vasi_lights->enable ( GL_CULL_FACE ) ;
     rwy_vasi_lights->enable( GL_TEXTURE_2D );
@@ -515,12 +499,10 @@ bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
 // Load a library of material properties
 bool SGMaterialLib::add_item ( const string &mat_name, ssgSimpleState *state )
 {
-    SGMaterial *m = new SGMaterial( state );
+    matlib[mat_name] = new SGMaterial( state );
 
     SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material given a premade "
 	    << "ssgSimpleState = " << mat_name );
-
-    matlib[mat_name] = m;
 
     return true;
 }
@@ -541,14 +523,6 @@ SGMaterial *SGMaterialLib::find( const string& material ) {
 
 // Destructor
 SGMaterialLib::~SGMaterialLib ( void ) {
-    // Free up all the material entries first
-    for ( material_map_iterator it = begin(); it != end(); it++ ) {
-	SGMaterial *slot = it->second;
-	slot->deRef();
-	if ( slot->getRef() <= 0 ) {
-            delete slot;
-        }
-    }
 }
 
 

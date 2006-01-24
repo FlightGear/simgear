@@ -26,6 +26,8 @@
 
 #include <plib/sg.h>
 #include <simgear/constants.h>
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/point3d.hxx>
@@ -655,7 +657,7 @@ void SGEnviro::drawLightning(void) {
 				double ax = 0.0, ay = 0.0;
 				ax = cos(course) * dist;
 				ay = sin(course) * dist;
-				SGSoundSample *snd = soundMgr->find("thunder");
+				SGSharedPtr<SGSoundSample> snd = soundMgr->find("thunder");
 				if( snd ) {
 					ALfloat pos[3]={ax, ay, -sgEnviro.last_alt };
 					snd->set_source_pos(pos);

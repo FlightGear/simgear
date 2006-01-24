@@ -30,6 +30,7 @@
 #include <plib/ssg.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/structure/ssgSharedPtr.hxx>
 
 #include STL_ALGORITHM
 #include SG_GLU_H
@@ -41,7 +42,7 @@
 /*
 */
 
-static ssgTexture *cloudTextures[SGNewCloud::CLTexture_max];
+static ssgSharedPtr<ssgTexture> cloudTextures[SGNewCloud::CLTexture_max];
 
 
 bool SGNewCloud::useAnisotropic = true;
@@ -129,12 +130,10 @@ void SGNewCloud::loadTextures(const string &tex_path) {
     cloud_path.set(tex_path);
     cloud_path.append("cl_cumulus.rgb");
     cloudTextures[ CLTexture_cumulus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
-    cloudTextures[ CLTexture_cumulus ]->ref();
 
     cloud_path.set(tex_path);
     cloud_path.append("cl_stratus.rgb");
     cloudTextures[ CLTexture_stratus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
-    cloudTextures[ CLTexture_stratus ]->ref();
 
 }
 

@@ -141,15 +141,6 @@ SGSoundMgr::~SGSoundMgr() {
     if (context)
         alcDestroyContext( context );
 #endif
-    //
-    // Remove the samples from the sample manager.
-    //
-    sample_map_iterator sample_current = samples.begin();
-    sample_map_iterator sample_end = samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-	SGSoundSample *sample = sample_current->second;
-	delete sample;
-    }
 }
 
 
@@ -158,12 +149,6 @@ void SGSoundMgr::init() {
     //
     // Remove the samples from the sample manager.
     //
-    sample_map_iterator sample_current = samples.begin();
-    sample_map_iterator sample_end = samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        delete sample;
-    }
     samples.clear();
 }
 

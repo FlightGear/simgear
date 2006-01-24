@@ -35,6 +35,9 @@
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
 
 SG_USING_STD(string);
@@ -53,7 +56,7 @@ class SGModelLib;
  * different shapes of trees), but they are considered equivalent
  * and interchangeable.
  */
-class SGMatModel {
+class SGMatModel : public SGReferenced {
 
 public:
 
@@ -116,13 +119,13 @@ public:
      */
     HeadingType get_heading_type () const;
 
+    virtual ~SGMatModel ();
+
 protected:
 
     friend class SGMatModelGroup;
 
     SGMatModel (const SGPropertyNode * node, double range_m);
-
-    virtual ~SGMatModel ();
 
 private:
 
@@ -138,7 +141,7 @@ private:
                       double sim_time_sec );
 
     vector<string> _paths;
-    mutable vector<ssgEntity *> _models;
+    mutable vector<ssgSharedPtr<ssgEntity> > _models;
     mutable bool _models_loaded;
     double _coverage_m2;
     double _range_m;
@@ -154,7 +157,7 @@ private:
  * Each SGMaterial instance keeps a (possibly-empty) list of
  * object groups for placing randomly on the scenery.
  */
-class SGMatModelGroup {
+class SGMatModelGroup : public SGReferenced {
 
 public:
 
@@ -194,7 +197,7 @@ protected:
 private:
 
     double _range_m;
-    vector<SGMatModel *> _objects;
+    vector<SGSharedPtr<SGMatModel> > _objects;
 
 };
 

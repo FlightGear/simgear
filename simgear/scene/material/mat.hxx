@@ -39,6 +39,8 @@
 #include <plib/ssg.h>
 
 #include <simgear/props/props.hxx>
+#include <simgear/structure/ssgSharedPtr.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 
 #include "matmodel.hxx"
 
@@ -55,7 +57,7 @@ SG_USING_STD(vector);
  * defined in the $FG_ROOT/materials.xml file, and can be changed
  * at runtime.
  */
-class SGMaterial {
+class SGMaterial : public SGReferenced {
 
 public:
 
@@ -161,29 +163,6 @@ public:
     return object_groups[index];
   }
 
-
-  /**
-   * Increment the reference count for this material.
-   *
-   * A material with 0 references may be deleted by the
-   * material library.
-   */
-  virtual inline void ref () { refcount++; }
-
-
-  /**
-   * Decrement the reference count for this material.
-   */
-  virtual inline void deRef () { refcount--; }
-
-
-  /**
-   * Get the reference count for this material.
-   *
-   * @return The number of references (0 if none).
-   */
-  virtual inline int getRef () const { return refcount; }
-
 protected:
 
 
@@ -201,7 +180,7 @@ protected:
   struct _internal_state {
      _internal_state( ssgSimpleState *s, const string &t, bool l )
                   : state(s), texture_path(t), texture_loaded(l) {}
-      ssgSimpleState *state;
+      ssgSharedPtr<ssgSimpleState> state;
       string texture_path;
       bool texture_loaded;
   };
@@ -235,12 +214,7 @@ private:
   sgVec4 ambient, diffuse, specular, emission;
   double shininess;
 
-  vector<SGMatModelGroup *> object_groups;
-
-  // ref count so we can properly delete if we have multiple
-  // pointers to this record
-  int refcount;
-
+  vector<SGSharedPtr<SGMatModelGroup> > object_groups;
 
 
   ////////////////////////////////////////////////////////////////////

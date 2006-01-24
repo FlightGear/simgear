@@ -16,6 +16,7 @@
 
 #include <simgear/math/point3d.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/structure/ssgSharedPtr.hxx>
 
 
 // Don't pull in the headers, since we don't need them here.
@@ -91,8 +92,8 @@ private:
   double _pitch_deg;
   double _heading_deg;
 
-  ssgSelector * _selector;
-  ssgPlacementTransform * _position;
+  ssgSharedPtr<ssgSelector> _selector;
+  ssgSharedPtr<ssgPlacementTransform> _position;
 
                                 // Location
   SGLocation * _location;

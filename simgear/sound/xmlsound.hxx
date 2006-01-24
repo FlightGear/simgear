@@ -120,7 +120,7 @@ protected:
 
   // SGXmlSound properties
   typedef struct {
-        SGPropertyNode * prop;
+        SGPropertyNode_ptr prop;
         double (*fn)(double);
         double *intern;
         double factor;
@@ -133,10 +133,10 @@ protected:
 private:
 
   SGSoundMgr * _mgr;
-  SGSoundSample * _sample;
+  SGSharedPtr<SGSoundSample> _sample;
 
   SGCondition * _condition;
-  SGPropertyNode * _property;
+  SGPropertyNode_ptr _property;
 
   bool _active;
   string _name;

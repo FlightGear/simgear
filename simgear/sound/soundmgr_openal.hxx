@@ -56,7 +56,7 @@ SG_USING_STD(map);
 SG_USING_STD(string);
 
 
-typedef map < string, SGSoundSample * > sample_map;
+typedef map < string, SGSharedPtr<SGSoundSample> > sample_map;
 typedef sample_map::iterator sample_map_iterator;
 typedef sample_map::const_iterator const_sample_map_iterator;
 

@@ -31,6 +31,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/texture.hxx>
+#include <simgear/structure/ssgSharedPtr.hxx>
 
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
@@ -49,12 +50,12 @@
 #endif
 
 
-static ssgStateSelector *layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
+static ssgSharedPtr<ssgStateSelector> layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;
 static bool bump_mapping = false;
 static GLint nb_texture_unit = 0;
-static ssgTexture *normal_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
-static ssgTexture *color_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2] = { 0 };
+static ssgSharedPtr<ssgTexture> normal_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2];
+static ssgSharedPtr<ssgTexture> color_map[SGCloudLayer::SG_MAX_CLOUD_COVERAGES][2];
 static GLuint normalization_cube_map;
 
 static glActiveTextureProc glActiveTexturePtr = 0;
@@ -345,56 +346,44 @@ SGCloudLayer::rebuild()
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast.rgb");
             color_map[ SG_CLOUD_OVERCAST ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_OVERCAST ][ 0 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast_n.rgb");
             normal_map[ SG_CLOUD_OVERCAST ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_OVERCAST ][ 0 ]->ref();
 
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast_top.rgb");
             color_map[ SG_CLOUD_OVERCAST ][ 1 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_OVERCAST ][ 1 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast_top_n.rgb");
             normal_map[ SG_CLOUD_OVERCAST ][ 1 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_OVERCAST ][ 1 ]->ref();
 
             cloud_path.set(texture_path.str());
             cloud_path.append("broken.rgba");
             color_map[ SG_CLOUD_BROKEN ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_BROKEN ][ 0 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("broken_n.rgb");
             normal_map[ SG_CLOUD_BROKEN ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_BROKEN ][ 0 ]->ref();
 
             cloud_path.set(texture_path.str());
             cloud_path.append("scattered.rgba");
             color_map[ SG_CLOUD_SCATTERED ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_SCATTERED ][ 0 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("scattered_n.rgb");
             normal_map[ SG_CLOUD_SCATTERED ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_SCATTERED ][ 0 ]->ref();
 
             cloud_path.set(texture_path.str());
             cloud_path.append("few.rgba");
             color_map[ SG_CLOUD_FEW ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_FEW ][ 0 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("few_n.rgb");
             normal_map[ SG_CLOUD_FEW ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_FEW ][ 0 ]->ref();
 
             cloud_path.set(texture_path.str());
             cloud_path.append("cirrus.rgba");
             color_map[ SG_CLOUD_CIRRUS ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            color_map[ SG_CLOUD_CIRRUS ][ 0 ]->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("cirrus_n.rgb");
             normal_map[ SG_CLOUD_CIRRUS ][ 0 ] = new ssgTexture( cloud_path.str().c_str() );
-            normal_map[ SG_CLOUD_CIRRUS ][ 0 ]->ref();
 
             glGenTextures( 1, &normalization_cube_map );
             glBindTexture( GL_TEXTURE_CUBE_MAP_ARB, normalization_cube_map );
@@ -410,7 +399,6 @@ SGCloudLayer::rebuild()
             ssgSimpleState *state;
 
             state_sel = new ssgStateSelector( 2 );
-            state_sel->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("overcast.rgb");
             state_sel->setStep( 0, sgCloudMakeState(cloud_path.str()) );
@@ -420,7 +408,6 @@ SGCloudLayer::rebuild()
             layer_states[SG_CLOUD_OVERCAST] = state_sel;
 
             state_sel = new ssgStateSelector( 2 );
-            state_sel->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("broken.rgba");
             state = sgCloudMakeState(cloud_path.str());
@@ -429,7 +416,6 @@ SGCloudLayer::rebuild()
             layer_states[SG_CLOUD_BROKEN] = state_sel;
 
             state_sel = new ssgStateSelector( 2 );
-            state_sel->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("scattered.rgba");
             state = sgCloudMakeState(cloud_path.str());
@@ -438,7 +424,6 @@ SGCloudLayer::rebuild()
             layer_states[SG_CLOUD_SCATTERED] = state_sel;
 
             state_sel = new ssgStateSelector( 2 );
-            state_sel->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("few.rgba");
             state = sgCloudMakeState(cloud_path.str());
@@ -447,7 +432,6 @@ SGCloudLayer::rebuild()
             layer_states[SG_CLOUD_FEW] = state_sel;
 
             state_sel = new ssgStateSelector( 2 );
-            state_sel->ref();
             cloud_path.set(texture_path.str());
             cloud_path.append("cirrus.rgba");
             state = sgCloudMakeState(cloud_path.str());

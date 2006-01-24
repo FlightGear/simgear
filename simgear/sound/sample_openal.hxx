@@ -37,6 +37,8 @@
 #include STL_STRING
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 
 #include <plib/sg.h>
 
@@ -56,7 +58,7 @@ SG_USING_STD(string);
  * manages everything we need to know for an individual sound sample
  */
 
-class SGSoundSample {
+class SGSoundSample : public SGReferenced {
 
 private:
 

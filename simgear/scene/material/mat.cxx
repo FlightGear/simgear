@@ -74,10 +74,6 @@ SGMaterial::SGMaterial( ssgSimpleState *s )
 
 SGMaterial::~SGMaterial (void)
 {
-  for (unsigned int i = 0; i < object_groups.size(); i++) {
-    delete object_groups[i];
-    object_groups[i] = 0;
-  }
 }
 
 
@@ -182,7 +178,6 @@ SGMaterial::init ()
     wrapv = true;
     mipmap = true;
     light_coverage = 0.0;
-    refcount = 0;
     shininess = 1.0;
     for (int i = 0; i < 4; i++) {
         ambient[i]  = (i < 3) ? 0.2 : 1.0;
@@ -238,7 +233,6 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
     for (unsigned int i = 0; i < _status.size(); i++)
     {
         ssgSimpleState *state = new ssgSimpleState();
-        state->ref();
 
         // Set up the textured state
         state->setShadeModel( shade_model );
@@ -279,9 +273,7 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 
 void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
-    _internal_state st( s, "", true );
-    st.state->ref();
-    _status.push_back( st );
+    _status.push_back( _internal_state( s, "", true ) );
 }
 
 // end of mat.cxx

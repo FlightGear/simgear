@@ -108,12 +108,6 @@ SGMatModel::SGMatModel (const SGPropertyNode * node, double range_m)
 
 SGMatModel::~SGMatModel ()
 {
-  for (unsigned int i = 0; i < _models.size(); i++) {
-    if (_models[i] != 0) {
-      ssgDeRefDelete(_models[i]);
-      _models[i] = 0;
-    }
-  }
 }
 
 int
@@ -160,7 +154,6 @@ SGMatModel::load_models ( SGModelLib *modellib,
                                 // there).
 	float ranges[] = {0, _range_m};
 	ssgRangeSelector * lod = new ssgRangeSelector;
-        lod->ref();
         lod->setRanges(ranges, 2);
 	if (_heading_type == HEADING_BILLBOARD) {
           // if the model is a billboard, it is likely :
@@ -246,10 +239,6 @@ SGMatModelGroup::SGMatModelGroup (SGPropertyNode * node)
 
 SGMatModelGroup::~SGMatModelGroup ()
 {
-  for (unsigned int i = 0; i < _objects.size(); i++) {
-    delete _objects[i];
-    _objects[i] = 0;
-  }
 }
 
 double

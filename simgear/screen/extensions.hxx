@@ -569,6 +569,26 @@ typedef void (*glXQueryDrawableProc) (Display *, GLXDrawable, int, unsigned int 
 #endif
 
 /*
+ * ARB point sprite
+ */
+#ifndef GL_ARB_point_sprite
+#define GL_ARB_point_sprite 1
+#define GL_POINT_SPRITE_ARB               0x8861
+#define GL_COORD_REPLACE_ARB              0x8862
+#endif
+
+#ifndef GL_NV_point_sprite
+#define GL_NV_point_sprite 1
+#define GL_POINT_SPRITE_NV                0x8861
+#define GL_COORD_REPLACE_NV               0x8862
+#define GL_POINT_SPRITE_R_MODE_NV         0x8863
+#endif
+
+#ifndef GL_VERSION_2_0
+#define GL_POINT_SPRITE                   0x8861
+#endif
+
+/*
  * ARB_vertex_program
  */
 #ifndef GL_ARB_vertex_program
@@ -879,6 +899,7 @@ typedef void (APIENTRY * glProgramParameter4fvNVProc) (GLenum target, GLuint ind
 #if defined(__cplusplus)
 }
 #endif
+
 
 #endif // !__SG_EXTENSIONS_HXX
 

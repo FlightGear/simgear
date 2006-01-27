@@ -558,11 +558,12 @@ void SGLightning::lt_Render(void) {
 	sgVec4 c;
 
 #define DRAW_SEG() \
-			{glBegin(GL_LINES); \
+			{glColorMaterial(GL_FRONT, GL_EMISSION);  \
+			glDisable(GL_LINE_SMOOTH); glBegin(GL_LINES); \
 				glColor4fv(c); \
                 glVertex3f(lt_tree[n].pt[PX], lt_tree[n].pt[PZ], lt_tree[n].pt[PY]); \
                 glVertex3f(lt_tree[lt_tree[n].prev].pt[PX], lt_tree[lt_tree[n].prev].pt[PZ], lt_tree[lt_tree[n].prev].pt[PY]); \
-			glEnd();}
+			glEnd(); glEnable(GL_LINE_SMOOTH);}
 
 	glDepthMask( GL_FALSE );
 	glEnable(GL_BLEND);
@@ -599,9 +600,7 @@ void SGLightning::lt_Render(void) {
 		if( lt_tree[n].depth >= 2 ) {
             glLineWidth(3);
 			sgScaleVec4(c, col, t1 * 0.6f);
-			glDisable(GL_LINE_SMOOTH);
 			DRAW_SEG();
-			glEnable(GL_LINE_SMOOTH);
 		} else {
 			if( lt_tree[n].depth == 0 ) {
                 glLineWidth(12);
@@ -610,15 +609,11 @@ void SGLightning::lt_Render(void) {
 
                 glLineWidth(6);
 				sgScaleVec4(c, col, t1);
-				glDisable(GL_LINE_SMOOTH);
 				DRAW_SEG();
-				glEnable(GL_LINE_SMOOTH);
 			} else {
                 glLineWidth(6);
 				sgScaleVec4(c, col, t1 * 0.7f);
-				glDisable(GL_LINE_SMOOTH);
 				DRAW_SEG();
-				glEnable(GL_LINE_SMOOTH);
 			}
 
             if( lt_tree[n].depth == 0 ) 
@@ -627,9 +622,7 @@ void SGLightning::lt_Render(void) {
                 glLineWidth(2);
 
             sgSetVec4(c, t1, t1, t1, t1);
-			glDisable(GL_LINE_SMOOTH);
 			DRAW_SEG();
-			glEnable(GL_LINE_SMOOTH);
 		}
 
 	}

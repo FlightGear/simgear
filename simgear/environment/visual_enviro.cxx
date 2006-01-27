@@ -599,7 +599,9 @@ void SGLightning::lt_Render(void) {
 		if( lt_tree[n].depth >= 2 ) {
             glLineWidth(3);
 			sgScaleVec4(c, col, t1 * 0.6f);
+			glDisable(GL_LINE_SMOOTH);
 			DRAW_SEG();
+			glEnable(GL_LINE_SMOOTH);
 		} else {
 			if( lt_tree[n].depth == 0 ) {
                 glLineWidth(12);
@@ -608,11 +610,15 @@ void SGLightning::lt_Render(void) {
 
                 glLineWidth(6);
 				sgScaleVec4(c, col, t1);
+				glDisable(GL_LINE_SMOOTH);
 				DRAW_SEG();
+				glEnable(GL_LINE_SMOOTH);
 			} else {
                 glLineWidth(6);
 				sgScaleVec4(c, col, t1 * 0.7f);
+				glDisable(GL_LINE_SMOOTH);
 				DRAW_SEG();
+				glEnable(GL_LINE_SMOOTH);
 			}
 
             if( lt_tree[n].depth == 0 ) 
@@ -621,7 +627,9 @@ void SGLightning::lt_Render(void) {
                 glLineWidth(2);
 
             sgSetVec4(c, t1, t1, t1, t1);
+			glDisable(GL_LINE_SMOOTH);
 			DRAW_SEG();
+			glEnable(GL_LINE_SMOOTH);
 		}
 
 	}

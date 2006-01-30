@@ -1097,9 +1097,11 @@ public:
 
 
   /**
-   * Add a change listener to the property.
+   * Add a change listener to the property. If "initial" is set call the
+   * listener initially.
    */
-  void addChangeListener (SGPropertyChangeListener * listener);
+  void addChangeListener (SGPropertyChangeListener * listener,
+                          bool initial = false);
 
 
   /**

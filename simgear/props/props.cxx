@@ -2030,12 +2030,15 @@ SGPropertyNode::untie (const char * relative_path)
 }
 
 void
-SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener)
+SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
+                                   bool initial)
 {
   if (_listeners == 0)
     _listeners = new vector<SGPropertyChangeListener*>;
   _listeners->push_back(listener);
   listener->register_property(this);
+  if (initial)
+    listener->valueChanged(this);
 }
 
 void

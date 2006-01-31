@@ -79,6 +79,9 @@ public:
 
     // retrun the current color of the sun
     inline float *get_color() { return  cl->get( 0 ); }
+
+    // return the texture id of the sun halo texture
+    inline GLuint get_texture_id() { return halo_state->getTextureHandle(); }
 };
 
 

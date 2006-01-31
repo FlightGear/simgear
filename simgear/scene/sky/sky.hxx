@@ -380,6 +380,11 @@ public:
      */
     inline float *get_sun_color() { return oursun->get_color(); }
 
+    /**
+     * Get the sun halo texture handle
+     */
+    inline GLuint get_sun_texture_id() { return oursun->get_texture_id(); }
+
 
     /**
      * Add a cloud layer.

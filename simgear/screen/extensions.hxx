@@ -586,6 +586,7 @@ typedef void (*glXQueryDrawableProc) (Display *, GLXDrawable, int, unsigned int 
 
 #ifndef GL_VERSION_2_0
 #define GL_POINT_SPRITE                   0x8861
+#define GL_COORD_REPLACE                  0x8862
 #endif
 
 /*

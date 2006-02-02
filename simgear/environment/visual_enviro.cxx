@@ -424,17 +424,23 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double speed,
 	int slice_count = static_cast<int>(
 				(40.0 + rain_norm*150.0)* precipitation_density / 100.0);
 
-	float angle = speed;
-	if( angle > 90.0 )
-		angle = 90.0;
+	// www.wonderquest.com/falling-raindrops.htm says that
+	// Raindrop terminal velocity is 5 to 20mph
+	// Rather than model it accurately (temp, pressure, diameter), and make it
+	// smaller than terminal when closer to the precipitation cloud base,
+	// we interpolate in the 5-20mph range according to rain_norm.
+	double raindrop_speed_kts 
+		= (5.0 + rain_norm*15.0) * SG_MPH_TO_MPS * SG_MPS_TO_KT;
 
+	float angle = atanf(speed / raindrop_speed_kts) * SG_RADIANS_TO_DEGREES;
+	// We assume that the speed is HORIZONTAL airspeed here!!! XXX
+	// DOCUMENT THE CHANGE IN THE PARAMETER speed MEANING BY RENAMING IT!!!
 	glPushMatrix();
-		// TODO:find the real view orientation, not the AC one
 		// the cone rotate with speed
 		angle = -pitch - angle;
+		glRotatef(heading, 0.0, 1.0, 0.0);
+		glRotatef(roll, 0.0, 0.0, 1.0);
 		glRotatef(angle, 1.0, 0.0, 0.0);
-		glRotatef(roll, 0.0, 1.0, 0.0);
-		glRotatef(heading, 0.0, 0.0, 1.0);
 
 		// up cone
 		DrawCone2(15.0, 30.0, slice_count, true, rain_norm, speed);

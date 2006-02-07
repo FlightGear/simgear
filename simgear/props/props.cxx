@@ -574,6 +574,7 @@ SGPropertyNode::make_string () const
   case DOUBLE:
     {
       stringstream sstr;
+      sstr.precision( 10 );
       sstr << get_double();
       _buffer = sstr.str();
       return _buffer.c_str();

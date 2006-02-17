@@ -35,7 +35,7 @@ RSC=rc.exe
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
-# ADD CPP /nologo /W3 /GX /O2 /D "NDEBUG" /D "WIN32" /D "_MBCS" /FD /c  /MT /I "." /I ".." /I ".\SimGear" /I ".\SimGear\metakit-2.4.3\include" /I "..\SimGear\zlib-1.1.4" /D "HAVE_CONFIG_H"
+# ADD CPP /nologo /W3 /GX /O2 /D "NDEBUG" /D "WIN32" /D "_MBCS" /FD /c  /MT /I "." /I ".." /I ".\SimGear" /I "..\zlib-1.2.3" /I "..\OpenAL 1.0 Software Development Kit\include" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
@@ -51,7 +51,7 @@ LINK32=link.exe -lib
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
-# ADD CPP /nologo /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_MBCS" /FR /FD /GZ /c  /MT /I "." /I ".." /I ".\SimGear" /I ".\SimGear\metakit-2.4.3\include" /I "..\SimGear\zlib-1.1.4" /D "HAVE_CONFIG_H"
+# ADD CPP /nologo /W3 /GX /ZI /Od /D "_DEBUG" /D "WIN32" /D "_MBCS" /FR /FD /GZ /c  /MT /I "." /I ".." /I ".\SimGear" /I "..\zlib-1.2.3" /I "..\OpenAL 1.0 Software Development Kit\include" /D "_USE_MATH_DEFINES" /D "_CRT_SECURE_NO_DEPRECATE" /D "HAVE_CONFIG_H"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
@@ -557,6 +557,21 @@ SOURCE=.\simgear\math\vector.cxx
 # Begin Source File
 
 SOURCE=.\simgear\math\fastmath.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmath"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmath"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\math\SGGeodesy.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

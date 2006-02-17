@@ -249,7 +249,7 @@ typedef SGVec4<double> SGVec4d;
 inline
 SGVec4f
 toVec4f(const SGVec4d& v)
-{ return SGVec4f(v(0), v(1), v(2), v(3)); }
+{ return SGVec4f((float)v(0), (float)v(1), (float)v(2), (float)v(3)); }
 
 inline
 SGVec4d

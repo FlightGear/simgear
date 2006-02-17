@@ -511,7 +511,7 @@ typedef SGQuat<double> SGQuatd;
 inline
 SGQuatf
 toQuatf(const SGQuatd& v)
-{ return SGQuatf(v(0), v(1), v(2), v(3)); }
+{ return SGQuatf((float)v(0), (float)v(1), (float)v(2), (float)v(3)); }
 
 inline
 SGQuatd

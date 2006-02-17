@@ -258,7 +258,7 @@ typedef SGVec3<double> SGVec3d;
 inline
 SGVec3f
 toVec3f(const SGVec3d& v)
-{ return SGVec3f(v(0), v(1), v(2)); }
+{ return SGVec3f((float)v(0), (float)v(1), (float)v(2)); }
 
 inline
 SGVec3d

@@ -51,16 +51,18 @@ void fast_BSR(float &x, register unsigned long shiftAmount);
 
 inline float fast_log2 (float val)
 {
-    int * const  exp_ptr = reinterpret_cast <int *> (&val);
-    int          x = *exp_ptr;
-    const int    log_2 = ((x >> 23) & 255) - 128;
-    x &= ~(255 << 23);
-    x += 127 << 23;
-    *exp_ptr = x;
+    union {
+        float f;
+        int i;
+    } v;
+    v.f = val;
+    const int log_2 = ((v.i >> 23) & 255) - 128;
+    v.i &= ~(255 << 23);
+    v.i += 127 << 23;
 
-    val = ((-1.0f/3) * val + 2) * val - 2.0f/3;   // (1)
+    v.f = ((-1.0f/3) * v.f + 2) * v.f - 2.0f/3;   // (1)
 
-    return (val + log_2);
+    return (v.f + log_2);
 }
 
 

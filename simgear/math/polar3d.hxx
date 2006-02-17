@@ -34,11 +34,10 @@
 #endif                                   
 
 
-#include <math.h>
-
 #include <simgear/constants.h>
 #include <simgear/math/point3d.hxx>
 
+#include "SGMath.hxx"
 
 /** 
  * Find the Altitude above the Ellipsoid (WGS84) given the Earth
@@ -47,7 +46,12 @@
  * @param cp point specified in cartesian coordinates
  * @return altitude above the (wgs84) earth in meters
  */
-double sgGeodAltFromCart(const Point3D& cp);
+inline double sgGeodAltFromCart(const Point3D& p)
+{
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(SGVec3<double>(p.x(), p.y(), p.z()), geod);
+  return geod.getElevationM();
+}
 
 
 /**
@@ -57,7 +61,12 @@ double sgGeodAltFromCart(const Point3D& cp);
  * @param p point specified in polar coordinates
  * @return the same point in cartesian coordinates
  */
-Point3D sgPolarToCart3d(const Point3D& p);
+inline Point3D sgPolarToCart3d(const Point3D& p)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeocToCart(SGGeoc::fromRadM(p.lon(), p.lat(), p.radius()), cart);
+  return Point3D::fromSGVec3(cart);
+}
 
 
 /**
@@ -66,7 +75,12 @@ Point3D sgPolarToCart3d(const Point3D& p);
  * @param cp point specified in cartesian coordinates
  * @return the same point in polar coordinates
  */
-Point3D sgCartToPolar3d(const Point3D& cp);
+inline Point3D sgCartToPolar3d(const Point3D& p)
+{
+  SGGeoc geoc;
+  SGGeodesy::SGCartToGeoc(SGVec3<double>(p.x(), p.y(), p.z()), geoc);
+  return Point3D::fromSGGeoc(geoc);
+}
 
 
 /**

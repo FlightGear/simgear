@@ -2,6 +2,19 @@
 #define _SG_GEODESY_HXX
 
 #include <simgear/math/point3d.hxx>
+#include "SGMath.hxx"
+
+// Returns the insersection of the line joining the center of the
+// earth and the specified cylindrical point with the surface of the
+// WGS84 ellipsoid.  Works by finding a normalization constant (in
+// squashed space) that places the squashed point on the surface of
+// the sphere.
+inline double seaLevelRadius(double r, double z)
+{
+    double sr = r * SGGeodesy::SQUASH;
+    double zz = z*z;
+    return SGGeodesy::POLRAD*sqrt((r*r + zz)/(sr*sr + zz));
+}
 
 /** 
  * Convert from geocentric coordinates to geodetic coordinates
@@ -12,9 +25,17 @@
  * @param sea_level_r (out) radius from earth center to sea level at
  *        local vertical (surface normal) of C.G. (meters)
  */
-void sgGeocToGeod(double lat_geoc, double radius,
-                  double *lat_geod, double *alt, double *sea_level_r);
-
+inline void sgGeocToGeod(double lat_geoc, double radius,
+                         double *lat_geod, double *alt, double *sea_level_r)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeocToCart(SGGeoc::fromRadM(0, lat_geoc, radius), cart);
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(cart, geod);
+  *lat_geod = geod.getLatitudeRad();
+  *alt = geod.getElevationM();
+  *sea_level_r = SGGeodesy::SGGeodToSeaLevelRadius(geod);
+}
 
 /**
  * Convert from geodetic coordinates to geocentric coordinates.
@@ -31,8 +52,17 @@ void sgGeocToGeod(double lat_geoc, double radius,
  * @param sl_radius (out) SEA LEVEL radius to earth center (meters)
  * @param lat_geoc (out) Geocentric latitude, radians, + = North
  */
-void sgGeodToGeoc(double lat_geod, double alt,
-                  double *sl_radius, double *lat_geoc );
+inline void sgGeodToGeoc(double lat_geod, double alt,
+                         double *sl_radius, double *lat_geoc)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeodToCart(SGGeod::fromRadM(0, lat_geod, alt), cart);
+  SGGeoc geoc;
+  SGGeodesy::SGCartToGeoc(cart, geoc);
+  *lat_geoc = geoc.getLatitudeRad();
+  *sl_radius = seaLevelRadius(cart(0), cart(2));
+}
+
 
 /**
  * Convert a cartesian point to a geodetic lat/lon/altitude.
@@ -42,7 +72,14 @@ void sgGeodToGeoc(double lat_geod, double alt,
  * @param lon (out) Longitude, in radians
  * @param alt (out) Altitude, in meters above the WGS84 ellipsoid
  */
-void sgCartToGeod(const double* xyz, double* lat, double* lon, double* alt);
+inline void sgCartToGeod(const double* xyz, double* lat, double* lon, double* alt)
+{
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(SGVec3<double>(xyz), geod);
+  *lat = geod.getLatitudeRad();
+  *lon = geod.getLongitudeRad();
+  *alt = geod.getElevationM();
+}
 
 /**
  * Convert a cartesian point to a geodetic lat/lon/altitude.
@@ -53,10 +90,9 @@ void sgCartToGeod(const double* xyz, double* lat, double* lon, double* alt);
  */
 inline Point3D sgCartToGeod(const Point3D& p)
 {
-    double lat, lon, alt, xyz[3];
-    xyz[0] = p.x(); xyz[1] = p.y(); xyz[2] = p.z(); 
-    sgCartToGeod(xyz, &lat, &lon, &alt);
-    return Point3D(lon, lat, alt);
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(SGVec3<double>(p.x(), p.y(), p.z()), geod);
+  return Point3D::fromSGGeod(geod);
 }
 
 
@@ -68,7 +104,14 @@ inline Point3D sgCartToGeod(const Point3D& p)
  * @param alt (in) Altitude, in meters above the WGS84 ellipsoid
  * @param xyz (out) Pointer to cartesian point.
  */
-void sgGeodToCart(double lat, double lon, double alt, double* xyz);
+inline void sgGeodToCart(double lat, double lon, double alt, double* xyz)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeodToCart(SGGeod::fromRadM(lon, lat, alt), cart);
+  xyz[0] = cart(0);
+  xyz[1] = cart(1);
+  xyz[2] = cart(2);
+}
 
 /**
  * Convert a geodetic lat/lon/altitude to a cartesian point.
@@ -79,9 +122,9 @@ void sgGeodToCart(double lat, double lon, double alt, double* xyz);
  */
 inline Point3D sgGeodToCart(const Point3D& geod)
 {
-    double xyz[3];
-    sgGeodToCart(geod.lat(), geod.lon(), geod.elev(), xyz);
-    return Point3D(xyz[0], xyz[1], xyz[2]);
+  SGVec3<double> cart;
+  SGGeodesy::SGGeodToCart(SGGeod::fromRadM(geod.lon(), geod.lat(), geod.elev()), cart);
+  return Point3D::fromSGVec3(cart);
 }
 
 /**

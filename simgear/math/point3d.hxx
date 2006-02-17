@@ -52,7 +52,7 @@
 # include <math.h>
 #endif
 
-#include <simgear/math/localconsts.hxx>
+#include "SGMath.hxx"
 
 // I don't understand ... <math.h> or <cmath> should be included
 // already depending on how you defined SG_HAVE_STD_INCLUDES, but I
@@ -95,6 +95,10 @@ public:
     explicit Point3D(const double d);
     Point3D(const Point3D &p);
 
+    static Point3D fromSGGeod(const SGGeod& geod);
+    static Point3D fromSGGeoc(const SGGeoc& geoc);
+    static Point3D fromSGVec3(const SGVec3<double>& cart);
+
     // Assignment operators
 
     Point3D& operator = ( const Point3D& p );	 // assignment of a Point3D
@@ -125,6 +129,9 @@ public:
     double lat() const;    // polar latitude
     double radius() const; // polar radius
     double elev() const;   // geodetic elevation (if specifying a surface point)
+
+    SGGeod toSGGeod(void) const;
+    SGGeoc toSGGeoc(void) const;
 
     // friends
     friend Point3D operator - (const Point3D& p);	            // -p1
@@ -204,6 +211,33 @@ inline Point3D::Point3D(const double d)
 inline Point3D::Point3D(const Point3D& p)
 {
     n[PX] = p.n[PX]; n[PY] = p.n[PY]; n[PZ] = p.n[PZ];
+}
+
+inline Point3D Point3D::fromSGGeod(const SGGeod& geod)
+{
+  Point3D pt;
+  pt.setlon(geod.getLongitudeRad());
+  pt.setlat(geod.getLatitudeRad());
+  pt.setelev(geod.getElevationM());
+  return pt;
+}
+
+inline Point3D Point3D::fromSGGeoc(const SGGeoc& geoc)
+{
+  Point3D pt;
+  pt.setlon(geoc.getLongitudeRad());
+  pt.setlat(geoc.getLatitudeRad());
+  pt.setradius(geoc.getRadiusM());
+  return pt;
+}
+
+inline Point3D Point3D::fromSGVec3(const SGVec3<double>& cart)
+{
+  Point3D pt;
+  pt.setx(cart.x());
+  pt.sety(cart.y());
+  pt.setz(cart.z());
+  return pt;
 }
 
 // ASSIGNMENT OPERATORS
@@ -290,6 +324,23 @@ inline double Point3D::radius() const { return n[PZ]; }
 
 inline double Point3D::elev() const { return n[PZ]; }
 
+inline SGGeod Point3D::toSGGeod(void) const
+{
+  SGGeod geod;
+  geod.setLongitudeRad(lon());
+  geod.setLatitudeRad(lat());
+  geod.setElevationM(elev());
+  return geod;
+}
+
+inline SGGeoc Point3D::toSGGeoc(void) const
+{
+  SGGeoc geoc;
+  geoc.setLongitudeRad(lon());
+  geoc.setLatitudeRad(lat());
+  geoc.setRadiusM(radius());
+  return geoc;
+}
 
 // FRIENDS
 

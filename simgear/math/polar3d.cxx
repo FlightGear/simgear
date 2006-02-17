@@ -23,73 +23,10 @@
 
 
 #include <math.h>
-#include <stdio.h>
 
 #include <simgear/constants.h>
 
 #include "polar3d.hxx"
-
-
-/**
- * Find the Altitude above the Ellipsoid (WGS84) given the Earth
- * Centered Cartesian coordinate vector Distances are specified in
- * meters.
- * @param cp point specified in cartesian coordinates
- * @return altitude above the (wgs84) earth in meters
- */
-double sgGeodAltFromCart(const Point3D& cp)
-{
-    double t_lat, x_alpha, mu_alpha;
-    double lat_geoc, radius;
-    double result;
-
-    lat_geoc = SGD_PI_2 - atan2( sqrt(cp.x()*cp.x() + cp.y()*cp.y()), cp.z() );
-    radius = sqrt( cp.x()*cp.x() + cp.y()*cp.y() + cp.z()*cp.z() );
-	
-    if( ( (SGD_PI_2 - lat_geoc) < SG_ONE_SECOND )        // near North pole
-	|| ( (SGD_PI_2 + lat_geoc) < SG_ONE_SECOND ) )   // near South pole
-    {
-	result = radius - SG_EQUATORIAL_RADIUS_M*E;
-    } else {
-	t_lat = tan(lat_geoc);
-	x_alpha = E*SG_EQUATORIAL_RADIUS_M/sqrt(t_lat*t_lat + E*E);
-	mu_alpha = atan2(sqrt(SG_EQ_RAD_SQUARE_M - x_alpha*x_alpha),E*x_alpha);
-	if (lat_geoc < 0) {
-	    mu_alpha = - mu_alpha;
-	}
-	result = (radius - x_alpha/cos(lat_geoc))*cos(mu_alpha - lat_geoc);
-    }
-
-    return(result);
-}
-
-/**
- * Convert a polar coordinate to a cartesian coordinate.  Lon and Lat
- * must be specified in radians.  The SG convention is for distances
- * to be specified in meters
- * @param p point specified in polar coordinates
- * @return the same point in cartesian coordinates
- */
-Point3D sgPolarToCart3d(const Point3D& p) {
-    double tmp = cos( p.lat() ) * p.radius();
-
-    return Point3D( cos( p.lon() ) * tmp,
-                    sin( p.lon() ) * tmp,
-                    sin( p.lat() ) * p.radius() );
-}
-
-/**
- * Convert a cartesian coordinate to polar coordinates (lon/lat
- * specified in radians.  Distances are specified in meters.
- * @param cp point specified in cartesian coordinates
- * @return the same point in polar coordinates
- */
-Point3D sgCartToPolar3d(const Point3D& cp) {
-    return Point3D( atan2( cp.y(), cp.x() ),
-                    SGD_PI_2 -
-                    atan2( sqrt(cp.x()*cp.x() + cp.y()*cp.y()), cp.z() ),
-                    sqrt(cp.x()*cp.x() + cp.y()*cp.y() + cp.z()*cp.z()) );
-}
 
 /**
  * Calculate new lon/lat given starting lon/lat, and offset radial, and

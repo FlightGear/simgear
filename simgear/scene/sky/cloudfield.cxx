@@ -209,11 +209,11 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 }
 
 SGCloudField::SGCloudField() :
-	draw_in_3d(true),
-	last_density(0.0),
 	deltax(0.0),
 	deltay(0.0),
-	last_course(0.0)
+	last_course(0.0),
+	last_density(0.0),
+	draw_in_3d(true)
 {
 	sgSetVec3( relative_position, 0,0,0);
 	theField.reserve(200);

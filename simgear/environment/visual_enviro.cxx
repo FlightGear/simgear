@@ -88,21 +88,21 @@ SGEnviro sgEnviro;
 
 SGEnviro::SGEnviro(void) :
 	view_in_cloud(false),
-	turbulence_enable_state(false),
 	precipitation_enable_state(true),
+	precipitation_density(100.0),
+	precipitation_max_alt(0.0),
+	turbulence_enable_state(false),
+	last_cloud_turbulence(0.0),
+	cloud_turbulence(0.0),
 	lightning_enable_state(false),
+	elapsed_time(0.0),
+	dt(0.0),
 	soundMgr(NULL),
 	snd_active(false),
 	snd_dist(0.0),
-	last_cloud_turbulence(0.0),
-	cloud_turbulence(0.0),
-	elapsed_time(0.0),
-	dt(0.0),
 	min_time_before_lt(0.0),
 	fov_width(55.0),
-	fov_height(55.0),
-	precipitation_max_alt(0.0),
-	precipitation_density(100.0)
+	fov_height(55.0)
 
 {
 	for(int i = 0; i < MAX_RAIN_SLICE ; i++)
@@ -469,11 +469,11 @@ void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail
 
 
 SGLightning::SGLightning(double _lon, double _lat, double _alt) :
+	nb_tree(0),
 	lon(_lon),
 	lat(_lat),
 	alt(_alt),
-	age(1.0 + sg_random() * 4.0),
-	nb_tree(0)
+	age(1.0 + sg_random() * 4.0)
 {
 //	sequence_count = 1 + sg_random() * 5.0;
 	lt_build();

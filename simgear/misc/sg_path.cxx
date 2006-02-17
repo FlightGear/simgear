@@ -200,7 +200,7 @@ void SGPath::create_dir( mode_t mode ) {
     string_list path_elements = sgPathBranchSplit(path);
     bool absolute = !path.empty() && path[0] == sgDirPathSep;
 
-    int i = 1;
+    unsigned int i = 1;
     SGPath dir = absolute ? string( 1, sgDirPathSep ) : "";
     dir.concat( path_elements[0] );
 #if defined( _MSC_VER) || defined(__MINGW32__)

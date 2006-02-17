@@ -100,8 +100,8 @@ SGShadowVolume::ShadowCaster::ShadowCaster( int _num_tri, ssgBranch * _geometry_
 	scenery_object ( 0 ),
 	first_select ( 0 ),
 	frameNumber ( 0 ),
-	numTriangles ( 0 ),
 	indices ( 0 ),
+	numTriangles ( 0 ),
 	vertices ( 0 ),
 	lastSilhouetteIndicesCount ( 0 )
 {
@@ -638,7 +638,7 @@ static bool filterLeaf(ssgLeaf *this_kid) {
 	if( ! leaf_name )
 		return true;
 	char lname[20];
-	int l = 0;
+	unsigned int l = 0;
 	char *buff;
 	for( buff = lname; *leaf_name && l < (sizeof( lname )-1); ++buff, l++ )
 	     *buff = tolower(*leaf_name++);
@@ -702,9 +702,9 @@ void SGShadowVolume::SceneryObject::find_trans(void) {
 }
 
 SGShadowVolume::SceneryObject::SceneryObject(ssgBranch *_scenery_object, OccluderType _occluder_type) :
-	pending_object ( _scenery_object ),
-	occluder_type ( _occluder_type ),
-	scenery_object ( 0 )
+        scenery_object ( 0 ),
+        pending_object ( _scenery_object ),
+        occluder_type ( _occluder_type )
 {
 	// queue objects, don't do all the work in the first frames because of
 	// massive cpu power needed

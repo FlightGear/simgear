@@ -609,52 +609,52 @@ bool SGMetar::scanRwyVisRange()
 
 
 static const struct Token special[] = {
-	"NSW",	"no significant weather",
-	"VCSH",	"showers in the vicinity",
-	"VCTS",	"thunderstorm in the vicinity",
-	0, 0
+	{ "NSW",  "no significant weather" },
+	{ "VCSH", "showers in the vicinity" },
+	{ "VCTS", "thunderstorm in the vicinity" },
+	{ 0, 0 }
 };
 
 
 static const struct Token description[] = {
-	"SH",	"showers of",
-	"TS",	"thunderstorm with",
-	"BC",	"patches of",
-	"BL",	"blowing",
-	"DR",	"low drifting",
-	"FZ",	"freezing",
-	"MI",	"shallow",
-	"PR",	"partial",
-	0, 0
+	{ "SH",	"showers of" },
+	{ "TS",	"thunderstorm with" },
+	{ "BC",	"patches of" },
+	{ "BL",	"blowing" },
+	{ "DR",	"low drifting" },
+	{ "FZ",	"freezing" },
+	{ "MI",	"shallow" },
+	{ "PR",	"partial" },
+	{ 0, 0 }
 };
 
 
 static const struct Token phenomenon[] = {
-	"DZ",	"drizzle",
-	"GR",	"hail",
-	"GS",	"small hail and/or snow pellets",
-	"IC",	"ice crystals",
-	"PE",	"ice pellets",
-	"RA",	"rain",
-	"SG",	"snow grains",
-	"SN",	"snow",
-	"UP",	"unknown precipitation",
-	"BR",	"mist",
-	"DU",	"widespread dust",
-	"SG",	"fog",
-	"SGBR",	"fog bank",
-	"FU",	"smoke",
-	"HZ",	"haze",
-	"PY",	"spray",
-	"SA",	"sand",
-	"VA",	"volcanic ash",
-	"DS",	"duststorm",
-	"FC",	"funnel cloud/tornado waterspout",
-	"PO",	"well-developed dust/sand whirls",
-	"SQ",	"squalls",
-	"SS",	"sandstorm",
-	"UP",	"unknown",	// ... due to failed automatic acquisition
-	0, 0
+	{ "DZ",	"drizzle" },
+	{ "GR",	"hail" },
+	{ "GS",	"small hail and/or snow pellets" },
+	{ "IC",	"ice crystals" },
+	{ "PE",	"ice pellets" },
+	{ "RA",	"rain" },
+	{ "SG",	"snow grains" },
+	{ "SN",	"snow" },
+	{ "UP",	"unknown precipitation" },
+	{ "BR",	"mist" },
+	{ "DU",	"widespread dust" },
+	{ "SG",	"fog" },
+	{ "SGBR",	"fog bank" },
+	{ "FU",	"smoke" },
+	{ "HZ",	"haze" },
+	{ "PY",	"spray" },
+	{ "SA",	"sand" },
+	{ "VA",	"volcanic ash" },
+	{ "DS",	"duststorm" },
+	{ "FC",	"funnel cloud/tornado waterspout" },
+	{ "PO",	"well-developed dust/sand whirls" },
+	{ "SQ",	"squalls" },
+	{ "SS",	"sandstorm" },
+	{ "UP",	"unknown" },	// ... due to failed automatic acquisition
+	{ 0, 0 }
 };
 
 
@@ -714,26 +714,26 @@ bool SGMetar::scanWeather()
 
 
 static const struct Token cloud_types[] = {
-	"AC",	 "altocumulus",
-	"ACC",	 "altocumulus castellanus",
-	"ACSL",	 "altocumulus standing lenticular",
-	"AS",	 "altostratus",
-	"CB",	 "cumulonimbus",
-	"CBMAM", "cumulonimbus mammatus",
-	"CC",	 "cirrocumulus",
-	"CCSL",	 "cirrocumulus standing lenticular",
-	"CI",	 "cirrus",
-	"CS",	 "cirrostratus",
-	"CU",	 "cumulus",
-	"CUFRA", "cumulus fractus",
-	"NS",	 "nimbostratus",
-	"SAC",	 "stratoaltocumulus",		// guessed
-	"SC",	 "stratocumulus",
-	"SCSL",	 "stratocumulus standing lenticular",
-	"ST",	 "stratus",
-	"STFRA", "stratus fractus",
-	"TCU",	 "towering cumulus",
-	0, 0
+	{ "AC",	  "altocumulus" },
+	{ "ACC",  "altocumulus castellanus" },
+	{ "ACSL", "altocumulus standing lenticular" },
+	{ "AS",	  "altostratus" },
+	{ "CB",	  "cumulonimbus" },
+	{ "CBMAM", "cumulonimbus mammatus" },
+	{ "CC",	  "cirrocumulus" },
+	{ "CCSL", "cirrocumulus standing lenticular" },
+	{ "CI",	  "cirrus" },
+	{ "CS",	  "cirrostratus" },
+	{ "CU",	  "cumulus" },
+	{ "CUFRA", "cumulus fractus" },
+	{ "NS",	  "nimbostratus" },
+	{ "SAC",  "stratoaltocumulus" },		// guessed
+	{ "SC",	  "stratocumulus" },
+	{ "SCSL", "stratocumulus standing lenticular" },
+	{ "ST",	  "stratus" },
+	{ "STFRA", "stratus fractus" },
+	{ "TCU",   "towering cumulus" },
+	{ 0, 0 }
 };
 
 
@@ -1076,13 +1076,13 @@ bool SGMetar::scanTrendForecast()
 
 // (BLU|WHT|GRN|YLO|AMB|RED)
 static const struct Token colors[] = {
-	"BLU", "Blue",		// 2500 ft,  8.0 km
-	"WHT", "White",		// 1500 ft,  5.0 km
-	"GRN", "Green",		//  700 ft,  3.7 km
-	"YLO", "Yellow",	//  300 ft,  1.6 km
-	"AMB", "Amber",		//  200 ft,  0.8 km
-	"RED", "Red",		// <200 ft, <0.8 km
-	0, 0
+	{ "BLU", "Blue" },      // 2500 ft,  8.0 km
+	{ "WHT", "White" },     // 1500 ft,  5.0 km
+	{ "GRN", "Green" },     //  700 ft,  3.7 km
+	{ "YLO", "Yellow" },	//  300 ft,  1.6 km
+	{ "AMB", "Amber" },     //  200 ft,  0.8 km
+	{ "RED", "Red" },       // <200 ft, <0.8 km
+	{ 0, 0 }
 };
 
 

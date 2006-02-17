@@ -213,7 +213,7 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
         sgMat4 CameraProjM, CameraViewM;
         glGetFloatv(GL_PROJECTION_MATRIX, (GLfloat *) CameraProjM);
         glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat *) CameraViewM);
-        const float dummy_scale = 1.0f; //0.95f;
+        // const float dummy_scale = 1.0f; //0.95f;
         const float deltaPos = 0.05f;
         glMatrixMode(GL_TEXTURE);
             glLoadIdentity();
@@ -268,7 +268,7 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
         glCallList ( dlist ) ;
 
         // alter colors only on last rendering
-        sgVec4 fLight = {0.93f, 0.93f, 1.00f, 0.85f};
+        // sgVec4 fLight = {0.93f, 0.93f, 1.00f, 0.85f};
         glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PRIMARY_COLOR_ARB );
         glTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR ); 
 
@@ -328,7 +328,7 @@ static int fresnel_shader_callback( ssgEntity *e ) {
     ssgGetLight( 0 )->getColour(GL_DIFFUSE, sunColor );
     ssgGetLight( 0 )->getColour(GL_AMBIENT, ambientColor );
 
-    SGShaderAnimation *my_shader = (SGShaderAnimation *) ( e->getUserData() );
+    // SGShaderAnimation *my_shader = (SGShaderAnimation *) ( e->getUserData() );
     glEnable(GL_BLEND);
 	glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) ;
 	glEnable(GL_ALPHA_TEST);

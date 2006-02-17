@@ -38,7 +38,7 @@ class PropsVisitor : public XMLVisitor
 public:
 
   PropsVisitor (SGPropertyNode * root, const string &base, int default_mode = 0)
-    : _root(root), _level(0), _base(base), _hasException(false), _default_mode(default_mode) {}
+    : _default_mode(default_mode), _root(root), _level(0), _base(base), _hasException(false) {}
 
   virtual ~PropsVisitor () {}
 

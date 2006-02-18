@@ -1,3 +1,8 @@
+
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/constants.h>
 #include "SGMath.hxx"
 #include "sg_geodesy.hxx"

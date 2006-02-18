@@ -20,6 +20,9 @@
 //
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <plib/sg.h>
 #include <plib/ssg.h>

@@ -20,6 +20,9 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>

@@ -20,6 +20,9 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #if defined( __APPLE__ )
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM

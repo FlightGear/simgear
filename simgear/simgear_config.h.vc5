@@ -152,3 +152,7 @@
 
 #define HAVE_MEMCPY 1
 
+#define GLUT_H <GL/glut.h>
+
+#define NOMINMAX 1
+

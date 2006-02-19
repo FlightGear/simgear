@@ -218,7 +218,7 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 	while ((i = sock->readline(buf, buflen))) {
 		if (i <= 2 && isspace(buf[0]) && (!buf[1] || isspace(buf[1])))
 			break;
-		if (!strncmp(buf, "X-MetarProxy: ", 9))
+		if (!strncmp(buf, "X-MetarProxy: ", 13))
 			_x_proxy = true;
 	}
 	if (i) {
@@ -617,48 +617,48 @@ static const struct Token special[] = {
 
 
 static const struct Token description[] = {
-	{ "SH",	"showers of" },
-	{ "TS",	"thunderstorm with" },
-	{ "BC",	"patches of" },
-	{ "BL",	"blowing" },
-	{ "DR",	"low drifting" },
-	{ "FZ",	"freezing" },
-	{ "MI",	"shallow" },
-	{ "PR",	"partial" },
+	{ "SH", "showers of" },
+	{ "TS", "thunderstorm with" },
+	{ "BC", "patches of" },
+	{ "BL", "blowing" },
+	{ "DR", "low drifting" },
+	{ "FZ", "freezing" },
+	{ "MI", "shallow" },
+	{ "PR", "partial" },
 	{ 0, 0 }
 };
 
 
 static const struct Token phenomenon[] = {
-	{ "DZ",	"drizzle" },
-	{ "GR",	"hail" },
-	{ "GS",	"small hail and/or snow pellets" },
-	{ "IC",	"ice crystals" },
-	{ "PE",	"ice pellets" },
-	{ "RA",	"rain" },
-	{ "SG",	"snow grains" },
-	{ "SN",	"snow" },
-	{ "UP",	"unknown precipitation" },
-	{ "BR",	"mist" },
-	{ "DU",	"widespread dust" },
-	{ "SG",	"fog" },
-	{ "SGBR",	"fog bank" },
-	{ "FU",	"smoke" },
-	{ "HZ",	"haze" },
-	{ "PY",	"spray" },
-	{ "SA",	"sand" },
-	{ "VA",	"volcanic ash" },
-	{ "DS",	"duststorm" },
-	{ "FC",	"funnel cloud/tornado waterspout" },
-	{ "PO",	"well-developed dust/sand whirls" },
-	{ "SQ",	"squalls" },
-	{ "SS",	"sandstorm" },
-	{ "UP",	"unknown" },	// ... due to failed automatic acquisition
+	{ "DZ",   "drizzle" },
+	{ "GR",   "hail" },
+	{ "GS",   "small hail and/or snow pellets" },
+	{ "IC",   "ice crystals" },
+	{ "PE",   "ice pellets" },
+	{ "RA",   "rain" },
+	{ "SG",   "snow grains" },
+	{ "SN",   "snow" },
+	{ "UP",   "unknown precipitation" },
+	{ "BR",   "mist" },
+	{ "DU",   "widespread dust" },
+	{ "FG",   "fog" },
+	{ "FGBR", "fog bank" },
+	{ "FU",   "smoke" },
+	{ "HZ",   "haze" },
+	{ "PY",   "spray" },
+	{ "SA",   "sand" },
+	{ "VA",   "volcanic ash" },
+	{ "DS",   "duststorm" },
+	{ "FC",   "funnel cloud/tornado waterspout" },
+	{ "PO",   "well-developed dust/sand whirls" },
+	{ "SQ",   "squalls" },
+	{ "SS",   "sandstorm" },
+	{ "UP",   "unknown" },	// ... due to failed automatic acquisition
 	{ 0, 0 }
 };
 
 
-// (+|-|VC)?(NSW|MI|PR|BC|DR|BL|SH|TS|FZ)?((DZ|RA|SN|SG|IC|PE|GR|GS|UP){0,3})(BR|SG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS){0,3}
+// (+|-|VC)?(NSW|MI|PR|BC|DR|BL|SH|TS|FZ)?((DZ|RA|SN|SG|IC|PE|GR|GS|UP){0,3})(BR|FG|FU|VA|DU|SA|HZ|PY|PO|SQ|FC|SS|DS){0,3}
 bool SGMetar::scanWeather()
 {
 	char *m = _m;
@@ -714,23 +714,23 @@ bool SGMetar::scanWeather()
 
 
 static const struct Token cloud_types[] = {
-	{ "AC",	  "altocumulus" },
-	{ "ACC",  "altocumulus castellanus" },
-	{ "ACSL", "altocumulus standing lenticular" },
-	{ "AS",	  "altostratus" },
-	{ "CB",	  "cumulonimbus" },
+	{ "AC",    "altocumulus" },
+	{ "ACC",   "altocumulus castellanus" },
+	{ "ACSL",  "altocumulus standing lenticular" },
+	{ "AS",    "altostratus" },
+	{ "CB",    "cumulonimbus" },
 	{ "CBMAM", "cumulonimbus mammatus" },
-	{ "CC",	  "cirrocumulus" },
-	{ "CCSL", "cirrocumulus standing lenticular" },
-	{ "CI",	  "cirrus" },
-	{ "CS",	  "cirrostratus" },
-	{ "CU",	  "cumulus" },
+	{ "CC",    "cirrocumulus" },
+	{ "CCSL",  "cirrocumulus standing lenticular" },
+	{ "CI",    "cirrus" },
+	{ "CS",    "cirrostratus" },
+	{ "CU",    "cumulus" },
 	{ "CUFRA", "cumulus fractus" },
-	{ "NS",	  "nimbostratus" },
-	{ "SAC",  "stratoaltocumulus" },		// guessed
-	{ "SC",	  "stratocumulus" },
-	{ "SCSL", "stratocumulus standing lenticular" },
-	{ "ST",	  "stratus" },
+	{ "NS",    "nimbostratus" },
+	{ "SAC",   "stratoaltocumulus" },		// guessed
+	{ "SC",    "stratocumulus" },
+	{ "SCSL",  "stratocumulus standing lenticular" },
+	{ "ST",    "stratus" },
 	{ "STFRA", "stratus fractus" },
 	{ "TCU",   "towering cumulus" },
 	{ 0, 0 }
@@ -958,11 +958,13 @@ bool SGMetar::scanRunwayReport()
 			m++;
 		else
 			return false;
+
 		if (*m == '1' || *m == '2' || *m == '5' || *m == '9') {	// extent of deposit
 			r._extent = *m - '0';
 			r._extent_string = runway_deposit_extent[*m - '0'];
 		} else if (*m != '/')
 			return false;
+
 		m++;
 		i = -1;
 		if (!strncmp(m, "//", 2))
@@ -971,7 +973,7 @@ bool SGMetar::scanRunwayReport()
 			return false;
 
 		if (i == 0)
-			r._depth = 0.5;					// < 1 mm deep (let's say 0.5 :-)
+			r._depth = 0.0005;				// < 1 mm deep (let's say 0.5 :-)
 		else if (i > 0 && i <= 90)
 			r._depth = i / 1000.0;				// i mm deep
 		else if (i >= 92 && i <= 98)
@@ -997,6 +999,7 @@ bool SGMetar::scanRunwayReport()
 		return false;
 
 	_runways[id]._deposit = r._deposit;
+	_runways[id]._deposit_string = r._deposit_string;
 	_runways[id]._extent = r._extent;
 	_runways[id]._extent_string = r._extent_string;
 	_runways[id]._depth = r._depth;

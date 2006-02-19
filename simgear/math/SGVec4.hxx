@@ -35,6 +35,13 @@ public:
   T& operator()(unsigned i)
   { return _data[i]; }
 
+  /// Access raw data by index, the index is unchecked
+  const T& operator[](unsigned i) const
+  { return _data[i]; }
+  /// Access raw data by index, the index is unchecked
+  T& operator[](unsigned i)
+  { return _data[i]; }
+
   /// Access the x component
   const T& x(void) const
   { return _data[0]; }

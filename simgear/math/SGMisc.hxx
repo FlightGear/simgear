@@ -29,6 +29,11 @@ public:
       return 0;
   }
 
+  static T rad2deg(const T& val)
+  { return val*180/pi(); }
+  static T deg2rad(const T& val)
+  { return val*pi()/180; }
+
 #ifndef NDEBUG
   /// Returns true if v is a NaN value
   /// Use with care: allways code that you do not need to use that!

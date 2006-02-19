@@ -32,7 +32,7 @@ public:
   { return fromRealImag(1, SGVec3<T>(0)); }
 
   /// Return a quaternion from euler angles
-  static SGQuat fromEuler(T z, T y, T x)
+  static SGQuat fromEulerRad(T z, T y, T x)
   {
     SGQuat q;
     T zd2 = T(0.5)*z; T yd2 = T(0.5)*y; T xd2 = T(0.5)*x;
@@ -47,17 +47,32 @@ public:
     return q;
   }
 
+  /// Return a quaternion from euler angles in degrees
+  static SGQuat fromEulerDeg(T z, T y, T x)
+  {
+    return fromEulerRad(SGMisc<T>::deg2rad(z), SGMisc<T>::deg2rad(y),
+                        SGMisc<T>::deg2rad(x));
+  }
+
   /// Return a quaternion from euler angles
   static SGQuat fromYawPitchRoll(T y, T p, T r)
-  { return fromEuler(y, p, r); }
+  { return fromEulerRad(y, p, r); }
+
+  /// Return a quaternion from euler angles
+  static SGQuat fromYawPitchRollDeg(T y, T p, T r)
+  { return fromEulerDeg(y, p, r); }
 
   /// Return a quaternion from euler angles
   static SGQuat fromHeadAttBank(T h, T a, T b)
-  { return fromEuler(h, a, b); }
+  { return fromEulerRad(h, a, b); }
+
+  /// Return a quaternion from euler angles
+  static SGQuat fromHeadAttBankDeg(T h, T a, T b)
+  { return fromEulerDeg(h, a, b); }
 
   /// Return a quaternion rotation the the horizontal local frame from given
   /// longitude and latitude
-  static SGQuat fromLonLat(T lon, T lat)
+  static SGQuat fromLonLatRad(T lon, T lat)
   {
     SGQuat q;
     T zd2 = T(0.5)*lon;
@@ -73,12 +88,21 @@ public:
     return q;
   }
 
+  /// Return a quaternion rotation the the horizontal local frame from given
+  /// longitude and latitude
+  static SGQuat fromLonLatDeg(T lon, T lat)
+  { return fromLonLatRad(SGMisc<T>::deg2rad(lon), SGMisc<T>::deg2rad(lat)); }
+
   /// Create a quaternion from the angle axis representation
   static SGQuat fromAngleAxis(T angle, const SGVec3<T>& axis)
   {
     T angle2 = 0.5*angle;
     return fromRealImag(cos(angle2), T(sin(angle2))*axis);
   }
+
+  /// Create a quaternion from the angle axis representation
+  static SGQuat fromAngleAxisDeg(T angle, const SGVec3<T>& axis)
+  { return fromAngleAxis(SGMisc<T>::deg2rad(angle), axis); }
 
   /// Create a quaternion from the angle axis representation where the angle
   /// is stored in the axis' length
@@ -147,9 +171,9 @@ public:
   void getEulerDeg(T& zDeg, T& yDeg, T& xDeg) const
   {
     getEulerRad(zDeg, yDeg, xDeg);
-    zDeg *= 180/SGMisc<value_type>::pi();
-    yDeg *= 180/SGMisc<value_type>::pi();
-    xDeg *= 180/SGMisc<value_type>::pi();
+    zDeg = SGMisc<T>::rad2deg(zDeg);
+    yDeg = SGMisc<T>::rad2deg(yDeg);
+    xDeg = SGMisc<T>::rad2deg(xDeg);
   }
 
   /// write the angle axis representation into the references
@@ -184,6 +208,13 @@ public:
   { return _data[i]; }
   /// Access by index, the index is unchecked
   T& operator()(unsigned i)
+  { return _data[i]; }
+
+  /// Access raw data by index, the index is unchecked
+  const T& operator[](unsigned i) const
+  { return _data[i]; }
+  /// Access raw data by index, the index is unchecked
+  T& operator[](unsigned i)
   { return _data[i]; }
 
   /// Access the x component

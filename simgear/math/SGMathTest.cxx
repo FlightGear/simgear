@@ -126,7 +126,7 @@ QuatTest(void)
   q2 = SGQuat<T>::fromAngleAxis(y, e2);
   q3 = SGQuat<T>::fromAngleAxis(x, e1);
   v2 = q3.transform(q2.transform(q1.transform(v1)));
-  q4 = SGQuat<T>::fromEuler(z, y, x);
+  q4 = SGQuat<T>::fromEulerRad(z, y, x);
   if (!equivalent(q4.transform(v1), v2))
     return false;
 
@@ -219,7 +219,7 @@ sgInterfaceTest(void)
 {
   SGVec3f v3f = SGVec3f::e2();
   SGVec4f v4f = SGVec4f::e2();
-  SGQuatf qf = SGQuatf::fromEuler(1.2, 1.3, -0.4);
+  SGQuatf qf = SGQuatf::fromEulerRad(1.2, 1.3, -0.4);
   SGMatrixf mf(qf, v3f);
 
   // Copy to and from plibs types check if result is equal,
@@ -266,7 +266,7 @@ sgdInterfaceTest(void)
 {
   SGVec3d v3d = SGVec3d::e2();
   SGVec4d v4d = SGVec4d::e2();
-  SGQuatd qd = SGQuatd::fromEuler(1.2, 1.3, -0.4);
+  SGQuatd qd = SGQuatd::fromEulerRad(1.2, 1.3, -0.4);
   SGMatrixd md(qd, v3d);
 
   // Copy to and from plibs types check if result is equal,

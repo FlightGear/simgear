@@ -224,8 +224,7 @@ SGSubsystemGroup::Member::Member (const Member &)
 
 SGSubsystemGroup::Member::~Member ()
 {
-                                // FIXME: causes a crash
-//     delete subsystem;
+    delete subsystem;
 }
 
 void

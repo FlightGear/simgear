@@ -28,10 +28,9 @@ class SGVec3;
 class SGGeodesy {
 public:
   // Hard numbers from the WGS84 standard.
-  static const double EQURAD;
-  static const double iFLATTENING;
-  static const double SQUASH;
-  static const double STRETCH;
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
   static const double POLRAD;
 
   /// Takes a cartesian coordinate data and returns the geodetic

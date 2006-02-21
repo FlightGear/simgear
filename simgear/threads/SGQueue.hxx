@@ -183,7 +183,7 @@ public:
     /**
      * Destroy this queue.
      */
-    ~SGBlockingQueue() { mutex.unlock(); }
+    ~SGBlockingQueue() {}
 
     /**
      * 

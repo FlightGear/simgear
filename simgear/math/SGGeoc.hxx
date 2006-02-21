@@ -34,6 +34,8 @@ public:
   /// Note that this conversion is relatively expensive to compute
   SGGeoc(const SGGeod& geod);
 
+  SGGeoc(const SGVec3<double>& cart);
+
   /// Factory from angular values in radians and radius in ft
   static SGGeoc fromRadFt(double lon, double lat, double radius);
   /// Factory from angular values in degrees and radius in ft

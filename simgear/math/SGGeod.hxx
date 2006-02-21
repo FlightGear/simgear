@@ -34,6 +34,8 @@ public:
   /// Note that this conversion is relatively expensive to compute
   SGGeod(const SGGeoc& geoc);
 
+  SGGeod(const SGVec3<double>& cart);
+
   /// Factory from angular values in radians and elevation is 0
   static SGGeod fromRad(double lon, double lat);
   /// Factory from angular values in degrees and elevation is 0

@@ -28,13 +28,12 @@ class SGGeod {
 public:
   /// Default constructor, initializes the instance to lat = lon = elev = 0
   SGGeod(void);
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+  /// Initialize from a cartesian vector assumed to be in meters
+  /// Note that this conversion is relatively expensive to compute
+  SGGeod(const SGVec3<double>& cart);
+  /// Initialize from a geocentric position
   /// Note that this conversion is relatively expensive to compute
   SGGeod(const SGGeoc& geoc);
-
-  SGGeod(const SGVec3<double>& cart);
 
   /// Factory from angular values in radians and elevation is 0
   static SGGeod fromRad(double lon, double lat);

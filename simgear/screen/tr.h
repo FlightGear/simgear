@@ -2,6 +2,9 @@
 
 /*
  * $Log$
+ * Revision 1.3  2006/02/21 10:47:21  ehofman
+ * Back out the previous patch.
+ *
  * Revision 1.2  2004/11/18 19:10:34  curt
  * Abstract out location of gl.h, glut.h, and glu.h includes so that we can
  * make the Mac platform happy since they put these in a different place compared

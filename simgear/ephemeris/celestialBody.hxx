@@ -15,9 +15,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Library General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * You should have received a copy of the GNU Library General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA  02111-1307, USA.
  *
  * $Id$
  **************************************************************************/
@@ -26,9 +27,9 @@
 #ifndef _CELESTIALBODY_H_
 #define _CELESTIALBODY_H_
 
-#ifndef __cplusplus
+#ifndef __cplusplus                                                          
 # error This library requires C++
-#endif
+#endif                                   
 
 
 #include <simgear/constants.h>

@@ -27,9 +27,10 @@
 // These are hard numbers from the WGS84 standard.  DON'T MODIFY
 // unless you want to change the datum.
 #define _EQURAD 6378137.0
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#define _FLATTENING 298.257223563
+
+// These are derived quantities more useful to the code:
+#if 0
 #define _SQUASH (1 - 1/_FLATTENING)
 #define _STRETCH (1/_SQUASH)
 #define _POLRAD (EQURAD * _SQUASH)

@@ -1124,6 +1124,7 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
         SGPropertyNode_ptr props, const SGPath &texture_path)
     : SGAnimation(props, new ssgBranch),
     _prop_root(prop_root),
+    _last_condition(false),
     _prop_base(""),
     _texture_base(texture_path),
     _cached_material(0),
@@ -1192,6 +1193,8 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     _thresh_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
     n = props->getChild("texture-prop");
     _tex_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
+
+    _static_update = _update;
 }
 
 void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)
@@ -1230,8 +1233,15 @@ void SGMaterialAnimation::init()
 
 int SGMaterialAnimation::update()
 {
-    if (_condition && !_condition->test())
-        return 2;
+    if (_condition) {
+        bool cond = _condition->test();
+        if (cond && !_last_condition)
+            _update |= _static_update;
+
+        _last_condition = cond;
+        if (!cond)
+            return 2;
+    }
 
     if (_read & DIFFUSE)
         updateColorGroup(&_diff, DIFFUSE);

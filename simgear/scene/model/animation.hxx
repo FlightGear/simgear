@@ -496,7 +496,7 @@ private:
         float factor;
         float offset;
         float min;
-	float max;
+        float max;
         SGPropertyNode_ptr value_prop;
         SGPropertyNode_ptr factor_prop;
         SGPropertyNode_ptr offset_prop;
@@ -507,6 +507,7 @@ private:
         }
     };
     SGCondition *_condition;
+    bool _last_condition;
     SGPropertyNode *_prop_root;
     string _prop_base;
     SGPath _texture_base;
@@ -516,6 +517,7 @@ private:
     ssgSimpleState* _cloned_material;
     unsigned _read;
     unsigned _update;
+    unsigned _static_update;
     bool _global;
     ColorSpec _diff;
     ColorSpec _amb;

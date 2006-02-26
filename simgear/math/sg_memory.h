@@ -26,7 +26,7 @@
 #define _SG_MEMORY_H
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include <simgear_config.h>
 #endif
 
 #ifdef HAVE_MEMCPY

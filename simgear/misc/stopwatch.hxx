@@ -44,7 +44,7 @@
 #endif                                   
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include <simgear_config.h>
 #endif
 
 #if defined(__linux__) && ! defined(HAVE_GETRUSAGE)

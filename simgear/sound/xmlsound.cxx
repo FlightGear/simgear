@@ -78,7 +78,8 @@ SGXmlSound::SGXmlSound()
 
 SGXmlSound::~SGXmlSound()
 {
-    _sample->stop();
+    if (_sample)
+        _sample->stop();
 
     delete _condition;
 

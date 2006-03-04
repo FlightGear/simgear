@@ -250,7 +250,7 @@ compare_strings (const char * s1, const char * s2)
  * Locate a child node by name and index.
  */
 static int
-find_child (const char * name, int index, vector<SGPropertyNode_ptr> nodes)
+find_child (const char * name, int index, const vector<SGPropertyNode_ptr>& nodes)
 {
   int nNodes = nodes.size();
   for (int i = 0; i < nNodes; i++) {
@@ -749,6 +749,11 @@ SGPropertyNode::SGPropertyNode (const char * name,
  */
 SGPropertyNode::~SGPropertyNode ()
 {
+  // zero out all parent pointers, else they might be dangling
+  for (unsigned i = 0; i < _children.size(); ++i)
+    _children[i]->_parent = 0;
+  for (unsigned i = 0; i < _removedChildren.size(); ++i)
+    _removedChildren[i]->_parent = 0;
   delete _path_cache;
   clearValue();
   delete _listeners;

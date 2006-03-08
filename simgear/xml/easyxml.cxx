@@ -1,4 +1,8 @@
-// easyxml.cxx - implementation of EasyXML interfaces.
+/**
+ * \file easyxml.cxx - implementation of EasyXML interfaces.
+ * Written by David Megginson, 2000-2001
+ * This file is in the Public Domain, and comes with NO WARRANTY of any kind.
+ */
 
 #include <simgear/compiler.h>
 

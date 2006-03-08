@@ -1,3 +1,12 @@
+/**
+ * \file props_io.cxx
+ * Started Fall 2000 by David Megginson, david@megginson.com
+ * This code is released into the Public Domain.
+ *
+ * See props.html for documentation [replace with URL when available].
+ *
+ * $Id$
+ */
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>

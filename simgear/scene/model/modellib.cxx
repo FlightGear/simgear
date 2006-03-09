@@ -81,7 +81,9 @@ ssgEntity *
 SGModelLib::load_model( const string &fg_root,
                            const string &path,
                            SGPropertyNode *prop_root,
-                           double sim_time_sec )
+                           double sim_time_sec,
+                           bool cache_object,
+                           SGModelData *data )
 {
     ssgBranch *personality_branch = new SGPersonalityBranch;
     personality_branch->setTravCallback(SSG_CALLBACK_PRETRAV, personality_pretrav_callback);
@@ -90,10 +92,12 @@ SGModelLib::load_model( const string &fg_root,
                                 // FIXME: normalize path to
                                 // avoid duplicates.
     map<string, ssgSharedPtr<ssgEntity> >::iterator it = _table.find(path);
-    if (it == _table.end()) {
+    if (!cache_object || it == _table.end()) {
         ssgSharedPtr<ssgEntity> model = sgLoad3DModel(fg_root, path, prop_root,
-                                                      sim_time_sec );
-        _table[path] = model;      // add one reference to keep it around
+                                                      sim_time_sec, 0, data );
+        if (cache_object)
+            _table[path] = model;      // add one reference to keep it around
+
         personality_branch->addKid( model );
     } else {
         personality_branch->addKid( it->second );

@@ -146,7 +146,8 @@ SGMatModel::load_models ( SGModelLib *modellib,
   if (!_models_loaded) {
     for (unsigned int i = 0; i < _paths.size(); i++) {
       ssgEntity *entity = modellib->load_model( fg_root, _paths[i],
-                                                prop_root, sim_time_sec );
+                                                prop_root, sim_time_sec,
+                                                /*cache_object*/ true );
       if (entity != 0) {
                                 // FIXME: this stuff can be handled
                                 // in the XML wrapper as well (at least,

@@ -16,6 +16,7 @@
 
 #include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
+#include "model.hxx"
 
 SG_USING_STD(map);
 SG_USING_STD(string);
@@ -36,7 +37,9 @@ public:
     virtual ssgEntity *load_model( const string &fg_root,
                                    const string &path,
                                    SGPropertyNode *prop_root,
-                                   double sim_time_sec );
+                                   double sim_time_sec,
+                                   bool cache_object,
+                                   SGModelData *data = 0 );
 protected:
 
     map<string,ssgSharedPtr<ssgEntity> > _table;

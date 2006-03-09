@@ -33,6 +33,19 @@ SG_USING_STD(set);
 
 
 /**
+ * Abstract class for adding data to the scene graph.  modelLoaded() is
+ * called by sgLoad3DModel() after the model was loaded, and the destructor
+ * when the branch is removed from the graph.
+ */
+class SGModelData : public ssgBase {
+public:
+    virtual ~SGModelData() {}
+    virtual void modelLoaded( const string& path, SGPropertyNode *prop,
+                              ssgBranch *branch) {}
+};
+
+
+/**
  * Load a 3D model with or without XML wrapper.  Note, this version
  * Does not know about or load the panel/cockpit information.  Use the
  * "model_panel.hxx" version if you want to load an aircraft
@@ -47,7 +60,8 @@ SG_USING_STD(set);
 ssgBranch *
 sgLoad3DModel( const string& fg_root, const string &path,
                           SGPropertyNode *prop_root, double sim_time_sec,
-                          ssgEntity *(*load_panel)(SGPropertyNode *) = 0 );
+                          ssgEntity *(*load_panel)(SGPropertyNode *) = 0,
+                          SGModelData *data = 0 );
 
 
 /**

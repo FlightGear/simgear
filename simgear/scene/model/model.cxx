@@ -245,7 +245,8 @@ static void makeDList( ssgBranch *b, const set<ssgBranch *> &ignore )
 ssgBranch *
 sgLoad3DModel( const string &fg_root, const string &path,
                SGPropertyNode *prop_root,
-               double sim_time_sec, ssgEntity *(*load_panel)(SGPropertyNode *) )
+               double sim_time_sec, ssgEntity *(*load_panel)(SGPropertyNode *),
+               SGModelData *data )
 {
   ssgBranch * model = 0;
   SGPropertyNode props;
@@ -336,6 +337,11 @@ sgLoad3DModel( const string &fg_root, const string &path,
         model->addKid(panel);
     }
   }
+
+  if (data) {
+    data->modelLoaded(path, &props, model);
+    model->setUserData(data);
+  }
                                 // Load animations
   set<ssgBranch *> ignore_branches;
   vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
@@ -353,6 +359,9 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 #endif
 
+  int m = props.getIntValue("dump", 0);
+  if (m > 0)
+    model->print(stderr, "", m - 1);
 
   return alignmainmodel;
 }

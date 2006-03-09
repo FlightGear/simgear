@@ -26,6 +26,7 @@
 // Original RenderTexture class: Mark J. Harris
 // Original Render to Depth Texture support: Thorsten Scheuermann
 // Linux Copy-to-texture: Eric Werness
+// OS X: Alexander Powell (someone please help)
 // Various Bug Fixes: Daniel (Redge) Sperl 
 //                    Bill Baxter
 //
@@ -43,6 +44,7 @@
  *
  * Jan. 2005, Removed GLEW dependencies, Erik Hofman, Fred Bouvier
  * Nov. 2005, Use the simgear logging facility, Erik Hofman
+ * Mar. 2006, Add MAC OS X support, Alexander Powell
  */
 
 #ifdef HAVE_CONFIG_H
@@ -84,7 +86,7 @@ static wglDestroyPbufferARBProc wglDestroyPbufferARBPtr = 0;
 static wglBindTexImageARBProc wglBindTexImageARBPtr = 0;
 static wglReleaseTexImageARBProc wglReleaseTexImageARBPtr = 0;
 
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
 #else /* !_WIN32 */
 static bool glXVersion1_3Present = false;
 static glXChooseFBConfigProc glXChooseFBConfigPtr = 0;
@@ -112,7 +114,7 @@ RenderTexture::RenderTexture(const char *strMode)
     _bIsTexture(false),
     _bIsDepthTexture(false),
     _bHasARBDepthTexture(true),            // [Redge]
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__MACH__)
     _eUpdateMode(RT_RENDER_TO_TEXTURE),
 #else
     _eUpdateMode(RT_COPY_TO_TEXTURE),
@@ -136,7 +138,10 @@ RenderTexture::RenderTexture(const char *strMode)
     _hPBuffer(NULL),
     _hPreviousDC(0),
     _hPreviousContext(0),
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    _hGLContext(NULL),
+    _hPBuffer(0),
+    _hPreviousContext(NULL),
 #else
     _pDisplay(NULL),
     _hGLContext(NULL),
@@ -160,7 +165,11 @@ RenderTexture::RenderTexture(const char *strMode)
     
     _pbufferAttribs.push_back(WGL_PBUFFER_LARGEST_ARB);
     _pbufferAttribs.push_back(true);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    //_pixelFormatAttribs.push_back(kCGLPFANoRecovery);
+    _pixelFormatAttribs.push_back(kCGLPFAAccelerated);
+    _pixelFormatAttribs.push_back(kCGLPFAWindow);
+    _pixelFormatAttribs.push_back(kCGLPFAPBuffer);
 #else
     _pbufferAttribs.push_back(GLX_RENDER_TYPE_SGIX);
     _pbufferAttribs.push_back(GLX_RGBA_BIT_SGIX);
@@ -173,6 +182,9 @@ RenderTexture::RenderTexture(const char *strMode)
 #ifdef _WIN32
     _pixelFormatAttribs.push_back(0);
     _pbufferAttribs.push_back(0);
+#elif defined(__MACH__)
+    _pixelFormatAttribs.push_back((CGLPixelFormatAttribute)0);
+    _pbufferAttribs.push_back((CGLPixelFormatAttribute)0);
 #else
     _pixelFormatAttribs.push_back(None);
 #endif
@@ -191,6 +203,30 @@ RenderTexture::~RenderTexture()
 {
     _Invalidate();
 }
+
+ //---------------------------------------------------------------------------
+// Function            : _cglcheckError
+// Description     :
+//---------------------------------------------------------------------------
+/**
+* @fn _cglCheckError()
+* @brief Prints to stderr a description when an OS X error is found.
+*/
+#ifdef __MACH__
+static void _cglCheckErrorHelper(CGLError err, char *sourceFile, int sourceLine)
+{
+# ifdef _DEBUG
+    if (err)
+    {
+       fprintf(stderr, "RenderTexture CGL Error:  %s at (%s,%d)",
+                        CGLErrorString(err), sourceFile, sourceLine);
+    }
+# endif
+}
+
+# define _cglCheckError(err) _cglCheckErrorHelper(err,__FILE__,__LINE__)
+
+#endif
 
 
 //---------------------------------------------------------------------------
@@ -455,8 +491,134 @@ bool RenderTexture::Initialize(int width, int height,
     if (_bDoubleBuffered) SG_LOG(SG_GL, SG_ALERT, " double buffered");
 #endif
 
-#elif defined( __APPLE__ )
-#else // !_WIN32
+#elif defined( __MACH__ )
+    // Get the current context.
+    CGLContextObj hglrc = CGLGetCurrentContext();
+    if (NULL == hglrc)
+        fprintf(stderr, "Couldn't get current context!");
+   
+        CGLPixelFormatObj pixFormat = NULL;
+        long int iNumFormats;
+        CGLError error;
+
+        // Copy the _pixelFormatAttribs into another array to fix
+        // typecast issues
+        CGLPixelFormatAttribute *pixFormatAttribs =
+            (CGLPixelFormatAttribute *)malloc(sizeof(CGLPixelFormatAttribute)
+                                              * _pixelFormatAttribs.size());
+
+        for (unsigned int ii = 0; ii < _pixelFormatAttribs.size(); ii++)
+        {
+            pixFormatAttribs[ii] =
+                               (CGLPixelFormatAttribute)_pixelFormatAttribs[ii];
+        }
+
+        if (error =
+           CGLChoosePixelFormat(&pixFormatAttribs[0], &pixFormat, &iNumFormats))
+        {
+            fprintf(stderr,
+                    "RenderTexture Error: CGLChoosePixelFormat() failed.\n");
+            _cglCheckError(error);
+            return false;
+        }
+        if ( iNumFormats <= 0 )
+        {
+            fprintf(stderr,
+                    "RenderTexture Error: Couldn't find a suitable "+
+                    "pixel format.\n");
+            return false;
+        }
+
+        // Free the copy of the _pixelFormatAttribs array
+        free(pixFormatAttribs);
+   
+       // Create the context.
+       error = CGLCreateContext(pixFormat, (_bShareObjects)
+                ? CGLGetCurrentContext() : NULL, &_hGLContext);
+       if (error)
+       {
+           fprintf(stderr,
+                   "RenderTexture Error: CGLCreateContext() failed.\n");
+           _cglCheckError(error);
+           return false;
+       }
+       CGLDestroyPixelFormat(pixFormat);
+   
+       // Create the p-buffer.
+       error = CGLCreatePBuffer(_iWidth, _iHeight, (_bRectangle)
+            ? GL_TEXTURE_RECTANGLE_EXT : GL_TEXTURE_2D, GL_RGBA, 0, &_hPBuffer);
+       if (error)
+       {
+           fprintf(stderr,
+                   "RenderTexture Error: CGLCreatePBuffer() failed.\n");
+           _cglCheckError(error);
+           return false;
+       }
+
+       long screen;
+       if (error = CGLGetVirtualScreen(CGLGetCurrentContext(), &screen))
+       {
+           _cglCheckError(error);
+           return false;
+       }
+       if (error = CGLSetPBuffer(_hGLContext, _hPBuffer, 0, 0, screen))
+       {
+           _cglCheckError(error);
+           return false;
+       }
+   
+       // Determine the actual width and height we were able to create.
+       //wglQueryPbufferARB( _hPBuffer, WGL_PBUFFER_WIDTH_ARB, &_iWidth );
+       //wglQueryPbufferARB( _hPBuffer, WGL_PBUFFER_HEIGHT_ARB, &_iHeight );
+   
+       _bInitialized = true;
+   
+       /*
+       // get the actual number of bits allocated:
+       int attrib = WGL_RED_BITS_ARB;
+       //int bits[6];
+       int value;
+       _iNumColorBits[0] =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_GREEN_BITS_ARB;
+       _iNumColorBits[1] =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_BLUE_BITS_ARB;
+       _iNumColorBits[2] =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_ALPHA_BITS_ARB;
+       _iNumColorBits[3] =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_DEPTH_BITS_ARB;
+       _iNumDepthBits =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_STENCIL_BITS_ARB;
+       _iNumStencilBits =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+            ? value : 0;
+       attrib = WGL_DOUBLE_BUFFER_ARB;
+       _bDoubleBuffered =
+            (wglGetPixelFormatAttribivARB(_hDC, iFormat, 0, 1, &attrib, &value))
+             ? (value?true:false) : false;
+       */
+
+#if defined(_DEBUG) | defined(DEBUG)
+       fprintf(stderr, "Created a %dx%d RenderTexture with BPP(%d, %d, %d, %d)",
+           _iWidth, _iHeight,
+           _iNumColorBits[0], _iNumColorBits[1],
+           _iNumColorBits[2], _iNumColorBits[3]);
+       if (_iNumDepthBits) fprintf(stderr, " depth=%d", _iNumDepthBits);
+       if (_iNumStencilBits) fprintf(stderr, " stencil=%d", _iNumStencilBits);
+       if (_bDoubleBuffered) fprintf(stderr, " double buffered");
+       fprintf(stderr, "\n");
+#endif
+
+#else // !_WIN32, !__MACH_
     _pDisplay = glXGetCurrentDisplay();
     GLXContext context = glXGetCurrentContext();
     int screen = DefaultScreen(_pDisplay);
@@ -570,7 +732,13 @@ bool RenderTexture::Initialize(int width, int height,
         _wglGetLastError();
         return false;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    CGLError err;
+    if (err = CGLSetCurrentContext(_hGLContext))
+    {
+        _cglCheckError(err);
+        return false;
+    }
 #else
     _hPreviousContext = glXGetCurrentContext();
     _hPreviousDrawable = glXGetCurrentDrawable();
@@ -595,7 +763,12 @@ bool RenderTexture::Initialize(int width, int height,
         _wglGetLastError();
         return false;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    if (err = CGLSetCurrentContext(_hPreviousContext))
+    {
+        _cglCheckError(err);
+        return false;
+    }
 #else
     if (False == glXMakeCurrent(_pDisplay, 
                                 _hPreviousDrawable, _hPreviousContext))
@@ -653,7 +826,17 @@ bool RenderTexture::_Invalidate()
         _hPBuffer = 0;
         return true;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    if ( _hPBuffer )
+    {
+        if (CGLGetCurrentContext() == _hGLContext)
+            CGLSetCurrentContext(NULL);
+        if (!_bCopyContext)
+            CGLDestroyContext(_hGLContext);
+        CGLDestroyPBuffer(_hPBuffer);
+        _hPBuffer = NULL;
+        return true;
+    }
 #else
     if ( _hPBuffer )
     {
@@ -687,7 +870,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
     _iWidth = 0; _iHeight = 0; 
     _bIsTexture = false; _bIsDepthTexture = false,
     _bHasARBDepthTexture = true;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__MACH__)
     _eUpdateMode = RT_RENDER_TO_TEXTURE;
 #else
     _eUpdateMode = RT_COPY_TO_TEXTURE;
@@ -724,7 +907,11 @@ bool RenderTexture::Reset(const char *strMode, ...)
     
     _pbufferAttribs.push_back(WGL_PBUFFER_LARGEST_ARB);
     _pbufferAttribs.push_back(true);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    //_pixelFormatAttribs.push_back(kCGLPFANoRecovery);
+    _pixelFormatAttribs.push_back(kCGLPFAAccelerated);
+    _pixelFormatAttribs.push_back(kCGLPFAWindow);
+    _pixelFormatAttribs.push_back(kCGLPFAPBuffer);
 #else
     _pbufferAttribs.push_back(GLX_RENDER_TYPE_SGIX);
     _pbufferAttribs.push_back(GLX_RGBA_BIT_SGIX);
@@ -747,6 +934,8 @@ bool RenderTexture::Reset(const char *strMode, ...)
 #ifdef _WIN32
     _pixelFormatAttribs.push_back(0);
     _pbufferAttribs.push_back(0);
+#elif defined(__MACH__)
+    _pixelFormatAttribs.push_back((CGLPixelFormatAttribute)0);
 #else
     _pixelFormatAttribs.push_back(None);
 #endif
@@ -794,7 +983,17 @@ bool RenderTexture::Resize(int iWidth, int iHeight)
         _hPBuffer = 0;
         return true;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    if ( _hPBuffer )
+    {
+        if (CGLGetCurrentContext() == _hGLContext)
+            CGLSetCurrentContext(NULL);
+        if (!_bCopyContext)
+            CGLDestroyContext(_hGLContext);
+        CGLDestroyPBuffer(_hPBuffer);
+        _hPBuffer = NULL;
+        return true;
+    }
 #else
     if ( _hPBuffer )
     {
@@ -837,7 +1036,8 @@ bool RenderTexture::BeginCapture()
     _hPreviousContext = wglGetCurrentContext();
     if (NULL == _hPreviousContext)
         _wglGetLastError();
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    _hPreviousContext = CGLGetCurrentContext();
 #else
     _hPreviousContext = glXGetCurrentContext();
     _hPreviousDrawable = glXGetCurrentDrawable();
@@ -866,6 +1066,8 @@ bool RenderTexture::EndCapture()
         return false;
     }
 
+    glFlush();	// Added by a-lex
+
     _MaybeCopyBuffer();
 
 #ifdef _WIN32
@@ -875,7 +1077,13 @@ bool RenderTexture::EndCapture()
         _wglGetLastError();
         return false;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    CGLError err;
+    if (err = CGLSetCurrentContext(_hPreviousContext))
+    {
+            _cglCheckError(err);
+            return false;
+    }
 #else
     if (False == glXMakeCurrent(_pDisplay, _hPreviousDrawable, 
                                 _hPreviousContext))
@@ -945,7 +1153,8 @@ bool RenderTexture::BeginCapture(RenderTexture* current)
     _hPreviousContext = current->_hPreviousContext;
     if (NULL == _hPreviousContext)
         _wglGetLastError();
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    _hPreviousContext = current->_hPreviousContext;
 #else
     _hPreviousContext = current->_hPreviousContext;
     _hPreviousDrawable = current->_hPreviousDrawable;
@@ -1032,6 +1241,18 @@ bool RenderTexture::BindBuffer( int iBuffer )
             _bIsBufferBound = true;
             _iCurrentBoundBuffer = iBuffer;
         }
+#elif defined(__MACH__)
+    if (RT_RENDER_TO_TEXTURE == _eUpdateMode && _bIsTexture &&
+         (!_bIsBufferBound || _iCurrentBoundBuffer != iBuffer))
+    {
+        CGLError err;
+        if (err=CGLTexImagePBuffer(CGLGetCurrentContext(), _hPBuffer, iBuffer))
+        {
+            _cglCheckError(err);
+        }
+        _bIsBufferBound = true;
+        _iCurrentBoundBuffer = iBuffer;
+     }
 #endif
     }    
     return true;
@@ -1039,7 +1260,7 @@ bool RenderTexture::BindBuffer( int iBuffer )
 
 
 //---------------------------------------------------------------------------
-// Function     	: RenderTexture::BindBuffer
+// Function     	: RenderTexture::BindDepthBuffer
 // Description	    : 
 //---------------------------------------------------------------------------
 /**
@@ -1058,6 +1279,17 @@ bool RenderTexture::_BindDepthBuffer() const
             _wglGetLastError();
             return false;
         }
+    }
+#elif defined(__MACH__)
+    if (_bInitialized && _bIsDepthTexture &&
+        RT_RENDER_TO_TEXTURE == _eUpdateMode)
+    {
+        glBindTexture(_iTextureTarget, _iDepthTextureID);
+        //if (FALSE == CGLTexImagePBuffer(<#CGLContextObj ctx#>,<#CGLPBufferObj pbuffer#>,<#unsigned long source#>)(_hPBuffer, WGL_DEPTH_COMPONENT_NV))
+        //{
+        //    _wglGetLastError();
+        //    return false;
+        //}
     }
 #endif
     return true;
@@ -1079,7 +1311,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
         return;
 
 	_iNumComponents = 0;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__MACH__)
     _eUpdateMode = RT_RENDER_TO_TEXTURE;
 #else
     _eUpdateMode = RT_COPY_TO_TEXTURE;
@@ -1129,13 +1361,18 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(bitVec[1]);
             pfAttribs.push_back(WGL_BLUE_BITS_ARB);
             pfAttribs.push_back(bitVec[2]);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
             pfAttribs.push_back(AGL_GREEN_SIZE);
             pfAttribs.push_back(bitVec[1]);
             pfAttribs.push_back(AGL_BLUE_SIZE);
             pfAttribs.push_back(bitVec[2]);
+# else
+            pfAttribs.push_back(kCGLPFAColorSize);
+            pfAttribs.push_back(bitVec[0] + bitVec[1] + bitVec[2]);
+# endif
 #else
             pfAttribs.push_back(GLX_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
@@ -1175,7 +1412,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(bitVec[2]);
             pfAttribs.push_back(WGL_ALPHA_BITS_ARB);
             pfAttribs.push_back(bitVec[3]);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0 
             pfAttribs.push_back(AGL_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
             pfAttribs.push_back(AGL_GREEN_SIZE);
@@ -1184,6 +1422,14 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(bitVec[2]);
             pfAttribs.push_back(AGL_ALPHA_SIZE);
             pfAttribs.push_back(bitVec[3]);
+# else
+            pfAttribs.push_back(kCGLPFAColorSize);
+            pfAttribs.push_back(bitVec[0] + bitVec[1] + bitVec[2] + bitVec[3]);
+            //pfAttribs.push_back(kCGLPFAAlphaSize);
+            //pfAttribs.push_back(bitVec[3]);
+            // printf("Color size: %d\n", bitVec[0] + bitVec[1] + bitVec[2] + bitVec[3]);
+
+# endif
 #else
             pfAttribs.push_back(GLX_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
@@ -1212,9 +1458,14 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #ifdef _WIN32
             pfAttribs.push_back(WGL_RED_BITS_ARB);
             pfAttribs.push_back(bitVec[0]);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
+# else
+            pfAttribs.push_back(kCGLPFAColorSize);
+            pfAttribs.push_back(bitVec[0]);
+# endif
 #else
             pfAttribs.push_back(GLX_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
@@ -1244,11 +1495,16 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(bitVec[0]);
             pfAttribs.push_back(WGL_GREEN_BITS_ARB);
             pfAttribs.push_back(bitVec[1]);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
             pfAttribs.push_back(AGL_GREEN_SIZE);
             pfAttribs.push_back(bitVec[1]);
+# else
+            pfAttribs.push_back(kCGLPFAColorSize);
+            pfAttribs.push_back(bitVec[0] + bitVec[1]);
+# endif
 #else
             pfAttribs.push_back(GLX_RED_SIZE);
             pfAttribs.push_back(bitVec[0]);
@@ -1277,8 +1533,12 @@ void RenderTexture::_ParseModeString(const char *modeString,
             bHasStencil = true;
 #ifdef _WIN32
             pfAttribs.push_back(WGL_STENCIL_BITS_ARB);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_STENCIL_SIZE);
+# else
+            pfAttribs.push_back(kCGLPFAStencilSize);
+# endif
 #else
             pfAttribs.push_back(GLX_STENCIL_SIZE);
 #endif
@@ -1296,10 +1556,15 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(1);
             pfAttribs.push_back(WGL_SAMPLES_ARB);
             pfAttribs.push_back(strtol(kv.second.c_str(), 0, 10));
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_SAMPLE_BUFFERS_ARB);
             pfAttribs.push_back(1);
             pfAttribs.push_back(AGL_SAMPLES_ARB);
+# else
+            pfAttribs.push_back(kCGLPFAMultisample);
+            pfAttribs.push_back(kCGLPFASamples);
+# endif
             pfAttribs.push_back(strtol(kv.second.c_str(), 0, 10));
 #else
 	    pfAttribs.push_back(GLX_SAMPLE_BUFFERS_ARB);
@@ -1316,9 +1581,13 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #ifdef _WIN32
             pfAttribs.push_back(WGL_DOUBLE_BUFFER_ARB);
             pfAttribs.push_back(true);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_DOUBLEBUFFER);
             pfAttribs.push_back(True);
+# else
+            pfAttribs.push_back(kCGLPFADoubleBuffer);
+# endif
 #else
             pfAttribs.push_back(GLX_DOUBLEBUFFER);
             pfAttribs.push_back(True);
@@ -1330,8 +1599,12 @@ void RenderTexture::_ParseModeString(const char *modeString,
         {
 #ifdef _WIN32
             pfAttribs.push_back(WGL_AUX_BUFFERS_ARB);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
             pfAttribs.push_back(AGL_AUX_BUFFERS);
+# else
+            pfAttribs.push_back(kCGLPFAAuxBuffers);
+# endif
 #else
             pfAttribs.push_back(GLX_AUX_BUFFERS);
 #endif
@@ -1346,7 +1619,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
         {            
             _bIsTexture = true;
             
-            if ((kv.first == "texRECT") && GL_NV_texture_rectangle)
+            if ((kv.first == "texRECT") && (GL_NV_texture_rectangle ||
+                                            GL_EXT_texture_rectangle))
             {
                 _bRectangle = true;
                 bBindRECT = true;
@@ -1367,7 +1641,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
         {
             _bIsDepthTexture = true;
             
-            if ((kv.first == "depthTexRECT") && GL_NV_texture_rectangle)
+            if ((kv.first == "depthTexRECT") && (GL_NV_texture_rectangle ||
+                                                 GL_EXT_texture_rectangle))
             {
                 _bRectangle = true;
                 bBindRECT = true;
@@ -1439,8 +1714,12 @@ void RenderTexture::_ParseModeString(const char *modeString,
 
 #ifdef _WIN32
     pfAttribs.push_back(WGL_DEPTH_BITS_ARB);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
     pfAttribs.push_back(AGL_DEPTH_SIZE);
+# else
+    pfAttribs.push_back(kCGLPFADepthSize);
+# endif
 #else
     pfAttribs.push_back(GLX_DEPTH_SIZE);
 #endif
@@ -1451,8 +1730,12 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #ifdef _WIN32
         pfAttribs.push_back(WGL_STENCIL_BITS_ARB);
         pfAttribs.push_back(0);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+# if 0
         pfAttribs.push_back(AGL_STENCIL_SIZE);
+# else
+        pfAttribs.push_back(kCGLPFAStencilSize);
+# endif
         pfAttribs.push_back(0);
 #else
         pfAttribs.push_back(GLX_STENCIL_SIZE);
@@ -1506,7 +1789,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pbAttribs.push_back(WGL_MIPMAP_TEXTURE_ARB);
             pbAttribs.push_back(true);
         }
-
+#elif defined(__MACH__)
 #elif defined(DEBUG) || defined(_DEBUG)
         SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: Render to Texture not "
                "supported in Linux or MacOS");
@@ -1530,7 +1813,11 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pfAttribs.push_back(WGL_PIXEL_TYPE_ARB);
             pfAttribs.push_back(WGL_TYPE_RGBA_FLOAT_ATI);
         }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+        // if (GL_MACH_float_pixels) // FIXME
+        {
+            pfAttribs.push_back(kCGLPFAColorFloat);
+        }
 #else
         if (GLX_NV_float_buffer)
         {
@@ -1640,7 +1927,100 @@ void RenderTexture::_ParseModeString(const char *modeString,
                         "(r=1,rg=2,rgb=3,rgba=4): " << _iNumComponents);
                 break;
             }
-        }         
+        }
+#elif defined(__MACH__)
+        if (_bFloat)
+        {
+                       /*
+            //if (WGLEW_NV_float_buffer)       // FIXME
+            {
+                switch(_iNumComponents)
+                {
+                case 1:
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_R_NV);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_FLOAT_R_NV);
+                    break;
+                case 2:
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RG_NV);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_FLOAT_RG_NV);
+                    break;
+                case 3:
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGB_NV);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_FLOAT_RGB_NV);
+                    break;
+                case 4:
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RECTANGLE_FLOAT_RGBA_NV);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_FLOAT_RGBA_NV);
+                    break;
+                default:
+                    fprintf(stderr,
+                            "RenderTexture Warning: Bad number of components "
+                            "(r=1,rg=2,rgb=3,rgba=4): %d.\n",
+                            _iNumComponents);
+                    break;
+                }
+           }
+            else
+            {
+                if (4 == _iNumComponents)
+                {
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RGBA_ARB);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_RGBA_ARB);
+                }
+                else
+                {
+                    // standard ARB_render_texture only supports 3 or 4 channels
+                    pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RGB_ARB);
+                    pfAttribs.push_back(true);
+
+                    pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                    pbAttribs.push_back(WGL_TEXTURE_RGB_ARB);
+                }
+            }
+            */
+        }
+        else
+        {
+                       /*
+            switch(_iNumComponents)
+            {
+            case 3:
+                pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RGB_ARB);
+                pfAttribs.push_back(true);
+
+                pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                pbAttribs.push_back(WGL_TEXTURE_RGB_ARB);
+                break;
+            case 4:
+                pfAttribs.push_back(WGL_BIND_TO_TEXTURE_RGBA_ARB);
+                pfAttribs.push_back(true);
+
+                pbAttribs.push_back(WGL_TEXTURE_FORMAT_ARB);
+                pbAttribs.push_back(WGL_TEXTURE_RGBA_ARB);
+                break;
+            default:
+                fprintf(stderr,
+                        "RenderTexture Warning: Bad number of components "
+                        "(r=1,rg=2,rgb=3,rgba=4): %d.\n", _iNumComponents);
+                break;
+            }
+                       */
+        }
 #elif defined(DEBUG) || defined(_DEBUG)
         SG_LOG(SG_GL, SG_ALERT, 
                 "RenderTexture Error: Render to Texture not supported in "
@@ -1667,6 +2047,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
             pbAttribs.push_back(WGL_DEPTH_TEXTURE_FORMAT_NV);
             pbAttribs.push_back(WGL_TEXTURE_DEPTH_COMPONENT_NV);
         }
+#elif defined(__MACH__)
 #elif defined(DEBUG) || defined(_DEBUG)
         SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: Render to Texture not supported in "
                "Linux or MacOS");
@@ -1819,7 +2200,8 @@ bool RenderTexture::_VerifyExtensions()
         }
         SetLastError(0);
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    // FIXME! Check extensions!
 #else
     Display* dpy = glXGetCurrentDisplay();
     int minor = 0, major = 0;
@@ -1902,6 +2284,8 @@ bool RenderTexture::_InitializeTextures()
     {
         if (_bRectangle && GL_NV_texture_rectangle)
             _iTextureTarget = GL_TEXTURE_RECTANGLE_NV;
+        else if (_bRectangle && GL_EXT_texture_rectangle)
+            _iTextureTarget = GL_TEXTURE_RECTANGLE_EXT;
         else
             _iTextureTarget = GL_TEXTURE_2D;
     }
@@ -2099,6 +2483,21 @@ void RenderTexture::_MaybeCopyBuffer()
         }
     }
     
+#elif defined(__MACH__)
+    if (RT_COPY_TO_TEXTURE == _eUpdateMode)
+    {
+       if (_bIsTexture)
+       {
+         glBindTexture(_iTextureTarget, _iTextureID);
+         glCopyTexSubImage2D(_iTextureTarget, 0, 0, 0, 0, 0, _iWidth, _iHeight);
+       }
+       if (_bIsDepthTexture)
+       {
+         glBindTexture(_iTextureTarget, _iDepthTextureID);
+         assert(_bHasARBDepthTexture);
+         glCopyTexSubImage2D(_iTextureTarget, 0, 0, 0, 0, 0, _iWidth, _iHeight);
+       }
+    }
 #else
     if (_bIsTexture)
     {
@@ -2178,7 +2577,14 @@ bool RenderTexture::_MakeCurrent()
         _wglGetLastError();
         return false;
     }
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    CGLError err;
+
+    if (err = CGLSetCurrentContext(_hGLContext))
+    {
+        _cglCheckError(err);
+        return false;
+    }
 #else
     if (false == glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext)) 
     {
@@ -2230,7 +2636,10 @@ RenderTexture::RenderTexture(int width, int height,
     _hPBuffer(NULL),
     _hPreviousDC(0),
     _hPreviousContext(0),
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    _hGLContext(NULL),
+    _hPBuffer(NULL),
+    _hPreviousContext(NULL),
 #else
     _pDisplay(NULL),
     _hGLContext(NULL),
@@ -2317,7 +2726,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     }
     if (_bIsTexture)
     {
-        if (GL_NV_texture_rectangle && 
+        if ((GL_NV_texture_rectangle || GL_EXT_texture_rectangle) && 
             ((!IsPowerOfTwo(_iWidth) || !IsPowerOfTwo(_iHeight))
               || iRBits >= 16 || iGBits > 16 || iBBits > 16 || iABits >= 16))
             mode.append("texRECT ");
@@ -2326,7 +2735,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     }
     if (_bIsDepthTexture)
     {
-        if (GL_NV_texture_rectangle && 
+        if ((GL_NV_texture_rectangle || GL_EXT_texture_rectangle) && 
             ((!IsPowerOfTwo(_iWidth) || !IsPowerOfTwo(_iHeight))
               || iRBits >= 16 || iGBits > 16 || iBBits > 16 || iABits >= 16))
             mode.append("texRECT ");
@@ -2347,7 +2756,11 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     
     _pbufferAttribs.push_back(WGL_PBUFFER_LARGEST_ARB);
     _pbufferAttribs.push_back(true);
-#elif defined( __APPLE__ )
+#elif defined( __MACH__ )
+    //_pixelFormatAttribs.push_back(kCGLPFANoRecovery);
+    _pixelFormatAttribs.push_back(kCGLPFAAccelerated);
+    _pixelFormatAttribs.push_back(kCGLPFAWindow);
+    _pixelFormatAttribs.push_back(kCGLPFAPBuffer);
 #else
     _pixelFormatAttribs.push_back(GLX_RENDER_TYPE_SGIX);
     _pixelFormatAttribs.push_back(GLX_RGBA_BIT_SGIX);
@@ -2360,6 +2773,8 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
 #ifdef _WIN32
     _pixelFormatAttribs.push_back(0);
     _pbufferAttribs.push_back(0);
+#elif defined(__MACH__)
+    _pixelFormatAttribs.push_back(0);
 #else
     _pixelFormatAttribs.push_back(None);
 #endif

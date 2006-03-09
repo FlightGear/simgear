@@ -27,6 +27,7 @@
 // Original RenderTexture code: Mark J. Harris
 // Original Render-to-depth-texture support: Thorsten Scheuermann
 // Linux Copy-to-texture: Eric Werness
+// OS X: Alexander Powell (someone please help)
 // Various Bug Fixes: Daniel (Redge) Sperl 
 //                    Bill Baxter
 //
@@ -45,18 +46,18 @@
  * Changelog:
  *
  * Jan. 2005, Removed GLEW dependencies, Erik Hofman
- *            Added MacOS X support
+ * Mar. 2006, Added MAC OS X support, Alexander Powell
  */
 #include <simgear/compiler.h>
 
-#if !defined( _WIN32 ) && !defined( __APPLE__ )
+#if !defined( _WIN32 ) && !defined( __MACH__ )
 #  include <X11/Xlib.h>
 #endif
 #include SG_GL_H
 #ifndef _WIN32
 #  include SG_GLX_H
 #endif
-#ifdef __APPLE__
+#ifdef __MACH__
 #  ifndef None
 #     define None false
 #  endif
@@ -346,8 +347,11 @@ protected: // data
     
     HDC          _hPreviousDC;
     HGLRC        _hPreviousContext;
-#elif defined( __APPLE__ )
-    
+#elif defined( __MACH__ )
+    CGLContextObj      _hGLContext;
+    CGLPBufferObj   _hPBuffer;
+   
+    CGLContextObj      _hPreviousContext;
 #else
     Display     *_pDisplay;
     GLXContext   _hGLContext;

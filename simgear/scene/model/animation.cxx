@@ -1123,8 +1123,8 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
         SGPropertyNode_ptr props, const SGPath &texture_path)
     : SGAnimation(props, new ssgBranch),
-    _prop_root(prop_root),
     _last_condition(false),
+    _prop_root(prop_root),
     _prop_base(""),
     _texture_base(texture_path),
     _cached_material(0),

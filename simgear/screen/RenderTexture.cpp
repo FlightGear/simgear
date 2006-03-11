@@ -523,9 +523,9 @@ bool RenderTexture::Initialize(int width, int height,
         }
         if ( iNumFormats <= 0 )
         {
-            fprintf(stderr,
-                    "RenderTexture Error: Couldn't find a suitable "+
-                    "pixel format.\n");
+            SG_LOG(SG_GL, SG_ALERT,
+                    "RenderTexture Error: Couldn't find a suitable "
+                    "pixel format.");
             return false;
         }
 

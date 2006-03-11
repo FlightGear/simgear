@@ -57,14 +57,6 @@
 #ifndef _WIN32
 #  include SG_GLX_H
 #endif
-#ifdef __MACH__
-#  ifndef None
-#     define None false
-#  endif
-#  ifndef True
-#     define True true
-#  endif
-#endif 
 
 #include <string>
 #include <vector>

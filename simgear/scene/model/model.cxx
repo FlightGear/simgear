@@ -339,7 +339,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 
   if (data) {
-    model->setUserData(data);
+    alignmainmodel->setUserData(data);
     data->modelLoaded(path, &props, model);
   }
                                 // Load animations

@@ -339,9 +339,8 @@ sgLoad3DModel( const string &fg_root, const string &path,
   }
 
   if (data) {
-    //data->modelLoaded(path, &props, model);
-    //model->setUserData(data);
-    delete data;
+    model->setUserData(data);
+    data->modelLoaded(path, &props, model);
   }
                                 // Load animations
   set<ssgBranch *> ignore_branches;

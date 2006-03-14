@@ -1185,9 +1185,9 @@ private:
 
   class hash_table;
 
+  int _index;
   string _name;
   mutable string _display_name;
-  int _index;
   /// To avoid cyclic reference counting loops this shall not be a reference
   /// counted pointer
   SGPropertyNode * _parent;

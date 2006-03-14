@@ -91,12 +91,12 @@ bool SGBbCache::allocTextureMemory(int cacheCount, int textureDimension) {
 
 SGBbCache::SGBbCache(void) :
 	bbListCount(0),
-	cacheSizeKb(0),
 	textureWH(0),
+	cacheSizeKb(0),
 	builtBBCount(0),
+	frameNumber(0),
 	rt(0),
 	rtAvailable(false),
-	frameNumber(0),
 	maxImpostorRegenFrame(20)
 {
 }

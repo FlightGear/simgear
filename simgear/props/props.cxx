@@ -911,7 +911,7 @@ SGPropertyNode_ptr
 SGPropertyNode::removeChild (int pos, bool keep)
 {
   SGPropertyNode_ptr node;
-  if (pos < 0 || pos >= _children.size())
+  if (pos < 0 || pos >= (int)_children.size())
     return node;
 
   vector<SGPropertyNode_ptr>::iterator it = _children.begin();

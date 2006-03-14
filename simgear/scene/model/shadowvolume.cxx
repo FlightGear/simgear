@@ -905,7 +905,6 @@ void SGShadowVolume::deleteOccluderFromTile(ssgBranch *tile) {
 }
 
 void SGShadowVolume::deleteOccluder(ssgBranch *occluder) {
-	ssgBranch *branch = occluder;
 	// skip first node and go to first transform (placement)
 	while( occluder && !occluder->isA(ssgTypeTransform()))
 		occluder = (ssgBranch *) occluder->getKid(0);
@@ -919,9 +918,6 @@ void SGShadowVolume::deleteOccluder(ssgBranch *occluder) {
 }
 
 void SGShadowVolume::addOccluder(ssgBranch *occluder, OccluderType occluder_type, ssgBranch *tile) {
-
-	ssgBranch *branch = occluder;
-
 	// skip first node and go to first transform (placement)
 	while( occluder && !occluder->isA(ssgTypeTransform()))
 		occluder = (ssgBranch *) occluder->getKid(0);

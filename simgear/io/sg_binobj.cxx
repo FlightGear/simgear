@@ -46,7 +46,7 @@ SG_USING_STD( string );
 SG_USING_STD( vector );
 
 
-enum {
+enum sgObjectTypes {
     SG_BOUNDING_SPHERE = 0,
 
     SG_VERTEX_LIST = 1,
@@ -59,19 +59,19 @@ enum {
     SG_TRIANGLE_FACES = 10,
     SG_TRIANGLE_STRIPS = 11,
     SG_TRIANGLE_FANS = 12
-} sgObjectTypes;
+};
 
-enum {
+enum sgIndexTypes {
     SG_IDX_VERTICES =  0x01,
     SG_IDX_NORMALS =   0x02,
     SG_IDX_COLORS =    0x04,
     SG_IDX_TEXCOORDS = 0x08
-} sgIndexTypes;
+};
 
-enum {
+enum sgPropertyTypes {
     SG_MATERIAL = 0,
     SG_INDEX_TYPES = 1
-} sgPropertyTypes;
+};
 
 
 class sgSimpleBuffer {

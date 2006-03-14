@@ -151,6 +151,7 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
             errno = 0;
         }
     }
+    fclose(infile);
 }
 
 SGTimeZoneContainer::~SGTimeZoneContainer()

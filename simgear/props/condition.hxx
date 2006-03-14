@@ -51,7 +51,7 @@ public:
   virtual ~SGPropertyCondition ();
   virtual bool test () const { return _node->getBoolValue(); }
 private:
-  const SGPropertyNode * _node;
+  SGConstPropertyNode_ptr _node;
 };
 
 
@@ -133,9 +133,9 @@ public:
 private:
   Type _type;
   bool _reverse;
-  const SGPropertyNode * _left_property;
-  const SGPropertyNode * _right_property;
-  const SGPropertyNode * _right_value;
+  SGConstPropertyNode_ptr _left_property;
+  SGConstPropertyNode_ptr _right_property;
+  SGConstPropertyNode_ptr _right_value;
 };
 
 

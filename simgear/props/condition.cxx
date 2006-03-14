@@ -235,7 +235,6 @@ SGComparisonCondition::SGComparisonCondition (Type type, bool reverse)
 
 SGComparisonCondition::~SGComparisonCondition ()
 {
-  delete _right_value;
 }
 
 bool
@@ -267,7 +266,6 @@ void
 SGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
                                          const char * propname )
 {
-  delete _right_value;
   _right_value = 0;
   _right_property = prop_root->getNode(propname, true);
 }
@@ -276,7 +274,6 @@ void
 SGComparisonCondition::setRightValue (const SGPropertyNode *node)
 {
   _right_property = 0;
-  delete _right_value;
   _right_value = new SGPropertyNode(*node);
 }
 

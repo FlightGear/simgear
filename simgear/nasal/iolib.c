@@ -158,12 +158,12 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
     naRef result;
     struct naIOGhost* g = argc==1 ? ioghost(args[0]) : 0;
     int i=0, sz = 128;
-    char* buf;
+    char c, *buf;
     if(!g || g->type != &naStdIOType)
         naRuntimeError(ctx, "bad argument to readln()");
     buf = naAlloc(sz);
     while(1) {
-        char c = getcguard(ctx, g->handle, buf);
+        c = getcguard(ctx, g->handle, buf);
         if(c == EOF || c == '\n') break;
         if(c == '\r') {
             char c2 = getcguard(ctx, g->handle, buf);

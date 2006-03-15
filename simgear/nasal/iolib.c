@@ -174,7 +174,7 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
         buf[i++] = c;
         if(i >= sz) buf = naRealloc(buf, sz *= 2);
     }
-    result = naStr_fromdata(naNewString(ctx), buf, i);
+    result = c == EOF ? naNil() : naStr_fromdata(naNewString(ctx), buf, i);
     naFree(buf);
     return result;
 }

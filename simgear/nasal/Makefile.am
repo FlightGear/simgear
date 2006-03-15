@@ -13,6 +13,8 @@ libsgnasal_a_SOURCES = \
 	lex.c \
 	lib.c \
 	mathlib.c \
+	iolib.c \
+	iolib.h \
 	misc.c \
 	nasal.h \
 	parse.c parse.h \

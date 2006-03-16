@@ -79,7 +79,8 @@ static void ghostDestroy(void* g)
 
 static void ioclose(naContext c, void* f)
 {
-    if(fclose(f) != 0 && c) naRuntimeError(c, strerror(errno));
+    if(f)
+        if(fclose(f) != 0 && c) naRuntimeError(c, strerror(errno));
 }
 
 static int ioread(naContext c, void* f, char* buf, unsigned int len)

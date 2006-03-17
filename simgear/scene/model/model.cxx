@@ -319,8 +319,15 @@ sgLoad3DModel( const string &fg_root, const string &path,
                         node->getFloatValue("offsets/z-m", 0.0));
     align->setTransform(res_matrix);
 
-    ssgBranch * kid = sgLoad3DModel( fg_root, node->getStringValue("path"),
-                                     prop_root, sim_time_sec, load_panel );
+    ssgBranch * kid;
+    const char * submodel = node->getStringValue("path");
+    try {
+      kid = sgLoad3DModel( fg_root, submodel, prop_root, sim_time_sec, load_panel );
+
+    } catch (const sg_throwable &t) {
+      SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
+      throw;
+    }
     align->addKid(kid);
     align->setName(node->getStringValue("name", ""));
     model->addKid(align);
@@ -340,7 +347,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
 
   if (data) {
     alignmainmodel->setUserData(data);
-    data->modelLoaded(path, &props, model);
+    data->modelLoaded(path, &props, alignmainmodel);
   }
                                 // Load animations
   set<ssgBranch *> ignore_branches;

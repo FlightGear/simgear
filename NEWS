@@ -1,3 +1,27 @@
+New in 0.3.10-pre1
+* March 20, 2006
+
+* Add a small accessor function to expose local timezone offset.
+* Improved exception handling and made output more helpful in various places.
+* Better pbuffer runtime detection.
+* Add directory creation capability to file/path library.
+* Added a basic reference counting class to improve robustness of
+  memory management in places.  Use this for all scenegraph
+  references, sgmaterial references, sgmatmodel references, and
+  sgsoundsample references.
+* Add support for point sprites.
+* Add a new vector library and integrate that with improved coordinate
+  system conversion code.
+* Mutex locking and cleanup improvements in the threading abstraction
+  library.
+* Add MacOS RenderTexture support.
+* Add a Nasal based io libarary that is not activated by default.
+
+* Various platform related bug fixes.
+* Various compiler related bug/warning fixes.
+* Clean up some things that triggered valgrind warnings.
+
+
 New in 0.3.9
 * November 17, 2005
 

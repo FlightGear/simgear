@@ -107,20 +107,18 @@ static naRef streq(naContext c, naRef me, int argc, naRef* args)
 static naRef f_cmp(naContext c, naRef me, int argc, naRef* args)
 {
     char *a, *b;
-    int i, len;
+    int i, alen, blen;
     if(argc < 2 || !naIsString(args[0]) || !naIsString(args[1]))
         naRuntimeError(c, "bad argument to cmp");
     a = naStr_data(args[0]);
+    alen = naStr_len(args[0]);
     b = naStr_data(args[1]);
-    len = naStr_len(args[0]);
-    if(naStr_len(args[1]) < len)
-        len = naStr_len(args[1]);
-    for(i=0; i<len; i++) {
-        int diff = a - b;
-        if(diff < 0) return naNum(-1);
-        else if(diff > 0) return naNum(1);
+    blen = naStr_len(args[1]);
+    for(i=0; i<alen && i<blen; i++) {
+        int diff = a[i] - b[i];
+        if(diff) return naNum(diff < 0 ? -1 : 1);
     }
-    return naNum(0);
+    return naNum(alen == blen ? 0 : (alen < blen ? -1 : 1));
 }
 
 static naRef substr(naContext c, naRef me, int argc, naRef* args)
@@ -228,14 +226,14 @@ static naRef f_die(naContext c, naRef me, int argc, naRef* args)
 // until it fits.  Returned buffer should be freed by the caller.
 char* dosprintf(char* f, ...)
 {
-    int l;
     char* buf;
     va_list va;
-    int len = 16;
+    int olen, len = 16;
     while(1) {
         buf = naAlloc(len);
         va_start(va, f);
-        if((l=vsnprintf(buf, len, f, va)) < len && l!=-1) {
+        olen = vsnprintf(buf, len, f, va);
+        if(olen >= 0 && olen < len) {
             va_end(va);
             return buf;
         }

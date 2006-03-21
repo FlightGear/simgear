@@ -69,7 +69,8 @@ static naRef subvec(naContext c, naRef me, int argc, naRef* args)
         len = (int)nlen.num;
     if(!naIsVector(v) || start < 0 || start >= naVec_size(v) || len < 0)
         return naNil();
-    if(len > naVec_size(v) - start) len = naVec_size(v) - start;
+    if(naIsNil(nlen) || len > naVec_size(v) - start)
+        len = naVec_size(v) - start;
     result = naNewVector(c);
     naVec_setsize(result, len);
     for(i=0; i<len; i++)

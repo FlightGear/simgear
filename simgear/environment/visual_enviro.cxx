@@ -85,7 +85,7 @@ static list_of_lightning lightnings;
 
 SGEnviro sgEnviro;
 
-SGEnviro::SGEnviro(void) :
+SGEnviro::SGEnviro() :
 	view_in_cloud(false),
 	precipitation_enable_state(true),
 	precipitation_density(100.0),
@@ -246,7 +246,7 @@ void SGEnviro::setLight(sgVec4 adj_fog_color) {
 	}
 }
 
-void SGEnviro::callback_cloud(float heading, float alt, float radius, int familly, float dist, int cloudId) {
+void SGEnviro::callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId) {
 	// send data to wx radar
 	// compute turbulence
 	// draw precipitation
@@ -256,7 +256,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 	// http://www.pilotfriend.com/flight_training/weather/THUNDERSTORM%20HAZARDS1.htm
 	double turbulence = 0.0;
 	if( dist < radius * radius * 2.25f ) {
-		switch(familly) {
+		switch(family) {
 			case SGNewCloud::CLFamilly_st:
 				turbulence = 0.2;
 				break;
@@ -291,7 +291,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 	// convert to LWC for radar (experimental)
 	// http://www-das.uwyo.edu/~geerts/cwx/notes/chap08/moist_cloud.html
 	double LWC = 0.0;
-	switch(familly) {
+	switch(family) {
 		case SGNewCloud::CLFamilly_st:
 			LWC = 0.29;
 			break;
@@ -325,7 +325,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 	// NB:data valid only from cockpit view
 
 	// spawn a new lightning
-	if(lightning_enable_state && min_time_before_lt <= 0.0 && (familly == SGNewCloud::CLFamilly_cb) &&
+	if(lightning_enable_state && min_time_before_lt <= 0.0 && (family == SGNewCloud::CLFamilly_cb) &&
 		dist < 15000.0 * 15000.0 && sg_random() > 0.9f) {
 		double lat, lon;
 		Point3D orig, dest;
@@ -344,7 +344,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int famill
 //		min_time_before_lt = 5.0;
 	}
 	if( (alt - radius * 0.1) > precipitation_max_alt )
-		switch(familly) {
+		switch(family) {
 			case SGNewCloud::CLFamilly_st:
 			case SGNewCloud::CLFamilly_cu:
 			case SGNewCloud::CLFamilly_cb:
@@ -361,7 +361,6 @@ list_of_SGWxRadarEcho *SGEnviro::get_radar_echo(void) {
 
 // precipitation rendering code
 void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, double rain_norm, double speed) {
-
 	sgVec3 light;
 	sgVec3 min_light = {0.35, 0.35, 0.35};
 	sgAddVec3( light, fog_color, min_light );
@@ -409,7 +408,24 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 	glEnd();
 }
 
-void SGEnviro::drawRain(double pitch, double roll, double heading, double speed, double rain_norm) {
+void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed, double rain_norm) {
+
+#if 0
+	static int debug_period = 0;
+	if (debug_period++ == 50) {
+		debug_period = 0;
+		cout << "drawRain(" 
+			<< pitch << ", " 
+			<< roll  << ", " 
+			<< heading << ", " 
+			<< hspeed << ", " 
+			<< rain_norm << ");"
+			//" angle = " << angle 
+			//<< " raindrop(KTS) = " << raindrop_speed_kts
+			<< endl;
+	}
+#endif
+
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -431,21 +447,19 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double speed,
 	double raindrop_speed_kts 
 		= (5.0 + rain_norm*15.0) * SG_MPH_TO_MPS * SG_MPS_TO_KT;
 
-	float angle = atanf(speed / raindrop_speed_kts) * SG_RADIANS_TO_DEGREES;
-	// We assume that the speed is HORIZONTAL airspeed here!!! XXX
-	// DOCUMENT THE CHANGE IN THE PARAMETER speed MEANING BY RENAMING IT!!!
+	float angle = atanf(hspeed / raindrop_speed_kts) * SG_RADIANS_TO_DEGREES;
 	glPushMatrix();
-		// the cone rotate with speed
+		// the cone rotate with hspeed
 		angle = -pitch - angle;
-		glRotatef(heading, 0.0, 1.0, 0.0);
 		glRotatef(roll, 0.0, 0.0, 1.0);
+		glRotatef(heading, 0.0, 1.0, 0.0);
 		glRotatef(angle, 1.0, 0.0, 0.0);
 
 		// up cone
-		DrawCone2(15.0, 30.0, slice_count, true, rain_norm, speed);
+		DrawCone2(15.0, 30.0, slice_count, true, rain_norm, hspeed);
 		// down cone (usually not visible)
 		if(angle > 0.0 || heading != 0.0)
-			DrawCone2(15.0, -30.0, slice_count, false, rain_norm, speed);
+			DrawCone2(15.0, -30.0, slice_count, false, rain_norm, hspeed);
 
 	glPopMatrix();
 
@@ -460,10 +474,10 @@ void SGEnviro::set_soundMgr(SGSoundMgr *mgr) {
 	soundMgr = mgr;
 }
 
-void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double speed) {
+void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double hspeed) {
 	if( precipitation_enable_state && rain_norm > 0.0)
 	  if( precipitation_max_alt >= last_alt )
-		drawRain(pitch, roll, heading, speed, rain_norm);
+		drawRain(pitch, roll, heading, hspeed, rain_norm);
 }
 
 

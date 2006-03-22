@@ -107,12 +107,12 @@ public:
      * @param heading direction of cloud in radians
      * @param alt asl of cloud in meters
      * @param radius radius of cloud in meters
-     * @param familly cloud familly
+     * @param family cloud family
      * @param dist  squared dist to cloud in meters
      */
-	void callback_cloud(float heading, float alt, float radius, int familly, float dist, int cloudId);
+	void callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId);
 
-	void drawRain(double pitch, double roll, double heading, double speed, double rain_norm);
+	void drawRain(double pitch, double roll, double heading, double hspeed, double rain_norm);
     /**
      * Draw rain or snow precipitation around the viewer.
      * @param rain_norm rain normalized intensity given by metar class
@@ -120,10 +120,10 @@ public:
      * @param hail_norm hail normalized intensity given by metar class
      * @param pitch pitch rotation of viewer
      * @param roll roll rotation of viewer
-     * @param speed moving speed of viewer in kt
+     * @param hspeed moving horizontal speed of viewer in kt
      */
 	void drawPrecipitation(double rain_norm, double snow_norm, double hail_norm,
-							double pitch, double roll, double heading, double speed);
+							double pitch, double roll, double heading, double hspeed);
 
     /**
      * Draw the lightnings spawned by cumulo nimbus.
@@ -186,6 +186,12 @@ public:
 	float get_precipitation_density(void) const;
 	bool get_precipitation_enable_state(void) const;
 
+	/** 
+	 * Decrease the precipitation density to the given percentage.
+	 * (Only show the given percentage of rain streaks etc.)
+	 * Default precipitation density upon construction is 100.0.
+	 * @param density 0.0 to 100.0
+	 */
 	void set_precipitation_density(float density);
     /**
      * Enable or disable the rendering of precipitation around the viewer.

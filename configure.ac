@@ -409,7 +409,6 @@ AM_CONFIG_HEADER(simgear/simgear_config.h)
 AC_CONFIG_FILES([ \
 	Makefile \
 	SimGear.spec \
-	src-libs/Makefile \
 	simgear/Makefile \
 	simgear/version.h \
 	simgear/compatibility/Makefile \

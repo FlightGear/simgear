@@ -7,7 +7,7 @@ EXTRA_DIST = \
 	SimGear.dsp \
 	SimGear.dsw
 
-SUBDIRS	= src-libs simgear
+SUBDIRS	= simgear
 
 dist-hook:
 	(cd $(top_srcdir); $(HOME)/Projects/FlightGear/admin/am2dsp.pl)

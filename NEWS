@@ -1,5 +1,5 @@
-New in 0.3.10-pre1
-* March 20, 2006
+New in 0.3.10-pre2
+* March 23, 2006
 
 * Add a small accessor function to expose local timezone offset.
 * Improved exception handling and made output more helpful in various places.
@@ -10,6 +10,7 @@ New in 0.3.10-pre1
   references, sgmaterial references, sgmatmodel references, and
   sgsoundsample references.
 * Add support for point sprites.
+* Updates to rain cone rendering.
 * Add a new vector library and integrate that with improved coordinate
   system conversion code.
 * Mutex locking and cleanup improvements in the threading abstraction
@@ -20,6 +21,7 @@ New in 0.3.10-pre1
 * Various platform related bug fixes.
 * Various compiler related bug/warning fixes.
 * Clean up some things that triggered valgrind warnings.
+* Fix a Nasal cmp() bug.
 
 
 New in 0.3.9

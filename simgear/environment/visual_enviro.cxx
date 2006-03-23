@@ -34,6 +34,7 @@
 #include <simgear/sound/soundmgr_openal.hxx>
 #include <simgear/scene/sky/cloudfield.hxx>
 #include <simgear/scene/sky/newcloud.hxx>
+#include <simgear/props/props.hxx>
 #include "visual_enviro.hxx"
 
 #include <vector>
@@ -50,6 +51,85 @@ typedef struct {
 #define MAX_RAIN_SLICE	200
 static float rainpos[MAX_RAIN_SLICE];
 #define MAX_LT_TREE_SEG	400
+
+#define DFL_MIN_LIGHT 0.35
+sgVec3 SGEnviro::min_light = {DFL_MIN_LIGHT, DFL_MIN_LIGHT, DFL_MIN_LIGHT};
+#define DFL_STREAK_BRIGHT_NEARMOST_LAYER 0.9
+SGfloat SGEnviro::streak_bright_nearmost_layer = DFL_STREAK_BRIGHT_NEARMOST_LAYER;
+#define DFL_STREAK_BRIGHT_FARMOST_LAYER 0.5
+SGfloat SGEnviro::streak_bright_farmost_layer = DFL_STREAK_BRIGHT_FARMOST_LAYER;
+#define DFL_STREAK_PERIOD_MAX 2.5
+SGfloat SGEnviro::streak_period_max = DFL_STREAK_PERIOD_MAX;
+#define DFL_STREAK_PERIOD_CHANGE_PER_KT 0.005
+SGfloat SGEnviro::streak_period_change_per_kt = DFL_STREAK_PERIOD_CHANGE_PER_KT;
+#define DFL_STREAK_PERIOD_MIN 1.0
+SGfloat SGEnviro::streak_period_min = DFL_STREAK_PERIOD_MIN;
+#define DFL_STREAK_LENGTH_MIN 0.03
+SGfloat SGEnviro::streak_length_min = DFL_STREAK_LENGTH_MIN;
+#define DFL_STREAK_LENGTH_CHANGE_PER_KT 0.0005
+SGfloat SGEnviro::streak_length_change_per_kt = DFL_STREAK_LENGTH_CHANGE_PER_KT;
+#define DFL_STREAK_LENGTH_MAX 0.1
+SGfloat SGEnviro::streak_length_max = DFL_STREAK_LENGTH_MAX;
+#define DFL_STREAK_COUNT_MIN 40
+int SGEnviro::streak_count_min = DFL_STREAK_COUNT_MIN;
+#define DFL_STREAK_COUNT_MAX 190
+#if (DFL_STREAK_COUNT_MAX > MAX_RAIN_SLICE)
+#error "Bad default!"
+#endif
+int SGEnviro::streak_count_max = DFL_STREAK_COUNT_MAX;
+#define DFL_CONE_BASE_RADIUS 15.0
+SGfloat SGEnviro::cone_base_radius = DFL_CONE_BASE_RADIUS;
+#define DFL_CONE_HEIGHT 30.0
+SGfloat SGEnviro::cone_height = DFL_CONE_HEIGHT;
+
+
+void SGEnviro::config(const SGPropertyNode* n)
+{
+	if (!n)
+		return;
+
+	const float ml = n->getFloatValue("min-light", DFL_MIN_LIGHT);
+	sgSetVec3(min_light, ml, ml, ml);
+
+	streak_bright_nearmost_layer = n->getFloatValue(
+			"streak-brightness-nearmost-layer",
+			DFL_STREAK_BRIGHT_NEARMOST_LAYER);
+	streak_bright_farmost_layer = n->getFloatValue(
+			"streak-brightness-farmost-layer",
+			DFL_STREAK_BRIGHT_FARMOST_LAYER);
+
+	streak_period_max = n->getFloatValue(
+			"streak-period-max",
+			DFL_STREAK_PERIOD_MAX);
+	streak_period_min = n->getFloatValue(
+			"streak-period-min",
+			DFL_STREAK_PERIOD_MIN);
+	streak_period_change_per_kt = n->getFloatValue(
+			"streak-period-change-per-kt",
+			DFL_STREAK_PERIOD_CHANGE_PER_KT);
+
+	streak_length_max = n->getFloatValue(
+			"streak-length-max",
+			DFL_STREAK_LENGTH_MAX);
+	streak_length_min = n->getFloatValue(
+			"streak-length-min",
+			DFL_STREAK_LENGTH_MIN);
+	streak_length_change_per_kt = n->getFloatValue(
+			"streak-length-change-per-kt",
+			DFL_STREAK_LENGTH_CHANGE_PER_KT);
+
+	streak_count_min = n->getIntValue(
+			"streak-count-min", DFL_STREAK_COUNT_MIN);
+	streak_count_max = n->getIntValue(
+			"streak-count-max", DFL_STREAK_COUNT_MAX);
+	if (streak_count_max > MAX_RAIN_SLICE)
+		streak_count_max = MAX_RAIN_SLICE;
+
+	cone_base_radius = n->getFloatValue(
+			"cone-base-radius", DFL_CONE_BASE_RADIUS);
+	cone_height = n->getFloatValue("cone_height", DFL_CONE_HEIGHT);
+}
+
 
 /**
  * A class to render lightnings.
@@ -362,24 +442,24 @@ list_of_SGWxRadarEcho *SGEnviro::get_radar_echo(void) {
 // precipitation rendering code
 void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, double rain_norm, double speed) {
 	sgVec3 light;
-	sgVec3 min_light = {0.35, 0.35, 0.35};
 	sgAddVec3( light, fog_color, min_light );
 	float da = SG_PI * 2.0f / (float) slices;
 	// low number = faster
-	float speedf = 2.5f - speed / 200.0;
-	if( speedf < 1.0f )
-		speedf = 1.0f;
-	float lenf = 0.03f + speed / 2000.0;
-	if( lenf > 0.10f )
-		lenf = 0.10f;
+	float speedf = streak_period_max - speed * streak_period_change_per_kt;
+	if( speedf < streak_period_min )
+		speedf = streak_period_min;
+	float lenf = streak_length_min + speed * streak_length_change_per_kt;
+	if( lenf > streak_length_max )
+		lenf = streak_length_max;
     float t = fmod((float) elapsed_time, speedf) / speedf;
 //	t = 0.1f;
 	if( !down )
 		t = 1.0f - t;
 	float angle = 0.0f;
-	glColor4f(1.0f, 0.7f, 0.7f, 0.9f);
+	//glColor4f(1.0f, 0.7f, 0.7f, 0.9f); // XXX unneeded? overriden below
 	glBegin(GL_LINES);
-	int rainpos_indice = 0;
+	if (slices >  MAX_RAIN_SLICE)
+		slices = MAX_RAIN_SLICE; // should never happen
 	for( int i = 0 ; i < slices ; i++ ) {
 		float x = cos(angle) * baseRadius;
 		float y = sin(angle) * baseRadius;
@@ -387,12 +467,14 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 		sgVec3 dir = {x, -height, y};
 
 		// rain drops at 2 different speed to simulate depth
-		float t1 = (i & 1 ? t : t + t) + rainpos[rainpos_indice];
+		float t1 = (i & 1 ? t : t + t) + rainpos[i];
 		if(t1 > 1.0f)	t1 -= 1.0f;
 		if(t1 > 1.0f)	t1 -= 1.0f;
 
 		// distant raindrops are more transparent
-		float c = (i & 1 ? t1 * 0.5f : t1 * 0.9f);
+		float c = t1 * (i & 1 ?
+				streak_bright_farmost_layer
+				: streak_bright_nearmost_layer);
 		glColor4f(c * light[0], c * light[1], c * light[2], c);
 		sgVec3 p1, p2;
 		sgScaleVec3(p1, dir, t1);
@@ -402,8 +484,6 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 
 		glVertex3f(p1[0], p1[1] + height, p1[2]);
 		glVertex3f(p2[0], p2[1] + height, p2[2]);
-		if( ++rainpos_indice >= MAX_RAIN_SLICE )
-			rainpos_indice = 0;
 	}
 	glEnd();
 }
@@ -414,13 +494,13 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed
 	static int debug_period = 0;
 	if (debug_period++ == 50) {
 		debug_period = 0;
-		cout << "drawRain(" 
-			<< pitch << ", " 
-			<< roll  << ", " 
-			<< heading << ", " 
-			<< hspeed << ", " 
+		cout << "drawRain("
+			<< pitch << ", "
+			<< roll  << ", "
+			<< heading << ", "
+			<< hspeed << ", "
 			<< rain_norm << ");"
-			//" angle = " << angle 
+			//" angle = " << angle
 			//<< " raindrop(KTS) = " << raindrop_speed_kts
 			<< endl;
 	}
@@ -437,14 +517,15 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed
 	glDisable(GL_LIGHTING);
 
 	int slice_count = static_cast<int>(
-				(40.0 + rain_norm*150.0)* precipitation_density / 100.0);
+			(streak_count_min + rain_norm*(streak_count_max-streak_count_min))
+				* precipitation_density / 100.0);
 
 	// www.wonderquest.com/falling-raindrops.htm says that
 	// Raindrop terminal velocity is 5 to 20mph
 	// Rather than model it accurately (temp, pressure, diameter), and make it
 	// smaller than terminal when closer to the precipitation cloud base,
 	// we interpolate in the 5-20mph range according to rain_norm.
-	double raindrop_speed_kts 
+	double raindrop_speed_kts
 		= (5.0 + rain_norm*15.0) * SG_MPH_TO_MPS * SG_MPS_TO_KT;
 
 	float angle = atanf(hspeed / raindrop_speed_kts) * SG_RADIANS_TO_DEGREES;
@@ -456,10 +537,12 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed
 		glRotatef(angle, 1.0, 0.0, 0.0);
 
 		// up cone
-		DrawCone2(15.0, 30.0, slice_count, true, rain_norm, hspeed);
+		DrawCone2(cone_base_radius, cone_height, 
+				slice_count, true, rain_norm, hspeed);
 		// down cone (usually not visible)
 		if(angle > 0.0 || heading != 0.0)
-			DrawCone2(15.0, -30.0, slice_count, false, rain_norm, hspeed);
+			DrawCone2(cone_base_radius, -cone_height, 
+					slice_count, false, rain_norm, hspeed);
 
 	glPopMatrix();
 

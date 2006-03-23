@@ -90,10 +90,30 @@ private:
 
 	/** a list of all the radar echo. */
 	list_of_SGWxRadarEcho radarEcho;
+	static sgVec3 min_light;
+	static SGfloat streak_bright_nearmost_layer,
+				   streak_bright_farmost_layer,
+				   streak_period_max,
+				   streak_period_change_per_kt,
+				   streak_period_min,
+				   streak_length_min,
+				   streak_length_change_per_kt,
+				   streak_length_max;
+	static int streak_count_min, streak_count_max;
+	static SGfloat cone_base_radius,
+				   cone_height;
 
 public:
 	SGEnviro();
 	~SGEnviro();
+
+	/** Read the config from the precipitation rendering config properties.
+	 * @param precip_rendering_cfgNode "/sim/rendering/precipitation" in fg
+	 * Set from whatever info present in the
+	 * subnodes passed, substituting hardwired defaults for missing fields.
+	 * If NULL is given, do nothing.
+	 */
+	void config(const class SGPropertyNode* precip_rendering_cfgNode);
 
     /**
      * Forward a few states used for renderings.

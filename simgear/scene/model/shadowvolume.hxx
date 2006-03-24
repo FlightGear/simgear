@@ -130,7 +130,7 @@ private:
 	bool	shadowsAC_transp_enabled;
 	bool	use_alpha;
 	bool	canDoAlpha, canDoStencil;
-	SGPropertyNode *sim_rendering;
+	SGPropertyNode_ptr sim_rendering;
 
 	sgVec3 sunPos;
 	int frameNumber;

@@ -117,8 +117,8 @@ private:
              double interval, double delay,
              bool repeat, bool simtime);
 
-    SGPropertyNode* _freezeProp;
-    SGPropertyNode* _rtProp;
+    SGPropertyNode_ptr _freezeProp;
+    SGPropertyNode_ptr _rtProp;
     SGTimerQueue _rtQueue; 
     SGTimerQueue _simQueue;
 };

@@ -780,7 +780,7 @@ bool SGCloudLayer::reposition( sgVec3 p, sgVec3 up, double lon, double lat,
         if ( base[1] > -10.0 && base[1] < 10.0 ) {
             base[1] -= (int)base[1];
         } else {
-            SG_LOG(SG_ASTRO, SG_ALERT,
+            SG_LOG(SG_ASTRO, SG_DEBUG,
                     "Error: base = " << base[0] << "," << base[1] <<
                     " course = " << course << " dist = " << dist );
             base[1] = 0.0;

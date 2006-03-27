@@ -762,26 +762,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\osg\btgloader.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="&quot;..\..\..\OSG_OP_OT-1.0\OpenThreads\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\Producer\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\OpenSceneGraph\include&quot;"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="&quot;..\..\..\OSG_OP_OT-1.0\OpenThreads\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\Producer\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\OpenSceneGraph\include&quot;"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\simgear\ephemeris\celestialBody.cxx"
 				>
 			</File>
@@ -1044,26 +1024,6 @@
 			<File
 				RelativePath="..\..\simgear\io\sg_binobj.cxx"
 				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\osg\sg_binobj_osg.cxx"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="&quot;..\..\..\OSG_OP_OT-1.0\OpenThreads\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\Producer\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\OpenSceneGraph\include&quot;"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories="&quot;..\..\..\OSG_OP_OT-1.0\OpenThreads\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\Producer\include&quot;;&quot;..\..\..\OSG_OP_OT-1.0\OpenSceneGraph\include&quot;"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\simgear\io\sg_file.cxx"

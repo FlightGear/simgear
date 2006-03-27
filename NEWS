@@ -1,5 +1,5 @@
-New in 0.3.10-pre2
-* March 23, 2006
+New in 0.3.10-pre3
+* March 27, 2006
 
 * Add a small accessor function to expose local timezone offset.
 * Improved exception handling and made output more helpful in various places.
@@ -17,11 +17,13 @@ New in 0.3.10-pre2
   library.
 * Add MacOS RenderTexture support.
 * Add a Nasal based io libarary that is not activated by default.
+* Added a set of preliminary MS-VC8 project files.
 
 * Various platform related bug fixes.
 * Various compiler related bug/warning fixes.
 * Clean up some things that triggered valgrind warnings.
 * Fix a Nasal cmp() bug.
+* Removed ancient version of zlib from distribution.
 
 
 New in 0.3.9

@@ -8,7 +8,7 @@ dnl Require at least automake 2.52
 AC_PREREQ(2.52)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 0.3.10-pre2)
+AM_INIT_AUTOMAKE(SimGear, 0.3.10-pre3)
 
 dnl Specify KAI C++ compiler and flags.
 dnl Borrowed with slight modification from blitz distribution.

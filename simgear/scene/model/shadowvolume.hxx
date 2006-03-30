@@ -23,6 +23,7 @@
 #ifndef _SHADOWVOLUME_HXX
 #define _SHADOWVOLUME_HXX
 
+#include <simgear/structure/ssgSharedPtr.hxx>
 
 #include <plib/sg.h>
 #include <vector>
@@ -72,10 +73,10 @@ private:
 			bool isFacingLight;
 		} triData;
 
-		ssgBranch *geometry_leaf;
-		ssgBranch *scenery_object;
-		ssgBranch *lib_object;
-		ssgBranch *first_select;
+		ssgSharedPtr<ssgBranch> geometry_leaf;
+		ssgSharedPtr<ssgBranch> scenery_object;
+		ssgSharedPtr<ssgBranch> lib_object;
+		ssgSharedPtr<ssgBranch> first_select;
 		sgVec3 last_lightpos;
 		sgMat4 last_transform;
 		int frameNumber;
@@ -110,14 +111,14 @@ private:
 		void computeShadows(void);
 		void traverseTree(ssgBranch *branch);
 		void find_trans(void);
-		ssgBranch *scenery_object;
-		ssgBranch *lib_object;
-		ssgBranch *pending_object;
-		ssgBranch *tile;
+		ssgSharedPtr<ssgBranch> scenery_object;
+		ssgSharedPtr<ssgBranch> lib_object;
+		ssgSharedPtr<ssgBranch> pending_object;
+		ssgSharedPtr<ssgBranch> tile;
 		ShadowCaster_list parts;
 		OccluderType occluder_type;
 	};
-	typedef map<ssgBranch *, SceneryObject *> SceneryObject_map;
+	typedef map<ssgSharedPtr<ssgBranch>, SceneryObject *> SceneryObject_map;
 
 
 private:
@@ -138,7 +139,7 @@ private:
 	sgMat4 CameraViewM;
 	double	sun_angle;
 	SceneryObject_map sceneryObjects;
-	ssgBranch *ssg_root;
+	ssgSharedPtr<ssgBranch> ssg_root;
 	bool shadows_rendered;
 };
 

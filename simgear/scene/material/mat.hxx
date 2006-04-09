@@ -34,6 +34,7 @@
 
 #include STL_STRING      // Standard C++ string library
 #include <vector>
+#include <map>
 
 #include <plib/sg.h>
 #include <plib/ssg.h>
@@ -46,6 +47,10 @@
 
 SG_USING_STD(string);
 SG_USING_STD(vector);
+SG_USING_STD(map);
+
+
+class SGMaterialGlyph;
 
 
 /**
@@ -163,6 +168,19 @@ public:
     return object_groups[index];
   }
 
+  /**
+   * Get the horizontal scaling factor for runway/taxiway signs.
+   */
+  virtual inline double get_xscale() const { return xscale; }
+
+  /**
+   * Return pointer to glyph class, or 0 if it doesn't exist.
+   */
+  virtual SGMaterialGlyph * get_glyph (const string& name) const {
+    map<string, SGMaterialGlyph *>::const_iterator it = glyphs.find(name);
+    return it != glyphs.end() ? it->second : 0;
+  }
+
 protected:
 
 
@@ -216,6 +234,10 @@ private:
 
   vector<SGSharedPtr<SGMatModelGroup> > object_groups;
 
+  // taxiway-/runway-sign elements
+  double xscale;
+  map<string, SGMaterialGlyph *> glyphs;
+
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.
@@ -228,6 +250,19 @@ private:
   void set_ssg_state( ssgSimpleState *s );
 
 
+};
+
+
+class SGMaterialGlyph {
+public:
+  SGMaterialGlyph(SGPropertyNode *);
+  inline double get_left() const { return _left; }
+  inline double get_right() const { return _right; }
+  inline double get_width() const { return _right - _left; }
+
+protected:
+  double _left;
+  double _right;
 };
 
 #endif // _SG_MAT_HXX 

@@ -27,89 +27,190 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/scene/tgdb/leaf.hxx>
+#include <simgear/scene/material/mat.hxx>
+#include <simgear/scene/material/matlib.hxx>
 
 #include "apt_signs.hxx"
 
+#define TAXI "OBJECT_TAXI_SIGN: "
+#define RWY "OBJECT_RUNWAY_SIGN: "
 
+
+// for temporary storage of sign elements
+struct element_info {
+    element_info(SGMaterial *m, SGMaterialGlyph *g) : material(m), glyph(g) {}
+    SGMaterial *material;
+    SGMaterialGlyph *glyph;
+};
+
+
+// translation table for 'command' to glyph name
+struct pair {
+    const char *keyword;
+    const char *glyph_name;
+} cmds[] = {
+    {"l",       "left"},
+    {"lu",      "up-left"},
+    {"ld",      "down-left"},
+    {"r",       "right"},
+    {"ru",      "up-right"},
+    {"rd",      "down-right"},
+    {"u",       "up"},
+    {"ul",      "up-left"},
+    {"ur",      "up-right"},
+    {"d",       "down"},
+    {"dl",      "down-left"},
+    {"dr",      "down-right"},
+    {"no-exit", "no-exit"},
+    {0, 0},
+};
+
+
+// Y ... black on yellow            -> direction, destination, boundary
+// R ... white on red               -> mandatory instruction
+// L ... yellow on black with frame -> runway/taxiway location
+// B ... white on black             -> runway distance remaining
+//
+// u/d/l/r     ... up/down/left/right arrow or two-letter combinations
+//                 thereof (ur, dl, ...)
+//
+// Example: {l}E|{L}[T]|{Y,ur}L|E{r}
+//
 ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
                            const string path, const string content )
 {
-    // for demo purposes we assume each element (letter) is 1x1 meter.
-    // Sign is placed 0.25 meters above the ground
+    const double sign_height = 1.0;   // meter     TODO make configurable
+
+    vector<element_info *> elements;
+    double total_width = 0.0;
+    bool cmd = false;
+    char *newmat = "YellowSign";
 
     ssgBranch *object = new ssgBranch();
-    object->setName( (char *)content.c_str() );
+    object->setName((char *)content.c_str());
+    SGMaterial *material = matlib->find(newmat);
 
-    double offset = content.length() / 2.0;
+    for (const char *s = content.data(); *s; s++) {
+        string name;
+        const char *newmat = 0;
 
-    for ( unsigned int i = 0; i < content.length(); ++i ) {
-	string material;
+        if (*s == '{') {
+            if (cmd)
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected { in sign contents");
+            cmd = true;
+            continue;
+        } else if (*s == '}') {
+            if (!cmd)
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected } in sign contents");
+            cmd = false;
+            continue;
+        } else if (cmd) {
+            if (*s == ',')
+                continue;
+            else if (*s == 'Y')
+                newmat = "YellowSign";
+            else if (*s == 'R')
+                newmat = "RedSign";
+            else if (*s == 'L')
+                newmat = "FramedSign";
+            else if (*s == 'B')
+                newmat = "BlackSign";
+            else {
+                // find longest match of cmds[]
+                int maxlen = 0, len;
+                for (int i = 0; cmds[i].keyword; i++) {
+                    len = strlen(cmds[i].keyword);
+                    if (!strncmp(s, cmds[i].keyword, len)) {
+                        maxlen = len;
+                        name = cmds[i].glyph_name;
+                    }
+                }
+                if (maxlen)
+                    s += maxlen - 1;
+            }
+            if (s[1] != ',' && s[1] != '}')
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "garbage after command `" << s << '\'');
 
-	char item = content[i];
-	if ( item == '<' ) {
-	    material = "ArrowL.rgb";
-	} else if ( item == '>' ) {
-	    material = "ArrowR.rgb";
-	} else if ( item >= 'A' && item <= 'Z' ) {
-	    material = "Letter";
-	    material += item;
-	    material += ".rgb";
-	} else if ( item >= 'a' && item <= 'z' ) {
-	    int tmp = item - 'a';
-	    char c = 'A' + tmp;
-	    material = "Black";
-	    material += c;
-	    material += ".rgb";
-	} else {
-	    SG_LOG( SG_TERRAIN, SG_ALERT,
-                    "Unknown taxi sign code = '" << item << "' !!!!" );
-	    return NULL;
-	}
+            if (newmat) {
+                material = matlib->find(newmat);
+                continue;
+            }
 
-	point_list nodes; nodes.clear();
-	point_list normals; normals.clear();
-	point_list texcoords; texcoords.clear();
-	int_list vertex_index; vertex_index.clear();
-	int_list normal_index; normal_index.clear();
-	int_list tex_index; tex_index.clear();
+            if (name.empty()) {
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unknown command `" << s << '\'');
+                continue;
+            }
+        } else
+            name = *s;
 
-	nodes.push_back( Point3D( -offset + i, 0, 0.25 ) );
-	nodes.push_back( Point3D( -offset + i + 1, 0, 0.25 ) );
-	nodes.push_back( Point3D( -offset + i, 0, 1.25 ) );
-	nodes.push_back( Point3D( -offset + i + 1, 0, 1.25 ) );
+        if (!material) {
+            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "material doesn't exit");
+            continue;
+        }
 
-	normals.push_back( Point3D( 0, -1, 0 ) );
+        SGMaterialGlyph *glyph = material->get_glyph(name);
+        if (!glyph) {
+            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "unsupported character `" << *s << '\'');
+            continue;
+        }
 
-	texcoords.push_back( Point3D( 0, 0, 0 ) );
-	texcoords.push_back( Point3D( 1, 0, 0 ) );
-	texcoords.push_back( Point3D( 0, 1, 0 ) );
-	texcoords.push_back( Point3D( 1, 1, 0 ) );
+        elements.push_back(new element_info(material, glyph));
+        total_width += glyph->get_width() * material->get_xscale();
+    }
 
-	vertex_index.push_back( 0 );
-	vertex_index.push_back( 1 );
-	vertex_index.push_back( 2 );
-	vertex_index.push_back( 3 );
+    double hpos = -total_width / 2;
 
-	normal_index.push_back( 0 );
-	normal_index.push_back( 0 );
-	normal_index.push_back( 0 );
-	normal_index.push_back( 0 );
+    sgVec3 normal;
+    sgSetVec3(normal, 0, -1, 0);
 
-	tex_index.push_back( 0 );
-	tex_index.push_back( 1 );
-	tex_index.push_back( 2 );
-	tex_index.push_back( 3 );
+    sgVec4 color;
+    sgSetVec4(color, 1.0, 1.0, 1.0, 1.0);
 
-	ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_STRIP, matlib, material,
-                                    nodes, normals, texcoords,
-                                    vertex_index, normal_index, tex_index,
-                                    false, NULL );
+    for (unsigned int i = 0; i < elements.size(); i++) {
+        element_info *element = elements[i];
 
-	object->addKid( leaf );
+        double xoffset = element->glyph->get_left();
+        double width = element->glyph->get_width();
+        double abswidth = width * element->material->get_xscale();
+
+        // vertices
+        ssgVertexArray *vl = new ssgVertexArray(4);
+        vl->add(hpos,            0, 0);
+        vl->add(hpos + abswidth, 0, 0);
+        vl->add(hpos,            0, sign_height);
+        vl->add(hpos + abswidth, 0, sign_height);
+
+        // texture coordinates
+        ssgTexCoordArray *tl = new ssgTexCoordArray(4);
+        tl->add(xoffset,         0);
+        tl->add(xoffset + width, 0);
+        tl->add(xoffset,         1);
+        tl->add(xoffset + width, 1);
+
+        // normals
+        ssgNormalArray *nl = new ssgNormalArray(1);
+        nl->add(normal);
+
+        // colors
+        ssgColourArray *cl = new ssgColourArray(1);
+        cl->add(color);
+
+        ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, tl, cl);
+        ssgSimpleState *state = element->material->get_state();
+        //if (!lighted)
+        //    state->setMaterial(GL_EMISSION, 0, 0, 0, 1);
+        leaf->setState(state);
+
+        object->addKid(leaf);
+        hpos += abswidth;
+        delete element;
     }
 
     return object;
 }
+
+
+
 
 
 ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
@@ -123,14 +224,14 @@ ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
 
     double width = name.length() / 3.0;
 
-    string material = name + ".rgb";
+    string material = name;
 
-    point_list nodes; nodes.clear();
-    point_list normals; normals.clear();
-    point_list texcoords; texcoords.clear();
-    int_list vertex_index; vertex_index.clear();
-    int_list normal_index; normal_index.clear();
-    int_list tex_index; tex_index.clear();
+    point_list nodes;
+    point_list normals;
+    point_list texcoords;
+    int_list vertex_index;
+    int_list normal_index;
+    int_list tex_index;
 
     nodes.push_back( Point3D( -width, 0, 0.25 ) );
     nodes.push_back( Point3D( width + 1, 0, 0.25 ) );

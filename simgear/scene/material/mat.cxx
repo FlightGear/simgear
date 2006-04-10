@@ -160,8 +160,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   for (unsigned int i = 0; i < object_group_nodes.size(); i++)
     object_groups.push_back(new SGMatModelGroup(object_group_nodes[i]));
 
-  // handling of glyphs for taxi-/runway-signs
-  xscale = props->getDoubleValue("xscale", 1.0);
+  // read glyph table for taxi-/runway-signs
   vector<SGPropertyNode_ptr> glyph_nodes = props->getChildren("glyph");
   for (unsigned int i = 0; i < glyph_nodes.size(); i++) {
     const char *name = glyph_nodes[i]->getStringValue("name");
@@ -185,7 +184,6 @@ SGMaterial::init ()
     ysize = 0;
     wrapu = true;
     wrapv = true;
-    xscale = 1;
 
     mipmap = true;
     light_coverage = 0.0;

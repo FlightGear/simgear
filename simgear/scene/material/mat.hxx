@@ -169,11 +169,6 @@ public:
   }
 
   /**
-   * Get the horizontal scaling factor for runway/taxiway signs.
-   */
-  virtual inline double get_xscale() const { return xscale; }
-
-  /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
    */
   virtual SGMaterialGlyph * get_glyph (const string& name) const {
@@ -234,8 +229,7 @@ private:
 
   vector<SGSharedPtr<SGMatModelGroup> > object_groups;
 
-  // taxiway-/runway-sign elements
-  double xscale;
+  // taxiway-/runway-sign texture elements
   map<string, SGMaterialGlyph *> glyphs;
 
 

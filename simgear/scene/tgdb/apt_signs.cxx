@@ -38,9 +38,12 @@
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, SGMaterialGlyph *g) : material(m), glyph(g) {}
+    element_info(SGMaterial *m, SGMaterialGlyph *g) : material(m), glyph(g) {
+        scale = m->get_xsize() / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
+    }
     SGMaterial *material;
     SGMaterialGlyph *glyph;
+    double scale;
 };
 
 
@@ -154,8 +157,9 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
             continue;
         }
 
-        elements.push_back(new element_info(material, glyph));
-        total_width += glyph->get_width() * material->get_xscale();
+        element_info *e = new element_info(material, glyph);
+        elements.push_back(e);
+        total_width += glyph->get_width() * e->scale;
     }
 
     double hpos = -total_width / 2;
@@ -171,7 +175,7 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
         double xoffset = element->glyph->get_left();
         double width = element->glyph->get_width();
-        double abswidth = width * element->material->get_xscale();
+        double abswidth = width * element->scale;
 
         // vertices
         ssgVertexArray *vl = new ssgVertexArray(4);

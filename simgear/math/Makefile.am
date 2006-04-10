@@ -33,8 +33,6 @@ include_HEADERS = \
 	SGVec3.hxx
 
 
-EXTRA_DIST = linintp2.h linintp2.inl sphrintp.h sphrintp.inl
-
 libsgmath_a_SOURCES = \
 	interpolater.cxx \
 	leastsqs.cxx \

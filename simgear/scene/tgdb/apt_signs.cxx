@@ -256,6 +256,7 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
     // Part II: typeset
     double hpos = -total_width / 2;
+    const double dist = 0.5;        // hard-code distance from surface for now
 
     sgVec3 normal;
     sgSetVec3(normal, 0, -1, 0);
@@ -273,10 +274,10 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
         // vertices
         ssgVertexArray *vl = new ssgVertexArray(4);
-        vl->add(hpos,            0, 0);
-        vl->add(hpos + abswidth, 0, 0);
-        vl->add(hpos,            0, height);
-        vl->add(hpos + abswidth, 0, height);
+        vl->add(hpos,            0, dist);
+        vl->add(hpos + abswidth, 0, dist);
+        vl->add(hpos,            0, dist + height);
+        vl->add(hpos + abswidth, 0, dist + height);
 
         // texture coordinates
         ssgTexCoordArray *tl = new ssgTexCoordArray(4);

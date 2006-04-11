@@ -308,6 +308,23 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
         delete element;
     }
 
+
+    // minimalistic backside
+    ssgVertexArray *vl = new ssgVertexArray(4);
+    vl->add(hpos,               0, dist);
+    vl->add(hpos - total_width, 0, dist);
+    vl->add(hpos,               0, dist + sign_height);
+    vl->add(hpos - total_width, 0, dist + sign_height);
+
+    ssgNormalArray *nl = new ssgNormalArray(1);
+    nl->add(0, 1, 0);
+
+    ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, 0, 0);
+    SGMaterial *mat = matlib->find("BlackSign");
+    if (mat)
+        leaf->setState(mat->get_state());
+    object->addKid(leaf);
+
     return object;
 }
 

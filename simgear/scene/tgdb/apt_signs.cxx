@@ -38,33 +38,41 @@
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, SGMaterialGlyph *g) : material(m), glyph(g) {
-        scale = m->get_xsize() / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
+    element_info(SGMaterial *m, SGMaterialGlyph *g, double h, bool l)
+        : material(m), glyph(g), height(h), lighted(l)
+    {
+        scale = h * m->get_xsize()
+                / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
     }
     SGMaterial *material;
     SGMaterialGlyph *glyph;
+    double height;
     double scale;
+    bool lighted;
 };
 
 
-// translation table for 'command' to glyph name
+// standard panel height sizes
+const double HT[5] = {0.460, 0.610, 0.760, 1.220, 0.760};
+
+
+// translation table for "command" to "glyph name"
 struct pair {
     const char *keyword;
     const char *glyph_name;
 } cmds[] = {
-    {"l",       "left"},
-    {"lu",      "up-left"},
-    {"ld",      "down-left"},
-    {"r",       "right"},
-    {"ru",      "up-right"},
-    {"rd",      "down-right"},
-    {"u",       "up"},
-    {"ul",      "up-left"},
-    {"ur",      "up-right"},
-    {"d",       "down"},
-    {"dl",      "down-left"},
-    {"dr",      "down-right"},
-    {"no-exit", "no-exit"},
+    {"@u",       "up"},
+    {"@d",       "down"},
+    {"@l",       "left"},
+    {"@lu",      "left-up"},
+    {"@ul",      "left-up"},
+    {"@ld",      "left-down"},
+    {"@dl",      "left-down"},
+    {"@r",       "right"},
+    {"@ru",      "right-up"},
+    {"@ur",      "right-up"},
+    {"@rd",      "right-down"},
+    {"@dr",      "right-down"},
     {0, 0},
 };
 
@@ -82,17 +90,22 @@ struct pair {
 ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
                            const string path, const string content )
 {
-    const double sign_height = 1.0;   // meter     TODO make configurable
+    double sign_height = 1.0;  // meter
+    bool lighted = true;
 
     vector<element_info *> elements;
+    element_info *close = 0;
     double total_width = 0.0;
     bool cmd = false;
-    char *newmat = "YellowSign";
+    char *newmat = "BlackSign";
+    int size = -1;
+    char oldtype = 0, newtype = 0;
 
     ssgBranch *object = new ssgBranch();
     object->setName((char *)content.c_str());
     SGMaterial *material = matlib->find(newmat);
 
+    // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
         string name;
         const char *newmat = 0;
@@ -102,49 +115,100 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
                 SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected { in sign contents");
             cmd = true;
             continue;
+
         } else if (*s == '}') {
             if (!cmd)
                 SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected } in sign contents");
             cmd = false;
             continue;
-        } else if (cmd) {
+
+        } else if (!cmd) {
+            name = *s;
+
+        } else {
             if (*s == ',')
                 continue;
-            else if (*s == 'Y')
-                newmat = "YellowSign";
-            else if (*s == 'R')
-                newmat = "RedSign";
-            else if (*s == 'L')
-                newmat = "FramedSign";
-            else if (*s == 'B')
-                newmat = "BlackSign";
-            else {
-                // find longest match of cmds[]
-                int maxlen = 0, len;
-                for (int i = 0; cmds[i].keyword; i++) {
-                    len = strlen(cmds[i].keyword);
-                    if (!strncmp(s, cmds[i].keyword, len)) {
-                        maxlen = len;
-                        name = cmds[i].glyph_name;
+
+            string value;
+            for (; *s; s++) {
+                name += *s;
+                if (s[1] == ',' || s[1] == '}' || s[1] == '=')
+                    break;
+            }
+            if (!*s) {
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unclosed { in sign contents");
+            } else if (s[1] == '=') {
+                for (s += 2; *s; s++) {
+                    value += *s;
+                    if (s[1] == ',' || s[1] == '}')
+                        break;
+                }
+                if (!*s)
+                    SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unclosed { in sign contents");
+            }
+
+            if (name == "@size") {
+                sign_height = strtod(value.data(), 0);
+                continue;
+            }
+
+            if (name == "@light") {
+                lighted = (value != "0" && value != "no" && value != "off" && value != "false");
+                continue;
+            }
+
+            if (name == "@material")
+                newmat = value.data();
+            else if (name.size() == 2 || name.size() == 3) {
+                if (name.size() == 3 && name[2] >= '1' && name[2] <= '5') {
+                    size = name[2] - '1';
+                    name = name.substr(0, 2);
+                }
+
+                if (name == "@Y") {
+                    if (size < 3) {
+                        sign_height = HT[size < 0 ? 2 : size];
+                        newmat = "YellowSign";
+                        newtype = 'Y';
+                    }
+                } else if (name == "@R") {
+                    if (size < 3) {
+                        sign_height = HT[size < 0 ? 2 : size];
+                        newmat = "RedSign";
+                        newtype = 'R';
+                    }
+                } else if (name == "@L") {
+                    if (size < 3) {
+                        sign_height = HT[size < 0 ? 2 : size];
+                        newmat = "FramedSign";
+                        newtype = 'L';
+                    }
+                } else if (name == "@B") {
+                    if (size < 0 || size == 3 || size == 4) {
+                        sign_height = HT[size < 0 ? 3 : size];
+                        newmat = "BlackSign";
+                        newtype = 'B';
                     }
                 }
-                if (maxlen)
-                    s += maxlen - 1;
             }
-            if (s[1] != ',' && s[1] != '}')
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "garbage after command `" << s << '\'');
 
             if (newmat) {
                 material = matlib->find(newmat);
                 continue;
             }
 
-            if (name.empty()) {
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unknown command `" << s << '\'');
+            for (int i = 0; cmds[i].keyword; i++) {
+                if (name == cmds[i].keyword) {
+                    name = cmds[i].glyph_name;
+                    break;
+                }
+            }
+
+            if (name[0] == '@') {
+                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "ignoring unknown command `" << name << '\'');
                 continue;
             }
-        } else
-            name = *s;
+        }
 
         if (!material) {
             SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "material doesn't exit");
@@ -153,15 +217,44 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
         SGMaterialGlyph *glyph = material->get_glyph(name);
         if (!glyph) {
-            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "unsupported character `" << *s << '\'');
+            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "unsupported glyph `" << *s << '\'');
             continue;
         }
 
-        element_info *e = new element_info(material, glyph);
+        // in managed mode push frame stop and frame start first
+        element_info *e;
+        if (newtype && newtype != oldtype) {
+            if (close) {
+                elements.push_back(close);
+                total_width += close->glyph->get_width() * close->scale;
+                close = 0;
+            }
+            oldtype = newtype;
+            SGMaterialGlyph *g = material->get_glyph("stop-frame");
+            if (g)
+                close = new element_info(material, g, sign_height, lighted);
+            g = material->get_glyph("start-frame");
+            if (g) {
+                e = new element_info(material, g, sign_height, lighted);
+                elements.push_back(e);
+                total_width += e->glyph->get_width() * e->scale;
+            }
+        }
+        // now the actually requested glyph
+        e = new element_info(material, glyph, sign_height, lighted);
         elements.push_back(e);
-        total_width += glyph->get_width() * e->scale;
+        total_width += e->glyph->get_width() * e->scale;
     }
 
+    // in managed mode close frame
+    if (close) {
+        elements.push_back(close);
+        total_width += close->glyph->get_width() * close->scale;
+        close = 0;
+    }
+
+
+    // Part II: typeset
     double hpos = -total_width / 2;
 
     sgVec3 normal;
@@ -174,6 +267,7 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
         element_info *element = elements[i];
 
         double xoffset = element->glyph->get_left();
+        double height = element->height;
         double width = element->glyph->get_width();
         double abswidth = width * element->scale;
 
@@ -181,8 +275,8 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
         ssgVertexArray *vl = new ssgVertexArray(4);
         vl->add(hpos,            0, 0);
         vl->add(hpos + abswidth, 0, 0);
-        vl->add(hpos,            0, sign_height);
-        vl->add(hpos + abswidth, 0, sign_height);
+        vl->add(hpos,            0, height);
+        vl->add(hpos + abswidth, 0, height);
 
         // texture coordinates
         ssgTexCoordArray *tl = new ssgTexCoordArray(4);
@@ -201,8 +295,11 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
         ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, tl, cl);
         ssgSimpleState *state = element->material->get_state();
-        //if (!lighted)
-        //    state->setMaterial(GL_EMISSION, 0, 0, 0, 1);
+        if (!element->lighted) {
+            // FIXME: clone state for unlighted elements only once per material
+            state = (ssgSimpleState *)state->clone(SSG_CLONE_STATE);
+            state->setMaterial(GL_EMISSION, 0.3, 0.3, 0.3, 1);
+        }
         leaf->setState(state);
 
         object->addKid(leaf);

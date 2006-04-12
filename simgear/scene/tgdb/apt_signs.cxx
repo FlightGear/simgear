@@ -274,10 +274,10 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
         // vertices
         ssgVertexArray *vl = new ssgVertexArray(4);
-        vl->add(hpos,            0, dist);
-        vl->add(hpos + abswidth, 0, dist);
-        vl->add(hpos,            0, dist + height);
-        vl->add(hpos + abswidth, 0, dist + height);
+        vl->add(0, hpos,            dist);
+        vl->add(0, hpos + abswidth, dist);
+        vl->add(0, hpos,            dist + height);
+        vl->add(0, hpos + abswidth, dist + height);
 
         // texture coordinates
         ssgTexCoordArray *tl = new ssgTexCoordArray(4);
@@ -311,10 +311,10 @@ ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
 
     // minimalistic backside
     ssgVertexArray *vl = new ssgVertexArray(4);
-    vl->add(hpos,               0, dist);
-    vl->add(hpos - total_width, 0, dist);
-    vl->add(hpos,               0, dist + sign_height);
-    vl->add(hpos - total_width, 0, dist + sign_height);
+    vl->add(0, hpos,               dist);
+    vl->add(0, hpos - total_width, dist);
+    vl->add(0, hpos,               dist + sign_height);
+    vl->add(0, hpos - total_width, dist + sign_height);
 
     ssgNormalArray *nl = new ssgNormalArray(1);
     nl->add(0, 1, 0);

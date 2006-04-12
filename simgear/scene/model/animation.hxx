@@ -354,6 +354,7 @@ private:
   sgMat4 _matrix;
   sgVec3 _center;
   sgVec3 _axis;
+  SGCondition * _condition;
 };
 
 
@@ -381,6 +382,7 @@ private:
   double _position;
   sgMat4 _matrix;
   sgVec3 _axis;
+  SGCondition * _condition;
 };
 
 
@@ -508,7 +510,7 @@ private:
     };
     SGCondition *_condition;
     bool _last_condition;
-    SGPropertyNode *_prop_root;
+    SGPropertyNode_ptr _prop_root;
     string _prop_base;
     SGPath _texture_base;
     SGPath _texture;

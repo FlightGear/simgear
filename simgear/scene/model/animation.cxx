@@ -880,8 +880,13 @@ SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
       _min_deg(props->getDoubleValue("min-deg")),
       _has_max(props->hasValue("max-deg")),
       _max_deg(props->getDoubleValue("max-deg")),
-      _position_deg(props->getDoubleValue("starting-position-deg", 0))
+      _position_deg(props->getDoubleValue("starting-position-deg", 0)),
+      _condition(0)
 {
+  SGPropertyNode *node = props->getChild("condition");
+  if (node != 0)
+    _condition = sgReadCondition(prop_root, node);
+
   _center[0] = props->getFloatValue("center/x", 0);
   _center[1] = props->getFloatValue("center/y", 0);
   _center[2] = props->getFloatValue("center/z", 0);
@@ -899,6 +904,9 @@ SGTexRotateAnimation::~SGTexRotateAnimation ()
 int
 SGTexRotateAnimation::update()
 {
+  if (_condition && !_condition->test())
+    return 1;
+
   if (_table == 0) {
    _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
    if (_has_min && _position_deg < _min_deg)
@@ -931,8 +939,13 @@ SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
     _min(props->getDoubleValue("min")),
     _has_max(props->hasValue("max")),
     _max(props->getDoubleValue("max")),
-    _position(props->getDoubleValue("starting-position", 0))
+    _position(props->getDoubleValue("starting-position", 0)),
+    _condition(0)
 {
+  SGPropertyNode *node = props->getChild("condition");
+  if (node != 0)
+    _condition = sgReadCondition(prop_root, node);
+
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
@@ -947,6 +960,9 @@ SGTexTranslateAnimation::~SGTexTranslateAnimation ()
 int
 SGTexTranslateAnimation::update()
 {
+  if (_condition && !_condition->test())
+    return 1;
+
   if (_table == 0) {
     _position = (apply_mods(_prop->getDoubleValue(), _step, _scroll) + _offset) * _factor;
     if (_has_min && _position < _min)

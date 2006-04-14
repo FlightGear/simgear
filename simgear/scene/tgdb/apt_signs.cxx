@@ -32,7 +32,7 @@
 
 #include "apt_signs.hxx"
 
-#define TAXI "OBJECT_TAXI_SIGN: "
+#define TAXI "OBJECT_SIGN: "
 #define RWY "OBJECT_RUNWAY_SIGN: "
 
 
@@ -87,8 +87,7 @@ struct pair {
 //
 // Example: {l}E|{L}[T]|{Y,ur}L|E{r}
 //
-ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
-                           const string path, const string content )
+ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string content)
 {
     double sign_height = 1.0;  // meter
     bool lighted = true;

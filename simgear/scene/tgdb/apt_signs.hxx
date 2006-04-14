@@ -41,9 +41,9 @@ class SGMaterialLib;            // forward declaration
 SG_USING_STD(string);
 
 
-// Generate a taxi sign
-ssgBranch *sgMakeTaxiSign( SGMaterialLib *matlib,
-                           const string path, const string content );
+// Generate a generic sign
+ssgBranch *sgMakeSign( SGMaterialLib *matlib,
+                       const string path, const string content );
 
 
 // Generate a runway sign

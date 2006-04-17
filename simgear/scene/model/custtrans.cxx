@@ -2,7 +2,6 @@
      $Id$
 */
 
-#include "plib/ssg.h"
 #include "custtrans.hxx"
 void _ssgPushMatrix ( sgMat4 m );
 void _ssgPopMatrix  ();

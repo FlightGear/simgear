@@ -7,8 +7,6 @@
 #include <simgear_config.h>
 #endif
 
-#include <simgear/compiler.h>
-
 #include <string.h>             // for strcmp()
 
 #include <vector>

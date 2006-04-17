@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <jpeglib.h>
 #include <jerror.h>
 

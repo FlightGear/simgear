@@ -39,6 +39,7 @@
 #include <plib/ssg.h>		// plib include
 
 #include <simgear/math/sg_types.hxx>
+#include <simgear/scene/material/matlib.hxx>
 
 SG_USING_STD(string);
 SG_USING_STD(vector);

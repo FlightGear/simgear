@@ -28,6 +28,7 @@
 #define _SG_CLOUD_HXX_
 
 #include <simgear/compiler.h>
+#include <simgear/misc/sg_path.hxx>
 
 #include <plib/ssg.h>
 

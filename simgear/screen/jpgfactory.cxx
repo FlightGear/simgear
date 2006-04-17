@@ -25,9 +25,6 @@
 #  include <windows.h>
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <plib/ssg.h>
 
 #include "jpgfactory.hxx"

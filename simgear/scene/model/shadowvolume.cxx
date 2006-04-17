@@ -25,8 +25,6 @@
 #endif
 
 #include <plib/sg.h>
-#include <plib/ssg.h>
-#include <simgear/props/props.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/scene/model/animation.hxx>

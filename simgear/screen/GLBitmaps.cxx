@@ -15,10 +15,6 @@
 #include <limits.h>
 #include <string.h>		// memcpy()
 
-#include <simgear/compiler.h>
-
-#include SG_GL_H
-
 #include "GLBitmaps.h"
 
 GlBitmap::GlBitmap( GLenum mode, GLint width, GLint height, GLubyte *bitmap )

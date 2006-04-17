@@ -5,11 +5,12 @@
 #ifndef _SG_PERSONALITY_HXX
 #define _SG_PERSONALITY_HXX 1
 
+#include <simgear/compiler.h>
+#include <plib/ssg.h>
+
 #include <map>
 
 SG_USING_STD(map);
-
-#include <plib/ssg.h>
 
 class SGAnimation;
 

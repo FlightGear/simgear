@@ -10,6 +10,8 @@
 # error This library requires C++
 #endif
 
+#include <simgear/compiler.h>
+
 #include <vector>
 #include <set>
 

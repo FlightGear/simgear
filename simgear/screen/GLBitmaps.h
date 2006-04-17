@@ -1,3 +1,7 @@
+#include <simgear/compiler.h>
+
+#include SG_GL_H
+
 class GlBitmap
 {
 public:

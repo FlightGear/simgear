@@ -2,8 +2,6 @@
  * $Id$
  */
 
-#include <simgear/compiler.h>
-
 #include "personality.hxx"
 
 void SGPersonalityBranch::setDoubleValue( double value, SGAnimation *anim, int var_id, int var_num )

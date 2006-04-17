@@ -14,15 +14,15 @@
 #include <vector>
 #include <map>
 
-SG_USING_STD(vector);
-SG_USING_STD(map);
-
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
 #include <simgear/math/point3d.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
+
+SG_USING_STD(vector);
+SG_USING_STD(map);
 
 
 // Don't pull in the headers, since we don't need them here.

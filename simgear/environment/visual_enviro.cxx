@@ -23,7 +23,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/sg.h>
 #include <simgear/constants.h>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>

@@ -36,7 +36,6 @@
 #include <simgear/math/polar3d.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/misc/sg_path.hxx>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/texture.hxx>
 #include <simgear/structure/ssgSharedPtr.hxx>

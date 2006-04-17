@@ -27,7 +27,6 @@
 #include <plib/sg.h>
 
 #include <simgear/scene/material/mat.hxx>
-#include <simgear/scene/material/matlib.hxx>
 
 #include "vasi.hxx"
 

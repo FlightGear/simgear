@@ -22,6 +22,8 @@
 #ifndef _VISUAL_ENVIRO_HXX
 #define _VISUAL_ENVIRO_HXX
 
+#include <plib/sg.h>
+
 #include <simgear/compiler.h>
 #include STL_STRING
 #include <vector>

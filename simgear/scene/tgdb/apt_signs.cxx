@@ -24,6 +24,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <vector>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/scene/tgdb/leaf.hxx>
@@ -32,23 +34,24 @@
 
 #include "apt_signs.hxx"
 
-#define TAXI "OBJECT_SIGN: "
+#define SIGN "OBJECT_SIGN: "
 #define RWY "OBJECT_RUNWAY_SIGN: "
 
+SG_USING_STD(vector);
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, SGMaterialGlyph *g, double h, bool l)
-        : material(m), glyph(g), height(h), lighted(l)
+    element_info(SGMaterial *m, ssgSimpleState *s, SGMaterialGlyph *g, double h)
+        : material(m), state(s), glyph(g), height(h)
     {
         scale = h * m->get_xsize()
                 / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
     }
     SGMaterial *material;
+    ssgSimpleState *state;
     SGMaterialGlyph *glyph;
     double height;
     double scale;
-    bool lighted;
 };
 
 
@@ -77,47 +80,42 @@ struct pair {
 };
 
 
-// Y ... black on yellow            -> direction, destination, boundary
-// R ... white on red               -> mandatory instruction
-// L ... yellow on black with frame -> runway/taxiway location
-// B ... white on black             -> runway distance remaining
-//
-// u/d/l/r     ... up/down/left/right arrow or two-letter combinations
-//                 thereof (ur, dl, ...)
-//
-// Example: {l}E|{L}[T]|{Y,ur}L|E{r}
+// see $FG_ROOT/Docs/README.scenery
 //
 ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string content)
 {
     double sign_height = 1.0;  // meter
     bool lighted = true;
+    const char *newmat = "BlackSign";
 
     vector<element_info *> elements;
     element_info *close = 0;
     double total_width = 0.0;
     bool cmd = false;
-    char *newmat = "BlackSign";
     int size = -1;
     char oldtype = 0, newtype = 0;
 
     ssgBranch *object = new ssgBranch();
     object->setName((char *)content.c_str());
-    SGMaterial *material = matlib->find(newmat);
+
+    SGMaterial *material;
+    ssgSimpleState *lighted_state;
+    ssgSimpleState *unlighted_state;
 
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
         string name;
-        const char *newmat = 0;
+        string value;
 
         if (*s == '{') {
             if (cmd)
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected { in sign contents");
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unexpected { in sign contents");
             cmd = true;
             continue;
 
         } else if (*s == '}') {
             if (!cmd)
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unexpected } in sign contents");
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unexpected } in sign contents");
             cmd = false;
             continue;
 
@@ -128,14 +126,13 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
             if (*s == ',')
                 continue;
 
-            string value;
             for (; *s; s++) {
                 name += *s;
                 if (s[1] == ',' || s[1] == '}' || s[1] == '=')
                     break;
             }
             if (!*s) {
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unclosed { in sign contents");
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unclosed { in sign contents");
             } else if (s[1] == '=') {
                 for (s += 2; *s; s++) {
                     value += *s;
@@ -143,7 +140,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
                         break;
                 }
                 if (!*s)
-                    SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "unclosed { in sign contents");
+                    SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unclosed { in sign contents");
             }
 
             if (name == "@size") {
@@ -156,44 +153,49 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
                 continue;
             }
 
-            if (name == "@material")
+            if (name == "@material") {
                 newmat = value.data();
-            else if (name.size() == 2 || name.size() == 3) {
-                if (name.size() == 3 && name[2] >= '1' && name[2] <= '5') {
-                    size = name[2] - '1';
-                    name = name.substr(0, 2);
+                continue;
+
+            } else if (name.size() == 2 || name.size() == 3) {
+                string n = name;
+                if (n.size() == 3 && n[2] >= '1' && n[2] <= '5') {
+                    size = n[2] - '1';
+                    n = n.substr(0, 2);
                 }
 
-                if (name == "@Y") {
+                if (n == "@Y") {
                     if (size < 3) {
                         sign_height = HT[size < 0 ? 2 : size];
                         newmat = "YellowSign";
                         newtype = 'Y';
+                        continue;
                     }
-                } else if (name == "@R") {
+
+                } else if (n == "@R") {
                     if (size < 3) {
                         sign_height = HT[size < 0 ? 2 : size];
                         newmat = "RedSign";
                         newtype = 'R';
+                        continue;
                     }
-                } else if (name == "@L") {
+
+                } else if (n == "@L") {
                     if (size < 3) {
                         sign_height = HT[size < 0 ? 2 : size];
                         newmat = "FramedSign";
                         newtype = 'L';
+                        continue;
                     }
-                } else if (name == "@B") {
+
+                } else if (n == "@B") {
                     if (size < 0 || size == 3 || size == 4) {
                         sign_height = HT[size < 0 ? 3 : size];
                         newmat = "BlackSign";
                         newtype = 'B';
+                        continue;
                     }
                 }
-            }
-
-            if (newmat) {
-                material = matlib->find(newmat);
-                continue;
             }
 
             for (int i = 0; cmds[i].keyword; i++) {
@@ -204,23 +206,41 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
             }
 
             if (name[0] == '@') {
-                SG_LOG(SG_TERRAIN, SG_ALERT, TAXI "ignoring unknown command `" << name << '\'');
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown command `" << name << '\'');
                 continue;
             }
         }
 
-        if (!material) {
-            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "material doesn't exit");
-            continue;
+        if (newmat) {
+            material = matlib->find(newmat);
+            if (!material) {
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
+                continue;
+            }
+
+            // set material states (lighted & unlighted)
+            lighted_state = material->get_state();
+            string u = string(newmat) + ".unlighted";
+
+            SGMaterial *m = matlib->find(u);
+            if (m) {
+                unlighted_state = (ssgSimpleState *)m->get_state()->clone(SSG_CLONE_STATE);
+                unlighted_state->setTexture(lighted_state->getTexture());
+            } else {
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
+                unlighted_state = lighted_state;
+            }
+            newmat = 0;
         }
 
         SGMaterialGlyph *glyph = material->get_glyph(name);
         if (!glyph) {
-            SG_LOG( SG_TERRAIN, SG_ALERT, TAXI "unsupported glyph `" << *s << '\'');
+            SG_LOG( SG_TERRAIN, SG_ALERT, SIGN "unsupported glyph `" << *s << '\'');
             continue;
         }
 
         // in managed mode push frame stop and frame start first
+        ssgSimpleState *state = lighted ? lighted_state : unlighted_state;
         element_info *e;
         if (newtype && newtype != oldtype) {
             if (close) {
@@ -231,16 +251,16 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
             oldtype = newtype;
             SGMaterialGlyph *g = material->get_glyph("stop-frame");
             if (g)
-                close = new element_info(material, g, sign_height, lighted);
+                close = new element_info(material, state, g, sign_height);
             g = material->get_glyph("start-frame");
             if (g) {
-                e = new element_info(material, g, sign_height, lighted);
+                e = new element_info(material, state, g, sign_height);
                 elements.push_back(e);
                 total_width += e->glyph->get_width() * e->scale;
             }
         }
         // now the actually requested glyph
-        e = new element_info(material, glyph, sign_height, lighted);
+        e = new element_info(material, state, glyph, sign_height);
         elements.push_back(e);
         total_width += e->glyph->get_width() * e->scale;
     }
@@ -294,13 +314,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
         cl->add(color);
 
         ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, tl, cl);
-        ssgSimpleState *state = element->material->get_state();
-        if (!element->lighted) {
-            // FIXME: clone state for unlighted elements only once per material
-            state = (ssgSimpleState *)state->clone(SSG_CLONE_STATE);
-            state->setMaterial(GL_EMISSION, 0.3, 0.3, 0.3, 1);
-        }
-        leaf->setState(state);
+        leaf->setState(element->state);
 
         object->addKid(leaf);
         hpos += abswidth;

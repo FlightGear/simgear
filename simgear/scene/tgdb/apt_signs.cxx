@@ -86,7 +86,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
 {
     double sign_height = 1.0;  // meter
     bool lighted = true;
-    const char *newmat = "BlackSign";
+    string newmat = "BlackSign";
 
     vector<element_info *> elements;
     element_info *close = 0;
@@ -211,7 +211,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
             }
         }
 
-        if (newmat) {
+        if (newmat.size()) {
             material = matlib->find(newmat);
             if (!material) {
                 SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
@@ -220,7 +220,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
 
             // set material states (lighted & unlighted)
             lighted_state = material->get_state();
-            string u = string(newmat) + ".unlighted";
+            string u = newmat + ".unlighted";
 
             SGMaterial *m = matlib->find(u);
             if (m) {
@@ -230,7 +230,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
                 SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
                 unlighted_state = lighted_state;
             }
-            newmat = 0;
+            newmat = "";
         }
 
         SGMaterialGlyph *glyph = material->get_glyph(name);

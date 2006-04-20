@@ -120,6 +120,7 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
     string tname = "unknown.rgb";
     SGPath tpath( fg_root );
     tpath.append("Textures");
+    tpath.append("Terrain");
     tpath.append(tname);
     _internal_state st( NULL, tpath.str(), true );
     _status.push_back( st );

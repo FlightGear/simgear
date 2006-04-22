@@ -43,6 +43,9 @@ SG_USING_STD(map);
 
 #include "mat.hxx"
 
+static map<string, ssgTexture *> _tex_cache;
+static map<string, ssgTexture *>::iterator _tex_cache_iter;
+
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructor.
@@ -208,9 +211,8 @@ SGMaterial::load_texture ( int n )
         if ( !_status[i].texture_loaded ) {
             SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
                                           << _status[i].texture_path );
-            _status[i].state->setTexture(
-                   (char *)_status[i].texture_path.c_str(),
-                   wrapu, wrapv, mipmap );
+            assignTexture(_status[i].state, _status[i].texture_path,
+                                         wrapu, wrapv, mipmap );
             _status[i].texture_loaded = true;
        }
     }
@@ -254,8 +256,7 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 
         if ( !defer_tex_load ) {
             SG_LOG(SG_INPUT, SG_INFO, "    " << _status[i].texture_path );
-	    state->setTexture( (char *)_status[i].texture_path.c_str(),
-                                wrapu, wrapv );
+	    assignTexture( state, _status[i].texture_path, wrapu, wrapv );
             _status[i].texture_loaded = true;
         } else {
             _status[i].texture_loaded = false;
@@ -284,6 +285,22 @@ SGMaterial::build_ssg_state( bool defer_tex_load )
 void SGMaterial::set_ssg_state( ssgSimpleState *s )
 {
     _status.push_back( _internal_state( s, "", true ) );
+}
+
+void SGMaterial::assignTexture( ssgSimpleState *state, string &fname,
+                 int _wrapu, int _wrapv, int _mipmap )
+{
+   _tex_cache_iter = _tex_cache.find(fname);
+   if (_tex_cache_iter == _tex_cache.end())
+   {
+      state->setTexture((char *)fname.c_str(), _wrapu, _wrapv, _mipmap);
+      _tex_cache[fname] = state->getTexture();
+   }
+   else
+   {
+      state->setTexture(_tex_cache_iter->second);
+      // cout << "Cache hit: " << fname << endl;
+   }
 }
 
 

@@ -243,6 +243,7 @@ private:
   void build_ssg_state( bool defer_tex_load );
   void set_ssg_state( ssgSimpleState *s );
 
+  void assignTexture( ssgSimpleState *state, string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
 
 };
 

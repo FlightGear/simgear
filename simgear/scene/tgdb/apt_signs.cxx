@@ -224,8 +224,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
 
             SGMaterial *m = matlib->find(u);
             if (m) {
-                unlighted_state = (ssgSimpleState *)m->get_state()->clone(SSG_CLONE_STATE);
-                unlighted_state->setTexture(lighted_state->getTexture());
+                unlighted_state = m->get_state();
             } else {
                 SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
                 unlighted_state = lighted_state;

@@ -91,8 +91,13 @@ SGSoundMgr::SGSoundMgr() {
         SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
         SG_LOG( SG_GENERAL, SG_ALERT, "   "+string(alutGetErrorString(error)));
         working = false;
+        context = 0;
     }
-    context = alcGetCurrentContext();
+    else
+    {
+        working = true;
+        context = alcGetCurrentContext();
+    }
 #else
     if ( (dev = alcOpenDevice( NULL )) != NULL
             && ( context = alcCreateContext( dev, NULL )) != NULL ) {

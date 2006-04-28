@@ -146,10 +146,16 @@ public:
     }
 
     /** Delete the front waypoint */
-    inline void delete_first() {
-	if ( route.size() ) {
-	    route.erase( route.begin() );
-	}
+    inline void delete_first() { delete_waypoint(0); }
+
+    /** Delete waypoint waypoint with index n  (last one if n < 0) */
+    void delete_waypoint( int n = 0 ) {
+        if ( !route.size() )
+            return;
+        if ( n < 0 || n > (int)route.size() - 1 )
+            n = route.size() - 1;
+
+        route.erase( route.begin() + n );
     }
 
     /**

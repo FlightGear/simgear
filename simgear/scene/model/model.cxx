@@ -234,12 +234,13 @@ static void makeDList( ssgBranch *b, const set<ssgBranch *> &ignore )
   }
 }
 
-class sgLoaderOptions : public ssgLoaderOptions {
+class SGLoaderOptions : public ssgLoaderOptions {
 public:
+  SGLoaderOptions() { ssgSetCurrentOptions( this ); } // Install our own loader options at startup
   void endLoad() {} // Avoid clearing the texture cache after every model load
 };
 
-static sgLoaderOptions loaderOptions;
+static SGLoaderOptions loaderOptions;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -286,7 +287,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
           texturepath = texturepath.dir();
 
     ssgTexturePath((char *)texturepath.c_str());
-    model = (ssgBranch *)ssgLoad((char *)modelpath.c_str(), &loaderOptions);
+    model = (ssgBranch *)ssgLoad((char *)modelpath.c_str());
     if (model == 0)
       throw sg_io_exception("Failed to load 3D model", 
 			  sg_location(modelpath.str()));

@@ -70,11 +70,14 @@ public:
     }
 
     /**
-     * Add a waypoint.
+     * Add waypoint (default), or insert waypoint at position n.
      * @param wp a waypoint
      */
-    inline void add_waypoint( const SGWayPoint &wp ) {
-	route.push_back( wp );
+    void add_waypoint( const SGWayPoint &wp, int n = -1 ) {
+        if ( n < 0 || n >= (int)route.size() )
+            route.push_back( wp );
+        else
+            route.insert( route.begin() + n, 1, wp );
 
 	int size = route.size();
 	if ( size > 1 ) {
@@ -152,7 +155,7 @@ public:
     void delete_waypoint( int n = 0 ) {
         if ( !route.size() )
             return;
-        if ( n < 0 || n > (int)route.size() - 1 )
+        if ( n < 0 || n >= (int)route.size() )
             n = route.size() - 1;
 
         route.erase( route.begin() + n );

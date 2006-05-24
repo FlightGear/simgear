@@ -758,8 +758,9 @@ SGPropertyNode::~SGPropertyNode ()
   clearValue();
 
   if (_listeners) {
-    for (unsigned i = 0; i < _listeners.size(); ++i)
-      _listeners[i]->unregister_property(this);
+    vector<SGPropertyChangeListener*>::iterator it;
+    for (it = _listeners->begin(); it != _listeners->end(); ++it)
+      (*it)->unregister_property(this);
     delete _listeners;
   }
 }

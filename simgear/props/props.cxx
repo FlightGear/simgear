@@ -756,7 +756,12 @@ SGPropertyNode::~SGPropertyNode ()
     _removedChildren[i]->_parent = 0;
   delete _path_cache;
   clearValue();
-  delete _listeners;
+
+  if (_listeners) {
+    for (unsigned i = 0; i < _listeners.size(); ++i)
+      _listeners[i]->unregister_property(this);
+    delete _listeners;
+  }
 }
 
 

@@ -87,6 +87,8 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
+    bool find( ssgSimpleState*, string & material ) const;
+
     // Destructor
     ~SGMaterialLib ( void );
 };

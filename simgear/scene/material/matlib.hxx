@@ -88,7 +88,6 @@ public:
     const_material_map_iterator end() const { return matlib.end(); }
 
     const SGMaterial* findMaterial(/*const*/ssgLeaf* leaf) const;
-    bool find( ssgSimpleState*, string & material ) const;
 
     // Destructor
     ~SGMaterialLib ( void );

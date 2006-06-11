@@ -584,37 +584,3 @@ const SGMaterial* SGMaterialLib::findMaterial(/*const*/ssgLeaf* leaf) const
 
   return matUserData->getMaterial();
 }
-
-bool SGMaterialLib::find( ssgSimpleState* state, string & material ) const
-{
-  // is obsolete, just kept here to avoid a race condition with
-  // SimGear/flightgear cvs checkouts ...
-    bool found = false;
-    ssgSimpleState *state_mat;
-
-    material = "";
-
-    for( const_material_map_iterator iter = begin(); iter != end(); iter++ )
-    {
-        int nb_tex = (*iter).second->get_num();
-
-        // many textures per material
-        for( int i = 0; i < nb_tex; i++ )
-        {
-            // material state
-            state_mat = (*iter).second->get_state( i );
-
-            if( state_mat == state )
-            {
-                 material = (*iter).first.c_str();
-                found = true;
-                break;
-            }
-        }
-
-        if( found )
-            break;
-    }
-
-    return found;
-}

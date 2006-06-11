@@ -36,6 +36,8 @@
 #include <vector>
 #include <map>
 
+#include <simgear/math/SGMath.hxx>
+
 #include <plib/sg.h>
 #include <plib/ssg.h>
 
@@ -104,7 +106,7 @@ public:
   /**
    * Destructor.
    */
-  virtual ~SGMaterial( void );
+  ~SGMaterial( void );
 
 
 
@@ -118,31 +120,31 @@ public:
    * @return true if the texture loaded, false if it was loaded
    * already.
    */
-  virtual bool load_texture (int n = -1);
+  bool load_texture (int n = -1);
 
 
   /**
    * Get the textured state.
    */
-  virtual ssgSimpleState *get_state (int n = -1) const;
+  ssgSimpleState *get_state (int n = -1) const;
 
 
   /**
    * Get the number of textures assigned to this material.
    */
-  virtual inline int get_num() const { return _status.size(); }
+  inline int get_num() const { return _status.size(); }
 
 
   /**
    * Get the xsize of the texture, in meters.
    */
-  virtual inline double get_xsize() const { return xsize; }
+  inline double get_xsize() const { return xsize; }
 
 
   /**
    * Get the ysize of the texture, in meters.
    */
-  virtual inline double get_ysize() const { return ysize; }
+  inline double get_ysize() const { return ysize; }
 
 
   /**
@@ -152,27 +154,61 @@ public:
    *
    * @return The area (m^2?) covered by each light.
    */
-  virtual inline double get_light_coverage () const { return light_coverage; }
+  inline double get_light_coverage () const { return light_coverage; }
 
+  /**
+   * Return if the surface material is solid, if it is not solid, a fluid
+   * can be assumed, that is usually water.
+   */
+  bool get_solid () const { return solid; }
+
+  /**
+   * Get the friction factor for that material
+   */
+  double get_friction_factor () const { return friction_factor; }
+
+  /**
+   * Get the rolling friction for that material
+   */
+  double get_rolling_friction () const { return rolling_friction; }
+
+  /**
+   * Get the bumpines for that material
+   */
+  double get_bumpiness () const { return bumpiness; }
+
+  /**
+   * Get the load resistence
+   */
+  double get_load_resistence () const { return load_resistence; }
+
+  /**
+   * Get the list of names for this material
+   */
+  const vector<string>& get_names() const { return _names; }
+
+  /**
+   * add the given name to the list of names this material is known
+   */
+  void add_name(const string& name) { _names.push_back(name); }
 
   /**
    * Get the number of randomly-placed objects defined for this material.
    */
-  virtual int get_object_group_count () const { return object_groups.size(); }
-
+  int get_object_group_count () const { return object_groups.size(); }
 
   /**
    * Get a randomly-placed object for this material.
    */
-  virtual SGMatModelGroup * get_object_group (int index) const {
+  SGMatModelGroup * get_object_group (int index) const {
     return object_groups[index];
   }
 
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
    */
-  virtual SGMaterialGlyph * get_glyph (const string& name) const {
-    map<string, SGMaterialGlyph *>::const_iterator it = glyphs.find(name);
+  SGMaterialGlyph * get_glyph (const string& name) const {
+    map<string, SGSharedPtr<SGMaterialGlyph> >::const_iterator it = glyphs.find(name);
     return it != glyphs.end() ? it->second : 0;
   }
 
@@ -186,7 +222,7 @@ protected:
   /**
    * Initialization method, invoked by all public constructors.
    */
-  virtual void init();
+  void init();
 
 protected:
 
@@ -223,14 +259,32 @@ private:
   // coverage of night lighting.
   double light_coverage;
 
+  // True if the material is solid, false if it is a fluid
+  bool solid;
+
+  // the friction factor of that surface material
+  double friction_factor;
+
+  // the rolling friction of that surface material
+  double rolling_friction;
+
+  // the bumpiness of that surface material
+  double bumpiness;
+
+  // the load resistence of that surface material
+  double load_resistence;
+
   // material properties
-  sgVec4 ambient, diffuse, specular, emission;
+  SGVec4f ambient, diffuse, specular, emission;
   double shininess;
+
+  // the list of names for this material. May be empty.
+  vector<string> _names;
 
   vector<SGSharedPtr<SGMatModelGroup> > object_groups;
 
   // taxiway-/runway-sign texture elements
-  map<string, SGMaterialGlyph *> glyphs;
+  map<string, SGSharedPtr<SGMaterialGlyph> > glyphs;
 
 
   ////////////////////////////////////////////////////////////////////
@@ -248,7 +302,7 @@ private:
 };
 
 
-class SGMaterialGlyph {
+class SGMaterialGlyph : public SGReferenced {
 public:
   SGMaterialGlyph(SGPropertyNode *);
   inline double get_left() const { return _left; }
@@ -258,6 +312,17 @@ public:
 protected:
   double _left;
   double _right;
+};
+
+class SGMaterialUserData : public ssgBase {
+public:
+  SGMaterialUserData(const SGMaterial* material) :
+    mMaterial(material)
+  {}
+  const SGMaterial* getMaterial() const
+  { return mMaterial; }
+private:
+  SGSharedPtr<const SGMaterial> mMaterial;
 };
 
 #endif // _SG_MAT_HXX 

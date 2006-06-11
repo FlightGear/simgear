@@ -33,6 +33,8 @@
 #  include <windows.h>
 #endif
 
+#include <plib/ssg.h>
+
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
@@ -46,6 +48,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/scene/tgdb/userdata.hxx>
 
 #include "mat.hxx"
 
@@ -188,17 +191,20 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
         throw;
     }
 
+    SGSharedPtr<SGMaterial> m;
+
     int nMaterials = materials.nChildren();
     for (int i = 0; i < nMaterials; i++) {
         const SGPropertyNode * node = materials.getChild(i);
         if (!strcmp(node->getName(), "material")) {
-            SGSharedPtr<SGMaterial> m = new SGMaterial( fg_root, node, season );
+            m = new SGMaterial( fg_root, node, season );
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {
                 string name = names[j]->getStringValue();
                 // cerr << "Material " << name << endl;
                 matlib[name] = m;
+                m->add_name(name);
                 SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material "
                         << names[j]->getStringValue() );
             }
@@ -219,7 +225,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     gnd_lights->enable( GL_BLEND );
     gnd_lights->disable( GL_ALPHA_TEST );
     gnd_lights->disable( GL_LIGHTING );
-    matlib["GROUND_LIGHTS"] = new SGMaterial( gnd_lights );
+    m = new SGMaterial( gnd_lights );
+    m->add_name("GROUND_LIGHTS");
+    matlib["GROUND_LIGHTS"] = m;
 
     GLuint tex_name;
 
@@ -237,10 +245,14 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_white_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_lights->setTexture( tex_name );
-    matlib["RWY_WHITE_LIGHTS"] = new SGMaterial( rwy_white_lights );
+    m = new SGMaterial( rwy_white_lights );
+    m->add_name("RWY_WHITE_LIGHTS");
+    matlib["RWY_WHITE_LIGHTS"] = m;
     // For backwards compatibility ... remove someday
-    matlib["RUNWAY_LIGHTS"] = new SGMaterial( rwy_white_lights );
-    matlib["RWY_LIGHTS"] = new SGMaterial( rwy_white_lights );
+    m->add_name("RUNWAY_LIGHTS");
+    matlib["RUNWAY_LIGHTS"] = m;
+    m->add_name("RWY_LIGHTS");
+    matlib["RWY_LIGHTS"] = m;
     // end of backwards compatitibilty
 
     // hard coded runway medium intensity white light state
@@ -257,8 +269,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_white_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_medium_lights->setTexture( tex_name );
-    matlib["RWY_WHITE_MEDIUM_LIGHTS"]
-        = new SGMaterial( rwy_white_medium_lights );
+    m = new SGMaterial( rwy_white_medium_lights );
+    m->add_name("RWY_WHITE_MEDIUM_LIGHTS");
+    matlib["RWY_WHITE_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity white light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 155 );
@@ -274,8 +287,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_white_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_white_low_lights->setTexture( tex_name );
-    matlib["RWY_WHITE_LOW_LIGHTS"]
-        = new SGMaterial( rwy_white_low_lights );
+    m = new SGMaterial( rwy_white_low_lights );
+    m->add_name("RWY_WHITE_LOW_LIGHTS");
+    matlib["RWY_WHITE_LOW_LIGHTS"] = m;
 
     // hard coded runway yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 255 );
@@ -291,7 +305,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_yellow_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_lights->setTexture( tex_name );
-    matlib["RWY_YELLOW_LIGHTS"] = new SGMaterial( rwy_yellow_lights );
+    m = new SGMaterial( rwy_yellow_lights );
+    m->add_name("RWY_YELLOW_LIGHTS");
+    matlib["RWY_YELLOW_LIGHTS"] = m;
 
     // hard coded runway medium intensity yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 205 );
@@ -307,8 +323,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_yellow_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_medium_lights->setTexture( tex_name );
-    matlib["RWY_YELLOW_MEDIUM_LIGHTS"]
-        = new SGMaterial( rwy_yellow_medium_lights );
+    m = new SGMaterial( rwy_yellow_medium_lights );
+    m->add_name("RWY_YELLOW_MEDIUM_LIGHTS");
+    matlib["RWY_YELLOW_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity yellow light state
     tex_name = gen_standard_dir_light_map( 235, 215, 20, 155 );
@@ -324,8 +341,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_yellow_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_yellow_low_lights->setTexture( tex_name );
-    matlib["RWY_YELLOW_LOW_LIGHTS"]
-        = new SGMaterial( rwy_yellow_low_lights );
+    m = new SGMaterial( rwy_yellow_low_lights );
+    m->add_name("RWY_YELLOW_LOW_LIGHTS");
+    matlib["RWY_YELLOW_LOW_LIGHTS"] = m;
 
     // hard coded runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 255 );
@@ -341,8 +359,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_red_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_lights->setTexture( tex_name );
-    matlib["RWY_RED_LIGHTS"]
-        = new SGMaterial( rwy_red_lights );
+    m = new SGMaterial( rwy_red_lights );
+    m->add_name("RWY_RED_LIGHTS");
+    matlib["RWY_RED_LIGHTS"] = m;
 
     // hard coded medium intensity runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
@@ -358,8 +377,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_red_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_medium_lights->setTexture( tex_name );
-    matlib["RWY_RED_MEDIUM_LIGHTS"]
-        = new SGMaterial( rwy_red_medium_lights );
+    m = new SGMaterial( rwy_red_medium_lights );
+    m->add_name("RWY_RED_MEDIUM_LIGHTS");
+    matlib["RWY_RED_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway red light state
     tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
@@ -375,8 +395,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_red_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_red_low_lights->setTexture( tex_name );
-    matlib["RWY_RED_LOW_LIGHTS"]
-        = new SGMaterial( rwy_red_low_lights );
+    m = new SGMaterial( rwy_red_low_lights );
+    m->add_name("RWY_RED_LOW_LIGHTS");
+    matlib["RWY_RED_LOW_LIGHTS"] = m;
 
     // hard coded runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 255 );
@@ -392,8 +413,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_green_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_lights->setTexture( tex_name );
-    matlib["RWY_GREEN_LIGHTS"]
-        = new SGMaterial( rwy_green_lights );
+    m = new SGMaterial( rwy_green_lights );
+    m->add_name("RWY_GREEN_LIGHTS");
+    matlib["RWY_GREEN_LIGHTS"] = m;
 
     // hard coded medium intensity runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
@@ -409,8 +431,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_green_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_medium_lights->setTexture( tex_name );
-    matlib["RWY_GREEN_MEDIUM_LIGHTS"]
-        = new SGMaterial( rwy_green_medium_lights );
+    m = new SGMaterial( rwy_green_medium_lights );
+    m->add_name("RWY_GREEN_MEDIUM_LIGHTS");
+    matlib["RWY_GREEN_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway green light state
     tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
@@ -426,10 +449,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_green_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     rwy_green_low_lights->setTexture( tex_name );
-    matlib["RWY_GREEN_LOW_LIGHTS"]
-        = new SGMaterial( rwy_green_low_lights );
-    matlib["RWY_GREEN_TAXIWAY_LIGHTS"]
-        = new SGMaterial( rwy_green_low_lights );
+    m = new SGMaterial( rwy_green_low_lights );
+    m->add_name("RWY_GREEN_LOW_LIGHTS");
+    matlib["RWY_GREEN_LOW_LIGHTS"] = m;
+    m->add_name("RWY_GREEN_TAXIWAY_LIGHTS");
+    matlib["RWY_GREEN_TAXIWAY_LIGHTS"] = m;
 
     // hard coded low intensity taxiway blue light state
     tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
@@ -445,8 +469,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     taxiway_blue_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
     taxiway_blue_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     taxiway_blue_low_lights->setTexture( tex_name );
-    matlib["RWY_BLUE_TAXIWAY_LIGHTS"]
-        = new SGMaterial( taxiway_blue_low_lights );
+    m = new SGMaterial( taxiway_blue_low_lights );
+    m->add_name("RWY_BLUE_TAXIWAY_LIGHTS");
+    matlib["RWY_BLUE_TAXIWAY_LIGHTS"] = m;
 
     // hard coded runway vasi light state
     tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
@@ -463,7 +488,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     rwy_vasi_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
     // rwy_vasi_lights->setTexture( gen_vasi_light_map_old() );
     rwy_vasi_lights->setTexture( tex_name );
-    matlib["RWY_VASI_LIGHTS"] = new SGMaterial( rwy_vasi_lights );
+    m = new SGMaterial( rwy_vasi_lights );
+    m->add_name("RWY_VASI_LIGHTS");
+    matlib["RWY_VASI_LIGHTS"] = m;
 
     return true;
 }
@@ -491,6 +518,7 @@ bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
 	    << mat_name << " (" << full_path << ")");
 
     matlib[mat_name] = new SGMaterial( full_path );
+    matlib[mat_name]->add_name(mat_name);
 
     return true;
 }
@@ -500,6 +528,7 @@ bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
 bool SGMaterialLib::add_item ( const string &mat_name, ssgSimpleState *state )
 {
     matlib[mat_name] = new SGMaterial( state );
+    matlib[mat_name]->add_name(mat_name);
 
     SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material given a premade "
 	    << "ssgSimpleState = " << mat_name );
@@ -539,8 +568,27 @@ void SGMaterialLib::load_next_deferred() {
     }
 }
 
-bool SGMaterialLib::find( ssgSimpleState *state, string & material ) const
+// Return the material from that given leaf
+const SGMaterial* SGMaterialLib::findMaterial(/*const*/ssgLeaf* leaf) const
 {
+  if (!leaf)
+    return 0;
+  
+  ssgBase* base = leaf->getUserData();
+  if (!base)
+    return 0;
+
+  SGMaterialUserData* matUserData = dynamic_cast<SGMaterialUserData*>(base);
+  if (!matUserData)
+    return 0;
+
+  return matUserData->getMaterial();
+}
+
+bool SGMaterialLib::find( ssgSimpleState* state, string & material ) const
+{
+  // is obsolete, just kept here to avoid a race condition with
+  // SimGear/flightgear cvs checkouts ...
     bool found = false;
     ssgSimpleState *state_mat;
 
@@ -548,26 +596,25 @@ bool SGMaterialLib::find( ssgSimpleState *state, string & material ) const
 
     for( const_material_map_iterator iter = begin(); iter != end(); iter++ )
     {
-	 int nb_tex = (*iter).second->get_num();
+        int nb_tex = (*iter).second->get_num();
 
-	 // many textures per material
-	 for( int i = 0; i < nb_tex; i++ )
-	 {
-	     // material state
-	     state_mat = (*iter).second->get_state( i );
+        // many textures per material
+        for( int i = 0; i < nb_tex; i++ )
+        {
+            // material state
+            state_mat = (*iter).second->get_state( i );
 
-	     if( state_mat == state )
-	     {
+            if( state_mat == state )
+            {
                  material = (*iter).first.c_str();
-	         found = true;
-	     	 break;
-	     }
-	 }
+                found = true;
+                break;
+            }
+        }
 
-	 if( found )
-	     break;
+        if( found )
+            break;
     }
 
     return found;
 }
-

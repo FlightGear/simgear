@@ -176,6 +176,7 @@ bool sgGenTile( const string& path, SGBucket b,
     ssgLeaf *leaf = 
         new ssgVtxTable ( GL_TRIANGLE_FAN, vl, nl, tl, cl );
 
+    leaf->setUserData( new SGMaterialUserData(mat) );
     leaf->setState( state );
     geometry->addKid( leaf );
 

@@ -136,6 +136,13 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   mipmap = props->getBoolValue("mipmap", true);
   light_coverage = props->getDoubleValue("light-coverage", 0.0);
 
+  // surface values for use with ground reactions
+  solid = props->getBoolValue("solid", true);
+  friction_factor = props->getDoubleValue("friction-factor", 1.0);
+  rolling_friction = props->getDoubleValue("rolling-friction", 0.02);
+  bumpiness = props->getDoubleValue("bumpiness", 0.0);
+  load_resistence = props->getDoubleValue("load-resistence", 1e30);
+
   // Taken from default values as used in ac3d
   ambient[0] = props->getDoubleValue("ambient/r", 0.2);
   ambient[1] = props->getDoubleValue("ambient/g", 0.2);
@@ -191,6 +198,13 @@ SGMaterial::init ()
 
     mipmap = true;
     light_coverage = 0.0;
+
+    solid = true;
+    friction_factor = 1;
+    rolling_friction = 0.02;
+    bumpiness = 0;
+    load_resistence = 1e30;
+
     shininess = 1.0;
     for (int i = 0; i < 4; i++) {
         ambient[i]  = (i < 3) ? 0.2 : 1.0;

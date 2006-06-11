@@ -250,6 +250,7 @@ ssgLeaf *sgMakeLeaf( const string& path,
 
     // lookup the state record
 
+    leaf->setUserData( new SGMaterialUserData(mat) );
     leaf->setState( state );
 
     if ( calc_lights ) {

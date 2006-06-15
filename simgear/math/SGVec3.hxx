@@ -296,6 +296,20 @@ equivalent(const SGVec3<T>& v1, const SGVec3<T>& v2)
   return equivalent(v1, v2, tol, tol);
 }
 
+/// The euclidean distance of the two vectors
+template<typename T>
+inline
+T
+dist(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{ return norm(v1 - v2); }
+
+/// The squared euclidean distance of the two vectors
+template<typename T>
+inline
+T
+distSqr(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{ SGVec3<T> tmp = v1 - v2; return dot(tmp, tmp); }
+
 #ifndef NDEBUG
 template<typename T>
 inline

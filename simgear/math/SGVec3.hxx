@@ -43,16 +43,6 @@ public:
   /// make sure it has at least 3 elements
   explicit SGVec3(const T* data)
   { _data[0] = data[0]; _data[1] = data[1]; _data[2] = data[2]; }
-  /// Constructor. Initialize by a geodetic coordinate
-  /// Note that this conversion is relatively expensive to compute
-  /// depricated
-  SGVec3(const SGGeod& geod)
-  { SGGeodesy::SGGeodToCart(geod, *this); }
-  /// Constructor. Initialize by a geocentric coordinate
-  /// Note that this conversion is relatively expensive to compute
-  /// depricated
-  SGVec3(const SGGeoc& geoc)
-  { SGGeodesy::SGGeocToCart(geoc, *this); }
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const

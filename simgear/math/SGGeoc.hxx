@@ -27,14 +27,6 @@ class SGGeoc {
 public:
   /// Default constructor, initializes the instance to lat = lon = lat = 0
   SGGeoc(void);
-  /// Initialize from a cartesian vector assumed to be in meters
-  /// Note that this conversion is relatively expensive to compute
-  /// depricated
-  SGGeoc(const SGVec3<double>& cart);
-  /// Initialize from a geodetic position
-  /// Note that this conversion is relatively expensive to compute
-  /// depricated
-  SGGeoc(const SGGeod& geod);
 
   /// Factory from angular values in radians and radius in ft
   static SGGeoc fromRadFt(double lon, double lat, double radius);
@@ -110,20 +102,6 @@ inline
 SGGeoc::SGGeoc(double lon, double lat, double radius) :
   _lon(lon), _lat(lat), _radius(radius)
 {
-}
-
-inline
-SGGeoc::SGGeoc(const SGVec3<double>& cart)
-{
-  SGGeodesy::SGCartToGeoc(cart, *this);
-}
-
-inline
-SGGeoc::SGGeoc(const SGGeod& geod)
-{
-  SGVec3<double> cart;
-  SGGeodesy::SGGeodToCart(geod, cart);
-  SGGeodesy::SGCartToGeoc(cart, *this);
 }
 
 inline

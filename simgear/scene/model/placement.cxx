@@ -103,6 +103,14 @@ SGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
 }
 
 void
+SGModelPlacement::setPosition(const SGGeod& position)
+{
+  _lon_deg = position.getLongitudeDeg();
+  _lat_deg = position.getLatitudeDeg();
+  _elev_ft = position.getElevationFt();
+}
+
+void
 SGModelPlacement::setRollDeg (double roll_deg)
 {
   _roll_deg = roll_deg;
@@ -127,6 +135,12 @@ SGModelPlacement::setOrientation (double roll_deg, double pitch_deg,
   _roll_deg = roll_deg;
   _pitch_deg = pitch_deg;
   _heading_deg = heading_deg;
+}
+
+void
+SGModelPlacement::setOrientation (const SGQuatd& orientation)
+{
+  orientation.getEulerDeg(_heading_deg, _pitch_deg, _roll_deg);
 }
 
 // end of model.cxx

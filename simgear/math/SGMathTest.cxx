@@ -213,16 +213,16 @@ GeodesyTest(void)
   geod0 = SGGeod::fromDegM(30, 20, 17);
 
   // Test the conversion routines to cartesian coordinates
-  cart0 = geod0;
-  geod1 = cart0;
+  cart0 = SGVec3<double>::fromGeod(geod0);
+  geod1 = SGGeod::fromCart(cart0);
   if (epsDeg < fabs(geod0.getLongitudeDeg() - geod1.getLongitudeDeg()) ||
       epsDeg < fabs(geod0.getLatitudeDeg() - geod1.getLatitudeDeg()) ||
       epsM < fabs(geod0.getElevationM() - geod1.getElevationM()))
     return false;
 
   // Test the conversion routines to radial coordinates
-  geoc0 = cart0;
-  cart1 = geoc0;
+  geoc0 = SGGeoc::fromCart(cart0);
+  cart1 = SGVec3<double>::fromGeoc(geoc0);
   if (!equivalent(cart0, cart1))
     return false;
 
@@ -346,8 +346,8 @@ main(void)
     return EXIT_FAILURE;
 
   // Check geodetic/geocentric/cartesian conversions
-//   if (!GeodesyTest())
-//     return EXIT_FAILURE;
+  if (!GeodesyTest())
+    return EXIT_FAILURE;
 
   // Check interaction with sg*/sgd*
   if (!sgInterfaceTest())

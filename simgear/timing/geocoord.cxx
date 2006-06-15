@@ -27,8 +27,8 @@
  * written for FlightGear, in order to store Timezone control points. 
  *
  ************************************************************************/
+#include <simgear/math/SGMath.hxx>
 #include "geocoord.h"
-#include <plib/sg.h>
 
 SGGeoCoord::SGGeoCoord(const SGGeoCoord& other)
 {
@@ -36,57 +36,20 @@ SGGeoCoord::SGGeoCoord(const SGGeoCoord& other)
   lon = other.lon;
 }
 
-// double SGGeoCoord::getAngle(const SGGeoCoord& other) const
-// {
-//   Vector first(      getX(),       getY(),       getZ());
-//   Vector secnd(other.getX(), other.getY(), other.getZ());
-//     double
-//       dot = VecDot(first, secnd),
-//       len1 = first.VecLen(),
-//       len2 = secnd.VecLen(),
-//       len = len1 * len2,
-//       angle = 0;
-//     //printf ("Dot: %f, len1: %f len2: %f\n", dot, len1, len2);
-//     /*Vector pPos = prevPos - Reference->prevPos;
-//       Vector pVel = prevVel - Reference->prevVel;*/
-
-
-//     if ( ( (dot / len) < 1) && (dot / len > -1) && len )
-//     	angle = acos(dot / len);
-//     return angle;
-// }
-
-// SGGeoCoord* SGGeoCoordContainer::getNearest(const SGGeoCoord& ref) const
-// {
-//   float angle, maxAngle = 180;
-
-//   SGGeoCoordVectorConstIterator i, nearest;
-//   for (i = data.begin(); i != data.end(); i++)
-//     {
-//       angle = SGD_RADIANS_TO_DEGREES * (*i)->getAngle(ref);
-//       if (angle < maxAngle)
-// 	{
-// 	  maxAngle = angle;
-// 	  nearest = i;
-// 	}
-//     }
-//   return *nearest;
-// }
-
-
 SGGeoCoord* SGGeoCoordContainer::getNearest(const SGGeoCoord& ref) const
 {
-  sgVec3 first, secnd;
-  float dist, maxDist=SG_MAX;
-  sgSetVec3( first, ref.getX(), ref.getY(), ref.getZ());
+  if (data.empty())
+    return 0;
+
+  float maxCosAng = -2;
+  SGVec3f refVec(ref.getX(), ref.getY(), ref.getZ());
   SGGeoCoordVectorConstIterator i, nearest;
-  for (i = data.begin(); i != data.end(); i++)
+  for (i = data.begin(); i != data.end(); ++i)
     {
-      sgSetVec3(secnd, (*i)->getX(), (*i)->getY(), (*i)->getZ());
-      dist = sgDistanceSquaredVec3(first, secnd);
-      if (dist < maxDist)
+      float cosAng = dot(refVec, SGVec3f((*i)->getX(), (*i)->getY(), (*i)->getZ()));
+      if (maxCosAng < cosAng)
 	{
-	  maxDist = dist;
+	  maxCosAng = cosAng;
 	  nearest = i;
 	}
     }

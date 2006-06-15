@@ -110,6 +110,11 @@ public:
   static SGQuat fromLonLatDeg(T lon, T lat)
   { return fromLonLatRad(SGMisc<T>::deg2rad(lon), SGMisc<T>::deg2rad(lat)); }
 
+  /// Return a quaternion rotation the the horizontal local frame from given
+  /// longitude and latitude
+  static SGQuat fromLonLat(const SGGeod& geod)
+  { return fromLonLatRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
+
   /// Create a quaternion from the angle axis representation
   static SGQuat fromAngleAxis(T angle, const SGVec3<T>& axis)
   {

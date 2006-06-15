@@ -36,10 +36,6 @@
 
 
 #include <math.h>
-#include <string>
-#include STL_IOSTREAM
-//#include <streambuf> // looks like streambuf does not exist on linux.
-// But it looks like it isn't used anyways -:)
 #include <vector>
 
 SG_USING_NAMESPACE(std);
@@ -66,8 +62,6 @@ public:
   float getZ()   const { return sin(SGD_DEGREES_TO_RADIANS*lat); };
 
 
-  //double getAngle(const SGGeoCoord& other) const;
-  virtual void print() {} ; 
   virtual const char * getDescription() {return 0;};
 };
 

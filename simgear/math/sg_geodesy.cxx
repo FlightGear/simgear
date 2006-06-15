@@ -73,10 +73,9 @@ static inline double M0( double e2 ) {
 }
 
 
-// given, alt, lat1, lon1, az1 and distance (s), calculate lat2, lon2
+// given, lat1, lon1, az1 and distance (s), calculate lat2, lon2
 // and az2.  Lat, lon, and azimuth are in degrees.  distance in meters
-int geo_direct_wgs_84 ( double alt, double lat1,
-                        double lon1, double az1,
+int geo_direct_wgs_84 ( double lat1, double lon1, double az1,
                         double s, double *lat2, double *lon2,
                         double *az2 )
 {
@@ -160,16 +159,15 @@ int geo_direct_wgs_84 ( double alt, double lat1,
 	double dM = a*M0(e2) - s;
 	double paz = ( phi1 < 0.0 ? 180.0 : 0.0 );
         double zero = 0.0f;
-	return geo_direct_wgs_84( alt, zero, lon1, paz, dM, lat2, lon2, az2 );
+	return geo_direct_wgs_84( zero, lon1, paz, dM, lat2, lon2, az2 );
     } 
 }
 
 
-// given alt, lat1, lon1, lat2, lon2, calculate starting and ending
+// given lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters
-int geo_inverse_wgs_84( double alt, double lat1,
-                        double lon1, double lat2,
+int geo_inverse_wgs_84( double lat1, double lon1, double lat2,
 			double lon2, double *az1, double *az2,
                         double *s )
 {
@@ -192,14 +190,14 @@ int geo_inverse_wgs_84( double alt, double lat1,
 	return 0;
     } else if(  fabs(cosphi1) < testv ) {
 	// initial point is polar
-	int k = geo_inverse_wgs_84( alt, lat2,lon2,lat1,lon1, az1,az2,s );
+	int k = geo_inverse_wgs_84( lat2,lon2,lat1,lon1, az1,az2,s );
 	k = k; // avoid compiler error since return result is unused
 	b = *az1; *az1 = *az2; *az2 = b;
 	return 0;
     } else if( fabs(cosphi2) < testv ) {
 	// terminal point is polar
         double _lon1 = lon1 + 180.0f;
-	int k = geo_inverse_wgs_84( alt, lat1, lon1, lat1, _lon1, 
+	int k = geo_inverse_wgs_84( lat1, lon1, lat1, _lon1, 
 				    az1, az2, s );
 	k = k; // avoid compiler error since return result is unused
 	*s /= 2.0;
@@ -211,8 +209,8 @@ int geo_inverse_wgs_84( double alt, double lat1,
     {
 	// Geodesic passes through the pole (antipodal)
 	double s1,s2;
-	geo_inverse_wgs_84( alt, lat1,lon1, lat1,lon2, az1,az2, &s1 );
-	geo_inverse_wgs_84( alt, lat2,lon2, lat1,lon2, az1,az2, &s2 );
+	geo_inverse_wgs_84( lat1,lon1, lat1,lon2, az1,az2, &s1 );
+	geo_inverse_wgs_84( lat2,lon2, lat1,lon2, az1,az2, &s2 );
 	*az2 = *az1;
 	*s = s1 + s2;
 	return 0;

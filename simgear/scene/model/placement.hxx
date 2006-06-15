@@ -66,6 +66,7 @@ public:
   virtual void setLatitudeDeg (double lat_deg);
   virtual void setElevationFt (double elev_ft);
   virtual void setPosition (double lon_deg, double lat_deg, double elev_ft);
+  void setPosition(const SGGeod& position);
 
   virtual double getRollDeg () const { return _roll_deg; }
   virtual double getPitchDeg () const { return _pitch_deg; }
@@ -76,6 +77,7 @@ public:
   virtual void setHeadingDeg (double heading_deg);
   virtual void setOrientation (double roll_deg, double pitch_deg,
                                double heading_deg);
+  void setOrientation(const SGQuatd& orientation);
   
   ssgPlacementTransform * getTransform(void)
   { return _position; }

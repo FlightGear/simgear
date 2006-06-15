@@ -27,9 +27,9 @@
 #include "SGGeodesy.hxx"
 #include "SGVec3.hxx"
 #include "SGVec4.hxx"
-#include "SGQuat.hxx"
-#include "SGMatrix.hxx"
 #include "SGGeoc.hxx"
 #include "SGGeod.hxx"
+#include "SGQuat.hxx"
+#include "SGMatrix.hxx"
 
 #endif

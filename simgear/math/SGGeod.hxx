@@ -29,9 +29,11 @@ public:
   SGGeod(void);
   /// Initialize from a cartesian vector assumed to be in meters
   /// Note that this conversion is relatively expensive to compute
+  /// depricated
   SGGeod(const SGVec3<double>& cart);
   /// Initialize from a geocentric position
   /// Note that this conversion is relatively expensive to compute
+  /// depricated
   SGGeod(const SGGeoc& geoc);
 
   /// Factory from angular values in radians and elevation is 0
@@ -46,6 +48,13 @@ public:
   static SGGeod fromRadM(double lon, double lat, double elevation);
   /// Factory from angular values in degrees and elevation in m
   static SGGeod fromDegM(double lon, double lat, double elevation);
+  /// Factory to convert position from a cartesian position assumed to be
+  /// in wgs84 measured in meters
+  /// Note that this conversion is relatively expensive to compute
+  static SGGeod fromCart(const SGVec3<double>& cart);
+  /// Factory to convert position from a geocentric position
+  /// Note that this conversion is relatively expensive to compute
+  static SGGeod fromGeoc(const SGGeoc& geoc);
 
   /// Return the geodetic longitude in radians
   double getLongitudeRad(void) const;
@@ -189,6 +198,26 @@ SGGeod::fromDegM(double lon, double lat, double elevation)
   return SGGeod(lon*SGD_DEGREES_TO_RADIANS, lat*SGD_DEGREES_TO_RADIANS,
                 elevation);
 #endif
+}
+
+inline
+SGGeod
+SGGeod::fromCart(const SGVec3<double>& cart)
+{
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(cart, geod);
+  return geod;
+}
+
+inline
+SGGeod
+SGGeod::fromGeoc(const SGGeoc& geoc)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeocToCart(geoc, cart);
+  SGGeod geod;
+  SGGeodesy::SGCartToGeod(cart, geod);
+  return geod;
 }
 
 inline

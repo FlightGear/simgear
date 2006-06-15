@@ -28,6 +28,7 @@
 #define _TIMEZONE_H_
 
 #include <stdio.h>
+#include <string>
 
 #include <simgear/timing/geocoord.h>
 
@@ -84,11 +85,6 @@ public:
      */
     virtual ~SGTimeZone() { };
   
-    /**
-     * Print the descriptor string
-     */
-    virtual void print() { printf("%s", descriptor.c_str()); }
-
     /**
      * Return the descriptor string
      * @return descriptor string (char array)

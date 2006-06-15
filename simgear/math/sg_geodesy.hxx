@@ -4,18 +4,6 @@
 #include <simgear/math/point3d.hxx>
 #include "SGMath.hxx"
 
-// Returns the insersection of the line joining the center of the
-// earth and the specified cylindrical point with the surface of the
-// WGS84 ellipsoid.  Works by finding a normalization constant (in
-// squashed space) that places the squashed point on the surface of
-// the sphere.
-inline double seaLevelRadius(double r, double z)
-{
-    double sr = r * SGGeodesy::SQUASH;
-    double zz = z*z;
-    return SGGeodesy::POLRAD*sqrt((r*r + zz)/(sr*sr + zz));
-}
-
 /** 
  * Convert from geocentric coordinates to geodetic coordinates
  * @param lat_geoc (in) Geocentric latitude, radians, + = North
@@ -56,11 +44,12 @@ inline void sgGeodToGeoc(double lat_geod, double alt,
                          double *sl_radius, double *lat_geoc)
 {
   SGVec3<double> cart;
-  SGGeodesy::SGGeodToCart(SGGeod::fromRadM(0, lat_geod, alt), cart);
+  SGGeod geod = SGGeod::fromRadM(0, lat_geod, alt);
+  SGGeodesy::SGGeodToCart(geod, cart);
   SGGeoc geoc;
   SGGeodesy::SGCartToGeoc(cart, geoc);
   *lat_geoc = geoc.getLatitudeRad();
-  *sl_radius = seaLevelRadius(cart(0), cart(2));
+  *sl_radius = SGGeodesy::SGGeodToSeaLevelRadius(geod);
 }
 
 
@@ -130,7 +119,7 @@ inline Point3D sgGeodToCart(const Point3D& geod)
 /**
  * Given a starting position and an offset radial and distance,
  * calculate an ending positon on a wgs84 ellipsoid.
- * @param alt (in) meters
+ * @param alt (in) meters (unused)
  * @param lat1 (in) degrees
  * @param lon1 (in) degrees
  * @param az1 (in) degrees
@@ -139,16 +128,39 @@ inline Point3D sgGeodToCart(const Point3D& geod)
  * @param lon2 (out) degrees
  * @param az2 (out) return course in degrees
  */
-int geo_direct_wgs_84 ( double alt, double lat1,
-                        double lon1, double az1, 
+int geo_direct_wgs_84 ( double lat1, double lon1, double az1, 
 			double s, double *lat2, double *lon2,
                         double *az2 );
+inline int geo_direct_wgs_84 ( double alt, double lat1,
+                        double lon1, double az1, 
+			double s, double *lat2, double *lon2,
+                        double *az2 )
+{ return geo_direct_wgs_84(lat1, lon1, az1, s, lat2, lon2, az2); }
 
+/**
+ * Given a starting position and an offset radial and distance,
+ * calculate an ending positon on a wgs84 ellipsoid.
+ * @param p1 (in) geodetic position
+ * @param az1 (in) degrees
+ * @param s (in) distance in meters
+ * @param p2 (out) geodetic position
+ * @param az2 (out) return course in degrees
+ */
+inline int geo_direct_wgs_84(const SGGeod& p1, double az1,
+                             double s, SGGeod& p2, double *az2 )
+{
+  double lat2, lon2;
+  int ret = geo_direct_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
+                              az1, s, &lat2, &lon2, az2);
+  p2.setLatitudeDeg(lat2);
+  p2.setLongitudeDeg(lon2);
+  return ret;
+}
 
 /**
  * Given an altitude and two sets of (lat, lon) calculate great circle
  * distance between them as well as the starting and ending azimuths.
- * @param alt (in) meters
+ * @param alt (in) meters (unused)
  * @param lat1 (in) degrees
  * @param lon1 (in) degrees
  * @param lat2 (in) degrees
@@ -157,9 +169,31 @@ int geo_direct_wgs_84 ( double alt, double lat1,
  * @param az2 (out) end heading degrees
  * @param s (out) distance meters
  */
-int geo_inverse_wgs_84( double alt, double lat1,
-                        double lon1, double lat2,
+int geo_inverse_wgs_84( double lat1, double lon1, double lat2,
 			double lon2, double *az1, double *az2,
                         double *s );
+inline int geo_inverse_wgs_84( double alt, double lat1,
+                               double lon1, double lat2,
+                               double lon2, double *az1, double *az2,
+                               double *s )
+{ return geo_inverse_wgs_84(lat1, lon1, lat2, lon2, az1, az2, s); }
+
+
+/**
+ * Given an altitude and two sets of (lat, lon) calculate great circle
+ * distance between them as well as the starting and ending azimuths.
+ * @param p1 (in) first position
+ * @param p2 (in) fsecond position
+ * @param az1 (out) start heading degrees
+ * @param az2 (out) end heading degrees
+ * @param s (out) distance meters
+ */
+inline int geo_inverse_wgs_84(const SGGeod& p1, const SGGeod& p2,
+                              double *az1, double *az2, double *s )
+{
+  return geo_inverse_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
+                            p2.getLatitudeDeg(), p2.getLongitudeDeg(),
+                            az1, az2, s);
+}
 
 #endif // _SG_GEODESY_HXX

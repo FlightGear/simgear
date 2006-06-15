@@ -45,10 +45,12 @@ public:
   { _data[0] = data[0]; _data[1] = data[1]; _data[2] = data[2]; }
   /// Constructor. Initialize by a geodetic coordinate
   /// Note that this conversion is relatively expensive to compute
+  /// depricated
   SGVec3(const SGGeod& geod)
   { SGGeodesy::SGGeodToCart(geod, *this); }
   /// Constructor. Initialize by a geocentric coordinate
   /// Note that this conversion is relatively expensive to compute
+  /// depricated
   SGVec3(const SGGeoc& geoc)
   { SGGeodesy::SGGeocToCart(geoc, *this); }
 
@@ -125,10 +127,57 @@ public:
   static SGVec3 e3(void)
   { return SGVec3(0, 0, 1); }
 
+  /// Constructor. Initialize by a geodetic coordinate
+  /// Note that this conversion is relatively expensive to compute
+  static SGVec3 fromGeod(const SGGeod& geod);
+  /// Constructor. Initialize by a geocentric coordinate
+  /// Note that this conversion is relatively expensive to compute
+  static SGVec3 fromGeoc(const SGGeoc& geoc);
+
 private:
   /// The actual data
   T _data[3];
 };
+
+template<>
+inline
+SGVec3<double>
+SGVec3<double>::fromGeod(const SGGeod& geod)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeodToCart(geod, cart);
+  return cart;
+}
+
+template<>
+inline
+SGVec3<float>
+SGVec3<float>::fromGeod(const SGGeod& geod)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeodToCart(geod, cart);
+  return SGVec3<float>(cart(0), cart(1), cart(2));
+}
+
+template<>
+inline
+SGVec3<double>
+SGVec3<double>::fromGeoc(const SGGeoc& geoc)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeocToCart(geoc, cart);
+  return cart;
+}
+
+template<>
+inline
+SGVec3<float>
+SGVec3<float>::fromGeoc(const SGGeoc& geoc)
+{
+  SGVec3<double> cart;
+  SGGeodesy::SGGeocToCart(geoc, cart);
+  return SGVec3<float>(cart(0), cart(1), cart(2));
+}
 
 /// Unary +, do nothing ...
 template<typename T>

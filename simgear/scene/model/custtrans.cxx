@@ -5,9 +5,6 @@
 #include "custtrans.hxx"
 void _ssgPushMatrix ( sgMat4 m );
 void _ssgPopMatrix  ();
-void _ssgReadInt     ( FILE *fd,                int   *var );
-void _ssgWriteInt    ( FILE *fd, const          int    var );
-extern sgMat4 _ssgOpenGLAxisSwapMatrix;
 
 void SGCustomTransform::copy_from( SGCustomTransform *src, int clone_flags )
 {

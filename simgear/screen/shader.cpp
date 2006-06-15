@@ -483,7 +483,7 @@ void Shader::bind(const float *v,...) {
     }
 	const float *value = v;
 	va_list args;
-	va_start(args,value);
+	va_start(args,v);
 	for(int i = 0; i < (int)parameters.size(); i++) {
 		if( vertex_target ) {
 			glProgramLocalParameter4fvPtr( vertex_target, parameters[i].location, value);
@@ -549,7 +549,7 @@ void Shader::setParameter(const char *name,const float *value) {
 void Shader::setParameters(const float *v,...) {
 	const float *value = v;
 	va_list args;
-	va_start(args,value);
+	va_start(args,v);
 	for(int i = 0; i < (int)parameters.size(); i++) {
 		if( vertex_target ) {
 			glProgramLocalParameter4fvPtr( vertex_target, parameters[i].location, value);

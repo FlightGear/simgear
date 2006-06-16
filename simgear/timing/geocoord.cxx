@@ -27,6 +27,10 @@
  * written for FlightGear, in order to store Timezone control points. 
  *
  ************************************************************************/
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/math/SGMath.hxx>
 #include "geocoord.h"
 

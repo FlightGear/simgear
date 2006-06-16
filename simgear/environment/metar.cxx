@@ -24,6 +24,9 @@
  * @file metar.cxx
  * Interface for encoded Meteorological Aerodrome Reports (METAR).
  */
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <string>
 #include <time.h>

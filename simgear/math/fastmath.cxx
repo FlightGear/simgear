@@ -2,7 +2,7 @@
  * \file fastmath.cxx
  * fast mathematics routines.
  *
- * Refferences:
+ * References:
  *
  * A Fast, Compact Approximation of the Exponential Function
  * Nicol N. Schraudolph

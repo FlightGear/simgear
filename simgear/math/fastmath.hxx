@@ -112,5 +112,36 @@ inline int fast_sgn(float f)
     return 1+(((*(int*)&f)>>31)<<1);
 }
 
+
+
+/**
+ * Quick rounding function.
+ */
+#if defined(i386)
+#define USE_X86_ASM
+#endif
+
+#if defined(USE_X86_ASM)
+static __inline__ int float_to_int(float f)
+{
+    int r;
+    __asm__ ("fistpl %0" : "=m" (r) : "t" (f) : "st");
+    return r;
+}
+#elif  defined(__MSC__) && defined(__WIN32__)
+static __inline int float_to_int(float f)
+{
+    int r;
+    _asm {
+        fld f
+        fistp r
+    }
+    return r;
+}
+#else
+#define float_to_int(F) ((int) ((F) < 0.0f ? (F)-0.5f : (F)+0.5f))
+#endif
+
+
 #endif // !_SG_FMATH_HXX
 

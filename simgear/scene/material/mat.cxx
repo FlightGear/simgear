@@ -317,6 +317,15 @@ void SGMaterial::assignTexture( ssgSimpleState *state, string &fname,
    }
 }
 
+SGMaterialGlyph* SGMaterial::get_glyph (const string& name) const
+{
+  map<string, SGSharedPtr<SGMaterialGlyph> >::const_iterator it;
+  it = glyphs.find(name);
+  if (it == glyphs.end())
+    return 0;
+
+  return it->second;
+}
 
 
 ////////////////////////////////////////////////////////////////////////

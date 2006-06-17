@@ -207,10 +207,7 @@ public:
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
    */
-  SGMaterialGlyph * get_glyph (const string& name) const {
-    map<string, SGSharedPtr<SGMaterialGlyph> >::const_iterator it = glyphs.find(name);
-    return it != glyphs.end() ? it->second : 0;
-  }
+  SGMaterialGlyph * get_glyph (const string& name) const;
 
 protected:
 

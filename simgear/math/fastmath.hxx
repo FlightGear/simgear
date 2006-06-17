@@ -97,19 +97,34 @@ inline float fast_pow(const float val1, const float val2)
  */
 inline float fast_abs(float f)
 {
-    int i=((*(int*)&f)&0x7fffffff);
-    return (*(float*)&i);
+    union {
+        float f;
+        int i;
+    } v;
+    v.f = f;
+    v.i = v.i&0x7fffffff;
+    return v.f;
 }
 
 inline float fast_neg(float f)
 {
-    int i=((*(int*)&f)^0x80000000);
-    return (*(float*)&i);
+    union {
+        float f;
+        int i;
+    } v;
+    v.f = f;
+    v.i = v.i^0x80000000;
+    return v.f;
 }
 
 inline int fast_sgn(float f)
 {
-    return 1+(((*(int*)&f)>>31)<<1);
+    union {
+        float f;
+        int i;
+    } v;
+    v.f = f;
+    return 1+((v.i>>31)<<1);
 }
 
 

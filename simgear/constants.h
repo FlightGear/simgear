@@ -128,6 +128,12 @@
 /** Knots to Miles per second */
 #define SG_KT_TO_MPS        0.5144444444444444444
 
+/** Feet per second to Knots */
+#define SG_FPS_TO_KT        0.5924838012958962841
+
+/** Knots to Feet per second */
+#define SG_KT_TO_FPS        1.6878098571011956874
+
 /** Miles per second to Miles per hour */
 #define SG_MPS_TO_MPH       2.2369362920544020312
 

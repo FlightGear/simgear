@@ -114,6 +114,9 @@ static int null_shader_callback( ssgEntity *e ) {
 }
 
 static int heat_haze_shader_callback( ssgEntity *e ) {
+   if( ! ((SGShadowAnimation *)e->getUserData())->get_condition_value() )
+       return true;
+
  	GLuint dlist = 0;
     ssgLeaf *leaf = (ssgLeaf *) e;
 #ifdef _SSG_USE_DLIST
@@ -312,6 +315,9 @@ static int heat_haze_shader_callback( ssgEntity *e ) {
 }
 
 static int fresnel_shader_callback( ssgEntity *e ) {
+   if( ! ((SGShadowAnimation *)e->getUserData())->get_condition_value() )
+       return true;
+
  	GLuint dlist = 0;
     ssgLeaf *leaf = (ssgLeaf *) e;
 #ifdef _SSG_USE_DLIST
@@ -385,6 +391,9 @@ static int fresnel_shader_callback( ssgEntity *e ) {
 
 
 static int chrome_shader_callback( ssgEntity *e ) {
+   if( ! ((SGShadowAnimation *)e->getUserData())->get_condition_value() )
+       return true;
+
  	GLuint dlist = 0;
     ssgLeaf *leaf = (ssgLeaf *) e;
 #ifdef _SSG_USE_DLIST

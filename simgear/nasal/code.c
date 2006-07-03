@@ -200,28 +200,14 @@ void naFreeContext(struct Context* c)
     UNLOCK();
 }
 
-#if 0
-/*
- * This is the original code which might not work properly on all
- * platforms since it allows one to work on the same variable in one
- * statement without the prior knowledge how this will behave.
- * 
- * e.g. ctx->opStack[ctx->opTop++] = ctx->opStack[ctx->opTop-1];
- *                        ^^^^^                        ^^^^^
- */
-# define PUSH(r) do { \
+// Note that opTop is incremented separately, to avoid situations
+// where the "r" expression also references opTop.  The SGI compiler
+// is known to have issues with such code.
+#define PUSH(r) do { \
     if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow"); \
-    ctx->opStack[ctx->opTop++] = r; \
+    ctx->opStack[ctx->opTop] = r; \
+    ctx->opTop++;                 \
     } while(0)
-
-#else
-
-# define PUSH(r)  _PUSH((ctx), (r))
-void _PUSH(struct Context* ctx, naRef r) {
-   if(ctx->opTop >= MAX_STACK_DEPTH) ERR(ctx, "stack overflow");
-    ctx->opStack[ctx->opTop++] = r;
-}
-#endif
 
 static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
 {
@@ -402,15 +388,14 @@ static int getMember(struct Context* ctx, naRef obj, naRef fld,
 }
 
 // OP_EACH works like a vector get, except that it leaves the vector
-// and index on the stack, increments the index after use, and pops
-// the arguments and pushes a nil if the index is beyond the end.
+// and index on the stack, increments the index after use, and
+// pushes a nil if the index is beyond the end.
 static void evalEach(struct Context* ctx, int useIndex)
 {
     int idx = (int)(ctx->opStack[ctx->opTop-1].num);
     naRef vec = ctx->opStack[ctx->opTop-2];
     if(!IS_VEC(vec)) naRuntimeError(ctx, "foreach enumeration of non-vector");
     if(!vec.ref.ptr.vec->rec || idx >= vec.ref.ptr.vec->rec->size) {
-        ctx->opTop -= 2; // pop two values
         PUSH(naNil());
         return;
     }
@@ -617,6 +602,9 @@ static naRef run(struct Context* ctx)
             break;
         case OP_BREAK: // restore stack state (FOLLOW WITH JMP!)
             ctx->opTop = ctx->markStack[--ctx->markTop];
+            break;
+        case OP_CONTINUE: // same, but don't modify markTop
+            ctx->opTop = ctx->markStack[ctx->markTop-1];
             break;
         default:
             ERR(ctx, "BUG: bad opcode");

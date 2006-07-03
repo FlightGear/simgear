@@ -480,9 +480,9 @@ static void genForEach(struct Parser* p, struct Token* t)
     vec = RIGHT(h);
     body = RIGHT(t)->children;
 
-    pushLoop(p, label);
     genExpr(p, vec);
     emit(p, OP_PUSHZERO);
+    pushLoop(p, label);
     loopTop = p->cg->codesz;
     emit(p, t->type == TOK_FOREACH ? OP_EACH : OP_INDEX);
     jumpEnd = emitJump(p, OP_JIFNIL);
@@ -491,6 +491,8 @@ static void genForEach(struct Parser* p, struct Token* t)
     emit(p, assignOp);
     emit(p, OP_POP);
     genLoop(p, body, 0, label, loopTop, jumpEnd);
+    emit(p, OP_POP); // Pull off the vector and index
+    emit(p, OP_POP);
 }
 
 static int tokMatch(struct Token* a, struct Token* b)
@@ -518,7 +520,7 @@ static void genBreakContinue(struct Parser* p, struct Token* t)
     bp = p->cg->loops[p->cg->loopTop - levels].breakIP;
     cp = p->cg->loops[p->cg->loopTop - levels].contIP;
     for(i=0; i<levels; i++)
-        emit(p, OP_BREAK);
+        emit(p, (t->type == TOK_BREAK || i>0) ? OP_BREAK : OP_CONTINUE);
     if(t->type == TOK_BREAK)
         emit(p, OP_PUSHNIL); // breakIP is always a JIFNOT/JIFNIL!
     emitImmediate(p, OP_JMP, t->type == TOK_BREAK ? bp : cp);

@@ -67,7 +67,7 @@ static naRef subvec(naContext c, naRef me, int argc, naRef* args)
     nlen = argc > 2 ? naNumValue(args[2]) : naNil();
     if(!naIsNil(nlen))
         len = (int)nlen.num;
-    if(!naIsVector(v) || start < 0 || start >= naVec_size(v) || len < 0)
+    if(!naIsVector(v) || start < 0 || start > naVec_size(v) || len < 0)
         return naNil();
     if(naIsNil(nlen) || len > naVec_size(v) - start)
         len = naVec_size(v) - start;
@@ -180,8 +180,8 @@ static naRef f_compile(naContext c, naRef me, int argc, naRef* args)
     int errLine;
     naRef script, code, fname;
     script = argc > 0 ? args[0] : naNil();
-    if(!naIsString(script)) return naNil();
-    fname = NEWCSTR(c, "<compile>");
+    fname = argc > 1 ? args[1] : NEWCSTR(c, "<compile>");
+    if(!naIsString(script) || !naIsString(fname)) return naNil();
     code = naParseCode(c, fname, 1,
                        naStr_data(script), naStr_len(script), &errLine);
     if(!naIsCode(code)) return naNil(); // FIXME: export error to caller...
@@ -208,9 +208,17 @@ static naRef f_call(naContext c, naRef me, int argc, naRef* args)
                     callme, callns);
     c->callChild = 0;
     if(argc > 2 && IS_VEC(args[argc-1])) {
-        if(!IS_NIL(subc->dieArg)) naVec_append(args[argc-1], subc->dieArg);
+        naRef v = args[argc-1];
+        if(!IS_NIL(subc->dieArg)) naVec_append(v, subc->dieArg);
         else if(naGetError(subc))
-            naVec_append(args[argc-1], NEWCSTR(subc, naGetError(subc)));
+            naVec_append(v, NEWCSTR(subc, naGetError(subc)));
+        if(naVec_size(v)) {
+            int i, sd = naStackDepth(subc);
+            for(i=0; i<sd; i++) {
+                naVec_append(v, naGetSourceFile(subc, i));
+                naVec_append(v, naNum(naGetLine(subc, i)));
+            }
+        }
     }
     naFreeContext(subc);
     return result;
@@ -349,10 +357,9 @@ static naRef f_caller(naContext ctx, naRef me, int argc, naRef* args)
 static naRef f_closure(naContext ctx, naRef me, int argc, naRef* args)
 {
     int i;
-    naRef func, idx;
     struct naFunc* f;
-    func = argc > 0 ? args[0] : naNil();
-    idx = argc > 1 ? naNumValue(args[1]) : naNil();
+    naRef func = argc > 0 ? args[0] : naNil();
+    naRef idx = argc > 1 ? naNumValue(args[1]) : naNum(0);
     if(!IS_FUNC(func) || IS_NIL(idx))
         naRuntimeError(ctx, "bad arguments to closure()");
     i = (int)idx.num;

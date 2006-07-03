@@ -13,7 +13,7 @@ static struct VecRec* newvecrec(struct VecRec* old)
     return vr;
 }
 
-static void vecrealloc(struct naVec* v)
+static void resize(struct naVec* v)
 {
     struct VecRec* vr = newvecrec(v->rec);
     naGC_swapfree((void**)&(v->rec), vr);
@@ -60,7 +60,7 @@ int naVec_append(naRef vec, naRef o)
     if(IS_VEC(vec)) {
         struct VecRec* r = vec.ref.ptr.vec->rec;
         while(!r || r->size >= r->alloced) {
-            vecrealloc(vec.ref.ptr.vec);
+            resize(vec.ref.ptr.vec);
             r = vec.ref.ptr.vec->rec;
         }
         r->array[r->size] = o;
@@ -91,7 +91,7 @@ naRef naVec_removelast(naRef vec)
         o = v->array[v->size - 1];
         v->size--;
         if(v->size < (v->alloced >> 1))
-            vecrealloc(vec.ref.ptr.vec);
+            resize(vec.ref.ptr.vec);
         return o;
     }
     return naNil();

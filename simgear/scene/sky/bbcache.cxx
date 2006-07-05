@@ -102,8 +102,7 @@ SGBbCache::SGBbCache(void) :
 }
 
 SGBbCache::~SGBbCache(void) {
-	if(rt)
-		delete rt;
+	delete rt;
 	freeTextureMemory();
 }
 

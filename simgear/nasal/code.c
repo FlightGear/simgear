@@ -601,10 +601,10 @@ static naRef run(struct Context* ctx)
             ctx->markTop--;
             break;
         case OP_BREAK: // restore stack state (FOLLOW WITH JMP!)
-            ctx->opTop = ctx->markStack[--ctx->markTop];
-            break;
-        case OP_CONTINUE: // same, but don't modify markTop
             ctx->opTop = ctx->markStack[ctx->markTop-1];
+            break;
+        case OP_BREAK2: // same, but also pop the mark stack
+            ctx->opTop = ctx->markStack[--ctx->markTop];
             break;
         default:
             ERR(ctx, "BUG: bad opcode");

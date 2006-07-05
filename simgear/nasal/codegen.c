@@ -520,7 +520,7 @@ static void genBreakContinue(struct Parser* p, struct Token* t)
     bp = p->cg->loops[p->cg->loopTop - levels].breakIP;
     cp = p->cg->loops[p->cg->loopTop - levels].contIP;
     for(i=0; i<levels; i++)
-        emit(p, (t->type == TOK_BREAK || i>0) ? OP_BREAK : OP_CONTINUE);
+        emit(p, (i<levels-1) ? OP_BREAK2 : OP_BREAK);
     if(t->type == TOK_BREAK)
         emit(p, OP_PUSHNIL); // breakIP is always a JIFNOT/JIFNIL!
     emitImmediate(p, OP_JMP, t->type == TOK_BREAK ? bp : cp);

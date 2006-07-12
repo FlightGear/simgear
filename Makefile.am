@@ -2,6 +2,7 @@ EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
 	DoxygenMain.cxx \
+	project/VC8 \
 	README.MSVC \
 	README.zlib \
         projects \

@@ -25,18 +25,78 @@
 #endif
 
 #include <plib/sg.h>
+#include <plib/ssg.h>
 
 #include <simgear/scene/material/mat.hxx>
+#include <simgear/screen/extensions.hxx>
 
 #include "vasi.hxx"
 
 #include "pt_lights.hxx"
 
 
+// static variables for use in ssg callbacks
+static bool extensions_checked = false;
+static bool glPointParameterIsSupported = false;
+static glPointParameterfProc glPointParameterfPtr;
+static glPointParameterfvProc glPointParameterfvPtr;
+static bool SGPointLightsUseSprites = false;
+static bool SGPointLightsEnhancedLighting = false;
+static bool SGPointLightsDistanceAttenuation = false;
+
+
+// Specify the way we want to draw directional point lights (assuming the
+// appropriate extensions are available.)
+
+void sgConfigureDirectionalLights( bool use_point_sprites,
+                                   bool enhanced_lighting,
+                                   bool distance_attenuation ) {
+    SGPointLightsUseSprites = use_point_sprites;
+    SGPointLightsEnhancedLighting = enhanced_lighting;
+    SGPointLightsDistanceAttenuation = distance_attenuation;
+}
+
+
+// runtime check for the availability of various opengl extensions.
+static void check_for_extensions() {
+    // get the address of our OpenGL extensions
+    if (SGIsOpenGLExtensionSupported("GL_EXT_point_parameters") ) {
+        glPointParameterIsSupported = true;
+        glPointParameterfPtr = (glPointParameterfProc)
+            SGLookupFunction("glPointParameterfEXT");
+        glPointParameterfvPtr = (glPointParameterfvProc)
+            SGLookupFunction("glPointParameterfvEXT");
+    } else if ( SGIsOpenGLExtensionSupported("GL_ARB_point_parameters") ) {
+        glPointParameterIsSupported = true;
+        glPointParameterfPtr = (glPointParameterfProc)
+            SGLookupFunction("glPointParameterfARB");
+        glPointParameterfvPtr = (glPointParameterfvProc)
+            SGLookupFunction("glPointParameterfvARB");
+    } else {
+        glPointParameterIsSupported = false;
+    }
+}
+
+
 // strobe pre-draw (we want a larger point size)
 static int StrobePreDraw( ssgEntity *e ) {
+    // check for the availability of point parameter extension, but
+    // just once.
+    if ( !extensions_checked ) {
+        check_for_extensions();
+        extensions_checked = true;
+    }
+
     glPushAttrib( GL_POINT_BIT );
-    glPointSize(4.0);
+    if ( glPointParameterIsSupported && SGPointLightsEnhancedLighting ) {
+        if ( SGPointLightsUseSprites ) {
+            glPointSize(10.0);
+        } else {
+            glPointSize(8.0);
+        }
+    } else {
+        glPointSize(4.0);
+    }
     glEnable(GL_POINT_SMOOTH);
 
     return true;
@@ -52,8 +112,23 @@ static int StrobePostDraw( ssgEntity *e ) {
 
 // vasi pre-draw (we want a larger point size)
 static int VASIPreDraw( ssgEntity *e ) {
+    // check for the availability of point parameter extension, but
+    // just once.
+    if ( !extensions_checked ) {
+        check_for_extensions();
+        extensions_checked = true;
+    }
+
     glPushAttrib( GL_POINT_BIT );
-    glPointSize(2.0);
+    if ( glPointParameterIsSupported && SGPointLightsEnhancedLighting ) {
+        if ( SGPointLightsUseSprites ) {
+            glPointSize(10.0);
+        } else {
+            glPointSize(8.0);
+        }
+    } else {
+        glPointSize(4.0);
+    }
     glEnable(GL_POINT_SMOOTH);
 
     return true;

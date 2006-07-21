@@ -90,5 +90,12 @@ ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
                                     const string &material,
                                     sgdVec3 dup );
 
+// Specify the way we want to draw directional point lights (assuming the
+// appropriate extensions are available.)
+
+void sgConfigureDirectionalLights( bool use_point_sprites,
+                                   bool enhanced_lighting,
+                                   bool distance_attenuation );
+
 
 #endif // _SG_PT_LIGHTS_HXX

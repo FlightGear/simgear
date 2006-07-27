@@ -63,7 +63,7 @@ SGSky::~SGSky( void )
 void SGSky::build( double h_radius_m, double v_radius_m,
                    double sun_size, double moon_size,
 		   int nplanets, sgdVec3 *planet_data,
-		   int nstars, sgdVec3 *star_data )
+		   int nstars, sgdVec3 *star_data, SGPropertyNode *property_tree_node )
 {
     pre_root = new ssgRoot;
     post_root = new ssgRoot;
@@ -87,7 +87,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
     pre_transform -> addKid( moon->build(tex_path, moon_size) );
 
     oursun = new SGSun;
-    pre_transform -> addKid( oursun->build(tex_path, sun_size) );
+    pre_transform -> addKid( oursun->build(tex_path, sun_size, property_tree_node ) );
 
     pre_selector->addKid( pre_transform );
     pre_selector->clrTraversalMaskBits( SSGTRAV_HOT );
@@ -116,7 +116,6 @@ bool SGSky::repaint( const SGSkyColor &sc )
 
         stars->repaint( sc.sun_angle, sc.nstars, sc.star_data );
         planets->repaint( sc.sun_angle, sc.nplanets, sc.planet_data );
-
 	oursun->repaint( sc.sun_angle, effective_visibility );
 	moon->repaint( sc.moon_angle );
 
@@ -152,7 +151,7 @@ bool SGSky::reposition( SGSkyState &st, double dt )
     planets->reposition( st.view_pos, angle );
 
     oursun->reposition( st.view_pos, angle,
-                        st.sun_ra, st.sun_dec, st.sun_dist );
+                        st.sun_ra, st.sun_dec, st.sun_dist, st.lat, st.alt, st.sun_angle );
 
     moon->reposition( st.view_pos, angle,
                       st.moon_ra, st.moon_dec, st.moon_dist );

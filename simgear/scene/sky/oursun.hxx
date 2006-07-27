@@ -32,23 +32,36 @@
 #include <plib/ssg.h>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/props/props.hxx>
 
 class SGSun {
 
     ssgTransform *sun_transform;
-    ssgSimpleState *orb_state;
-    ssgSimpleState *halo_state;
+    ssgSimpleState *sun_state; 
+    ssgSimpleState *ihalo_state;
+    ssgSimpleState *ohalo_state;
 
-    ssgColourArray *cl;
+    ssgColourArray *sun_cl;
+    ssgColourArray *ihalo_cl;
+    ssgColourArray *ohalo_cl;
 
-    ssgVertexArray *halo_vl;
-    ssgTexCoordArray *halo_tl;
+    ssgVertexArray *sun_vl;
+    ssgVertexArray *ihalo_vl;
+    ssgVertexArray *ohalo_vl;
+
+    ssgTexCoordArray *sun_tl;
+    ssgTexCoordArray *ihalo_tl;
+    ssgTexCoordArray *ohalo_tl;
 
     GLuint sun_texid;
     GLubyte *sun_texbuf;
 
     double visibility;
     double prev_sun_angle;
+    // distance of light traveling through the atmosphere
+    double path_distance;
+
+    SGPropertyNode *env_node;
 
 public:
 
@@ -59,7 +72,7 @@ public:
     ~SGSun( void );
 
     // return the sun object
-    ssgBranch *build( SGPath path, double sun_size );
+    ssgBranch *build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node );
 
     // repaint the sun colors based on current value of sun_anglein
     // degrees relative to verticle
@@ -74,13 +87,13 @@ public:
     // an optional rotation (i.e. for the current time of day.)
     bool reposition( sgVec3 p, double angle,
 		     double rightAscension, double declination,
-		     double sun_dist );
+		     double sun_dist, double lat, double alt_asl, double sun_angle );
 
     // retrun the current color of the sun
-    inline float *get_color() { return  cl->get( 0 ); }
+    inline float *get_color() { return  ohalo_cl->get( 0 ); }
 
     // return the texture id of the sun halo texture
-    inline GLuint get_texture_id() { return halo_state->getTextureHandle(); }
+    inline GLuint get_texture_id() { return ohalo_state->getTextureHandle(); }
 };
 
 

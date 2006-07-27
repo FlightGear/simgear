@@ -38,6 +38,7 @@
 
 #include <simgear/compiler.h>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/props/props.hxx>
 
 #include <vector>
 
@@ -60,6 +61,7 @@ typedef struct {
 	double gst;
 	double sun_ra, sun_dec, sun_dist;
 	double moon_ra, moon_dec, moon_dist;
+	double sun_angle;
 } SGSkyState;
 
 typedef struct {
@@ -259,7 +261,7 @@ public:
     void build( double h_radius_m, double v_radius_m,
                 double sun_size, double moon_size,
 		int nplanets, sgdVec3 *planet_data,
-		int nstars, sgdVec3 *star_data );
+		int nstars, sgdVec3 *star_data, SGPropertyNode *property_tree_node );
 
     /**
      * Repaint the sky components based on current value of sun_angle,

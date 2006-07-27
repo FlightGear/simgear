@@ -83,6 +83,8 @@ public:
     
     //! Return the position relative to the given scenery center.
     virtual float * get_view_pos( const Point3D& scenery_center );
+    float * get_view_pos( const SGVec3d& sc )
+    { return get_view_pos(Point3D(sc[0], sc[1], sc[2])); }
     
     // Get world up vector
     virtual float *get_world_up()
@@ -111,6 +113,9 @@ public:
         recalcAbsolutePosition();
         return UP;
     }
+    const sgVec4 *getUpMatrix( const SGVec3d& sc )
+    { return getUpMatrix(Point3D(sc[0], sc[1], sc[2])); }
+
     virtual const sgVec4 *getCachedUpMatrix() { return UP; }
 
 private:

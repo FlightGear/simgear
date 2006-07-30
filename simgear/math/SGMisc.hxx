@@ -18,8 +18,6 @@
 #ifndef SGMisc_H
 #define SGMisc_H
 
-#include <cmath>
-
 template<typename T>
 class SGMisc {
 public:
@@ -51,6 +49,11 @@ public:
   static T deg2rad(const T& val)
   { return val*pi()/180; }
 
+  static T round(const T& v)
+  { return floor(v + T(0.5)); }
+  static int roundToInt(const T& v)
+  { return int(round(v)); }
+
 #ifndef NDEBUG
   /// Returns true if v is a NaN value
   /// Use with care: allways code that you do not need to use that!
@@ -70,8 +73,5 @@ public:
   }
 #endif
 };
-
-typedef SGMisc<float> SGMiscf;
-typedef SGMisc<double> SGMiscd;
 
 #endif

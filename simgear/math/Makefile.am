@@ -20,13 +20,14 @@ include_HEADERS = \
 	sg_random.h \
 	sg_types.hxx \
 	vector.hxx \
-	fastmath.hxx \
+	SGCMath.hxx \
 	SGGeoc.hxx \
 	SGGeod.hxx \
 	SGGeodesy.hxx \
 	SGLimits.hxx \
 	SGMatrix.hxx \
 	SGMath.hxx \
+	SGMathFwd.hxx \
 	SGMisc.hxx \
 	SGQuat.hxx \
 	SGVec4.hxx \
@@ -40,7 +41,6 @@ libsgmath_a_SOURCES = \
 	sg_geodesy.cxx \
 	sg_random.c \
 	vector.cxx \
-	fastmath.cxx \
 	SGGeodesy.cxx
 
 INCLUDES = -I$(top_srcdir)

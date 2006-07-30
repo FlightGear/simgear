@@ -15,24 +15,38 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifndef SGMath_H
-#define SGMath_H
+#ifndef SGMathFwd_H
+#define SGMathFwd_H
 
-/// Just include them all
+// All forward declarations in case they only need to be declared
 
-#include <iosfwd>
+class SGGeoc;
+class SGGeod;
 
-#include "SGMathFwd.hxx"
+template<typename T>
+class SGLimits;
+template<typename T>
+class SGMatrix;
+template<typename T>
+class SGMisc;
+template<typename T>
+class SGQuat;
+template<typename T>
+class SGVec3;
+template<typename T>
+class SGVec4;
 
-#include "SGCMath.hxx"
-#include "SGLimits.hxx"
-#include "SGMisc.hxx"
-#include "SGGeodesy.hxx"
-#include "SGVec3.hxx"
-#include "SGVec4.hxx"
-#include "SGGeoc.hxx"
-#include "SGGeod.hxx"
-#include "SGQuat.hxx"
-#include "SGMatrix.hxx"
+typedef SGLimits<float> SGLimitsf;
+typedef SGLimits<double> SGLimitsd;
+typedef SGMatrix<float> SGMatrixf;
+typedef SGMatrix<double> SGMatrixd;
+typedef SGMisc<float> SGMiscf;
+typedef SGMisc<double> SGMiscd;
+typedef SGQuat<float> SGQuatf;
+typedef SGQuat<double> SGQuatd;
+typedef SGVec3<float> SGVec3f;
+typedef SGVec3<double> SGVec3d;
+typedef SGVec4<float> SGVec4f;
+typedef SGVec4<double> SGVec4d;
 
 #endif

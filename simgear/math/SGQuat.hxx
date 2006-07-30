@@ -557,10 +557,6 @@ std::basic_ostream<char_type, traits_type>&
 operator<<(std::basic_ostream<char_type, traits_type>& s, const SGQuat<T>& v)
 { return s << "[ " << v(0) << ", " << v(1) << ", " << v(2) << ", " << v(3) << " ]"; }
 
-/// Two classes doing actually the same on different types
-typedef SGQuat<float> SGQuatf;
-typedef SGQuat<double> SGQuatd;
-
 inline
 SGQuatf
 toQuatf(const SGQuatd& v)

@@ -248,10 +248,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\fastmath.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\timing\geocoord.h"
 				>
 			</File>
@@ -533,6 +529,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\math\SGMath.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\math\SGMathFwd.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\math\SGCMath.hxx"
 				>
 			</File>
 			<File
@@ -819,10 +823,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\screen\extensions.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\fastmath.cxx"
 				>
 			</File>
 			<File

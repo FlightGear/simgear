@@ -23,28 +23,22 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <cmath>
-#else
-#  include <math.h>
-#endif
 #include <string.h>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/condition.hxx>
-#include <simgear/math/fastmath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 
 #include "xmlsound.hxx"
 
 
-#define LOG_ABS(x) (((x) > 1) ? (x) : (((x) < -1) ? -(x) : 0))
 // static double _snd_lin(double v)   { return v; }
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }
 static double _snd_abs(double v)   { return (v >= 0) ? v : -v; }
-static double _snd_sqrt(double v)  { return (v < 0) ? sqrt(-v) : sqrt(v); }
-static double _snd_log10(double v) { return fast_log10( LOG_ABS(v) ); }
-static double _snd_log(double v)   { return fast_log( LOG_ABS(v) ); }
+static double _snd_sqrt(double v)  { return sqrt(fabs(v)); }
+static double _snd_log10(double v) { return log10(fabs(v)); }
+static double _snd_log(double v)   { return log(fabs(v)); }
 // static double _snd_sqr(double v)   { return v*v; }
 // static double _snd_pow3(double v)  { return v*v*v; }
 

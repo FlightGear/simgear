@@ -22,9 +22,6 @@
 template<typename T>
 struct TransNegRef;
 
-template<typename T>
-class SGMatrix;
-
 /// 3D Matrix Class
 template<typename T>
 class SGMatrix {
@@ -570,10 +567,6 @@ operator<<(std::basic_ostream<char_type, traits_type>& s, const SGMatrix<T>& m)
   s << "  " << m(3,0) << ", " << m(3,1) << ", " << m(3,2) << ", " << m(3,3) << " ]";
   return s;
 }
-
-/// Two classes doing actually the same on different types
-typedef SGMatrix<float> SGMatrixf;
-typedef SGMatrix<double> SGMatrixd;
 
 inline
 SGMatrixf

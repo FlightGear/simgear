@@ -15,24 +15,17 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifndef SGMath_H
-#define SGMath_H
+#ifndef SGCMath_H
+#define SGCMath_H
 
-/// Just include them all
+#include <simgear/compiler.h>
 
-#include <iosfwd>
-
-#include "SGMathFwd.hxx"
-
-#include "SGCMath.hxx"
-#include "SGLimits.hxx"
-#include "SGMisc.hxx"
-#include "SGGeodesy.hxx"
-#include "SGVec3.hxx"
-#include "SGVec4.hxx"
-#include "SGGeoc.hxx"
-#include "SGGeod.hxx"
-#include "SGQuat.hxx"
-#include "SGMatrix.hxx"
+#ifdef SG_HAVE_STD_INCLUDES
+// We have cmath from the standard c++ lib available
+#include <cmath>
+#else
+// We only have math.h with the c89 double functions.
+#include <math.h>
+#endif
 
 #endif

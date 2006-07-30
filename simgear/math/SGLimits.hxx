@@ -26,7 +26,4 @@
 template<typename T>
 class SGLimits : public std::numeric_limits<T> {};
 
-typedef SGLimits<float> SGLimitsf;
-typedef SGLimits<double> SGLimitsd;
-
 #endif

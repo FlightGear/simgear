@@ -18,12 +18,6 @@
 #ifndef SGGeodesy_H
 #define SGGeodesy_H
 
-class SGGeoc;
-class SGGeod;
-
-template<typename T>
-class SGVec3;
-
 class SGGeodesy {
 public:
   // Hard numbers from the WGS84 standard.

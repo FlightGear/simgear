@@ -280,10 +280,6 @@ std::basic_ostream<char_type, traits_type>&
 operator<<(std::basic_ostream<char_type, traits_type>& s, const SGVec4<T>& v)
 { return s << "[ " << v(0) << ", " << v(1) << ", " << v(2) << ", " << v(3) << " ]"; }
 
-/// Two classes doing actually the same on different types
-typedef SGVec4<float> SGVec4f;
-typedef SGVec4<double> SGVec4d;
-
 inline
 SGVec4f
 toVec4f(const SGVec4d& v)

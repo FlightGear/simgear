@@ -1,6 +1,5 @@
 includedir = @includedir@/math
 
-noinst_PROGRAMS = SGMathTest
 check_PROGRAMS  = SGMathTest
 TESTS           = $(check_PROGRAMS)
 

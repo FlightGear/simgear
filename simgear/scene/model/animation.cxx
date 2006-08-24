@@ -359,7 +359,9 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _last_time_sec( sim_time_sec ),
-    _condition(0)
+    _condition(0),
+    _factor( props, "factor", 1.0 ),
+    _position_deg( props, "starting-position-deg", 0.0 )
 {
     SGPropertyNode_ptr node = props->getChild("condition");
     if (node != 0)
@@ -394,38 +396,6 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
        _center[2] = props->getFloatValue("center/z-m", 0);
     }
     sgNormalizeVec3(_axis);
-
-    //_factor(props->getDoubleValue("factor", 1.0)),
-    _factor = 1.0;
-    _factor_min = 1.0;
-    _factor_max = 1.0;
-    SGPropertyNode_ptr factor_n = props->getNode( "factor" );
-    if ( factor_n != 0 ) {
-       SGPropertyNode_ptr rand_n = factor_n->getNode( "random" );
-       if ( rand_n != 0 ) {
-          _factor_min = rand_n->getDoubleValue( "min", 0.0 );
-          _factor_max = rand_n->getDoubleValue( "max", 1.0 );
-          _factor = _factor_min + sg_random() * ( _factor_max - _factor_min );
-       } else {
-          _factor = _factor_min = _factor_max = props->getDoubleValue("factor", 1.0);
-       }
-    }
-    //_position_deg(props->getDoubleValue("starting-position-deg", 0)),
-    _position_deg = 0.0;
-    _position_deg_min = 0.0;
-    _position_deg_max = 0.0;
-    SGPropertyNode_ptr position_deg_n = props->getNode( "starting-position-deg" );
-    if ( position_deg_n != 0 ) {
-       SGPropertyNode_ptr rand_n = position_deg_n->getNode( "random" );
-       if ( rand_n != 0 ) {
-          _position_deg_min = rand_n->getDoubleValue( "min", 0.0 );
-          _position_deg_max = rand_n->getDoubleValue( "max", 1.0 );
-          _position_deg = _position_deg_min + sg_random() * ( _position_deg_max - _position_deg_min );
-       } else {
-          _position_deg = _position_deg_min = _position_deg_max = 
-                  props->getDoubleValue("starting-position-deg", 1.0);
-       }
-    }
 }
 
 SGSpinAnimation::~SGSpinAnimation ()
@@ -438,17 +408,14 @@ SGSpinAnimation::update()
   if ( _condition == 0 || _condition->test() ) {
     double dt;
     float velocity_rpms;
-    if ( _use_personality ) {
+    if ( _use_personality && current_object ) {
       SGPersonalityBranch *key = current_object;
       if ( !key->getIntValue( this, INIT_SPIN ) ) {
-        double v = _factor_min + sg_random() * ( _factor_max - _factor_min );
-        key->setDoubleValue( v, this, FACTOR_SPIN );
+        key->setDoubleValue( _factor.shuffle(), this, FACTOR_SPIN );
+        key->setDoubleValue( _position_deg.shuffle(), this, POSITION_DEG_SPIN );
 
         key->setDoubleValue( sim_time_sec, this, LAST_TIME_SEC_SPIN );
         key->setIntValue( 1, this, INIT_SPIN );
-
-        v = _position_deg_min + sg_random() * ( _position_deg_max - _position_deg_min );
-        key->setDoubleValue( v, this, POSITION_DEG_SPIN );
       }
 
       _factor = key->getDoubleValue( this, FACTOR_SPIN );
@@ -545,7 +512,7 @@ SGTimedAnimation::init()
 int
 SGTimedAnimation::update()
 {
-    if ( _use_personality ) {
+    if ( _use_personality && current_object ) {
         SGPersonalityBranch *key = current_object;
         if ( !key->getIntValue( this, INIT_TIMED ) ) {
             double total = 0;
@@ -695,11 +662,12 @@ SGRotateAnimation::update()
 SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
+    _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _table(read_interpolation_table(props)),
     _prev_value(1.0),
-    _offset(props->getDoubleValue("offset", 0.0)),
-    _factor(props->getDoubleValue("factor", 1.0)),
+    _offset(props,"offset",0.0),
+    _factor(props,"factor",1.0),
     _has_min(props->hasValue("min")),
     _min(props->getDoubleValue("min", 0.0)),
     _has_max(props->hasValue("max")),
@@ -716,6 +684,19 @@ int
 SGBlendAnimation::update()
 {
   double _blend;
+
+  if ( _use_personality && current_object ) {
+    SGPersonalityBranch *key = current_object;
+    if ( !key->getIntValue( this, INIT_BLEND ) ) {
+      key->setDoubleValue( _factor.shuffle(), this, FACTOR_BLEND );
+      key->setDoubleValue( _offset.shuffle(), this, OFFSET_BLEND );
+
+      key->setIntValue( 1, this, INIT_BLEND );
+    }
+
+    _factor = key->getDoubleValue( this, FACTOR_BLEND );
+    _offset = key->getDoubleValue( this, OFFSET_BLEND );
+  }
 
   if (_table == 0) {
     _blend = 1.0 - (_prop->getDoubleValue() * _factor + _offset);
@@ -744,16 +725,17 @@ SGBlendAnimation::update()
 SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _offset_m(props->getDoubleValue("offset-m", 0.0)),
-    _factor(props->getDoubleValue("factor", 1.0)),
+    _use_personality( props->getBoolValue("use-personality",false) ),
+    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _table(read_interpolation_table(props)),
     _has_min(props->hasValue("min-m")),
     _min_m(props->getDoubleValue("min-m")),
     _has_max(props->hasValue("max-m")),
     _max_m(props->getDoubleValue("max-m")),
     _position_m(props->getDoubleValue("starting-position-m", 0)),
-    _condition(0)
+    _condition(0),
+    _factor( props, "factor", 1.0 ),
+    _offset_m( props, "offset-m", 0.0 )
 {
   SGPropertyNode_ptr node = props->getChild("condition");
   if (node != 0)
@@ -774,6 +756,19 @@ int
 SGTranslateAnimation::update()
 {
   if (_condition == 0 || _condition->test()) {
+    if ( _use_personality && current_object ) {
+      SGPersonalityBranch *key = current_object;
+      if ( !key->getIntValue( this, INIT_TRANSLATE ) ) {
+        key->setDoubleValue( _factor.shuffle(), this, FACTOR_TRANSLATE );
+        key->setDoubleValue( _offset_m.shuffle(), this, OFFSET_TRANSLATE );
+      }
+
+      _factor = key->getDoubleValue( this, FACTOR_TRANSLATE );
+      _offset_m = key->getDoubleValue( this, OFFSET_TRANSLATE );
+
+      key->setIntValue( 1, this, INIT_TRANSLATE );
+    }
+
     if (_table == 0) {
       _position_m = (_prop->getDoubleValue() * _factor) + _offset_m;
       if (_has_min && _position_m < _min_m)
@@ -783,6 +778,7 @@ SGTranslateAnimation::update()
     } else {
       _position_m = _table->interpolate(_prop->getDoubleValue());
     }
+
     set_translation(_matrix, _position_m, _axis);
     ((ssgTransform *)_branch)->setTransform(_matrix);
   }
@@ -798,13 +794,14 @@ SGTranslateAnimation::update()
 SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new ssgTransform),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _x_factor(props->getDoubleValue("x-factor", 1.0)),
-    _y_factor(props->getDoubleValue("y-factor", 1.0)),
-    _z_factor(props->getDoubleValue("z-factor", 1.0)),
-    _x_offset(props->getDoubleValue("x-offset", 1.0)),
-    _y_offset(props->getDoubleValue("y-offset", 1.0)),
-    _z_offset(props->getDoubleValue("z-offset", 1.0)),
+    _use_personality( props->getBoolValue("use-personality",false) ),
+    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _x_factor(props,"x-factor",1.0),
+    _y_factor(props,"y-factor",1.0),
+    _z_factor(props,"z-factor",1.0),
+    _x_offset(props,"x-offset",1.0),
+    _y_offset(props,"y-offset",1.0),
+    _z_offset(props,"z-offset",1.0),
     _table(read_interpolation_table(props)),
     _has_min_x(props->hasValue("x-min")),
     _has_min_y(props->hasValue("y-min")),
@@ -829,6 +826,27 @@ SGScaleAnimation::~SGScaleAnimation ()
 int
 SGScaleAnimation::update()
 {
+  if ( _use_personality && current_object ) {
+    SGPersonalityBranch *key = current_object;
+    if ( !key->getIntValue( this, INIT_SCALE ) ) {
+      key->setDoubleValue( _x_factor.shuffle(), this, X_FACTOR_SCALE );
+      key->setDoubleValue( _x_offset.shuffle(), this, X_OFFSET_SCALE );
+      key->setDoubleValue( _y_factor.shuffle(), this, Y_FACTOR_SCALE );
+      key->setDoubleValue( _y_offset.shuffle(), this, Y_OFFSET_SCALE );
+      key->setDoubleValue( _z_factor.shuffle(), this, Z_FACTOR_SCALE );
+      key->setDoubleValue( _z_offset.shuffle(), this, Z_OFFSET_SCALE );
+
+      key->setIntValue( 1, this, INIT_SCALE );
+    }
+
+    _x_factor = key->getDoubleValue( this, X_FACTOR_SCALE );
+    _x_offset = key->getDoubleValue( this, X_OFFSET_SCALE );
+    _y_factor = key->getDoubleValue( this, Y_FACTOR_SCALE );
+    _y_offset = key->getDoubleValue( this, Y_OFFSET_SCALE );
+    _z_factor = key->getDoubleValue( this, Z_FACTOR_SCALE );
+    _z_offset = key->getDoubleValue( this, Z_OFFSET_SCALE );
+  }
+
   if (_table == 0) {
       _x_scale = _prop->getDoubleValue() * _x_factor + _x_offset;
     if (_has_min_x && _x_scale < _min_x)

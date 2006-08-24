@@ -21,6 +21,8 @@
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
 
+#include <simgear/scene/model/persparam.hxx>
+
 SG_USING_STD(vector);
 SG_USING_STD(map);
 
@@ -51,10 +53,14 @@ class SGPersonalityBranch;
 class SGAnimation :  public ssgBase
 {
 public:
-  enum PersonalityVar { INIT_SPIN, LAST_TIME_SEC_SPIN, FACTOR_SPIN,
-                        POSITION_DEG_SPIN, INIT_TIMED, LAST_TIME_SEC_TIMED,
-                        TOTAL_DURATION_SEC_TIMED, BRANCH_DURATION_SEC_TIMED,
-                        STEP_TIMED };
+  enum PersonalityVar { INIT_SPIN, LAST_TIME_SEC_SPIN, FACTOR_SPIN, 
+                            POSITION_DEG_SPIN, 
+                        INIT_TIMED, LAST_TIME_SEC_TIMED, TOTAL_DURATION_SEC_TIMED, 
+                            BRANCH_DURATION_SEC_TIMED, STEP_TIMED,
+                        INIT_TRANSLATE, FACTOR_TRANSLATE, OFFSET_TRANSLATE,
+                        INIT_BLEND, FACTOR_BLEND, OFFSET_BLEND,
+                        INIT_SCALE, X_FACTOR_SCALE, Y_FACTOR_SCALE, Z_FACTOR_SCALE,
+                            X_OFFSET_SCALE, Y_OFFSET_SCALE, Z_OFFSET_SCALE };
 
   SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch);
 
@@ -178,12 +184,8 @@ public:
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
-  double _factor;
-  double _factor_min;
-  double _factor_max;
-  double _position_deg;
-  double _position_deg_min;
-  double _position_deg_max;
+  SGPersonalityParameter<double> _factor;
+  SGPersonalityParameter<double> _position_deg;
   double _last_time_sec;
   sgMat4 _matrix;
   sgVec3 _center;
@@ -257,9 +259,10 @@ public:
   virtual ~SGTranslateAnimation ();
   virtual int update();
 private:
+  bool _use_personality;
   SGPropertyNode_ptr _prop;
-  double _offset_m;
-  double _factor;
+  SGPersonalityParameter<double> _offset_m;
+  SGPersonalityParameter<double> _factor;
   SGInterpTable * _table;
   bool _has_min;
   double _min_m;
@@ -282,11 +285,12 @@ public:
   virtual ~SGBlendAnimation ();
   virtual int update();
 private:
+  bool _use_personality;
   SGPropertyNode_ptr _prop;
   SGInterpTable * _table;
   double _prev_value;
-  double _offset;
-  double _factor;
+  SGPersonalityParameter<double> _offset;
+  SGPersonalityParameter<double> _factor;
   bool _has_min;
   double _min;
   bool _has_max;
@@ -304,13 +308,14 @@ public:
   virtual ~SGScaleAnimation ();
   virtual int update();
 private:
+  bool _use_personality;
   SGPropertyNode_ptr _prop;
-  double _x_factor;
-  double _y_factor;
-  double _z_factor;
-  double _x_offset;
-  double _y_offset;
-  double _z_offset;
+  SGPersonalityParameter<double> _x_factor;
+  SGPersonalityParameter<double> _y_factor;
+  SGPersonalityParameter<double> _z_factor;
+  SGPersonalityParameter<double> _x_offset;
+  SGPersonalityParameter<double> _y_offset;
+  SGPersonalityParameter<double> _z_offset;
   SGInterpTable * _table;
   bool _has_min_x;
   bool _has_min_y;

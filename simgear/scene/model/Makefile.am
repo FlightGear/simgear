@@ -11,6 +11,7 @@ include_HEADERS = \
 	model.hxx \
 	modellib.hxx \
 	personality.hxx \
+	persparam.hxx \
 	placement.hxx \
 	placementtrans.hxx \
 	shadowvolume.hxx
@@ -22,6 +23,7 @@ libsgmodel_a_SOURCES = \
 	model.cxx \
 	modellib.cxx \
 	personality.cxx \
+	persparam.cxx \
 	placement.cxx \
 	placementtrans.cxx \
 	shadowvolume.cxx \

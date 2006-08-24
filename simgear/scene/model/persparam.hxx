@@ -5,6 +5,9 @@
 #ifndef _SG_PERSPARAM_HXX
 #define _SG_PERSPARAM_HXX 1
 
+#include <simgear/math/sg_random.h>
+
+
 template <class T>
 class SGPersonalityParameter {
 public:

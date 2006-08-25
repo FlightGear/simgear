@@ -16,6 +16,7 @@ class SGAnimation;
 
 class SGPersonalityBranch : public ssgBranch {
 public:
+    SGPersonalityBranch();
     void setDoubleValue( double value, SGAnimation *anim, int var_id, int var_num = 0 );
     void setIntValue( int value, SGAnimation *anim, int var_id, int var_num = 0 );
     double getDoubleValue( SGAnimation *anim, int var_id, int var_num = 0 ) const;

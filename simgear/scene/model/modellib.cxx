@@ -61,22 +61,6 @@ SGModelLib::flush1()
     }
 }
 
-static int
-personality_pretrav_callback(ssgEntity * entity, int mask)
-{
-    ((SGPersonalityBranch *)entity)->_old_current = SGAnimation::current_object;
-    SGAnimation::current_object = (SGPersonalityBranch *)entity;
-    return 1;
-}
-
-static int
-personality_posttrav_callback(ssgEntity * entity, int mask)
-{
-    SGAnimation::current_object = ((SGPersonalityBranch *)entity)->_old_current;
-    ((SGPersonalityBranch *)entity)->_old_current = 0;
-    return 1;
-}
-
 ssgEntity *
 SGModelLib::load_model( const string &fg_root,
                            const string &path,
@@ -86,8 +70,6 @@ SGModelLib::load_model( const string &fg_root,
                            SGModelData *data )
 {
     ssgBranch *personality_branch = new SGPersonalityBranch;
-    personality_branch->setTravCallback(SSG_CALLBACK_PRETRAV, personality_pretrav_callback);
-    personality_branch->setTravCallback(SSG_CALLBACK_POSTTRAV, personality_posttrav_callback);
 
                                 // FIXME: normalize path to
                                 // avoid duplicates.

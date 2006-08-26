@@ -122,6 +122,9 @@ bool SGSerialPort::open_port(const string& device) {
 
     // cout << "config.c_iflag = " << config.c_iflag << endl;
 
+    // disable LF expanded to CR-LF
+    config.c_oflag &= ~(ONLCR);
+
     // disable software flow control
     config.c_iflag &= ~(IXON | IXOFF | IXANY);
 

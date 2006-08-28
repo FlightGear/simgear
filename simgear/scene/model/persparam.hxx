@@ -17,8 +17,8 @@ public:
     if ( node != 0 ) {
       SGPropertyNode_ptr rand_n = node->getNode( "random" );
       if ( rand_n != 0 ) {
-        _min = rand_n->getDoubleValue( "min", 0.0 );
-        _max = rand_n->getDoubleValue( "max", 1.0 );
+        _min = getNodeValue( rand_n, "min", (T)0 );
+        _max = getNodeValue( rand_n, "max", (T)1 );
         shuffle();
       } else {
         _var = _min = _max = getNodeValue( props, name, defval );

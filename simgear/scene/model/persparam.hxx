@@ -39,4 +39,10 @@ private:
   T _max;
 };
 
+template <> double
+SGPersonalityParameter<double>::getNodeValue( SGPropertyNode *props,
+                                              const char *name,
+                                              double defval ) const;
+
 #endif // _SG_PERSPARAM_HXX
+

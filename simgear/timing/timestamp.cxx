@@ -72,8 +72,8 @@ void SGTimeStamp::stamp() {
 #if defined( WIN32 ) && !defined(__CYGWIN__)
     unsigned int t;
     t = timeGetTime();
-    seconds = 0;
-    usec =  t * 1000;
+    seconds = t / 1000;
+    usec = ( t - ( seconds * 1000 ) ) * 1000;
 #elif defined( HAVE_GETTIMEOFDAY )
     struct timeval current;
     struct timezone tz;
@@ -105,20 +105,12 @@ void SGTimeStamp::stamp() {
 
 // increment the time stamp by the number of microseconds (usec)
 SGTimeStamp operator + (const SGTimeStamp& t, const long& m) {
-#if defined( WIN32 ) && !defined(__CYGWIN__)
-    return SGTimeStamp( 0, t.usec + m );
-#else
     return SGTimeStamp( t.seconds + ( t.usec + m ) / 1000000,
 			( t.usec + m ) % 1000000 );
-#endif
 }
 
 // difference between time stamps in microseconds (usec)
 long operator - (const SGTimeStamp& a, const SGTimeStamp& b)
 {
-#if defined( WIN32 ) && !defined(__CYGWIN__)
-    return a.usec - b.usec;
-#else
     return 1000000 * (a.seconds - b.seconds) + (a.usec - b.usec);
-#endif
 }

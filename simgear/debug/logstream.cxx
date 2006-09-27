@@ -25,6 +25,9 @@
 logstream *global_logstream = NULL;
 
 bool            logbuf::logging_enabled = true;
+#ifdef _MSC_VER
+   bool         logbuf::has_console = true;
+#endif
 sgDebugClass    logbuf::logClass        = SG_NONE;
 sgDebugPriority logbuf::logPriority     = SG_INFO;
 streambuf*      logbuf::sbuf            = NULL;

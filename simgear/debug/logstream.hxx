@@ -139,6 +139,10 @@ public:
      */
     void set_sb( streambuf* sb );
 
+#ifdef _MSC_VER
+    static void has_no_console() { has_console = false; }
+#endif
+
 protected:
 
     /** sync/flush */
@@ -154,6 +158,9 @@ private:
     static streambuf* sbuf;
 
     static bool logging_enabled;
+#ifdef _MSC_VER
+    static bool has_console;
+#endif
     static sgDebugClass logClass;
     static sgDebugPriority logPriority;
 
@@ -184,7 +191,6 @@ inline logbuf::int_type
 logbuf::overflow( int c )
 {
 #ifdef _MSC_VER
-    static bool has_console = false;
     if ( logging_enabled ) {
         if ( !has_console ) {
             AllocConsole();

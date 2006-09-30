@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../AL/include;&quot;../../../zlib-1.2.3&quot;;&quot;../../../Pre-built.2/include&quot;"
+				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../devel/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -103,7 +103,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../AL/include;&quot;../../../zlib-1.2.3&quot;;&quot;../../../Pre-built.2/include&quot;"
+				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../devel/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -508,6 +508,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\math\SGCMath.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGGeoc.hxx"
 				>
 			</File>
@@ -533,10 +537,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\math\SGMathFwd.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\SGCMath.hxx"
 				>
 			</File>
 			<File
@@ -971,6 +971,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\personality.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\persparam.cxx"
 				>
 			</File>
 			<File

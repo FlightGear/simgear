@@ -41,6 +41,7 @@ SGModelPlacement::SGModelPlacement ()
 
 SGModelPlacement::~SGModelPlacement ()
 {
+  delete _location;
 }
 
 void

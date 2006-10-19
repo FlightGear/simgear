@@ -58,6 +58,10 @@ SG_USING_NAMESPACE(std);
 SG_USING_STD(string);
 
 
+// FIXME: should make this configurable
+static const bool sprite_lighting = true;
+
+
 // Constructor
 SGMaterialLib::SGMaterialLib ( void ) {
 }
@@ -100,6 +104,42 @@ static int gen_test_light_map() {
     return tex_name;
 }
 #endif
+
+
+// generate a light sprite texture map
+static int gen_standard_light_sprite( int r, int g, int b, int alpha ) {
+    const int env_tex_res = 32;
+    int half_res = env_tex_res / 2;
+    unsigned char env_map[env_tex_res][env_tex_res][4];
+    GLuint tex_name;
+
+    for ( int i = 0; i < env_tex_res; ++i ) {
+        for ( int j = 0; j < env_tex_res; ++j ) {
+            double x = (i - half_res) / (double)half_res;
+            double y = (j - half_res) / (double)half_res;
+            double dist = sqrt(x*x + y*y);
+            if ( dist > 1.0 ) { dist = 1.0; }
+            double bright = cos( dist * SGD_PI_2 );
+            if ( bright < 0.01 ) { bright = 0.0; }
+            env_map[i][j][0] = r;
+            env_map[i][j][1] = g;
+            env_map[i][j][2] = b;
+            env_map[i][j][3] = (int)(bright * alpha);
+        }
+    }
+    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
+    glGenTextures( 1, &tex_name );
+    glBindTexture( GL_TEXTURE_2D, tex_name );
+  
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
+                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
+
+    return tex_name;
+}
 
 
 // generate standard colored directional light environment texture map
@@ -232,7 +272,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     GLuint tex_name;
 
     // hard coded runway white light state
-    tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 235, 195, 255 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+    }
     ssgSimpleState *rwy_white_lights = new ssgSimpleState();
     rwy_white_lights->disable( GL_LIGHTING );
     rwy_white_lights->enable ( GL_CULL_FACE ) ;
@@ -256,7 +300,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     // end of backwards compatitibilty
 
     // hard coded runway medium intensity white light state
-    tex_name = gen_standard_dir_light_map( 235, 235, 195, 205 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 235, 195, 205 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 235, 195, 205 );
+    }
     ssgSimpleState *rwy_white_medium_lights = new ssgSimpleState();
     rwy_white_medium_lights->disable( GL_LIGHTING );
     rwy_white_medium_lights->enable ( GL_CULL_FACE ) ;
@@ -274,7 +322,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_WHITE_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity white light state
-    tex_name = gen_standard_dir_light_map( 235, 235, 195, 155 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 235, 195, 155 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 235, 195, 155 );
+    }
     ssgSimpleState *rwy_white_low_lights = new ssgSimpleState();
     rwy_white_low_lights->disable( GL_LIGHTING );
     rwy_white_low_lights->enable ( GL_CULL_FACE ) ;
@@ -292,7 +344,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_WHITE_LOW_LIGHTS"] = m;
 
     // hard coded runway yellow light state
-    tex_name = gen_standard_dir_light_map( 235, 215, 20, 255 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 215, 20, 255 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 215, 20, 255 );
+    }
     ssgSimpleState *rwy_yellow_lights = new ssgSimpleState();
     rwy_yellow_lights->disable( GL_LIGHTING );
     rwy_yellow_lights->enable ( GL_CULL_FACE ) ;
@@ -310,7 +366,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_YELLOW_LIGHTS"] = m;
 
     // hard coded runway medium intensity yellow light state
-    tex_name = gen_standard_dir_light_map( 235, 215, 20, 205 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 215, 20, 205 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 215, 20, 205 );
+    }
     ssgSimpleState *rwy_yellow_medium_lights = new ssgSimpleState();
     rwy_yellow_medium_lights->disable( GL_LIGHTING );
     rwy_yellow_medium_lights->enable ( GL_CULL_FACE ) ;
@@ -328,7 +388,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_YELLOW_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity yellow light state
-    tex_name = gen_standard_dir_light_map( 235, 215, 20, 155 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 215, 20, 155 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 215, 20, 155 );
+    }
     ssgSimpleState *rwy_yellow_low_lights = new ssgSimpleState();
     rwy_yellow_low_lights->disable( GL_LIGHTING );
     rwy_yellow_low_lights->enable ( GL_CULL_FACE ) ;
@@ -346,7 +410,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_YELLOW_LOW_LIGHTS"] = m;
 
     // hard coded runway red light state
-    tex_name = gen_standard_dir_light_map( 235, 90, 90, 255 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 90, 90, 255 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 90, 90, 255 );
+    }
     ssgSimpleState *rwy_red_lights = new ssgSimpleState();
     rwy_red_lights->disable( GL_LIGHTING );
     rwy_red_lights->enable ( GL_CULL_FACE ) ;
@@ -364,7 +432,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_RED_LIGHTS"] = m;
 
     // hard coded medium intensity runway red light state
-    tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 90, 90, 205 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
+    }
     ssgSimpleState *rwy_red_medium_lights = new ssgSimpleState();
     rwy_red_medium_lights->disable( GL_LIGHTING );
     rwy_red_medium_lights->enable ( GL_CULL_FACE ) ;
@@ -382,7 +454,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_RED_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway red light state
-    tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 90, 90, 155 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
+    }
     ssgSimpleState *rwy_red_low_lights = new ssgSimpleState();
     rwy_red_low_lights->disable( GL_LIGHTING );
     rwy_red_low_lights->enable ( GL_CULL_FACE ) ;
@@ -400,7 +476,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_RED_LOW_LIGHTS"] = m;
 
     // hard coded runway green light state
-    tex_name = gen_standard_dir_light_map( 20, 235, 20, 255 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 20, 235, 20, 255 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 20, 235, 20, 255 );
+    }
     ssgSimpleState *rwy_green_lights = new ssgSimpleState();
     rwy_green_lights->disable( GL_LIGHTING );
     rwy_green_lights->enable ( GL_CULL_FACE ) ;
@@ -418,7 +498,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_GREEN_LIGHTS"] = m;
 
     // hard coded medium intensity runway green light state
-    tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 20, 235, 20, 205 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
+    }
     ssgSimpleState *rwy_green_medium_lights = new ssgSimpleState();
     rwy_green_medium_lights->disable( GL_LIGHTING );
     rwy_green_medium_lights->enable ( GL_CULL_FACE ) ;
@@ -436,7 +520,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_GREEN_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway green light state
-    tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 20, 235, 20, 155 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
+    }
     ssgSimpleState *rwy_green_low_lights = new ssgSimpleState();
     rwy_green_low_lights->disable( GL_LIGHTING );
     rwy_green_low_lights->enable ( GL_CULL_FACE ) ;
@@ -456,7 +544,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_GREEN_TAXIWAY_LIGHTS"] = m;
 
     // hard coded low intensity taxiway blue light state
-    tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 90, 90, 235, 205 );
+    } else {
+        tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
+    }
     ssgSimpleState *taxiway_blue_low_lights = new ssgSimpleState();
     taxiway_blue_low_lights->disable( GL_LIGHTING );
     taxiway_blue_low_lights->enable ( GL_CULL_FACE ) ;
@@ -474,7 +566,11 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
     matlib["RWY_BLUE_TAXIWAY_LIGHTS"] = m;
 
     // hard coded runway vasi light state
-    tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+    if ( sprite_lighting ) {
+        tex_name = gen_standard_light_sprite( 235, 235, 195, 255 );
+    } else {
+        tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+    }
     ssgSimpleState *rwy_vasi_lights = new ssgSimpleState();
     rwy_vasi_lights->disable( GL_LIGHTING );
     rwy_vasi_lights->enable ( GL_CULL_FACE ) ;

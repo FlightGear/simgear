@@ -2286,12 +2286,8 @@ SGPropertyNode::hash_table::hashcode (const char * key)
 
 SGPropertyChangeListener::~SGPropertyChangeListener ()
 {
-				// This will come back and remove
-				// the current item each time.  Is
-				// that OK?
-  vector<SGPropertyNode *>::iterator it;
-  for (it = _properties.begin(); it != _properties.end(); it++)
-    (*it)->removeChangeListener(this);
+  for (int i = _properties.size() - 1; i >= 0; i--)
+    _properties[i]->removeChangeListener(this);
 }
 
 void

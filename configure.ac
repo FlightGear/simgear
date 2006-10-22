@@ -261,10 +261,10 @@ OPENAL_OK="no"
 case "${host}" in
 *-*-cygwin* | *-*-mingw32*)
     dnl CygWin under Windoze.
-    INCLUDES="$INCLUDES -I/usr/local/include"
+    INCLUDES="$INCLUDES -I/usr/local/include/"
     LIBS="$LIBS -L/usr/local/lib"
-    AC_SEARCH_LIBS(alGenBuffers, openal32)
-    AC_SEARCH_LIBS(alutInit, [ openal32 ALut ] )
+    AC_SEARCH_LIBS(alGenBuffers, [ openal32 openal ] )
+    AC_SEARCH_LIBS(alutInit, [ openal32 ALut alut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
     openal_LIBS="$LIBS"
     OPENAL_OK="$ac_cv_search_alGenBuffers"

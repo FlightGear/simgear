@@ -54,6 +54,11 @@ SG_USING_STD(vector);
 #  endif
 #endif
 
+
+#if defined (__CYGWIN__)
+#include <ieeefp.h>
+#endif
+
 extern SGSky *thesky;
 
 static list_of_culledCloud inViewClouds;

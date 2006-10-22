@@ -56,6 +56,9 @@
 #  endif
 #endif
 
+#if defined (__CYGWIN__)
+#include <ieeefp.h>
+#endif
 
 static ssgSharedPtr<ssgStateSelector> layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static bool state_initialized = false;

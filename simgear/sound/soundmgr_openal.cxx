@@ -63,6 +63,11 @@ extern "C" int isinf (double);
 #  endif
 #endif
 
+#if defined (__CYGWIN__)
+#include <ieeefp.h>
+#endif
+
+
 #include STL_IOSTREAM
 
 #include <simgear/debug/logstream.hxx>

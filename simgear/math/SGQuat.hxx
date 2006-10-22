@@ -18,6 +18,15 @@
 #ifndef SGQuat_H
 #define SGQuat_H
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
+
 /// 3D Vector Class
 template<typename T>
 class SGQuat {

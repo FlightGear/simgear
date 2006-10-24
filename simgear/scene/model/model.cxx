@@ -19,6 +19,7 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/props/condition.hxx>
 
 #include "animation.hxx"
 #include "model.hxx"
@@ -62,6 +63,23 @@ restore_callback (ssgEntity * entity, int mask)
 {
     ((SGAnimation *)entity->getUserData())->restore();
     return 1;
+}
+
+/**
+ * Callback and userData class for conditional rendering.
+ */
+class SGConditionalRender : public ssgBase {
+public:
+  SGConditionalRender(SGCondition *c) : _condition(c) {}
+  bool test() { return _condition->test(); }
+private:
+  SGCondition *_condition;
+};
+
+static int
+model_condition_callback (ssgEntity * entity, int mask)
+{
+  return ((SGConditionalRender *)entity->getUserData())->test();
 }
 
 
@@ -333,6 +351,13 @@ sgLoad3DModel( const string &fg_root, const string &path,
       SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
       throw;
     }
+
+    SGPropertyNode_ptr cond_node = node->getNode("condition", false);
+    if (cond_node) {
+        align->setUserData(new SGConditionalRender(sgReadCondition(prop_root, cond_node)));
+        align->setTravCallback(SSG_CALLBACK_PRETRAV, model_condition_callback);
+    }
+
     align->addKid(kid);
     align->setName(node->getStringValue("name", ""));
     model->addKid(align);

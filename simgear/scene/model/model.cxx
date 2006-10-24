@@ -352,10 +352,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
       throw;
     }
 
-    SGPropertyNode_ptr cond_node = node->getNode("condition", false);
-    if (cond_node) {
-        align->setUserData(new SGConditionalRender(sgReadCondition(prop_root, cond_node)));
-        align->setTravCallback(SSG_CALLBACK_PRETRAV, model_condition_callback);
+    SGPropertyNode *cond = node->getNode("condition", false);
+    if (cond) {
+      align->setUserData(new SGConditionalRender(sgReadCondition(prop_root, cond)));
+      align->setTravCallback(SSG_CALLBACK_PRETRAV, model_condition_callback);
     }
 
     align->addKid(kid);

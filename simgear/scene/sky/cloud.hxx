@@ -29,22 +29,25 @@
 
 #include <simgear/compiler.h>
 #include <simgear/misc/sg_path.hxx>
-
-#include <plib/ssg.h>
+#include <simgear/math/SGMath.hxx>
+#include <simgear/structure/SGReferenced.hxx>
 
 #include STL_STRING
 SG_USING_STD(string);
 
-// #include <iostream>
-// SG_USING_STD(cout);
-// SG_USING_STD(endl);
+#include <osg/ref_ptr>
+#include <osg/Array>
+#include <osg/Geode>
+#include <osg/Group>
+#include <osg/MatrixTransform>
+#include <osg/Switch>
 
 class SGCloudField;
 
 /**
  * A class layer to model a single cloud layer
  */
-class SGCloudLayer {
+class SGCloudLayer : public SGReferenced {
 public:
 
     /**
@@ -163,7 +166,7 @@ public:
      * repaint the cloud colors based on the specified fog_color
      * @param fog_color the fog color
      */
-    bool repaint( sgVec3 fog_color );
+    bool repaint( const SGVec3f& fog_color );
 
     /**
      * reposition the cloud layer at the specified origin and
@@ -176,42 +179,30 @@ public:
      *        (and orients the sunrise/set effects)
      * @param dt the time elapsed since the last call
      */
-    bool reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt,
+    bool reposition( const SGVec3f& p, const SGVec3f& up,
+                     double lon, double lat, double alt,
                      double dt = 0.0 );
 
-    /** draw the cloud layer */
-    void draw( bool top );
+    osg::Switch* getNode() { return layer_root.get(); }
 
     static bool enable_bump_mapping;
 
-	/** return the 3D layer cloud associated with this 2D layer */
-	SGCloudField *get_layer3D(void) { return layer3D; }
+    /** return the 3D layer cloud associated with this 2D layer */
+    SGCloudField *get_layer3D(void) { return layer3D; }
 
 private:
 
-    struct CloudVertex {
-        sgVec3 position;
-        sgVec2 texCoord;
-        sgVec3 tangentSpLight;
-        sgVec3 sTangent;
-        sgVec3 tTangent;
-        sgVec3 normal;
-        sgVec4 color;
-    };
-
-    CloudVertex *vertices;
-    unsigned int *indices;
-
-    ssgRoot *layer_root;
-    ssgTransform *layer_transform;
-    ssgLeaf *layer[4];
-    ssgStateSelector *state_sel;
+    osg::ref_ptr<osg::Switch> layer_root;
+    osg::ref_ptr<osg::Group> group_top, group_bottom;
+    osg::ref_ptr<osg::MatrixTransform> layer_transform;
+    osg::ref_ptr<osg::Geode> layer[4];
 
     float cloud_alpha;          // 1.0 = drawn fully, 0.0 faded out completely
 
-    ssgColourArray *cl[4]; 
-    ssgVertexArray *vl[4];
-    ssgTexCoordArray *tl[4];
+    osg::ref_ptr<osg::Vec4Array> cl[4];
+    osg::ref_ptr<osg::Vec3Array> vl[4];
+    osg::ref_ptr<osg::Vec2Array> tl[4];
+    osg::ref_ptr<osg::Vec3Array> tl2[4];
 
     // height above sea level (meters)
     SGPath texture_path;
@@ -230,12 +221,9 @@ private:
     // double xoff, yoff;
     double last_lon, last_lat, last_course;
 
-	SGCloudField *layer3D;
+    osg::Vec2 base;
+
+    SGCloudField *layer3D;
 };
-
-
-// make an ssgSimpleState for a cloud layer given the named texture
-ssgSimpleState *sgCloudMakeState( const string &path );
-
 
 #endif // _SG_CLOUD_HXX_

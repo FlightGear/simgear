@@ -136,6 +136,7 @@ SGThread::start( unsigned cpu )
 {
     int status = pthread_create( &tid, 0, start_handler, this );
     assert( status == 0 );
+    (void)status;
 #if defined( sgi )
     if ( !status && !cpu )
         pthread_setrunon_np( cpu );
@@ -148,6 +149,7 @@ SGThread::join()
 {
     int status = pthread_join( tid, 0 );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void
@@ -155,6 +157,7 @@ SGThread::cancel()
 {
     int status = pthread_cancel( tid );
     assert( status == 0 );
+    (void)status;
 }
 
 /**
@@ -219,24 +222,28 @@ inline SGMutex::SGMutex()
 {
     int status = pthread_mutex_init( &mutex, 0 );
     assert( status == 0 );
+    (void)status;
 }
 
 inline SGMutex::~SGMutex()
 {
     int status = pthread_mutex_destroy( &mutex );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void SGMutex::lock()
 {
     int status = pthread_mutex_lock( &mutex );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void SGMutex::unlock()
 {
     int status = pthread_mutex_unlock( &mutex );
     assert( status == 0 );
+    (void)status;
 }
 
 /**
@@ -307,30 +314,35 @@ inline SGPthreadCond::SGPthreadCond()
 {
     int status = pthread_cond_init( &cond, 0 );
     assert( status == 0 );
+    (void)status;
 }
 
 inline SGPthreadCond::~SGPthreadCond()
 {
     int status = pthread_cond_destroy( &cond );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void SGPthreadCond::signal()
 {
     int status = pthread_cond_signal( &cond );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void SGPthreadCond::broadcast()
 {
     int status = pthread_cond_broadcast( &cond );
     assert( status == 0 );
+    (void)status;
 }
 
 inline void SGPthreadCond::wait( SGMutex& mutex )
 {
     int status = pthread_cond_wait( &cond, &mutex.mutex );
     assert( status == 0 );
+    (void)status;
 }
 
 #endif /* SGTHREAD_HXX_INCLUDED */

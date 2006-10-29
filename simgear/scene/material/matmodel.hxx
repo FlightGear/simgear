@@ -32,12 +32,11 @@
 
 #include STL_STRING      // Standard C++ string library
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/ref_ptr>
+#include <osg/Node>
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
 
 SG_USING_STD(string);
@@ -86,7 +85,7 @@ public:
      * @param index The index of the model.
      * @return The model.
      */
-    ssgEntity *get_model( int index,
+     osg::Node *get_model( int index,
                           SGModelLib *modellib,
                           const string &fg_root,
                           SGPropertyNode *prop_root,
@@ -98,7 +97,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    ssgEntity *get_random_model( SGModelLib *modellib,
+    osg::Node *get_random_model( SGModelLib *modellib,
                                  const string &fg_root,
                                  SGPropertyNode *prop_root,
                                  double sim_time_sec );
@@ -141,7 +140,7 @@ private:
                       double sim_time_sec );
 
     vector<string> _paths;
-    mutable vector<ssgSharedPtr<ssgEntity> > _models;
+    mutable vector<osg::ref_ptr<osg::Node> > _models;
     mutable bool _models_loaded;
     double _coverage_m2;
     double _range_m;
@@ -198,7 +197,6 @@ private:
 
     double _range_m;
     vector<SGSharedPtr<SGMatModel> > _objects;
-
 };
 
 

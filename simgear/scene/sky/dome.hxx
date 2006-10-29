@@ -30,27 +30,29 @@
 # error This library requires C++
 #endif
 
+#include <osg/ref_ptr>
+#include <osg/Array>
+#include <osg/MatrixTransform>
 
-#include <plib/ssg.h>		// plib include
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/math/SGMath.hxx>
 
+class SGSkyDome : public SGReferenced {
+    osg::ref_ptr<osg::MatrixTransform> dome_transform;
 
-class SGSkyDome {
-    ssgTransform *dome_transform;
-    ssgSimpleState *dome_state;
+    osg::ref_ptr<osg::Vec3Array> center_disk_vl;
+    osg::ref_ptr<osg::Vec3Array> center_disk_cl;
 
-    ssgVertexArray *center_disk_vl;
-    ssgColourArray *center_disk_cl;
+    osg::ref_ptr<osg::Vec3Array> upper_ring_vl;
+    osg::ref_ptr<osg::Vec3Array> upper_ring_cl;
 
-    ssgVertexArray *upper_ring_vl;
-    ssgColourArray *upper_ring_cl;
+    osg::ref_ptr<osg::Vec3Array> middle_ring_vl;
+    osg::ref_ptr<osg::Vec3Array> middle_ring_cl;
 
-    ssgVertexArray *middle_ring_vl;
-    ssgColourArray *middle_ring_cl;
+    osg::ref_ptr<osg::Vec3Array> lower_ring_vl;
+    osg::ref_ptr<osg::Vec3Array> lower_ring_cl;
 
-    ssgVertexArray *lower_ring_vl;
-    ssgColourArray *lower_ring_cl;
-
-    float   asl;
+    double asl;
 
 public:
 
@@ -62,7 +64,7 @@ public:
 
     // initialize the sky object and connect it into our scene graph
     // root
-    ssgBranch *build( double hscale = 80000.0, double vscale = 80000.0 );
+    osg::Node *build( double hscale = 80000.0, double vscale = 80000.0 );
 
     // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for
@@ -71,15 +73,16 @@ public:
     // 0 degrees = high noon
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
-    bool repaint( sgVec3 sky_color, sgVec3 fog_color, double sun_angle,
-		  double vis );
+    bool repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
+                  double sun_angle, double vis );
 
     // reposition the sky at the specified origin and orientation
     // lon specifies a rotation about the Z axis
     // lat specifies a rotation about the new Y axis
     // spin specifies a rotation about the new Z axis (and orients the
     // sunrise/set effects
-    bool reposition( sgVec3 p, double lon, double lat, double spin );
+    bool reposition( const SGVec3f& p, double asl,
+                     double lon, double lat, double spin );
 };
 
 

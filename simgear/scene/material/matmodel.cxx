@@ -30,7 +30,11 @@
 #include <map>
 SG_USING_STD(map);
 
-#include <simgear/compiler.h>
+#include <osg/AlphaFunc>
+#include <osg/Group>
+#include <osg/LOD>
+#include <osg/StateSet>
+#include <osg/Transform>
 
 #ifdef SG_MATH_EXCEPTION_CLASH
 #  include <math.h>
@@ -120,22 +124,6 @@ SGMatModel::get_model_count( SGModelLib *modellib,
   return _models.size();
 }
 
-static void
-setAlphaClampToBranch( ssgBranch *b, float clamp )
-{
-  int nb = b->getNumKids();
-  for (int i = 0; i<nb; i++) {
-    ssgEntity *e = b->getKid(i);
-    if (e->isAKindOf(ssgTypeLeaf())) {
-      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
-      s->enable( GL_ALPHA_TEST );
-      s->setAlphaClamp( clamp );
-    } else if (e->isAKindOf(ssgTypeBranch())) {
-      setAlphaClampToBranch( (ssgBranch*)e, clamp );
-    }
-  }
-}
-
 inline void
 SGMatModel::load_models ( SGModelLib *modellib,
                           const string &fg_root,
@@ -145,7 +133,7 @@ SGMatModel::load_models ( SGModelLib *modellib,
 				// Load model only on demand
   if (!_models_loaded) {
     for (unsigned int i = 0; i < _paths.size(); i++) {
-      ssgEntity *entity = modellib->load_model( fg_root, _paths[i],
+      osg::Node *entity = modellib->load_model( fg_root, _paths[i],
                                                 prop_root, sim_time_sec,
                                                 /*cache_object*/ true );
       if (entity != 0) {
@@ -153,23 +141,29 @@ SGMatModel::load_models ( SGModelLib *modellib,
                                 // in the XML wrapper as well (at least,
                                 // the billboarding should be handled
                                 // there).
-	float ranges[] = {0, _range_m};
-	ssgRangeSelector * lod = new ssgRangeSelector;
-        lod->setRanges(ranges, 2);
+        osg::LOD * lod = new osg::LOD;
+        lod->setName("Model LOD");
+        lod->setRangeMode(osg::LOD::DISTANCE_FROM_EYE_POINT);
+        lod->setRange(0, 0, _range_m);
 	if (_heading_type == HEADING_BILLBOARD) {
           // if the model is a billboard, it is likely :
           // 1. a branch with only leaves,
           // 2. a tree or a non rectangular shape faked by transparency
           // We add alpha clamp then
-          if ( entity->isAKindOf(ssgTypeBranch()) ) {
-            ssgBranch *b = (ssgBranch *)entity;
-            setAlphaClampToBranch( b, 0.01f );
-          }
-	  ssgCutout * cutout = new ssgCutout(false);
-	  cutout->addKid(entity);
-	  lod->addKid(cutout);
+          osg::StateSet* stateSet = entity->getOrCreateStateSet();
+          osg::AlphaFunc* alphaFunc =
+            new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01f);
+          stateSet->setAttributeAndModes(alphaFunc,
+                                         osg::StateAttribute::OVERRIDE);
+          stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+
+          osg::Transform* transform = new osg::Transform;
+          transform->setName("Model Billboard Transform");
+          transform->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+	  transform->addChild(entity);
+	  lod->addChild(transform);
 	} else {
-	  lod->addKid(entity);
+	  lod->addChild(entity);
 	}
 	_models.push_back(lod);
       } else {
@@ -180,7 +174,7 @@ SGMatModel::load_models ( SGModelLib *modellib,
   _models_loaded = true;
 }
 
-ssgEntity *
+osg::Node*
 SGMatModel::get_model( int index,
                        SGModelLib *modellib,
                        const string &fg_root,
@@ -188,10 +182,10 @@ SGMatModel::get_model( int index,
                        double sim_time_sec )
 {
   load_models( modellib, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
-  return _models[index];
+  return _models[index].get();
 }
 
-ssgEntity *
+osg::Node*
 SGMatModel::get_random_model( SGModelLib *modellib,
                               const string &fg_root,
                               SGPropertyNode *prop_root,
@@ -202,7 +196,7 @@ SGMatModel::get_random_model( SGModelLib *modellib,
   int index = int(sg_random() * nModels);
   if (index >= nModels)
     index = 0;
-  return _models[index];
+  return _models[index].get();
 }
 
 double

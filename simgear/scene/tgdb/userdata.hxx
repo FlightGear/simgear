@@ -29,7 +29,11 @@
 
 #include STL_STRING
 
-#include <plib/ssg.h>
+#include <plib/sg.h>
+
+#include <osg/Referenced>
+#include <osg/Geometry>
+#include <osg/Group>
 
 SG_USING_STD(string);
 
@@ -52,13 +56,13 @@ void sgUserDataInit( SGModelLib *m, const string &r,
 /**
  * User data for populating leaves when they come in range.
  */
-class SGLeafUserData : public ssgBase
+class SGLeafUserData : public osg::Referenced
 {
 public:
     bool is_filled_in;
-    ssgLeaf *leaf;
+    osg::Geometry *leaf;
     SGMaterial *mat;
-    ssgBranch *branch;
+    osg::Group *branch;
     float sin_lat;
     float cos_lat;
     float sin_lon;
@@ -71,17 +75,17 @@ public:
 /**
  * User data for populating triangles when they come in range.
  */
-class SGTriUserData : public ssgBase
+class SGTriUserData : public osg::Referenced
 {
 public:
     bool is_filled_in;
     float * p1;
     float * p2;
     float * p3;
-    sgVec3 center;
+    osg::Vec3 center;
     double area;
     SGMatModelGroup * object_group;
-    ssgBranch * branch;
+    osg::Group * branch;
     SGLeafUserData * leafData;
     unsigned int seed;
 
@@ -89,27 +93,5 @@ public:
     void add_object_to_triangle(SGMatModel * object);
     void makeWorldMatrix (sgMat4 ROT, double hdg_deg );
 };
-
-
-/**
- * ssgEntity with a dummy bounding sphere, to fool culling.
- *
- * This forces the in-range and out-of-range branches to be visited
- * when appropriate, even if they have no children.  It's ugly, but
- * it works and seems fairly efficient (since branches can still
- * be culled when they're out of the view frustum).
- */
-class SGDummyBSphereEntity : public ssgBranch
-{
-public:
-  SGDummyBSphereEntity (float radius)
-  {
-    bsphere.setCenter(0, 0, 0);
-    bsphere.setRadius(radius);
-  }
-  virtual ~SGDummyBSphereEntity () {}
-  virtual void recalcBSphere () { bsphere_is_invalid = false; }
-};
-
 
 #endif // _SG_USERDATA_HXX

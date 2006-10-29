@@ -2,7 +2,65 @@
 
 /*
  * $Log$
- * Revision 1.3  2006/02/21 10:47:21  ehofman
+ * Revision 1.4  2006/10/29 19:27:11  frohlich
+ * Modified Files:
+ * 	configure.ac simgear/environment/visual_enviro.cxx
+ * 	simgear/ephemeris/ephemeris.cxx
+ * 	simgear/ephemeris/ephemeris.hxx simgear/ephemeris/stardata.cxx
+ * 	simgear/ephemeris/stardata.hxx simgear/math/SGMatrix.hxx
+ * 	simgear/math/SGQuat.hxx simgear/math/SGVec3.hxx
+ * 	simgear/math/SGVec4.hxx simgear/scene/Makefile.am
+ *  	simgear/scene/material/mat.cxx simgear/scene/material/mat.hxx
+ * 	simgear/scene/material/matlib.cxx
+ * 	simgear/scene/material/matlib.hxx
+ * 	simgear/scene/material/matmodel.cxx
+ * 	simgear/scene/material/matmodel.hxx
+ * 	simgear/scene/model/Makefile.am
+ * 	simgear/scene/model/animation.cxx
+ * 	simgear/scene/model/animation.hxx
+ * 	simgear/scene/model/custtrans.hxx
+ * 	simgear/scene/model/model.cxx simgear/scene/model/model.hxx
+ * 	simgear/scene/model/modellib.cxx
+ * 	simgear/scene/model/modellib.hxx
+ * 	simgear/scene/model/personality.cxx
+ * 	simgear/scene/model/personality.hxx
+ * 	simgear/scene/model/placement.cxx
+ * 	simgear/scene/model/placement.hxx
+ * 	simgear/scene/model/placementtrans.cxx
+ * 	simgear/scene/model/placementtrans.hxx
+ * 	simgear/scene/model/shadanim.cxx
+ * 	simgear/scene/model/shadowvolume.hxx
+ * 	simgear/scene/sky/cloud.cxx simgear/scene/sky/cloud.hxx
+ * 	simgear/scene/sky/cloudfield.cxx simgear/scene/sky/dome.cxx
+ * 	simgear/scene/sky/dome.hxx simgear/scene/sky/moon.cxx
+ * 	simgear/scene/sky/moon.hxx simgear/scene/sky/newcloud.cxx
+ * 	simgear/scene/sky/oursun.cxx simgear/scene/sky/oursun.hxx
+ * 	simgear/scene/sky/sky.cxx simgear/scene/sky/sky.hxx
+ * 	simgear/scene/sky/sphere.cxx simgear/scene/sky/sphere.hxx
+ * 	simgear/scene/sky/stars.cxx simgear/scene/sky/stars.hxx
+ * 	simgear/scene/tgdb/apt_signs.cxx
+ * 	simgear/scene/tgdb/apt_signs.hxx simgear/scene/tgdb/leaf.cxx
+ * 	simgear/scene/tgdb/leaf.hxx simgear/scene/tgdb/obj.cxx
+ * 	simgear/scene/tgdb/obj.hxx simgear/scene/tgdb/pt_lights.cxx
+ * 	simgear/scene/tgdb/pt_lights.hxx
+ * 	simgear/scene/tgdb/userdata.cxx
+ * 	simgear/scene/tgdb/userdata.hxx simgear/scene/tgdb/vasi.hxx
+ * 	simgear/screen/jpgfactory.cxx simgear/screen/tr.cxx
+ * 	simgear/structure/Makefile.am simgear/threads/SGThread.hxx
+ * Added Files:
+ * 	simgear/scene/util/Makefile.am
+ * 	simgear/scene/util/SGDebugDrawCallback.hxx
+ * 	simgear/scene/util/SGNodeMasks.hxx
+ * 	simgear/scene/util/SGStateAttributeVisitor.hxx
+ * 	simgear/scene/util/SGTextureStateAttributeVisitor.hxx
+ * 	simgear/scene/util/SGUpdateVisitor.hxx
+ * Removed Files:
+ * 	simgear/screen/ssgEntityArray.cxx
+ * 	simgear/screen/ssgEntityArray.hxx
+ * 	simgear/structure/ssgSharedPtr.hxx
+ * 	Big BLOB on the way to OSG.
+ *
+ * Revision 1.3  2006-02-21 10:47:21  ehofman
  * Back out the previous patch.
  *
  * Revision 1.2  2004/11/18 19:10:34  curt
@@ -73,7 +131,6 @@
 
 #include SG_GLU_H
 
-#include <plib/ssg.h>
 #include "tr.h"
 
 
@@ -395,7 +452,8 @@ void trBeginTile(TRcontext *tr)
           * (tr->CurrentRow * tr->TileHeightNB - border) / tr->ImageHeight;
    top = bottom + (tr->Top - tr->Bottom) * tileHeight / tr->ImageHeight;
 
-   ssgSetFrustum ( left, right, bottom, top, tr->Near, tr->Far );
+   // OSGFIXME
+//    ssgSetFrustum ( left, right, bottom, top, tr->Near, tr->Far );
 
    /* restore user's matrix mode */
    glMatrixMode( (GLenum)matrixMode );

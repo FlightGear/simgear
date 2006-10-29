@@ -31,38 +31,16 @@
 #include <stdio.h>
 #include STL_IOSTREAM
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/AlphaFunc>
+#include <osg/BlendFunc>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Image>
+#include <osg/Material>
+#include <osg/Point>
+#include <osg/ShadeModel>
 
 #include "stars.hxx"
-
-
-// Set up star rendering call backs
-static int sgStarPreDraw( ssgEntity *e ) {
-    /* cout << endl << "Star pre draw" << endl << "----------------" 
-       << endl << endl; */
-
-    ssgLeaf *f = (ssgLeaf *)e;
-    if ( f -> hasState () ) f->getState()->apply() ;
-
-    glPushAttrib( GL_DEPTH_BUFFER_BIT | GL_FOG_BIT | GL_COLOR_BUFFER_BIT );
-
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_FOG );
-    // glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
-
-    return true;
-}
-
-static int sgStarPostDraw( ssgEntity *e ) {
-    /* cout << endl << "Star post draw" << endl << "----------------" 
-       << endl << endl; */
-
-    glPopAttrib();
-
-    return true;
-}
-
 
 // Constructor
 SGStars::SGStars( void ) :
@@ -77,64 +55,76 @@ SGStars::~SGStars( void ) {
 
 
 // initialize the stars object and connect it into our scene graph root
-ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
-    sgVec4 color;
-
-    if ( star_data == NULL )
-        SG_LOG( SG_EVENT, SG_WARN, "null star data passed to SGStars::build()");
-
-
-    // set up the orb state
-    state = new ssgSimpleState();
-    state->disable( GL_LIGHTING );
-    state->disable( GL_CULL_FACE );
-    state->disable( GL_TEXTURE_2D );
-    state->enable( GL_COLOR_MATERIAL );
-    state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-    state->enable( GL_BLEND );
-    state->disable( GL_ALPHA_TEST );
-
-    vl = new ssgVertexArray( num );
-    cl = new ssgColourArray( num );
-    // cl = new ssgColourArray( 1 );
-    // sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-    // cl->add( color );
-
-    // Build ssg structure
-    sgVec3 p;
-    for ( int i = 0; i < num; ++i ) {
-        // position seeded to arbitrary values
-        sgSetVec3( p, 
-                   star_dist * cos( star_data[i][0] )
-                   * cos( star_data[i][1] ),
-                   star_dist * sin( star_data[i][0] )
-                   * cos( star_data[i][1] ),
-                   star_dist * sin( star_data[i][1] )
-                   );
-        vl->add( p );
-
-        // color (magnitude)
-        sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-        cl->add( color );
-    }
-
-    ssgLeaf *stars_obj = 
-        new ssgVtxTable ( GL_POINTS, vl, NULL, NULL, cl );
-    stars_obj->setState( state );
-    stars_obj->setCallback( SSG_CALLBACK_PREDRAW, sgStarPreDraw );
-    stars_obj->setCallback( SSG_CALLBACK_POSTDRAW, sgStarPostDraw );
-
+osg::Node*
+SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
-    stars_transform = new ssgTransform;
+    stars_transform = new osg::MatrixTransform;
 
-    stars_transform->addKid( stars_obj );
+    osg::Geode* geode = new osg::Geode;
+    osg::StateSet* stateSet = geode->getOrCreateStateSet();
+    stateSet->setRenderBinDetails(-9, "RenderBin");
 
-    SG_LOG( SG_EVENT, SG_INFO, "stars = " << stars_transform);
+    // set up the star state
 
-    return stars_transform;
+    // Ok, the old implementation did have a color material set.
+    // But with lighting off, I don't see how this should change the result
+    osg::Material* material = new osg::Material;
+//     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+//     material->setEmission(osg::Material::FRONT_AND_BACK,
+//                           osg::Vec4(0, 0, 0, 1));
+//     material->setSpecular(osg::Material::FRONT_AND_BACK,
+//                               osg::Vec4(0, 0, 0, 1));
+    stateSet->setAttribute(material);
+//     stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::OFF);
+
+    osg::BlendFunc* blendFunc = new osg::BlendFunc;
+    blendFunc->setFunction(osg::BlendFunc::SRC_ALPHA,
+                           osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+    stateSet->setAttributeAndModes(blendFunc);
+
+//     osg::Point* point = new osg::Point;
+//     point->setSize(5);
+//     stateSet->setAttributeAndModes(point);
+
+    stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+
+    // Build scenegraph structure
+    
+    cl = new osg::Vec4Array;
+    osg::Vec3Array* vl = new osg::Vec3Array;
+
+    // Build scenegraph structure
+    for ( int i = 0; i < num; ++i ) {
+        // position seeded to arbitrary values
+        vl->push_back(osg::Vec3(star_dist * cos( star_data[i][0])
+                                * cos( star_data[i][1] ),
+                                star_dist * sin( star_data[i][0])
+                                * cos( star_data[i][1] ),
+                                star_dist * sin( star_data[i][1])));
+
+        // color (magnitude)
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
+    }
+
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setVertexArray(vl);
+    geometry->setColorArray(cl.get());
+    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, vl->size()));
+    geode->addDrawable(geometry);
+
+    stars_transform->addChild(geode);
+
+    SG_LOG( SG_EVENT, SG_INFO, "stars = " << stars_transform.get());
+
+    return stars_transform.get();
 }
 
 
@@ -143,12 +133,11 @@ ssgBranch * SGStars::build( int num, sgdVec3 *star_data, double star_dist ) {
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
+bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
     // cout << "repainting stars" << endl;
     // double min = 100;
     // double max = -100;
     double mag, nmag, alpha, factor, cutoff;
-    float *color;
 
     int phase;
 
@@ -217,10 +206,10 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
             if (alpha > 1.0) { alpha = 1.0; }
             if (alpha < 0.0) { alpha = 0.0; }
 
-            color = cl->get( i );
-            sgSetVec4( color, 1.0, 1.0, 1.0, alpha );
+            (*cl)[i] = osg::Vec4(1, 1, 1, alpha);
             // cout << "alpha[" << i << "] = " << alpha << endl;
         }
+        cl->dirty();
     } else {
 	// cout << "  no phase change, skipping" << endl;
     }
@@ -235,24 +224,15 @@ bool SGStars::repaint( double sun_angle, int num, sgdVec3 *star_data ) {
 // reposition the stars for the specified time (GST rotation),
 // offset by our current position (p) so that it appears fixed at a
 // great distance from the viewer.
-bool SGStars::reposition( sgVec3 p, double angle )
+bool
+SGStars::reposition( const SGVec3f& p, double angle )
 {
-    sgMat4 T1, GST;
-    sgVec3 axis;
+    osg::Matrix T1, GST;
+    T1.makeTranslate(p.osg());
 
-    sgMakeTransMat4( T1, p );
+    GST.makeRotate(angle*SGD_DEGREES_TO_RADIANS, osg::Vec3(0, 0, -1));
 
-    sgSetVec3( axis, 0.0, 0.0, -1.0 );
-    sgMakeRotMat4( GST, angle, axis );
-
-    sgMat4 TRANSFORM;
-    sgCopyMat4( TRANSFORM, T1 );
-    sgPreMultMat4( TRANSFORM, GST );
-
-    sgCoord skypos;
-    sgSetCoord( &skypos, TRANSFORM );
-
-    stars_transform->setTransform( &skypos );
+    stars_transform->setMatrix(GST*T1);
 
     return true;
 }

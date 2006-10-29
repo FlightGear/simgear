@@ -33,8 +33,6 @@
 #  include <windows.h>
 #endif
 
-#include <plib/ssg.h>
-
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
@@ -43,6 +41,20 @@
 
 #include <string.h>
 #include STL_STRING
+
+#include <osg/AlphaFunc>
+#include <osg/BlendFunc>
+#include <osg/CullFace>
+#include <osg/Material>
+// #include <osg/Multisample>
+#include <osg/Point>
+#include <osg/PointSprite>
+#include <osg/PolygonMode>
+#include <osg/PolygonOffset>
+#include <osg/StateSet>
+#include <osg/TexEnv>
+#include <osg/TexGen>
+#include <osg/Texture2D>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -57,98 +69,26 @@
 SG_USING_NAMESPACE(std);
 SG_USING_STD(string);
 
+extern bool SGPointLightsUseSprites;
+extern bool SGPointLightsEnhancedLighting;
+extern bool SGPointLightsDistanceAttenuation;
 
 // FIXME: should make this configurable
 static const bool sprite_lighting = true;
-
 
 // Constructor
 SGMaterialLib::SGMaterialLib ( void ) {
 }
 
-
-#if 0 // debugging infrastructure
-static int gen_test_light_map() {
-    static const int env_tex_res = 32;
-    int half_res = env_tex_res / 2;
-    unsigned char env_map[env_tex_res][env_tex_res][4];
-    GLuint tex_name;
-
-    for ( int i = 0; i < env_tex_res; ++i ) {
-        for ( int j = 0; j < env_tex_res; ++j ) {
-            double x = (i - half_res) / (double)half_res;
-            double y = (j - half_res) / (double)half_res;
-            double dist = sqrt(x*x + y*y);
-            if ( dist > 1.0 ) { dist = 1.0; }
-
-            // cout << x << "," << y << " " << (int)(dist * 255) << ","
-            //      << (int)((1.0 - dist) * 255) << endl;
-            env_map[i][j][0] = (int)(dist * 255);
-            env_map[i][j][1] = (int)((1.0 - dist) * 255);
-            env_map[i][j][2] = 0;
-            env_map[i][j][3] = 255;
-        }
-    }
-
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-    glGenTextures( 1, &tex_name );
-    glBindTexture( GL_TEXTURE_2D, tex_name );
-  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
-                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
-
-    return tex_name;
-}
-#endif
-
-
-// generate a light sprite texture map
-static int gen_standard_light_sprite( int r, int g, int b, int alpha ) {
-    const int env_tex_res = 32;
-    int half_res = env_tex_res / 2;
-    unsigned char env_map[env_tex_res][env_tex_res][4];
-    GLuint tex_name;
-
-    for ( int i = 0; i < env_tex_res; ++i ) {
-        for ( int j = 0; j < env_tex_res; ++j ) {
-            double x = (i - half_res) / (double)half_res;
-            double y = (j - half_res) / (double)half_res;
-            double dist = sqrt(x*x + y*y);
-            if ( dist > 1.0 ) { dist = 1.0; }
-            double bright = cos( dist * SGD_PI_2 );
-            if ( bright < 0.01 ) { bright = 0.0; }
-            env_map[i][j][0] = r;
-            env_map[i][j][1] = g;
-            env_map[i][j][2] = b;
-            env_map[i][j][3] = (int)(bright * alpha);
-        }
-    }
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-    glGenTextures( 1, &tex_name );
-    glBindTexture( GL_TEXTURE_2D, tex_name );
-  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
-                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
-
-    return tex_name;
-}
-
-
 // generate standard colored directional light environment texture map
-static int gen_standard_dir_light_map( int r, int g, int b, int alpha ) {
+static osg::Texture2D*
+gen_standard_dir_light_map( int r, int g, int b, int alpha ) {
     const int env_tex_res = 32;
     int half_res = env_tex_res / 2;
-    unsigned char env_map[env_tex_res][env_tex_res][4];
-    GLuint tex_name;
 
+    osg::Image* image = new osg::Image;
+    image->allocateImage(env_tex_res, env_tex_res, 1,
+                         GL_RGBA, GL_UNSIGNED_BYTE);
     for ( int i = 0; i < env_tex_res; ++i ) {
         for ( int j = 0; j < env_tex_res; ++j ) {
             double x = (i - half_res) / (double)half_res;
@@ -157,34 +97,30 @@ static int gen_standard_dir_light_map( int r, int g, int b, int alpha ) {
             if ( dist > 1.0 ) { dist = 1.0; }
             double bright = cos( dist * SGD_PI_2 );
             if ( bright < 0.3 ) { bright = 0.3; }
-            env_map[i][j][0] = r;
-            env_map[i][j][1] = g;
-            env_map[i][j][2] = b;
-            env_map[i][j][3] = (int)(bright * alpha);
+            unsigned char* env_map = image->data(i, j);
+            env_map[0] = r;
+            env_map[1] = g;
+            env_map[2] = b;
+            env_map[3] = (int)(bright * alpha);
         }
     }
 
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-    glGenTextures( 1, &tex_name );
-    glBindTexture( GL_TEXTURE_2D, tex_name );
-  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
-                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
+    osg::Texture2D* texture = new osg::Texture2D;
+    texture->setImage(image);
 
-    return tex_name;
+    return texture;
 }
 
 
 // generate standard colored directional light environment texture map
-static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
+static osg::Texture2D*
+gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
     const int env_tex_res = 32;
     int half_res = env_tex_res / 2;
-    unsigned char env_map[env_tex_res][env_tex_res][4];
-    GLuint tex_name;
+
+    osg::Image* image = new osg::Image;
+    image->allocateImage(env_tex_res, env_tex_res, 1,
+                         GL_RGBA, GL_UNSIGNED_BYTE);
 
     for ( int i = 0; i < env_tex_res; ++i ) {
         for ( int j = 0; j < env_tex_res; ++j ) {
@@ -195,25 +131,49 @@ static int gen_taxiway_dir_light_map( int r, int g, int b, int alpha ) {
             if ( dist > 1.0 ) { dist = 1.0; }
             double bright = sin( dist * SGD_PI_2 );
             if ( bright < 0.2 ) { bright = 0.2; }
-            env_map[i][j][0] = r;
-            env_map[i][j][1] = g;
-            env_map[i][j][2] = b;
-            env_map[i][j][3] = (int)(bright * alpha);
+            unsigned char* env_map = image->data(i, j);
+            env_map[0] = r;
+            env_map[1] = g;
+            env_map[2] = b;
+            env_map[3] = (int)(bright * alpha);
         }
     }
 
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-    glGenTextures( 1, &tex_name );
-    glBindTexture( GL_TEXTURE_2D, tex_name );
-  
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, env_tex_res, env_tex_res, 0,
-                  GL_RGBA, GL_UNSIGNED_BYTE, env_map);
+    osg::Texture2D* texture = new osg::Texture2D;
+    texture->setImage(image);
 
-    return tex_name;
+    return texture;
+}
+
+static osg::Texture2D*
+gen_standard_light_sprite( int r, int g, int b, int alpha ) {
+    const int env_tex_res = 32;
+    int half_res = env_tex_res / 2;
+
+    osg::Image* image = new osg::Image;
+    image->allocateImage(env_tex_res, env_tex_res, 1,
+                         GL_RGBA, GL_UNSIGNED_BYTE);
+
+    for ( int i = 0; i < env_tex_res; ++i ) {
+        for ( int j = 0; j < env_tex_res; ++j ) {
+            double x = (i - half_res) / (double)half_res;
+            double y = (j - half_res) / (double)half_res;
+            double dist = sqrt(x*x + y*y);
+            if ( dist > 1.0 ) { dist = 1.0; }
+            double bright = cos( dist * SGD_PI_2 );
+            if ( bright < 0.01 ) { bright = 0.0; }
+            unsigned char* env_map = image->data(i, j);
+            env_map[0] = r;
+            env_map[1] = g;
+            env_map[2] = b;
+            env_map[3] = (int)(bright * alpha);
+        }
+    }
+
+    osg::Texture2D* texture = new osg::Texture2D;
+    texture->setImage(image);
+
+    return texture;
 }
 
 
@@ -254,41 +214,89 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
         }
     }
 
+    osg::ref_ptr<osg::StateSet> lightStateSet = new osg::StateSet;
+    {
+//       lightStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+//       lightStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
+      lightStateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+//       lightStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
+
+      lightStateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+//       lightStateSet->setAttribute(new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0));
+//       lightStateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+
+      osg::CullFace* cullFace = new osg::CullFace;
+      cullFace->setMode(osg::CullFace::BACK);
+      lightStateSet->setAttributeAndModes(cullFace, osg::StateAttribute::ON);
+
+      osg::BlendFunc* blendFunc = new osg::BlendFunc;
+      blendFunc->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+      lightStateSet->setAttributeAndModes(blendFunc, osg::StateAttribute::ON);
+
+      osg::PolygonMode* polygonMode = new osg::PolygonMode;
+      polygonMode->setMode(osg::PolygonMode::FRONT, osg::PolygonMode::POINT);
+      lightStateSet->setAttribute(polygonMode);
+
+//       if (SGPointLightsUseSprites) {
+        osg::PointSprite* pointSprite = new osg::PointSprite;
+        lightStateSet->setTextureAttributeAndModes(0, pointSprite, osg::StateAttribute::ON);
+//       }
+
+//       if (SGPointLightsDistanceAttenuation) {
+        osg::Point* point = new osg::Point;
+        point->setMinSize(2);
+        point->setSize(8);
+        point->setDistanceAttenuation(osg::Vec3(1.0, 0.001, 0.000001));
+        lightStateSet->setAttribute(point);
+//       }
+
+      osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
+      polygonOffset->setFactor(-1);
+      polygonOffset->setUnits(-1);
+      lightStateSet->setAttributeAndModes(polygonOffset, osg::StateAttribute::ON);
+      
+      osg::TexGen* texGen = new osg::TexGen;
+      texGen->setMode(osg::TexGen::SPHERE_MAP);
+      lightStateSet->setTextureAttribute(0, texGen);
+      lightStateSet->setTextureMode(0, GL_TEXTURE_GEN_S, osg::StateAttribute::ON);
+      lightStateSet->setTextureMode(0, GL_TEXTURE_GEN_T, osg::StateAttribute::ON);
+      osg::TexEnv* texEnv = new osg::TexEnv;
+      texEnv->setMode(osg::TexEnv::MODULATE);
+      lightStateSet->setTextureAttribute(0, texEnv);
+
+      osg::Material* material = new osg::Material;
+      lightStateSet->setAttribute(material);
+//       lightStateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::OFF);
+    }
+    
+
     // hard coded ground light state
-    ssgSimpleState *gnd_lights = new ssgSimpleState;
-    gnd_lights->disable( GL_TEXTURE_2D );
-    gnd_lights->enable( GL_CULL_FACE );
-    gnd_lights->enable( GL_COLOR_MATERIAL );
-    gnd_lights->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    gnd_lights->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    gnd_lights->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-    gnd_lights->enable( GL_BLEND );
-    gnd_lights->disable( GL_ALPHA_TEST );
-    gnd_lights->disable( GL_LIGHTING );
+    osg::StateSet *gnd_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+//     if (SGPointLightsDistanceAttenuation) {
+    osg::Point* point = new osg::Point;
+      point->setMinSize(1);
+      point->setSize(2);
+      point->setMaxSize(4);
+      point->setDistanceAttenuation(osg::Vec3(1.0, 0.01, 0.0001));
+      while (gnd_lights->getAttribute(osg::StateAttribute::POINT)) {
+        gnd_lights->removeAttribute(osg::StateAttribute::POINT);
+      }
+      gnd_lights->setAttribute(point);
+//     }
     m = new SGMaterial( gnd_lights );
     m->add_name("GROUND_LIGHTS");
     matlib["GROUND_LIGHTS"] = m;
 
-    GLuint tex_name;
-
     // hard coded runway white light state
+    osg::Texture2D* texture;
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 235, 195, 255 );
+      texture = gen_standard_light_sprite(235, 235, 195, 255);
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+      texture = gen_standard_dir_light_map(235, 235, 195, 255);
     }
-    ssgSimpleState *rwy_white_lights = new ssgSimpleState();
-    rwy_white_lights->disable( GL_LIGHTING );
-    rwy_white_lights->enable ( GL_CULL_FACE ) ;
-    rwy_white_lights->enable( GL_TEXTURE_2D );
-    rwy_white_lights->enable( GL_BLEND );
-    rwy_white_lights->enable( GL_ALPHA_TEST );
-    rwy_white_lights->enable( GL_COLOR_MATERIAL );
-    rwy_white_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_lights->setTexture( tex_name );
+    osg::StateSet *rwy_white_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_white_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
+
     m = new SGMaterial( rwy_white_lights );
     m->add_name("RWY_WHITE_LIGHTS");
     matlib["RWY_WHITE_LIGHTS"] = m;
@@ -301,242 +309,133 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     // hard coded runway medium intensity white light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 235, 195, 205 );
+      texture = gen_standard_light_sprite( 235, 235, 195, 205 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 235, 195, 205 );
+      texture = gen_standard_dir_light_map( 235, 235, 195, 205 );
     }
-    ssgSimpleState *rwy_white_medium_lights = new ssgSimpleState();
-    rwy_white_medium_lights->disable( GL_LIGHTING );
-    rwy_white_medium_lights->enable ( GL_CULL_FACE ) ;
-    rwy_white_medium_lights->enable( GL_TEXTURE_2D );
-    rwy_white_medium_lights->enable( GL_BLEND );
-    rwy_white_medium_lights->enable( GL_ALPHA_TEST );
-    rwy_white_medium_lights->enable( GL_COLOR_MATERIAL );
-    rwy_white_medium_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_medium_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_medium_lights->setTexture( tex_name );
+    osg::StateSet *rwy_white_medium_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_white_medium_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
+
     m = new SGMaterial( rwy_white_medium_lights );
     m->add_name("RWY_WHITE_MEDIUM_LIGHTS");
     matlib["RWY_WHITE_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity white light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 235, 195, 155 );
+      texture = gen_standard_light_sprite( 235, 235, 195, 155 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 235, 195, 155 );
+      texture = gen_standard_dir_light_map( 235, 235, 195, 155 );
     }
-    ssgSimpleState *rwy_white_low_lights = new ssgSimpleState();
-    rwy_white_low_lights->disable( GL_LIGHTING );
-    rwy_white_low_lights->enable ( GL_CULL_FACE ) ;
-    rwy_white_low_lights->enable( GL_TEXTURE_2D );
-    rwy_white_low_lights->enable( GL_BLEND );
-    rwy_white_low_lights->enable( GL_ALPHA_TEST );
-    rwy_white_low_lights->enable( GL_COLOR_MATERIAL );
-    rwy_white_low_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_low_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_white_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_white_low_lights->setTexture( tex_name );
+    osg::StateSet *rwy_white_low_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_white_medium_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_white_low_lights );
     m->add_name("RWY_WHITE_LOW_LIGHTS");
     matlib["RWY_WHITE_LOW_LIGHTS"] = m;
 
     // hard coded runway yellow light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 215, 20, 255 );
+      texture = gen_standard_light_sprite( 235, 215, 20, 255 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 215, 20, 255 );
+      texture = gen_standard_dir_light_map( 235, 215, 20, 255 );
     }
-    ssgSimpleState *rwy_yellow_lights = new ssgSimpleState();
-    rwy_yellow_lights->disable( GL_LIGHTING );
-    rwy_yellow_lights->enable ( GL_CULL_FACE ) ;
-    rwy_yellow_lights->enable( GL_TEXTURE_2D );
-    rwy_yellow_lights->enable( GL_BLEND );
-    rwy_yellow_lights->enable( GL_ALPHA_TEST );
-    rwy_yellow_lights->enable( GL_COLOR_MATERIAL );
-    rwy_yellow_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_lights->setTexture( tex_name );
+    osg::StateSet *rwy_yellow_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_yellow_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_yellow_lights );
     m->add_name("RWY_YELLOW_LIGHTS");
     matlib["RWY_YELLOW_LIGHTS"] = m;
 
     // hard coded runway medium intensity yellow light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 215, 20, 205 );
+      texture = gen_standard_light_sprite( 235, 215, 20, 205 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 215, 20, 205 );
+      texture = gen_standard_dir_light_map( 235, 215, 20, 205 );
     }
-    ssgSimpleState *rwy_yellow_medium_lights = new ssgSimpleState();
-    rwy_yellow_medium_lights->disable( GL_LIGHTING );
-    rwy_yellow_medium_lights->enable ( GL_CULL_FACE ) ;
-    rwy_yellow_medium_lights->enable( GL_TEXTURE_2D );
-    rwy_yellow_medium_lights->enable( GL_BLEND );
-    rwy_yellow_medium_lights->enable( GL_ALPHA_TEST );
-    rwy_yellow_medium_lights->enable( GL_COLOR_MATERIAL );
-    rwy_yellow_medium_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_medium_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_medium_lights->setTexture( tex_name );
+    osg::StateSet *rwy_yellow_medium_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_yellow_medium_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_yellow_medium_lights );
     m->add_name("RWY_YELLOW_MEDIUM_LIGHTS");
     matlib["RWY_YELLOW_MEDIUM_LIGHTS"] = m;
 
     // hard coded runway low intensity yellow light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 215, 20, 155 );
+      texture = gen_standard_light_sprite( 235, 215, 20, 155 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 215, 20, 155 );
+      texture = gen_standard_dir_light_map( 235, 215, 20, 155 );
     }
-    ssgSimpleState *rwy_yellow_low_lights = new ssgSimpleState();
-    rwy_yellow_low_lights->disable( GL_LIGHTING );
-    rwy_yellow_low_lights->enable ( GL_CULL_FACE ) ;
-    rwy_yellow_low_lights->enable( GL_TEXTURE_2D );
-    rwy_yellow_low_lights->enable( GL_BLEND );
-    rwy_yellow_low_lights->enable( GL_ALPHA_TEST );
-    rwy_yellow_low_lights->enable( GL_COLOR_MATERIAL );
-    rwy_yellow_low_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_low_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_yellow_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_yellow_low_lights->setTexture( tex_name );
+    osg::StateSet *rwy_yellow_low_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_yellow_low_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_yellow_low_lights );
     m->add_name("RWY_YELLOW_LOW_LIGHTS");
     matlib["RWY_YELLOW_LOW_LIGHTS"] = m;
 
     // hard coded runway red light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 90, 90, 255 );
+      texture = gen_standard_light_sprite( 235, 90, 90, 255 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 90, 90, 255 );
+      texture = gen_standard_dir_light_map( 235, 90, 90, 255 );
     }
-    ssgSimpleState *rwy_red_lights = new ssgSimpleState();
-    rwy_red_lights->disable( GL_LIGHTING );
-    rwy_red_lights->enable ( GL_CULL_FACE ) ;
-    rwy_red_lights->enable( GL_TEXTURE_2D );
-    rwy_red_lights->enable( GL_BLEND );
-    rwy_red_lights->enable( GL_ALPHA_TEST );
-    rwy_red_lights->enable( GL_COLOR_MATERIAL );
-    rwy_red_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_lights->setTexture( tex_name );
+    osg::StateSet *rwy_red_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_red_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_red_lights );
     m->add_name("RWY_RED_LIGHTS");
     matlib["RWY_RED_LIGHTS"] = m;
 
     // hard coded medium intensity runway red light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 90, 90, 205 );
+      texture = gen_standard_light_sprite( 235, 90, 90, 205 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 90, 90, 205 );
+      texture = gen_standard_dir_light_map( 235, 90, 90, 205 );
     }
-    ssgSimpleState *rwy_red_medium_lights = new ssgSimpleState();
-    rwy_red_medium_lights->disable( GL_LIGHTING );
-    rwy_red_medium_lights->enable ( GL_CULL_FACE ) ;
-    rwy_red_medium_lights->enable( GL_TEXTURE_2D );
-    rwy_red_medium_lights->enable( GL_BLEND );
-    rwy_red_medium_lights->enable( GL_ALPHA_TEST );
-    rwy_red_medium_lights->enable( GL_COLOR_MATERIAL );
-    rwy_red_medium_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_medium_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_medium_lights->setTexture( tex_name );
+    osg::StateSet *rwy_red_medium_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_red_medium_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_red_medium_lights );
     m->add_name("RWY_RED_MEDIUM_LIGHTS");
     matlib["RWY_RED_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway red light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 90, 90, 155 );
+      texture = gen_standard_light_sprite( 235, 90, 90, 155 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 90, 90, 155 );
+      texture = gen_standard_dir_light_map( 235, 90, 90, 155 );
     }
-    ssgSimpleState *rwy_red_low_lights = new ssgSimpleState();
-    rwy_red_low_lights->disable( GL_LIGHTING );
-    rwy_red_low_lights->enable ( GL_CULL_FACE ) ;
-    rwy_red_low_lights->enable( GL_TEXTURE_2D );
-    rwy_red_low_lights->enable( GL_BLEND );
-    rwy_red_low_lights->enable( GL_ALPHA_TEST );
-    rwy_red_low_lights->enable( GL_COLOR_MATERIAL );
-    rwy_red_low_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_low_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_red_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_red_low_lights->setTexture( tex_name );
+    osg::StateSet *rwy_red_low_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_red_low_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_red_low_lights );
     m->add_name("RWY_RED_LOW_LIGHTS");
     matlib["RWY_RED_LOW_LIGHTS"] = m;
 
     // hard coded runway green light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 20, 235, 20, 255 );
+      texture = gen_standard_light_sprite( 20, 235, 20, 255 );
     } else {
-        tex_name = gen_standard_dir_light_map( 20, 235, 20, 255 );
+      texture = gen_standard_dir_light_map( 20, 235, 20, 255 );
     }
-    ssgSimpleState *rwy_green_lights = new ssgSimpleState();
-    rwy_green_lights->disable( GL_LIGHTING );
-    rwy_green_lights->enable ( GL_CULL_FACE ) ;
-    rwy_green_lights->enable( GL_TEXTURE_2D );
-    rwy_green_lights->enable( GL_BLEND );
-    rwy_green_lights->enable( GL_ALPHA_TEST );
-    rwy_green_lights->enable( GL_COLOR_MATERIAL );
-    rwy_green_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_lights->setTexture( tex_name );
+    osg::StateSet *rwy_green_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_green_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_green_lights );
     m->add_name("RWY_GREEN_LIGHTS");
     matlib["RWY_GREEN_LIGHTS"] = m;
 
     // hard coded medium intensity runway green light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 20, 235, 20, 205 );
+      texture = gen_standard_light_sprite( 20, 235, 20, 205 );
     } else {
-        tex_name = gen_standard_dir_light_map( 20, 235, 20, 205 );
+      texture = gen_standard_dir_light_map( 20, 235, 20, 205 );
     }
-    ssgSimpleState *rwy_green_medium_lights = new ssgSimpleState();
-    rwy_green_medium_lights->disable( GL_LIGHTING );
-    rwy_green_medium_lights->enable ( GL_CULL_FACE ) ;
-    rwy_green_medium_lights->enable( GL_TEXTURE_2D );
-    rwy_green_medium_lights->enable( GL_BLEND );
-    rwy_green_medium_lights->enable( GL_ALPHA_TEST );
-    rwy_green_medium_lights->enable( GL_COLOR_MATERIAL );
-    rwy_green_medium_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_medium_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_medium_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_medium_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_medium_lights->setTexture( tex_name );
+    osg::StateSet *rwy_green_medium_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_green_medium_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_green_medium_lights );
     m->add_name("RWY_GREEN_MEDIUM_LIGHTS");
     matlib["RWY_GREEN_MEDIUM_LIGHTS"] = m;
 
     // hard coded low intensity runway green light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 20, 235, 20, 155 );
+      texture = gen_standard_light_sprite( 20, 235, 20, 155 );
     } else {
-        tex_name = gen_standard_dir_light_map( 20, 235, 20, 155 );
+      texture = gen_standard_dir_light_map( 20, 235, 20, 155 );
     }
-    ssgSimpleState *rwy_green_low_lights = new ssgSimpleState();
-    rwy_green_low_lights->disable( GL_LIGHTING );
-    rwy_green_low_lights->enable ( GL_CULL_FACE ) ;
-    rwy_green_low_lights->enable( GL_TEXTURE_2D );
-    rwy_green_low_lights->enable( GL_BLEND );
-    rwy_green_low_lights->enable( GL_ALPHA_TEST );
-    rwy_green_low_lights->enable( GL_COLOR_MATERIAL );
-    rwy_green_low_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_low_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_green_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    rwy_green_low_lights->setTexture( tex_name );
+    osg::StateSet *rwy_green_low_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    rwy_green_low_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_green_low_lights );
     m->add_name("RWY_GREEN_LOW_LIGHTS");
     matlib["RWY_GREEN_LOW_LIGHTS"] = m;
@@ -545,45 +444,34 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     // hard coded low intensity taxiway blue light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 90, 90, 235, 205 );
+      texture = gen_standard_light_sprite( 90, 90, 235, 205 );
     } else {
-        tex_name = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
+      texture = gen_taxiway_dir_light_map( 90, 90, 235, 205 );
     }
-    ssgSimpleState *taxiway_blue_low_lights = new ssgSimpleState();
-    taxiway_blue_low_lights->disable( GL_LIGHTING );
-    taxiway_blue_low_lights->enable ( GL_CULL_FACE ) ;
-    taxiway_blue_low_lights->enable( GL_TEXTURE_2D );
-    taxiway_blue_low_lights->enable( GL_BLEND );
-    taxiway_blue_low_lights->enable( GL_ALPHA_TEST );
-    taxiway_blue_low_lights->enable( GL_COLOR_MATERIAL );
-    taxiway_blue_low_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    taxiway_blue_low_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    taxiway_blue_low_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    taxiway_blue_low_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    taxiway_blue_low_lights->setTexture( tex_name );
+    osg::StateSet *taxiway_blue_low_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+    taxiway_blue_low_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( taxiway_blue_low_lights );
     m->add_name("RWY_BLUE_TAXIWAY_LIGHTS");
     matlib["RWY_BLUE_TAXIWAY_LIGHTS"] = m;
 
     // hard coded runway vasi light state
     if ( sprite_lighting ) {
-        tex_name = gen_standard_light_sprite( 235, 235, 195, 255 );
+      texture = gen_standard_light_sprite( 235, 235, 195, 255 );
     } else {
-        tex_name = gen_standard_dir_light_map( 235, 235, 195, 255 );
+      texture = gen_standard_dir_light_map( 235, 235, 195, 255 );
     }
-    ssgSimpleState *rwy_vasi_lights = new ssgSimpleState();
-    rwy_vasi_lights->disable( GL_LIGHTING );
-    rwy_vasi_lights->enable ( GL_CULL_FACE ) ;
-    rwy_vasi_lights->enable( GL_TEXTURE_2D );
-    rwy_vasi_lights->enable( GL_BLEND );
-    rwy_vasi_lights->enable( GL_ALPHA_TEST );
-    rwy_vasi_lights->enable( GL_COLOR_MATERIAL );
-    rwy_vasi_lights->setMaterial ( GL_AMBIENT, 1.0, 1.0, 1.0, 1.0 );
-    rwy_vasi_lights->setMaterial ( GL_DIFFUSE, 1.0, 1.0, 1.0, 1.0 );
-    rwy_vasi_lights->setMaterial ( GL_SPECULAR, 0.0, 0.0, 0.0, 0.0 );
-    rwy_vasi_lights->setMaterial ( GL_EMISSION, 0.0, 0.0, 0.0, 0.0 );
-    // rwy_vasi_lights->setTexture( gen_vasi_light_map_old() );
-    rwy_vasi_lights->setTexture( tex_name );
+    osg::StateSet *rwy_vasi_lights = static_cast<osg::StateSet*>(lightStateSet->clone(osg::CopyOp::DEEP_COPY_ALL));
+//     if (SGPointLightsDistanceAttenuation) {
+      point = new osg::Point;
+      point->setMinSize(4);
+      point->setSize(10);
+      point->setDistanceAttenuation(osg::Vec3(1.0, 0.01, 0.0001));
+      while (rwy_vasi_lights->getAttribute(osg::StateAttribute::POINT)) {
+        rwy_vasi_lights->removeAttribute(osg::StateAttribute::POINT);
+      }
+      rwy_vasi_lights->setAttribute(point);
+//     }
+    rwy_vasi_lights->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     m = new SGMaterial( rwy_vasi_lights );
     m->add_name("RWY_VASI_LIGHTS");
     matlib["RWY_VASI_LIGHTS"] = m;
@@ -621,13 +509,13 @@ bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
 
 
 // Load a library of material properties
-bool SGMaterialLib::add_item ( const string &mat_name, ssgSimpleState *state )
+bool SGMaterialLib::add_item ( const string &mat_name, osg::StateSet *state )
 {
     matlib[mat_name] = new SGMaterial( state );
     matlib[mat_name]->add_name(mat_name);
 
     SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material given a premade "
-	    << "ssgSimpleState = " << mat_name );
+	    << "osg::StateSet = " << mat_name );
 
     return true;
 }
@@ -665,16 +553,17 @@ void SGMaterialLib::load_next_deferred() {
 }
 
 // Return the material from that given leaf
-const SGMaterial* SGMaterialLib::findMaterial(/*const*/ssgLeaf* leaf) const
+const SGMaterial* SGMaterialLib::findMaterial(const osg::Node* leaf) const
 {
   if (!leaf)
     return 0;
   
-  ssgBase* base = leaf->getUserData();
+  const osg::Referenced* base = leaf->getUserData();
   if (!base)
     return 0;
 
-  SGMaterialUserData* matUserData = dynamic_cast<SGMaterialUserData*>(base);
+  const SGMaterialUserData* matUserData
+    = dynamic_cast<const SGMaterialUserData*>(base);
   if (!matUserData)
     return 0;
 

@@ -29,33 +29,28 @@
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
+#include <simgear/math/SGMath.hxx>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/Transform>
 
-class ssgPlacementTransform : public ssgTransform
+class SGPlacementTransform : public osg::Transform
 {
 public:
   
-  ssgPlacementTransform(void);
-  virtual ~ssgPlacementTransform(void);
+  SGPlacementTransform(void);
+  virtual ~SGPlacementTransform(void);
 
-//   using ssgTransform::addKid(ssgEntity*);
-
-  virtual ssgBase *clone(int clone_flags);
-protected:
-  void copy_from(ssgPlacementTransform *src, int clone_flags);
-
-private:
-//   virtual void setTransform(sgVec3 xyz);
-//   virtual void setTransform(sgCoord *xform);
-//   virtual void setTransform(sgCoord *xform, float sx, float sy, float sz);
-//   virtual void setTransform(sgMat4 xform);
 public:
 
-  void setTransform(sgdVec3 off);
-  void setTransform(sgdVec3 off, sgMat4 rot);
-  void setSceneryCenter(sgdVec3 xyz);
+  void setTransform(const SGVec3d& off)
+  { _placement_offset = off; dirtyBound(); }
+  void setTransform(const SGVec3d& off, const SGMatrixd& rot)
+  { _placement_offset = off; _rotation = rot; dirtyBound(); }
+  void setSceneryCenter(const SGVec3d& center)
+  { _scenery_center = center; dirtyBound(); }
+
+  virtual bool computeLocalToWorldMatrix(osg::Matrix&,osg::NodeVisitor*) const;
+  virtual bool computeWorldToLocalMatrix(osg::Matrix&,osg::NodeVisitor*) const;
 
 private:
 
@@ -63,9 +58,9 @@ private:
   // private data                                                 //
   //////////////////////////////////////////////////////////////////
   
-  sgdVec3 _placement_offset;
-  sgdVec3 _scenery_center;
-    
+  SGVec3d _placement_offset;
+  SGVec3d _scenery_center;
+  SGMatrixd _rotation;
 };
 
 #endif // _SG_LOCATION_HXX

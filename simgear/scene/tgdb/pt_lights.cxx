@@ -24,31 +24,33 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/Array>
+#include <osg/Geometry>
+#include <osg/Geode>
+#include <osg/LOD>
+#include <osg/MatrixTransform>
+#include <osg/NodeCallback>
+#include <osg/NodeVisitor>
+#include <osg/Switch>
 
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/screen/extensions.hxx>
+#include <simgear/math/sg_random.h>
 
 #include "vasi.hxx"
 
 #include "pt_lights.hxx"
 
-
 // static variables for use in ssg callbacks
-static bool extensions_checked = false;
-static bool glPointParameterIsSupported = false;
-static glPointParameterfProc glPointParameterfPtr;
-static glPointParameterfvProc glPointParameterfvPtr;
-static bool SGPointLightsUseSprites = false;
-static bool SGPointLightsEnhancedLighting = false;
-static bool SGPointLightsDistanceAttenuation = false;
+bool SGPointLightsUseSprites = false;
+bool SGPointLightsEnhancedLighting = false;
+bool SGPointLightsDistanceAttenuation = false;
 
 
 // Specify the way we want to draw directional point lights (assuming the
 // appropriate extensions are available.)
 
-void sgConfigureDirectionalLights( bool use_point_sprites,
+void SGConfigureDirectionalLights( bool use_point_sprites,
                                    bool enhanced_lighting,
                                    bool distance_attenuation ) {
     SGPointLightsUseSprites = use_point_sprites;
@@ -56,189 +58,18 @@ void sgConfigureDirectionalLights( bool use_point_sprites,
     SGPointLightsDistanceAttenuation = distance_attenuation;
 }
 
-
-// runtime check for the availability of various opengl extensions.
-static void check_for_extensions() {
-    // get the address of our OpenGL extensions
-    if (SGIsOpenGLExtensionSupported("GL_EXT_point_parameters") ) {
-        glPointParameterIsSupported = true;
-        glPointParameterfPtr = (glPointParameterfProc)
-            SGLookupFunction("glPointParameterfEXT");
-        glPointParameterfvPtr = (glPointParameterfvProc)
-            SGLookupFunction("glPointParameterfvEXT");
-    } else if ( SGIsOpenGLExtensionSupported("GL_ARB_point_parameters") ) {
-        glPointParameterIsSupported = true;
-        glPointParameterfPtr = (glPointParameterfProc)
-            SGLookupFunction("glPointParameterfARB");
-        glPointParameterfvPtr = (glPointParameterfvProc)
-            SGLookupFunction("glPointParameterfvARB");
-    } else {
-        glPointParameterIsSupported = false;
-    }
-}
-
-
-// strobe pre-draw (we want a larger point size)
-static int StrobePreDraw( ssgEntity *e ) {
-    // check for the availability of point parameter extension, but
-    // just once.
-    if ( !extensions_checked ) {
-        check_for_extensions();
-        extensions_checked = true;
-    }
-
-    glPushAttrib( GL_POINT_BIT );
-    if ( glPointParameterIsSupported && SGPointLightsEnhancedLighting ) {
-        if ( SGPointLightsUseSprites ) {
-            glPointSize(10.0);
-        } else {
-            glPointSize(8.0);
-        }
-    } else {
-        glPointSize(4.0);
-    }
-    glEnable(GL_POINT_SMOOTH);
-
-    return true;
-}
-
-// strobe post-draw (we want a larger point size)
-static int StrobePostDraw( ssgEntity *e ) {
-    glPopAttrib();
-
-    return true;
-}
-
-
-// vasi pre-draw (we want a larger point size)
-static int VASIPreDraw( ssgEntity *e ) {
-    // check for the availability of point parameter extension, but
-    // just once.
-    if ( !extensions_checked ) {
-        check_for_extensions();
-        extensions_checked = true;
-    }
-
-    glPushAttrib( GL_POINT_BIT );
-    if ( glPointParameterIsSupported && SGPointLightsEnhancedLighting ) {
-        if ( SGPointLightsUseSprites ) {
-            glPointSize(10.0);
-        } else {
-            glPointSize(8.0);
-        }
-    } else {
-        glPointSize(4.0);
-    }
-    glEnable(GL_POINT_SMOOTH);
-
-    return true;
-}
-
-// vasi post-draw (we want a larger point size)
-static int VASIPostDraw( ssgEntity *e ) {
-    glPopAttrib();
-
-    return true;
-}
-
-
-// Generate a directional light
-ssgLeaf *sgMakeDirectionalLight( sgVec3 pt, sgVec3 dir, sgVec3 up, 
-                                 const SGMaterial *mat ) {
-
-    // calculate a vector perpendicular to dir and up
-    sgVec3 perp;
-    sgVectorProductVec3( perp, dir, up );
-
-    ssgVertexArray   *vl = new ssgVertexArray( 3 );
-    ssgNormalArray   *nl = new ssgNormalArray( 3 );
-    ssgColourArray   *cl = new ssgColourArray( 3 );
-
-    // front face
-    sgVec3 tmp3;
-    sgCopyVec3( tmp3, pt );
-    vl->add( tmp3 );
-    sgAddVec3( tmp3, up );
-    vl->add( tmp3 );
-    sgAddVec3( tmp3, perp );
-    vl->add( tmp3 );
-    // sgSubVec3( tmp3, up );
-    // vl->add( tmp3 );
-
-    nl->add( dir );
-    nl->add( dir );
-    nl->add( dir );
-    // nl->add( dir );
-
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-    cl->add( color );
-    sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-    cl->add( color );
-    cl->add( color );
-    // cl->add( color );
-
-    /*
-    // temporarily do back face
-    sgCopyVec3( tmp3, pt );
-    vl->add( tmp3 );
-    sgAddVec3( tmp3, up );
-    vl->add( tmp3 );
-    sgAddVec3( tmp3, perp );
-    vl->add( tmp3 );
-
-    sgNegateVec3( dir );
-    nl->add( dir );
-    nl->add( dir );
-    nl->add( dir );
-
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-    cl->add( color );
-    sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-    cl->add( color );
-    cl->add( color );
-    */
-
-    /* ssgTexCoordArray *tl = new ssgTexCoordArray( 4 );
-    sgVec2 tmp2;
-    sgSetVec2( tmp2, 0.0, 0.0 );
-    tl->add( tmp2 );
-    sgSetVec2( tmp2, 1.0, 0.0 );
-    tl->add( tmp2 );
-    sgSetVec2( tmp2, 1.0, 1.0 );
-    tl->add( tmp2 );
-    sgSetVec2( tmp2, 0.0, 1.0 );
-    tl->add( tmp2 ); */
-
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_TRIANGLES, vl, nl, NULL, cl );
-
-    if ( mat != NULL ) {
-        leaf->setState( mat->get_state() );
-    } else {
-        SG_LOG( SG_TERRAIN, SG_ALERT, "Warning: mat = NULL" );
-    }
-
-    return leaf;
-}
-
-
 static void calc_center_point( const point_list &nodes,
                                const int_list &pnt_i,
-                               sgVec3 result ) {
-    sgVec3 pt;
-    sgSetVec3( pt, nodes[pnt_i[0]][0], nodes[pnt_i[0]][1], nodes[pnt_i[0]][2] );
-
-    double minx = pt[0];
-    double maxx = pt[0];
-    double miny = pt[1];
-    double maxy = pt[1];
-    double minz = pt[2];
-    double maxz = pt[2];
+                               Point3D& result ) {
+    double minx = nodes[pnt_i[0]][0];
+    double maxx = nodes[pnt_i[0]][0];
+    double miny = nodes[pnt_i[0]][1];
+    double maxy = nodes[pnt_i[0]][1];
+    double minz = nodes[pnt_i[0]][2];
+    double maxz = nodes[pnt_i[0]][2];
 
     for ( unsigned int i = 0; i < pnt_i.size(); ++i ) {
-        sgSetVec3( pt, nodes[pnt_i[i]][0], nodes[pnt_i[i]][1],
-                   nodes[pnt_i[i]][2] );
+        Point3D pt = nodes[pnt_i[i]];
         if ( pt[0] < minx ) { minx = pt[0]; }
         if ( pt[0] > maxx ) { minx = pt[0]; }
         if ( pt[1] < miny ) { miny = pt[1]; }
@@ -247,223 +78,231 @@ static void calc_center_point( const point_list &nodes,
         if ( pt[2] > maxz ) { minz = pt[2]; }
     }
 
-    sgSetVec3( result, (minx + maxx) / 2.0, (miny + maxy) / 2.0,
-               (minz + maxz) / 2.0 );
+    result = Point3D((minx + maxx) / 2.0, (miny + maxy) / 2.0,
+                     (minz + maxz) / 2.0);
 }
 
 
-static ssgTransform *gen_dir_light_group( const point_list &nodes,
-                                          const point_list &normals,
-                                          const int_list &pnt_i,
-                                          const int_list &nml_i,
-                                          const SGMaterial *mat,
-                                          sgVec3 up, bool vertical )
+static osg::Node*
+gen_dir_light_group( const point_list &nodes,
+                     const point_list &normals,
+                     const int_list &pnt_i,
+                     const int_list &nml_i,
+                     const SGMaterial *mat,
+                     const osg::Vec3& up, bool vertical, bool vasi )
 {
-    sgVec3 center;
+    Point3D center;
     calc_center_point( nodes, pnt_i, center );
     // cout << center[0] << "," << center[1] << "," << center[2] << endl;
 
 
     // find a vector perpendicular to the normal.
-    sgVec3 perp1;
+    osg::Vec3 perp1;
     if ( !vertical ) {
         // normal isn't vertical so we can use up as our first vector
-        sgNormalizeVec3( perp1, up );
+        perp1 = up;
     } else {
         // normal is vertical so we have to work a bit harder to
         // determine our first vector
-        sgVec3 pt1, pt2;
-        sgSetVec3( pt1, nodes[pnt_i[0]][0], nodes[pnt_i[0]][1],
-                   nodes[pnt_i[0]][2] );
-        sgSetVec3( pt2, nodes[pnt_i[1]][0], nodes[pnt_i[1]][1],
-                   nodes[pnt_i[1]][2] );
+        osg::Vec3 pt1(nodes[pnt_i[0]][0], nodes[pnt_i[0]][1],
+                      nodes[pnt_i[0]][2] );
+        osg::Vec3 pt2(nodes[pnt_i[1]][0], nodes[pnt_i[1]][1],
+                      nodes[pnt_i[1]][2] );
 
-        sgSubVec3( perp1, pt2, pt1 );
-        sgNormalizeVec3( perp1 );
+        perp1 = pt2 - pt1;
     }
+    perp1.normalize();
 
-    ssgVertexArray *vl = new ssgVertexArray( 3 * pnt_i.size() );
-    ssgNormalArray *nl = new ssgNormalArray( 3 * pnt_i.size() );
-    ssgColourArray *cl = new ssgColourArray( 3 * pnt_i.size() );
+    osg::Vec3Array *vl = new osg::Vec3Array;
+    osg::Vec3Array *nl = new osg::Vec3Array;
+    osg::Vec4Array *cl = new osg::Vec4Array;
 
     unsigned int i;
-    sgVec3 pt, normal;
     for ( i = 0; i < pnt_i.size(); ++i ) {
-        sgSetVec3( pt, nodes[pnt_i[i]][0], nodes[pnt_i[i]][1],
-                   nodes[pnt_i[i]][2] );
-        sgSubVec3( pt, center );
-        sgSetVec3( normal, normals[nml_i[i]][0], normals[nml_i[i]][1],
-                   normals[nml_i[i]][2] );
+        Point3D ppt = nodes[pnt_i[i]] - center;
+        osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+        osg::Vec3 normal(normals[nml_i[i]][0], normals[nml_i[i]][1],
+                         normals[nml_i[i]][2] );
 
         // calculate a vector perpendicular to dir and up
-        sgVec3 perp2;
-        sgVectorProductVec3( perp2, normal, perp1 );
+        osg::Vec3 perp2 = normal^perp1;
 
         // front face
-        sgVec3 tmp3;
-        sgCopyVec3( tmp3, pt );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, perp1 );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, perp2 );
-        vl->add( tmp3 );
-        // sgSubVec3( tmp3, perp1 );
-        // vl->add( tmp3 );
+        osg::Vec3 tmp3 = pt;
+        vl->push_back( tmp3 );
+        tmp3 += perp1;
+        vl->push_back( tmp3 );
+        tmp3 += perp2;
+        vl->push_back( tmp3 );
 
-        nl->add( normal );
-        nl->add( normal );
-        nl->add( normal );
-        // nl->add( normal );
+        nl->push_back( normal );
+        nl->push_back( normal );
+        nl->push_back( normal );
 
-        sgVec4 color;
-        sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-        cl->add( color );
-        sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-        cl->add( color );
-        cl->add( color );
-        // cl->add( color );
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
     }
 
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_TRIANGLES, vl, nl, NULL, cl );
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setName("Dir Lights " + mat->get_names().front());
+//     geometry->setDrawCallback(new SGDebugDrawCallback);
+//     geometry->setUseDisplayList(false);
+    geometry->setVertexArray(vl);
+    geometry->setNormalArray(nl);
+    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLES, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(geometry);
+
+    if (vasi) {
+        // this one is dynamic in its colors, so do not bother with dlists
+        geometry->setUseDisplayList(false);
+        geometry->setUseVertexBufferObjects(false);
+        osg::Vec3 dir(normals[nml_i[0]][0], normals[nml_i[0]][1],
+                      normals[nml_i[0]][2]);
+
+        // calculate the reference position of this vasi and use it
+        // to init the vasi structure
+        Point3D ppt = nodes[pnt_i[0]] - center;
+        osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+        // up is the "up" vector which is also
+        // the reference center point of this tile.  The reference
+        // center + the coordinate of the first light gives the actual
+        // location of the first light.
+        pt += up;
+
+        // Set up the callback
+        geode->setCullCallback(new SGVasiUpdateCallback(cl, pt, up, dir));
+    }
 
     if ( mat != NULL ) {
-        leaf->setState( mat->get_state() );
+        geode->setStateSet(mat->get_state());
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Warning: material = NULL" );
     }
 
     // put an LOD on each lighting component
-    ssgRangeSelector *lod = new ssgRangeSelector;
-    lod->setRange( 0, SG_ZERO );
-    lod->setRange( 1, 20000 );
-    lod->addKid( leaf );
+    osg::LOD *lod = new osg::LOD;
+    lod->addChild( geode, 0, 20000 );
 
     // create the transformation.
-    sgCoord coord;
-    sgSetCoord( &coord, center[0], center[1], center[2], 0.0, 0.0, 0.0 );
-    ssgTransform *trans = new ssgTransform;
-    trans->setTransform( &coord );
-    trans->addKid( lod );
+    osg::MatrixTransform *trans = new osg::MatrixTransform;
+    trans->setMatrix(osg::Matrixd::translate(osg::Vec3d(center[0], center[1], center[2])));
+    trans->addChild( lod );
 
     return trans;
 }
 
-
-static ssgTransform *gen_reil_lights( const point_list &nodes,
-                                      const point_list &normals,
-                                      const int_list &pnt_i,
-                                      const int_list &nml_i,
-                                      SGMaterialLib *matlib,
-                                      sgVec3 up )
+static osg::Node *gen_reil_lights( const point_list &nodes,
+                                   const point_list &normals,
+                                   const int_list &pnt_i,
+                                   const int_list &nml_i,
+                                   SGMaterialLib *matlib,
+                                   const osg::Vec3& up )
 {
-    sgVec3 center;
+    Point3D center;
     calc_center_point( nodes, pnt_i, center );
     // cout << center[0] << "," << center[1] << "," << center[2] << endl;
 
-    sgVec3 nup;
-    sgNormalizeVec3( nup, up );
+    osg::Vec3 nup = up;
+    nup.normalize();
 
-    ssgVertexArray   *vl = new ssgVertexArray( 3 * pnt_i.size() );
-    ssgNormalArray   *nl = new ssgNormalArray( 3 * pnt_i.size() );
-    ssgColourArray   *cl = new ssgColourArray( 3 * pnt_i.size() );
+    osg::Vec3Array   *vl = new osg::Vec3Array;
+    osg::Vec3Array   *nl = new osg::Vec3Array;
+    osg::Vec4Array   *cl = new osg::Vec4Array;
 
     unsigned int i;
-    sgVec3 pt, normal;
     for ( i = 0; i < pnt_i.size(); ++i ) {
-        sgSetVec3( pt, nodes[pnt_i[i]][0], nodes[pnt_i[i]][1],
-                   nodes[pnt_i[i]][2] );
-        sgSubVec3( pt, center );
-        sgSetVec3( normal, normals[nml_i[i]][0], normals[nml_i[i]][1],
-                   normals[nml_i[i]][2] );
+        Point3D ppt = nodes[pnt_i[i]] - center;
+        osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+        osg::Vec3 normal(normals[nml_i[i]][0], normals[nml_i[i]][1],
+                         normals[nml_i[i]][2] );
 
         // calculate a vector perpendicular to dir and up
-        sgVec3 perp;
-        sgVectorProductVec3( perp, normal, nup );
+        osg::Vec3 perp = normal^up;
 
         // front face
-        sgVec3 tmp3;
-        sgCopyVec3( tmp3, pt );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, nup );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, perp );
-        vl->add( tmp3 );
-        // sgSubVec3( tmp3, nup );
-        // vl->add( tmp3 );
+        osg::Vec3 tmp3 = pt;
+        vl->push_back( tmp3 );
+        tmp3 += nup;
+        vl->push_back( tmp3 );
+        tmp3 += perp;
+        vl->push_back( tmp3 );
 
-        nl->add( normal );
-        nl->add( normal );
-        nl->add( normal );
-        // nl->add( normal );
+        nl->push_back( normal );
+        nl->push_back( normal );
+        nl->push_back( normal );
 
-        sgVec4 color;
-        sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-        cl->add( color );
-        sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-        cl->add( color );
-        cl->add( color );
-        // cl->add( color );
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
     }
-
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_TRIANGLES, vl, nl, NULL, cl );
 
     SGMaterial *mat = matlib->find( "RWY_WHITE_LIGHTS" );
 
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setName("Reil Lights " + mat->get_names().front());
+    geometry->setVertexArray(vl);
+    geometry->setNormalArray(nl);
+    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLES, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(geometry);
+
     if ( mat != NULL ) {
-        leaf->setState( mat->get_state() );
+        geode->setStateSet( mat->get_state() );
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT,
                 "Warning: can't find material = RWY_WHITE_LIGHTS" );
     }
 
-    leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-    leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+    // OSGFIXME
+//     leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
+//     leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
 
-    ssgTimedSelector *reil = new ssgTimedSelector;
+    // OSGFIXME: implement an update callback that switches on/off
+    // based on the osg::FrameStamp
+    osg::Switch *reil = new osg::Switch;
+//     reil->setDuration( 60 );
+//     reil->setLimits( 0, 2 );
+//     reil->setMode( SSG_ANIM_SHUTTLE );
+//     reil->control( SSG_ANIM_START );
 
     // need to add this twice to work around an ssg bug
-    reil->addKid( leaf );
-    reil->addKid( leaf );
-
-    reil->setDuration( 60 );
-    reil->setLimits( 0, 2 );
-    reil->setMode( SSG_ANIM_SHUTTLE );
-    reil->control( SSG_ANIM_START );
+    reil->addChild(geode, true);
    
     // put an LOD on each lighting component
-    ssgRangeSelector *lod = new ssgRangeSelector;
-    lod->setRange( 0, SG_ZERO );
-    lod->setRange( 1, 12000 );
-    lod->addKid( reil );
+    osg::LOD *lod = new osg::LOD;
+    lod->addChild( reil, 0, 12000 /*OSGFIXME: hardcoded here?*/);
 
     // create the transformation.
-    sgCoord coord;
-    sgSetCoord( &coord, center[0], center[1], center[2], 0.0, 0.0, 0.0 );
-    ssgTransform *trans = new ssgTransform;
-    trans->setTransform( &coord );
-    trans->addKid( lod );
+    osg::MatrixTransform *trans = new osg::MatrixTransform;
+    trans->setMatrix(osg::Matrixd::translate(osg::Vec3d(center[0], center[1], center[2])));
+    trans->addChild( lod );
 
     return trans;
 }
 
 
-static ssgTransform *gen_odals_lights( const point_list &nodes,
-                                       const point_list &normals,
-                                       const int_list &pnt_i,
-                                       const int_list &nml_i,
-                                       SGMaterialLib *matlib,
-                                       sgVec3 up )
+static osg::Node *gen_odals_lights( const point_list &nodes,
+                                               const point_list &normals,
+                                               const int_list &pnt_i,
+                                               const int_list &nml_i,
+                                               SGMaterialLib *matlib,
+                                               const osg::Vec3& up )
 {
-    sgVec3 center;
+    Point3D center;
     calc_center_point( nodes, pnt_i, center );
     // cout << center[0] << "," << center[1] << "," << center[2] << endl;
 
-    ssgTimedSelector *odals = new ssgTimedSelector;
-
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+    // OSGFIXME: implement like above
+//     osg::Switch *odals = new osg::Switch;
+    osg::Group *odals = new osg::Group;
 
     // we don't want directional lights here
     SGMaterial *mat = matlib->find( "GROUND_LIGHTS" );
@@ -472,94 +311,111 @@ static ssgTransform *gen_odals_lights( const point_list &nodes,
                 "Warning: can't material = GROUND_LIGHTS" );
     }
 
-    // center line strobes
-    int i;
-    sgVec3 pt;
-    for ( i = (int)pnt_i.size() - 1; i >= 2; --i ) {
-        ssgVertexArray   *vl = new ssgVertexArray( 1 );
-        ssgColourArray   *cl = new ssgColourArray( 1 );
+    osg::Vec3Array   *vl = new osg::Vec3Array;
+    osg::Vec4Array   *cl = new osg::Vec4Array;
      
-        sgSetVec3( pt, nodes[pnt_i[i]][0], nodes[pnt_i[i]][1],
-                   nodes[pnt_i[i]][2] );
-        sgSubVec3( pt, center );
-        vl->add( pt );
+    cl->push_back(osg::Vec4(1, 1, 1, 1));
 
-        cl->add( color );
-
-        ssgLeaf *leaf = 
-            new ssgVtxTable ( GL_POINTS, vl, NULL, NULL, cl );
-
-        leaf->setState( mat->get_state() );
-        leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-        leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
-
-        odals->addKid( leaf );
+    // center line strobes
+    for ( unsigned i = pnt_i.size() - 1; i >= 2; --i ) {
+        Point3D ppt = nodes[pnt_i[i]] - center;
+        osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+        vl->push_back(pt);
     }
 
     // runway end strobes
-    ssgVertexArray   *vl = new ssgVertexArray( 2 );
-    ssgColourArray   *cl = new ssgColourArray( 2 );
      
-    sgSetVec3( pt, nodes[pnt_i[0]][0], nodes[pnt_i[0]][1],
-               nodes[pnt_i[0]][2] );
-    sgSubVec3( pt, center );
-    vl->add( pt );
-    cl->add( color );
+    Point3D ppt = nodes[pnt_i[0]] - center;
+    osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+    vl->push_back(pt);
 
-    sgSetVec3( pt, nodes[pnt_i[1]][0], nodes[pnt_i[1]][1],
-               nodes[pnt_i[1]][2] );
-    sgSubVec3( pt, center );
-    vl->add( pt );
-    cl->add( color );
+    ppt = nodes[pnt_i[1]] - center;
+    pt = osg::Vec3(ppt[0], ppt[1], ppt[2]);
+    vl->push_back(pt);
 
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_POINTS, vl, NULL, NULL, cl );
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setName("Odal Lights " + mat->get_names().front());
+    geometry->setVertexArray(vl);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(geometry);
 
-    leaf->setState( mat->get_state() );
-    leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-    leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+    geode->setStateSet( mat->get_state() );
+    // OSGFIXME
+//         leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
+//         leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
 
-    odals->addKid( leaf );
+    odals->addChild( geode );
 
     // setup animition
 
-    odals->setDuration( 10 );
-    odals->setLimits( 0, pnt_i.size() - 1 );
-    odals->setMode( SSG_ANIM_SHUTTLE );
-    odals->control( SSG_ANIM_START );
+//     odals->setDuration( 10 );
+//     odals->setLimits( 0, pnt_i.size() - 1 );
+//     odals->setMode( SSG_ANIM_SHUTTLE );
+//     odals->control( SSG_ANIM_START );
    
     // put an LOD on each lighting component
-    ssgRangeSelector *lod = new ssgRangeSelector;
-    lod->setRange( 0, SG_ZERO );
-    lod->setRange( 1, 12000 );
-    lod->addKid( odals );
+    osg::LOD *lod = new osg::LOD;
+    lod->addChild( odals, 0, 12000 /*OSGFIXME hardcoded visibility*/ );
 
     // create the transformation.
-    sgCoord coord;
-    sgSetCoord( &coord, center[0], center[1], center[2], 0.0, 0.0, 0.0 );
-    ssgTransform *trans = new ssgTransform;
-    trans->setTransform( &coord );
-    trans->addKid( lod );
+    osg::MatrixTransform *trans = new osg::MatrixTransform;
+    trans->setMatrix(osg::Matrixd::translate(osg::Vec3d(center[0], center[1], center[2])));
+    trans->addChild(lod);
 
     return trans;
 }
 
+class SGRabbitUpdateCallback : public osg::NodeCallback {
+public:
+  SGRabbitUpdateCallback(double duration) :
+    mBaseTime(sg_random()), mDuration(duration)
+  {
+    if (fabs(mDuration) < 1e-3)
+      mDuration = 1e-3;
+    mBaseTime -= mDuration*floor(mBaseTime/mDuration);
+  }
 
-static ssgTransform *gen_rabbit_lights( const point_list &nodes,
-                                        const point_list &normals,
-                                        const int_list &pnt_i,
-                                        const int_list &nml_i,
-                                        SGMaterialLib *matlib,
-                                        sgVec3 up )
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    assert(dynamic_cast<osg::Switch*>(node));
+    osg::Switch* sw = static_cast<osg::Switch*>(node);
+    double frameTime = nv->getFrameStamp()->getReferenceTime();
+    double timeDiff = (frameTime - mBaseTime)/mDuration;
+    double reminder = timeDiff - unsigned(floor(timeDiff));
+    unsigned nChildren = sw->getNumChildren();
+    unsigned activeChild = unsigned(nChildren*reminder);
+    if (nChildren <= activeChild)
+      activeChild = nChildren;
+    sw->setSingleChildOn(activeChild);
+
+    osg::NodeCallback::operator()(node, nv);
+  }
+public:
+  double mBaseTime;
+  double mDuration;
+};
+
+
+static osg::Node *gen_rabbit_lights( const point_list &nodes,
+                                     const point_list &normals,
+                                     const int_list &pnt_i,
+                                     const int_list &nml_i,
+                                     SGMaterialLib *matlib,
+                                     const osg::Vec3& up )
 {
-    sgVec3 center;
+    Point3D center;
     calc_center_point( nodes, pnt_i, center );
     // cout << center[0] << "," << center[1] << "," << center[2] << endl;
 
-    sgVec3 nup;
-    sgNormalizeVec3( nup, up );
+    osg::Vec3 nup = up;
+    nup.normalize();
 
-    ssgTimedSelector *rabbit = new ssgTimedSelector;
+    // OSGFIXME: implement like above ...
+    osg::Switch *rabbit = new osg::Switch;
+    rabbit->setUpdateCallback(new SGRabbitUpdateCallback(10));
 
     SGMaterial *mat = matlib->find( "RWY_WHITE_LIGHTS" );
     if ( mat == NULL ) {
@@ -567,182 +423,106 @@ static ssgTransform *gen_rabbit_lights( const point_list &nodes,
                 "Warning: can't material = RWY_WHITE_LIGHTS" );
     }
 
-    int i;
-    sgVec3 pt, normal;
-    for ( i = (int)pnt_i.size() - 1; i >= 0; --i ) {
-        ssgVertexArray   *vl = new ssgVertexArray( 3 );
-        ssgNormalArray   *nl = new ssgNormalArray( 3 );
-        ssgColourArray   *cl = new ssgColourArray( 3 );
-     
-        sgSetVec3( pt, nodes[pnt_i[i]][0], nodes[pnt_i[i]][1],
-                   nodes[pnt_i[i]][2] );
-        sgSubVec3( pt, center );
+    for ( int i = pnt_i.size() - 1; i >= 0; --i ) {
+        osg::Vec3Array   *vl = new osg::Vec3Array;
+        osg::Vec3Array   *nl = new osg::Vec3Array;
+        osg::Vec4Array   *cl = new osg::Vec4Array;
 
-        sgSetVec3( normal, normals[nml_i[i]][0], normals[nml_i[i]][1],
-                   normals[nml_i[i]][2] );
+
+        Point3D ppt = nodes[pnt_i[i]] - center;
+        osg::Vec3 pt(ppt[0], ppt[1], ppt[2]);
+        osg::Vec3 normal(normals[nml_i[i]][0], normals[nml_i[i]][1],
+                         normals[nml_i[i]][2] );
 
         // calculate a vector perpendicular to dir and up
-        sgVec3 perp;
-        sgVectorProductVec3( perp, normal, nup );
+        osg::Vec3 perp = normal^nup;
 
         // front face
-        sgVec3 tmp3;
-        sgCopyVec3( tmp3, pt );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, nup );
-        vl->add( tmp3 );
-        sgAddVec3( tmp3, perp );
-        vl->add( tmp3 );
-        // sgSubVec3( tmp3, nup );
-        // vl->add( tmp3 );
+        osg::Vec3 tmp3 = pt;
+        vl->push_back( tmp3 );
+        tmp3 += nup;
+        vl->push_back( tmp3 );
+        tmp3 += perp;
+        vl->push_back( tmp3 );
 
-        nl->add( normal );
-        nl->add( normal );
-        nl->add( normal );
-        // nl->add( normal );
+        nl->push_back(normal);
 
-        sgVec4 color;
-        sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-        cl->add( color );
-        sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-        cl->add( color );
-        cl->add( color );
-        // cl->add( color );
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
+        cl->push_back(osg::Vec4(1, 1, 1, 0));
 
-        ssgLeaf *leaf = 
-            new ssgVtxTable ( GL_TRIANGLES, vl, nl, NULL, cl );
+        osg::Geometry* geometry = new osg::Geometry;
+        geometry->setName("Rabbit Lights " + mat->get_names().front());
+        geometry->setVertexArray(vl);
+        geometry->setNormalArray(nl);
+        geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
+        geometry->setColorArray(cl);
+        geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+        geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLES, 0, vl->size()));
+        osg::Geode* geode = new osg::Geode;
+        geode->addDrawable(geometry);
+        
+        geode->setStateSet( mat->get_state() );
 
-        leaf->setState( mat->get_state() );
-        leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
-        leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
+        // OSGFIXME
+//         leaf->setCallback( SSG_CALLBACK_PREDRAW, StrobePreDraw );
+//         leaf->setCallback( SSG_CALLBACK_POSTDRAW, StrobePostDraw );
 
-        rabbit->addKid( leaf );
+        rabbit->addChild( geode );
     }
 
-    rabbit->setDuration( 10 );
-    rabbit->setLimits( 0, pnt_i.size() - 1 );
-    rabbit->setMode( SSG_ANIM_SHUTTLE );
-    rabbit->control( SSG_ANIM_START );
+//     rabbit->setDuration( 10 );
+//     rabbit->setLimits( 0, pnt_i.size() - 1 );
+//     rabbit->setMode( SSG_ANIM_SHUTTLE );
+//     rabbit->control( SSG_ANIM_START );
    
     // put an LOD on each lighting component
-    ssgRangeSelector *lod = new ssgRangeSelector;
-    lod->setRange( 0, SG_ZERO );
-    lod->setRange( 1, 12000 );
-    lod->addKid( rabbit );
+    osg::LOD *lod = new osg::LOD;
+    lod->addChild( rabbit, 0, 12000 /*OSGFIXME: hadcoded*/ );
 
     // create the transformation.
-    sgCoord coord;
-    sgSetCoord( &coord, center[0], center[1], center[2], 0.0, 0.0, 0.0 );
-    ssgTransform *trans = new ssgTransform;
-    trans->setTransform( &coord );
-    trans->addKid( lod );
+    osg::MatrixTransform *trans = new osg::MatrixTransform;
+    trans->setMatrix(osg::Matrixd::translate(osg::Vec3d(center[0], center[1], center[2])));
+    trans->addChild(lod);
 
     return trans;
 }
 
 
-#if 0 // debugging infrastructure
-// Generate a normal line 
-static ssgLeaf *gen_normal_line( SGMaterialLib *matlib,
-                                 sgVec3 pt, sgVec3 dir, sgVec3 up )
-{
-
-    ssgVertexArray *vl = new ssgVertexArray( 3 );
-    ssgColourArray *cl = new ssgColourArray( 3 );
-
-    sgVec3 tmp3;
-    sgCopyVec3( tmp3, pt );
-    vl->add( tmp3 );
-    sgAddVec3( tmp3, dir );
-    vl->add( tmp3 );
-
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 0.0, 0.0, 1.0 );
-    cl->add( color );
-    cl->add( color );
-
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_LINES, vl, NULL, NULL, cl );
-
-    SGMaterial *mat = matlib->find( "GROUND_LIGHTS" );
-    leaf->setState( mat->get_state() );
-
-    return leaf;
-}
-#endif
-
-
-ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
+osg::Node *SGMakeDirectionalLights( const point_list &nodes,
                                     const point_list &normals,
                                     const int_list &pnt_i,
                                     const int_list &nml_i,
                                     SGMaterialLib *matlib,
                                     const string &material,
-                                    sgdVec3 dup )
+                                    const SGVec3d& dup )
 {
-    sgVec3 up;
-    sgSetVec3( up, dup );
-
-    sgVec3 nup;
-    sgNormalizeVec3( nup, up );
+    osg::Vec3 nup = toVec3f(dup).osg();
+    nup.normalize();
 
     SGMaterial *mat = matlib->find( material );
 
     if ( material == "RWY_REIL_LIGHTS" ) {
         // cout << "found a reil" << endl;
-        ssgTransform *reil = gen_reil_lights( nodes, normals, pnt_i, nml_i,
-                                              matlib, up );
-        return reil;
+        return gen_reil_lights( nodes, normals, pnt_i, nml_i,
+                                matlib, nup );
     } else if ( material == "RWY_ODALS_LIGHTS" ) {
         // cout << "found a odals" << endl;
-        ssgTransform *odals = gen_odals_lights( nodes, normals, pnt_i, nml_i,
-                                                matlib, up );
-        return odals;
+        return gen_odals_lights( nodes, normals, pnt_i, nml_i,
+                                 matlib, nup );
     } else if ( material == "RWY_SEQUENCED_LIGHTS" ) {
         // cout << "found a rabbit" << endl;
-        ssgTransform *rabbit = gen_rabbit_lights( nodes, normals,
-                                                  pnt_i, nml_i,
-                                                  matlib, up );
-        return rabbit;
+        return gen_rabbit_lights( nodes, normals, pnt_i, nml_i,
+                                  matlib, nup );
     } else if ( material == "RWY_VASI_LIGHTS" ) {
-        ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
-                                                         nml_i, mat, up,
-                                                         false );
-
-        // calculate the geocentric position of this vasi and use it
-        // to init the vasi structure and save it in the userdata slot
-        sgdVec3 pos;
-        sgdSetVec3( pos, nodes[pnt_i[0]][0], nodes[pnt_i[0]][1],
-                    nodes[pnt_i[0]][2] );
-        // dup is the double version of the "up" vector which is also
-        // the reference center point of this tile.  The reference
-        // center + the coordinate of the first light gives the actual
-        // location of the first light.
-        sgdAddVec3( pos, dup );
-
-        // extract a pointer to the leaf node so a) we can set the
-        // phat light call back and b) we can pass this to the vasi
-        // structure.
-        ssgRangeSelector *lod = (ssgRangeSelector *)light_group->getKid(0);
-        ssgLeaf *leaf = (ssgLeaf *)lod->getKid(0);
-        leaf->setCallback( SSG_CALLBACK_PREDRAW, VASIPreDraw );
-        leaf->setCallback( SSG_CALLBACK_POSTDRAW, VASIPostDraw );
-
-        SGVASIUserData *vasi = new SGVASIUserData( pos, leaf );
-
-        light_group->setUserData( vasi );
-
-        return light_group;
+        return gen_dir_light_group( nodes, normals, pnt_i,
+                                    nml_i, mat, nup, false, true );
     } else if ( material == "RWY_BLUE_TAXIWAY_LIGHTS" ) {
-        ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
-                                                         nml_i, mat, up,
-                                                         true );
-        return light_group;
+        return gen_dir_light_group( nodes, normals, pnt_i, nml_i, mat, nup,
+                                    true, false );
     } else {
-        ssgTransform *light_group = gen_dir_light_group( nodes, normals, pnt_i,
-                                                         nml_i, mat, up,
-                                                         false );
-        return light_group;
+        return gen_dir_light_group( nodes, normals, pnt_i, nml_i, mat, nup,
+                                    false, false );
     }
 
     return NULL;

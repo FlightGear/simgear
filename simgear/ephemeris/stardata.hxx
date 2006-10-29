@@ -36,7 +36,7 @@
 class SGStarData {
 
     int nstars;
-    sgdVec3 *stars;
+    SGVec3d *stars;
     
     SGPath data_path;
 
@@ -54,7 +54,7 @@ public:
 
     // stars
     inline int getNumStars() const { return nstars; }
-    inline sgdVec3 *getStars() { return stars; }
+    inline SGVec3d *getStars() { return stars; }
 };
 
 

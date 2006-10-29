@@ -189,6 +189,8 @@ SGEnviro::SGEnviro() :
 }
 
 SGEnviro::~SGEnviro(void) {
+  // OSGFIXME
+  return;
 	list_of_lightning::iterator iLightning;
 	for( iLightning = lightnings.begin() ; iLightning != lightnings.end() ; iLightning++ ) {
 		delete (*iLightning);
@@ -197,6 +199,8 @@ SGEnviro::~SGEnviro(void) {
 }
 
 void SGEnviro::startOfFrame( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double delta_time) {
+  // OSGFIXME
+  return;
 	view_in_cloud = false;
 	// ask the impostor cache to do some cleanup
 	if(SGNewCloud::cldCache)
@@ -319,6 +323,8 @@ void SGEnviro::set_lightning_enable_state(bool enable) {
 }
 
 void SGEnviro::setLight(sgVec4 adj_fog_color) {
+  // OSGFIXME
+  return;
 	sgCopyVec4( fog_color, adj_fog_color );
 	if( false ) {
 	//    ssgGetLight( 0 ) -> setColour( GL_DIFFUSE, l->scene_diffuse() );
@@ -326,6 +332,8 @@ void SGEnviro::setLight(sgVec4 adj_fog_color) {
 }
 
 void SGEnviro::callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId) {
+  // OSGFIXME
+  return;
 	// send data to wx radar
 	// compute turbulence
 	// draw precipitation
@@ -440,6 +448,8 @@ list_of_SGWxRadarEcho *SGEnviro::get_radar_echo(void) {
 
 // precipitation rendering code
 void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, double rain_norm, double speed) {
+  // OSGFIXME
+  return;
 	sgVec3 light;
 	sgAddVec3( light, fog_color, min_light );
 	float da = SG_PI * 2.0f / (float) slices;
@@ -488,6 +498,8 @@ void SGEnviro::DrawCone2(float baseRadius, float height, int slices, bool down, 
 }
 
 void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed, double rain_norm) {
+  // OSGFIXME
+  return;
 
 #if 0
 	static int debug_period = 0;
@@ -557,6 +569,8 @@ void SGEnviro::set_soundMgr(SGSoundMgr *mgr) {
 }
 
 void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double hspeed) {
+  // OSGFIXME
+  return;
 	if( precipitation_enable_state && rain_norm > 0.0)
 	  if( precipitation_max_alt >= last_alt )
 		drawRain(pitch, roll, heading, hspeed, rain_norm);
@@ -579,6 +593,8 @@ SGLightning::~SGLightning() {
 
 // lightning rendering code
 void SGLightning::lt_build_tree_branch(int tree_nr, Point3D &start, float energy, int nbseg, float segsize) {
+  // OSGFIXME
+  return;
 
 	sgVec3 dir, newdir;
 	int nseg = 0;
@@ -626,6 +642,8 @@ void SGLightning::lt_build_tree_branch(int tree_nr, Point3D &start, float energy
 }
 
 void SGLightning::lt_build(void) {
+  // OSGFIXME
+  return;
     Point3D top;
     nb_tree = 0;
     top[PX] = 0 ;
@@ -651,6 +669,8 @@ void SGLightning::lt_build(void) {
 
 
 void SGLightning::lt_Render(void) {
+  // OSGFIXME
+  return;
 	float flash = 0.5;
 	if( fmod(sgEnviro.elapsed_time*100.0, 100.0) > 50.0 )
 		flash = sg_random() * 0.75f + 0.25f;
@@ -675,10 +695,12 @@ void SGLightning::lt_Render(void) {
 	glDisable( GL_FOG );
 	glPushMatrix();
 	sgMat4 modelview, tmp;
-    ssgGetModelviewMatrix( modelview );
+    // OSGFIXME
+//     ssgGetModelviewMatrix( modelview );
 	sgCopyMat4( tmp, sgEnviro.transform );
     sgPostMultMat4( tmp, modelview );
-    ssgLoadModelviewMatrix( tmp );
+    // OSGFIXME
+//     ssgLoadModelviewMatrix( tmp );
 
     Point3D start( sgEnviro.last_lon*SG_DEGREES_TO_RADIANS, sgEnviro.last_lat*SG_DEGREES_TO_RADIANS, 0.0 );
     Point3D dest( lon*SG_DEGREES_TO_RADIANS, lat*SG_DEGREES_TO_RADIANS, 0.0 );
@@ -736,6 +758,8 @@ void SGLightning::lt_Render(void) {
 }
 
 void SGEnviro::addLightning(double lon, double lat, double alt) {
+  // OSGFIXME
+  return;
 	if( lightnings.size() > 10)
 		return;
 	SGLightning *lt= new SGLightning(lon, lat, alt);
@@ -743,6 +767,8 @@ void SGEnviro::addLightning(double lon, double lat, double alt) {
 }
 
 void SGEnviro::drawLightning(void) {
+  // OSGFIXME
+  return;
 	list_of_lightning::iterator iLightning;
 	// play 'thunder' for lightning
 	if( snd_active )

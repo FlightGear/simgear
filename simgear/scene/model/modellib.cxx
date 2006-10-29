@@ -6,6 +6,7 @@
 
 #include <simgear/compiler.h>
 #include <simgear/props/props.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "model.hxx"
 #include "animation.hxx"
@@ -48,11 +49,11 @@ SGModelLib::flush1()
 
     return;
 
-    map<string, ssgSharedPtr<ssgEntity> >::iterator it = _table.begin();
+    map<string, osg::ref_ptr<osg::Node> >::iterator it = _table.begin();
     while (it != _table.end()) {
                                 // If there is only one reference, it's
                                 // ours; no one else is using the item.
-        if (!it->second.isShared()) {
+        if (it->second->referenceCount() <= 1) {
             string key = it->first;
             _table.erase(it);
             it = _table.upper_bound(key);
@@ -61,7 +62,7 @@ SGModelLib::flush1()
     }
 }
 
-ssgEntity *
+osg::Node*
 SGModelLib::load_model( const string &fg_root,
                            const string &path,
                            SGPropertyNode *prop_root,
@@ -69,21 +70,24 @@ SGModelLib::load_model( const string &fg_root,
                            bool cache_object,
                            SGModelData *data )
 {
-    ssgBranch *personality_branch = new SGPersonalityBranch;
+    osg::Group *personality_branch = new SGPersonalityBranch;
+    personality_branch->setName("Model Personality Group");
 
                                 // FIXME: normalize path to
                                 // avoid duplicates.
-    map<string, ssgSharedPtr<ssgEntity> >::iterator it = _table.find(path);
+    map<string, osg::ref_ptr<osg::Node> >::iterator it = _table.find(path);
     if (!cache_object || it == _table.end()) {
-        ssgSharedPtr<ssgEntity> model = sgLoad3DModel(fg_root, path, prop_root,
+        osg::ref_ptr<osg::Node> model = sgLoad3DModel(fg_root, path, prop_root,
                                                       sim_time_sec, 0, data );
+        model->setName("Loaded model node");
         if (cache_object)
             _table[path] = model;      // add one reference to keep it around
 
-        personality_branch->addKid( model );
+        personality_branch->addChild( model.get() );
     } else {
-        personality_branch->addKid( it->second );
+        personality_branch->addChild( it->second.get() );
     }
+
     return personality_branch;
 }
 

@@ -11,17 +11,16 @@
 # error This library requires C++
 #endif
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/ref_ptr>
+#include <osg/Node>
+#include <osg/Switch>
 
-#include <simgear/math/point3d.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/structure/ssgSharedPtr.hxx>
 
+#include "placementtrans.hxx"
 
 // Don't pull in the headers, since we don't need them here.
 class SGLocation;
-class ssgPlacementTransform;
 
 
 // Has anyone done anything *really* stupid, like making min and max macros?
@@ -47,11 +46,11 @@ public:
   SGModelPlacement ();
   virtual ~SGModelPlacement ();
 
-  virtual void init( ssgBranch * model );
+  virtual void init( osg::Node* model );
 
   virtual void update();
 
-  virtual ssgEntity * getSceneGraph () { return (ssgEntity *)_selector; }
+  virtual osg::Node* getSceneGraph () { return _selector.get(); }
 
   virtual SGLocation * getSGLocation () { return _location; }
 
@@ -79,8 +78,8 @@ public:
                                double heading_deg);
   void setOrientation(const SGQuatd& orientation);
   
-  ssgPlacementTransform * getTransform(void)
-  { return _position; }
+  SGPlacementTransform * getTransform(void)
+  { return _position.get(); }
 
 private:
 
@@ -94,8 +93,8 @@ private:
   double _pitch_deg;
   double _heading_deg;
 
-  ssgSharedPtr<ssgSelector> _selector;
-  ssgSharedPtr<ssgPlacementTransform> _position;
+  osg::ref_ptr<osg::Switch> _selector;
+  osg::ref_ptr<SGPlacementTransform> _position;
 
                                 // Location
   SGLocation * _location;

@@ -24,13 +24,14 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osg/ref_ptr>
+#include <osg/Texture2D>
+
 #include <simgear/compiler.h>
 
 #include <plib/sg.h>
-#include <plib/ssg.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/structure/ssgSharedPtr.hxx>
 
 #include STL_ALGORITHM
 #include SG_GLU_H
@@ -42,7 +43,7 @@
 /*
 */
 
-static ssgSharedPtr<ssgTexture> cloudTextures[SGNewCloud::CLTexture_max];
+static osg::ref_ptr<osg::Texture2D> cloudTextures[SGNewCloud::CLTexture_max];
 
 
 bool SGNewCloud::useAnisotropic = true;
@@ -129,11 +130,15 @@ void SGNewCloud::loadTextures(const string &tex_path) {
 
     cloud_path.set(tex_path);
     cloud_path.append("cl_cumulus.rgb");
-    cloudTextures[ CLTexture_cumulus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
+    // OSGFIXME
+//     cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D( cloud_path.str().c_str(), false, false, false );
+    cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D;
 
     cloud_path.set(tex_path);
     cloud_path.append("cl_stratus.rgb");
-    cloudTextures[ CLTexture_stratus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
+    // OSGFIXME
+//     cloudTextures[ CLTexture_stratus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
+    cloudTextures[ CLTexture_stratus ] = new osg::Texture2D;
 
 }
 
@@ -486,7 +491,8 @@ void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos,
 		// in practice there is no texture switch (atm)
 		if( previousTexture != thisTexture ) {
 			previousTexture = thisTexture;
-			glBindTexture(GL_TEXTURE_2D, cloudTextures[thisTexture]->getHandle());
+                        // OSGFIXME
+// 			glBindTexture(GL_TEXTURE_2D, cloudTextures[thisTexture]->getHandle());
 		}
 
 			sgVec3 translate;

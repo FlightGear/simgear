@@ -26,6 +26,11 @@
 
 #include <vector>
 
+#include <osg/StateSet>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Group>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/scene/tgdb/leaf.hxx>
@@ -41,14 +46,14 @@ SG_USING_STD(vector);
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, ssgSimpleState *s, SGMaterialGlyph *g, double h)
+    element_info(SGMaterial *m, osg::StateSet *s, SGMaterialGlyph *g, double h)
         : material(m), state(s), glyph(g), height(h)
     {
         scale = h * m->get_xsize()
                 / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
     }
     SGMaterial *material;
-    ssgSimpleState *state;
+    osg::StateSet *state;
     SGMaterialGlyph *glyph;
     double height;
     double scale;
@@ -82,7 +87,8 @@ struct pair {
 
 // see $FG_ROOT/Docs/README.scenery
 //
-ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string content)
+osg::Node*
+SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
 {
     double sign_height = 1.0;  // meter
     bool lighted = true;
@@ -95,12 +101,12 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
     int size = -1;
     char oldtype = 0, newtype = 0;
 
-    ssgBranch *object = new ssgBranch();
-    object->setName((char *)content.c_str());
+    osg::Group* object = new osg::Group;
+    object->setName(content);
 
     SGMaterial *material;
-    ssgSimpleState *lighted_state;
-    ssgSimpleState *unlighted_state;
+    osg::StateSet *lighted_state;
+    osg::StateSet *unlighted_state;
 
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
@@ -239,7 +245,7 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
         }
 
         // in managed mode push frame stop and frame start first
-        ssgSimpleState *state = lighted ? lighted_state : unlighted_state;
+        osg::StateSet *state = lighted ? lighted_state : unlighted_state;
         element_info *e;
         if (newtype && newtype != oldtype) {
             if (close) {
@@ -276,12 +282,6 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
     double hpos = -total_width / 2;
     const double dist = 0.25;        // hard-code distance from surface for now
 
-    sgVec3 normal;
-    sgSetVec3(normal, 0, -1, 0);
-
-    sgVec4 color;
-    sgSetVec4(color, 1.0, 1.0, 1.0, 1.0);
-
     for (unsigned int i = 0; i < elements.size(); i++) {
         element_info *element = elements[i];
 
@@ -291,51 +291,67 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
         double abswidth = width * element->scale;
 
         // vertices
-        ssgVertexArray *vl = new ssgVertexArray(4);
-        vl->add(0, hpos,            dist);
-        vl->add(0, hpos + abswidth, dist);
-        vl->add(0, hpos,            dist + height);
-        vl->add(0, hpos + abswidth, dist + height);
+        osg::Vec3Array* vl = new osg::Vec3Array;
+        vl->push_back(osg::Vec3(0, hpos,            dist));
+        vl->push_back(osg::Vec3(0, hpos + abswidth, dist));
+        vl->push_back(osg::Vec3(0, hpos,            dist + height));
+        vl->push_back(osg::Vec3(0, hpos + abswidth, dist + height));
 
         // texture coordinates
-        ssgTexCoordArray *tl = new ssgTexCoordArray(4);
-        tl->add(xoffset,         0);
-        tl->add(xoffset + width, 0);
-        tl->add(xoffset,         1);
-        tl->add(xoffset + width, 1);
+        osg::Vec2Array* tl = new osg::Vec2Array;
+        tl->push_back(osg::Vec2(xoffset,         0));
+        tl->push_back(osg::Vec2(xoffset + width, 0));
+        tl->push_back(osg::Vec2(xoffset,         1));
+        tl->push_back(osg::Vec2(xoffset + width, 1));
 
         // normals
-        ssgNormalArray *nl = new ssgNormalArray(1);
-        nl->add(normal);
+        osg::Vec3Array* nl = new osg::Vec3Array;
+        nl->push_back(osg::Vec3(0, -1, 0));
 
         // colors
-        ssgColourArray *cl = new ssgColourArray(1);
-        cl->add(color);
+        osg::Vec4Array* cl = new osg::Vec4Array;
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
 
-        ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, tl, cl);
-        leaf->setState(element->state);
+        osg::Geometry* geometry = new osg::Geometry;
+//         geometry->setUseDisplayList(false);
+        geometry->setVertexArray(vl);
+        geometry->setNormalArray(nl);
+        geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
+        geometry->setColorArray(cl);
+        geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+        geometry->setTexCoordArray(0, tl);
+        geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
+        osg::Geode* geode = new osg::Geode;
+        geode->addDrawable(geometry);
+        geode->setStateSet(element->state);
 
-        object->addKid(leaf);
+        object->addChild(geode);
         hpos += abswidth;
         delete element;
     }
 
 
     // minimalistic backside
-    ssgVertexArray *vl = new ssgVertexArray(4);
-    vl->add(0, hpos,               dist);
-    vl->add(0, hpos - total_width, dist);
-    vl->add(0, hpos,               dist + sign_height);
-    vl->add(0, hpos - total_width, dist + sign_height);
+    osg::Vec3Array* vl = new osg::Vec3Array;
+    vl->push_back(osg::Vec3(0, hpos,               dist));
+    vl->push_back(osg::Vec3(0, hpos - total_width, dist));
+    vl->push_back(osg::Vec3(0, hpos,               dist + sign_height));
+    vl->push_back(osg::Vec3(0, hpos - total_width, dist + sign_height));
 
-    ssgNormalArray *nl = new ssgNormalArray(1);
-    nl->add(0, 1, 0);
+    osg::Vec3Array* nl = new osg::Vec3Array;
+    nl->push_back(osg::Vec3(0, 1, 0));
 
-    ssgLeaf *leaf = new ssgVtxTable(GL_TRIANGLE_STRIP, vl, nl, 0, 0);
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setVertexArray(vl);
+    geometry->setNormalArray(nl);
+    geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(geometry);
     SGMaterial *mat = matlib->find("BlackSign");
     if (mat)
-        leaf->setState(mat->get_state());
-    object->addKid(leaf);
+      geode->setStateSet(mat->get_state());
+    object->addChild(geode);
 
     return object;
 }
@@ -344,14 +360,14 @@ ssgBranch *sgMakeSign(SGMaterialLib *matlib, const string path, const string con
 
 
 
-ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
-                             const string path, const string name )
+osg::Node*
+SGMakeRunwaySign(SGMaterialLib *matlib, const string& path, const string& name)
 {
     // for demo purposes we assume each element (letter) is 1x1 meter.
     // Sign is placed 0.25 meters above the ground
 
-    ssgBranch *object = new ssgBranch();
-    object->setName( (char *)name.c_str() );
+    osg::Group *object = new osg::Group;
+    object->setName(name);
 
     double width = name.length() / 3.0;
 
@@ -391,12 +407,12 @@ ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
     tex_index.push_back( 2 );
     tex_index.push_back( 3 );
 
-    ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_STRIP, matlib, material,
-                                nodes, normals, texcoords,
-                                vertex_index, normal_index, tex_index,
-                                false, NULL );
+    osg::Node* leaf = SGMakeLeaf( path, GL_TRIANGLE_STRIP, matlib, material,
+                                  nodes, normals, texcoords,
+                                  vertex_index, normal_index, tex_index,
+                                  false, NULL );
 
-    object->addKid( leaf );
+    object->addChild(leaf);
 
     return object;
 }

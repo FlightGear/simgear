@@ -26,10 +26,42 @@
 #undef max
 #endif
 
+#include <osg/Quat>
+
+template<typename T>
+struct SGQuatStorage {
+  /// Readonly raw storage interface
+  const T (&data(void) const)[4]
+  { return _data; }
+  /// Readonly raw storage interface
+  T (&data(void))[4]
+  { return _data; }
+
+  void osg() const
+  { }
+
+private:
+  T _data[4];
+};
+
+template<>
+struct SGQuatStorage<double> : public osg::Quat {
+  /// Access raw data by index, the index is unchecked
+  const double (&data(void) const)[4]
+  { return osg::Quat::_v; }
+  /// Access raw data by index, the index is unchecked
+  double (&data(void))[4]
+  { return osg::Quat::_v; }
+
+  const osg::Quat& osg() const
+  { return *this; }
+  osg::Quat& osg()
+  { return *this; }
+};
 
 /// 3D Vector Class
 template<typename T>
-class SGQuat {
+class SGQuat : protected SGQuatStorage<T> {
 public:
   typedef T value_type;
 
@@ -42,7 +74,7 @@ public:
     /// uninitialized values in the debug build very fast ...
 #ifndef NDEBUG
     for (unsigned i = 0; i < 4; ++i)
-      _data[i] = SGLimits<T>::quiet_NaN();
+      data()[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
   /// Constructor. Initialize by the given values
@@ -51,7 +83,9 @@ public:
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 4 elements
   explicit SGQuat(const T* d)
-  { _data[0] = d[0]; _data[1] = d[1]; _data[2] = d[2]; _data[3] = d[3]; }
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+  explicit SGQuat(const osg::Quat& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
 
   /// Return a unit quaternion
   static SGQuat unit(void)
@@ -236,67 +270,66 @@ public:
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access by index, the index is unchecked
   T& operator()(unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access raw data by index, the index is unchecked
   const T& operator[](unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access raw data by index, the index is unchecked
   T& operator[](unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access the x component
   const T& x(void) const
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the x component
   T& x(void)
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the y component
   const T& y(void) const
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the y component
   T& y(void)
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the z component
   const T& z(void) const
-  { return _data[2]; }
+  { return data()[2]; }
   /// Access the z component
   T& z(void)
-  { return _data[2]; }
+  { return data()[2]; }
   /// Access the w component
   const T& w(void) const
-  { return _data[3]; }
+  { return data()[3]; }
   /// Access the w component
   T& w(void)
-  { return _data[3]; }
+  { return data()[3]; }
 
-  /// Get the data pointer, usefull for interfacing with plib's sg*Vec
-  const T* data(void) const
-  { return _data; }
-  /// Get the data pointer, usefull for interfacing with plib's sg*Vec
-  T* data(void)
-  { return _data; }
+  /// Get the data pointer
+  using SGQuatStorage<T>::data;
 
   /// Readonly interface function to ssg's sgQuat/sgdQuat
   const T (&sg(void) const)[4]
-  { return _data; }
+  { return data(); }
   /// Interface function to ssg's sgQuat/sgdQuat
   T (&sg(void))[4]
-  { return _data; }
+  { return data(); }
+
+  /// Interface function to osg's Quat*
+  using SGQuatStorage<T>::osg;
 
   /// Inplace addition
   SGQuat& operator+=(const SGQuat& v)
-  { _data[0]+=v(0);_data[1]+=v(1);_data[2]+=v(2);_data[3]+=v(3);return *this; }
+  { data()[0]+=v(0);data()[1]+=v(1);data()[2]+=v(2);data()[3]+=v(3);return *this; }
   /// Inplace subtraction
   SGQuat& operator-=(const SGQuat& v)
-  { _data[0]-=v(0);_data[1]-=v(1);_data[2]-=v(2);_data[3]-=v(3);return *this; }
+  { data()[0]-=v(0);data()[1]-=v(1);data()[2]-=v(2);data()[3]-=v(3);return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGQuat& operator*=(S s)
-  { _data[0] *= s; _data[1] *= s; _data[2] *= s; _data[3] *= s; return *this; }
+  { data()[0] *= s; data()[1] *= s; data()[2] *= s; data()[3] *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGQuat& operator/=(S s)
@@ -343,10 +376,6 @@ public:
     
     return deriv;
   }
-
-private:
-  /// The actual data
-  T _data[4];
 };
 
 /// Unary +, do nothing ...

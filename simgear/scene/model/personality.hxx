@@ -6,7 +6,7 @@
 #define _SG_PERSONALITY_HXX 1
 
 #include <simgear/compiler.h>
-#include <plib/ssg.h>
+#include <osg/Group>
 
 #include <map>
 
@@ -14,15 +14,14 @@ SG_USING_STD(map);
 
 class SGAnimation;
 
-class SGPersonalityBranch : public ssgBranch {
+// OSGFIXME avoid personality with cloning the structural trees.
+class SGPersonalityBranch : public osg::Group {
 public:
     SGPersonalityBranch();
     void setDoubleValue( double value, SGAnimation *anim, int var_id, int var_num = 0 );
     void setIntValue( int value, SGAnimation *anim, int var_id, int var_num = 0 );
     double getDoubleValue( SGAnimation *anim, int var_id, int var_num = 0 ) const;
     int getIntValue( SGAnimation *anim, int var_id, int var_num = 0 ) const;
-
-    SGPersonalityBranch *_old_current;
 
 private:
     struct Key {

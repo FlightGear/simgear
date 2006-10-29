@@ -11,8 +11,6 @@
 
 #include <string.h>             // for strcmp()
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
 #include <plib/ul.h>
 
 #include "location.hxx"
@@ -33,8 +31,8 @@ SGModelPlacement::SGModelPlacement ()
     _roll_deg(0),
     _pitch_deg(0),
     _heading_deg(0),
-    _selector(new ssgSelector),
-    _position(new ssgPlacementTransform),
+    _selector(new osg::Switch),
+    _position(new SGPlacementTransform),
     _location(new SGLocation)
 {
 }
@@ -45,13 +43,14 @@ SGModelPlacement::~SGModelPlacement ()
 }
 
 void
-SGModelPlacement::init( ssgBranch * model )
+SGModelPlacement::init( osg::Node * model )
 {
   if (model != 0) {
-      _position->addKid(model);
+      _position->addChild(model);
   }
-  _selector->addKid(_position);
-  _selector->clrTraversalMaskBits(SSGTRAV_HOT);
+  _selector->addChild(_position.get());
+//   _selector->setNodeMask(_selector->getNodeMask() & ~SG_HOT_TRAVERSAL_BIT);
+  _selector->setValue(0, 1);
 }
 
 void
@@ -60,21 +59,25 @@ SGModelPlacement::update()
   _location->setPosition( _lon_deg, _lat_deg, _elev_ft );
   _location->setOrientation( _roll_deg, _pitch_deg, _heading_deg );
 
-  sgMat4 rotation;
-  sgCopyMat4( rotation, _location->getTransformMatrix() );
-  _position->setTransform(_location->get_absolute_view_pos(), rotation);
+  const sgVec4 *t = _location->getTransformMatrix();
+  SGMatrixd rotation;
+  for (unsigned i = 0; i < 4; ++i)
+    for (unsigned j = 0; j < 4; ++j)
+      rotation(i, j) = t[j][i];
+  SGVec3d pos(_location->get_absolute_view_pos());
+  _position->setTransform(pos, rotation);
 }
 
 bool
 SGModelPlacement::getVisible () const
 {
-  return (_selector->getSelect() != 0);
+  return _selector->getValue(0);
 }
 
 void
 SGModelPlacement::setVisible (bool visible)
 {
-  _selector->select(visible);
+  _selector->setValue(0, visible);
 }
 
 void

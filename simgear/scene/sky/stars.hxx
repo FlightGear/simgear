@@ -29,16 +29,18 @@
 #define _SG_STARS_HXX_
 
 
-#include <plib/ssg.h>
+#include <osg/Array>
+#include <osg/Node>
+#include <osg/MatrixTransform>
+
+#include <simgear/math/SGMath.hxx>
+#include <simgear/structure/SGReferenced.hxx>
 
 
-class SGStars {
+class SGStars : public SGReferenced {
 
-    ssgTransform *stars_transform;
-    ssgSimpleState *state;
-
-    ssgColourArray *cl;
-    ssgVertexArray *vl;
+    osg::ref_ptr<osg::MatrixTransform> stars_transform;
+    osg::ref_ptr<osg::Vec4Array> cl;
 
     int old_phase;		// data for optimization
 
@@ -51,7 +53,7 @@ public:
     ~SGStars( void );
 
     // initialize the stars structure
-    ssgBranch *build( int num, sgdVec3 *star_data, double star_dist );
+    osg::Node* build( int num, const SGVec3d star_data[], double star_dist );
 
     // repaint the planet magnitudes based on current value of
     // sun_angle in degrees relative to verticle (so we can make them
@@ -59,12 +61,12 @@ public:
     // 0 degrees = high noon
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
-    bool repaint( double sun_angle, int num, sgdVec3 *star_data );
+    bool repaint( double sun_angle, int num, const SGVec3d star_data[] );
 
     // reposition the stars for the specified time (GST rotation),
     // offset by our current position (p) so that it appears fixed at
     // a great distance from the viewer.
-    bool reposition( sgVec3 p, double angle );
+    bool reposition( const SGVec3f& p, double angle );
 };
 
 

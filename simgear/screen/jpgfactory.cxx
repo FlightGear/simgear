@@ -25,8 +25,6 @@
 #  include <windows.h>
 #endif
 
-#include <plib/ssg.h>
-
 #include "jpgfactory.hxx"
    
 
@@ -42,6 +40,7 @@ static boolean empty_output_buffer (j_compress_ptr cinfo);
 }
 #endif
 
+// OSGFIME: offscreenrendering on osg - completely new context ...
 
 typedef struct {
     struct jpeg_destination_mgr pub; /* public fields */
@@ -238,7 +237,8 @@ int trJpgFactory::render()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    sgFrustum *frustum = ssgGetFrustum();
+    // OSGFIXME
+//     sgFrustum *frustum = ssgGetFrustum();
     trFrustum(tr,
               frustum->getLeft(), frustum->getRight(),
               frustum->getBot(),  frustum->getTop(), 

@@ -12,9 +12,9 @@
 #include <map>
 #include STL_STRING
 
-#include <plib/ssg.h>
+#include <osg/ref_ptr>
+#include <osg/Node>
 
-#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
 #include "model.hxx"
 
@@ -34,7 +34,7 @@ public:
     virtual ~SGModelLib ();
     virtual void flush1();
 
-    virtual ssgEntity *load_model( const string &fg_root,
+    virtual osg::Node *load_model( const string &fg_root,
                                    const string &path,
                                    SGPropertyNode *prop_root,
                                    double sim_time_sec,
@@ -42,7 +42,7 @@ public:
                                    SGModelData *data = 0 );
 protected:
 
-    map<string,ssgSharedPtr<ssgEntity> > _table;
+    map<string, osg::ref_ptr<osg::Node> > _table;
 };
 
 

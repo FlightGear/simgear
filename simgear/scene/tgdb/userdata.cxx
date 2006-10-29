@@ -25,9 +25,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
-
 #include <simgear/sg_inlines.h>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -120,6 +117,8 @@ void SGTriUserData::add_object_to_triangle (SGMatModel * object)
     if (object->get_heading_type() == SGMatModel::HEADING_RANDOM)
         hdg_deg = sg_random() * 360;
 
+#if 0
+    // OSGFIXME
     sgMat4 mat;
     makeWorldMatrix(mat, hdg_deg);
 
@@ -132,45 +131,47 @@ void SGTriUserData::add_object_to_triangle (SGMatModel * object)
                                            root_props, sim_time_sec )
                  );
     branch->addKid(pos);
+#endif
 }
 
 void SGTriUserData::makeWorldMatrix (sgMat4 mat, double hdg_deg )
 {
-    if (hdg_deg == 0) {
-        mat[0][0] =  leafData->sin_lat * leafData->cos_lon;
-        mat[0][1] =  leafData->sin_lat * leafData->sin_lon;
-        mat[0][2] = -leafData->cos_lat;
-        mat[0][3] =  SG_ZERO;
+  // OSGFIXME
+//     if (hdg_deg == 0) {
+//         mat[0][0] =  leafData->sin_lat * leafData->cos_lon;
+//         mat[0][1] =  leafData->sin_lat * leafData->sin_lon;
+//         mat[0][2] = -leafData->cos_lat;
+//         mat[0][3] =  SG_ZERO;
 
-        mat[1][0] =  -leafData->sin_lon;
-        mat[1][1] =  leafData->cos_lon;
-        mat[1][2] =  SG_ZERO;
-        mat[1][3] =  SG_ZERO;
-    } else {
-        float sin_hdg = sin( hdg_deg * SGD_DEGREES_TO_RADIANS ) ;
-        float cos_hdg = cos( hdg_deg * SGD_DEGREES_TO_RADIANS ) ;
-        mat[0][0] =  cos_hdg * leafData->sin_lat * leafData->cos_lon - sin_hdg * leafData->sin_lon;
-        mat[0][1] =  cos_hdg * leafData->sin_lat * leafData->sin_lon + sin_hdg * leafData->cos_lon;
-        mat[0][2] = -cos_hdg * leafData->cos_lat;
-        mat[0][3] =  SG_ZERO;
+//         mat[1][0] =  -leafData->sin_lon;
+//         mat[1][1] =  leafData->cos_lon;
+//         mat[1][2] =  SG_ZERO;
+//         mat[1][3] =  SG_ZERO;
+//     } else {
+//         float sin_hdg = sin( hdg_deg * SGD_DEGREES_TO_RADIANS ) ;
+//         float cos_hdg = cos( hdg_deg * SGD_DEGREES_TO_RADIANS ) ;
+//         mat[0][0] =  cos_hdg * leafData->sin_lat * leafData->cos_lon - sin_hdg * leafData->sin_lon;
+//         mat[0][1] =  cos_hdg * leafData->sin_lat * leafData->sin_lon + sin_hdg * leafData->cos_lon;
+//         mat[0][2] = -cos_hdg * leafData->cos_lat;
+//         mat[0][3] =  SG_ZERO;
 
-        mat[1][0] = -sin_hdg * leafData->sin_lat * leafData->cos_lon - cos_hdg * leafData->sin_lon;
-        mat[1][1] = -sin_hdg * leafData->sin_lat * leafData->sin_lon + cos_hdg * leafData->cos_lon;
-        mat[1][2] =  sin_hdg * leafData->cos_lat;
-        mat[1][3] =  SG_ZERO;
-    }
+//         mat[1][0] = -sin_hdg * leafData->sin_lat * leafData->cos_lon - cos_hdg * leafData->sin_lon;
+//         mat[1][1] = -sin_hdg * leafData->sin_lat * leafData->sin_lon + cos_hdg * leafData->cos_lon;
+//         mat[1][2] =  sin_hdg * leafData->cos_lat;
+//         mat[1][3] =  SG_ZERO;
+//     }
 
-    mat[2][0] = leafData->cos_lat * leafData->cos_lon;
-    mat[2][1] = leafData->cos_lat * leafData->sin_lon;
-    mat[2][2] = leafData->sin_lat;
-    mat[2][3] = SG_ZERO;
+//     mat[2][0] = leafData->cos_lat * leafData->cos_lon;
+//     mat[2][1] = leafData->cos_lat * leafData->sin_lon;
+//     mat[2][2] = leafData->sin_lat;
+//     mat[2][3] = SG_ZERO;
 
-    // translate to random point in triangle
-    sgVec3 result;
-    random_pt_inside_tri(result, p1, p2, p3);
-    sgSubVec3(mat[3], result, center);
+//     // translate to random point in triangle
+//     sgVec3 result;
+//     random_pt_inside_tri(result, p1, p2, p3);
+//     sgSubVec3(mat[3], result, center);
 
-    mat[3][3] = SG_ONE ;
+//     mat[3][3] = SG_ONE ;
 }
 
 /**
@@ -185,16 +186,16 @@ void SGTriUserData::makeWorldMatrix (sgMat4 mat, double hdg_deg )
  * @param mask The entity's traversal mask (not used).
  * @return Always 1, to allow traversal and culling to continue.
  */
-static int
-tri_in_range_callback (ssgEntity * entity, int mask)
-{
-  SGTriUserData * data = (SGTriUserData *)entity->getUserData();
-  if (!data->is_filled_in) {
-        data->fill_in_triangle();
-    data->is_filled_in = true;
-  }
-  return 1;
-}
+// static int
+// tri_in_range_callback (ssgEntity * entity, int mask)
+// {
+//   SGTriUserData * data = (SGTriUserData *)entity->getUserData();
+//   if (!data->is_filled_in) {
+//         data->fill_in_triangle();
+//     data->is_filled_in = true;
+//   }
+//   return 1;
+// }
 
 
 /**
@@ -209,16 +210,16 @@ tri_in_range_callback (ssgEntity * entity, int mask)
  * @param mask The entity's traversal mask (not used).
  * @return Always 0, to prevent any further traversal or culling.
  */
-static int
-tri_out_of_range_callback (ssgEntity * entity, int mask)
-{
-  SGTriUserData * data = (SGTriUserData *)entity->getUserData();
-  if (data->is_filled_in) {
-    data->branch->removeAllKids();
-    data->is_filled_in = false;
-  }
-  return 0;
-}
+// static int
+// tri_out_of_range_callback (ssgEntity * entity, int mask)
+// {
+//   SGTriUserData * data = (SGTriUserData *)entity->getUserData();
+//   if (data->is_filled_in) {
+//     data->branch->removeAllKids();
+//     data->is_filled_in = false;
+//   }
+//   return 0;
+// }
 
 
 /**
@@ -230,13 +231,13 @@ tri_out_of_range_callback (ssgEntity * entity, int mask)
  * @param p3 The third point in the triangle.
  * @return The greatest distance any point lies from the center.
  */
-static inline float
-get_bounding_radius( sgVec3 center, float *p1, float *p2, float *p3)
-{
-   return sqrt( SG_MAX3( sgDistanceSquaredVec3(center, p1),
-                         sgDistanceSquaredVec3(center, p2),
-                         sgDistanceSquaredVec3(center, p3) ) );
-}
+// static inline float
+// get_bounding_radius( sgVec3 center, float *p1, float *p2, float *p3)
+// {
+//    return sqrt( SG_MAX3( sgDistanceSquaredVec3(center, p1),
+//                          sgDistanceSquaredVec3(center, p2),
+//                          sgDistanceSquaredVec3(center, p3) ) );
+// }
 
 
 /**
@@ -248,81 +249,81 @@ get_bounding_radius( sgVec3 center, float *p1, float *p2, float *p3)
 
 void SGLeafUserData::setup_triangle (int i )
 {
-    short n1, n2, n3;
-    leaf->getTriangle(i, &n1, &n2, &n3);
+//     short n1, n2, n3;
+//     leaf->getTriangle(i, &n1, &n2, &n3);
 
-    float * p1 = leaf->getVertex(n1);
-    float * p2 = leaf->getVertex(n2);
-    float * p3 = leaf->getVertex(n3);
+//     float * p1 = leaf->getVertex(n1);
+//     float * p2 = leaf->getVertex(n2);
+//     float * p3 = leaf->getVertex(n3);
 
-                                // Set up a single center point for LOD
-    sgVec3 center;
-    sgSetVec3(center,
-              (p1[0] + p2[0] + p3[0]) / 3.0,
-              (p1[1] + p2[1] + p3[1]) / 3.0,
-              (p1[2] + p2[2] + p3[2]) / 3.0);
-    double area = sgTriArea(p1, p2, p3);
+//                                 // Set up a single center point for LOD
+//     sgVec3 center;
+//     sgSetVec3(center,
+//               (p1[0] + p2[0] + p3[0]) / 3.0,
+//               (p1[1] + p2[1] + p3[1]) / 3.0,
+//               (p1[2] + p2[2] + p3[2]) / 3.0);
+//     double area = sgTriArea(p1, p2, p3);
       
-                                // maximum radius of an object from center.
-    double bounding_radius = get_bounding_radius(center, p1, p2, p3);
+//                                 // maximum radius of an object from center.
+//     double bounding_radius = get_bounding_radius(center, p1, p2, p3);
 
-                                // Set up a transformation to the center
-                                // point, so that everything else can
-                                // be specified relative to it.
-    ssgTransform * location = new ssgTransform;
-    sgMat4 TRANS;
-    sgMakeTransMat4(TRANS, center);
-    location->setTransform(TRANS);
-    branch->addKid(location);
+//                                 // Set up a transformation to the center
+//                                 // point, so that everything else can
+//                                 // be specified relative to it.
+//     ssgTransform * location = new ssgTransform;
+//     sgMat4 TRANS;
+//     sgMakeTransMat4(TRANS, center);
+//     location->setTransform(TRANS);
+//     branch->addKid(location);
 
-                                // Iterate through all the object types.
-    int num_groups = mat->get_object_group_count();
-    for (int j = 0; j < num_groups; j++) {
-                                // Look up the random object.
-        SGMatModelGroup * group = mat->get_object_group(j);
+//                                 // Iterate through all the object types.
+//     int num_groups = mat->get_object_group_count();
+//     for (int j = 0; j < num_groups; j++) {
+//                                 // Look up the random object.
+//         SGMatModelGroup * group = mat->get_object_group(j);
 
-                                // Set up the range selector for the entire
-                                // triangle; note that we use the object
-                                // range plus the bounding radius here, to
-                                // allow for objects far from the center.
-        float ranges[] = { 0,
-                          group->get_range_m() + bounding_radius,
-                SG_MAX };
-        ssgRangeSelector * lod = new ssgRangeSelector;
-        lod->setRanges(ranges, 3);
-        location->addKid(lod);
+//                                 // Set up the range selector for the entire
+//                                 // triangle; note that we use the object
+//                                 // range plus the bounding radius here, to
+//                                 // allow for objects far from the center.
+//         float ranges[] = { 0,
+//                           group->get_range_m() + bounding_radius,
+//                 SG_MAX };
+//         ssgRangeSelector * lod = new ssgRangeSelector;
+//         lod->setRanges(ranges, 3);
+//         location->addKid(lod);
 
-                                // Create the in-range and out-of-range
-                                // branches.
-        ssgBranch * in_range = new ssgBranch;
-        ssgBranch * out_of_range = new ssgBranch;
+//                                 // Create the in-range and out-of-range
+//                                 // branches.
+//         ssgBranch * in_range = new ssgBranch;
+//         ssgBranch * out_of_range = new ssgBranch;
 
-                                // Set up the user data for if/when
-                                // the random objects in this triangle
-                                // are filled in.
-        SGTriUserData * data = new SGTriUserData;
-        data->is_filled_in = false;
-        data->p1 = p1;
-        data->p2 = p2;
-        data->p3 = p3;
-        sgCopyVec3 (data->center, center);
-        data->area = area;
-        data->object_group = group;
-        data->branch = in_range;
-        data->leafData = this;
-        data->seed = (unsigned int)(p1[0] * j);
+//                                 // Set up the user data for if/when
+//                                 // the random objects in this triangle
+//                                 // are filled in.
+//         SGTriUserData * data = new SGTriUserData;
+//         data->is_filled_in = false;
+//         data->p1 = p1;
+//         data->p2 = p2;
+//         data->p3 = p3;
+//         sgCopyVec3 (data->center, center);
+//         data->area = area;
+//         data->object_group = group;
+//         data->branch = in_range;
+//         data->leafData = this;
+//         data->seed = (unsigned int)(p1[0] * j);
 
-                                // Set up the in-range node.
-        in_range->setUserData(data);
-        in_range->setTravCallback(SSG_CALLBACK_PRETRAV,
-                                 tri_in_range_callback);
-        lod->addKid(in_range);
+//                                 // Set up the in-range node.
+//         in_range->setUserData(data);
+//         in_range->setTravCallback(SSG_CALLBACK_PRETRAV,
+//                                  tri_in_range_callback);
+//         lod->addKid(in_range);
 
-                                // Set up the out-of-range node.
-        out_of_range->setUserData(data);
-        out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
-                                      tri_out_of_range_callback);
-        out_of_range->addKid(new SGDummyBSphereEntity(bounding_radius));
-        lod->addKid(out_of_range);
-    }
+//                                 // Set up the out-of-range node.
+//         out_of_range->setUserData(data);
+//         out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
+//                                       tri_out_of_range_callback);
+//         out_of_range->addKid(new SGDummyBSphereEntity(bounding_radius));
+//         lod->addKid(out_of_range);
+//     }
 }

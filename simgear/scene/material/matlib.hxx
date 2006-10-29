@@ -37,8 +37,8 @@
 #include <map>			// STL associative "array"
 #include <vector>		// STL "array"
 
-#include <plib/ssg.h>		// plib include
-
+#include <osg/Node>
+#include <osg/StateSet>
 
 class SGMaterial;
 
@@ -46,7 +46,6 @@ SG_USING_STD(string);
 SG_USING_STD(map);
 SG_USING_STD(vector);
 SG_USING_STD(less);
-
 
 // Material management class
 class SGMaterialLib {
@@ -71,7 +70,7 @@ public:
     // Add the named texture with default properties
     bool add_item( const string &tex_path );
     bool add_item( const string &mat_name, const string &tex_path );
-    bool add_item( const string &mat_name, ssgSimpleState *state );
+    bool add_item( const string &mat_name, osg::StateSet *state );
 
     // find a material record by material name
     SGMaterial *find( const string& material );
@@ -87,7 +86,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    const SGMaterial* findMaterial(/*const*/ssgLeaf* leaf) const;
+    const SGMaterial* findMaterial(const osg::Node* leaf) const;
 
     // Destructor
     ~SGMaterialLib ( void );

@@ -32,6 +32,12 @@
 
 #include STL_STRING
 
+#include <osg/StateSet>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Group>
+#include <osg/LOD>
+
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/io/sg_binobj.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -55,13 +61,11 @@ struct Leaf {
 
 
 // Generate an ocean tile
-bool sgGenTile( const string& path, SGBucket b,
+bool SGGenTile( const string& path, SGBucket b,
                 Point3D *center, double *bounding_radius,
-                SGMaterialLib *matlib, ssgBranch* geometry )
+                SGMaterialLib *matlib, osg::Group* group )
 {
-    ssgSimpleState *state = NULL;
-
-    geometry->setName( (char *)path.c_str() );
+    osg::StateSet *state = 0;
 
     double tex_width = 1000.0;
     // double tex_height;
@@ -142,43 +146,30 @@ bool sgGenTile( const string& path, SGBucket b,
                                        1000.0 / tex_width );
 
     // Allocate ssg structure
-    ssgVertexArray   *vl = new ssgVertexArray( 4 );
-    ssgNormalArray   *nl = new ssgNormalArray( 4 );
-    ssgTexCoordArray *tl = new ssgTexCoordArray( 4 );
-    ssgColourArray   *cl = new ssgColourArray( 1 );
+    osg::Vec3Array *vl = new osg::Vec3Array;
+    osg::Vec3Array *nl = new osg::Vec3Array;
+    osg::Vec2Array *tl = new osg::Vec2Array;
 
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
-    cl->add( color );
-
-    // sgVec3 *vtlist = new sgVec3 [ 4 ];
-    // t->vec3_ptrs.push_back( vtlist );
-    // sgVec3 *vnlist = new sgVec3 [ 4 ];
-    // t->vec3_ptrs.push_back( vnlist );
-    // sgVec2 *tclist = new sgVec2 [ 4 ];
-    // t->vec2_ptrs.push_back( tclist );
-
-    sgVec2 tmp2;
-    sgVec3 tmp3;
     for ( i = 0; i < 4; ++i ) {
-        sgSetVec3( tmp3, 
-                   rel[i].x(), rel[i].y(), rel[i].z() );
-        vl->add( tmp3 );
-
-        sgSetVec3( tmp3, 
-                   normals[i].x(), normals[i].y(), normals[i].z() );
-        nl->add( tmp3 );
-
-        sgSetVec2( tmp2, texs[i].x(), texs[i].y());
-        tl->add( tmp2 );
+        vl->push_back(osg::Vec3(rel[i].x(), rel[i].y(), rel[i].z()));
+        nl->push_back(osg::Vec3(normals[i].x(), normals[i].y(), normals[i].z()));
+        tl->push_back(osg::Vec2(texs[i].x(), texs[i].y()));
     }
     
-    ssgLeaf *leaf = 
-        new ssgVtxTable ( GL_TRIANGLE_FAN, vl, nl, tl, cl );
 
-    leaf->setUserData( new SGMaterialUserData(mat) );
-    leaf->setState( state );
-    geometry->addKid( leaf );
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setVertexArray(vl);
+    geometry->setNormalArray(nl);
+    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->setColorBinding(osg::Geometry::BIND_OFF);
+    geometry->setTexCoordArray(0, tl);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_FAN, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->setName(path);
+    geode->addDrawable(geometry);
+    geode->setStateSet(state);
+
+    group->addChild(geode);
 
     return true;
 }
@@ -197,22 +188,22 @@ bool sgGenTile( const string& path, SGBucket b,
  * @param mask The entity's traversal mask (not used).
  * @return Always 1, to allow traversal and culling to continue.
  */
-static int
-leaf_in_range_callback (ssgEntity * entity, int mask)
-{
-  SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
+// static int
+// leaf_in_range_callback (ssgEntity * entity, int mask)
+// {
+//   SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
 
-  if (!data->is_filled_in) {
-                                // Iterate through all the triangles
-                                // and populate them.
-    int num_tris = data->leaf->getNumTriangles();
-    for ( int i = 0; i < num_tris; ++i ) {
-            data->setup_triangle(i);
-    }
-    data->is_filled_in = true;
-  }
-  return 1;
-}
+//   if (!data->is_filled_in) {
+//                                 // Iterate through all the triangles
+//                                 // and populate them.
+//     int num_tris = data->leaf->getNumTriangles();
+//     for ( int i = 0; i < num_tris; ++i ) {
+//             data->setup_triangle(i);
+//     }
+//     data->is_filled_in = true;
+//   }
+//   return 1;
+// }
 
 
 /**
@@ -227,16 +218,16 @@ leaf_in_range_callback (ssgEntity * entity, int mask)
  * @param mask The entity's traversal mask (not used).
  * @return Always 0, to prevent any further traversal or culling.
  */
-static int
-leaf_out_of_range_callback (ssgEntity * entity, int mask)
-{
-  SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
-  if (data->is_filled_in) {
-    data->branch->removeAllKids();
-    data->is_filled_in = false;
-  }
-  return 0;
-}
+// static int
+// leaf_out_of_range_callback (ssgEntity * entity, int mask)
+// {
+//   SGLeafUserData * data = (SGLeafUserData *)entity->getUserData();
+//   if (data->is_filled_in) {
+//     data->branch->removeAllKids();
+//     data->is_filled_in = false;
+//   }
+//   return 0;
+// }
 
 
 /**
@@ -255,11 +246,13 @@ leaf_out_of_range_callback (ssgEntity * entity, int mask)
  * @param material_name The name of the surface's material.
  */
 static void
-gen_random_surface_objects (ssgLeaf *leaf,
-                            ssgBranch *branch,
+gen_random_surface_objects (osg::Node *leaf,
+                            osg::Group *branch,
                             Point3D *center,
                             SGMaterial *mat )
 {
+  // OSGFIXME
+#if 0
                                 // If the surface has no triangles, return
                                 // now.
     int num_tris = leaf->getNumTriangles();
@@ -280,17 +273,15 @@ gen_random_surface_objects (ssgLeaf *leaf,
 
                                 // LOD for the leaf
                                 // max random object range: 20000m
-    float ranges[] = { 0, 20000, 1000000 };
-    ssgRangeSelector * lod = new ssgRangeSelector;
-    lod->setRanges(ranges, 3);
-    branch->addKid(lod);
+    osg::LOD * lod = new osg::LOD;
+    branch->addChild(lod);
 
                                 // Create the in-range and out-of-range
                                 // branches.
-    ssgBranch * in_range = new ssgBranch;
-    ssgBranch * out_of_range = new ssgBranch;
-    lod->addKid(in_range);
-    lod->addKid(out_of_range);
+    osg::Group * in_range = new osg::Group;
+//     osg::Group * out_of_range = new osg::Group;
+    lod->addChild(in_range, 0, 20000 /*OSGFIXME hardcoded visibility ???*/);
+//     lod->addChild(out_of_range, 20000, 1e30);
 
     SGLeafUserData * data = new SGLeafUserData;
     data->is_filled_in = false;
@@ -303,12 +294,16 @@ gen_random_surface_objects (ssgLeaf *leaf,
     data->cos_lon = cos(lon_rad);
 
     in_range->setUserData(data);
-    in_range->setTravCallback(SSG_CALLBACK_PRETRAV, leaf_in_range_callback);
-    out_of_range->setUserData(data);
-    out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
-                                   leaf_out_of_range_callback);
-    out_of_range
-      ->addKid(new SGDummyBSphereEntity(leaf->getBSphere()->getRadius()));
+    // OSGFIXME: implement random objects to be loaded when in sight
+//     in_range->setTravCallback(SSG_CALLBACK_PRETRAV, leaf_in_range_callback);
+
+    // OSGFIXME: implement deletion of tiles that are no longer used
+//     out_of_range->setUserData(data);
+//     out_of_range->setTravCallback(SSG_CALLBACK_PRETRAV,
+//                                    leaf_out_of_range_callback);
+//     out_of_range
+//       ->addChild(new SGDummyBSphereEntity(leaf->getBSphere()->getRadius()));
+#endif
 }
 
 
@@ -318,16 +313,16 @@ gen_random_surface_objects (ssgLeaf *leaf,
 ////////////////////////////////////////////////////////////////////////
 
 // Load an Binary obj file
-bool sgBinObjLoad( const string& path, const bool is_base,
+bool SGBinObjLoad( const string& path, const bool is_base,
                    Point3D *center,
                    double *bounding_radius,
                    SGMaterialLib *matlib,
                    bool use_random_objects,
-                   ssgBranch *geometry,
-                   ssgBranch *vasi_lights,
-                   ssgBranch *rwy_lights,
-                   ssgBranch *taxi_lights,
-                   ssgVertexArray *ground_lights )
+                   osg::Group *geometry,
+                   osg::Group *vasi_lights,
+                   osg::Group *rwy_lights,
+                   osg::Group *taxi_lights,
+                   osg::Vec3Array *ground_lights )
 {
     SGBinObject obj;
 
@@ -335,11 +330,11 @@ bool sgBinObjLoad( const string& path, const bool is_base,
         return false;
     }
 
-    ssgBranch *local_terrain = new ssgBranch;
+    osg::Group *local_terrain = new osg::Group;
     local_terrain->setName( "LocalTerrain" );
-    geometry->addKid( local_terrain );
+    geometry->addChild( local_terrain );
 
-    geometry->setName( (char *)path.c_str() );
+    geometry->setName(path);
 
     // reference point (center offset/bounding sphere)
     *center = obj.get_gbs_center();
@@ -363,45 +358,43 @@ bool sgBinObjLoad( const string& path, const bool is_base,
         // cout << "pts_v.size() = " << pts_v.size() << endl;
         if ( pt_materials[i].substr(0, 3) == "RWY" ) {
             // airport environment lighting
-            sgdVec3 up;
-            sgdSetVec3( up, center->x(), center->y(), center->z() );
+            SGVec3d up(center->x(), center->y(), center->z());
             // returns a transform -> lod -> leaf structure
-            ssgBranch *branch = sgMakeDirectionalLights( nodes, normals,
+            osg::Node *branch = SGMakeDirectionalLights( nodes, normals,
                                                          pts_v[i], pts_n[i],
                                                          matlib,
                                                          pt_materials[i], up );
             if ( pt_materials[i] == "RWY_VASI_LIGHTS" ) {
-                vasi_lights->addKid( branch );
+                vasi_lights->addChild( branch );
             } else if ( pt_materials[i] == "RWY_BLUE_TAXIWAY_LIGHTS"
                 || pt_materials[i] == "RWY_GREEN_TAXIWAY_LIGHTS" )
             {
-                taxi_lights->addKid( branch );
+                taxi_lights->addChild( branch );
             } else {
-                rwy_lights->addKid( branch );
+                rwy_lights->addChild( branch );
             }
         } else {
             // other geometry
             material = pt_materials[i];
             tex_index.clear();
-            ssgLeaf *leaf = sgMakeLeaf( path, GL_POINTS, matlib, material,
+            osg::Node *leaf = SGMakeLeaf( path, GL_POINTS, matlib, material,
                                         nodes, normals, texcoords,
                                         pts_v[i], pts_n[i], tex_index,
                                         false, ground_lights );
-            local_terrain->addKid( leaf );
+            local_terrain->addChild( leaf );
         }
     }
 
     // Put all randomly-placed objects under a separate branch
     // (actually an ssgRangeSelector) named "random-models".
-    ssgBranch * random_object_branch = 0;
+    osg::Group * random_object_branch = 0;
     if (use_random_objects) {
-        float ranges[] = { 0, 20000 }; // Maximum 20km range for random objects
-        ssgRangeSelector * object_lod = new ssgRangeSelector;
-        object_lod->setRanges(ranges, 2);
+        osg::LOD* object_lod = new osg::LOD;
         object_lod->setName("random-models");
-        geometry->addKid(object_lod);
-        random_object_branch = new ssgBranch;
-        object_lod->addKid(random_object_branch);
+        geometry->addChild(object_lod);
+        random_object_branch = new osg::Group;
+        // Maximum 20km range for random objects
+        object_lod->addChild(random_object_branch, 0, 20000);
     }
 
     typedef map<string,list<Leaf> > LeafMap;
@@ -443,7 +436,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
             Leaf &leaf = *li;
             int ind = leaf.index;
             if ( leaf.type == GL_TRIANGLES ) {
-                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLES, matlib,
+                osg::Node *leaf = SGMakeLeaf( path, GL_TRIANGLES, matlib,
                                             tri_materials[ind],
                                             nodes, normals, texcoords,
                                             tris_v[ind], tris_n[ind], tris_tc[ind],
@@ -459,9 +452,9 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                                     center, mat );
                     }
                 }
-                local_terrain->addKid( leaf );
+                local_terrain->addChild( leaf );
             } else if ( leaf.type == GL_TRIANGLE_STRIP ) {
-                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_STRIP,
+                osg::Node *leaf = SGMakeLeaf( path, GL_TRIANGLE_STRIP,
                                             matlib, strip_materials[ind],
                                             nodes, normals, texcoords,
                                             strips_v[ind], strips_n[ind], strips_tc[ind],
@@ -477,9 +470,9 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                                     center, mat );
                     }
                 }
-                local_terrain->addKid( leaf );
+                local_terrain->addChild( leaf );
             } else {
-                ssgLeaf *leaf = sgMakeLeaf( path, GL_TRIANGLE_FAN,
+                osg::Node *leaf = SGMakeLeaf( path, GL_TRIANGLE_FAN,
                                             matlib, fan_materials[ind],
                                             nodes, normals, texcoords,
                                             fans_v[ind], fans_n[ind], fans_tc[ind],
@@ -495,7 +488,7 @@ bool sgBinObjLoad( const string& path, const bool is_base,
                                                     center, mat );
                     }
                 }
-                local_terrain->addKid( leaf );
+                local_terrain->addChild( leaf );
             }
             ++li;
         }

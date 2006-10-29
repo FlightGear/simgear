@@ -33,10 +33,17 @@
 
 #include STL_STRING
 
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Group>
+#include <osg/StateSet>
+#include <osg/TriangleFunctor>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
+// #include <simgear/scene/util/SGDebugDrawCallback.hxx>
 
 #include "leaf.hxx"
 
@@ -49,8 +56,9 @@ typedef int_list::iterator int_list_iterator;
 typedef int_list::const_iterator int_point_list_iterator;
 
 
-static void random_pt_inside_tri( float *res,
-                                  float *n1, float *n2, float *n3 )
+static inline
+osg::Vec3 random_pt_inside_tri(const osg::Vec3& n1, const osg::Vec3& n2,
+                               const osg::Vec3& n3 )
 {
     double a = sg_random();
     double b = sg_random();
@@ -60,60 +68,45 @@ static void random_pt_inside_tri( float *res,
     }
     double c = 1 - a - b;
 
-    res[0] = n1[0]*a + n2[0]*b + n3[0]*c;
-    res[1] = n1[1]*a + n2[1]*b + n3[1]*c;
-    res[2] = n1[2]*a + n2[2]*b + n3[2]*c;
+    return n1*a + n2*b + n3*c;
 }
 
+/// class to implement the TrinagleFunctor class
+struct SGRandomSurfacePointsFill {
+  osg::Vec3Array* lights;
+  float factor;
 
-void sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor, 
-                               ssgVertexArray *lights )
-{
-    int tris = leaf->getNumTriangles();
-    if ( tris > 0 ) {
-        short int n1, n2, n3;
-        float *p1, *p2, *p3;
-        sgVec3 result;
-
-        // generate a repeatable random seed
-        p1 = leaf->getVertex( 0 );
-        unsigned int seed = (unsigned int)(fabs(p1[0]*100));
-        sg_srandom( seed );
-
-        for ( int i = 0; i < tris; ++i ) {
-            leaf->getTriangle( i, &n1, &n2, &n3 );
-            p1 = leaf->getVertex(n1);
-            p2 = leaf->getVertex(n2);
-            p3 = leaf->getVertex(n3);
-            double area = sgTriArea( p1, p2, p3 );
-            double num = area / factor;
-
-            // generate a light point for each unit of area
-            while ( num > 1.0 ) {
-                random_pt_inside_tri( result, p1, p2, p3 );
-                lights->add( result );
-                num -= 1.0;
-            }
-            // for partial units of area, use a zombie door method to
-            // create the proper random chance of a light being created
-            // for this triangle
-            if ( num > 0.0 ) {
-                if ( sg_random() <= num ) {
-                    // a zombie made it through our door
-                    random_pt_inside_tri( result, p1, p2, p3 );
-                    lights->add( result );
-                }
-            }
-        }
+  void operator () (const osg::Vec3& v1, const osg::Vec3& v2,
+                    const osg::Vec3& v3, bool)
+  {
+    // Compute the area
+    float area = 0.5*((v1 - v2)^(v3 - v2)).length();
+    float num = area / factor;
+    
+    // generate a light point for each unit of area
+    while ( num > 1.0 ) {
+      lights->push_back(random_pt_inside_tri( v1, v2, v3 ));
+      num -= 1.0;
     }
-}
+    // for partial units of area, use a zombie door method to
+    // create the proper random chance of a light being created
+    // for this triangle
+    if ( num > 0.0 ) {
+      if ( sg_random() <= num ) {
+        // a zombie made it through our door
+        lights->push_back(random_pt_inside_tri( v1, v2, v3 ));
+      }
+    }
+  }
+};
 
-
-ssgVertexArray *sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor ) {
-    ssgVertexArray *result = new ssgVertexArray();
-    sgGenRandomSurfacePoints( leaf, factor, result );
-
-    return result;
+static void SGGenRandomSurfacePoints( osg::Geometry *leaf, double factor, 
+                                      osg::Vec3Array *lights )
+{
+  osg::TriangleFunctor<SGRandomSurfacePointsFill> triangleFunctor;
+  triangleFunctor.lights = lights;
+  triangleFunctor.factor = factor;
+  leaf->accept(triangleFunctor);
 }
 
 
@@ -121,7 +114,7 @@ ssgVertexArray *sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor ) {
 // Scenery loaders.
 ////////////////////////////////////////////////////////////////////////
 
-ssgLeaf *sgMakeLeaf( const string& path,
+osg::Node* SGMakeLeaf( const string& path,
                      const GLenum ty, 
                      SGMaterialLib *matlib, const string& material,
                      const point_list& nodes, const point_list& normals,
@@ -129,10 +122,10 @@ ssgLeaf *sgMakeLeaf( const string& path,
                      const int_list& node_index,
                      const int_list& normal_index,
                      const int_list& tex_index,
-                     const bool calc_lights, ssgVertexArray *lights )
+                     const bool calc_lights, osg::Vec3Array *lights )
 {
     double tex_width = 1000.0, tex_height = 1000.0;
-    ssgSimpleState *state = NULL;
+    osg::StateSet *state = 0;
     float coverage = -1;
 
     SGMaterial *mat = matlib->find( material );
@@ -173,9 +166,6 @@ ssgLeaf *sgMakeLeaf( const string& path,
         coverage = -1;
     }
 
-    sgVec2 tmp2;
-    sgVec3 tmp3;
-    sgVec4 tmp4;
     int i;
 
     // vertices
@@ -184,74 +174,81 @@ ssgLeaf *sgMakeLeaf( const string& path,
         SG_LOG( SG_TERRAIN, SG_ALERT, "Woh! node list size < 1" );
         exit(-1);
     }
-    ssgVertexArray *vl = new ssgVertexArray( size );
-    Point3D node;
+    osg::Vec3Array* vl = new osg::Vec3Array;
+    vl->reserve(size);
     for ( i = 0; i < size; ++i ) {
-        node = nodes[ node_index[i] ];
-        sgSetVec3( tmp3, node[0], node[1], node[2] );
-        vl -> add( tmp3 );
+        Point3D node = nodes[ node_index[i] ];
+        vl->push_back(osg::Vec3(node[0], node[1], node[2]));
     }
 
     // normals
-    Point3D normal;
-    ssgNormalArray *nl = new ssgNormalArray( size );
+    osg::Vec3Array* nl = new osg::Vec3Array;
+    nl->reserve(size);
     if ( normal_index.size() ) {
         // object file specifies normal indices (i.e. normal indices
         // aren't 'implied'
         for ( i = 0; i < size; ++i ) {
-            normal = normals[ normal_index[i] ];
-            sgSetVec3( tmp3, normal[0], normal[1], normal[2] );
-            nl -> add( tmp3 );
+            Point3D normal = normals[ normal_index[i] ];
+            nl->push_back(osg::Vec3(normal[0], normal[1], normal[2]));
         }
     } else {
         // use implied normal indices.  normal index = vertex index.
         for ( i = 0; i < size; ++i ) {
-            normal = normals[ node_index[i] ];
-            sgSetVec3( tmp3, normal[0], normal[1], normal[2] );
-            nl -> add( tmp3 );
+            Point3D normal = normals[ node_index[i] ];
+            nl->push_back(osg::Vec3(normal[0], normal[1], normal[2]));
         }
     }
 
     // colors
-    ssgColourArray *cl = new ssgColourArray( 1 );
-    sgSetVec4( tmp4, 1.0, 1.0, 1.0, 1.0 );
-    cl->add( tmp4 );
+    osg::Vec4Array* cl = new osg::Vec4Array;
+    cl->push_back(osg::Vec4(1, 1, 1, 1));
 
     // texture coordinates
     size = tex_index.size();
     Point3D texcoord;
-    ssgTexCoordArray *tl = new ssgTexCoordArray( size );
+    osg::Vec2Array* tl = new osg::Vec2Array;
+    tl->reserve(size);
     if ( size == 1 ) {
-        texcoord = texcoords[ tex_index[0] ];
-        sgSetVec2( tmp2, texcoord[0], texcoord[1] );
-        //sgSetVec2( tmp2, texcoord[0], texcoord[1] );
+        Point3D texcoord = texcoords[ tex_index[0] ];
+        osg::Vec2 tmp2(texcoord[0], texcoord[1]);
         if ( tex_width > 0 ) {
             tmp2[0] *= (1000.0 / tex_width);
         }
         if ( tex_height > 0 ) {
             tmp2[1] *= (1000.0 / tex_height);
         }
-        tl -> add( tmp2 );
+        tl -> push_back( tmp2 );
     } else if ( size > 1 ) {
         for ( i = 0; i < size; ++i ) {
-            texcoord = texcoords[ tex_index[i] ];
-            sgSetVec2( tmp2, texcoord[0], texcoord[1] );
+            Point3D texcoord = texcoords[ tex_index[i] ];
+            osg::Vec2 tmp2(texcoord[0], texcoord[1]);
             if ( tex_width > 0 ) {
                 tmp2[0] *= (1000.0 / tex_width);
             }
             if ( tex_height > 0 ) {
                 tmp2[1] *= (1000.0 / tex_height);
             }
-            tl -> add( tmp2 );
+            tl -> push_back( tmp2 );
         }
     }
 
-    ssgLeaf *leaf = new ssgVtxTable ( ty, vl, nl, tl, cl );
+
+    osg::Geometry* geometry = new osg::Geometry;
+//     geometry->setUseDisplayList(false);
+//     geometry->setDrawCallback(new SGDebugDrawCallback);
+    geometry->setVertexArray(vl);
+    geometry->setNormalArray(nl);
+    geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setTexCoordArray(0, tl);
+    geometry->addPrimitiveSet(new osg::DrawArrays(ty, 0, vl->size()));
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(geometry);
 
     // lookup the state record
-
-    leaf->setUserData( new SGMaterialUserData(mat) );
-    leaf->setState( state );
+    geode->setStateSet(state);
+    geode->setUserData( new SGMaterialUserData(mat) );
 
     if ( calc_lights ) {
         if ( coverage > 0.0 ) {
@@ -260,9 +257,9 @@ ssgLeaf *sgMakeLeaf( const string& path,
                        << coverage << ", pushing up to 10000");
                 coverage = 10000;
             }
-            sgGenRandomSurfacePoints(leaf, coverage, lights );
+            SGGenRandomSurfacePoints(geometry, coverage, lights );
         }
     }
 
-    return leaf;
+    return geode;
 }

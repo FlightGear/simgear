@@ -18,8 +18,8 @@
 SG_USING_STD(vector);
 SG_USING_STD(set);
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/Node>
+#include <osg/Texture2D>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
@@ -39,11 +39,11 @@ SG_USING_STD(set);
  * called by sgLoad3DModel() after the model was loaded, and the destructor
  * when the branch is removed from the graph.
  */
-class SGModelData : public ssgBase {
+class SGModelData : public osg::Referenced {
 public:
     virtual ~SGModelData() {}
     virtual void modelLoaded( const string& path, SGPropertyNode *prop,
-                              ssgBranch *branch) {}
+                              osg::Node*branch) = 0;
 };
 
 
@@ -59,48 +59,37 @@ public:
  * Subsystems should not normally invoke this function directly;
  * instead, they should use the FGModelLoader declared in loader.hxx.
  */
-ssgBranch *
+osg::Node*
 sgLoad3DModel( const string& fg_root, const string &path,
-                          SGPropertyNode *prop_root, double sim_time_sec,
-                          ssgEntity *(*load_panel)(SGPropertyNode *) = 0,
-                          SGModelData *data = 0 );
+               SGPropertyNode *prop_root, double sim_time_sec,
+               osg::Node *(*load_panel)(SGPropertyNode *) = 0,
+               SGModelData *data = 0,
+               const SGPath& texturePath = SGPath() );
 
-
-/**
- * Make an offset matrix from rotations and position offset.
- */
-void
-sgMakeOffsetsMatrix( sgMat4 * result, double h_rot, double p_rot, double r_rot,
-                     double x_off, double y_off, double z_off );
 
 /**
  * Make the animation
  */
 void
-sgMakeAnimation( ssgBranch * model,
+sgMakeAnimation( osg::Node* model,
                  const char * name,
                  vector<SGPropertyNode_ptr> &name_nodes,
                  SGPropertyNode *prop_root,
                  SGPropertyNode_ptr node,
                  double sim_time_sec,
                  SGPath &texture_path,
-                 set<ssgBranch *> &ignore_branches );
+                 set<osg::Node*> &ignore_branches );
 
-/**
- * Set the filter state on models
- */
-bool
-sgSetModelFilter( bool filter );
 
-/**
- * Check if the ssg node contains an animation
- */
-bool 
-sgCheckAnimationBranch (ssgEntity * entity);
+osg::Texture2D*
+SGLoadTexture2D(const std::string& path, bool wrapu = true,
+                bool wrapv = true, int mipmaplevels = -1);
 
-/**
- * Enable or disable Display list usage
- */
-extern bool sgUseDisplayList;
+inline osg::Texture2D*
+SGLoadTexture2D(const SGPath& path, bool wrapu = true, bool wrapv = true,
+                int mipmaplevels = -1)
+{
+  return SGLoadTexture2D(path.str(), wrapu, wrapv, mipmaplevels);
+}
 
 #endif // __MODEL_HXX

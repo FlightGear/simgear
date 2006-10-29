@@ -10,18 +10,26 @@
 #include <string.h>             // for strcmp()
 #include <math.h>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
-#include <plib/ul.h>
+#include <osg/AlphaFunc>
+#include <osg/AutoTransform>
+#include <osg/ColorMatrix>
+#include <osg/Drawable>
+#include <osg/Geode>
+#include <osg/LOD>
+#include <osg/MatrixTransform>
+#include <osg/StateSet>
+#include <osg/Switch>
+#include <osg/TexMat>
 
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/math/sg_random.h>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "animation.hxx"
-#include "custtrans.hxx"
 #include "personality.hxx"
+#include "model.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -32,8 +40,8 @@
  * Set up the transform matrix for a spin or rotation.
  */
 static void
-set_rotation (sgMat4 &matrix, double position_deg,
-              sgVec3 &center, sgVec3 &axis)
+set_rotation (osg::Matrix &matrix, double position_deg,
+              const osg::Vec3 &center, const osg::Vec3 &axis)
 {
  float temp_angle = -position_deg * SG_DEGREES_TO_RADIANS ;
  
@@ -47,80 +55,55 @@ set_rotation (sgMat4 &matrix, double position_deg,
  float y = axis[1];
  float z = axis[2];
 
- matrix[0][0] = t * x * x + c ;
- matrix[0][1] = t * y * x - s * z ;
- matrix[0][2] = t * z * x + s * y ;
- matrix[0][3] = SG_ZERO;
+ matrix(0, 0) = t * x * x + c ;
+ matrix(0, 1) = t * y * x - s * z ;
+ matrix(0, 2) = t * z * x + s * y ;
+ matrix(0, 3) = SG_ZERO;
  
- matrix[1][0] = t * x * y + s * z ;
- matrix[1][1] = t * y * y + c ;
- matrix[1][2] = t * z * y - s * x ;
- matrix[1][3] = SG_ZERO;
+ matrix(1, 0) = t * x * y + s * z ;
+ matrix(1, 1) = t * y * y + c ;
+ matrix(1, 2) = t * z * y - s * x ;
+ matrix(1, 3) = SG_ZERO;
  
- matrix[2][0] = t * x * z - s * y ;
- matrix[2][1] = t * y * z + s * x ;
- matrix[2][2] = t * z * z + c ;
- matrix[2][3] = SG_ZERO;
+ matrix(2, 0) = t * x * z - s * y ;
+ matrix(2, 1) = t * y * z + s * x ;
+ matrix(2, 2) = t * z * z + c ;
+ matrix(2, 3) = SG_ZERO;
 
   // hint to the compiler to put these into FP registers
  x = center[0];
  y = center[1];
  z = center[2];
  
- matrix[3][0] = x - x*matrix[0][0] - y*matrix[1][0] - z*matrix[2][0];
- matrix[3][1] = y - x*matrix[0][1] - y*matrix[1][1] - z*matrix[2][1];
- matrix[3][2] = z - x*matrix[0][2] - y*matrix[1][2] - z*matrix[2][2];
- matrix[3][3] = SG_ONE;
+ matrix(3, 0) = x - x*matrix(0, 0) - y*matrix(1, 0) - z*matrix(2, 0);
+ matrix(3, 1) = y - x*matrix(0, 1) - y*matrix(1, 1) - z*matrix(2, 1);
+ matrix(3, 2) = z - x*matrix(0, 2) - y*matrix(1, 2) - z*matrix(2, 2);
+ matrix(3, 3) = SG_ONE;
 }
 
 /**
  * Set up the transform matrix for a translation.
  */
 static void
-set_translation (sgMat4 &matrix, double position_m, sgVec3 &axis)
+set_translation (osg::Matrix &matrix, double position_m, const osg::Vec3 &axis)
 {
-  sgVec3 xyz;
-  sgScaleVec3(xyz, axis, position_m);
-  sgMakeTransMat4(matrix, xyz);
+  osg::Vec3 xyz = axis * position_m;
+  matrix.makeIdentity();
+  matrix(3, 0) = xyz[0];
+  matrix(3, 1) = xyz[1];
+  matrix(3, 2) = xyz[2];
 }
 
 /**
  * Set up the transform matrix for a scale operation.
  */
 static void
-set_scale (sgMat4 &matrix, double x, double y, double z)
+set_scale (osg::Matrix &matrix, double x, double y, double z)
 {
-  sgMakeIdentMat4( matrix );
-  matrix[0][0] = x;
-  matrix[1][1] = y;
-  matrix[2][2] = z;
-}
-
-/**
- * Recursively process all kids to change the alpha values
- */
-static void
-change_alpha( ssgBase *_branch, float _blend )
-{
-  int i;
-
-  for (i = 0; i < ((ssgBranch *)_branch)->getNumKids(); i++)
-    change_alpha( ((ssgBranch *)_branch)->getKid(i), _blend );
-
-  if ( !_branch->isAKindOf(ssgTypeLeaf())
-       && !_branch->isAKindOf(ssgTypeVtxTable())
-       && !_branch->isAKindOf(ssgTypeVTable()) )
-    return;
-
-  int num_colors = ((ssgLeaf *)_branch)->getNumColours();
-// unsigned int select_ = (_blend == 1.0) ? false : true;
-
-  for (i = 0; i < num_colors; i++)
-  {
-//    ((ssgSelector *)_branch)->select( select_ );
-    float *color =  ((ssgLeaf *)_branch)->getColour(i);
-    color[3] = _blend;
-  }
+  matrix.makeIdentity();
+  matrix(0, 0) = x;
+  matrix(1, 1) = y;
+  matrix(2, 2) = z;
 }
 
 /**
@@ -181,15 +164,15 @@ read_interpolation_table (SGPropertyNode_ptr props)
 double SGAnimation::sim_time_sec = 0.0;
 SGPersonalityBranch *SGAnimation::current_object = 0;
 
-SGAnimation::SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch)
+SGAnimation::SGAnimation (SGPropertyNode_ptr props, osg::Group * branch)
     : _branch(branch),
     animation_type(0)
 {
-    _branch->setName(props->getStringValue("name", 0));
+    _branch->setName(props->getStringValue("name", "Animation"));
     if ( props->getBoolValue( "enable-hot", true ) ) {
-        _branch->setTraversalMaskBits( SSGTRAV_HOT );
+        _branch->setNodeMask(SG_NODEMASK_TERRAIN_BIT|_branch->getNodeMask());
     } else {
-        _branch->clrTraversalMaskBits( SSGTRAV_HOT );
+        _branch->setNodeMask(~SG_NODEMASK_TERRAIN_BIT&_branch->getNodeMask());
     }
 }
 
@@ -220,7 +203,7 @@ SGAnimation::restore()
 ////////////////////////////////////////////////////////////////////////
 
 SGNullAnimation::SGNullAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgBranch)
+  : SGAnimation(props, new osg::Group)
 {
 }
 
@@ -236,7 +219,7 @@ SGNullAnimation::~SGNullAnimation ()
 
 SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
                                     SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgRangeSelector),
+  : SGAnimation(props, new osg::LOD),
     _min(0.0), _max(0.0), _min_factor(1.0), _max_factor(1.0),
     _condition(0)
 {
@@ -270,7 +253,7 @@ SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
        _max = props->getFloatValue("max-m", 0);
        ranges[1] = _max * _max_factor;
     }
-    ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
+    static_cast<osg::LOD*>(_branch)->setRange(0, ranges[0], ranges[1]);
 }
 
 SGRangeAnimation::~SGRangeAnimation ()
@@ -296,7 +279,7 @@ SGRangeAnimation::update()
     ranges[0] = 0.f;
     ranges[1] = 1000000000.f;
   }
-  ((ssgRangeSelector *)_branch)->setRanges(ranges, 2);
+  static_cast<osg::LOD*>(_branch)->setRange(0, ranges[0], ranges[1]);
   return 2;
 }
 
@@ -307,8 +290,18 @@ SGRangeAnimation::update()
 ////////////////////////////////////////////////////////////////////////
 
 SGBillboardAnimation::SGBillboardAnimation (SGPropertyNode_ptr props)
-    : SGAnimation(props, new ssgCutout(props->getBoolValue("spherical", true)))
+  : SGAnimation(props, new osg::AutoTransform)
 {
+//OSGFIXME: verify
+  bool spherical = props->getBoolValue("spherical", true);
+  osg::AutoTransform* autoTrans = static_cast<osg::AutoTransform*>(_branch);
+  if (spherical) {
+    autoTrans->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
+  } else {
+    autoTrans->setAutoRotateMode(osg::AutoTransform::NO_ROTATION);
+    autoTrans->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+  }
+  autoTrans->setAutoScaleToScreen(false);
 }
 
 SGBillboardAnimation::~SGBillboardAnimation ()
@@ -323,7 +316,7 @@ SGBillboardAnimation::~SGBillboardAnimation ()
 
 SGSelectAnimation::SGSelectAnimation( SGPropertyNode *prop_root,
                                   SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgSelector),
+  : SGAnimation(props, new osg::Switch),
     _condition(0)
 {
   SGPropertyNode_ptr node = props->getChild("condition");
@@ -336,16 +329,15 @@ SGSelectAnimation::~SGSelectAnimation ()
   delete _condition;
 }
 
-int
-SGSelectAnimation::update()
-{
-  if (_condition != 0 && _condition->test()) 
-      ((ssgSelector *)_branch)->select(0xffff);
+void
+SGSelectAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{ 
+  if (_condition != 0 && _condition->test())
+    static_cast<osg::Switch*>(_branch)->setAllChildrenOn();
   else
-      ((ssgSelector *)_branch)->select(0x0000);
-  return 2;
+    static_cast<osg::Switch*>(_branch)->setAllChildrenOff();
+  traverse(node, nv);
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -355,13 +347,13 @@ SGSelectAnimation::update()
 SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
                               SGPropertyNode_ptr props,
                               double sim_time_sec )
-  : SGAnimation(props, new ssgTransform),
+  : SGAnimation(props, new osg::MatrixTransform),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _last_time_sec( sim_time_sec ),
-    _condition(0),
     _factor( props, "factor", 1.0 ),
-    _position_deg( props, "starting-position-deg", 0.0 )
+    _position_deg( props, "starting-position-deg", 0.0 ),
+    _last_time_sec( sim_time_sec ),
+    _condition(0)
 {
     SGPropertyNode_ptr node = props->getChild("condition");
     if (node != 0)
@@ -395,7 +387,8 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
        _center[1] = props->getFloatValue("center/y-m", 0);
        _center[2] = props->getFloatValue("center/z-m", 0);
     }
-    sgNormalizeVec3(_axis);
+    
+    _axis.normalize();
 }
 
 SGSpinAnimation::~SGSpinAnimation ()
@@ -427,10 +420,7 @@ SGSpinAnimation::update()
 
       velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
       _position_deg += (dt * velocity_rpms * 360);
-      while (_position_deg < 0)
-         _position_deg += 360.0;
-      while (_position_deg >= 360.0)
-         _position_deg -= 360.0;
+      _position_deg -= 360*floor(_position_deg/360);
       key->setDoubleValue( _position_deg, this, POSITION_DEG_SPIN );
     } else {
       dt = sim_time_sec - _last_time_sec;
@@ -438,14 +428,12 @@ SGSpinAnimation::update()
 
       velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
       _position_deg += (dt * velocity_rpms * 360);
-      while (_position_deg < 0)
-         _position_deg += 360.0;
-      while (_position_deg >= 360.0)
-         _position_deg -= 360.0;
+      _position_deg -= 360*floor(_position_deg/360);
     }
 
+    osg::Matrix _matrix;
     set_rotation(_matrix, _position_deg, _center, _axis);
-    ((ssgTransform *)_branch)->setTransform(_matrix);
+    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
   return 1;
 }
@@ -457,7 +445,7 @@ SGSpinAnimation::update()
 ////////////////////////////////////////////////////////////////////////
 
 SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgSelector),
+  : SGAnimation(props, new osg::Switch),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
     _last_time_sec( sim_time_sec ),
@@ -490,9 +478,9 @@ void
 SGTimedAnimation::init()
 {
     if ( !_use_personality ) {
-        for ( int i = 0; i < getBranch()->getNumKids(); i++ ) {
+        for ( unsigned i = 0; i < getBranch()->getNumChildren(); i++ ) {
             double v;
-            if ( i < (int)_branch_duration_specs.size() ) {
+            if ( i < _branch_duration_specs.size() ) {
                 DurationSpec &sp = _branch_duration_specs[ i ];
                 v = sp._min + sg_random() * ( sp._max - sp._min );
             } else {
@@ -501,12 +489,14 @@ SGTimedAnimation::init()
             _branch_duration_sec.push_back( v );
             _total_duration_sec += v;
         }
-        // Sanity check : total duration shouldn't equal zero
-        if ( _total_duration_sec < 0.01 ) {
-            _total_duration_sec = 0.01;
-        }
     }
-    ((ssgSelector *)getBranch())->selectStep(_step);
+    // Sanity check : total duration shouldn't equal zero
+    if (_duration_sec < 0.01)
+        _duration_sec = 0.01;
+    if ( _total_duration_sec < 0.01 )
+        _total_duration_sec = 0.01;
+
+    static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
 }
 
 int
@@ -539,36 +529,32 @@ SGTimedAnimation::update()
         _step = key->getIntValue( this, STEP_TIMED );
         _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC_TIMED );
         _total_duration_sec = key->getDoubleValue( this, TOTAL_DURATION_SEC_TIMED );
-        while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
-            _last_time_sec += _total_duration_sec;
-        }
+        _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
         double duration = _duration_sec;
-        if ( _step < (int)_branch_duration_specs.size() ) {
+        if ( _step < _branch_duration_specs.size() ) {
             duration = key->getDoubleValue( this, BRANCH_DURATION_SEC_TIMED, _step );
         }
         if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
             _last_time_sec += duration;
             _step += 1;
-            if ( _step >= getBranch()->getNumKids() )
+            if ( _step >= getBranch()->getNumChildren() )
                 _step = 0;
         }
-        ((ssgSelector *)getBranch())->selectStep( _step );
+        static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
         key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC_TIMED );
         key->setIntValue( _step, this, STEP_TIMED );
     } else {
-        while ( ( sim_time_sec - _last_time_sec ) >= _total_duration_sec ) {
-            _last_time_sec += _total_duration_sec;
-        }
+        _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
         double duration = _duration_sec;
-        if ( _step < (int)_branch_duration_sec.size() ) {
+        if ( _step < _branch_duration_sec.size() ) {
             duration = _branch_duration_sec[ _step ];
         }
         if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
             _last_time_sec += duration;
             _step += 1;
-            if ( _step >= getBranch()->getNumKids() )
+            if ( _step >= getBranch()->getNumChildren() )
                 _step = 0;
-            ((ssgSelector *)getBranch())->selectStep( _step );
+            static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
         }
     }
     return 1;
@@ -582,7 +568,7 @@ SGTimedAnimation::update()
 
 SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
                                   SGPropertyNode_ptr props )
-    : SGAnimation(props, new ssgTransform),
+  : SGAnimation(props, new osg::MatrixTransform),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
       _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
       _factor(props->getDoubleValue("factor", 1.0)),
@@ -627,7 +613,7 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
         _center[1] = props->getFloatValue("center/y-m", 0);
         _center[2] = props->getFloatValue("center/z-m", 0);
     }
-    sgNormalizeVec3(_axis);
+    _axis.normalize();
 }
 
 SGRotateAnimation::~SGRotateAnimation ()
@@ -648,8 +634,9 @@ SGRotateAnimation::update()
     } else {
       _position_deg = _table->interpolate(_prop->getDoubleValue());
     }
+    osg::Matrix _matrix;
     set_rotation(_matrix, _position_deg, _center, _axis);
-    ((ssgTransform *)_branch)->setTransform(_matrix);
+    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
   return 2;
 }
@@ -661,7 +648,7 @@ SGRotateAnimation::update()
 
 SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgTransform),
+  : SGAnimation(props, new osg::Group),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _table(read_interpolation_table(props)),
@@ -673,6 +660,12 @@ SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
     _has_max(props->hasValue("max")),
     _max(props->getDoubleValue("max", 1.0))
 {
+  // OSGFIXME: does ot work like that!!!
+  // depends on a not so wide available extension
+
+  _colorMatrix = new osg::ColorMatrix;
+  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+  stateSet->setAttribute(_colorMatrix.get());
 }
 
 SGBlendAnimation::~SGBlendAnimation ()
@@ -711,7 +704,7 @@ SGBlendAnimation::update()
 
   if (_blend != _prev_value) {
     _prev_value = _blend;
-    change_alpha( _branch, _blend );
+    _colorMatrix->getMatrix()(3, 3) = _blend;
   }
   return 1;
 }
@@ -724,18 +717,18 @@ SGBlendAnimation::update()
 
 SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgTransform),
+  : SGAnimation(props, new osg::MatrixTransform),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
+    _offset_m( props, "offset-m", 0.0 ),
+    _factor( props, "factor", 1.0 ),
     _table(read_interpolation_table(props)),
     _has_min(props->hasValue("min-m")),
     _min_m(props->getDoubleValue("min-m")),
     _has_max(props->hasValue("max-m")),
     _max_m(props->getDoubleValue("max-m")),
     _position_m(props->getDoubleValue("starting-position-m", 0)),
-    _condition(0),
-    _factor( props, "factor", 1.0 ),
-    _offset_m( props, "offset-m", 0.0 )
+    _condition(0)
 {
   SGPropertyNode_ptr node = props->getChild("condition");
   if (node != 0)
@@ -744,7 +737,7 @@ SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
-  sgNormalizeVec3(_axis);
+  _axis.normalize();
 }
 
 SGTranslateAnimation::~SGTranslateAnimation ()
@@ -779,8 +772,9 @@ SGTranslateAnimation::update()
       _position_m = _table->interpolate(_prop->getDoubleValue());
     }
 
+    osg::Matrix _matrix;
     set_translation(_matrix, _position_m, _axis);
-    ((ssgTransform *)_branch)->setTransform(_matrix);
+    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
   return 2;
 }
@@ -793,7 +787,7 @@ SGTranslateAnimation::update()
 
 SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgTransform),
+  : SGAnimation(props, new osg::MatrixTransform),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _x_factor(props,"x-factor",1.0),
@@ -877,8 +871,9 @@ SGScaleAnimation::update()
     _z_scale = _table->interpolate(_prop->getDoubleValue());
   }
 
+  osg::Matrix _matrix;
   set_scale(_matrix, _x_scale, _y_scale, _z_scale );
-  ((ssgTransform *)_branch)->setTransform(_matrix);
+  static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   return 2;
 }
 
@@ -889,7 +884,7 @@ SGScaleAnimation::update()
 
 SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
                                   SGPropertyNode_ptr props )
-    : SGAnimation(props, new ssgTexTrans),
+    : SGAnimation(props, new osg::Group),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
       _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
       _factor(props->getDoubleValue("factor", 1.0)),
@@ -911,7 +906,11 @@ SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
-  sgNormalizeVec3(_axis);
+  _axis.normalize();
+
+  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+  _texMat = new osg::TexMat;
+  stateSet->setTextureAttribute(0, _texMat.get());
 }
 
 SGTexRotateAnimation::~SGTexRotateAnimation ()
@@ -934,8 +933,9 @@ SGTexRotateAnimation::update()
   } else {
     _position_deg = _table->interpolate(_prop->getDoubleValue());
   }
+  osg::Matrix _matrix;
   set_rotation(_matrix, _position_deg, _center, _axis);
-  ((ssgTexTrans *)_branch)->setTransform(_matrix);
+  _texMat->setMatrix(_matrix);
   return 2;
 }
 
@@ -946,7 +946,7 @@ SGTexRotateAnimation::update()
 
 SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgTexTrans),
+  : SGAnimation(props, new osg::Group),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
     _offset(props->getDoubleValue("offset", 0.0)),
     _factor(props->getDoubleValue("factor", 1.0)),
@@ -967,7 +967,11 @@ SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
   _axis[0] = props->getFloatValue("axis/x", 0);
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
-  sgNormalizeVec3(_axis);
+  _axis.normalize();
+
+  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+  _texMat = new osg::TexMat;
+  stateSet->setTextureAttribute(0, _texMat.get());
 }
 
 SGTexTranslateAnimation::~SGTexTranslateAnimation ()
@@ -990,8 +994,9 @@ SGTexTranslateAnimation::update()
   } else {
     _position = _table->interpolate(apply_mods(_prop->getDoubleValue(), _step, _scroll));
   }
+  osg::Matrix _matrix;
   set_translation(_matrix, _position, _axis);
-  ((ssgTexTrans *)_branch)->setTransform(_matrix);
+  _texMat->setMatrix(_matrix);
   return 2;
 }
 
@@ -1002,7 +1007,7 @@ SGTexTranslateAnimation::update()
 
 SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgTexTrans),
+  : SGAnimation(props, new osg::Group),
       _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
 {
   unsigned int i;
@@ -1034,7 +1039,7 @@ SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
       _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
       _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
       _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
-      sgNormalizeVec3(_transform[i].axis);
+      _transform[i].axis.normalize();
       _num_transforms++;
     } else if (!strcmp("texrotate",transform_nodes[i]->getStringValue("subtype", 0))) {
 
@@ -1057,10 +1062,13 @@ SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
       _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
       _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
       _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
-      sgNormalizeVec3(_transform[i].axis);
+      _transform[i].axis.normalize();
       _num_transforms++;
     }
   }
+  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+  _texMat = new osg::TexMat;
+  stateSet->setTextureAttribute(0, _texMat.get());
 }
 
 SGTexMultipleAnimation::~SGTexMultipleAnimation ()
@@ -1072,8 +1080,8 @@ int
 SGTexMultipleAnimation::update()
 {
   int i;
-  sgMat4 tmatrix;
-  sgMakeIdentMat4(tmatrix);
+  osg::Matrix tmatrix;
+  tmatrix.makeIdentity();
   for (i = 0; i < _num_transforms; i++) {
 
     if(_transform[i].subtype == 0) {
@@ -1088,8 +1096,9 @@ SGTexMultipleAnimation::update()
       } else {
          _transform[i].position = _transform[i].table->interpolate(apply_mods(_transform[i].prop->getDoubleValue(), _transform[i].step,_transform[i].scroll));
       }
-      set_translation(_transform[i].matrix, _transform[i].position, _transform[i].axis);
-      sgPreMultMat4(tmatrix, _transform[i].matrix);
+      osg::Matrix matrix;
+      set_translation(matrix, _transform[i].position, _transform[i].axis);
+      tmatrix = matrix*tmatrix;
 
     } else if (_transform[i].subtype == 1) {
 
@@ -1104,11 +1113,13 @@ SGTexMultipleAnimation::update()
      } else {
         _transform[i].position = _transform[i].table->interpolate(_transform[i].prop->getDoubleValue());
       }
-      set_rotation(_transform[i].matrix, _transform[i].position, _transform[i].center, _transform[i].axis);
-      sgPreMultMat4(tmatrix, _transform[i].matrix);
+
+      osg::Matrix matrix;
+      set_rotation(matrix, _transform[i].position, _transform[i].center, _transform[i].axis);
+      tmatrix = matrix*tmatrix;
     }
   }
-  ((ssgTexTrans *)_branch)->setTransform(tmatrix);
+  _texMat->setMatrix(tmatrix);
   return 2;
 }
 
@@ -1119,7 +1130,7 @@ SGTexMultipleAnimation::update()
 ////////////////////////////////////////////////////////////////////////
 
 SGAlphaTestAnimation::SGAlphaTestAnimation(SGPropertyNode_ptr props)
-  : SGAnimation(props, new ssgBranch)
+  : SGAnimation(props, new osg::Group)
 {
   _alpha_clamp = props->getFloatValue("alpha-factor", 0.0);
 }
@@ -1130,22 +1141,13 @@ SGAlphaTestAnimation::~SGAlphaTestAnimation ()
 
 void SGAlphaTestAnimation::init()
 {
-  setAlphaClampToBranch(_branch,_alpha_clamp);
-}
-
-void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
-{
-  int nb = b->getNumKids();
-  for (int i = 0; i<nb; i++) {
-    ssgEntity *e = b->getKid(i);
-    if (e->isAKindOf(ssgTypeLeaf())) {
-      ssgSimpleState*s = (ssgSimpleState*)((ssgLeaf*)e)->getState();
-      s->enable( GL_ALPHA_TEST );
-      s->setAlphaClamp( clamp );
-    } else if (e->isAKindOf(ssgTypeBranch())) {
-      setAlphaClampToBranch( (ssgBranch*)e, clamp );
-    }
-  }
+  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+  osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+  alphaFunc->setFunction(osg::AlphaFunc::GREATER);
+  alphaFunc->setReferenceValue(_alpha_clamp);
+  stateSet->setAttribute(alphaFunc);
+  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+  stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 }
 
 
@@ -1156,13 +1158,11 @@ void SGAlphaTestAnimation::setAlphaClampToBranch(ssgBranch *b, float clamp)
 
 SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
         SGPropertyNode_ptr props, const SGPath &texture_path)
-    : SGAnimation(props, new ssgBranch),
+    : SGAnimation(props, new osg::Group),
     _last_condition(false),
     _prop_root(prop_root),
     _prop_base(""),
     _texture_base(texture_path),
-    _cached_material(0),
-    _cloned_material(0),
     _read(0),
     _update(0),
     _global(props->getBoolValue("global", false))
@@ -1229,6 +1229,9 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     _tex_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
 
     _static_update = _update;
+
+    _alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0);
+    _texture2D = SGLoadTexture2D(_texture);
 }
 
 void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)
@@ -1263,6 +1266,17 @@ void SGMaterialAnimation::init()
 {
     if (!_global)
         cloneMaterials(_branch);
+
+    // OSGFIXME
+    osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+    if (_update & THRESHOLD) {
+      stateSet->setAttribute(_alphaFunc.get(), osg::StateAttribute::OVERRIDE);
+      stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    }
+    if (_update & TEXTURE) {
+      stateSet->setTextureAttribute(0, _texture2D.get(), osg::StateAttribute::OVERRIDE);
+      stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    }
 }
 
 int SGMaterialAnimation::update()
@@ -1343,79 +1357,124 @@ void SGMaterialAnimation::updateColorGroup(ColorSpec *col, int flag)
         _update |= flag;
 }
 
-void SGMaterialAnimation::cloneMaterials(ssgBranch *b)
-{
-    for (int i = 0; i < b->getNumKids(); i++)
-        cloneMaterials((ssgBranch *)b->getKid(i));
-
-    if (!b->isAKindOf(ssgTypeLeaf()) || !((ssgLeaf *)b)->hasState())
-        return;
-
-    ssgSimpleState *s = (ssgSimpleState *)((ssgLeaf *)b)->getState();
-    if (!_cached_material || _cached_material != s) {
-        _cached_material = s;
-        _cloned_material = (ssgSimpleState *)s->clone(SSG_CLONE_STATE);
+class SGMaterialAnimationCloneVisitor : public osg::NodeVisitor {
+public:
+  SGMaterialAnimationCloneVisitor() :
+    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+  {
+    setVisitorType(osg::NodeVisitor::NODE_VISITOR);
+  }
+  virtual void apply(osg::Node& node)
+  {
+    traverse(node);
+    osg::StateSet* stateSet = node.getStateSet();
+    if (!stateSet)
+      return;
+    if (1 < stateSet->referenceCount()) {
+      osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATESETS);
+      osg::Object* object = stateSet->clone(copyOp);
+      stateSet = static_cast<osg::StateSet*>(object);
+      node.setStateSet(stateSet);
     }
-    ((ssgLeaf *)b)->setState(_cloned_material);
+    cloneMaterial(stateSet);
+  }
+  virtual void apply(osg::Geode& node)
+  {
+    apply((osg::Node&)node);
+    traverse(node);
+    unsigned nDrawables = node.getNumDrawables();
+    for (unsigned i = 0; i < nDrawables; ++i) {
+      osg::Drawable* drawable = node.getDrawable(i);
+      osg::StateSet* stateSet = drawable->getStateSet();
+      if (!stateSet)
+        continue;
+      if (1 < stateSet->referenceCount()) {
+        osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATESETS);
+        osg::Object* object = stateSet->clone(copyOp);
+        stateSet = static_cast<osg::StateSet*>(object);
+        drawable->setStateSet(stateSet);
+      }
+      cloneMaterial(stateSet);
+    }
+  }
+  void cloneMaterial(osg::StateSet* stateSet)
+  {
+    
+    osg::StateAttribute* stateAttr;
+    stateAttr = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
+    if (!stateAttr)
+      return;
+    osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATEATTRIBUTES);
+    osg::Object* object = stateAttr->clone(copyOp);
+    osg::Material* material = static_cast<osg::Material*>(object);
+    materialList.push_back(material);
+    while (stateSet->getAttribute(osg::StateAttribute::MATERIAL)) {
+      stateSet->removeAttribute(osg::StateAttribute::MATERIAL);
+    }
+    stateSet->setAttribute(material);
+  }
+  std::vector<osg::Material*> materialList;
+};
+
+void SGMaterialAnimation::cloneMaterials(osg::Group *b)
+{
+  SGMaterialAnimationCloneVisitor cloneVisitor;
+  b->accept(cloneVisitor);
+  _materialList.swap(cloneVisitor.materialList);
 }
 
-void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
+void SGMaterialAnimation::setMaterialBranch(osg::Group *b)
 {
-    for (int i = 0; i < b->getNumKids(); i++)
-        setMaterialBranch((ssgBranch *)b->getKid(i));
-
-    if (!b->isAKindOf(ssgTypeLeaf()) || !((ssgLeaf *)b)->hasState())
-        return;
-
-    ssgSimpleState *s = (ssgSimpleState *)((ssgLeaf *)b)->getState();
-
+  std::vector<osg::Material*>::iterator i;
+  for (i = _materialList.begin(); i != _materialList.end(); ++i) {
+    osg::Material* material = *i;
     if (_update & DIFFUSE) {
-        float *v = _diff.rgba();
-        SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
-        s->setColourMaterial(GL_DIFFUSE);
-        s->enable(GL_COLOR_MATERIAL);
-        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], alpha);
-        s->disable(GL_COLOR_MATERIAL);
+      osg::Vec4 v = _diff.rgba();
+      float alpha = material->getDiffuse(osg::Material::FRONT_AND_BACK)[3];
+      material->setColorMode(osg::Material::DIFFUSE);
+      material->setDiffuse(osg::Material::FRONT_AND_BACK,
+                           osg::Vec4(v[0], v[1], v[2], alpha));
     }
     if (_update & AMBIENT) {
-        s->setColourMaterial(GL_AMBIENT);
-        s->enable(GL_COLOR_MATERIAL);
-        s->setMaterial(GL_AMBIENT, _amb.rgba());
-        s->disable(GL_COLOR_MATERIAL);
+      material->setColorMode(osg::Material::AMBIENT);
+      material->setDiffuse(osg::Material::FRONT_AND_BACK, _amb.rgba());
     }
     if (_update & EMISSION)
-        s->setMaterial(GL_EMISSION, _emis.rgba());
+      material->setEmission(osg::Material::FRONT_AND_BACK, _emis.rgba());
     if (_update & SPECULAR)
-        s->setMaterial(GL_SPECULAR, _spec.rgba());
+      material->setSpecular(osg::Material::FRONT_AND_BACK, _spec.rgba());
     if (_update & SHININESS)
-        s->setShininess(clamp(_shi, 0.0, 128.0));
+      material->setShininess(osg::Material::FRONT_AND_BACK,
+                             clamp(_shi, 0.0, 128.0));
     if (_update & TRANSPARENCY) {
-        SGfloat *v = s->getMaterial(GL_DIFFUSE);
-        float trans = _trans.value * _trans.factor + _trans.offset;
-        trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
-        s->setMaterial(GL_DIFFUSE, v[0], v[1], v[2], trans);
+      osg::Vec4 v = material->getDiffuse(osg::Material::FRONT_AND_BACK);
+      float trans = _trans.value * _trans.factor + _trans.offset;
+      trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
+      material->setDiffuse(osg::Material::FRONT_AND_BACK,
+                           osg::Vec4(v[0], v[1], v[2], trans));
     }
     if (_update & THRESHOLD)
-        s->setAlphaClamp(clamp(_thresh));
-    if (_update & TEXTURE)
-        s->setTexture(_texture.c_str());
-    if (_update & (TEXTURE|TRANSPARENCY)) {
-        SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
-        ssgTexture *tex = s->getTexture();
-        if ((tex && tex->hasAlpha()) || alpha < 0.999) {
-            s->setColourMaterial(GL_DIFFUSE);
-            s->enable(GL_COLOR_MATERIAL);
-            s->enable(GL_BLEND);
-            s->enable(GL_ALPHA_TEST);
-            s->setTranslucent();
-            s->disable(GL_COLOR_MATERIAL);
-        } else {
-            s->disable(GL_BLEND);
-            s->disable(GL_ALPHA_TEST);
-            s->setOpaque();
-        }
-    }
-    s->force();
+        _alphaFunc->setReferenceValue(clamp(_thresh));
+    // OSGFIXME
+//     if (_update & TEXTURE)
+//         s->setTexture(_texture.c_str());
+//     if (_update & (TEXTURE|TRANSPARENCY)) {
+//         SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
+//         ssgTexture *tex = s->getTexture();
+//         if ((tex && tex->hasAlpha()) || alpha < 0.999) {
+//             s->setColourMaterial(GL_DIFFUSE);
+//             s->enable(GL_COLOR_MATERIAL);
+//             s->enable(GL_BLEND);
+//             s->enable(GL_ALPHA_TEST);
+//             s->setTranslucent();
+//             s->disable(GL_COLOR_MATERIAL);
+//         } else {
+//             s->disable(GL_BLEND);
+//             s->disable(GL_ALPHA_TEST);
+//             s->setOpaque();
+//         }
+//     }
+  }
 }
 
 
@@ -1423,70 +1482,106 @@ void SGMaterialAnimation::setMaterialBranch(ssgBranch *b)
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGFlashAnimation
 ////////////////////////////////////////////////////////////////////////
+class SGFlashAnimationTransform : public osg::Transform {
+public:
+  SGFlashAnimationTransform(SGPropertyNode* props)
+  {
+    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
+
+    _axis[0] = props->getFloatValue("axis/x", 0);
+    _axis[1] = props->getFloatValue("axis/y", 0);
+    _axis[2] = props->getFloatValue("axis/z", 1);
+    _axis.normalize();
+    
+    _center[0] = props->getFloatValue("center/x-m", 0);
+    _center[1] = props->getFloatValue("center/y-m", 0);
+    _center[2] = props->getFloatValue("center/z-m", 0);
+    
+    _offset = props->getFloatValue("offset", 0.0);
+    _factor = props->getFloatValue("factor", 1.0);
+    _power = props->getFloatValue("power", 1.0);
+    _two_sides = props->getBoolValue("two-sides", false);
+    
+    _min_v = props->getFloatValue("min", 0.0);
+    _max_v = props->getFloatValue("max", 1.0);
+  }
+
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    double scale_factor = computeScaleFactor(nv);
+    osg::Matrix transform;
+    transform(0,0) = scale_factor;
+    transform(1,1) = scale_factor;
+    transform(2,2) = scale_factor;
+    transform(3,0) = _center[0] * ( 1 - scale_factor );
+    transform(3,1) = _center[1] * ( 1 - scale_factor );
+    transform(3,2) = _center[2] * ( 1 - scale_factor );
+    if (_referenceFrame == RELATIVE_RF)
+      matrix.preMult(transform);
+    else
+      matrix = transform;
+
+    return true;
+  }
+  
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    double scale_factor = computeScaleFactor(nv);
+    if (fabs(scale_factor) <= std::numeric_limits<double>::min())
+      return false;
+    osg::Matrix transform;
+    double rScaleFactor = 1/scale_factor;
+    transform(0,0) = rScaleFactor;
+    transform(1,1) = rScaleFactor;
+    transform(2,2) = rScaleFactor;
+    transform(3,0) = rScaleFactor*_center[0] * ( scale_factor - 1 );
+    transform(3,1) = rScaleFactor*_center[1] * ( scale_factor - 1 );
+    transform(3,2) = rScaleFactor*_center[2] * ( scale_factor - 1 );
+    if (_referenceFrame == RELATIVE_RF)
+      matrix.postMult(transform);
+    else
+      matrix = transform;
+    return true;
+  }
+
+  double computeScaleFactor(osg::NodeVisitor* nv) const
+  {
+    if (!nv)
+      return 1;
+
+    osg::Vec3 localEyeToCenter = nv->getEyePoint() - _center;
+    localEyeToCenter.normalize();
+
+    double cos_angle = localEyeToCenter*_axis;
+    double scale_factor = 0;
+    if ( _two_sides && cos_angle < 0 )
+      scale_factor = _factor * pow( -cos_angle, _power ) + _offset;
+    else if ( cos_angle > 0 )
+      scale_factor = _factor * pow( cos_angle, _power ) + _offset;
+    
+    if ( scale_factor < _min_v )
+      scale_factor = _min_v;
+    if ( scale_factor > _max_v )
+      scale_factor = _max_v;
+
+    return scale_factor;
+  }
+
+private:
+  osg::Vec3 _axis, _center;
+  double _power, _factor, _offset, _min_v, _max_v;
+  bool _two_sides;
+};
+
 SGFlashAnimation::SGFlashAnimation(SGPropertyNode_ptr props)
-  : SGAnimation( props, new SGCustomTransform )
+  : SGAnimation( props, new SGFlashAnimationTransform(props) )
 {
-  _axis[0] = props->getFloatValue("axis/x", 0);
-  _axis[1] = props->getFloatValue("axis/y", 0);
-  _axis[2] = props->getFloatValue("axis/z", 1);
-
-  _center[0] = props->getFloatValue("center/x-m", 0);
-  _center[1] = props->getFloatValue("center/y-m", 0);
-  _center[2] = props->getFloatValue("center/z-m", 0);
-
-  _offset = props->getFloatValue("offset", 0.0);
-  _factor = props->getFloatValue("factor", 1.0);
-  _power = props->getFloatValue("power", 1.0);
-  _two_sides = props->getBoolValue("two-sides", false);
-
-  _min_v = props->getFloatValue("min", 0.0);
-  _max_v = props->getFloatValue("max", 1.0);
-
-  ((SGCustomTransform *)_branch)->setTransCallback( &SGFlashAnimation::flashCallback, this );
 }
 
 SGFlashAnimation::~SGFlashAnimation()
 {
-}
-
-void SGFlashAnimation::flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d )
-{
-  ((SGFlashAnimation *)d)->flashCallback( r, f, m );
-}
-
-void SGFlashAnimation::flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
-{
-  sgVec3 transformed_axis;
-  sgXformVec3( transformed_axis, _axis, m );
-  sgNormalizeVec3( transformed_axis );
-
-  sgVec3 view;
-  sgFullXformPnt3( view, _center, m );
-  sgNormalizeVec3( view );
-
-  float cos_angle = -sgScalarProductVec3( transformed_axis, view );
-  float scale_factor = 0.f;
-  if ( _two_sides && cos_angle < 0 )
-    scale_factor = _factor * (float)pow( -cos_angle, _power ) + _offset;
-  else if ( cos_angle > 0 )
-    scale_factor = _factor * (float)pow( cos_angle, _power ) + _offset;
-
-  if ( scale_factor < _min_v )
-      scale_factor = _min_v;
-  if ( scale_factor > _max_v )
-      scale_factor = _max_v;
-
-  sgMat4 transform;
-  sgMakeIdentMat4( transform );
-  transform[0][0] = scale_factor;
-  transform[1][1] = scale_factor;
-  transform[2][2] = scale_factor;
-  transform[3][0] = _center[0] * ( 1 - scale_factor );
-  transform[3][1] = _center[1] * ( 1 - scale_factor );
-  transform[3][2] = _center[2] * ( 1 - scale_factor );
-
-  sgCopyMat4( r, m );
-  sgPreMultMat4( r, transform );
 }
 
 
@@ -1494,59 +1589,102 @@ void SGFlashAnimation::flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGDistScaleAnimation
 ////////////////////////////////////////////////////////////////////////
-SGDistScaleAnimation::SGDistScaleAnimation(SGPropertyNode_ptr props)
-  : SGAnimation( props, new SGCustomTransform ),
-    _factor(props->getFloatValue("factor", 1.0)),
-    _offset(props->getFloatValue("offset", 0.0)),
-    _min_v(props->getFloatValue("min", 0.0)),
-    _max_v(props->getFloatValue("max", 1.0)),
-    _has_min(props->hasValue("min")),
-    _has_max(props->hasValue("max")),
-    _table(read_interpolation_table(props))
-{
-  _center[0] = props->getFloatValue("center/x-m", 0);
-  _center[1] = props->getFloatValue("center/y-m", 0);
-  _center[2] = props->getFloatValue("center/z-m", 0);
+class SGDistScaleTransform : public osg::Transform {
+public:
+  SGDistScaleTransform(SGPropertyNode* props)
+  {
+    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
 
-  ((SGCustomTransform *)_branch)->setTransCallback( &SGDistScaleAnimation::distScaleCallback, this );
+    _factor = props->getFloatValue("factor", 1.0);
+    _offset = props->getFloatValue("offset", 0.0);
+    _min_v = props->getFloatValue("min", 0.0);
+    _max_v = props->getFloatValue("max", 1.0);
+    _has_min = props->hasValue("min");
+    _has_max = props->hasValue("max");
+    _table = read_interpolation_table(props);
+    _center[0] = props->getFloatValue("center/x-m", 0);
+    _center[1] = props->getFloatValue("center/y-m", 0);
+    _center[2] = props->getFloatValue("center/z-m", 0);
+  }
+  ~SGDistScaleTransform()
+  {
+    delete _table;
+  }
+
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    osg::Matrix transform;
+    double scale_factor = computeScaleFactor(nv);
+    transform(0,0) = scale_factor;
+    transform(1,1) = scale_factor;
+    transform(2,2) = scale_factor;
+    transform(3,0) = _center[0] * ( 1 - scale_factor );
+    transform(3,1) = _center[1] * ( 1 - scale_factor );
+    transform(3,2) = _center[2] * ( 1 - scale_factor );
+    if (_referenceFrame == RELATIVE_RF)
+      matrix.preMult(transform);
+    else
+      matrix = transform;
+    return true;
+  }
+  
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    double scale_factor = computeScaleFactor(nv);
+    if (fabs(scale_factor) <= std::numeric_limits<double>::min())
+      return false;
+    osg::Matrix transform;
+    double rScaleFactor = 1/scale_factor;
+    transform(0,0) = rScaleFactor;
+    transform(1,1) = rScaleFactor;
+    transform(2,2) = rScaleFactor;
+    transform(3,0) = rScaleFactor*_center[0] * ( scale_factor - 1 );
+    transform(3,1) = rScaleFactor*_center[1] * ( scale_factor - 1 );
+    transform(3,2) = rScaleFactor*_center[2] * ( scale_factor - 1 );
+    if (_referenceFrame == RELATIVE_RF)
+      matrix.postMult(transform);
+    else
+      matrix = transform;
+    return true;
+  }
+
+  double computeScaleFactor(osg::NodeVisitor* nv) const
+  {
+    if (!nv)
+      return 1;
+
+    osg::Vec3 localEyeToCenter = _center - nv->getEyePoint();
+    double scale_factor = localEyeToCenter.length();
+    if (_table == 0) {
+      scale_factor = _factor * scale_factor + _offset;
+      if ( _has_min && scale_factor < _min_v )
+        scale_factor = _min_v;
+      if ( _has_max && scale_factor > _max_v )
+        scale_factor = _max_v;
+    } else {
+      scale_factor = _table->interpolate( scale_factor );
+    }
+
+    return scale_factor;
+  }
+
+
+private:
+  osg::Vec3 _center;
+  float _factor, _offset, _min_v, _max_v;
+  bool _has_min, _has_max;
+  SGInterpTable * _table;
+};
+
+SGDistScaleAnimation::SGDistScaleAnimation(SGPropertyNode_ptr props)
+  : SGAnimation( props, new SGDistScaleTransform(props) )
+{
 }
 
 SGDistScaleAnimation::~SGDistScaleAnimation()
 {
-}
-
-void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d )
-{
-  ((SGDistScaleAnimation *)d)->distScaleCallback( r, f, m );
-}
-
-void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
-{
-  sgVec3 view;
-  sgFullXformPnt3( view, _center, m );
-
-  float scale_factor = sgLengthVec3( view );
-  if (_table == 0) {
-    scale_factor = _factor * scale_factor + _offset;
-    if ( _has_min && scale_factor < _min_v )
-      scale_factor = _min_v;
-    if ( _has_max && scale_factor > _max_v )
-      scale_factor = _max_v;
-  } else {
-    scale_factor = _table->interpolate( scale_factor );
-  }
-
-  sgMat4 transform;
-  sgMakeIdentMat4( transform );
-  transform[0][0] = scale_factor;
-  transform[1][1] = scale_factor;
-  transform[2][2] = scale_factor;
-  transform[3][0] = _center[0] * ( 1 - scale_factor );
-  transform[3][1] = _center[1] * ( 1 - scale_factor );
-  transform[3][2] = _center[2] * ( 1 - scale_factor );
-
-  sgCopyMat4( r, m );
-  sgPreMultMat4( r, transform );
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1554,34 +1692,40 @@ void SGDistScaleAnimation::distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m )
 ////////////////////////////////////////////////////////////////////////
 
 SGShadowAnimation::SGShadowAnimation ( SGPropertyNode *prop_root,
-                   SGPropertyNode_ptr props )
-  : SGAnimation(props, new ssgBranch),
+                                       SGPropertyNode_ptr props )
+  : SGAnimation(props, new osg::Group),
     _condition(0),
-	_condition_value(true)
+    _condition_value(true)
 {
-	animation_type = 1;
-	SGPropertyNode_ptr node = props->getChild("condition");
-	if (node != 0) {
-		_condition = sgReadCondition(prop_root, node);
-		_condition_value = false;
-	}
+    animation_type = 1;
+    SGPropertyNode_ptr node = props->getChild("condition");
+    if (node != 0) {
+        _condition = sgReadCondition(prop_root, node);
+        _condition_value = false;
+    }
 }
 
 SGShadowAnimation::~SGShadowAnimation ()
 {
-	delete _condition;
+    delete _condition;
 }
 
 int
 SGShadowAnimation::update()
 {
-	if (_condition)
-		_condition_value = _condition->test();
-	return 2;
+    if (_condition)
+        _condition_value = _condition->test();
+
+    if ( _condition_value ) {
+        _branch->setNodeMask(SG_NODEMASK_SHADOW_BIT|_branch->getNodeMask());
+    } else {
+        _branch->setNodeMask(~SG_NODEMASK_SHADOW_BIT&_branch->getNodeMask());
+    }
+    return 2;
 }
 
 bool SGShadowAnimation::get_condition_value(void) {
-	return _condition_value;
+    return _condition_value;
 }
 
 // end of animation.cxx

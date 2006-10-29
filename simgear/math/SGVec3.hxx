@@ -18,9 +18,58 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
+#include <osg/Vec3f>
+#include <osg/Vec3d>
+
+template<typename T>
+struct SGVec3Storage {
+  /// Readonly raw storage interface
+  const T (&data(void) const)[3]
+  { return _data; }
+  /// Readonly raw storage interface
+  T (&data(void))[3]
+  { return _data; }
+
+  void osg() const
+  { }
+
+private:
+  T _data[3];
+};
+
+template<>
+struct SGVec3Storage<float> : public osg::Vec3f {
+  /// Access raw data by index, the index is unchecked
+  const float (&data(void) const)[3]
+  { return osg::Vec3f::_v; }
+  /// Access raw data by index, the index is unchecked
+  float (&data(void))[3]
+  { return osg::Vec3f::_v; }
+
+  const osg::Vec3f& osg() const
+  { return *this; }
+  osg::Vec3f& osg()
+  { return *this; }
+};
+
+template<>
+struct SGVec3Storage<double> : public osg::Vec3d {
+  /// Access raw data by index, the index is unchecked
+  const double (&data(void) const)[3]
+  { return osg::Vec3d::_v; }
+  /// Access raw data by index, the index is unchecked
+  double (&data(void))[3]
+  { return osg::Vec3d::_v; }
+
+  const osg::Vec3d& osg() const
+  { return *this; }
+  osg::Vec3d& osg()
+  { return *this; }
+};
+
 /// 3D Vector Class
 template<typename T>
-class SGVec3 {
+class SGVec3 : protected SGVec3Storage<T> {
 public:
   typedef T value_type;
 
@@ -33,74 +82,77 @@ public:
     /// uninitialized values in the debug build very fast ...
 #ifndef NDEBUG
     for (unsigned i = 0; i < 3; ++i)
-      _data[i] = SGLimits<T>::quiet_NaN();
+      data()[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
   /// Constructor. Initialize by the given values
   SGVec3(T x, T y, T z)
-  { _data[0] = x; _data[1] = y; _data[2] = z; }
+  { data()[0] = x; data()[1] = y; data()[2] = z; }
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
-  explicit SGVec3(const T* data)
-  { _data[0] = data[0]; _data[1] = data[1]; _data[2] = data[2]; }
+  explicit SGVec3(const T* d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
+  explicit SGVec3(const osg::Vec3f& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
+  explicit SGVec3(const osg::Vec3d& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access by index, the index is unchecked
   T& operator()(unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access raw data by index, the index is unchecked
   const T& operator[](unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access raw data by index, the index is unchecked
   T& operator[](unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access the x component
   const T& x(void) const
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the x component
   T& x(void)
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the y component
   const T& y(void) const
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the y component
   T& y(void)
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the z component
   const T& z(void) const
-  { return _data[2]; }
+  { return data()[2]; }
   /// Access the z component
   T& z(void)
-  { return _data[2]; }
+  { return data()[2]; }
 
   /// Get the data pointer
-  const T* data(void) const
-  { return _data; }
-  /// Get the data pointer
-  T* data(void)
-  { return _data; }
+  using SGVec3Storage<T>::data;
 
   /// Readonly interface function to ssg's sgVec3/sgdVec3
   const T (&sg(void) const)[3]
-  { return _data; }
+  { return data(); }
   /// Interface function to ssg's sgVec3/sgdVec3
   T (&sg(void))[3]
-  { return _data; }
+  { return data(); }
+
+  /// Interface function to osg's Vec3*
+  using SGVec3Storage<T>::osg;
 
   /// Inplace addition
   SGVec3& operator+=(const SGVec3& v)
-  { _data[0] += v(0); _data[1] += v(1); _data[2] += v(2); return *this; }
+  { data()[0] += v(0); data()[1] += v(1); data()[2] += v(2); return *this; }
   /// Inplace subtraction
   SGVec3& operator-=(const SGVec3& v)
-  { _data[0] -= v(0); _data[1] -= v(1); _data[2] -= v(2); return *this; }
+  { data()[0] -= v(0); data()[1] -= v(1); data()[2] -= v(2); return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGVec3& operator*=(S s)
-  { _data[0] *= s; _data[1] *= s; _data[2] *= s; return *this; }
+  { data()[0] *= s; data()[1] *= s; data()[2] *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGVec3& operator/=(S s)
@@ -123,10 +175,6 @@ public:
   /// Constructor. Initialize by a geocentric coordinate
   /// Note that this conversion is relatively expensive to compute
   static SGVec3 fromGeoc(const SGGeoc& geoc);
-
-private:
-  /// The actual data
-  T _data[3];
 };
 
 template<>

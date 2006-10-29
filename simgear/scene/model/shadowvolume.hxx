@@ -24,11 +24,7 @@
 #define _SHADOWVOLUME_HXX
 
 #include <simgear/compiler.h>
-#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/props/props.hxx>
-
-#include <plib/ssg.h>
-#include <plib/sg.h>
 
 #include <vector>
 #include <map>

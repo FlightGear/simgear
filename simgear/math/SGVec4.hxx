@@ -18,9 +18,58 @@
 #ifndef SGVec4_H
 #define SGVec4_H
 
+#include <osg/Vec4f>
+#include <osg/Vec4d>
+
+template<typename T>
+struct SGVec4Storage {
+  /// Readonly raw storage interface
+  const T (&data(void) const)[4]
+  { return _data; }
+  /// Readonly raw storage interface
+  T (&data(void))[4]
+  { return _data; }
+
+  void osg() const
+  { }
+
+private:
+  T _data[4];
+};
+
+template<>
+struct SGVec4Storage<float> : public osg::Vec4f {
+  /// Access raw data by index, the index is unchecked
+  const float (&data(void) const)[4]
+  { return osg::Vec4f::_v; }
+  /// Access raw data by index, the index is unchecked
+  float (&data(void))[4]
+  { return osg::Vec4f::_v; }
+
+  const osg::Vec4f& osg() const
+  { return *this; }
+  osg::Vec4f& osg()
+  { return *this; }
+};
+
+template<>
+struct SGVec4Storage<double> : public osg::Vec4d {
+  /// Access raw data by index, the index is unchecked
+  const double (&data(void) const)[4]
+  { return osg::Vec4d::_v; }
+  /// Access raw data by index, the index is unchecked
+  double (&data(void))[4]
+  { return osg::Vec4d::_v; }
+
+  const osg::Vec4d& osg() const
+  { return *this; }
+  osg::Vec4d& osg()
+  { return *this; }
+};
+
 /// 4D Vector Class
 template<typename T>
-class SGVec4 {
+class SGVec4 : protected SGVec4Storage<T> {
 public:
   typedef T value_type;
 
@@ -33,82 +82,84 @@ public:
     /// uninitialized values in the debug build very fast ...
 #ifndef NDEBUG
     for (unsigned i = 0; i < 4; ++i)
-      _data[i] = SGLimits<T>::quiet_NaN();
+      data()[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
   /// Constructor. Initialize by the given values
   SGVec4(T x, T y, T z, T w)
-  { _data[0] = x; _data[1] = y; _data[2] = z; _data[3] = w; }
+  { data()[0] = x; data()[1] = y; data()[2] = z; data()[3] = w; }
   /// Constructor. Initialize by the content of a plain array,
   /// make sure it has at least 3 elements
   explicit SGVec4(const T* d)
-  { _data[0] = d[0]; _data[1] = d[1]; _data[2] = d[2]; _data[3] = d[3]; }
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+  explicit SGVec4(const osg::Vec4f& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+  explicit SGVec4(const osg::Vec4d& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
 
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access by index, the index is unchecked
   T& operator()(unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access raw data by index, the index is unchecked
   const T& operator[](unsigned i) const
-  { return _data[i]; }
+  { return data()[i]; }
   /// Access raw data by index, the index is unchecked
   T& operator[](unsigned i)
-  { return _data[i]; }
+  { return data()[i]; }
 
   /// Access the x component
   const T& x(void) const
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the x component
   T& x(void)
-  { return _data[0]; }
+  { return data()[0]; }
   /// Access the y component
   const T& y(void) const
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the y component
   T& y(void)
-  { return _data[1]; }
+  { return data()[1]; }
   /// Access the z component
   const T& z(void) const
-  { return _data[2]; }
+  { return data()[2]; }
   /// Access the z component
   T& z(void)
-  { return _data[2]; }
+  { return data()[2]; }
   /// Access the x component
   const T& w(void) const
-  { return _data[3]; }
+  { return data()[3]; }
   /// Access the x component
   T& w(void)
-  { return _data[3]; }
+  { return data()[3]; }
 
+  /// Get the data pointer
+  using SGVec4Storage<T>::data;
 
-  /// Get the data pointer, usefull for interfacing with plib's sg*Vec
-  const T* data(void) const
-  { return _data; }
-  /// Get the data pointer, usefull for interfacing with plib's sg*Vec
-  T* data(void)
-  { return _data; }
-
-  /// Readonly interface function to ssg's sgVec3/sgdVec3
+  /// Readonly interface function to ssg's sgVec4/sgdVec4
   const T (&sg(void) const)[4]
-  { return _data; }
-  /// Interface function to ssg's sgVec3/sgdVec3
+  { return data(); }
+  /// Interface function to ssg's sgVec4/sgdVec4
   T (&sg(void))[4]
-  { return _data; }
+  { return data(); }
+
+  /// Interface function to osg's Vec4*
+  using SGVec4Storage<T>::osg;
 
   /// Inplace addition
   SGVec4& operator+=(const SGVec4& v)
-  { _data[0]+=v(0);_data[1]+=v(1);_data[2]+=v(2);_data[3]+=v(3);return *this; }
+  { data()[0]+=v(0);data()[1]+=v(1);data()[2]+=v(2);data()[3]+=v(3);return *this; }
   /// Inplace subtraction
   SGVec4& operator-=(const SGVec4& v)
-  { _data[0]-=v(0);_data[1]-=v(1);_data[2]-=v(2);_data[3]-=v(3);return *this; }
+  { data()[0]-=v(0);data()[1]-=v(1);data()[2]-=v(2);data()[3]-=v(3);return *this; }
   /// Inplace scalar multiplication
   template<typename S>
   SGVec4& operator*=(S s)
-  { _data[0] *= s; _data[1] *= s; _data[2] *= s; _data[3] *= s; return *this; }
+  { data()[0] *= s; data()[1] *= s; data()[2] *= s; data()[3] *= s; return *this; }
   /// Inplace scalar multiplication by 1/s
   template<typename S>
   SGVec4& operator/=(S s)
@@ -126,10 +177,6 @@ public:
   { return SGVec4(0, 0, 1, 0); }
   static SGVec4 e4(void)
   { return SGVec4(0, 0, 0, 1); }
-
-private:
-  /// The actual data
-  T _data[4];
 };
 
 /// Unary +, do nothing ...

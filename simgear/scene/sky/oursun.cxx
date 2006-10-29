@@ -30,77 +30,20 @@
 
 #include <simgear/compiler.h>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
-
-// define the following to enable a cheesy lens flare effect for the sun
-// #define FG_TEST_CHEESY_LENS_FLARE
-
-#ifdef FG_TEST_CHEESY_LENS_FLARE
-#  include <plib/ssgaLensFlare.h>
-#endif
+#include <osg/AlphaFunc>
+#include <osg/BlendFunc>
+#include <osg/Fog>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Material>
+#include <osg/ShadeModel>
+#include <osg/TexEnv>
+#include <osg/Texture2D>
+#include <osgDB/ReadFile>
 
 #include <simgear/screen/colors.hxx>
+#include <simgear/scene/model/model.hxx>
 #include "oursun.hxx"
-
-
-static double sun_exp2_punch_through;
-
-// Set up sun rendering call backs
-static int sgSunPreDraw( ssgEntity *e ) {
-    /* cout << endl << "Sun orb pre draw" << endl << "----------------" 
-	 << endl << endl; */
-
-    ssgLeaf *f = (ssgLeaf *)e;
-    if ( f -> hasState () ) f->getState()->apply() ;
-
-    glPushAttrib( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
-    // cout << "push error = " << glGetError() << endl;
-
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_FOG );
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
-    return true;
-}
-
-static int sgSunPostDraw( ssgEntity *e ) {
-    /* cout << endl << "Sun orb post draw" << endl << "----------------" 
-	 << endl << endl; */
-
-    glPopAttrib();
-    // cout << "pop error = " << glGetError() << endl;
-
-    return true;
-}
-
-static int sgSunHaloPreDraw( ssgEntity *e ) {
-    /* cout << endl << "Sun halo pre draw" << endl << "----------------" 
-	 << endl << endl; */
-
-    ssgLeaf *f = (ssgLeaf *)e;
-    if ( f -> hasState () ) f->getState()->apply() ;
-
-    glPushAttrib( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_FOG_BIT );
-    // cout << "push error = " << glGetError() << endl;
-
-    glDisable( GL_DEPTH_TEST );
-    // glDisable( GL_FOG );
-    glFogf (GL_FOG_DENSITY, sun_exp2_punch_through);
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
-
-    return true;
-}
-
-static int sgSunHaloPostDraw( ssgEntity *e ) {
-    /* cout << endl << "Sun halo post draw" << endl << "----------------" 
-	 << endl << endl; */
-
-    glPopAttrib();
-    // cout << "pop error = " << glGetError() << endl;
-
-    return true;
-}
-
 
 // Constructor
 SGSun::SGSun( void ) {
@@ -114,308 +57,170 @@ SGSun::~SGSun( void ) {
 }
 
 
-#if 0
-// this might be nice to keep, just as an example of how to generate a
-// texture on the fly ...
-static GLuint makeHalo( GLubyte *sun_texbuf, int width ) {
-    int texSize;
-    GLuint texid;
-    GLubyte *p;
-    int i,j;
-    double radius;
-  
-    // create a texture id
-#ifdef GL_VERSION_1_1
-    glGenTextures(1, &texid);
-    glBindTexture(GL_TEXTURE_2D, texid);
-#elif GL_EXT_texture_object
-    glGenTexturesEXT(1, &texid);
-    glBindTextureEXT(GL_TEXTURE_2D, texid);
-#else
-#   error port me
-#endif
-
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 4 );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE ) ;
- 
-    // create the actual texture contents
-    texSize = width * width;
-  
-    if ( !sun_texbuf ) {
-        SG_LOG( SG_EVENT, SG_ALERT,
-                               "Could not allocate memroy for the sun texture");
-	exit(-1);  // Ugly!
-    }
-
-    p = sun_texbuf;
-  
-    radius = (double)(width / 2);
-  
-    GLubyte value;
-    double x, y, d;
-    for ( i = 0; i < width; i++ ) {
-	for ( j = 0; j < width; j++ ) {
-	    x = fabs((double)(i - (width / 2)));
-	    y = fabs((double)(j - (width / 2)));
-	    d = sqrt((x * x) + (y * y));
-	    if (d < radius) {
-		// t is 1.0 at center, 0.0 at edge
-		double t = 1.0 - (d / radius);
-
-		// inverse square looks nice 
-		value = (int)((double) 0xff * (t*t));
-	    } else {
-		value = 0x00;
-	    }
-	    *p = value;
-	    *(p+1) = value;
-	    *(p+2) = value;
-	    // *(p+3) = value;
-
-	    p += 3;
-	}
-    }
-
-    /* glTexImage2D( GL_TEXTURE_2D,
-		  0,
-		  GL_RGBA,
-		  width, width,
-		  0,
-		  GL_RGBA, GL_UNSIGNED_BYTE,
-		  sun_texbuf ); */
-
-    return texid;
-}
-
-
-#define RGB  3			// 3 bytes of color info per pixel
-#define RGBA 4			// 4 bytes of color+alpha info
-void my_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int win_height, int mode)
-{
-    int i, j, k, q;
-    unsigned char *ibuffer;
-    FILE *fp;
-    int pixelSize = mode==GL_RGBA?4:3;
-
-    ibuffer = (unsigned char *) malloc(win_width*win_height*RGB);
-
-    fp = fopen(filename, "wb");
-    fprintf(fp, "P6\n# CREATOR: glReadPixel()\n%d %d\n%d\n",
-	    win_width, win_height, UCHAR_MAX);
-    q = 0;
-    for (i = 0; i < win_height; i++) {
-	for (j = 0; j < win_width; j++) {
-	    for (k = 0; k < RGB; k++) {
-		ibuffer[q++] = (unsigned char)
-		    *(buffer + (pixelSize*((win_height-1-i)*win_width+j)+k));
-	    }
-	}
-    }
-
-    // *(buffer + (pixelSize*((win_height-1-i)*win_width+j)+k));
-
-    fwrite(ibuffer, sizeof(unsigned char), RGB*win_width*win_height, fp);
-    fclose(fp);
-    free(ibuffer);
-
-    printf("wrote file (%d x %d pixels, %d bytes)\n",
-	   win_width, win_height, RGB*win_width*win_height);
-}
-#endif
-
 // initialize the sun object and connect it into our scene graph root
-ssgBranch * SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node ) {
+osg::Node*
+SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node ) {
 
     env_node = property_tree_Node;
 
     SGPath ihalopath = path, ohalopath = path;
 
-    sgVec4 color;
-    sgSetVec4( color, 1.0, 1.0, 1.0, 1.0 );
+    // build the ssg scene graph sub tree for the sky and connected
+    // into the provide scene graph branch
+    sun_transform = new osg::MatrixTransform;
+    osg::StateSet* stateSet = sun_transform->getOrCreateStateSet();
 
-    sun_cl = new ssgColourArray( 1 );
-    sun_cl->add( color );
+    osg::TexEnv* texEnv = new osg::TexEnv;
+    texEnv->setMode(osg::TexEnv::MODULATE);
+    stateSet->setTextureAttribute(0, texEnv, osg::StateAttribute::ON);
+ 
+    osg::Material* material = new osg::Material;
+    material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+    material->setEmission(osg::Material::FRONT_AND_BACK,
+                          osg::Vec4(0, 0, 0, 1));
+    material->setSpecular(osg::Material::FRONT_AND_BACK,
+                          osg::Vec4(0, 0, 0, 1));
+    stateSet->setAttributeAndModes(material);
 
-    ihalo_cl = new ssgColourArray( 1 );
-    ihalo_cl->add( color );
+    osg::ShadeModel* shadeModel = new osg::ShadeModel;
+    shadeModel->setMode(osg::ShadeModel::FLAT);
+    stateSet->setAttributeAndModes(shadeModel);
 
-    ohalo_cl = new ssgColourArray( 1 );
-    ohalo_cl->add( color );
+    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+    alphaFunc->setFunction(osg::AlphaFunc::GREATER);
+    alphaFunc->setReferenceValue(0.01);
+    stateSet->setAttributeAndModes(alphaFunc);
 
-    // force a repaint of the sun colors with arbitrary defaults
-    repaint( 0.0, 1.0 );
+    osg::BlendFunc* blendFunc = new osg::BlendFunc;
+    blendFunc->setSource(osg::BlendFunc::SRC_ALPHA);
+    blendFunc->setDestination(osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
+    stateSet->setAttributeAndModes(blendFunc);
 
+    stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+
+
+    osg::Geode* geode = new osg::Geode;
+    stateSet = geode->getOrCreateStateSet();
+
+    stateSet->setRenderBinDetails(-8, "RenderBin");
 
     // set up the sun-state
     path.append( "sun.rgba" );
-    sun_state = new ssgSimpleState();
-    sun_state->setShadeModel( GL_SMOOTH );
-    sun_state->disable( GL_LIGHTING );
-    sun_state->disable( GL_CULL_FACE );
-    sun_state->setTexture( (char *)path.c_str() );
-    sun_state->enable( GL_TEXTURE_2D );
-    sun_state->enable( GL_COLOR_MATERIAL );
-    sun_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    sun_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    sun_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-    sun_state->enable( GL_BLEND );
-    sun_state->setAlphaClamp( 0.01 );
-    sun_state->enable( GL_ALPHA_TEST );
+    osg::Texture2D* texture = SGLoadTexture2D(path);
+    stateSet->setTextureAttributeAndModes(0, texture);
 
-    // Build ssg structure
-    
-   sgVec3 va;
-   sun_vl = new ssgVertexArray;
-   sgSetVec3( va, -sun_size, 0.0, -sun_size );
-   sun_vl->add( va );
-   sgSetVec3( va, sun_size, 0.0, -sun_size );
-   sun_vl->add( va );
-   sgSetVec3( va, -sun_size, 0.0,  sun_size );
-   sun_vl->add( va );
-   sgSetVec3( va, sun_size, 0.0,  sun_size );
-   sun_vl->add( va );
+    // Build scenegraph
+    sun_cl = new osg::Vec4Array;
+    sun_cl->push_back(osg::Vec4(1, 1, 1, 1));
 
-   sgVec2 vb;
-   sun_tl = new ssgTexCoordArray;
-   sgSetVec2( vb, 0.0f, 0.0f );
-   sun_tl->add( vb );
-   sgSetVec2( vb, 1.0, 0.0 );
-   sun_tl->add( vb );
-   sgSetVec2( vb, 0.0, 1.0 );
-   sun_tl->add( vb );
-   sgSetVec2( vb, 1.0, 1.0 );
-   sun_tl->add( vb );
+    osg::Vec3Array* sun_vl = new osg::Vec3Array;
+    sun_vl->push_back(osg::Vec3(-sun_size, 0, -sun_size));
+    sun_vl->push_back(osg::Vec3(sun_size, 0, -sun_size));
+    sun_vl->push_back(osg::Vec3(-sun_size, 0, sun_size));
+    sun_vl->push_back(osg::Vec3(sun_size, 0, sun_size));
 
+    osg::Vec2Array* sun_tl = new osg::Vec2Array;
+    sun_tl->push_back(osg::Vec2(0, 0));
+    sun_tl->push_back(osg::Vec2(1, 0));
+    sun_tl->push_back(osg::Vec2(0, 1));
+    sun_tl->push_back(osg::Vec2(1, 1));
 
-   ssgLeaf *sun = 
-	new ssgVtxTable ( GL_TRIANGLE_STRIP, sun_vl, NULL, sun_tl, sun_cl );
-   sun->setState( sun_state );
+    osg::Geometry* geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setVertexArray(sun_vl);
+    geometry->setColorArray(sun_cl.get());
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setTexCoordArray(0, sun_tl);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    geode->addDrawable(geometry);
 
-   sun->setCallback( SSG_CALLBACK_PREDRAW, sgSunPreDraw );
-   sun->setCallback( SSG_CALLBACK_POSTDRAW, sgSunPostDraw );
-    
+    sun_transform->addChild( geode );
 
-
-    // build the halo
-    // sun_texbuf = new GLubyte[64*64*3];
-    // sun_texid = makeHalo( sun_texbuf, 64 );
-    // my_glWritePPMFile("sunhalo.ppm", sun_texbuf, 64, 64, RGB);
 
     // set up the inner-halo state
-
-   ihalopath.append( "inner_halo.rgba" );
-
-   ihalo_state = new ssgSimpleState();
-   ihalo_state->setTexture( (char *)ihalopath.c_str() );
-   ihalo_state->enable( GL_TEXTURE_2D );
-   ihalo_state->disable( GL_LIGHTING );
-   ihalo_state->setShadeModel( GL_SMOOTH );
-   ihalo_state->disable( GL_CULL_FACE );
-   ihalo_state->enable( GL_COLOR_MATERIAL );
-   ihalo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-   ihalo_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-   ihalo_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-   ihalo_state->enable( GL_ALPHA_TEST );
-   ihalo_state->setAlphaClamp(0.01);
-   ihalo_state->enable ( GL_BLEND ) ;
+    geode = new osg::Geode;
+    stateSet = geode->getOrCreateStateSet();
+    stateSet->setRenderBinDetails(-7, "RenderBin");
+    
+    ihalopath.append( "inner_halo.rgba" );
+    texture = SGLoadTexture2D(path);
+    stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
-    double ihalo_size = sun_size * 2.0;
-    sgVec3 vc;
-    ihalo_vl = new ssgVertexArray;
-    sgSetVec3( vc, -ihalo_size, 0.0, -ihalo_size );
-    ihalo_vl->add( vc );
-    sgSetVec3( vc, ihalo_size, 0.0, -ihalo_size );
-    ihalo_vl->add( vc );
-    sgSetVec3( vc, -ihalo_size, 0.0,  ihalo_size );
-    ihalo_vl->add( vc );
-    sgSetVec3( vc, ihalo_size, 0.0,  ihalo_size );
-    ihalo_vl->add( vc );
+    ihalo_cl = new osg::Vec4Array;
+    ihalo_cl->push_back(osg::Vec4(1, 1, 1, 1));
 
-    sgVec2 vd;
-    ihalo_tl = new ssgTexCoordArray;
-    sgSetVec2( vd, 0.0f, 0.0f );
-    ihalo_tl->add( vd );
-    sgSetVec2( vd, 1.0, 0.0 );
-    ihalo_tl->add( vd );
-    sgSetVec2( vd, 0.0, 1.0 );
-    ihalo_tl->add( vd );
-    sgSetVec2( vd, 1.0, 1.0 );
-    ihalo_tl->add( vd );
+    float ihalo_size = sun_size * 2.0;
+    osg::Vec3Array* ihalo_vl = new osg::Vec3Array;
+    ihalo_vl->push_back(osg::Vec3(-ihalo_size, 0, -ihalo_size));
+    ihalo_vl->push_back(osg::Vec3(ihalo_size, 0, -ihalo_size));
+    ihalo_vl->push_back(osg::Vec3(-ihalo_size, 0, ihalo_size));
+    ihalo_vl->push_back(osg::Vec3(ihalo_size, 0, ihalo_size));
 
-    ssgLeaf *ihalo =
-        new ssgVtxTable ( GL_TRIANGLE_STRIP, ihalo_vl, NULL, ihalo_tl, ihalo_cl );
-    ihalo->setState( ihalo_state );
+    osg::Vec2Array* ihalo_tl = new osg::Vec2Array;
+    ihalo_tl->push_back(osg::Vec2(0, 0));
+    ihalo_tl->push_back(osg::Vec2(1, 0));
+    ihalo_tl->push_back(osg::Vec2(0, 1));
+    ihalo_tl->push_back(osg::Vec2(1, 1));
+
+    geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setVertexArray(ihalo_vl);
+    geometry->setColorArray(ihalo_cl.get());
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setTexCoordArray(0, ihalo_tl);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    geode->addDrawable(geometry);
+
+    sun_transform->addChild( geode );
 
     
     // set up the outer halo state
     
+    geode = new osg::Geode;
+    stateSet = geode->getOrCreateStateSet();
+    stateSet->setRenderBinDetails(-6, "RenderBin");
+
     ohalopath.append( "outer_halo.rgba" );
-  
-    ohalo_state = new ssgSimpleState();
-    ohalo_state->setTexture( (char *)ohalopath.c_str() );
-    ohalo_state->enable( GL_TEXTURE_2D );
-    ohalo_state->disable( GL_LIGHTING );
-    ohalo_state->setShadeModel( GL_SMOOTH );
-    ohalo_state->disable( GL_CULL_FACE );
-    ohalo_state->enable( GL_COLOR_MATERIAL );
-    ohalo_state->setColourMaterial( GL_AMBIENT_AND_DIFFUSE );
-    ohalo_state->setMaterial( GL_EMISSION, 0, 0, 0, 1 );
-    ohalo_state->setMaterial( GL_SPECULAR, 0, 0, 0, 1 );
-    ohalo_state->enable( GL_ALPHA_TEST );
-    ohalo_state->setAlphaClamp(0.01);
-    ohalo_state->enable ( GL_BLEND ) ;
+    texture = SGLoadTexture2D(path);
+    stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
+    ohalo_cl = new osg::Vec4Array;
+    ohalo_cl->push_back(osg::Vec4(1, 1, 1, 1));
+
     double ohalo_size = sun_size * 7.0;
-    sgVec3 ve;
-    ohalo_vl = new ssgVertexArray;
-    sgSetVec3( ve, -ohalo_size, 0.0, -ohalo_size );
-    ohalo_vl->add( ve );
-    sgSetVec3( ve, ohalo_size, 0.0, -ohalo_size );
-    ohalo_vl->add( ve );
-    sgSetVec3( ve, -ohalo_size, 0.0,  ohalo_size );
-    ohalo_vl->add( ve );
-    sgSetVec3( ve, ohalo_size, 0.0,  ohalo_size );
-    ohalo_vl->add( ve );
+    osg::Vec3Array* ohalo_vl = new osg::Vec3Array;
+    ohalo_vl->push_back(osg::Vec3(-ohalo_size, 0, -ohalo_size));
+    ohalo_vl->push_back(osg::Vec3(ohalo_size, 0, -ohalo_size));
+    ohalo_vl->push_back(osg::Vec3(-ohalo_size, 0, ohalo_size));
+    ohalo_vl->push_back(osg::Vec3(ohalo_size, 0, ohalo_size));
 
-    sgVec2 vf;
-    ohalo_tl = new ssgTexCoordArray;
-    sgSetVec2( vf, 0.0f, 0.0f );
-    ohalo_tl->add( vf );
-    sgSetVec2( vf, 1.0, 0.0 );
-    ohalo_tl->add( vf );
-    sgSetVec2( vf, 0.0, 1.0 );
-    ohalo_tl->add( vf );
-    sgSetVec2( vf, 1.0, 1.0 );
-    ohalo_tl->add( vf );
+    osg::Vec2Array* ohalo_tl = new osg::Vec2Array;
+    ohalo_tl->push_back(osg::Vec2(0, 0));
+    ohalo_tl->push_back(osg::Vec2(1, 0));
+    ohalo_tl->push_back(osg::Vec2(0, 1));
+    ohalo_tl->push_back(osg::Vec2(1, 1));
 
-    ssgLeaf *ohalo =
-        new ssgVtxTable ( GL_TRIANGLE_STRIP, ohalo_vl, NULL, ohalo_tl, ohalo_cl );
-    ohalo->setState( ohalo_state );
+    geometry = new osg::Geometry;
+    geometry->setUseDisplayList(false);
+    geometry->setVertexArray(ihalo_vl);
+    geometry->setColorArray(ihalo_cl.get());
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setTexCoordArray(0, ihalo_tl);
+    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+    geode->addDrawable(geometry);
+
+    sun_transform->addChild( geode );
 
 
-    // build the ssg scene graph sub tree for the sky and connected
-    // into the provide scene graph branch
-    sun_transform = new ssgTransform;
+    // force a repaint of the sun colors with arbitrary defaults
+    repaint( 0.0, 1.0 );
 
-    ihalo->setCallback( SSG_CALLBACK_PREDRAW, sgSunHaloPreDraw );
-    ihalo->setCallback( SSG_CALLBACK_POSTDRAW, sgSunHaloPostDraw );
-    ohalo->setCallback( SSG_CALLBACK_PREDRAW, sgSunHaloPreDraw );
-    ohalo->setCallback( SSG_CALLBACK_POSTDRAW, sgSunHaloPostDraw );
-
-    sun_transform->addKid( ohalo );    
-    sun_transform->addKid( ihalo );
-    sun_transform->addKid( sun );
-
-#ifdef FG_TEST_CHEESY_LENS_FLARE
-    // cheesy lens flair
-    sun_transform->addKid( new ssgaLensFlare );
-#endif
-
-    return sun_transform;
+    return sun_transform.get();
 }
 
 
@@ -460,7 +265,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 		}
 
 		// ok, now let's go and generate the sun color
-		sgVec4 i_halo_color, o_halo_color, sun_color;
+                osg::Vec4 i_halo_color, o_halo_color, sun_color;
 
 		// Some comments: 
 		// When the sunangle changes, light has to travel a longer distance through the atmosphere.
@@ -536,18 +341,16 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 		else if ( o_halo_color[3] > 1) o_halo_color[3] = 1;
 
         
-		gamma_correct_rgb( i_halo_color );
-		gamma_correct_rgb( o_halo_color );
-		gamma_correct_rgb( sun_color );	
+		gamma_correct_rgb( i_halo_color._v );
+		gamma_correct_rgb( o_halo_color._v );
+		gamma_correct_rgb( sun_color._v );	
 
-
-        	float *ptr;
-        	ptr = sun_cl->get( 0 );
-        	sgCopyVec4( ptr, sun_color );
-		ptr = ihalo_cl->get( 0 );
-		sgCopyVec4( ptr, i_halo_color );
-		ptr = ohalo_cl->get( 0 );
-		sgCopyVec4( ptr, o_halo_color );
+        	(*sun_cl)[0] = sun_color;
+                sun_cl->dirty();
+        	(*ihalo_cl)[0] = i_halo_color;
+                ihalo_cl->dirty();
+        	(*ohalo_cl)[0] = o_halo_color;
+                ohalo_cl->dirty();
     }
 
     return true;
@@ -559,43 +362,27 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
 // Then calculate stuff needed for the sun-coloring
-bool SGSun::reposition( sgVec3 p, double angle,
+bool SGSun::reposition( const SGVec3f& p, double angle,
 			double rightAscension, double declination, 
 			double sun_dist, double lat, double alt_asl, double sun_angle)
 {
     // GST - GMT sidereal time 
-    sgMat4 T1, T2, GST, RA, DEC;
-    sgVec3 axis;
-    sgVec3 v;
+    osg::Matrix T1, T2, GST, RA, DEC;
 
-    sgMakeTransMat4( T1, p );
-    sgSetVec3( axis, 0.0, 0.0, -1.0 );
-    sgMakeRotMat4( GST, angle, axis );
+    T1.makeTranslate(p.osg());
+    GST.makeRotate(SGD_DEGREES_TO_RADIANS*angle, osg::Vec3(0, 0, -1));
 
     // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
     //             0.0, 0.0, 1.0);
-    sgSetVec3( axis, 0.0, 0.0, 1.0 );
-    sgMakeRotMat4( RA, (rightAscension * SGD_RADIANS_TO_DEGREES) - 90.0, axis );
+    RA.makeRotate(rightAscension - 90*SGD_DEGREES_TO_RADIANS, osg::Vec3(0, 0, 1));
 
     // xglRotatef((SGD_RADIANS_TO_DEGREES * declination), 1.0, 0.0, 0.0);
-    sgSetVec3( axis, 1.0, 0.0, 0.0 );
-    sgMakeRotMat4( DEC, declination * SGD_RADIANS_TO_DEGREES, axis );
+    DEC.makeRotate(declination, osg::Vec3(1, 0, 0));
 
     // xglTranslatef(0,sun_dist);
-    sgSetVec3( v, 0.0, sun_dist, 0.0 );
-    sgMakeTransMat4( T2, v );
+    T2.makeTranslate(osg::Vec3(0, sun_dist, 0));
 
-    sgMat4 TRANSFORM;
-    sgCopyMat4( TRANSFORM, T1 );
-    sgPreMultMat4( TRANSFORM, GST );
-    sgPreMultMat4( TRANSFORM, RA );
-    sgPreMultMat4( TRANSFORM, DEC );
-    sgPreMultMat4( TRANSFORM, T2 );
-
-    sgCoord skypos;
-    sgSetCoord( &skypos, TRANSFORM );
-
-    sun_transform->setTransform( &skypos );
+    sun_transform->setMatrix(T2*DEC*RA*GST*T1);
 
     // Suncolor related things:
     if ( prev_sun_angle != sun_angle ) {
@@ -630,4 +417,10 @@ bool SGSun::reposition( sgVec3 p, double angle,
     }
 
     return true;
+}
+
+SGVec4f
+SGSun::get_color()
+{
+    return SGVec4f((*sun_cl)[0][0], (*sun_cl)[0][1], (*sun_cl)[0][2], (*sun_cl)[0][3]);
 }

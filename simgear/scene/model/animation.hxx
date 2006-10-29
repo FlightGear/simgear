@@ -14,24 +14,34 @@
 #include <vector>
 #include <map>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/Vec3>
+#include <osg/Vec4>
 
-#include <simgear/math/point3d.hxx>
+#include <osg/ref_ptr>
+#include <osg/AlphaFunc>
+#include <osg/ColorMatrix>
+#include <osg/Group>
+#include <osg/Material>
+#include <osg/Node>
+#include <osg/NodeCallback>
+#include <osg/NodeVisitor>
+#include <osg/StateSet>
+#include <osg/Texture2D>
+#include <osg/TexMat>
+
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include <simgear/scene/model/persparam.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 SG_USING_STD(vector);
 SG_USING_STD(map);
-
 
 // Don't pull in the headers, since we don't need them here.
 class SGInterpTable;
 class SGCondition;
 class SGPersonalityBranch;
-
 
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
@@ -50,7 +60,7 @@ class SGPersonalityBranch;
 /**
  * Abstract base class for all animations.
  */
-class SGAnimation :  public ssgBase
+class SGAnimation :  public osg::NodeCallback
 {
 public:
   enum PersonalityVar { INIT_SPIN, LAST_TIME_SEC_SPIN, FACTOR_SPIN, 
@@ -62,14 +72,14 @@ public:
                         INIT_SCALE, X_FACTOR_SCALE, Y_FACTOR_SCALE, Z_FACTOR_SCALE,
                             X_OFFSET_SCALE, Y_OFFSET_SCALE, Z_OFFSET_SCALE };
 
-  SGAnimation (SGPropertyNode_ptr props, ssgBranch * branch);
+  SGAnimation (SGPropertyNode_ptr props, osg::Group * branch);
 
   virtual ~SGAnimation ();
 
   /**
    * Get the SSG branch holding the animation.
    */
-  virtual ssgBranch * getBranch () { return _branch; }
+  virtual osg::Group * getBranch () { return _branch; }
 
   /**
    * Initialize the animation, after children have been added.
@@ -79,6 +89,14 @@ public:
   /**
    * Update the animation.
    */
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  { 
+    // note, callback is responsible for scenegraph traversal so
+    // should always include call traverse(node,nv) to ensure 
+    // that the rest of cullbacks and the scene graph are traversed.
+    update();
+    traverse(node, nv);
+  }
   virtual int update();
 
   /**
@@ -104,7 +122,7 @@ protected:
 
   static double sim_time_sec;
 
-  ssgBranch * _branch;
+  osg::Group* _branch;
 
   int animation_type;
 };
@@ -162,7 +180,7 @@ public:
   SGSelectAnimation( SGPropertyNode *prop_root,
                    SGPropertyNode_ptr props );
   virtual ~SGSelectAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   SGCondition * _condition;
 };
@@ -187,9 +205,8 @@ private:
   SGPersonalityParameter<double> _factor;
   SGPersonalityParameter<double> _position_deg;
   double _last_time_sec;
-  sgMat4 _matrix;
-  sgVec3 _center;
-  sgVec3 _axis;
+  osg::Vec3 _center;
+  osg::Vec3 _axis;
   SGCondition * _condition;
 };
 
@@ -209,7 +226,7 @@ private:
     double _duration_sec;
     double _last_time_sec;
     double _total_duration_sec;
-    int _step;
+    unsigned _step;
     struct DurationSpec {
         DurationSpec( double m = 0.0 ) : _min(m), _max(m) {}
         DurationSpec( double m1, double m2 ) : _min(m1), _max(m2) {}
@@ -241,9 +258,8 @@ private:
   bool _has_max;
   double _max_deg;
   double _position_deg;
-  sgMat4 _matrix;
-  sgVec3 _center;
-  sgVec3 _axis;
+  osg::Vec3 _center;
+  osg::Vec3 _axis;
   SGCondition * _condition;
 };
 
@@ -269,8 +285,7 @@ private:
   bool _has_max;
   double _max_m;
   double _position_m;
-  sgMat4 _matrix;
-  sgVec3 _axis;
+  osg::Vec3 _axis;
   SGCondition * _condition;
 };
 
@@ -295,6 +310,7 @@ private:
   double _min;
   bool _has_max;
   double _max;
+  osg::ref_ptr<osg::ColorMatrix> _colorMatrix;
 };
 
 /**
@@ -332,7 +348,6 @@ private:
   double _x_scale;
   double _y_scale;
   double _z_scale;
-  sgMat4 _matrix;
 };
 
 /**
@@ -356,10 +371,10 @@ private:
   bool _has_max;
   double _max_deg;
   double _position_deg;
-  sgMat4 _matrix;
-  sgVec3 _center;
-  sgVec3 _axis;
+  osg::Vec3 _center;
+  osg::Vec3 _axis;
   SGCondition * _condition;
+  osg::ref_ptr<osg::TexMat> _texMat;
 };
 
 
@@ -385,9 +400,9 @@ private:
   bool _has_max;
   double _max;
   double _position;
-  sgMat4 _matrix;
-  sgVec3 _axis;
+  osg::Vec3 _axis;
   SGCondition * _condition;
+  osg::ref_ptr<osg::TexMat> _texMat;
 };
 
 
@@ -419,13 +434,13 @@ private:
     bool has_max;
     double max;
     double position;
-    sgMat4 matrix;
-    sgVec3 center;
-    sgVec3 axis;
+    osg::Vec3 center;
+    osg::Vec3 axis;
   };
   SGPropertyNode_ptr _prop;
   TexTransform* _transform;
   int _num_transforms;
+  osg::ref_ptr<osg::TexMat> _texMat;
 };
 
 
@@ -439,7 +454,6 @@ public:
   virtual ~SGAlphaTestAnimation ();
   virtual void init();
 private:
-  void setAlphaClampToBranch(ssgBranch *b, float clamp);
   float _alpha_clamp;
 };
 
@@ -475,7 +489,7 @@ private:
         SGPropertyNode_ptr blue_prop;
         SGPropertyNode_ptr factor_prop;
         SGPropertyNode_ptr offset_prop;
-        sgVec4 v;
+        osg::Vec4 v;
         inline bool dirty() {
             return red >= 0.0 || green >= 0.0 || blue >= 0.0;
         }
@@ -487,7 +501,7 @@ private:
             return red != a.red || green != a.green || blue != a.blue
                     || factor != a.factor || offset != a.offset;
         }
-        sgVec4 &rgba() {
+        osg::Vec4 &rgba() {
             v[0] = clamp(red * factor + offset);
             v[1] = clamp(green * factor + offset);
             v[2] = clamp(blue * factor + offset);
@@ -520,8 +534,6 @@ private:
     SGPath _texture_base;
     SGPath _texture;
     string _texture_str;
-    ssgSimpleState* _cached_material;
-    ssgSimpleState* _cloned_material;
     unsigned _read;
     unsigned _update;
     unsigned _static_update;
@@ -538,9 +550,12 @@ private:
     SGPropertyNode_ptr _shi_prop;
     SGPropertyNode_ptr _thresh_prop;
     SGPropertyNode_ptr _tex_prop;
+    std::vector<osg::Material*> _materialList;
+    osg::ref_ptr<osg::AlphaFunc> _alphaFunc;
+    osg::ref_ptr<osg::Texture2D> _texture2D;
 
-    void cloneMaterials(ssgBranch *b);
-    void setMaterialBranch(ssgBranch *b);
+    void cloneMaterials(osg::Group *b);
+    void setMaterialBranch(osg::Group *b);
     void initColorGroup(SGPropertyNode_ptr, ColorSpec *, int flag);
     void updateColorGroup(ColorSpec *, int flag);
     inline float clamp(float val, float min = 0.0, float max = 1.0) {
@@ -561,14 +576,6 @@ class SGFlashAnimation : public SGAnimation
 public:
   SGFlashAnimation(SGPropertyNode_ptr props);
   virtual ~SGFlashAnimation ();
-
-  static void flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d );
-  void flashCallback( sgMat4 r, sgFrustum *f, sgMat4 m );
-
-private:
-  sgVec3 _axis, _center;
-  float _power, _factor, _offset, _min_v, _max_v;
-  bool _two_sides;
 };
 
 
@@ -581,15 +588,6 @@ class SGDistScaleAnimation : public SGAnimation
 public:
   SGDistScaleAnimation(SGPropertyNode_ptr props);
   virtual ~SGDistScaleAnimation ();
-
-  static void distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m, void *d );
-  void distScaleCallback( sgMat4 r, sgFrustum *f, sgMat4 m );
-
-private:
-  sgVec3 _center;
-  float _factor, _offset, _min_v, _max_v;
-  bool _has_min, _has_max;
-  SGInterpTable * _table;
 };
 
 /**
@@ -618,24 +616,25 @@ public:
                    SGPropertyNode_ptr props );
   virtual ~SGShaderAnimation ();
   virtual void init();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
   bool get_condition_value(void);
 private:
   SGCondition * _condition;
   bool _condition_value;
   int _shader_type;
   float _param_1;
-  sgVec4 _param_color;
+  osg::Vec4 _param_color;
 public:
   bool _depth_test;
   float _factor;
   SGPropertyNode_ptr _factor_prop;
   float _speed;
+  float totalTime;
   SGPropertyNode_ptr _speed_prop;
-  ssgTexture *_effectTexture;
+  osg::ref_ptr<osg::Texture2D> _effectTexture;
   unsigned char *_textureData;
   GLint _texWidth, _texHeight;
-  sgVec4 _envColor;
+  osg::Vec4 _envColor;
 };
 
 

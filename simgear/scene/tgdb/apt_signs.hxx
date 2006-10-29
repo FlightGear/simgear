@@ -34,7 +34,7 @@
 
 #include STL_STRING
 
-#include <plib/ssg.h>		// plib include
+#include <osg/Node>
 
 class SGMaterialLib;            // forward declaration
 
@@ -42,13 +42,13 @@ SG_USING_STD(string);
 
 
 // Generate a generic sign
-ssgBranch *sgMakeSign( SGMaterialLib *matlib,
-                       const string path, const string content );
+osg::Node* SGMakeSign( SGMaterialLib *matlib,
+                       const string& path, const string& content );
 
 
 // Generate a runway sign
-ssgBranch *sgMakeRunwaySign( SGMaterialLib *matlib,
-                             const string path, const string name );
+osg::Node* SGMakeRunwaySign( SGMaterialLib *matlib,
+                             const string& path, const string& name );
 
 
 #endif // _SG_APT_SIGNS_HXX

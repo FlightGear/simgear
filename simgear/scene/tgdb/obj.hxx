@@ -35,7 +35,8 @@
 
 #include STL_STRING
 
-#include <plib/ssg.h>           // plib include
+#include <osg/Array>
+#include <osg/Group>
 
 #include <simgear/math/point3d.hxx>
 
@@ -46,21 +47,21 @@ class SGMaterialLib;
 
 
 // Load a Binary obj file
-bool sgBinObjLoad( const string& path, const bool is_base,
+bool SGBinObjLoad( const string& path, const bool is_base,
                    Point3D *center,
                    double *bounding_radius,
                    SGMaterialLib *matlib,
                    bool use_random_objects,
-                   ssgBranch *geometry,
-                   ssgBranch *vasi_lights,
-                   ssgBranch *rwy_lights,
-                   ssgBranch *taxi_lights,
-                   ssgVertexArray *ground_lights );
+                   osg::Group *geometry,
+                   osg::Group *vasi_lights,
+                   osg::Group *rwy_lights,
+                   osg::Group *taxi_lights,
+                   osg::Vec3Array *ground_lights );
 
 // Generate an ocean tile
-bool sgGenTile( const string& path, SGBucket b,
+bool SGGenTile( const string& path, SGBucket b,
                 Point3D *center, double *bounding_radius,
-                SGMaterialLib *matlib, ssgBranch *geometry );
+                SGMaterialLib *matlib, osg::Group *geometry );
 
 
 #endif // _SG_OBJ_HXX

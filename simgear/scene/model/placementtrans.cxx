@@ -27,74 +27,57 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
-
 #include "placementtrans.hxx"
 
-ssgPlacementTransform::ssgPlacementTransform(void)
+SGPlacementTransform::SGPlacementTransform(void) :
+  _placement_offset(0, 0, 0),
+  _scenery_center(0, 0, 0),
+  _rotation(1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1)
 {
-  sgdSetVec3(_placement_offset, 0, 0, 0);
-  sgdSetVec3(_scenery_center, 0, 0, 0);
 }
 
-ssgPlacementTransform::~ssgPlacementTransform(void)
+SGPlacementTransform::~SGPlacementTransform(void)
 {
 }
 
-ssgBase *ssgPlacementTransform::clone(int clone_flags)
+bool
+SGPlacementTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                                osg::NodeVisitor*) const
 {
-  ssgPlacementTransform *b = new ssgPlacementTransform;
-  b->copy_from(this, clone_flags);
-  return b;
+  osg::Matrix t;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      t(j, i) = _rotation(i, j);
+    }
+    t(3, i) = _placement_offset(i) - _scenery_center(i);
+  }
+  
+  if (_referenceFrame == RELATIVE_RF)
+    matrix.preMult(t);
+  else
+    matrix = t;
+  return true;
 }
 
-void
-ssgPlacementTransform::copy_from(ssgPlacementTransform *src, int clone_flags)
+bool
+SGPlacementTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                                osg::NodeVisitor*) const
 {
-  ssgBaseTransform::copy_from(src, clone_flags);
-  sgdCopyVec3(_placement_offset, src->_placement_offset);
-  sgdCopyVec3(_scenery_center,  src->_scenery_center);
-}
+  osg::Matrix t;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      t(j, i) = _rotation(i, j);
+    }
+    t(3, i) = _placement_offset(i) - _scenery_center(i);
+  }
+  t = osg::Matrix::inverse(t);
 
-void ssgPlacementTransform::setTransform(sgdVec3 off)
-{
-  sgdCopyVec3(_placement_offset, off);
-  sgdVec3 tmp;
-  sgdSubVec3(tmp, _placement_offset, _scenery_center);
-  sgMat4 tmat;
-  sgZeroVec4(tmat[0]);
-  tmat[0][0] = 1;
-  sgZeroVec4(tmat[1]);
-  tmat[1][1] = 1;
-  sgZeroVec4(tmat[2]);
-  tmat[2][2] = 1;
-  sgSetVec3(tmat[3], tmp);
-  tmat[3][3] = 1;
-  ssgTransform::setTransform(tmat);
-}
-
-void ssgPlacementTransform::setTransform(sgdVec3 off, sgMat4 rot)
-{
-  sgdCopyVec3(_placement_offset, off);
-  sgdVec3 tmp;
-  sgdSubVec3(tmp, _placement_offset, _scenery_center);
-  sgMat4 tmat;
-  sgCopyVec4(tmat[0], rot[0]);
-  sgCopyVec4(tmat[1], rot[1]);
-  sgCopyVec4(tmat[2], rot[2]);
-  sgSetVec3(tmat[3], tmp);
-  tmat[3][3] = 1;
-  ssgTransform::setTransform(tmat);
-}
-
-void ssgPlacementTransform::setSceneryCenter(sgdVec3 xyz)
-{
-  sgdCopyVec3(_scenery_center, xyz);
-  sgdVec3 tmp;
-  sgdSubVec3(tmp, _placement_offset, _scenery_center);
-  sgMat4 tmat;
-  getTransform(tmat);
-  sgSetVec3(tmat[3], tmp);
-  ssgTransform::setTransform(tmat);
+  if (_referenceFrame == RELATIVE_RF)
+    matrix.postMult(t);
+  else
+    matrix = t;
+  return true;
 }

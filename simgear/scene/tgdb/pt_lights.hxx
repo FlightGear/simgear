@@ -35,9 +35,6 @@
 #include STL_STRING
 #include <vector>		// STL
 
-#include <plib/sg.h>
-#include <plib/ssg.h>		// plib include
-
 #include <simgear/math/sg_types.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
@@ -79,21 +76,18 @@ typedef int_list::const_iterator int_point_list_iterator;
 // Yes this get's to be long and convoluted.  If you can suggest a
 // simpler way, please do! :-)
 
-ssgLeaf *sgMakeDirectionalLight( sgVec3 pt, sgVec3 dir, sgVec3 up );
-
-
-ssgBranch *sgMakeDirectionalLights( const point_list &nodes,
+osg::Node *SGMakeDirectionalLights( const point_list &nodes,
                                     const point_list &normals,
                                     const int_list &pnt_i,
                                     const int_list &nml_i,
                                     SGMaterialLib *matlib,
                                     const string &material,
-                                    sgdVec3 dup );
+                                    const SGVec3d& dup );
 
 // Specify the way we want to draw directional point lights (assuming the
 // appropriate extensions are available.)
 
-void sgConfigureDirectionalLights( bool use_point_sprites,
+void SGConfigureDirectionalLights( bool use_point_sprites,
                                    bool enhanced_lighting,
                                    bool distance_attenuation );
 

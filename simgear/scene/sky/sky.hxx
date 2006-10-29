@@ -33,14 +33,16 @@
 # error This library requires C++
 #endif
 
-
-#include <plib/ssg.h>		// plib include
-
 #include <simgear/compiler.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
 #include <vector>
+
+#include <osg/ref_ptr>
+#include <osg/MatrixTransform>
+#include <osg/Node>
+#include <osg/Switch>
 
 #include <simgear/scene/sky/cloud.hxx>
 #include <simgear/scene/sky/dome.hxx>
@@ -51,12 +53,8 @@
 SG_USING_STD(vector);
 
 
-typedef vector < SGCloudLayer* > layer_list_type;
-typedef layer_list_type::iterator layer_list_iterator;
-typedef layer_list_type::const_iterator layer_list_const_iterator;
-
 typedef struct {
-	float *view_pos, *zero_elev, *view_up;
+	SGVec3f view_pos, zero_elev, view_up;
 	double lon, lat, alt, spin;
 	double gst;
 	double sun_ra, sun_dec, sun_dist;
@@ -65,10 +63,12 @@ typedef struct {
 } SGSkyState;
 
 typedef struct {
-	float *sky_color, *fog_color, *cloud_color;
+	SGVec3f sky_color, fog_color;
+	SGVec3f cloud_color;
 	double sun_angle, moon_angle;
 	int nplanets, nstars;
-	sgdVec3 *planet_data, *star_data;
+        SGVec3d *planet_data;
+        SGVec3d *star_data;
 } SGSkyColor;
 
 /**
@@ -205,19 +205,21 @@ typedef struct {
 class SGSky {
 
 private:
+    typedef std::vector<SGSharedPtr<SGCloudLayer> > layer_list_type;
+    typedef layer_list_type::iterator layer_list_iterator;
+    typedef layer_list_type::const_iterator layer_list_const_iterator;
 
     // components of the sky
-    SGSkyDome *dome;
-    SGSun *oursun;
-    SGMoon *moon;
-    SGStars *planets;
-    SGStars *stars;
+    SGSharedPtr<SGSkyDome> dome;
+    SGSharedPtr<SGSun> oursun;
+    SGSharedPtr<SGMoon> moon;
+    SGSharedPtr<SGStars> planets;
+    SGSharedPtr<SGStars> stars;
     layer_list_type cloud_layers;
 
-    ssgRoot *pre_root, *post_root;
-
-    ssgSelector *pre_selector, *post_selector;
-    ssgTransform *pre_transform, *post_transform;
+    osg::ref_ptr<osg::Group> pre_root, post_root, cloud_root;
+    osg::ref_ptr<osg::Switch> pre_selector, post_selector;
+    osg::ref_ptr<osg::MatrixTransform> pre_transform, post_transform;
 
     SGPath tex_path;
 
@@ -260,8 +262,8 @@ public:
      */
     void build( double h_radius_m, double v_radius_m,
                 double sun_size, double moon_size,
-		int nplanets, sgdVec3 *planet_data,
-		int nstars, sgdVec3 *star_data, SGPropertyNode *property_tree_node );
+                int nplanets, SGVec3d planet_data[7],
+                int nstars, SGVec3d star_data[], SGPropertyNode *property_tree_node );
 
     /**
      * Repaint the sky components based on current value of sun_angle,
@@ -329,28 +331,9 @@ public:
      */
     void modify_vis( float alt, float time_factor );
 
-    /**
-     * Draw background portions of the sky ... do this before you draw
-     * the rest of your scene.  See discussion in detailed
-     * class description.
-     * @param alt current altitude
-     */
-    void preDraw( float alt, float fog_exp2_density );
-
-    /**
-     * Draw upper translucent clouds ... do this before you've drawn 
-     * all the translucent elements of your scene.  See discussion in 
-     * detailed class description.
-     * @param fog_exp2_density fog density of the current cloud layer
-     */
-    void drawUpperClouds();
-
-    /**
-     * Draw lower translucent clouds ... do this after you've drawn 
-     * all the opaque elements of your scene.  See discussion in detailed
-     * class description.
-     */
-    void drawLowerClouds();
+    osg::Node* getPreRoot() { return pre_root.get(); }
+    osg::Node* getPostRoot() { return post_root.get(); }
+    osg::Node* getCloudRoot() { return cloud_root.get(); }
 
     /** 
      * Specify the texture path (optional, defaults to current directory)
@@ -362,8 +345,8 @@ public:
 
     /** Enable drawing of the sky. */
     inline void enable() {
-	pre_selector->select( 1 );
-	post_selector->select( 1 );
+        pre_selector->setValue(0, 1);
+	post_selector->setValue(0, 1);
     }
 
     /**
@@ -371,21 +354,14 @@ public:
      * there, how ever it won't be traversed on by ssgCullandRender()
      */
     inline void disable() {
-	pre_selector->select( 0 );
-	post_selector->select( 0 );
+        pre_selector->setValue(0, 0);
+	post_selector->setValue(0, 0);
     }
-
 
     /**
      * Get the current sun color
      */
-    inline float *get_sun_color() { return oursun->get_color(); }
-
-    /**
-     * Get the sun halo texture handle
-     */
-    inline GLuint get_sun_texture_id() { return oursun->get_texture_id(); }
-
+    inline SGVec4f get_sun_color() { return oursun->get_color(); }
 
     /**
      * Add a cloud layer.

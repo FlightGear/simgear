@@ -83,7 +83,7 @@ class SGEphemeris {
     // planets[i][1] = Declination
     // planets[i][2] = Magnitude
     int nplanets;
-    sgdVec3 planets[7];
+    SGVec3d planets[7];
 
     SGStarData *stars;
 
@@ -155,7 +155,7 @@ public:
      * the second is the declination, and the third is the magnitude.
      * @return planets array
      */
-    inline sgdVec3 *getPlanets() { return planets; }
+    inline SGVec3d *getPlanets() { return planets; }
 
     /** @return the numbers of defined stars. */
     inline int getNumStars() const { return stars->getNumStars(); }
@@ -167,7 +167,7 @@ public:
      * third is the magnitude.
      * @returns star array
      */
-    inline sgdVec3 *getStars() { return stars->getStars(); }
+    inline SGVec3d *getStars() { return stars->getStars(); }
 };
 
 

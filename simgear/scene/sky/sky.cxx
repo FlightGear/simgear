@@ -25,9 +25,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
-
 #include <simgear/math/sg_random.h>
 
 #include "sky.hxx"
@@ -43,18 +40,24 @@ SGSky::SGSky( void ) {
     puff_progression = 0;
     ramp_up = 0.15;
     ramp_down = 0.15;
-    // ramp_up = 4.0;
-    // ramp_down = 4.0;
 
     in_cloud  = -1;
+
+    pre_root = new osg::Group;
+    post_root = new osg::Group;
+    cloud_root = new osg::Group;
+
+    pre_selector = new osg::Switch;
+    post_selector = new osg::Switch;
+
+    pre_transform = new osg::MatrixTransform;
+    post_transform = new osg::MatrixTransform;
 }
 
 
 // Destructor
 SGSky::~SGSky( void )
 {
-    for (unsigned int i = 0; i < cloud_layers.size(); i++)
-        delete cloud_layers[i];
 }
 
 
@@ -62,41 +65,30 @@ SGSky::~SGSky( void )
 // the provided branch
 void SGSky::build( double h_radius_m, double v_radius_m,
                    double sun_size, double moon_size,
-		   int nplanets, sgdVec3 *planet_data,
-		   int nstars, sgdVec3 *star_data, SGPropertyNode *property_tree_node )
+		   int nplanets, SGVec3d planet_data[7],
+		   int nstars, SGVec3d star_data[], SGPropertyNode *property_tree_node )
 {
-    pre_root = new ssgRoot;
-    post_root = new ssgRoot;
-
-    pre_selector = new ssgSelector;
-    post_selector = new ssgSelector;
-
-    pre_transform = new ssgTransform;
-    post_transform = new ssgTransform;
-
     dome = new SGSkyDome;
-    pre_transform -> addKid( dome->build( h_radius_m, v_radius_m ) );
+    pre_transform->addChild( dome->build( h_radius_m, v_radius_m ) );
 
     planets = new SGStars;
-    pre_transform -> addKid(planets->build(nplanets, planet_data, h_radius_m));
+    pre_transform->addChild(planets->build(nplanets, planet_data, h_radius_m));
 
     stars = new SGStars;
-    pre_transform -> addKid( stars->build(nstars, star_data, h_radius_m) );
+    pre_transform->addChild( stars->build(nstars, star_data, h_radius_m) );
     
     moon = new SGMoon;
-    pre_transform -> addKid( moon->build(tex_path, moon_size) );
+    pre_transform->addChild( moon->build(tex_path, moon_size) );
 
     oursun = new SGSun;
-    pre_transform -> addKid( oursun->build(tex_path, sun_size, property_tree_node ) );
+    pre_transform->addChild( oursun->build(tex_path, sun_size, property_tree_node ) );
 
-    pre_selector->addKid( pre_transform );
-    pre_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+    pre_selector->addChild( pre_transform.get() );
 
-    post_selector->addKid( post_transform );
-    post_selector->clrTraversalMaskBits( SSGTRAV_HOT );
+    post_selector->addChild( post_transform.get() );
 
-    pre_root->addKid( pre_selector );
-    post_root->addKid( post_selector );
+    pre_root->addChild( pre_selector.get() );
+    post_root->addChild( post_selector.get() );
 }
 
 
@@ -119,7 +111,7 @@ bool SGSky::repaint( const SGSkyColor &sc )
 	oursun->repaint( sc.sun_angle, effective_visibility );
 	moon->repaint( sc.moon_angle );
 
-	for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+	for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
             if (cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR){
                 cloud_layers[i]->repaint( sc.cloud_color );
             }
@@ -145,7 +137,7 @@ bool SGSky::reposition( SGSkyState &st, double dt )
 
     double angle = st.gst * 15;	// degrees
 
-    dome->reposition( st.zero_elev, st.lon, st.lat, st.spin );
+    dome->reposition( st.zero_elev, st.alt, st.lon, st.lat, st.spin );
 
     stars->reposition( st.view_pos, angle );
     planets->reposition( st.view_pos, angle );
@@ -156,87 +148,22 @@ bool SGSky::reposition( SGSkyState &st, double dt )
     moon->reposition( st.view_pos, angle,
                       st.moon_ra, st.moon_dec, st.moon_dist );
 
-    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+    for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
             cloud_layers[i]->reposition( st.zero_elev, st.view_up,
                                          st.lon, st.lat, st.alt, dt );
-        }
+        } else
+          cloud_layers[i]->getNode()->setAllChildrenOff();
     }
 
     return true;
-}
-
-
-// draw background portions of the sky ... do this before you draw the
-// rest of your scene.
-void SGSky::preDraw( float alt, float fog_exp2_density ) {
-    ssgCullAndDraw( pre_root );
-
-    // if we are closer than this to a cloud layer, don't draw clouds
-    static const float slop = 5.0;
-    int i;
-
-    // check where we are relative to the cloud layers
-    in_cloud = -1;
-    for ( i = 0; i < (int)cloud_layers.size(); ++i ) {
-        float asl = cloud_layers[i]->getElevation_m();
-        float thickness = cloud_layers[i]->getThickness_m();
-
-        if ( alt < asl - slop ) {
-            // below cloud layer
-        } else if ( alt < asl + thickness + slop ) {
-            // in cloud layer
-
-            // bail now and don't draw any clouds
-			if( cloud_layers[i]->get_layer3D()->is3D() && SGCloudField::enable3D )
-				continue;
-            in_cloud = i;
-        } else {
-            // above cloud layer
-        }
-    }
-
-    // determine rendering order
-    cur_layer_pos = 0;
-    while ( cur_layer_pos < (int)cloud_layers.size() &&
-            alt > cloud_layers[cur_layer_pos]->getElevation_m() )
-    {
-        ++cur_layer_pos;
-    }
-
-    // FIXME: This should not be needed, but at this time (08/15/2003)
-    //        certain NVidia drivers don't seem to implement
-    //        glPushAttrib(FG_FOG_BIT) properly. The result is that
-    //        there is not fog when looking at the sun.
-    glFogf ( GL_FOG_DENSITY, fog_exp2_density );
-}
-
-void SGSky::drawUpperClouds( ) {
-    // draw the cloud layers that are above us, top to bottom
-    for ( int i = (int)cloud_layers.size() - 1; i >= cur_layer_pos; --i ) {
-        if ( i != in_cloud ) {
-            cloud_layers[i]->draw( false );
-        }
-    }
-}
-
-
-// draw translucent clouds ... do this after you've drawn all the
-// oapaque elements of your scene.
-void SGSky::drawLowerClouds() {
-
-    // draw the cloud layers that are below us, bottom to top
-    for ( int i = 0; i < cur_layer_pos; ++i ) {
-        if ( i != in_cloud ) {
-            cloud_layers[i]->draw( true );
-        }
-    }
 }
 
 void
 SGSky::add_cloud_layer( SGCloudLayer * layer )
 {
     cloud_layers.push_back(layer);
+    cloud_root->addChild(layer->getNode());
 }
 
 const SGCloudLayer *

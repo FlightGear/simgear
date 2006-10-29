@@ -7,7 +7,6 @@ include_HEADERS = \
 	commands.hxx \
 	exception.hxx \
 	event_mgr.hxx \
-	ssgSharedPtr.hxx \
 	subsystem_mgr.hxx \
 	SGReferenced.hxx \
 	SGSharedPtr.hxx

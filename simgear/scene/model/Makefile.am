@@ -6,19 +6,16 @@ noinst_HEADERS =
 
 include_HEADERS = \
 	animation.hxx \
-	custtrans.hxx \
 	location.hxx \
 	model.hxx \
 	modellib.hxx \
 	personality.hxx \
 	persparam.hxx \
 	placement.hxx \
-	placementtrans.hxx \
-	shadowvolume.hxx
+	placementtrans.hxx
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
-	custtrans.cxx \
 	location.cxx \
 	model.cxx \
 	modellib.cxx \
@@ -26,7 +23,6 @@ libsgmodel_a_SOURCES = \
 	persparam.cxx \
 	placement.cxx \
 	placementtrans.cxx \
-	shadowvolume.cxx \
 	shadanim.cxx
 
 INCLUDES = -I$(top_srcdir)

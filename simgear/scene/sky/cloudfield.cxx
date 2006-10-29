@@ -78,10 +78,14 @@ static int cacheResolution = 64;
 static sgVec3 last_sunlight={0.0f, 0.0f, 0.0f};
 
 int SGCloudField::get_CacheResolution(void) {
+#if 0
 	return cacheResolution;
+#endif
+        return 0;
 }
 
 void SGCloudField::set_CacheResolution(int resolutionPixels) {
+#if 0
 	if(cacheResolution == resolutionPixels)
 		return;
 	cacheResolution = resolutionPixels;
@@ -91,13 +95,18 @@ void SGCloudField::set_CacheResolution(int resolutionPixels) {
 			count = 1;
 		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
 	}
+#endif
 }
 
 int SGCloudField::get_CacheSize(void) { 
+#if 0
 	return SGNewCloud::cldCache->queryCacheSize(); 
+#endif
+        return 0;
 }
 
 void SGCloudField::set_CacheSize(int sizeKb) {
+#if 0
 	// apply in rendering option dialog
 	if(last_cache_size == sizeKb)
 		return;
@@ -111,15 +120,21 @@ void SGCloudField::set_CacheSize(int sizeKb) {
 			count = 1;
 		SGNewCloud::cldCache->setCacheSize(count, cacheResolution);
 	}
+#endif
 }
 void SGCloudField::set_CloudVis(float distance) {
+#if 0
 	if( distance <= fieldSize )
 		SGCloudField::CloudVis = distance;
+#endif
 }
 void SGCloudField::set_density(float density) {
+#if 0
 	SGCloudField::density = density;
+#endif
 }
 void SGCloudField::set_enable3dClouds(bool enable) {
+#if 0
 	if(enable3D == enable)
 		return;
 	enable3D = enable;
@@ -131,10 +146,12 @@ void SGCloudField::set_enable3dClouds(bool enable) {
 	} else {
 		SGNewCloud::cldCache->setCacheSize(0);
 	}
+#endif
 }
 
 // reposition the cloud layer at the specified origin and orientation
 void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt, float direction, float speed) {
+#if 0
     sgMat4 T1, LON, LAT;
     sgVec3 axis;
 
@@ -211,6 +228,7 @@ void SGCloudField::reposition( sgVec3 p, sgVec3 up, double lon, double lat, doub
 	frustum.setFOV( w, h );
 	frustum.setNearFar(1.0, CloudVis);
 	timer_dt = dt;
+#endif
 }
 
 SGCloudField::SGCloudField() :
@@ -220,22 +238,29 @@ SGCloudField::SGCloudField() :
 	last_density(0.0),
 	draw_in_3d(true)
 {
+#if 0
 	sgSetVec3( relative_position, 0,0,0);
 	theField.reserve(200);
 	inViewClouds.reserve(200);
         sg_srandom_time_10();
+#else
+	draw_in_3d = false;
+#endif
 }
 
 SGCloudField::~SGCloudField() {
+#if 0
 	list_of_Cloud::iterator iCloud;
 	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
 		delete iCloud->aCloud;
 	}
 	theField.clear();
+#endif
 }
 
 
 void SGCloudField::clear(void) {
+#if 0
 	list_of_Cloud::iterator iCloud;
 	for( iCloud = theField.begin() ; iCloud != theField.end() ; iCloud++ ) {
 		delete iCloud->aCloud;
@@ -245,6 +270,7 @@ void SGCloudField::clear(void) {
 	last_density = 0.0;
 	// true to come back in set density after layer is built
 	draw_in_3d = true;
+#endif
 }
 
 // use a table or else we see poping when moving the slider...
@@ -264,6 +290,7 @@ static int densTable[][10] = {
 
 // set the visible flag depending on density
 void SGCloudField::applyDensity(void) {
+#if 0
 	int row = (int) (density / 10.0);
 	int col = 0;
     sgBox fieldBox;
@@ -286,16 +313,19 @@ void SGCloudField::applyDensity(void) {
     center[1] = 0.0f;
     field_sphere.setCenter( center );
     field_sphere.setRadius( fieldSize * 0.5f * 1.414f );
+#endif
 }
 
 // add one cloud, data is not copied, ownership given
 void SGCloudField::addCloud( sgVec3 pos, SGNewCloud *cloud) {
+#if 0
 	Cloud cl;
 	cl.aCloud = cloud;
 	cl.visible = true;
 	cloud->SetPos( pos );
 	sgCopyVec3( cl.pos, *cloud->getCenter() );
 	theField.push_back( cl );
+#endif
 }
 
 
@@ -306,7 +336,7 @@ static float Rnd(float n) {
 // for debug only
 // build a field of cloud of size 25x25 km, its a grid of 11x11 clouds
 void SGCloudField::buildTestLayer(void) {
-
+#if 0
 	const float s = 2250.0f;
 
 	for( int z = -5 ; z <= 5 ; z++) {
@@ -318,10 +348,12 @@ void SGCloudField::buildTestLayer(void) {
 		}
 	}
 	applyDensity();
+#endif
 }
 
 // cull all clouds of a tiled field
 void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
+#if 0
 	list_of_Cloud::iterator iCloud;
 
     sgSphere tile_sphere;
@@ -357,7 +389,7 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 				sgEnviro.set_view_in_cloud(true);
 		}
 	}
-
+#endif
 }
 
 
@@ -366,6 +398,7 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 // we draw this field and adjacent fields.
 // adjacent fields are not real, its the same field displaced by some offset
 void SGCloudField::Render(void) {
+#if 0
     sgVec3 eyePos;
 	double relx, rely;
 
@@ -493,6 +526,5 @@ void SGCloudField::Render(void) {
 	ssgLoadModelviewMatrix( modelview );
 
 	glPopMatrix();
-
+#endif
 }
-

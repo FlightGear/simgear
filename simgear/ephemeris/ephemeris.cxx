@@ -43,7 +43,7 @@ SGEphemeris::SGEphemeris( const string &path ) {
     neptune = new Neptune;
     nplanets = 7;
     for ( int i = 0; i < nplanets; ++i ) {
-        sgdSetVec3( planets[i], 0.0, 0.0, 0.0 );
+       sgdSetVec3( planets[i].sg(), 0.0, 0.0, 0.0 );
     }
     stars = new SGStarData( SGPath(path) );
 }

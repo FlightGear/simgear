@@ -22,13 +22,10 @@
 // $Id$
 
 
-#include <plib/ssg.h>
-
+#include <osg/Node>
 
 // return a sphere object as an ssgBranch (and connect in the
 // specified ssgSimpleState
-ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl, 
-			  double radius, int slices, int stacks,
-			  ssgCallback predraw, ssgCallback postdraw );
+osg::Node* SGMakeSphere(double radius, int slices, int stacks);
 
 

@@ -5,8 +5,6 @@
 #ifndef _SG_CUSTOM_TRANSFORM_HXX
 #define _SG_CUSTOM_TRANSFORM_HXX 1
 
-#include "plib/ssg.h"
-
 class SGCustomTransform : public ssgBranch
 {
 public:

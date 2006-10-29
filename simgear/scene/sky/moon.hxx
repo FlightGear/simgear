@@ -29,21 +29,20 @@
 #define _SG_MOON_HXX_
 
 
-#include <plib/ssg.h>
+#include <osg/ref_ptr>
+#include <osg/MatrixTransform>
+#include <osg/Material>
+
+#include <simgear/math/SGMath.hxx>
+#include <simgear/structure/SGReferenced.hxx>
 
 #include <simgear/misc/sg_path.hxx>
 
 
-class SGMoon {
+class SGMoon : public SGReferenced {
 
-    ssgTransform *moon_transform;
-    ssgSimpleState *orb_state;
-    ssgSimpleState *halo_state;
-
-    ssgColourArray *cl;
-
-    ssgVertexArray *halo_vl;
-    ssgTexCoordArray *halo_tl;
+    osg::ref_ptr<osg::MatrixTransform> moon_transform;
+    osg::ref_ptr<osg::Material> orb_material;
 
     double prev_moon_angle;
 
@@ -56,7 +55,7 @@ public:
     ~SGMoon( void );
 
     // build the moon object
-    ssgBranch *build( SGPath path, double moon_size );
+    osg::Node *build( SGPath path, double moon_size );
 
     // repaint the moon colors based on current value of moon_anglein
     // degrees relative to verticle
@@ -69,7 +68,7 @@ public:
     // declination, offset by our current position (p) so that it
     // appears fixed at a great distance from the viewer.  Also add in
     // an optional rotation (i.e. for the current time of day.)
-    bool reposition( sgVec3 p, double angle,
+    bool reposition( const SGVec3f& p, double angle,
 		     double rightAscension, double declination,
 		     double moon_dist  );
 };

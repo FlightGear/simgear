@@ -430,6 +430,7 @@ AC_CONFIG_FILES([ \
 	simgear/scene/model/Makefile \
 	simgear/scene/sky/Makefile \
 	simgear/scene/tgdb/Makefile \
+	simgear/scene/util/Makefile \
 	simgear/screen/Makefile \
 	simgear/serial/Makefile \
 	simgear/sound/Makefile \

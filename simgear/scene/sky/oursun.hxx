@@ -28,40 +28,30 @@
 #ifndef _SG_SUN_HXX_
 #define _SG_SUN_HXX_
 
+#include <osg/Array>
+#include <osg/Node>
+#include <osg/MatrixTransform>
 
-#include <plib/ssg.h>
+#include <simgear/structure/SGReferenced.hxx>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
-class SGSun {
+class SGSun : public SGReferenced {
 
-    ssgTransform *sun_transform;
-    ssgSimpleState *sun_state; 
-    ssgSimpleState *ihalo_state;
-    ssgSimpleState *ohalo_state;
+    osg::ref_ptr<osg::MatrixTransform> sun_transform;
 
-    ssgColourArray *sun_cl;
-    ssgColourArray *ihalo_cl;
-    ssgColourArray *ohalo_cl;
-
-    ssgVertexArray *sun_vl;
-    ssgVertexArray *ihalo_vl;
-    ssgVertexArray *ohalo_vl;
-
-    ssgTexCoordArray *sun_tl;
-    ssgTexCoordArray *ihalo_tl;
-    ssgTexCoordArray *ohalo_tl;
-
-    GLuint sun_texid;
-    GLubyte *sun_texbuf;
+    osg::ref_ptr<osg::Vec4Array> sun_cl;
+    osg::ref_ptr<osg::Vec4Array> ihalo_cl;
+    osg::ref_ptr<osg::Vec4Array> ohalo_cl;
 
     double visibility;
     double prev_sun_angle;
     // distance of light traveling through the atmosphere
     double path_distance;
+    double sun_exp2_punch_through;
 
-    SGPropertyNode *env_node;
+    SGPropertyNode_ptr env_node;
 
 public:
 
@@ -72,7 +62,7 @@ public:
     ~SGSun( void );
 
     // return the sun object
-    ssgBranch *build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node );
+    osg::Node* build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node );
 
     // repaint the sun colors based on current value of sun_anglein
     // degrees relative to verticle
@@ -85,15 +75,12 @@ public:
     // declination, offset by our current position (p) so that it
     // appears fixed at a great distance from the viewer.  Also add in
     // an optional rotation (i.e. for the current time of day.)
-    bool reposition( sgVec3 p, double angle,
+    bool reposition( const SGVec3f& p, double angle,
 		     double rightAscension, double declination,
 		     double sun_dist, double lat, double alt_asl, double sun_angle );
 
     // retrun the current color of the sun
-    inline float *get_color() { return  ohalo_cl->get( 0 ); }
-
-    // return the texture id of the sun halo texture
-    inline GLuint get_texture_id() { return ohalo_state->getTextureHandle(); }
+    SGVec4f get_color();
 };
 
 

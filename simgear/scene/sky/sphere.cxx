@@ -28,23 +28,21 @@
 
 #include STL_IOSTREAM
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/Node>
+#include <osg/Geometry>
+#include <osg/Geode>
+#include <osg/Array>
 
 
 // return a sphere object as an ssgBranch
-ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
-			  double radius, int slices, int stacks,
-			  ssgCallback predraw, ssgCallback postdraw )
+osg::Node*
+SGMakeSphere(double radius, int slices, int stacks)
 {
-    float rho, drho, theta, dtheta;
-    float x, y, z;
+    float rho, drho, dtheta;
     float s, t, ds, dt;
     int i, j, imin, imax;
     float nsign = 1.0;
-    ssgBranch *sphere = new ssgBranch;
-    sgVec2 vec2;
-    sgVec3 vec3;
+    osg::Geode* geode = new osg::Geode;
 
     drho = SGD_PI / (float) stacks;
     dtheta = SGD_2PI / (float) slices;
@@ -62,69 +60,67 @@ ssgBranch *ssgMakeSphere( ssgSimpleState *state, ssgColourArray *cl,
 
     /* build slices as quad strips */
     for ( i = imin; i < imax; i++ ) {
-	ssgVertexArray   *vl = new ssgVertexArray();
-	ssgNormalArray   *nl = new ssgNormalArray();
-	ssgTexCoordArray *tl = new ssgTexCoordArray();
+        osg::Geometry* geometry = new osg::Geometry;
+        osg::Vec3Array* vl = new osg::Vec3Array;
+        osg::Vec3Array* nl = new osg::Vec3Array;
+        osg::Vec2Array* tl = new osg::Vec2Array;
 
 	rho = i * drho;
 	s = 0.0;
 	for ( j = 0; j <= slices; j++ ) {
-	    theta = (j == slices) ? 0.0 : j * dtheta;
-	    x = -sin(theta) * sin(rho);
-	    y = cos(theta) * sin(rho);
-	    z = nsign * cos(rho);
+	    double theta = (j == slices) ? 0.0 : j * dtheta;
+	    double x = -sin(theta) * sin(rho);
+	    double y = cos(theta) * sin(rho);
+	    double z = nsign * cos(rho);
 
 	    // glNormal3f( x*nsign, y*nsign, z*nsign );
-	    sgSetVec3( vec3, x*nsign, y*nsign, z*nsign );
-	    sgNormalizeVec3( vec3 );
-	    nl->add( vec3 );
+            osg::Vec3 normal(x*nsign, y*nsign, z*nsign);
+	    normal.normalize();
+	    nl->push_back(normal);
 
 	    // glTexCoord2f(s,t);
-	    sgSetVec2( vec2, s, t );
-	    tl->add( vec2 );
+	    tl->push_back(osg::Vec2(s, t));
 
 	    // glVertex3f( x*radius, y*radius, z*radius );
-	    sgSetVec3( vec3, x*radius, y*radius, z*radius );
-	    vl->add( vec3 );
+	    vl->push_back(osg::Vec3(x*radius, y*radius, z*radius));
 
 	    x = -sin(theta) * sin(rho+drho);
 	    y = cos(theta) * sin(rho+drho);
 	    z = nsign * cos(rho+drho);
 
 	    // glNormal3f( x*nsign, y*nsign, z*nsign );
-	    sgSetVec3( vec3, x*nsign, y*nsign, z*nsign );
-	    sgNormalizeVec3( vec3 );
-	    nl->add( vec3 );
+            normal = osg::Vec3(x*nsign, y*nsign, z*nsign);
+	    normal.normalize();
+	    nl->push_back(normal);
 
 	    // glTexCoord2f(s,t-dt);
-	    sgSetVec2( vec2, s, t-dt );
-	    tl->add( vec2 );
+	    tl->push_back(osg::Vec2(s, t-dt));
 	    s += ds;
 
 	    // glVertex3f( x*radius, y*radius, z*radius );
-	    sgSetVec3( vec3, x*radius, y*radius, z*radius );
-	    vl->add( vec3 );
+	    vl->push_back(osg::Vec3(x*radius, y*radius, z*radius));
 	}
 
-	ssgLeaf *slice = 
-	    new ssgVtxTable ( GL_TRIANGLE_STRIP, vl, nl, tl, cl );
-
-	if ( vl->getNum() != nl->getNum() ) {
+	if ( vl->size() != nl->size() ) {
             SG_LOG( SG_EVENT, SG_ALERT, "bad sphere1");
 	    exit(-1);
 	}
-	if ( vl->getNum() != tl->getNum() ) {
+	if ( vl->size() != tl->size() ) {
             SG_LOG( SG_EVENT, SG_ALERT, "bad sphere2");
 	    exit(-1);
 	}
-	slice->setState( state );
-	slice->setCallback( SSG_CALLBACK_PREDRAW, predraw );
-	slice->setCallback( SSG_CALLBACK_POSTDRAW, postdraw );
 
-	sphere->addKid( slice );
+        geometry->setUseDisplayList(false);
+        geometry->setVertexArray(vl);
+        geometry->setNormalArray(nl);
+        geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+        geometry->setTexCoordArray(0, tl);
+        geometry->setColorBinding(osg::Geometry::BIND_OFF);
+        geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
+        geode->addDrawable(geometry);
 
 	t -= dt;
     }
 
-    return sphere;
+    return geode;
 }

@@ -34,7 +34,8 @@
 
 #include STL_STRING
 
-#include <plib/ssg.h>           // plib include
+#include <osg/Array>
+#include <osg/Node>
 
 #include <simgear/math/sg_types.hxx>
 
@@ -45,7 +46,7 @@ class SGMaterialLib;            // forward declaration.
 
 
 // Create a ssg leaf
-ssgLeaf *sgMakeLeaf( const string& path,
+osg::Node* SGMakeLeaf( const string& path,
                      const GLenum ty,
                      SGMaterialLib *matlib, const string& material,
                      const point_list& nodes, const point_list& normals,
@@ -53,17 +54,6 @@ ssgLeaf *sgMakeLeaf( const string& path,
                      const int_list& node_index,
                      const int_list& normal_index,
                      const int_list& tex_index,
-                     const bool calc_lights, ssgVertexArray *lights );
-
-
-// return a newly created list of points randomly spread across the
-// specified leaf.  "factor" specifies density ... on average there
-// will be one object per the area specified by "factor" in m^2 A
-// larger factor will mean fewer objects.
-ssgVertexArray *sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor );
-
-// Another varient of the same routine.
-void sgGenRandomSurfacePoints( ssgLeaf *leaf, double factor, 
-                               ssgVertexArray *lights );
+                     const bool calc_lights, osg::Vec3Array *lights );
 
 #endif // _SG_LEAF_HXX

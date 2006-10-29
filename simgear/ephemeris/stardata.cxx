@@ -56,7 +56,7 @@ bool SGStarData::load() {
 
     // -dw- avoid local data > 32k error by dynamic allocation of the
     // array, problem for some compilers
-    stars = new sgdVec3[SG_MAX_STARS];
+    stars = new SGVec3d[SG_MAX_STARS];
 
      // build the full path name to the stars data base file
     data_path.append( "stars" );
@@ -117,7 +117,7 @@ bool SGStarData::load() {
 
 	// cout << " star data = " << ra << " " << dec << " " << mag << endl;
 
-	sgdSetVec3( stars[nstars], ra, dec, mag );
+	sgdSetVec3( stars[nstars].sg(), ra, dec, mag );
 
 	++nstars;
     }

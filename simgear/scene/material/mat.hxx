@@ -38,11 +38,10 @@
 
 #include <simgear/math/SGMath.hxx>
 
-#include <plib/sg.h>
-#include <plib/ssg.h>
+#include <osg/ref_ptr>
+#include <osg/StateSet>
 
 #include <simgear/props/props.hxx>
-#include <simgear/structure/ssgSharedPtr.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
 #include "matmodel.hxx"
@@ -93,15 +92,15 @@ public:
 
 
   /**
-   * Construct a material around an existing SSG state.
+   * Construct a material around an existing state.
    *
    * This constructor allows the application to create a custom,
    * low-level state for the scene graph and wrap a material around
    * it.  Note: the pointer ownership is transferred to the material.
    *
-   * @param s The SSG state for this material.
+   * @param s The state for this material.
    */
-  SGMaterial( ssgSimpleState *s );
+  SGMaterial( osg::StateSet *s );
 
   /**
    * Destructor.
@@ -126,7 +125,7 @@ public:
   /**
    * Get the textured state.
    */
-  ssgSimpleState *get_state (int n = -1) const;
+  osg::StateSet *get_state (int n = -1) const;
 
 
   /**
@@ -224,9 +223,9 @@ protected:
 protected:
 
   struct _internal_state {
-     _internal_state( ssgSimpleState *s, const string &t, bool l )
+      _internal_state( osg::StateSet *s, const string &t, bool l )
                   : state(s), texture_path(t), texture_loaded(l) {}
-      ssgSharedPtr<ssgSimpleState> state;
+      osg::ref_ptr<osg::StateSet> state;
       string texture_path;
       bool texture_loaded;
   };
@@ -242,7 +241,7 @@ private:
   vector<_internal_state> _status;
 
   // Round-robin counter
-  unsigned int _current_ptr;
+  mutable unsigned int _current_ptr;
 
   // texture size
   double xsize, ysize;
@@ -291,10 +290,10 @@ private:
   SGMaterial( const string &fg_root, const SGMaterial &mat ); // unimplemented
 
   void read_properties( const string &fg_root, const SGPropertyNode *props, const char *season );
-  void build_ssg_state( bool defer_tex_load );
-  void set_ssg_state( ssgSimpleState *s );
+  void build_state( bool defer_tex_load );
+  void set_state( osg::StateSet *s );
 
-  void assignTexture( ssgSimpleState *state, string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
+  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
 
 };
 
@@ -311,7 +310,7 @@ protected:
   double _right;
 };
 
-class SGMaterialUserData : public ssgBase {
+class SGMaterialUserData : public osg::Referenced {
 public:
   SGMaterialUserData(const SGMaterial* material) :
     mMaterial(material)

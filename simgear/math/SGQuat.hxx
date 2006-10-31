@@ -89,7 +89,7 @@ public:
 
   /// Return a unit quaternion
   static SGQuat unit(void)
-  { return fromRealImag(1, SGVec3<T>(0)); }
+  { return fromRealImag(1, SGVec3<T>(0, 0, 0)); }
 
   /// Return a quaternion from euler angles
   static SGQuat fromEulerRad(T z, T y, T x)

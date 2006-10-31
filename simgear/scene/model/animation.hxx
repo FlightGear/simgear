@@ -63,15 +63,6 @@ class SGPersonalityBranch;
 class SGAnimation :  public osg::NodeCallback
 {
 public:
-  enum PersonalityVar { INIT_SPIN, LAST_TIME_SEC_SPIN, FACTOR_SPIN, 
-                            POSITION_DEG_SPIN, 
-                        INIT_TIMED, LAST_TIME_SEC_TIMED, TOTAL_DURATION_SEC_TIMED, 
-                            BRANCH_DURATION_SEC_TIMED, STEP_TIMED,
-                        INIT_TRANSLATE, FACTOR_TRANSLATE, OFFSET_TRANSLATE,
-                        INIT_BLEND, FACTOR_BLEND, OFFSET_BLEND,
-                        INIT_SCALE, X_FACTOR_SCALE, Y_FACTOR_SCALE, Z_FACTOR_SCALE,
-                            X_OFFSET_SCALE, Y_OFFSET_SCALE, Z_OFFSET_SCALE };
-
   SGAnimation (SGPropertyNode_ptr props, osg::Group * branch);
 
   virtual ~SGAnimation ();
@@ -89,38 +80,16 @@ public:
   /**
    * Update the animation.
    */
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  { 
-    // note, callback is responsible for scenegraph traversal so
-    // should always include call traverse(node,nv) to ensure 
-    // that the rest of cullbacks and the scene graph are traversed.
-    update();
-    traverse(node, nv);
-  }
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 
   /**
    * Restore the state after the animation.
    */
   virtual void restore();
 
-  /**
-   * Set the value of sim_time_sec.  This needs to be called every
-   * frame in order for the time based animations to work correctly.
-   */
-  static void set_sim_time_sec( double val ) { sim_time_sec = val; }
-
-  /**
-   * Current personality branch : enable animation to behave differently
-   * for similar objects
-   */
-  static SGPersonalityBranch *current_object;
-
   int get_animation_type(void) { return animation_type; }
 
 protected:
-
-  static double sim_time_sec;
 
   osg::Group* _branch;
 
@@ -148,7 +117,7 @@ public:
   SGRangeAnimation (SGPropertyNode *prop_root,
                     SGPropertyNode_ptr props);
   virtual ~SGRangeAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   SGPropertyNode_ptr _min_prop;
   SGPropertyNode_ptr _max_prop;
@@ -198,7 +167,7 @@ public:
                  SGPropertyNode_ptr props,
                  double sim_time_sec );
   virtual ~SGSpinAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
@@ -220,7 +189,7 @@ public:
     SGTimedAnimation (SGPropertyNode_ptr props);
     virtual ~SGTimedAnimation ();
     virtual void init();
-    virtual int update();
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
     bool _use_personality;
     double _duration_sec;
@@ -247,7 +216,7 @@ class SGRotateAnimation : public SGAnimation
 public:
   SGRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
   virtual ~SGRotateAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
@@ -273,7 +242,7 @@ public:
   SGTranslateAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTranslateAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
@@ -298,7 +267,7 @@ public:
   SGBlendAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGBlendAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
@@ -322,7 +291,7 @@ public:
   SGScaleAnimation( SGPropertyNode *prop_root,
                         SGPropertyNode_ptr props );
   virtual ~SGScaleAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
@@ -360,7 +329,7 @@ class SGTexRotateAnimation : public SGAnimation
 public:
   SGTexRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
   virtual ~SGTexRotateAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
@@ -387,7 +356,7 @@ public:
   SGTexTranslateAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTexTranslateAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   SGPropertyNode_ptr _prop;
   double _offset;
@@ -417,7 +386,7 @@ public:
   SGTexMultipleAnimation( SGPropertyNode *prop_root,
                       SGPropertyNode_ptr props );
   virtual ~SGTexMultipleAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
   class TexTransform
     {
@@ -468,7 +437,7 @@ public:
             const SGPath &texpath);
     virtual ~SGMaterialAnimation() {}
     virtual void init();
-    virtual int update();
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
     enum {
         DIFFUSE = 1,
@@ -599,7 +568,7 @@ public:
   SGShadowAnimation ( SGPropertyNode *prop_root,
                    SGPropertyNode_ptr props );
   virtual ~SGShadowAnimation ();
-  virtual int update();
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
   bool get_condition_value(void);
 private:
   SGCondition * _condition;

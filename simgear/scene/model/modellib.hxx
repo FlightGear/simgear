@@ -40,9 +40,6 @@ public:
                                    double sim_time_sec,
                                    bool cache_object,
                                    SGModelData *data = 0 );
-protected:
-
-    map<string, osg::ref_ptr<osg::Node> > _table;
 };
 
 

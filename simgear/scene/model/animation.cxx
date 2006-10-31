@@ -28,7 +28,6 @@
 #include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "animation.hxx"
-#include "personality.hxx"
 #include "model.hxx"
 
 
@@ -160,10 +159,6 @@ read_interpolation_table (SGPropertyNode_ptr props)
 // Implementation of SGAnimation
 ////////////////////////////////////////////////////////////////////////
 
-// Initialize the static data member
-double SGAnimation::sim_time_sec = 0.0;
-SGPersonalityBranch *SGAnimation::current_object = 0;
-
 SGAnimation::SGAnimation (SGPropertyNode_ptr props, osg::Group * branch)
     : _branch(branch),
     animation_type(0)
@@ -185,17 +180,16 @@ SGAnimation::init ()
 {
 }
 
-int
-SGAnimation::update()
-{
-    return 1;
-}
-
 void
 SGAnimation::restore()
 {
 }
 
+void
+SGAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    traverse(node, nv);
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -260,8 +254,8 @@ SGRangeAnimation::~SGRangeAnimation ()
 {
 }
 
-int
-SGRangeAnimation::update()
+void
+SGRangeAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   float ranges[2];
   if ( _condition == 0 || _condition->test() ) {
@@ -280,7 +274,7 @@ SGRangeAnimation::update()
     ranges[1] = 1000000000.f;
   }
   static_cast<osg::LOD*>(_branch)->setRange(0, ranges[0], ranges[1]);
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -345,8 +339,8 @@ SGSelectAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 ////////////////////////////////////////////////////////////////////////
 
 SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
-                              SGPropertyNode_ptr props,
-                              double sim_time_sec )
+                                  SGPropertyNode_ptr props,
+                                  double sim_time_sec )
   : SGAnimation(props, new osg::MatrixTransform),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
@@ -389,53 +383,36 @@ SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
     }
     
     _axis.normalize();
+
+    if ( _use_personality ) {
+      _factor.shuffle();
+      _position_deg.shuffle();
+    }
 }
 
 SGSpinAnimation::~SGSpinAnimation ()
 {
 }
 
-int
-SGSpinAnimation::update()
+void
+SGSpinAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
+  double sim_time_sec = nv->getFrameStamp()->getReferenceTime();
   if ( _condition == 0 || _condition->test() ) {
     double dt;
     float velocity_rpms;
-    if ( _use_personality && current_object ) {
-      SGPersonalityBranch *key = current_object;
-      if ( !key->getIntValue( this, INIT_SPIN ) ) {
-        key->setDoubleValue( _factor.shuffle(), this, FACTOR_SPIN );
-        key->setDoubleValue( _position_deg.shuffle(), this, POSITION_DEG_SPIN );
-
-        key->setDoubleValue( sim_time_sec, this, LAST_TIME_SEC_SPIN );
-        key->setIntValue( 1, this, INIT_SPIN );
-      }
-
-      _factor = key->getDoubleValue( this, FACTOR_SPIN );
-      _position_deg = key->getDoubleValue( this, POSITION_DEG_SPIN );
-      _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC_SPIN );
-      dt = sim_time_sec - _last_time_sec;
-      _last_time_sec = sim_time_sec;
-      key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC_SPIN );
-
-      velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
-      _position_deg += (dt * velocity_rpms * 360);
-      _position_deg -= 360*floor(_position_deg/360);
-      key->setDoubleValue( _position_deg, this, POSITION_DEG_SPIN );
-    } else {
-      dt = sim_time_sec - _last_time_sec;
-      _last_time_sec = sim_time_sec;
-
-      velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
-      _position_deg += (dt * velocity_rpms * 360);
-      _position_deg -= 360*floor(_position_deg/360);
-    }
+    dt = sim_time_sec - _last_time_sec;
+    _last_time_sec = sim_time_sec;
+    
+    velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
+    _position_deg += (dt * velocity_rpms * 360);
+    _position_deg -= 360*floor(_position_deg/360);
 
     osg::Matrix _matrix;
     set_rotation(_matrix, _position_deg, _center, _axis);
     static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
-  return 1;
+  traverse(node, nv);
 }
 
 
@@ -448,7 +425,7 @@ SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
   : SGAnimation(props, new osg::Switch),
     _use_personality( props->getBoolValue("use-personality",false) ),
     _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
-    _last_time_sec( sim_time_sec ),
+    _last_time_sec( 0 ),
     _total_duration_sec( 0 ),
     _step( 0 )
     
@@ -499,65 +476,23 @@ SGTimedAnimation::init()
     static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
 }
 
-int
-SGTimedAnimation::update()
+void
+SGTimedAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-    if ( _use_personality && current_object ) {
-        SGPersonalityBranch *key = current_object;
-        if ( !key->getIntValue( this, INIT_TIMED ) ) {
-            double total = 0;
-            double offset = 1.0;
-            for ( size_t i = 0; i < _branch_duration_specs.size(); i++ ) {
-                DurationSpec &sp = _branch_duration_specs[ i ];
-                double v = sp._min + sg_random() * ( sp._max - sp._min );
-                key->setDoubleValue( v, this, BRANCH_DURATION_SEC_TIMED, i );
-                if ( i == 0 )
-                    offset = v;
-                total += v;
-            }
-            // Sanity check : total duration shouldn't equal zero
-            if ( total < 0.01 ) {
-                total = 0.01;
-            }
-            offset *= sg_random();
-            key->setDoubleValue( sim_time_sec - offset, this, LAST_TIME_SEC_TIMED );
-            key->setDoubleValue( total, this, TOTAL_DURATION_SEC_TIMED );
-            key->setIntValue( 0, this, STEP_TIMED );
-            key->setIntValue( 1, this, INIT_TIMED );
-        }
-
-        _step = key->getIntValue( this, STEP_TIMED );
-        _last_time_sec = key->getDoubleValue( this, LAST_TIME_SEC_TIMED );
-        _total_duration_sec = key->getDoubleValue( this, TOTAL_DURATION_SEC_TIMED );
-        _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
-        double duration = _duration_sec;
-        if ( _step < _branch_duration_specs.size() ) {
-            duration = key->getDoubleValue( this, BRANCH_DURATION_SEC_TIMED, _step );
-        }
-        if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
-            _last_time_sec += duration;
-            _step += 1;
-            if ( _step >= getBranch()->getNumChildren() )
-                _step = 0;
-        }
-        static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
-        key->setDoubleValue( _last_time_sec, this, LAST_TIME_SEC_TIMED );
-        key->setIntValue( _step, this, STEP_TIMED );
-    } else {
-        _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
-        double duration = _duration_sec;
-        if ( _step < _branch_duration_sec.size() ) {
-            duration = _branch_duration_sec[ _step ];
-        }
-        if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
-            _last_time_sec += duration;
-            _step += 1;
-            if ( _step >= getBranch()->getNumChildren() )
-                _step = 0;
-            static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
-        }
+    double sim_time_sec = nv->getFrameStamp()->getReferenceTime();
+    _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
+    double duration = _duration_sec;
+    if ( _step < _branch_duration_sec.size() ) {
+      duration = _branch_duration_sec[ _step ];
     }
-    return 1;
+    if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
+      _last_time_sec += duration;
+      _step += 1;
+      if ( _step >= getBranch()->getNumChildren() )
+        _step = 0;
+      static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
+    }
+    traverse(node, nv);
 }
 
 
@@ -621,8 +556,8 @@ SGRotateAnimation::~SGRotateAnimation ()
   delete _table;
 }
 
-int
-SGRotateAnimation::update()
+void
+SGRotateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   if (_condition == 0 || _condition->test()) {
     if (_table == 0) {
@@ -638,7 +573,7 @@ SGRotateAnimation::update()
     set_rotation(_matrix, _position_deg, _center, _axis);
     static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -666,6 +601,11 @@ SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
   _colorMatrix = new osg::ColorMatrix;
   osg::StateSet* stateSet = _branch->getOrCreateStateSet();
   stateSet->setAttribute(_colorMatrix.get());
+
+  if ( _use_personality ) {
+    _factor.shuffle();
+    _offset.shuffle();
+  }
 }
 
 SGBlendAnimation::~SGBlendAnimation ()
@@ -673,23 +613,10 @@ SGBlendAnimation::~SGBlendAnimation ()
     delete _table;
 }
 
-int
-SGBlendAnimation::update()
+void
+SGBlendAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   double _blend;
-
-  if ( _use_personality && current_object ) {
-    SGPersonalityBranch *key = current_object;
-    if ( !key->getIntValue( this, INIT_BLEND ) ) {
-      key->setDoubleValue( _factor.shuffle(), this, FACTOR_BLEND );
-      key->setDoubleValue( _offset.shuffle(), this, OFFSET_BLEND );
-
-      key->setIntValue( 1, this, INIT_BLEND );
-    }
-
-    _factor = key->getDoubleValue( this, FACTOR_BLEND );
-    _offset = key->getDoubleValue( this, OFFSET_BLEND );
-  }
 
   if (_table == 0) {
     _blend = 1.0 - (_prop->getDoubleValue() * _factor + _offset);
@@ -706,7 +633,7 @@ SGBlendAnimation::update()
     _prev_value = _blend;
     _colorMatrix->getMatrix()(3, 3) = _blend;
   }
-  return 1;
+  traverse(node, nv);
 }
 
 
@@ -738,6 +665,11 @@ SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
   _axis[1] = props->getFloatValue("axis/y", 0);
   _axis[2] = props->getFloatValue("axis/z", 0);
   _axis.normalize();
+
+  if ( _use_personality ) {
+    _factor.shuffle();
+    _offset_m.shuffle();
+  }
 }
 
 SGTranslateAnimation::~SGTranslateAnimation ()
@@ -745,22 +677,10 @@ SGTranslateAnimation::~SGTranslateAnimation ()
   delete _table;
 }
 
-int
-SGTranslateAnimation::update()
+void
+SGTranslateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   if (_condition == 0 || _condition->test()) {
-    if ( _use_personality && current_object ) {
-      SGPersonalityBranch *key = current_object;
-      if ( !key->getIntValue( this, INIT_TRANSLATE ) ) {
-        key->setDoubleValue( _factor.shuffle(), this, FACTOR_TRANSLATE );
-        key->setDoubleValue( _offset_m.shuffle(), this, OFFSET_TRANSLATE );
-      }
-
-      _factor = key->getDoubleValue( this, FACTOR_TRANSLATE );
-      _offset_m = key->getDoubleValue( this, OFFSET_TRANSLATE );
-
-      key->setIntValue( 1, this, INIT_TRANSLATE );
-    }
 
     if (_table == 0) {
       _position_m = (_prop->getDoubleValue() * _factor) + _offset_m;
@@ -776,7 +696,7 @@ SGTranslateAnimation::update()
     set_translation(_matrix, _position_m, _axis);
     static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
   }
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -810,6 +730,14 @@ SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
     _max_y(props->getDoubleValue("y-max")),
     _max_z(props->getDoubleValue("z-max"))
 {
+  if ( _use_personality ) {
+    _x_factor.shuffle();
+    _x_offset.shuffle();
+    _y_factor.shuffle();
+    _y_offset.shuffle();
+    _z_factor.shuffle();
+    _z_offset.shuffle();
+  }
 }
 
 SGScaleAnimation::~SGScaleAnimation ()
@@ -817,30 +745,9 @@ SGScaleAnimation::~SGScaleAnimation ()
   delete _table;
 }
 
-int
-SGScaleAnimation::update()
+void
+SGScaleAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-  if ( _use_personality && current_object ) {
-    SGPersonalityBranch *key = current_object;
-    if ( !key->getIntValue( this, INIT_SCALE ) ) {
-      key->setDoubleValue( _x_factor.shuffle(), this, X_FACTOR_SCALE );
-      key->setDoubleValue( _x_offset.shuffle(), this, X_OFFSET_SCALE );
-      key->setDoubleValue( _y_factor.shuffle(), this, Y_FACTOR_SCALE );
-      key->setDoubleValue( _y_offset.shuffle(), this, Y_OFFSET_SCALE );
-      key->setDoubleValue( _z_factor.shuffle(), this, Z_FACTOR_SCALE );
-      key->setDoubleValue( _z_offset.shuffle(), this, Z_OFFSET_SCALE );
-
-      key->setIntValue( 1, this, INIT_SCALE );
-    }
-
-    _x_factor = key->getDoubleValue( this, X_FACTOR_SCALE );
-    _x_offset = key->getDoubleValue( this, X_OFFSET_SCALE );
-    _y_factor = key->getDoubleValue( this, Y_FACTOR_SCALE );
-    _y_offset = key->getDoubleValue( this, Y_OFFSET_SCALE );
-    _z_factor = key->getDoubleValue( this, Z_FACTOR_SCALE );
-    _z_offset = key->getDoubleValue( this, Z_OFFSET_SCALE );
-  }
-
   if (_table == 0) {
       _x_scale = _prop->getDoubleValue() * _x_factor + _x_offset;
     if (_has_min_x && _x_scale < _min_x)
@@ -874,7 +781,7 @@ SGScaleAnimation::update()
   osg::Matrix _matrix;
   set_scale(_matrix, _x_scale, _y_scale, _z_scale );
   static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -918,25 +825,24 @@ SGTexRotateAnimation::~SGTexRotateAnimation ()
   delete _table;
 }
 
-int
-SGTexRotateAnimation::update()
+void
+SGTexRotateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-  if (_condition && !_condition->test())
-    return 1;
-
-  if (_table == 0) {
-   _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
-   if (_has_min && _position_deg < _min_deg)
-     _position_deg = _min_deg;
-   if (_has_max && _position_deg > _max_deg)
-     _position_deg = _max_deg;
-  } else {
-    _position_deg = _table->interpolate(_prop->getDoubleValue());
+  if (!_condition || _condition->test()) {
+    if (_table == 0) {
+      _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
+      if (_has_min && _position_deg < _min_deg)
+        _position_deg = _min_deg;
+      if (_has_max && _position_deg > _max_deg)
+        _position_deg = _max_deg;
+    } else {
+      _position_deg = _table->interpolate(_prop->getDoubleValue());
+    }
+    osg::Matrix _matrix;
+    set_rotation(_matrix, _position_deg, _center, _axis);
+    _texMat->setMatrix(_matrix);
   }
-  osg::Matrix _matrix;
-  set_rotation(_matrix, _position_deg, _center, _axis);
-  _texMat->setMatrix(_matrix);
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -979,25 +885,24 @@ SGTexTranslateAnimation::~SGTexTranslateAnimation ()
   delete _table;
 }
 
-int
-SGTexTranslateAnimation::update()
+void
+SGTexTranslateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
-  if (_condition && !_condition->test())
-    return 1;
-
-  if (_table == 0) {
-    _position = (apply_mods(_prop->getDoubleValue(), _step, _scroll) + _offset) * _factor;
-    if (_has_min && _position < _min)
-      _position = _min;
-    if (_has_max && _position > _max)
-      _position = _max;
-  } else {
-    _position = _table->interpolate(apply_mods(_prop->getDoubleValue(), _step, _scroll));
+  if (!_condition || _condition->test()) {
+    if (_table == 0) {
+      _position = (apply_mods(_prop->getDoubleValue(), _step, _scroll) + _offset) * _factor;
+      if (_has_min && _position < _min)
+        _position = _min;
+      if (_has_max && _position > _max)
+        _position = _max;
+    } else {
+      _position = _table->interpolate(apply_mods(_prop->getDoubleValue(), _step, _scroll));
+    }
+    osg::Matrix _matrix;
+    set_translation(_matrix, _position, _axis);
+    _texMat->setMatrix(_matrix);
   }
-  osg::Matrix _matrix;
-  set_translation(_matrix, _position, _axis);
-  _texMat->setMatrix(_matrix);
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -1076,8 +981,8 @@ SGTexMultipleAnimation::~SGTexMultipleAnimation ()
    delete [] _transform;
 }
 
-int
-SGTexMultipleAnimation::update()
+void
+SGTexMultipleAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
   int i;
   osg::Matrix tmatrix;
@@ -1120,7 +1025,7 @@ SGTexMultipleAnimation::update()
     }
   }
   _texMat->setMatrix(tmatrix);
-  return 2;
+  traverse(node, nv);
 }
 
 
@@ -1279,7 +1184,8 @@ void SGMaterialAnimation::init()
     }
 }
 
-int SGMaterialAnimation::update()
+void
+SGMaterialAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
     if (_condition) {
         bool cond = _condition->test();
@@ -1287,8 +1193,10 @@ int SGMaterialAnimation::update()
             _update |= _static_update;
 
         _last_condition = cond;
-        if (!cond)
-            return 2;
+        if (!cond) {
+            traverse(node, nv);
+            return;
+        }
     }
 
     if (_read & DIFFUSE)
@@ -1337,7 +1245,7 @@ int SGMaterialAnimation::update()
         setMaterialBranch(_branch);
         _update = 0;
     }
-    return 2;
+    traverse(node, nv);
 }
 
 void SGMaterialAnimation::updateColorGroup(ColorSpec *col, int flag)
@@ -1710,8 +1618,8 @@ SGShadowAnimation::~SGShadowAnimation ()
     delete _condition;
 }
 
-int
-SGShadowAnimation::update()
+void
+SGShadowAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
     if (_condition)
         _condition_value = _condition->test();
@@ -1721,7 +1629,7 @@ SGShadowAnimation::update()
     } else {
         _branch->setNodeMask(~SG_NODEMASK_SHADOW_BIT&_branch->getNodeMask());
     }
-    return 2;
+    traverse(node, nv);
 }
 
 bool SGShadowAnimation::get_condition_value(void) {

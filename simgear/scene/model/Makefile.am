@@ -9,7 +9,6 @@ include_HEADERS = \
 	location.hxx \
 	model.hxx \
 	modellib.hxx \
-	personality.hxx \
 	persparam.hxx \
 	placement.hxx \
 	placementtrans.hxx
@@ -19,7 +18,6 @@ libsgmodel_a_SOURCES = \
 	location.cxx \
 	model.cxx \
 	modellib.cxx \
-	personality.cxx \
 	persparam.cxx \
 	placement.cxx \
 	placementtrans.cxx \

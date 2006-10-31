@@ -11,6 +11,8 @@ include_HEADERS = \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx
 
-libsgutil_a_SOURCES =
+libsgutil_a_SOURCES = \
+	SGStateAttributeVisitor.cxx \
+	SGTextureStateAttributeVisitor.cxx
 
 INCLUDES = -I$(top_srcdir)

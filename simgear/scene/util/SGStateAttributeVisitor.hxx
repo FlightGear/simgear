@@ -22,44 +22,19 @@
 #ifndef SG_SCENE_STATEATTRIBUTEVISITOR_HXX
 #define SG_SCENE_STATEATTRIBUTEVISITOR_HXX
 
+#include <osg/Geode>
+#include <osg/Node>
+#include <osg/NodeVisitor>
+#include <osg/StateSet>
+
 class SGStateAttributeVisitor : public osg::NodeVisitor {
 public:
-  SGStateAttributeVisitor() :
-    osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
-                     osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
-  { }
-
-  virtual void apply(osg::StateSet::RefAttributePair&)
-  { }
-  virtual void apply(osg::StateSet::AttributeList& attrList)
-  {
-    osg::StateSet::AttributeList::iterator i;
-    i = attrList.begin();
-    while (i != attrList.end()) {
-      apply(i->second);
-      ++i;
-    }
-  }
-  virtual void apply(osg::StateSet* stateSet)
-  {
-    if (!stateSet)
-      return;
-    apply(stateSet->getAttributeList());
-  }
-
-  virtual void apply(osg::Node& node)
-  {
-    apply(node.getStateSet());
-    traverse(node);
-  }
-  virtual void apply(osg::Geode& node)
-  {
-    unsigned nDrawables = node.getNumDrawables();
-    for (unsigned i = 0; i < nDrawables; ++i)
-      apply(node.getDrawable(i)->getStateSet());
-    apply(node.getStateSet());
-    traverse(node);
-  }
+  SGStateAttributeVisitor();
+  virtual void apply(osg::StateSet::RefAttributePair&);
+  virtual void apply(osg::StateSet::AttributeList& attrList);
+  virtual void apply(osg::StateSet* stateSet);
+  virtual void apply(osg::Node& node);
+  virtual void apply(osg::Geode& node);
 };
 
 #endif

@@ -22,49 +22,21 @@
 #ifndef SG_SCENE_TEXTURESTATEATTRIBUTEVISITOR_HXX
 #define SG_SCENE_TEXTURESTATEATTRIBUTEVISITOR_HXX
 
+#include <osg/Geode>
+#include <osg/Node>
+#include <osg/NodeVisitor>
+#include <osg/StateSet>
+
 class SGTextureStateAttributeVisitor : public osg::NodeVisitor {
 public:
-  SGTextureStateAttributeVisitor() :
-    osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
-                     osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
-  { }
+  SGTextureStateAttributeVisitor();
 
-  virtual void apply(int textureUnit, osg::StateSet::RefAttributePair& refAttr)
-  { }
-  virtual void apply(int textureUnit, osg::StateSet::AttributeList& attrList)
-  {
-    osg::StateSet::AttributeList::iterator i;
-    i = attrList.begin();
-    while (i != attrList.end()) {
-      apply(textureUnit, i->second);
-      ++i;
-    }
-  }
-  virtual void apply(osg::StateSet::TextureAttributeList& attrList)
-  {
-    for (unsigned i = 0; i < attrList.size(); ++i)
-      apply(i, attrList[i]);
-  }
-  virtual void apply(osg::StateSet* stateSet)
-  {
-    if (!stateSet)
-      return;
-    apply(stateSet->getTextureAttributeList());
-  }
-
-  virtual void apply(osg::Node& node)
-  {
-    apply(node.getStateSet());
-    traverse(node);
-  }
-  virtual void apply(osg::Geode& node)
-  {
-    unsigned nDrawables = node.getNumDrawables();
-    for (unsigned i = 0; i < nDrawables; ++i)
-      apply(node.getDrawable(i)->getStateSet());
-    apply(node.getStateSet());
-    traverse(node);
-  }
+  virtual void apply(int textureUnit, osg::StateSet::RefAttributePair& refAttr);
+  virtual void apply(int textureUnit, osg::StateSet::AttributeList& attrList);
+  virtual void apply(osg::StateSet::TextureAttributeList& attrList);
+  virtual void apply(osg::StateSet* stateSet);
+  virtual void apply(osg::Node& node);
+  virtual void apply(osg::Geode& node);
 };
 
 #endif

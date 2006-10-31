@@ -26,6 +26,9 @@
 
 #include "extensions.hxx"
 #include <simgear/debug/logstream.hxx>
+#if !defined(WIN32) && !defined( GLX_VERSION_1_4 )
+#  include <dlfcn.h>
+#endif
 
 bool SGSearchExtensionsString(const char *extString, const char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
@@ -96,7 +99,7 @@ void* macosxGetGLProcAddress(const char *func) {
   return function;
 }
 
-#elif !defined( WIN32 )
+#elif !defined( WIN32 ) && !defined(GLX_VERSION_1_4)
 
 void *SGGetGLProcAddress(const char *func) {
     static void *libHandle = NULL;

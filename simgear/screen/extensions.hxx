@@ -33,7 +33,7 @@
 #endif
 
 #if !defined(WIN32)
-# include <dlfcn.h>
+# include <GL/glx.h>
 #endif
 
 #include <simgear/compiler.h>
@@ -56,7 +56,7 @@ bool SGIsOpenGLExtensionSupported(char *extName);
   // don't use an inline function for symbol lookup, since it is too big
   void* macosxGetGLProcAddress(const char *func);
 
-#elif !defined( WIN32 )
+#elif !defined( WIN32 ) && !defined( GLX_VERSION_1_4 )
 
   void *SGGetGLProcAddress(const char *func);
   
@@ -70,8 +70,10 @@ inline void (*SGLookupFunction(const char *func))()
 #elif defined( __APPLE__ )
     return (void (*)()) macosxGetGLProcAddress(func);
 
-#else // UNIX
+#elif defined( GLX_VERSION_1_4 )
+    return glXGetProcAddress((const GLubyte*)func);
 
+#else // UNIX, default
     return (void (*)()) SGGetGLProcAddress(func);
 #endif
 }

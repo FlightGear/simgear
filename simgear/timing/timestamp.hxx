@@ -71,13 +71,9 @@ public:
      * @param m initial microseconds value
      */
     SGTimeStamp( const long s, const long m );
-    ~SGTimeStamp();
 
     /** Update stored time to current time (seconds and microseconds) */
     void stamp();
-
-    /** Compare two time stamps for equality */
-    SGTimeStamp& operator = ( const SGTimeStamp& t );
 
     /**
      * Increment the saved time by the specified number of microseconds
@@ -112,17 +108,6 @@ inline SGTimeStamp::SGTimeStamp( const long s, const long u ) {
     seconds = s;
     usec = u;
 }
-
-inline SGTimeStamp::~SGTimeStamp() {
-}
-
-inline SGTimeStamp& SGTimeStamp::operator = (const SGTimeStamp& t)
-{
-    seconds = t.seconds;
-    usec = t.usec;
-    return *this;
-}
-
 
 #endif // _TIMESTAMP_HXX
 

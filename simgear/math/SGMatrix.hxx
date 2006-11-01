@@ -63,14 +63,13 @@ public:
   }
 
   /// Constructor, build up a SGMatrix from a translation
-  SGMatrix(const SGVec3<T>& trans)
+  template<typename S>
+  SGMatrix(const SGVec3<S>& trans)
   { set(trans); }
 
   /// Constructor, build up a SGMatrix from a rotation and a translation
-  SGMatrix(const SGQuat<T>& quat, const SGVec3<T>& trans)
-  { set(quat, trans); }
-  /// Constructor, build up a SGMatrix from a rotation and a translation
-  SGMatrix(const SGQuat<T>& quat)
+  template<typename S>
+  SGMatrix(const SGQuat<S>& quat)
   { set(quat); }
 
   /// Copy constructor for a transposed negated matrix
@@ -78,39 +77,22 @@ public:
   { set(tm); }
 
   /// Set from a tranlation
-  void set(const SGVec3<T>& trans)
+  template<typename S>
+  void set(const SGVec3<S>& trans)
   {
     _data.flat[0] = 1; _data.flat[4] = 0;
-    _data.flat[8] = 0; _data.flat[12] = -trans(0);
+    _data.flat[8] = 0; _data.flat[12] = T(trans(0));
     _data.flat[1] = 0; _data.flat[5] = 1;
-    _data.flat[9] = 0; _data.flat[13] = -trans(1);
+    _data.flat[9] = 0; _data.flat[13] = T(trans(1));
     _data.flat[2] = 0; _data.flat[6] = 0;
-    _data.flat[10] = 1; _data.flat[14] = -trans(2);
+    _data.flat[10] = 1; _data.flat[14] = T(trans(2));
     _data.flat[3] = 0; _data.flat[7] = 0;
     _data.flat[11] = 0; _data.flat[15] = 1;
   }
 
   /// Set from a scale/rotation and tranlation
-  void set(const SGQuat<T>& quat, const SGVec3<T>& trans)
-  {
-    T w = quat.w(); T x = quat.x(); T y = quat.y(); T z = quat.z();
-    T xx = x*x; T yy = y*y; T zz = z*z;
-    T wx = w*x; T wy = w*y; T wz = w*z;
-    T xy = x*y; T xz = x*z; T yz = y*z;
-    _data.flat[0] = 1-2*(yy+zz); _data.flat[1] = 2*(xy-wz);
-    _data.flat[2] = 2*(xz+wy); _data.flat[3] = 0;
-    _data.flat[4] = 2*(xy+wz); _data.flat[5] = 1-2*(xx+zz);
-    _data.flat[6] = 2*(yz-wx); _data.flat[7] = 0;
-    _data.flat[8] = 2*(xz-wy); _data.flat[9] = 2*(yz+wx);
-    _data.flat[10] = 1-2*(xx+yy); _data.flat[11] = 0;
-    // Well, this one is ugly here, as that xform method on the current
-    // object needs the above data to be already set ...
-    SGVec3<T> t = xformVec(trans);
-    _data.flat[12] = -t(0); _data.flat[13] = -t(1);
-    _data.flat[14] = -t(2); _data.flat[15] = 1;
-  }
-  /// Set from a scale/rotation and tranlation
-  void set(const SGQuat<T>& quat)
+  template<typename S>
+  void set(const SGQuat<S>& quat)
   {
     T w = quat.w(); T x = quat.x(); T y = quat.y(); T z = quat.z();
     T xx = x*x; T yy = y*y; T zz = z*z;
@@ -198,6 +180,45 @@ public:
   { return operator*=(1/T(s)); }
   /// Inplace matrix multiplication, post multiply
   SGMatrix& operator*=(const SGMatrix<T>& m2);
+
+  template<typename S>
+  SGMatrix& preMultTranslate(const SGVec3<S>& t)
+  {
+    for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i)
+      (*this)(i,3) += T(t(i));
+    return *this;
+  }
+  template<typename S>
+  SGMatrix& postMultTranslate(const SGVec3<S>& t)
+  {
+    SGVec4<T> col3((*this)(0,3), (*this)(1,3), (*this)(2,3), (*this)(3,3));
+    for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i) {
+      SGVec4<T> tmp((*this)(0,3), (*this)(1,3), (*this)(2,3), (*this)(3,3));
+      col3 += T(t(i))*tmp;
+    }
+    (*this)(0,3) = col3(0); (*this)(1,3) = col3(1);
+    (*this)(2,3) = col3(2); (*this)(3,3) = col3(3);
+    return *this;
+  }
+
+  SGMatrix& preMultRotate(const SGQuat<T>& r)
+  {
+    for (unsigned i = 0; i < SGMatrix<T>::nCols; ++i) {
+      SGVec3<T> col((*this)(0,i), (*this)(1,i), (*this)(2,i));
+      col = r.transform(col);
+      (*this)(0,i) = col(0); (*this)(1,i) = col(1); (*this)(2,i) = col(2);
+    }
+    return *this;
+  }
+  SGMatrix& postMultRotate(const SGQuat<T>& r)
+  {
+    for (unsigned i = 0; i < SGMatrix<T>::nCols; ++i) {
+      SGVec3<T> col((*this)(i,0), (*this)(i,1), (*this)(i,2));
+      col = r.backTransform(col);
+      (*this)(i,0) = col(0); (*this)(i,1) = col(1); (*this)(i,2) = col(2);
+    }
+    return *this;
+  }
 
   SGVec3<T> xformPt(const SGVec3<T>& pt) const
   {

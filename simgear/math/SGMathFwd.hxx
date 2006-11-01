@@ -32,6 +32,8 @@ class SGMisc;
 template<typename T>
 class SGQuat;
 template<typename T>
+class SGVec2;
+template<typename T>
 class SGVec3;
 template<typename T>
 class SGVec4;
@@ -44,6 +46,8 @@ typedef SGMisc<float> SGMiscf;
 typedef SGMisc<double> SGMiscd;
 typedef SGQuat<float> SGQuatf;
 typedef SGQuat<double> SGQuatd;
+typedef SGVec2<float> SGVec2f;
+typedef SGVec2<double> SGVec2d;
 typedef SGVec3<float> SGVec3f;
 typedef SGVec3<double> SGVec3d;
 typedef SGVec4<float> SGVec4f;

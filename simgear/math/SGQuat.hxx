@@ -180,14 +180,100 @@ public:
     return fromRealImag(cos(angle2), T(sin(angle2)/nAxis)*axis);
   }
 
+  static SGQuat fromRotateTo(const SGVec3<T>& from, const SGVec3<T>& to)
+  {
+    T nfrom = norm(from);
+    T nto = norm(to);
+    if (nfrom < SGLimits<T>::min() || nto < SGLimits<T>::min())
+      return SGQuat::unit();
+
+    return SGQuat::fromRotateToNorm((1/nfrom)*from, (1/nto)*to);
+  }
+
+  // FIXME more finegrained error behavour.
+  static SGQuat fromRotateTo(const SGVec3<T>& v1, unsigned i1,
+                             const SGVec3<T>& v2, unsigned i2)
+  {
+    T nrmv1 = norm(v1);
+    T nrmv2 = norm(v2);
+    if (nrmv1 < SGLimits<T>::min() || nrmv2 < SGLimits<T>::min())
+      return SGQuat::unit();
+
+    SGVec3<T> nv1 = (1/nrmv1)*v1;
+    SGVec3<T> nv2 = (1/nrmv2)*v2;
+    T dv1v2 = dot(nv1, nv2);
+    if (fabs(fabs(dv1v2)-1) < SGLimits<T>::epsilon())
+      return SGQuat::unit();
+
+    // The target vector for the first rotation
+    SGVec3<T> nto1 = SGVec3<T>::zeros();
+    SGVec3<T> nto2 = SGVec3<T>::zeros();
+    nto1[i1] = 1;
+    nto2[i2] = 1;
+
+    // The first rotation can be done with the usual routine.
+    SGQuat q = SGQuat::fromRotateToNorm(nv1, nto1);
+
+    // The rotation axis for the second rotation is the
+    // target for the first one, so the rotation axis is nto1
+    // We need to get the angle.
+
+    // Make nv2 exactly orthogonal to nv1.
+    nv2 = normalize(nv2 - dv1v2*nv1);
+
+    SGVec3<T> tnv2 = q.transform(nv2);
+    T cosang = dot(nto2, tnv2);
+    T cos05ang = T(0.5+0.5*cosang);
+    if (cos05ang <= 0)
+      cosang = T(0);
+    cos05ang = sqrt(cos05ang);
+    T sig = dot(nto1, cross(nto2, tnv2));
+    T sin05ang = T(0.5-0.5*cosang);
+    if (sin05ang <= 0)
+      sin05ang = 0;
+    sin05ang = copysign(sqrt(sin05ang), sig);
+    q *= SGQuat::fromRealImag(cos05ang, sin05ang*nto1);
+
+    return q;
+  }
+
+
+  // Return a quaternion which rotates the vector given by v
+  // to the vector -v. Other directions are *not* preserved.
+  static SGQuat fromChangeSign(const SGVec3<T>& v)
+  {
+    // The vector from points to the oposite direction than to.
+    // Find a vector perpandicular to the vector to.
+    T absv1 = fabs(v(0));
+    T absv2 = fabs(v(1));
+    T absv3 = fabs(v(2));
+    
+    SGVec3<T> axis;
+    if (absv2 < absv1 && absv3 < absv1) {
+      T quot = v(1)/v(0);
+      axis = (1/sqrt(1+quot*quot))*SGVec3<T>(quot, -1, 0);
+    } else if (absv1 < absv2 && absv3 < absv2) {
+      T quot = v(2)/v(1);
+      axis = (1/sqrt(1+quot*quot))*SGVec3<T>(0, quot, -1);
+    } else if (absv1 < absv3 && absv2 < absv3) {
+      T quot = v(0)/v(2);
+      axis = (1/sqrt(1+quot*quot))*SGVec3<T>(-1, 0, quot);
+    } else {
+      // The all zero case.
+      return SGQuat::unit();
+    }
+
+    return SGQuat::fromRealImag(0, axis);
+  }
+
   /// Return a quaternion from real and imaginary part
   static SGQuat fromRealImag(T r, const SGVec3<T>& i)
   {
     SGQuat q;
     q.w() = r;
-    q.x() = i(0);
-    q.y() = i(1);
-    q.z() = i(2);
+    q.x() = i.x();
+    q.y() = i.y();
+    q.z() = i.z();
     return q;
   }
 
@@ -198,36 +284,36 @@ public:
   /// write the euler angles into the references
   void getEulerRad(T& zRad, T& yRad, T& xRad) const
   {
-    value_type sqrQW = w()*w();
-    value_type sqrQX = x()*x();
-    value_type sqrQY = y()*y();
-    value_type sqrQZ = z()*z();
+    T sqrQW = w()*w();
+    T sqrQX = x()*x();
+    T sqrQY = y()*y();
+    T sqrQZ = z()*z();
 
-    value_type num = 2*(y()*z() + w()*x());
-    value_type den = sqrQW - sqrQX - sqrQY + sqrQZ;
-    if (fabs(den) < SGLimits<value_type>::min() &&
-        fabs(num) < SGLimits<value_type>::min())
+    T num = 2*(y()*z() + w()*x());
+    T den = sqrQW - sqrQX - sqrQY + sqrQZ;
+    if (fabs(den) < SGLimits<T>::min() &&
+        fabs(num) < SGLimits<T>::min())
       xRad = 0;
     else
       xRad = atan2(num, den);
     
-    value_type tmp = 2*(x()*z() - w()*y());
+    T tmp = 2*(x()*z() - w()*y());
     if (tmp < -1)
-      yRad = 0.5*SGMisc<value_type>::pi();
+      yRad = 0.5*SGMisc<T>::pi();
     else if (1 < tmp)
-      yRad = -0.5*SGMisc<value_type>::pi();
+      yRad = -0.5*SGMisc<T>::pi();
     else
       yRad = -asin(tmp);
    
     num = 2*(x()*y() + w()*z()); 
     den = sqrQW + sqrQX - sqrQY - sqrQZ;
-    if (fabs(den) < SGLimits<value_type>::min() &&
-        fabs(num) < SGLimits<value_type>::min())
+    if (fabs(den) < SGLimits<T>::min() &&
+        fabs(num) < SGLimits<T>::min())
       zRad = 0;
     else {
-      value_type psi = atan2(num, den);
+      T psi = atan2(num, den);
       if (psi < 0)
-        psi += 2*SGMisc<value_type>::pi();
+        psi += 2*SGMisc<T>::pi();
       zRad = psi;
     }
   }
@@ -341,18 +427,18 @@ public:
   /// frame rotated with the quaternion
   SGVec3<T> transform(const SGVec3<T>& v) const
   {
-    value_type r = 2/dot(*this, *this);
+    T r = 2/dot(*this, *this);
     SGVec3<T> qimag = imag(*this);
-    value_type qr = real(*this);
+    T qr = real(*this);
     return (r*qr*qr - 1)*v + (r*dot(qimag, v))*qimag - (r*qr)*cross(qimag, v);
   }
   /// Transform a vector from the coordinate frame rotated with the quaternion
   /// to the current coordinate frame
   SGVec3<T> backTransform(const SGVec3<T>& v) const
   {
-    value_type r = 2/dot(*this, *this);
+    T r = 2/dot(*this, *this);
     SGVec3<T> qimag = imag(*this);
-    value_type qr = real(*this);
+    T qr = real(*this);
     return (r*qr*qr - 1)*v + (r*dot(qimag, v))*qimag + (r*qr)*cross(qimag, v);
   }
 
@@ -375,6 +461,67 @@ public:
     deriv.z() = 0.5*(-y()*angVel(0) + x()*angVel(1) + w()*angVel(2));
     
     return deriv;
+  }
+
+private:
+
+  // Private because it assumes normalized inputs.
+  static SGQuat
+  fromRotateToSmaller90Deg(T cosang,
+                           const SGVec3<T>& from, const SGVec3<T>& to)
+  {
+    // In this function we assume that the angle required to rotate from
+    // the vector from to the vector to is <= 90 deg.
+    // That is done so because of possible instabilities when we rotate more
+    // then 90deg.
+
+    // Note that the next comment does actually cover a *more* *general* case
+    // than we need in this function. That shows that this formula is even
+    // valid for rotations up to 180deg.
+
+    // Because of the signs in the axis, it is sufficient to care for angles
+    // in the interval [-pi,pi]. That means that 0.5*angle is in the interval
+    // [-pi/2,pi/2]. But in that range the cosine is allways >= 0.
+    // So we do not need to care for egative roots in the following equation:
+    T cos05ang = sqrt(0.5+0.5*cosang);
+
+
+    // Now our assumption of angles <= 90 deg comes in play.
+    // For that reason, we know that cos05ang is not zero.
+    // It is even more, we can see from the above formula that 
+    // sqrt(0.5) < cos05ang.
+
+
+    // Compute the rotation axis, that is
+    // sin(angle)*normalized rotation axis
+    SGVec3<T> axis = cross(to, from);
+
+    // We need sin(0.5*angle)*normalized rotation axis.
+    // So rescale with sin(0.5*x)/sin(x).
+    // To do that we use the equation:
+    // sin(x) = 2*sin(0.5*x)*cos(0.5*x)
+    return SGQuat::fromRealImag( cos05ang, (1/(2*cos05ang))*axis);
+  }
+
+  // Private because it assumes normalized inputs.
+  static SGQuat
+  fromRotateToNorm(const SGVec3<T>& from, const SGVec3<T>& to)
+  {
+    // To avoid instabilities with roundoff, we distinguish between rotations
+    // with more then 90deg and rotations with less than 90deg.
+
+    // Compute the cosine of the angle.
+    T cosang = dot(from, to);
+
+    // For the small ones do direct computation
+    if (T(-0.5) < cosang)
+      return SGQuat::fromRotateToSmaller90Deg(cosang, from, to);
+
+    // For larger rotations. first rotate from to -from.
+    // Past that we will have a smaller angle again.
+    SGQuat q1 = SGQuat::fromChangeSign(from);
+    SGQuat q2 = SGQuat::fromRotateToSmaller90Deg(-cosang, -from, to);
+    return q1*q2;
   }
 };
 

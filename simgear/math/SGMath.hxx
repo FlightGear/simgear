@@ -28,6 +28,7 @@
 #include "SGLimits.hxx"
 #include "SGMisc.hxx"
 #include "SGGeodesy.hxx"
+#include "SGVec2.hxx"
 #include "SGVec3.hxx"
 #include "SGVec4.hxx"
 #include "SGGeoc.hxx"

@@ -30,7 +30,8 @@ include_HEADERS = \
 	SGMisc.hxx \
 	SGQuat.hxx \
 	SGVec4.hxx \
-	SGVec3.hxx
+	SGVec3.hxx \
+	SGVec2.hxx
 
 
 libsgmath_a_SOURCES = \

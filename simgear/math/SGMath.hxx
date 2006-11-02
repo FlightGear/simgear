@@ -21,6 +21,8 @@
 /// Just include them all
 
 #include <iosfwd>
+// FIXME, make it compile on IRIX
+#include <osg/GL>
 
 #include "SGMathFwd.hxx"
 

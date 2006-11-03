@@ -230,6 +230,7 @@
 
 #    define isnan _isnan
 #    define snprintf _snprintf
+#    define copysign _copysign
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float

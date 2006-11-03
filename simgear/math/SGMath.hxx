@@ -22,6 +22,12 @@
 
 #include <iosfwd>
 // FIXME, make it compile on IRIX
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+#ifdef HAVE_WINDOWS_H
+#  include <windows.h>
+#endif
 #include <osg/GL>
 
 #include "SGMathFwd.hxx"

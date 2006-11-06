@@ -1123,6 +1123,7 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     if (!_texture_str.empty()) {
         _texture = _texture_base;
         _texture.append(_texture_str);
+        _texture2D = SGLoadTexture2D(_texture);
         _update |= TEXTURE;
     }
 
@@ -1136,7 +1137,6 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     _static_update = _update;
 
     _alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0);
-    _texture2D = SGLoadTexture2D(_texture);
 }
 
 void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)

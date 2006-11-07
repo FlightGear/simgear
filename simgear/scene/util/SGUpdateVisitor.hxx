@@ -31,36 +31,8 @@ class SGUpdateVisitor : public osgUtil::UpdateVisitor {
 public:
   SGUpdateVisitor()
   {
-//     setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
+    setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
   }
-//   virtual void apply(osg::Transform& transform)
-//   {
-//     osg::Matrix matrix = mModelViewMatrix;
-//     transform.computeLocalToWorldMatrix(mModelViewMatrix, this);
-
-//     handle_callbacks_and_traverse(transform);
-
-//     mModelViewMatrix = matrix;
-//   }
-
-//   virtual osg::Vec3 getEyePoint() const
-//   {
-//     osg::Matrix matrix;
-//     matrix.invert(mModelViewMatrix);
-//     return matrix.preMult(osg::Vec3(0, 0, 0));
-//   }
-
-// protected:
-//   osg::Matrix mModelViewMatrix;
 };
-
-// #include <osg/NodeCallback>
-
-// class SGNodeCallback : public osg::NodeCallback {
-// public:
-//   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-//   {
-//   }
-// };
 
 #endif

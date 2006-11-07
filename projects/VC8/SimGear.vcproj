@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../3rdparty/include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -104,7 +104,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../3rdparty/include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				StringPooling="true"
 				MinimalRebuild="true"
 				RuntimeLibrary="2"
@@ -560,7 +560,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGStateAttributeVisitor.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\misc\sgstream.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.hxx"
 				>
 			</File>
 			<File
@@ -962,10 +970,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\personality.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\model\persparam.cxx"
 				>
 			</File>
@@ -1058,7 +1062,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGStateAttributeVisitor.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\misc\sgstream.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.cxx"
 				>
 			</File>
 			<File

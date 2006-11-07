@@ -26,6 +26,11 @@
 #undef max
 #endif
 
+// for microsoft compiler
+#ifdef _MSC_VER
+#define copysign _copysign
+#endif
+
 #include <osg/Quat>
 
 template<typename T>

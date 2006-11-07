@@ -34,4 +34,4 @@ SUBDIRS = \
 	$(SGTHREAD_DIR) \
 	timing
 
-DIST_SUBDIRS = $(SUBDIRS) compatibility threads
+DIST_SUBDIRS = $(SUBDIRS) compatibility

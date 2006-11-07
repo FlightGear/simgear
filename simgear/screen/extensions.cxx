@@ -26,7 +26,7 @@
 
 #include "extensions.hxx"
 #include <simgear/debug/logstream.hxx>
-#if !defined(WIN32) && !defined( GLX_VERSION_1_4 )
+#if !defined(WIN32)
 #  include <dlfcn.h>
 #endif
 
@@ -99,10 +99,11 @@ void* macosxGetGLProcAddress(const char *func) {
   return function;
 }
 
-#elif !defined( WIN32 ) && !defined(GLX_VERSION_1_4)
+#elif !defined( WIN32 )
 
 void *SGGetGLProcAddress(const char *func) {
     static void *libHandle = NULL;
+    static void *(*glXGetProcAddressPtr)(const GLubyte*) = 0;
     void *fptr = NULL;
 
     /*
@@ -116,10 +117,32 @@ void *SGGetGLProcAddress(const char *func) {
      * arise from linking with a different libGL at link time an than later
      * use the standard libGL at runtime ...
      */
-    if (libHandle == NULL)
+    if (libHandle == NULL) {
         libHandle = dlopen(NULL, RTLD_LAZY);
 
-    if (libHandle != NULL) {
+        if (!libHandle) {
+#if defined (__FreeBSD__)
+            const char *error = dlerror();
+#else
+            char *error = dlerror();
+#endif
+            if (error) {
+                SG_LOG(SG_GENERAL, SG_INFO, error);
+                return 0;
+            }
+        }
+
+        void* symbol = dlsym(libHandle, "glXGetProcAddress");
+        if (!symbol)
+            symbol = dlsym(libHandle, "glXGetProcAddressARB");
+        glXGetProcAddressPtr = (void *(*)(const GLubyte*)) symbol;
+    }
+
+    // First try the glx api function for that
+    if (glXGetProcAddressPtr) {
+        fptr = glXGetProcAddressPtr((const GLubyte*)func);
+
+    } else if (libHandle != NULL) {
         fptr = dlsym(libHandle, func);
 
 #if defined (__FreeBSD__)

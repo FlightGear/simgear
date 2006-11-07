@@ -287,14 +287,14 @@ SGMaterial::build_state( bool defer_tex_load )
         }
 
         osg::Material* material = new osg::Material;
-        material->setColorMode(osg::Material::DIFFUSE);
+        material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
         material->setAmbient(osg::Material::FRONT_AND_BACK, ambient.osg());
         material->setDiffuse(osg::Material::FRONT_AND_BACK, diffuse.osg());
         material->setSpecular(osg::Material::FRONT_AND_BACK, specular.osg());
         material->setEmission(osg::Material::FRONT_AND_BACK, emission.osg());
         material->setShininess(osg::Material::FRONT_AND_BACK, shininess );
         stateSet->setAttribute(material);
-//         stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::ON);
+        stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::ON);
 
         _status[i].state = stateSet;
     }

@@ -71,6 +71,71 @@ private:
   osg::ref_ptr<osg::Referenced> mReferenced;
 };
 
+// Visitor for 
+class SGTextureUpdateVisitor : public SGTextureStateAttributeVisitor {
+public:
+  SGTextureUpdateVisitor(const osgDB::FilePathList& pathList) :
+    mPathList(pathList)
+  { }
+  osg::Texture2D* textureReplace(int unit, osg::StateSet::RefAttributePair& refAttr)
+  {
+    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(refAttr.first.get());
+    if (!texture)
+      return 0;
+    
+    osg::ref_ptr<osg::Image> image = texture->getImage(0);
+    if (!image)
+      return 0;
+
+    // The currently loaded file name
+    std::string fullFilePath = image->getFileName();
+    // The short name
+    std::string fileName = osgDB::getSimpleFileName(fullFilePath);
+    // The name that should be found with the current database path
+    std::string fullLiveryFile = osgDB::findFileInPath(fileName, mPathList);
+    // If they are identical then there is nothing to do
+    if (fullLiveryFile == fullFilePath)
+      return 0;
+
+    image = osgDB::readImageFile(fullLiveryFile);
+    if (!image)
+      return 0;
+
+    osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_ALL &
+                       ~osg::CopyOp::DEEP_COPY_IMAGES);
+    texture = static_cast<osg::Texture2D*>(copyOp(texture));
+    if (!texture)
+      return 0;
+    texture->setImage(image.get());
+    return texture;
+  }
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+
+    // get a copy that we can safely modify the statesets values.
+    osg::StateSet::TextureAttributeList attrList;
+    attrList = stateSet->getTextureAttributeList();
+    for (unsigned unit = 0; unit < attrList.size(); ++unit) {
+      osg::StateSet::AttributeList::iterator i;
+      i = attrList[unit].begin();
+      while (i != attrList[unit].end()) {
+        osg::Texture2D* texture = textureReplace(unit, i->second);
+        if (texture) {
+          stateSet->removeTextureAttribute(unit, i->second.first.get());
+          stateSet->setTextureAttribute(unit, texture, i->second.second);
+          stateSet->setTextureMode(unit, GL_TEXTURE_2D, osg::StateAttribute::ON);
+        }
+        ++i;
+      }
+    }
+  }
+
+private:
+  osgDB::FilePathList mPathList;
+};
+
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
   SGTexCompressionVisitor(osg::Texture::InternalFormatMode formatMode) :
@@ -250,6 +315,12 @@ public:
     flags &= ~osg::CopyOp::DEEP_COPY_SHAPES;
     res = osgDB::ReaderWriter::ReadResult(osg::CopyOp(flags)(res.getNode()));
     res.getNode()->addObserver(databaseReference);
+
+    SGTextureUpdateVisitor liveryUpdate(osgDB::getDataFilePathList());
+    res.getNode()->accept(liveryUpdate);
+
+    // OSGFIXME: don't forget that mutex here
+    registry->getOrCreateSharedStateManager()->share(res.getNode(), 0);
 
     return res;
   }

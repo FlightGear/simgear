@@ -42,7 +42,6 @@
 #include <osg/Material>
 #include <osg/ShadeModel>
 
-#include <simgear/scene/util/SGDebugDrawCallback.hxx>
 #include <simgear/debug/logstream.hxx>
 
 #include "dome.hxx"
@@ -107,7 +106,6 @@ SGSkyDome::build( double hscale, double vscale ) {
 //                           osg::Vec4(0, 0, 0, 1));
 //     material->setShininess(osg::Material::FRONT_AND_BACK, 0);
     stateSet->setAttribute(material);
-//     stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::OFF);
 
     // initialize arrays
     // initially seed to all blue
@@ -194,7 +192,6 @@ SGSkyDome::build( double hscale, double vscale ) {
     // into the provide scene graph branch
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setName("Dome Center");
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(center_disk_vl.get());
     geometry->setColorArray(center_disk_cl.get());
@@ -205,7 +202,6 @@ SGSkyDome::build( double hscale, double vscale ) {
 
     geometry = new osg::Geometry;
     geometry->setName("Dome Upper Ring");
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(upper_ring_vl.get());
     geometry->setColorArray(upper_ring_cl.get());
@@ -216,7 +212,6 @@ SGSkyDome::build( double hscale, double vscale ) {
 
     geometry = new osg::Geometry;
     geometry->setName("Dome Middle Ring");
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(middle_ring_vl.get());
     geometry->setColorArray(middle_ring_cl.get());
@@ -227,7 +222,6 @@ SGSkyDome::build( double hscale, double vscale ) {
 
     geometry = new osg::Geometry;
     geometry->setName("Dome Lower Ring");
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
     geometry->setUseDisplayList(false);
     geometry->setVertexArray(lower_ring_vl.get());
     geometry->setColorArray(lower_ring_cl.get());

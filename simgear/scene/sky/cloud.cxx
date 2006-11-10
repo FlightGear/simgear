@@ -43,7 +43,6 @@
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>
-#include <simgear/scene/util/SGDebugDrawCallback.hxx>
 #include <simgear/math/polar3d.hxx>
 
 #include "newcloud.hxx"
@@ -117,7 +116,6 @@ SGMakeState(const SGPath &path, const char* colorTexture, const char* normalText
 //     material->setSpecular(osg::Material::FRONT_AND_BACK,
 //                           osg::Vec4(0, 0, 0, 1));
 //     stateSet->setAttribute(material);
-//     stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::ON);
 
     stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
 

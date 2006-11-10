@@ -313,7 +313,6 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
         cl->push_back(osg::Vec4(1, 1, 1, 1));
 
         osg::Geometry* geometry = new osg::Geometry;
-//         geometry->setUseDisplayList(false);
         geometry->setVertexArray(vl);
         geometry->setNormalArray(nl);
         geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);

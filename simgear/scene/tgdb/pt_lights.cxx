@@ -146,8 +146,6 @@ gen_dir_light_group( const point_list &nodes,
 
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setName("Dir Lights " + mat->get_names().front());
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
-//     geometry->setUseDisplayList(false);
     geometry->setVertexArray(vl);
     geometry->setNormalArray(nl);
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);

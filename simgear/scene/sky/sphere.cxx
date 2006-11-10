@@ -110,12 +110,17 @@ SGMakeSphere(double radius, int slices, int stacks)
 	    exit(-1);
 	}
 
+        // colors
+        osg::Vec4Array* cl = new osg::Vec4Array;
+        cl->push_back(osg::Vec4(1, 1, 1, 1));
+
         geometry->setUseDisplayList(false);
         geometry->setVertexArray(vl);
         geometry->setNormalArray(nl);
         geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
         geometry->setTexCoordArray(0, tl);
-        geometry->setColorBinding(osg::Geometry::BIND_OFF);
+        geometry->setColorArray(cl);
+        geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
         geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
         geode->addDrawable(geometry);
 

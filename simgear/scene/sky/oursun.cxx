@@ -80,7 +80,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
                           osg::Vec4(0, 0, 0, 1));
     material->setSpecular(osg::Material::FRONT_AND_BACK,
                           osg::Vec4(0, 0, 0, 1));
-    stateSet->setAttributeAndModes(material);
+    stateSet->setAttribute(material);
 
     osg::ShadeModel* shadeModel = new osg::ShadeModel;
     shadeModel->setMode(osg::ShadeModel::FLAT);
@@ -133,6 +133,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geometry->setVertexArray(sun_vl);
     geometry->setColorArray(sun_cl.get());
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
     geometry->setTexCoordArray(0, sun_tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
@@ -171,6 +172,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geometry->setVertexArray(ihalo_vl);
     geometry->setColorArray(ihalo_cl.get());
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
     geometry->setTexCoordArray(0, ihalo_tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
@@ -210,6 +212,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geometry->setVertexArray(ihalo_vl);
     geometry->setColorArray(ihalo_cl.get());
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
     geometry->setTexCoordArray(0, ihalo_tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);

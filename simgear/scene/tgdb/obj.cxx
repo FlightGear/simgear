@@ -156,12 +156,15 @@ bool SGGenTile( const string& path, SGBucket b,
         tl->push_back(osg::Vec2(texs[i].x(), texs[i].y()));
     }
     
+    osg::Vec4Array* cl = new osg::Vec4Array;
+    cl->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setVertexArray(vl);
     geometry->setNormalArray(nl);
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setColorBinding(osg::Geometry::BIND_OFF);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->setTexCoordArray(0, tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_FAN, 0, vl->size()));
     osg::Geode* geode = new osg::Geode;

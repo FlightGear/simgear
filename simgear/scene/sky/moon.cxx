@@ -90,7 +90,7 @@ SGMoon::build( SGPath path, double moon_size ) {
     orb_material->setSpecular(osg::Material::FRONT_AND_BACK,
                               osg::Vec4(0, 0, 0, 1));
     orb_material->setShininess(osg::Material::FRONT_AND_BACK, 0);
-    stateSet->setAttributeAndModes(orb_material.get());
+    stateSet->setAttribute(orb_material.get());
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
     stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
     stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);

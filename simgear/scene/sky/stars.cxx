@@ -79,7 +79,6 @@ SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
 //     material->setSpecular(osg::Material::FRONT_AND_BACK,
 //                               osg::Vec4(0, 0, 0, 1));
     stateSet->setAttribute(material);
-//     stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::OFF);
 
     osg::BlendFunc* blendFunc = new osg::BlendFunc;
     blendFunc->setFunction(osg::BlendFunc::SRC_ALPHA,

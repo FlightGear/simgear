@@ -26,6 +26,7 @@
 #include <GL/gl.h>
 #include <osg/Drawable>
 #include <osg/State>
+#include <simgear/math/SGMath.hxx>
 
 struct SGDebugDrawCallback : public osg::Drawable::DrawCallback {
   virtual void drawImplementation(osg::State& state,
@@ -141,6 +142,24 @@ do {                                  \
 #undef PRINT_STATE
 #undef ERROR_CHECK
 
+
+#ifdef PRINT_LIGHT
+#undef PRINT_LIGHT
+#endif
+#define PRINT_LIGHT(pname)                    \
+do {                                             \
+  SGVec4f color;                                 \
+  glGetLightfv(GL_LIGHT0, pname, color.data());\
+  stream << " " #pname " " << color;    \
+} while(0)
+    PRINT_LIGHT(GL_AMBIENT);
+    PRINT_LIGHT(GL_DIFFUSE);
+    PRINT_LIGHT(GL_SPECULAR);
+    PRINT_LIGHT(GL_POSITION);
+    PRINT_LIGHT(GL_SPOT_DIRECTION);
+
+#undef PRINT_LIGHT
+
     if (glIsEnabled(GL_COLOR_MATERIAL)) {
       stream << " GL_COLOR_MATERIAL(";
       GLint value;
@@ -155,6 +174,24 @@ do {                                  \
         stream << "GL_EMISSION";
       if (value == GL_SPECULAR)
         stream << "GL_SPECULAR";
+
+#ifdef PRINT_MATERIAL
+#undef PRINT_MATERIAL
+#endif
+#define PRINT_MATERIAL(pname)                    \
+do {                                             \
+  SGVec4f color;                                 \
+  glGetMaterialfv(GL_FRONT, pname, color.data());\
+  stream << " " #pname " GL_FRONT " << color;    \
+  glGetMaterialfv(GL_BACK, pname, color.data()); \
+  stream << " " #pname " GL_BACK " << color;     \
+} while(0)
+
+      PRINT_MATERIAL(GL_AMBIENT);
+      PRINT_MATERIAL(GL_DIFFUSE);
+      PRINT_MATERIAL(GL_EMISSION);
+      PRINT_MATERIAL(GL_SPECULAR);
+#undef PRINT_MATERIAL
 
       stream << ")";
     }

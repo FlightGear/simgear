@@ -216,14 +216,15 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     osg::ref_ptr<osg::StateSet> lightStateSet = new osg::StateSet;
     {
-//       lightStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-//       lightStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
+      lightStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
       lightStateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 //       lightStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
 
+      lightStateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+
       lightStateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
-//       lightStateSet->setAttribute(new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0));
-//       lightStateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+      lightStateSet->setAttribute(new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01));
+      lightStateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
 
       osg::CullFace* cullFace = new osg::CullFace;
       cullFace->setMode(osg::CullFace::BACK);
@@ -266,7 +267,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
       osg::Material* material = new osg::Material;
       lightStateSet->setAttribute(material);
-//       lightStateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::OFF);
     }
     
 

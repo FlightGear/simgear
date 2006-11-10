@@ -43,7 +43,6 @@
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
-// #include <simgear/scene/util/SGDebugDrawCallback.hxx>
 
 #include "leaf.hxx"
 
@@ -234,8 +233,6 @@ osg::Node* SGMakeLeaf( const string& path,
 
 
     osg::Geometry* geometry = new osg::Geometry;
-//     geometry->setUseDisplayList(false);
-//     geometry->setDrawCallback(new SGDebugDrawCallback);
     geometry->setVertexArray(vl);
     geometry->setNormalArray(nl);
     geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);

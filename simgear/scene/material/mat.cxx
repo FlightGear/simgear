@@ -275,8 +275,6 @@ SGMaterial::build_state( bool defer_tex_load )
         stateSet->setAttributeAndModes(cullFace, osg::StateAttribute::ON);
 
         stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
-        stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
-        stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
 
         if ( !defer_tex_load ) {
             SG_LOG(SG_INPUT, SG_INFO, "    " << _status[i].texture_path );
@@ -294,7 +292,15 @@ SGMaterial::build_state( bool defer_tex_load )
         material->setEmission(osg::Material::FRONT_AND_BACK, emission.osg());
         material->setShininess(osg::Material::FRONT_AND_BACK, shininess );
         stateSet->setAttribute(material);
-        stateSet->setMode(GL_COLOR_MATERIAL, osg::StateAttribute::ON);
+
+        if (ambient[3] < 1 || diffuse[3] < 1 ||
+            specular[3] < 1 || emission[3] < 1) {
+          stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+          stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+        } else {
+          stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
+          stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+        }
 
         _status[i].state = stateSet;
     }

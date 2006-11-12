@@ -519,7 +519,7 @@ private:
     SGPropertyNode_ptr _shi_prop;
     SGPropertyNode_ptr _thresh_prop;
     SGPropertyNode_ptr _tex_prop;
-    std::vector<osg::Material*> _materialList;
+    std::vector<osg::ref_ptr<osg::Material> > _materialList;
     osg::ref_ptr<osg::AlphaFunc> _alphaFunc;
     osg::ref_ptr<osg::Texture2D> _texture2D;
 

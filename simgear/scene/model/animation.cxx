@@ -1052,6 +1052,7 @@ void SGAlphaTestAnimation::init()
   alphaFunc->setReferenceValue(_alpha_clamp);
   stateSet->setAttribute(alphaFunc);
   stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
   stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
 }
 
@@ -1307,7 +1308,6 @@ public:
   }
   void cloneMaterial(osg::StateSet* stateSet)
   {
-    
     osg::StateAttribute* stateAttr;
     stateAttr = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
     if (!stateAttr)
@@ -1321,7 +1321,7 @@ public:
     }
     stateSet->setAttribute(material);
   }
-  std::vector<osg::Material*> materialList;
+  std::vector<osg::ref_ptr<osg::Material> > materialList;
 };
 
 void SGMaterialAnimation::cloneMaterials(osg::Group *b)
@@ -1333,9 +1333,9 @@ void SGMaterialAnimation::cloneMaterials(osg::Group *b)
 
 void SGMaterialAnimation::setMaterialBranch(osg::Group *b)
 {
-  std::vector<osg::Material*>::iterator i;
+  std::vector<osg::ref_ptr<osg::Material> >::iterator i;
   for (i = _materialList.begin(); i != _materialList.end(); ++i) {
-    osg::Material* material = *i;
+    osg::Material* material = i->get();
     if (_update & DIFFUSE) {
       osg::Vec4 v = _diff.rgba();
       float alpha = material->getDiffuse(osg::Material::FRONT_AND_BACK)[3];

@@ -680,9 +680,6 @@ sgLoad3DModel( const string &fg_root, const string &path,
       model->setUpdateCallback(new SGSwitchUpdateCallback(sgReadCondition(prop_root, cond)));
   }
 
-  // restore old path list
-  osgDB::setDataFilePathList(pathList);
-
   if ( load_panel ) {
                                 // Load panels
     vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
@@ -709,6 +706,9 @@ sgLoad3DModel( const string &fg_root, const string &path,
     sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
                      sim_time_sec, texturepath, ignore_branches);
   }
+
+  // restore old path list
+  osgDB::setDataFilePathList(pathList);
 
   return alignmainmodel;
 }

@@ -451,7 +451,7 @@ public:
 
   /// Return the time derivative of the quaternion given the angular velocity
   SGQuat
-  derivative(const SGVec3<T>& angVel)
+  derivative(const SGVec3<T>& angVel) const
   {
     SGQuat deriv;
 

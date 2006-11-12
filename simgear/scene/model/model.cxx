@@ -37,18 +37,6 @@
 SG_USING_STD(vector);
 SG_USING_STD(set);
 
-static inline
-int nMipMaps(int s)
-{
-  s = s >> 2;
-  int n = 0;
-  do {
-    ++n;
-    s = s >> 1;
-  } while(s);
-  return n;
-}
-
 // Little helper class that holds an extra reference to a
 // loaded 3d model.
 // Since we clone all structural nodes from our 3d models,
@@ -154,15 +142,6 @@ public:
 
     int s = image->s();
     int t = image->t();
-
-    int mipmaplevels = 0;
-    if (s < t) {
-      mipmaplevels = nMipMaps(s);
-    } else {
-      mipmaplevels = nMipMaps(t);
-    }
-    texture->setNumMipmapLevels(mipmaplevels);
-
     if (s <= t && 32 <= s) {
       texture->setInternalFormatMode(mFormatMode);
     } else if (t < s && 32 <= t) {
@@ -344,8 +323,7 @@ public:
 static SGReadCallbackInstaller readCallbackInstaller;
 
 osg::Texture2D*
-SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv,
-                int mipmaplevels)
+SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
 {
   osg::Image* image = osgDB::readImageFile(path);
   osg::Texture2D* texture = new osg::Texture2D;
@@ -362,15 +340,6 @@ SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv,
   if (image) {
     int s = image->s();
     int t = image->t();
-
-    if (mipmaplevels < 0) {
-      if (s < t) {
-        mipmaplevels = nMipMaps(s);
-      } else {
-        mipmaplevels = nMipMaps(t);
-      }
-    }
-    texture->setNumMipmapLevels(mipmaplevels);
 
     // OSGFIXME: guard with a flag
     if (osg::Texture::getExtensions(0, true)->isTextureCompressionARBSupported()) {

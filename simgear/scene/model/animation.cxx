@@ -12,14 +12,16 @@
 
 #include <osg/AlphaFunc>
 #include <osg/AutoTransform>
-#include <osg/ColorMatrix>
 #include <osg/Drawable>
 #include <osg/Geode>
+#include <osg/Geometry>
 #include <osg/LOD>
 #include <osg/MatrixTransform>
 #include <osg/StateSet>
 #include <osg/Switch>
 #include <osg/TexMat>
+#include <osg/Texture2D>
+#include <osgDB/ReadFile>
 
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
@@ -581,6 +583,59 @@ SGRotateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 // Implementation of SGBlendAnimation
 ////////////////////////////////////////////////////////////////////////
 
+class SGBlendAnimationVisitor : public osg::NodeVisitor {
+public:
+  SGBlendAnimationVisitor(float blend) :
+    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+    _blend(blend)
+  {
+    setVisitorType(osg::NodeVisitor::NODE_VISITOR);
+  }
+  virtual void apply(osg::Node& node)
+  {
+    updateStateSet(node.getStateSet());
+    traverse(node);
+  }
+  virtual void apply(osg::Geode& node)
+  {
+    apply((osg::Node&)node);
+    unsigned nDrawables = node.getNumDrawables();
+    for (unsigned i = 0; i < nDrawables; ++i) {
+      osg::Drawable* drawable = node.getDrawable(i);
+      updateStateSet(drawable->getStateSet());
+      osg::Geometry* geometry = drawable->asGeometry();
+      if (!geometry)
+        continue;
+      osg::Array* array = geometry->getColorArray();
+      if (!array)
+        continue;
+      osg::Vec4Array* vec4Array = dynamic_cast<osg::Vec4Array*>(array);
+      if (!vec4Array)
+        continue;
+      geometry->dirtyDisplayList();
+      vec4Array->dirty();
+      for (unsigned k = 0; k < vec4Array->size(); ++k) {
+        (*vec4Array)[k][3] = _blend;
+      }
+    }
+  }
+  void updateStateSet(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    osg::StateAttribute* stateAttribute = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
+    if (!stateAttribute)
+      return;
+    osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
+    if (!material)
+      return;
+    material->setAlpha(osg::Material::FRONT_AND_BACK, _blend);
+  }
+private:
+  float _blend;
+};
+
+
 SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
                                         SGPropertyNode_ptr props )
   : SGAnimation(props, new osg::Group),
@@ -590,18 +645,9 @@ SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
     _prev_value(1.0),
     _offset(props,"offset",0.0),
     _factor(props,"factor",1.0),
-    _has_min(props->hasValue("min")),
     _min(props->getDoubleValue("min", 0.0)),
-    _has_max(props->hasValue("max")),
     _max(props->getDoubleValue("max", 1.0))
 {
-  // OSGFIXME: does ot work like that!!!
-  // depends on a not so wide available extension
-
-  _colorMatrix = new osg::ColorMatrix;
-  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-  stateSet->setAttribute(_colorMatrix.get());
-
   if ( _use_personality ) {
     _factor.shuffle();
     _offset.shuffle();
@@ -620,18 +666,18 @@ SGBlendAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
 
   if (_table == 0) {
     _blend = 1.0 - (_prop->getDoubleValue() * _factor + _offset);
-
-    if (_has_min && (_blend < _min))
-      _blend = _min;
-    if (_has_max && (_blend > _max))
-      _blend = _max;
   } else {
     _blend = _table->interpolate(_prop->getDoubleValue());
   }
+  if (_blend < _min)
+    _blend = _min;
+  if (_blend > _max)
+    _blend = _max;
 
   if (_blend != _prev_value) {
     _prev_value = _blend;
-    _colorMatrix->getMatrix()(3, 3) = _blend;
+    SGBlendAnimationVisitor visitor(1-_blend);
+    _branch->accept(visitor);
   }
   traverse(node, nv);
 }
@@ -1179,7 +1225,7 @@ void SGMaterialAnimation::init()
       stateSet->setAttribute(_alphaFunc.get(), osg::StateAttribute::OVERRIDE);
       stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
     }
-    if (_update & TEXTURE) {
+    if ((_update & TEXTURE) && _texture2D.valid()) {
       stateSet->setTextureAttribute(0, _texture2D.get(), osg::StateAttribute::OVERRIDE);
       stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
     }
@@ -1354,34 +1400,33 @@ void SGMaterialAnimation::setMaterialBranch(osg::Group *b)
     if (_update & SHININESS)
       material->setShininess(osg::Material::FRONT_AND_BACK,
                              clamp(_shi, 0.0, 128.0));
-    if (_update & TRANSPARENCY) {
-      osg::Vec4 v = material->getDiffuse(osg::Material::FRONT_AND_BACK);
-      float trans = _trans.value * _trans.factor + _trans.offset;
-      trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
-      material->setDiffuse(osg::Material::FRONT_AND_BACK,
-                           osg::Vec4(v[0], v[1], v[2], trans));
-    }
     if (_update & THRESHOLD)
         _alphaFunc->setReferenceValue(clamp(_thresh));
-    // OSGFIXME
-//     if (_update & TEXTURE)
-//         s->setTexture(_texture.c_str());
-//     if (_update & (TEXTURE|TRANSPARENCY)) {
-//         SGfloat alpha = s->getMaterial(GL_DIFFUSE)[3];
-//         ssgTexture *tex = s->getTexture();
-//         if ((tex && tex->hasAlpha()) || alpha < 0.999) {
-//             s->setColourMaterial(GL_DIFFUSE);
-//             s->enable(GL_COLOR_MATERIAL);
-//             s->enable(GL_BLEND);
-//             s->enable(GL_ALPHA_TEST);
-//             s->setTranslucent();
-//             s->disable(GL_COLOR_MATERIAL);
-//         } else {
-//             s->disable(GL_BLEND);
-//             s->disable(GL_ALPHA_TEST);
-//             s->setOpaque();
-//         }
-//     }
+  }
+
+  if (_update & TRANSPARENCY) {
+    float trans = _trans.value * _trans.factor + _trans.offset;
+    trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
+    SGBlendAnimationVisitor visitor(trans);
+    _branch->accept(visitor);
+  }
+  if (_update & TEXTURE) {
+    if (!_texture2D) {
+      _texture2D = new osg::Texture2D;
+      osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+      stateSet->setTextureAttribute(0, _texture2D.get(), osg::StateAttribute::OVERRIDE);
+      stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    }
+    osg::Image* image = osgDB::readImageFile(_texture.str());
+    if (image) {
+      _texture2D->setImage(image);
+      if (image->isImageTranslucent()) {
+        osg::StateSet* stateSet = _branch->getOrCreateStateSet();
+        stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+        stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+        stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+      }
+    }
   }
 }
 

@@ -19,7 +19,6 @@
 
 #include <osg/ref_ptr>
 #include <osg/AlphaFunc>
-#include <osg/ColorMatrix>
 #include <osg/Group>
 #include <osg/Material>
 #include <osg/Node>
@@ -275,11 +274,8 @@ private:
   double _prev_value;
   SGPersonalityParameter<double> _offset;
   SGPersonalityParameter<double> _factor;
-  bool _has_min;
   double _min;
-  bool _has_max;
   double _max;
-  osg::ref_ptr<osg::ColorMatrix> _colorMatrix;
 };
 
 /**

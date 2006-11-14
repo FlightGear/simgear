@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../3rdparty/include"
+				AdditionalIncludeDirectories="../..;../../..;../../../OpenThreads/include;../../../OpenSceneGraph/include;../../Simgear;../../../3rdparty/include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -103,7 +103,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="../..;../../..;../../Simgear;../../../3rdparty/include"
+				AdditionalIncludeDirectories="../..;../../..;../../../OpenThreads/include;../../../OpenSceneGraph/include;../../Simgear;../../../3rdparty/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				StringPooling="true"
 				MinimalRebuild="true"

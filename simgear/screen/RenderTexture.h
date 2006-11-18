@@ -55,7 +55,7 @@
 #endif
 #include SG_GL_H
 #if defined( __MACH__)
-#  include <OpenGL/CGLTypes.h>
+#  include <OpenGL/OpenGL.h>
 #endif
 #ifndef _WIN32
 #  include SG_GLX_H

@@ -212,7 +212,10 @@ public:
       SG_LOG(SG_IO, SG_INFO, "Reading model \""
              << absFileName << "\"");
 
+      bool needTristrip = true;
       if (osgDB::getLowerCaseFileExtension(absFileName) == "ac") {
+        // we get optimal geometry from the loader.
+        needTristrip = false;
         osg::Matrix m(1, 0, 0, 0,
                       0, 0, 1, 0,
                       0, -1, 0, 0,
@@ -250,7 +253,7 @@ public:
       unsigned opts = 0;
       // Don't use this one. It will break animation names ...
       // opts |= osgUtil::Optimizer::REMOVE_REDUNDANT_NODES;
-      
+
       // opts |= osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES;
       // opts |= osgUtil::Optimizer::COMBINE_ADJACENT_LODS;
       // opts |= osgUtil::Optimizer::SHARE_DUPLICATE_STATE;
@@ -258,9 +261,10 @@ public:
       // opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
       // opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
       // opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
-      opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
+      if (needTristrip)
+        opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
       // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
-      // opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
+      opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
       optimizer.optimize(res.getNode(), opts);
 
       // OSGFIXME

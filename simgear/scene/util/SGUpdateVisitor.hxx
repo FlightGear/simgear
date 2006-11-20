@@ -25,14 +25,67 @@
 #include <osg/NodeVisitor>
 #include <osgUtil/UpdateVisitor>
 
-#include <osg/io_utils>
-
 class SGUpdateVisitor : public osgUtil::UpdateVisitor {
 public:
   SGUpdateVisitor()
   {
     setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
   }
+  void setViewData(const SGVec3d& globalEyePos,
+                   const SGQuatd& globalViewOrientation)
+  {
+    mGlobalGeodEyePos = SGGeod::fromCart(globalEyePos);
+    mGlobalEyePos = globalEyePos;
+    mGlobalViewOr = globalViewOrientation;
+    mGlobalHorizLocalOr = SGQuatd::fromLonLat(mGlobalGeodEyePos);
+    mHorizLocalNorth = mGlobalHorizLocalOr.backTransform(SGVec3d(1, 0, 0));
+    mHorizLocalEast = mGlobalHorizLocalOr.backTransform(SGVec3d(0, 1, 0));
+    mHorizLocalDown = mGlobalHorizLocalOr.backTransform(SGVec3d(0, 0, 1));
+  }
+
+  void setSceneryCenter(const SGVec3d& sceneryCenter)
+  {
+    mSceneryCenter = sceneryCenter;
+  }
+
+  void setVisibility(double visibility)
+  {
+    mVisibility = visibility;
+    mSqrVisibility = visibility*visibility;
+  }
+
+  double getVisibility() const
+  { return mVisibility; }
+  double getSqrVisibility() const
+  { return mSqrVisibility; }
+
+  const SGVec3d& getGlobalEyePos() const
+  { return mGlobalEyePos; }
+  const SGGeod& getGeodEyePos() const
+  { return mGlobalGeodEyePos; }
+  const SGQuatd& getGlobalViewOr() const
+  { return mGlobalViewOr; }
+  const SGQuatd& getGlobalHorizLocalOr() const
+  { return mGlobalViewOr; }
+  const SGVec3d& getHorizLocalNorth() const
+  { return mHorizLocalNorth; }
+  const SGVec3d& getHorizLocalEast() const
+  { return mHorizLocalEast; }
+  const SGVec3d& getHorizLocalDown() const
+  { return mHorizLocalDown; }
+private:
+  SGGeod mGlobalGeodEyePos;
+  SGVec3d mGlobalEyePos;
+  SGQuatd mGlobalViewOr;
+  SGQuatd mGlobalHorizLocalOr;
+  SGVec3d mHorizLocalNorth;
+  SGVec3d mHorizLocalEast;
+  SGVec3d mHorizLocalDown;
+
+  SGVec3d mSceneryCenter;
+
+  double mVisibility;
+  double mSqrVisibility;
 };
 
 #endif

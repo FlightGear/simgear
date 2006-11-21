@@ -221,6 +221,70 @@ SGVec4<T>
 operator*(const SGVec4<T>& v, S s)
 { return SGVec4<T>(s*v(0), s*v(1), s*v(2), s*v(3)); }
 
+/// component wise min
+template<typename T>
+inline
+SGVec4<T>
+min(const SGVec4<T>& v1, const SGVec4<T>& v2)
+{
+  return SGVec4<T>(SGMisc<T>::min(v1(0), v2(0)),
+                   SGMisc<T>::min(v1(1), v2(1)),
+                   SGMisc<T>::min(v1(2), v2(2)),
+                   SGMisc<T>::min(v1(3), v2(3)));
+}
+template<typename S, typename T>
+inline
+SGVec4<T>
+min(const SGVec4<T>& v, S s)
+{
+  return SGVec4<T>(SGMisc<T>::min(s, v(0)),
+                   SGMisc<T>::min(s, v(1)),
+                   SGMisc<T>::min(s, v(2)),
+                   SGMisc<T>::min(s, v(3)));
+}
+template<typename S, typename T>
+inline
+SGVec4<T>
+min(S s, const SGVec4<T>& v)
+{
+  return SGVec4<T>(SGMisc<T>::min(s, v(0)),
+                   SGMisc<T>::min(s, v(1)),
+                   SGMisc<T>::min(s, v(2)),
+                   SGMisc<T>::min(s, v(3)));
+}
+
+/// component wise max
+template<typename T>
+inline
+SGVec4<T>
+max(const SGVec4<T>& v1, const SGVec4<T>& v2)
+{
+  return SGVec4<T>(SGMisc<T>::max(v1(0), v2(0)),
+                   SGMisc<T>::max(v1(1), v2(1)),
+                   SGMisc<T>::max(v1(2), v2(2)),
+                   SGMisc<T>::max(v1(3), v2(3)));
+}
+template<typename S, typename T>
+inline
+SGVec4<T>
+max(const SGVec4<T>& v, S s)
+{
+  return SGVec4<T>(SGMisc<T>::max(s, v(0)),
+                   SGMisc<T>::max(s, v(1)),
+                   SGMisc<T>::max(s, v(2)),
+                   SGMisc<T>::max(s, v(3)));
+}
+template<typename S, typename T>
+inline
+SGVec4<T>
+max(S s, const SGVec4<T>& v)
+{
+  return SGVec4<T>(SGMisc<T>::max(s, v(0)),
+                   SGMisc<T>::max(s, v(1)),
+                   SGMisc<T>::max(s, v(2)),
+                   SGMisc<T>::max(s, v(3)));
+}
+
 /// Scalar dot product
 template<typename T>
 inline

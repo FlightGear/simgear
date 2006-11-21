@@ -65,7 +65,6 @@ SGNotCondition::SGNotCondition (SGCondition * condition)
 
 SGNotCondition::~SGNotCondition ()
 {
-  delete _condition;
 }
 
 bool
@@ -86,8 +85,6 @@ SGAndCondition::SGAndCondition ()
 
 SGAndCondition::~SGAndCondition ()
 {
-  for (unsigned int i = 0; i < _conditions.size(); i++)
-    delete _conditions[i];
 }
 
 bool
@@ -119,8 +116,6 @@ SGOrCondition::SGOrCondition ()
 
 SGOrCondition::~SGOrCondition ()
 {
-  for (unsigned int i = 0; i < _conditions.size(); i++)
-    delete _conditions[i];
 }
 
 bool
@@ -398,13 +393,11 @@ SGConditional::SGConditional ()
 
 SGConditional::~SGConditional ()
 {
-  delete _condition;
 }
 
 void
 SGConditional::setCondition (SGCondition * condition)
 {
-  delete _condition;
   _condition = condition;
 }
 

@@ -35,12 +35,12 @@
 
 #include <simgear/compiler.h>
 
-#include <vector>
-SG_USING_STD(vector);
+#include "simgear/structure/SGReferenced.hxx"
+
+#include <map>
 
 #include STL_STRING
 SG_USING_STD(string);
-
 
 /**
  * A class that provids a simple linear 2d interpolation lookup table.
@@ -48,21 +48,7 @@ SG_USING_STD(string);
  * independant variable must be strictly ascending.  The dependent
  * variable can be anything.
  */
-class SGInterpTable {
-
-    struct Entry
-    {
-      Entry ()
-	: ind(0.0L), dep(0.0L) {}
-      Entry (double independent, double dependent)
-	: ind(independent), dep(dependent) {}
-      double ind;
-      double dep;
-    };
-
-    int size;
-    vector<Entry> table;
-
+class SGInterpTable : public SGReferenced {
 public:
 
     /**
@@ -95,6 +81,10 @@ public:
 
     /** Destructor */
     ~SGInterpTable();
+
+private:
+    typedef std::map<double, double> Table;
+    Table _table;
 };
 
 

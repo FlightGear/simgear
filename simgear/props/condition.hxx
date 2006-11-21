@@ -13,6 +13,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/structure/SGReferenced.hxx>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@
  *
  * This class should migrate to somewhere more general.
  */
-class SGCondition
+class SGCondition : public SGReferenced
 {
 public:
   SGCondition ();
@@ -63,12 +64,11 @@ private:
 class SGNotCondition : public SGCondition
 {
 public:
-				// transfer pointer ownership
   SGNotCondition (SGCondition * condition);
   virtual ~SGNotCondition ();
   virtual bool test () const;
 private:
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 
@@ -87,7 +87,7 @@ public:
 				// transfer pointer ownership
   virtual void addCondition (SGCondition * condition);
 private:
-  vector<SGCondition *> _conditions;
+  std::vector<SGSharedPtr<SGCondition> > _conditions;
 };
 
 
@@ -106,7 +106,7 @@ public:
 				// transfer pointer ownership
   virtual void addCondition (SGCondition * condition);
 private:
-  vector<SGCondition *> _conditions;
+  std::vector<SGSharedPtr<SGCondition> > _conditions;
 };
 
 
@@ -156,7 +156,7 @@ public:
   virtual const SGCondition * getCondition () const { return _condition; }
   virtual bool test () const;
 private:
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 

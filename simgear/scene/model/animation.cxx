@@ -322,7 +322,6 @@ SGSelectAnimation::SGSelectAnimation( SGPropertyNode *prop_root,
 
 SGSelectAnimation::~SGSelectAnimation ()
 {
-  delete _condition;
 }
 
 void
@@ -555,7 +554,6 @@ SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
 
 SGRotateAnimation::~SGRotateAnimation ()
 {
-  delete _table;
 }
 
 void
@@ -656,7 +654,6 @@ SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
 
 SGBlendAnimation::~SGBlendAnimation ()
 {
-    delete _table;
 }
 
 void
@@ -720,7 +717,6 @@ SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
 
 SGTranslateAnimation::~SGTranslateAnimation ()
 {
-  delete _table;
 }
 
 void
@@ -788,7 +784,6 @@ SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
 
 SGScaleAnimation::~SGScaleAnimation ()
 {
-  delete _table;
 }
 
 void
@@ -868,7 +863,6 @@ SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
 
 SGTexRotateAnimation::~SGTexRotateAnimation ()
 {
-  delete _table;
 }
 
 void
@@ -928,7 +922,6 @@ SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
 
 SGTexTranslateAnimation::~SGTexTranslateAnimation ()
 {
-  delete _table;
 }
 
 void
@@ -1184,6 +1177,10 @@ SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
     _static_update = _update;
 
     _alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0);
+}
+
+SGMaterialAnimation::~SGMaterialAnimation()
+{
 }
 
 void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)
@@ -1561,7 +1558,6 @@ public:
   }
   ~SGDistScaleTransform()
   {
-    delete _table;
   }
 
   virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
@@ -1628,7 +1624,7 @@ private:
   osg::Vec3 _center;
   float _factor, _offset, _min_v, _max_v;
   bool _has_min, _has_max;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
 };
 
 SGDistScaleAnimation::SGDistScaleAnimation(SGPropertyNode_ptr props)
@@ -1660,7 +1656,6 @@ SGShadowAnimation::SGShadowAnimation ( SGPropertyNode *prop_root,
 
 SGShadowAnimation::~SGShadowAnimation ()
 {
-    delete _condition;
 }
 
 void

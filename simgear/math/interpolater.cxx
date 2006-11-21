@@ -25,8 +25,6 @@
 
 #include <simgear/compiler.h>
 
-#include <stdlib.h> // for exit()
-
 #include STL_STRING
 
 #include <simgear/debug/logstream.hxx>
@@ -38,7 +36,6 @@ SG_USING_STD(string);
 
 // Constructor -- starts with an empty table.
 SGInterpTable::SGInterpTable()
-    : size(0)
 {
 }
 
@@ -46,14 +43,13 @@ SGInterpTable::SGInterpTable()
 // Constructor -- loads the interpolation table from the specified
 // file
 SGInterpTable::SGInterpTable( const string& file ) 
-  : size(0)
 {
     SG_LOG( SG_MATH, SG_INFO, "Initializing Interpolator for " << file );
 
     sg_gzifstream in( file );
     if ( !in.is_open() ) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Cannot open file: " << file );
-	exit(-1);
+        return;
     }
 
     in >> skipcomment;
@@ -61,8 +57,7 @@ SGInterpTable::SGInterpTable( const string& file )
       double ind, dep;
       in >> ind >> dep;
       in >> skipws;
-      table.push_back(Entry(ind, dep));
-      size++;
+      _table[ind] = dep;
     }
 }
 
@@ -70,51 +65,42 @@ SGInterpTable::SGInterpTable( const string& file )
 // Add an entry to the table.
 void SGInterpTable::addEntry (double ind, double dep)
 {
-  table.push_back(Entry(ind,dep));
-  size++;
+  _table[ind] = dep;
 }
-
 
 // Given an x value, linearly interpolate the y value from the table
 double SGInterpTable::interpolate(double x) const
 {
-    int i;
-    double y;
-
-    if (size == 0.0) {
-      return 0.0;
-    }
-
-    i = 0;
-
-    while ( (i < size) && (x > table[i].ind) ) {
-	// cout << "  i = " << i << " table[i].ind = " << table[i].ind << endl;
-	// cout << "  size = " << size << endl;
-	i++;
-    }
-
-    // printf ("i = %d ", i);
-
-    if ( i <= 0 ) {
-	SG_LOG( SG_MATH, SG_DEBUG, 
-		"interpolate(): lookup error, x to small = " << x );
-	return table[0].dep;
-    }
-
-    // cout << " table[size-1].ind = " << table[size-1].ind << endl;
-    if ( i >= size ) {
-	SG_LOG( SG_MATH, SG_DEBUG, 
-		"interpolate(): lookup error, x to big = " << x );
-	return table[size-1].dep;
-    }
-
-    // y = y1 + (y0 - y1)(x - x1) / (x0 - x1)
-    y = table[i].dep + 
-	( (table[i-1].dep - table[i].dep) * 
-	  (x - table[i].ind) ) /
-	(table[i-1].ind - table[i].ind);
-
-    return(y);
+  // Empty table??
+  if (_table.empty())
+    return 0;
+  
+  // Find the table bounds for the requested input.
+  Table::const_iterator upBoundIt = _table.upper_bound(x);
+  // points to a value outside the map. That is we are out of range.
+  // use the last entry
+  if (upBoundIt == _table.end())
+    return _table.rbegin()->second;
+  
+  // points to the first key must be lower
+  // use the first entry
+  if (upBoundIt == _table.begin())
+    return upBoundIt->second;
+  
+  // we know that we do not stand at the beginning, so it is safe to do so
+  Table::const_iterator loBoundIt = upBoundIt;
+  --loBoundIt;
+  
+  // Just do linear interpolation.
+  double loBound = loBoundIt->first;
+  double upBound = upBoundIt->first;
+  double loVal = loBoundIt->second;
+  double upVal = upBoundIt->second;
+  
+  // division by zero should not happen since the std::map
+  // has sorted out duplicate entries before. Also since we have a
+  // map, we know that we get different first values for different iterators
+  return loVal + (upVal - loVal)*(x - loBound)/(upBound - loBound);
 }
 
 

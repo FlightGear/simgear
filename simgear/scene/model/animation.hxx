@@ -40,7 +40,6 @@ SG_USING_STD(map);
 // Don't pull in the headers, since we don't need them here.
 class SGInterpTable;
 class SGCondition;
-class SGPersonalityBranch;
 
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
@@ -124,7 +123,7 @@ private:
   float _max;
   float _min_factor;
   float _max_factor;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 
@@ -150,7 +149,7 @@ public:
   virtual ~SGSelectAnimation ();
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 
@@ -175,7 +174,7 @@ private:
   double _last_time_sec;
   osg::Vec3 _center;
   osg::Vec3 _axis;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 
@@ -220,7 +219,7 @@ private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
   double _factor;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   bool _has_min;
   double _min_deg;
   bool _has_max;
@@ -228,7 +227,7 @@ private:
   double _position_deg;
   osg::Vec3 _center;
   osg::Vec3 _axis;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 
@@ -247,14 +246,14 @@ private:
   SGPropertyNode_ptr _prop;
   SGPersonalityParameter<double> _offset_m;
   SGPersonalityParameter<double> _factor;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   bool _has_min;
   double _min_m;
   bool _has_max;
   double _max_m;
   double _position_m;
   osg::Vec3 _axis;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
 };
 
 /**
@@ -270,7 +269,7 @@ public:
 private:
   bool _use_personality;
   SGPropertyNode_ptr _prop;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   double _prev_value;
   SGPersonalityParameter<double> _offset;
   SGPersonalityParameter<double> _factor;
@@ -297,7 +296,7 @@ private:
   SGPersonalityParameter<double> _x_offset;
   SGPersonalityParameter<double> _y_offset;
   SGPersonalityParameter<double> _z_offset;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   bool _has_min_x;
   bool _has_min_y;
   bool _has_min_z;
@@ -330,7 +329,7 @@ private:
   SGPropertyNode_ptr _prop;
   double _offset_deg;
   double _factor;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   bool _has_min;
   double _min_deg;
   bool _has_max;
@@ -338,7 +337,7 @@ private:
   double _position_deg;
   osg::Vec3 _center;
   osg::Vec3 _axis;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
   osg::ref_ptr<osg::TexMat> _texMat;
 };
 
@@ -359,14 +358,14 @@ private:
   double _factor;
   double _step;
   double _scroll;
-  SGInterpTable * _table;
+  SGSharedPtr<SGInterpTable> _table;
   bool _has_min;
   double _min;
   bool _has_max;
   double _max;
   double _position;
   osg::Vec3 _axis;
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
   osg::ref_ptr<osg::TexMat> _texMat;
 };
 
@@ -393,7 +392,7 @@ private:
     double factor;
     double step;
     double scroll;
-    SGInterpTable * table;
+    SGSharedPtr<SGInterpTable> table;
     bool has_min;
     double min;
     bool has_max;
@@ -431,7 +430,7 @@ class SGMaterialAnimation : public SGAnimation
 public:
     SGMaterialAnimation(SGPropertyNode *prop_root, SGPropertyNode_ptr props,
             const SGPath &texpath);
-    virtual ~SGMaterialAnimation() {}
+    virtual ~SGMaterialAnimation();
     virtual void init();
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 private:
@@ -492,7 +491,7 @@ private:
             return value != a.value || factor != a.factor || offset != a.offset;
         }
     };
-    SGCondition *_condition;
+    SGSharedPtr<SGCondition> _condition;
     bool _last_condition;
     SGPropertyNode_ptr _prop_root;
     string _prop_base;
@@ -567,7 +566,7 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
   bool get_condition_value(void);
 private:
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
   bool _condition_value;
 };
 
@@ -584,7 +583,7 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
   bool get_condition_value(void);
 private:
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
   bool _condition_value;
   int _shader_type;
   float _param_1;

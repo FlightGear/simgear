@@ -83,12 +83,11 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet->setAttribute(material);
 
     osg::ShadeModel* shadeModel = new osg::ShadeModel;
-    shadeModel->setMode(osg::ShadeModel::FLAT);
+    shadeModel->setMode(osg::ShadeModel::SMOOTH);
     stateSet->setAttributeAndModes(shadeModel);
 
     osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-    alphaFunc->setFunction(osg::AlphaFunc::GREATER);
-    alphaFunc->setReferenceValue(0.01);
+    alphaFunc->setFunction(osg::AlphaFunc::ALWAYS);
     stateSet->setAttributeAndModes(alphaFunc);
 
     osg::BlendFunc* blendFunc = new osg::BlendFunc;
@@ -105,7 +104,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     osg::Geode* geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
 
-    stateSet->setRenderBinDetails(-8, "RenderBin");
+    stateSet->setRenderBinDetails(-6, "RenderBin");
 
     // set up the sun-state
     path.append( "sun.rgba" );
@@ -147,7 +146,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet->setRenderBinDetails(-7, "RenderBin");
     
     ihalopath.append( "inner_halo.rgba" );
-    texture = SGLoadTexture2D(path);
+    texture = SGLoadTexture2D(ihalopath);
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
@@ -184,17 +183,17 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     
     geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
-    stateSet->setRenderBinDetails(-6, "RenderBin");
+    stateSet->setRenderBinDetails(-8, "RenderBin");
 
     ohalopath.append( "outer_halo.rgba" );
-    texture = SGLoadTexture2D(path);
+    texture = SGLoadTexture2D(ohalopath);
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
     ohalo_cl = new osg::Vec4Array;
     ohalo_cl->push_back(osg::Vec4(1, 1, 1, 1));
 
-    double ohalo_size = sun_size * 7.0;
+    double ohalo_size = sun_size * 8.0;
     osg::Vec3Array* ohalo_vl = new osg::Vec3Array;
     ohalo_vl->push_back(osg::Vec3(-ohalo_size, 0, -ohalo_size));
     ohalo_vl->push_back(osg::Vec3(ohalo_size, 0, -ohalo_size));
@@ -209,11 +208,11 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     geometry = new osg::Geometry;
     geometry->setUseDisplayList(false);
-    geometry->setVertexArray(ihalo_vl);
-    geometry->setColorArray(ihalo_cl.get());
+    geometry->setVertexArray(ohalo_vl);
+    geometry->setColorArray(ohalo_cl.get());
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->setTexCoordArray(0, ihalo_tl);
+    geometry->setTexCoordArray(0, ohalo_tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 4));
     geode->addDrawable(geometry);
 

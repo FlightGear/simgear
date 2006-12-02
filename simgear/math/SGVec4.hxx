@@ -314,6 +314,13 @@ T
 norm1(const SGVec4<T>& v)
 { return fabs(v(0)) + fabs(v(1)) + fabs(v(2)) + fabs(v(3)); }
 
+/// The inf-norm of the vector
+template<typename T>
+inline
+T
+normI(const SGVec4<T>& v)
+{ return SGMisc<T>::max(fabs(v(0)), fabs(v(1)), fabs(v(2)), fabs(v(2))); }
+
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
 inline

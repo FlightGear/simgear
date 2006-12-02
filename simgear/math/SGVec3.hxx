@@ -346,6 +346,13 @@ T
 norm1(const SGVec3<T>& v)
 { return fabs(v(0)) + fabs(v(1)) + fabs(v(2)); }
 
+/// The inf-norm of the vector
+template<typename T>
+inline
+T
+normI(const SGVec3<T>& v)
+{ return SGMisc<T>::max(fabs(v(0)), fabs(v(1)), fabs(v(2))); }
+
 /// Vector cross product
 template<typename T>
 inline

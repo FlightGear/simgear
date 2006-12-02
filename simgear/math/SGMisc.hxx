@@ -22,6 +22,8 @@ template<typename T>
 class SGMisc {
 public:
   static T pi() { return T(3.1415926535897932384626433832795029L); }
+  static T twopi() { return 2*T(3.1415926535897932384626433832795029L); }
+
   static T min(const T& a, const T& b)
   { return a < b ? a : b; }
   static T min(const T& a, const T& b, const T& c)
@@ -34,6 +36,11 @@ public:
   { return max(max(a, b), c); }
   static T max(const T& a, const T& b, const T& c, const T& d)
   { return max(max(max(a, b), c), d); }
+
+  // clip the value of a to be in the range between and including _min and _max
+  static T clip(const T& a, const T& _min, const T& _max)
+  { return max(_min, min(_max, a)); }
+
   static int sign(const T& a)
   {
     if (a < -SGLimits<T>::min())
@@ -48,6 +55,32 @@ public:
   { return val*180/pi(); }
   static T deg2rad(const T& val)
   { return val*pi()/180; }
+
+  // normalize the value to be in a range between [min, max[
+  static T
+  normalizePeriodic(const T& min, const T& max, const T& value)
+  {
+    T range = max - min;
+    if (range < SGLimits<T>::min())
+      return min;
+    T normalized = value - range*floor((value - min)/range);
+    // two security checks that can only happen due to roundoff
+    if (value <= min)
+      return min;
+    if (max <= normalized)
+      return min;
+    return normalized;
+  }
+
+  // normalize the angle to be in a range between [-pi, pi[
+  static T
+  normalizeAngle(const T& angle)
+  { return normalizePeriodic(-pi(), pi(), angle); }
+
+  // normalize the angle to be in a range between [0, 2pi[
+  static T
+  normalizeAngle2(const T& angle)
+  { return normalizePeriodic(0, twopi(), angle); }
 
   static T round(const T& v)
   { return floor(v + T(0.5)); }

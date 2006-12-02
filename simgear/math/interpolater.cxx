@@ -29,6 +29,7 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/props/props.hxx>
 
 #include "interpolater.hxx"
 
@@ -39,6 +40,15 @@ SGInterpTable::SGInterpTable()
 {
 }
 
+SGInterpTable::SGInterpTable(const SGPropertyNode* interpolation) 
+{
+    if (!interpolation)
+        return;
+    std::vector<SGPropertyNode_ptr> entries = interpolation->getChildren("entry");
+    for (unsigned i = 0; i < entries.size(); ++i)
+        addEntry(entries[i]->getDoubleValue("ind", 0.0),
+                 entries[i]->getDoubleValue("dep", 0.0));
+}
 
 // Constructor -- loads the interpolation table from the specified
 // file

@@ -42,6 +42,8 @@
 #include STL_STRING
 SG_USING_STD(string);
 
+class SGPropertyNode;
+
 /**
  * A class that provids a simple linear 2d interpolation lookup table.
  * The actual table is expected to be loaded from a file.  The
@@ -55,6 +57,13 @@ public:
      * Constructor. Creates a new, empty table.
      */
     SGInterpTable();
+
+    /**
+     * Constructor. Loads the interpolation table from an interpolation
+     * property node.
+     * @param interpolation property node having entry children
+     */
+    SGInterpTable(const SGPropertyNode* interpolation);
 
     /**
      * Constructor. Loads the interpolation table from the specified file.

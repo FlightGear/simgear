@@ -6,7 +6,7 @@
 #include "persparam.hxx"
 
 template <> double
-SGPersonalityParameter<double>::getNodeValue( SGPropertyNode *props,
+SGPersonalityParameter<double>::getNodeValue( const SGPropertyNode *props,
                                               const char *name,
                                               double defval ) const
 {

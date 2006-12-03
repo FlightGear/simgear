@@ -19,6 +19,7 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
+#include <osgDB/WriteFile>
 #include <osgDB/Registry>
 #include <osgDB/SharedStateManager>
 #include <osgUtil/Optimizer>
@@ -65,9 +66,11 @@ public:
   SGTextureUpdateVisitor(const osgDB::FilePathList& pathList) :
     mPathList(pathList)
   { }
-  osg::Texture2D* textureReplace(int unit, osg::StateSet::RefAttributePair& refAttr)
+  osg::Texture2D* textureReplace(int unit,
+                                 osg::StateSet::RefAttributePair& refAttr)
   {
-    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(refAttr.first.get());
+    osg::Texture2D* texture;
+    texture = dynamic_cast<osg::Texture2D*>(refAttr.first.get());
     if (!texture)
       return 0;
     
@@ -113,7 +116,8 @@ public:
         if (texture) {
           stateSet->removeTextureAttribute(unit, i->second.first.get());
           stateSet->setTextureAttribute(unit, texture, i->second.second);
-          stateSet->setTextureMode(unit, GL_TEXTURE_2D, osg::StateAttribute::ON);
+          stateSet->setTextureMode(unit, GL_TEXTURE_2D,
+                                   osg::StateAttribute::ON);
         }
         ++i;
       }
@@ -132,7 +136,8 @@ public:
 
   virtual void apply(int, osg::StateSet::RefAttributePair& refAttr)
   {
-    osg::Texture2D* texture = dynamic_cast<osg::Texture2D*>(refAttr.first.get());
+    osg::Texture2D* texture;
+    texture = dynamic_cast<osg::Texture2D*>(refAttr.first.get());
     if (!texture)
       return;
     
@@ -157,7 +162,8 @@ class SGAcMaterialCrippleVisitor : public SGStateAttributeVisitor {
 public:
   virtual void apply(osg::StateSet::RefAttributePair& refAttr)
   {
-    osg::Material* material = dynamic_cast<osg::Material*>(refAttr.first.get());
+    osg::Material* material;
+    material = dynamic_cast<osg::Material*>(refAttr.first.get());
     if (!material)
       return;
     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
@@ -168,7 +174,8 @@ class SGReadFileCallback :
   public osgDB::Registry::ReadFileCallback {
 public:
   virtual osgDB::ReaderWriter::ReadResult
-  readImage(const std::string& fileName, const osgDB::ReaderWriter::Options* opt)
+  readImage(const std::string& fileName,
+            const osgDB::ReaderWriter::Options* opt)
   {
     std::string absFileName = osgDB::findDataFile(fileName);
     if (!osgDB::fileExists(absFileName)) {
@@ -178,7 +185,8 @@ public:
     }
 
     osgDB::Registry* registry = osgDB::Registry::instance();
-    osgDB::ReaderWriter::ReadResult res = registry->readImageImplementation(absFileName, opt);
+    osgDB::ReaderWriter::ReadResult res;
+    res = registry->readImageImplementation(absFileName, opt);
     if (res.loadedFromCache())
       SG_LOG(SG_IO, SG_INFO, "Returning cached image \""
              << res.getImage()->getFileName() << "\"");
@@ -190,7 +198,8 @@ public:
   }
 
   virtual osgDB::ReaderWriter::ReadResult
-  readNode(const std::string& fileName, const osgDB::ReaderWriter::Options* opt)
+  readNode(const std::string& fileName,
+           const osgDB::ReaderWriter::Options* opt)
   {
     std::string absFileName = osgDB::findDataFile(fileName);
     if (!osgDB::fileExists(absFileName)) {
@@ -234,19 +243,23 @@ public:
         osgUtil::Optimizer optimizer;
         unsigned opts = osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
         optimizer.optimize(root.get(), opts);
+
+        // strip away unneeded groups
+        if (root->getNumChildren() == 1 && root->getName().empty()) {
+          res = osgDB::ReaderWriter::ReadResult(root->getChild(0));
+        } else
+          res = osgDB::ReaderWriter::ReadResult(root.get());
         
         // Ok, this step is questionable.
         // It is there to have the same visual appearance of ac objects for the
         // first cut. Osg's ac3d loader will correctly set materials from the
         // ac file. But the old plib loader used GL_AMBIENT_AND_DIFFUSE for the
         // materials that in effect igored the ambient part specified in the
-        // file. We emulate that for the first cut here by changing all ac models
-        // here. But in the long term we should use the unchanged model and fix
-        // the input files instead ...
+        // file. We emulate that for the first cut here by changing all
+        // ac models here. But in the long term we should use the
+        // unchanged model and fix the input files instead ...
         SGAcMaterialCrippleVisitor matCriple;
-        root->accept(matCriple);
-        
-        res = osgDB::ReaderWriter::ReadResult(root.get());
+        res.getNode()->accept(matCriple);
       }
       
       osgUtil::Optimizer optimizer;
@@ -261,6 +274,7 @@ public:
       // opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
       // opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
       // opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
+      opts |= osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
       if (needTristrip)
         opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
       // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
@@ -271,7 +285,8 @@ public:
       registry->getSharedStateManager()->share(res.getNode());
       
       // OSGFIXME: guard that with a flag
-      // OSGFIXME: in the long term it is unclear if we have an OpenGL context here...
+      // OSGFIXME: in the long term it is unclear if we have an OpenGL
+      // context here...
       osg::Texture::Extensions* e = osg::Texture::getExtensions(0, true);
       if (e->isTextureCompressionARBSupported()) {
         SGTexCompressionVisitor texComp(osg::Texture::USE_ARB_COMPRESSION);
@@ -284,10 +299,11 @@ public:
 
     // Add an extra reference to the model stored in the database.
     // That it to avoid expiring the object from the cache even if it is still
-    // in use. Note that the object cache will think that a model is unused if the
-    // reference count is 1. If we clone all structural nodes here we need that extra
-    // reference to the original object
-    SGDatabaseReference* databaseReference = new SGDatabaseReference(res.getNode());
+    // in use. Note that the object cache will think that a model is unused
+    // if the reference count is 1. If we clone all structural nodes here
+    // we need that extra reference to the original object
+    SGDatabaseReference* databaseReference;
+    databaseReference = new SGDatabaseReference(res.getNode());
     osg::CopyOp::CopyFlags flags = osg::CopyOp::DEEP_COPY_ALL;
     flags &= ~osg::CopyOp::DEEP_COPY_TEXTURES;
     flags &= ~osg::CopyOp::DEEP_COPY_IMAGES;
@@ -383,156 +399,8 @@ public:
   }
 
 private:
-  SGCondition* mCondition;
+  SGSharedPtr<SGCondition> mCondition;
 };
-
-/**
- * Locate a named node in a branch.
- */
-class NodeFinder : public osg::NodeVisitor {
-public:
-  NodeFinder(const std::string& nameToFind) :
-    osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
-                     osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-    mName(nameToFind),
-    mNode(0)
-  { }
-  virtual void apply(osg::Node& node)
-  {
-    if (mNode)
-      return;
-    if (mName == node.getName()) {
-      mNode = &node;
-      return;
-    }
-    traverse(node);
-  }
-
-  osg::Node* getNode() const
-  { return mNode; }
-private:
-  std::string mName;
-  osg::Node* mNode;
-};
-
-/**
- * Splice a branch in between all child nodes and their parents.
- */
-static void
-splice_branch(osg::Group* group, osg::Node* child)
-{
-  osg::Node::ParentList parents = child->getParents();
-  group->addChild(child);
-  osg::Node::ParentList::iterator i;
-  for (i = parents.begin(); i != parents.end(); ++i)
-    (*i)->replaceChild(child, group);
-}
-
-void
-sgMakeAnimation( osg::Node * model,
-                 const char * name,
-                 vector<SGPropertyNode_ptr> &name_nodes,
-                 SGPropertyNode *prop_root,
-                 SGPropertyNode_ptr node,
-                 double sim_time_sec,
-                 SGPath &texture_path,
-                 set<osg::Node*> &ignore_branches )
-{
-  bool ignore = false;
-  SGAnimation * animation = 0;
-  const char * type = node->getStringValue("type", "none");
-  if (!strcmp("none", type)) {
-    animation = new SGNullAnimation(node);
-  } else if (!strcmp("range", type)) {
-    animation = new SGRangeAnimation(prop_root, node);
-  } else if (!strcmp("billboard", type)) {
-    animation = new SGBillboardAnimation(node);
-  } else if (!strcmp("select", type)) {
-    animation = new SGSelectAnimation(prop_root, node);
-  } else if (!strcmp("spin", type)) {
-    animation = new SGSpinAnimation(prop_root, node, sim_time_sec );
-  } else if (!strcmp("timed", type)) {
-    animation = new SGTimedAnimation(node);
-  } else if (!strcmp("rotate", type)) {
-    animation = new SGRotateAnimation(prop_root, node);
-  } else if (!strcmp("translate", type)) {
-    animation = new SGTranslateAnimation(prop_root, node);
-  } else if (!strcmp("scale", type)) {
-    animation = new SGScaleAnimation(prop_root, node);
-  } else if (!strcmp("texrotate", type)) {
-    animation = new SGTexRotateAnimation(prop_root, node);
-  } else if (!strcmp("textranslate", type)) {
-    animation = new SGTexTranslateAnimation(prop_root, node);
-  } else if (!strcmp("texmultiple", type)) {
-    animation = new SGTexMultipleAnimation(prop_root, node);
-  } else if (!strcmp("blend", type)) {
-    animation = new SGBlendAnimation(prop_root, node);
-    ignore = true;
-  } else if (!strcmp("alpha-test", type)) {
-    animation = new SGAlphaTestAnimation(node);
-  } else if (!strcmp("material", type)) {
-    animation = new SGMaterialAnimation(prop_root, node, texture_path);
-  } else if (!strcmp("flash", type)) {
-    animation = new SGFlashAnimation(node);
-  } else if (!strcmp("dist-scale", type)) {
-    animation = new SGDistScaleAnimation(node);
-  } else if (!strcmp("noshadow", type)) {
-    animation = new SGShadowAnimation(prop_root, node);
-  } else if (!strcmp("shader", type)) {
-    animation = new SGShaderAnimation(prop_root, node);
-  } else {
-    animation = new SGNullAnimation(node);
-    SG_LOG(SG_INPUT, SG_WARN, "Unknown animation type " << type);
-  }
-
-  if (name != 0)
-      animation->setName(name);
-
-  osg::Node * object = 0;
-  if (!name_nodes.empty()) {
-    const char * name = name_nodes[0]->getStringValue();
-    NodeFinder nodeFinder(name);
-    model->accept(nodeFinder);
-    object = nodeFinder.getNode();
-    if (object == 0) {
-      SG_LOG(SG_INPUT, SG_ALERT, "Object " << name << " not found");
-      delete animation;
-      animation = 0;
-    }
-  } else {
-    object = model;
-  }
-
-  if ( animation == 0 )
-     return;
-
-  osg::Group* branch = animation->getBranch();
-  splice_branch(branch, object);
-
-  for (unsigned int i = 1; i < name_nodes.size(); i++) {
-      const char * name = name_nodes[i]->getStringValue();
-      NodeFinder nodeFinder(name);
-      model->accept(nodeFinder);
-      object = nodeFinder.getNode();
-      if (object == 0) {
-          SG_LOG(SG_INPUT, SG_ALERT, "Object " << name << " not found");
-          delete animation;
-          animation = 0;
-      } else {
-          osg::Group* oldParent = object->getParent(0);
-          branch->addChild(object);
-          oldParent->removeChild(object);
-      }
-  }
-
-  if ( animation != 0 ) {
-    animation->init();
-    branch->setUpdateCallback(animation);
-    if ( ignore ) {
-      ignore_branches.insert( branch );
-    }
-  }
-}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -546,10 +414,10 @@ sgLoad3DModel( const string &fg_root, const string &path,
                SGModelData *data,
                const SGPath& externalTexturePath )
 {
-  osg::Switch* model = 0;
+  osg::Node* model = 0;
   SGPropertyNode props;
 
-                                // Load the 3D aircraft object itself
+  // Load the 3D aircraft object itself
   SGPath modelpath = path, texturepath = path;
   if ( !ulIsAbsolutePathName( path.c_str() ) ) {
     SGPath tmp = fg_root;
@@ -557,7 +425,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
     modelpath = texturepath = tmp;
   }
 
-                                // Check for an XML wrapper
+  // Check for an XML wrapper
   if (modelpath.str().substr(modelpath.str().size() - 4, 4) == ".xml") {
     readProperties(modelpath.str(), &props);
     if (props.hasValue("/path")) {
@@ -576,25 +444,23 @@ sgLoad3DModel( const string &fg_root, const string &path,
   osgDB::FilePathList pathList = osgDB::getDataFilePathList();
   osgDB::Registry::instance()->initFilePathLists();
 
-                                // Assume that textures are in
-                                // the same location as the XML file.
+  // Assume that textures are in
+  // the same location as the XML file.
   if (model == 0) {
     if (texturepath.extension() != "")
           texturepath = texturepath.dir();
 
     osgDB::Registry::instance()->getDataFilePathList().push_front(texturepath.str());
 
-    osg::Node* node = osgDB::readNodeFile(modelpath.str());
-    if (node == 0)
+    model = osgDB::readNodeFile(modelpath.str());
+    if (model == 0)
       throw sg_io_exception("Failed to load 3D model", 
                             sg_location(modelpath.str()));
-    model = new osg::Switch;
-    model->addChild(node, true);
   }
 
   osgDB::Registry::instance()->getDataFilePathList().push_front(externalTexturePath.str());
 
-                                // Set up the alignment node
+  // Set up the alignment node
   osg::MatrixTransform* alignmainmodel = new osg::MatrixTransform;
   alignmainmodel->addChild(model);
   osg::Matrix res_matrix;
@@ -612,30 +478,28 @@ sgLoad3DModel( const string &fg_root, const string &path,
                      props.getFloatValue("/offsets/z-m", 0.0));
   alignmainmodel->setMatrix(res_matrix*tmat);
 
-  unsigned int i;
-
-                                // Load sub-models
+  // Load sub-models
   vector<SGPropertyNode_ptr> model_nodes = props.getChildren("model");
-  for (i = 0; i < model_nodes.size(); i++) {
+  for (unsigned i = 0; i < model_nodes.size(); i++) {
     SGPropertyNode_ptr node = model_nodes[i];
     osg::MatrixTransform* align = new osg::MatrixTransform;
     res_matrix.makeIdentity();
     res_matrix.makeRotate(
-      node->getFloatValue("offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+      node->getDoubleValue("offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
       osg::Vec3(0, 0, 1),
-      node->getFloatValue("offsets/roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+      node->getDoubleValue("offsets/roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
       osg::Vec3(1, 0, 0),
-      node->getFloatValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+      node->getDoubleValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
       osg::Vec3(0, 1, 0));
     
     tmat.makeIdentity();
-    tmat.makeTranslate(node->getFloatValue("offsets/x-m", 0.0),
-                       node->getFloatValue("offsets/y-m", 0.0),
-                       node->getFloatValue("offsets/z-m", 0.0));
+    tmat.makeTranslate(node->getDoubleValue("offsets/x-m", 0),
+                       node->getDoubleValue("offsets/y-m", 0),
+                       node->getDoubleValue("offsets/z-m", 0));
     align->setMatrix(res_matrix*tmat);
 
     osg::Node* kid;
-    const char * submodel = node->getStringValue("path");
+    const char* submodel = node->getStringValue("path");
     try {
       kid = sgLoad3DModel( fg_root, submodel, prop_root, sim_time_sec, load_panel );
 
@@ -646,22 +510,28 @@ sgLoad3DModel( const string &fg_root, const string &path,
     align->addChild(kid);
 
     align->setName(node->getStringValue("name", ""));
-    model->addChild(align);
 
     SGPropertyNode *cond = node->getNode("condition", false);
-    if (cond)
-      model->setUpdateCallback(new SGSwitchUpdateCallback(sgReadCondition(prop_root, cond)));
+    if (cond) {
+      osg::Switch* sw = new osg::Switch;
+      sw->setUpdateCallback(new SGSwitchUpdateCallback(sgReadCondition(prop_root, cond)));
+      alignmainmodel->addChild(sw);
+      sw->addChild(align);
+      sw->setName("submodel condition switch");
+    } else {
+      alignmainmodel->addChild(align);
+    }
   }
 
   if ( load_panel ) {
-                                // Load panels
+    // Load panels
     vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
-    for (i = 0; i < panel_nodes.size(); i++) {
+    for (unsigned i = 0; i < panel_nodes.size(); i++) {
         SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
         osg::Node * panel = load_panel(panel_nodes[i]);
         if (panel_nodes[i]->hasValue("name"))
             panel->setName((char *)panel_nodes[i]->getStringValue("name"));
-        model->addChild(panel);
+        alignmainmodel->addChild(panel);
     }
   }
 
@@ -669,19 +539,21 @@ sgLoad3DModel( const string &fg_root, const string &path,
     alignmainmodel->setUserData(data);
     data->modelLoaded(path, &props, alignmainmodel);
   }
-                                // Load animations
-  set<osg::Node*> ignore_branches;
-  vector<SGPropertyNode_ptr> animation_nodes = props.getChildren("animation");
-  for (i = 0; i < animation_nodes.size(); i++) {
-    const char * name = animation_nodes[i]->getStringValue("name", 0);
-    vector<SGPropertyNode_ptr> name_nodes =
-      animation_nodes[i]->getChildren("object-name");
-    sgMakeAnimation( model, name, name_nodes, prop_root, animation_nodes[i],
-                     sim_time_sec, texturepath, ignore_branches);
-  }
+
+  std::vector<SGPropertyNode_ptr> animation_nodes;
+  animation_nodes = props.getChildren("animation");
+  for (unsigned i = 0; i < animation_nodes.size(); ++i)
+    /// OSGFIXME: duh, why not only model?????
+    SGAnimation::animate(alignmainmodel, animation_nodes[i], prop_root);
 
   // restore old path list
   osgDB::setDataFilePathList(pathList);
+
+  if (props.hasChild("debug-outfile")) {
+    std::string outputfile = props.getStringValue("debug-outfile",
+                                                  "debug-model.osg");
+    osgDB::writeNodeFile(*alignmainmodel, outputfile);
+  }
 
   return alignmainmodel;
 }

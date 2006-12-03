@@ -11,11 +11,11 @@
 template <class T>
 class SGPersonalityParameter {
 public:
-  SGPersonalityParameter( SGPropertyNode *props, const char *name, T defval )
+  SGPersonalityParameter(const SGPropertyNode *props, const char *name, T defval )
     : _var( defval ), _min( defval ), _max( defval ) {
-    SGPropertyNode_ptr node = props->getNode( name );
+    const SGPropertyNode* node = props->getNode( name );
     if ( node != 0 ) {
-      SGPropertyNode_ptr rand_n = node->getNode( "random" );
+      const SGPropertyNode* rand_n = node->getNode( "random" );
       if ( rand_n != 0 ) {
         _min = getNodeValue( rand_n, "min", (T)0 );
         _max = getNodeValue( rand_n, "max", (T)1 );
@@ -30,7 +30,7 @@ public:
   SGPersonalityParameter<T> &operator-=( T v ) { _var -= v; return *this; }
   T shuffle() { return ( _var = _min + sg_random() * ( _max - _min ) ); }
   T value() const { return _var; }
-  T getNodeValue( SGPropertyNode *props, const char *name, T defval ) const;
+  T getNodeValue(const SGPropertyNode *props, const char *name, T defval ) const;
   operator T() const { return _var; }
 
 private:
@@ -40,7 +40,7 @@ private:
 };
 
 template <> double
-SGPersonalityParameter<double>::getNodeValue( SGPropertyNode *props,
+SGPersonalityParameter<double>::getNodeValue( const SGPropertyNode *props,
                                               const char *name,
                                               double defval ) const;
 

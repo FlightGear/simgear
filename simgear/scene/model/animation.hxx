@@ -31,8 +31,10 @@
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
 
+#include <simgear/math/interpolater.hxx>
 #include <simgear/scene/model/persparam.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+
 
 SG_USING_STD(vector);
 SG_USING_STD(map);
@@ -52,554 +54,310 @@ class SGCondition;
 
 
 //////////////////////////////////////////////////////////////////////
-// Animation classes
+// Helper classes, FIXME: factor out
 //////////////////////////////////////////////////////////////////////
 
-/**
- * Abstract base class for all animations.
- */
-class SGAnimation :  public osg::NodeCallback
-{
+class SGDoubleValue : public SGReferenced {
 public:
-  SGAnimation (SGPropertyNode_ptr props, osg::Group * branch);
+  virtual ~SGDoubleValue() {}
+  virtual double getValue() const = 0;
+};
 
-  virtual ~SGAnimation ();
+
+//////////////////////////////////////////////////////////////////////
+// Base class for animation installers
+//////////////////////////////////////////////////////////////////////
 
-  /**
-   * Get the SSG branch holding the animation.
-   */
-  virtual osg::Group * getBranch () { return _branch; }
+class SGAnimation : protected osg::NodeVisitor {
+public:
+  SGAnimation(const SGPropertyNode* configNode, SGPropertyNode* modelRoot);
+  virtual ~SGAnimation();
 
-  /**
-   * Initialize the animation, after children have been added.
-   */
-  virtual void init ();
-
-  /**
-   * Update the animation.
-   */
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-
-  /**
-   * Restore the state after the animation.
-   */
-  virtual void restore();
-
-  int get_animation_type(void) { return animation_type; }
+  static bool animate(osg::Node* node, const SGPropertyNode* configNode,
+                      SGPropertyNode* modelRoot);
 
 protected:
+  void apply(osg::Node* node);
 
-  osg::Group* _branch;
+  virtual void install(osg::Node& node);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 
-  int animation_type;
-};
+  virtual void apply(osg::Group& group);
 
+  void removeMode(osg::Node& node, osg::StateAttribute::GLMode mode);
+  void removeAttribute(osg::Node& node, osg::StateAttribute::Type type);
+  void removeTextureMode(osg::Node& node, unsigned unit,
+                         osg::StateAttribute::GLMode mode);
+  void removeTextureAttribute(osg::Node& node, unsigned unit,
+                              osg::StateAttribute::Type type);
+  void setRenderBinToInherit(osg::Node& node);
+  void cloneDrawables(osg::Node& node);
 
-/**
- * A no-op animation.
- */
-class SGNullAnimation : public SGAnimation
-{
-public:
-  SGNullAnimation (SGPropertyNode_ptr props);
-  virtual ~SGNullAnimation ();
-};
+  std::string getType() const
+  { return std::string(_configNode->getStringValue("type", "")); }
 
+  const SGPropertyNode* getConfig() const
+  { return _configNode; }
+  SGPropertyNode* getModelRoot() const
+  { return _modelRoot; }
 
-/**
- * A range, or level-of-detail (LOD) animation.
- */
-class SGRangeAnimation : public SGAnimation
-{
-public:
-  SGRangeAnimation (SGPropertyNode *prop_root,
-                    SGPropertyNode_ptr props);
-  virtual ~SGRangeAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  const SGCondition* getCondition() const;
+
 private:
-  SGPropertyNode_ptr _min_prop;
-  SGPropertyNode_ptr _max_prop;
-  float _min;
-  float _max;
-  float _min_factor;
-  float _max_factor;
-  SGSharedPtr<SGCondition> _condition;
+  void installInGroup(const std::string& name, osg::Group& group,
+                      osg::ref_ptr<osg::Group>& animationGroup);
+
+  class RemoveModeVisitor;
+  class RemoveAttributeVisitor;
+  class RemoveTextureModeVisitor;
+  class RemoveTextureAttributeVisitor;
+  class BinToInheritVisitor;
+  class DrawableCloneVisitor;
+
+  bool _found;
+  std::string _name;
+  SGSharedPtr<SGPropertyNode const> _configNode;
+  SGPropertyNode* _modelRoot;
+  std::list<std::string> _objectNames;
+  bool _enableHOT;
+  bool _disableShadow;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Null animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to turn and face the screen.
- */
-class SGBillboardAnimation : public SGAnimation
-{
+class SGGroupAnimation : public SGAnimation {
 public:
-  SGBillboardAnimation (SGPropertyNode_ptr props);
-  virtual ~SGBillboardAnimation ();
+  SGGroupAnimation(const SGPropertyNode*, SGPropertyNode*);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Translate animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to select alternative versions of the same object.
- */
-class SGSelectAnimation : public SGAnimation
-{
+class SGTranslateAnimation : public SGAnimation {
 public:
-  SGSelectAnimation( SGPropertyNode *prop_root,
-                   SGPropertyNode_ptr props );
-  virtual ~SGSelectAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGTranslateAnimation(const SGPropertyNode* configNode,
+                       SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  SGSharedPtr<SGCondition> _condition;
+  class UpdateCallback;
+  class Transform;
+  SGSharedPtr<const SGCondition> _condition;
+  SGSharedPtr<const SGDoubleValue> _animationValue;
+  SGVec3d _axis;
+  double _initialValue;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Rotate/Spin animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to spin an object around a center point.
- *
- * This animation rotates at a specific velocity.
- */
-class SGSpinAnimation : public SGAnimation
-{
+class SGRotateAnimation : public SGAnimation {
 public:
-  SGSpinAnimation( SGPropertyNode *prop_root,
-                 SGPropertyNode_ptr props,
-                 double sim_time_sec );
-  virtual ~SGSpinAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGRotateAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  bool _use_personality;
-  SGPropertyNode_ptr _prop;
-  SGPersonalityParameter<double> _factor;
-  SGPersonalityParameter<double> _position_deg;
-  double _last_time_sec;
-  osg::Vec3 _center;
-  osg::Vec3 _axis;
-  SGSharedPtr<SGCondition> _condition;
+  class UpdateCallback;
+  class SpinUpdateCallback;
+  class Transform;
+  SGSharedPtr<const SGCondition> _condition;
+  SGSharedPtr<const SGDoubleValue> _animationValue;
+  SGVec3d _axis;
+  SGVec3d _center;
+  double _initialValue;
+  bool _isSpin;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Scale animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to draw objects for a specific amount of time each.
- */
-class SGTimedAnimation : public SGAnimation
-{
+class SGScaleAnimation : public SGAnimation {
 public:
-    SGTimedAnimation (SGPropertyNode_ptr props);
-    virtual ~SGTimedAnimation ();
-    virtual void init();
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGScaleAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-    bool _use_personality;
-    double _duration_sec;
-    double _last_time_sec;
-    double _total_duration_sec;
-    unsigned _step;
-    struct DurationSpec {
-        DurationSpec( double m = 0.0 ) : _min(m), _max(m) {}
-        DurationSpec( double m1, double m2 ) : _min(m1), _max(m2) {}
-        double _min, _max;
-    };
-    vector<DurationSpec> _branch_duration_specs;
-    vector<double> _branch_duration_sec;
+  class UpdateCallback;
+  class Transform;
+  SGSharedPtr<const SGCondition> _condition;
+  SGSharedPtr<const SGDoubleValue> _animationValue[3];
+  SGVec3d _initialValue;
+  SGVec3d _center;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// dist scale animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to rotate an object around a center point.
- *
- * This animation rotates to a specific position.
- */
-class SGRotateAnimation : public SGAnimation
-{
+class SGDistScaleAnimation : public SGAnimation {
 public:
-  SGRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
-  virtual ~SGRotateAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGDistScaleAnimation(const SGPropertyNode* configNode,
+                       SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  SGPropertyNode_ptr _prop;
-  double _offset_deg;
-  double _factor;
-  SGSharedPtr<SGInterpTable> _table;
-  bool _has_min;
-  double _min_deg;
-  bool _has_max;
-  double _max_deg;
-  double _position_deg;
-  osg::Vec3 _center;
-  osg::Vec3 _axis;
-  SGSharedPtr<SGCondition> _condition;
+  class Transform;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// dist scale animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to slide along an axis.
- */
-class SGTranslateAnimation : public SGAnimation
-{
+class SGFlashAnimation : public SGAnimation {
 public:
-  SGTranslateAnimation( SGPropertyNode *prop_root,
-                      SGPropertyNode_ptr props );
-  virtual ~SGTranslateAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGFlashAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  bool _use_personality;
-  SGPropertyNode_ptr _prop;
-  SGPersonalityParameter<double> _offset_m;
-  SGPersonalityParameter<double> _factor;
-  SGSharedPtr<SGInterpTable> _table;
-  bool _has_min;
-  double _min_m;
-  bool _has_max;
-  double _max_m;
-  double _position_m;
-  osg::Vec3 _axis;
-  SGSharedPtr<SGCondition> _condition;
+  class Transform;
 };
 
-/**
- * Animation to blend an object.
- */
-class SGBlendAnimation : public SGAnimation
-{
+
+//////////////////////////////////////////////////////////////////////
+// dist scale animation installer
+//////////////////////////////////////////////////////////////////////
+
+class SGBillboardAnimation : public SGAnimation {
 public:
-  SGBlendAnimation( SGPropertyNode *prop_root,
-                      SGPropertyNode_ptr props );
-  virtual ~SGBlendAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGBillboardAnimation(const SGPropertyNode* configNode,
+                       SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  bool _use_personality;
-  SGPropertyNode_ptr _prop;
-  SGSharedPtr<SGInterpTable> _table;
-  double _prev_value;
-  SGPersonalityParameter<double> _offset;
-  SGPersonalityParameter<double> _factor;
-  double _min;
-  double _max;
+  class Transform;
 };
 
-/**
- * Animation to scale an object.
- */
-class SGScaleAnimation : public SGAnimation
-{
+
+//////////////////////////////////////////////////////////////////////
+// Range animation installer
+//////////////////////////////////////////////////////////////////////
+
+class SGRangeAnimation : public SGAnimation {
 public:
-  SGScaleAnimation( SGPropertyNode *prop_root,
-                        SGPropertyNode_ptr props );
-  virtual ~SGScaleAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGRangeAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  bool _use_personality;
-  SGPropertyNode_ptr _prop;
-  SGPersonalityParameter<double> _x_factor;
-  SGPersonalityParameter<double> _y_factor;
-  SGPersonalityParameter<double> _z_factor;
-  SGPersonalityParameter<double> _x_offset;
-  SGPersonalityParameter<double> _y_offset;
-  SGPersonalityParameter<double> _z_offset;
-  SGSharedPtr<SGInterpTable> _table;
-  bool _has_min_x;
-  bool _has_min_y;
-  bool _has_min_z;
-  double _min_x;
-  double _min_y;
-  double _min_z;
-  bool _has_max_x;
-  bool _has_max_y;
-  bool _has_max_z;
-  double _max_x;
-  double _max_y;
-  double _max_z;
-  double _x_scale;
-  double _y_scale;
-  double _z_scale;
+  class UpdateCallback;
+  SGSharedPtr<const SGCondition> _condition;
+  SGSharedPtr<const SGDoubleValue> _minAnimationValue;
+  SGSharedPtr<const SGDoubleValue> _maxAnimationValue;
+  SGVec2d _initialValue;
 };
 
-/**
- * Animation to rotate texture mappings around a center point.
- *
- * This animation rotates to a specific position.
- */
-class SGTexRotateAnimation : public SGAnimation
-{
+
+//////////////////////////////////////////////////////////////////////
+// Select animation installer
+//////////////////////////////////////////////////////////////////////
+
+class SGSelectAnimation : public SGAnimation {
 public:
-  SGTexRotateAnimation( SGPropertyNode *prop_root, SGPropertyNode_ptr props );
-  virtual ~SGTexRotateAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGSelectAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  SGPropertyNode_ptr _prop;
-  double _offset_deg;
-  double _factor;
-  SGSharedPtr<SGInterpTable> _table;
-  bool _has_min;
-  double _min_deg;
-  bool _has_max;
-  double _max_deg;
-  double _position_deg;
-  osg::Vec3 _center;
-  osg::Vec3 _axis;
-  SGSharedPtr<SGCondition> _condition;
-  osg::ref_ptr<osg::TexMat> _texMat;
+  class UpdateCallback;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Alpha test animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * Animation to slide texture mappings along an axis.
- */
-class SGTexTranslateAnimation : public SGAnimation
-{
+class SGAlphaTestAnimation : public SGAnimation {
 public:
-  SGTexTranslateAnimation( SGPropertyNode *prop_root,
-                      SGPropertyNode_ptr props );
-  virtual ~SGTexTranslateAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGAlphaTestAnimation(const SGPropertyNode* configNode,
+                       SGPropertyNode* modelRoot);
+  virtual void install(osg::Node& node);
+};
+
+
+//////////////////////////////////////////////////////////////////////
+// Blend animation installer
+//////////////////////////////////////////////////////////////////////
+
+class SGBlendAnimation : public SGAnimation {
+public:
+  SGBlendAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
+  virtual void install(osg::Node& node);
 private:
-  SGPropertyNode_ptr _prop;
-  double _offset;
-  double _factor;
-  double _step;
-  double _scroll;
-  SGSharedPtr<SGInterpTable> _table;
-  bool _has_min;
-  double _min;
-  bool _has_max;
-  double _max;
-  double _position;
-  osg::Vec3 _axis;
-  SGSharedPtr<SGCondition> _condition;
-  osg::ref_ptr<osg::TexMat> _texMat;
+  class BlendVisitor;
+  class UpdateCallback;
+  SGSharedPtr<SGDoubleValue> _animationValue;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Timed animation installer
+//////////////////////////////////////////////////////////////////////
 
-
-/**
- * Classes for handling multiple types of Texture translations on one object
- */
-
-class SGTexMultipleAnimation : public SGAnimation
-{
+class SGTimedAnimation : public SGAnimation {
 public:
-  SGTexMultipleAnimation( SGPropertyNode *prop_root,
-                      SGPropertyNode_ptr props );
-  virtual ~SGTexMultipleAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGTimedAnimation(const SGPropertyNode* configNode,
+                   SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  class TexTransform
-    {
-    public:
-    SGPropertyNode_ptr prop;
-    int subtype; //  0=translation, 1=rotation
-    double offset;
-    double factor;
-    double step;
-    double scroll;
-    SGSharedPtr<SGInterpTable> table;
-    bool has_min;
-    double min;
-    bool has_max;
-    double max;
-    double position;
-    osg::Vec3 center;
-    osg::Vec3 axis;
-  };
-  SGPropertyNode_ptr _prop;
-  TexTransform* _transform;
-  int _num_transforms;
-  osg::ref_ptr<osg::TexMat> _texMat;
+  class UpdateCallback;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Shadow animation installer
+//////////////////////////////////////////////////////////////////////
 
-/**
- * An "animation" to enable the alpha test 
- */
-class SGAlphaTestAnimation : public SGAnimation
-{
+class SGShadowAnimation : public SGAnimation {
 public:
-  SGAlphaTestAnimation(SGPropertyNode_ptr props);
-  virtual ~SGAlphaTestAnimation ();
-  virtual void init();
+  SGShadowAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  float _alpha_clamp;
+  class UpdateCallback;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// TextureTransform animation
+//////////////////////////////////////////////////////////////////////
 
-/**
- * An "animation" to modify material properties
- */
-class SGMaterialAnimation : public SGAnimation
-{
+class SGTexTransformAnimation : public SGAnimation {
 public:
-    SGMaterialAnimation(SGPropertyNode *prop_root, SGPropertyNode_ptr props,
-            const SGPath &texpath);
-    virtual ~SGMaterialAnimation();
-    virtual void init();
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
+  SGTexTransformAnimation(const SGPropertyNode* configNode,
+                          SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-    enum {
-        DIFFUSE = 1,
-        AMBIENT = 2,
-        SPECULAR = 4,
-        EMISSION = 8,
-        SHININESS = 16,
-        TRANSPARENCY = 32,
-        THRESHOLD = 64,
-        TEXTURE = 128,
-    };
-    struct ColorSpec {
-        float red, green, blue;
-        float factor;
-        float offset;
-        SGPropertyNode_ptr red_prop;
-        SGPropertyNode_ptr green_prop;
-        SGPropertyNode_ptr blue_prop;
-        SGPropertyNode_ptr factor_prop;
-        SGPropertyNode_ptr offset_prop;
-        osg::Vec4 v;
-        inline bool dirty() {
-            return red >= 0.0 || green >= 0.0 || blue >= 0.0;
-        }
-        inline bool live() {
-            return red_prop || green_prop || blue_prop
-                    || factor_prop || offset_prop;
-        }
-        inline bool operator!=(ColorSpec& a) {
-            return red != a.red || green != a.green || blue != a.blue
-                    || factor != a.factor || offset != a.offset;
-        }
-        osg::Vec4 &rgba() {
-            v[0] = clamp(red * factor + offset);
-            v[1] = clamp(green * factor + offset);
-            v[2] = clamp(blue * factor + offset);
-            v[3] = 1.0;
-            return v;
-        }
-        inline float clamp(float val) {
-            return val < 0.0 ? 0.0 : val > 1.0 ? 1.0 : val;
-        }
-    };
-    struct PropSpec {
-        float value;
-        float factor;
-        float offset;
-        float min;
-        float max;
-        SGPropertyNode_ptr value_prop;
-        SGPropertyNode_ptr factor_prop;
-        SGPropertyNode_ptr offset_prop;
-        inline bool dirty() { return value >= 0.0; }
-        inline bool live() { return value_prop || factor_prop || offset_prop; }
-        inline bool operator!=(PropSpec& a) {
-            return value != a.value || factor != a.factor || offset != a.offset;
-        }
-    };
-    SGSharedPtr<SGCondition> _condition;
-    bool _last_condition;
-    SGPropertyNode_ptr _prop_root;
-    string _prop_base;
-    SGPath _texture_base;
-    SGPath _texture;
-    string _texture_str;
-    unsigned _read;
-    unsigned _update;
-    unsigned _static_update;
-    bool _global;
-    ColorSpec _diff;
-    ColorSpec _amb;
-    ColorSpec _emis;
-    ColorSpec _spec;
-    float _shi;
-    PropSpec _trans;
-    float _thresh;	// alpha_clamp (see man glAlphaFunc)
-    string _tex;
-    string _tmpstr;
-    SGPropertyNode_ptr _shi_prop;
-    SGPropertyNode_ptr _thresh_prop;
-    SGPropertyNode_ptr _tex_prop;
-    std::vector<osg::ref_ptr<osg::Material> > _materialList;
-    osg::ref_ptr<osg::AlphaFunc> _alphaFunc;
-    osg::ref_ptr<osg::Texture2D> _texture2D;
-
-    void cloneMaterials(osg::Group *b);
-    void setMaterialBranch(osg::Group *b);
-    void initColorGroup(SGPropertyNode_ptr, ColorSpec *, int flag);
-    void updateColorGroup(ColorSpec *, int flag);
-    inline float clamp(float val, float min = 0.0, float max = 1.0) {
-        return val < min ? min : val > max ? max : val;
-    }
-    const char *path(const char *rel) {
-        return (_tmpstr = _prop_base + rel).c_str();
-    }
+  class Transform;
+  class Translation;
+  class Rotation;
+  class UpdateCallback;
+  void appendTexTranslate(const SGPropertyNode* config,
+                          UpdateCallback* updateCallback);
+  void appendTexRotate(const SGPropertyNode* config,
+                       UpdateCallback* updateCallback);
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Shader animation
+//////////////////////////////////////////////////////////////////////
 
-/**
- * An "animation" that compute a scale according to 
- * the angle between an axis and the view direction
- */
-class SGFlashAnimation : public SGAnimation
-{
+class SGShaderAnimation : public SGAnimation {
 public:
-  SGFlashAnimation(SGPropertyNode_ptr props);
-  virtual ~SGFlashAnimation ();
-};
-
-
-/**
- * An animation that compute a scale according to 
- * the distance from a point and the viewer
- */
-class SGDistScaleAnimation : public SGAnimation
-{
-public:
-  SGDistScaleAnimation(SGPropertyNode_ptr props);
-  virtual ~SGDistScaleAnimation ();
-};
-
-/**
- * An animation to tell wich objects don't cast shadows.
- */
-class SGShadowAnimation : public SGAnimation
-{
-public:
-  SGShadowAnimation ( SGPropertyNode *prop_root,
-                   SGPropertyNode_ptr props );
-  virtual ~SGShadowAnimation ();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-  bool get_condition_value(void);
+  SGShaderAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  SGSharedPtr<SGCondition> _condition;
-  bool _condition_value;
+  class UpdateCallback;
 };
-
-/**
-+ * An "animation" that replace fixed opengl pipeline by shaders
-+ */
-class SGShaderAnimation : public SGAnimation
-{
-public:
-  SGShaderAnimation ( SGPropertyNode *prop_root,
-                   SGPropertyNode_ptr props );
-  virtual ~SGShaderAnimation ();
-  virtual void init();
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-  bool get_condition_value(void);
-private:
-  SGSharedPtr<SGCondition> _condition;
-  bool _condition_value;
-  int _shader_type;
-  float _param_1;
-  osg::Vec4 _param_color;
-public:
-  bool _depth_test;
-  float _factor;
-  SGPropertyNode_ptr _factor_prop;
-  float _speed;
-  float totalTime;
-  SGPropertyNode_ptr _speed_prop;
-  osg::ref_ptr<osg::Texture2D> _effectTexture;
-  unsigned char *_textureData;
-  GLint _texWidth, _texHeight;
-  osg::Vec4 _envColor;
-};
-
 
 #endif // _SG_ANIMATION_HXX

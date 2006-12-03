@@ -24,11 +24,22 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/ul.h>
+#include <osg/Group>
+#include <osg/Program>
+#include <osg/Shader>
+#include <osg/StateSet>
+#include <osg/TextureCubeMap>
+#include <osg/TexEnvCombine>
+#include <osg/TexGen>
+#include <osg/Texture1D>
+#include <osgUtil/HighlightMapGenerator>
+
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/screen/extensions.hxx>
 
 #include <simgear/debug/logstream.hxx>
 
@@ -66,6 +77,130 @@
     </animation>
 
 */
+
+
+class SGMapGenCallback :
+  public osg::StateAttribute::Callback {
+public:
+  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
+  {
+    SGUpdateVisitor* updateVisitor = dynamic_cast<SGUpdateVisitor*>(nv);
+    if (!updateVisitor)
+      return;
+
+    if (distSqr(_lastLightDirection, updateVisitor->getLightDirection()) < 1e-4
+        && distSqr(_lastLightColor, updateVisitor->getAmbientLight()) < 1e-4)
+      return;
+
+    _lastLightDirection = updateVisitor->getLightDirection();
+    _lastLightColor = updateVisitor->getAmbientLight();
+
+    osg::TextureCubeMap *tcm = static_cast<osg::TextureCubeMap*>(sa);
+
+    // FIXME: need an update or callback ...
+    // generate the six highlight map images (light direction = [1, 1, -1])
+    osg::ref_ptr<osgUtil::HighlightMapGenerator> mapgen;
+    mapgen = new osgUtil::HighlightMapGenerator(_lastLightDirection.osg(),
+                                                _lastLightColor.osg(), 5);
+    mapgen->generateMap();
+
+    // assign the six images to the texture object
+    tcm->setImage(osg::TextureCubeMap::POSITIVE_X,
+                  mapgen->getImage(osg::TextureCubeMap::POSITIVE_X));
+    tcm->setImage(osg::TextureCubeMap::NEGATIVE_X,
+                  mapgen->getImage(osg::TextureCubeMap::NEGATIVE_X));
+    tcm->setImage(osg::TextureCubeMap::POSITIVE_Y,
+                  mapgen->getImage(osg::TextureCubeMap::POSITIVE_Y));
+    tcm->setImage(osg::TextureCubeMap::NEGATIVE_Y,
+                  mapgen->getImage(osg::TextureCubeMap::NEGATIVE_Y));
+    tcm->setImage(osg::TextureCubeMap::POSITIVE_Z,
+                  mapgen->getImage(osg::TextureCubeMap::POSITIVE_Z));
+    tcm->setImage(osg::TextureCubeMap::NEGATIVE_Z,
+                  mapgen->getImage(osg::TextureCubeMap::NEGATIVE_Z));
+  }
+private:
+  SGVec3f _lastLightDirection;
+  SGVec4f _lastLightColor;
+};
+
+static osg::TextureCubeMap*
+getOrCreateTextureCubeMap()
+{
+  static osg::TextureCubeMap* textureCubeMap = 0;
+  if (textureCubeMap)
+    return textureCubeMap;
+
+  static SGMutex mutex;
+  SGGuard<SGMutex> locker(mutex);
+  if (textureCubeMap)
+    return textureCubeMap;
+
+  // create and setup the texture object
+  textureCubeMap = new osg::TextureCubeMap;
+
+  textureCubeMap->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP);
+  textureCubeMap->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP);
+  textureCubeMap->setWrap(osg::Texture::WRAP_R, osg::Texture::CLAMP);
+  textureCubeMap->setFilter(osg::Texture::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
+  textureCubeMap->setFilter(osg::Texture::MAG_FILTER, osg::Texture::LINEAR);    
+  
+  textureCubeMap->setUpdateCallback(new SGMapGenCallback);
+
+  return textureCubeMap;
+}
+
+static void create_specular_highlights(osg::Node *node)
+{
+  osg::StateSet *ss = node->getOrCreateStateSet();
+  
+  // create and setup the texture object
+  osg::TextureCubeMap *tcm = getOrCreateTextureCubeMap();
+  
+  // enable texturing, replacing any textures in the subgraphs
+  ss->setTextureAttributeAndModes(0, tcm, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+  
+  // texture coordinate generation
+  osg::TexGen *tg = new osg::TexGen;
+  tg->setMode(osg::TexGen::REFLECTION_MAP);
+  ss->setTextureAttributeAndModes(0, tg, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+  
+  // use TexEnvCombine to add the highlights to the original lighting
+  osg::TexEnvCombine *te = new osg::TexEnvCombine;
+  te->setCombine_RGB(osg::TexEnvCombine::ADD);
+  te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
+  te->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+  te->setSource1_RGB(osg::TexEnvCombine::PRIMARY_COLOR);
+  te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+  ss->setTextureAttributeAndModes(0, te, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+}
+
+
+SGShaderAnimation::SGShaderAnimation(const SGPropertyNode* configNode,
+                                     SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGShaderAnimation::createAnimationGroup(osg::Group& parent)
+{
+  osg::Group* group = new osg::Group;
+  group->setName("shader animation");
+  parent.addChild(group);
+
+  std::string shader_name = getConfig()->getStringValue("shader", "");
+//   if( shader_name == "fresnel" || shader_name == "reflection" )
+//     _shader_type = 1;
+//   else if( shader_name == "heat-haze" )
+//     _shader_type = 2;
+//   else
+  if( shader_name == "chrome")
+    create_specular_highlights(group);
+
+  return group;
+}
+
+#if 0
 // static Shader *shFresnel=NULL;
 // static GLuint texFresnel = 0;
 
@@ -621,3 +756,4 @@ SGShaderAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
   // that the rest of cullbacks and the scene graph are traversed.
   traverse(node, nv);
 }
+#endif

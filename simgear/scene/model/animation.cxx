@@ -11,26 +11,27 @@
 #include <math.h>
 
 #include <osg/AlphaFunc>
-#include <osg/AutoTransform>
 #include <osg/Drawable>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LOD>
-#include <osg/MatrixTransform>
 #include <osg/StateSet>
 #include <osg/Switch>
 #include <osg/TexMat>
 #include <osg/Texture2D>
+#include <osg/Transform>
 #include <osgDB/ReadFile>
 
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/math/sg_random.h>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 
 #include "animation.hxx"
 #include "model.hxx"
+
+#include "SGMaterialAnimation.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -42,69 +43,57 @@
  */
 static void
 set_rotation (osg::Matrix &matrix, double position_deg,
-              const osg::Vec3 &center, const osg::Vec3 &axis)
+              const SGVec3d &center, const SGVec3d &axis)
 {
- float temp_angle = -position_deg * SG_DEGREES_TO_RADIANS ;
- 
- float s = (float) sin ( temp_angle ) ;
- float c = (float) cos ( temp_angle ) ;
- float t = SG_ONE - c ;
-
- // axis was normalized at load time 
- // hint to the compiler to put these into FP registers
- float x = axis[0];
- float y = axis[1];
- float z = axis[2];
-
- matrix(0, 0) = t * x * x + c ;
- matrix(0, 1) = t * y * x - s * z ;
- matrix(0, 2) = t * z * x + s * y ;
- matrix(0, 3) = SG_ZERO;
- 
- matrix(1, 0) = t * x * y + s * z ;
- matrix(1, 1) = t * y * y + c ;
- matrix(1, 2) = t * z * y - s * x ;
- matrix(1, 3) = SG_ZERO;
- 
- matrix(2, 0) = t * x * z - s * y ;
- matrix(2, 1) = t * y * z + s * x ;
- matrix(2, 2) = t * z * z + c ;
- matrix(2, 3) = SG_ZERO;
-
+  double temp_angle = -SGMiscd::deg2rad(position_deg);
+  
+  double s = sin(temp_angle);
+  double c = cos(temp_angle);
+  double t = 1 - c;
+  
+  // axis was normalized at load time 
   // hint to the compiler to put these into FP registers
- x = center[0];
- y = center[1];
- z = center[2];
- 
- matrix(3, 0) = x - x*matrix(0, 0) - y*matrix(1, 0) - z*matrix(2, 0);
- matrix(3, 1) = y - x*matrix(0, 1) - y*matrix(1, 1) - z*matrix(2, 1);
- matrix(3, 2) = z - x*matrix(0, 2) - y*matrix(1, 2) - z*matrix(2, 2);
- matrix(3, 3) = SG_ONE;
+  double x = axis[0];
+  double y = axis[1];
+  double z = axis[2];
+  
+  matrix(0, 0) = t * x * x + c ;
+  matrix(0, 1) = t * y * x - s * z ;
+  matrix(0, 2) = t * z * x + s * y ;
+  matrix(0, 3) = 0;
+  
+  matrix(1, 0) = t * x * y + s * z ;
+  matrix(1, 1) = t * y * y + c ;
+  matrix(1, 2) = t * z * y - s * x ;
+  matrix(1, 3) = 0;
+  
+  matrix(2, 0) = t * x * z - s * y ;
+  matrix(2, 1) = t * y * z + s * x ;
+  matrix(2, 2) = t * z * z + c ;
+  matrix(2, 3) = 0;
+  
+  // hint to the compiler to put these into FP registers
+  x = center[0];
+  y = center[1];
+  z = center[2];
+  
+  matrix(3, 0) = x - x*matrix(0, 0) - y*matrix(1, 0) - z*matrix(2, 0);
+  matrix(3, 1) = y - x*matrix(0, 1) - y*matrix(1, 1) - z*matrix(2, 1);
+  matrix(3, 2) = z - x*matrix(0, 2) - y*matrix(1, 2) - z*matrix(2, 2);
+  matrix(3, 3) = 1;
 }
 
 /**
  * Set up the transform matrix for a translation.
  */
 static void
-set_translation (osg::Matrix &matrix, double position_m, const osg::Vec3 &axis)
+set_translation (osg::Matrix &matrix, double position_m, const SGVec3d &axis)
 {
-  osg::Vec3 xyz = axis * position_m;
+  SGVec3d xyz = axis * position_m;
   matrix.makeIdentity();
   matrix(3, 0) = xyz[0];
   matrix(3, 1) = xyz[1];
   matrix(3, 2) = xyz[2];
-}
-
-/**
- * Set up the transform matrix for a scale operation.
- */
-static void
-set_scale (osg::Matrix &matrix, double x, double y, double z)
-{
-  matrix.makeIdentity();
-  matrix(0, 0) = x;
-  matrix(1, 1) = y;
-  matrix(2, 2) = z;
 }
 
 /**
@@ -140,455 +129,1473 @@ apply_mods(double property, double step, double scroll)
  * Read an interpolation table from properties.
  */
 static SGInterpTable *
-read_interpolation_table (SGPropertyNode_ptr props)
+read_interpolation_table(const SGPropertyNode* props)
 {
-  SGPropertyNode_ptr table_node = props->getNode("interpolation");
-  if (table_node != 0) {
-    SGInterpTable * table = new SGInterpTable();
-    vector<SGPropertyNode_ptr> entries = table_node->getChildren("entry");
-    for (unsigned int i = 0; i < entries.size(); i++)
-      table->addEntry(entries[i]->getDoubleValue("ind", 0.0),
-                      entries[i]->getDoubleValue("dep", 0.0));
-    return table;
-  } else {
+  const SGPropertyNode* table_node = props->getNode("interpolation");
+  if (!table_node)
     return 0;
-  }
+  return new SGInterpTable(table_node);
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGAnimation
+// Utility value classes
 ////////////////////////////////////////////////////////////////////////
-
-SGAnimation::SGAnimation (SGPropertyNode_ptr props, osg::Group * branch)
-    : _branch(branch),
-    animation_type(0)
-{
-    _branch->setName(props->getStringValue("name", "Animation"));
-    if ( props->getBoolValue( "enable-hot", true ) ) {
-        _branch->setNodeMask(SG_NODEMASK_TERRAIN_BIT|_branch->getNodeMask());
-    } else {
-        _branch->setNodeMask(~SG_NODEMASK_TERRAIN_BIT&_branch->getNodeMask());
-    }
-}
-
-SGAnimation::~SGAnimation ()
-{
-}
-
-void
-SGAnimation::init ()
-{
-}
-
-void
-SGAnimation::restore()
-{
-}
-
-void
-SGAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGNullAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGNullAnimation::SGNullAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new osg::Group)
-{
-}
-
-SGNullAnimation::~SGNullAnimation ()
-{
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGRangeAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGRangeAnimation::SGRangeAnimation (SGPropertyNode *prop_root,
-                                    SGPropertyNode_ptr props)
-  : SGAnimation(props, new osg::LOD),
-    _min(0.0), _max(0.0), _min_factor(1.0), _max_factor(1.0),
-    _condition(0)
-{
-    SGPropertyNode_ptr node = props->getChild("condition");
-    if (node != 0)
-       _condition = sgReadCondition(prop_root, node);
-
-    float ranges[2];
-
-    node = props->getChild( "min-factor" );
-    if (node != 0) {
-       _min_factor = props->getFloatValue("min-factor", 1.0);
-    }
-    node = props->getChild( "max-factor" );
-    if (node != 0) {
-       _max_factor = props->getFloatValue("max-factor", 1.0);
-    }
-    node = props->getChild( "min-property" );
-    if (node != 0) {
-       _min_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
-       ranges[0] = _min_prop->getFloatValue() * _min_factor;
-    } else {
-       _min = props->getFloatValue("min-m", 0);
-       ranges[0] = _min * _min_factor;
-    }
-    node = props->getChild( "max-property" );
-    if (node != 0) {
-       _max_prop = (SGPropertyNode *)prop_root->getNode(node->getStringValue(), true);
-       ranges[1] = _max_prop->getFloatValue() * _max_factor;
-    } else {
-       _max = props->getFloatValue("max-m", 0);
-       ranges[1] = _max * _max_factor;
-    }
-    static_cast<osg::LOD*>(_branch)->setRange(0, ranges[0], ranges[1]);
-}
-
-SGRangeAnimation::~SGRangeAnimation ()
-{
-}
-
-void
-SGRangeAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  float ranges[2];
-  if ( _condition == 0 || _condition->test() ) {
-    if (_min_prop != 0) {
-      ranges[0] = _min_prop->getFloatValue() * _min_factor;
-    } else {
-      ranges[0] = _min * _min_factor;
-    }
-    if (_max_prop != 0) {
-      ranges[1] = _max_prop->getFloatValue() * _max_factor;
-    } else {
-      ranges[1] = _max * _max_factor;
-    }
-  } else {
-    ranges[0] = 0.f;
-    ranges[1] = 1000000000.f;
-  }
-  static_cast<osg::LOD*>(_branch)->setRange(0, ranges[0], ranges[1]);
-  traverse(node, nv);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGBillboardAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGBillboardAnimation::SGBillboardAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new osg::AutoTransform)
-{
-//OSGFIXME: verify
-  bool spherical = props->getBoolValue("spherical", true);
-  osg::AutoTransform* autoTrans = static_cast<osg::AutoTransform*>(_branch);
-  if (spherical) {
-    autoTrans->setAutoRotateMode(osg::AutoTransform::ROTATE_TO_SCREEN);
-  } else {
-    autoTrans->setAutoRotateMode(osg::AutoTransform::NO_ROTATION);
-    autoTrans->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-  }
-  autoTrans->setAutoScaleToScreen(false);
-}
-
-SGBillboardAnimation::~SGBillboardAnimation ()
-{
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGSelectAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGSelectAnimation::SGSelectAnimation( SGPropertyNode *prop_root,
-                                  SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::Switch),
-    _condition(0)
-{
-  SGPropertyNode_ptr node = props->getChild("condition");
-  if (node != 0)
-    _condition = sgReadCondition(prop_root, node);
-}
-
-SGSelectAnimation::~SGSelectAnimation ()
-{
-}
-
-void
-SGSelectAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{ 
-  if (_condition != 0 && _condition->test())
-    static_cast<osg::Switch*>(_branch)->setAllChildrenOn();
-  else
-    static_cast<osg::Switch*>(_branch)->setAllChildrenOff();
-  traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGSpinAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGSpinAnimation::SGSpinAnimation( SGPropertyNode *prop_root,
-                                  SGPropertyNode_ptr props,
-                                  double sim_time_sec )
-  : SGAnimation(props, new osg::MatrixTransform),
-    _use_personality( props->getBoolValue("use-personality",false) ),
-    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _factor( props, "factor", 1.0 ),
-    _position_deg( props, "starting-position-deg", 0.0 ),
-    _last_time_sec( sim_time_sec ),
-    _condition(0)
-{
-    SGPropertyNode_ptr node = props->getChild("condition");
-    if (node != 0)
-        _condition = sgReadCondition(prop_root, node);
-
-    _center[0] = 0;
-    _center[1] = 0;
-    _center[2] = 0;
-    if (props->hasValue("axis/x1-m")) {
-        double x1,y1,z1,x2,y2,z2;
-        x1 = props->getFloatValue("axis/x1-m");
-        y1 = props->getFloatValue("axis/y1-m");
-        z1 = props->getFloatValue("axis/z1-m");
-        x2 = props->getFloatValue("axis/x2-m");
-        y2 = props->getFloatValue("axis/y2-m");
-        z2 = props->getFloatValue("axis/z2-m");
-        _center[0] = (x1+x2)/2;
-        _center[1]= (y1+y2)/2;
-        _center[2] = (z1+z2)/2;
-        float vector_length = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1));
-        _axis[0] = (x2-x1)/vector_length;
-        _axis[1] = (y2-y1)/vector_length;
-        _axis[2] = (z2-z1)/vector_length;
-    } else {
-       _axis[0] = props->getFloatValue("axis/x", 0);
-       _axis[1] = props->getFloatValue("axis/y", 0);
-       _axis[2] = props->getFloatValue("axis/z", 0);
-    }
-    if (props->hasValue("center/x-m")) {
-       _center[0] = props->getFloatValue("center/x-m", 0);
-       _center[1] = props->getFloatValue("center/y-m", 0);
-       _center[2] = props->getFloatValue("center/z-m", 0);
-    }
-    
-    _axis.normalize();
-
-    if ( _use_personality ) {
-      _factor.shuffle();
-      _position_deg.shuffle();
-    }
-}
-
-SGSpinAnimation::~SGSpinAnimation ()
-{
-}
-
-void
-SGSpinAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  double sim_time_sec = nv->getFrameStamp()->getReferenceTime();
-  if ( _condition == 0 || _condition->test() ) {
-    double dt;
-    float velocity_rpms;
-    dt = sim_time_sec - _last_time_sec;
-    _last_time_sec = sim_time_sec;
-    
-    velocity_rpms = (_prop->getDoubleValue() * _factor / 60.0);
-    _position_deg += (dt * velocity_rpms * 360);
-    _position_deg -= 360*floor(_position_deg/360);
-
-    osg::Matrix _matrix;
-    set_rotation(_matrix, _position_deg, _center, _axis);
-    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
-  }
-  traverse(node, nv);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGTimedAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGTimedAnimation::SGTimedAnimation (SGPropertyNode_ptr props)
-  : SGAnimation(props, new osg::Switch),
-    _use_personality( props->getBoolValue("use-personality",false) ),
-    _duration_sec(props->getDoubleValue("duration-sec", 1.0)),
-    _last_time_sec( 0 ),
-    _total_duration_sec( 0 ),
-    _step( 0 )
-    
-{
-    vector<SGPropertyNode_ptr> nodes = props->getChildren( "branch-duration-sec" );
-    size_t nb = nodes.size();
-    for ( size_t i = 0; i < nb; i++ ) {
-        size_t ind = nodes[ i ]->getIndex();
-        while ( ind >= _branch_duration_specs.size() ) {
-            _branch_duration_specs.push_back( DurationSpec( _duration_sec ) );
-        }
-        SGPropertyNode_ptr rNode = nodes[ i ]->getChild("random");
-        if ( rNode == 0 ) {
-            _branch_duration_specs[ ind ] = DurationSpec( nodes[ i ]->getDoubleValue() );
-        } else {
-            _branch_duration_specs[ ind ] = DurationSpec( rNode->getDoubleValue( "min", 0.0 ),
-                                                          rNode->getDoubleValue( "max", 1.0 ) );
-        }
-    }
-}
-
-SGTimedAnimation::~SGTimedAnimation ()
-{
-}
-
-void
-SGTimedAnimation::init()
-{
-    if ( !_use_personality ) {
-        for ( unsigned i = 0; i < getBranch()->getNumChildren(); i++ ) {
-            double v;
-            if ( i < _branch_duration_specs.size() ) {
-                DurationSpec &sp = _branch_duration_specs[ i ];
-                v = sp._min + sg_random() * ( sp._max - sp._min );
-            } else {
-                v = _duration_sec;
-            }
-            _branch_duration_sec.push_back( v );
-            _total_duration_sec += v;
-        }
-    }
-    // Sanity check : total duration shouldn't equal zero
-    if (_duration_sec < 0.01)
-        _duration_sec = 0.01;
-    if ( _total_duration_sec < 0.01 )
-        _total_duration_sec = 0.01;
-
-    static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
-}
-
-void
-SGTimedAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    double sim_time_sec = nv->getFrameStamp()->getReferenceTime();
-    _last_time_sec -= _total_duration_sec*floor((sim_time_sec - _last_time_sec)/_total_duration_sec);
-    double duration = _duration_sec;
-    if ( _step < _branch_duration_sec.size() ) {
-      duration = _branch_duration_sec[ _step ];
-    }
-    if ( ( sim_time_sec - _last_time_sec ) >= duration ) {
-      _last_time_sec += duration;
-      _step += 1;
-      if ( _step >= getBranch()->getNumChildren() )
-        _step = 0;
-      static_cast<osg::Switch*>(getBranch())->setSingleChildOn(_step);
-    }
-    traverse(node, nv);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGRotateAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGRotateAnimation::SGRotateAnimation( SGPropertyNode *prop_root,
-                                  SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::MatrixTransform),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-      _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
-      _factor(props->getDoubleValue("factor", 1.0)),
-      _table(read_interpolation_table(props)),
-      _has_min(props->hasValue("min-deg")),
-      _min_deg(props->getDoubleValue("min-deg")),
-      _has_max(props->hasValue("max-deg")),
-      _max_deg(props->getDoubleValue("max-deg")),
-      _position_deg(props->getDoubleValue("starting-position-deg", 0)),
-      _condition(0)
-{
-    SGPropertyNode_ptr node = props->getChild("condition");
-    if (node != 0)
-      _condition = sgReadCondition(prop_root, node);
-
-    _center[0] = 0;
-    _center[1] = 0;
-    _center[2] = 0;
-    if (props->hasValue("axis/x") || props->hasValue("axis/y") || props->hasValue("axis/z")) {
-       _axis[0] = props->getFloatValue("axis/x", 0);
-       _axis[1] = props->getFloatValue("axis/y", 0);
-       _axis[2] = props->getFloatValue("axis/z", 0);
-    } else {
-        double x1,y1,z1,x2,y2,z2;
-        x1 = props->getFloatValue("axis/x1-m", 0);
-        y1 = props->getFloatValue("axis/y1-m", 0);
-        z1 = props->getFloatValue("axis/z1-m", 0);
-        x2 = props->getFloatValue("axis/x2-m", 0);
-        y2 = props->getFloatValue("axis/y2-m", 0);
-        z2 = props->getFloatValue("axis/z2-m", 0);
-        _center[0] = (x1+x2)/2;
-        _center[1]= (y1+y2)/2;
-        _center[2] = (z1+z2)/2;
-        float vector_length = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1));
-        _axis[0] = (x2-x1)/vector_length;
-        _axis[1] = (y2-y1)/vector_length;
-        _axis[2] = (z2-z1)/vector_length;
-    }
-    if (props->hasValue("center/x-m") || props->hasValue("center/y-m")
-            || props->hasValue("center/z-m")) {
-        _center[0] = props->getFloatValue("center/x-m", 0);
-        _center[1] = props->getFloatValue("center/y-m", 0);
-        _center[2] = props->getFloatValue("center/z-m", 0);
-    }
-    _axis.normalize();
-}
-
-SGRotateAnimation::~SGRotateAnimation ()
-{
-}
-
-void
-SGRotateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  if (_condition == 0 || _condition->test()) {
-    if (_table == 0) {
-      _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
-      if (_has_min && _position_deg < _min_deg)
-        _position_deg = _min_deg;
-      if (_has_max && _position_deg > _max_deg)
-        _position_deg = _max_deg;
-    } else {
-      _position_deg = _table->interpolate(_prop->getDoubleValue());
-    }
-    osg::Matrix _matrix;
-    set_rotation(_matrix, _position_deg, _center, _axis);
-    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
-  }
-  traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGBlendAnimation
-////////////////////////////////////////////////////////////////////////
-
-class SGBlendAnimationVisitor : public osg::NodeVisitor {
+class SGScaleOffsetValue : public SGDoubleValue {
 public:
-  SGBlendAnimationVisitor(float blend) :
+  SGScaleOffsetValue(SGPropertyNode const* propertyNode) :
+    _propertyNode(propertyNode),
+    _scale(1),
+    _offset(0),
+    _min(-SGLimitsd::max()),
+    _max(SGLimitsd::max())
+  { }
+  void setScale(double scale)
+  { _scale = scale; }
+  void setOffset(double offset)
+  { _offset = offset; }
+  void setMin(double min)
+  { _min = min; }
+  void setMax(double max)
+  { _max = max; }
+
+  virtual double getValue() const
+  {
+    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
+    return std::min(_max, std::max(_min, _offset + _scale*value));
+  }
+private:
+  SGSharedPtr<SGPropertyNode const> _propertyNode;
+  double _scale;
+  double _offset;
+  double _min;
+  double _max;
+};
+
+class SGPersScaleOffsetValue : public SGDoubleValue {
+public:
+  SGPersScaleOffsetValue(SGPropertyNode const* propertyNode,
+                         SGPropertyNode const* config,
+                         const char* scalename, const char* offsetname,
+                         double defScale = 1, double defOffset = 0) :
+    _propertyNode(propertyNode),
+    _scale(config, scalename, defScale),
+    _offset(config, offsetname, defOffset),
+    _min(-SGLimitsd::max()),
+    _max(SGLimitsd::max())
+  { }
+  void setScale(double scale)
+  { _scale = scale; }
+  void setOffset(double offset)
+  { _offset = offset; }
+  void setMin(double min)
+  { _min = min; }
+  void setMax(double max)
+  { _max = max; }
+
+  virtual double getValue() const
+  {
+    _offset.shuffle();
+    _scale.shuffle();
+    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
+    return SGMiscd::clip(_offset + _scale*value, _min, _max);
+  }
+private:
+  SGSharedPtr<SGPropertyNode const> _propertyNode;
+  mutable SGPersonalityParameter<double> _scale;
+  mutable SGPersonalityParameter<double> _offset;
+  double _min;
+  double _max;
+};
+
+class SGInterpTableValue : public SGDoubleValue {
+public:
+  SGInterpTableValue(SGPropertyNode const* propertyNode,
+                     SGInterpTable const* interpTable) :
+    _propertyNode(propertyNode),
+    _interpTable(interpTable)
+  { }
+  virtual double getValue() const
+  { return _interpTable->interpolate(_propertyNode->getDoubleValue()); }
+private:
+  SGSharedPtr<SGPropertyNode const> _propertyNode;
+  SGSharedPtr<SGInterpTable const> _interpTable;
+};
+
+class SGTexScaleOffsetValue : public SGDoubleValue {
+public:
+  SGTexScaleOffsetValue(const SGPropertyNode* propertyNode) :
+    _propertyNode(propertyNode),
+    _scale(1),
+    _offset(0),
+    _step(0),
+    _scroll(0),
+    _min(-SGLimitsd::max()),
+    _max(SGLimitsd::max())
+  { }
+  void setScale(double scale)
+  { _scale = scale; }
+  void setOffset(double offset)
+  { _offset = offset; }
+  void setStep(double step)
+  { _step = step; }
+  void setScroll(double scroll)
+  { _scroll = scroll; }
+  void setMin(double min)
+  { _min = min; }
+  void setMax(double max)
+  { _max = max; }
+
+  virtual double getValue() const
+  {
+    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
+    value = apply_mods(value, _step, _scroll);
+    return SGMiscd::clip(_scale*(_offset + value), _min, _max);
+  }
+private:
+  SGSharedPtr<const SGPropertyNode> _propertyNode;
+  double _scale;
+  double _offset;
+  double _step;
+  double _scroll;
+  double _min;
+  double _max;
+};
+
+class SGTexTableValue : public SGDoubleValue {
+public:
+  SGTexTableValue(const SGPropertyNode* propertyNode,
+                  const SGInterpTable* interpTable) :
+    _propertyNode(propertyNode),
+    _interpTable(interpTable)
+  { }
+  void setStep(double step)
+  { _step = step; }
+  void setScroll(double scroll)
+  { _scroll = scroll; }
+  virtual double getValue() const
+  {
+    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
+    value = apply_mods(value, _step, _scroll);
+    return _interpTable->interpolate(value);
+  }
+private:
+  SGSharedPtr<SGPropertyNode const> _propertyNode;
+  SGSharedPtr<SGInterpTable const> _interpTable;
+  double _step;
+  double _scroll;
+};
+
+static std::string
+unit_string(const char* value, const char* unit)
+{
+  return std::string(value) + unit;
+}
+
+static SGDoubleValue*
+read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
+           const char* unit, double defMin, double defMax)
+{
+  std::string inputPropertyName;
+  inputPropertyName = configNode->getStringValue("property", "");
+  if (!inputPropertyName.empty()) {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+    SGInterpTable* interpTable = read_interpolation_table(configNode);
+    if (interpTable) {
+      SGInterpTableValue* value;
+      value = new SGInterpTableValue(inputProperty, interpTable);
+      return value;
+    } else {
+      std::string offset = unit_string("offset", unit);
+      std::string min = unit_string("min", unit);
+      std::string max = unit_string("max", unit);
+
+      if (configNode->getBoolValue("use-personality", false)) {
+        SGPersScaleOffsetValue* value;
+        value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                           "factor", offset.c_str());
+        value->setMin(configNode->getDoubleValue(min.c_str(), defMin));
+        value->setMax(configNode->getDoubleValue(max.c_str(), defMax));
+        return value;
+      } else {
+        SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
+        value->setScale(configNode->getDoubleValue("factor", 1));
+        value->setOffset(configNode->getDoubleValue(offset.c_str(), 0));
+        value->setMin(configNode->getDoubleValue(min.c_str(), defMin));
+        value->setMax(configNode->getDoubleValue(max.c_str(), defMax));
+        return value;
+      }
+    }
+  }
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Animation installer
+////////////////////////////////////////////////////////////////////////
+
+class SGAnimation::RemoveModeVisitor : public SGStateAttributeVisitor {
+public:
+  RemoveModeVisitor(osg::StateAttribute::GLMode mode) :
+    _mode(mode)
+  { }
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    stateSet->removeMode(_mode);
+  }
+private:
+  osg::StateAttribute::GLMode _mode;
+};
+
+class SGAnimation::RemoveAttributeVisitor : public SGStateAttributeVisitor {
+public:
+  RemoveAttributeVisitor(osg::StateAttribute::Type type) :
+    _type(type)
+  { }
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    while (stateSet->getAttribute(_type)) {
+      stateSet->removeAttribute(_type);
+    }
+  }
+private:
+  osg::StateAttribute::Type _type;
+};
+
+class SGAnimation::RemoveTextureModeVisitor : public SGStateAttributeVisitor {
+public:
+  RemoveTextureModeVisitor(unsigned unit, osg::StateAttribute::GLMode mode) :
+    _unit(unit),
+    _mode(mode)
+  { }
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    stateSet->removeTextureMode(_unit, _mode);
+  }
+private:
+  unsigned _unit;
+  osg::StateAttribute::GLMode _mode;
+};
+
+class SGAnimation::RemoveTextureAttributeVisitor :
+  public SGStateAttributeVisitor {
+public:
+  RemoveTextureAttributeVisitor(unsigned unit,
+                                osg::StateAttribute::Type type) :
+    _unit(unit),
+    _type(type)
+  { }
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    while (stateSet->getTextureAttribute(_unit, _type)) {
+      stateSet->removeTextureAttribute(_unit, _type);
+    }
+  }
+private:
+  unsigned _unit;
+  osg::StateAttribute::Type _type;
+};
+
+class SGAnimation::BinToInheritVisitor : public SGStateAttributeVisitor {
+public:
+  virtual void apply(osg::StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    stateSet->setRenderBinToInherit();
+  }
+};
+
+class SGAnimation::DrawableCloneVisitor : public osg::NodeVisitor {
+public:
+  DrawableCloneVisitor() :
+    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+  {}
+  void apply(osg::Geode& geode)
+  {
+    for (unsigned i = 0 ; i < geode.getNumDrawables(); ++i) {
+      osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_ALL &
+                         ~osg::CopyOp::DEEP_COPY_TEXTURES);
+      geode.setDrawable(i, copyOp(geode.getDrawable(i)));
+    }
+  }
+};
+
+
+SGAnimation::SGAnimation(const SGPropertyNode* configNode,
+                                           SGPropertyNode* modelRoot) :
+  osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+  _found(false),
+  _configNode(configNode),
+  _modelRoot(modelRoot)
+{
+  _name = configNode->getStringValue("name", "");
+  _enableHOT = configNode->getBoolValue("enable-hot", true);
+  _disableShadow = configNode->getBoolValue("disable-shadow", false);
+  std::vector<SGPropertyNode_ptr> objectNames =
+    configNode->getChildren("object-name");
+  for (unsigned i = 0; i < objectNames.size(); ++i)
+    _objectNames.push_back(objectNames[i]->getStringValue());
+}
+
+SGAnimation::~SGAnimation()
+{
+  if (_found)
+    return;
+
+  SG_LOG(SG_IO, SG_ALERT, "Could not find at least one of the following"
+         " objects for animation:\n");
+  std::list<std::string>::const_iterator i;
+  for (i = _objectNames.begin(); i != _objectNames.end(); ++i)
+    SG_LOG(SG_IO, SG_ALERT, *i << "\n");
+}
+
+bool
+SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
+                     SGPropertyNode* modelRoot)
+{
+  std::string type = configNode->getStringValue("type", "none");
+  if (type == "alpha-test") {
+    SGAlphaTestAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "billboard") {
+    SGBillboardAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "blend") {
+    SGBlendAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "dist-scale") {
+    SGDistScaleAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "flash") {
+    SGFlashAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "material") {
+    SGMaterialAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "noshadow") {
+    SGShadowAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "range") {
+    SGRangeAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "rotate" || type == "spin") {
+    SGRotateAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "scale") {
+    SGScaleAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "select") {
+    SGSelectAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "shader") {
+    SGShaderAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "textranslate" || type == "texrotate" ||
+             type == "texmultiple") {
+    SGTexTransformAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "timed") {
+    SGTimedAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "translate") {
+    SGTranslateAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "null" || type == "none" || type.empty()) {
+    SGGroupAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else
+    return false;
+
+  return true;
+}
+  
+  
+void
+SGAnimation::apply(osg::Node* node)
+{
+  // duh what a special case ...
+  if (_objectNames.empty()) {
+    osg::Group* group = node->asGroup();
+    if (group) {
+      osg::ref_ptr<osg::Group> animationGroup;
+      installInGroup(std::string(), *group, animationGroup);
+    }
+  } else
+    node->accept(*this);
+}
+
+void
+SGAnimation::install(osg::Node& node)
+{
+  _found = true;
+  if (_enableHOT)
+    node.setNodeMask( SG_NODEMASK_TERRAIN_BIT | node.getNodeMask());
+  else
+    node.setNodeMask(~SG_NODEMASK_TERRAIN_BIT & node.getNodeMask());
+  if (!_disableShadow)
+    node.setNodeMask( SG_NODEMASK_SHADOW_BIT | node.getNodeMask());
+  else
+    node.setNodeMask(~SG_NODEMASK_SHADOW_BIT & node.getNodeMask());
+}
+
+osg::Group*
+SGAnimation::createAnimationGroup(osg::Group& parent)
+{
+  // default implementation, we do not need a new group
+  // for every animation type. Usually animations that just change
+  // the StateSet of some parts of the model
+  return 0;
+}
+
+void
+SGAnimation::apply(osg::Group& group)
+{
+  // the trick is to first traverse the children and then
+  // possibly splice in a new group node if required.
+  // Else we end up in a recursive loop where we infinitly insert new
+  // groups in between
+  traverse(group);
+
+  // Note that this algorithm preserves the order of the child objects
+  // like they appear in the object-name tags.
+  // The timed animations require this
+  osg::ref_ptr<osg::Group> animationGroup;
+  std::list<std::string>::const_iterator nameIt;
+  for (nameIt = _objectNames.begin(); nameIt != _objectNames.end(); ++nameIt)
+    installInGroup(*nameIt, group, animationGroup);
+}
+
+void
+SGAnimation::installInGroup(const std::string& name, osg::Group& group,
+                            osg::ref_ptr<osg::Group>& animationGroup)
+{
+  int i = group.getNumChildren() - 1;
+  for (; 0 <= i; --i) {
+    osg::Node* child = group.getChild(i);
+    if (name.empty() || child->getName() == name) {
+      // fire the installation of the animation
+      install(*child);
+      
+      // create a group node on demand
+      if (!animationGroup.valid()) {
+        animationGroup = createAnimationGroup(group);
+        // Animation type that does not require a new group,
+        // in this case we can stop and look for the next object
+        if (animationGroup.valid() && !_name.empty())
+          animationGroup->setName(_name);
+      }
+      if (animationGroup.valid()) {
+        animationGroup->addChild(child);
+        group.removeChild(i);
+      }
+    }
+  }
+}
+
+void
+SGAnimation::removeMode(osg::Node& node, osg::StateAttribute::GLMode mode)
+{
+  RemoveModeVisitor visitor(mode);
+  node.accept(visitor);
+}
+
+void
+SGAnimation::removeAttribute(osg::Node& node, osg::StateAttribute::Type type)
+{
+  RemoveAttributeVisitor visitor(type);
+  node.accept(visitor);
+}
+
+void
+SGAnimation::removeTextureMode(osg::Node& node, unsigned unit,
+                               osg::StateAttribute::GLMode mode)
+{
+  RemoveTextureModeVisitor visitor(unit, mode);
+  node.accept(visitor);
+}
+
+void
+SGAnimation::removeTextureAttribute(osg::Node& node, unsigned unit,
+                                    osg::StateAttribute::Type type)
+{
+  RemoveTextureAttributeVisitor visitor(unit, type);
+  node.accept(visitor);
+}
+
+void
+SGAnimation::setRenderBinToInherit(osg::Node& node)
+{
+  BinToInheritVisitor visitor;
+  node.accept(visitor);
+}
+
+void
+SGAnimation::cloneDrawables(osg::Node& node)
+{
+  DrawableCloneVisitor visitor;
+  node.accept(visitor);
+}
+
+const SGCondition*
+SGAnimation::getCondition() const
+{
+  const SGPropertyNode* conditionNode = _configNode->getChild("condition");
+  if (!conditionNode)
+    return 0;
+  return sgReadCondition(_modelRoot, conditionNode);
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of null animation
+////////////////////////////////////////////////////////////////////////
+
+// Ok, that is to build a subgraph from different other
+// graph nodes. I guess that this stems from the time where modellers
+// could not build hierarchical trees ...
+SGGroupAnimation::SGGroupAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot):
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGGroupAnimation::createAnimationGroup(osg::Group& parent)
+{
+  osg::Group* group = new osg::Group;
+  parent.addChild(group);
+  return group;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of translate animation
+////////////////////////////////////////////////////////////////////////
+
+class SGTranslateAnimation::Transform : public osg::Transform {
+public:
+  Transform() :
+    _axis(0, 0, 0),
+    _value(0)
+  { setReferenceFrame(RELATIVE_RF); }
+  void setAxis(const SGVec3d& axis)
+  { _axis = axis; dirtyBound(); }
+  void setValue(double value)
+  { _value = value; dirtyBound(); }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    assert(_referenceFrame == RELATIVE_RF);
+    osg::Matrix tmp;
+    set_translation(tmp, _value, _axis);
+    matrix.preMult(tmp);
+    return true;
+  }
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    assert(_referenceFrame == RELATIVE_RF);
+    osg::Matrix tmp;
+    set_translation(tmp, -_value, _axis);
+    matrix.postMult(tmp);
+    return true;
+  }
+private:
+  SGVec3d _axis;
+  double _value;
+};
+
+class SGTranslateAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(SGCondition const* condition,
+                 SGDoubleValue const* animationValue) :
+    _condition(condition),
+    _animationValue(animationValue)
+  { }
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    if (!_condition || _condition->test()) {
+      SGTranslateAnimation::Transform* transform;
+      transform = static_cast<SGTranslateAnimation::Transform*>(node);
+      transform->setValue(_animationValue->getValue());
+    }
+    traverse(node, nv);
+  }
+public:
+  SGSharedPtr<SGCondition const> _condition;
+  SGSharedPtr<SGDoubleValue const> _animationValue;
+};
+
+SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
+                                           SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+  _condition = getCondition();
+  _animationValue = read_value(configNode, modelRoot, "-m",
+                               -SGLimitsd::max(), SGLimitsd::max());
+  _axis[0] = configNode->getDoubleValue("axis/x", 0);
+  _axis[1] = configNode->getDoubleValue("axis/y", 0);
+  _axis[2] = configNode->getDoubleValue("axis/z", 0);
+  if (8*SGLimitsd::min() < norm(_axis))
+    _axis = normalize(_axis);
+
+  _initialValue = configNode->getDoubleValue("starting-position-m", 0);
+  _initialValue *= configNode->getDoubleValue("factor", 1);
+  _initialValue += configNode->getDoubleValue("offset-m", 0);
+}
+
+osg::Group*
+SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform;
+  transform->setName("translate animation");
+  if (_animationValue) {
+    UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
+    transform->setUpdateCallback(uc);
+  }
+  transform->setAxis(_axis);
+  transform->setValue(_initialValue);
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of rotate/spin animation
+////////////////////////////////////////////////////////////////////////
+
+class SGRotateAnimation::Transform : public osg::Transform {
+public:
+  Transform()
+  { setReferenceFrame(RELATIVE_RF); }
+  void setCenter(const SGVec3d& center)
+  { _center = center; dirtyBound(); }
+  void setAxis(const SGVec3d& axis)
+  { _axis = axis; dirtyBound(); }
+  void setAngle(double angle)
+  { _angle = angle; }
+  double getAngle() const
+  { return _angle; }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    // This is the fast path, optimize a bit
+    assert(_referenceFrame == RELATIVE_RF);
+    // FIXME optimize
+    osg::Matrix tmp;
+    set_rotation(tmp, _angle, _center, _axis);
+    matrix.preMult(tmp);
+    return true;
+  }
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    assert(_referenceFrame == RELATIVE_RF);
+    // FIXME optimize
+    osg::Matrix tmp;
+    set_rotation(tmp, -_angle, _center, _axis);
+    matrix.postMult(tmp);
+    return true;
+  }
+  virtual osg::BoundingSphere computeBound() const
+  {
+    osg::BoundingSphere bs = osg::Group::computeBound();
+    osg::BoundingSphere centerbs(_center.osg(), bs.radius());
+    centerbs.expandBy(bs);
+    return centerbs;
+  }
+
+private:
+  SGVec3d _center;
+  SGVec3d _axis;
+  double _angle;
+};
+
+class SGRotateAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(SGCondition const* condition,
+                 SGDoubleValue const* animationValue) :
+    _condition(condition),
+    _animationValue(animationValue)
+  { }
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    if (!_condition || _condition->test()) {
+      SGRotateAnimation::Transform* transform;
+      transform = static_cast<SGRotateAnimation::Transform*>(node);
+      transform->setAngle(_animationValue->getValue());
+    }
+    traverse(node, nv);
+  }
+public:
+  SGSharedPtr<SGCondition const> _condition;
+  SGSharedPtr<SGDoubleValue const> _animationValue;
+};
+
+class SGRotateAnimation::SpinUpdateCallback : public osg::NodeCallback {
+public:
+  SpinUpdateCallback(SGCondition const* condition,
+                     SGDoubleValue const* animationValue) :
+    _condition(condition),
+    _animationValue(animationValue),
+    _lastTime(-1)
+  { }
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    if (!_condition || _condition->test()) {
+      SGRotateAnimation::Transform* transform;
+      transform = static_cast<SGRotateAnimation::Transform*>(node);
+
+      double t = nv->getFrameStamp()->getReferenceTime();
+      double dt = 0;
+      if (0 <= _lastTime)
+        dt = t - _lastTime;
+      _lastTime = t;
+      double velocity_rpms = _animationValue->getValue()/60;
+      double angle = transform->getAngle();
+      angle += dt*velocity_rpms*360;
+      angle -= 360*floor(angle/360);
+      transform->setAngle(angle);
+    }
+    traverse(node, nv);
+  }
+public:
+  SGSharedPtr<SGCondition const> _condition;
+  SGSharedPtr<SGDoubleValue const> _animationValue;
+  double _lastTime;
+};
+
+SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode, SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+  std::string type = configNode->getStringValue("type", "");
+  _isSpin = (type == "spin");
+
+  _condition = getCondition();
+  _animationValue = read_value(configNode, modelRoot, "-deg",
+                               -SGLimitsd::max(), SGLimitsd::max());
+  _initialValue = configNode->getDoubleValue("starting-position-deg", 0);
+  _initialValue *= configNode->getDoubleValue("factor", 1);
+  _initialValue += configNode->getDoubleValue("offset-deg", 0);
+
+  _center = SGVec3d::zeros();
+  if (configNode->hasValue("axis/x1-m")) {
+    SGVec3d v1, v2;
+    v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
+    v1[1] = configNode->getDoubleValue("axis/y1-m", 0);
+    v1[2] = configNode->getDoubleValue("axis/z1-m", 0);
+    v2[0] = configNode->getDoubleValue("axis/x2-m", 0);
+    v2[1] = configNode->getDoubleValue("axis/y2-m", 0);
+    v2[2] = configNode->getDoubleValue("axis/z2-m", 0);
+    _center = 0.5*(v1+v2);
+    _axis = v2 - v1;
+  } else {
+    _axis[0] = configNode->getDoubleValue("axis/x", 0);
+    _axis[1] = configNode->getDoubleValue("axis/y", 0);
+    _axis[2] = configNode->getDoubleValue("axis/z", 0);
+  }
+  if (8*SGLimitsd::min() < norm(_axis))
+    _axis = normalize(_axis);
+
+  _center[0] = configNode->getDoubleValue("center/x-m", _center[0]);
+  _center[1] = configNode->getDoubleValue("center/y-m", _center[1]);
+  _center[2] = configNode->getDoubleValue("center/z-m", _center[2]);
+}
+
+osg::Group*
+SGRotateAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform;
+  transform->setName("rotate animation");
+  if (_isSpin) {
+    SpinUpdateCallback* uc;
+    uc = new SpinUpdateCallback(_condition, _animationValue);
+    transform->setUpdateCallback(uc);
+  } else if (_animationValue) {
+    UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
+    transform->setUpdateCallback(uc);
+  }
+  transform->setCenter(_center);
+  transform->setAxis(_axis);
+  transform->setAngle(_initialValue);
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of scale animation
+////////////////////////////////////////////////////////////////////////
+
+class SGScaleAnimation::Transform : public osg::Transform {
+public:
+  Transform() :
+    _center(0, 0, 0),
+    _scaleFactor(1, 1, 1),
+    _boundScale(0)
+  {
+    setReferenceFrame(RELATIVE_RF);
+  }
+  void setCenter(const SGVec3d& center)
+  {
+    _center = center;
+    dirtyBound();
+  }
+  void setScaleFactor(const SGVec3d& scaleFactor)
+  {
+    if (_boundScale < normI(scaleFactor))
+      dirtyBound();
+    _scaleFactor = scaleFactor;
+  }
+  void setScaleFactor(double scaleFactor)
+  { 
+    if (_boundScale < fabs(scaleFactor))
+      dirtyBound();
+    _scaleFactor = SGVec3d(scaleFactor, scaleFactor, scaleFactor);
+  }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    assert(_referenceFrame == RELATIVE_RF);
+    osg::Matrix transform;
+    transform(0,0) = _scaleFactor[0];
+    transform(1,1) = _scaleFactor[1];
+    transform(2,2) = _scaleFactor[2];
+    transform(3,0) = _center[0]*(1 - _scaleFactor[0]);
+    transform(3,1) = _center[1]*(1 - _scaleFactor[1]);
+    transform(3,2) = _center[2]*(1 - _scaleFactor[2]);
+    matrix.preMult(transform);
+    return true;
+  }
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    assert(_referenceFrame == RELATIVE_RF);
+    if (fabs(_scaleFactor[0]) < SGLimitsd::min())
+      return false;
+    if (fabs(_scaleFactor[1]) < SGLimitsd::min())
+      return false;
+    if (fabs(_scaleFactor[2]) < SGLimitsd::min())
+      return false;
+    SGVec3d rScaleFactor(1/_scaleFactor[0],
+                         1/_scaleFactor[1],
+                         1/_scaleFactor[2]);
+    osg::Matrix transform;
+    transform(0,0) = rScaleFactor[0];
+    transform(1,1) = rScaleFactor[1];
+    transform(2,2) = rScaleFactor[2];
+    transform(3,0) = _center[0]*(1 - rScaleFactor[0]);
+    transform(3,1) = _center[1]*(1 - rScaleFactor[1]);
+    transform(3,2) = _center[2]*(1 - rScaleFactor[2]);
+    matrix.postMult(transform);
+    return true;
+  }
+  virtual osg::BoundingSphere computeBound() const
+  {
+    osg::BoundingSphere bs = osg::Group::computeBound();
+    _boundScale = normI(_scaleFactor);
+    bs.radius() *= _boundScale;
+    return bs;
+  }
+
+private:
+  SGVec3d _center;
+  SGVec3d _scaleFactor;
+  mutable double _boundScale;
+};
+
+class SGScaleAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(const SGCondition* condition,
+                 SGSharedPtr<const SGDoubleValue> animationValue[3]) :
+    _condition(condition)
+  {
+    _animationValue[0] = animationValue[0];
+    _animationValue[1] = animationValue[1];
+    _animationValue[2] = animationValue[2];
+  }
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    if (!_condition || _condition->test()) {
+      SGScaleAnimation::Transform* transform;
+      transform = static_cast<SGScaleAnimation::Transform*>(node);
+      SGVec3d scale(_animationValue[0]->getValue(),
+                    _animationValue[1]->getValue(),
+                    _animationValue[2]->getValue());
+      transform->setScaleFactor(scale);
+    }
+    traverse(node, nv);
+  }
+public:
+  SGSharedPtr<SGCondition const> _condition;
+  SGSharedPtr<SGDoubleValue const> _animationValue[3];
+};
+
+SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+  _condition = getCondition();
+
+  // default offset/factor for all directions
+  double offset = configNode->getDoubleValue("offset", 1);
+  double factor = configNode->getDoubleValue("factor", 1);
+
+  std::string inputPropertyName;
+  inputPropertyName = configNode->getStringValue("property", "");
+  if (!inputPropertyName.empty()) {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+    SGInterpTable* interpTable = read_interpolation_table(configNode);
+    if (interpTable) {
+      SGInterpTableValue* value;
+      value = new SGInterpTableValue(inputProperty, interpTable);
+      _animationValue[0] = value;
+      _animationValue[1] = value;
+      _animationValue[2] = value;
+    } else if (configNode->getBoolValue("use-personality", false)) {
+      SGPersScaleOffsetValue* value;
+      value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                         "x-factor", "x-offset",
+                                         factor, offset);
+      value->setMin(configNode->getDoubleValue("x-min", 0));
+      value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
+      _animationValue[0] = value;
+      value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                         "y-factor", "y-offset",
+                                         factor, offset);
+      value->setMin(configNode->getDoubleValue("y-min", 0));
+      value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
+      _animationValue[1] = value;
+      value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                         "z-factor", "z-offset",
+                                         factor, offset);
+      value->setMin(configNode->getDoubleValue("z-min", 0));
+      value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
+      _animationValue[2] = value;
+    } else {
+      SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
+      value->setScale(configNode->getDoubleValue("x-factor", factor));
+      value->setOffset(configNode->getDoubleValue("x-offset", offset));
+      value->setMin(configNode->getDoubleValue("x-min", 0));
+      value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
+      _animationValue[0] = value;
+      value = new SGScaleOffsetValue(inputProperty);
+      value->setScale(configNode->getDoubleValue("y-factor", factor));
+      value->setOffset(configNode->getDoubleValue("y-offset", offset));
+      value->setMin(configNode->getDoubleValue("y-min", 0));
+      value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
+      _animationValue[1] = value;
+      value = new SGScaleOffsetValue(inputProperty);
+      value->setScale(configNode->getDoubleValue("z-factor", factor));
+      value->setOffset(configNode->getDoubleValue("z-offset", offset));
+      value->setMin(configNode->getDoubleValue("z-min", 0));
+      value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
+      _animationValue[2] = value;
+    }
+  }
+  _initialValue[0] = configNode->getDoubleValue("x-starting-scale", 1);
+  _initialValue[0] *= configNode->getDoubleValue("x-factor", factor);
+  _initialValue[0] += configNode->getDoubleValue("x-offset", offset);
+  _initialValue[1] = configNode->getDoubleValue("y-starting-scale", 1);
+  _initialValue[1] *= configNode->getDoubleValue("y-factor", factor);
+  _initialValue[1] += configNode->getDoubleValue("y-offset", offset);
+  _initialValue[2] = configNode->getDoubleValue("z-starting-scale", 1);
+  _initialValue[2] *= configNode->getDoubleValue("z-factor", factor);
+  _initialValue[2] += configNode->getDoubleValue("z-offset", offset);
+  _center[0] = configNode->getDoubleValue("center/x-m", 0);
+  _center[1] = configNode->getDoubleValue("center/y-m", 0);
+  _center[2] = configNode->getDoubleValue("center/z-m", 0);
+}
+
+osg::Group*
+SGScaleAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform;
+  transform->setName("scale animation");
+  transform->setCenter(_center);
+  transform->setScaleFactor(_initialValue);
+  UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
+  transform->setUpdateCallback(uc);
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of dist scale animation
+////////////////////////////////////////////////////////////////////////
+
+class SGDistScaleAnimation::Transform : public osg::Transform {
+public:
+  Transform(const SGPropertyNode* configNode)
+  {
+    setName(configNode->getStringValue("name", "dist scale animation"));
+    setReferenceFrame(RELATIVE_RF);
+    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
+    _factor = configNode->getFloatValue("factor", 1);
+    _offset = configNode->getFloatValue("offset", 0);
+    _min_v = configNode->getFloatValue("min", SGLimitsf::epsilon());
+    _max_v = configNode->getFloatValue("max", SGLimitsf::max());
+    _table = read_interpolation_table(configNode);
+    _center[0] = configNode->getFloatValue("center/x-m", 0);
+    _center[1] = configNode->getFloatValue("center/y-m", 0);
+    _center[2] = configNode->getFloatValue("center/z-m", 0);
+  }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    osg::Matrix transform;
+    double scale_factor = computeScaleFactor(nv);
+    transform(0,0) = scale_factor;
+    transform(1,1) = scale_factor;
+    transform(2,2) = scale_factor;
+    transform(3,0) = _center[0]*(1 - scale_factor);
+    transform(3,1) = _center[1]*(1 - scale_factor);
+    transform(3,2) = _center[2]*(1 - scale_factor);
+    matrix.preMult(transform);
+    return true;
+  }
+  
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    double scale_factor = computeScaleFactor(nv);
+    if (fabs(scale_factor) <= SGLimits<double>::min())
+      return false;
+    osg::Matrix transform;
+    double rScaleFactor = 1/scale_factor;
+    transform(0,0) = rScaleFactor;
+    transform(1,1) = rScaleFactor;
+    transform(2,2) = rScaleFactor;
+    transform(3,0) = _center[0]*(1 - rScaleFactor);
+    transform(3,1) = _center[1]*(1 - rScaleFactor);
+    transform(3,2) = _center[2]*(1 - rScaleFactor);
+    matrix.postMult(transform);
+    return true;
+  }
+
+private:
+  double computeScaleFactor(osg::NodeVisitor* nv) const
+  {
+    if (!nv)
+      return 1;
+
+    double scale_factor = (_center.osg() - nv->getEyePoint()).length();
+    if (_table == 0) {
+      scale_factor = _factor * scale_factor + _offset;
+    } else {
+      scale_factor = _table->interpolate( scale_factor );
+    }
+    if (scale_factor < _min_v)
+      scale_factor = _min_v;
+    if (scale_factor > _max_v)
+      scale_factor = _max_v;
+
+    return scale_factor;
+  }
+
+  SGSharedPtr<SGInterpTable> _table;
+  SGVec3d _center;
+  double _min_v;
+  double _max_v;
+  double _factor;
+  double _offset;
+};
+
+
+SGDistScaleAnimation::SGDistScaleAnimation(const SGPropertyNode* configNode,
+                                           SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGDistScaleAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform(getConfig());
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of flash animation
+////////////////////////////////////////////////////////////////////////
+
+class SGFlashAnimation::Transform : public osg::Transform {
+public:
+  Transform(const SGPropertyNode* configNode)
+  {
+    setReferenceFrame(RELATIVE_RF);
+    setName(configNode->getStringValue("name", "flash animation"));
+    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
+
+    _axis[0] = configNode->getFloatValue("axis/x", 0);
+    _axis[1] = configNode->getFloatValue("axis/y", 0);
+    _axis[2] = configNode->getFloatValue("axis/z", 1);
+    _axis.normalize();
+    
+    _center[0] = configNode->getFloatValue("center/x-m", 0);
+    _center[1] = configNode->getFloatValue("center/y-m", 0);
+    _center[2] = configNode->getFloatValue("center/z-m", 0);
+    
+    _offset = configNode->getFloatValue("offset", 0);
+    _factor = configNode->getFloatValue("factor", 1);
+    _power = configNode->getFloatValue("power", 1);
+    _two_sides = configNode->getBoolValue("two-sides", false);
+    
+    _min_v = configNode->getFloatValue("min", SGLimitsf::epsilon());
+    _max_v = configNode->getFloatValue("max", 1);
+  }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    osg::Matrix transform;
+    double scale_factor = computeScaleFactor(nv);
+    transform(0,0) = scale_factor;
+    transform(1,1) = scale_factor;
+    transform(2,2) = scale_factor;
+    transform(3,0) = _center[0]*(1 - scale_factor);
+    transform(3,1) = _center[1]*(1 - scale_factor);
+    transform(3,2) = _center[2]*(1 - scale_factor);
+    matrix.preMult(transform);
+    return true;
+  }
+  
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    double scale_factor = computeScaleFactor(nv);
+    if (fabs(scale_factor) <= SGLimits<double>::min())
+      return false;
+    osg::Matrix transform;
+    double rScaleFactor = 1/scale_factor;
+    transform(0,0) = rScaleFactor;
+    transform(1,1) = rScaleFactor;
+    transform(2,2) = rScaleFactor;
+    transform(3,0) = _center[0]*(1 - rScaleFactor);
+    transform(3,1) = _center[1]*(1 - rScaleFactor);
+    transform(3,2) = _center[2]*(1 - rScaleFactor);
+    matrix.postMult(transform);
+    return true;
+  }
+
+private:
+  double computeScaleFactor(osg::NodeVisitor* nv) const
+  {
+    if (!nv)
+      return 1;
+
+    osg::Vec3 localEyeToCenter = nv->getEyePoint() - _center;
+    localEyeToCenter.normalize();
+
+    double cos_angle = localEyeToCenter*_axis;
+    double scale_factor = 0;
+    if ( _two_sides && cos_angle < 0 )
+      scale_factor = _factor * pow( -cos_angle, _power ) + _offset;
+    else if ( cos_angle > 0 )
+      scale_factor = _factor * pow( cos_angle, _power ) + _offset;
+    
+    if ( scale_factor < _min_v )
+      scale_factor = _min_v;
+    if ( scale_factor > _max_v )
+      scale_factor = _max_v;
+
+    return scale_factor;
+  }
+
+  virtual osg::BoundingSphere computeBound() const
+  {
+    // avoid being culled away by small feature culling
+    osg::BoundingSphere bs = osg::Group::computeBound();
+    bs.radius() *= _max_v;
+    return bs;
+  }
+
+private:
+  osg::Vec3 _center;
+  osg::Vec3 _axis;
+  double _power, _factor, _offset, _min_v, _max_v;
+  bool _two_sides;
+};
+
+
+SGFlashAnimation::SGFlashAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGFlashAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform(getConfig());
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of flash animation
+////////////////////////////////////////////////////////////////////////
+
+class SGBillboardAnimation::Transform : public osg::Transform {
+public:
+  Transform(const SGPropertyNode* configNode) :
+    _spherical(configNode->getBoolValue("spherical", true))
+  {
+    setReferenceFrame(RELATIVE_RF);
+    setName(configNode->getStringValue("name", "billboard animation"));
+  }
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    // More or less taken from plibs ssgCutout
+    if (_spherical) {
+      matrix(0,0) = 1; matrix(0,1) = 0; matrix(0,2) = 0;
+      matrix(1,0) = 0; matrix(1,1) = 0; matrix(1,2) = -1;
+      matrix(2,0) = 0; matrix(2,1) = 1; matrix(2,2) = 0;
+    } else {
+      osg::Vec3 zAxis(matrix(2, 0), matrix(2, 1), matrix(2, 2));
+      osg::Vec3 xAxis = osg::Vec3(0, 0, -1)^zAxis;
+      osg::Vec3 yAxis = zAxis^xAxis;
+      
+      xAxis.normalize();
+      yAxis.normalize();
+      zAxis.normalize();
+      
+      matrix(0,0) = xAxis[0]; matrix(0,1) = xAxis[1]; matrix(0,2) = xAxis[2];
+      matrix(1,0) = yAxis[0]; matrix(1,1) = yAxis[1]; matrix(1,2) = yAxis[2];
+      matrix(2,0) = zAxis[0]; matrix(2,1) = zAxis[1]; matrix(2,2) = zAxis[2];
+    }
+    return true;
+  }
+  
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    // Hmm, don't yet know how to get that back ...
+    return false;
+  }
+
+private:
+  bool _spherical;
+};
+
+
+SGBillboardAnimation::SGBillboardAnimation(const SGPropertyNode* configNode,
+                                           SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGBillboardAnimation::createAnimationGroup(osg::Group& parent)
+{
+  Transform* transform = new Transform(getConfig());
+  parent.addChild(transform);
+  return transform;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of a range animation
+////////////////////////////////////////////////////////////////////////
+
+class SGRangeAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(const SGCondition* condition,
+                 const SGDoubleValue* minAnimationValue,
+                 const SGDoubleValue* maxAnimationValue,
+                 double minValue, double maxValue) :
+    _condition(condition),
+    _minAnimationValue(minAnimationValue),
+    _maxAnimationValue(maxAnimationValue),
+    _minStaticValue(minValue),
+    _maxStaticValue(maxValue)
+  {}
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    osg::LOD* lod = static_cast<osg::LOD*>(node);
+    if (!_condition || _condition->test()) {
+      double minRange;
+      if (_minAnimationValue)
+        minRange = _minAnimationValue->getValue();
+      else
+        minRange = _minStaticValue;
+      double maxRange;
+      if (_maxAnimationValue)
+        maxRange = _maxAnimationValue->getValue();
+      else
+        maxRange = _maxStaticValue;
+      lod->setRange(0, minRange, maxRange);
+    } else {
+      lod->setRange(0, 0, SGLimitsf::max());
+    }
+    traverse(node, nv);
+  }
+
+private:
+  SGSharedPtr<const SGCondition> _condition;
+  SGSharedPtr<const SGDoubleValue> _minAnimationValue;
+  SGSharedPtr<const SGDoubleValue> _maxAnimationValue;
+  double _minStaticValue;
+  double _maxStaticValue;
+};
+
+SGRangeAnimation::SGRangeAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+  _condition = getCondition();
+
+  std::string inputPropertyName;
+  inputPropertyName = configNode->getStringValue("min-property", "");
+  if (!inputPropertyName.empty()) {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
+    value->setScale(configNode->getDoubleValue("min-factor", 1));
+    _minAnimationValue = value;
+  }
+  inputPropertyName = configNode->getStringValue("max-property", "");
+  if (!inputPropertyName.empty()) {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
+    value->setScale(configNode->getDoubleValue("max-factor", 1));
+    _maxAnimationValue = value;
+  }
+
+  _initialValue[0] = configNode->getDoubleValue("min-m", 0);
+  _initialValue[0] *= configNode->getDoubleValue("min-factor", 1);
+  _initialValue[1] = configNode->getDoubleValue("max-m", SGLimitsf::max());
+  _initialValue[1] *= configNode->getDoubleValue("max-factor", 1);
+}
+
+osg::Group*
+SGRangeAnimation::createAnimationGroup(osg::Group& parent)
+{
+  osg::Group* group = new osg::Group;
+  group->setName("range animation group");
+
+  osg::LOD* lod = new osg::LOD;
+  lod->setName("range animation node");
+  parent.addChild(lod);
+
+  lod->addChild(group, _initialValue[0], _initialValue[1]);
+  lod->setCenterMode(osg::LOD::USE_BOUNDING_SPHERE_CENTER);
+  lod->setRangeMode(osg::LOD::DISTANCE_FROM_EYE_POINT);
+  if (_minAnimationValue || _maxAnimationValue || _condition) {
+    UpdateCallback* uc;
+    uc = new UpdateCallback(_condition, _minAnimationValue, _maxAnimationValue,
+                            _initialValue[0], _initialValue[1]);
+    lod->setUpdateCallback(uc);
+  }
+  return group;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of a select animation
+////////////////////////////////////////////////////////////////////////
+
+class SGSelectAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(const SGCondition* condition) :
+    _condition(condition)
+  {}
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    osg::Switch* sw = static_cast<osg::Switch*>(node);
+    if (_condition->test())
+      sw->setAllChildrenOn();
+    else
+      sw->setAllChildrenOff();
+    traverse(node, nv);
+  }
+
+private:
+  SGSharedPtr<SGCondition const> _condition;
+};
+
+SGSelectAnimation::SGSelectAnimation(const SGPropertyNode* configNode,
+                                     SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGSelectAnimation::createAnimationGroup(osg::Group& parent)
+{
+  // if no condition given, this is a noop.
+  SGSharedPtr<SGCondition const> condition = getCondition();
+  // trick, gets deleted with all its 'animated' children
+  // when the animation installer returns
+  if (!condition)
+    return new osg::Group;
+
+  osg::Switch* sw = new osg::Switch;
+  sw->setName("select animation node");
+  sw->setUpdateCallback(new UpdateCallback(condition));
+  parent.addChild(sw);
+  return sw;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of alpha test animation
+////////////////////////////////////////////////////////////////////////
+
+SGAlphaTestAnimation::SGAlphaTestAnimation(const SGPropertyNode* configNode,
+                                           SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+void
+SGAlphaTestAnimation::install(osg::Node& node)
+{
+  SGAnimation::install(node);
+  
+  cloneDrawables(node);
+  removeMode(node, GL_ALPHA_TEST);
+  removeAttribute(node, osg::StateAttribute::ALPHAFUNC);
+
+  osg::StateSet* stateSet = node.getOrCreateStateSet();
+  osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+  alphaFunc->setFunction(osg::AlphaFunc::GREATER);
+  float alphaClamp = getConfig()->getFloatValue("alpha-factor", 0);
+  alphaFunc->setReferenceValue(alphaClamp);
+  stateSet->setAttribute(alphaFunc);
+  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
+// Blend animation installer
+//////////////////////////////////////////////////////////////////////
+
+class SGBlendAnimation::BlendVisitor : public osg::NodeVisitor {
+public:
+  BlendVisitor(float blend) :
     osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
     _blend(blend)
-  {
-    setVisitorType(osg::NodeVisitor::NODE_VISITOR);
-  }
+  { setVisitorType(osg::NodeVisitor::NODE_VISITOR); }
   virtual void apply(osg::Node& node)
   {
     updateStateSet(node.getStateSet());
@@ -621,1059 +1628,438 @@ public:
   {
     if (!stateSet)
       return;
-    osg::StateAttribute* stateAttribute = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
+    osg::StateAttribute* stateAttribute;
+    stateAttribute = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
     if (!stateAttribute)
       return;
     osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
     if (!material)
       return;
     material->setAlpha(osg::Material::FRONT_AND_BACK, _blend);
+    if (_blend < 1) {
+      stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+      stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+    } else {
+      stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
+    }
   }
 private:
   float _blend;
 };
 
-
-SGBlendAnimation::SGBlendAnimation( SGPropertyNode *prop_root,
-                                        SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::Group),
-    _use_personality( props->getBoolValue("use-personality",false) ),
-    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _table(read_interpolation_table(props)),
-    _prev_value(1.0),
-    _offset(props,"offset",0.0),
-    _factor(props,"factor",1.0),
-    _min(props->getDoubleValue("min", 0.0)),
-    _max(props->getDoubleValue("max", 1.0))
-{
-  if ( _use_personality ) {
-    _factor.shuffle();
-    _offset.shuffle();
+class SGBlendAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(const SGPropertyNode* configNode, const SGDoubleValue* v) :
+    _prev_value(-1),
+    _animationValue(v)
+  { }
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    double blend = _animationValue->getValue();
+    if (blend != _prev_value) {
+      _prev_value = blend;
+      BlendVisitor visitor(1-blend);
+      node->accept(visitor);
+    }
+    traverse(node, nv);
   }
+public:
+  double _prev_value;
+  SGSharedPtr<SGDoubleValue const> _animationValue;
+};
+
+
+SGBlendAnimation::SGBlendAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot)
+  : SGAnimation(configNode, modelRoot),
+    _animationValue(read_value(configNode, modelRoot, "", 0, 1))
+{
 }
 
-SGBlendAnimation::~SGBlendAnimation ()
+osg::Group*
+SGBlendAnimation::createAnimationGroup(osg::Group& parent)
 {
+  if (!_animationValue)
+    return 0;
+
+  osg::Group* group = new osg::Switch;
+  group->setName("blend animation node");
+  group->setUpdateCallback(new UpdateCallback(getConfig(), _animationValue));
+  parent.addChild(group);
+  return group;
 }
 
 void
-SGBlendAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
+SGBlendAnimation::install(osg::Node& node)
 {
-  double _blend;
-
-  if (_table == 0) {
-    _blend = 1.0 - (_prop->getDoubleValue() * _factor + _offset);
-  } else {
-    _blend = _table->interpolate(_prop->getDoubleValue());
-  }
-  if (_blend < _min)
-    _blend = _min;
-  if (_blend > _max)
-    _blend = _max;
-
-  if (_blend != _prev_value) {
-    _prev_value = _blend;
-    SGBlendAnimationVisitor visitor(1-_blend);
-    _branch->accept(visitor);
-  }
-  traverse(node, nv);
+  SGAnimation::install(node);
+  // make sure we do not change common geometries,
+  // that also creates new display lists for these subgeometries.
+  cloneDrawables(node);
 }
-
 
 
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGTranslateAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGTranslateAnimation::SGTranslateAnimation( SGPropertyNode *prop_root,
-                                        SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::MatrixTransform),
-    _use_personality( props->getBoolValue("use-personality",false) ),
-    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _offset_m( props, "offset-m", 0.0 ),
-    _factor( props, "factor", 1.0 ),
-    _table(read_interpolation_table(props)),
-    _has_min(props->hasValue("min-m")),
-    _min_m(props->getDoubleValue("min-m")),
-    _has_max(props->hasValue("max-m")),
-    _max_m(props->getDoubleValue("max-m")),
-    _position_m(props->getDoubleValue("starting-position-m", 0)),
-    _condition(0)
-{
-  SGPropertyNode_ptr node = props->getChild("condition");
-  if (node != 0)
-    _condition = sgReadCondition(prop_root, node);
-
-  _axis[0] = props->getFloatValue("axis/x", 0);
-  _axis[1] = props->getFloatValue("axis/y", 0);
-  _axis[2] = props->getFloatValue("axis/z", 0);
-  _axis.normalize();
-
-  if ( _use_personality ) {
-    _factor.shuffle();
-    _offset_m.shuffle();
-  }
-}
-
-SGTranslateAnimation::~SGTranslateAnimation ()
-{
-}
-
-void
-SGTranslateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  if (_condition == 0 || _condition->test()) {
-
-    if (_table == 0) {
-      _position_m = (_prop->getDoubleValue() * _factor) + _offset_m;
-      if (_has_min && _position_m < _min_m)
-        _position_m = _min_m;
-      if (_has_max && _position_m > _max_m)
-        _position_m = _max_m;
-    } else {
-      _position_m = _table->interpolate(_prop->getDoubleValue());
-    }
-
-    osg::Matrix _matrix;
-    set_translation(_matrix, _position_m, _axis);
-    static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
-  }
-  traverse(node, nv);
-}
+//////////////////////////////////////////////////////////////////////
+// Timed animation installer
+//////////////////////////////////////////////////////////////////////
 
 
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGScaleAnimation
-////////////////////////////////////////////////////////////////////////
 
-SGScaleAnimation::SGScaleAnimation( SGPropertyNode *prop_root,
-                                        SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::MatrixTransform),
-    _use_personality( props->getBoolValue("use-personality",false) ),
-    _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _x_factor(props,"x-factor",1.0),
-    _y_factor(props,"y-factor",1.0),
-    _z_factor(props,"z-factor",1.0),
-    _x_offset(props,"x-offset",1.0),
-    _y_offset(props,"y-offset",1.0),
-    _z_offset(props,"z-offset",1.0),
-    _table(read_interpolation_table(props)),
-    _has_min_x(props->hasValue("x-min")),
-    _has_min_y(props->hasValue("y-min")),
-    _has_min_z(props->hasValue("z-min")),
-    _min_x(props->getDoubleValue("x-min")),
-    _min_y(props->getDoubleValue("y-min")),
-    _min_z(props->getDoubleValue("z-min")),
-    _has_max_x(props->hasValue("x-max")),
-    _has_max_y(props->hasValue("y-max")),
-    _has_max_z(props->hasValue("z-max")),
-    _max_x(props->getDoubleValue("x-max")),
-    _max_y(props->getDoubleValue("y-max")),
-    _max_z(props->getDoubleValue("z-max"))
-{
-  if ( _use_personality ) {
-    _x_factor.shuffle();
-    _x_offset.shuffle();
-    _y_factor.shuffle();
-    _y_offset.shuffle();
-    _z_factor.shuffle();
-    _z_offset.shuffle();
-  }
-}
-
-SGScaleAnimation::~SGScaleAnimation ()
-{
-}
-
-void
-SGScaleAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  if (_table == 0) {
-      _x_scale = _prop->getDoubleValue() * _x_factor + _x_offset;
-    if (_has_min_x && _x_scale < _min_x)
-      _x_scale = _min_x;
-    if (_has_max_x && _x_scale > _max_x)
-      _x_scale = _max_x;
-  } else {
-    _x_scale = _table->interpolate(_prop->getDoubleValue());
-  }
-
-  if (_table == 0) {
-    _y_scale = _prop->getDoubleValue() * _y_factor + _y_offset;
-    if (_has_min_y && _y_scale < _min_y)
-      _y_scale = _min_y;
-    if (_has_max_y && _y_scale > _max_y)
-      _y_scale = _max_y;
-  } else {
-    _y_scale = _table->interpolate(_prop->getDoubleValue());
-  }
-
-  if (_table == 0) {
-    _z_scale = _prop->getDoubleValue() * _z_factor + _z_offset;
-    if (_has_min_z && _z_scale < _min_z)
-      _z_scale = _min_z;
-    if (_has_max_z && _z_scale > _max_z)
-      _z_scale = _max_z;
-  } else {
-    _z_scale = _table->interpolate(_prop->getDoubleValue());
-  }
-
-  osg::Matrix _matrix;
-  set_scale(_matrix, _x_scale, _y_scale, _z_scale );
-  static_cast<osg::MatrixTransform*>(_branch)->setMatrix(_matrix);
-  traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGTexRotateAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGTexRotateAnimation::SGTexRotateAnimation( SGPropertyNode *prop_root,
-                                  SGPropertyNode_ptr props )
-    : SGAnimation(props, new osg::Group),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-      _offset_deg(props->getDoubleValue("offset-deg", 0.0)),
-      _factor(props->getDoubleValue("factor", 1.0)),
-      _table(read_interpolation_table(props)),
-      _has_min(props->hasValue("min-deg")),
-      _min_deg(props->getDoubleValue("min-deg")),
-      _has_max(props->hasValue("max-deg")),
-      _max_deg(props->getDoubleValue("max-deg")),
-      _position_deg(props->getDoubleValue("starting-position-deg", 0)),
-      _condition(0)
-{
-  SGPropertyNode *node = props->getChild("condition");
-  if (node != 0)
-    _condition = sgReadCondition(prop_root, node);
-
-  _center[0] = props->getFloatValue("center/x", 0);
-  _center[1] = props->getFloatValue("center/y", 0);
-  _center[2] = props->getFloatValue("center/z", 0);
-  _axis[0] = props->getFloatValue("axis/x", 0);
-  _axis[1] = props->getFloatValue("axis/y", 0);
-  _axis[2] = props->getFloatValue("axis/z", 0);
-  _axis.normalize();
-
-  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-  _texMat = new osg::TexMat;
-  stateSet->setTextureAttribute(0, _texMat.get());
-}
-
-SGTexRotateAnimation::~SGTexRotateAnimation ()
-{
-}
-
-void
-SGTexRotateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  if (!_condition || _condition->test()) {
-    if (_table == 0) {
-      _position_deg = _prop->getDoubleValue() * _factor + _offset_deg;
-      if (_has_min && _position_deg < _min_deg)
-        _position_deg = _min_deg;
-      if (_has_max && _position_deg > _max_deg)
-        _position_deg = _max_deg;
-    } else {
-      _position_deg = _table->interpolate(_prop->getDoubleValue());
-    }
-    osg::Matrix _matrix;
-    set_rotation(_matrix, _position_deg, _center, _axis);
-    _texMat->setMatrix(_matrix);
-  }
-  traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGTexTranslateAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGTexTranslateAnimation::SGTexTranslateAnimation( SGPropertyNode *prop_root,
-                                        SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::Group),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true)),
-    _offset(props->getDoubleValue("offset", 0.0)),
-    _factor(props->getDoubleValue("factor", 1.0)),
-    _step(props->getDoubleValue("step",0.0)),
-    _scroll(props->getDoubleValue("scroll",0.0)),
-    _table(read_interpolation_table(props)),
-    _has_min(props->hasValue("min")),
-    _min(props->getDoubleValue("min")),
-    _has_max(props->hasValue("max")),
-    _max(props->getDoubleValue("max")),
-    _position(props->getDoubleValue("starting-position", 0)),
-    _condition(0)
-{
-  SGPropertyNode *node = props->getChild("condition");
-  if (node != 0)
-    _condition = sgReadCondition(prop_root, node);
-
-  _axis[0] = props->getFloatValue("axis/x", 0);
-  _axis[1] = props->getFloatValue("axis/y", 0);
-  _axis[2] = props->getFloatValue("axis/z", 0);
-  _axis.normalize();
-
-  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-  _texMat = new osg::TexMat;
-  stateSet->setTextureAttribute(0, _texMat.get());
-}
-
-SGTexTranslateAnimation::~SGTexTranslateAnimation ()
-{
-}
-
-void
-SGTexTranslateAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  if (!_condition || _condition->test()) {
-    if (_table == 0) {
-      _position = (apply_mods(_prop->getDoubleValue(), _step, _scroll) + _offset) * _factor;
-      if (_has_min && _position < _min)
-        _position = _min;
-      if (_has_max && _position > _max)
-        _position = _max;
-    } else {
-      _position = _table->interpolate(apply_mods(_prop->getDoubleValue(), _step, _scroll));
-    }
-    osg::Matrix _matrix;
-    set_translation(_matrix, _position, _axis);
-    _texMat->setMatrix(_matrix);
-  }
-  traverse(node, nv);
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGTexMultipleAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGTexMultipleAnimation::SGTexMultipleAnimation( SGPropertyNode *prop_root,
-                                        SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::Group),
-      _prop((SGPropertyNode *)prop_root->getNode(props->getStringValue("property", "/null"), true))
-{
-  unsigned int i;
-  // Load animations
-  vector<SGPropertyNode_ptr> transform_nodes = props->getChildren("transform");
-  _transform = new TexTransform [transform_nodes.size()];
-  _num_transforms = 0;
-  for (i = 0; i < transform_nodes.size(); i++) {
-    SGPropertyNode_ptr transform_props = transform_nodes[i];
-
-    if (!strcmp("textranslate",transform_props->getStringValue("subtype", 0))) {
-
-      // transform is a translation
-      _transform[i].subtype = 0;
-
-      _transform[i].prop = (SGPropertyNode *)prop_root->getNode(transform_props->getStringValue("property", "/null"), true);
-
-      _transform[i].offset = transform_props->getDoubleValue("offset", 0.0);
-      _transform[i].factor = transform_props->getDoubleValue("factor", 1.0);
-      _transform[i].step = transform_props->getDoubleValue("step",0.0);
-      _transform[i].scroll = transform_props->getDoubleValue("scroll",0.0);
-      _transform[i].table = read_interpolation_table(transform_props);
-      _transform[i].has_min = transform_props->hasValue("min");
-      _transform[i].min = transform_props->getDoubleValue("min");
-      _transform[i].has_max = transform_props->hasValue("max");
-      _transform[i].max = transform_props->getDoubleValue("max");
-      _transform[i].position = transform_props->getDoubleValue("starting-position", 0);
-
-      _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
-      _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
-      _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
-      _transform[i].axis.normalize();
-      _num_transforms++;
-    } else if (!strcmp("texrotate",transform_nodes[i]->getStringValue("subtype", 0))) {
-
-      // transform is a rotation
-      _transform[i].subtype = 1;
-
-      _transform[i].prop = (SGPropertyNode *)prop_root->getNode(transform_props->getStringValue("property", "/null"), true);
-      _transform[i].offset = transform_props->getDoubleValue("offset-deg", 0.0);
-      _transform[i].factor = transform_props->getDoubleValue("factor", 1.0);
-      _transform[i].table = read_interpolation_table(transform_props);
-      _transform[i].has_min = transform_props->hasValue("min-deg");
-      _transform[i].min = transform_props->getDoubleValue("min-deg");
-      _transform[i].has_max = transform_props->hasValue("max-deg");
-      _transform[i].max = transform_props->getDoubleValue("max-deg");
-      _transform[i].position = transform_props->getDoubleValue("starting-position-deg", 0);
-
-      _transform[i].center[0] = transform_props->getFloatValue("center/x", 0);
-      _transform[i].center[1] = transform_props->getFloatValue("center/y", 0);
-      _transform[i].center[2] = transform_props->getFloatValue("center/z", 0);
-      _transform[i].axis[0] = transform_props->getFloatValue("axis/x", 0);
-      _transform[i].axis[1] = transform_props->getFloatValue("axis/y", 0);
-      _transform[i].axis[2] = transform_props->getFloatValue("axis/z", 0);
-      _transform[i].axis.normalize();
-      _num_transforms++;
-    }
-  }
-  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-  _texMat = new osg::TexMat;
-  stateSet->setTextureAttribute(0, _texMat.get());
-}
-
-SGTexMultipleAnimation::~SGTexMultipleAnimation ()
-{
-   delete [] _transform;
-}
-
-void
-SGTexMultipleAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-  int i;
-  osg::Matrix tmatrix;
-  tmatrix.makeIdentity();
-  for (i = 0; i < _num_transforms; i++) {
-
-    if(_transform[i].subtype == 0) {
-
-      // subtype 0 is translation
-      if (_transform[i].table == 0) {
-        _transform[i].position = (apply_mods(_transform[i].prop->getDoubleValue(), _transform[i].step,_transform[i].scroll) + _transform[i].offset) * _transform[i].factor;
-        if (_transform[i].has_min && _transform[i].position < _transform[i].min)
-          _transform[i].position = _transform[i].min;
-        if (_transform[i].has_max && _transform[i].position > _transform[i].max)
-          _transform[i].position = _transform[i].max;
+class SGTimedAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+  UpdateCallback(const SGPropertyNode* configNode) :
+    _current_index(0),
+    _reminder(0),
+    _duration_sec(configNode->getDoubleValue("duration-sec", 1)),
+    _last_time_sec(SGLimitsd::max()),
+    _use_personality(configNode->getBoolValue("use-personality", false))
+  {
+    std::vector<SGSharedPtr<SGPropertyNode> > nodes;
+    nodes = configNode->getChildren("branch-duration-sec");
+    for (size_t i = 0; i < nodes.size(); ++i) {
+      unsigned ind = nodes[ i ]->getIndex();
+      while ( ind >= _durations.size() ) {
+        _durations.push_back(DurationSpec(_duration_sec));
+      }
+      SGPropertyNode_ptr rNode = nodes[i]->getChild("random");
+      if ( rNode == 0 ) {
+        _durations[ind] = DurationSpec(nodes[ i ]->getDoubleValue());
       } else {
-         _transform[i].position = _transform[i].table->interpolate(apply_mods(_transform[i].prop->getDoubleValue(), _transform[i].step,_transform[i].scroll));
+        _durations[ind] = DurationSpec(rNode->getDoubleValue( "min", 0),
+                                       rNode->getDoubleValue( "max", 1));
       }
-      osg::Matrix matrix;
-      set_translation(matrix, _transform[i].position, _transform[i].axis);
-      tmatrix = matrix*tmatrix;
-
-    } else if (_transform[i].subtype == 1) {
-
-      // subtype 1 is rotation
-
-      if (_transform[i].table == 0) {
-        _transform[i].position = _transform[i].prop->getDoubleValue() * _transform[i].factor + _transform[i].offset;
-        if (_transform[i].has_min && _transform[i].position < _transform[i].min)
-         _transform[i].position = _transform[i].min;
-       if (_transform[i].has_max && _transform[i].position > _transform[i].max)
-         _transform[i].position = _transform[i].max;
-     } else {
-        _transform[i].position = _transform[i].table->interpolate(_transform[i].prop->getDoubleValue());
-      }
-
-      osg::Matrix matrix;
-      set_rotation(matrix, _transform[i].position, _transform[i].center, _transform[i].axis);
-      tmatrix = matrix*tmatrix;
     }
   }
-  _texMat->setMatrix(tmatrix);
-  traverse(node, nv);
-}
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+  {
+    assert(dynamic_cast<osg::Switch*>(node));
+    osg::Switch* sw = static_cast<osg::Switch*>(node);
 
+    unsigned nChildren = sw->getNumChildren();
 
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGAlphaTestAnimation
-////////////////////////////////////////////////////////////////////////
+    // blow up the durations vector to the required size
+    while (_durations.size() < nChildren) {
+      _durations.push_back(_duration_sec);
+    }
+    // make sure the current index is an duration that really exists
+    _current_index = _current_index % nChildren;
 
-SGAlphaTestAnimation::SGAlphaTestAnimation(SGPropertyNode_ptr props)
-  : SGAnimation(props, new osg::Group)
-{
-  _alpha_clamp = props->getFloatValue("alpha-factor", 0.0);
-}
-
-SGAlphaTestAnimation::~SGAlphaTestAnimation ()
-{
-}
-
-void SGAlphaTestAnimation::init()
-{
-  osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-  osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-  alphaFunc->setFunction(osg::AlphaFunc::GREATER);
-  alphaFunc->setReferenceValue(_alpha_clamp);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGMaterialAnimation
-////////////////////////////////////////////////////////////////////////
-
-SGMaterialAnimation::SGMaterialAnimation( SGPropertyNode *prop_root,
-        SGPropertyNode_ptr props, const SGPath &texture_path)
-    : SGAnimation(props, new osg::Group),
-    _last_condition(false),
-    _prop_root(prop_root),
-    _prop_base(""),
-    _texture_base(texture_path),
-    _read(0),
-    _update(0),
-    _global(props->getBoolValue("global", false))
-{
-    SGPropertyNode_ptr n;
-    n = props->getChild("condition");
-    _condition = n ? sgReadCondition(_prop_root, n) : 0;
-    n = props->getChild("property-base");
-    if (n) {
-        _prop_base = n->getStringValue();
-        if (!_prop_base.empty() && _prop_base.end()[-1] != '/')
-            _prop_base += '/';
+    // update the time and compute the current systems time value
+    double t = nv->getFrameStamp()->getReferenceTime();
+    if (_last_time_sec == SGLimitsd::max()) {
+      _last_time_sec = t;
+    } else {
+      double dt = t - _last_time_sec;
+      if (_use_personality)
+        dt *= 1 + 0.2*(0.5 - sg_random());
+      _reminder += dt;
+      _last_time_sec = t;
     }
 
-    initColorGroup(props->getChild("diffuse"), &_diff, DIFFUSE);
-    initColorGroup(props->getChild("ambient"), &_amb, AMBIENT);
-    initColorGroup(props->getChild("emission"), &_emis, EMISSION);
-    initColorGroup(props->getChild("specular"), &_spec, SPECULAR);
-
-    _shi = props->getFloatValue("shininess", -1.0);
-    if (_shi >= 0.0)
-        _update |= SHININESS;
-
-    SGPropertyNode_ptr group = props->getChild("transparency");
-    if (group) {
-        _trans.value = group->getFloatValue("alpha", -1.0);
-        _trans.factor = group->getFloatValue("factor", 1.0);
-        _trans.offset = group->getFloatValue("offset", 0.0);
-        _trans.min = group->getFloatValue("min", 0.0);
-        if (_trans.min < 0.0)
-            _trans.min = 0.0;
-        _trans.max = group->getFloatValue("max", 1.0);
-        if (_trans.max > 1.0)
-            _trans.max = 1.0;
-        if (_trans.dirty())
-            _update |= TRANSPARENCY;
-
-        n = group->getChild("alpha-prop");
-        _trans.value_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-        n = group->getChild("factor-prop");
-        _trans.factor_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-        n = group->getChild("offset-prop");
-        _trans.offset_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-        if (_trans.live())
-            _read |= TRANSPARENCY;
+    double currentDuration = _durations[_current_index].get();
+    while (currentDuration < _reminder) {
+      _reminder -= currentDuration;
+      _current_index = (_current_index + 1) % nChildren;
+      currentDuration = _durations[_current_index].get();
     }
 
-    _thresh = props->getFloatValue("threshold", -1.0);
-    if (_thresh >= 0.0)
-        _update |= THRESHOLD;
+    sw->setSingleChildOn(_current_index);
 
-    string _texture_str = props->getStringValue("texture", "");
-    if (!_texture_str.empty()) {
-        _texture = _texture_base;
-        _texture.append(_texture_str);
-        _texture2D = SGLoadTexture2D(_texture);
-        _update |= TEXTURE;
-    }
-
-    n = props->getChild("shininess-prop");
-    _shi_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = props->getChild("threshold-prop");
-    _thresh_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = props->getChild("texture-prop");
-    _tex_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-
-    _static_update = _update;
-
-    _alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0);
-}
-
-SGMaterialAnimation::~SGMaterialAnimation()
-{
-}
-
-void SGMaterialAnimation::initColorGroup(SGPropertyNode_ptr group, ColorSpec *col, int flag)
-{
-    if (!group)
-        return;
-
-    col->red = group->getFloatValue("red", -1.0);
-    col->green = group->getFloatValue("green", -1.0);
-    col->blue = group->getFloatValue("blue", -1.0);
-    col->factor = group->getFloatValue("factor", 1.0);
-    col->offset = group->getFloatValue("offset", 0.0);
-    if (col->dirty())
-        _update |= flag;
-
-    SGPropertyNode *n;
-    n = group->getChild("red-prop");
-    col->red_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = group->getChild("green-prop");
-    col->green_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = group->getChild("blue-prop");
-    col->blue_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = group->getChild("factor-prop");
-    col->factor_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    n = group->getChild("offset-prop");
-    col->offset_prop = n ? _prop_root->getNode(path(n->getStringValue()), true) : 0;
-    if (col->live())
-        _read |= flag;
-}
-
-void SGMaterialAnimation::init()
-{
-    if (!_global)
-        cloneMaterials(_branch);
-
-    // OSGFIXME
-    osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-    if (_update & THRESHOLD) {
-      stateSet->setAttribute(_alphaFunc.get(), osg::StateAttribute::OVERRIDE);
-      stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    }
-    if ((_update & TEXTURE) && _texture2D.valid()) {
-      stateSet->setTextureAttribute(0, _texture2D.get(), osg::StateAttribute::OVERRIDE);
-      stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    }
-}
-
-void
-SGMaterialAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    if (_condition) {
-        bool cond = _condition->test();
-        if (cond && !_last_condition)
-            _update |= _static_update;
-
-        _last_condition = cond;
-        if (!cond) {
-            traverse(node, nv);
-            return;
-        }
-    }
-
-    if (_read & DIFFUSE)
-        updateColorGroup(&_diff, DIFFUSE);
-    if (_read & AMBIENT)
-        updateColorGroup(&_amb, AMBIENT);
-    if (_read & EMISSION)
-        updateColorGroup(&_emis, EMISSION);
-    if (_read & SPECULAR)
-        updateColorGroup(&_spec, SPECULAR);
-
-    float f;
-    if (_shi_prop) {
-        f = _shi;
-        _shi = _shi_prop->getFloatValue();
-        if (_shi != f)
-            _update |= SHININESS;
-    }
-    if (_read & TRANSPARENCY) {
-        PropSpec tmp = _trans;
-        if (_trans.value_prop)
-            _trans.value = _trans.value_prop->getFloatValue();
-        if (_trans.factor_prop)
-            _trans.factor = _trans.factor_prop->getFloatValue();
-        if (_trans.offset_prop)
-            _trans.offset = _trans.offset_prop->getFloatValue();
-        if (_trans != tmp)
-            _update |= TRANSPARENCY;
-    }
-    if (_thresh_prop) {
-        f = _thresh;
-        _thresh = _thresh_prop->getFloatValue();
-        if (_thresh != f)
-            _update |= THRESHOLD;
-    }
-    if (_tex_prop) {
-        string t = _tex_prop->getStringValue();
-        if (!t.empty() && t != _texture_str) {
-            _texture_str = t;
-            _texture = _texture_base;
-            _texture.append(t);
-            _update |= TEXTURE;
-        }
-    }
-    if (_update) {
-        setMaterialBranch(_branch);
-        _update = 0;
-    }
     traverse(node, nv);
-}
-
-void SGMaterialAnimation::updateColorGroup(ColorSpec *col, int flag)
-{
-    ColorSpec tmp = *col;
-    if (col->red_prop)
-        col->red = col->red_prop->getFloatValue();
-    if (col->green_prop)
-        col->green = col->green_prop->getFloatValue();
-    if (col->blue_prop)
-        col->blue = col->blue_prop->getFloatValue();
-    if (col->factor_prop)
-        col->factor = col->factor_prop->getFloatValue();
-    if (col->offset_prop)
-        col->offset = col->offset_prop->getFloatValue();
-    if (*col != tmp)
-        _update |= flag;
-}
-
-class SGMaterialAnimationCloneVisitor : public osg::NodeVisitor {
-public:
-  SGMaterialAnimationCloneVisitor() :
-    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
-  {
-    setVisitorType(osg::NodeVisitor::NODE_VISITOR);
-  }
-  virtual void apply(osg::Node& node)
-  {
-    traverse(node);
-    osg::StateSet* stateSet = node.getStateSet();
-    if (!stateSet)
-      return;
-    if (1 < stateSet->referenceCount()) {
-      osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATESETS);
-      osg::Object* object = stateSet->clone(copyOp);
-      stateSet = static_cast<osg::StateSet*>(object);
-      node.setStateSet(stateSet);
-    }
-    cloneMaterial(stateSet);
-  }
-  virtual void apply(osg::Geode& node)
-  {
-    apply((osg::Node&)node);
-    traverse(node);
-    unsigned nDrawables = node.getNumDrawables();
-    for (unsigned i = 0; i < nDrawables; ++i) {
-      osg::Drawable* drawable = node.getDrawable(i);
-      osg::StateSet* stateSet = drawable->getStateSet();
-      if (!stateSet)
-        continue;
-      if (1 < stateSet->referenceCount()) {
-        osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATESETS);
-        osg::Object* object = stateSet->clone(copyOp);
-        stateSet = static_cast<osg::StateSet*>(object);
-        drawable->setStateSet(stateSet);
-      }
-      cloneMaterial(stateSet);
-    }
-  }
-  void cloneMaterial(osg::StateSet* stateSet)
-  {
-    osg::StateAttribute* stateAttr;
-    stateAttr = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
-    if (!stateAttr)
-      return;
-    osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_STATEATTRIBUTES);
-    osg::Object* object = stateAttr->clone(copyOp);
-    osg::Material* material = static_cast<osg::Material*>(object);
-    materialList.push_back(material);
-    while (stateSet->getAttribute(osg::StateAttribute::MATERIAL)) {
-      stateSet->removeAttribute(osg::StateAttribute::MATERIAL);
-    }
-    stateSet->setAttribute(material);
-  }
-  std::vector<osg::ref_ptr<osg::Material> > materialList;
-};
-
-void SGMaterialAnimation::cloneMaterials(osg::Group *b)
-{
-  SGMaterialAnimationCloneVisitor cloneVisitor;
-  b->accept(cloneVisitor);
-  _materialList.swap(cloneVisitor.materialList);
-}
-
-void SGMaterialAnimation::setMaterialBranch(osg::Group *b)
-{
-  std::vector<osg::ref_ptr<osg::Material> >::iterator i;
-  for (i = _materialList.begin(); i != _materialList.end(); ++i) {
-    osg::Material* material = i->get();
-    if (_update & DIFFUSE) {
-      osg::Vec4 v = _diff.rgba();
-      float alpha = material->getDiffuse(osg::Material::FRONT_AND_BACK)[3];
-      material->setColorMode(osg::Material::DIFFUSE);
-      material->setDiffuse(osg::Material::FRONT_AND_BACK,
-                           osg::Vec4(v[0], v[1], v[2], alpha));
-    }
-    if (_update & AMBIENT) {
-      material->setColorMode(osg::Material::AMBIENT);
-      material->setDiffuse(osg::Material::FRONT_AND_BACK, _amb.rgba());
-    }
-    if (_update & EMISSION)
-      material->setEmission(osg::Material::FRONT_AND_BACK, _emis.rgba());
-    if (_update & SPECULAR)
-      material->setSpecular(osg::Material::FRONT_AND_BACK, _spec.rgba());
-    if (_update & SHININESS)
-      material->setShininess(osg::Material::FRONT_AND_BACK,
-                             clamp(_shi, 0.0, 128.0));
-    if (_update & THRESHOLD)
-        _alphaFunc->setReferenceValue(clamp(_thresh));
-  }
-
-  if (_update & TRANSPARENCY) {
-    float trans = _trans.value * _trans.factor + _trans.offset;
-    trans = trans < _trans.min ? _trans.min : trans > _trans.max ? _trans.max : trans;
-    SGBlendAnimationVisitor visitor(trans);
-    _branch->accept(visitor);
-  }
-  if (_update & TEXTURE) {
-    if (!_texture2D) {
-      _texture2D = new osg::Texture2D;
-      osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-      stateSet->setTextureAttribute(0, _texture2D.get(), osg::StateAttribute::OVERRIDE);
-      stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-    }
-    osg::Image* image = osgDB::readImageFile(_texture.str());
-    if (image) {
-      _texture2D->setImage(image);
-      if (image->isImageTranslucent()) {
-        osg::StateSet* stateSet = _branch->getOrCreateStateSet();
-        stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-        stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-        stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-      }
-    }
-  }
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
-// Implementation of SGFlashAnimation
-////////////////////////////////////////////////////////////////////////
-class SGFlashAnimationTransform : public osg::Transform {
-public:
-  SGFlashAnimationTransform(SGPropertyNode* props)
-  {
-    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
-
-    _axis[0] = props->getFloatValue("axis/x", 0);
-    _axis[1] = props->getFloatValue("axis/y", 0);
-    _axis[2] = props->getFloatValue("axis/z", 1);
-    _axis.normalize();
-    
-    _center[0] = props->getFloatValue("center/x-m", 0);
-    _center[1] = props->getFloatValue("center/y-m", 0);
-    _center[2] = props->getFloatValue("center/z-m", 0);
-    
-    _offset = props->getFloatValue("offset", 0.0);
-    _factor = props->getFloatValue("factor", 1.0);
-    _power = props->getFloatValue("power", 1.0);
-    _two_sides = props->getBoolValue("two-sides", false);
-    
-    _min_v = props->getFloatValue("min", 0.0);
-    _max_v = props->getFloatValue("max", 1.0);
-  }
-
-  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
-  {
-    double scale_factor = computeScaleFactor(nv);
-    osg::Matrix transform;
-    transform(0,0) = scale_factor;
-    transform(1,1) = scale_factor;
-    transform(2,2) = scale_factor;
-    transform(3,0) = _center[0] * ( 1 - scale_factor );
-    transform(3,1) = _center[1] * ( 1 - scale_factor );
-    transform(3,2) = _center[2] * ( 1 - scale_factor );
-    if (_referenceFrame == RELATIVE_RF)
-      matrix.preMult(transform);
-    else
-      matrix = transform;
-
-    return true;
-  }
-  
-  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const
-  {
-    double scale_factor = computeScaleFactor(nv);
-    if (fabs(scale_factor) <= std::numeric_limits<double>::min())
-      return false;
-    osg::Matrix transform;
-    double rScaleFactor = 1/scale_factor;
-    transform(0,0) = rScaleFactor;
-    transform(1,1) = rScaleFactor;
-    transform(2,2) = rScaleFactor;
-    transform(3,0) = rScaleFactor*_center[0] * ( scale_factor - 1 );
-    transform(3,1) = rScaleFactor*_center[1] * ( scale_factor - 1 );
-    transform(3,2) = rScaleFactor*_center[2] * ( scale_factor - 1 );
-    if (_referenceFrame == RELATIVE_RF)
-      matrix.postMult(transform);
-    else
-      matrix = transform;
-    return true;
-  }
-
-  double computeScaleFactor(osg::NodeVisitor* nv) const
-  {
-    if (!nv)
-      return 1;
-
-    osg::Vec3 localEyeToCenter = nv->getEyePoint() - _center;
-    localEyeToCenter.normalize();
-
-    double cos_angle = localEyeToCenter*_axis;
-    double scale_factor = 0;
-    if ( _two_sides && cos_angle < 0 )
-      scale_factor = _factor * pow( -cos_angle, _power ) + _offset;
-    else if ( cos_angle > 0 )
-      scale_factor = _factor * pow( cos_angle, _power ) + _offset;
-    
-    if ( scale_factor < _min_v )
-      scale_factor = _min_v;
-    if ( scale_factor > _max_v )
-      scale_factor = _max_v;
-
-    return scale_factor;
   }
 
 private:
-  osg::Vec3 _axis, _center;
-  double _power, _factor, _offset, _min_v, _max_v;
-  bool _two_sides;
+  struct DurationSpec {
+    DurationSpec(double t) :
+      minTime(SGMiscd::max(0.01, t)),
+      maxTime(SGMiscd::max(0.01, t))
+    {}
+    DurationSpec(double t0, double t1) :
+      minTime(SGMiscd::max(0.01, t0)),
+      maxTime(SGMiscd::max(0.01, t1))
+    {}
+    double get() const
+    { return minTime + sg_random()*(maxTime - minTime); }
+    double minTime;
+    double maxTime;
+  };
+  std::vector<DurationSpec> _durations;
+  unsigned _current_index;
+  double _reminder;
+  double _duration_sec;
+  double _last_time_sec;
+  bool _use_personality;
 };
 
-SGFlashAnimation::SGFlashAnimation(SGPropertyNode_ptr props)
-  : SGAnimation( props, new SGFlashAnimationTransform(props) )
+
+SGTimedAnimation::SGTimedAnimation(const SGPropertyNode* configNode,
+                                   SGPropertyNode* modelRoot)
+  : SGAnimation(configNode, modelRoot)
 {
 }
 
-SGFlashAnimation::~SGFlashAnimation()
+osg::Group*
+SGTimedAnimation::createAnimationGroup(osg::Group& parent)
 {
+  osg::Switch* sw = new osg::Switch;
+  sw->setName("timed animation node");
+  sw->setUpdateCallback(new UpdateCallback(getConfig()));
+  parent.addChild(sw);
+  return sw;
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGDistScaleAnimation
+// dynamically switch on/off shadows
 ////////////////////////////////////////////////////////////////////////
-class SGDistScaleTransform : public osg::Transform {
+
+class SGShadowAnimation::UpdateCallback : public osg::NodeCallback {
 public:
-  SGDistScaleTransform(SGPropertyNode* props)
+  UpdateCallback(const SGCondition* condition) :
+    _condition(condition)
+  {}
+  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
-    getOrCreateStateSet()->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
-
-    _factor = props->getFloatValue("factor", 1.0);
-    _offset = props->getFloatValue("offset", 0.0);
-    _min_v = props->getFloatValue("min", 0.0);
-    _max_v = props->getFloatValue("max", 1.0);
-    _has_min = props->hasValue("min");
-    _has_max = props->hasValue("max");
-    _table = read_interpolation_table(props);
-    _center[0] = props->getFloatValue("center/x-m", 0);
-    _center[1] = props->getFloatValue("center/y-m", 0);
-    _center[2] = props->getFloatValue("center/z-m", 0);
-  }
-  ~SGDistScaleTransform()
-  {
-  }
-
-  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
-  {
-    osg::Matrix transform;
-    double scale_factor = computeScaleFactor(nv);
-    transform(0,0) = scale_factor;
-    transform(1,1) = scale_factor;
-    transform(2,2) = scale_factor;
-    transform(3,0) = _center[0] * ( 1 - scale_factor );
-    transform(3,1) = _center[1] * ( 1 - scale_factor );
-    transform(3,2) = _center[2] * ( 1 - scale_factor );
-    if (_referenceFrame == RELATIVE_RF)
-      matrix.preMult(transform);
+    if (_condition->test())
+      node->setNodeMask( SG_NODEMASK_SHADOW_BIT | node->getNodeMask());
     else
-      matrix = transform;
-    return true;
+      node->setNodeMask(~SG_NODEMASK_SHADOW_BIT & node->getNodeMask());
+    traverse(node, nv);
   }
-  
-  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const
-  {
-    double scale_factor = computeScaleFactor(nv);
-    if (fabs(scale_factor) <= std::numeric_limits<double>::min())
-      return false;
-    osg::Matrix transform;
-    double rScaleFactor = 1/scale_factor;
-    transform(0,0) = rScaleFactor;
-    transform(1,1) = rScaleFactor;
-    transform(2,2) = rScaleFactor;
-    transform(3,0) = rScaleFactor*_center[0] * ( scale_factor - 1 );
-    transform(3,1) = rScaleFactor*_center[1] * ( scale_factor - 1 );
-    transform(3,2) = rScaleFactor*_center[2] * ( scale_factor - 1 );
-    if (_referenceFrame == RELATIVE_RF)
-      matrix.postMult(transform);
-    else
-      matrix = transform;
-    return true;
-  }
-
-  double computeScaleFactor(osg::NodeVisitor* nv) const
-  {
-    if (!nv)
-      return 1;
-
-    osg::Vec3 localEyeToCenter = _center - nv->getEyePoint();
-    double scale_factor = localEyeToCenter.length();
-    if (_table == 0) {
-      scale_factor = _factor * scale_factor + _offset;
-      if ( _has_min && scale_factor < _min_v )
-        scale_factor = _min_v;
-      if ( _has_max && scale_factor > _max_v )
-        scale_factor = _max_v;
-    } else {
-      scale_factor = _table->interpolate( scale_factor );
-    }
-
-    return scale_factor;
-  }
-
 
 private:
-  osg::Vec3 _center;
-  float _factor, _offset, _min_v, _max_v;
-  bool _has_min, _has_max;
-  SGSharedPtr<SGInterpTable> _table;
+  SGSharedPtr<const SGCondition> _condition;
 };
 
-SGDistScaleAnimation::SGDistScaleAnimation(SGPropertyNode_ptr props)
-  : SGAnimation( props, new SGDistScaleTransform(props) )
+SGShadowAnimation::SGShadowAnimation(const SGPropertyNode* configNode,
+                                     SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
 {
 }
 
-SGDistScaleAnimation::~SGDistScaleAnimation()
+osg::Group*
+SGShadowAnimation::createAnimationGroup(osg::Group& parent)
 {
+  SGSharedPtr<SGCondition const> condition = getCondition();
+  if (!condition)
+    return 0;
+
+  osg::Group* group = new osg::Group;
+  group->setName("shadow animation");
+  group->setUpdateCallback(new UpdateCallback(condition));
+  parent.addChild(group);
+  return group;
 }
 
+
 ////////////////////////////////////////////////////////////////////////
-// Implementation of SGShadowAnimation
+// Implementation of SGTexTransformAnimation
 ////////////////////////////////////////////////////////////////////////
 
-SGShadowAnimation::SGShadowAnimation ( SGPropertyNode *prop_root,
-                                       SGPropertyNode_ptr props )
-  : SGAnimation(props, new osg::Group),
-    _condition(0),
-    _condition_value(true)
-{
-    animation_type = 1;
-    SGPropertyNode_ptr node = props->getChild("condition");
-    if (node != 0) {
-        _condition = sgReadCondition(prop_root, node);
-        _condition_value = false;
+class SGTexTransformAnimation::Transform : public SGReferenced {
+public:
+  Transform() :
+    _value(0)
+  {}
+  virtual ~Transform()
+  { }
+  void setValue(double value)
+  { _value = value; }
+  virtual bool transform(osg::Matrix&) = 0;
+protected:
+  double _value;
+};
+
+class SGTexTransformAnimation::Translation :
+  public SGTexTransformAnimation::Transform {
+public:
+  Translation(const SGVec3d& axis) :
+    _axis(axis)
+  { }
+  void setValue(double value)
+  { _value = value; }
+  virtual bool transform(osg::Matrix& matrix)
+  {
+    osg::Matrix tmp;
+    set_translation(tmp, _value, _axis);
+    matrix.preMult(tmp);
+  }
+private:
+  SGVec3d _axis;
+};
+
+class SGTexTransformAnimation::Rotation :
+  public SGTexTransformAnimation::Transform {
+public:
+  Rotation(const SGVec3d& axis, const SGVec3d& center) :
+    _axis(axis),
+    _center(center)
+  { }
+  virtual bool transform(osg::Matrix& matrix)
+  {
+    osg::Matrix tmp;
+    set_rotation(tmp, _value, _center, _axis);
+    matrix.preMult(tmp);
+  }
+private:
+  SGVec3d _axis;
+  SGVec3d _center;
+};
+
+class SGTexTransformAnimation::UpdateCallback :
+  public osg::StateAttribute::Callback {
+public:
+  UpdateCallback(const SGCondition* condition) :
+    _condition(condition)
+  { }
+  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor*)
+  {
+    if (!_condition || _condition->test()) {
+      TransformList::const_iterator i;
+      for (i = _transforms.begin(); i != _transforms.end(); ++i)
+        i->transform->setValue(i->value->getValue());
     }
+    assert(dynamic_cast<osg::TexMat*>(sa));
+    osg::TexMat* texMat = static_cast<osg::TexMat*>(sa);
+    texMat->getMatrix().makeIdentity();
+    TransformList::const_iterator i;
+    for (i = _transforms.begin(); i != _transforms.end(); ++i)
+      i->transform->transform(texMat->getMatrix());
+  }
+  void appendTransform(Transform* transform, SGDoubleValue* value)
+  {
+    Entry entry = { transform, value };
+    transform->transform(_matrix);
+    _transforms.push_back(entry);
+  }
+
+private:
+  struct Entry {
+    SGSharedPtr<Transform> transform;
+    SGSharedPtr<const SGDoubleValue> value;
+  };
+  typedef std::vector<Entry> TransformList;
+  TransformList _transforms;
+  SGSharedPtr<const SGCondition> _condition;
+  osg::Matrix _matrix;
+};
+
+SGTexTransformAnimation::SGTexTransformAnimation(const SGPropertyNode* configNode,
+                                                 SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
 }
 
-SGShadowAnimation::~SGShadowAnimation ()
+osg::Group*
+SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
 {
+  osg::Group* group = new osg::Group;
+  group->setName("texture transform group");
+  osg::StateSet* stateSet = group->getOrCreateStateSet();
+  osg::TexMat* texMat = new osg::TexMat;
+  UpdateCallback* updateCallback = new UpdateCallback(getCondition());
+  // interpret the configs ...
+  std::string type = getType();
+
+  if (type == "textranslate") {
+    appendTexTranslate(getConfig(), updateCallback);
+  } else if (type == "texrotate") {
+    appendTexRotate(getConfig(), updateCallback);
+  } else if (type == "texmultiple") {
+    std::vector<SGSharedPtr<SGPropertyNode> > transformConfigs;
+    transformConfigs = getConfig()->getChildren("transform");
+    for (unsigned i = 0; i < transformConfigs.size(); ++i) {
+      std::string subtype = transformConfigs[i]->getStringValue("subtype", "");
+      if (subtype == "textranslate")
+        appendTexTranslate(transformConfigs[i], updateCallback);
+      else if (subtype == "texrotate")
+        appendTexRotate(transformConfigs[i], updateCallback);
+      else
+        SG_LOG(SG_INPUT, SG_ALERT,
+               "Ignoring unknown texture transform subtype");
+    }
+  } else {
+    SG_LOG(SG_INPUT, SG_ALERT, "Ignoring unknown texture transform type");
+  }
+
+  texMat->setUpdateCallback(updateCallback);
+  stateSet->setTextureAttribute(0, texMat);
+  parent.addChild(group);
+  return group;
 }
 
 void
-SGShadowAnimation::operator()(osg::Node* node, osg::NodeVisitor* nv)
+SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
+                                            UpdateCallback* updateCallback)
 {
-    if (_condition)
-        _condition_value = _condition->test();
+  std::string propertyName = config->getStringValue("property", "/null");
+  SGPropertyNode* inputNode;
+  inputNode = getModelRoot()->getNode(propertyName.c_str(), true);
 
-    if ( _condition_value ) {
-        _branch->setNodeMask(SG_NODEMASK_SHADOW_BIT|_branch->getNodeMask());
-    } else {
-        _branch->setNodeMask(~SG_NODEMASK_SHADOW_BIT&_branch->getNodeMask());
-    }
-    traverse(node, nv);
+  SGDoubleValue* animationValue;
+  SGInterpTable* table = read_interpolation_table(config);
+  if (table) {
+    SGTexTableValue* value;
+    value = new SGTexTableValue(inputNode, table);
+    value->setStep(config->getDoubleValue("step", 0));
+    value->setScroll(config->getDoubleValue("scroll", 0));
+    animationValue = value;
+  } else {
+    SGTexScaleOffsetValue* value;
+    value = new SGTexScaleOffsetValue(inputNode);
+    value->setScale(config->getDoubleValue("factor", 1));
+    value->setOffset(config->getDoubleValue("offset", 0));
+    value->setStep(config->getDoubleValue("step", 0));
+    value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setMin(config->getDoubleValue("min", -SGLimitsd::max()));
+    value->setMax(config->getDoubleValue("max", SGLimitsd::max()));
+    animationValue = value;
+  }
+  SGVec3d axis(getConfig()->getDoubleValue("axis/x", 0),
+               getConfig()->getDoubleValue("axis/y", 0),
+               getConfig()->getDoubleValue("axis/z", 0));
+  Translation* translation;
+  translation = new Translation(normalize(axis));
+  translation->setValue(config->getDoubleValue("starting-position", 0));
+  updateCallback->appendTransform(translation, animationValue);
 }
 
-bool SGShadowAnimation::get_condition_value(void) {
-    return _condition_value;
+void
+SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
+                                         UpdateCallback* updateCallback)
+{
+  std::string propertyName = config->getStringValue("property", "/null");
+  SGPropertyNode* inputNode;
+  inputNode = getModelRoot()->getNode(propertyName.c_str(), true);
+
+  SGDoubleValue* animationValue;
+  SGInterpTable* table = read_interpolation_table(config);
+  if (table) {
+    SGTexTableValue* value;
+    value = new SGTexTableValue(inputNode, table);
+    value->setStep(config->getDoubleValue("step", 0));
+    value->setScroll(config->getDoubleValue("scroll", 0));
+    animationValue = value;
+  } else {
+    SGTexScaleOffsetValue* value;
+    value = new SGTexScaleOffsetValue(inputNode);
+    value->setScale(config->getDoubleValue("factor", 1));
+    value->setOffset(config->getDoubleValue("offset-deg", 0));
+    value->setStep(config->getDoubleValue("step", 0));
+    value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setMin(config->getDoubleValue("min-deg", -SGLimitsd::max()));
+    value->setMax(config->getDoubleValue("max-deg", SGLimitsd::max()));
+    animationValue = value;
+  }
+  SGVec3d axis(getConfig()->getDoubleValue("axis/x", 0),
+               getConfig()->getDoubleValue("axis/y", 0),
+               getConfig()->getDoubleValue("axis/z", 0));
+  SGVec3d center(getConfig()->getDoubleValue("center/x", 0),
+                 getConfig()->getDoubleValue("center/y", 0),
+                 getConfig()->getDoubleValue("center/z", 0));
+  Rotation* rotation;
+  rotation = new Rotation(normalize(axis), center);
+  rotation->setValue(config->getDoubleValue("starting-position-deg", 0));
+  updateCallback->appendTransform(rotation, animationValue);
 }
 
-// end of animation.cxx

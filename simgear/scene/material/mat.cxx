@@ -268,11 +268,12 @@ SGMaterial::build_state( bool defer_tex_load )
         // Set up the textured state
         osg::ShadeModel* shadeModel = new osg::ShadeModel;
         shadeModel->setMode(osg::ShadeModel::SMOOTH);
-        stateSet->setAttributeAndModes(shadeModel, osg::StateAttribute::ON);
+        stateSet->setAttribute(shadeModel);
 
         osg::CullFace* cullFace = new osg::CullFace;
         cullFace->setMode(osg::CullFace::BACK);
-        stateSet->setAttributeAndModes(cullFace, osg::StateAttribute::ON);
+        stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
+        stateSet->setAttribute(cullFace);
 
         stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 
@@ -295,9 +296,11 @@ SGMaterial::build_state( bool defer_tex_load )
 
         if (ambient[3] < 1 || diffuse[3] < 1 ||
             specular[3] < 1 || emission[3] < 1) {
+          stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
           stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
           stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
         } else {
+          stateSet->setRenderingHint(osg::StateSet::OPAQUE_BIN);
           stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
           stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
         }

@@ -25,11 +25,16 @@
 #include <osg/NodeVisitor>
 #include <osgUtil/UpdateVisitor>
 
+#include "simgear/math/SGMath.hxx"
+
 class SGUpdateVisitor : public osgUtil::UpdateVisitor {
 public:
   SGUpdateVisitor()
   {
-    setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
+    // Need to traverse all children, else some LOD nodes do not get updated
+    // Note that the broad number of updates is not done due to
+    // the update callback in the global position node.
+    setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
   }
   void setViewData(const SGVec3d& globalEyePos,
                    const SGQuatd& globalViewOrientation)
@@ -73,6 +78,24 @@ public:
   { return mHorizLocalEast; }
   const SGVec3d& getHorizLocalDown() const
   { return mHorizLocalDown; }
+
+  void setLight(const SGVec3f& direction, const SGVec4f& ambient,
+                const SGVec4f& diffuse, const SGVec4f& specular)
+  {
+    mLightDirection = direction;
+    mAmbientLight = ambient;
+    mDiffuseLight = diffuse;
+  }
+
+  const SGVec3f& getLightDirection() const
+  { return mLightDirection; }
+  const SGVec4f& getAmbientLight() const
+  { return mAmbientLight; }
+  const SGVec4f& getDiffuseLight() const
+  { return mDiffuseLight; }
+  const SGVec4f& getSpecularLight() const
+  { return mSpecularLight; }
+
 private:
   SGGeod mGlobalGeodEyePos;
   SGVec3d mGlobalEyePos;
@@ -86,6 +109,11 @@ private:
 
   double mVisibility;
   double mSqrVisibility;
+
+  SGVec3f mLightDirection;
+  SGVec4f mAmbientLight;
+  SGVec4f mDiffuseLight;
+  SGVec4f mSpecularLight;
 };
 
 #endif

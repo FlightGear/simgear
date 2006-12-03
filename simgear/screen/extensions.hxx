@@ -32,12 +32,11 @@
 # include <windows.h>
 #endif
 
-#if !defined(WIN32)
-# include <GL/glx.h>
-#endif
-
 #include <simgear/compiler.h>
 
+#if !defined(WIN32)
+# include SG_GLX_H
+#endif
 #include SG_GL_H
 
 

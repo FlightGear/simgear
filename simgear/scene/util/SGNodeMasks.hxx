@@ -22,7 +22,11 @@
 #ifndef SG_SCENE_NODEMASKS_HXX
 #define SG_SCENE_NODEMASKS_HXX
 
-#define SG_NODEMASK_TERRAIN_BIT (2<<10)
-#define SG_NODEMASK_SHADOW_BIT (2<<11)
+/// If set, do terrain elevation computations with that nodes
+#define SG_NODEMASK_TERRAIN_BIT (1<<0)
+/// If set, cast shadows
+#define SG_NODEMASK_SHADOW_BIT  (1<<1)
+/// If set, the node is pickable
+#define SG_NODEMASK_PICK_BIT    (1<<2)
 
 #endif

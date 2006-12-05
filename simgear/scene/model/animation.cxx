@@ -2015,9 +2015,9 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
     value->setMax(config->getDoubleValue("max", SGLimitsd::max()));
     animationValue = value;
   }
-  SGVec3d axis(getConfig()->getDoubleValue("axis/x", 0),
-               getConfig()->getDoubleValue("axis/y", 0),
-               getConfig()->getDoubleValue("axis/z", 0));
+  SGVec3d axis(config->getDoubleValue("axis/x", 0),
+               config->getDoubleValue("axis/y", 0),
+               config->getDoubleValue("axis/z", 0));
   Translation* translation;
   translation = new Translation(normalize(axis));
   translation->setValue(config->getDoubleValue("starting-position", 0));
@@ -2051,12 +2051,12 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
     value->setMax(config->getDoubleValue("max-deg", SGLimitsd::max()));
     animationValue = value;
   }
-  SGVec3d axis(getConfig()->getDoubleValue("axis/x", 0),
-               getConfig()->getDoubleValue("axis/y", 0),
-               getConfig()->getDoubleValue("axis/z", 0));
-  SGVec3d center(getConfig()->getDoubleValue("center/x", 0),
-                 getConfig()->getDoubleValue("center/y", 0),
-                 getConfig()->getDoubleValue("center/z", 0));
+  SGVec3d axis(config->getDoubleValue("axis/x", 0),
+               config->getDoubleValue("axis/y", 0),
+               config->getDoubleValue("axis/z", 0));
+  SGVec3d center(config->getDoubleValue("center/x", 0),
+                 config->getDoubleValue("center/y", 0),
+                 config->getDoubleValue("center/z", 0));
   Rotation* rotation;
   rotation = new Rotation(normalize(axis), center);
   rotation->setValue(config->getDoubleValue("starting-position-deg", 0));

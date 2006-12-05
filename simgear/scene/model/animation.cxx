@@ -1865,7 +1865,7 @@ public:
   { }
   void setValue(double value)
   { _value = value; }
-  virtual bool transform(osg::Matrix&) = 0;
+  virtual void transform(osg::Matrix&) = 0;
 protected:
   double _value;
 };
@@ -1878,7 +1878,7 @@ public:
   { }
   void setValue(double value)
   { _value = value; }
-  virtual bool transform(osg::Matrix& matrix)
+  virtual void transform(osg::Matrix& matrix)
   {
     osg::Matrix tmp;
     set_translation(tmp, _value, _axis);
@@ -1895,7 +1895,7 @@ public:
     _axis(axis),
     _center(center)
   { }
-  virtual bool transform(osg::Matrix& matrix)
+  virtual void transform(osg::Matrix& matrix)
   {
     osg::Matrix tmp;
     set_rotation(tmp, _value, _center, _axis);

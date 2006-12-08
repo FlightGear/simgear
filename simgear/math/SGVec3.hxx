@@ -364,6 +364,20 @@ cross(const SGVec3<T>& v1, const SGVec3<T>& v2)
                    v1(0)*v2(1) - v1(1)*v2(0));
 }
 
+/// return any vector perpandicular to v
+template<typename T>
+inline
+SGVec3<T>
+perpandicular(const SGVec3<T>& v)
+{
+  if (fabs(v.x()) < fabs(v.y()) && fabs(v.x()) < fabs(v.z()))
+    return cross(SGVec3f(1, 0, 0), v);
+  else if (fabs(v.y()) < fabs(v.x()) && fabs(v.y()) < fabs(v.z()))
+    return cross(SGVec3f(0, 1, 0), v);
+  else
+    return cross(SGVec3f(0, 0, 1), v);
+}
+
 /// The euclidean norm of the vector, that is what most people call length
 template<typename T>
 inline

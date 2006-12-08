@@ -28,7 +28,6 @@
 #include <simgear/debug/logstream.hxx>
 
 #include <plib/sg.h>
-#include <plib/ssg.h>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
 #include SG_GLU_H

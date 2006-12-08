@@ -27,7 +27,6 @@
 #include <simgear/compiler.h>
 
 #include <plib/sg.h>
-#include <plib/ssg.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/polar3d.hxx>

@@ -132,6 +132,9 @@ public:
     SGGeod toSGGeod(void) const;
     SGGeoc toSGGeoc(void) const;
 
+    SGVec3d toSGVec3d(void) const;
+    SGVec3f toSGVec3f(void) const;
+
     // friends
     friend Point3D operator - (const Point3D& p);	            // -p1
     friend bool operator == (const Point3D& a, const Point3D& b);  // p1 == p2?
@@ -339,6 +342,16 @@ inline SGGeoc Point3D::toSGGeoc(void) const
   geoc.setLatitudeRad(lat());
   geoc.setRadiusM(radius());
   return geoc;
+}
+
+inline SGVec3d Point3D::toSGVec3d(void) const
+{
+  return SGVec3d(x(), y(), z());
+}
+
+inline SGVec3f Point3D::toSGVec3f(void) const
+{
+  return SGVec3f(x(), y(), z());
 }
 
 // FRIENDS

@@ -364,11 +364,11 @@ cross(const SGVec3<T>& v1, const SGVec3<T>& v2)
                    v1(0)*v2(1) - v1(1)*v2(0));
 }
 
-/// return any vector perpandicular to v
+/// return any vector perpendicular to v
 template<typename T>
 inline
 SGVec3<T>
-perpandicular(const SGVec3<T>& v)
+perpendicular(const SGVec3<T>& v)
 {
   if (fabs(v.x()) < fabs(v.y()) && fabs(v.x()) < fabs(v.z()))
     return cross(SGVec3f(1, 0, 0), v);

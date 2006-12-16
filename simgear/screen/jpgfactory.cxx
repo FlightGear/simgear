@@ -21,6 +21,10 @@
 // $Id$
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #ifdef HAVE_WINDOWS_H
 #  include <windows.h>
 #endif
@@ -236,13 +240,6 @@ int trJpgFactory::render()
     // Make sure we have SSG projection primed for current view
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    // OSGFIXME
-//     sgFrustum *frustum = ssgGetFrustum();
-    trFrustum(tr,
-              frustum->getLeft(), frustum->getRight(),
-              frustum->getBot(),  frustum->getTop(), 
-              frustum->getNear(), frustum->getFar());
 
     /* just to be safe... */
     glPixelStorei(GL_PACK_ALIGNMENT, 1);

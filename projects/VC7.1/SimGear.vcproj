@@ -433,6 +433,12 @@
 				RelativePath="..\..\simgear\screen\GLBitmaps.h">
 			</File>
 			<File
+				RelativePath="..\..\simgear\screen\jpgfactory.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\screen\jpgfactory.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\screen\RenderTexture.cpp">
 			</File>
 			<File

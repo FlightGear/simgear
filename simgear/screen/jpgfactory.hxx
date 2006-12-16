@@ -27,6 +27,10 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_WINDOWS_H
+#  define XMD_H // to avoid INT32 redefinition
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <jpeglib.h>
@@ -72,6 +76,10 @@ class trJpgFactory {
         void destroy(int error = 0);
 
         int render();
+        void setFrustum(GLdouble left, GLdouble right,
+               GLdouble bottom, GLdouble top,
+               GLdouble zNear, GLdouble zFar) { trFrustum(tr, left, right, bottom, top, zNear, zFar); }
+
         unsigned char *data() { return IMAGE ; }
 
         struct jpeg_compress_struct *JPGinfo() { return &cinfo ; }

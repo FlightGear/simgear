@@ -30,7 +30,7 @@
 #endif
 
 #include "jpgfactory.hxx"
-   
+#include <string.h>   
 
 #ifdef __cplusplus
 extern "C" {

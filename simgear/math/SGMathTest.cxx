@@ -174,7 +174,9 @@ MatrixTest(void)
   // Create some test matrix
   SGVec3<T> v0(2, 7, 17);
   SGQuat<T> q0 = SGQuat<T>::fromAngleAxis(SGMisc<T>::pi(), normalize(v0));
-  SGMatrix<T> m0(q0, v0);
+  SGMatrix<T> m0;
+  m0.postMultTranslate(v0);
+  m0.postMultRotate(q0);
 
   // Check the tqo forms of the inverse for that kind of special matrix
   SGMatrix<T> m1, m2;
@@ -236,7 +238,9 @@ sgInterfaceTest(void)
   SGVec3f v3f = SGVec3f::e2();
   SGVec4f v4f = SGVec4f::e2();
   SGQuatf qf = SGQuatf::fromEulerRad(1.2, 1.3, -0.4);
-  SGMatrixf mf(qf, v3f);
+  SGMatrixf mf;
+  mf.postMultTranslate(v3f);
+  mf.postMultRotate(qf);
 
   // Copy to and from plibs types check if result is equal,
   // test for exact equality
@@ -283,7 +287,9 @@ sgdInterfaceTest(void)
   SGVec3d v3d = SGVec3d::e2();
   SGVec4d v4d = SGVec4d::e2();
   SGQuatd qd = SGQuatd::fromEulerRad(1.2, 1.3, -0.4);
-  SGMatrixd md(qd, v3d);
+  SGMatrixd md;
+  md.postMultTranslate(v3d);
+  md.postMultRotate(qd);
 
   // Copy to and from plibs types check if result is equal,
   // test for exact equality

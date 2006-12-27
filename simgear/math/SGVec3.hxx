@@ -364,18 +364,29 @@ cross(const SGVec3<T>& v1, const SGVec3<T>& v2)
                    v1(0)*v2(1) - v1(1)*v2(0));
 }
 
-/// return any vector perpendicular to v
+/// return any normalized vector perpendicular to v
 template<typename T>
 inline
 SGVec3<T>
 perpendicular(const SGVec3<T>& v)
 {
-  if (fabs(v.x()) < fabs(v.y()) && fabs(v.x()) < fabs(v.z()))
-    return cross(SGVec3f(1, 0, 0), v);
-  else if (fabs(v.y()) < fabs(v.x()) && fabs(v.y()) < fabs(v.z()))
-    return cross(SGVec3f(0, 1, 0), v);
-  else
-    return cross(SGVec3f(0, 0, 1), v);
+  T absv1 = fabs(v(0));
+  T absv2 = fabs(v(1));
+  T absv3 = fabs(v(2));
+
+  if (absv2 < absv1 && absv3 < absv1) {
+    T quot = v(1)/v(0);
+    return (1/sqrt(1+quot*quot))*SGVec3<T>(quot, -1, 0);
+  } else if (absv1 < absv2 && absv3 < absv2) {
+    T quot = v(2)/v(1);
+    return (1/sqrt(1+quot*quot))*SGVec3<T>(0, quot, -1);
+  } else if (absv1 < absv3 && absv2 < absv3) {
+    T quot = v(0)/v(2);
+    return (1/sqrt(1+quot*quot))*SGVec3<T>(-1, 0, quot);
+  } else {
+    // the all zero case ...
+    return SGVec3<T>(0, 0, 0);
+  }
 }
 
 /// The euclidean norm of the vector, that is what most people call length

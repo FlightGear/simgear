@@ -130,13 +130,17 @@ public:
   static SGQuat fromHeadAttBankDeg(T h, T a, T b)
   { return fromEulerDeg(h, a, b); }
 
-  /// Return a quaternion rotation the the horizontal local frame from given
-  /// longitude and latitude
+  /// Return a quaternion rotation from the earth centered to the
+  /// simulation usual horizontal local frame from given
+  /// longitude and latitude.
+  /// The horizontal local frame used in simulations is the frame with x-axis
+  /// pointing north, the y-axis pointing eastwards and the z axis
+  /// pointing downwards.
   static SGQuat fromLonLatRad(T lon, T lat)
   {
     SGQuat q;
     T zd2 = T(0.5)*lon;
-    T yd2 = T(-0.25)*SGMisc<value_type>::pi() - T(0.5)*lat;
+    T yd2 = T(-0.25)*SGMisc<T>::pi() - T(0.5)*lat;
     T Szd2 = sin(zd2);
     T Syd2 = sin(yd2);
     T Czd2 = cos(zd2);
@@ -147,16 +151,50 @@ public:
     q.z() = Szd2*Cyd2;
     return q;
   }
-
-  /// Return a quaternion rotation the the horizontal local frame from given
-  /// longitude and latitude
+  /// Like the above provided for convenience
   static SGQuat fromLonLatDeg(T lon, T lat)
   { return fromLonLatRad(SGMisc<T>::deg2rad(lon), SGMisc<T>::deg2rad(lat)); }
-
-  /// Return a quaternion rotation the the horizontal local frame from given
-  /// longitude and latitude
+  /// Like the above provided for convenience
   static SGQuat fromLonLat(const SGGeod& geod)
   { return fromLonLatRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
+
+  /// Return a quaternion rotation from the earth centered to the
+  /// OpenGL/viewer horizontal local frame from given longitude and latitude.
+  /// This frame matches the usual OpenGL axis directions. That is the target
+  /// frame has an x-axis pointing eastwards, y-axis pointing up and y z-axis
+  /// pointing south.
+  static SGQuat viewHLRad(T lon, T lat)
+  {
+    // That bails down to a 3-2-1 euler sequence lon+pi/2, 0, -lat-pi
+    // what is here is again the hand optimized version ...
+    SGQuat q;
+    T xd2 = -T(0.5)*lat - T(0.5)*SGMisc<T>::pi();
+    T zd2 = T(0.5)*lon + T(0.25)*SGMisc<T>::pi();
+    T Szd2 = sin(zd2);
+    T Sxd2 = sin(xd2);
+    T Czd2 = cos(zd2);
+    T Cxd2 = cos(xd2);
+    q.w() = Cxd2*Czd2;
+    q.x() = Sxd2*Czd2;
+    q.y() = Sxd2*Szd2;
+    q.z() = Cxd2*Szd2;
+    return q;
+  }
+  /// Like the above provided for convenience
+  static SGQuat viewHLDeg(T lon, T lat)
+  { return viewHLRad(SGMisc<T>::deg2rad(lon), SGMisc<T>::deg2rad(lat)); }
+  /// Like the above provided for convenience
+  static SGQuat viewHL(const SGGeod& geod)
+  { return viewHLRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
+
+  /// Convert a quaternion rotation from the simulation frame
+  /// to the view (OpenGL) frame. That is it just swaps the axis part of
+  /// this current quaternion.
+  /// That proves useful when you want to use the euler 3-2-1 sequence
+  /// for the usual heading/pitch/roll sequence within the context of
+  /// OpenGL/viewer frames.
+  static SGQuat simToView(const SGQuat& q)
+  { return SGQuat(q.y(), -q.z(), -q.x(), q.w()); }
 
   /// Create a quaternion from the angle axis representation
   static SGQuat fromAngleAxis(T angle, const SGVec3<T>& axis)
@@ -243,7 +281,7 @@ public:
   static SGQuat fromChangeSign(const SGVec3<T>& v)
   {
     // The vector from points to the oposite direction than to.
-    // Find a vector perpandicular to the vector to.
+    // Find a vector perpendicular to the vector to.
     T absv1 = fabs(v(0));
     T absv2 = fabs(v(1));
     T absv3 = fabs(v(2));

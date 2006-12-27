@@ -1,11 +1,13 @@
 includedir = @includedir@/math
 
-check_PROGRAMS  = SGMathTest
+check_PROGRAMS  = SGMathTest SGGeometryTest
 TESTS           = $(check_PROGRAMS)
 
 SGMathTest_SOURCES = SGMathTest.cxx
 SGMathTest_LDADD = libsgmath.a $(base_LIBS)
 
+SGGeometryTest_SOURCES = SGGeometryTest.cxx
+SGGeometryTest_LDADD = libsgmath.a $(base_LIBS)
 
 lib_LIBRARIES = libsgmath.a
 
@@ -19,20 +21,28 @@ include_HEADERS = \
 	sg_random.h \
 	sg_types.hxx \
 	vector.hxx \
+	SGBox.hxx \
 	SGCMath.hxx \
 	SGGeoc.hxx \
 	SGGeod.hxx \
 	SGGeodesy.hxx \
+	SGGeometry.hxx \
+	SGGeometryFwd.hxx \
+	SGIntersect.hxx \
 	SGLimits.hxx \
+	SGLineSegment.hxx \
 	SGMatrix.hxx \
 	SGMath.hxx \
 	SGMathFwd.hxx \
 	SGMisc.hxx \
+	SGPlane.hxx \
 	SGQuat.hxx \
-	SGVec4.hxx \
+	SGRay.hxx \
+	SGSphere.hxx \
+	SGTriangle.hxx \
+	SGVec2.hxx \
 	SGVec3.hxx \
-	SGVec2.hxx
-
+	SGVec4.hxx
 
 libsgmath_a_SOURCES = \
 	interpolater.cxx \

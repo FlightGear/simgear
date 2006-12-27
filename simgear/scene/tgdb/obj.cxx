@@ -32,11 +32,13 @@
 
 #include STL_STRING
 
-#include <osg/StateSet>
+#include <osg/Depth>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/LOD>
+#include <osg/MatrixTransform>
+#include <osg/StateSet>
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/io/sg_binobj.hxx>
@@ -45,6 +47,7 @@
 #include <simgear/misc/texcoord.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/scene/tgdb/leaf.hxx>
 #include <simgear/scene/tgdb/pt_lights.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
@@ -310,6 +313,50 @@ gen_random_surface_objects (osg::Node *leaf,
 }
 
 
+// Ok, somehow polygon offset for lights ...
+// Could never make the polygon offset for our lights get right.
+// So, why not in this way ...
+class SGLightOffsetTransform : public osg::Transform {
+public:
+#define SCALE_FACTOR 0.94
+  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const 
+  {
+    if (nv && nv->getVisitorType() == osg::NodeVisitor::CULL_VISITOR) {
+      double scaleFactor = SCALE_FACTOR;
+      osg::Vec3 center = nv->getEyePoint();
+      osg::Matrix transform;
+      transform(0,0) = scaleFactor;
+      transform(1,1) = scaleFactor;
+      transform(2,2) = scaleFactor;
+      transform(3,0) = center[0]*(1 - scaleFactor);
+      transform(3,1) = center[1]*(1 - scaleFactor);
+      transform(3,2) = center[2]*(1 - scaleFactor);
+      matrix.preMult(transform);
+    }
+    return true;
+  }
+  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                         osg::NodeVisitor* nv) const
+  {
+    if (nv && nv->getVisitorType() == osg::NodeVisitor::CULL_VISITOR) {
+      double scaleFactor = 1/SCALE_FACTOR;
+      osg::Vec3 center = nv->getEyePoint();
+      osg::Matrix transform;
+      transform(0,0) = scaleFactor;
+      transform(1,1) = scaleFactor;
+      transform(2,2) = scaleFactor;
+      transform(3,0) = center[0]*(1 - scaleFactor);
+      transform(3,1) = center[1]*(1 - scaleFactor);
+      transform(3,2) = center[2]*(1 - scaleFactor);
+      matrix.preMult(transform);
+    }
+    return true;
+  }
+#undef SCALE_FACTOR
+};
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // Scenery loaders.
@@ -322,15 +369,34 @@ bool SGBinObjLoad( const string& path, const bool is_base,
                    SGMaterialLib *matlib,
                    bool use_random_objects,
                    osg::Group *geometry,
-                   osg::Group *vasi_lights,
-                   osg::Group *rwy_lights,
-                   osg::Group *taxi_lights,
+                   osg::Group *_vasi_lights,
+                   osg::Group *_rwy_lights,
+                   osg::Group *_taxi_lights,
                    osg::Vec3Array *ground_lights )
 {
     SGBinObject obj;
 
     if ( ! obj.read_bin( path ) ) {
         return false;
+    }
+
+    // Ok, somehow polygon offset for lights ...
+    // Could never make the polygon offset for our lights get right.
+    // So, why not in this way ...
+    SGLightOffsetTransform* vasi_lights = 0;
+    if (_vasi_lights) {
+      vasi_lights = new SGLightOffsetTransform;
+      _vasi_lights->addChild(vasi_lights);
+    }
+    SGLightOffsetTransform *rwy_lights = 0;
+    if (_rwy_lights) {
+      rwy_lights = new SGLightOffsetTransform;
+      _rwy_lights->addChild(rwy_lights);
+    }
+    SGLightOffsetTransform *taxi_lights = 0;
+    if (_taxi_lights) {
+      taxi_lights = new SGLightOffsetTransform;
+      _taxi_lights->addChild(taxi_lights);
     }
 
     osg::Group *local_terrain = new osg::Group;

@@ -21,6 +21,8 @@
 #ifndef SGReferenced_HXX
 #define SGReferenced_HXX
 
+#include "SGAtomic.hxx"
+
 /// Base class for all reference counted SimGear objects
 /// Classes derived from this one are meant to be managed with
 /// the SGSharedPtr class.
@@ -47,7 +49,7 @@ public:
   { if (ref) return 1u < ref->_refcount; else return false; }
 
 private:
-  mutable unsigned _refcount;
+  mutable SGAtomic _refcount;
 };
 
 #endif

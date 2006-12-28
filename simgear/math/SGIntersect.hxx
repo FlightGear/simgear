@@ -570,17 +570,17 @@ intersects(const SGBox<T>& box, const SGRay<T>& ray)
         return false;
     }
 
-    T near = - SGLimits<T>::max();
-    T far = SGLimits<T>::max();
+    T nearr = - SGLimits<T>::max();
+    T farr = SGLimits<T>::max();
 
     T T1 = (cMin - cOrigin) / cDir;
     T T2 = (cMax - cOrigin) / cDir;
     if (T1 > T2) std::swap (T1, T2);/* since T1 intersection with near plane */
-    if (T1 > near) near = T1; /* want largest Tnear */
-    if (T2 < far) far = T2; /* want smallest Tfar */
-    if (near > far) // far box is missed
+    if (T1 > nearr) nearr = T1; /* want largest Tnear */
+    if (T2 < farr) farr = T2; /* want smallest Tfarr */
+    if (nearr > farr) // farr box is missed
       return false;
-    if (far < 0) // box is behind ray
+    if (farr < 0) // box is behind ray
       return false;
   }
 

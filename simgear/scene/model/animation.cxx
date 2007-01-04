@@ -15,6 +15,8 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LOD>
+#include <osg/PolygonMode>
+#include <osg/PolygonOffset>
 #include <osg/StateSet>
 #include <osg/Switch>
 #include <osg/TexMat>
@@ -25,7 +27,9 @@
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/structure/SGBinding.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 
 #include "animation.hxx"
@@ -485,6 +489,9 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
   } else if (type == "noshadow") {
     SGShadowAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
+  } else if (type == "pick") {
+    SGPickAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
   } else if (type == "range") {
     SGRangeAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
@@ -582,6 +589,13 @@ SGAnimation::installInGroup(const std::string& name, osg::Group& group,
   int i = group.getNumChildren() - 1;
   for (; 0 <= i; --i) {
     osg::Node* child = group.getChild(i);
+
+    // Check if this one is already processed
+    if (std::find(_installedAnimations.begin(),
+                  _installedAnimations.end(), child)
+        != _installedAnimations.end())
+      continue;
+
     if (name.empty() || child->getName() == name) {
       // fire the installation of the animation
       install(*child);
@@ -598,6 +612,11 @@ SGAnimation::installInGroup(const std::string& name, osg::Group& group,
         animationGroup->addChild(child);
         group.removeChild(i);
       }
+
+      // store that we already have processed this child node
+      // We can hit this one twice if an animation references some
+      // part of a subtree twice
+      _installedAnimations.push_back(child);
     }
   }
 }
@@ -2063,3 +2082,115 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
   updateCallback->appendTransform(rotation, animationValue);
 }
 
+
+////////////////////////////////////////////////////////////////////////
+// Implementation of SGPickAnimation
+////////////////////////////////////////////////////////////////////////
+
+class SGPickAnimation::PickCallback : public SGPickCallback {
+public:
+  PickCallback(const SGPropertyNode* configNode,
+               SGPropertyNode* modelRoot) :
+    _repeatable(configNode->getBoolValue("repeatable", false)),
+    _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
+  {
+    SG_LOG(SG_INPUT, SG_DEBUG, "Reading all bindings");
+    std::vector<SGPropertyNode_ptr> bindings;
+    bindings = configNode->getChildren("binding");
+    for (unsigned int i = 0; i < bindings.size(); ++i) {
+      _bindingsDown.push_back(new SGBinding(bindings[i], modelRoot));
+    }
+
+    const SGPropertyNode* upNode = configNode->getChild("mod-up");
+    if (!upNode)
+      return;
+    bindings = upNode->getChildren("binding");
+    for (unsigned int i = 0; i < bindings.size(); ++i) {
+      _bindingsUp.push_back(new SGBinding(bindings[i], modelRoot));
+    }
+  }
+  virtual bool buttonPressed(int button, const Info&)
+  {
+    SGBindingList::const_iterator i;
+    for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
+      (*i)->fire();
+    _repeatTime = 0;
+    return true;
+  }
+  virtual void buttonReleased(void)
+  {
+    SGBindingList::const_iterator i;
+    for (i = _bindingsUp.begin(); i != _bindingsUp.end(); ++i)
+      (*i)->fire();
+  }
+  virtual void update(double dt)
+  {
+    if (!_repeatable)
+      return;
+
+    _repeatTime += dt;
+    while (_repeatInterval < _repeatTime) {
+      _repeatTime -= _repeatInterval;
+      SGBindingList::const_iterator i;
+      for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
+        (*i)->fire();
+    }
+  }
+private:
+  SGBindingList _bindingsDown;
+  SGBindingList _bindingsUp;
+  bool _repeatable;
+  double _repeatInterval;
+  double _repeatTime;
+};
+
+SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
+                                 SGPropertyNode* modelRoot) :
+  SGAnimation(configNode, modelRoot)
+{
+}
+
+osg::Group*
+SGPickAnimation::createAnimationGroup(osg::Group& parent)
+{
+  osg::Group* commonGroup = new osg::Group;
+
+  // Contains the normal geometry that is interactive
+  osg::Group* normalGroup = new osg::Group;
+  normalGroup->addChild(commonGroup);
+  SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(normalGroup);
+  ud->setPickCallback(new PickCallback(getConfig(), getModelRoot()));
+
+  // Used to render the geometry with just yellow edges
+  osg::Group* highlightGroup = new osg::Group;
+  highlightGroup->setNodeMask(SG_NODEMASK_PICK_BIT);
+  highlightGroup->addChild(commonGroup);
+
+  // prepare a state set that paints the edges of this object yellow
+  osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
+  stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::OFF | osg::StateAttribute::OVERRIDE);
+
+  osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
+  polygonOffset->setFactor(-1);
+  polygonOffset->setUnits(-1);
+  stateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
+  stateSet->setMode(GL_POLYGON_OFFSET_LINE, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+
+  osg::PolygonMode* polygonMode = new osg::PolygonMode;
+  polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+                       osg::PolygonMode::LINE);
+  stateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
+  
+  osg::Material* material = new osg::Material;
+  material->setColorMode(osg::Material::OFF);
+  material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
+  material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
+  material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
+  material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
+  stateSet->setAttribute(material, osg::StateAttribute::OVERRIDE);
+
+  parent.addChild(normalGroup);
+  parent.addChild(highlightGroup);
+
+  return commonGroup;
+}

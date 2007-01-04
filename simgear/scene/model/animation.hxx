@@ -119,6 +119,7 @@ private:
   SGSharedPtr<SGPropertyNode const> _configNode;
   SGPropertyNode* _modelRoot;
   std::list<std::string> _objectNames;
+  std::list<osg::ref_ptr<osg::Node> > _installedAnimations;
   bool _enableHOT;
   bool _disableShadow;
 };
@@ -358,6 +359,20 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
+};
+
+
+//////////////////////////////////////////////////////////////////////
+// Pick animation
+//////////////////////////////////////////////////////////////////////
+
+class SGPickAnimation : public SGAnimation {
+public:
+  SGPickAnimation(const SGPropertyNode* configNode,
+                  SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
+private:
+  class PickCallback;
 };
 
 #endif // _SG_ANIMATION_HXX

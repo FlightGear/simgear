@@ -45,16 +45,14 @@ public:
 
 
   /**
-   * Default constructor.
-   */
-  SGCommandMgr ();
-
-
-  /**
    * Destructor.
    */
   virtual ~SGCommandMgr ();
 
+  /**
+   * Implement the classical singleton.
+   */
+  static SGCommandMgr* instance();
 
   /**
    * Register a new command with the manager.
@@ -98,6 +96,13 @@ public:
    * false otherwise.
    */
   virtual bool execute (const string &name, const SGPropertyNode * arg) const;
+
+protected:
+  /**
+   * Default constructor.
+   */
+  SGCommandMgr ();
+
 
 private:
 

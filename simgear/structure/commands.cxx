@@ -4,7 +4,10 @@
 //
 // $Id$
 
+#include <memory>
 #include <simgear/props/props_io.hxx>
+#include <simgear/threads/SGThread.hxx>
+#include <simgear/threads/SGGuard.hxx>
 
 #include "commands.hxx"
 
@@ -23,6 +26,22 @@ SGCommandMgr::SGCommandMgr ()
 SGCommandMgr::~SGCommandMgr ()
 {
   // no-op
+}
+
+SGCommandMgr*
+SGCommandMgr::instance()
+{
+  static std::auto_ptr<SGCommandMgr> mgr;
+  if (mgr.get())
+    return mgr.get();
+
+  static SGMutex lock;
+  SGGuard<SGMutex> guard(lock);
+  if (mgr.get())
+    return mgr.get();
+
+  mgr = std::auto_ptr<SGCommandMgr>(new SGCommandMgr);
+  return mgr.get();
 }
 
 void

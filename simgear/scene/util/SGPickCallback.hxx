@@ -19,14 +19,33 @@
  *
  */
 
-#ifndef SG_SCENE_NODEMASKS_HXX
-#define SG_SCENE_NODEMASKS_HXX
+#ifndef SG_SCENE_PICKCALLBACK_HXX
+#define SG_SCENE_PICKCALLBACK_HXX
 
-/// If set, do terrain elevation computations with that nodes
-#define SG_NODEMASK_TERRAIN_BIT        (1<<0)
-/// If set, cast shadows
-#define SG_NODEMASK_SHADOW_BIT         (1<<1)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<2)
+#include <simgear/structure/SGReferenced.hxx>
+#include <simgear/math/SGMath.hxx>
+
+// Used to implement scenery interaction.
+// The interface is still under development
+class SGPickCallback : public SGReferenced {
+public:
+  struct Info {
+    SGVec3d wgs84;
+    SGVec3d local;
+  };
+
+  virtual ~SGPickCallback() {}
+  virtual bool buttonPressed(int button, const Info& info)
+  { return false; }
+  virtual void update(double dt)
+  { }
+  virtual void buttonReleased(void)
+  { }
+};
+
+struct SGSceneryPick {
+  SGPickCallback::Info info;
+  SGSharedPtr<SGPickCallback> callback;
+};
 
 #endif

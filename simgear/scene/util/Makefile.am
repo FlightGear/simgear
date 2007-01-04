@@ -8,6 +8,8 @@ include_HEADERS = \
 	SGNodeMasks.hxx \
 	SGUpdateVisitor.hxx \
 	SGDebugDrawCallback.hxx \
+	SGPickCallback.hxx \
+	SGSceneUserData.hxx \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx
 

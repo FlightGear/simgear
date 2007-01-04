@@ -855,6 +855,12 @@
 				RelativePath="..\..\simgear\structure\exception.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGBinding.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGBinding.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\structure\SGReferenced.hxx">
 			</File>
 			<File

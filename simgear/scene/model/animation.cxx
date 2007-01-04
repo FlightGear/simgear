@@ -9,6 +9,7 @@
 
 #include <string.h>             // for strcmp()
 #include <math.h>
+#include <algorithm>
 
 #include <osg/AlphaFunc>
 #include <osg/Drawable>

@@ -146,7 +146,7 @@ private:
  * invoke the test() method whenever it needs to decide whether to
  * active itself, draw itself, and so on.
  */
-class SGConditional
+class SGConditional : public SGReferenced
 {
 public:
   SGConditional ();

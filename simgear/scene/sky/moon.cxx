@@ -105,11 +105,11 @@ SGMoon::build( SGPath path, double moon_size ) {
     blendFunc->setFunction(osg::BlendFunc::SRC_ALPHA, osg::BlendFunc::ONE);
     stateSet->setAttributeAndModes(blendFunc);
 
-//     osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-//     alphaFunc->setFunction(osg::AlphaFunc::GREATER);
-//     alphaFunc->setReferenceValue(0.01);
-//     stateSet->setAttributeAndModes(alphaFunc);
-    stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+    alphaFunc->setFunction(osg::AlphaFunc::GREATER);
+    alphaFunc->setReferenceValue(0.01);
+    stateSet->setAttribute(alphaFunc);
+    stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
 
     // force a repaint of the moon colors with arbitrary defaults
     repaint( 0.0 );

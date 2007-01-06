@@ -2,10 +2,9 @@ EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
 	DoxygenMain.cxx \
-	projects/VC8 \
 	README.MSVC \
 	README.zlib \
-        projects \
+	projects \
 	SimGear.dsp \
 	SimGear.dsw
 

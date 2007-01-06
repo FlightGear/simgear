@@ -7,7 +7,7 @@ endif
 # METAR_DIRS =
 METAR_DIRS = environment
 
-EXTRA_DIST = simgear_config.h.vc5 version.h.in
+EXTRA_DIST = simgear_config.h.vc5 simgear_config.h-msvc71 version.h.in
 
 include_HEADERS = \
 	compiler.h constants.h sg_inlines.h sg_traits.hxx version.h

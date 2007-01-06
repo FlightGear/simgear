@@ -556,21 +556,6 @@ SOURCE=.\simgear\math\vector.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\math\fastmath.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmath"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmath"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\math\SGGeodesy.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1184,21 +1169,6 @@ SOURCE=.\simgear\scene\model\animation.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\model\custtrans.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmodel"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmodel"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\scene\model\location.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1244,7 +1214,7 @@ SOURCE=.\simgear\scene\model\modellib.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\model\personality.cxx
+SOURCE=.\simgear\scene\model\persparam.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1289,7 +1259,7 @@ SOURCE=.\simgear\scene\model\placementtrans.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\model\shadowvolume.cxx
+SOURCE=.\simgear\scene\model\shadanim.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1304,7 +1274,7 @@ SOURCE=.\simgear\scene\model\shadowvolume.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\model\shadanim.cxx
+SOURCE=.\simgear\scene\model\SGMaterialAnimation.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1546,6 +1516,40 @@ SOURCE=.\simgear\scene\tgdb\userdata.cxx
 !ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
 
 # PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "Lib_sgutil"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\SGStateAttributeVisitor.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\SGTextureStateAttributeVisitor.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
 
 !ENDIF 
 
@@ -1794,6 +1798,36 @@ SOURCE=.\simgear\structure\event_mgr.cxx
 # Begin Source File
 
 SOURCE=.\simgear\structure\subsystem_mgr.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgstructure"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgstructure"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\structure\SGAtomic.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgstructure"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgstructure"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\structure\SGBinding.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

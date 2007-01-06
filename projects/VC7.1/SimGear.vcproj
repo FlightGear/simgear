@@ -4,6 +4,7 @@
 	Version="7.10"
 	Name="SimGear"
 	ProjectGUID="{22540CD3-D3CA-4C86-A773-80AEEE3ACDED}"
+	RootNamespace="SimGear"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -23,7 +24,7 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\OpenSceneGraph\include;..\..\..\OpenThreads\include;..\..\..\3rdparty\include;&quot;..\..\..\pthreads-w32-2-7-0-release&quot;"
-				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32"
+				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="TRUE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="TRUE"
@@ -74,7 +75,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\OpenSceneGraph\include;..\..\..\OpenThreads\include;..\..\..\3rdparty\include;&quot;..\..\..\pthreads-w32-2-7-0-release&quot;"
-				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES"
+				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="TRUE"
@@ -998,7 +999,23 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath="..\..\simgear\simgear_config.h.vc5">
+			RelativePath="..\..\simgear\simgear_config.h-msvc71">
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Generation of simgear_config.h"
+					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h"
+					Outputs="..\..\simgear\simgear_config.h"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Generation of simgear_config.h"
+					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h"
+					Outputs="..\..\simgear\simgear_config.h"/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

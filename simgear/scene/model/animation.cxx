@@ -2164,7 +2164,10 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
   osg::Group* normalGroup = new osg::Group;
   normalGroup->addChild(commonGroup);
   SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(normalGroup);
-  ud->setPickCallback(new PickCallback(getConfig(), getModelRoot()));
+  std::vector<SGPropertyNode_ptr> actions;
+  actions = getConfig()->getChildren("action");
+  for (unsigned int i = 0; i < actions.size(); ++i)
+    ud->addPickCallback(new PickCallback(actions[i], getModelRoot()));
 
   // Used to render the geometry with just yellow edges
   osg::Group* highlightGroup = new osg::Group;

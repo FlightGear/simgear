@@ -23,6 +23,7 @@
 #define SG_SCENE_PICKCALLBACK_HXX
 
 #include <simgear/structure/SGReferenced.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
 
 // Used to implement scenery interaction.

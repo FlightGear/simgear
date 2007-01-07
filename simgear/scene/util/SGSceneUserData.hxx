@@ -22,38 +22,26 @@
 #ifndef SG_SCENE_USERDATA_HXX
 #define SG_SCENE_USERDATA_HXX
 
+#include <vector>
 #include <osg/Referenced>
 #include <osg/Node>
 #include "SGPickCallback.hxx"
 
 class SGSceneUserData : public osg::Referenced {
 public:
-  static SGSceneUserData* getSceneUserData(osg::Node* node)
-  {
-    if (!node)
-      return 0;
-    osg::Referenced* referenced = node->getUserData();
-    if (!referenced)
-      return 0;
-    return dynamic_cast<SGSceneUserData*>(referenced);
-  }
-  static SGSceneUserData* getOrCreateSceneUserData(osg::Node* node)
-  {
-    SGSceneUserData* userData = getSceneUserData(node);
-    if (userData)
-      return userData;
-    userData = new SGSceneUserData;
-    node->setUserData(userData);
-    return userData;
-  }
+  static SGSceneUserData* getSceneUserData(osg::Node* node);
+  static const SGSceneUserData* getSceneUserData(const osg::Node* node);
+  static SGSceneUserData* getOrCreateSceneUserData(osg::Node* node);
 
-  SGPickCallback* getPickCallback() const
-  { return _pickCallback; }
-  void setPickCallback(SGPickCallback* pickCallback)
-  { _pickCallback = pickCallback; }
+  /// Access to the pick callbacks of a node.
+  unsigned getNumPickCallbacks() const;
+  SGPickCallback* getPickCallback(unsigned i = 0) const;
+  void setPickCallback(SGPickCallback* pickCallback);
+  void addPickCallback(SGPickCallback* pickCallback);
   
 private:
-  SGSharedPtr<SGPickCallback> _pickCallback;
+  /// Scene interaction callbacks
+  std::vector<SGSharedPtr<SGPickCallback> > _pickCallbacks;
 };
 
 #endif

@@ -14,6 +14,7 @@ include_HEADERS = \
 	SGTextureStateAttributeVisitor.hxx
 
 libsgutil_a_SOURCES = \
+	SGSceneUserData.cxx \
 	SGStateAttributeVisitor.cxx \
 	SGTextureStateAttributeVisitor.cxx
 

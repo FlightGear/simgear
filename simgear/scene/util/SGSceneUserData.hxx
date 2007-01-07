@@ -35,7 +35,7 @@ public:
 
   /// Access to the pick callbacks of a node.
   unsigned getNumPickCallbacks() const;
-  SGPickCallback* getPickCallback(unsigned i = 0) const;
+  SGPickCallback* getPickCallback(unsigned i) const;
   void setPickCallback(SGPickCallback* pickCallback);
   void addPickCallback(SGPickCallback* pickCallback);
   

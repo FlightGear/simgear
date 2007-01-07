@@ -61,7 +61,7 @@ SGSceneUserData::getNumPickCallbacks() const
 }
 
 SGPickCallback*
-SGSceneUserData::getPickCallback(unsigned i = 0) const
+SGSceneUserData::getPickCallback(unsigned i) const
 {
   if (_pickCallbacks.size() <= i)
     return 0;

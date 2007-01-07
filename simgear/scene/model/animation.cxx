@@ -2092,6 +2092,7 @@ class SGPickAnimation::PickCallback : public SGPickCallback {
 public:
   PickCallback(const SGPropertyNode* configNode,
                SGPropertyNode* modelRoot) :
+    _button(configNode->getIntValue("button", -1)),
     _repeatable(configNode->getBoolValue("repeatable", false)),
     _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
   {
@@ -2112,6 +2113,8 @@ public:
   }
   virtual bool buttonPressed(int button, const Info&)
   {
+    if (0 <= _button && button != _button)
+      return false;
     SGBindingList::const_iterator i;
     for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
       (*i)->fire();
@@ -2140,6 +2143,7 @@ public:
 private:
   SGBindingList _bindingsDown;
   SGBindingList _bindingsUp;
+  int _button;
   bool _repeatable;
   double _repeatInterval;
   double _repeatTime;

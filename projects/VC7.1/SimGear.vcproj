@@ -983,6 +983,12 @@
 				RelativePath="..\..\simgear\scene\util\SGNodeMasks.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneUserData.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneUserData.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\SGStateAttributeVisitor.cxx">
 			</File>
 			<File

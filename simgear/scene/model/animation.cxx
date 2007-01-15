@@ -2161,18 +2161,19 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
   osg::Group* commonGroup = new osg::Group;
 
   // Contains the normal geometry that is interactive
-  osg::Group* normalGroup = new osg::Group;
+  osg::ref_ptr<osg::Group> normalGroup = new osg::Group;
   normalGroup->addChild(commonGroup);
-  SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(normalGroup);
-  std::vector<SGPropertyNode_ptr> actions;
-  actions = getConfig()->getChildren("action");
-  for (unsigned int i = 0; i < actions.size(); ++i)
-    ud->addPickCallback(new PickCallback(actions[i], getModelRoot()));
 
   // Used to render the geometry with just yellow edges
   osg::Group* highlightGroup = new osg::Group;
   highlightGroup->setNodeMask(SG_NODEMASK_PICK_BIT);
   highlightGroup->addChild(commonGroup);
+  SGSceneUserData* ud;
+  ud = SGSceneUserData::getOrCreateSceneUserData(highlightGroup);
+  std::vector<SGPropertyNode_ptr> actions;
+  actions = getConfig()->getChildren("action");
+  for (unsigned int i = 0; i < actions.size(); ++i)
+    ud->addPickCallback(new PickCallback(actions[i], getModelRoot()));
 
   // prepare a state set that paints the edges of this object yellow
   osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
@@ -2197,7 +2198,9 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
   material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
   stateSet->setAttribute(material, osg::StateAttribute::OVERRIDE);
 
-  parent.addChild(normalGroup);
+  // Only add normal geometry if configured
+  if (getConfig()->getBoolValue("visible", true))
+    parent.addChild(normalGroup.get());
   parent.addChild(highlightGroup);
 
   return commonGroup;

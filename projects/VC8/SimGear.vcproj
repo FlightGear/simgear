@@ -504,7 +504,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGAtomic.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGBinding.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGCMath.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGDebugDrawCallback.hxx"
 				>
 			</File>
 			<File
@@ -528,6 +540,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGMath.hxx"
 				>
 			</File>
@@ -544,6 +560,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGNodeMasks.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGQuat.hxx"
 				>
 			</File>
@@ -553,6 +573,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\SGReferenced.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneUserData.hxx"
 				>
 			</File>
 			<File
@@ -576,6 +600,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGUpdateVisitor.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGVec3.hxx"
 				>
 			</File>
@@ -590,20 +618,6 @@
 			<File
 				RelativePath="..\..\simgear\scene\model\shadowvolume.hxx"
 				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\simgear_config.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description=""
-						CommandLine=""
-						Outputs=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\sky\sky.hxx"
@@ -1058,7 +1072,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGBinding.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGGeodesy.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneUserData.cxx"
 				>
 			</File>
 			<File
@@ -1218,6 +1244,28 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\..\simgear\simgear_config.h-msvc71"
+			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCustomBuildTool"
+					CommandLine="copy &quot;$(InputPath)&quot;  &quot;$(InputDir)\$(InputName).h&quot;&#x0D;&#x0A;"
+					Outputs="&quot;${InputDir}\$(InputName).h&quot;"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32"
+				>
+				<Tool
+					Name="VCCustomBuildTool"
+					CommandLine="copy &quot;$(InputPath)&quot;  &quot;$(InputDir)\$(InputName).h&quot;&#x0D;&#x0A;"
+					Outputs="${InputDir}\$(InputName).h"
+				/>
+			</FileConfiguration>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

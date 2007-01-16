@@ -195,6 +195,8 @@ bool SGPath::exists() const {
 
 void SGPath::create_dir( mode_t mode ) {
     string_list dirlist = sgPathSplit(dir());
+    if ( dirlist.empty() )
+        return;
     string path = dirlist[0];
     string_list path_elements = sgPathBranchSplit(path);
     bool absolute = !path.empty() && path[0] == sgDirPathSep;

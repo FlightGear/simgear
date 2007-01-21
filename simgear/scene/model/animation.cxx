@@ -220,7 +220,7 @@ public:
     _interpTable(interpTable)
   { }
   virtual double getValue() const
-  { return _interpTable->interpolate(_propertyNode->getDoubleValue()); }
+  { return _interpTable->interpolate(_propertyNode ? _propertyNode->getDoubleValue() : 0); }
 private:
   SGSharedPtr<SGPropertyNode const> _propertyNode;
   SGSharedPtr<SGInterpTable const> _interpTable;
@@ -1050,9 +1050,9 @@ public:
     if (!_condition || _condition->test()) {
       SGScaleAnimation::Transform* transform;
       transform = static_cast<SGScaleAnimation::Transform*>(node);
-      SGVec3d scale(_animationValue[0] ? _animationValue[0]->getValue() : 1.0,
-                    _animationValue[1] ? _animationValue[1]->getValue() : 1.0,
-                    _animationValue[2] ? _animationValue[2]->getValue() : 1.0);
+      SGVec3d scale(_animationValue[0]->getValue(),
+                    _animationValue[1]->getValue(),
+                    _animationValue[2]->getValue());
       transform->setScaleFactor(scale);
     }
     traverse(node, nv);
@@ -1074,56 +1074,56 @@ SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
 
   std::string inputPropertyName;
   inputPropertyName = configNode->getStringValue("property", "");
+  SGPropertyNode* inputProperty = 0;
   if (!inputPropertyName.empty()) {
-    SGPropertyNode* inputProperty;
     inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
-    SGInterpTable* interpTable = read_interpolation_table(configNode);
-    if (interpTable) {
-      SGInterpTableValue* value;
-      value = new SGInterpTableValue(inputProperty, interpTable);
-      _animationValue[0] = value;
-      _animationValue[1] = value;
-      _animationValue[2] = value;
-    } else if (configNode->getBoolValue("use-personality", false)) {
-      SGPersScaleOffsetValue* value;
-      value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                         "x-factor", "x-offset",
-                                         factor, offset);
-      value->setMin(configNode->getDoubleValue("x-min", 0));
-      value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
-      _animationValue[0] = value;
-      value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                         "y-factor", "y-offset",
-                                         factor, offset);
-      value->setMin(configNode->getDoubleValue("y-min", 0));
-      value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
-      _animationValue[1] = value;
-      value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                         "z-factor", "z-offset",
-                                         factor, offset);
-      value->setMin(configNode->getDoubleValue("z-min", 0));
-      value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
-      _animationValue[2] = value;
-    } else {
-      SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
-      value->setScale(configNode->getDoubleValue("x-factor", factor));
-      value->setOffset(configNode->getDoubleValue("x-offset", offset));
-      value->setMin(configNode->getDoubleValue("x-min", 0));
-      value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
-      _animationValue[0] = value;
-      value = new SGScaleOffsetValue(inputProperty);
-      value->setScale(configNode->getDoubleValue("y-factor", factor));
-      value->setOffset(configNode->getDoubleValue("y-offset", offset));
-      value->setMin(configNode->getDoubleValue("y-min", 0));
-      value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
-      _animationValue[1] = value;
-      value = new SGScaleOffsetValue(inputProperty);
-      value->setScale(configNode->getDoubleValue("z-factor", factor));
-      value->setOffset(configNode->getDoubleValue("z-offset", offset));
-      value->setMin(configNode->getDoubleValue("z-min", 0));
-      value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
-      _animationValue[2] = value;
-    }
+  }
+  SGInterpTable* interpTable = read_interpolation_table(configNode);
+  if (interpTable) {
+    SGInterpTableValue* value;
+    value = new SGInterpTableValue(inputProperty, interpTable);
+    _animationValue[0] = value;
+    _animationValue[1] = value;
+    _animationValue[2] = value;
+  } else if (configNode->getBoolValue("use-personality", false)) {
+    SGPersScaleOffsetValue* value;
+    value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                        "x-factor", "x-offset",
+                                        factor, offset);
+    value->setMin(configNode->getDoubleValue("x-min", 0));
+    value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
+    _animationValue[0] = value;
+    value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                        "y-factor", "y-offset",
+                                        factor, offset);
+    value->setMin(configNode->getDoubleValue("y-min", 0));
+    value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
+    _animationValue[1] = value;
+    value = new SGPersScaleOffsetValue(inputProperty, configNode,
+                                        "z-factor", "z-offset",
+                                        factor, offset);
+    value->setMin(configNode->getDoubleValue("z-min", 0));
+    value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
+    _animationValue[2] = value;
+  } else {
+    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
+    value->setScale(configNode->getDoubleValue("x-factor", factor));
+    value->setOffset(configNode->getDoubleValue("x-offset", offset));
+    value->setMin(configNode->getDoubleValue("x-min", 0));
+    value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
+    _animationValue[0] = value;
+    value = new SGScaleOffsetValue(inputProperty);
+    value->setScale(configNode->getDoubleValue("y-factor", factor));
+    value->setOffset(configNode->getDoubleValue("y-offset", offset));
+    value->setMin(configNode->getDoubleValue("y-min", 0));
+    value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
+    _animationValue[1] = value;
+    value = new SGScaleOffsetValue(inputProperty);
+    value->setScale(configNode->getDoubleValue("z-factor", factor));
+    value->setOffset(configNode->getDoubleValue("z-offset", offset));
+    value->setMin(configNode->getDoubleValue("z-min", 0));
+    value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
+    _animationValue[2] = value;
   }
   _initialValue[0] = configNode->getDoubleValue("x-starting-scale", 1);
   _initialValue[0] *= configNode->getDoubleValue("x-factor", factor);

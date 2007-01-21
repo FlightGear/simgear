@@ -1050,9 +1050,9 @@ public:
     if (!_condition || _condition->test()) {
       SGScaleAnimation::Transform* transform;
       transform = static_cast<SGScaleAnimation::Transform*>(node);
-      SGVec3d scale(_animationValue[0]->getValue(),
-                    _animationValue[1]->getValue(),
-                    _animationValue[2]->getValue());
+      SGVec3d scale(_animationValue[0] ? _animationValue[0]->getValue() : 1.0,
+                    _animationValue[1] ? _animationValue[1]->getValue() : 1.0,
+                    _animationValue[2] ? _animationValue[2]->getValue() : 1.0);
       transform->setScaleFactor(scale);
     }
     traverse(node, nv);

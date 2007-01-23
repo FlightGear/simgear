@@ -20,6 +20,8 @@ static unsigned int sleep(unsigned int secs) { return 0; }
 # include <AL/alut.h>
 #endif
 
+#define AUDIOFILE	SRC_DIR"/jet.wav"
+
 #include <simgear/debug/logstream.hxx>
 
 static void print_openal_error( ALuint error ) {
@@ -117,16 +119,16 @@ int main( int argc, char *argv[] ) {
     // Load the sample file
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
 
-  buffer = alutCreateBufferFromFile("jet.wav");
+  buffer = alutCreateBufferFromFile(AUDIOFILE);
   if (buffer == AL_NONE) {
     SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
   }
 
 #else
 # if defined (__APPLE__)
-    alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq );
+    alutLoadWAVFile( (ALbyte *)AUDIOFILE, &format, &data, &size, &freq );
 # else
-    alutLoadWAVFile( (ALbyte *)"jet.wav", &format, &data, &size, &freq, &loop );
+    alutLoadWAVFile( (ALbyte *)AUDIOFILE, &format, &data, &size, &freq, &loop );
 # endif
     if (alGetError() != AL_NO_ERROR) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to load wav file.");

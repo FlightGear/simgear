@@ -126,14 +126,12 @@ private:
 static osg::TextureCubeMap*
 getOrCreateTextureCubeMap()
 {
-  static osg::TextureCubeMap* textureCubeMap = 0;
-  if (textureCubeMap)
-    return textureCubeMap;
+   static osg::ref_ptr<osg::TextureCubeMap> textureCubeMap;
 
   static SGMutex mutex;
   SGGuard<SGMutex> locker(mutex);
-  if (textureCubeMap)
-    return textureCubeMap;
+  if (textureCubeMap.get())
+    return textureCubeMap.get();
 
   // create and setup the texture object
   textureCubeMap = new osg::TextureCubeMap;
@@ -146,7 +144,7 @@ getOrCreateTextureCubeMap()
   
   textureCubeMap->setUpdateCallback(new SGMapGenCallback);
 
-  return textureCubeMap;
+  return textureCubeMap.get();
 }
 
 static void create_specular_highlights(osg::Node *node)

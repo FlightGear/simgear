@@ -7,8 +7,6 @@
 #include <simgear_config.h>
 #endif
 
-#include <string.h>             // for strcmp()
-
 #include <osg/observer_ptr>
 #include <osg/ref_ptr>
 #include <osg/Group>
@@ -346,7 +344,7 @@ osg::Texture2D*
 SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
 {
   osg::Image* image = osgDB::readImageFile(path);
-  osg::Texture2D* texture = new osg::Texture2D;
+  osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
   if (wrapu)
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
@@ -376,7 +374,28 @@ SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
       }
     }
   }
-  return texture;
+
+  // Make sure the texture is shared if we already have the same texture
+  // somewhere ...
+  {
+    osg::ref_ptr<osg::Node> tmpNode = new osg::Node;
+    osg::StateSet* stateSet = tmpNode->getOrCreateStateSet();
+    stateSet->setTextureAttribute(0, texture.get());
+
+    // OSGFIXME: don't forget that mutex here
+    osgDB::Registry* registry = osgDB::Registry::instance();
+    registry->getOrCreateSharedStateManager()->share(tmpNode.get(), 0);
+
+    // should be the same, but be paranoid ...
+    stateSet = tmpNode->getStateSet();
+    osg::StateAttribute* stateAttr;
+    stateAttr = stateSet->getTextureAttribute(0, osg::StateAttribute::TEXTURE);
+    osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(stateAttr);
+    if (texture2D)
+      texture = texture2D;
+  }
+
+  return texture.release();
 }
 
 class SGSwitchUpdateCallback : public osg::NodeCallback {
@@ -465,12 +484,12 @@ sgLoad3DModel( const string &fg_root, const string &path,
   alignmainmodel->addChild(model);
   osg::Matrix res_matrix;
   res_matrix.makeRotate(
-    props.getFloatValue("/offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-    osg::Vec3(0, 0, 1),
+    props.getFloatValue("/offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+    osg::Vec3(0, 1, 0),
     props.getFloatValue("/offsets/roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
     osg::Vec3(1, 0, 0),
-    props.getFloatValue("/offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-    osg::Vec3(0, 1, 0));
+    props.getFloatValue("/offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+    osg::Vec3(0, 0, 1));
 
   osg::Matrix tmat;
   tmat.makeTranslate(props.getFloatValue("/offsets/x-m", 0.0),
@@ -485,12 +504,12 @@ sgLoad3DModel( const string &fg_root, const string &path,
     osg::MatrixTransform* align = new osg::MatrixTransform;
     res_matrix.makeIdentity();
     res_matrix.makeRotate(
-      node->getDoubleValue("offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-      osg::Vec3(0, 0, 1),
+      node->getDoubleValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+      osg::Vec3(0, 1, 0),
       node->getDoubleValue("offsets/roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
       osg::Vec3(1, 0, 0),
-      node->getDoubleValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-      osg::Vec3(0, 1, 0));
+      node->getDoubleValue("offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+      osg::Vec3(0, 0, 1));
     
     tmat.makeIdentity();
     tmat.makeTranslate(node->getDoubleValue("offsets/x-m", 0),

@@ -126,7 +126,9 @@ private:
 static osg::TextureCubeMap*
 getOrCreateTextureCubeMap()
 {
-   static osg::ref_ptr<osg::TextureCubeMap> textureCubeMap;
+  static osg::ref_ptr<osg::TextureCubeMap> textureCubeMap;
+  if (textureCubeMap.get())
+    return textureCubeMap.get();
 
   static SGMutex mutex;
   SGGuard<SGMutex> locker(mutex);

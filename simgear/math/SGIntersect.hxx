@@ -287,6 +287,38 @@ intersects(SGVec3<T>& dst, const SGPlane<T>& plane, const SGLineSegment<T>& line
 { return intersects(dst, lineSegment, plane); }
 
 
+// Distance of a line segment to a point
+template<typename T>
+inline T
+distSqr(const SGLineSegment<T>& lineSeg, const SGVec3<T>& p)
+{
+  SGVec3<T> ps = p - lineSeg.getStart();
+
+  T psdotdir = dot(ps, lineSeg.getDirection());
+  if (psdotdir <= 0)
+    return dot(ps, ps);
+
+  SGVec3<T> pe = p - lineSeg.getEnd();
+  if (0 <= dot(pe, lineSeg.getDirection()))
+    return dot(pe, pe);
+ 
+  return dot(ps, ps) - psdotdir*psdotdir/dot(lineSeg.getDirection(), lineSeg.getDirection());
+}
+// make it symmetric
+template<typename T>
+inline T
+distSqr(const SGVec3<T>& p, const SGLineSegment<T>& lineSeg)
+{ return distSqr(lineSeg, p); }
+// with sqrt
+template<typename T>
+inline T
+dist(const SGVec3<T>& p, const SGLineSegment<T>& lineSeg)
+{ return sqrt(distSqr(lineSeg, p)); }
+template<typename T>
+inline T
+dist(const SGLineSegment<T>& lineSeg, const SGVec3<T>& p)
+{ return sqrt(distSqr(lineSeg, p)); }
+
 template<typename T>
 inline bool
 intersects(const SGRay<T>& ray, const SGSphere<T>& sphere)

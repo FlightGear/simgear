@@ -96,6 +96,8 @@ public:
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
   explicit SGVec3(const osg::Vec3d& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
+  explicit SGVec3(const SGVec2<T>& v2, const T& v3 = 0)
+  { data()[0] = v2[0]; data()[1] = v2[1]; data()[2] = v3; }
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const

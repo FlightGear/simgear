@@ -551,9 +551,9 @@ SGAnimation::install(osg::Node& node)
   else
     node.setNodeMask(~SG_NODEMASK_TERRAIN_BIT & node.getNodeMask());
   if (!_disableShadow)
-    node.setNodeMask( SG_NODEMASK_SHADOW_BIT | node.getNodeMask());
+    node.setNodeMask( SG_NODEMASK_CASTSHADOW_BIT | node.getNodeMask());
   else
-    node.setNodeMask(~SG_NODEMASK_SHADOW_BIT & node.getNodeMask());
+    node.setNodeMask(~SG_NODEMASK_CASTSHADOW_BIT & node.getNodeMask());
 }
 
 osg::Group*
@@ -1841,9 +1841,9 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (_condition->test())
-      node->setNodeMask( SG_NODEMASK_SHADOW_BIT | node->getNodeMask());
+      node->setNodeMask( SG_NODEMASK_CASTSHADOW_BIT | node->getNodeMask());
     else
-      node->setNodeMask(~SG_NODEMASK_SHADOW_BIT & node->getNodeMask());
+      node->setNodeMask(~SG_NODEMASK_CASTSHADOW_BIT & node->getNodeMask());
     traverse(node, nv);
   }
 

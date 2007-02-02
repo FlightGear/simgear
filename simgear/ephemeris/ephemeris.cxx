@@ -31,7 +31,7 @@
 
 
 // Constructor
-SGEphemeris::SGEphemeris( const string &path ) {
+SGEphemeris::SGEphemeris( const std::string &path ) {
     our_sun = new Star;
     moon = new MoonPos;
     mercury = new Mercury;

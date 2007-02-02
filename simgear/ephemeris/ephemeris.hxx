@@ -29,6 +29,7 @@
 #ifndef _EPHEMERIS_HXX
 #define _EPHEMERIS_HXX
 
+#include <string>
 
 #include <simgear/ephemeris/star.hxx>
 #include <simgear/ephemeris/moonpos.hxx>
@@ -42,6 +43,7 @@
 #include <simgear/ephemeris/stardata.hxx>
 
 #include <simgear/math/SGMath.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 
 /** Ephemeris class
@@ -95,7 +97,7 @@ public:
      * calling the constructor you need to provide a path pointing to
      * your star database file.
      * @param path path to your star database */
-    SGEphemeris( const string &path );
+    SGEphemeris( const std::string &path );
 
     /** Destructor */
     ~SGEphemeris( void );

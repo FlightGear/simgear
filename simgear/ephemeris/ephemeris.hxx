@@ -30,8 +30,6 @@
 #define _EPHEMERIS_HXX
 
 
-#include <plib/sg.h>
-
 #include <simgear/ephemeris/star.hxx>
 #include <simgear/ephemeris/moonpos.hxx>
 #include <simgear/ephemeris/mercury.hxx>
@@ -42,6 +40,8 @@
 #include <simgear/ephemeris/uranus.hxx>
 #include <simgear/ephemeris/neptune.hxx>
 #include <simgear/ephemeris/stardata.hxx>
+
+#include <simgear/math/SGMath.hxx>
 
 
 /** Ephemeris class

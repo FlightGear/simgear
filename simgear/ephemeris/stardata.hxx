@@ -24,37 +24,28 @@
 #ifndef _SG_STARDATA_HXX
 #define _SG_STARDATA_HXX
 
+#include <vector>
+#include <simgear/math/SGMath.hxx>
 
-#include <plib/sg.h>
-
-#include <simgear/misc/sg_path.hxx>
-
-
-#define SG_MAX_STARS 850
-
+class SGPath;
 
 class SGStarData {
-
-    int nstars;
-    SGVec3d *stars;
-    
-    SGPath data_path;
-
 public:
-
     // Constructor
-    SGStarData();
-    SGStarData( SGPath path );
+    SGStarData( const SGPath& path );
 
     // Destructor
     ~SGStarData();
 
     // load the stars database
-    bool load();
+    bool load( const SGPath& path );
 
     // stars
-    inline int getNumStars() const { return nstars; }
-    inline SGVec3d *getStars() { return stars; }
+    inline int getNumStars() const { return _stars.size(); }
+    inline SGVec3d *getStars() { return &(_stars[0]); }
+
+private:
+    std::vector<SGVec3d> _stars;
 };
 
 

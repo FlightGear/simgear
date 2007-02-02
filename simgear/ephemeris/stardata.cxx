@@ -25,6 +25,7 @@
 #endif
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
 
 #include "stardata.hxx"
@@ -34,16 +35,9 @@
 #endif
 
 // Constructor
-SGStarData::SGStarData() :
-    nstars(0)
+SGStarData::SGStarData( const SGPath& path )
 {
-}
-
-SGStarData::SGStarData( SGPath path ) :
-    nstars(0)
-{
-    data_path = SGPath( path );
-    load();
+    load(path);
 }
 
 
@@ -52,31 +46,27 @@ SGStarData::~SGStarData() {
 }
 
 
-bool SGStarData::load() {
+bool SGStarData::load( const SGPath& path ) {
 
-    // -dw- avoid local data > 32k error by dynamic allocation of the
-    // array, problem for some compilers
-    stars = new SGVec3d[SG_MAX_STARS];
+    _stars.clear();
 
-     // build the full path name to the stars data base file
-    data_path.append( "stars" );
-    SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << data_path.str() );
+    // build the full path name to the stars data base file
+    path.append( "stars" );
+    SG_LOG( SG_ASTRO, SG_INFO, "  Loading stars from " << path.str() );
 
-    sg_gzifstream in( data_path.str() );
+    sg_gzifstream in( path.str() );
     if ( ! in.is_open() ) {
 	SG_LOG( SG_ASTRO, SG_ALERT, "Cannot open star file: "
-		<< data_path.str() );
-	exit(-1);
+		<< path.str() );
+        return false;
     }
 
     double ra, dec, mag;
     char c;
     string name;
 
-    nstars = 0;
-
     // read in each line of the file
-    while ( ! in.eof() && nstars < SG_MAX_STARS ) {
+    while ( ! in.eof() ) {
 	in >> skipcomment;
 
         getline( in, name, ',' );
@@ -116,13 +106,10 @@ bool SGStarData::load() {
 	in >> mag;
 
 	// cout << " star data = " << ra << " " << dec << " " << mag << endl;
-
-	sgdSetVec3( stars[nstars].sg(), ra, dec, mag );
-
-	++nstars;
+        _stars.push_back(SGVec3d(ra, dec, mag));
     }
 
-    SG_LOG( SG_ASTRO, SG_INFO, "  Loaded " << nstars << " stars" );
+    SG_LOG( SG_ASTRO, SG_INFO, "  Loaded " << _stars.size() << " stars" );
 
     return true;
 }

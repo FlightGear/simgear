@@ -42,9 +42,8 @@ SGEphemeris::SGEphemeris( const string &path ) {
     uranus = new Uranus;
     neptune = new Neptune;
     nplanets = 7;
-    for ( int i = 0; i < nplanets; ++i ) {
-       sgdSetVec3( planets[i].sg(), 0.0, 0.0, 0.0 );
-    }
+    for ( int i = 0; i < nplanets; ++i )
+      planets[i] = SGVec3d::zeros();
     stars = new SGStarData( SGPath(path) );
 }
 

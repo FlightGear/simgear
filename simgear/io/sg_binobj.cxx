@@ -322,7 +322,7 @@ bool SGBinObject::read_bin( const string& file ) {
 	string filegz = file + ".gz";
 	if ( (fp = gzopen( filegz.c_str(), "rb" )) == NULL ) {
             SG_LOG( SG_EVENT, SG_ALERT,
-               "ERROR: opening " << file << " or " << filegz << "for reading!");
+               "ERROR: opening " << file << " or " << filegz << " for reading!");
 
 	    return false;
 	}

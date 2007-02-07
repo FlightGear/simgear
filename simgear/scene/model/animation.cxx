@@ -105,10 +105,11 @@ set_translation (osg::Matrix &matrix, double position_m, const SGVec3d &axis)
  * Modify property value by step and scroll settings in texture translations
  */
 static double
-apply_mods(double property, double step, double scroll)
+apply_mods(double property, double step, double scroll, double bias)
 {
 
   double modprop;
+  property += bias;
   if(step > 0) {
     double scrollval = 0.0;
     if(scroll > 0) {
@@ -234,6 +235,7 @@ public:
     _offset(0),
     _step(0),
     _scroll(0),
+    _bias(0),
     _min(-SGLimitsd::max()),
     _max(SGLimitsd::max())
   { }
@@ -245,6 +247,8 @@ public:
   { _step = step; }
   void setScroll(double scroll)
   { _scroll = scroll; }
+  void setBias(double bias)
+  { _bias = bias; }
   void setMin(double min)
   { _min = min; }
   void setMax(double max)
@@ -253,7 +257,7 @@ public:
   virtual double getValue() const
   {
     double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    value = apply_mods(value, _step, _scroll);
+    value = apply_mods(value, _step, _scroll, _bias);
     return SGMiscd::clip(_scale*(_offset + value), _min, _max);
   }
 private:
@@ -262,6 +266,7 @@ private:
   double _offset;
   double _step;
   double _scroll;
+  double _bias;
   double _min;
   double _max;
 };
@@ -277,10 +282,12 @@ public:
   { _step = step; }
   void setScroll(double scroll)
   { _scroll = scroll; }
+  void setBias(double bias)
+  { _bias = bias; }
   virtual double getValue() const
   {
     double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    value = apply_mods(value, _step, _scroll);
+    value = apply_mods(value, _step, _scroll, _bias);
     return _interpTable->interpolate(value);
   }
 private:
@@ -288,6 +295,7 @@ private:
   SGSharedPtr<SGInterpTable const> _interpTable;
   double _step;
   double _scroll;
+  double _bias;
 };
 
 static std::string
@@ -2023,6 +2031,7 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
     value = new SGTexTableValue(inputNode, table);
     value->setStep(config->getDoubleValue("step", 0));
     value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setBias(config->getDoubleValue("bias", 0));
     animationValue = value;
   } else {
     SGTexScaleOffsetValue* value;
@@ -2031,6 +2040,7 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
     value->setOffset(config->getDoubleValue("offset", 0));
     value->setStep(config->getDoubleValue("step", 0));
     value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setBias(config->getDoubleValue("bias", 0));
     value->setMin(config->getDoubleValue("min", -SGLimitsd::max()));
     value->setMax(config->getDoubleValue("max", SGLimitsd::max()));
     animationValue = value;
@@ -2059,6 +2069,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
     value = new SGTexTableValue(inputNode, table);
     value->setStep(config->getDoubleValue("step", 0));
     value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setBias(config->getDoubleValue("bias", 0));
     animationValue = value;
   } else {
     SGTexScaleOffsetValue* value;
@@ -2067,6 +2078,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
     value->setOffset(config->getDoubleValue("offset-deg", 0));
     value->setStep(config->getDoubleValue("step", 0));
     value->setScroll(config->getDoubleValue("scroll", 0));
+    value->setBias(config->getDoubleValue("bias", 0));
     value->setMin(config->getDoubleValue("min-deg", -SGLimitsd::max()));
     value->setMax(config->getDoubleValue("max-deg", SGLimitsd::max()));
     animationValue = value;

@@ -911,6 +911,21 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
+ * Remove this node from all nodes that link to it in their path cache.
+ */
+void
+SGPropertyNode::remove_from_path_caches ()
+{
+  for (unsigned int i = 0; i < _linkedNodes.size(); i++)
+    _linkedNodes[i]->erase(this);
+
+  _linkedNodes.clear();
+  for (unsigned int i = 0; i < _children.size(); ++i)
+    _children[i]->remove_from_path_caches();
+}
+
+
+/**
  * Remove child by position.
  */
 SGPropertyNode_ptr
@@ -927,8 +942,8 @@ SGPropertyNode::removeChild (int pos, bool keep)
   if (keep) {
     _removedChildren.push_back(node);
   }
-  if (_path_cache)
-     _path_cache->erase(node->getName()); // EMH - TODO: Take "index" into account!
+
+  node->remove_from_path_caches();
   node->setAttribute(REMOVED, true);
   node->clearValue();
   fireChildRemoved(node);
@@ -964,6 +979,24 @@ SGPropertyNode::removeChildren (const char * name, bool keep)
 
   sort(children.begin(), children.end(), CompareIndices());
   return children;
+}
+
+
+/**
+  * Remove a linked node.
+  */
+bool
+SGPropertyNode::remove_linked_node (hash_table * node)
+{
+  for (unsigned int i = 0; i < _linkedNodes.size(); i++) {
+    if (_linkedNodes[i] == node) {
+      vector<hash_table *>::iterator it = _linkedNodes.begin();
+      it += i;
+      _linkedNodes.erase(it);
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -2210,6 +2243,20 @@ SGPropertyNode::hash_table::bucket::erase (const char * key)
   }
 }
 
+bool
+SGPropertyNode::hash_table::bucket::erase (SGPropertyNode * node)
+{
+  for (int i = 0; i < _length; i++) {
+    if (_entries[i]->get_value() == node) {
+      for (++i; i < _length; i++) {
+        _entries[i-1] = _entries[i];
+      }
+      _length--;
+      return true;
+    }
+  }
+  return false;
+}
 
 SGPropertyNode::hash_table::hash_table ()
   : _data_length(0),
@@ -2254,6 +2301,7 @@ SGPropertyNode::hash_table::put (const char * key, SGPropertyNode * value)
   }
   entry * e = _data[index]->get_entry(key, true);
   e->set_value(value);
+  value->add_linked_node(this);
 }
 
 void
@@ -2264,7 +2312,19 @@ SGPropertyNode::hash_table::erase (const char * key)
   unsigned int index = hashcode(key) % _data_length;
   if (_data[index] == 0)
     return;
+  _data[index]->get_entry(key, true)->get_value()->remove_linked_node(this);
   _data[index]->erase(key);
+  _data[index] = 0;
+}
+
+bool
+SGPropertyNode::hash_table::erase (SGPropertyNode * node)
+{
+  for (unsigned int d = 0; d < _data_length; d++)
+    if (_data[d] && _data[d]->erase(node))
+      return true;
+
+  return false;
 }
 
 unsigned int

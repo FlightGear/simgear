@@ -1183,6 +1183,12 @@ private:
   void trace_write () const;
 
 
+  /**
+   * Remove this node from all nodes that link to it in their path cache.
+   */
+  void remove_from_path_caches();
+
+
   class hash_table;
 
   int _index;
@@ -1193,6 +1199,7 @@ private:
   SGPropertyNode * _parent;
   vector<SGPropertyNode_ptr> _children;
   vector<SGPropertyNode_ptr> _removedChildren;
+  vector<hash_table *> _linkedNodes;
   mutable string _path;
   mutable string _buffer;
   hash_table * _path_cache;
@@ -1223,9 +1230,16 @@ private:
   vector <SGPropertyChangeListener *> * _listeners;
 
 
+  /**
+    * Register/unregister node that links to this node in its path cache.
+    */
+  void add_linked_node (hash_table * node) { _linkedNodes.push_back(node); }
+  bool remove_linked_node (hash_table * node);
+
+
 
   /**
-   * A very simple hash table with no remove functionality.
+   * A very simple hash table.
    */
   class hash_table {
   public:
@@ -1255,7 +1269,8 @@ private:
       bucket ();
       ~bucket ();
       entry * get_entry (const char * key, bool create = false);
-      void erase(const char * key);
+      void erase (const char * key);
+      bool erase (SGPropertyNode * node);
     private:
       int _length;
       entry ** _entries;
@@ -1267,7 +1282,8 @@ private:
     ~hash_table ();
     SGPropertyNode * get (const char * key);
     void put (const char * key, SGPropertyNode * value);
-    void erase(const char * key);
+    void erase (const char * key);
+    bool erase (SGPropertyNode * node);
 
   private:
     unsigned int hashcode (const char * key);

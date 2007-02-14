@@ -27,7 +27,8 @@ SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
 
 SGBinding::~SGBinding()
 {
-  _arg->getParent()->removeChild(_arg->getName(), _arg->getIndex(), false);
+  if(_arg && _arg->getParent())
+    _arg->getParent()->removeChild(_arg->getName(), _arg->getIndex(), false);
 }
 
 void

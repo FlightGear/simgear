@@ -1257,7 +1257,7 @@ private:
       void set_value (SGPropertyNode * value);
     private:
       string _key;
-      SGSharedPtr<SGPropertyNode>  _value;
+      SGSharedPtr<SGPropertyNode> _value;
     };
 
 

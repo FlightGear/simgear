@@ -911,17 +911,18 @@ SGPropertyNode::getChildren (const char * name) const
 
 
 /**
- * Remove this node from all nodes that link to it in their path cache.
+ * Remove this node and all children from nodes that link to them
+ * in their path cache.
  */
 void
 SGPropertyNode::remove_from_path_caches ()
 {
-  for (unsigned int i = 0; i < _linkedNodes.size(); i++)
-    _linkedNodes[i]->erase(this);
-
-  _linkedNodes.clear();
   for (unsigned int i = 0; i < _children.size(); ++i)
     _children[i]->remove_from_path_caches();
+
+  for (unsigned int i = 0; i < _linkedNodes.size(); i++)
+    _linkedNodes[i]->erase(this);
+  _linkedNodes.clear();
 }
 
 
@@ -954,7 +955,7 @@ SGPropertyNode::removeChild (int pos, bool keep)
 /**
  * Remove a child node
  */
-SGPropertyNode_ptr 
+SGPropertyNode_ptr
 SGPropertyNode::removeChild (const char * name, int index, bool keep)
 {
   SGPropertyNode_ptr ret;
@@ -2236,10 +2237,11 @@ SGPropertyNode::hash_table::bucket::erase (const char * key)
   }
 
   if (i < _length) {
+    delete _entries[i];
     for (++i; i < _length; i++) {
       _entries[i-1] = _entries[i];
     }
-     _length--;
+    _length--;
   }
 }
 
@@ -2248,6 +2250,7 @@ SGPropertyNode::hash_table::bucket::erase (SGPropertyNode * node)
 {
   for (int i = 0; i < _length; i++) {
     if (_entries[i]->get_value() == node) {
+      delete _entries[i];
       for (++i; i < _length; i++) {
         _entries[i-1] = _entries[i];
       }
@@ -2307,21 +2310,19 @@ SGPropertyNode::hash_table::put (const char * key, SGPropertyNode * value)
 void
 SGPropertyNode::hash_table::erase (const char * key)
 {
-   if (_data_length == 0)
+  if (_data_length == 0)
     return;
   unsigned int index = hashcode(key) % _data_length;
   if (_data[index] == 0)
     return;
-  _data[index]->get_entry(key, true)->get_value()->remove_linked_node(this);
   _data[index]->erase(key);
-  _data[index] = 0;
 }
 
 bool
 SGPropertyNode::hash_table::erase (SGPropertyNode * node)
 {
-  for (unsigned int d = 0; d < _data_length; d++)
-    if (_data[d] && _data[d]->erase(node))
+  for (unsigned int i = 0; i < _data_length; i++)
+    if (_data[i] && _data[i]->erase(node))
       return true;
 
   return false;

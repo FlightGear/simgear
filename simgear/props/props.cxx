@@ -2227,24 +2227,6 @@ SGPropertyNode::hash_table::bucket::get_entry (const char * key, bool create)
   }
 }
 
-void
-SGPropertyNode::hash_table::bucket::erase (const char * key)
-{
-  int i;
-  for (i = 0; i < _length; i++) {
-    if (!strcmp(_entries[i]->get_key(), key))
-       break;
-  }
-
-  if (i < _length) {
-    delete _entries[i];
-    for (++i; i < _length; i++) {
-      _entries[i-1] = _entries[i];
-    }
-    _length--;
-  }
-}
-
 bool
 SGPropertyNode::hash_table::bucket::erase (SGPropertyNode * node)
 {
@@ -2261,6 +2243,16 @@ SGPropertyNode::hash_table::bucket::erase (SGPropertyNode * node)
   return false;
 }
 
+void
+SGPropertyNode::hash_table::bucket::clear (SGPropertyNode::hash_table * owner)
+{
+  for (int i = 0; i < _length; i++) {
+    SGPropertyNode * node = _entries[i]->get_value();
+    if (node)
+      node->remove_linked_node(owner);
+  }
+}
+
 SGPropertyNode::hash_table::hash_table ()
   : _data_length(0),
     _data(0)
@@ -2269,8 +2261,12 @@ SGPropertyNode::hash_table::hash_table ()
 
 SGPropertyNode::hash_table::~hash_table ()
 {
-  for (unsigned int i = 0; i < _data_length; i++)
-    delete _data[i];
+  for (unsigned int i = 0; i < _data_length; i++) {
+    if (_data[i]) {
+      _data[i]->clear(this);
+      delete _data[i];
+    }
+  }
   delete [] _data;
 }
 
@@ -2305,17 +2301,6 @@ SGPropertyNode::hash_table::put (const char * key, SGPropertyNode * value)
   entry * e = _data[index]->get_entry(key, true);
   e->set_value(value);
   value->add_linked_node(this);
-}
-
-void
-SGPropertyNode::hash_table::erase (const char * key)
-{
-  if (_data_length == 0)
-    return;
-  unsigned int index = hashcode(key) % _data_length;
-  if (_data[index] == 0)
-    return;
-  _data[index]->erase(key);
 }
 
 bool

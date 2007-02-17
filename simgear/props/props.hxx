@@ -1269,8 +1269,8 @@ private:
       bucket ();
       ~bucket ();
       entry * get_entry (const char * key, bool create = false);
-      void erase (const char * key);
       bool erase (SGPropertyNode * node);
+      void clear (hash_table * owner);
     private:
       int _length;
       entry ** _entries;
@@ -1282,7 +1282,6 @@ private:
     ~hash_table ();
     SGPropertyNode * get (const char * key);
     void put (const char * key, SGPropertyNode * value);
-    void erase (const char * key);
     bool erase (SGPropertyNode * node);
 
   private:

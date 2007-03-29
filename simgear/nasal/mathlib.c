@@ -59,34 +59,20 @@ static naRef f_atan2(naContext c, naRef me, int argc, naRef* args)
     return a;
 }
 
-static struct func { char* name; naCFunction func; } funcs[] = {
+static naCFuncItem funcs[] = {
     { "sin", f_sin },
     { "cos", f_cos },
     { "exp", f_exp },
     { "ln", f_ln },
     { "sqrt", f_sqrt },
     { "atan2", f_atan2 },
+    { 0 }
 };
 
-naRef naMathLib(naContext c)
+naRef naInit_math(naContext c)
 {
-    naRef name, namespace = naNewHash(c);
-    int i, n = sizeof(funcs)/sizeof(struct func);
-    for(i=0; i<n; i++) {
-        naRef code = naNewCCode(c, funcs[i].func);
-        naRef name = naStr_fromdata(naNewString(c),
-                                    funcs[i].name, strlen(funcs[i].name));
-        naHash_set(namespace, name, naNewFunc(c, code));
-    }
-
-    // Set up constants for math.pi and math.e.  Can't use M_PI or
-    // M_E, becuase those aren't technically part of the C standard.  Sigh.
-    name = naStr_fromdata(naNewString(c), "pi", 2);
-    naHash_set(namespace, name, naNum(3.14159265358979323846));
-
-    name = naStr_fromdata(naNewString(c), "e", 1);
-    name = naInternSymbol(name);
-    naHash_set(namespace, name, naNum(2.7182818284590452354));
-
-    return namespace;
+    naRef ns = naGenLib(c, funcs);
+    naAddSym(c, ns, "pi", naNum(3.14159265358979323846));
+    naAddSym(c, ns, "e", naNum(2.7182818284590452354));
+    return ns;
 }

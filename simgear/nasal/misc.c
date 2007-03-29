@@ -5,9 +5,17 @@
 #include "nasal.h"
 #include "code.h"
 
+static void* chkptr(void* p)
+{
+    naRef foo;
+    SETPTR(foo, p);
+    if(PTR(foo).obj != p) *(int*)0=0;
+    return p;
+}
+
 void naFree(void* m) { free(m); }
-void* naAlloc(int n) { return malloc(n); }
-void* naRealloc(void* b, int n) { return realloc(b, n); }
+void* naAlloc(int n) { return chkptr(malloc(n)); }
+void* naRealloc(void* b, int n) { return chkptr(realloc(b, n)); }
 void naBZero(void* m, int n) { memset(m, 0, n); }
 
 void naTempSave(naContext c, naRef r)
@@ -23,14 +31,13 @@ void naTempSave(naContext c, naRef r)
         naFree(c->temps);
         c->temps = newtemps;
     }
-    c->temps[c->ntemps++] = r.ref.ptr.obj;
+    c->temps[c->ntemps++] = PTR(r).obj;
 }
 
 naRef naObj(int type, struct naObj* o)
 {
     naRef r;
-    r.ref.reftag = NASAL_REFTAG;
-    r.ref.ptr.obj = o;
+    SETPTR(r, o);
     o->type = type;
     return r;
 }
@@ -78,23 +85,23 @@ naRef naNew(struct Context* c, int type)
 naRef naNewString(struct Context* c)
 {
     naRef s = naNew(c, T_STR);
-    s.ref.ptr.str->len = 0;
-    s.ref.ptr.str->data = 0;
-    s.ref.ptr.str->hashcode = 0;
+    PTR(s).str->len = 0;
+    PTR(s).str->data = 0;
+    PTR(s).str->hashcode = 0;
     return s;
 }
 
 naRef naNewVector(struct Context* c)
 {
     naRef r = naNew(c, T_VEC);
-    r.ref.ptr.vec->rec = 0;
+    PTR(r).vec->rec = 0;
     return r;
 }
 
 naRef naNewHash(struct Context* c)
 {
     naRef r = naNew(c, T_HASH);
-    r.ref.ptr.hash->rec = 0;
+    PTR(r).hash->rec = 0;
     return r;
 }
 
@@ -106,59 +113,57 @@ naRef naNewCode(struct Context* c)
 naRef naNewCCode(struct Context* c, naCFunction fptr)
 {
     naRef r = naNew(c, T_CCODE);
-    r.ref.ptr.ccode->fptr = fptr;
+    PTR(r).ccode->fptr = fptr;
     return r;
 }
 
 naRef naNewFunc(struct Context* c, naRef code)
 {
     naRef func = naNew(c, T_FUNC);
-    func.ref.ptr.func->code = code;
-    func.ref.ptr.func->namespace = naNil();
-    func.ref.ptr.func->next = naNil();
+    PTR(func).func->code = code;
+    PTR(func).func->namespace = naNil();
+    PTR(func).func->next = naNil();
     return func;
 }
 
 naRef naNewGhost(naContext c, naGhostType* type, void* ptr)
 {
     naRef ghost = naNew(c, T_GHOST);
-    ghost.ref.ptr.ghost->gtype = type;
-    ghost.ref.ptr.ghost->ptr = ptr;
+    PTR(ghost).ghost->gtype = type;
+    PTR(ghost).ghost->ptr = ptr;
     return ghost;
 }
 
 naGhostType* naGhost_type(naRef ghost)
 {
     if(!IS_GHOST(ghost)) return 0;
-    return ghost.ref.ptr.ghost->gtype;
+    return PTR(ghost).ghost->gtype;
 }
 
 void* naGhost_ptr(naRef ghost)
 {
     if(!IS_GHOST(ghost)) return 0;
-    return ghost.ref.ptr.ghost->ptr;
+    return PTR(ghost).ghost->ptr;
 }
 
 naRef naNil()
 {
-    naRef r;
-    r.ref.reftag = NASAL_REFTAG;
-    r.ref.ptr.obj = 0;
+    naRef r; 
+    SETPTR(r, 0);
     return r;
 }
 
 naRef naNum(double num)
 {
     naRef r;
-    r.ref.reftag = ~NASAL_REFTAG;
-    r.num = num;
+    SETNUM(r, num);
     return r;
 }
 
 int naEqual(naRef a, naRef b)
 {
     double na=0, nb=0;
-    if(IS_REF(a) && IS_REF(b) && a.ref.ptr.obj == b.ref.ptr.obj)
+    if(IS_REF(a) && IS_REF(b) && PTR(a).obj == PTR(b).obj)
         return 1; // Object identity (and nil == nil)
     if(IS_NIL(a) || IS_NIL(b))
         return 0;
@@ -182,10 +187,10 @@ int naStrEqual(naRef a, naRef b)
     int i;
     if(!(IS_STR(a) && IS_STR(b)))
         return 0;
-    if(a.ref.ptr.str->len != b.ref.ptr.str->len)
+    if(PTR(a).str->len != PTR(b).str->len)
         return 0;
-    for(i=0; i<a.ref.ptr.str->len; i++)
-        if(a.ref.ptr.str->data[i] != b.ref.ptr.str->data[i])
+    for(i=0; i<PTR(a).str->len; i++)
+        if(PTR(a).str->data[i] != PTR(b).str->data[i])
             return 0;
     return 1;
 }
@@ -214,3 +219,24 @@ int naIsFunc(naRef r)   { return IS_FUNC(r); }
 int naIsCode(naRef r)   { return IS_CODE(r); }
 int naIsCCode(naRef r)  { return IS_CCODE(r); }
 int naIsGhost(naRef r)  { return IS_GHOST(r); }
+
+void naSetUserData(naContext c, void* p) { c->userData = p; }
+void* naGetUserData(naContext c)
+{
+    if(c->userData) return c->userData;
+    return c->callParent ? naGetUserData(c->callParent) : 0;
+}
+
+void naAddSym(naContext c, naRef ns, char *sym, naRef val)
+{
+    naRef name = naStr_fromdata(naNewString(c), sym, strlen(sym));
+    naHash_set(ns, naInternSymbol(name), val);
+}
+
+naRef naGenLib(naContext c, naCFuncItem *fns)
+{
+    naRef ns = naNewHash(c);
+    for(/**/; fns->name; fns++)
+        naAddSym(c, ns, fns->name, naNewFunc(c, naNewCCode(c, fns->func)));
+    return ns;
+}

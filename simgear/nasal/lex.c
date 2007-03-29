@@ -109,7 +109,20 @@ static int lineEnd(struct Parser* p, int line)
 static void newToken(struct Parser* p, int pos, int type,
                      char* str, int slen, double num)
 {
-    struct Token* tok;
+    struct Token *tok, *last = p->tree.lastChild;
+
+    /* Adjacent string literals get concatenated */
+    if(type == TOK_LITERAL && str) {
+        if(last && last->type == TOK_LITERAL) {
+            int i, len1 = last->strlen;
+            char* str2 = naParseAlloc(p, len1 + slen);
+            for(i=0; i<len1; i++) str2[i] = last->str[i];
+            for(i=0; i<slen; i++) str2[i+len1] = str[i];
+            last->str = str2;
+            last->strlen += slen;
+            return;
+        }
+    }
 
     tok = naParseAlloc(p, sizeof(struct Token));
     tok->type = type;
@@ -119,17 +132,18 @@ static void newToken(struct Parser* p, int pos, int type,
     tok->num = num;
     tok->parent = &p->tree;
     tok->next = 0;
-    tok->prev = p->tree.lastChild;
+    tok->prev = last;
     tok->children = 0;
     tok->lastChild = 0;
 
     // Context sensitivity hack: a "-" following a binary operator of
-    // higher precedence (MUL and DIV, basically) must be a unary
-    // negation.  Needed to get precedence right in the parser for
-    // expressiong like "a * -2"
-    if(type == TOK_MINUS && tok->prev)
-        if(tok->prev->type == TOK_MUL || tok->prev->type == TOK_DIV)
+    // equal or higher precedence must be a unary negation.  Needed to
+    // get precedence right in the parser for expressiong like "a * -2"
+    if(type == TOK_MINUS && tok->prev) {
+        int pt = tok->prev->type;
+        if(pt==TOK_PLUS||pt==TOK_MINUS||pt==TOK_CAT||pt==TOK_MUL||pt==TOK_DIV)
             tok->type = type = TOK_NEG;
+    }
 
     if(!p->tree.children) p->tree.children = tok;
     if(p->tree.lastChild) p->tree.lastChild->next = tok;
@@ -179,6 +193,7 @@ static void dqEscape(char* buf, int len, int index, struct Parser* p,
     case 'n': *cOut = '\n'; break;
     case 't': *cOut = '\t'; break;
     case '\\': *cOut = '\\'; break;
+    case '`': *cOut = '`'; break;
     case 'x':
         if(len < 4) error(p, "unterminated string", index);
         *cOut = (char)((hexc(buf[2], p, index)<<4) | hexc(buf[3], p, index));
@@ -191,11 +206,12 @@ static void dqEscape(char* buf, int len, int index, struct Parser* p,
     }
 }
 
-// FIXME: should handle UTF8 too
 static void charLiteral(struct Parser* p, int index, char* s, int len)
 {
-    if(len != 1) error(p, "character constant not single character", index);
-    newToken(p, index, TOK_LITERAL, 0, 0, *s);
+    int n, c;
+    c = naLexUtf8C(s, len, &n);
+    if(c < 0 || n != len) error(p, "invalid utf8 character constant", index);
+    newToken(p, index, TOK_LITERAL, 0, 0, c);
 }
 
 // Read in a string literal
@@ -317,6 +333,7 @@ static int tryLexemes(struct Parser* p, int index, int* lexemeOut)
     return best;
 }
 
+#define ISNUM(c) ((c) >= '0' && (c) <= '9')
 void naLex(struct Parser* p)
 {
     int i = 0;
@@ -338,7 +355,8 @@ void naLex(struct Parser* p)
             i = lexStringLiteral(p, i, c);
             break;
         default:
-            if(c >= '0' && c <= '9') i = lexNumLiteral(p, i);
+            if(ISNUM(c) || (c == '.' && (i+1)<p->len && ISNUM(p->buf[i+1])))
+                i = lexNumLiteral(p, i);
             else handled = 0;
         }
 

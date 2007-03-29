@@ -11,7 +11,7 @@ naGhostType naIOGhostType = { ghostDestroy };
 
 static struct naIOGhost* ioghost(naRef r)
 {
-    if(naGhost_type(r) == &naIOGhostType)
+    if(naGhost_type(r) == &naIOGhostType && IOGHOST(r)->handle)
         return naGhost_ptr(r);
     return 0;
 }
@@ -32,9 +32,9 @@ static naRef f_read(naContext c, naRef me, int argc, naRef* args)
     naRef len = argc > 2 ? naNumValue(args[2]) : naNil();
     if(!g || !MUTABLE(str) || !IS_NUM(len))
         naRuntimeError(c, "bad argument to read()");
-    if(str.ref.ptr.str->len < (int)len.num)
+    if(PTR(str).str->len < (int)len.num)
         naRuntimeError(c, "string not big enough for read");
-    return naNum(g->type->read(c, g->handle, (char*)str.ref.ptr.str->data,
+    return naNum(g->type->read(c, g->handle, (char*)PTR(str).str->data,
                                (int)len.num));
 }
 
@@ -44,8 +44,8 @@ static naRef f_write(naContext c, naRef me, int argc, naRef* args)
     naRef str = argc > 1 ? args[1] : naNil();
     if(!g || !IS_STR(str))
         naRuntimeError(c, "bad argument to write()");
-    return naNum(g->type->write(c, g->handle, (char*)str.ref.ptr.str->data,
-                                str.ref.ptr.str->len));
+    return naNum(g->type->write(c, g->handle, (char*)PTR(str).str->data,
+                                PTR(str).str->len));
 }
 
 static naRef f_seek(naContext c, naRef me, int argc, naRef* args)
@@ -113,7 +113,8 @@ static int iotell(naContext c, void* f)
 
 static void iodestroy(void* f)
 {
-    ioclose(0, f);
+    if(f != stdin && f != stdout && f != stderr)
+        ioclose(0, f);
 }
 
 struct naIOType naStdIOType = { ioclose, ioread, iowrite, ioseek,
@@ -133,8 +134,8 @@ static naRef f_open(naContext c, naRef me, int argc, naRef* args)
     naRef file = argc > 0 ? naStringValue(c, args[0]) : naNil();
     naRef mode = argc > 1 ? naStringValue(c, args[1]) : naNil();
     if(!IS_STR(file)) naRuntimeError(c, "bad argument to open()");
-    f = fopen((char*)file.ref.ptr.str->data,
-              IS_STR(mode) ? (const char*)mode.ref.ptr.str->data : "r");
+    f = fopen((char*)PTR(file).str->data,
+              IS_STR(mode) ? (const char*)PTR(mode).str->data : "rb");
     if(!f) naRuntimeError(c, strerror(errno));
     return naIOGhost(c, f);
 }
@@ -169,7 +170,8 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
         if(c == '\r') {
             char c2 = getcguard(ctx, g->handle, buf);
             if(c2 != EOF && c2 != '\n')
-                ungetc(c2, g->handle);
+                if(EOF == ungetc(c2, g->handle))
+                    break;
             break;
         }
         buf[i++] = c;
@@ -186,7 +188,7 @@ static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
     struct stat s;
     naRef result, path = argc > 0 ? naStringValue(ctx, args[0]) : naNil();
     if(!IS_STR(path)) naRuntimeError(ctx, "bad argument to stat()");
-    if(stat((char*)path.ref.ptr.str->data, &s) < 0) {
+    if(stat((char*)PTR(path).str->data, &s) < 0) {
         if(errno == ENOENT) return naNil();
         naRuntimeError(ctx, strerror(errno));
     }
@@ -199,7 +201,7 @@ static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
     return result;
 }
 
-static struct func { char* name; naCFunction func; } funcs[] = {
+static naCFuncItem funcs[] = {
     { "close", f_close },
     { "read", f_read },
     { "write", f_write },
@@ -208,26 +210,17 @@ static struct func { char* name; naCFunction func; } funcs[] = {
     { "open", f_open },
     { "readln", f_readln },
     { "stat", f_stat },
+    { 0 }
 };
 
-static void setsym(naContext c, naRef hash, char* sym, naRef val)
+naRef naInit_io(naContext c)
 {
-    naRef name = naStr_fromdata(naNewString(c), sym, strlen(sym));
-    naHash_set(hash, naInternSymbol(name), val);
-}
-
-naRef naIOLib(naContext c)
-{
-    naRef ns = naNewHash(c);
-    int i, n = sizeof(funcs)/sizeof(struct func);
-    for(i=0; i<n; i++)
-        setsym(c, ns, funcs[i].name,
-               naNewFunc(c, naNewCCode(c, funcs[i].func)));
-    setsym(c, ns, "SEEK_SET", naNum(SEEK_SET));
-    setsym(c, ns, "SEEK_CUR", naNum(SEEK_CUR));
-    setsym(c, ns, "SEEK_END", naNum(SEEK_END));
-    setsym(c, ns, "stdin", naIOGhost(c, stdin));
-    setsym(c, ns, "stdout", naIOGhost(c, stdout));
-    setsym(c, ns, "stderr", naIOGhost(c, stderr));
+    naRef ns = naGenLib(c, funcs);
+    naAddSym(c, ns, "SEEK_SET", naNum(SEEK_SET));
+    naAddSym(c, ns, "SEEK_CUR", naNum(SEEK_CUR));
+    naAddSym(c, ns, "SEEK_END", naNum(SEEK_END));
+    naAddSym(c, ns, "stdin", naIOGhost(c, stdin));
+    naAddSym(c, ns, "stdout", naIOGhost(c, stdout));
+    naAddSym(c, ns, "stderr", naIOGhost(c, stderr));
     return ns;
 }

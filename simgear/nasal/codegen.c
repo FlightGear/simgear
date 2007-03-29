@@ -91,41 +91,6 @@ static int findConstantIndex(struct Parser* p, struct Token* t)
     return internConstant(p, c);
 }
 
-static int lastExprInBlock(struct Token* t)
-{
-    if(!t->parent) return 1;
-    if(t->parent->type == TOK_TOP || t->parent->type == TOK_LCURL) return 1;
-    if(t->parent->type == TOK_SEMI)
-        if(!t->next || t->next->type == TOK_EMPTY)
-            return 1;
-    return 0;
-}
-
-// Returns true if the node is in "tail context" -- either a child of
-// a return, the last child of a func block, or else the
-// last child of an if/elsif/if that is itself in tail context.
-static int tailContext(struct Token* t)
-{
-    if(t->parent && t->parent->type == TOK_RETURN)
-        return 1;
-    else if(!lastExprInBlock(t))
-        return 0;
-
-    // Walk up the tree.  It is ok to see semicolons, else's, elsifs
-    // and curlies.  If we reach the top or a func, then we are in
-    // tail context.  If we hit an if, then we are in tail context
-    // only if the "if" node is.
-    while((t = t->parent) != 0)
-        switch(t->type) {
-        case TOK_SEMI: case TOK_LCURL: break;
-        case TOK_ELSE: case TOK_ELSIF: break;
-        case TOK_TOP:  case TOK_FUNC:  return 1;
-        case TOK_IF:                   return tailContext(t);
-        default:                       return 0;
-        }
-    return 0;
-}
-
 static int genScalarConstant(struct Parser* p, struct Token* t)
 {
     // These opcodes are for special-case use in other constructs, but
@@ -145,7 +110,7 @@ static int genScalarConstant(struct Parser* p, struct Token* t)
 
 static int genLValue(struct Parser* p, struct Token* t, int* cidx)
 {
-    if(t->type == TOK_LPAR) {
+    if(t->type == TOK_LPAR && t->rule != PREC_SUFFIX) {
         return genLValue(p, LEFT(t), cidx); // Handle stuff like "(a) = 1"
     } else if(t->type == TOK_SYMBOL) {
         *cidx = genScalarConstant(p, t);
@@ -293,8 +258,6 @@ static void genFuncall(struct Parser* p, struct Token* t)
         genExpr(p, LEFT(t));
     }
     if(RIGHT(t)) nargs = genList(p, RIGHT(t), 0);
-    if(tailContext(t))
-        op = op == OP_FCALL ? OP_FTAIL : OP_MTAIL;
     emitImmediate(p, op, nargs);
 }
 
@@ -334,15 +297,12 @@ static void fixJumpTarget(struct Parser* p, int spot)
 
 static void genShortCircuit(struct Parser* p, struct Token* t)
 {
-    int jumpNext, jumpEnd, isAnd = (t->type == TOK_AND);
+    int end;
     genExpr(p, LEFT(t));
-    if(isAnd) emit(p, OP_NOT);
-    jumpNext = emitJump(p, OP_JIFNOT);
-    emit(p, isAnd ? OP_PUSHNIL : OP_PUSHONE);
-    jumpEnd = emitJump(p, OP_JMP);
-    fixJumpTarget(p, jumpNext);
+    end = emitJump(p, t->type == TOK_AND ? OP_JIFNOT : OP_JIFTRUE);
+    emit(p, OP_POP);
     genExpr(p, RIGHT(t));
-    fixJumpTarget(p, jumpEnd);
+    fixJumpTarget(p, end);
 }
 
 
@@ -350,7 +310,7 @@ static void genIf(struct Parser* p, struct Token* tif, struct Token* telse)
 {
     int jumpNext, jumpEnd;
     genExpr(p, tif->children); // the test
-    jumpNext = emitJump(p, OP_JIFNOT);
+    jumpNext = emitJump(p, OP_JIFNOTPOP);
     genExprList(p, tif->children->next->children); // the body
     jumpEnd = emitJump(p, OP_JMP);
     fixJumpTarget(p, jumpNext);
@@ -374,7 +334,7 @@ static void genQuestion(struct Parser* p, struct Token* t)
     if(!RIGHT(t) || RIGHT(t)->type != TOK_COLON)
         naParseError(p, "invalid ?: expression", t->line);
     genExpr(p, LEFT(t)); // the test
-    jumpNext = emitJump(p, OP_JIFNOT);
+    jumpNext = emitJump(p, OP_JIFNOTPOP);
     genExpr(p, LEFT(RIGHT(t))); // the "if true" expr
     jumpEnd = emitJump(p, OP_JMP);
     fixJumpTarget(p, jumpNext);
@@ -420,7 +380,7 @@ static void genForWhile(struct Parser* p, struct Token* init,
     pushLoop(p, label);
     loopTop = p->cg->codesz;
     genExpr(p, test);
-    jumpEnd = emitJump(p, OP_JIFNOT);
+    jumpEnd = emitJump(p, OP_JIFNOTPOP);
     genLoop(p, body, update, label, loopTop, jumpEnd);
 }
 
@@ -485,7 +445,7 @@ static void genForEach(struct Parser* p, struct Token* t)
     pushLoop(p, label);
     loopTop = p->cg->codesz;
     emit(p, t->type == TOK_FOREACH ? OP_EACH : OP_INDEX);
-    jumpEnd = emitJump(p, OP_JIFNIL);
+    jumpEnd = emitJump(p, OP_JIFEND);
     assignOp = genLValue(p, elem, &dummy);
     emit(p, OP_XCHG);
     emit(p, assignOp);
@@ -522,7 +482,7 @@ static void genBreakContinue(struct Parser* p, struct Token* t)
     for(i=0; i<levels; i++)
         emit(p, (i<levels-1) ? OP_BREAK2 : OP_BREAK);
     if(t->type == TOK_BREAK)
-        emit(p, OP_PUSHNIL); // breakIP is always a JIFNOT/JIFNIL!
+        emit(p, OP_PUSHEND); // breakIP is always a JIFNOTPOP/JIFEND!
     emitImmediate(p, OP_JMP, t->type == TOK_BREAK ? bp : cp);
 }
 
@@ -544,6 +504,8 @@ static void newLineEntry(struct Parser* p, int line)
 static void genExpr(struct Parser* p, struct Token* t)
 {
     int i, dummy;
+    if(!t) naParseError(p, "parse error", -1); // throw line -1...
+    p->errLine = t->line;                      // ...to use this one instead
     if(t->line != p->cg->lastLine)
         newLineEntry(p, t->line);
     p->cg->lastLine = t->line;
@@ -613,7 +575,7 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_MINUS:
         if(BINARY(t)) {
             genBinOp(OP_MINUS,  p, t);  // binary subtraction
-        } else if(RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str) {
+        } else if(RIGHT(t) && RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str) {
             RIGHT(t)->num *= -1;        // Pre-negate constants
             genScalarConstant(p, RIGHT(t));
         } else {
@@ -627,7 +589,7 @@ static void genExpr(struct Parser* p, struct Token* t)
         break;
     case TOK_DOT:
         genExpr(p, LEFT(t));
-        if(RIGHT(t)->type != TOK_SYMBOL)
+        if(!RIGHT(t) || RIGHT(t)->type != TOK_SYMBOL)
             naParseError(p, "object field not symbol", RIGHT(t)->line);
         emitImmediate(p, OP_MEMBER, findConstantIndex(p, RIGHT(t)));
         break;
@@ -658,7 +620,7 @@ static void genExpr(struct Parser* p, struct Token* t)
 
 static void genExprList(struct Parser* p, struct Token* t)
 {
-    if(t->type == TOK_SEMI) {
+    if(t && t->type == TOK_SEMI) {
         genExpr(p, LEFT(t));
         if(RIGHT(t) && RIGHT(t)->type != TOK_EMPTY) {
             emit(p, OP_POP);
@@ -692,7 +654,7 @@ naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist)
 
     // Now make a code object
     codeObj = naNewCode(p->context);
-    code = codeObj.ref.ptr.code;
+    code = PTR(codeObj).code;
 
     // Parse the argument list, if any
     code->restArgSym = globals->argRef;

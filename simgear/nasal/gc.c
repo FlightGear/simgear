@@ -2,7 +2,7 @@
 #include "data.h"
 #include "code.h"
 
-#define MIN_BLOCK_SIZE 256
+#define MIN_BLOCK_SIZE 32
 
 static void reap(struct naPool* p);
 static void mark(naRef r);
@@ -27,7 +27,7 @@ static void marktemps(struct Context* c)
     int i;
     naRef r = naNil();
     for(i=0; i<c->ntemps; i++) {
-        r.ref.ptr.obj = c->temps[i];
+        SETPTR(r, c->temps[i]);
         mark(r);
     }
 }
@@ -108,7 +108,7 @@ static void bottleneck()
     if(g->waitCount >= g->nThreads - 1) {
         freeDead();
         if(g->needGC) garbageCollect();
-        if(g->waitCount) naSemUpAll(g->sem, g->waitCount);
+        if(g->waitCount) naSemUp(g->sem, g->waitCount);
         g->bottleneck = 0;
     }
 }
@@ -130,7 +130,7 @@ static void naCode_gcclean(struct naCode* o)
 
 static void naGhost_gcclean(struct naGhost* g)
 {
-    if(g->ptr) g->gtype->destroy(g->ptr);
+    if(g->ptr && g->gtype->destroy) g->gtype->destroy(g->ptr);
     g->ptr = 0;
 }
 
@@ -214,7 +214,7 @@ struct naObj** naGC_get(struct naPool* p, int n, int* nout)
 static void markvec(naRef r)
 {
     int i;
-    struct VecRec* vr = r.ref.ptr.vec->rec;
+    struct VecRec* vr = PTR(r).vec->rec;
     if(!vr) return;
     for(i=0; i<vr->size; i++)
         mark(vr->array[i]);
@@ -223,7 +223,7 @@ static void markvec(naRef r)
 static void markhash(naRef r)
 {
     int i;
-    struct HashRec* hr = r.ref.ptr.hash->rec;
+    struct HashRec* hr = PTR(r).hash->rec;
     if(!hr) return;
     for(i=0; i < (1<<hr->lgalloced); i++) {
         struct HashNode* hn = hr->table[i];
@@ -244,22 +244,22 @@ static void mark(naRef r)
     if(IS_NUM(r) || IS_NIL(r))
         return;
 
-    if(r.ref.ptr.obj->mark == 1)
+    if(PTR(r).obj->mark == 1)
         return;
 
-    r.ref.ptr.obj->mark = 1;
-    switch(r.ref.ptr.obj->type) {
+    PTR(r).obj->mark = 1;
+    switch(PTR(r).obj->type) {
     case T_VEC: markvec(r); break;
     case T_HASH: markhash(r); break;
     case T_CODE:
-        mark(r.ref.ptr.code->srcFile);
-        for(i=0; i<r.ref.ptr.code->nConstants; i++)
-            mark(r.ref.ptr.code->constants[i]);
+        mark(PTR(r).code->srcFile);
+        for(i=0; i<PTR(r).code->nConstants; i++)
+            mark(PTR(r).code->constants[i]);
         break;
     case T_FUNC:
-        mark(r.ref.ptr.func->code);
-        mark(r.ref.ptr.func->namespace);
-        mark(r.ref.ptr.func->next);
+        mark(PTR(r).func->code);
+        mark(PTR(r).func->namespace);
+        mark(PTR(r).func->next);
         break;
     }
 }
@@ -270,7 +270,6 @@ static void reap(struct naPool* p)
 {
     struct Block* b;
     int elem, freesz, total = poolsize(p);
-    p->nfree = 0;
     freesz = total < MIN_BLOCK_SIZE ? MIN_BLOCK_SIZE : total;
     freesz = (3 * freesz / 2) + (globals->nThreads * OBJ_CACHE_SZ);
     if(p->freesz < freesz) {
@@ -279,6 +278,9 @@ static void reap(struct naPool* p)
         p->free = p->free0 = naAlloc(sizeof(void*) * p->freesz);
     }
 
+    p->nfree = 0;
+    p->free = p->free0;
+
     for(b = p->blocks; b; b = b->next)
         for(elem=0; elem < b->size; elem++) {
             struct naObj* o = (struct naObj*)(b->block + elem * p->elemsz);
@@ -286,6 +288,8 @@ static void reap(struct naPool* p)
                 freeelem(p, o);
             o->mark = 0;
         }
+
+    p->freetop = p->nfree;
 
     // allocs of this type until the next collection
     globals->allocCount += total/2;
@@ -299,7 +303,6 @@ static void reap(struct naPool* p)
         if(need > 0)
             newBlock(p, need);
     }
-    p->freetop = p->nfree;
 }
 
 // Does the swap, returning the old value

@@ -15,7 +15,7 @@ void  naLock(void* lock)   { EnterCriticalSection((LPCRITICAL_SECTION)lock); }
 void  naUnlock(void* lock) { LeaveCriticalSection((LPCRITICAL_SECTION)lock); }
 void* naNewSem()           { return CreateSemaphore(0, 0, MAX_SEM_COUNT, 0); }
 void  naSemDown(void* sem) { WaitForSingleObject((HANDLE)sem, INFINITE); }
-void  naSemUpAll(void* sem, int count) { ReleaseSemaphore(sem, count, 0); }
+void  naSemUp(void* sem, int count) { ReleaseSemaphore(sem, count, 0); }
 
 #endif
 

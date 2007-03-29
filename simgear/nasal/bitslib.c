@@ -5,10 +5,10 @@
 // bits (i.e. an unsigned int).  Using a 64 bit integer would stretch
 // that beyond what is representable in the double result, but
 // requires portability work.
-
-#define BIT(s,l,n) s[l-1-((n)>>3)] & (1<<((n)&7))
-#define CLRB(s,l,n) s[l-1-((n)>>3)] &= ~(1<<((n)&7))
-#define SETB(s,l,n) s[l-1-((n)>>3)] |= 1<<((n)&7)
+#define MSK(n) (1 << (7 - ((n) & 7)))
+#define BIT(s,l,n) s[(n)>>3] & MSK(n)
+#define CLRB(s,l,n) s[(n)>>3] &= ~MSK(n)
+#define SETB(s,l,n) s[(n)>>3] |= MSK(n)
 
 static unsigned int fld(naContext c, unsigned char* s,
                         int slen, int bit, int flen)
@@ -32,7 +32,7 @@ static void setfld(naContext c, unsigned char* s, int slen,
 
 static naRef dofld(naContext c, int argc, naRef* args, int sign)
 {
-    struct naStr* s = argc > 0 ? args[0].ref.ptr.str : 0;
+    struct naStr* s = argc > 0 ? PTR(args[0]).str : 0;
     int bit = argc > 1 ? (int)naNumValue(args[1]).num : -1;
     int len = argc > 2 ? (int)naNumValue(args[2]).num : -1;
     unsigned int f;
@@ -56,7 +56,7 @@ static naRef f_fld(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_setfld(naContext c, naRef me, int argc, naRef* args)
 {
-    struct naStr* s = argc > 0 ? args[0].ref.ptr.str : 0;
+    struct naStr* s = argc > 0 ? PTR(args[0]).str : 0;
     int bit = argc > 1 ? (int)naNumValue(args[1]).num : -1;
     int len = argc > 2 ? (int)naNumValue(args[2]).num : -1;
     naRef val = argc > 3 ? naNumValue(args[3]) : naNil();
@@ -73,22 +73,15 @@ static naRef f_buf(naContext c, naRef me, int argc, naRef* args)
     return naStr_buf(naNewString(c), (int)len.num);
 }
 
-static struct func { char* name; naCFunction func; } funcs[] = {
+static naCFuncItem funcs[] = {
     { "sfld", f_sfld },
     { "fld", f_fld },
     { "setfld", f_setfld },
     { "buf", f_buf },
+    { 0 }
 };
 
-naRef naBitsLib(naContext c)
+naRef naInit_bits(naContext c)
 {
-    naRef namespace = naNewHash(c);
-    int i, n = sizeof(funcs)/sizeof(struct func);
-    for(i=0; i<n; i++) {
-        naRef code = naNewCCode(c, funcs[i].func);
-        naRef name = naStr_fromdata(naNewString(c),
-                                    funcs[i].name, strlen(funcs[i].name));
-        naHash_set(namespace, name, naNewFunc(c, code));
-    }
-    return namespace;
+    return naGenLib(c, funcs);
 }

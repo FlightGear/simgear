@@ -28,7 +28,7 @@ void naVec_gcclean(struct naVec* v)
 naRef naVec_get(naRef v, int i)
 {
     if(IS_VEC(v)) {
-        struct VecRec* r = v.ref.ptr.vec->rec;
+        struct VecRec* r = PTR(v).vec->rec;
         if(r) {
             if(i < 0) i += r->size;
             if(i >= 0 && i < r->size) return r->array[i];
@@ -40,7 +40,7 @@ naRef naVec_get(naRef v, int i)
 void naVec_set(naRef vec, int i, naRef o)
 {
     if(IS_VEC(vec)) {
-        struct VecRec* r = vec.ref.ptr.vec->rec;
+        struct VecRec* r = PTR(vec).vec->rec;
         if(r && i >= r->size) return;
         r->array[i] = o;
     }
@@ -49,7 +49,7 @@ void naVec_set(naRef vec, int i, naRef o)
 int naVec_size(naRef v)
 {
     if(IS_VEC(v)) {
-        struct VecRec* r = v.ref.ptr.vec->rec;
+        struct VecRec* r = PTR(v).vec->rec;
         return r ? r->size : 0;
     }
     return 0;
@@ -58,10 +58,10 @@ int naVec_size(naRef v)
 int naVec_append(naRef vec, naRef o)
 {
     if(IS_VEC(vec)) {
-        struct VecRec* r = vec.ref.ptr.vec->rec;
+        struct VecRec* r = PTR(vec).vec->rec;
         while(!r || r->size >= r->alloced) {
-            resize(vec.ref.ptr.vec);
-            r = vec.ref.ptr.vec->rec;
+            resize(PTR(vec).vec);
+            r = PTR(vec).vec->rec;
         }
         r->array[r->size] = o;
         return r->size++;
@@ -72,26 +72,25 @@ int naVec_append(naRef vec, naRef o)
 void naVec_setsize(naRef vec, int sz)
 {
     int i;
-    struct VecRec* v = vec.ref.ptr.vec->rec;
+    struct VecRec* v = PTR(vec).vec->rec;
     struct VecRec* nv = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * sz);
     nv->size = sz;
     nv->alloced = sz;
     for(i=0; i<sz; i++)
         nv->array[i] = (v && i < v->size) ? v->array[i] : naNil();
-    naFree(v);
-    vec.ref.ptr.vec->rec = nv;
+    naGC_swapfree((void**)&(PTR(vec).vec->rec), nv);
 }
 
 naRef naVec_removelast(naRef vec)
 {
     naRef o;
     if(IS_VEC(vec)) {
-        struct VecRec* v = vec.ref.ptr.vec->rec;
+        struct VecRec* v = PTR(vec).vec->rec;
         if(!v || v->size == 0) return naNil();
         o = v->array[v->size - 1];
         v->size--;
         if(v->size < (v->alloced >> 1))
-            resize(vec.ref.ptr.vec);
+            resize(PTR(vec).vec);
         return o;
     }
     return naNil();

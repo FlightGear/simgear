@@ -3,27 +3,83 @@
 
 #include "nasal.h"
 
+#if defined(NASAL_NAN64)
+
+// On 64 bit systems, Nasal non-numeric references are stored with a
+// bitmask that sets the top 16 bits.  As a double, this is a
+// signalling NaN that cannot itself be produced by normal numerics
+// code.  The pointer value can be reconstructed if (and only if) we
+// are guaranteed that all memory that can be poitned to by a naRef
+// (i.e. all memory returned by naAlloc) lives in the bottom 48 bits
+// of memory.  Linux on x86_64, Win64, Solaris and Irix all have such
+// policies with address spaces:
+//
+// http://msdn.microsoft.com/library/en-us/win64/win64/virtual_address_space.asp
+// http://docs.sun.com/app/docs/doc/816-5138/6mba6ua5p?a=view
+// http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi/
+//  ...   0650/bks/SGI_Developer/books/T_IRIX_Prog/sgi_html/ch01.html
+//
+// In the above, MS guarantees 44 bits of process address space, SGI
+// 40, and Sun 43 (Solaris *does* place the stack in the "negative"
+// address space at 0xffff..., but we don't care as naRefs will never
+// point there).  Linux doesn't document this rigorously, but testing
+// shows that it allows 47 bits of address space (and current x86_64
+// implementations are limited to 48 bits of virtual space anyway). So
+// we choose 48 as the conservative compromise.
+
+#define REFMAGIC ((1UL<<48) - 1)
+
+#define _ULP(r) ((unsigned long long)((r).ptr))
+#define REFPTR(r) (_ULP(r) & REFMAGIC)
+#define IS_REF(r) ((_ULP(r) & ~REFMAGIC) == ~REFMAGIC)
+
+// Portability note: this cast from a pointer type to naPtr (a union)
+// is not defined in ISO C, it's a GCC extention that doesn't work on
+// (at least) either the SUNWspro or MSVC compilers.  Unfortunately,
+// fixing this would require abandoning the naPtr union for a set of
+// PTR_<type>() macros, which is a ton of work and a lot of extra
+// code.  And as all enabled 64 bit platforms are gcc anyway, and the
+// 32 bit fallback code works in any case, this is acceptable for now.
+#define PTR(r) ((naPtr)((struct naObj*)(_ULP(r) & REFMAGIC)))
+
+#define SETPTR(r, p) ((r).ptr = (void*)((unsigned long long)p | ~REFMAGIC))
+#define SETNUM(r, n) ((r).num = n)
+
+#else
+
+// On 32 bit systems where the pointer is half the width of the
+// double, we store a special magic number in the structure to make
+// the double a NaN.  This must appear in the top bits of the double,
+// which is why the structure layout is endianness-dependent.
+
+#define NASAL_REFTAG 0x7ff56789 // == 2,146,789,257 decimal
+#define IS_REF(r) ((r).ref.reftag == NASAL_REFTAG)
+#define PTR(r) ((r).ref.ptr)
+
+#define SETPTR(r, p) ((r).ref.ptr.obj = (void*)p, (r).ref.reftag = NASAL_REFTAG)
+#define SETNUM(r, n) ((r).ref.reftag = ~NASAL_REFTAG, (r).num = n)
+
+#endif /* platform stuff */
+
 enum { T_STR, T_VEC, T_HASH, T_CODE, T_FUNC, T_CCODE, T_GHOST,
        NUM_NASAL_TYPES }; // V. important that this come last!
 
-#define IS_REF(r) ((r).ref.reftag == NASAL_REFTAG)
-#define IS_NUM(r) ((r).ref.reftag != NASAL_REFTAG)
-#define IS_OBJ(r) (IS_REF((r)) && (r).ref.ptr.obj != 0)
-//#define IS_OBJ(r) (IS_REF((r)) && (r).ref.ptr.obj != 0 && (((r).ref.ptr.obj->type == 123) ? *(int*)0 : 1))
-#define IS_NIL(r) (IS_REF((r)) && (r).ref.ptr.obj == 0)
-#define IS_STR(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_STR)
-#define IS_VEC(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_VEC)
-#define IS_HASH(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_HASH)
-#define IS_CODE(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_CODE)
-#define IS_FUNC(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_FUNC)
-#define IS_CCODE(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_CCODE)
-#define IS_GHOST(r) (IS_OBJ((r)) && (r).ref.ptr.obj->type == T_GHOST)
+#define IS_NUM(r) (!IS_REF(r))
+#define IS_OBJ(r) (IS_REF(r) && PTR(r).obj != 0)
+#define IS_NIL(r) (IS_REF(r) && PTR(r).obj == 0)
+#define IS_STR(r) (IS_OBJ(r) && PTR(r).obj->type == T_STR)
+#define IS_VEC(r) (IS_OBJ(r) && PTR(r).obj->type == T_VEC)
+#define IS_HASH(r) (IS_OBJ(r) && PTR(r).obj->type == T_HASH)
+#define IS_CODE(r) (IS_OBJ(r) && PTR(r).obj->type == T_CODE)
+#define IS_FUNC(r) (IS_OBJ(r) && PTR(r).obj->type == T_FUNC)
+#define IS_CCODE(r) (IS_OBJ(r) && PTR(r).obj->type == T_CCODE)
+#define IS_GHOST(r) (IS_OBJ(r) && PTR(r).obj->type == T_GHOST)
 #define IS_CONTAINER(r) (IS_VEC(r)||IS_HASH(r))
-#define IS_SCALAR(r) (IS_NUM((r)) || IS_STR((r)))
+#define IS_SCALAR(r) (IS_NUM(r) || IS_STR(r))
 #define IDENTICAL(a, b) (IS_REF(a) && IS_REF(b) \
-                         && a.ref.ptr.obj == b.ref.ptr.obj)
+                         && PTR(a).obj == PTR(b).obj)
 
-#define MUTABLE(r) (IS_STR(r) && (r).ref.ptr.str->hashcode == 0)
+#define MUTABLE(r) (IS_STR(r) && PTR(r).str->hashcode == 0)
 
 // This is a macro instead of a separate struct to allow compilers to
 // avoid padding.  GCC on x86, at least, will always padd the size of

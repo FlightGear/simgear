@@ -15,14 +15,14 @@
 #define OBJ_CACHE_SZ 128
 
 enum {    
-    OP_AND, OP_OR, OP_NOT, OP_MUL, OP_PLUS, OP_MINUS, OP_DIV, OP_NEG,
+    OP_NOT, OP_MUL, OP_PLUS, OP_MINUS, OP_DIV, OP_NEG,
     OP_CAT, OP_LT, OP_LTE, OP_GT, OP_GTE, OP_EQ, OP_NEQ, OP_EACH,
-    OP_JMP, OP_JMPLOOP, OP_JIFNOT, OP_JIFNIL, OP_FCALL, OP_MCALL, OP_RETURN,
-    OP_PUSHCONST, OP_PUSHONE, OP_PUSHZERO, OP_PUSHNIL, OP_POP,
+    OP_JMP, OP_JMPLOOP, OP_JIFNOTPOP, OP_JIFEND, OP_FCALL, OP_MCALL,
+    OP_RETURN, OP_PUSHCONST, OP_PUSHONE, OP_PUSHZERO, OP_PUSHNIL, OP_POP,
     OP_DUP, OP_XCHG, OP_INSERT, OP_EXTRACT, OP_MEMBER, OP_SETMEMBER,
     OP_LOCAL, OP_SETLOCAL, OP_NEWVEC, OP_VAPPEND, OP_NEWHASH, OP_HAPPEND,
-    OP_MARK, OP_UNMARK, OP_BREAK, OP_FTAIL, OP_MTAIL, OP_SETSYM, OP_DUP2,
-    OP_INDEX, OP_BREAK2
+    OP_MARK, OP_UNMARK, OP_BREAK, OP_SETSYM, OP_DUP2, OP_INDEX, OP_BREAK2,
+    OP_PUSHEND, OP_JIFTRUE, OP_JIFNOT
 };
 
 struct Frame {
@@ -69,6 +69,7 @@ struct Context {
     struct Frame fStack[MAX_RECURSION];
     int fTop;
     naRef opStack[MAX_STACK_DEPTH];
+    int opFrame; // like Frame::bp, but for C functions
     int opTop;
     int markStack[MAX_MARK_DEPTH];
     int markTop;
@@ -86,7 +87,7 @@ struct Context {
 
     // Error handling
     jmp_buf jumpHandle;
-    char* error;
+    char error[128];
     naRef dieArg;
 
     // Sub-call lists
@@ -96,6 +97,8 @@ struct Context {
     // Linked list pointers in globals
     struct Context* nextFree;
     struct Context* nextAll;
+
+    void* userData;
 };
 
 #define globals nasal_globals
@@ -103,11 +106,13 @@ extern struct Globals* globals;
 
 // Threading low-level functions
 void* naNewLock();
+void naFreeLock(void* lock);
 void naLock(void* lock);
 void naUnlock(void* lock);
 void* naNewSem();
+void naFreeSem(void* sem);
 void naSemDown(void* sem);
-void naSemUpAll(void* sem, int count);
+void naSemUp(void* sem, int count);
 
 void naCheckBottleneck();
 

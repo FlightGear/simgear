@@ -19,11 +19,15 @@ enum {
     TOK_FORINDEX
 };
 
+// Precedence rules
+enum { PREC_BINARY=1, PREC_REVERSE, PREC_PREFIX, PREC_SUFFIX };
+
 struct Token {
     int type;
     int line;
     char* str;
     int strlen;
+    int rule;
     double num;
     struct Token* parent;
     struct Token* next;
@@ -94,6 +98,7 @@ void naParseInit(struct Parser* p);
 void* naParseAlloc(struct Parser* p, int bytes);
 void naParseDestroy(struct Parser* p);
 void naLex(struct Parser* p);
+int naLexUtf8C(char* s, int len, int* used); /* in utf8lib.c */
 naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist);
 
 void naParse(struct Parser* p);

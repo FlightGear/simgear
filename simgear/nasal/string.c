@@ -14,13 +14,13 @@ static int fromnum(double val, unsigned char* s);
 int naStr_len(naRef s)
 {
     if(!IS_STR(s)) return 0;
-    return s.ref.ptr.str->len;
+    return PTR(s).str->len;
 }
 
 char* naStr_data(naRef s)
 {
     if(!IS_STR(s)) return 0;
-    return (char*)s.ref.ptr.str->data;
+    return (char*)PTR(s).str->data;
 }
 
 static void setlen(struct naStr* s, int sz)
@@ -33,24 +33,24 @@ static void setlen(struct naStr* s, int sz)
 
 naRef naStr_buf(naRef dst, int len)
 {
-    setlen(dst.ref.ptr.str, len);
-    naBZero(dst.ref.ptr.str->data, len);
+    setlen(PTR(dst).str, len);
+    naBZero(PTR(dst).str->data, len);
     return dst;
 }
 
 naRef naStr_fromdata(naRef dst, char* data, int len)
 {
     if(!IS_STR(dst)) return naNil();
-    setlen(dst.ref.ptr.str, len);
-    memcpy(dst.ref.ptr.str->data, data, len);
+    setlen(PTR(dst).str, len);
+    memcpy(PTR(dst).str->data, data, len);
     return dst;
 }
 
 naRef naStr_concat(naRef dest, naRef s1, naRef s2)
 {
-    struct naStr* dst = dest.ref.ptr.str;
-    struct naStr* a = s1.ref.ptr.str;
-    struct naStr* b = s2.ref.ptr.str;
+    struct naStr* dst = PTR(dest).str;
+    struct naStr* a = PTR(s1).str;
+    struct naStr* b = PTR(s2).str;
     if(!(IS_STR(s1)&&IS_STR(s2)&&IS_STR(dest))) return naNil();
     setlen(dst, a->len + b->len);
     memcpy(dst->data, a->data, a->len);
@@ -60,8 +60,8 @@ naRef naStr_concat(naRef dest, naRef s1, naRef s2)
 
 naRef naStr_substr(naRef dest, naRef str, int start, int len)
 {
-    struct naStr* dst = dest.ref.ptr.str;
-    struct naStr* s = str.ref.ptr.str;
+    struct naStr* dst = PTR(dest).str;
+    struct naStr* s = PTR(str).str;
     if(!(IS_STR(dest)&&IS_STR(str))) return naNil();
     if(start + len > s->len) { dst->len = 0; dst->data = 0; return naNil(); }
     setlen(dst, len);
@@ -71,8 +71,8 @@ naRef naStr_substr(naRef dest, naRef str, int start, int len)
 
 int naStr_equal(naRef s1, naRef s2)
 {
-    struct naStr* a = s1.ref.ptr.str;
-    struct naStr* b = s2.ref.ptr.str;
+    struct naStr* a = PTR(s1).str;
+    struct naStr* b = PTR(s2).str;
     if(a->data == b->data) return 1;
     if(a->len != b->len) return 0;
     if(memcmp(a->data, b->data, a->len) == 0) return 1;
@@ -81,7 +81,7 @@ int naStr_equal(naRef s1, naRef s2)
 
 naRef naStr_fromnum(naRef dest, double num)
 {
-    struct naStr* dst = dest.ref.ptr.str;
+    struct naStr* dst = PTR(dest).str;
     unsigned char buf[DIGITS+8];
     setlen(dst, fromnum(num, buf));
     memcpy(dst->data, buf, dst->len);
@@ -95,13 +95,13 @@ int naStr_parsenum(char* str, int len, double* result)
 
 int naStr_tonum(naRef str, double* out)
 {
-    return tonum(str.ref.ptr.str->data, str.ref.ptr.str->len, out);
+    return tonum(PTR(str).str->data, PTR(str).str->len, out);
 }
 
 int naStr_numeric(naRef str)
 {
     double dummy;
-    return tonum(str.ref.ptr.str->data, str.ref.ptr.str->len, &dummy);
+    return tonum(PTR(str).str->data, PTR(str).str->len, &dummy);
 }
 
 void naStr_gcclean(struct naStr* str)

@@ -3,9 +3,7 @@
 
 #define MIN_HASH_SIZE 4
 
-#define EQUAL(a, b) (((a).ref.reftag == (b).ref.reftag \
-                      && (a).ref.ptr.obj == (b).ref.ptr.obj) \
-                     || naEqual(a, b))
+#define EQUAL(a, b) (IDENTICAL(a, b) || naEqual(a, b))
 
 #define HASH_MAGIC 2654435769u
 
@@ -28,15 +26,15 @@ static unsigned int hashcode(naRef r)
         // 2*sizeof(int).
         unsigned int* p = (unsigned int*)&(r.num);
         return p[0] ^ p[1];
-    } else if(r.ref.ptr.str->hashcode) {
-        return r.ref.ptr.str->hashcode;
+    } else if(PTR(r).str->hashcode) {
+        return PTR(r).str->hashcode;
     } else {
         // This is Daniel Bernstein's djb2 hash function that I found
         // on the web somewhere.  It appears to work pretty well.
         unsigned int i, hash = 5831;
-        for(i=0; i<r.ref.ptr.str->len; i++)
-            hash = (hash * 33) ^ r.ref.ptr.str->data[i];
-        r.ref.ptr.str->hashcode = hash;
+        for(i=0; i<PTR(r).str->len; i++)
+            hash = (hash * 33) ^ PTR(r).str->data[i];
+        PTR(r).str->hashcode = hash;
         return hash;
     }
 }
@@ -90,7 +88,7 @@ int naHash_sym(struct naHash* hash, struct naStr* sym, naRef* out)
         int col = (HASH_MAGIC * sym->hashcode) >> (32 - h->lgalloced);
         struct HashNode* hn = h->table[col];
         while(hn) {
-            if(hn->key.ref.ptr.str == sym) {
+            if(PTR(hn->key).str == sym) {
                 *out = hn->val;
                 return 1;
             }
@@ -103,26 +101,32 @@ int naHash_sym(struct naHash* hash, struct naStr* sym, naRef* out)
 static struct HashNode* find(struct naHash* hash, naRef key)
 {
     struct HashRec* h = hash->rec;
-    if(h) {
-        struct HashNode* hn = h->table[hashcolumn(h, key)];
-        while(hn) {
-            if(EQUAL(key, hn->key))
-                return hn;
-            hn = hn->next;
-        }
-    }
+    struct HashNode* hn;
+    if(!h) return 0;
+    for(hn = h->table[hashcolumn(h, key)]; hn; hn = hn->next)
+        if(EQUAL(key, hn->key))
+            return hn;
     return 0;
 }
 
 // Make a temporary string on the stack
-static void tmpStr(naRef* out, struct naStr* str, char* key)
+static void tmpStr(naRef* out, struct naStr* str, const char* key)
 {
     str->len = 0;
+    str->type = T_STR;
     str->data = (unsigned char*)key;
     str->hashcode = 0;
     while(key[str->len]) str->len++;
     *out = naNil();
-    out->ref.ptr.str = str;
+    SETPTR(*out, str);
+}
+
+int naMember_cget(naRef obj, const char* field, naRef* out)
+{
+    naRef key;
+    struct naStr str;
+    tmpStr(&key, &str, field);
+    return naMember_get(obj, key, out);
 }
 
 naRef naHash_cget(naRef hash, char* key)
@@ -146,7 +150,7 @@ void naHash_cset(naRef hash, char* key, naRef val)
 int naHash_get(naRef hash, naRef key, naRef* out)
 {
     if(IS_HASH(hash)) {
-        struct HashNode* n = find(hash.ref.ptr.hash, key);
+        struct HashNode* n = find(PTR(hash).hash, key);
         if(n) { *out = n->val; return 1; }
     }
     return 0;
@@ -156,7 +160,7 @@ int naHash_get(naRef hash, naRef key, naRef* out)
 int naHash_tryset(naRef hash, naRef key, naRef val)
 {
     if(IS_HASH(hash)) {
-        struct HashNode* n = find(hash.ref.ptr.hash, key);
+        struct HashNode* n = find(PTR(hash).hash, key);
         if(n) n->val = val;
         return n != 0;
     }
@@ -173,7 +177,7 @@ void naHash_newsym(struct naHash* hash, naRef* sym, naRef* val)
     struct HashRec* h = hash->rec;
     while(!h || h->size >= 1<<h->lgalloced)
         h = resize(hash);
-    col = (HASH_MAGIC * sym->ref.ptr.str->hashcode) >> (32 - h->lgalloced);
+    col = (HASH_MAGIC * PTR(*sym).str->hashcode) >> (32 - h->lgalloced);
     INSERT(h, *sym, *val, col);
 }
 
@@ -196,10 +200,10 @@ void naHash_set(naRef hash, naRef key, naRef val)
     struct HashRec* h;
     struct HashNode* n;
     if(!IS_HASH(hash)) return;
-    if((n = find(hash.ref.ptr.hash, key))) { n->val = val; return; }
-    h = hash.ref.ptr.hash->rec;
+    if((n = find(PTR(hash).hash, key))) { n->val = val; return; }
+    h = PTR(hash).hash->rec;
     while(!h || h->size >= 1<<h->lgalloced)
-        h = resize(hash.ref.ptr.hash);
+        h = resize(PTR(hash).hash);
     col = hashcolumn(h, key);
     INSERT(h, key, val, hashcolumn(h, key));
     chkcycle(h->table[col], h->size - h->dels);
@@ -207,7 +211,7 @@ void naHash_set(naRef hash, naRef key, naRef val)
 
 void naHash_delete(naRef hash, naRef key)
 {
-    struct HashRec* h = hash.ref.ptr.hash->rec;
+    struct HashRec* h = PTR(hash).hash->rec;
     int col;
     struct HashNode *last=0, *hn;
     if(!IS_HASH(hash) || !h) return;
@@ -228,7 +232,7 @@ void naHash_delete(naRef hash, naRef key)
 void naHash_keys(naRef dst, naRef hash)
 {
     int i;
-    struct HashRec* h = hash.ref.ptr.hash->rec;
+    struct HashRec* h = PTR(hash).hash->rec;
     if(!IS_HASH(hash) || !h) return;
     for(i=0; i<(1<<h->lgalloced); i++) {
         struct HashNode* hn = h->table[i];
@@ -241,7 +245,7 @@ void naHash_keys(naRef dst, naRef hash)
 
 int naHash_size(naRef hash)
 {
-    struct HashRec* h = hash.ref.ptr.hash->rec;
+    struct HashRec* h = PTR(hash).hash->rec;
     if(!IS_HASH(hash) || !h) return 0;
     return h->size - h->dels;
 }

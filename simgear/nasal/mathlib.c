@@ -5,7 +5,7 @@
 
 // Toss a runtime error for any NaN or Inf values produced.  Note that
 // this assumes an IEEE 754 format.
-#define VALIDATE(r) (valid(r.num) ? (r) : die(c, __func__+2))
+#define VALIDATE(r) (valid(r.num) ? (r) : die(c, __FUNCTION__+2))
 
 static int valid(double d)
 {

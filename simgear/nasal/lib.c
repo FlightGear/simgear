@@ -16,9 +16,9 @@
 #define NEWCSTR(c, s) NEWSTR(c, s, strlen(s))
 
 // Generic argument error, assumes that the symbol "c" is a naContext,
-// and that the __func__ string is of the form "f_NASALSYMBOL".
+// and that the __FUNCTION__ string is of the form "f_NASALSYMBOL".
 #define ARGERR() \
-    naRuntimeError(c, "bad/missing argument to %s()", (__func__ + 2))
+    naRuntimeError(c, "bad/missing argument to %s()", (__FUNCTION__ + 2))
 
 static naRef f_size(naContext c, naRef me, int argc, naRef* args)
 {

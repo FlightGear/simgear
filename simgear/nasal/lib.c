@@ -128,14 +128,21 @@ static naRef f_cmp(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_substr(naContext c, naRef me, int argc, naRef* args)
 {
-    naRef src = argc > 1 ? args[0] : naNil();
-    naRef startR = argc > 1 ? naNumValue(args[1]) : naNil();
-    naRef lenR = argc > 2 ? naNumValue(args[2]) : naNil();
-    int start, len;
-    if(!naIsString(src) || naIsNil(startR)) ARGERR();
-    start = (int)startR.num;
-    len = naIsNil(lenR) ? (naStr_len(src) - start) : (int)lenR.num;
-    if(len < 0) ARGERR();
+    int start, len, srclen;
+    naRef src = argc > 0 ? args[0] : naNil();
+    naRef startr = argc > 1 ? naNumValue(args[1]) : naNil();
+    naRef lenr = argc > 2 ? naNumValue(args[2]) : naNil();
+    if(!naIsString(src)) ARGERR();
+    if(naIsNil(startr) || !naIsNum(startr)) ARGERR();
+    if(!naIsNil(lenr) && !naIsNum(lenr)) ARGERR();
+    srclen = naStr_len(src);
+    start = (int)startr.num;
+    len = naIsNum(lenr) ? (int)lenr.num : (srclen - start);
+    if(start < 0) start += srclen;
+    if(start < 0) start = len = 0;
+    if(start >= srclen) start = len = 0;
+    if(len < 0) len = 0;
+    if(len > srclen - start) len = srclen - start;
     return naStr_substr(naNewString(c), src, start, len);
 }
 

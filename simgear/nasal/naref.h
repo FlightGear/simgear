@@ -9,7 +9,7 @@
 /* Win64 and Irix should work with this too, but have not been
  * tested */
 #   define NASAL_NAN64
-#elif defined(_M_X86)   || defined(i386)    || defined(__x86_64) || \
+#elif defined(_M_IX86)   || defined(i386)    || defined(__x86_64) || \
     defined(__ia64__) || defined(_M_IA64) || defined(__ARMEL__) 
 # define NASAL_LE
 #elif defined(__sparc) || defined(__ppc__) || defined(__mips) || \

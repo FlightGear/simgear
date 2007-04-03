@@ -433,7 +433,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
                SGModelData *data,
                const SGPath& externalTexturePath )
 {
-  osg::Node* model = 0;
+  osg::ref_ptr<osg::Node> model;
   SGPropertyNode props;
 
   // Load the 3D aircraft object itself
@@ -455,7 +455,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
         texturepath.append(props.getStringValue("/texture-path"));
       }
     } else {
-      if (model == 0)
+      if (!model)
         model = new osg::Switch;
     }
   }
@@ -465,7 +465,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
 
   // Assume that textures are in
   // the same location as the XML file.
-  if (model == 0) {
+  if (!model) {
     if (texturepath.extension() != "")
           texturepath = texturepath.dir();
 
@@ -480,8 +480,8 @@ sgLoad3DModel( const string &fg_root, const string &path,
   osgDB::Registry::instance()->getDataFilePathList().push_front(externalTexturePath.str());
 
   // Set up the alignment node
-  osg::MatrixTransform* alignmainmodel = new osg::MatrixTransform;
-  alignmainmodel->addChild(model);
+  osg::ref_ptr<osg::MatrixTransform> alignmainmodel = new osg::MatrixTransform;
+  alignmainmodel->addChild(model.get());
   osg::Matrix res_matrix;
   res_matrix.makeRotate(
     props.getFloatValue("/offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
@@ -501,7 +501,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
   vector<SGPropertyNode_ptr> model_nodes = props.getChildren("model");
   for (unsigned i = 0; i < model_nodes.size(); i++) {
     SGPropertyNode_ptr node = model_nodes[i];
-    osg::MatrixTransform* align = new osg::MatrixTransform;
+    osg::ref_ptr<osg::MatrixTransform> align = new osg::MatrixTransform;
     res_matrix.makeIdentity();
     res_matrix.makeRotate(
       node->getDoubleValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
@@ -517,7 +517,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
                        node->getDoubleValue("offsets/z-m", 0));
     align->setMatrix(res_matrix*tmat);
 
-    osg::Node* kid;
+    osg::ref_ptr<osg::Node> kid;
     const char* submodel = node->getStringValue("path");
     try {
       kid = sgLoad3DModel( fg_root, submodel, prop_root, sim_time_sec, load_panel );
@@ -526,19 +526,19 @@ sgLoad3DModel( const string &fg_root, const string &path,
       SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
       throw;
     }
-    align->addChild(kid);
+    align->addChild(kid.get());
 
     align->setName(node->getStringValue("name", ""));
 
     SGPropertyNode *cond = node->getNode("condition", false);
     if (cond) {
-      osg::Switch* sw = new osg::Switch;
+      osg::ref_ptr<osg::Switch> sw = new osg::Switch;
       sw->setUpdateCallback(new SGSwitchUpdateCallback(sgReadCondition(prop_root, cond)));
-      alignmainmodel->addChild(sw);
-      sw->addChild(align);
+      alignmainmodel->addChild(sw.get());
+      sw->addChild(align.get());
       sw->setName("submodel condition switch");
     } else {
-      alignmainmodel->addChild(align);
+      alignmainmodel->addChild(align.get());
     }
   }
 
@@ -547,23 +547,23 @@ sgLoad3DModel( const string &fg_root, const string &path,
     vector<SGPropertyNode_ptr> panel_nodes = props.getChildren("panel");
     for (unsigned i = 0; i < panel_nodes.size(); i++) {
         SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
-        osg::Node * panel = load_panel(panel_nodes[i]);
+        osg::ref_ptr<osg::Node> panel = load_panel(panel_nodes[i]);
         if (panel_nodes[i]->hasValue("name"))
             panel->setName((char *)panel_nodes[i]->getStringValue("name"));
-        alignmainmodel->addChild(panel);
+        alignmainmodel->addChild(panel.get());
     }
   }
 
   if (data) {
     alignmainmodel->setUserData(data);
-    data->modelLoaded(path, &props, alignmainmodel);
+    data->modelLoaded(path, &props, alignmainmodel.get());
   }
 
   std::vector<SGPropertyNode_ptr> animation_nodes;
   animation_nodes = props.getChildren("animation");
   for (unsigned i = 0; i < animation_nodes.size(); ++i)
     /// OSGFIXME: duh, why not only model?????
-    SGAnimation::animate(alignmainmodel, animation_nodes[i], prop_root);
+    SGAnimation::animate(alignmainmodel.get(), animation_nodes[i], prop_root);
 
   // restore old path list
   osgDB::setDataFilePathList(pathList);
@@ -574,7 +574,7 @@ sgLoad3DModel( const string &fg_root, const string &path,
     osgDB::writeNodeFile(*alignmainmodel, outputfile);
   }
 
-  return alignmainmodel;
+  return alignmainmodel.release();
 }
 
 // end of model.cxx

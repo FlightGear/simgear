@@ -942,6 +942,12 @@
 				RelativePath="..\..\simgear\nasal\thread-win32.c">
 			</File>
 			<File
+				RelativePath="..\..\simgear\nasal\threadlib.c">
+			</File>
+			<File
+				RelativePath="..\..\simgear\nasal\utf8lib.c">
+			</File>
+			<File
 				RelativePath="..\..\simgear\nasal\vector.c">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -1011,7 +1017,8 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Generation of simgear_config.h"
-					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h"
+					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h
+"
 					Outputs="..\..\simgear\simgear_config.h"/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -1019,7 +1026,8 @@
 				<Tool
 					Name="VCCustomBuildTool"
 					Description="Generation of simgear_config.h"
-					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h"
+					CommandLine="copy $(inputPath) $(InputDir)\$(InputName).h
+"
 					Outputs="..\..\simgear\simgear_config.h"/>
 			</FileConfiguration>
 		</File>

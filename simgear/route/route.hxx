@@ -55,6 +55,8 @@ private:
     route_list route;
     int current_wp;
 
+    void update_distance(int index);
+
 public:
 
     /** Constructor */
@@ -73,21 +75,7 @@ public:
      * Add waypoint (default), or insert waypoint at position n.
      * @param wp a waypoint
      */
-    void add_waypoint( const SGWayPoint &wp, int n = -1 ) {
-        if ( n < 0 || n >= (int)route.size() )
-            route.push_back( wp );
-        else
-            route.insert( route.begin() + n, 1, wp );
-
-	int size = route.size();
-	if ( size > 1 ) {
-	    SGWayPoint next_to_last = route[ size - 2 ];
-	    double tmpd, tmpc;
-	    wp.CourseAndDistance( next_to_last, &tmpc, &tmpd );
-	    route[size - 1].set_distance( tmpd );
-	}
-    }
-
+    void add_waypoint( const SGWayPoint &wp, int n = -1 );
     /**
      * Get the number of waypoints (i.e. route length )
      * @return route length
@@ -152,14 +140,7 @@ public:
     inline void delete_first() { delete_waypoint(0); }
 
     /** Delete waypoint waypoint with index n  (last one if n < 0) */
-    void delete_waypoint( int n = 0 ) {
-        if ( !route.size() )
-            return;
-        if ( n < 0 || n >= (int)route.size() )
-            n = route.size() - 1;
-
-        route.erase( route.begin() + n );
-    }
+    void delete_waypoint( int n = 0 );
 
     /**
      * Calculate perpendicular distance from the current route segment

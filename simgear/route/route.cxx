@@ -49,7 +49,7 @@ double SGRoute::distance_off_route( double x, double y ) const {
 	int n1 = current_wp;
 	sgdVec3 p, p0, p1, d;
 	sgdSetVec3( p, x, y, 0.0 );
-	sgdSetVec3( p0, 
+	sgdSetVec3( p0,
 		    route[n0].get_target_lon(), route[n0].get_target_lat(),
 		    0.0 );
 	sgdSetVec3( p1,
@@ -67,4 +67,51 @@ double SGRoute::distance_off_route( double x, double y ) const {
 
 	return 0;
     }
+}
+
+/** Update the length of the leg ending at waypoint index */
+void SGRoute::update_distance(int index)
+{
+    SGWayPoint& curr = route[ index ];
+    double course, dist;
+
+    if ( index == 0 ) {
+	dist = 0;
+    } else {
+	const SGWayPoint& prev = route[ index - 1 ];
+	curr.CourseAndDistance( prev, &course, &dist );
+    }
+
+    curr.set_distance( dist );
+}
+
+/**
+ * Add waypoint (default), or insert waypoint at position n.
+ * @param wp a waypoint
+ */
+void SGRoute::add_waypoint( const SGWayPoint &wp, int n ) {
+    int size = route.size();
+    if ( n < 0 || n >= size ) {
+        n = size;
+        route.push_back( wp );
+    } else {
+        route.insert( route.begin() + n, 1, wp );
+        // update distance of next leg if not at end of route
+        update_distance( n + 1 );
+    }
+    update_distance( n );
+}
+
+/** Delete waypoint with index n  (last one if n < 0) */
+void SGRoute::delete_waypoint( int n ) {
+    int size = route.size();
+    if ( size == 0 )
+        return;
+    if ( n < 0 || n >= size )
+        n = size - 1;
+
+    route.erase( route.begin() + n );
+    // update distance of next leg if not at end of route
+    if ( n < size - 1 )
+        update_distance( n );
 }

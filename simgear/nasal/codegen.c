@@ -152,6 +152,15 @@ static void genEqOp(int op, struct Parser* p, struct Token* t)
 static int defArg(struct Parser* p, struct Token* t)
 {
     if(t->type == TOK_LPAR) return defArg(p, RIGHT(t));
+    if(t->type == TOK_MINUS && RIGHT(t) && 
+       RIGHT(t)->type == TOK_LITERAL && !RIGHT(t)->str)
+    {
+        /* default arguments are constants, but "-1" parses as two
+         * tokens, so we have to subset the expression generator for that
+         * case */
+        RIGHT(t)->num *= -1;
+        return defArg(p, RIGHT(t));
+    }
     return findConstantIndex(p, t);
 }
 

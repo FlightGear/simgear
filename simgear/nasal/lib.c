@@ -479,6 +479,60 @@ static naRef f_bind(naContext c, naRef me, int argc, naRef* args)
     return func;
 }
 
+/* We use the "SortRec" gadget for two reasons: first, because ANSI
+ * qsort() doesn't give us a mechanism for passing a "context" pointer
+ * to the comparison routine we have to store one in every sorted
+ * record.  Second, using an index into the original vector here
+ * allows us to make the sort stable in the event of a zero returned
+ * from the Nasal comparison function. */
+struct SortData { naContext ctx, subc; struct SortRec* recs;
+                  naRef* elems; int n; naRef fn; };
+struct SortRec { struct SortData* sd; int i; };
+
+static int sortcmp(struct SortRec* a, struct SortRec* b)
+{
+    struct SortData* sd = a->sd;
+    naRef args[2], d;
+    args[0] = sd->elems[a->i];
+    args[1] = sd->elems[b->i];
+    d = naCall(sd->subc, sd->fn, 2, args, naNil(), naNil());
+    if(naGetError(sd->subc)) {
+        naFree(sd->recs);
+        naRethrowError(sd->subc);
+    } else if(!naIsNum(d = naNumValue(d))) {
+        naFree(sd->recs);
+        naRuntimeError(sd->ctx, "sort() comparison returned non-number");
+    }
+    return (d.num > 0) ? 1 : ((d.num < 0) ? -1 : (a->i - b->i));
+}
+
+static naRef f_sort(naContext c, naRef me, int argc, naRef* args)
+{
+    int i;
+    struct SortData sd;
+    naRef out;
+    if(argc != 2 || !naIsVector(args[0]) || !naIsFunc(args[1]))
+        naRuntimeError(c, "bad/missing argument to sort()");
+    sd.subc = naSubContext(c);
+    sd.elems = PTR(args[0]).vec->rec->array;
+    sd.n = PTR(args[0]).vec->rec->size;
+    sd.fn = args[1];
+    sd.recs = naAlloc(sizeof(struct SortRec) * sd.n);
+    for(i=0; i<sd.n; i++) {
+        sd.recs[i].sd = &sd;
+        sd.recs[i].i = i;
+    }
+    qsort(sd.recs, sd.n, sizeof(sd.recs[0]),
+          (int(*)(const void*,const void*))sortcmp);
+    out = naNewVector(c);
+    naVec_setsize(out, sd.n);
+    for(i=0; i<sd.n; i++)
+        PTR(out).vec->rec->array[i] = sd.elems[sd.recs[i].i];
+    naFree(sd.recs);
+    naFreeContext(sd.subc);
+    return out;
+}
+
 static naCFuncItem funcs[] = {
     { "size", f_size },
     { "keys", f_keys }, 
@@ -506,6 +560,7 @@ static naCFuncItem funcs[] = {
     { "split", f_split },
     { "rand", f_rand },
     { "bind", f_bind },
+    { "sort", f_sort },
     { 0 }
 };
 

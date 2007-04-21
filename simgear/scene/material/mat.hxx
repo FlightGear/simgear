@@ -252,6 +252,9 @@ private:
   // use mipmapping?
   int mipmap;
 
+  // use anisotropic filtering
+  float filtering;
+
   // coverage of night lighting.
   double light_coverage;
 
@@ -293,7 +296,7 @@ private:
   void build_state( bool defer_tex_load );
   void set_state( osg::StateSet *s );
 
-  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
+  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE, float filtering = 1.0f );
 
 };
 

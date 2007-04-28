@@ -218,7 +218,7 @@ void
 SGTexture::read_rgb_texture(const char *name)
 {
     GLubyte *ptr;
-    GLubyte *rbuf, *gbuf, *bbuf, *abuf;
+    GLubyte *rbuf, *gbuf, *bbuf;
     SGTexture::ImageRec *image;
     int y;
 
@@ -232,51 +232,45 @@ SGTexture::read_rgb_texture(const char *name)
 
     texture_width = image->xsize;
     texture_height = image->ysize;
-    if (image->zsize != 3 && image->zsize != 4) {
+    if (image->zsize < 1 || image->zsize > 4) {
       ImageClose(image);
       errstr = WRONG_COUNT;
       return;
     }
 
-    texture_data = new GLubyte[ image->xsize * image->ysize * 3 ];
     num_colors = 3;
+    texture_data = new GLubyte[ image->xsize * image->ysize * num_colors ];
     rbuf = new GLubyte[ image->xsize ];
     gbuf = new GLubyte[ image->xsize ];
     bbuf = new GLubyte[ image->xsize ];
-    abuf = new GLubyte[ image->xsize ];
-    if(!texture_data || !rbuf || !gbuf || !bbuf || !abuf) {
+    if(!texture_data || !rbuf || !gbuf || !bbuf) {
       delete[] texture_data;
       delete[] rbuf;
       delete[] gbuf;
       delete[] bbuf;
-      delete[] abuf;
       errstr = OUT_OF_MEMORY;
       return;
     }
 
     ptr = texture_data;
     for(y=0; y<image->ysize; y++) {
-        if(image->zsize == 4) {
+        if(image->zsize == 4 || image->zsize == 3) {
             ImageGetRow(image,rbuf,y,0);
             ImageGetRow(image,gbuf,y,1);
             ImageGetRow(image,bbuf,y,2);
-            ImageGetRow(image,abuf,y,3); // discard
-            rgbtorgb(rbuf,gbuf,bbuf,ptr,image->xsize);
-            ptr += (image->xsize * 3);
         } else {
             ImageGetRow(image,rbuf,y,0);
-            ImageGetRow(image,gbuf,y,1);
-            ImageGetRow(image,bbuf,y,2);
-            rgbtorgb(rbuf,gbuf,bbuf,ptr,image->xsize);
-            ptr += (image->xsize * 3);
+            memcpy(gbuf,rbuf,image->xsize);
+            memcpy(bbuf,rbuf,image->xsize);
         }
+        rgbtorgb(rbuf,gbuf,bbuf,ptr,image->xsize);
+        ptr += (image->xsize * num_colors);
     }
 
     ImageClose(image);
     delete[] rbuf;
     delete[] gbuf;
     delete[] bbuf;
-    delete[] abuf;
 }
 
 
@@ -299,14 +293,14 @@ SGTexture::read_rgba_texture(const char *name)
 
     texture_width = image->xsize;
     texture_height = image->ysize;
-    if (image->zsize != 3 && image->zsize != 4) {
+    if (image->zsize < 1 || image->zsize > 4) {
       ImageClose(image);
       errstr = WRONG_COUNT;
       return;
     }
 
-    texture_data = new GLubyte[ image->xsize * image->ysize * 4 ];
     num_colors = 4;
+    texture_data = new GLubyte[ image->xsize * image->ysize * num_colors ];
     rbuf = new GLubyte[ image->xsize ];
     gbuf = new GLubyte[ image->xsize ];
     bbuf = new GLubyte[ image->xsize ];
@@ -322,22 +316,30 @@ SGTexture::read_rgba_texture(const char *name)
     }
 
     ptr = texture_data;
-    memset(abuf, 255, image->xsize);
     for(y=0; y<image->ysize; y++) {
         if(image->zsize == 4) {
             ImageGetRow(image,rbuf,y,0);
             ImageGetRow(image,gbuf,y,1);
             ImageGetRow(image,bbuf,y,2);
             ImageGetRow(image,abuf,y,3);
-            rgbatorgba(rbuf,gbuf,bbuf,abuf,ptr,image->xsize);
-            ptr += (image->xsize * 4);
-        } else {
+        } else if(image->zsize == 3) {
             ImageGetRow(image,rbuf,y,0);
             ImageGetRow(image,gbuf,y,1);
             ImageGetRow(image,bbuf,y,2);
-            rgbatorgba(rbuf,gbuf,bbuf,abuf,ptr,image->xsize);
-            ptr += (image->xsize * 3);
+            memset(abuf, 255, image->xsize);
+        } else if(image->zsize == 2) {
+            ImageGetRow(image,rbuf,y,0);
+            memcpy(gbuf,rbuf,image->xsize);
+            memcpy(bbuf,rbuf,image->xsize);
+            ImageGetRow(image,abuf,y,1);
+        } else {
+            ImageGetRow(image,rbuf,y,0);
+            memcpy(gbuf,rbuf,image->xsize);
+            memcpy(bbuf,rbuf,image->xsize);
+            memset(abuf, 255, image->xsize);
         }
+        rgbatorgba(rbuf,gbuf,bbuf,abuf,ptr,image->xsize);
+        ptr += (image->xsize * num_colors);
     }
 
     ImageClose(image);

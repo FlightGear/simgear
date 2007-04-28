@@ -670,12 +670,12 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
 
     if ((image->type & 0xFF00) == 0x0100) {
         gzseek(image->file, (long) image->rowStart[y+z*image->ysize], SEEK_SET);
-        gzread(image->file, image->tmp,
-               (unsigned int)image->rowSize[y+z*image->ysize]);
+        int size = image->rowSize[y+z*image->ysize];
+        gzread(image->file, image->tmp, size);
 
         iPtr = image->tmp;
         oPtr = buf;
-        for (;;) {
+        for (GLubyte *limit = iPtr + size; iPtr < limit;) {
             pixel = *iPtr++;
             count = (int)(pixel & 0x7F);
             if (!count) {
@@ -683,10 +683,10 @@ SGTexture::ImageGetRow(SGTexture::ImageRec *image, GLubyte *buf, int y, int z) {
                 return;
             }
             if (pixel & 0x80) {
-                while (count--) {
+                while (iPtr < limit && count--) {
                     *oPtr++ = *iPtr++;
                 }
-            } else {
+            } else if (iPtr < limit) {
                 pixel = *iPtr++;
                 while (count--) {
                     *oPtr++ = pixel;

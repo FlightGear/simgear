@@ -514,6 +514,7 @@ static naRef f_sort(naContext c, naRef me, int argc, naRef* args)
     if(argc != 2 || !naIsVector(args[0]) || !naIsFunc(args[1]))
         naRuntimeError(c, "bad/missing argument to sort()");
     sd.subc = naSubContext(c);
+    if(!PTR(args[0]).vec->rec) return naNil();
     sd.elems = PTR(args[0]).vec->rec->array;
     sd.n = PTR(args[0]).vec->rec->size;
     sd.fn = args[1];

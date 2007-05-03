@@ -24,6 +24,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <map>
+
 #include <osg/Group>
 #include <osg/Program>
 #include <osg/Shader>
@@ -179,6 +181,102 @@ SGShaderAnimation::SGShaderAnimation(const SGPropertyNode* configNode,
                                      SGPropertyNode* modelRoot) :
   SGAnimation(configNode, modelRoot)
 {
+  const SGPropertyNode* node = configNode->getChild("texture");
+  if (node)
+    _effect_texture = SGLoadTexture2D(node->getStringValue());
+}
+
+namespace {
+class ChromeLightingCallback :
+  public osg::StateAttribute::Callback {
+public:
+  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
+  {
+    SGUpdateVisitor* updateVisitor = dynamic_cast<SGUpdateVisitor*>(nv);
+    if (!updateVisitor)
+      return;
+    osg::TexEnvCombine *combine = dynamic_cast<osg::TexEnvCombine *>(sa);
+    if (!combine)
+	return;
+    // An approximation for light reflected back by chrome.
+    osg::Vec4 globalColor = (updateVisitor->getAmbientLight().osg() * .4f
+			     + updateVisitor->getDiffuseLight().osg());
+    globalColor.a() = 1.0f;
+    combine->setConstantColor(globalColor);
+  }
+};
+    
+typedef map<osg::ref_ptr<osg::Texture2D>, osg::ref_ptr<osg::StateSet> >
+StateSetMap;
+}
+
+// The chrome effect is mixed by the alpha channel of the texture
+// on the model, which will be attached to a node lower in the scene
+// graph: 0 -> completely chrome, 1 -> completely model texture.
+static void create_chrome(osg::Group* group, osg::Texture2D* texture)
+{
+    static SGMutex mutex;
+    SGGuard<SGMutex> locker(mutex);
+    static StateSetMap chromeMap;
+    osg::StateSet *stateSet;
+    StateSetMap::iterator iterator = chromeMap.find(texture);
+    if (iterator != chromeMap.end()) {
+	stateSet = iterator->second.get();
+    } else {
+	stateSet = new osg::StateSet;
+	// If the model doesn't have any texture, we need to have one
+	// activated so that we don't need a seperate combiner
+	// attribute for the non-textured case. This texture will be
+	// shadowed by any attached to the model.
+	osg::Image *dummyImage = new osg::Image;
+	dummyImage->allocateImage(1, 1, 1, GL_LUMINANCE_ALPHA,
+				  GL_UNSIGNED_BYTE);
+	unsigned char* imageBytes = dummyImage->data(0, 0);
+	imageBytes[0] = 255;
+	imageBytes[1] = 0;
+	osg::Texture2D* dummyTexture = new osg::Texture2D;
+	dummyTexture->setImage(dummyImage);
+	dummyTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+	dummyTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
+	stateSet->setTextureAttributeAndModes(0, dummyTexture,
+					      osg::StateAttribute::ON);
+	osg::TexEnvCombine* combine0 = new osg::TexEnvCombine;
+	osg::TexEnvCombine* combine1 = new osg::TexEnvCombine;
+	osg::TexGen* texGen = new osg::TexGen;
+	// Mix the environmental light color and the chrome map on texture
+	// unit 0
+	combine0->setCombine_RGB(osg::TexEnvCombine::MODULATE);
+	combine0->setSource0_RGB(osg::TexEnvCombine::CONSTANT);
+	combine0->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+	combine0->setSource1_RGB(osg::TexEnvCombine::TEXTURE1);
+	combine0->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+	combine0->setDataVariance(osg::Object::DYNAMIC);
+	combine0->setUpdateCallback(new ChromeLightingCallback);
+
+	// Interpolate the colored chrome map with the texture on the
+	// model, using the model texture's alpha.
+	combine1->setCombine_RGB(osg::TexEnvCombine::INTERPOLATE);
+	combine1->setSource0_RGB(osg::TexEnvCombine::TEXTURE0);
+	combine1->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+	combine1->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
+	combine1->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+	combine1->setSource2_RGB(osg::TexEnvCombine::TEXTURE0);
+	combine1->setOperand2_RGB(osg::TexEnvCombine::SRC_ALPHA);
+	// Are these used for anything?
+	combine1->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
+	combine1->setSource0_Alpha(osg::TexEnvCombine::TEXTURE1);
+	combine1->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+    
+	texGen->setMode(osg::TexGen::SPHERE_MAP);
+	stateSet->setTextureAttribute(0, combine0);
+	stateSet->setTextureAttribute(1, combine1);
+	stateSet->setTextureAttributeAndModes(1, texture,
+					      osg::StateAttribute::ON);
+	stateSet->setTextureAttributeAndModes(1, texGen,
+					      osg::StateAttribute::ON);
+	chromeMap[texture] = stateSet;
+    }
+    group->setStateSet(stateSet);
 }
 
 osg::Group*
@@ -195,8 +293,10 @@ SGShaderAnimation::createAnimationGroup(osg::Group& parent)
 //     _shader_type = 2;
 //   else
   if( shader_name == "chrome")
+#if 0
     create_specular_highlights(group);
-
+#endif
+  create_chrome(group, _effect_texture.get());
   return group;
 }
 

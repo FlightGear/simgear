@@ -359,6 +359,7 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
+  osg::ref_ptr<osg::Texture2D> _effect_texture;
 };
 
 

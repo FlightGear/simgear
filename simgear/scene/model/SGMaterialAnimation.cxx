@@ -358,8 +358,8 @@ SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
   SGAnimation(configNode, modelRoot)
 {
   if (configNode->hasChild("global"))
-    SG_LOG(SG_IO, SG_ALERT, "Using global material animation that can "
-           "no longer work");
+    SG_LOG(SG_IO, SG_ALERT, "Use of <global> in material animation is "
+           "no longer supported");
 }
 
 osg::Group*

@@ -11,6 +11,7 @@
 # error This library requires C++
 #endif
 
+#include <osg/Material>
 #include "animation.hxx"
 
 //////////////////////////////////////////////////////////////////////
@@ -24,10 +25,8 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
-  struct ColorSpec;
-  struct PropSpec;
-  class MaterialVisitor;
-  class UpdateCallback;
+  osg::ref_ptr<osg::Material> defaultMaterial;
+  osg::Vec4 defaultAmbientDiffuse;
 };
 
 #endif // _SG_MATERIALANIMATION_HXX

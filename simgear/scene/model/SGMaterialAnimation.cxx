@@ -10,9 +10,11 @@
 #include "SGMaterialAnimation.hxx"
 
 #include <osg/AlphaFunc>
+#include <osg/Array>
 #include <osg/Drawable>
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osg/Material>
 #include <osg/StateSet>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
@@ -22,7 +24,11 @@
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/model.hxx>
 
-struct SGMaterialAnimation::ColorSpec {
+namespace {
+/**
+ * Get a color from properties.
+ */
+struct ColorSpec {
   float red, green, blue;
   float factor;
   float offset;
@@ -91,6 +97,12 @@ struct SGMaterialAnimation::ColorSpec {
     v[3] = 1;
     return v;
   }
+
+  osg::Vec4& rgbaVec4()
+  {
+    return rgba().osg();
+  }
+  
   SGVec4f &initialRgba() {
     v[0] = SGMiscf::clip(red*factor + offset, 0, 1);
     v[1] = SGMiscf::clip(green*factor + offset, 0, 1);
@@ -100,8 +112,10 @@ struct SGMaterialAnimation::ColorSpec {
   }
 };
 
-
-struct SGMaterialAnimation::PropSpec {
+/**
+ * Get a property value from a property.
+ */
+struct PropSpec {
   float value;
   float factor;
   float offset;
@@ -155,148 +169,83 @@ struct SGMaterialAnimation::PropSpec {
   }
 };
 
-class SGMaterialAnimation::MaterialVisitor : public osg::NodeVisitor {
-public:
-  enum {
-    DIFFUSE = 1,
-    AMBIENT = 2,
-    SPECULAR = 4,
-    EMISSION = 8,
-    SHININESS = 16,
-    TRANSPARENCY = 32
-  };
+/**
+ * The possible color properties supplied by a material animation.
+ */
+enum SuppliedColor {
+  DIFFUSE = 1,
+  AMBIENT = 2,
+  SPECULAR = 4,
+  EMISSION = 8,
+  SHININESS = 16,
+  TRANSPARENCY = 32
+};
 
-  MaterialVisitor() :
-    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-    _updateMask(0),
-    _ambient(-1, -1, -1, -1),
-    _diffuse(-1, -1, -1, -1),
-    _specular(-1, -1, -1, -1),
-    _emission(-1, -1, -1, -1),
-    _shininess(-1),
-    _alpha(-1)
+const unsigned AMBIENT_DIFFUSE = AMBIENT | DIFFUSE;
+
+const int allMaterialColors = (DIFFUSE | AMBIENT | SPECULAR | EMISSION
+			       | SHININESS);
+
+// Visitor for finding default material colors in the animation node's
+// subgraph. This makes some assumptions about the subgraph i.e.,
+// there will be one material and one color value found. This is
+// probably true for ac3d models and most uses of material animations,
+// but will break down if, for example, you animate the transparency
+// of a vertex colored model.
+class MaterialDefaultsVisitor : public osg::NodeVisitor {
+public:
+  MaterialDefaultsVisitor()
+    : osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+      ambientDiffuse(-1.0f, -1.0f, -1.0f, -1.0f)
   {
     setVisitorType(osg::NodeVisitor::NODE_VISITOR);
   }
 
-  void setDiffuse(const SGVec4f& diffuse)
-  {
-    if (diffuse != _diffuse)
-      _diffuse = diffuse;
-    _updateMask |= DIFFUSE;
-  }
-  void setAmbient(const SGVec4f& ambient)
-  {
-    if (ambient != _ambient)
-      _ambient = ambient;
-    _updateMask |= AMBIENT;
-  }
-  void setSpecular(const SGVec4f& specular)
-  {
-    if (specular != _specular)
-      _specular = specular;
-    _updateMask |= SPECULAR;
-  }
-  void setEmission(const SGVec4f& emission)
-  {
-    if (emission != _emission)
-      _emission = emission;
-    _updateMask |= EMISSION;
-  }
-  void setShininess(float shininess)
-  {
-    if (shininess != _shininess)
-      _shininess = shininess;
-    _updateMask |= SHININESS;
-  }
-
-  void setAlpha(float alpha)
-  {
-    if (alpha != _alpha)
-      _alpha = alpha;
-    _updateMask |= TRANSPARENCY;
-  }
-
-  virtual void reset()
-  {
-    _updateMask = 0;
-  }
   virtual void apply(osg::Node& node)
   {
-    updateStateSet(node.getStateSet());
+    maybeGetMaterialValues(node.getStateSet());
     traverse(node);
   }
+
   virtual void apply(osg::Geode& node)
   {
-    apply((osg::Node&)node);
-    unsigned nDrawables = node.getNumDrawables();
-    for (unsigned i = 0; i < nDrawables; ++i) {
-      osg::Drawable* drawable = node.getDrawable(i);
-      updateStateSet(drawable->getStateSet());
-
-      if (_updateMask&TRANSPARENCY) {
-        osg::Geometry* geometry = drawable->asGeometry();
-        if (!geometry)
-          continue;
-        osg::Array* array = geometry->getColorArray();
-        if (!array)
-          continue;
-        osg::Vec4Array* vec4Array = dynamic_cast<osg::Vec4Array*>(array);
-        if (!vec4Array)
-          continue;
-
-        // FIXME, according to the colormode in the material
-        // we might incorporate the apropriate color value
-        geometry->dirtyDisplayList();
-        vec4Array->dirty();
-        for (unsigned k = 0; k < vec4Array->size(); ++k) {
-          (*vec4Array)[k][3] = _alpha;
-        }
+    maybeGetMaterialValues(node.getStateSet());
+    int numDrawables = node.getNumDrawables();
+    for (int i = 0; i < numDrawables; i++) {
+      osg::Geometry* geom = dynamic_cast<osg::Geometry*>(node.getDrawable(i));
+      if (!geom || geom->getColorBinding() != osg::Geometry::BIND_OVERALL)
+	continue;
+      maybeGetMaterialValues(geom->getStateSet());
+      osg::Array* colorArray = geom->getColorArray();
+      osg::Vec4Array* colorVec4 = dynamic_cast<osg::Vec4Array*>(colorArray);
+      if (colorVec4) {
+	ambientDiffuse = (*colorVec4)[0];
+	break;
+      }
+      osg::Vec3Array* colorVec3 = dynamic_cast<osg::Vec3Array*>(colorArray);
+      if (colorVec3) {
+	ambientDiffuse = osg::Vec4((*colorVec3)[0], 1.0f);
+	break;
       }
     }
   }
-  void updateStateSet(osg::StateSet* stateSet)
+  
+  void maybeGetMaterialValues(osg::StateSet* stateSet)
   {
     if (!stateSet)
       return;
-    osg::StateAttribute* stateAttribute;
-    stateAttribute = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
-    if (!stateAttribute)
+    osg::Material* nodeMat
+      = dynamic_cast<osg::Material*>(stateSet->getAttribute(osg::StateAttribute::MATERIAL));
+    if (!nodeMat)
       return;
-    osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
-    if (!material)
-      return;
-    if (_updateMask&AMBIENT)
-      material->setAmbient(osg::Material::FRONT_AND_BACK, _ambient.osg());
-    if (_updateMask&DIFFUSE)
-      material->setDiffuse(osg::Material::FRONT_AND_BACK, _diffuse.osg());
-    if (_updateMask&SPECULAR)
-      material->setSpecular(osg::Material::FRONT_AND_BACK, _specular.osg());
-    if (_updateMask&EMISSION)
-      material->setEmission(osg::Material::FRONT_AND_BACK, _emission.osg());
-    if (_updateMask&SHININESS)
-      material->setShininess(osg::Material::FRONT_AND_BACK, _shininess);
-    if (_updateMask&TRANSPARENCY) {
-      material->setAlpha(osg::Material::FRONT_AND_BACK, _alpha);
-      if (_alpha < 1) {
-        stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-        stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-      } else {
-        stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
-      }
-    }
+    material = nodeMat;
   }
-private:
-  unsigned _updateMask;
-  SGVec4f _ambient;
-  SGVec4f _diffuse;
-  SGVec4f _specular;
-  SGVec4f _emission;
-  float _shininess;
-  float _alpha;
+
+  osg::ref_ptr<osg::Material> material;
+  osg::Vec4 ambientDiffuse;
 };
 
-class SGMaterialAnimation::UpdateCallback : public osg::NodeCallback {
+class UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const osgDB::FilePathList& texturePathList,
                  const SGCondition* condition,
@@ -324,12 +273,13 @@ public:
 
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
-    if (!_condition || _condition->test()) {
+    osg::StateSet* stateSet = node->getStateSet();
+    if ((!_condition || _condition->test()) && stateSet) {
       if (_textureProp) {
         std::string textureName = _textureProp->getStringValue();
         if (_textureName != textureName) {
-          osg::StateSet* stateSet = node->getOrCreateStateSet();
-          while (stateSet->getTextureAttribute(0, osg::StateAttribute::TEXTURE)) {
+          while (stateSet->getTextureAttribute(0,
+					       osg::StateAttribute::TEXTURE)) {
             stateSet->removeTextureAttribute(0, osg::StateAttribute::TEXTURE);
           }
           std::string textureFile;
@@ -337,7 +287,8 @@ public:
           if (!textureFile.empty()) {
             osg::Texture2D* texture2D = SGLoadTexture2D(textureFile);
             if (texture2D) {
-              stateSet->setTextureAttribute(0, texture2D);
+              stateSet->setTextureAttribute(0, texture2D,
+					    osg::StateAttribute::OVERRIDE);
               stateSet->setTextureMode(0, GL_TEXTURE_2D,
                                        osg::StateAttribute::ON);
               _textureName = textureName;
@@ -349,35 +300,47 @@ public:
         osg::StateSet* stateSet = node->getOrCreateStateSet();
         osg::StateAttribute* stateAttribute;
         stateAttribute = stateSet->getAttribute(osg::StateAttribute::ALPHAFUNC);
-        assert(dynamic_cast<osg::AlphaFunc*>(stateAttribute));
-        osg::AlphaFunc* alphaFunc = static_cast<osg::AlphaFunc*>(stateAttribute);
+        osg::AlphaFunc* alphaFunc = dynamic_cast<osg::AlphaFunc*>(stateAttribute);
+	assert(alphaFunc);
         alphaFunc->setReferenceValue(_thresholdProp->getFloatValue());
       }
-      
-      _visitor.reset();
-      if (_ambient.live())
-        _visitor.setAmbient(_ambient.rgba());
-      if (_diffuse.live())
-        _visitor.setDiffuse(_diffuse.rgba());
-      if (_specular.live())
-        _visitor.setSpecular(_specular.rgba());
-      if (_emission.live())
-        _visitor.setEmission(_emission.rgba());
-      if (_shininess.live())
-        _visitor.setShininess(_shininess.getValue());
-      if (_transparency.live())
-        _visitor.setAlpha(_transparency.getValue());
-      
-      node->accept(_visitor);
+      osg::StateAttribute* stateAttribute
+	= stateSet->getAttribute(osg::StateAttribute::MATERIAL);
+      osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
+      if (material) {
+	if (_ambient.live())
+	  material->setAmbient(osg::Material::FRONT_AND_BACK,
+			       _ambient.rgbaVec4());	
+	if (_diffuse.live())
+	  material->setDiffuse(osg::Material::FRONT_AND_BACK,
+			       _diffuse.rgbaVec4());
+	if (_specular.live())
+	  material->setSpecular(osg::Material::FRONT_AND_BACK,
+				_specular.rgbaVec4());
+	if (_emission.live())
+	  material->setEmission(osg::Material::FRONT_AND_BACK,
+				_emission.rgbaVec4());
+	if (_shininess.live())
+	  material->setShininess(osg::Material::FRONT_AND_BACK,
+				 _shininess.getValue());
+	if (_transparency.live())	{
+	  float alpha = _transparency.getValue();
+	  material->setAlpha(osg::Material::FRONT_AND_BACK, alpha);
+	  if (alpha < 1.0f) {
+	    stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+	    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+	  } else {
+	    stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
+	  }
+	}
+      }
     }
-
     traverse(node, nv);
   }
 private:
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGPropertyNode> _textureProp;
   SGSharedPtr<const SGPropertyNode> _thresholdProp;
-  MaterialVisitor _visitor;
   std::string _textureName;
   ColorSpec _ambient;
   ColorSpec _diffuse;
@@ -387,6 +350,8 @@ private:
   PropSpec _transparency;
   osgDB::FilePathList _texturePathList;
 };
+} // namespace
+
 
 SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
                                          SGPropertyNode* modelRoot) :
@@ -419,7 +384,8 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
       osg::StateSet* stateSet = group->getOrCreateStateSet();
       osg::Texture2D* texture2D = SGLoadTexture2D(textureFile);
       if (texture2D) {
-        stateSet->setTextureAttribute(0, texture2D);
+        stateSet->setTextureAttribute(0, texture2D,
+				      osg::StateAttribute::OVERRIDE);
         stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
         if (texture2D->getImage()->isImageTranslucent()) {
           stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
@@ -435,13 +401,100 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
     alphaFunc->setFunction(osg::AlphaFunc::GREATER);
     float threshold = getConfig()->getFloatValue("threshold", 0);
     alphaFunc->setReferenceValue(threshold);
-    stateSet->setAttributeAndModes(alphaFunc);
+    stateSet->setAttribute(alphaFunc, osg::StateAttribute::OVERRIDE);
   }
 
-  UpdateCallback* updateCallback;
-  updateCallback = new UpdateCallback(texturePathList, getCondition(),
-                                      getConfig(), inputRoot);
-  group->setUpdateCallback(updateCallback);
+  unsigned suppliedColors = 0;
+  if (getConfig()->hasChild("ambient"))
+    suppliedColors |= AMBIENT;
+  if (getConfig()->hasChild("diffuse"))
+    suppliedColors |= DIFFUSE;
+  if (getConfig()->hasChild("specular"))
+    suppliedColors |= SPECULAR;
+  if (getConfig()->hasChild("emission"))
+    suppliedColors |= EMISSION;
+  if (getConfig()->hasChild("shininess")
+      || getConfig()->hasChild("shininess-prop"))
+    suppliedColors |= SHININESS;
+  if (getConfig()->hasChild("transparency"))
+    suppliedColors |= TRANSPARENCY;
+
+  if (suppliedColors != 0) {
+      osg::StateSet* stateSet = group->getOrCreateStateSet();
+      osg::Material* mat;
+
+      if (defaultMaterial.valid()) {
+	mat = defaultMaterial.get();
+
+      } else {
+	mat = new osg::Material;
+	mat->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+      }
+      mat->setDataVariance(osg::Object::DYNAMIC);
+      unsigned defaultColorModeMask = 0;
+      mat->setUpdateCallback(0); // Just to make sure.
+      switch (mat->getColorMode()) {
+      case osg::Material::OFF:
+	defaultColorModeMask = 0;
+	break;
+      case osg::Material::AMBIENT:
+	defaultColorModeMask = AMBIENT;
+	break;
+      case osg::Material::DIFFUSE:
+	defaultColorModeMask = DIFFUSE;
+	break;
+      case osg::Material::AMBIENT_AND_DIFFUSE:
+	defaultColorModeMask = AMBIENT | DIFFUSE;
+	break;
+      case osg::Material::SPECULAR:
+	defaultColorModeMask = SPECULAR;
+	break;
+      case osg::Material::EMISSION:
+	defaultColorModeMask = EMISSION;
+	break;
+      }
+      // Copy the color found by traversing geometry into the material
+      // in case we need to specify it (e.g., transparency) and it is
+      // not specified by the animation.
+      if (defaultAmbientDiffuse.x() >= 0) {
+	if (defaultColorModeMask & AMBIENT)
+	  mat->setAmbient(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
+	if (defaultColorModeMask & DIFFUSE)
+	  mat->setDiffuse(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
+      }
+      // Compute which colors in the animation override colors set via
+      // colorMode / glColor, and set the colorMode for the animation's
+      // material accordingly. 
+      if (suppliedColors & TRANSPARENCY) {
+	// All colors will be affected by the material. Hope all the
+	// defaults are fine, if needed.
+	mat->setColorMode(osg::Material::OFF);
+      } else if ((suppliedColors & defaultColorModeMask) != 0) {
+	// First deal with the complicated AMBIENT/DIFFUSE case.
+	if (defaultColorModeMask & AMBIENT_DIFFUSE != 0) {
+	  // glColor can supply colors not specified by the animation.
+	  unsigned matColorModeMask = ((~suppliedColors & defaultColorModeMask)
+				       & AMBIENT_DIFFUSE);
+	  if (matColorModeMask & DIFFUSE != 0)
+	    mat->setColorMode(osg::Material::DIFFUSE);
+	  else if (matColorModeMask & AMBIENT != 0)
+	    mat->setColorMode(osg::Material::AMBIENT);
+	  else
+	    mat->setColorMode(osg::Material::OFF);
+	} else {
+	  // The animation overrides the glColor color.
+	  mat->setColorMode(osg::Material::OFF);
+	}
+      } else {
+	// No overlap between the animation and color mode, so leave
+	// the color mode alone.
+      }
+      stateSet->setAttribute(mat,(osg::StateAttribute::ON
+				  | osg::StateAttribute::OVERRIDE));
+  }
+  group->setUpdateCallback(new UpdateCallback(texturePathList,
+					      getCondition(),
+					      getConfig(), inputRoot));
   parent.addChild(group);
   return group;
 }
@@ -450,43 +503,12 @@ void
 SGMaterialAnimation::install(osg::Node& node)
 {
   SGAnimation::install(node);
-  // make sure everything (except the texture attributes)
-  // below is private to our model
-  cloneDrawables(node);
 
-  // Remove all textures if required, they get replaced later on
-  if (getConfig()->hasChild("texture") ||
-      getConfig()->hasChild("texture-prop")) {
-    removeTextureAttribute(node, 0, osg::StateAttribute::TEXTURE);
-    removeTextureMode(node, 0, GL_TEXTURE_2D);
-  }
-  // Remove all nested alphaFuncs
-  if (getConfig()->hasChild("threshold") ||
-      getConfig()->hasChild("threshold-prop"))
-    removeAttribute(node, osg::StateAttribute::ALPHAFUNC);
-
-  ColorSpec ambient(getConfig()->getChild("ambient"), getModelRoot());
-  ColorSpec diffuse(getConfig()->getChild("diffuse"), getModelRoot());
-  ColorSpec specular(getConfig()->getChild("specular"), getModelRoot());
-  ColorSpec emission(getConfig()->getChild("emission"), getModelRoot());
-  PropSpec shininess("shininess", "shininess-prop",
-                     getConfig()->getChild("shininess"), getModelRoot());
-  PropSpec transparency("alpha", "alpha-prop",
-                        getConfig()->getChild("transparency"), getModelRoot());
-
-  MaterialVisitor visitor;
-  if (ambient.dirty())
-    visitor.setAmbient(ambient.initialRgba());
-  if (diffuse.dirty())
-    visitor.setDiffuse(diffuse.initialRgba());
-  if (specular.dirty())
-    visitor.setSpecular(specular.initialRgba());
-  if (emission.dirty())
-    visitor.setEmission(emission.initialRgba());
-  if (shininess.dirty())
-    visitor.setShininess(shininess.getInitialValue());
-  if (transparency.dirty())
-    visitor.setAlpha(transparency.getInitialValue());
-  node.accept(visitor);
+    MaterialDefaultsVisitor defaultsVisitor;
+    node.accept(defaultsVisitor);
+    if (defaultsVisitor.material.valid()) {
+      defaultMaterial
+	= static_cast<osg::Material*>(defaultsVisitor.material->clone(osg::CopyOp::SHALLOW_COPY));
+    }
+    defaultAmbientDiffuse = defaultsVisitor.ambientDiffuse;
 }
-

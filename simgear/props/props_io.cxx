@@ -229,6 +229,21 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       } catch (sg_io_exception &e) {
 	setException(e);
       }
+
+      const char *omit = atts.getValue("omit-node");
+      if (omit && !strcmp(omit, "y")) {
+        int nChildren = node->nChildren();
+        for (int i = 0; i < nChildren; i++) {
+          SGPropertyNode *src = node->getChild(i);
+          const char *name = src->getName();
+          int index = st.counters[name];
+          st.counters[name]++;
+          SGPropertyNode *dst = st.node->getChild(name, index, true);
+          copyProperties(src, dst);
+        }
+        st.node->removeChild(node->getName(), node->getIndex(), false);
+        node = st.node;
+      }
     }
 
     const char *type = atts.getValue("type");
@@ -432,11 +447,11 @@ doIndent (ostream &output, int indent)
 
 
 static void
-writeAtts (ostream &output, const SGPropertyNode * node)
+writeAtts (ostream &output, const SGPropertyNode * node, bool forceindex)
 {
   int index = node->getIndex();
 
-  if (index != 0)
+  if (index != 0 || forceindex)
     output << " n=\"" << index << '"';
 
 #if 0
@@ -484,13 +499,14 @@ writeNode (ostream &output, const SGPropertyNode * node,
 
   const string name = node->getName();
   int nChildren = node->nChildren();
+  bool node_has_value = false;
 
 				// If there is a literal value,
 				// write it first.
   if (node->hasValue() && (write_all || node->getAttribute(archive_flag))) {
     doIndent(output, indent);
     output << '<' << name;
-    writeAtts(output, node);
+    writeAtts(output, node, nChildren != 0);
     if (node->isAlias() && node->getAliasTarget() != 0) {
       output << " alias=\"" << node->getAliasTarget()->getPath()
 	     << "\"/>" << endl;
@@ -501,13 +517,14 @@ writeNode (ostream &output, const SGPropertyNode * node,
       writeData(output, node->getStringValue());
       output << "</" << name << '>' << endl;
     }
+    node_has_value = true;
   }
 
 				// If there are children, write them next.
   if (nChildren > 0) {
     doIndent(output, indent);
     output << '<' << name;
-    writeAtts(output, node);
+    writeAtts(output, node, node_has_value);
     output << '>' << endl;
     for (int i = 0; i < nChildren; i++)
       writeNode(output, node->getChild(i), write_all, indent + INDENT_STEP, archive_flag);

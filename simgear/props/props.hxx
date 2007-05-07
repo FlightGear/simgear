@@ -1111,6 +1111,12 @@ public:
 
 
   /**
+   * Get the number of listeners.
+   */
+  int nListeners () const { return _listeners ? _listeners->size() : 0; }
+
+
+  /**
    * Fire a value change event to all listeners.
    */
   void fireValueChanged ();

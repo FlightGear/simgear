@@ -29,12 +29,14 @@
 
 class SGUpdateVisitor : public osgUtil::UpdateVisitor {
 public:
-  SGUpdateVisitor()
+  SGUpdateVisitor() :
+    mVisibility(-1)
   {
     // Need to traverse all children, else some LOD nodes do not get updated
     // Note that the broad number of updates is not done due to
     // the update callback in the global position node.
     setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    setVisibility(10000);
   }
   void setViewData(const SGVec3d& globalEyePos,
                    const SGQuatd& globalViewOrientation)
@@ -48,21 +50,49 @@ public:
     mHorizLocalDown = mGlobalHorizLocalOr.backTransform(SGVec3d(0, 0, 1));
   }
 
-  void setSceneryCenter(const SGVec3d& sceneryCenter)
-  {
-    mSceneryCenter = sceneryCenter;
-  }
-
   void setVisibility(double visibility)
   {
+    if (mVisibility == visibility)
+      return;
     mVisibility = visibility;
     mSqrVisibility = visibility*visibility;
+
+    double m_log01 = -log( 0.01 );
+    double sqrt_m_log01 = sqrt( m_log01 );
+    double fog_exp_density = m_log01 / visibility;
+    double fog_exp2_density = sqrt_m_log01 / visibility;
+    double ground_exp2_punch_through = sqrt_m_log01 / (visibility * 1.5);
+    double rwy_exp2_punch_through, taxi_exp2_punch_through;
+    if ( visibility < 8000 ) {
+      rwy_exp2_punch_through = sqrt_m_log01 / (visibility * 2.5);
+      taxi_exp2_punch_through = sqrt_m_log01 / (visibility * 1.5);
+    } else {
+      rwy_exp2_punch_through = sqrt_m_log01 / ( 8000 * 2.5 );
+      taxi_exp2_punch_through = sqrt_m_log01 / ( 8000 * 1.5 );
+    }
+    
+    mFogExpDensity = fog_exp_density;
+    mFogExp2Density = fog_exp2_density;
+    mRunwayFogExp2Density = rwy_exp2_punch_through;
+    mTaxiFogExp2Density = taxi_exp2_punch_through;
+    mGroundLightsFogExp2Density = ground_exp2_punch_through;
   }
 
   double getVisibility() const
   { return mVisibility; }
   double getSqrVisibility() const
   { return mSqrVisibility; }
+
+  double getFogExpDensity() const
+  { return mFogExpDensity; }
+  double getFogExp2Density() const
+  { return mFogExp2Density; }
+  double getRunwayFogExp2Density() const
+  { return mRunwayFogExp2Density; }
+  double getTaxiFogExp2Density() const
+  { return mTaxiFogExp2Density; }
+  double getGroundLightsFogExp2Density() const
+  { return mGroundLightsFogExp2Density; }
 
   const SGVec3d& getGlobalEyePos() const
   { return mGlobalEyePos; }
@@ -80,11 +110,15 @@ public:
   { return mHorizLocalDown; }
 
   void setLight(const SGVec3f& direction, const SGVec4f& ambient,
-                const SGVec4f& diffuse, const SGVec4f& specular)
+                const SGVec4f& diffuse, const SGVec4f& specular,
+                const SGVec4f& fogColor, double sunAngleDeg)
   {
     mLightDirection = direction;
     mAmbientLight = ambient;
     mDiffuseLight = diffuse;
+    mSpecularLight = specular;
+    mFogColor = fogColor;
+    mSunAngleDeg = sunAngleDeg;
   }
 
   const SGVec3f& getLightDirection() const
@@ -95,6 +129,11 @@ public:
   { return mDiffuseLight; }
   const SGVec4f& getSpecularLight() const
   { return mSpecularLight; }
+  const SGVec4f& getFogColor() const
+  { return mFogColor; }
+
+  double getSunAngleDeg() const
+  { return mSunAngleDeg; }
 
 private:
   SGGeod mGlobalGeodEyePos;
@@ -105,15 +144,21 @@ private:
   SGVec3d mHorizLocalEast;
   SGVec3d mHorizLocalDown;
 
-  SGVec3d mSceneryCenter;
-
   double mVisibility;
   double mSqrVisibility;
+  double mFogExpDensity;
+  double mFogExp2Density;
+  double mRunwayFogExp2Density;
+  double mTaxiFogExp2Density;
+  double mGroundLightsFogExp2Density;
 
   SGVec3f mLightDirection;
   SGVec4f mAmbientLight;
   SGVec4f mDiffuseLight;
   SGVec4f mSpecularLight;
+  SGVec4f mFogColor;
+
+  double mSunAngleDeg;
 };
 
 #endif

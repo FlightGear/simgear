@@ -216,7 +216,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     osg::ref_ptr<osg::StateSet> lightStateSet = new osg::StateSet;
     {
-      lightStateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+      lightStateSet->setRenderBinDetails(9, "DepthSortedBin");
       lightStateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 //       lightStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
 
@@ -552,13 +552,13 @@ void SGMaterialLib::load_next_deferred() {
     }
 }
 
-// Return the material from that given leaf
-const SGMaterial* SGMaterialLib::findMaterial(const osg::Node* leaf) const
+const SGMaterial*
+SGMaterialLib::findMaterial(const osg::StateSet* stateSet) const
 {
-  if (!leaf)
+  if (!stateSet)
     return 0;
   
-  const osg::Referenced* base = leaf->getUserData();
+  const osg::Referenced* base = stateSet->getUserData();
   if (!base)
     return 0;
 

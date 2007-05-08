@@ -54,22 +54,6 @@ typedef vector < int > int_list;
 typedef int_list::iterator int_list_iterator;
 typedef int_list::const_iterator int_point_list_iterator;
 
-
-static inline
-osg::Vec3 random_pt_inside_tri(const osg::Vec3& n1, const osg::Vec3& n2,
-                               const osg::Vec3& n3 )
-{
-    double a = sg_random();
-    double b = sg_random();
-    if ( a + b > 1.0 ) {
-        a = 1.0 - a;
-        b = 1.0 - b;
-    }
-    double c = 1 - a - b;
-
-    return n1*a + n2*b + n3*c;
-}
-
 /// class to implement the TrinagleFunctor class
 struct SGRandomSurfacePointsFill {
   osg::Vec3Array* lights;
@@ -97,6 +81,20 @@ struct SGRandomSurfacePointsFill {
       }
     }
   }
+
+  osg::Vec3 random_pt_inside_tri(const osg::Vec3& n1, const osg::Vec3& n2,
+                                 const osg::Vec3& n3)
+  {
+    double a = sg_random();
+    double b = sg_random();
+    if ( a + b > 1.0 ) {
+      a = 1 - a;
+      b = 1 - b;
+    }
+    double c = 1 - a - b;
+    
+    return n1*a + n2*b + n3*c;
+  }
 };
 
 static void SGGenRandomSurfacePoints( osg::Geometry *leaf, double factor, 
@@ -109,13 +107,13 @@ static void SGGenRandomSurfacePoints( osg::Geometry *leaf, double factor,
 }
 
 
+
 ////////////////////////////////////////////////////////////////////////
 // Scenery loaders.
 ////////////////////////////////////////////////////////////////////////
 
-osg::Node* SGMakeLeaf( const string& path,
-                     const GLenum ty, 
-                     SGMaterialLib *matlib, const string& material,
+osg::Drawable* SGMakeLeaf( const string& path,
+                     const GLenum ty, SGMaterial *mat,
                      const point_list& nodes, const point_list& normals,
                      const point_list& texcoords,
                      const int_list& node_index,
@@ -127,31 +125,6 @@ osg::Node* SGMakeLeaf( const string& path,
     osg::StateSet *state = 0;
     float coverage = -1;
 
-    SGMaterial *mat = matlib->find( material );
-    if ( mat == NULL ) {
-        // see if this is an on the fly texture
-        string file = path;
-        string::size_type pos = file.rfind( "/" );
-        file = file.substr( 0, pos );
-        // cout << "current file = " << file << endl;
-        file += "/";
-        file += material;
-        // cout << "current file = " << file << endl;
-        if ( ! matlib->add_item( file ) ) {
-            SG_LOG( SG_TERRAIN, SG_ALERT, 
-                    "Ack! unknown usemtl name = " << material 
-                    << " in " << path );
-        } else {
-            // locate our newly created material
-            mat = matlib->find( material );
-            if ( mat == NULL ) {
-                SG_LOG( SG_TERRAIN, SG_ALERT, 
-                        "Ack! bad on the fly material create = "
-                        << material << " in " << path );
-            }
-        }
-    }
-
     if ( mat != NULL ) {
         // set the texture width and height values for this
         // material
@@ -159,10 +132,6 @@ osg::Node* SGMakeLeaf( const string& path,
         tex_height = mat->get_ysize();
         state = mat->get_state();
         coverage = mat->get_light_coverage();
-        // cout << "(w) = " << tex_width << " (h) = "
-        //      << tex_width << endl;
-    } else {
-        coverage = -1;
     }
 
     int i;
@@ -240,12 +209,9 @@ osg::Node* SGMakeLeaf( const string& path,
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->setTexCoordArray(0, tl);
     geometry->addPrimitiveSet(new osg::DrawArrays(ty, 0, vl->size()));
-    osg::Geode* geode = new osg::Geode;
-    geode->addDrawable(geometry);
 
     // lookup the state record
-    geode->setStateSet(state);
-    geode->setUserData( new SGMaterialUserData(mat) );
+    geometry->setStateSet(state);
 
     if ( calc_lights ) {
         if ( coverage > 0.0 ) {
@@ -254,9 +220,10 @@ osg::Node* SGMakeLeaf( const string& path,
                        << coverage << ", pushing up to 10000");
                 coverage = 10000;
             }
-            SGGenRandomSurfacePoints(geometry, coverage, lights );
+            SGGenRandomSurfacePoints(geometry, coverage, lights);
         }
     }
 
-    return geode;
+    return geometry;
 }
+

@@ -33,7 +33,6 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>
-#include <simgear/scene/tgdb/leaf.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
@@ -355,63 +354,27 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     return object;
 }
 
-
-
-
-
 osg::Node*
 SGMakeRunwaySign(SGMaterialLib *matlib, const string& path, const string& name)
 {
     // for demo purposes we assume each element (letter) is 1x1 meter.
     // Sign is placed 0.25 meters above the ground
 
-    osg::Group *object = new osg::Group;
-    object->setName(name);
+    float width = name.length() / 3.0;
 
-    double width = name.length() / 3.0;
+    osg::Vec3 corner(-width, 0, 0.25f);
+    osg::Vec3 widthVec(2*width + 1, 0, 0);
+    osg::Vec3 heightVec(0, 0, 1);
+    osg::Geometry* geometry;
+    geometry = osg::createTexturedQuadGeometry(corner, widthVec, heightVec);
 
-    string material = name;
+    SGMaterial *mat = matlib->find(name);
+    if (mat)
+      geometry->setStateSet(mat->get_state());
 
-    point_list nodes;
-    point_list normals;
-    point_list texcoords;
-    int_list vertex_index;
-    int_list normal_index;
-    int_list tex_index;
+    osg::Geode* geode = new osg::Geode;
+    geode->setName(name);
+    geode->addDrawable(geometry);
 
-    nodes.push_back( Point3D( -width, 0, 0.25 ) );
-    nodes.push_back( Point3D( width + 1, 0, 0.25 ) );
-    nodes.push_back( Point3D( -width, 0, 1.25 ) );
-    nodes.push_back( Point3D( width + 1, 0, 1.25 ) );
-
-    normals.push_back( Point3D( 0, -1, 0 ) );
-
-    texcoords.push_back( Point3D( 0, 0, 0 ) );
-    texcoords.push_back( Point3D( 1, 0, 0 ) );
-    texcoords.push_back( Point3D( 0, 1, 0 ) );
-    texcoords.push_back( Point3D( 1, 1, 0 ) );
-
-    vertex_index.push_back( 0 );
-    vertex_index.push_back( 1 );
-    vertex_index.push_back( 2 );
-    vertex_index.push_back( 3 );
-
-    normal_index.push_back( 0 );
-    normal_index.push_back( 0 );
-    normal_index.push_back( 0 );
-    normal_index.push_back( 0 );
-
-    tex_index.push_back( 0 );
-    tex_index.push_back( 1 );
-    tex_index.push_back( 2 );
-    tex_index.push_back( 3 );
-
-    osg::Node* leaf = SGMakeLeaf( path, GL_TRIANGLE_STRIP, matlib, material,
-                                  nodes, normals, texcoords,
-                                  vertex_index, normal_index, tex_index,
-                                  false, NULL );
-
-    object->addChild(leaf);
-
-    return object;
+    return geode;
 }

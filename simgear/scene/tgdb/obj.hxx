@@ -45,23 +45,12 @@ SG_USING_STD(string);
 class SGBucket;
 class SGMaterialLib;
 
-
-// Load a Binary obj file
-bool SGBinObjLoad( const string& path, const bool is_base,
-                   Point3D *center,
-                   double *bounding_radius,
-                   SGMaterialLib *matlib,
-                   bool use_random_objects,
-                   osg::Group *geometry,
-                   osg::Group *vasi_lights,
-                   osg::Group *rwy_lights,
-                   osg::Group *taxi_lights,
-                   osg::Vec3Array *ground_lights );
-
 // Generate an ocean tile
-bool SGGenTile( const string& path, SGBucket b,
-                Point3D *center, double *bounding_radius,
+bool SGGenTile( const string& path, const SGBucket& b,
                 SGMaterialLib *matlib, osg::Group *geometry );
+
+osg::Node*
+SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects);
 
 
 #endif // _SG_OBJ_HXX

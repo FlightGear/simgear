@@ -266,6 +266,7 @@ SGMaterial::build_state( bool defer_tex_load )
     for (unsigned int i = 0; i < _status.size(); i++)
     {
         osg::StateSet *stateSet = new osg::StateSet;
+        stateSet->setUserData(new SGMaterialUserData(this));
 
         // Set up the textured state
         osg::ShadeModel* shadeModel = new osg::ShadeModel;

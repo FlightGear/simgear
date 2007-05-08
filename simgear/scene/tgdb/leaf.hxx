@@ -46,9 +46,8 @@ class SGMaterialLib;            // forward declaration.
 
 
 // Create a ssg leaf
-osg::Node* SGMakeLeaf( const string& path,
-                     const GLenum ty,
-                     SGMaterialLib *matlib, const string& material,
+osg::Drawable* SGMakeLeaf( const string& path,
+                     const GLenum ty, SGMaterial *mat,
                      const point_list& nodes, const point_list& normals,
                      const point_list& texcoords,
                      const int_list& node_index,

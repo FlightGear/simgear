@@ -31,6 +31,7 @@
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
+#include <simgear/math/SGMath.hxx>
 
 #ifdef SG_HAVE_STD_INCLUDES
 #  include <cmath>
@@ -252,7 +253,24 @@ public:
      * @return the height of the tile in meters.
      */
     double get_height_m() const;
- 
+
+    /**
+     * @return the center of the bucket in geodetic coordinates.
+     */
+    SGGeod get_center() const
+    { return SGGeod::fromDeg(get_center_lon(), get_center_lat()); }
+
+    /**
+     * @return the center of the bucket in geodetic coordinates.
+     */
+    SGGeod get_corner(unsigned num) const
+    {
+        double lonFac = ((num + 1) & 2) ? 0.5 : -0.5;
+        double latFac = ((num    ) & 2) ? 0.5 : -0.5;
+        return SGGeod::fromDeg(get_center_lon() + lonFac*get_width(),
+                               get_center_lat() + latFac*get_height());
+    }
+
     // Informational methods.
 
     /**

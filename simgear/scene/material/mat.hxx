@@ -177,9 +177,9 @@ public:
   double get_bumpiness () const { return bumpiness; }
 
   /**
-   * Get the load resistence
+   * Get the load resistance
    */
-  double get_load_resistence () const { return load_resistence; }
+  double get_load_resistance () const { return load_resistance; }
 
   /**
    * Get the list of names for this material
@@ -270,8 +270,8 @@ private:
   // the bumpiness of that surface material
   double bumpiness;
 
-  // the load resistence of that surface material
-  double load_resistence;
+  // the load resistance of that surface material
+  double load_resistance;
 
   // material properties
   SGVec4f ambient, diffuse, specular, emission;

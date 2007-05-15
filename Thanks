@@ -47,6 +47,18 @@ Jean-Francois Doue
   http://www.animats.com/simpleppp/ftp/public_html/topics/developers.html
 
 
+Melchior Franz
+  METAR parser and fetcher. "material" animation (based on Jim Wilsons's
+  "emission" animation). Debugging and extension of property listener
+  features. Addition of removeChildren.
+
+
+Mathias Froehlich
+  Reworked and cleaned up large parts of the infrastructure, of math
+  files, animations and rendering in preparation of a transition to
+  the OSG library. Added new handlers for shared and referenced objects.
+
+
 Bruce Finney <bfinney@gte.net>
   MSVC5 compatibility.
 
@@ -69,6 +81,10 @@ Bruce Jackson of NASA <e.b.jackson@larc.nasa.gov>
   Developed the LaRCsim code under funding by NASA which we use to provide
   the flight model. Bruce has patiently answered my many, many questions.
   http://dcb.larc.nasa.gov/www/DCBStaff/ebj/ebj.html
+
+
+Maik Justus
+  Fixed an old bug in the SGPropertyNode class.
 
 
 Richard Kaszeta <bofh@me.umn.edu>

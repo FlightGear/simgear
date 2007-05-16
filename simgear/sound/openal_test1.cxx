@@ -101,7 +101,7 @@ int main( int argc, char *argv[] ) {
     ALsizei size;
     ALvoid* data;
     ALsizei freq;
-    ALboolean loop;
+    ALboolean loop = false;
 
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;

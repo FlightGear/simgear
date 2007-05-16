@@ -146,8 +146,8 @@ RenderTexture::RenderTexture(const char *strMode)
     _pDisplay(NULL),
     _hGLContext(NULL),
     _hPBuffer(0),
-    _hPreviousContext(0),
     _hPreviousDrawable(0),
+    _hPreviousContext(0),
 #endif
     _iTextureTarget(GL_NONE),
     _iTextureID(0),
@@ -622,7 +622,7 @@ bool RenderTexture::Initialize(int width, int height,
     _pDisplay = glXGetCurrentDisplay();
     GLXContext context = glXGetCurrentContext();
     int screen = DefaultScreen(_pDisplay);
-    XVisualInfo *visInfo;
+    XVisualInfo *visInfo = NULL;
     
     GLXFBConfig *fbConfigs;
     int nConfigs;
@@ -667,9 +667,11 @@ bool RenderTexture::Initialize(int width, int height,
     }
     else
     {
+#ifdef WIN32
         int iFormat = 0;
         int iNumFormats;
         int attrib = 0;
+#endif
         for (int i=0;i<nConfigs;i++)
         {
             _hPBuffer = glXCreateGLXPbufferPtr(_pDisplay, fbConfigs[i], 
@@ -1119,7 +1121,7 @@ bool RenderTexture::EndCapture()
  */ 
 bool RenderTexture::BeginCapture(RenderTexture* current)
 {
-    bool bContextReset = false;
+    // bool bContextReset = false;
     
     if (current == this) {
         return true; // no switch necessary
@@ -2623,8 +2625,8 @@ RenderTexture::RenderTexture(int width, int height,
     _iCurrentBoundBuffer(0),
     _iNumDepthBits(0),
     _iNumStencilBits(0),
-    _bDoubleBuffered(false),
     _bFloat(false),
+    _bDoubleBuffered(false),
     _bPowerOf2(true),
     _bRectangle(false),
     _bMipmap(false),
@@ -2644,8 +2646,8 @@ RenderTexture::RenderTexture(int width, int height,
     _pDisplay(NULL),
     _hGLContext(NULL),
     _hPBuffer(0),
-    _hPreviousContext(0),
     _hPreviousDrawable(0),
+    _hPreviousContext(0),
 #endif
     _iTextureTarget(GL_NONE),
     _iTextureID(0),

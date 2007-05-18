@@ -97,6 +97,8 @@ public:
     static Point3D fromSGGeod(const SGGeod& geod);
     static Point3D fromSGGeoc(const SGGeoc& geoc);
     static Point3D fromSGVec3(const SGVec3<double>& cart);
+    static Point3D fromSGVec3(const SGVec3<float>& cart);
+    static Point3D fromSGVec2(const SGVec2<double>& cart);
 
     // Assignment operators
 
@@ -134,6 +136,7 @@ public:
 
     SGVec3d toSGVec3d(void) const;
     SGVec3f toSGVec3f(void) const;
+    SGVec2f toSGVec2f(void) const;
 
     // friends
     friend Point3D operator - (const Point3D& p);	            // -p1
@@ -239,6 +242,24 @@ inline Point3D Point3D::fromSGVec3(const SGVec3<double>& cart)
   pt.setx(cart.x());
   pt.sety(cart.y());
   pt.setz(cart.z());
+  return pt;
+}
+
+inline Point3D Point3D::fromSGVec3(const SGVec3<float>& cart)
+{
+  Point3D pt;
+  pt.setx(cart.x());
+  pt.sety(cart.y());
+  pt.setz(cart.z());
+  return pt;
+}
+
+inline Point3D Point3D::fromSGVec2(const SGVec2<double>& cart)
+{
+  Point3D pt;
+  pt.setx(cart.x());
+  pt.sety(cart.y());
+  pt.setz(0);
   return pt;
 }
 
@@ -352,6 +373,11 @@ inline SGVec3d Point3D::toSGVec3d(void) const
 inline SGVec3f Point3D::toSGVec3f(void) const
 {
   return SGVec3f(x(), y(), z());
+}
+
+inline SGVec2f Point3D::toSGVec2f(void) const
+{
+  return SGVec2f(x(), y());
 }
 
 // FRIENDS

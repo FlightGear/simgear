@@ -412,6 +412,43 @@ bool
 operator!=(const SGVec3<T>& v1, const SGVec3<T>& v2)
 { return ! (v1 == v2); }
 
+/// Return true if smaller, good for putting that into a std::map
+template<typename T>
+inline
+bool
+operator<(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{
+  if (v1(0) < v2(0)) return true;
+  else if (v2(0) < v1(0)) return false;
+  else if (v1(1) < v2(1)) return true;
+  else if (v2(1) < v1(1)) return false;
+  else return (v1(2) < v2(2));
+}
+
+template<typename T>
+inline
+bool
+operator<=(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{
+  if (v1(0) < v2(0)) return true;
+  else if (v2(0) < v1(0)) return false;
+  else if (v1(1) < v2(1)) return true;
+  else if (v2(1) < v1(1)) return false;
+  else return (v1(2) <= v2(2));
+}
+
+template<typename T>
+inline
+bool
+operator>(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{ return operator<(v2, v1); }
+
+template<typename T>
+inline
+bool
+operator>=(const SGVec3<T>& v1, const SGVec3<T>& v2)
+{ return operator<=(v2, v1); }
+
 /// Return true if equal to the relative tolerance tol
 template<typename T>
 inline

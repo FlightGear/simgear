@@ -379,10 +379,10 @@ perpendicular(const SGVec3<T>& v)
   if (absv2 < absv1 && absv3 < absv1) {
     T quot = v(1)/v(0);
     return (1/sqrt(1+quot*quot))*SGVec3<T>(quot, -1, 0);
-  } else if (absv1 < absv2 && absv3 < absv2) {
+  } else if (absv3 < absv2) {
     T quot = v(2)/v(1);
     return (1/sqrt(1+quot*quot))*SGVec3<T>(0, quot, -1);
-  } else if (absv1 < absv3 && absv2 < absv3) {
+  } else if (SGLimits<T>::min() < absv3) {
     T quot = v(0)/v(2);
     return (1/sqrt(1+quot*quot))*SGVec3<T>(-1, 0, quot);
   } else {

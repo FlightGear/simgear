@@ -10,10 +10,10 @@
  * tested */
 #   define NASAL_NAN64
 #elif defined(_M_IX86)   || defined(i386)    || defined(__x86_64) || \
-    defined(__ia64__) || defined(_M_IA64) || defined(__ARMEL__) 
+      defined(__ia64__) || defined(_M_IA64) || defined(__ARMEL__) 
 # define NASAL_LE
-#elif defined(__sparc) || defined(__ppc__) || defined(__mips) || \
-      defined(__ARMEB__)
+#elif defined(__sparc) || defined(__ppc__) ||defined(__PPC) || \
+      defined(__mips) || defined(__ARMEB__)
 # define NASAL_BE
 #else
 # error Unrecognized CPU architecture

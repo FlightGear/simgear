@@ -53,6 +53,17 @@ SG_USING_STD(map);
 
 class SGMaterialGlyph;
 
+class SGTextureFilterListener  {
+private:
+  static int filter;
+
+  SGTextureFilterListener() {
+  }
+  
+public:
+  static int getFilter();
+  static void setFilter(int filt);
+ };
 
 /**
  * A material in the scene graph.
@@ -120,7 +131,6 @@ public:
    * already.
    */
   bool load_texture (int n = -1);
-
 
   /**
    * Get the textured state.
@@ -266,9 +276,6 @@ private:
   // use mipmapping?
   int mipmap;
 
-  // use anisotropic filtering
-  float filtering;
-
   // coverage of night lighting.
   double light_coverage;
 
@@ -310,7 +317,7 @@ private:
   void build_state( bool defer_tex_load );
   void set_state( osg::StateSet *s );
 
-  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE, float filtering = 1.0f );
+  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
 
 };
 

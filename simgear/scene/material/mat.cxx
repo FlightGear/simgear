@@ -49,6 +49,7 @@ SG_USING_STD(map);
 #include <simgear/misc/sgstream.hxx>
 
 #include <simgear/scene/model/model.hxx>
+
 #include "mat.hxx"
 
 static map<string, osg::ref_ptr<osg::Texture2D> > _tex_cache;
@@ -141,7 +142,6 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   wrapu = props->getBoolValue("wrapu", true);
   wrapv = props->getBoolValue("wrapv", true);
   mipmap = props->getBoolValue("mipmap", true);
-  filtering = props->getDoubleValue("filtering", 1.0);
   light_coverage = props->getDoubleValue("light-coverage", 0.0);
 
   // surface values for use with ground reactions
@@ -205,7 +205,6 @@ SGMaterial::init ()
     wrapv = true;
 
     mipmap = true;
-    filtering = 1.0f;
     light_coverage = 0.0;
 
     solid = true;
@@ -235,7 +234,7 @@ SGMaterial::load_texture ( int n )
             SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
                                           << _status[i].texture_path );
             assignTexture(_status[i].state.get(), _status[i].texture_path,
-                                         wrapu, wrapv, mipmap, filtering );
+                                         wrapu, wrapv, mipmap);
             _status[i].texture_loaded = true;
        }
     }
@@ -282,7 +281,7 @@ SGMaterial::build_state( bool defer_tex_load )
 
         if ( !defer_tex_load ) {
             SG_LOG(SG_INPUT, SG_INFO, "    " << _status[i].texture_path );
-	    assignTexture( stateSet, _status[i].texture_path, wrapu, wrapv, 1, filtering );
+	    assignTexture( stateSet, _status[i].texture_path, wrapu, wrapv);
             _status[i].texture_loaded = true;
         } else {
             _status[i].texture_loaded = false;
@@ -319,7 +318,7 @@ void SGMaterial::set_state( osg::StateSet *s )
 }
 
 void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
-                 int _wrapu, int _wrapv, int _mipmap, float filtering )
+                 int _wrapu, int _wrapv, int _mipmap )
 {
    map<string, osg::ref_ptr<osg::Texture2D> >::iterator _tex_cache_iter;
    _tex_cache_iter = _tex_cache.find(fname);
@@ -327,7 +326,7 @@ void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
    {
       osg::Texture2D* texture = SGLoadTexture2D(fname, _wrapu, _wrapv,
                                                 mipmap ? -1 : 0);
-      texture->setMaxAnisotropy( filtering);
+      texture->setMaxAnisotropy( SGTextureFilterListener::getFilter());
       state->setTextureAttributeAndModes(0, texture);
       _tex_cache[fname] = texture;
    }
@@ -362,5 +361,15 @@ SGMaterialGlyph::SGMaterialGlyph(SGPropertyNode *p) :
 {
 }
 
+////////////////////////////////////////////////////////////////////////
+// SGTextureFilterListener
+////////////////////////////////////////////////////////////////////////
 
+
+int SGTextureFilterListener::filter = 1;
+
+int SGTextureFilterListener::getFilter() { return filter; };
+void SGTextureFilterListener::setFilter(int filt) { 
+    filter = filt;
+};
 // end of mat.cxx

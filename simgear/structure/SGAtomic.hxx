@@ -25,6 +25,9 @@
   && (defined(__i386__) || defined(__x86_64__))
 // No need to include something. Is a Compiler API ...
 # define SGATOMIC_USE_GCC4_BUILTINS
+#elif defined(__sgi) && defined(_COMPILER_VERSION) && (_COMPILER_VERSION>=730)
+// No need to include something. Is a Compiler API ...
+# define SGATOMIC_USE_MIPSPRO_BUILTINS
 #elif defined(WIN32) 
 # include <windows.h>
 # define SGATOMIC_USE_WIN32_INTERLOCKED
@@ -42,6 +45,8 @@ public:
   {
 #if defined(SGATOMIC_USE_GCC4_BUILTINS)
     return __sync_add_and_fetch(&mValue, 1);
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+    return __add_and_fetch(&mValue, 1);
 #elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
     return InterlockedIncrement(reinterpret_cast<long volatile*>(&mValue));
 #else
@@ -53,6 +58,8 @@ public:
   {
 #if defined(SGATOMIC_USE_GCC4_BUILTINS)
     return __sync_sub_and_fetch(&mValue, 1);
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+    return __sub_and_fetch(&mValue, 1);
 #elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
     return InterlockedDecrement(reinterpret_cast<long volatile*>(&mValue));
 #else
@@ -64,6 +71,9 @@ public:
   {
 #if defined(SGATOMIC_USE_GCC4_BUILTINS)
     __sync_synchronize();
+    return mValue;
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+    __synchronize();
     return mValue;
 #elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
     return static_cast<unsigned const volatile &>(mValue);
@@ -78,6 +88,7 @@ private:
   SGAtomic& operator=(const SGAtomic&);
 
 #if !defined(SGATOMIC_USE_GCC4_BUILTINS) \
+  && !defined(SGATOMIC_USE_MIPOSPRO_BUILTINS) \
   && !defined(SGATOMIC_USE_WIN32_INTERLOCKED)
   mutable SGMutex mMutex;
 #endif

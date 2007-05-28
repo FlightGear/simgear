@@ -19,21 +19,32 @@
  *
  */
 
-#ifndef SG_SCENE_NODEMASKS_HXX
-#define SG_SCENE_NODEMASKS_HXX
+#ifndef SG_LIGHT_BIN_HXX
+#define SG_LIGHT_BIN_HXX
 
-/// If set, do terrain elevation computations with that nodes
-#define SG_NODEMASK_TERRAIN_BIT        (1<<0)
-/// If set, this is the main model of this simulation
-#define SG_NODEMASK_MAINMODEL_BIT      (1<<1)
-/// If set, cast shadows
-#define SG_NODEMASK_CASTSHADOW_BIT     (1<<2)
-/// If set, cast recieves shadows
-#define SG_NODEMASK_RECIEVESHADOW_BIT  (1<<3)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<4)
+class SGLightBin {
+public:
+  struct Light {
+    Light(const SGVec3f& p, const SGVec4f& c) :
+      position(p), color(c)
+    { }
+    SGVec3f position;
+    SGVec4f color;
+  };
+  typedef std::vector<Light> LightList;
 
-/// If set, the node is a gui element
-#define SG_NODEMASK_GUI_BIT            (1<<5)
+  void insert(const Light& light)
+  { _lights.push_back(light); }
+  void insert(const SGVec3f& p, const SGVec4f& c)
+  { insert(Light(p, c)); }
+
+  unsigned getNumLights() const
+  { return _lights.size(); }
+  const Light& getLight(unsigned i) const
+  { return _lights[i]; }
+
+private:
+  LightList _lights;
+};
 
 #endif

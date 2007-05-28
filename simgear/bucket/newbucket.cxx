@@ -44,6 +44,9 @@ SGBucket::SGBucket(const double dlon, const double dlat) {
     set_bucket(dlon, dlat);
 }
 
+SGBucket::SGBucket(const SGGeod& geod) {
+    set_bucket(geod);
+}
 
 // create an impossible bucket if false
 SGBucket::SGBucket(const bool is_good) {
@@ -70,11 +73,6 @@ SGBucket::SGBucket(const long int bindex) {
     index -= y << 3;
 
     x = index;
-}
-
-
-// default destructor
-SGBucket::~SGBucket() {
 }
 
 
@@ -134,6 +132,11 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
     y = (int)((dlat - lat) * 8);
 }
 
+
+void SGBucket::set_bucket(const SGGeod& geod)
+{
+    set_bucket(geod.getLongitudeDeg(), geod.getLatitudeDeg());
+}
 
 // Build the path name for this bucket
 string SGBucket::gen_base_path() const {

@@ -134,6 +134,13 @@ public:
      */
     SGBucket(const double dlon, const double dlat);
 
+    /**
+     * Construct a bucket given a specific location.
+     * @param dlon longitude specified in degrees
+     * @param dlat latitude specified in degrees
+     */
+    SGBucket(const SGGeod& geod);
+
     /** Construct a bucket.
      *  @param is_good if false, create an invalid bucket.  This is
      *  useful * if you are comparing cur_bucket to last_bucket and
@@ -148,11 +155,6 @@ public:
     SGBucket(const long int bindex);
 
     /**
-     * Default destructor.
-     */
-    ~SGBucket();
-
-    /**
      * Reset a bucket to represent a new lat and lon
      * @param dlon longitude specified in degrees
      * @param dlat latitude specified in degrees
@@ -165,6 +167,13 @@ public:
      * (specified) in degrees
      */
     void set_bucket( double *lonlat );
+
+    /**
+     * Reset a bucket to represent a new lat and lon
+     * @param dlon longitude specified in degrees
+     * @param dlat latitude specified in degrees
+     */
+    void set_bucket(const SGGeod& geod);
 
     /**
      * Create an impossible bucket.

@@ -208,6 +208,20 @@ public:
    */
   SGMaterialGlyph * get_glyph (const string& name) const;
 
+  void set_light_color(const SGVec4f& color)
+  { emission = color; }
+  const SGVec4f& get_light_color() const
+  { return emission; }
+
+  SGVec2f get_tex_coord_scale() const
+  {
+    float tex_width = get_xsize();
+    float tex_height = get_ysize();
+
+    return SGVec2f((0 < tex_width) ? 1000.0f/tex_width : 1.0f,
+                   (0 < tex_height) ? 1000.0f/tex_height : 1.0f);
+  }
+
 protected:
 
 

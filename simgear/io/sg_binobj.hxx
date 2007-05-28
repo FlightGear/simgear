@@ -89,13 +89,13 @@ typedef group_list::const_iterator const_group_list_iterator;
 class SGBinObject {
     unsigned short version;
 
-    Point3D gbs_center;
+    SGVec3d gbs_center;
     float gbs_radius;
 
-    point_list wgs84_nodes;	// vertex list
-    point_list colors;		// color list
-    point_list normals;		// normal list
-    point_list texcoords;	// texture coordinate list
+    std::vector<SGVec3d> wgs84_nodes;	// vertex list
+    std::vector<SGVec4f> colors;	// color list
+    std::vector<SGVec3f> normals;	// normal list
+    std::vector<SGVec2f> texcoords;	// texture coordinate list
 
     group_list pts_v;		// points vertex index
     group_list pts_n;		// points normal index
@@ -125,23 +125,51 @@ public:
 
     inline unsigned short get_version() const { return version; }
 
-    inline const Point3D& get_gbs_center() const { return gbs_center; }
-    inline void set_gbs_center( const Point3D& p ) { gbs_center = p; }
+    inline Point3D get_gbs_center() const { return Point3D::fromSGVec3(gbs_center); }
+    inline void set_gbs_center( const Point3D& p ) { gbs_center = p.toSGVec3d(); }
+    inline const SGVec3d& get_gbs_center2() const { return gbs_center; }
+    inline void set_gbs_center( const SGVec3d& p ) { gbs_center = p; }
 
     inline float get_gbs_radius() const { return gbs_radius; }
     inline void set_gbs_radius( float r ) { gbs_radius = r; }
 
-    inline const point_list& get_wgs84_nodes() const { return wgs84_nodes; }
-    inline void set_wgs84_nodes( const point_list& n ) { wgs84_nodes = n; }
+    inline const std::vector<SGVec3d>& get_wgs84_nodes() const
+    { return wgs84_nodes; }
+    inline void set_wgs84_nodes( const std::vector<SGVec3d>& n )
+    { wgs84_nodes = n; }
+    inline void set_wgs84_nodes( const point_list& n )
+    {
+      wgs84_nodes.resize(n.size());
+      for (unsigned i = 0; i < wgs84_nodes.size(); ++i)
+        wgs84_nodes[i] = n[i].toSGVec3d();
+    }
 
-    inline const point_list& get_colors() const { return colors; }
-    inline void set_colors( const point_list& c ) { colors = c; }
+    inline const std::vector<SGVec4f>& get_colors() const { return colors; }
+    inline void set_colors( const std::vector<SGVec4f>& c ) { colors = c; }
+    inline void set_colors( const point_list& c )
+    {
+      colors.resize(c.size());
+      for (unsigned i = 0; i < colors.size(); ++i)
+        colors[i] = SGVec4f(c[i].toSGVec3f(), 1);
+    }
 
-    inline const point_list& get_normals() const { return normals; }
-    inline void set_normals( const point_list& n ) { normals = n; }
+    inline const std::vector<SGVec3f>& get_normals() const { return normals; }
+    inline void set_normals( const std::vector<SGVec3f>& n ) { normals = n; }
+    inline void set_normals( const point_list& n )
+    {
+      normals.resize(n.size());
+      for (unsigned i = 0; i < normals.size(); ++i)
+        normals[i] = n[i].toSGVec3f();
+    }
 
-    inline const point_list& get_texcoords() const { return texcoords; }
-    inline void set_texcoords( const point_list& t ) { texcoords = t; }
+    inline const std::vector<SGVec2f>& get_texcoords() const { return texcoords; }
+    inline void set_texcoords( const std::vector<SGVec2f>& t ) { texcoords = t; }
+    inline void set_texcoords( const point_list& t )
+    {
+      texcoords.resize(t.size());
+      for (unsigned i = 0; i < texcoords.size(); ++i)
+        texcoords[i] = t[i].toSGVec2f();
+    }
 
     inline const group_list& get_pts_v() const { return pts_v; }
     inline void set_pts_v( const group_list& g ) { pts_v = g; }

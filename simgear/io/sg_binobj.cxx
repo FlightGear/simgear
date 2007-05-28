@@ -174,7 +174,7 @@ static void read_object( gzFile fp,
     int idx_size;
     bool do_vertices, do_normals, do_colors, do_texcoords;
     int j, k, idx;
-    static sgSimpleBuffer buf( 32768 );  // 32 Kb
+    sgSimpleBuffer buf( 32768 );  // 32 Kb
     char material[256];
 
     // default values
@@ -280,13 +280,13 @@ static void read_object( gzFile fp,
 
 // read a binary file and populate the provided structures.
 bool SGBinObject::read_bin( const string& file ) {
-    Point3D p;
+    SGVec3d p;
     int i, j, k;
     unsigned int nbytes;
-    static sgSimpleBuffer buf( 32768 );  // 32 Kb
+    sgSimpleBuffer buf( 32768 );  // 32 Kb
 
     // zero out structures
-    gbs_center = Point3D( 0 );
+    gbs_center = SGVec3d(0, 0, 0);
     gbs_radius = 0.0;
 
     wgs84_nodes.clear();
@@ -407,7 +407,7 @@ bool SGBinObject::read_bin( const string& file ) {
 		    sgEndianSwap( (uint64_t *)&(dptr[1]) );
 		    sgEndianSwap( (uint64_t *)&(dptr[2]) );
 		}
-		gbs_center = Point3D( dptr[0], dptr[1], dptr[2] );
+		gbs_center = SGVec3d( dptr[0], dptr[1], dptr[2] );
 		// cout << "Center = " << gbs_center << endl;
 		ptr += sizeof(double) * 3;
 		
@@ -447,7 +447,7 @@ bool SGBinObject::read_bin( const string& file ) {
 			sgEndianSwap( (uint32_t *)&(fptr[1]) );
 			sgEndianSwap( (uint32_t *)&(fptr[2]) );
 		    }
-		    wgs84_nodes.push_back( Point3D(fptr[0], fptr[1], fptr[2]) );
+		    wgs84_nodes.push_back( SGVec3d(fptr[0], fptr[1], fptr[2]) );
 		    fptr += 3;
 		}
 	    }
@@ -481,7 +481,8 @@ bool SGBinObject::read_bin( const string& file ) {
 			sgEndianSwap( (uint32_t *)&(fptr[2]) );
 			sgEndianSwap( (uint32_t *)&(fptr[3]) );
 		    }
-		    colors.push_back( Point3D( fptr[0], fptr[1], fptr[2] ) );
+		    SGVec4f color( fptr[0], fptr[1], fptr[2], fptr[3] );
+		    colors.push_back( color );
 		    fptr += 4;
 		}
 	    }
@@ -508,14 +509,11 @@ bool SGBinObject::read_bin( const string& file ) {
 		int count = nbytes / 3;
 		normals.reserve( count );
 		for ( k = 0; k < count; ++k ) {
-                    sgdVec3 normal;
-                    sgdSetVec3( normal,
-                               (ptr[0]) / 127.5 - 1.0,
-                               (ptr[1]) / 127.5 - 1.0,
-                               (ptr[2]) / 127.5 - 1.0 );
-                    sgdNormalizeVec3( normal );
+                    SGVec3f normal((ptr[0]) / 127.5 - 1.0,
+                                   (ptr[1]) / 127.5 - 1.0,
+                                   (ptr[2]) / 127.5 - 1.0);
 
-		    normals.push_back(Point3D(normal[0], normal[1], normal[2]));
+		    normals.push_back(normalize(normal));
 		    ptr += 3;
 		}
 	    }
@@ -547,7 +545,7 @@ bool SGBinObject::read_bin( const string& file ) {
 			sgEndianSwap( (uint32_t *)&(fptr[0]) );
 			sgEndianSwap( (uint32_t *)&(fptr[1]) );
 		    }
-		    texcoords.push_back( Point3D( fptr[0], fptr[1], 0 ) );
+		    texcoords.push_back( SGVec2f( fptr[0], fptr[1] ) );
 		    fptr += 2;
 		}
 	    }
@@ -612,10 +610,6 @@ bool SGBinObject::read_bin( const string& file ) {
 bool SGBinObject::write_bin( const string& base, const string& name,
 			     const SGBucket& b )
 {
-    Point3D p;
-    sgVec2 t;
-    sgVec3 pt;
-    sgVec4 color;
     int i, j;
     unsigned char idx_mask;
     int idx_size;
@@ -738,9 +732,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, wgs84_nodes.size() * sizeof(float) * 3 ); // nbytes
     for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-	p = wgs84_nodes[i] - gbs_center;
-	sgSetVec3( pt, p.x(), p.y(), p.z() );
-	sgWriteVec3( fp, pt );
+        SGVec3f p = toVec3f(wgs84_nodes[i] - gbs_center);
+	sgWriteVec3( fp, p.data() );
     }
 
     // dump vertex color list
@@ -749,12 +742,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, colors.size() * sizeof(float) * 4 ); // nbytes
     for ( i = 0; i < (int)colors.size(); ++i ) {
-	p = colors[i];
-        // Right now we have a place holder for color alpha but we
-        // need to update the interface so the calling program can
-        // provide the info.
-	sgSetVec4( color, p.x(), p.y(), p.z(), 1.0 );
-	sgWriteVec4( fp, color );
+	sgWriteVec4( fp, colors[i].data() );
     }
 
     // dump vertex normal list
@@ -764,7 +752,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteUInt( fp, normals.size() * 3 );              // nbytes
     char normal[3];
     for ( i = 0; i < (int)normals.size(); ++i ) {
-	p = normals[i];
+        SGVec3f p = normals[i];
 	normal[0] = (unsigned char)((p.x() + 1.0) * 127.5);
 	normal[1] = (unsigned char)((p.y() + 1.0) * 127.5);
 	normal[2] = (unsigned char)((p.z() + 1.0) * 127.5);
@@ -777,9 +765,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteShort( fp, 1 );		                // nelements
     sgWriteUInt( fp, texcoords.size() * sizeof(float) * 2 ); // nbytes
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
-	p = texcoords[i];
-	sgSetVec2( t, p.x(), p.y() );
-	sgWriteVec2( fp, t );
+	sgWriteVec2( fp, texcoords[i].data() );
     }
 
     // dump point groups if they exist
@@ -1042,7 +1028,6 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 bool SGBinObject::write_ascii( const string& base, const string& name,
 			       const SGBucket& b )
 {
-    Point3D p;
     int i, j;
 
     SGPath file = base + "/" + b.gen_base_path() + "/" + name;
@@ -1084,7 +1069,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     // dump vertex list
     fprintf(fp, "# vertex list\n");
     for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-	p = wgs84_nodes[i] - gbs_center;
+        SGVec3d p = wgs84_nodes[i] - gbs_center;
 	
 	fprintf(fp,  "v %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
     }
@@ -1092,7 +1077,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 
     fprintf(fp, "# vertex normal list\n");
     for ( i = 0; i < (int)normals.size(); ++i ) {
-	p = normals[i];
+        SGVec3f p = normals[i];
 	fprintf(fp,  "vn %.5f %.5f %.5f\n", p.x(), p.y(), p.z() );
     }
     fprintf(fp, "\n");
@@ -1100,7 +1085,7 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     // dump texture coordinates
     fprintf(fp, "# texture coordinate list\n");
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
-	p = texcoords[i];
+        SGVec2f p = texcoords[i];
 	fprintf(fp,  "vt %.5f %.5f\n", p.x(), p.y() );
     }
     fprintf(fp, "\n");
@@ -1126,13 +1111,13 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 	    // make a list of points for the group
 	    point_list group_nodes;
 	    group_nodes.clear();
-	    Point3D bs_center;
+	    SGVec3d bs_center;
 	    double bs_radius = 0;
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
-		    group_nodes.push_back( wgs84_nodes[ tris_v[i][j] ] );
-		    bs_center = sgCalcCenter( group_nodes );
-		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
+                    group_nodes.push_back( Point3D::fromSGVec3(wgs84_nodes[ tris_v[i][j] ]) );
+		    bs_center = sgCalcCenter( group_nodes ).toSGVec3d();
+		    bs_radius = sgCalcBoundingRadius( Point3D::fromSGVec3(bs_center), group_nodes );
 		}
 	    }
 
@@ -1177,13 +1162,13 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 	    // make a list of points for the group
 	    point_list group_nodes;
 	    group_nodes.clear();
-	    Point3D bs_center;
+	    SGVec3d bs_center;
 	    double bs_radius = 0;
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-		    group_nodes.push_back( wgs84_nodes[ strips_v[i][j] ] );
-		    bs_center = sgCalcCenter( group_nodes );
-		    bs_radius = sgCalcBoundingRadius( bs_center, group_nodes );
+                    group_nodes.push_back( Point3D::fromSGVec3(wgs84_nodes[ strips_v[i][j] ]) );
+		    bs_center = sgCalcCenter( group_nodes ).toSGVec3d();
+		    bs_radius = sgCalcBoundingRadius( Point3D::fromSGVec3(bs_center), group_nodes );
 		}
 	    }
 

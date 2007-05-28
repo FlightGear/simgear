@@ -37,14 +37,14 @@ int main( int argc, char **argv ) {
            obj.get_gbs_radius());
     cout << endl;
 
-    point_list nodes = obj.get_wgs84_nodes();
+    std::vector<SGVec3d> nodes = obj.get_wgs84_nodes();
     cout << "# vertex list" << endl;
     for ( i = 0; i < (int)nodes.size(); ++i ) {
         printf("v %.5f %.5f %.5f\n", nodes[i].x(), nodes[i].y(), nodes[i].z() );
     }
     cout << endl;
 
-    point_list normals = obj.get_normals();
+    std::vector<SGVec3f> normals = obj.get_normals();
     cout << "# vertex normal list" << endl;
     for ( i = 0; i < (int)normals.size(); ++i ) {
         printf("vn %.5f %.5f %.5f\n",
@@ -52,7 +52,7 @@ int main( int argc, char **argv ) {
     }
     cout << endl;
 
-    point_list texcoords = obj.get_texcoords();
+    std::vector<SGVec2f> texcoords = obj.get_texcoords();
     cout << "# texture coordinate list" << endl;
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
         printf("vt %.5f %.5f\n",

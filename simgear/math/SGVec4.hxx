@@ -223,6 +223,15 @@ SGVec4<T>
 operator*(const SGVec4<T>& v, S s)
 { return SGVec4<T>(s*v(0), s*v(1), s*v(2), s*v(3)); }
 
+/// multiplication as a multiplicator, that is assume that the first vector
+/// represents a 4x4 diagonal matrix with the diagonal elements in the vector.
+/// Then the result is the product of that matrix times the second vector.
+template<typename T>
+inline
+SGVec4<T>
+mult(const SGVec4<T>& v1, const SGVec4<T>& v2)
+{ return SGVec4<T>(v1(0)*v2(0), v1(1)*v2(1), v1(2)*v2(2), v1(3)*v2(3)); }
+
 /// component wise min
 template<typename T>
 inline

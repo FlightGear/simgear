@@ -19,21 +19,15 @@
  *
  */
 
-#ifndef SG_SCENE_NODEMASKS_HXX
-#define SG_SCENE_NODEMASKS_HXX
+#ifndef _SG_OceanTile_HXX
+#define _SG_OceanTile_HXX
 
-/// If set, do terrain elevation computations with that nodes
-#define SG_NODEMASK_TERRAIN_BIT        (1<<0)
-/// If set, this is the main model of this simulation
-#define SG_NODEMASK_MAINMODEL_BIT      (1<<1)
-/// If set, cast shadows
-#define SG_NODEMASK_CASTSHADOW_BIT     (1<<2)
-/// If set, cast recieves shadows
-#define SG_NODEMASK_RECIEVESHADOW_BIT  (1<<3)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<4)
+#include <osg/Node>
 
-/// If set, the node is a gui element
-#define SG_NODEMASK_GUI_BIT            (1<<5)
+class SGBucket;
+class SGMaterialLib;
 
-#endif
+// Generate an ocean tile
+osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib);
+
+#endif // _SG_OBJ_HXX

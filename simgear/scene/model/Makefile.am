@@ -12,7 +12,8 @@ include_HEADERS = \
 	persparam.hxx \
 	placement.hxx \
 	placementtrans.hxx \
-	SGMaterialAnimation.hxx
+	SGMaterialAnimation.hxx \
+	SGOffsetTransform.hxx
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
@@ -23,6 +24,7 @@ libsgmodel_a_SOURCES = \
 	placement.cxx \
 	placementtrans.cxx \
 	shadanim.cxx \
-	SGMaterialAnimation.cxx
+	SGMaterialAnimation.cxx \
+	SGOffsetTransform.cxx
 
 INCLUDES = -I$(top_srcdir)

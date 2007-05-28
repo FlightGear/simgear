@@ -1,0 +1,75 @@
+/* -*-c++-*-
+ *
+ * Copyright (C) 2006-2007 Mathias Froehlich 
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
+ */
+
+#ifndef SG_SCENE_FEATURES_HXX
+#define SG_SCENE_FEATURES_HXX
+
+#include <simgear/structure/SGReferenced.hxx>
+
+class SGSceneFeatures : public SGReferenced {
+public:
+  static SGSceneFeatures* instance();
+
+  void setEnablePointSpriteLights(bool enable)
+  { _pointSpriteLights = enable; }
+  bool getEnablePointSpriteLights(unsigned contextId) const
+  {
+    if (!_pointSpriteLights)
+      return false;
+    return getHavePointSprites(contextId);
+  }
+
+  void setEnableDistanceAttenuationLights(bool enable)
+  { _distanceAttenuationLights = enable; }
+  bool getEnableDistanceAttenuationLights(unsigned contextId) const
+  {
+    if (!_distanceAttenuationLights)
+      return false;
+    return getHavePointParameters(contextId);
+  }
+
+  void setEnableShaderLights(bool enable)
+  { _shaderLights = enable; }
+  bool getEnableShaderLights(unsigned contextId) const
+  {
+    if (!_shaderLights)
+      return false;
+    return getHaveShaderPrograms(contextId);
+  }
+
+protected:  
+  bool getHavePointSprites(unsigned contextId) const;
+  bool getHaveFragmentPrograms(unsigned contextId) const;
+  bool getHaveVertexPrograms(unsigned contextId) const;
+  bool getHaveShaderPrograms(unsigned contextId) const;
+  bool getHavePointParameters(unsigned contextId) const;
+
+private:
+  SGSceneFeatures();
+  SGSceneFeatures(const SGSceneFeatures&);
+  SGSceneFeatures& operator=(const SGSceneFeatures&);
+
+  bool _shaderLights;
+  bool _pointSpriteLights;
+  bool _distanceAttenuationLights;
+};
+
+#endif

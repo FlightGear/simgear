@@ -19,21 +19,23 @@
  *
  */
 
-#ifndef SG_SCENE_NODEMASKS_HXX
-#define SG_SCENE_NODEMASKS_HXX
+#ifndef SG_ENLARGE_BOUNDING_BOX_HXX
+#define SG_ENLARGE_BOUNDING_BOX_HXX
 
-/// If set, do terrain elevation computations with that nodes
-#define SG_NODEMASK_TERRAIN_BIT        (1<<0)
-/// If set, this is the main model of this simulation
-#define SG_NODEMASK_MAINMODEL_BIT      (1<<1)
-/// If set, cast shadows
-#define SG_NODEMASK_CASTSHADOW_BIT     (1<<2)
-/// If set, cast recieves shadows
-#define SG_NODEMASK_RECIEVESHADOW_BIT  (1<<3)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<4)
+#include <osg/Drawable>
 
-/// If set, the node is a gui element
-#define SG_NODEMASK_GUI_BIT            (1<<5)
+// Helper class to enlarge a bounding box of a drawable.
+// Is usefull to enlarge the mounding box of single point lights that would
+// be victim to small feature culling otherwise.
+class SGEnlargeBoundingBox : public osg::Drawable::ComputeBoundingBoxCallback {
+public:
+  SGEnlargeBoundingBox(float offset = 0);
+  SGEnlargeBoundingBox(const SGEnlargeBoundingBox& cb, const osg::CopyOp&);
+  META_Object(osg, SGEnlargeBoundingBox);
+  virtual osg::BoundingBox computeBound(const osg::Drawable& drawable) const;
+
+private:
+  float _offset;
+};
 
 #endif

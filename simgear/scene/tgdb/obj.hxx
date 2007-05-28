@@ -25,20 +25,18 @@
 #ifndef _SG_OBJ_HXX
 #define _SG_OBJ_HXX
 
-
 #ifndef __cplusplus
 # error This library requires C++
 #endif
-
 
 #include <simgear/compiler.h>
 
 #include STL_STRING
 
-#include <osg/Array>
+#include <osg/Node>
 #include <osg/Group>
 
-#include <simgear/math/point3d.hxx>
+#include "SGOceanTile.hxx"
 
 SG_USING_STD(string);
 
@@ -46,11 +44,18 @@ class SGBucket;
 class SGMaterialLib;
 
 // Generate an ocean tile
-bool SGGenTile( const string& path, const SGBucket& b,
-                SGMaterialLib *matlib, osg::Group *geometry );
+inline bool SGGenTile( const std::string&, const SGBucket& b,
+                       SGMaterialLib *matlib, osg::Group* group )
+{
+  // Generate an ocean tile
+  osg::Node* node = SGOceanTile(b, matlib);
+  if (!node)
+    return false;
+  group->addChild(node);
+  return true;
+}
 
 osg::Node*
 SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects);
-
 
 #endif // _SG_OBJ_HXX

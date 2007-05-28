@@ -147,7 +147,6 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
-  class Transform;
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGDoubleValue> _animationValue;
   SGVec3d _axis;
@@ -167,7 +166,6 @@ public:
 private:
   class UpdateCallback;
   class SpinUpdateCallback;
-  class Transform;
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGDoubleValue> _animationValue;
   SGVec3d _axis;
@@ -188,7 +186,6 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;
-  class Transform;
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGDoubleValue> _animationValue[3];
   SGVec3d _initialValue;

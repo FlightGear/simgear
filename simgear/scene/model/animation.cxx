@@ -36,7 +36,10 @@
 #include "animation.hxx"
 #include "model.hxx"
 
+#include "SGTranslateTransform.hxx"
 #include "SGMaterialAnimation.hxx"
+#include "SGRotateTransform.hxx"
+#include "SGScaleTransform.hxx"
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -711,39 +714,6 @@ SGGroupAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of translate animation
 ////////////////////////////////////////////////////////////////////////
 
-class SGTranslateAnimation::Transform : public osg::Transform {
-public:
-  Transform() :
-    _axis(0, 0, 0),
-    _value(0)
-  { setReferenceFrame(RELATIVE_RF); }
-  void setAxis(const SGVec3d& axis)
-  { _axis = axis; dirtyBound(); }
-  void setValue(double value)
-  { _value = value; dirtyBound(); }
-  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
-  {
-    assert(_referenceFrame == RELATIVE_RF);
-    osg::Matrix tmp;
-    set_translation(tmp, _value, _axis);
-    matrix.preMult(tmp);
-    return true;
-  }
-  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const
-  {
-    assert(_referenceFrame == RELATIVE_RF);
-    osg::Matrix tmp;
-    set_translation(tmp, -_value, _axis);
-    matrix.postMult(tmp);
-    return true;
-  }
-private:
-  SGVec3d _axis;
-  double _value;
-};
-
 class SGTranslateAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(SGCondition const* condition,
@@ -754,8 +724,8 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (!_condition || _condition->test()) {
-      SGTranslateAnimation::Transform* transform;
-      transform = static_cast<SGTranslateAnimation::Transform*>(node);
+      SGTranslateTransform* transform;
+      transform = static_cast<SGTranslateTransform*>(node);
       transform->setValue(_animationValue->getValue());
     }
     traverse(node, nv);
@@ -786,7 +756,7 @@ SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
 osg::Group*
 SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 {
-  Transform* transform = new Transform;
+  SGTranslateTransform* transform = new SGTranslateTransform;
   transform->setName("translate animation");
   if (_animationValue) {
     UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
@@ -803,53 +773,6 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of rotate/spin animation
 ////////////////////////////////////////////////////////////////////////
 
-class SGRotateAnimation::Transform : public osg::Transform {
-public:
-  Transform()
-  { setReferenceFrame(RELATIVE_RF); }
-  void setCenter(const SGVec3d& center)
-  { _center = center; dirtyBound(); }
-  void setAxis(const SGVec3d& axis)
-  { _axis = axis; dirtyBound(); }
-  void setAngle(double angle)
-  { _angle = angle; }
-  double getAngle() const
-  { return _angle; }
-  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
-  {
-    // This is the fast path, optimize a bit
-    assert(_referenceFrame == RELATIVE_RF);
-    // FIXME optimize
-    osg::Matrix tmp;
-    set_rotation(tmp, _angle, _center, _axis);
-    matrix.preMult(tmp);
-    return true;
-  }
-  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const
-  {
-    assert(_referenceFrame == RELATIVE_RF);
-    // FIXME optimize
-    osg::Matrix tmp;
-    set_rotation(tmp, -_angle, _center, _axis);
-    matrix.postMult(tmp);
-    return true;
-  }
-  virtual osg::BoundingSphere computeBound() const
-  {
-    osg::BoundingSphere bs = osg::Group::computeBound();
-    osg::BoundingSphere centerbs(_center.osg(), bs.radius());
-    centerbs.expandBy(bs);
-    return centerbs;
-  }
-
-private:
-  SGVec3d _center;
-  SGVec3d _axis;
-  double _angle;
-};
-
 class SGRotateAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(SGCondition const* condition,
@@ -860,9 +783,9 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (!_condition || _condition->test()) {
-      SGRotateAnimation::Transform* transform;
-      transform = static_cast<SGRotateAnimation::Transform*>(node);
-      transform->setAngle(_animationValue->getValue());
+      SGRotateTransform* transform;
+      transform = static_cast<SGRotateTransform*>(node);
+      transform->setAngleDeg(_animationValue->getValue());
     }
     traverse(node, nv);
   }
@@ -882,8 +805,8 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (!_condition || _condition->test()) {
-      SGRotateAnimation::Transform* transform;
-      transform = static_cast<SGRotateAnimation::Transform*>(node);
+      SGRotateTransform* transform;
+      transform = static_cast<SGRotateTransform*>(node);
 
       double t = nv->getFrameStamp()->getReferenceTime();
       double dt = 0;
@@ -891,10 +814,10 @@ public:
         dt = t - _lastTime;
       _lastTime = t;
       double velocity_rpms = _animationValue->getValue()/60;
-      double angle = transform->getAngle();
+      double angle = transform->getAngleDeg();
       angle += dt*velocity_rpms*360;
       angle -= 360*floor(angle/360);
-      transform->setAngle(angle);
+      transform->setAngleDeg(angle);
     }
     traverse(node, nv);
   }
@@ -944,7 +867,7 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode, SGPropert
 osg::Group*
 SGRotateAnimation::createAnimationGroup(osg::Group& parent)
 {
-  Transform* transform = new Transform;
+  SGRotateTransform* transform = new SGRotateTransform;
   transform->setName("rotate animation");
   if (_isSpin) {
     SpinUpdateCallback* uc;
@@ -956,7 +879,7 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
   }
   transform->setCenter(_center);
   transform->setAxis(_axis);
-  transform->setAngle(_initialValue);
+  transform->setAngleDeg(_initialValue);
   parent.addChild(transform);
   return transform;
 }
@@ -965,83 +888,6 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
 ////////////////////////////////////////////////////////////////////////
 // Implementation of scale animation
 ////////////////////////////////////////////////////////////////////////
-
-class SGScaleAnimation::Transform : public osg::Transform {
-public:
-  Transform() :
-    _center(0, 0, 0),
-    _scaleFactor(1, 1, 1),
-    _boundScale(0)
-  {
-    setReferenceFrame(RELATIVE_RF);
-  }
-  void setCenter(const SGVec3d& center)
-  {
-    _center = center;
-    dirtyBound();
-  }
-  void setScaleFactor(const SGVec3d& scaleFactor)
-  {
-    if (_boundScale < normI(scaleFactor))
-      dirtyBound();
-    _scaleFactor = scaleFactor;
-  }
-  void setScaleFactor(double scaleFactor)
-  { 
-    if (_boundScale < fabs(scaleFactor))
-      dirtyBound();
-    _scaleFactor = SGVec3d(scaleFactor, scaleFactor, scaleFactor);
-  }
-  virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const 
-  {
-    assert(_referenceFrame == RELATIVE_RF);
-    osg::Matrix transform;
-    transform(0,0) = _scaleFactor[0];
-    transform(1,1) = _scaleFactor[1];
-    transform(2,2) = _scaleFactor[2];
-    transform(3,0) = _center[0]*(1 - _scaleFactor[0]);
-    transform(3,1) = _center[1]*(1 - _scaleFactor[1]);
-    transform(3,2) = _center[2]*(1 - _scaleFactor[2]);
-    matrix.preMult(transform);
-    return true;
-  }
-  virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
-                                         osg::NodeVisitor* nv) const
-  {
-    assert(_referenceFrame == RELATIVE_RF);
-    if (fabs(_scaleFactor[0]) < SGLimitsd::min())
-      return false;
-    if (fabs(_scaleFactor[1]) < SGLimitsd::min())
-      return false;
-    if (fabs(_scaleFactor[2]) < SGLimitsd::min())
-      return false;
-    SGVec3d rScaleFactor(1/_scaleFactor[0],
-                         1/_scaleFactor[1],
-                         1/_scaleFactor[2]);
-    osg::Matrix transform;
-    transform(0,0) = rScaleFactor[0];
-    transform(1,1) = rScaleFactor[1];
-    transform(2,2) = rScaleFactor[2];
-    transform(3,0) = _center[0]*(1 - rScaleFactor[0]);
-    transform(3,1) = _center[1]*(1 - rScaleFactor[1]);
-    transform(3,2) = _center[2]*(1 - rScaleFactor[2]);
-    matrix.postMult(transform);
-    return true;
-  }
-  virtual osg::BoundingSphere computeBound() const
-  {
-    osg::BoundingSphere bs = osg::Group::computeBound();
-    _boundScale = normI(_scaleFactor);
-    bs.radius() *= _boundScale;
-    return bs;
-  }
-
-private:
-  SGVec3d _center;
-  SGVec3d _scaleFactor;
-  mutable double _boundScale;
-};
 
 class SGScaleAnimation::UpdateCallback : public osg::NodeCallback {
 public:
@@ -1056,8 +902,8 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (!_condition || _condition->test()) {
-      SGScaleAnimation::Transform* transform;
-      transform = static_cast<SGScaleAnimation::Transform*>(node);
+      SGScaleTransform* transform;
+      transform = static_cast<SGScaleTransform*>(node);
       SGVec3d scale(_animationValue[0]->getValue(),
                     _animationValue[1]->getValue(),
                     _animationValue[2]->getValue());
@@ -1150,7 +996,7 @@ SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
 osg::Group*
 SGScaleAnimation::createAnimationGroup(osg::Group& parent)
 {
-  Transform* transform = new Transform;
+  SGScaleTransform* transform = new SGScaleTransform;
   transform->setName("scale animation");
   transform->setCenter(_center);
   transform->setScaleFactor(_initialValue);

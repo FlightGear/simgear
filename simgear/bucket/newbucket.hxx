@@ -154,6 +154,10 @@ public:
      */
     SGBucket(const long int bindex);
 
+    /** Explicit Destructor
+     */
+    ~SGBucket();
+
     /**
      * Reset a bucket to represent a new lat and lon
      * @param dlon longitude specified in degrees

@@ -520,6 +520,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGEnlargeBoundingBox.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGGeoc.hxx"
 				>
 			</File>
@@ -564,6 +568,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGOffsetTransform.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGQuat.hxx"
 				>
 			</File>
@@ -573,6 +585,18 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\SGReferenced.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGRotateTransform.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGScaleTransform.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneFeatures.hxx"
 				>
 			</File>
 			<File
@@ -600,7 +624,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGTranslateTransform.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\SGUpdateVisitor.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.hxx"
 				>
 			</File>
 			<File
@@ -884,10 +916,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\tgdb\leaf.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\leastsqs.cxx"
 				>
 			</File>
@@ -1084,11 +1112,35 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGEnlargeBoundingBox.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGGeodesy.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGOffsetTransform.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGRotateTransform.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGScaleTransform.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneFeatures.cxx"
 				>
 			</File>
 			<File
@@ -1109,6 +1161,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\threads\SGThread.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGTranslateTransform.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx"
 				>
 			</File>
 			<File

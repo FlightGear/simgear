@@ -6,6 +6,15 @@ extern "C" {
 
 #include "naref.h"
 
+#if __GNUC__ > 2
+/* This marks the function as having no side effects and depending on
+ * nothing but its arguments, which allows the optimizer to avoid
+ * duplicate calls to naNil(). */
+#define GCC_PURE __attribute__((__pure__))
+#else
+#define GCC_PURE
+#endif
+
 typedef struct Context* naContext;
     
 // The function signature for an extension function:
@@ -27,7 +36,7 @@ naContext naSubContext(naContext super);
 // provision for sharing it, nor for validating the source or type of
 // the pointer returned.
 void naSetUserData(naContext c, void* p);
-void* naGetUserData(naContext c);
+void* naGetUserData(naContext c) GCC_PURE;
 
 // "Save" this object in the context, preventing it (and objects
 // referenced by it) from being garbage collected.
@@ -117,19 +126,19 @@ naRef naGetSourceFile(naContext ctx, int frame);
 char* naGetError(naContext ctx);
 
 // Type predicates
-int naIsNil(naRef r);
-int naIsNum(naRef r);
-int naIsString(naRef r);
-int naIsScalar(naRef r);
-int naIsVector(naRef r);
-int naIsHash(naRef r);
-int naIsCode(naRef r);
-int naIsFunc(naRef r);
-int naIsCCode(naRef r);
+int naIsNil(naRef r) GCC_PURE;
+int naIsNum(naRef r) GCC_PURE;
+int naIsString(naRef r) GCC_PURE;
+int naIsScalar(naRef r) GCC_PURE;
+int naIsVector(naRef r) GCC_PURE;
+int naIsHash(naRef r) GCC_PURE;
+int naIsCode(naRef r) GCC_PURE;
+int naIsFunc(naRef r) GCC_PURE;
+int naIsCCode(naRef r) GCC_PURE;
 
 // Allocators/generators:
-naRef naNil();
-naRef naNum(double num);
+naRef naNil() GCC_PURE;
+naRef naNum(double num) GCC_PURE;
 naRef naNewString(naContext c);
 naRef naNewVector(naContext c);
 naRef naNewHash(naContext c);
@@ -137,10 +146,10 @@ naRef naNewFunc(naContext c, naRef code);
 naRef naNewCCode(naContext c, naCFunction fptr);
 
 // Some useful conversion/comparison routines
-int naEqual(naRef a, naRef b);
-int naStrEqual(naRef a, naRef b);
-int naTrue(naRef b);
-naRef naNumValue(naRef n);
+int naEqual(naRef a, naRef b) GCC_PURE;
+int naStrEqual(naRef a, naRef b) GCC_PURE;
+int naTrue(naRef b) GCC_PURE;
+naRef naNumValue(naRef n) GCC_PURE;
 naRef naStringValue(naContext c, naRef n);
 
 // String utilities:

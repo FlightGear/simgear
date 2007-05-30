@@ -9,7 +9,7 @@
 // bitmask that sets the top 16 bits.  As a double, this is a
 // signalling NaN that cannot itself be produced by normal numerics
 // code.  The pointer value can be reconstructed if (and only if) we
-// are guaranteed that all memory that can be poitned to by a naRef
+// are guaranteed that all memory that can be pointed to by a naRef
 // (i.e. all memory returned by naAlloc) lives in the bottom 48 bits
 // of memory.  Linux on x86_64, Win64, Solaris and Irix all have such
 // policies with address spaces:
@@ -82,7 +82,7 @@ enum { T_STR, T_VEC, T_HASH, T_CODE, T_FUNC, T_CCODE, T_GHOST,
 #define MUTABLE(r) (IS_STR(r) && PTR(r).str->hashcode == 0)
 
 // This is a macro instead of a separate struct to allow compilers to
-// avoid padding.  GCC on x86, at least, will always padd the size of
+// avoid padding.  GCC on x86, at least, will always pad the size of
 // an embedded struct up to 32 bits.  Doing it this way allows the
 // implementing objects to pack in 16 bits worth of data "for free".
 #define GC_HEADER \

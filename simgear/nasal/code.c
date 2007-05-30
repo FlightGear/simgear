@@ -807,12 +807,30 @@ naRef naContinue(naContext ctx)
 {
     naRef result;
     if(!ctx->callParent) naModLock();
+
+    ctx->dieArg = naNil();
+    ctx->error[0] = 0;
+
     if(setjmp(ctx->jumpHandle)) {
         if(!ctx->callParent) naModUnlock(ctx);
+        else naRethrowError(ctx);
         return naNil();
     }
+
+    // Wipe off the old function arguments, and push the expected
+    // result (either the result of our subcontext, or a synthesized
+    // nil if the thrown error was from an extension function or
+    // in-script die() call) before re-running the code from the
+    // instruction following the error.
     ctx->opTop = ctx->opFrame;
-    PUSH(naNil());
+    PUSH(ctx->callChild ? naContinue(ctx->callChild) : naNil());
+
+    // Getting here means the child completed successfully.  But
+    // because its original C stack was longjmp'd out of existence,
+    // there is no one left to free the context, so we have to do it.
+    // This is fragile, but unfortunately required.
+    if(ctx->callChild) naFreeContext(ctx->callChild);
+
     result = run(ctx);
     if(!ctx->callParent) naModUnlock();
     return result;

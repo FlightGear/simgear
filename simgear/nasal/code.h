@@ -10,9 +10,13 @@
 #define MAX_MARK_DEPTH 128
 
 // Number of objects (per pool per thread) asked for using naGC_get().
-// Testing with fib.nas shows that this gives the best performance,
-// without too much per-thread overhead.
-#define OBJ_CACHE_SZ 128
+// The idea is that contexts can "cache" allocations to prevent thread
+// contention on the global pools.  But in practice this interacts
+// very badly with small subcontext calls, which grab huge numbers of
+// cached objects and don't use them, causing far more collections
+// than necessary.  Just leave it at 1 pending a rework of the
+// collector synchronization.
+#define OBJ_CACHE_SZ 1
 
 enum {    
     OP_NOT, OP_MUL, OP_PLUS, OP_MINUS, OP_DIV, OP_NEG,

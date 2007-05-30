@@ -227,29 +227,32 @@ static naRef f_call(naContext c, naRef me, int argc, naRef* args)
     if(!IS_FUNC(args[0]) || (!IS_NIL(callargs) && !IS_VEC(callargs)))
         ARGERR();
 
-    // Note that we don't free the subcontext, in case the user
-    // re-throws the same error.  That happens at the next OP_RETURN
-    // or naSubContext().
     subc = naSubContext(c);
     vr = IS_NIL(callargs) ? 0 : PTR(callargs).vec->rec;
     result = naCall(subc, args[0], vr ? vr->size : 0, vr ? vr->array : 0,
                     callme, callns);
-    if(naGetError(subc)) {
-        if(argc <= 2 || !IS_VEC(args[argc-1])) {
-            naRethrowError(subc);
-        } else {
-            int i, sd;
-            naRef errv = args[argc-1];
-            if(!IS_NIL(subc->dieArg)) naVec_append(errv, subc->dieArg);
-            else naVec_append(errv, NEWCSTR(subc, naGetError(subc)));
-            sd = naStackDepth(subc);
-            for(i=0; i<sd; i++) {
-                naVec_append(errv, naGetSourceFile(subc, i));
-                naVec_append(errv, naNum(naGetLine(subc, i)));
-            }
+    if(!naGetError(subc)) {
+        naFreeContext(subc);
+        return result;
+    }
+
+    // Error handling. Note that we don't free the subcontext after an
+    // error, in case the user re-throws the same error or calls
+    // naContinue()
+    if(argc <= 2 || !IS_VEC(args[argc-1])) {
+        naRethrowError(subc);
+    } else {
+        int i, sd;
+        naRef errv = args[argc-1];
+        if(!IS_NIL(subc->dieArg)) naVec_append(errv, subc->dieArg);
+        else naVec_append(errv, NEWCSTR(subc, naGetError(subc)));
+        sd = naStackDepth(subc);
+        for(i=0; i<sd; i++) {
+            naVec_append(errv, naGetSourceFile(subc, i));
+            naVec_append(errv, naNum(naGetLine(subc, i)));
         }
     }
-    return result;
+    return naNil();
 }
 
 static naRef f_die(naContext c, naRef me, int argc, naRef* args)

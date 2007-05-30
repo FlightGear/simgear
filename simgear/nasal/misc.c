@@ -5,17 +5,9 @@
 #include "nasal.h"
 #include "code.h"
 
-static void* chkptr(void* p)
-{
-    naRef foo;
-    SETPTR(foo, p);
-    if(PTR(foo).obj != p) *(int*)0=0;
-    return p;
-}
-
 void naFree(void* m) { free(m); }
-void* naAlloc(int n) { return chkptr(malloc(n)); }
-void* naRealloc(void* b, int n) { return chkptr(realloc(b, n)); }
+void* naAlloc(int n) { return malloc(n); }
+void* naRealloc(void* b, int n) { return realloc(b, n); }
 void naBZero(void* m, int n) { memset(m, 0, n); }
 
 void naTempSave(naContext c, naRef r)

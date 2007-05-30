@@ -471,13 +471,13 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
 	mat->setColorMode(osg::Material::OFF);
       } else if ((suppliedColors & defaultColorModeMask) != 0) {
 	// First deal with the complicated AMBIENT/DIFFUSE case.
-	if (defaultColorModeMask & AMBIENT_DIFFUSE != 0) {
+	if ((defaultColorModeMask & AMBIENT_DIFFUSE) != 0) {
 	  // glColor can supply colors not specified by the animation.
 	  unsigned matColorModeMask = ((~suppliedColors & defaultColorModeMask)
 				       & AMBIENT_DIFFUSE);
-	  if (matColorModeMask & DIFFUSE != 0)
+	  if ((matColorModeMask & DIFFUSE) != 0)
 	    mat->setColorMode(osg::Material::DIFFUSE);
-	  else if (matColorModeMask & AMBIENT != 0)
+	  else if ((matColorModeMask & AMBIENT) != 0)
 	    mat->setColorMode(osg::Material::AMBIENT);
 	  else
 	    mat->setColorMode(osg::Material::OFF);

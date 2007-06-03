@@ -29,6 +29,7 @@
 
 #include <osg/Geode>
 #include <osg/Geometry>
+#include <osg/MatrixTransform>
 #include <osg/StateSet>
 
 #include <simgear/bucket/newbucket.hxx>
@@ -126,6 +127,11 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
   geode->setName("Ocean tile");
   geode->addDrawable(geometry);
   geode->setStateSet(stateSet);
+
+  osg::MatrixTransform* transform = new osg::MatrixTransform;
+  transform->setName("Ocean");
+  transform->setMatrix(osg::Matrix::translate(cartCenter.osg()));
+  transform->addChild(geode);
   
-  return geode;
+  return transform;
 }

@@ -24,9 +24,25 @@
 
 #include <simgear/structure/SGReferenced.hxx>
 
+namespace osg { class Texture; }
+
 class SGSceneFeatures : public SGReferenced {
 public:
   static SGSceneFeatures* instance();
+
+  enum TextureCompression {
+    DoNotUseCompression,
+    UseARBCompression,
+    UseDXT1Compression,
+    UseDXT3Compression,
+    UseDXT5Compression
+  };
+
+  void setTextureCompression(TextureCompression textureCompression)
+  { _textureCompression = textureCompression; }
+  TextureCompression getTextureCompression() const
+  { return _textureCompression; }
+  void setTextureCompression(osg::Texture* texture) const;
 
   void setEnablePointSpriteLights(bool enable)
   { _pointSpriteLights = enable; }
@@ -67,6 +83,7 @@ private:
   SGSceneFeatures(const SGSceneFeatures&);
   SGSceneFeatures& operator=(const SGSceneFeatures&);
 
+  TextureCompression _textureCompression;
   bool _shaderLights;
   bool _pointSpriteLights;
   bool _distanceAttenuationLights;

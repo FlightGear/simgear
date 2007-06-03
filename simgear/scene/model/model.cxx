@@ -22,6 +22,7 @@
 #include <osgDB/SharedStateManager>
 #include <osgUtil/Optimizer>
 
+#include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
 
@@ -128,10 +129,6 @@ private:
 
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
-  SGTexCompressionVisitor(osg::Texture::InternalFormatMode formatMode) :
-    mFormatMode(formatMode)
-  { }
-
   virtual void apply(int, osg::StateSet::RefAttributePair& refAttr)
   {
     osg::Texture2D* texture;
@@ -145,15 +142,26 @@ public:
 
     int s = image->s();
     int t = image->t();
+
     if (s <= t && 32 <= s) {
-      texture->setInternalFormatMode(mFormatMode);
+      SGSceneFeatures::instance()->setTextureCompression(texture);
     } else if (t < s && 32 <= t) {
-      texture->setInternalFormatMode(mFormatMode);
+      SGSceneFeatures::instance()->setTextureCompression(texture);
     }
   }
+};
 
-private:
-  osg::Texture::InternalFormatMode mFormatMode;
+class SGTexDataVarianceVisitor : public SGTextureStateAttributeVisitor {
+public:
+  virtual void apply(int, osg::StateSet::RefAttributePair& refAttr)
+  {
+    osg::Texture* texture;
+    texture = dynamic_cast<osg::Texture*>(refAttr.first.get());
+    if (!texture)
+      return;
+    
+    texture->setDataVariance(osg::Object::STATIC);
+  }
 };
 
 class SGAcMaterialCrippleVisitor : public SGStateAttributeVisitor {
@@ -276,23 +284,17 @@ public:
       if (needTristrip)
         opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
       // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
-      opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
+      // opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
       optimizer.optimize(res.getNode(), opts);
 
-      // OSGFIXME
+      // Make sure the data variance of sharable objects is set to STATIC ...
+      SGTexDataVarianceVisitor dataVarianceVisitor;
+      res.getNode()->accept(dataVarianceVisitor);
+      // ... so that textures are now globally shared
       registry->getSharedStateManager()->share(res.getNode());
       
-      // OSGFIXME: guard that with a flag
-      // OSGFIXME: in the long term it is unclear if we have an OpenGL
-      // context here...
-      osg::Texture::Extensions* e = osg::Texture::getExtensions(0, true);
-      if (e->isTextureCompressionARBSupported()) {
-        SGTexCompressionVisitor texComp(osg::Texture::USE_ARB_COMPRESSION);
-        res.getNode()->accept(texComp);
-      } else if (e->isTextureCompressionS3TCSupported()) {
-        SGTexCompressionVisitor texComp(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-        res.getNode()->accept(texComp);
-      }
+      SGTexCompressionVisitor texComp;
+      res.getNode()->accept(texComp);
     }
 
     // Add an extra reference to the model stored in the database.
@@ -313,10 +315,14 @@ public:
     res = osgDB::ReaderWriter::ReadResult(osg::CopyOp(flags)(res.getNode()));
     res.getNode()->addObserver(databaseReference);
 
+    // Update liveries
     SGTextureUpdateVisitor liveryUpdate(osgDB::getDataFilePathList());
     res.getNode()->accept(liveryUpdate);
 
-    // OSGFIXME: don't forget that mutex here
+    // Make sure the data variance of sharable objects is set to STATIC ...
+    SGTexDataVarianceVisitor dataVarianceVisitor;
+    res.getNode()->accept(dataVarianceVisitor);
+    // ... so that textures are now globally shared
     registry->getOrCreateSharedStateManager()->share(res.getNode(), 0);
 
     return res;
@@ -359,19 +365,10 @@ SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
     int s = image->s();
     int t = image->t();
 
-    // OSGFIXME: guard with a flag
-    if (osg::Texture::getExtensions(0, true)->isTextureCompressionARBSupported()) {
-      if (s <= t && 32 <= s) {
-        texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
-      } else if (t < s && 32 <= t) {
-        texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
-      }
-    } else if (osg::Texture::getExtensions(0, true)->isTextureCompressionS3TCSupported()) {
-      if (s <= t && 32 <= s) {
-        texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-      } else if (t < s && 32 <= t) {
-        texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
-      }
+    if (s <= t && 32 <= s) {
+      SGSceneFeatures::instance()->setTextureCompression(texture.get());
+    } else if (t < s && 32 <= t) {
+      SGSceneFeatures::instance()->setTextureCompression(texture.get());
     }
   }
 

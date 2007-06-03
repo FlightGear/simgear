@@ -29,12 +29,14 @@
 #include <osg/VertexProgram>
 #include <osg/Point>
 #include <osg/PointSprite>
+#include <osg/Texture>
 
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
 
 SGSceneFeatures::SGSceneFeatures() :
+  _textureCompression(UseARBCompression),
   _shaderLights(true),
   _pointSpriteLights(true),
   _distanceAttenuationLights(true)
@@ -53,6 +55,28 @@ SGSceneFeatures::instance()
     return sceneFeatures;
   sceneFeatures = new SGSceneFeatures;
   return sceneFeatures;
+}
+
+void
+SGSceneFeatures::setTextureCompression(osg::Texture* texture) const
+{
+  switch (_textureCompression) {
+  case UseARBCompression:
+    texture->setInternalFormatMode(osg::Texture::USE_ARB_COMPRESSION);
+    break;
+  case UseDXT1Compression:
+    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT1_COMPRESSION);
+    break;
+  case UseDXT3Compression:
+    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT3_COMPRESSION);
+    break;
+  case UseDXT5Compression:
+    texture->setInternalFormatMode(osg::Texture::USE_S3TC_DXT5_COMPRESSION);
+    break;
+  default:
+    texture->setInternalFormatMode(osg::Texture::USE_IMAGE_DATA_FORMAT);
+    break;
+  }
 }
 
 bool

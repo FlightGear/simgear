@@ -43,6 +43,7 @@
 
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include "matmodel.hxx"
 
@@ -52,18 +53,6 @@ SG_USING_STD(map);
 
 
 class SGMaterialGlyph;
-
-class SGTextureFilterListener  {
-private:
-  static int filter;
-
-  SGTextureFilterListener() {
-  }
-  
-public:
-  static int getFilter();
-  static void setFilter(int filt);
- };
 
 /**
  * A material in the scene graph.
@@ -344,5 +333,11 @@ public:
 private:
   SGSharedPtr<const SGMaterial> mMaterial;
 };
+
+void
+SGSetTextureFilter( int max);
+
+int
+SGGetTextureFilter();
 
 #endif // _SG_MAT_HXX 

@@ -326,7 +326,7 @@ void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
    {
       osg::Texture2D* texture = SGLoadTexture2D(fname, _wrapu, _wrapv,
                                                 mipmap ? -1 : 0);
-      texture->setMaxAnisotropy( SGTextureFilterListener::getFilter());
+	  texture->setMaxAnisotropy( SGGetTextureFilter());
       state->setTextureAttributeAndModes(0, texture);
       _tex_cache[fname] = texture;
    }
@@ -361,15 +361,12 @@ SGMaterialGlyph::SGMaterialGlyph(SGPropertyNode *p) :
 {
 }
 
-////////////////////////////////////////////////////////////////////////
-// SGTextureFilterListener
-////////////////////////////////////////////////////////////////////////
+void
+SGSetTextureFilter( int max) {
+	SGSceneFeatures::instance()->setTextureFilter( max);
+}
 
-
-int SGTextureFilterListener::filter = 1;
-
-int SGTextureFilterListener::getFilter() { return filter; };
-void SGTextureFilterListener::setFilter(int filt) { 
-    filter = filt;
-};
-// end of mat.cxx
+int
+SGGetTextureFilter() {
+	return SGSceneFeatures::instance()->getTextureFilter();
+}

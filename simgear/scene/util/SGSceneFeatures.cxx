@@ -39,7 +39,8 @@ SGSceneFeatures::SGSceneFeatures() :
   _textureCompression(UseARBCompression),
   _shaderLights(true),
   _pointSpriteLights(true),
-  _distanceAttenuationLights(true)
+  _distanceAttenuationLights(true),
+  _textureFilter(1)
 {
 }
 

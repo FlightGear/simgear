@@ -70,6 +70,12 @@ public:
       return false;
     return getHaveShaderPrograms(contextId);
   }
+  
+  void setTextureFilter( int max) 
+  { _textureFilter = max; }
+  int getTextureFilter() const {
+	  return _textureFilter;
+  }
 
 protected:  
   bool getHavePointSprites(unsigned contextId) const;
@@ -87,6 +93,7 @@ private:
   bool _shaderLights;
   bool _pointSpriteLights;
   bool _distanceAttenuationLights;
+  int  _textureFilter;
 };
 
 #endif

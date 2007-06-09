@@ -747,6 +747,14 @@ bool SGMetar::scanSkyCondition()
 	int i;
 	SGMetarCloud cl;
 
+	if (!strncmp(m, "//////", 6)) {
+		m += 6;
+		if (!scanBoundary(&m))
+			return false;
+		_m = m;
+		return true;
+	}
+
 	if (!strncmp(m, "CLR", i = 3)				// clear
 			|| !strncmp(m, "SKC", i = 3)		// sky clear
 			|| !strncmp(m, "NSC", i = 3)		// no significant clouds
@@ -836,7 +844,7 @@ bool SGMetar::scanTemperature()
 		return false;
 	if (!scanBoundary(&m)) {
 		if (!strncmp(m, "XX", 2))	// not spec compliant!
-			m += 2, sign = 0;
+			m += 2, sign = 0, dew = temp;
 		else {
 			sign = 1;
 			if (*m == 'M')

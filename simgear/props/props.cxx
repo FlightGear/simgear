@@ -598,7 +598,7 @@ SGPropertyNode::trace_write () const
   cerr << "TRACE: Write node " << getPath () << ", value\""
        << make_string() << '"' << endl;
 #else
-  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Write node " << getPath()
+  SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << getPath()
 	 << ", value\"" << make_string() << '"');
 #endif
 }
@@ -613,7 +613,7 @@ SGPropertyNode::trace_read () const
   cerr << "TRACE: Write node " << getPath () << ", value \""
        << make_string() << '"' << endl;
 #else
-  SG_LOG(SG_GENERAL, SG_INFO, "TRACE: Read node " << getPath()
+  SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Read node " << getPath()
 	 << ", value \"" << make_string() << '"');
 #endif
 }

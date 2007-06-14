@@ -71,8 +71,8 @@ bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
     fclose(fp);
     free(ibuffer);
 
-    printf("wrote file (%d x %d pixels, %d bytes)\n",
-	   win_width, win_height, RGB3*win_width*win_height);
+    printf("wrote file '%s' (%d x %d pixels, %d bytes)\n",
+	   filename, win_width, win_height, RGB3*win_width*win_height);
     return true;
 }
 

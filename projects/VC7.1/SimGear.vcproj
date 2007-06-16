@@ -710,6 +710,30 @@
 				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGOffsetTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGOffsetTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGRotateTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGRotateTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGScaleTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGScaleTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGTranslateTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGTranslateTransform.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\shadanim.cxx">
 			</File>
 		</Filter>
@@ -767,12 +791,6 @@
 				RelativePath="..\..\simgear\scene\tgdb\apt_signs.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\tgdb\leaf.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\tgdb\leaf.hxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\tgdb\obj.cxx">
 			</File>
 			<File
@@ -783,6 +801,18 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\pt_lights.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\userdata.cxx">
@@ -986,7 +1016,19 @@
 				RelativePath="..\..\simgear\scene\util\SGDebugDrawCallback.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SGEnlargeBoundingBox.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGEnlargeBoundingBox.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\SGNodeMasks.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneFeatures.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGSceneFeatures.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\SGSceneUserData.cxx">

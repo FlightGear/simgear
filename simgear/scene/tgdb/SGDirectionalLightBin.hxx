@@ -64,8 +64,7 @@ public:
 
     LightList sortedLights;
     sortedLights.reserve(_lights.size());
-    LightSet::const_iterator i;
-    for (i = lightSet.begin(); i != lightSet.end(); ++i)
+    for (LightSet::const_iterator i = lightSet.begin(); i != lightSet.end(); ++i)
       sortedLights.push_back(*i);
 
     return sortedLights;

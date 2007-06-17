@@ -923,7 +923,7 @@ SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
   _condition = getCondition();
 
   // default offset/factor for all directions
-  double offset = configNode->getDoubleValue("offset", 1);
+  double offset = configNode->getDoubleValue("offset", 0);
   double factor = configNode->getDoubleValue("factor", 1);
 
   std::string inputPropertyName;

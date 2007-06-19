@@ -595,7 +595,7 @@ void
 SGPropertyNode::trace_write () const
 {
 #if PROPS_STANDALONE
-  cerr << "TRACE: Write node " << getPath () << ", value\""
+  cerr << "TRACE: Write node " << getPath () << ", value \""
        << make_string() << '"' << endl;
 #else
   SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << getPath()

@@ -599,7 +599,7 @@ SGPropertyNode::trace_write () const
        << make_string() << '"' << endl;
 #else
   SG_LOG(SG_GENERAL, SG_ALERT, "TRACE: Write node " << getPath()
-	 << ", value\"" << make_string() << '"');
+	 << ", value \"" << make_string() << '"');
 #endif
 }
 

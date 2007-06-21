@@ -338,6 +338,9 @@ SGSoundSample::set_orientation( ALfloat *dir, ALfloat inner_angle,
     inner = inner_angle;
     outer = outer_angle;
     outergain = outer_gain;
+    direction[0] = dir[0];
+    direction[1] = dir[1];
+    direction[2] = dir[2];
     if (playing) {
         alSourcefv( source, AL_DIRECTION, dir);
         alSourcef( source, AL_CONE_INNER_ANGLE, inner );

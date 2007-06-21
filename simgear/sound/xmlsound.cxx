@@ -237,7 +237,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    SGPropertyNode_ptr pos = node->getChild("position");
    if ( pos != NULL ) {
        offset_pos[0] = pos->getDoubleValue("x", 0.0);
-       offset_pos[1] = pos->getDoubleValue("y", 0.0);
+       offset_pos[1] = -pos->getDoubleValue("y", 0.0);
        offset_pos[2] = pos->getDoubleValue("z", 0.0);
    }
 
@@ -252,7 +252,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    pos = node->getChild("orientation");
    if ( pos != NULL ) {
       dir[0] = pos->getDoubleValue("x", 0.0);
-      dir[1] = pos->getDoubleValue("y", 0.0);
+      dir[1] = -pos->getDoubleValue("y", 0.0);
       dir[2] = pos->getDoubleValue("z", 0.0);
       inner = pos->getDoubleValue("inner-angle", 360.0);
       outer = pos->getDoubleValue("outer-angle", 360.0);

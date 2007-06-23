@@ -424,15 +424,15 @@ SGXmlSound::update (double dt)
    //
    // Change sample state
    //
+
+   double vol = volume_offset + volume;
+   if (vol > 1.0) {
+      SG_LOG(SG_GENERAL, SG_WARN, "Sound volume too large for '"
+              << _name << "':  " << vol << "  ->  clipping to 1.0");
+      vol = 1.0;
+   }
+   _sample->set_volume(vol);
    _sample->set_pitch( pitch_offset + pitch );
-   if ((volume_offset + volume ) > 1.0)
-   {
-      _sample->set_volume( 1.0 );
-      SG_LOG(SG_GENERAL, SG_WARN,
-             "Volume larger than 1.0 in configuration for '" << _name
-              << "', clipping.");
-   } else 
-      _sample->set_volume( volume_offset + volume );
 
 
    //

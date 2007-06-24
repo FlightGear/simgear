@@ -1,6 +1,9 @@
 // Visual environment helper class
 //
 // Written by Harald JOHNSEN, started April 2005.
+// Minor changes/additions by Vivian Meazza Apr- May 2007
+//
+// Ported to OSG by Tim Moore Jun 2007
 //
 // Copyright (C) 2005  Harald JOHNSEN - hjohnsen@evc.net
 //
@@ -331,9 +334,7 @@ void SGEnviro::setLight(sgVec4 adj_fog_color) {
 	}
 }
 
-void SGEnviro::callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId) {
-  // OSGFIXME
-  return;
+void SGEnviro::callback_cloud(float bearing, float alt, float radius, int family, float dist, int cloudId) {
 	// send data to wx radar
 	// compute turbulence
 	// draw precipitation
@@ -405,9 +406,10 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int family
 			LWC = 0.29*2.0;
 			break;
 	}
+
 	// add to the list for the wxRadar instrument
 	if( LWC > 0.0 )
-		radarEcho.push_back( SGWxRadarEcho ( heading, alt, radius, dist, LWC, false, cloudId ) );
+		radarEcho.push_back( SGWxRadarEcho ( bearing, alt, radius, dist, 0.0 , LWC, false, cloudId, false ) );
 
 	// NB:data valid only from cockpit view
 
@@ -420,7 +422,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int family
 		orig.setlon(last_lon * SG_DEGREES_TO_RADIANS );
 		orig.setelev(0.0);
 		dist = sgSqrt(dist);
-		dest = calc_gc_lon_lat(orig, heading, dist);
+		dest = calc_gc_lon_lat(orig, bearing, dist);
 		lon = dest.lon() * SG_RADIANS_TO_DEGREES;
 		lat = dest.lat() * SG_RADIANS_TO_DEGREES;
 		addLightning( lon, lat, alt );
@@ -712,7 +714,7 @@ void SGLightning::lt_Render(void) {
 
 	glTranslatef( ax, ay, -sgEnviro.last_alt );
 
-	sgEnviro.radarEcho.push_back( SGWxRadarEcho ( course, 0.0, 0.0, dist, age, true, 0 ) );
+	sgEnviro.radarEcho.push_back( SGWxRadarEcho ( course, 0.0, 0.0, dist, 0.0, age, true, 0, false ) );
 
 	for( int n = 0 ; n < nb_tree ; n++ ) {
         if( lt_tree[n].prev < 0 )

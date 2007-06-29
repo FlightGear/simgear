@@ -42,15 +42,24 @@ public:
   }
 };
 
-main (int ac, const char ** av)
+int main (int ac, const char ** av)
 {
   MyVisitor visitor;
 
   for (int i = 1; i < ac; i++) {
     ifstream input(av[i]);
     cout << "Reading " << av[i] << endl;
-    if (!readXML(input, visitor)) {
+    try {
+      readXML(input, visitor);
+
+    } catch (const sg_exception& e) {
+      cerr << "Error: file '" << av[i] << "' " << e.getFormattedMessage() << endl;
+      return -1;
+
+    } catch (...) {
       cerr << "Error reading from " << av[i] << endl;
+      return -1;
     }
   }
+  return 0;
 }

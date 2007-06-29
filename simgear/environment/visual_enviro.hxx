@@ -1,9 +1,6 @@
 // Visual environment helper class
 //
 // Written by Harald JOHNSEN, started April 2005.
-// Minor changes/additions by Vivian Meazza Apr- May 2007
-//
-// Ported to OSG by Tim Moore Jun 2007
 //
 // Copyright (C) 2005  Harald JOHNSEN - hjohnsen@evc.net
 //
@@ -43,32 +40,24 @@ class SGSoundMgr;
  */
 class SGWxRadarEcho {
 public:
-	SGWxRadarEcho(float _bearing, float _alt, float _radius, float _dist, float _heading,
-			double _LWC, bool _lightning, int _cloudId, bool _aircraft) :
-	  bearing (_bearing),
+	SGWxRadarEcho(float _heading, float _alt, float _radius, float _dist,
+			double _LWC, bool _lightning, int _cloudId ) :
 	  heading( _heading ),
 	  alt ( _alt ),
 	  radius ( _radius ),
 	  dist ( _dist ),
 	  LWC ( _LWC ),
 	  lightning ( _lightning ),
-	  aircraft ( _aircraft ),
 	  cloudId ( _cloudId )
 	{}
 
-	/** the heading and bearing in radian are versus north */
-	float bearing, heading;
+	/** the heading in radian is versus north */
+	float heading;
 	float alt, radius, dist;
-
 	/** reflectivity converted to liquid water content. */
 	double LWC;
-
 	/** if true then this data is for a lightning else it is for water echo. */
-	bool   lightning;
-
-	/** if true then this data is for an aircraft  */
-	bool aircraft;
-
+	bool lightning;
 	/** Unique identifier of cloud */
 	int cloudId;
 };

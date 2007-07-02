@@ -40,6 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+
+#include <simgear/structure/exception.hxx>
+
 #include "lowleveltime.h"
 
 
@@ -331,19 +334,18 @@ static void fgtzset_internal (int always, const char *tz)
   fgtzfile_read (tz);
   if (use_fgtzfile)
     return;
-  // The default behaviour of the originale tzset_internal (int always, char* tz) 
-  // function is to set up a default timezone, in any casetz file_read() fails
-  // Currently this leads to problems, because it modidifies the system timezone
+  // The default behaviour of the original tzset_internal (int always, char* tz) 
+  // function is to set up a default timezone, in any case file_read() fails
+  // Currently this leads to problems, because it modifies the system timezone
   // and not the local aircraft timezone, contained in FlightGear. I could adapt 
   // this in future versions of this code, but doubt whether this is what we really
-  // want. So right now, exit when timezone information reading failed. 
+  // want. So right now, throw an exception when timezone information reading failed. 
   // Guess I'll change that to something like 12 * (FG_LON / 180.0)
   // 
   // For now, I'll leave it like this.
   else
   {
-    printf ("Timezone reading failed\n");
-    exit(1);
+    throw sg_exception("Timezone reading failed");
   }
   // this emacs "comment out" function is cool!
  

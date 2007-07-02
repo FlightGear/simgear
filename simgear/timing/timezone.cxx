@@ -29,6 +29,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
+
+#include <simgear/structure/exception.hxx>
+
 #include "timezone.h"
 
 SGTimeZone::SGTimeZone(float la, float lo, char* cc, char* desc) :
@@ -126,8 +129,9 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     char buffer[256];
     FILE* infile = fopen(filename, "rb");
     if (!(infile)) {
-        fprintf(stderr, "Unable to open file %s\n", filename);
-        exit(1);
+        string e = "Unable to open time zone file '";
+        throw sg_exception(e + filename + '\'');
+
     } else { 
         errno = 0;
     

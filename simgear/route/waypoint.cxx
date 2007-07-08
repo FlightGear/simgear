@@ -32,7 +32,7 @@
 
 // Constructor
 SGWayPoint::SGWayPoint( const double lon, const double lat, const double alt,
-			const modetype m, const string s, const string n ) {
+			const modetype m, const string& s, const string& n ) {
     target_lon = lon;
     target_lat = lat;
     target_alt = alt;

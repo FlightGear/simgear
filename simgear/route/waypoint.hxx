@@ -91,7 +91,7 @@ public:
      */
     SGWayPoint( const double lon = 0.0, const double lat = 0.0,
 		const double alt = 0.0, const modetype m = WGS84,
-		const string s = "", const string n = "" );
+		const string& s = "", const string& n = "" );
 
     /** Destructor */
     ~SGWayPoint();

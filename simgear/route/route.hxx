@@ -32,13 +32,10 @@
 # error This library requires C++
 #endif
 
-
 #include <simgear/compiler.h>
 
-#include STL_STRING
 #include <vector>
 
-SG_USING_STD(string);
 SG_USING_STD(vector);
 
 #include <simgear/route/waypoint.hxx>

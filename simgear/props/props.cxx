@@ -116,7 +116,7 @@ parse_name (const string &path, int &i)
       name = ".";
     }
     if (i < max && path[i] != '/')
-      throw string("Illegal character after " + name);
+      throw string("illegal character after " + name);
   }
 
   else if (isalpha(path[i]) || path[i] == '_') {
@@ -295,7 +295,7 @@ find_node (SGPropertyNode * current,
   else if (components[position].name == "..") {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
-      throw string("Attempt to move past root with '..'");
+      throw string("attempt to move past root with '..'");
     else
       return find_node(parent, components, position + 1, create);
   }
@@ -739,7 +739,11 @@ SGPropertyNode::SGPropertyNode (const char * name,
     _attr(READ|WRITE),
     _listeners(0)
 {
-  _name = name;
+  int i = 0;
+  _name = parse_name(name, i);
+  if (i != int(strlen(name)) || name[0] == '.')
+    throw string("plain name expected instead of '") + name + '\'';
+
   _local_val.string_val = 0;
 }
 

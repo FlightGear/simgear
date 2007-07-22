@@ -59,7 +59,7 @@
   #define USE_OPEN_AL_DOPPLER_WITH_FIXED_LISTENER better than nothing
  #endif
 #else
-//the Open_AL Doppler calculation seem to be buggy on windows
+ // the Open_AL Doppler calculation seems to be buggy on windows
  #define USE_SOFTWARE_DOPPLER seem to be necessary
 #endif
 
@@ -128,7 +128,7 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( const char *path, const char *file , bool no_Doppler_effect = true );
+    SGSoundSample( const char *path, const char *file, bool no_Doppler_effect = true );
 
     /**
      * Constructor.
@@ -139,7 +139,7 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( unsigned char *_data, int len, int _freq , bool no_Doppler_effect = true );
+    SGSoundSample( unsigned char *_data, int len, int _freq, bool no_Doppler_effect = true );
 
     ~SGSoundSample();
 
@@ -224,7 +224,7 @@ public:
     /**
      * Set velocity of sound source (uses same coordinate system as opengl)
      */
-    void set_source_vel( ALfloat *vel , ALfloat *listener_vel );
+    void set_source_vel( ALfloat *vel, ALfloat *listener_vel );
 
 
     /**

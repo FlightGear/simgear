@@ -85,7 +85,7 @@ SGSoundSample::SGSoundSample() :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( const char *path, const char *file , bool _no_Doppler_effect ) :
+SGSoundSample::SGSoundSample( const char *path, const char *file, bool _no_Doppler_effect ) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -99,7 +99,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file , bool _no_Dopp
 #endif
     playing(false),
     no_Doppler_effect(_no_Doppler_effect)
-    {
+{
     SGPath samplepath( path );
     if ( strlen(file) ) {
         samplepath.append( file );
@@ -155,7 +155,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file , bool _no_Dopp
 }
 
 // constructor
-SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq , bool _no_Doppler_effect ) :
+SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq, bool _no_Doppler_effect ) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -267,9 +267,9 @@ SGSoundSample::bind_source() {
     alSourcef( source, AL_GAIN, volume );
 #else
     print_openal_error("bind_sources return");
-    alSourcef( source, AL_PITCH, pitch *doppler_pitch_factor );
-    alGetError(); //ignore if the pitch is clamped by the driver
-    alSourcef( source, AL_GAIN, volume *doppler_volume_factor );
+    alSourcef( source, AL_PITCH, pitch * doppler_pitch_factor );
+    alGetError(); // ignore if the pitch is clamped by the driver
+    alSourcef( source, AL_GAIN, volume * doppler_volume_factor );
 #endif
     alSourcefv( source, AL_POSITION, source_pos );
     alSourcefv( source, AL_DIRECTION, direction );
@@ -302,7 +302,7 @@ SGSoundSample::set_pitch( double p ) {
         print_openal_error("set_pitch");
 #else
         alSourcef( source, AL_PITCH, pitch * doppler_pitch_factor );
-        alGetError(); //ignore if the pitch is clamped by the driver
+        alGetError(); // ignore if the pitch is clamped by the driver
 #endif
     }
 }
@@ -385,7 +385,7 @@ SGSoundSample::set_orientation( ALfloat *dir, ALfloat inner_angle,
 }
 
 void
-SGSoundSample::set_source_vel( ALfloat *vel , ALfloat *listener_vel ) {
+SGSoundSample::set_source_vel( ALfloat *vel, ALfloat *listener_vel ) {
     if (no_Doppler_effect) {
         source_vel[0] = listener_vel[0];
         source_vel[1] = listener_vel[1];
@@ -416,8 +416,8 @@ SGSoundSample::set_source_vel( ALfloat *vel , ALfloat *listener_vel ) {
     sgAddVec3( final_pos, source_pos, offset_pos );
     mfp = sgLengthVec3(final_pos);
     if (mfp > 1e-6) {
-        double vls = - sgScalarProductVec3( listener_vel, final_pos ) / mfp;
-        double vss = - sgScalarProductVec3( source_vel, final_pos ) / mfp;
+        double vls = -sgScalarProductVec3( listener_vel, final_pos ) / mfp;
+        double vss = -sgScalarProductVec3( source_vel, final_pos ) / mfp;
         if (fabs(340 - vss) > 1e-6)
         {
             doppler = (340 - vls) / (340 - vss);

@@ -345,6 +345,6 @@ void SGSoundMgr::set_source_vel_all( ALfloat *vel ) {
     sample_map_iterator sample_end = samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
 	SGSoundSample *sample = sample_current->second;
-        sample->set_source_vel( vel , listener_vel );
+        sample->set_source_vel( vel, listener_vel );
     }
 }

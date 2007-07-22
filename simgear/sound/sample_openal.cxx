@@ -75,12 +75,13 @@ SGSoundSample::SGSoundSample() :
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
-    playing(false)
+    playing(false),
+    no_Doppler_effect(true)
 {
 }
 
 // constructor
-SGSoundSample::SGSoundSample( const char *path, const char *file) :
+SGSoundSample::SGSoundSample( const char *path, const char *file , bool _no_Doppler_effect ) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -88,8 +89,9 @@ SGSoundSample::SGSoundSample( const char *path, const char *file) :
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
-    playing(false)
-{
+    playing(false),
+    no_Doppler_effect(_no_Doppler_effect)
+    {
     SGPath samplepath( path );
     if ( strlen(file) ) {
         samplepath.append( file );
@@ -145,7 +147,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file) :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
+SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq , bool _no_Doppler_effect ) :
     buffer(0),
     source(0),
     pitch(1.0),
@@ -153,7 +155,8 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq ) :
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
-    playing(false)
+    playing(false),
+    no_Doppler_effect(_no_Doppler_effect)
 {
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
 
@@ -313,6 +316,7 @@ SGSoundSample::set_source_pos( ALfloat *pos ) {
         sgAddVec3( final_pos, source_pos, offset_pos );
 
         alSourcefv( source, AL_POSITION, final_pos );
+        print_openal_error("set_source_pos");
     }
 }
 
@@ -327,6 +331,7 @@ SGSoundSample::set_offset_pos( ALfloat *pos ) {
         sgAddVec3( final_pos, source_pos, offset_pos );
 
         alSourcefv( source, AL_POSITION, final_pos );
+        print_openal_error("set_offset_pos");
     }
 }
 
@@ -350,10 +355,16 @@ SGSoundSample::set_orientation( ALfloat *dir, ALfloat inner_angle,
 }
 
 void
-SGSoundSample::set_source_vel( ALfloat *vel ) {
-    source_vel[0] = vel[0];
-    source_vel[1] = vel[1];
-    source_vel[2] = vel[2];
+SGSoundSample::set_source_vel( ALfloat *vel , ALfloat *listener_vel ) {
+    if (no_Doppler_effect) {
+        source_vel[0] = listener_vel[0];
+        source_vel[1] = listener_vel[1];
+        source_vel[2] = listener_vel[2];
+    } else {
+        source_vel[0] = vel[0];
+        source_vel[1] = vel[1];
+        source_vel[2] = vel[2];
+    }
     if (playing) {
         alSourcefv( source, AL_VELOCITY, source_vel );
     }

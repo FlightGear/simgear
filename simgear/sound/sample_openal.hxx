@@ -52,6 +52,7 @@
 # include <AL/alut.h>
 #endif
 
+
 SG_USING_STD(string);
 
 /**
@@ -96,6 +97,7 @@ private:
 
     bool playing;
     bool bind_source();
+    bool no_Doppler_effect;
 
 public:
 
@@ -112,7 +114,7 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( const char *path, const char *file );
+    SGSoundSample( const char *path, const char *file , bool no_Doppler_effect = true );
 
     /**
      * Constructor.
@@ -123,7 +125,7 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( unsigned char *_data, int len, int _freq );
+    SGSoundSample( unsigned char *_data, int len, int _freq , bool no_Doppler_effect = true );
 
     ~SGSoundSample();
 
@@ -208,7 +210,7 @@ public:
     /**
      * Set velocity of sound source (uses same coordinate system as opengl)
      */
-    void set_source_vel( ALfloat *vel );
+    void set_source_vel( ALfloat *vel , ALfloat *listener_vel );
 
 
     /**

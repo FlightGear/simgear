@@ -206,7 +206,9 @@ public:
         listener_vel[0] = vel[0];
         listener_vel[1] = vel[1];
         listener_vel[2] = vel[2];
+#ifdef USE_OPEN_AL_DOPPLER
         alListenerfv( AL_VELOCITY, listener_vel );
+#endif
     }
 
     /**

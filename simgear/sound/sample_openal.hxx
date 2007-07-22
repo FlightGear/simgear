@@ -52,6 +52,16 @@
 # include <AL/alut.h>
 #endif
 
+#ifndef HAVE_WINDOWS_H
+ #ifdef AL_VERSION_1_2
+  #define USE_OPEN_AL_DOPPLER should work
+ #else
+  #define USE_OPEN_AL_DOPPLER_WITH_FIXED_LISTENER better than nothing
+ #endif
+#else
+//the Open_AL Doppler calculation seem to be buggy on windows
+ #define USE_SOFTWARE_DOPPLER seem to be necessary
+#endif
 
 SG_USING_STD(string);
 
@@ -91,6 +101,10 @@ private:
 
     double pitch;
     double volume;
+#ifdef USE_SOFTWARE_DOPPLER
+    double doppler_pitch_factor;
+    double doppler_volume_factor;
+#endif
     double reference_dist;
     double max_dist;
     ALboolean loop;

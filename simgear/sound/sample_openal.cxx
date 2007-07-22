@@ -75,6 +75,10 @@ SGSoundSample::SGSoundSample() :
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
+#ifdef USE_SOFTWARE_DOPPLER
+    doppler_pitch_factor(1),
+    doppler_volume_factor(1),
+#endif
     playing(false),
     no_Doppler_effect(true)
 {
@@ -89,6 +93,10 @@ SGSoundSample::SGSoundSample( const char *path, const char *file , bool _no_Dopp
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
+#ifdef USE_SOFTWARE_DOPPLER
+    doppler_pitch_factor(1),
+    doppler_volume_factor(1),
+#endif
     playing(false),
     no_Doppler_effect(_no_Doppler_effect)
     {
@@ -155,6 +163,10 @@ SGSoundSample::SGSoundSample( unsigned char *_data, int len, int _freq , bool _n
     reference_dist(500.0),
     max_dist(3000.),
     loop(AL_FALSE),
+#ifdef USE_SOFTWARE_DOPPLER
+    doppler_pitch_factor(1),
+    doppler_volume_factor(1),
+#endif
     playing(false),
     no_Doppler_effect(_no_Doppler_effect)
 {
@@ -250,14 +262,23 @@ SGSoundSample::bind_source() {
     }
 
     alSourcei( source, AL_BUFFER, buffer );
+#ifndef USE_SOFTWARE_DOPPLER
     alSourcef( source, AL_PITCH, pitch );
     alSourcef( source, AL_GAIN, volume );
+#else
+    print_openal_error("bind_sources return");
+    alSourcef( source, AL_PITCH, pitch *doppler_pitch_factor );
+    alGetError(); //ignore if the pitch is clamped by the driver
+    alSourcef( source, AL_GAIN, volume *doppler_volume_factor );
+#endif
     alSourcefv( source, AL_POSITION, source_pos );
     alSourcefv( source, AL_DIRECTION, direction );
     alSourcef( source, AL_CONE_INNER_ANGLE, inner );
     alSourcef( source, AL_CONE_OUTER_ANGLE, outer );
     alSourcef( source, AL_CONE_OUTER_GAIN, outergain);
+#ifdef USE_OPEN_AL_DOPPLER
     alSourcefv( source, AL_VELOCITY, source_vel );
+#endif
     alSourcei( source, AL_LOOPING, loop );
 
     alSourcei( source, AL_SOURCE_RELATIVE, AL_TRUE );
@@ -276,8 +297,13 @@ SGSoundSample::set_pitch( double p ) {
     if ( p > 2.0 ) { p = 2.0; }
     pitch = p;
     if (playing) {
+#ifndef USE_SOFTWARE_DOPPLER
         alSourcef( source, AL_PITCH, pitch );
         print_openal_error("set_pitch");
+#else
+        alSourcef( source, AL_PITCH, pitch * doppler_pitch_factor );
+        alGetError(); //ignore if the pitch is clamped by the driver
+#endif
     }
 }
 
@@ -285,7 +311,11 @@ void
 SGSoundSample::set_volume( double v ) {
     volume = v;
     if (playing) {
+#ifndef USE_SOFTWARE_DOPPLER
         alSourcef( source, AL_GAIN, volume );
+#else
+        alSourcef( source, AL_GAIN, volume * doppler_volume_factor );
+#endif
         print_openal_error("set_volume");
     }
 }
@@ -365,9 +395,75 @@ SGSoundSample::set_source_vel( ALfloat *vel , ALfloat *listener_vel ) {
         source_vel[1] = vel[1];
         source_vel[2] = vel[2];
     }
+#ifdef USE_OPEN_AL_DOPPLER
     if (playing) {
         alSourcefv( source, AL_VELOCITY, source_vel );
     }
+#elif defined (USE_OPEN_AL_DOPPLER_WITH_FIXED_LISTENER)
+    if (playing) {
+        sgVec3 relative_vel;
+        sgSubVec3( relative_vel, source_vel, listener_vel );
+        alSourcefv( source, AL_VELOCITY, relative_vel );
+    }
+#else
+    if (no_Doppler_effect) {
+        doppler_pitch_factor = 1;
+        doppler_volume_factor = 1;
+        return;
+    }
+    double doppler, mfp;
+    sgVec3 final_pos;
+    sgAddVec3( final_pos, source_pos, offset_pos );
+    mfp = sgLengthVec3(final_pos);
+    if (mfp > 1e-6) {
+        double vls = - sgScalarProductVec3( listener_vel, final_pos ) / mfp;
+        double vss = - sgScalarProductVec3( source_vel, final_pos ) / mfp;
+        if (fabs(340 - vss) > 1e-6)
+        {
+            doppler = (340 - vls) / (340 - vss);
+            doppler = ( doppler > 0) ? ( ( doppler < 10) ? doppler : 10 ) : 0;
+        }
+        else
+            doppler = 0;
+    }
+    else
+        doppler = 1;
+    /* the OpenAL documentation of the Doppler calculation
+    SS: AL_SPEED_OF_SOUND = speed of sound (default value 343.3)
+    DF: AL_DOPPLER_FACTOR = Doppler factor (default 1.0)
+    vls: Listener velocity scalar (scalar, projected on source-to-listener vector)
+    vss: Source velocity scalar (scalar, projected on source-to-listener vector)
+    SL = source to listener vector
+    SV = Source Velocity vector
+    LV = Listener Velocity vector
+    vls = DotProduct(SL, LV) / Mag(SL)
+    vss = DotProduct(SL, SV) / Mag(SL)
+    Dopper Calculation:
+    vss = min(vss, SS/DF)
+    vls = min(vls, SS/DF)
+    f' = f * (SS - DF*vls) / (SS - DF*vss)
+    */
+    if (doppler > 0.1) {
+        if (doppler < 10) {
+            doppler_pitch_factor = doppler;
+            doppler_volume_factor = 1;
+        }
+        else {
+            doppler_pitch_factor = (doppler < 11) ? doppler : 11;
+            doppler_volume_factor = (doppler < 11) ? 11-doppler : 0;
+        }
+    }
+    else {
+        doppler_pitch_factor = 0.1;
+        doppler_volume_factor = (doppler > 0) ? doppler * 10 : 0;
+    }
+    if (playing) {
+        alSourcef( source, AL_GAIN, volume * doppler_volume_factor );
+        print_openal_error("set_source_vel: volume");
+        alSourcef( source, AL_PITCH, pitch * doppler_pitch_factor );
+        alGetError(); //ignore if the pitch is clamped
+    }
+#endif
 }
 
 void

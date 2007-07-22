@@ -28,7 +28,11 @@
 class SGRotateTransform : public osg::Transform {
 public:
   SGRotateTransform();
+  SGRotateTransform(const SGRotateTransform&,
+                    const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
+  META_Node(simgear, SGRotateTransform);
+  
   void setCenter(const SGVec3f& center)
   { setCenter(toVec3d(center)); }
   void setCenter(const SGVec3d& center)

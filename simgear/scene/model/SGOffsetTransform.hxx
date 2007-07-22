@@ -26,11 +26,25 @@
 
 class SGOffsetTransform : public osg::Transform {
 public:
-  SGOffsetTransform(double scaleFactor);
+  SGOffsetTransform(double scaleFactor = 1.0);
+  SGOffsetTransform(const SGOffsetTransform&,
+                    const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+
+  META_Node(simgear, SGOffsetTransform);
+
+  double getScaleFactor() const { return _scaleFactor; };
+
+  void setScaleFactor(double scaleFactor)
+  {
+    _scaleFactor = scaleFactor;
+    _rScaleFactor = 1.0 / scaleFactor;
+  }
+  
   virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
                                          osg::NodeVisitor* nv) const;
   virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
                                          osg::NodeVisitor* nv) const;
+
 private:
   double _scaleFactor;
   double _rScaleFactor;

@@ -23,6 +23,10 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/Output>
+
 #include "SGRotateTransform.hxx"
 
 static void
@@ -75,6 +79,15 @@ SGRotateTransform::SGRotateTransform() :
   setReferenceFrame(RELATIVE_RF);
 }
 
+SGRotateTransform::SGRotateTransform(const SGRotateTransform& rot,
+                                     const osg::CopyOp& copyop) :
+    osg::Transform(rot, copyop),
+    _center(rot._center),
+    _axis(rot._axis),
+    _angleRad(rot._angleRad)
+{
+}
+
 bool
 SGRotateTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
                                              osg::NodeVisitor* nv) const
@@ -120,3 +133,73 @@ SGRotateTransform::computeBound() const
   return centerbs;
 }
 
+// Functions to read/write SGRotateTransform from/to a .osg file.
+
+namespace {
+
+bool RotateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
+{
+    SGRotateTransform& rot = static_cast<SGRotateTransform&>(obj);
+    if (fr[0].matchWord("center")) {
+        ++fr;
+        SGVec3d center;
+        if (fr.readSequence(center.osg()))
+            fr += 3;
+        else
+            return false;
+        rot.setCenter(center);
+    }
+    if (fr[0].matchWord("axis")) {
+        ++fr;
+        SGVec3d axis;
+        if (fr.readSequence(axis.osg()))
+            fr += 3;
+        else
+            return false;
+        rot.setCenter(axis);
+    }
+    if (fr[0].matchWord("angle")) {
+        ++fr;
+        double angle;
+        if (fr[0].getFloat(angle))
+            ++fr;
+        else
+            return false;
+        rot.setAngleRad(angle);
+    }
+    return true;
+}
+
+bool RotateTransform_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+{
+    const SGRotateTransform& rot = static_cast<const SGRotateTransform&>(obj);
+    const SGVec3d& center = rot.getCenter();
+    const SGVec3d& axis = rot.getAxis();
+    const double angle = rot.getAngleRad();
+    int prec = fw.precision();
+    fw.precision(15);
+    fw.indent() << "center ";
+    for (int i = 0; i < 3; i++) {
+        fw << center(i) << " ";
+    }
+    fw << std::endl;
+    fw.precision(prec);
+    fw.indent() << "axis ";
+    for (int i = 0; i < 3; i++) {
+        fw << axis(i) << " ";
+    }
+    fw << std::endl;
+    fw.indent() << "angle ";
+    fw << angle << std::endl;
+    return true;
+}
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_SGRotateTransformProxy
+(
+    new SGRotateTransform,
+    "SGRotateTransform",
+    "Object Node Transform SGRotateTransform Group",
+    &RotateTransform_readLocalData,
+    &RotateTransform_writeLocalData
+);

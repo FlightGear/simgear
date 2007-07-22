@@ -44,6 +44,10 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/Output>
+
 #include "SGScaleTransform.hxx"
 
 SGScaleTransform::SGScaleTransform() :
@@ -52,6 +56,15 @@ SGScaleTransform::SGScaleTransform() :
   _boundScale(1)
 {
   setReferenceFrame(RELATIVE_RF);
+}
+
+SGScaleTransform::SGScaleTransform(const SGScaleTransform& scale,
+                                   const osg::CopyOp& copyop) :
+    osg::Transform(scale, copyop),
+    _center(scale._center),
+    _scaleFactor(scale._scaleFactor),
+    _boundScale(scale._boundScale)
+{
 }
 
 bool
@@ -107,3 +120,59 @@ SGScaleTransform::computeBound() const
   bs.radius() *= _boundScale;
   return bs;
 }
+
+namespace {
+
+bool ScaleTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
+{
+    SGScaleTransform& scale = static_cast<SGScaleTransform&>(obj);
+    if (fr[0].matchWord("center")) {
+        ++fr;
+        SGVec3d center;
+        if (fr.readSequence(center.osg()))
+            fr += 3;
+        else
+            return false;
+        scale.setCenter(center);
+    }
+    if (fr[0].matchWord("scaleFactor")) {
+        ++fr;
+        SGVec3d scaleFactor;
+        if (fr.readSequence(scaleFactor.osg()))
+            fr += 3;
+        else
+            return false;
+        scale.setScaleFactor(scaleFactor);
+    }
+    return true;
+}
+
+bool ScaleTransform_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+{
+    const SGScaleTransform& scale = static_cast<const SGScaleTransform&>(obj);
+    const SGVec3d& center = scale.getCenter();
+    const SGVec3d& scaleFactor = scale.getScaleFactor();
+    int prec = fw.precision();
+    fw.precision(15);
+    fw.indent() << "center ";
+    for (int i = 0; i < 3; i++)
+        fw << center(i) << " ";
+    fw << std::endl;
+    fw.precision(prec);
+    fw.indent() << "scaleFactor ";
+    for (int i = 0; i < 3; i++)
+        fw << scaleFactor(i) << " ";
+    fw << std::endl;
+    return true;
+}
+
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_ScaleTransformProxy
+(
+    new SGScaleTransform,
+    "SGScaleTransform",
+    "Object Node Transform SGScaleTransform Group",
+    &ScaleTransform_readLocalData,
+    &ScaleTransform_writeLocalData
+);

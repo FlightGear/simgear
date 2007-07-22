@@ -23,11 +23,23 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/Output>
+
 #include "SGOffsetTransform.hxx"
 
 SGOffsetTransform::SGOffsetTransform(double scaleFactor) :
   _scaleFactor(scaleFactor),
   _rScaleFactor(1/scaleFactor)
+{
+}
+
+SGOffsetTransform::SGOffsetTransform(const SGOffsetTransform& offset,
+                                     const osg::CopyOp& copyop) :
+    osg::Transform(offset, copyop),
+    _scaleFactor(offset._scaleFactor),
+    _rScaleFactor(offset._rScaleFactor)
 {
 }
 
@@ -66,3 +78,39 @@ SGOffsetTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
   }
   return true;
 }
+
+namespace {
+
+bool OffsetTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
+{
+    SGOffsetTransform& offset = static_cast<SGOffsetTransform&>(obj);
+    if (fr[0].matchWord("scaleFactor")) {
+        ++fr;
+        double scaleFactor;
+        if (fr[0].getFloat(scaleFactor))
+            ++fr;
+        else
+            return false;
+        offset.setScaleFactor(scaleFactor);
+    }
+    return true;
+}
+
+bool OffsetTransform_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+{
+    const SGOffsetTransform& offset
+        = static_cast<const SGOffsetTransform&>(obj);
+    fw.indent() << "scaleFactor " << offset.getScaleFactor() << std::endl;
+    return true;
+}
+
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_SGOffsetTransformProxy
+(
+    new SGOffsetTransform,
+    "SGOffsetTransform",
+    "Object Node Transform SGOffsetTransform Group",
+    &OffsetTransform_readLocalData,
+    &OffsetTransform_writeLocalData
+);

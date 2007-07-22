@@ -27,6 +27,10 @@
 # error This library requires C++
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/Output>
+
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 
@@ -67,6 +71,16 @@ SGPlacementTransform::SGPlacementTransform(void) :
             0, 0, 0, 1)
 {
   setUpdateCallback(new UpdateCallback);
+}
+
+SGPlacementTransform::SGPlacementTransform(const SGPlacementTransform& trans,
+                                           const osg::CopyOp& copyop):
+  osg::Transform(trans, copyop),
+  _placement_offset(trans._placement_offset),
+  _scenery_center(trans._scenery_center),
+  _rotation(trans._rotation)
+{
+  
 }
 
 SGPlacementTransform::~SGPlacementTransform(void)
@@ -111,3 +125,97 @@ SGPlacementTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
     matrix = t;
   return true;
 }
+
+// Functions to read / write SGPlacementTrans from / to a .osg file,
+// mostly for debugging purposes.
+
+namespace {
+
+bool PlacementTrans_readLocalData(osg::Object& obj, osgDB::Input& fr)
+{
+    SGPlacementTransform& trans = static_cast<SGPlacementTransform&>(obj);
+    SGMatrixd rotation(1, 0, 0, 0,
+                       0, 1, 0, 0,
+                       0, 0, 1, 0,
+                       0, 0, 0, 1);
+    SGVec3d placementOffset(0, 0, 0);
+    SGVec3d sceneryCenter(0, 0, 0);
+    
+    if (fr[0].matchWord("rotation") && fr[1].isOpenBracket()) {
+        fr += 2;
+        for (int i = 0; i < 3; i++) {
+            SGVec3d scratch;
+            if (!fr.readSequence(scratch.osg()))
+                return false;
+            fr += 3;
+            for (int j = 0; j < 3; j++)
+                rotation(j, i) = scratch[j];
+        }
+        if (fr[0].isCloseBracket())
+            ++fr;
+        else
+            return false;
+    }
+    if (fr[0].matchWord("placement")) {
+        ++fr;
+        if (fr.readSequence(placementOffset.osg()))
+            fr += 3;
+        else
+            return false;
+    }
+    if (fr[0].matchWord("sceneryCenter")) {
+        ++fr;
+        if (fr.readSequence(sceneryCenter.osg()))
+            fr += 3;
+        else
+            return false;
+    }
+    trans.setTransform(placementOffset, rotation);
+    trans.setSceneryCenter(sceneryCenter);
+    return true;
+}
+
+bool PlacementTrans_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+{
+    const SGPlacementTransform& trans
+        = static_cast<const SGPlacementTransform&>(obj);
+    const SGMatrixd& rotation = trans.getRotation();
+    const SGVec3d& placement = trans.getGlobalPos();
+    const SGVec3d& sceneryCenter = trans.getSceneryCenter();
+    
+    fw.indent() << "rotation {" << std::endl;
+    fw.moveIn();
+    for (int i = 0; i < 3; i++) {
+        fw.indent();
+        for (int j = 0; j < 3; j++) {
+            fw << rotation(j, i) << " ";
+        }
+        fw << std::endl;
+    }
+    fw.moveOut();
+    fw.indent() << "}" << std::endl;
+    int prec = fw.precision();
+    fw.precision(15);
+    fw.indent() << "placement ";
+    for (int i = 0; i < 3; i++) {
+        fw << placement(i) << " ";
+    }
+    fw << std::endl;
+    fw.indent() << "sceneryCenter ";
+    for (int i = 0; i < 3; i++) {
+        fw << sceneryCenter(i) << " ";
+    }
+    fw << std::endl;
+    fw.precision(prec);
+    return true;
+}
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_SGPlacementTransProxy
+(
+    new SGPlacementTransform,
+    "SGPlacementTransform",
+    "Object Node Transform SGPlacementTransform Group",
+    &PlacementTrans_readLocalData,
+    &PlacementTrans_writeLocalData
+);

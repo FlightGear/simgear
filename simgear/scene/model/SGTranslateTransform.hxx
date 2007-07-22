@@ -28,7 +28,11 @@
 class SGTranslateTransform : public osg::Transform {
 public:
   SGTranslateTransform();
+  SGTranslateTransform(const SGTranslateTransform&,
+                       const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
+  META_Node(simgear, SGTranslateTransform);
+  
   void setAxis(const SGVec3d& axis)
   { _axis = axis; dirtyBound(); }
   const SGVec3d& getAxis() const

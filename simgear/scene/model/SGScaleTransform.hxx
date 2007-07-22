@@ -28,6 +28,10 @@
 class SGScaleTransform : public osg::Transform {
 public:
   SGScaleTransform();
+  SGScaleTransform(const SGScaleTransform&,
+                   const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+
+  META_Node(simgear, SGScaleTransform);
 
   void setCenter(const SGVec3f& center)
   { setCenter(toVec3d(center)); }

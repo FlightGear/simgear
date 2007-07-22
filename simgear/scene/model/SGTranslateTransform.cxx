@@ -23,6 +23,10 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/Output>
+
 #include "SGTranslateTransform.hxx"
 
 static inline void
@@ -40,6 +44,14 @@ SGTranslateTransform::SGTranslateTransform() :
   _value(0)
 {
   setReferenceFrame(RELATIVE_RF);
+}
+
+SGTranslateTransform::SGTranslateTransform(const SGTranslateTransform& trans,
+                                           const osg::CopyOp& copyop) :
+  osg::Transform(trans, copyop),
+  _axis(trans._axis),
+  _value(trans._value)
+{
 }
 
 bool
@@ -81,3 +93,57 @@ SGTranslateTransform::computeBound() const
   bs._center += _axis.osg()*_value;
   return bs;
 }
+
+namespace {
+
+bool TranslateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
+{
+    SGTranslateTransform& trans = static_cast<SGTranslateTransform&>(trans);
+
+    if (fr[0].matchWord("axis")) {
+        ++fr;
+        SGVec3d axis;
+        if (fr.readSequence(axis.osg()))
+            fr += 3;
+        else
+            return false;
+        trans.setAxis(axis);
+    }
+    if (fr[0].matchWord("value")) {
+        ++fr;
+        double value;
+        if (fr[0].getFloat(value))
+            ++fr;
+        else
+            return false;
+        trans.setValue(value);
+    }
+    return true;
+}
+
+bool TranslateTransform_writeLocalData(const osg::Object& obj,
+                                       osgDB::Output& fw)
+{
+    const SGTranslateTransform& trans
+        = static_cast<const SGTranslateTransform&>(obj);
+    const SGVec3d& axis = trans.getAxis();
+    double value = trans.getValue();
+    
+    fw.indent() << "axis ";
+    for (int i = 0; i < 3; i++)
+        fw << axis(i) << " ";
+    fw << std::endl;
+    fw.indent() << "value " << value << std::endl;
+    return true;
+}
+
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_SGTranslateTransformProxy
+(
+    new SGTranslateTransform,
+    "SGTranslateTransform",
+    "Object Node Transform SGTranslateTransform Group",
+    &TranslateTransform_readLocalData,
+    &TranslateTransform_writeLocalData
+);

@@ -11,7 +11,7 @@ noinst_PROGRAMS = testserial
 testserial_SOURCES = testserial.cxx
 
 testserial_LDADD = \
-	$(top_builddir)/simgear/serial/libsgserial.a \
+	libsgserial.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a
 
 INCLUDES = -I$(top_srcdir)

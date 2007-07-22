@@ -26,7 +26,7 @@ openal_test1_LDADD = \
 	$(openal_LIBS)
 
 openal_test2_LDADD = \
-	$(top_builddir)/simgear/sound/libsgsound.a \
+	libsgsound.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/structure/libsgstructure.a \

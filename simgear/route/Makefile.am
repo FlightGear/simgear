@@ -15,7 +15,7 @@ noinst_PROGRAMS = waytest routetest
 waytest_SOURCES = waytest.cxx
 
 waytest_LDADD = \
-	$(top_builddir)/simgear/route/libsgroute.a \
+	libsgroute.a \
 	$(top_builddir)/simgear/math/libsgmath.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
@@ -28,7 +28,7 @@ waytest_LDADD = \
 routetest_SOURCES = routetest.cxx
 
 routetest_LDADD = \
-	$(top_builddir)/simgear/route/libsgroute.a \
+	libsgroute.a \
 	$(top_builddir)/simgear/math/libsgmath.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(base_LIBS)

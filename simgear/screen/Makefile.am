@@ -41,7 +41,7 @@ noinst_PROGRAMS = TestRenderTexture
 TestRenderTexture_SOURCES = TestRenderTexture.cpp
 
 TestRenderTexture_LDADD = \
-	$(top_builddir)/simgear/screen/libsgscreen.a \
+	libsgscreen.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(opengl_LIBS)
 endif

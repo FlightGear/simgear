@@ -26,9 +26,15 @@ noinst_PROGRAMS = tabbed_value_test swap_test
 
 tabbed_value_test_SOURCES = tabbed_values_test.cxx
 tabbed_value_test_LDADD = \
-	$(top_builddir)/simgear/misc/libsgmisc.a \
+	libsgmisc.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a
+
+$(top_builddir)/simgear/xml/libsgxml.a:
+	cd $(top_builddir)/simgear/xml && $(MAKE) $(AM_MAKEFLAGS) libsgxml.a
+
+$(top_builddir)/simgear/debug/libsgdebug.a:
+	cd $(top_builddir)/simgear/debug && $(MAKE) $(AM_MAKEFLAGS) libsgdebug.a
 
 swap_test_SOURCES = swap_test.cpp
 

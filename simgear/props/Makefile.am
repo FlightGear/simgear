@@ -16,7 +16,7 @@ noinst_PROGRAMS = props_test
 
 props_test_SOURCES = props_test.cxx
 props_test_LDADD = \
-	$(top_builddir)/simgear/props/libsgprops.a \
+	libsgprops.a \
 	$(top_builddir)/simgear/xml/libsgxml.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \

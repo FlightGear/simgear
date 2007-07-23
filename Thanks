@@ -120,7 +120,7 @@ Petter Reinholdtsen <pere@games.no>
   Incorporated the Gnu automake/autoconf system (with libtool).
   This should streamline and standardize the build process for all
   Unix-like platforms.  It should have little effect on IDE type 
-  environments since the don't use the Unix make system.
+  environments since these don't use the Unix make system.
 
 
 Paul Schlyter <pausch@saaf.se>  

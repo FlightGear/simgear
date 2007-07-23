@@ -24,8 +24,10 @@ AC_ARG_WITH(cxx,
   esac
 ])
 
-echo CXX = $CXX
-echo CC = $CC
+AC_MSG_CHECKING([CXX])
+AC_MSG_RESULT([$CXX])
+AC_MSG_CHECKING([CC])
+AC_MSG_RESULT([$CC])
 
 dnl Checks for programs.
 AC_PROG_MAKE_SET

@@ -201,7 +201,7 @@ SGGeoc::getLongitudeDeg(void) const
 #ifdef SG_GEOC_NATIVE_DEGREE
   return _lon;
 #else
-  return _lon*SGD_DEGREES_TO_RADIANS;
+  return _lon*SGD_RADIANS_TO_DEGREES;
 #endif
 }
 
@@ -212,7 +212,7 @@ SGGeoc::setLongitudeDeg(double lon)
 #ifdef SG_GEOC_NATIVE_DEGREE
   _lon = lon;
 #else
-  _lon = lon*SGD_RADIANS_TO_DEGREES;
+  _lon = lon*SGD_DEGREES_TO_RADIANS;
 #endif
 }
 
@@ -245,7 +245,7 @@ SGGeoc::getLatitudeDeg(void) const
 #ifdef SG_GEOC_NATIVE_DEGREE
   return _lat;
 #else
-  return _lat*SGD_DEGREES_TO_RADIANS;
+  return _lat*SGD_RADIANS_TO_DEGREES;
 #endif
 }
 
@@ -256,7 +256,7 @@ SGGeoc::setLatitudeDeg(double lat)
 #ifdef SG_GEOC_NATIVE_DEGREE
   _lat = lat;
 #else
-  _lat = lat*SGD_RADIANS_TO_DEGREES;
+  _lat = lat*SGD_DEGREES_TO_RADIANS;
 #endif
 }
 

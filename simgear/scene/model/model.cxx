@@ -207,6 +207,15 @@ public:
   readNode(const std::string& fileName,
            const osgDB::ReaderWriter::Options* opt)
   {
+    osgDB::Registry* registry = osgDB::Registry::instance();
+    osgDB::ReaderWriter::ReadResult res;
+    // The BTG loader automatically looks for ".btg.gz" if a file with
+    // the .btg extension doesn't exist. Also, we don't want to add
+    // nodes, run the optimizer, etc. on the btg model.So, let it do
+    // its thing.
+    if (osgDB::equalCaseInsensitive(osgDB::getFileExtension(fileName), "btg")) {
+      return registry->readNodeImplementation(fileName, opt);
+    }
     std::string absFileName = osgDB::findDataFile(fileName);
     if (!osgDB::fileExists(absFileName)) {
       SG_LOG(SG_IO, SG_ALERT, "Cannot find model file \""
@@ -214,8 +223,6 @@ public:
       return osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND;
     }
 
-    osgDB::Registry* registry = osgDB::Registry::instance();
-    osgDB::ReaderWriter::ReadResult res;
     res = registry->readNodeImplementation(absFileName, opt);
     if (!res.validNode())
       return res;

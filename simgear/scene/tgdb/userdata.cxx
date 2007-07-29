@@ -25,6 +25,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+
 #include <simgear/sg_inlines.h>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -33,7 +35,7 @@
 #include <simgear/scene/material/matmodel.hxx>
 
 #include "userdata.hxx"
-
+#include "SGReaderWriterBTG.hxx"
 
 // the following are static values needed by the runtime object
 // loader.  However, the loading is done via a call back so these
@@ -46,6 +48,14 @@ static SGModelLib *modellib = NULL;
 static string model_root = "";
 static SGPropertyNode *root_props = NULL;
 static double sim_time_sec = 0.0;
+
+// Because BTG files are now loaded through the osgDB::Registry, there
+// are no symbols referenced by FlightGear in this library other than
+// sgUserDataInit. But the libraries are all statically linked, so
+// none of the other object files in this library would be included in
+// the executable! Sticking the static proxy here forces the BTG code
+// to be sucked in.
+osgDB::RegisterReaderWriterProxy<SGReaderWriterBTG> g_readerWriter_BTG_Proxy;
 
 void sgUserDataInit( SGModelLib *m, const string &r,
                      SGPropertyNode *p, double t ) {

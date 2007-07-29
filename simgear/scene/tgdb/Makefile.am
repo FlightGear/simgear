@@ -14,6 +14,7 @@ include_HEADERS = \
 	SGDirectionalLightBin.hxx \
 	SGLightBin.hxx \
 	SGOceanTile.hxx \
+	SGReaderWriterBTGOptions.hxx \
 	SGTexturedTriangleBin.hxx \
 	SGTriangleBin.hxx \
 	SGVertexArrayBin.hxx
@@ -24,6 +25,7 @@ libsgtgdb_a_SOURCES = \
 	pt_lights.cxx \
 	userdata.cxx \
 	SGOceanTile.cxx \
+	SGReaderWriterBTG.cxx \
 	SGVasiDrawable.cxx
 
 INCLUDES = -I$(top_srcdir)

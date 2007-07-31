@@ -58,8 +58,6 @@ SG_USING_STD(vector);
 #include <ieeefp.h>
 #endif
 
-extern SGSky *thesky;
-
 static list_of_culledCloud inViewClouds;
 
 // visibility distance for clouds in meters
@@ -396,7 +394,13 @@ void SGCloudField::cullClouds(sgVec3 eyePos, sgMat4 mat) {
 // because no field can have an infinite size (and we don't want to reach his border)
 // we draw this field and adjacent fields.
 // adjacent fields are not real, its the same field displaced by some offset
-void SGCloudField::Render(void) {
+void SGCloudField::Render(float *sun_color) {
+    // sun_color used to depend on an extern SGSky *thesky definition
+    // above.  However, this is bad form for a library and it's much
+    // more clean to just pass in the needed value.  For reference, here is
+    // the old way that sun_color was fetched ...
+    // float *sun_color = thesky->get_sun_color();
+
 #if 0
     sgVec3 eyePos;
 	double relx, rely;
@@ -437,7 +441,6 @@ void SGCloudField::Render(void) {
 	sgScaleVec3 ( SGNewCloud::ambLight, ambient , 1.1f);
 	// trying something else : clouds are more yellow/red at dawn/dusk
 	// and added a bit of blue ambient
-    float *sun_color = thesky->get_sun_color();
 	sgScaleVec3 ( SGNewCloud::sunlight, sun_color , 0.4f);
 	SGNewCloud::ambLight[2] += 0.1f;
 

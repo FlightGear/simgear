@@ -94,7 +94,7 @@ public:
 	void buildTestLayer(void);
 
 	// Render a cloud field
-	void Render(void);
+	void Render( float *sun_color );
 
 	// reposition the cloud layer at the specified origin and orientation
 	void reposition( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double dt, float direction, float speed);

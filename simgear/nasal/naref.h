@@ -5,7 +5,8 @@
  * platform-dependent endianness headers, just detect the platforms we
  * support.  This list is simpler and smaller, yet still quite
  * complete. */
-#if (defined(__x86_64) && defined(__linux__)) || defined(__sparcv9)
+#if (defined(__x86_64) && defined(__linux__)) || defined(__sparcv9) || \
+    defined(__powerpc64__)
 /* Win64 and Irix should work with this too, but have not been
  * tested */
 #   define NASAL_NAN64

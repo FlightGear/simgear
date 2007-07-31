@@ -92,7 +92,9 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
   rectangle.clear();
   rectangle.reserve(4);
   for ( i = 0; i < 4; ++i ) {
-    geod_nodes.push_back( Point3D::fromSGGeod(geod[i]) );
+    geod_nodes.push_back(Point3D(geod[i].getLongitudeDeg(),
+                                 geod[i].getLatitudeDeg(),
+                                 geod[i].getElevationM()));
     rectangle.push_back( i );
   }
   point_list texs = sgCalcTexCoords( b, geod_nodes, rectangle, 

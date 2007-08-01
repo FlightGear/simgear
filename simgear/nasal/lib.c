@@ -224,7 +224,7 @@ static naRef f_call(naContext c, naRef me, int argc, naRef* args)
     callns = argc > 3 ? args[3] : naNil(); // ditto
     if(!IS_HASH(callme)) callme = naNil();
     if(!IS_HASH(callns)) callns = naNil();
-    if(!IS_FUNC(args[0]) || (!IS_NIL(callargs) && !IS_VEC(callargs)))
+    if(argc==0 || !IS_FUNC(args[0]) || (!IS_NIL(callargs) && !IS_VEC(callargs)))
         ARGERR();
 
     subc = naSubContext(c);

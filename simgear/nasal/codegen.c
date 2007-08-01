@@ -110,6 +110,7 @@ static int genScalarConstant(struct Parser* p, struct Token* t)
 
 static int genLValue(struct Parser* p, struct Token* t, int* cidx)
 {
+    if(!t) naParseError(p, "bad lvalue", -1);
     if(t->type == TOK_LPAR && t->rule != PREC_SUFFIX) {
         return genLValue(p, LEFT(t), cidx); // Handle stuff like "(a) = 1"
     } else if(t->type == TOK_SYMBOL) {

@@ -4,26 +4,8 @@
 #include <simgear/math/point3d.hxx>
 #include "SGMath.hxx"
 
-/** 
- * Convert from geocentric coordinates to geodetic coordinates
- * @param lat_geoc (in) Geocentric latitude, radians, + = North
- * @param radius (in) C.G. radius to earth center (meters)
- * @param lat_geod (out) Geodetic latitude, radians, + = North
- * @param alt (out) C.G. altitude above mean sea level (meters)
- * @param sea_level_r (out) radius from earth center to sea level at
- *        local vertical (surface normal) of C.G. (meters)
- */
-inline void sgGeocToGeod(double lat_geoc, double radius,
-                         double *lat_geod, double *alt, double *sea_level_r)
-{
-  SGVec3<double> cart;
-  SGGeodesy::SGGeocToCart(SGGeoc::fromRadM(0, lat_geoc, radius), cart);
-  SGGeod geod;
-  SGGeodesy::SGCartToGeod(cart, geod);
-  *lat_geod = geod.getLatitudeRad();
-  *alt = geod.getElevationM();
-  *sea_level_r = SGGeodesy::SGGeodToSeaLevelRadius(geod);
-}
+// Compatibility header.
+// Please use the SGGeodesy and SGMath functions directly.
 
 /**
  * Convert from geodetic coordinates to geocentric coordinates.
@@ -128,9 +110,17 @@ inline Point3D sgGeodToCart(const Point3D& geod)
  * @param lon2 (out) degrees
  * @param az2 (out) return course in degrees
  */
-int geo_direct_wgs_84 ( double lat1, double lon1, double az1, 
-			double s, double *lat2, double *lon2,
-                        double *az2 );
+inline int geo_direct_wgs_84 ( double lat1, double lon1, double az1, 
+                               double s, double *lat2, double *lon2,
+                               double *az2 )
+{
+  SGGeod p2;
+  if (!SGGeodesy::direct(SGGeod::fromDeg(lon1, lat1), az1, s, p2, *az2))
+    return 1;
+  *lat2 = p2.getLatitudeDeg();
+  *lon2 = p2.getLongitudeDeg();
+  return 0;
+}
 inline int geo_direct_wgs_84 ( double alt, double lat1,
                         double lon1, double az1, 
 			double s, double *lat2, double *lon2,
@@ -149,12 +139,7 @@ inline int geo_direct_wgs_84 ( double alt, double lat1,
 inline int geo_direct_wgs_84(const SGGeod& p1, double az1,
                              double s, SGGeod& p2, double *az2 )
 {
-  double lat2, lon2;
-  int ret = geo_direct_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
-                              az1, s, &lat2, &lon2, az2);
-  p2.setLatitudeDeg(lat2);
-  p2.setLongitudeDeg(lon2);
-  return ret;
+  return !SGGeodesy::direct(p1, az1, s, p2, *az2);
 }
 
 /**
@@ -169,9 +154,13 @@ inline int geo_direct_wgs_84(const SGGeod& p1, double az1,
  * @param az2 (out) end heading degrees
  * @param s (out) distance meters
  */
-int geo_inverse_wgs_84( double lat1, double lon1, double lat2,
-			double lon2, double *az1, double *az2,
-                        double *s );
+inline int geo_inverse_wgs_84( double lat1, double lon1, double lat2,
+                               double lon2, double *az1, double *az2,
+                               double *s )
+{
+  return !SGGeodesy::inverse(SGGeod::fromDeg(lon1, lat1),
+                             SGGeod::fromDeg(lon2, lat2), *az1, *az2, *s);
+}
 inline int geo_inverse_wgs_84( double alt, double lat1,
                                double lon1, double lat2,
                                double lon2, double *az1, double *az2,
@@ -191,9 +180,7 @@ inline int geo_inverse_wgs_84( double alt, double lat1,
 inline int geo_inverse_wgs_84(const SGGeod& p1, const SGGeod& p2,
                               double *az1, double *az2, double *s )
 {
-  return geo_inverse_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
-                            p2.getLatitudeDeg(), p2.getLongitudeDeg(),
-                            az1, az2, s);
+  return !SGGeodesy::inverse(p1, p2, *az1, *az2, *s);
 }
 
 #endif // _SG_GEODESY_HXX

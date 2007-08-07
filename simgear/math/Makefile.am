@@ -17,7 +17,6 @@ include_HEADERS = \
 	point3d.hxx \
 	polar3d.hxx \
 	sg_geodesy.hxx \
-	sg_memory.h \
 	sg_random.h \
 	sg_types.hxx \
 	vector.hxx \
@@ -47,8 +46,6 @@ include_HEADERS = \
 libsgmath_a_SOURCES = \
 	interpolater.cxx \
 	leastsqs.cxx \
-	polar3d.cxx \
-	sg_geodesy.cxx \
 	sg_random.c \
 	vector.cxx \
 	SGGeodesy.cxx

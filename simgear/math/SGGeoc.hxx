@@ -74,6 +74,11 @@ public:
   /// Set the geocentric radius from the argument given in feet
   void setRadiusFt(double radius);
 
+  SGGeoc advanceRadM(double course, double distance) const;
+  static double courseRad(const SGGeoc& from, const SGGeoc& to);
+  static double courseDeg(const SGGeoc& from, const SGGeoc& to);
+  static double distanceM(const SGGeoc& from, const SGGeoc& to);
+
 private:
   /// This one is private since construction is not unique if you do
   /// not know the units of the arguments, use the factory methods for
@@ -286,6 +291,36 @@ void
 SGGeoc::setRadiusFt(double radius)
 {
   _radius = radius*SG_FEET_TO_METER;
+}
+
+inline
+SGGeoc
+SGGeoc::advanceRadM(double course, double distance) const
+{
+  SGGeoc result;
+  SGGeodesy::advanceRadM(*this, course, distance, result);
+  return result;
+}
+
+inline
+double
+SGGeoc::courseRad(const SGGeoc& from, const SGGeoc& to)
+{
+  return SGGeodesy::courseRad(from, to);
+}
+
+inline
+double
+SGGeoc::courseDeg(const SGGeoc& from, const SGGeoc& to)
+{
+  return SGMiscd::rad2deg(courseRad(from, to));
+}
+
+inline
+double
+SGGeoc::distanceM(const SGGeoc& from, const SGGeoc& to)
+{
+  return SGGeodesy::distanceM(from, to);
 }
 
 /// Output to an ostream

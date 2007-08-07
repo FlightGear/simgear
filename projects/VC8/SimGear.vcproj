@@ -468,10 +468,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\sg_memory.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\misc\sg_path.hxx"
 				>
 			</File>
@@ -1040,10 +1036,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\polar3d.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\props\props.cxx"
 				>
 			</File>
@@ -1085,10 +1077,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\io\sg_file.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\sg_geodesy.cxx"
 				>
 			</File>
 			<File

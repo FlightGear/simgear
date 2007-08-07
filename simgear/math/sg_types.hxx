@@ -63,25 +63,5 @@ typedef vector < string > string_list;
 typedef string_list::iterator string_list_iterator;
 typedef string_list::const_iterator const_string_list_iterator;
 
-
-/**
- * Simple 2d point class where members can be accessed as x, dist, or lon
- * and y, theta, or lat
- */
-class point2d {
-public:
-    union {
-	double x;
-	double dist;
-	double lon;
-    };
-    union {
-	double y;
-	double theta;
-	double lat;
-    };
-};
-
-
 #endif // _SG_TYPES_HXX
 

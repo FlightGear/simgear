@@ -308,19 +308,10 @@
 				RelativePath="..\..\simgear\math\point3d.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\polar3d.cxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\polar3d.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\sg_geodesy.cxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\sg_geodesy.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\sg_memory.h">
 			</File>
 			<File
 				RelativePath="..\..\simgear\math\sg_random.c">

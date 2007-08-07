@@ -45,6 +45,19 @@ public:
   /// Takes a geocentric coordinate data and returns the cartesian
   /// coordinates.
   static void SGGeocToCart(const SGGeoc& geoc, SGVec3<double>& cart);
+
+  // Geodetic course/distance computation
+  static bool direct(const SGGeod& p1, double course1,
+                     double distance, SGGeod& p2, double& course2);
+
+  static bool inverse(const SGGeod& p1, const SGGeod& p2, double& course1,
+                      double& course2, double& distance);
+
+  // Geocentric course/distance computation
+  static void advanceRadM(const SGGeoc& geoc, double course, double distance,
+                          SGGeoc& result);
+  static double courseRad(const SGGeoc& from, const SGGeoc& to);
+  static double distanceM(const SGGeoc& from, const SGGeoc& to);
 };
 
 #endif

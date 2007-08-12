@@ -13,7 +13,9 @@ include_HEADERS = \
 	SGSceneFeatures.hxx \
 	SGSceneUserData.hxx \
 	SGStateAttributeVisitor.hxx \
-	SGTextureStateAttributeVisitor.hxx
+	SGTextureStateAttributeVisitor.hxx \
+	VectorArrayAdapter.hxx
+
 
 libsgutil_a_SOURCES = \
 	SGEnlargeBoundingBox.cxx \

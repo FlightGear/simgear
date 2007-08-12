@@ -49,5 +49,8 @@
 point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 
+point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
+			    const int_list& fan, double scale = 1.0 );
+
 
 #endif // _TEXCOORD_HXX

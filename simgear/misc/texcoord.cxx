@@ -177,12 +177,18 @@ static inline Point3D basic_tex_coord( const Point3D& p,
 point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
 			    const int_list& fan, double scale )
 {
+    return sgCalcTexCoords(b.get_center_lat(), geod_nodes, fan, scale);
+}
+
+point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
+			    const int_list& fan, double scale )
+{
     // cout << "calculating texture coordinates for a specific fan of size = "
     //      << fan.size() << endl;
 
     // calculate perimeter based on center of this degree (not center
     // of bucket)
-    double clat = (int)b.get_center_lat();
+    double clat = (int)centerLat;
     if ( clat > 0 ) {
 	clat = (int)clat + 0.5;
     } else {

@@ -800,6 +800,15 @@
 				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGReaderWriterBTG.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGReaderWriterBTG.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGReaderWriterBTGOptions.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx">
 			</File>
 			<File

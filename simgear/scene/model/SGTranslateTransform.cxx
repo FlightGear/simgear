@@ -98,7 +98,7 @@ namespace {
 
 bool TranslateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
 {
-    SGTranslateTransform& trans = static_cast<SGTranslateTransform&>(trans);
+    SGTranslateTransform& trans = static_cast<SGTranslateTransform&>(obj);
 
     if (fr[0].matchWord("axis")) {
         ++fr;

@@ -39,6 +39,21 @@
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
+void fillDrawElements(int width, int height,
+                      osg::DrawElementsUShort::vector_type::iterator elements)
+{
+    for (int j = 0; j < height - 1; j++) {
+        for (int i = 0; i < width - 1; i++) {
+            *elements++ = j * width + i;
+            *elements++ = j * width + i + 1;
+            *elements++ = (j + 1) * width + i;
+            *elements++ = (j + 1) * width + i;
+            *elements++ = j * width + i + 1;
+            *elements++ = (j + 1) * width + i + 1;
+        }
+    }
+}
+
 // Generate an ocean tile
 osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
 {
@@ -61,54 +76,59 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
   
   // Calculate center point
   SGVec3d cartCenter = SGVec3d::fromGeod(b.get_center());
-  Point3D center = Point3D(cartCenter[0], cartCenter[1], cartCenter[2]);
   
   double clon = b.get_center_lon();
   double clat = b.get_center_lat();
   double height = b.get_height();
   double width = b.get_width();
-  
-  // Caculate corner vertices
-  SGGeod geod[4];
-  geod[0] = SGGeod::fromDeg( clon - 0.5*width, clat - 0.5*height );
-  geod[1] = SGGeod::fromDeg( clon + 0.5*width, clat - 0.5*height );
-  geod[2] = SGGeod::fromDeg( clon + 0.5*width, clat + 0.5*height );
-  geod[3] = SGGeod::fromDeg( clon - 0.5*width, clat + 0.5*height );
-  
-  int i;
-  SGVec3f normals[4];
-  SGVec3d rel[4];
-  for ( i = 0; i < 4; ++i ) {
-    SGVec3d cart = SGVec3d::fromGeod(geod[i]);
-    rel[i] = cart - center.toSGVec3d();
-    normals[i] = toVec3f(normalize(cart));
+
+  // Calculate vertices. By splitting the tile up into 4 quads on a
+  // side we avoid curvature-of-the-earth problems; the error should
+  // be less than .5 meters.
+  SGGeod geod[5][5];
+  SGVec3f normals[5][5];
+  SGVec3d rel[5][5];
+  double longInc = width * .25;
+  double latInc = height * .25;
+  double startLat = clat - height * .5;
+  double startLon = clon - width * .5;
+  for (int j = 0; j < 5; j++) {
+    double lat = startLat + j * latInc;
+    for (int i = 0; i < 5; i++) {
+      geod[i][j] = SGGeod::fromDeg(startLon + i * longInc, lat);
+      SGVec3d cart = SGVec3d::fromGeod(geod[i][j]);
+      rel[i][j] = cart - cartCenter;
+      normals[i][j] = toVec3f(normalize(cart));
+    }
   }
-  
+    
   // Calculate texture coordinates
   point_list geod_nodes;
-  geod_nodes.clear();
-  geod_nodes.reserve(4);
+  geod_nodes.reserve(5 * 5);
   int_list rectangle;
-  rectangle.clear();
-  rectangle.reserve(4);
-  for ( i = 0; i < 4; ++i ) {
-    geod_nodes.push_back(Point3D(geod[i].getLongitudeDeg(),
-                                 geod[i].getLatitudeDeg(),
-                                 geod[i].getElevationM()));
-    rectangle.push_back( i );
+  rectangle.reserve(5 * 5);
+  for (int j = 0; j < 5; j++) {
+    for (int i = 0; i < 5; ++i) {
+      geod_nodes.push_back(Point3D(geod[i][j].getLongitudeDeg(),
+                                   geod[i][j].getLatitudeDeg(),
+                                   geod[i][j].getElevationM()));
+      rectangle.push_back(j * 5 + i);
+    }
   }
   point_list texs = sgCalcTexCoords( b, geod_nodes, rectangle, 
                                      1000.0 / tex_width );
   
-  // Allocate ssg structure
+  // Allocate osg structures
   osg::Vec3Array *vl = new osg::Vec3Array;
   osg::Vec3Array *nl = new osg::Vec3Array;
   osg::Vec2Array *tl = new osg::Vec2Array;
-  
-  for ( i = 0; i < 4; ++i ) {
-    vl->push_back(rel[i].osg());
-    nl->push_back(normals[i].osg());
-    tl->push_back(texs[i].toSGVec2f().osg());
+
+  for (int j = 0; j < 5; j++) {
+    for (int i = 0; i < 5; ++i) {
+      vl->push_back(rel[i][j].osg());
+      nl->push_back(normals[i][j].osg());
+      tl->push_back(texs[j * 5 + i].toSGVec2f().osg());
+    }
   }
   
   osg::Vec4Array* cl = new osg::Vec4Array;
@@ -121,9 +141,11 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
   geometry->setColorArray(cl);
   geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
   geometry->setTexCoordArray(0, tl);
-  osg::DrawArrays* drawArrays;
-  drawArrays = new osg::DrawArrays(GL_TRIANGLE_FAN, 0, vl->size());
-  geometry->addPrimitiveSet(drawArrays);
+
+  osg::DrawElementsUShort* drawElements
+      = new osg::DrawElementsUShort(GL_TRIANGLES, 32 * 3);
+  fillDrawElements(5, 5, drawElements->begin());
+  geometry->addPrimitiveSet(drawElements);
 
   osg::Geode* geode = new osg::Geode;
   geode->setName("Ocean tile");

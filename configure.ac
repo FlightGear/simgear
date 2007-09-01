@@ -390,7 +390,7 @@ AC_CHECK_HEADER(osg/Version)
 if test "x$ac_cv_header_osg_Version" != "xyes"; then
     echo
     echo "You *must* have the OpenSceneGraph support library installed on your system"
-    echo "to build the FGFS simulator!"
+    echo "to build this version of SimGear!"
     echo
     echo "Please see README.OSG for more details."
     echo

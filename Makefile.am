@@ -4,6 +4,8 @@ EXTRA_DIST = \
 	DoxygenMain.cxx \
 	README.MSVC \
 	README.zlib \
+	README.plib \
+	README.OpenAL \
 	projects \
 	SimGear.dsp \
 	SimGear.dsw

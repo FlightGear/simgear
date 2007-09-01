@@ -1,6 +1,6 @@
 [This file is mirrored in both the FlightGear and SimGear packages.]
 
-You *must* have plib version 1.6.0 or later installed on your system
+You *must* have plib version 1.8.4 or later installed on your system
 to build FlightGear!"  Flight Gear is no longer compatible with the
 earlier versions of the library.
 

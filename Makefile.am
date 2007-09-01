@@ -6,6 +6,7 @@ EXTRA_DIST = \
 	README.zlib \
 	README.plib \
 	README.OpenAL \
+	README.OSG \
 	projects \
 	SimGear.dsp \
 	SimGear.dsw

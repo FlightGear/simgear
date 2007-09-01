@@ -386,6 +386,18 @@ int main() {
 
 LIBS="$saved_LIBS"
 
+AC_CHECK_HEADER(osg/Version)
+if test "x$ac_cv_header_osg_Version" != "xyes"; then
+    echo
+    echo "You *must* have the OpenSceneGraph support library installed on your system"
+    echo "to build the FGFS simulator!"
+    echo
+    echo "Please see README.OSG for more details."
+    echo
+    echo "configure aborted."
+    exit
+fi
+
 AC_LANG_POP
 
 dnl Check for system installed zlib

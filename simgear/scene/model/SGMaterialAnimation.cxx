@@ -376,6 +376,8 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
 
   osgDB::FilePathList texturePathList = osgDB::getDataFilePathList();
 
+  if (getConfig()->hasChild("texture-prop"))
+      osg::StateSet* stateSet = group->getOrCreateStateSet();
   if (getConfig()->hasChild("texture")) {
     std::string textureName = getConfig()->getStringValue("texture");
     std::string textureFile;

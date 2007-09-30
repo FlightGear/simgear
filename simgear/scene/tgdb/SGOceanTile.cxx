@@ -298,11 +298,11 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
                                            + 2 * (latPoints - 1)));
     fillDrawElementsWithApron(latPoints, lonPoints, drawElements->begin());
     geometry->addPrimitiveSet(drawElements);
+    geometry->setStateSet(stateSet);
 
     osg::Geode* geode = new osg::Geode;
     geode->setName("Ocean tile");
     geode->addDrawable(geometry);
-    geode->setStateSet(stateSet);
 
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName("Ocean");

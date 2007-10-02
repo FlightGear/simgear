@@ -75,7 +75,8 @@ bool SGCloudLayer::enable_bump_mapping = false;
 
 // make an StateSet for a cloud layer given the named texture
 static osg::StateSet*
-SGMakeState(const SGPath &path, const char* colorTexture, const char* normalTexture)
+SGMakeState(const SGPath &path, const char* colorTexture,
+            const char* normalTexture)
 {
     osg::StateSet *stateSet = new osg::StateSet;
 
@@ -157,6 +158,9 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
 {
   layer_root->addChild(group_bottom.get());
   layer_root->addChild(group_top.get());
+  // Force the cloud layers into recursive bins of bin 4.
+  osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
+  rootSet->setRenderBinDetails(4, "RenderBin");
 
   group_top->addChild(layer_transform.get());
   group_bottom->addChild(layer_transform.get());
@@ -513,13 +517,12 @@ SGCloudLayer::rebuild()
     if ( layer_states[layer_coverage].valid() ) {
       osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_ALL
                          & ~osg::CopyOp::DEEP_COPY_TEXTURES);
-      
+      // render bin will be set in reposition
       osg::StateSet* stateSet = static_cast<osg::StateSet*>(layer_states2[layer_coverage]->clone(copyOp));
-      // OSGFIXME
-      stateSet->setRenderBinDetails(4, "RenderBin");
+      stateSet->setDataVariance(osg::Object::DYNAMIC);
       group_top->setStateSet(stateSet);
       stateSet = static_cast<osg::StateSet*>(layer_states2[layer_coverage]->clone(copyOp));
-      stateSet->setRenderBinDetails(4, "RenderBin");
+      stateSet->setDataVariance(osg::Object::DYNAMIC);
       group_bottom->setStateSet(stateSet);
     }
 }
@@ -847,12 +850,24 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
 
     layer_transform->setMatrix( LAT*LON*T );
-
+    // The layers need to be drawn in order because they are
+    // translucent, but OSG transparency sorting doesn't work because
+    // the cloud polys are huge. However, the ordering is simple: the
+    // bottom polys should be drawn from high altitude to low, and the
+    // top polygons from low to high. The altitude can be used
+    // directly to order the polygons!
+    layer_root->getChild(0)->getStateSet()->setRenderBinDetails(-(int)layer_asl,
+                                                                "RenderBin");
+    layer_root->getChild(1)->getStateSet()->setRenderBinDetails((int)layer_asl,
+                                                                "RenderBin");
     if ( alt <= layer_asl ) {
       layer_root->setSingleChildOn(0);
-    } else {
+    } else if ( alt >= layer_asl + layer_thickness ) {
       layer_root->setSingleChildOn(1);
+    } else {
+      layer_root->setAllChildrenOff();
     }
+        
 
     // now calculate update texture coordinates
     if ( last_lon < -900 ) {

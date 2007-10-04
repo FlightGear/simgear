@@ -39,6 +39,7 @@
 #include <osg/TexEnv>
 #include <osg/Texture2D>
 #include <osg/TextureCubeMap>
+#include <osg/TexMat>
 
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
@@ -161,6 +162,8 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
   // Force the cloud layers into recursive bins of bin 4.
   osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
   rootSet->setRenderBinDetails(4, "RenderBin");
+  rootSet->setTextureAttribute(0, new osg::TexMat());
+  base = osg::Vec2(sg_random(), sg_random());
 
   group_top->addChild(layer_transform.get());
   group_bottom->addChild(layer_transform.get());
@@ -246,6 +249,17 @@ SGCloudLayer::setCoverage (Coverage coverage)
         layer_coverage = coverage;
         rebuild();
     }
+}
+
+void
+SGCloudLayer::setTextureOffset(const osg::Vec2& offset)
+{
+    osg::StateAttribute* attr = layer_root->getStateSet()
+        ->getTextureAttribute(0, osg::StateAttribute::TEXMAT);
+    osg::TexMat* texMat = dynamic_cast<osg::TexMat*>(attr);
+    if (!texMat)
+        return;
+    texMat->setMatrix(osg::Matrix::translate(offset[0], offset[1], 0.0));
 }
 
 // build the cloud object
@@ -422,9 +436,8 @@ SGCloudLayer::rebuild()
 
     scale = 4000.0;
     last_lon = last_lat = -999.0f;
-    
-    base = osg::Vec2(sg_random(), sg_random());
-    
+
+    setTextureOffset(base);
     // build the cloud layer
     const float layer_scale = layer_span / scale;
     const float mpi = SG_PI/4;
@@ -451,7 +464,7 @@ SGCloudLayer::rebuild()
       
       osg::Vec3 vertex(layer_span*(i-2)/2, -layer_span,
                        alt_diff * (sin(i*mpi) - 2));
-      osg::Vec2 tc(base[0] + layer_scale * i/4, base[1]);
+      osg::Vec2 tc(layer_scale * i/4, 0.0f);
       osg::Vec4 color(1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f);
       
       cl[i]->push_back(color);
@@ -461,8 +474,7 @@ SGCloudLayer::rebuild()
       for (int j = 0; j < 4; j++) {
         vertex = osg::Vec3(layer_span*(i-1)/2, layer_span*(j-2)/2,
                            alt_diff * (sin((i+1)*mpi) + sin(j*mpi) - 2));
-        tc = osg::Vec2(base[0] + layer_scale * (i+1)/4,
-                       base[1] + layer_scale * j/4);
+        tc = osg::Vec2(layer_scale * (i+1)/4, layer_scale * j/4);
         color = osg::Vec4(1.0f, 1.0f, 1.0f,
                           ( (j == 0) || (i == 3)) ?  
                           ( (j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f );
@@ -473,8 +485,7 @@ SGCloudLayer::rebuild()
         
         vertex = osg::Vec3(layer_span*(i-2)/2, layer_span*(j-1)/2,
                            alt_diff * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
-        tc = osg::Vec2(base[0] + layer_scale * i/4,
-                       base[1] + layer_scale * (j+1)/4 );
+        tc = osg::Vec2(layer_scale * i/4, layer_scale * (j+1)/4 );
         color = osg::Vec4(1.0f, 1.0f, 1.0f,
                           ((j == 3) || (i == 0)) ?
                           ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f );
@@ -486,8 +497,7 @@ SGCloudLayer::rebuild()
       vertex = osg::Vec3(layer_span*(i-1)/2, layer_span, 
                          alt_diff * (sin((i+1)*mpi) - 2));
       
-      tc = osg::Vec2(base[0] + layer_scale * (i+1)/4,
-                     base[1] + layer_scale);
+      tc = osg::Vec2(layer_scale * (i+1)/4, layer_scale);
       
       color = osg::Vec4(1.0f, 1.0f, 1.0f, (i == 3) ? 0.0f : 0.15f );
       
@@ -947,15 +957,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 
         // cout << "base = " << base[0] << "," << base[1] << endl;
 
-        for (int i = 0; i < 4; i++) {
-          (*tl[i])[0] = base + osg::Vec2(i, 0)*layer_scale/4;
-          for (int j = 0; j < 4; j++) {
-            (*tl[i])[j*2+1] = base + osg::Vec2(i+1, j)*layer_scale/4;
-            (*tl[i])[j*2+2] = base + osg::Vec2(i, j+1)*layer_scale/4;
-          }
-          (*tl[i])[9] = base + osg::Vec2(i+1, 4)*layer_scale/4;
-        }
-
+        setTextureOffset(base);
         last_lon = lon;
         last_lat = lat;
     }

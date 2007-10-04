@@ -189,7 +189,8 @@ public:
 
     /** return the 3D layer cloud associated with this 2D layer */
     SGCloudField *get_layer3D(void) { return layer3D; }
-
+protected:
+    void setTextureOffset(const osg::Vec2& offset);
 private:
 
     osg::ref_ptr<osg::Switch> layer_root;

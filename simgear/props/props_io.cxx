@@ -279,6 +279,8 @@ PropsVisitor::endElement (const char * name)
       ret = st.node->setStringValue(_data.c_str());
     } else if (st.type == "unspecified") {
       ret = st.node->setUnspecifiedValue(_data.c_str());
+    } else if (_level == 1) {
+      ret = true;		// empty <PropertyList>
     } else {
       string message = "Unrecognized data type '";
       message += st.type;

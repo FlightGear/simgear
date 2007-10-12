@@ -217,7 +217,18 @@ public:
     if (osgDB::equalCaseInsensitive(osgDB::getFileExtension(fileName), "btg")) {
       return registry->readNodeImplementation(fileName, opt);
     }
-    std::string absFileName = osgDB::findDataFile(fileName);
+    // First, look for a file with the same name, and the extension
+    // ".osg" and, if it exists, load it instead. This allows for
+    // substitution of optimized models for ones named in the scenery.
+    bool optimizeModel = true;
+    std::string fileSansExtension = osgDB::getNameLessExtension(fileName);
+    std::string osgFileName = fileSansExtension + ".osg";
+    std::string absFileName = osgDB::findDataFile(osgFileName);
+    if (osgDB::fileExists(absFileName)) {
+      optimizeModel = false;
+    } else {
+      absFileName = osgDB::findDataFile(fileName);
+    }
     if (!osgDB::fileExists(absFileName)) {
       SG_LOG(SG_IO, SG_ALERT, "Cannot find model file \""
              << fileName << "\"");
@@ -236,7 +247,7 @@ public:
         return res;
 
       bool needTristrip = true;
-      if (osgDB::getLowerCaseFileExtension(absFileName) == "ac") {
+      if (osgDB::getLowerCaseFileExtension(fileName) == "ac") {
         // we get optimal geometry from the loader.
         needTristrip = false;
         osg::Matrix m(1, 0, 0, 0,
@@ -253,10 +264,12 @@ public:
         transform->addChild(res.getNode());
         
         res = osgDB::ReaderWriter::ReadResult(0);
-        
-        osgUtil::Optimizer optimizer;
-        unsigned opts = osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
-        optimizer.optimize(root.get(), opts);
+
+        if (optimizeModel) {
+          osgUtil::Optimizer optimizer;
+          unsigned opts = osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
+          optimizer.optimize(root.get(), opts);
+        }
 
         // strip away unneeded groups
         if (root->getNumChildren() == 1 && root->getName().empty()) {
@@ -275,26 +288,27 @@ public:
         SGAcMaterialCrippleVisitor matCriple;
         res.getNode()->accept(matCriple);
       }
-      
-      osgUtil::Optimizer optimizer;
-      unsigned opts = 0;
-      // Don't use this one. It will break animation names ...
-      // opts |= osgUtil::Optimizer::REMOVE_REDUNDANT_NODES;
 
-      // opts |= osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES;
-      // opts |= osgUtil::Optimizer::COMBINE_ADJACENT_LODS;
-      // opts |= osgUtil::Optimizer::SHARE_DUPLICATE_STATE;
-      opts |= osgUtil::Optimizer::MERGE_GEOMETRY;
-      // opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
-      // opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
-      // opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
-      opts |= osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
-      if (needTristrip)
-        opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
-      // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
-      // opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
-      optimizer.optimize(res.getNode(), opts);
+      if (optimizeModel) {
+        osgUtil::Optimizer optimizer;
+        unsigned opts = 0;
+        // Don't use this one. It will break animation names ...
+        // opts |= osgUtil::Optimizer::REMOVE_REDUNDANT_NODES;
 
+        // opts |= osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES;
+        // opts |= osgUtil::Optimizer::COMBINE_ADJACENT_LODS;
+        // opts |= osgUtil::Optimizer::SHARE_DUPLICATE_STATE;
+        opts |= osgUtil::Optimizer::MERGE_GEOMETRY;
+        // opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
+        // opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
+        // opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
+        opts |= osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
+        if (needTristrip)
+          opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
+        // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
+        // opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
+        optimizer.optimize(res.getNode(), opts);
+      }
       // Make sure the data variance of sharable objects is set to STATIC ...
       SGTexDataVarianceVisitor dataVarianceVisitor;
       res.getNode()->accept(dataVarianceVisitor);

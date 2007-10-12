@@ -209,6 +209,7 @@ public:
   {
     osgDB::Registry* registry = osgDB::Registry::instance();
     osgDB::ReaderWriter::ReadResult res;
+    osg::Node* cached = 0;
     // The BTG loader automatically looks for ".btg.gz" if a file with
     // the .btg extension doesn't exist. Also, we don't want to add
     // nodes, run the optimizer, etc. on the btg model.So, let it do
@@ -222,17 +223,17 @@ public:
              << fileName << "\"");
       return osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND;
     }
-
-    res = registry->readNodeImplementation(absFileName, opt);
-    if (!res.validNode())
-      return res;
-
-    if (res.loadedFromCache()) {
-      SG_LOG(SG_IO, SG_INFO, "Returning cached model \""
+    cached
+        = dynamic_cast<osg::Node*>(registry->getFromObjectCache(absFileName));
+    if (cached) {
+      SG_LOG(SG_IO, SG_INFO, "Got cached model \""
              << absFileName << "\"");
     } else {
       SG_LOG(SG_IO, SG_INFO, "Reading model \""
              << absFileName << "\"");
+      res = registry->readNodeImplementation(absFileName, opt);
+      if (!res.validNode())
+        return res;
 
       bool needTristrip = true;
       if (osgDB::getLowerCaseFileExtension(absFileName) == "ac") {
@@ -302,15 +303,16 @@ public:
       
       SGTexCompressionVisitor texComp;
       res.getNode()->accept(texComp);
+      cached = res.getNode();
+      registry->addEntryToObjectCache(absFileName, cached);
     }
-
     // Add an extra reference to the model stored in the database.
     // That it to avoid expiring the object from the cache even if it is still
     // in use. Note that the object cache will think that a model is unused
     // if the reference count is 1. If we clone all structural nodes here
     // we need that extra reference to the original object
     SGDatabaseReference* databaseReference;
-    databaseReference = new SGDatabaseReference(res.getNode());
+    databaseReference = new SGDatabaseReference(cached);
     osg::CopyOp::CopyFlags flags = osg::CopyOp::DEEP_COPY_ALL;
     flags &= ~osg::CopyOp::DEEP_COPY_TEXTURES;
     flags &= ~osg::CopyOp::DEEP_COPY_IMAGES;
@@ -319,7 +321,7 @@ public:
     // This will safe display lists ...
     flags &= ~osg::CopyOp::DEEP_COPY_DRAWABLES;
     flags &= ~osg::CopyOp::DEEP_COPY_SHAPES;
-    res = osgDB::ReaderWriter::ReadResult(osg::CopyOp(flags)(res.getNode()));
+    res = osgDB::ReaderWriter::ReadResult(osg::CopyOp(flags)(cached));
     res.getNode()->addObserver(databaseReference);
 
     // Update liveries
@@ -344,7 +346,11 @@ public:
 
     osgDB::Registry* registry = osgDB::Registry::instance();
     osgDB::ReaderWriter::Options* options = new osgDB::ReaderWriter::Options;
-    options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_ALL);
+    // We manage node caching ourselves
+    int cacheOptions = osgDB::ReaderWriter::Options::CACHE_ALL
+      & ~osgDB::ReaderWriter::Options::CACHE_NODES;
+    options->
+      setObjectCacheHint((osgDB::ReaderWriter::Options::CacheHintOptions)cacheOptions);
     registry->setOptions(options);
     registry->getOrCreateSharedStateManager()->setShareMode(osgDB::SharedStateManager::SHARE_TEXTURES);
     registry->setReadFileCallback(new SGReadFileCallback);

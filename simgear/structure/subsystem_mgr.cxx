@@ -1,5 +1,6 @@
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 #include "exception.hxx"
 #include "subsystem_mgr.hxx"
@@ -70,6 +71,32 @@ SGSubsystem::is_suspended () const
 }
 
 
+void
+SGSubsystem::printTimingInformation ()
+{
+  SGTimeStamp startTime, endTime;
+   long duration;
+   for ( eventTimeVecIterator i = timingInfo.begin();
+          i != timingInfo.end();
+          i++) {
+       if (i == timingInfo.begin()) {
+           startTime = i->getTime();
+       } else {
+           endTime = i->getTime();
+           duration = (endTime - startTime);
+	   startTime = endTime;
+           SG_LOG(SG_GENERAL, SG_ALERT, "- Getting to timestamp :   " << i->getName() << " takes " << duration << " usec.");
+       }
+   }
+}
+
+void SGSubsystem::stamp(string name)
+{
+    SGTimeStamp now;
+    now.stamp();
+    timingInfo.push_back(TimingInfo(name, now));
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystemGroup.
@@ -124,7 +151,18 @@ void
 SGSubsystemGroup::update (double delta_time_sec)
 {
     for (unsigned int i = 0; i < _members.size(); i++)
-        _members[i]->update(delta_time_sec); // indirect call
+    {
+         SGTimeStamp start, now;
+         start.stamp();
+         _members[i]->update(delta_time_sec); // indirect call
+         now.stamp();
+         long b = ( now - start );
+         if ( b > 10000 ) {
+             SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert : " << b << " " << _members[i]->name);
+             //int a = 1;
+             _members[i]->printTimingInformation();
+         }
+    }
 }
 
 void
@@ -237,6 +275,13 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
             elapsed_sec = 0;
         }
     }
+}
+
+
+void 
+SGSubsystemGroup::Member::printTimingInformation()
+{
+     subsystem->printTimingInformation();
 }
 
 

@@ -1335,7 +1335,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
         tokens.push_back(buf);
         buf = strtok(NULL, " ");
     }
-
+    free(mode);
     for (unsigned int i = 0; i < tokens.size(); i++)
     {
         string token = tokens[i];

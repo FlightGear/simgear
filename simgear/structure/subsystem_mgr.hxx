@@ -38,10 +38,31 @@ SG_USING_STD(string);
 SG_USING_STD(vector);
 #endif
 
+#include <string>
 #include <map>
+#include <vector>
 SG_USING_STD(map);
+SG_USING_STD(vector);
+SG_USING_STD(string);
 
 #include <simgear/props/props.hxx>
+#include <simgear/timing/timestamp.hxx>
+
+
+class TimingInfo
+{
+private:
+    string eventName;
+    SGTimeStamp time;
+
+public: 
+    TimingInfo(string name, SGTimeStamp &t) { eventName = name; time = t;};
+    string getName() { return eventName; };
+    SGTimeStamp getTime() { return time; };
+};
+
+typedef vector<TimingInfo> eventTimeVec;
+typedef vector<TimingInfo>::iterator eventTimeVecIterator;
 
 
 
@@ -235,10 +256,17 @@ public:
    */
   virtual bool is_suspended () const;
 
+  void printTimingInformation();
+
+  void stamp(string name);
+
 
 protected:
 
   bool _suspended;
+
+  eventTimeVec timingInfo;
+  //int test;
 
 };
 
@@ -271,6 +299,7 @@ public:
     virtual void remove_subsystem (const string &name);
     virtual bool has_subsystem (const string &name) const;
 
+
 private:
 
     struct Member {
@@ -280,6 +309,7 @@ private:
         virtual ~Member ();
 
         virtual void update (double delta_time_sec);
+	void printTimingInformation();
 
         string name;
         SGSubsystem * subsystem;

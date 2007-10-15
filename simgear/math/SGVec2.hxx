@@ -18,6 +18,10 @@
 #ifndef SGVec2_H
 #define SGVec2_H
 
+#if defined ( __CYGWIN__ )
+#include <ieeefp.h>
+#endif
+
 #include <osg/Vec2f>
 #include <osg/Vec2d>
 

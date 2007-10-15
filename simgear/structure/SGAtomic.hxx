@@ -28,7 +28,7 @@
 #elif defined(__sgi) && defined(_COMPILER_VERSION) && (_COMPILER_VERSION>=730)
 // No need to include something. Is a Compiler API ...
 # define SGATOMIC_USE_MIPSPRO_BUILTINS
-#elif defined(WIN32) 
+#elif defined(WIN32)  && !defined ( __CYGWIN__ )
 # include <windows.h>
 # define SGATOMIC_USE_WIN32_INTERLOCKED
 #else

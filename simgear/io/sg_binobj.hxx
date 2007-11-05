@@ -74,9 +74,9 @@ typedef group_list::const_iterator const_group_list_iterator;
  *
  * - prop_typecode: material_name | ???
  *
- * - nelements: SHORT (Gives us 65536 which ought to be enough, right?)
+ * - nelements: USHORT (Gives us 65536 which ought to be enough, right?)
  *
- * - nproperties: SHORT
+ * - nproperties: USHORT
  *
  * - *_typecode: CHAR
  *

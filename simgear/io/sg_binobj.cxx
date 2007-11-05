@@ -364,18 +364,32 @@ bool SGBinObject::read_bin( const string& file ) {
 #endif
 
     // read number of top level objects
-    short nobjects;
-    sgReadShort( fp, &nobjects );
+    unsigned short nobjects;
+    if ( version >= 7 ) {
+        sgReadUShort( fp, &nobjects );
+    } else {
+        short tmp;
+        sgReadShort( fp, &tmp );
+        nobjects = tmp;
+    }
     // cout << "Total objects to read = " << nobjects << endl;
 
     // read in objects
     for ( i = 0; i < nobjects; ++i ) {
 	// read object header
 	char obj_type;
-	short nproperties, nelements;
+	unsigned short nproperties, nelements;
 	sgReadChar( fp, &obj_type );
-	sgReadShort( fp, &nproperties );
-	sgReadShort( fp, &nelements );
+        if ( version >= 7 ) {
+            sgReadUShort( fp, &nproperties );
+            sgReadUShort( fp, &nelements );
+        } else {
+            short tmp;
+            sgReadShort( fp, &tmp );
+            nproperties = tmp;
+            sgReadShort( fp, &tmp );
+            nelements = tmp;
+        }
 
 	// cout << "object " << i << " = " << (int)obj_type << " props = "
 	//      << nproperties << " elements = " << nelements << endl;
@@ -649,7 +663,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     string material;
     int start;
     int end;
-    short nobjects = 0;
+    unsigned short nobjects = 0;
     nobjects++;			// for gbs
     nobjects++;			// for vertices
     nobjects++;			// for colors
@@ -657,7 +671,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects++;			// for texcoords
 
     // points
-    short npts = 0;
+    unsigned short npts = 0;
     start = 0; end = 1;
     while ( start < (int)pt_materials.size() ) {
 	material = pt_materials[start];
@@ -671,7 +685,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects += npts;
 
     // tris
-    short ntris = 0;
+    unsigned short ntris = 0;
     start = 0; end = 1;
     while ( start < (int)tri_materials.size() ) {
 	material = tri_materials[start];
@@ -685,7 +699,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects += ntris;
 
     // strips
-    short nstrips = 0;
+    unsigned short nstrips = 0;
     start = 0; end = 1;
     while ( start < (int)strip_materials.size() ) {
 	material = strip_materials[start];
@@ -699,7 +713,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects += nstrips;
 
     // fans
-    short nfans = 0;
+    unsigned short nfans = 0;
     start = 0; end = 1;
     while ( start < (int)fan_materials.size() ) {
 	material = fan_materials[start];
@@ -713,12 +727,12 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     nobjects += nfans;
 
     cout << "total top level objects = " << nobjects << endl;
-    sgWriteShort( fp, nobjects );
+    sgWriteUShort( fp, nobjects );
 
     // write bounding sphere
     sgWriteChar( fp, (char)SG_BOUNDING_SPHERE );        // type
-    sgWriteShort( fp, 0 );		                // nproperties
-    sgWriteShort( fp, 1 );		                // nelements
+    sgWriteUShort( fp, 0 );		                // nproperties
+    sgWriteUShort( fp, 1 );		                // nelements
 
     sgWriteUInt( fp, sizeof(double) * 3 + sizeof(float) ); // nbytes
     sgdVec3 center;
@@ -728,8 +742,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     // dump vertex list
     sgWriteChar( fp, (char)SG_VERTEX_LIST );             // type
-    sgWriteShort( fp, 0 );		                 // nproperties
-    sgWriteShort( fp, 1 );		                 // nelements
+    sgWriteUShort( fp, 0 );		                 // nproperties
+    sgWriteUShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, wgs84_nodes.size() * sizeof(float) * 3 ); // nbytes
     for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
         SGVec3f p = toVec3f(wgs84_nodes[i] - gbs_center);
@@ -738,8 +752,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     // dump vertex color list
     sgWriteChar( fp, (char)SG_COLOR_LIST );             // type
-    sgWriteShort( fp, 0 );		                 // nproperties
-    sgWriteShort( fp, 1 );		                 // nelements
+    sgWriteUShort( fp, 0 );		                 // nproperties
+    sgWriteUShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, colors.size() * sizeof(float) * 4 ); // nbytes
     for ( i = 0; i < (int)colors.size(); ++i ) {
 	sgWriteVec4( fp, colors[i].data() );
@@ -747,8 +761,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     // dump vertex normal list
     sgWriteChar( fp, (char)SG_NORMAL_LIST );            // type
-    sgWriteShort( fp, 0 );		                // nproperties
-    sgWriteShort( fp, 1 );		                // nelements
+    sgWriteUShort( fp, 0 );		                // nproperties
+    sgWriteUShort( fp, 1 );		                // nelements
     sgWriteUInt( fp, normals.size() * 3 );              // nbytes
     char normal[3];
     for ( i = 0; i < (int)normals.size(); ++i ) {
@@ -761,8 +775,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
     // dump texture coordinates
     sgWriteChar( fp, (char)SG_TEXCOORD_LIST );          // type
-    sgWriteShort( fp, 0 );		                // nproperties
-    sgWriteShort( fp, 1 );		                // nelements
+    sgWriteUShort( fp, 0 );		                // nproperties
+    sgWriteUShort( fp, 1 );		                // nelements
     sgWriteUInt( fp, texcoords.size() * sizeof(float) * 2 ); // nbytes
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
 	sgWriteVec2( fp, texcoords[i].data() );
@@ -786,8 +800,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_POINTS );          // type
-	    sgWriteShort( fp, 2 );		         // nproperties
-	    sgWriteShort( fp, end - start );             // nelements
+	    sgWriteUShort( fp, 2 );		         // nproperties
+	    sgWriteUShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
@@ -806,19 +820,20 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    // write strips
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, pts_v[i].size() * idx_size * sizeof(short) );
+		sgWriteUInt( fp, pts_v[i].size() * idx_size
+                                 * sizeof(unsigned short) );
 		for ( j = 0; j < (int)pts_v[i].size(); ++j ) {
 		    if ( pts_v.size() ) { 
-			sgWriteShort( fp, (short)pts_v[i][j] );
+			sgWriteUShort( fp, (unsigned short)pts_v[i][j] );
 		    }
 		    if ( pts_n.size() ) { 
-			sgWriteShort( fp, (short)pts_n[i][j] );
+			sgWriteUShort( fp, (unsigned short)pts_n[i][j] );
 		    }
 		    if ( pts_c.size() ) { 
-			sgWriteShort( fp, (short)pts_c[i][j] );
+			sgWriteUShort( fp, (unsigned short)pts_c[i][j] );
 		    }
 		    if ( pts_tc.size() ) { 
-			sgWriteShort( fp, (short)pts_tc[i][j] );
+			sgWriteUShort( fp, (unsigned short)pts_tc[i][j] );
 		    }
 		}
 	    }
@@ -847,8 +862,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_FACES ); // type
-	    sgWriteShort( fp, 2 );		        // nproperties
-	    sgWriteShort( fp, 1 );                      // nelements
+	    sgWriteUShort( fp, 2 );		        // nproperties
+	    sgWriteUShort( fp, 1 );                      // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
@@ -865,22 +880,23 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    sgWriteChar( fp, idx_mask );
 
 	    // nbytes
-	    sgWriteUInt( fp, (end - start) * 3 * idx_size * sizeof(short) );
+	    sgWriteUInt( fp, (end - start) * 3 * idx_size
+                             * sizeof(unsigned short) );
 
 	    // write group
 	    for ( i = start; i < end; ++i ) {
 		for ( j = 0; j < 3; ++j ) {
 		    if ( tris_v.size() ) {
-			sgWriteShort( fp, (short)tris_v[i][j] );
+			sgWriteUShort( fp, (unsigned short)tris_v[i][j] );
 		    }
 		    if ( tris_n.size() ) {
-			sgWriteShort( fp, (short)tris_n[i][j] );
+			sgWriteUShort( fp, (unsigned short)tris_n[i][j] );
 		    }
 		    if ( tris_c.size() ) {
-			sgWriteShort( fp, (short)tris_c[i][j] );
+			sgWriteUShort( fp, (unsigned short)tris_c[i][j] );
 		    }
 		    if ( tris_tc.size() ) {
-			sgWriteShort( fp, (short)tris_tc[i][j] );
+			sgWriteUShort( fp, (unsigned short)tris_tc[i][j] );
 		    }
 		}
 	    }
@@ -908,8 +924,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_STRIPS ); // type
-	    sgWriteShort( fp, 2 );		         // nproperties
-	    sgWriteShort( fp, end - start );             // nelements
+	    sgWriteUShort( fp, 2 );		         // nproperties
+	    sgWriteUShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );        // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
@@ -928,19 +944,20 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    // write strips
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, strips_v[i].size() * idx_size * sizeof(short));
+		sgWriteUInt( fp, strips_v[i].size() * idx_size
+                                 * sizeof(unsigned short));
 		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
 		    if ( strips_v.size() ) { 
-			sgWriteShort( fp, (short)strips_v[i][j] );
+			sgWriteUShort( fp, (unsigned short)strips_v[i][j] );
 		    }
 		    if ( strips_n.size() ) { 
-			sgWriteShort( fp, (short)strips_n[i][j] );
+			sgWriteUShort( fp, (unsigned short)strips_n[i][j] );
 		    }
 		    if ( strips_c.size() ) { 
-			sgWriteShort( fp, (short)strips_c[i][j] );
+			sgWriteUShort( fp, (unsigned short)strips_c[i][j] );
 		    }
 		    if ( strips_tc.size() ) { 
-			sgWriteShort( fp, (short)strips_tc[i][j] );
+			sgWriteUShort( fp, (unsigned short)strips_tc[i][j] );
 		    }
 		}
 	    }
@@ -968,8 +985,8 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 
 	    // write group headers
 	    sgWriteChar( fp, (char)SG_TRIANGLE_FANS );   // type
-	    sgWriteShort( fp, 2 );		         // nproperties
-	    sgWriteShort( fp, end - start );             // nelements
+	    sgWriteUShort( fp, 2 );		         // nproperties
+	    sgWriteUShort( fp, end - start );             // nelements
 
 	    sgWriteChar( fp, (char)SG_MATERIAL );       // property
 	    sgWriteUInt( fp, material.length() );        // nbytes
@@ -988,19 +1005,20 @@ bool SGBinObject::write_bin( const string& base, const string& name,
 	    // write fans
 	    for ( i = start; i < end; ++i ) {
 		// nbytes
-		sgWriteUInt( fp, fans_v[i].size() * idx_size * sizeof(short) );
+		sgWriteUInt( fp, fans_v[i].size() * idx_size
+                                 * sizeof(unsigned short) );
 		for ( j = 0; j < (int)fans_v[i].size(); ++j ) {
 		    if ( fans_v.size() ) {
-			sgWriteShort( fp, (short)fans_v[i][j] );
+			sgWriteUShort( fp, (unsigned short)fans_v[i][j] );
 		    }
 		    if ( fans_n.size() ) {
-			sgWriteShort( fp, (short)fans_n[i][j] );
+			sgWriteUShort( fp, (unsigned short)fans_n[i][j] );
 		    }
 		    if ( fans_c.size() ) {
-			sgWriteShort( fp, (short)fans_c[i][j] );
+			sgWriteUShort( fp, (unsigned short)fans_c[i][j] );
 		    }
 		    if ( fans_tc.size() ) {
-			sgWriteShort( fp, (short)fans_tc[i][j] );
+			sgWriteUShort( fp, (unsigned short)fans_tc[i][j] );
 		    }
 		}
 	    }

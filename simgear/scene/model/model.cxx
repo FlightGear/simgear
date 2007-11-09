@@ -136,6 +136,9 @@ public:
     if (!texture)
       return;
     
+    // Hmm, true??
+    texture->setDataVariance(osg::Object::STATIC);
+
     osg::Image* image = texture->getImage(0);
     if (!image)
       return;
@@ -379,6 +382,7 @@ SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
   osg::Image* image = osgDB::readImageFile(path);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
+  texture->setDataVariance(osg::Object::STATIC);
   if (wrapu)
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
   else
@@ -408,7 +412,7 @@ SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
 
     // OSGFIXME: don't forget that mutex here
     osgDB::Registry* registry = osgDB::Registry::instance();
-    registry->getOrCreateSharedStateManager()->share(tmpNode.get(), 0);
+    registry->getSharedStateManager()->share(tmpNode.get(), 0);
 
     // should be the same, but be paranoid ...
     stateSet = tmpNode->getStateSet();

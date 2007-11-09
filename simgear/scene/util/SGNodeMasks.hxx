@@ -30,10 +30,11 @@
 #define SG_NODEMASK_CASTSHADOW_BIT     (1<<2)
 /// If set, cast recieves shadows
 #define SG_NODEMASK_RECIEVESHADOW_BIT  (1<<3)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<4)
-
 /// If set, the node is a gui element
-#define SG_NODEMASK_GUI_BIT            (1<<5)
+#define SG_NODEMASK_GUI_BIT            (1<<4)
+/// If set, the node is a 2D panel
+#define SG_NODEMASK_2DPANEL_BIT        (1<<5)
+/// If set, the node is pickable
+#define SG_NODEMASK_PICK_BIT           (1<<6)
 
 #endif

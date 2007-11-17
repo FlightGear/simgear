@@ -90,6 +90,8 @@ SGSubsystem::printTimingInformation ()
    }
 }
 
+
+
 void SGSubsystem::stamp(string name)
 {
     SGTimeStamp now;
@@ -109,7 +111,10 @@ SGSubsystemGroup::SGSubsystemGroup ()
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
     for (unsigned int i = 0; i < _members.size(); i++)
+    {
+        _members[i]->printTimingStatistics();
         delete _members[i];
+    }
 }
 
 void
@@ -157,11 +162,20 @@ SGSubsystemGroup::update (double delta_time_sec)
          _members[i]->update(delta_time_sec); // indirect call
          now.stamp();
          long b = ( now - start );
-         if ( b > 10000 ) {
-             SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert : " << b << " " << _members[i]->name);
-             //int a = 1;
-             _members[i]->printTimingInformation();
+         _members[i]->updateExecutionTime(b);
+         double threshold = _members[i]->getTimeWarningThreshold();
+         if (( b > threshold ) && (b > 10000)) {
+             _members[i]->printTimingInformation(b);
          }
+    }
+}
+
+void 
+SGSubsystemGroup::collectDebugTiming(bool collect)
+{
+    for (unsigned int i = 0; i < _members.size(); i++)
+    {
+        _members[i]->collectDebugTiming(collect);
     }
 }
 
@@ -218,6 +232,26 @@ SGSubsystemGroup::remove_subsystem (const string &name)
     }
 }
 
+void
+SGSubsystemGroup::Member::printTimingStatistics ()
+{
+    if (collectTimeStats) {
+        double minTime = timeStat.min()   / 1000;
+        double maxTime = timeStat.max()   / 1000;
+        double meanTime = timeStat.mean() / 1000;
+        double stddev   = timeStat.stdDev()   / 1000;
+
+        char buffer[256];
+        snprintf(buffer, 256, "Timing summary for %20s.\n"
+                              "-  mean time: %04.2f ms.\n"
+                              "-  min time : %04.2f ms.\n"
+                              "-  max time : %04.2f ms.\n"
+                              "- stddev    : %04.2f ms.\n", name.c_str(), meanTime, minTime, maxTime, stddev);
+        SG_LOG(SG_GENERAL, SG_ALERT, buffer);
+    }
+}
+
+
 bool
 SGSubsystemGroup::has_subsystem (const string &name) const
 {
@@ -251,7 +285,8 @@ SGSubsystemGroup::Member::Member ()
     : name(""),
       subsystem(0),
       min_step_sec(0),
-      elapsed_sec(0)
+      elapsed_sec(0),
+      collectTimeStats(false)
 {
 }
 
@@ -279,10 +314,27 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 
 
 void 
-SGSubsystemGroup::Member::printTimingInformation()
+SGSubsystemGroup::Member::printTimingInformation(double time)
 {
-     subsystem->printTimingInformation();
+     if (collectTimeStats) {
+         SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert : " << time << " " << name);
+         subsystem->printTimingInformation();
+     }
 }
+
+double SGSubsystemGroup::Member::getTimeWarningThreshold()
+{
+    return (timeStat.mean() + 3 * timeStat.stdDev());
+}
+
+void SGSubsystemGroup::Member::updateExecutionTime(double time)
+{
+    if (collectTimeStats) {
+        timeStat += time;
+    }
+}
+
+
 
 
 
@@ -339,6 +391,14 @@ SGSubsystemMgr::update (double delta_time_sec)
 {
     for (int i = 0; i < MAX_GROUPS; i++) {
         _groups[i].update(delta_time_sec);
+    }
+}
+
+void 
+SGSubsystemMgr::collectDebugTiming(bool collect)
+{
+    for (int i = 0; i < MAX_GROUPS; i++) {
+        _groups[i].collectDebugTiming(collect);
     }
 }
 

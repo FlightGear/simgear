@@ -11,7 +11,9 @@ include_HEADERS = \
 	SGAtomic.hxx \
 	SGBinding.hxx \
 	SGReferenced.hxx \
-	SGSharedPtr.hxx
+	SGSharedPtr.hxx \
+	SGSmplhist.hxx \
+	SGSmplstat.hxx
 
 libsgstructure_a_SOURCES = \
 	commands.cxx \
@@ -19,7 +21,9 @@ libsgstructure_a_SOURCES = \
 	event_mgr.cxx\
 	subsystem_mgr.cxx \
 	SGAtomic.cxx \
-	SGBinding.cxx
+	SGBinding.cxx \
+	SGSmplhist.cxx \
+	SGSmplstat.cxx
 
 INCLUDES = -I$(top_srcdir)
 

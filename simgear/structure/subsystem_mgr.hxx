@@ -47,6 +47,7 @@ SG_USING_STD(string);
 
 #include <simgear/props/props.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include "SGSmplstat.hxx"
 
 
 class TimingInfo
@@ -256,9 +257,34 @@ public:
    */
   virtual bool is_suspended () const;
 
+
+  /**
+   * Keep track of execution time.
+   *
+   * <p>This method keeps track of timing statistics for each subsystem.</p>
+   * 
+   * @param time execution time in ms of last call.
+   */
+  void updateExecutionTime(double time);
+
+  /**
+   * Print details of execution time.
+   *
+   * <p>For debugging purposes, developers can place stamp() calls
+   * at strategic points in the update() function of each subsystem, which 
+   * record the time between the successive calls to stamp. This method,
+   * printExecutionTime() is called after exectution of the subsystem
+   * update function itself to conduct a post-hoc analysis of excecution
+   * time</p>
+   */ 
   void printTimingInformation();
 
+  /**
+   * Place time stamps at strategic points in the execution of subsystems 
+   * update() member functions. Predominantly for debugging purposes.
+   */
   void stamp(string name);
+  
 
 
 protected:
@@ -299,6 +325,7 @@ public:
     virtual void remove_subsystem (const string &name);
     virtual bool has_subsystem (const string &name) const;
 
+    void collectDebugTiming(bool collect);
 
 private:
 
@@ -309,12 +336,18 @@ private:
         virtual ~Member ();
 
         virtual void update (double delta_time_sec);
-	void printTimingInformation();
+	void printTimingInformation(double time);
+        void printTimingStatistics();
+        void updateExecutionTime(double time);
+        double getTimeWarningThreshold();
+        void collectDebugTiming (bool collect) { collectTimeStats = collect; };
 
+        SampleStatistic timeStat;
         string name;
         SGSubsystem * subsystem;
         double min_step_sec;
         double elapsed_sec;
+        bool collectTimeStats;
     };
 
     Member * get_member (const string &name, bool create = false);
@@ -375,6 +408,8 @@ public:
     virtual SGSubsystemGroup * get_group (GroupType group);
 
     virtual SGSubsystem * get_subsystem(const string &name);
+
+   void collectDebugTiming(bool collect);
 
 private:
 

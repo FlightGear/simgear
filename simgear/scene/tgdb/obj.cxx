@@ -623,8 +623,6 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     osg::Geode* geode = new osg::Geode;
     groundLights0->addChild(geode);
     geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.tileLights));
-
-    groundLights0->addChild(geode);
     geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 4, -0.3f));
 
     geode = new osg::Geode;

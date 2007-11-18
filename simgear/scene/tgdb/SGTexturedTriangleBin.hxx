@@ -54,6 +54,44 @@ struct SGVertNormTex {
   SGVec2f texCoord;
 };
 
+// Use a DrawElementsUShort if there are few enough vertices,
+// otherwise fallback to DrawElementsUInt. Hide the differences
+// between the two from the rest of the code.
+//
+// We don't bother with DrawElementsUByte because that is generally
+// not an advantage on modern hardware.
+class DrawElementsFacade {
+public:
+    DrawElementsFacade(unsigned numVerts) :
+        _ushortElements(0), _uintElements(0)
+    {
+        if (numVerts > 65535)
+            _uintElements
+                = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+        else
+            _ushortElements
+                = new osg::DrawElementsUShort(osg::PrimitiveSet::TRIANGLES);
+    }
+    
+    void push_back(unsigned val)
+    {
+        if (_uintElements)
+            _uintElements->push_back(val);
+        else
+            _ushortElements->push_back(val);
+    }
+
+    osg::DrawElements* getDrawElements()
+    {
+        if (_uintElements)
+            return _uintElements;
+        return _ushortElements;
+    }
+protected:
+    osg::DrawElementsUShort* _ushortElements;
+    osg::DrawElementsUInt* _uintElements;
+};
+
 class SGTexturedTriangleBin : public SGTriangleBin<SGVertNormTex> {
 public:
 
@@ -123,9 +161,8 @@ public:
 
     const unsigned invalid = ~unsigned(0);
     std::vector<unsigned> indexMap(getNumVertices(), invalid);
-    
-    osg::DrawElementsUInt* drawElements;
-    drawElements = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+
+    DrawElementsFacade deFacade(vertices->size());
     for (index_type i = 0; i < triangles.size(); ++i) {
       triangle_ref triangle = triangles[i];
       if (indexMap[triangle[0]] == invalid) {
@@ -134,7 +171,7 @@ public:
         normals->push_back(getVertex(triangle[0]).normal.osg());
         texCoords->push_back(getVertex(triangle[0]).texCoord.osg());
       }
-      drawElements->push_back(indexMap[triangle[0]]);
+      deFacade.push_back(indexMap[triangle[0]]);
 
       if (indexMap[triangle[1]] == invalid) {
         indexMap[triangle[1]] = vertices->size();
@@ -142,7 +179,7 @@ public:
         normals->push_back(getVertex(triangle[1]).normal.osg());
         texCoords->push_back(getVertex(triangle[1]).texCoord.osg());
       }
-      drawElements->push_back(indexMap[triangle[1]]);
+      deFacade.push_back(indexMap[triangle[1]]);
 
       if (indexMap[triangle[2]] == invalid) {
         indexMap[triangle[2]] = vertices->size();
@@ -150,9 +187,9 @@ public:
         normals->push_back(getVertex(triangle[2]).normal.osg());
         texCoords->push_back(getVertex(triangle[2]).texCoord.osg());
       }
-      drawElements->push_back(indexMap[triangle[2]]);
+      deFacade.push_back(indexMap[triangle[2]]);
     }
-    geometry->addPrimitiveSet(drawElements);
+    geometry->addPrimitiveSet(deFacade.getDrawElements());
 
     return geometry;
   }

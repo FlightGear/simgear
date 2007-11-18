@@ -360,7 +360,12 @@ struct SGTileGeometryBin {
     osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-#define CHUNCKED
+      // CHUNCKED (sic) here splits up unconnected triangles parts of
+      // the mesh into different Geometry sets, presumably for better
+      // culling. I (timoore) believe it is more performant to build
+      // the biggest indexed sets possible at the expense of tight
+      // culling.
+//#define CHUNCKED
 #ifdef CHUNCKED
       SGMaterial *mat = matlib->find(i->first);
 

@@ -10,8 +10,10 @@
 #include <string.h>             // for strcmp()
 #include <math.h>
 #include <algorithm>
+#include <functional>
 
 #include <OpenThreads/Mutex>
+#include <OpenThreads/ReentrantMutex>
 #include <OpenThreads/ScopedLock>
 
 #include <osg/AlphaFunc>
@@ -19,6 +21,7 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/LOD>
+#include <osg/Math>
 #include <osg/PolygonMode>
 #include <osg/PolygonOffset>
 #include <osg/StateSet>
@@ -449,6 +452,24 @@ public:
   }
 };
 
+namespace
+{
+// Set all drawables to not use display lists. OSG will use
+// glDrawArrays instead.
+struct DoDrawArraysVisitor : public osg::NodeVisitor {
+    DoDrawArraysVisitor() :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+    {}
+    void apply(osg::Geode& geode)
+    {
+        using namespace osg;
+        using namespace std;
+
+        for (int i = 0; i < geode.getNumDrawables(); ++i)
+            geode.getDrawable(i)->setUseDisplayList(false);
+    }
+};
+}
 
 SGAnimation::SGAnimation(const SGPropertyNode* configNode,
                                            SGPropertyNode* modelRoot) :
@@ -1462,30 +1483,74 @@ SGAlphaTestAnimation::SGAlphaTestAnimation(const SGPropertyNode* configNode,
 {
 }
 
+namespace
+{
+// Keep one copy of the most common alpha test its state set.
+OpenThreads::ReentrantMutex alphaTestMutex;
+osg::ref_ptr<osg::AlphaFunc> standardAlphaFunc;
+osg::ref_ptr<osg::StateSet> alphaFuncStateSet;
+
+osg::AlphaFunc* makeAlphaFunc(float clamp)
+{
+    using namespace OpenThreads;
+    ScopedLock<ReentrantMutex> lock(alphaTestMutex);
+    if (osg::equivalent(clamp, 0.01f)) {
+        if (standardAlphaFunc.valid())
+            return standardAlphaFunc.get();
+        clamp = .01;
+    }
+    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
+    alphaFunc->setFunction(osg::AlphaFunc::GREATER);
+    alphaFunc->setReferenceValue(clamp);
+    alphaFunc->setDataVariance(osg::Object::STATIC);
+    if (osg::equivalent(clamp, 0.01f))
+        standardAlphaFunc = alphaFunc;
+    return alphaFunc;
+}
+
+osg::StateSet* makeAlphaTestStateSet(float clamp)
+{
+    using namespace OpenThreads;
+    ScopedLock<ReentrantMutex> lock(alphaTestMutex);
+    if (osg::equivalent(clamp, 0.01f)) {
+        if (alphaFuncStateSet.valid())
+            return alphaFuncStateSet.get();
+    }
+    osg::AlphaFunc* alphaFunc = makeAlphaFunc(clamp);
+    osg::StateSet* stateSet = new osg::StateSet;
+    stateSet->setAttributeAndModes(alphaFunc,
+                                   (osg::StateAttribute::ON
+                                    | osg::StateAttribute::OVERRIDE));
+    stateSet->setDataVariance(osg::Object::STATIC);
+    if (osg::equivalent(clamp, 0.01f))
+        alphaFuncStateSet = stateSet;
+    return stateSet;
+}
+}
 void
 SGAlphaTestAnimation::install(osg::Node& node)
 {
   SGAnimation::install(node);
-  
-  cloneDrawables(node);
-  removeMode(node, GL_ALPHA_TEST);
-  removeAttribute(node, osg::StateAttribute::ALPHAFUNC);
 
-  osg::StateSet* stateSet = node.getOrCreateStateSet();
-  osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-  alphaFunc->setFunction(osg::AlphaFunc::GREATER);
   float alphaClamp = getConfig()->getFloatValue("alpha-factor", 0);
-  alphaFunc->setReferenceValue(alphaClamp);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+  osg::StateSet* stateSet = node.getStateSet();
+  if (!stateSet) {
+      node.setStateSet(makeAlphaTestStateSet(alphaClamp));
+  } else {
+      stateSet->setAttributeAndModes(makeAlphaFunc(alphaClamp),
+                                     (osg::StateAttribute::ON
+                                      | osg::StateAttribute::OVERRIDE));
+  }
 }
-
 
 
 //////////////////////////////////////////////////////////////////////
 // Blend animation installer
 //////////////////////////////////////////////////////////////////////
 
+// XXX This needs to be replaced by something using TexEnvCombine to
+// change the blend factor. Changing the alpha values in the geometry
+// is bogus.
 class SGBlendAnimation::BlendVisitor : public osg::NodeVisitor {
 public:
   BlendVisitor(float blend) :
@@ -1503,7 +1568,6 @@ public:
     unsigned nDrawables = node.getNumDrawables();
     for (unsigned i = 0; i < nDrawables; ++i) {
       osg::Drawable* drawable = node.getDrawable(i);
-      updateStateSet(drawable->getStateSet());
       osg::Geometry* geometry = drawable->asGeometry();
       if (!geometry)
         continue;
@@ -1513,11 +1577,11 @@ public:
       osg::Vec4Array* vec4Array = dynamic_cast<osg::Vec4Array*>(array);
       if (!vec4Array)
         continue;
-      geometry->dirtyDisplayList();
-      vec4Array->dirty();
       for (unsigned k = 0; k < vec4Array->size(); ++k) {
         (*vec4Array)[k][3] = _blend;
       }
+      vec4Array->dirty();
+      updateStateSet(drawable->getStateSet());
     }
   }
   void updateStateSet(osg::StateSet* stateSet)
@@ -1592,6 +1656,8 @@ SGBlendAnimation::install(osg::Node& node)
   // make sure we do not change common geometries,
   // that also creates new display lists for these subgeometries.
   cloneDrawables(node);
+  DoDrawArraysVisitor visitor;
+  node.accept(visitor);
 }
 
 

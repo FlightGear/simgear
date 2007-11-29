@@ -14,6 +14,7 @@ include_HEADERS = \
 	SGSceneUserData.hxx \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx \
+	RenderConstants.hxx \
 	VectorArrayAdapter.hxx
 
 

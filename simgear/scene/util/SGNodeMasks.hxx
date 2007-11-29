@@ -22,19 +22,18 @@
 #ifndef SG_SCENE_NODEMASKS_HXX
 #define SG_SCENE_NODEMASKS_HXX
 
-/// If set, do terrain elevation computations with that nodes
-#define SG_NODEMASK_TERRAIN_BIT        (1<<0)
-/// If set, this is the main model of this simulation
-#define SG_NODEMASK_MAINMODEL_BIT      (1<<1)
-/// If set, cast shadows
-#define SG_NODEMASK_CASTSHADOW_BIT     (1<<2)
-/// If set, cast recieves shadows
-#define SG_NODEMASK_RECIEVESHADOW_BIT  (1<<3)
-/// If set, the node is a gui element
-#define SG_NODEMASK_GUI_BIT            (1<<4)
-/// If set, the node is a 2D panel
-#define SG_NODEMASK_2DPANEL_BIT        (1<<5)
-/// If set, the node is pickable
-#define SG_NODEMASK_PICK_BIT           (1<<6)
+#include "RenderConstants.hxx"
 
+/// If set, do terrain elevation computations with that nodes
+#define SG_NODEMASK_TERRAIN_BIT        simgear::TERRAIN_BIT
+/// If set, this is the main model of this simulation
+#define SG_NODEMASK_MAINMODEL_BIT      simgear::MAINMODEL_BIT
+/// If set, cast shadows
+#define SG_NODEMASK_CASTSHADOW_BIT     simgear::CASTSHADOW_BIT
+/// If set, cast recieves shadows
+#define SG_NODEMASK_RECIEVESHADOW_BIT  simgear::RECEIVESHADOW_BIT
+#define SG_NODEMASK_GUI_BIT            simgear::GUI_BIT
+#define SG_NODEMASK_2DPANEL_BIT        simgear::PANEL2D_BIT
+/// If set, the node is pickable
+#define SG_NODEMASK_PICK_BIT           simgear::PICK_BIT
 #endif

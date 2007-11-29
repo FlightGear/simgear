@@ -75,30 +75,44 @@ public:
         using namespace osgDB;
         using osgDB::ReaderWriter;
         Registry* registry = Registry::instance();
-        std::string usedFileName = _substitutePolicy.substitute(fileName, opt);
-        if (usedFileName.empty())
-            usedFileName = fileName;
-        ref_ptr<osg::Node> loadedNode = _cachePolicy.find(usedFileName, opt);
-        if (!loadedNode.valid()) {
-            ReaderWriter* rw = registry ->getReaderWriterForExtension(osgDB::getFileExtension(usedFileName));
-            if (!rw)
-                return ReaderWriter::ReadResult(); // FILE_NOT_HANDLED
-            ReaderWriter::ReadResult res = rw->readNode(usedFileName, opt);
-            if (!res.validNode())
-                return res;
-            ref_ptr<osg::Node> processedNode
-                = _processPolicy.process(res.getNode(), usedFileName, opt);
-            ref_ptr<osg::Node> optimizedNode
-                = _optimizePolicy.optimize(processedNode.get(), usedFileName,
-                                           opt);
-            _cachePolicy.addToCache(usedFileName, optimizedNode.get());
-            loadedNode = optimizedNode;
+        ref_ptr<osg::Node> optimizedNode = _cachePolicy.find(fileName, opt);
+        if (!optimizedNode.valid()) {
+            std::string otherFileName = _substitutePolicy.substitute(fileName,
+                                                                     opt);
+            ReaderWriter::ReadResult res;
+            if (!otherFileName.empty()) {
+                res = loadUsingReaderWriter(otherFileName, opt);
+                if (res.validNode())
+                    optimizedNode = res.getNode();
+            }
+            if (!optimizedNode.valid()) {
+                res = loadUsingReaderWriter(fileName, opt);
+                if (!res.validNode())
+                    return res;
+                ref_ptr<osg::Node> processedNode
+                    = _processPolicy.process(res.getNode(), fileName, opt);
+                optimizedNode = _optimizePolicy.optimize(processedNode.get(),
+                                                         fileName, opt);
+            }
+            _cachePolicy.addToCache(fileName, optimizedNode.get());
         }
-        return ReaderWriter::ReadResult(_copyPolicy.copy(loadedNode.get(),
-                                                         usedFileName,
+        return ReaderWriter::ReadResult(_copyPolicy.copy(optimizedNode.get(),
+                                                         fileName,
                                                          opt));
     }
 protected:
+    static osgDB::ReaderWriter::ReadResult
+    loadUsingReaderWriter(const std::string& fileName,
+                          const osgDB::ReaderWriter::Options* opt)
+    {
+        using namespace osgDB;
+        ReaderWriter* rw = Registry::instance()
+            ->getReaderWriterForExtension(osgDB::getFileExtension(fileName));
+        if (!rw)
+            return ReaderWriter::ReadResult(); // FILE_NOT_HANDLED
+        return rw->readNode(fileName, opt);
+    }
+    
     ProcessPolicy _processPolicy;
     CachePolicy _cachePolicy;
     OptimizePolicy _optimizePolicy;

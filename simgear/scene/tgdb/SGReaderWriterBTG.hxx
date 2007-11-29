@@ -31,5 +31,6 @@ public:
                                 const osgDB::ReaderWriter::Options* options)
         const;
 };
+
 #endif
     

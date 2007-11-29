@@ -17,9 +17,14 @@
 
 #include <osgDB/FileNameUtils>
 #include <osgDB/Registry>
+
+#include <simgear/scene/model/ModelRegistry.hxx>
+
 #include "SGReaderWriterBTGOptions.hxx"
 #include "SGReaderWriterBTG.hxx"
 #include "obj.hxx"
+
+using namespace simgear;
 
 const char* SGReaderWriterBTG::className() const
 {
@@ -64,4 +69,7 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
         return ReadResult::FILE_NOT_HANDLED;
 }
 
-
+namespace
+{
+ModelRegistryCallbackProxy<OSGFileCallback> g_btgCallbackProxy("btg");
+}

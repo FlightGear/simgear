@@ -71,5 +71,5 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
 
 namespace
 {
-ModelRegistryCallbackProxy<OSGFileCallback> g_btgCallbackProxy("btg");
+ModelRegistryCallbackProxy<LoadOnlyCallback> g_btgCallbackProxy("btg");
 }

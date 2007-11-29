@@ -1,3 +1,21 @@
+// ModelRegistry.hxx -- interface to the OSG model registry
+//
+// Copyright (C) 2005-2007 Mathias Froehlich 
+// Copyright (C) 2007  Tim Moore <timoore@redhat.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ModelRegistry.hxx"
 
 #include <osg/observer_ptr>
@@ -27,6 +45,7 @@
 
 using namespace std;
 using namespace osg;
+using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
@@ -156,6 +175,14 @@ public:
     
     texture->setDataVariance(Object::STATIC);
   }
+
+  virtual void apply(StateSet* stateSet)
+  {
+    if (!stateSet)
+      return;
+    SGTextureStateAttributeVisitor::apply(stateSet);
+    stateSet->setDataVariance(Object::STATIC);
+  }
 };
 
 class SGAcMaterialCrippleVisitor : public SGStateAttributeVisitor {
@@ -199,152 +226,106 @@ ModelRegistry::readImage(const string& fileName,
     return res;
 }
 
-ReaderWriter::ReadResult
-ModelRegistry::readNode(const string& fileName,
-                        const ReaderWriter::Options* opt)
+
+osg::Node* DefaultCachePolicy::find(const string& fileName,
+                                    const ReaderWriter::Options* opt)
 {
     Registry* registry = Registry::instance();
-    ReaderWriter::ReadResult res;
-    Node* cached = 0;
-    CallbackMap::iterator iter
-        = nodeCallbackMap.find(getFileExtension(fileName));
-    if (iter != nodeCallbackMap.end() && iter->second.valid())
-        return iter->second->readNode(fileName, opt);
-    // First, look for a file with the same name, and the extension
-    // ".osg" and, if it exists, load it instead. This allows for
-    // substitution of optimized models for ones named in the scenery.
-    bool optimizeModel = true;
-    string fileSansExtension = getNameLessExtension(fileName);
-    string osgFileName = fileSansExtension + ".osg";
-    string absFileName = findDataFile(osgFileName);
-    // The absolute file name is passed to the reader plugin, which
-    // calls findDataFile again... but that's OK, it should find the
-    // file by its absolute path straight away.
-    if (fileExists(absFileName)) {
-        optimizeModel = false;
-    } else {
-        absFileName = findDataFile(fileName);
-    }
-    if (!fileExists(absFileName)) {
-        SG_LOG(SG_IO, SG_ALERT, "Cannot find model file \""
-               << fileName << "\"");
-        return ReaderWriter::ReadResult::FILE_NOT_FOUND;
-    }
-    cached
-        = dynamic_cast<Node*>(registry->getFromObjectCache(absFileName));
-    if (cached) {
+    osg::Node* cached
+        = dynamic_cast<Node*>(registry->getFromObjectCache(fileName));
+    if (cached)
         SG_LOG(SG_IO, SG_INFO, "Got cached model \""
-               << absFileName << "\"");
-    } else {
+               << fileName << "\"");
+    else
         SG_LOG(SG_IO, SG_INFO, "Reading model \""
-               << absFileName << "\"");
-        res = registry->readNodeImplementation(absFileName, opt);
-        if (!res.validNode())
-            return res;
+               << fileName << "\"");
+    return cached;
+}
 
-        bool needTristrip = true;
-        if (getLowerCaseFileExtension(fileName) == "ac") {
-            // we get optimal geometry from the loader.
-            needTristrip = false;
-            Matrix m(1, 0, 0, 0,
-                     0, 0, 1, 0,
-                     0, -1, 0, 0,
-                     0, 0, 0, 1);
-        
-            ref_ptr<Group> root = new Group;
-            MatrixTransform* transform = new MatrixTransform;
-            root->addChild(transform);
-        
-            transform->setDataVariance(Object::STATIC);
-            transform->setMatrix(m);
-            transform->addChild(res.getNode());
-        
-            res = ReaderWriter::ReadResult(0);
+void DefaultCachePolicy::addToCache(const string& fileName,
+                                    osg::Node* node)
+{
+    Registry::instance()->addEntryToObjectCache(fileName, node);
+}
 
-            if (optimizeModel) {
-                osgUtil::Optimizer optimizer;
-                unsigned opts = osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
-                optimizer.optimize(root.get(), opts);
-            }
+// Optimizations we don't use:
+// Don't use this one. It will break animation names ...
+// opts |= osgUtil::Optimizer::REMOVE_REDUNDANT_NODES;
+//
+// opts |= osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES;
+// opts |= osgUtil::Optimizer::COMBINE_ADJACENT_LODS;
+// opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
+// opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
+// opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
+// opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
+// opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
 
-            // strip away unneeded groups
-            if (root->getNumChildren() == 1 && root->getName().empty()) {
-                res = ReaderWriter::ReadResult(root->getChild(0));
-            } else
-                res = ReaderWriter::ReadResult(root.get());
-        
-            // Ok, this step is questionable.
-            // It is there to have the same visual appearance of ac objects for the
-            // first cut. Osg's ac3d loader will correctly set materials from the
-            // ac file. But the old plib loader used GL_AMBIENT_AND_DIFFUSE for the
-            // materials that in effect igored the ambient part specified in the
-            // file. We emulate that for the first cut here by changing all
-            // ac models here. But in the long term we should use the
-            // unchanged model and fix the input files instead ...
-            SGAcMaterialCrippleVisitor matCriple;
-            res.getNode()->accept(matCriple);
-        }
+OptimizeModelPolicy::OptimizeModelPolicy(const string& extension) :
+    _osgOptions(Optimizer::SHARE_DUPLICATE_STATE
+                | Optimizer::MERGE_GEOMETRY
+                | Optimizer::FLATTEN_STATIC_TRANSFORMS
+                | Optimizer::TRISTRIP_GEOMETRY)
+{
+}
 
-        if (optimizeModel) {
-            osgUtil::Optimizer optimizer;
-            unsigned opts = 0;
-            // Don't use this one. It will break animation names ...
-            // opts |= osgUtil::Optimizer::REMOVE_REDUNDANT_NODES;
+osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
+                                         const string& fileName,
+                                         const osgDB::ReaderWriter::Options* opt)
+{
+    osgUtil::Optimizer optimizer;
+    optimizer.optimize(node, _osgOptions);
 
-            // opts |= osgUtil::Optimizer::REMOVE_LOADED_PROXY_NODES;
-            // opts |= osgUtil::Optimizer::COMBINE_ADJACENT_LODS;
-            // opts |= osgUtil::Optimizer::SHARE_DUPLICATE_STATE;
-            opts |= osgUtil::Optimizer::MERGE_GEOMETRY;
-            // opts |= osgUtil::Optimizer::CHECK_GEOMETRY;
-            // opts |= osgUtil::Optimizer::SPATIALIZE_GROUPS;
-            // opts |= osgUtil::Optimizer::COPY_SHARED_NODES;
-            opts |= osgUtil::Optimizer::FLATTEN_STATIC_TRANSFORMS;
-            if (needTristrip)
-                opts |= osgUtil::Optimizer::TRISTRIP_GEOMETRY;
-            // opts |= osgUtil::Optimizer::TESSELATE_GEOMETRY;
-            // opts |= osgUtil::Optimizer::OPTIMIZE_TEXTURE_SETTINGS;
-            optimizer.optimize(res.getNode(), opts);
-        }
-        // Make sure the data variance of sharable objects is set to STATIC ...
-        SGTexDataVarianceVisitor dataVarianceVisitor;
-        res.getNode()->accept(dataVarianceVisitor);
-        // ... so that textures are now globally shared
-        registry->getSharedStateManager()->share(res.getNode());
+    // Make sure the data variance of sharable objects is set to
+    // STATIC so that textures will be globally shared.
+    SGTexDataVarianceVisitor dataVarianceVisitor;
+    node->accept(dataVarianceVisitor);
       
-        SGTexCompressionVisitor texComp;
-        res.getNode()->accept(texComp);
-        cached = res.getNode();
-        registry->addEntryToObjectCache(absFileName, cached);
-    }
+    SGTexCompressionVisitor texComp;
+    node->accept(texComp);
+    return node;
+}
+
+osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
+                    const osgDB::ReaderWriter::Options* opt)
+{
     // Add an extra reference to the model stored in the database.
     // That it to avoid expiring the object from the cache even if it is still
     // in use. Note that the object cache will think that a model is unused
     // if the reference count is 1. If we clone all structural nodes here
     // we need that extra reference to the original object
     SGDatabaseReference* databaseReference;
-    databaseReference = new SGDatabaseReference(cached);
+    databaseReference = new SGDatabaseReference(model);
     CopyOp::CopyFlags flags = CopyOp::DEEP_COPY_ALL;
     flags &= ~CopyOp::DEEP_COPY_TEXTURES;
     flags &= ~CopyOp::DEEP_COPY_IMAGES;
+    flags &= ~CopyOp::DEEP_COPY_STATESETS;
+    flags &= ~CopyOp::DEEP_COPY_STATEATTRIBUTES;
     flags &= ~CopyOp::DEEP_COPY_ARRAYS;
     flags &= ~CopyOp::DEEP_COPY_PRIMITIVES;
     // This will safe display lists ...
     flags &= ~CopyOp::DEEP_COPY_DRAWABLES;
     flags &= ~CopyOp::DEEP_COPY_SHAPES;
-    res = ReaderWriter::ReadResult(CopyOp(flags)(cached));
-    res.getNode()->addObserver(databaseReference);
+    osg::Node* res = CopyOp(flags)(model);
+    res->addObserver(databaseReference);
 
     // Update liveries
     SGTextureUpdateVisitor liveryUpdate(getDataFilePathList());
-    res.getNode()->accept(liveryUpdate);
-
-    // Make sure the data variance of sharable objects is set to STATIC ...
-    SGTexDataVarianceVisitor dataVarianceVisitor;
-    res.getNode()->accept(dataVarianceVisitor);
-    // ... so that textures are now globally shared
-    registry->getOrCreateSharedStateManager()->share(res.getNode(), 0);
-
+    res->accept(liveryUpdate);
     return res;
+}
+
+string OSGSubstitutePolicy::substitute(const string& name,
+                                       const ReaderWriter::Options* opt)
+{
+    string fileSansExtension = getNameLessExtension(name);
+    string osgFileName = fileSansExtension + ".osg";
+    string absFileName = findDataFile(osgFileName);
+    return absFileName;
+}
+
+ModelRegistry::ModelRegistry() :
+    _defaultCallback(new DefaultCallback(""))
+{
 }
 
 void
@@ -371,6 +352,20 @@ ModelRegistry* ModelRegistry::getInstance()
     return instance.get();
 }
 
+ReaderWriter::ReadResult
+ModelRegistry::readNode(const string& fileName,
+                        const ReaderWriter::Options* opt)
+{
+    Registry* registry = Registry::instance();
+    ReaderWriter::ReadResult res;
+    Node* cached = 0;
+    CallbackMap::iterator iter
+        = nodeCallbackMap.find(getFileExtension(fileName));
+    if (iter != nodeCallbackMap.end() && iter->second.valid())
+        return iter->second->readNode(fileName, opt);
+    return _defaultCallback->readNode(fileName, opt);
+}
+
 class SGReadCallbackInstaller {
 public:
   SGReadCallbackInstaller()
@@ -381,19 +376,68 @@ public:
 
     Registry* registry = Registry::instance();
     ReaderWriter::Options* options = new ReaderWriter::Options;
-    // We manage node caching ourselves
-    int cacheOptions = ReaderWriter::Options::CACHE_ALL
-      & ~ReaderWriter::Options::CACHE_NODES;
+    int cacheOptions = ReaderWriter::Options::CACHE_ALL;
     options->
       setObjectCacheHint((ReaderWriter::Options::CacheHintOptions)cacheOptions);
     registry->setOptions(options);
     registry->getOrCreateSharedStateManager()->
-      setShareMode(SharedStateManager::SHARE_TEXTURES);
+      setShareMode(SharedStateManager::SHARE_STATESETS);
     registry->setReadFileCallback(ModelRegistry::getInstance());
   }
 };
 
 static SGReadCallbackInstaller readCallbackInstaller;
+
+// we get optimal geometry from the loader.
+struct ACOptimizePolicy : public OptimizeModelPolicy {
+    ACOptimizePolicy(const string& extension)  :
+        OptimizeModelPolicy(extension)
+    {
+        _osgOptions &= ~Optimizer::TRISTRIP_GEOMETRY;
+    }
+};
+
+struct ACProcessPolicy {
+    ACProcessPolicy(const string& extension) {}
+    Node* process(Node* node, const string& filename,
+                  const ReaderWriter::Options* opt)
+    {
+        Matrix m(1, 0, 0, 0,
+                 0, 0, 1, 0,
+                 0, -1, 0, 0,
+                 0, 0, 0, 1);
+        // XXX Does there need to be a Group node here to trick the
+        // optimizer into optimizing the static transform?
+        osg::Group* root = new Group;
+        MatrixTransform* transform = new MatrixTransform;
+        root->addChild(transform);
+        
+        transform->setDataVariance(Object::STATIC);
+        transform->setMatrix(m);
+        transform->addChild(node);
+        // Ok, this step is questionable.
+        // It is there to have the same visual appearance of ac objects for the
+        // first cut. Osg's ac3d loader will correctly set materials from the
+        // ac file. But the old plib loader used GL_AMBIENT_AND_DIFFUSE for the
+        // materials that in effect igored the ambient part specified in the
+        // file. We emulate that for the first cut here by changing all
+        // ac models here. But in the long term we should use the
+        // unchanged model and fix the input files instead ...
+        SGAcMaterialCrippleVisitor matCriple;
+        root->accept(matCriple);
+        return root;
+    }
+};
+
+typedef ModelRegistryCallback<ACProcessPolicy, DefaultCachePolicy,
+                              ACOptimizePolicy, DefaultCopyPolicy,
+                              OSGSubstitutePolicy> ACCallback;
+
+namespace
+{
+ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
+}   
+
 
 ReaderWriter::ReadResult
 OSGFileCallback::readImage(const string& fileName,

@@ -677,6 +677,12 @@
 				RelativePath="..\..\simgear\scene\model\modellib.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\ModelRegistry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\ModelRegistry.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\persparam.cxx">
 			</File>
 			<File
@@ -898,6 +904,18 @@
 				RelativePath="..\..\simgear\structure\SGSharedPtr.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGSmplhist.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGSmplhist.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGSmplstat.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGSmplstat.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\structure\ssgSharedPtr.hxx">
 			</File>
 			<File
@@ -1012,6 +1030,9 @@
 		<Filter
 			Name="Lib_sgutil"
 			Filter="">
+			<File
+				RelativePath="..\..\simgear\scene\util\RenderConstants.hxx">
+			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\SGDebugDrawCallback.hxx">
 			</File>

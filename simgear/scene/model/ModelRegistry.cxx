@@ -18,6 +18,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ModelRegistry.hxx"
 
+#include <OpenThreads/ScopedLock>
+
 #include <osg/observer_ptr>
 #include <osg/ref_ptr>
 #include <osg/Group>
@@ -202,11 +204,12 @@ ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
                          const ReaderWriter::Options* opt)
 {
+    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(readerMutex);
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
     if (iter != imageCallbackMap.end() && iter->second.valid())
         return iter->second->readImage(fileName, opt);
-    string absFileName = findDataFile(fileName);
+    string absFileName = findDataFile(fileName, opt);
     if (!fileExists(absFileName)) {
         SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
                << fileName << "\"");
@@ -309,7 +312,7 @@ osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
     res->addObserver(databaseReference);
 
     // Update liveries
-    SGTextureUpdateVisitor liveryUpdate(getDataFilePathList());
+    SGTextureUpdateVisitor liveryUpdate(opt->getDatabasePathList());
     res->accept(liveryUpdate);
     return res;
 }
@@ -319,7 +322,7 @@ string OSGSubstitutePolicy::substitute(const string& name,
 {
     string fileSansExtension = getNameLessExtension(name);
     string osgFileName = fileSansExtension + ".osg";
-    string absFileName = findDataFile(osgFileName);
+    string absFileName = findDataFile(osgFileName, opt);
     return absFileName;
 }
 
@@ -356,6 +359,7 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
+    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(readerMutex);
     Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
     Node* cached = 0;
@@ -437,18 +441,3 @@ namespace
 {
 ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
 }   
-
-
-ReaderWriter::ReadResult
-OSGFileCallback::readImage(const string& fileName,
-                           const ReaderWriter::Options* opt)
-{
-    return Registry::instance()->readImageImplementation(fileName, opt);
-}
-
-ReaderWriter::ReadResult
-OSGFileCallback::readNode(const string& fileName,
-                          const ReaderWriter::Options* opt)
-{
-    return Registry::instance()->readNodeImplementation(fileName, opt);
-}

@@ -178,12 +178,14 @@ static void create_specular_highlights(osg::Node *node)
 
 
 SGShaderAnimation::SGShaderAnimation(const SGPropertyNode* configNode,
-                                     SGPropertyNode* modelRoot) :
+                                     SGPropertyNode* modelRoot,
+                                     const osgDB::ReaderWriter::Options*
+                                     options) :
   SGAnimation(configNode, modelRoot)
 {
   const SGPropertyNode* node = configNode->getChild("texture");
   if (node)
-    _effect_texture = SGLoadTexture2D(node->getStringValue());
+    _effect_texture = SGLoadTexture2D(node->getStringValue(), options);
 }
 
 namespace {

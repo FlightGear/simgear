@@ -28,6 +28,7 @@
 #include <osg/Texture2D>
 #include <osg/TexMat>
 
+#include <osgDB/ReaderWriter>
 #include <simgear/props/props.hxx>
 #include <simgear/misc/sg_path.hxx>
 
@@ -74,7 +75,8 @@ public:
   virtual ~SGAnimation();
 
   static bool animate(osg::Node* node, const SGPropertyNode* configNode,
-                      SGPropertyNode* modelRoot);
+                      SGPropertyNode* modelRoot,
+                      const osgDB::ReaderWriter::Options* options);
 
 protected:
   void apply(osg::Node* node);
@@ -352,7 +354,8 @@ private:
 class SGShaderAnimation : public SGAnimation {
 public:
   SGShaderAnimation(const SGPropertyNode* configNode,
-                    SGPropertyNode* modelRoot);
+                    SGPropertyNode* modelRoot,
+                    const osgDB::ReaderWriter::Options* options);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;

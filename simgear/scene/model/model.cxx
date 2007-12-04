@@ -37,9 +37,15 @@
 SG_USING_STD(vector);
 
 osg::Texture2D*
-SGLoadTexture2D(const std::string& path, bool wrapu, bool wrapv, int)
+SGLoadTexture2D(const std::string& path,
+                const osgDB::ReaderWriter::Options* options,
+                bool wrapu, bool wrapv, int)
 {
-  osg::Image* image = osgDB::readImageFile(path);
+  osg::Image* image;
+  if (options)
+    image = osgDB::readImageFile(path, options);
+  else
+    image = osgDB::readImageFile(path);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
   texture->setDataVariance(osg::Object::STATIC);
@@ -148,24 +154,25 @@ sgLoad3DModel( const string &fg_root, const string &path,
     }
   }
 
-  osgDB::FilePathList pathList = osgDB::getDataFilePathList();
-  osgDB::Registry::instance()->initFilePathLists();
+  osg::ref_ptr<osgDB::ReaderWriter::Options> options
+      = new osgDB::ReaderWriter::Options(*osgDB::Registry::instance()
+                                         ->getOptions());
 
   // Assume that textures are in
   // the same location as the XML file.
   if (!model) {
-    if (texturepath.extension() != "")
+      if (texturepath.extension() != "")
           texturepath = texturepath.dir();
 
-    osgDB::Registry::instance()->getDataFilePathList().push_front(texturepath.str());
+      options->setDatabasePath(texturepath.str());
+      if (!externalTexturePath.str().empty())
+          options->getDatabasePathList().push_back(externalTexturePath.str());
 
-    model = osgDB::readNodeFile(modelpath.str());
-    if (model == 0)
-      throw sg_io_exception("Failed to load 3D model", 
-                            sg_location(modelpath.str()));
+      model = osgDB::readNodeFile(modelpath.str(), options.get());
+      if (model == 0)
+          throw sg_io_exception("Failed to load 3D model", 
+                                sg_location(modelpath.str()));
   }
-
-  osgDB::Registry::instance()->getDataFilePathList().push_front(externalTexturePath.str());
 
   // Set up the alignment node
   osg::ref_ptr<osg::MatrixTransform> alignmainmodel = new osg::MatrixTransform;
@@ -251,10 +258,8 @@ sgLoad3DModel( const string &fg_root, const string &path,
   animation_nodes = props.getChildren("animation");
   for (unsigned i = 0; i < animation_nodes.size(); ++i)
     /// OSGFIXME: duh, why not only model?????
-    SGAnimation::animate(alignmainmodel.get(), animation_nodes[i], prop_root);
-
-  // restore old path list
-  osgDB::setDataFilePathList(pathList);
+    SGAnimation::animate(alignmainmodel.get(), animation_nodes[i], prop_root,
+                         options.get());
 
   if (props.hasChild("debug-outfile")) {
     std::string outputfile = props.getStringValue("debug-outfile",

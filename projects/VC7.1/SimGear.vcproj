@@ -386,6 +386,12 @@
 			<File
 				RelativePath="..\..\simgear\misc\zfstream.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\misc\PathOptions.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\PathOptions.hxx">
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgroute"

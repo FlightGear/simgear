@@ -41,9 +41,12 @@
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
 
+#include <simgear/misc/PathOptions.hxx>
 #include <simgear/screen/colors.hxx>
 #include <simgear/scene/model/model.hxx>
 #include "oursun.hxx"
+
+using namespace simgear;
 
 // Constructor
 SGSun::SGSun( void ) {
@@ -63,8 +66,8 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     env_node = property_tree_Node;
 
-    SGPath ihalopath = path, ohalopath = path;
-
+    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+        = makeOptionsFromPath(path);
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
     sun_transform = new osg::MatrixTransform;
@@ -100,15 +103,13 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
     stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
 
-
     osg::Geode* geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
 
     stateSet->setRenderBinDetails(-6, "RenderBin");
 
     // set up the sun-state
-    path.append( "sun.rgba" );
-    osg::Texture2D* texture = SGLoadTexture2D(path);
+    osg::Texture2D* texture = SGLoadTexture2D("sun.rgba", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build scenegraph
@@ -139,14 +140,12 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     sun_transform->addChild( geode );
 
-
     // set up the inner-halo state
     geode = new osg::Geode;
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-7, "RenderBin");
     
-    ihalopath.append( "inner_halo.rgba" );
-    texture = SGLoadTexture2D(ihalopath);
+    texture = SGLoadTexture2D("inner_halo.rgba", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
@@ -177,7 +176,6 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     geode->addDrawable(geometry);
 
     sun_transform->addChild( geode );
-
     
     // set up the outer halo state
     
@@ -185,8 +183,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-8, "RenderBin");
 
-    ohalopath.append( "outer_halo.rgba" );
-    texture = SGLoadTexture2D(ohalopath);
+    texture = SGLoadTexture2D("outer_halo.rgba", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure

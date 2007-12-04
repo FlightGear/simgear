@@ -501,7 +501,8 @@ SGAnimation::~SGAnimation()
 
 bool
 SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
-                     SGPropertyNode* modelRoot)
+                     SGPropertyNode* modelRoot,
+                     const osgDB::ReaderWriter::Options* options)
 {
   std::string type = configNode->getStringValue("type", "none");
   if (type == "alpha-test") {
@@ -541,7 +542,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGSelectAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "shader") {
-    SGShaderAnimation animInst(configNode, modelRoot);
+    SGShaderAnimation animInst(configNode, modelRoot, options);
     animInst.apply(node);
   } else if (type == "textranslate" || type == "texrotate" ||
              type == "texmultiple") {

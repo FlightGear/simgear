@@ -20,6 +20,7 @@ SG_USING_STD(set);
 
 #include <osg/Node>
 #include <osg/Texture2D>
+#include <osgDB/ReaderWriter>
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
@@ -82,14 +83,17 @@ sgMakeAnimation( osg::Node* model,
 
 
 osg::Texture2D*
-SGLoadTexture2D(const std::string& path, bool wrapu = true,
-                bool wrapv = true, int mipmaplevels = -1);
+SGLoadTexture2D(const std::string& path,
+                const osgDB::ReaderWriter::Options* options = 0,
+                bool wrapu = true, bool wrapv = true, int mipmaplevels = -1);
 
 inline osg::Texture2D*
-SGLoadTexture2D(const SGPath& path, bool wrapu = true, bool wrapv = true,
+SGLoadTexture2D(const SGPath& path,
+                const osgDB::ReaderWriter::Options* options = 0,
+                bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
-  return SGLoadTexture2D(path.str(), wrapu, wrapv, mipmaplevels);
+    return SGLoadTexture2D(path.str(), options, wrapu, wrapv, mipmaplevels);
 }
 
 #endif // __MODEL_HXX

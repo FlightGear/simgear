@@ -42,6 +42,7 @@
 #include <osg/TexMat>
 
 #include <simgear/math/sg_random.h>
+#include <simgear/misc/PathOptions.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/math/polar3d.hxx>
@@ -50,6 +51,7 @@
 #include "cloudfield.hxx"
 #include "cloud.hxx"
 
+using namespace simgear;
 // #if defined(__MINGW32__)
 // #define isnan(x) _isnan(x)
 // #endif
@@ -81,9 +83,10 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 {
     osg::StateSet *stateSet = new osg::StateSet;
 
-    SGPath colorPath(path);
-    colorPath.append(colorTexture);
-    stateSet->setTextureAttribute(0, SGLoadTexture2D(colorPath));
+    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+        = makeOptionsFromPath(path);
+    stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
+                                                     options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
 
     osg::TexEnv* texEnv = new osg::TexEnv;

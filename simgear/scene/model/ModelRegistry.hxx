@@ -19,6 +19,8 @@
 #ifndef _SG_MODELREGISTRY_HXX
 #define _SG_MODELREGISTRY_HXX 1
 
+#include <OpenThreads/ReentrantMutex>
+
 #include <osg/ref_ptr>
 #include <osg/Node>
 #include <osgDB/FileUtils>
@@ -225,6 +227,9 @@ protected:
     CallbackMap imageCallbackMap;
     CallbackMap nodeCallbackMap;
     osg::ref_ptr<DefaultCallback> _defaultCallback;
+    // Protect against simultaneous calls from main thread (MP models)
+    // and pager thread.
+    OpenThreads::ReentrantMutex readerMutex;
 };
 
 // Callback that only loads the file without any caching or
@@ -245,19 +250,5 @@ public:
             ->addNodeCallbackForExtension(extension, new T(extension));
     }
 };
-
-// Callback for file extensions that load files using the default OSG
-// implementation.
-
-class OSGFileCallback : public osgDB::Registry::ReadFileCallback {
-public:
-    virtual osgDB::ReaderWriter::ReadResult
-    readImage(const std::string& fileName,
-              const osgDB::ReaderWriter::Options* opt);
-    virtual osgDB::ReaderWriter::ReadResult
-    readNode(const std::string& fileName,
-             const osgDB::ReaderWriter::Options* opt);
-};
-
 }
 #endif // _SG_MODELREGISTRY_HXX

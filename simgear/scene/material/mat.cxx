@@ -324,7 +324,7 @@ void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
    _tex_cache_iter = _tex_cache.find(fname);
    if (_tex_cache_iter == _tex_cache.end())
    {
-      osg::Texture2D* texture = SGLoadTexture2D(fname, _wrapu, _wrapv,
+     osg::Texture2D* texture = SGLoadTexture2D(fname, 0, _wrapu, _wrapv,
                                                 mipmap ? -1 : 0);
 	  texture->setMaxAnisotropy( SGGetTextureFilter());
       state->setTextureAttributeAndModes(0, texture);

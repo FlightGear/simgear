@@ -214,7 +214,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
     break;
   }
   }
-  throw sg_exception("Unrecognized node type");
+  throw sg_exception("condition: unrecognized node type in comparison");
   return 0;
 }
 
@@ -299,7 +299,7 @@ readNotCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
     if (condition != 0)
       return new SGNotCondition(condition);
   }
-  SG_LOG(SG_COCKPIT, SG_ALERT, "Panel: empty 'not' condition");
+  SG_LOG(SG_COCKPIT, SG_ALERT, "empty 'not' condition");
   return 0;
 }
 
@@ -341,8 +341,10 @@ readComparison( SGPropertyNode *prop_root,
   condition->setLeftProperty(prop_root, node->getStringValue("property[0]"));
   if (node->hasValue("property[1]"))
     condition->setRightProperty(prop_root, node->getStringValue("property[1]"));
-  else
+  else if (node->hasValue("value"))
     condition->setRightValue(node->getChild("value", 0));
+  else
+    throw sg_exception("condition: comparison without property[1] or value");
 
   return condition;
 }

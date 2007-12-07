@@ -81,11 +81,18 @@ sgMakeAnimation( osg::Node* model,
                  SGPath &texture_path,
                  set<osg::Node*> &ignore_branches );
 
-
 osg::Texture2D*
-SGLoadTexture2D(const std::string& path,
+SGLoadTexture2D(bool staticTexture, const std::string& path,
                 const osgDB::ReaderWriter::Options* options = 0,
                 bool wrapu = true, bool wrapv = true, int mipmaplevels = -1);
+
+inline osg::Texture2D*
+SGLoadTexture2D(const std::string& path,
+                const osgDB::ReaderWriter::Options* options = 0,
+                bool wrapu = true, bool wrapv = true, int mipmaplevels = -1)
+{
+    return SGLoadTexture2D(true, path, options, wrapu, wrapv, mipmaplevels);
+}
 
 inline osg::Texture2D*
 SGLoadTexture2D(const SGPath& path,
@@ -93,7 +100,18 @@ SGLoadTexture2D(const SGPath& path,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
-    return SGLoadTexture2D(path.str(), options, wrapu, wrapv, mipmaplevels);
+    return SGLoadTexture2D(true, path.str(), options, wrapu, wrapv,
+                           mipmaplevels);
+}
+
+inline osg::Texture2D*
+SGLoadTexture2D(bool staticTexture, const SGPath& path,
+                const osgDB::ReaderWriter::Options* options = 0,
+                bool wrapu = true, bool wrapv = true,
+                int mipmaplevels = -1)
+{
+    return SGLoadTexture2D(staticTexture, path.str(), options, wrapu, wrapv,
+                           mipmaplevels);
 }
 
 #endif // __MODEL_HXX

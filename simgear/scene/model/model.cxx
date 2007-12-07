@@ -37,7 +37,7 @@
 SG_USING_STD(vector);
 
 osg::Texture2D*
-SGLoadTexture2D(const std::string& path,
+SGLoadTexture2D(bool staticTexture, const std::string& path,
                 const osgDB::ReaderWriter::Options* options,
                 bool wrapu, bool wrapv, int)
 {
@@ -48,7 +48,8 @@ SGLoadTexture2D(const std::string& path,
     image = osgDB::readImageFile(path);
   osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D;
   texture->setImage(image);
-  texture->setDataVariance(osg::Object::STATIC);
+  if (staticTexture)
+    texture->setDataVariance(osg::Object::STATIC);
   if (wrapu)
     texture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
   else

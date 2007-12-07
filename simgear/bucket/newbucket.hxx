@@ -310,6 +310,11 @@ public:
     friend bool operator== ( const SGBucket&, const SGBucket& );
 };
 
+inline bool operator!= (const SGBucket& lhs, const SGBucket& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
 
 /**
  * \relates SGBucket

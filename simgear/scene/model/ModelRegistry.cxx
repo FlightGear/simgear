@@ -204,8 +204,12 @@ public:
 
 struct OptionsPusher {
     FilePathList localPathList;
-    OptionsPusher(const ReaderWriter::Options* options)
+    bool validOptions;
+    OptionsPusher(const ReaderWriter::Options* options):
+        validOptions(false)
     {
+        if (!options)
+            return;
         Registry* registry = Registry::instance();
         localPathList = registry->getDataFilePathList();
         const FilePathList& regPathList = registry->getDataFilePathList();
@@ -219,11 +223,13 @@ struct OptionsPusher {
         }
         // Save the current Registry path list and install the augmented one.
         localPathList.swap(registry->getDataFilePathList());
+        validOptions = true;
     }
     ~OptionsPusher()
     {
         // Restore the old path list
-        localPathList.swap(Registry::instance()->getDataFilePathList());
+        if (validOptions)
+            localPathList.swap(Registry::instance()->getDataFilePathList());
     }
 };
 } // namespace

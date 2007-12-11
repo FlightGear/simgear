@@ -18,6 +18,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ModelRegistry.hxx"
 
+#include <algorithm>
+
 #include <OpenThreads/ScopedLock>
 
 #include <osg/observer_ptr>
@@ -219,7 +221,7 @@ struct OptionsPusher {
              ++iter) {
             if (find(regPathList.begin(), regPathList.end(), *iter)
                 == regPathList.end())
-                localPathList.push_front(*iter);
+                localPathList.push_back(*iter);
         }
         // Save the current Registry path list and install the augmented one.
         localPathList.swap(registry->getDataFilePathList());
@@ -242,27 +244,29 @@ ModelRegistry::readImage(const string& fileName,
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
     // XXX Workaround for OSG plugin bug
-    OptionsPusher pusher(opt);
-    if (iter != imageCallbackMap.end() && iter->second.valid())
-        return iter->second->readImage(fileName, opt);
-    string absFileName = findDataFile(fileName);
-    if (!fileExists(absFileName)) {
-        SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
-               << fileName << "\"");
-        return ReaderWriter::ReadResult::FILE_NOT_FOUND;
+    {
+        OptionsPusher pusher(opt);
+        if (iter != imageCallbackMap.end() && iter->second.valid())
+            return iter->second->readImage(fileName, opt);
+        string absFileName = findDataFile(fileName);
+        if (!fileExists(absFileName)) {
+            SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
+                   << fileName << "\"");
+            return ReaderWriter::ReadResult::FILE_NOT_FOUND;
+        }
+
+        Registry* registry = Registry::instance();
+        ReaderWriter::ReadResult res;
+        res = registry->readImageImplementation(absFileName, opt);
+        if (res.loadedFromCache())
+            SG_LOG(SG_IO, SG_INFO, "Returning cached image \""
+                   << res.getImage()->getFileName() << "\"");
+        else
+            SG_LOG(SG_IO, SG_INFO, "Reading image \""
+                   << res.getImage()->getFileName() << "\"");
+
+        return res;
     }
-
-    Registry* registry = Registry::instance();
-    ReaderWriter::ReadResult res;
-    res = registry->readImageImplementation(absFileName, opt);
-    if (res.loadedFromCache())
-        SG_LOG(SG_IO, SG_INFO, "Returning cached image \""
-               << res.getImage()->getFileName() << "\"");
-    else
-        SG_LOG(SG_IO, SG_INFO, "Reading image \""
-               << res.getImage()->getFileName() << "\"");
-
-    return res;
 }
 
 

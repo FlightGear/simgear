@@ -19,7 +19,7 @@
 
 #include <osgDB/Registry>
 
-#include <PathOptions.hxx>
+#include "PathOptions.hxx"
 
 using namespace simgear;
 

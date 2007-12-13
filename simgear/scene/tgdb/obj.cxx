@@ -55,8 +55,12 @@
 #include "SGTexturedTriangleBin.hxx"
 #include "SGLightBin.hxx"
 #include "SGDirectionalLightBin.hxx"
+#include "GroundLightManager.hxx"
+
 
 #include "pt_lights.hxx"
+
+using namespace simgear;
 
 typedef std::map<std::string,SGTexturedTriangleBin> SGMaterialTriangleMap;
 typedef std::list<SGLightBin> SGLightListBin;
@@ -449,92 +453,6 @@ struct SGTileGeometryBin {
   }
 };
 
-
-class SGTileUpdateCallback : public osg::NodeCallback {
-public:
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    assert(dynamic_cast<osg::Switch*>(node));
-    assert(dynamic_cast<SGUpdateVisitor*>(nv));
-
-    osg::Switch* lightSwitch = static_cast<osg::Switch*>(node);
-    SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-
-    // The current sun angle in degree
-    float sun_angle = updateVisitor->getSunAngleDeg();
-
-    // vasi is always on
-    lightSwitch->setValue(0, true);
-    if (sun_angle > 85 || updateVisitor->getVisibility() < 5000) {
-      // runway and taxi
-      lightSwitch->setValue(1, true);
-      lightSwitch->setValue(2, true);
-    } else {
-      // runway and taxi
-      lightSwitch->setValue(1, false);
-      lightSwitch->setValue(2, false);
-    }
-    
-    // ground lights
-    if ( sun_angle > 95 )
-      lightSwitch->setValue(5, true);
-    else
-      lightSwitch->setValue(5, false);
-    if ( sun_angle > 92 )
-      lightSwitch->setValue(4, true);
-    else
-      lightSwitch->setValue(4, false);
-    if ( sun_angle > 89 )
-      lightSwitch->setValue(3, true);
-    else
-      lightSwitch->setValue(3, false);
-
-    traverse(node, nv);
-  }
-};
-
-class SGRunwayLightFogUpdateCallback : public osg::StateAttribute::Callback {
-public:
-  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
-  {
-    assert(dynamic_cast<SGUpdateVisitor*>(nv));
-    assert(dynamic_cast<osg::Fog*>(sa));
-    SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-    osg::Fog* fog = static_cast<osg::Fog*>(sa);
-    fog->setMode(osg::Fog::EXP2);
-    fog->setColor(updateVisitor->getFogColor().osg());
-    fog->setDensity(updateVisitor->getRunwayFogExp2Density());
-  }
-};
-
-class SGTaxiLightFogUpdateCallback : public osg::StateAttribute::Callback {
-public:
-  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
-  {
-    assert(dynamic_cast<SGUpdateVisitor*>(nv));
-    assert(dynamic_cast<osg::Fog*>(sa));
-    SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-    osg::Fog* fog = static_cast<osg::Fog*>(sa);
-    fog->setMode(osg::Fog::EXP2);
-    fog->setColor(updateVisitor->getFogColor().osg());
-    fog->setDensity(updateVisitor->getTaxiFogExp2Density());
-  }
-};
-
-class SGGroundLightFogUpdateCallback : public osg::StateAttribute::Callback {
-public:
-  virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
-  {
-    assert(dynamic_cast<SGUpdateVisitor*>(nv));
-    assert(dynamic_cast<osg::Fog*>(sa));
-    SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-    osg::Fog* fog = static_cast<osg::Fog*>(sa);
-    fog->setMode(osg::Fog::EXP2);
-    fog->setColor(updateVisitor->getFogColor().osg());
-    fog->setDensity(updateVisitor->getGroundLightsFogExp2Density());
-  }
-};
-
 osg::Node*
 SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects)
 {
@@ -550,67 +468,9 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   SGGeod geodPos = SGGeod::fromCart(center);
   SGQuatd hlOr = SGQuatd::fromLonLat(geodPos);
   SGVec3f up = toVec3f(hlOr.backTransform(SGVec3d(0, 0, -1)));
+  GroundLightManager* lightManager = GroundLightManager::instance();
 
-  osg::Group* vasiLights = new osg::Group;
-  vasiLights->setCullCallback(new SGPointSpriteLightCullCallback(osg::Vec3(1, 0.0001, 0.000001), 6));
-  osg::StateSet* stateSet = vasiLights->getOrCreateStateSet();
-  osg::Fog* fog = new osg::Fog;
-  fog->setUpdateCallback(new SGRunwayLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Group* rwyLights = new osg::Group;
-  rwyLights->setCullCallback(new SGPointSpriteLightCullCallback);
-  stateSet = rwyLights->getOrCreateStateSet();
-  fog = new osg::Fog;
-  fog->setUpdateCallback(new SGRunwayLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Group* taxiLights = new osg::Group;
-  taxiLights->setCullCallback(new SGPointSpriteLightCullCallback);
-  stateSet = taxiLights->getOrCreateStateSet();
-  fog = new osg::Fog;
-  fog->setUpdateCallback(new SGTaxiLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Group* groundLights0 = new osg::Group;
-  stateSet = groundLights0->getOrCreateStateSet();
-  fog = new osg::Fog;
-  fog->setUpdateCallback(new SGGroundLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Group* groundLights1 = new osg::Group;
-  stateSet = groundLights1->getOrCreateStateSet();
-  fog = new osg::Fog;
-  fog->setUpdateCallback(new SGGroundLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Group* groundLights2 = new osg::Group;
-  stateSet = groundLights2->getOrCreateStateSet();
-  fog = new osg::Fog;
-  fog->setUpdateCallback(new SGGroundLightFogUpdateCallback);
-  stateSet->setAttribute(fog);
-
-  osg::Switch* lightSwitch = new osg::Switch;
-  lightSwitch->setUpdateCallback(new SGTileUpdateCallback);
-  lightSwitch->addChild(vasiLights, true);
-  lightSwitch->addChild(rwyLights, true);
-  lightSwitch->addChild(taxiLights, true);
-  lightSwitch->addChild(groundLights0, true);
-  lightSwitch->addChild(groundLights1, true);
-  lightSwitch->addChild(groundLights2, true);
-
-  osg::Group* lightGroup = new SGOffsetTransform(0.94);
-  lightGroup->addChild(lightSwitch);
-
-  osg::LOD* lightLOD = new osg::LOD;
-  lightLOD->addChild(lightGroup, 0, 30000);
-  unsigned nodeMask = ~0u;
-  nodeMask &= ~SG_NODEMASK_CASTSHADOW_BIT;
-  nodeMask &= ~SG_NODEMASK_RECIEVESHADOW_BIT;
-  nodeMask &= ~SG_NODEMASK_PICK_BIT;
-  nodeMask &= ~SG_NODEMASK_TERRAIN_BIT;
-  lightLOD->setNodeMask(nodeMask);
-
+  osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
   osg::Group* terrainGroup = new osg::Group;
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
   if (node)
@@ -620,21 +480,36 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     // FIXME: ugly, has a side effect
     tileGeometryBin.computeRandomSurfaceLights(matlib);
 
-    osg::Geode* geode = new osg::Geode;
-    groundLights0->addChild(geode);
-    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.tileLights));
-    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 4, -0.3f));
-
-    geode = new osg::Geode;
-    groundLights1->addChild(geode);
-    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 2, -0.15f));
-
-    geode = new osg::Geode;
-    groundLights2->addChild(geode);
-    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights));
+    if (tileGeometryBin.tileLights.getNumLights() > 0
+        || tileGeometryBin.randomTileLights.getNumLights() > 0) {
+      osg::Group* groundLights0 = new osg::Group;
+      groundLights0->setStateSet(lightManager->getGroundLightStateSet());
+      groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
+      osg::Geode* geode = new osg::Geode;
+      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.tileLights));
+      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 4, -0.3f));
+      groundLights0->addChild(geode);
+      lightGroup->addChild(groundLights0);
+    }
+    if (tileGeometryBin.randomTileLights.getNumLights() > 0) {
+      osg::Group* groundLights1 = new osg::Group;
+      groundLights1->setStateSet(lightManager->getGroundLightStateSet());
+      groundLights1->setNodeMask(GROUNDLIGHTS1_BIT);
+      osg::Group* groundLights2 = new osg::Group;
+      groundLights2->setStateSet(lightManager->getGroundLightStateSet());
+      groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
+      osg::Geode* geode = new osg::Geode;
+      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 2, -0.15f));
+      groundLights1->addChild(geode);
+      lightGroup->addChild(groundLights1);
+      geode = new osg::Geode;
+      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights));
+      groundLights2->addChild(geode);
+      lightGroup->addChild(groundLights2);
+    }
   }
 
-  {
+  if (!tileGeometryBin.vasiLights.empty()) {
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = matlib->find("RWY_RED_LIGHTS");
     if (mat)
@@ -643,18 +518,35 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     mat = matlib->find("RWY_WHITE_LIGHTS");
     if (mat)
       white = mat->get_light_color();
-    osg::Geode* geode;
-    geode = new osg::Geode;
-    vasiLights->addChild(geode);
+
+    osg::Geode* geode = new osg::Geode;
     SGDirectionalLightListBin::const_iterator i;
     for (i = tileGeometryBin.vasiLights.begin();
          i != tileGeometryBin.vasiLights.end(); ++i) {
       geode->addDrawable(SGLightFactory::getVasi(up, *i, red, white));
     }
-    
-    geode = new osg::Geode;
-    rwyLights->addChild(geode);
-    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.runwayLights));
+    osg::Group* vasiLights = new osg::Group;
+    vasiLights->setCullCallback(new SGPointSpriteLightCullCallback(osg::Vec3(1, 0.0001, 0.000001), 6));
+    vasiLights->setStateSet(lightManager->getRunwayLightStateSet());
+    vasiLights->addChild(geode);
+    lightGroup->addChild(vasiLights);
+  }
+
+  if (tileGeometryBin.runwayLights.getNumLights() > 0
+      || !tileGeometryBin.rabitLights.empty()
+      || !tileGeometryBin.reilLights.empty()
+      || !tileGeometryBin.odalLights.empty()) {
+    osg::Group* rwyLights = new osg::Group;
+    rwyLights->setCullCallback(new SGPointSpriteLightCullCallback);
+    rwyLights->setStateSet(lightManager->getRunwayLightStateSet());
+    rwyLights->setNodeMask(RUNWAYLIGHTS_BIT);
+    if (tileGeometryBin.runwayLights.getNumLights() != 0) {
+      osg::Geode* geode = new osg::Geode;
+      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin
+                                                   .runwayLights));
+      rwyLights->addChild(geode);
+    }
+    SGDirectionalLightListBin::const_iterator i;
     for (i = tileGeometryBin.rabitLights.begin();
          i != tileGeometryBin.rabitLights.end(); ++i) {
       rwyLights->addChild(SGLightFactory::getSequenced(*i));
@@ -663,16 +555,23 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
          i != tileGeometryBin.reilLights.end(); ++i) {
       rwyLights->addChild(SGLightFactory::getSequenced(*i));
     }
-
     SGLightListBin::const_iterator j;
     for (j = tileGeometryBin.odalLights.begin();
          j != tileGeometryBin.odalLights.end(); ++j) {
       rwyLights->addChild(SGLightFactory::getOdal(*j));
     }
+    lightGroup->addChild(rwyLights);
+  }
 
-    geode = new osg::Geode;
-    taxiLights->addChild(geode);
+  if (tileGeometryBin.taxiLights.getNumLights() > 0) {
+    osg::Group* taxiLights = new osg::Group;
+    taxiLights->setCullCallback(new SGPointSpriteLightCullCallback);
+    taxiLights->setStateSet(lightManager->getTaxiLightStateSet());
+    taxiLights->setNodeMask(RUNWAYLIGHTS_BIT);
+    osg::Geode* geode = new osg::Geode;
     geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.taxiLights));
+    taxiLights->addChild(geode);
+    lightGroup->addChild(taxiLights);
   }
 
   // The toplevel transform for that tile.
@@ -680,7 +579,16 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   transform->setName(path);
   transform->setMatrix(osg::Matrix::translate(center.osg()));
   transform->addChild(terrainGroup);
-  transform->addChild(lightLOD);
-
+  if (lightGroup->getNumChildren() > 0) {
+    osg::LOD* lightLOD = new osg::LOD;
+    lightLOD->addChild(lightGroup.get(), 0, 30000);
+    unsigned nodeMask = ~0u;
+    nodeMask &= ~SG_NODEMASK_CASTSHADOW_BIT;
+    nodeMask &= ~SG_NODEMASK_RECIEVESHADOW_BIT;
+    nodeMask &= ~SG_NODEMASK_PICK_BIT;
+    nodeMask &= ~SG_NODEMASK_TERRAIN_BIT;
+    lightLOD->setNodeMask(nodeMask);
+    transform->addChild(lightLOD);
+  }
   return transform;
 }

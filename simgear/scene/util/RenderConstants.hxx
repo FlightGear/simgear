@@ -31,8 +31,14 @@ enum NodeMask {
     RECEIVESHADOW_BIT = (1 << 3),
     GUI_BIT = (1 << 4),
     PANEL2D_BIT = (1 << 5),
-    PICK_BIT = (1 << 6)
+    PICK_BIT = (1 << 6),
     // Different classes of lights turned on by node masks
+    GROUNDLIGHTS0_BIT = (1 << 7),
+    GROUNDLIGHTS1_BIT = (1 << 8),
+    GROUNDLIGHTS2_BIT = (1 << 9),
+    RUNWAYLIGHTS_BIT = (1 << 10),
+    LIGHTS_BITS = (GROUNDLIGHTS0_BIT | GROUNDLIGHTS1_BIT | GROUNDLIGHTS2_BIT
+                   | RUNWAYLIGHTS_BIT)
 };
 }
 #endif

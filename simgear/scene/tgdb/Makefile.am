@@ -17,7 +17,8 @@ include_HEADERS = \
 	SGReaderWriterBTGOptions.hxx \
 	SGTexturedTriangleBin.hxx \
 	SGTriangleBin.hxx \
-	SGVertexArrayBin.hxx
+	SGVertexArrayBin.hxx \
+	GroundLightManager.hxx
 
 libsgtgdb_a_SOURCES = \
 	apt_signs.cxx \
@@ -26,6 +27,7 @@ libsgtgdb_a_SOURCES = \
 	userdata.cxx \
 	SGOceanTile.cxx \
 	SGReaderWriterBTG.cxx \
-	SGVasiDrawable.cxx
+	SGVasiDrawable.cxx \
+	GroundLightManager.cxx
 
 INCLUDES = -I$(top_srcdir)

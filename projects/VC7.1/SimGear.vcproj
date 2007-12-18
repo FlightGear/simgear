@@ -348,6 +348,12 @@
 				RelativePath="..\..\simgear\misc\interpolator.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\misc\PathOptions.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\PathOptions.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\misc\sg_path.cxx">
 			</File>
 			<File
@@ -385,12 +391,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\zfstream.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\PathOptions.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\PathOptions.hxx">
 			</File>
 		</Filter>
 		<Filter
@@ -792,6 +792,12 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\apt_signs.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\GroundLightManager.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\GroundLightManager.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\obj.cxx">

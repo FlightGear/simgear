@@ -54,9 +54,12 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>
 
 #include "SGVasiDrawable.hxx"
+
+using namespace simgear;
 
 static void
 setPointSpriteImage(unsigned char* data, unsigned log2resolution,
@@ -238,7 +241,7 @@ SGLightFactory::getLight(const SGLightBin::Light& light)
   geometry->addPrimitiveSet(drawArrays);
   
   osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
   
   osg::BlendFunc* blendFunc = new osg::BlendFunc;
@@ -291,7 +294,7 @@ SGLightFactory::getLight(const SGDirectionalLightBin::Light& light)
   geometry->addPrimitiveSet(drawArrays);
   
   osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
 
   osg::Material* material = new osg::Material;
   material->setColorMode(osg::Material::OFF);
@@ -352,7 +355,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
   geometry->addPrimitiveSet(drawArrays);
   
   osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
 
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
   
@@ -407,7 +410,7 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   geometry->addPrimitiveSet(drawArrays);
   
   osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
 
   osg::Material* material = new osg::Material;
   material->setColorMode(osg::Material::OFF);
@@ -489,7 +492,7 @@ SGLightFactory::getVasi(const SGVec3f& up, const SGDirectionalLightBin& lights,
     return 0;
 
   osg::StateSet* stateSet = drawable->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::BlendFunc* blendFunc = new osg::BlendFunc;
@@ -525,7 +528,7 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
   sequence->setSync(true);
 
   osg::StateSet* stateSet = sequence->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::BlendFunc* blendFunc = new osg::BlendFunc;
@@ -577,7 +580,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   sequence->setSync(true);
 
   osg::StateSet* stateSet = sequence->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(9, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::BlendFunc* blendFunc = new osg::BlendFunc;

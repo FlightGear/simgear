@@ -45,6 +45,8 @@
 #include <simgear/misc/PathOptions.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/math/polar3d.hxx>
 
 #include "newcloud.hxx"
@@ -88,31 +90,13 @@ SGMakeState(const SGPath &path, const char* colorTexture,
     stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
                                                      options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
-
-    osg::TexEnv* texEnv = new osg::TexEnv;
-    texEnv->setMode(osg::TexEnv::MODULATE);
-    stateSet->setTextureAttribute(0, texEnv);
- 
-    osg::ShadeModel* shadeModel = new osg::ShadeModel;
-    // FIXME: TRUE??
-    shadeModel->setMode(osg::ShadeModel::SMOOTH);
-    stateSet->setAttributeAndModes(shadeModel);
-
+    StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
+    stateSet->setTextureAttribute(0, attribFactory->getStandardTexEnv());
+    stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
-
-//     osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-//     alphaFunc->setFunction(osg::AlphaFunc::GREATER);
-//     alphaFunc->setReferenceValue(0.01);
-//     stateSet->setAttribute(alphaFunc);
-//     stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-    stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
-
-    osg::BlendFunc* blendFunc = new osg::BlendFunc;
-    blendFunc->setSource(osg::BlendFunc::SRC_ALPHA);
-    blendFunc->setDestination(osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
-    stateSet->setAttribute(blendFunc);
-    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+    stateSet->setAttributeAndModes(attribFactory->getStandardAlphaFunc());
+    stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
 
 //     osg::Material* material = new osg::Material;
 //     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
@@ -160,11 +144,15 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     last_lon(0.0),
     last_lat(0.0)
 {
+    // XXX
+    // Render bottoms before the rest of transparent objects (rendered
+    // in bin 10), tops after. The negative numbers on the bottoms
+    // RenderBins and the positive numbers on the tops enforce this
+    // order.
   layer_root->addChild(group_bottom.get());
   layer_root->addChild(group_top.get());
-  // Force the cloud layers into recursive bins of bin 4.
   osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
-  rootSet->setRenderBinDetails(4, "RenderBin");
+  rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
   rootSet->setTextureAttribute(0, new osg::TexMat());
   base = osg::Vec2(sg_random(), sg_random());
 
@@ -869,10 +857,10 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     // bottom polys should be drawn from high altitude to low, and the
     // top polygons from low to high. The altitude can be used
     // directly to order the polygons!
-    layer_root->getChild(0)->getStateSet()->setRenderBinDetails(-(int)layer_asl,
-                                                                "RenderBin");
-    layer_root->getChild(1)->getStateSet()->setRenderBinDetails((int)layer_asl,
-                                                                "RenderBin");
+    group_bottom->getStateSet()->setRenderBinDetails(-(int)layer_asl,
+                                                     "RenderBin");
+    group_top->getStateSet()->setRenderBinDetails((int)layer_asl,
+                                                  "RenderBin");
     if ( alt <= layer_asl ) {
       layer_root->setSingleChildOn(0);
     } else if ( alt >= layer_asl + layer_thickness ) {

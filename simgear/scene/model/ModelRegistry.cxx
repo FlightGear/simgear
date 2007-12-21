@@ -441,6 +441,24 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
     {
         _osgOptions &= ~Optimizer::TRISTRIP_GEOMETRY;
     }
+    Node* optimize(Node* node, const string& fileName,
+                   const ReaderWriter::Options* opt)
+    {
+        ref_ptr<Node> optimized
+            = OptimizeModelPolicy::optimize(node, fileName, opt);
+        MatrixTransform* transform
+            = dynamic_cast<MatrixTransform*>(optimized.get());
+        if (transform && transform->getMatrix().isIdentity()
+            && transform->getName().empty()
+            && transform->getNumChildren() == 1) {
+            optimized = static_cast<Node*>(transform->getChild(0));
+            Group* group = dynamic_cast<Group*>(optimized.get());
+            if (group && group->getName().empty()
+                && group->getNumChildren() == 1)
+                optimized = static_cast<Node*>(group->getChild(0));
+        }
+        return optimized.release();
+    }
 };
 
 struct ACProcessPolicy {

@@ -37,6 +37,7 @@
 #include <osg/Material>
 #include <osg/ShadeModel>
 #include <osg/TexEnv>
+#include <osg/TexEnvCombine>
 #include <osg/Texture2D>
 #include <osg/TextureCubeMap>
 #include <osg/TexMat>
@@ -91,7 +92,6 @@ SGMakeState(const SGPath &path, const char* colorTexture,
                                                      options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);
     StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
-    stateSet->setTextureAttribute(0, attribFactory->getStandardTexEnv());
     stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
@@ -153,7 +153,40 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
   layer_root->addChild(group_top.get());
   osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
   rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
-  rootSet->setTextureAttribute(0, new osg::TexMat());
+  rootSet->setTextureAttribute(0, new osg::TexMat);
+  // Combiner for fog color and cloud alpha
+  osg::TexEnvCombine* combine0 = new osg::TexEnvCombine;
+  osg::TexEnvCombine* combine1 = new osg::TexEnvCombine;
+  combine0->setCombine_RGB(osg::TexEnvCombine::MODULATE);
+  combine0->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+  combine0->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+  combine0->setSource1_RGB(osg::TexEnvCombine::TEXTURE0);
+  combine0->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+  combine0->setCombine_Alpha(osg::TexEnvCombine::MODULATE);
+  combine0->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+  combine0->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+  combine0->setSource1_Alpha(osg::TexEnvCombine::TEXTURE0);
+  combine0->setOperand1_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+
+  combine1->setCombine_RGB(osg::TexEnvCombine::MODULATE);
+  combine1->setSource0_RGB(osg::TexEnvCombine::PREVIOUS);
+  combine1->setOperand0_RGB(osg::TexEnvCombine::SRC_COLOR);
+  combine1->setSource1_RGB(osg::TexEnvCombine::CONSTANT);
+  combine1->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
+  combine1->setCombine_Alpha(osg::TexEnvCombine::MODULATE);
+  combine1->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
+  combine1->setOperand0_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+  combine1->setSource1_Alpha(osg::TexEnvCombine::CONSTANT);
+  combine1->setOperand1_Alpha(osg::TexEnvCombine::SRC_ALPHA);
+  combine1->setDataVariance(osg::Object::DYNAMIC);
+  rootSet->setTextureAttributeAndModes(0, combine0);
+  rootSet->setTextureAttributeAndModes(1, combine1);
+  rootSet->setTextureMode(1, GL_TEXTURE_2D, osg::StateAttribute::ON);
+  rootSet->setTextureAttributeAndModes(1, StateAttributeFactory::instance()
+                                       ->getWhiteTexture(),
+                                       osg::StateAttribute::ON);
+  rootSet->setDataVariance(osg::Object::DYNAMIC);
+
   base = osg::Vec2(sg_random(), sg_random());
 
   group_top->addChild(layer_transform.get());
@@ -516,8 +549,7 @@ SGCloudLayer::rebuild()
     
     //OSGFIXME: true
     if ( layer_states[layer_coverage].valid() ) {
-      osg::CopyOp copyOp(osg::CopyOp::DEEP_COPY_ALL
-                         & ~osg::CopyOp::DEEP_COPY_TEXTURES);
+      osg::CopyOp copyOp;    // shallow copy
       // render bin will be set in reposition
       osg::StateSet* stateSet = static_cast<osg::StateSet*>(layer_states2[layer_coverage]->clone(copyOp));
       stateSet->setDataVariance(osg::Object::DYNAMIC);
@@ -783,30 +815,12 @@ ss->setTextureAttributeAndModes(0, te, osg::StateAttribute::OVERRIDE | osg::Stat
 
 // repaint the cloud layer colors
 bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
-  for ( int i = 0; i < 4; i++ ) {
-    osg::Vec4 color(fog_color.osg(), 1);
-    color[3] = (i == 0) ? 0.0f : cloud_alpha * 0.15f;
-    (*cl[i])[0] = color;
-    
-    for ( int j = 0; j < 4; ++j ) {
-      color[3] =
-        ((j == 0) || (i == 3)) ?
-        ((j == 0) && (i == 3)) ? 0.0f : cloud_alpha * 0.15f : cloud_alpha;
-      (*cl[i])[(2*j) + 1] = color;
-      
-      color[3] = 
-        ((j == 3) || (i == 0)) ?
-        ((j == 3) && (i == 0)) ? 0.0f : cloud_alpha * 0.15f : cloud_alpha;
-      (*cl[i])[(2*j) + 2] = color;
-    }
-    
-    color[3] = (i == 3) ? 0.0f : cloud_alpha * 0.15f;
-    (*cl[i])[9] = color;
-    
-    cl[i]->dirty();
-  }
-
-  return true;
+    osg::Vec4f combineColor(fog_color.osg(), cloud_alpha);
+    osg::TexEnvCombine* combiner
+        = dynamic_cast<osg::TexEnvCombine*>(layer_root->getStateSet()
+                                            ->getTextureAttribute(1, osg::StateAttribute::TEXENV));
+    combiner->setConstantColor(combineColor);
+    return true;
 }
 
 // reposition the cloud layer at the specified origin and orientation

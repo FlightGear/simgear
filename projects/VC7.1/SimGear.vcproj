@@ -1084,6 +1084,13 @@
 			<File
 				RelativePath="..\..\simgear\scene\util\SGUpdateVisitor.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
+			</File>
+
 		</Filter>
 		<File
 			RelativePath="..\..\simgear\simgear_config.h-msvc71">

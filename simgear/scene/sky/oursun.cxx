@@ -49,9 +49,11 @@
 using namespace simgear;
 
 // Constructor
-SGSun::SGSun( void ) {
-    prev_sun_angle = -9999.0;
-    visibility = -9999.0;
+SGSun::SGSun( void ) :
+    visibility(-9999.0), prev_sun_angle(-9999.0), path_distance(60000.0),
+    sun_exp2_punch_through(7.0e-06)
+{
+
 }
 
 
@@ -336,7 +338,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 		else if ( i_halo_color[2] > 1) i_halo_color[2] = 1;
 		if ( o_halo_color[2] < 0 ) o_halo_color[2] = 0;
 		else if ( o_halo_color[2] > 1) o_halo_color[2] = 1;
-		if ( o_halo_color[3] < 0 ) o_halo_color[2] = 0;
+		if ( o_halo_color[3] < 0 ) o_halo_color[3] = 0;
 		else if ( o_halo_color[3] > 1) o_halo_color[3] = 1;
 
         

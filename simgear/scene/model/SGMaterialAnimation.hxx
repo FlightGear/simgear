@@ -12,6 +12,7 @@
 #endif
 
 #include <osg/Material>
+#include <osgDB/ReaderWriter>
 #include "animation.hxx"
 
 //////////////////////////////////////////////////////////////////////
@@ -21,12 +22,14 @@
 class SGMaterialAnimation : public SGAnimation {
 public:
   SGMaterialAnimation(const SGPropertyNode* configNode,
-                      SGPropertyNode* modelRoot);
+                      SGPropertyNode* modelRoot,
+                      const osgDB::ReaderWriter::Options* options);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
   osg::ref_ptr<osg::Material> defaultMaterial;
   osg::Vec4 defaultAmbientDiffuse;
+  osgDB::FilePathList texturePathList;
 };
 
 #endif // _SG_MATERIALANIMATION_HXX

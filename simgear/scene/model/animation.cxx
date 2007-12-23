@@ -521,7 +521,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGFlashAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "material") {
-    SGMaterialAnimation animInst(configNode, modelRoot);
+    SGMaterialAnimation animInst(configNode, modelRoot, options);
     animInst.apply(node);
   } else if (type == "noshadow") {
     SGShadowAnimation animInst(configNode, modelRoot);

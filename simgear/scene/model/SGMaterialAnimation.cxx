@@ -354,8 +354,11 @@ private:
 
 
 SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
-                                         SGPropertyNode* modelRoot) :
-  SGAnimation(configNode, modelRoot)
+                                         SGPropertyNode* modelRoot,
+                                         const osgDB::ReaderWriter::Options*
+                                         options) :
+  SGAnimation(configNode, modelRoot),
+  texturePathList(options->getDatabasePathList())
 {
   if (configNode->hasChild("global"))
     SG_LOG(SG_IO, SG_ALERT, "Use of <global> in material animation is "
@@ -373,9 +376,6 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
   if (node)
     inputRoot = getModelRoot()->getRootNode()->getNode(node->getStringValue(),
                                                        true);
-
-  osgDB::FilePathList texturePathList = osgDB::getDataFilePathList();
-
   if (getConfig()->hasChild("texture-prop"))
       osg::StateSet* stateSet = group->getOrCreateStateSet();
   if (getConfig()->hasChild("texture")) {

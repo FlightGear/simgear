@@ -30,10 +30,20 @@
 // The interface is still under development
 class SGPickCallback : public SGReferenced {
 public:
+  enum Priority {
+    PriorityGUI = 0,
+    PriorityPanel = 1,
+    PriorityOther = 2
+  };
+
   struct Info {
     SGVec3d wgs84;
     SGVec3d local;
   };
+
+  SGPickCallback(Priority priority = PriorityOther) :
+    _priority(priority)
+  { }
 
   virtual ~SGPickCallback() {}
   virtual bool buttonPressed(int button, const Info& info)
@@ -42,6 +52,12 @@ public:
   { }
   virtual void buttonReleased(void)
   { }
+
+  Priority getPriority() const
+  { return _priority; }
+
+private:
+  Priority _priority;
 };
 
 struct SGSceneryPick {

@@ -5,15 +5,15 @@ lib_LIBRARIES = libsgutil.a
 noinst_HEADERS =
 
 include_HEADERS = \
-	SGNodeMasks.hxx \
-	SGUpdateVisitor.hxx \
-	SGEnlargeBoundingBox.hxx \
 	SGDebugDrawCallback.hxx \
+	SGEnlargeBoundingBox.hxx \
+	SGNodeMasks.hxx \
 	SGPickCallback.hxx \
 	SGSceneFeatures.hxx \
 	SGSceneUserData.hxx \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx \
+	SGUpdateVisitor.hxx \
 	RenderConstants.hxx \
 	StateAttributeFactory.hxx \
 	VectorArrayAdapter.hxx

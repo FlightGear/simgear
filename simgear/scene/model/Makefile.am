@@ -13,6 +13,7 @@ include_HEADERS = \
 	persparam.hxx \
 	placement.hxx \
 	placementtrans.hxx \
+	SGClipGroup.hxx \
 	SGMaterialAnimation.hxx \
 	SGOffsetTransform.hxx \
 	SGRotateTransform.hxx \
@@ -29,6 +30,7 @@ libsgmodel_a_SOURCES = \
 	placement.cxx \
 	placementtrans.cxx \
 	shadanim.cxx \
+	SGClipGroup.cxx \
 	SGMaterialAnimation.cxx \
 	SGOffsetTransform.cxx \
 	SGRotateTransform.cxx \

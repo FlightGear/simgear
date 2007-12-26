@@ -10,6 +10,7 @@ include_HEADERS = \
 	subsystem_mgr.hxx \
 	SGAtomic.hxx \
 	SGBinding.hxx \
+	SGExpression.hxx \
 	SGReferenced.hxx \
 	SGSharedPtr.hxx \
 	SGSmplhist.hxx \
@@ -22,6 +23,7 @@ libsgstructure_a_SOURCES = \
 	subsystem_mgr.cxx \
 	SGAtomic.cxx \
 	SGBinding.cxx \
+	SGExpression.cxx \
 	SGSmplhist.cxx \
 	SGSmplstat.cxx
 

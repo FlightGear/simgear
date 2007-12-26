@@ -11,38 +11,17 @@
 # error This library requires C++
 #endif
 
-#include <vector>
-#include <map>
-
-#include <osg/Vec3>
-#include <osg/Vec4>
-
 #include <osg/ref_ptr>
-#include <osg/AlphaFunc>
 #include <osg/Group>
-#include <osg/Material>
 #include <osg/Node>
-#include <osg/NodeCallback>
 #include <osg/NodeVisitor>
-#include <osg/StateSet>
 #include <osg/Texture2D>
-#include <osg/TexMat>
-
 #include <osgDB/ReaderWriter>
-#include <simgear/props/props.hxx>
-#include <simgear/misc/sg_path.hxx>
 
-#include <simgear/math/interpolater.hxx>
-#include <simgear/scene/model/persparam.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
-
-
-SG_USING_STD(vector);
-SG_USING_STD(map);
-
-// Don't pull in the headers, since we don't need them here.
-class SGInterpTable;
-class SGCondition;
+#include <simgear/props/props.hxx>
+#include <simgear/props/condition.hxx>
+#include <simgear/structure/SGExpression.hxx>
 
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
@@ -51,18 +30,6 @@ class SGCondition;
 #ifdef max
 #undef max
 #endif
-
-
-
-//////////////////////////////////////////////////////////////////////
-// Helper classes, FIXME: factor out
-//////////////////////////////////////////////////////////////////////
-
-class SGDoubleValue : public SGReferenced {
-public:
-  virtual ~SGDoubleValue() {}
-  virtual double getValue() const = 0;
-};
 
 
 //////////////////////////////////////////////////////////////////////
@@ -150,7 +117,7 @@ public:
 private:
   class UpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
-  SGSharedPtr<const SGDoubleValue> _animationValue;
+  SGSharedPtr<const SGExpressiond> _animationValue;
   SGVec3d _axis;
   double _initialValue;
 };
@@ -169,7 +136,7 @@ private:
   class UpdateCallback;
   class SpinUpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
-  SGSharedPtr<const SGDoubleValue> _animationValue;
+  SGSharedPtr<const SGExpressiond> _animationValue;
   SGVec3d _axis;
   SGVec3d _center;
   double _initialValue;
@@ -189,7 +156,7 @@ public:
 private:
   class UpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
-  SGSharedPtr<const SGDoubleValue> _animationValue[3];
+  SGSharedPtr<const SGExpressiond> _animationValue[3];
   SGVec3d _initialValue;
   SGVec3d _center;
 };
@@ -249,8 +216,8 @@ public:
 private:
   class UpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
-  SGSharedPtr<const SGDoubleValue> _minAnimationValue;
-  SGSharedPtr<const SGDoubleValue> _maxAnimationValue;
+  SGSharedPtr<const SGExpressiond> _minAnimationValue;
+  SGSharedPtr<const SGExpressiond> _maxAnimationValue;
   SGVec2d _initialValue;
 };
 
@@ -294,7 +261,7 @@ public:
 private:
   class BlendVisitor;
   class UpdateCallback;
-  SGSharedPtr<SGDoubleValue> _animationValue;
+  SGSharedPtr<SGExpressiond> _animationValue;
 };
 
 

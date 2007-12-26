@@ -111,36 +111,6 @@ set_translation (osg::Matrix &matrix, double position_m, const SGVec3d &axis)
 }
 
 /**
- * Modify property value by step and scroll settings in texture translations
- */
-static double
-apply_mods(double property, double step, double scroll, double bias)
-{
-
-  double modprop;
-  property += bias;
-  if(step > 0) {
-    double scrollval = 0.0;
-    if(scroll > 0) {
-      // calculate scroll amount (for odometer like movement)
-      double remainder  =  step - fmod(fabs(property), step);
-      if (remainder < scroll) {
-        scrollval = (scroll - remainder) / scroll * step;
-      }
-    }
-  // apply stepping of input value
-  if(property > 0) 
-     modprop = ((floor(property/step) * step) + scrollval);
-  else
-     modprop = ((ceil(property/step) * step) + scrollval);
-  } else {
-     modprop = property;
-  }
-  return modprop;
-
-}
-
-/**
  * Read an interpolation table from properties.
  */
 static SGInterpTable *
@@ -152,202 +122,96 @@ read_interpolation_table(const SGPropertyNode* props)
   return new SGInterpTable(table_node);
 }
 
-////////////////////////////////////////////////////////////////////////
-// Utility value classes
-////////////////////////////////////////////////////////////////////////
-class SGScaleOffsetValue : public SGDoubleValue {
-public:
-  SGScaleOffsetValue(SGPropertyNode const* propertyNode) :
-    _propertyNode(propertyNode),
-    _scale(1),
-    _offset(0),
-    _min(-SGLimitsd::max()),
-    _max(SGLimitsd::max())
-  { }
-  void setScale(double scale)
-  { _scale = scale; }
-  void setOffset(double offset)
-  { _offset = offset; }
-  void setMin(double min)
-  { _min = min; }
-  void setMax(double max)
-  { _max = max; }
-
-  virtual double getValue() const
-  {
-    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    return std::min(_max, std::max(_min, _offset + _scale*value));
-  }
-private:
-  SGSharedPtr<SGPropertyNode const> _propertyNode;
-  double _scale;
-  double _offset;
-  double _min;
-  double _max;
-};
-
-class SGPersScaleOffsetValue : public SGDoubleValue {
-public:
-  SGPersScaleOffsetValue(SGPropertyNode const* propertyNode,
-                         SGPropertyNode const* config,
-                         const char* scalename, const char* offsetname,
-                         double defScale = 1, double defOffset = 0) :
-    _propertyNode(propertyNode),
-    _scale(config, scalename, defScale),
-    _offset(config, offsetname, defOffset),
-    _min(-SGLimitsd::max()),
-    _max(SGLimitsd::max())
-  { }
-  void setScale(double scale)
-  { _scale = scale; }
-  void setOffset(double offset)
-  { _offset = offset; }
-  void setMin(double min)
-  { _min = min; }
-  void setMax(double max)
-  { _max = max; }
-
-  virtual double getValue() const
-  {
-    _offset.shuffle();
-    _scale.shuffle();
-    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    return SGMiscd::clip(_offset + _scale*value, _min, _max);
-  }
-private:
-  SGSharedPtr<SGPropertyNode const> _propertyNode;
-  mutable SGPersonalityParameter<double> _scale;
-  mutable SGPersonalityParameter<double> _offset;
-  double _min;
-  double _max;
-};
-
-class SGInterpTableValue : public SGDoubleValue {
-public:
-  SGInterpTableValue(SGPropertyNode const* propertyNode,
-                     SGInterpTable const* interpTable) :
-    _propertyNode(propertyNode),
-    _interpTable(interpTable)
-  { }
-  virtual double getValue() const
-  { return _interpTable->interpolate(_propertyNode ? _propertyNode->getDoubleValue() : 0); }
-private:
-  SGSharedPtr<SGPropertyNode const> _propertyNode;
-  SGSharedPtr<SGInterpTable const> _interpTable;
-};
-
-class SGTexScaleOffsetValue : public SGDoubleValue {
-public:
-  SGTexScaleOffsetValue(const SGPropertyNode* propertyNode) :
-    _propertyNode(propertyNode),
-    _scale(1),
-    _offset(0),
-    _step(0),
-    _scroll(0),
-    _bias(0),
-    _min(-SGLimitsd::max()),
-    _max(SGLimitsd::max())
-  { }
-  void setScale(double scale)
-  { _scale = scale; }
-  void setOffset(double offset)
-  { _offset = offset; }
-  void setStep(double step)
-  { _step = step; }
-  void setScroll(double scroll)
-  { _scroll = scroll; }
-  void setBias(double bias)
-  { _bias = bias; }
-  void setMin(double min)
-  { _min = min; }
-  void setMax(double max)
-  { _max = max; }
-
-  virtual double getValue() const
-  {
-    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    value = apply_mods(value, _step, _scroll, _bias);
-    return SGMiscd::clip(_scale*(_offset + value), _min, _max);
-  }
-private:
-  SGSharedPtr<const SGPropertyNode> _propertyNode;
-  double _scale;
-  double _offset;
-  double _step;
-  double _scroll;
-  double _bias;
-  double _min;
-  double _max;
-};
-
-class SGTexTableValue : public SGDoubleValue {
-public:
-  SGTexTableValue(const SGPropertyNode* propertyNode,
-                  const SGInterpTable* interpTable) :
-    _propertyNode(propertyNode),
-    _interpTable(interpTable)
-  { }
-  void setStep(double step)
-  { _step = step; }
-  void setScroll(double scroll)
-  { _scroll = scroll; }
-  void setBias(double bias)
-  { _bias = bias; }
-  virtual double getValue() const
-  {
-    double value = _propertyNode ? _propertyNode->getDoubleValue() : 0;
-    value = apply_mods(value, _step, _scroll, _bias);
-    return _interpTable->interpolate(value);
-  }
-private:
-  SGSharedPtr<SGPropertyNode const> _propertyNode;
-  SGSharedPtr<SGInterpTable const> _interpTable;
-  double _step;
-  double _scroll;
-  double _bias;
-};
-
 static std::string
 unit_string(const char* value, const char* unit)
 {
   return std::string(value) + unit;
 }
 
-static SGDoubleValue*
+class SGPersonalityScaleOffsetExpression : public SGUnaryExpression<double> {
+public:
+  SGPersonalityScaleOffsetExpression(SGExpression<double>* expr,
+                                     SGPropertyNode const* config,
+                                     const std::string& scalename,
+                                     const std::string& offsetname,
+                                     double defScale = 1,
+                                     double defOffset = 0) :
+    SGUnaryExpression<double>(expr),
+    _scale(config, scalename.c_str(), defScale),
+    _offset(config, offsetname.c_str(), defOffset)
+  { }
+  void setScale(double scale)
+  { _scale = scale; }
+  void setOffset(double offset)
+  { _offset = offset; }
+
+  virtual void eval(double& value) const
+  {
+    _offset.shuffle();
+    _scale.shuffle();
+    value = _offset + _scale*getOperand()->getValue();
+  }
+
+  virtual bool isConst() const { return false; }
+
+private:
+  mutable SGPersonalityParameter<double> _scale;
+  mutable SGPersonalityParameter<double> _offset;
+};
+
+
+static SGExpressiond*
+read_factor_offset(const SGPropertyNode* configNode, SGExpressiond* expr,
+                   const std::string& factor, const std::string& offset)
+{
+  double factorValue = configNode->getDoubleValue(factor, 1);
+  if (factorValue != 1)
+    expr = new SGScaleExpression<double>(expr, factorValue);
+  double offsetValue = configNode->getDoubleValue(offset, 0);
+  if (offsetValue != 0)
+    expr = new SGBiasExpression<double>(expr, offsetValue);
+  return expr;
+}
+
+static SGExpressiond*
 read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax)
 {
-  std::string inputPropertyName;
-  inputPropertyName = configNode->getStringValue("property", "");
-  if (!inputPropertyName.empty()) {
-    SGPropertyNode* inputProperty;
-    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
-    SGInterpTable* interpTable = read_interpolation_table(configNode);
-    if (interpTable) {
-      SGInterpTableValue* value;
-      value = new SGInterpTableValue(inputProperty, interpTable);
-      return value;
-    } else {
-      std::string offset = unit_string("offset", unit);
-      std::string min = unit_string("min", unit);
-      std::string max = unit_string("max", unit);
+  SGExpression<double>* value = 0;
 
-      if (configNode->getBoolValue("use-personality", false)) {
-        SGPersScaleOffsetValue* value;
-        value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                           "factor", offset.c_str());
-        value->setMin(configNode->getDoubleValue(min.c_str(), defMin));
-        value->setMax(configNode->getDoubleValue(max.c_str(), defMax));
-        return value;
-      } else {
-        SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
-        value->setScale(configNode->getDoubleValue("factor", 1));
-        value->setOffset(configNode->getDoubleValue(offset.c_str(), 0));
-        value->setMin(configNode->getDoubleValue(min.c_str(), defMin));
-        value->setMax(configNode->getDoubleValue(max.c_str(), defMax));
-        return value;
-      }
+  std::string inputPropertyName = configNode->getStringValue("property", "");
+  if (inputPropertyName.empty()) {
+    std::string spos = unit_string("starting-position", unit);
+    double initPos = configNode->getDoubleValue(spos, 0);
+    value = new SGConstExpression<double>(initPos);
+  } else {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName, true);
+    value = new SGPropertyExpression<double>(inputProperty);
+  }
+
+  SGInterpTable* interpTable = read_interpolation_table(configNode);
+  if (interpTable) {
+    return new SGInterpTableExpression<double>(value, interpTable);
+  } else {
+    std::string offset = unit_string("offset", unit);
+    std::string min = unit_string("min", unit);
+    std::string max = unit_string("max", unit);
+    
+    if (configNode->getBoolValue("use-personality", false)) {
+      value = new SGPersonalityScaleOffsetExpression(value, configNode,
+                                                     "factor", offset);
+    } else {
+      value = read_factor_offset(configNode, value, "factor", offset);
     }
+    
+    double minClip = configNode->getDoubleValue(min, defMin);
+    double maxClip = configNode->getDoubleValue(max, defMax);
+    if (minClip > SGMiscd::min(SGLimitsd::min(), -SGLimitsd::max()) ||
+        maxClip < SGLimitsd::max())
+      value = new SGClipExpression<double>(value, minClip, maxClip);
+    
+    return value;
   }
   return 0;
 }
@@ -742,7 +606,7 @@ SGGroupAnimation::createAnimationGroup(osg::Group& parent)
 class SGTranslateAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(SGCondition const* condition,
-                 SGDoubleValue const* animationValue) :
+                 SGExpressiond const* animationValue) :
     _condition(condition),
     _animationValue(animationValue)
   { }
@@ -757,7 +621,7 @@ public:
   }
 public:
   SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGDoubleValue const> _animationValue;
+  SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
 SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
@@ -765,17 +629,20 @@ SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
   SGAnimation(configNode, modelRoot)
 {
   _condition = getCondition();
-  _animationValue = read_value(configNode, modelRoot, "-m",
-                               -SGLimitsd::max(), SGLimitsd::max());
+  SGSharedPtr<SGExpressiond> value;
+  value = read_value(configNode, modelRoot, "-m",
+                     -SGLimitsd::max(), SGLimitsd::max());
+  _animationValue = value->simplify();
+  if (_animationValue)
+    _initialValue = _animationValue->getValue();
+  else
+    _initialValue = 0;
+
   _axis[0] = configNode->getDoubleValue("axis/x", 0);
   _axis[1] = configNode->getDoubleValue("axis/y", 0);
   _axis[2] = configNode->getDoubleValue("axis/z", 0);
   if (8*SGLimitsd::min() < norm(_axis))
     _axis = normalize(_axis);
-
-  _initialValue = configNode->getDoubleValue("starting-position-m", 0);
-  _initialValue *= configNode->getDoubleValue("factor", 1);
-  _initialValue += configNode->getDoubleValue("offset-m", 0);
 }
 
 osg::Group*
@@ -783,7 +650,7 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 {
   SGTranslateTransform* transform = new SGTranslateTransform;
   transform->setName("translate animation");
-  if (_animationValue) {
+  if (_animationValue && !_animationValue->isConst()) {
     UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
     transform->setUpdateCallback(uc);
   }
@@ -801,7 +668,7 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 class SGRotateAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(SGCondition const* condition,
-                 SGDoubleValue const* animationValue) :
+                 SGExpressiond const* animationValue) :
     _condition(condition),
     _animationValue(animationValue)
   { }
@@ -816,13 +683,13 @@ public:
   }
 public:
   SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGDoubleValue const> _animationValue;
+  SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
 class SGRotateAnimation::SpinUpdateCallback : public osg::NodeCallback {
 public:
   SpinUpdateCallback(SGCondition const* condition,
-                     SGDoubleValue const* animationValue) :
+                     SGExpressiond const* animationValue) :
     _condition(condition),
     _animationValue(animationValue),
     _lastTime(-1)
@@ -848,22 +715,26 @@ public:
   }
 public:
   SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGDoubleValue const> _animationValue;
+  SGSharedPtr<SGExpressiond const> _animationValue;
   double _lastTime;
 };
 
-SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode, SGPropertyNode* modelRoot) :
+SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
+                                     SGPropertyNode* modelRoot) :
   SGAnimation(configNode, modelRoot)
 {
   std::string type = configNode->getStringValue("type", "");
   _isSpin = (type == "spin");
 
   _condition = getCondition();
-  _animationValue = read_value(configNode, modelRoot, "-deg",
-                               -SGLimitsd::max(), SGLimitsd::max());
-  _initialValue = configNode->getDoubleValue("starting-position-deg", 0);
-  _initialValue *= configNode->getDoubleValue("factor", 1);
-  _initialValue += configNode->getDoubleValue("offset-deg", 0);
+  SGSharedPtr<SGExpressiond> value;
+  value = read_value(configNode, modelRoot, "-deg",
+                     -SGLimitsd::max(), SGLimitsd::max());
+  _animationValue = value->simplify();
+  if (_animationValue)
+    _initialValue = _animationValue->getValue();
+  else
+    _initialValue = 0;
 
   _center = SGVec3d::zeros();
   if (configNode->hasValue("axis/x1-m")) {
@@ -898,7 +769,7 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
     SpinUpdateCallback* uc;
     uc = new SpinUpdateCallback(_condition, _animationValue);
     transform->setUpdateCallback(uc);
-  } else if (_animationValue) {
+  } else if (_animationValue || !_animationValue->isConst()) {
     UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
     transform->setUpdateCallback(uc);
   }
@@ -917,7 +788,7 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
 class SGScaleAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const SGCondition* condition,
-                 SGSharedPtr<const SGDoubleValue> animationValue[3]) :
+                 SGSharedPtr<const SGExpressiond> animationValue[3]) :
     _condition(condition)
   {
     _animationValue[0] = animationValue[0];
@@ -938,7 +809,7 @@ public:
   }
 public:
   SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGDoubleValue const> _animationValue[3];
+  SGSharedPtr<SGExpressiond const> _animationValue[3];
 };
 
 SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
@@ -951,58 +822,69 @@ SGScaleAnimation::SGScaleAnimation(const SGPropertyNode* configNode,
   double offset = configNode->getDoubleValue("offset", 0);
   double factor = configNode->getDoubleValue("factor", 1);
 
+  SGSharedPtr<SGExpressiond> inPropExpr;
+
   std::string inputPropertyName;
   inputPropertyName = configNode->getStringValue("property", "");
-  SGPropertyNode* inputProperty = 0;
-  if (!inputPropertyName.empty()) {
-    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
+  if (inputPropertyName.empty()) {
+    inPropExpr = new SGConstExpression<double>(0);
+  } else {
+    SGPropertyNode* inputProperty;
+    inputProperty = modelRoot->getNode(inputPropertyName, true);
+    inPropExpr = new SGPropertyExpression<double>(inputProperty);
   }
+
   SGInterpTable* interpTable = read_interpolation_table(configNode);
   if (interpTable) {
-    SGInterpTableValue* value;
-    value = new SGInterpTableValue(inputProperty, interpTable);
-    _animationValue[0] = value;
-    _animationValue[1] = value;
-    _animationValue[2] = value;
+    SGSharedPtr<SGExpressiond> value;
+    value = new SGInterpTableExpression<double>(inPropExpr, interpTable);
+    _animationValue[0] = value->simplify();
+    _animationValue[1] = value->simplify();
+    _animationValue[2] = value->simplify();
   } else if (configNode->getBoolValue("use-personality", false)) {
-    SGPersScaleOffsetValue* value;
-    value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                        "x-factor", "x-offset",
-                                        factor, offset);
-    value->setMin(configNode->getDoubleValue("x-min", 0));
-    value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
-    _animationValue[0] = value;
-    value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                        "y-factor", "y-offset",
-                                        factor, offset);
-    value->setMin(configNode->getDoubleValue("y-min", 0));
-    value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
-    _animationValue[1] = value;
-    value = new SGPersScaleOffsetValue(inputProperty, configNode,
-                                        "z-factor", "z-offset",
-                                        factor, offset);
-    value->setMin(configNode->getDoubleValue("z-min", 0));
-    value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
-    _animationValue[2] = value;
+    SGSharedPtr<SGExpressiond> value;
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+                                                   "x-factor", "x-offset",
+                                                   factor, offset);
+    double minClip = configNode->getDoubleValue("x-min", 0);
+    double maxClip = configNode->getDoubleValue("x-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[0] = value->simplify();
+    
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+                                                   "y-factor", "y-offset",
+                                                   factor, offset);
+    minClip = configNode->getDoubleValue("y-min", 0);
+    maxClip = configNode->getDoubleValue("y-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[1] = value->simplify();
+    
+    value = new SGPersonalityScaleOffsetExpression(inPropExpr, configNode,
+                                                   "z-factor", "z-offset",
+                                                   factor, offset);
+    minClip = configNode->getDoubleValue("z-min", 0);
+    maxClip = configNode->getDoubleValue("z-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[2] = value->simplify();
   } else {
-    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
-    value->setScale(configNode->getDoubleValue("x-factor", factor));
-    value->setOffset(configNode->getDoubleValue("x-offset", offset));
-    value->setMin(configNode->getDoubleValue("x-min", 0));
-    value->setMax(configNode->getDoubleValue("x-max", SGLimitsd::max()));
-    _animationValue[0] = value;
-    value = new SGScaleOffsetValue(inputProperty);
-    value->setScale(configNode->getDoubleValue("y-factor", factor));
-    value->setOffset(configNode->getDoubleValue("y-offset", offset));
-    value->setMin(configNode->getDoubleValue("y-min", 0));
-    value->setMax(configNode->getDoubleValue("y-max", SGLimitsd::max()));
-    _animationValue[1] = value;
-    value = new SGScaleOffsetValue(inputProperty);
-    value->setScale(configNode->getDoubleValue("z-factor", factor));
-    value->setOffset(configNode->getDoubleValue("z-offset", offset));
-    value->setMin(configNode->getDoubleValue("z-min", 0));
-    value->setMax(configNode->getDoubleValue("z-max", SGLimitsd::max()));
-    _animationValue[2] = value;
+    SGSharedPtr<SGExpressiond> value;
+    value = read_factor_offset(configNode, inPropExpr, "x-factor", "x-offset");
+    double minClip = configNode->getDoubleValue("x-min", 0);
+    double maxClip = configNode->getDoubleValue("x-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[0] = value->simplify();
+
+    value = read_factor_offset(configNode, inPropExpr, "y-factor", "y-offset");
+    minClip = configNode->getDoubleValue("y-min", 0);
+    maxClip = configNode->getDoubleValue("y-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[1] = value->simplify();
+
+    value = read_factor_offset(configNode, inPropExpr, "z-factor", "z-offset");
+    minClip = configNode->getDoubleValue("z-min", 0);
+    maxClip = configNode->getDoubleValue("z-max", SGLimitsd::max());
+    value = new SGClipExpression<double>(value, minClip, maxClip);
+    _animationValue[2] = value->simplify();
   }
   _initialValue[0] = configNode->getDoubleValue("x-starting-scale", 1);
   _initialValue[0] *= configNode->getDoubleValue("x-factor", factor);
@@ -1335,8 +1217,8 @@ SGBillboardAnimation::createAnimationGroup(osg::Group& parent)
 class SGRangeAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const SGCondition* condition,
-                 const SGDoubleValue* minAnimationValue,
-                 const SGDoubleValue* maxAnimationValue,
+                 const SGExpressiond* minAnimationValue,
+                 const SGExpressiond* maxAnimationValue,
                  double minValue, double maxValue) :
     _condition(condition),
     _minAnimationValue(minAnimationValue),
@@ -1367,8 +1249,8 @@ public:
 
 private:
   SGSharedPtr<const SGCondition> _condition;
-  SGSharedPtr<const SGDoubleValue> _minAnimationValue;
-  SGSharedPtr<const SGDoubleValue> _maxAnimationValue;
+  SGSharedPtr<const SGExpressiond> _minAnimationValue;
+  SGSharedPtr<const SGExpressiond> _maxAnimationValue;
   double _minStaticValue;
   double _maxStaticValue;
 };
@@ -1383,18 +1265,23 @@ SGRangeAnimation::SGRangeAnimation(const SGPropertyNode* configNode,
   inputPropertyName = configNode->getStringValue("min-property", "");
   if (!inputPropertyName.empty()) {
     SGPropertyNode* inputProperty;
-    inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
-    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
-    value->setScale(configNode->getDoubleValue("min-factor", 1));
-    _minAnimationValue = value;
+    inputProperty = modelRoot->getNode(inputPropertyName, true);
+    SGSharedPtr<SGExpressiond> value;
+    value = new SGPropertyExpression<double>(inputProperty);
+
+    value = read_factor_offset(configNode, value, "min-factor", "min-offset");
+    _minAnimationValue = value->simplify();
   }
   inputPropertyName = configNode->getStringValue("max-property", "");
   if (!inputPropertyName.empty()) {
     SGPropertyNode* inputProperty;
     inputProperty = modelRoot->getNode(inputPropertyName.c_str(), true);
-    SGScaleOffsetValue* value = new SGScaleOffsetValue(inputProperty);
-    value->setScale(configNode->getDoubleValue("max-factor", 1));
-    _maxAnimationValue = value;
+
+    SGSharedPtr<SGExpressiond> value;
+    value = new SGPropertyExpression<double>(inputProperty);
+
+    value = read_factor_offset(configNode, value, "max-factor", "max-offset");
+    _maxAnimationValue = value->simplify();
   }
 
   _initialValue[0] = configNode->getDoubleValue("min-m", 0);
@@ -1610,7 +1497,7 @@ private:
 
 class SGBlendAnimation::UpdateCallback : public osg::NodeCallback {
 public:
-  UpdateCallback(const SGPropertyNode* configNode, const SGDoubleValue* v) :
+  UpdateCallback(const SGPropertyNode* configNode, const SGExpressiond* v) :
     _prev_value(-1),
     _animationValue(v)
   { }
@@ -1626,7 +1513,7 @@ public:
   }
 public:
   double _prev_value;
-  SGSharedPtr<SGDoubleValue const> _animationValue;
+  SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
 
@@ -1889,7 +1776,7 @@ public:
     for (i = _transforms.begin(); i != _transforms.end(); ++i)
       i->transform->transform(texMat->getMatrix());
   }
-  void appendTransform(Transform* transform, SGDoubleValue* value)
+  void appendTransform(Transform* transform, SGExpressiond* value)
   {
     Entry entry = { transform, value };
     transform->transform(_matrix);
@@ -1899,7 +1786,7 @@ public:
 private:
   struct Entry {
     SGSharedPtr<Transform> transform;
-    SGSharedPtr<const SGDoubleValue> value;
+    SGSharedPtr<const SGExpressiond> value;
   };
   typedef std::vector<Entry> TransformList;
   TransformList _transforms;
@@ -1956,29 +1843,38 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
                                             UpdateCallback* updateCallback)
 {
   std::string propertyName = config->getStringValue("property", "/null");
-  SGPropertyNode* inputNode;
-  inputNode = getModelRoot()->getNode(propertyName.c_str(), true);
+  SGSharedPtr<SGExpressiond> value;
+  if (getModelRoot()->hasChild(propertyName))
+    value = new SGPropertyExpression<double>(getModelRoot()->getNode(propertyName));
+  else
+    value = new SGConstExpression<double>(0);
 
-  SGDoubleValue* animationValue;
+  SGSharedPtr<SGExpressiond> animationValue;
   SGInterpTable* table = read_interpolation_table(config);
   if (table) {
-    SGTexTableValue* value;
-    value = new SGTexTableValue(inputNode, table);
-    value->setStep(config->getDoubleValue("step", 0));
-    value->setScroll(config->getDoubleValue("scroll", 0));
-    value->setBias(config->getDoubleValue("bias", 0));
-    animationValue = value;
+    value = new SGInterpTableExpression<double>(value, table);
+    double biasValue = config->getDoubleValue("bias", 0);
+    if (biasValue != 0)
+      value = new SGBiasExpression<double>(value, biasValue);
+    value = new SGStepExpression<double>(value,
+                                         config->getDoubleValue("step", 0),
+                                         config->getDoubleValue("scroll", 0));
+    animationValue = value->simplify();
   } else {
-    SGTexScaleOffsetValue* value;
-    value = new SGTexScaleOffsetValue(inputNode);
-    value->setScale(config->getDoubleValue("factor", 1));
-    value->setOffset(config->getDoubleValue("offset", 0));
-    value->setStep(config->getDoubleValue("step", 0));
-    value->setScroll(config->getDoubleValue("scroll", 0));
-    value->setBias(config->getDoubleValue("bias", 0));
-    value->setMin(config->getDoubleValue("min", -SGLimitsd::max()));
-    value->setMax(config->getDoubleValue("max", SGLimitsd::max()));
-    animationValue = value;
+    double biasValue = config->getDoubleValue("bias", 0);
+    if (biasValue != 0)
+      value = new SGBiasExpression<double>(value, biasValue);
+    value = new SGStepExpression<double>(value,
+                                         config->getDoubleValue("step", 0),
+                                         config->getDoubleValue("scroll", 0));
+    value = read_factor_offset(config, value, "factor", "offset");
+
+    if (config->hasChild("min") || config->hasChild("max")) {
+      double minClip = config->getDoubleValue("min", -SGLimitsd::max());
+      double maxClip = config->getDoubleValue("max", SGLimitsd::max());
+      value = new SGClipExpression<double>(value, minClip, maxClip);
+    }
+    animationValue = value->simplify();
   }
   SGVec3d axis(config->getDoubleValue("axis/x", 0),
                config->getDoubleValue("axis/y", 0),
@@ -1994,29 +1890,38 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
                                          UpdateCallback* updateCallback)
 {
   std::string propertyName = config->getStringValue("property", "/null");
-  SGPropertyNode* inputNode;
-  inputNode = getModelRoot()->getNode(propertyName.c_str(), true);
+  SGSharedPtr<SGExpressiond> value;
+  if (getModelRoot()->hasChild(propertyName))
+    value = new SGPropertyExpression<double>(getModelRoot()->getNode(propertyName));
+  else
+    value = new SGConstExpression<double>(0);
 
-  SGDoubleValue* animationValue;
+  SGSharedPtr<SGExpressiond> animationValue;
   SGInterpTable* table = read_interpolation_table(config);
   if (table) {
-    SGTexTableValue* value;
-    value = new SGTexTableValue(inputNode, table);
-    value->setStep(config->getDoubleValue("step", 0));
-    value->setScroll(config->getDoubleValue("scroll", 0));
-    value->setBias(config->getDoubleValue("bias", 0));
-    animationValue = value;
+    value = new SGInterpTableExpression<double>(value, table);
+    double biasValue = config->getDoubleValue("bias", 0);
+    if (biasValue != 0)
+      value = new SGBiasExpression<double>(value, biasValue);
+    value = new SGStepExpression<double>(value,
+                                         config->getDoubleValue("step", 0),
+                                         config->getDoubleValue("scroll", 0));
+    animationValue = value->simplify();
   } else {
-    SGTexScaleOffsetValue* value;
-    value = new SGTexScaleOffsetValue(inputNode);
-    value->setScale(config->getDoubleValue("factor", 1));
-    value->setOffset(config->getDoubleValue("offset-deg", 0));
-    value->setStep(config->getDoubleValue("step", 0));
-    value->setScroll(config->getDoubleValue("scroll", 0));
-    value->setBias(config->getDoubleValue("bias", 0));
-    value->setMin(config->getDoubleValue("min-deg", -SGLimitsd::max()));
-    value->setMax(config->getDoubleValue("max-deg", SGLimitsd::max()));
-    animationValue = value;
+    double biasValue = config->getDoubleValue("bias", 0);
+    if (biasValue != 0)
+      value = new SGBiasExpression<double>(value, biasValue);
+    value = new SGStepExpression<double>(value,
+                                         config->getDoubleValue("step", 0),
+                                         config->getDoubleValue("scroll", 0));
+    value = read_factor_offset(config, value, "factor", "offset-deg");
+
+    if (config->hasChild("min-deg") || config->hasChild("max-deg")) {
+      double minClip = config->getDoubleValue("min-deg", -SGLimitsd::max());
+      double maxClip = config->getDoubleValue("max-deg", SGLimitsd::max());
+      value = new SGClipExpression<double>(value, minClip, maxClip);
+    }
+    animationValue = value->simplify();
   }
   SGVec3d axis(config->getDoubleValue("axis/x", 0),
                config->getDoubleValue("axis/y", 0),

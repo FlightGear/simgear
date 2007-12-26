@@ -628,6 +628,14 @@ public:
     return (getChild(name, index) != 0);
   }
 
+  /**
+   * Test whether a named child exists.
+   */
+  bool hasChild (const std::string& name, int index = 0) const
+  {
+    return (getChild(name, index) != 0);
+  }
+
 
   /**
    * Get a child node by name and index.
@@ -635,11 +643,24 @@ public:
   SGPropertyNode * getChild (const char * name, int index = 0,
 			     bool create = false);
 
+  /**
+   * Get a child node by name and index.
+   */
+  SGPropertyNode * getChild (const std::string& name, int index = 0,
+			     bool create = false)
+  { return getChild(name.c_str(), index, create); }
+
 
   /**
    * Get a const child node by name and index.
    */
   const SGPropertyNode * getChild (const char * name, int index = 0) const;
+
+  /**
+   * Get a const child node by name and index.
+   */
+  const SGPropertyNode * getChild (const std::string& name, int index = 0) const
+  { return getChild(name.c_str(), index); }
 
 
   /**
@@ -647,6 +668,11 @@ public:
    */
   vector<SGPropertyNode_ptr> getChildren (const char * name) const;
 
+  /**
+   * Get a vector of all children with the specified name.
+   */
+  vector<SGPropertyNode_ptr> getChildren (const std::string& name) const
+  { return getChildren(name.c_str()); }
 
   /**
    * Remove child by position.
@@ -661,11 +687,25 @@ public:
                                   bool keep = true);
 
   /**
+   * Remove a child node
+   */
+  SGPropertyNode_ptr removeChild (const std::string& name, int index = 0,
+                                  bool keep = true)
+  { return removeChild(name.c_str(), index, keep); }
+
+  /**
    * Remove all children with the specified name.
    */
   vector<SGPropertyNode_ptr> removeChildren (const char * name,
                                              bool keep = true);
 
+
+  /**
+   * Remove all children with the specified name.
+   */
+  vector<SGPropertyNode_ptr> removeChildren (const std::string& name,
+                                             bool keep = true)
+  { return removeChildren(name.c_str(), keep); }
 
   //
   // Alias support.
@@ -682,6 +722,12 @@ public:
    * Alias this node's leaf value to another's by relative path.
    */
   bool alias (const char * path);
+
+  /**
+   * Alias this node's leaf value to another's by relative path.
+   */
+  bool alias (const std::string& path)
+  { return alias(path.c_str()); }
 
 
   /**
@@ -736,6 +782,11 @@ public:
    */
   SGPropertyNode * getNode (const char * relative_path, bool create = false);
 
+  /**
+   * Get a pointer to another node by relative path.
+   */
+  SGPropertyNode * getNode (const std::string& relative_path, bool create = false)
+  { return getNode(relative_path.c_str(), create); }
 
   /**
    * Get a pointer to another node by relative path.
@@ -750,11 +801,30 @@ public:
   SGPropertyNode * getNode (const char * relative_path, int index,
 			    bool create = false);
 
+  /**
+   * Get a pointer to another node by relative path.
+   *
+   * This method leaves the index off the last member of the path,
+   * so that the user can specify it separately (and save some
+   * string building).  For example, getNode("/bar[1]/foo", 3) is
+   * exactly equivalent to getNode("bar[1]/foo[3]").  The index
+   * provided overrides any given in the path itself for the last
+   * component.
+   */
+  SGPropertyNode * getNode (const std::string& relative_path, int index,
+			    bool create = false)
+  { return getNode(relative_path.c_str(), index, create); }
 
   /**
    * Get a const pointer to another node by relative path.
    */
   const SGPropertyNode * getNode (const char * relative_path) const;
+
+  /**
+   * Get a const pointer to another node by relative path.
+   */
+  const SGPropertyNode * getNode (const std::string& relative_path) const
+  { return getNode(relative_path.c_str()); }
 
 
   /**
@@ -766,6 +836,15 @@ public:
   const SGPropertyNode * getNode (const char * relative_path,
 				  int index) const;
 
+  /**
+   * Get a const pointer to another node by relative path.
+   *
+   * This method leaves the index off the last member of the path,
+   * so that the user can specify it separate.
+   */
+  const SGPropertyNode * getNode (const std::string& relative_path,
+				  int index) const
+  { return getNode(relative_path.c_str(), index); }
 
   //
   // Access Mode.
@@ -880,6 +959,12 @@ public:
    */
   bool setStringValue (const char * value);
 
+  /**
+   * Set a string value for this node.
+   */
+  bool setStringValue (const std::string& value)
+  { return setStringValue(value.c_str()); }
+
 
   /**
    * Set a value of unspecified type for this node.
@@ -951,12 +1036,22 @@ public:
    */
   Type getType (const char * relative_path) const;
 
+  /**
+   * Get another node's type.
+   */
+  Type getType (const std::string& relative_path) const
+  { return getType(relative_path.c_str()); }
 
   /**
    * Test whether another node has a leaf value.
    */
   bool hasValue (const char * relative_path) const;
 
+  /**
+   * Test whether another node has a leaf value.
+   */
+  bool hasValue (const std::string& relative_path) const
+  { return hasValue(relative_path.c_str()); }
 
   /**
    * Get another node's value as a bool.
@@ -964,12 +1059,25 @@ public:
   bool getBoolValue (const char * relative_path,
 		     bool defaultValue = false) const;
 
+  /**
+   * Get another node's value as a bool.
+   */
+  bool getBoolValue (const std::string& relative_path,
+		     bool defaultValue = false) const
+  { return getBoolValue(relative_path.c_str(), defaultValue); }
 
   /**
    * Get another node's value as an int.
    */
   int getIntValue (const char * relative_path,
 		   int defaultValue = 0) const;
+
+  /**
+   * Get another node's value as an int.
+   */
+  int getIntValue (const std::string& relative_path,
+                   int defaultValue = 0) const
+  { return getIntValue(relative_path.c_str(), defaultValue); }
 
 
   /**
@@ -978,20 +1086,39 @@ public:
   long getLongValue (const char * relative_path,
 		     long defaultValue = 0L) const;
 
+  /**
+   * Get another node's value as a long int.
+   */
+  long getLongValue (const std::string& relative_path,
+		     long defaultValue = 0L) const
+  { return getLongValue(relative_path.c_str(), defaultValue); }
 
   /**
    * Get another node's value as a float.
    */
   float getFloatValue (const char * relative_path,
-		       float defaultValue = 0.0) const;
+		       float defaultValue = 0.0f) const;
+
+  /**
+   * Get another node's value as a float.
+   */
+  float getFloatValue (const std::string& relative_path,
+		       float defaultValue = 0.0f) const
+  { return getFloatValue(relative_path.c_str(), defaultValue); }
 
 
   /**
    * Get another node's value as a double.
    */
   double getDoubleValue (const char * relative_path,
-			 double defaultValue = 0.0L) const;
+			 double defaultValue = 0.0) const;
 
+  /**
+   * Get another node's value as a double.
+   */
+  double getDoubleValue (const std::string& relative_path,
+			 double defaultValue = 0.0) const
+  { return getDoubleValue(relative_path.c_str(), defaultValue); }
 
   /**
    * Get another node's value as a string.
@@ -1001,9 +1128,23 @@ public:
 
 
   /**
+   * Get another node's value as a string.
+   */
+  const char * getStringValue (const std::string& relative_path,
+			       const char * defaultValue = "") const
+  { return getStringValue(relative_path.c_str(), defaultValue); }
+
+
+  /**
    * Set another node's value as a bool.
    */
   bool setBoolValue (const char * relative_path, bool value);
+
+  /**
+   * Set another node's value as a bool.
+   */
+  bool setBoolValue (const std::string& relative_path, bool value)
+  { return setBoolValue(relative_path.c_str(), value); }
 
 
   /**
@@ -1011,11 +1152,23 @@ public:
    */
   bool setIntValue (const char * relative_path, int value);
 
+  /**
+   * Set another node's value as an int.
+   */
+  bool setIntValue (const std::string& relative_path, int value)
+  { return setIntValue(relative_path.c_str(), value); }
+
 
   /**
    * Set another node's value as a long int.
    */
   bool setLongValue (const char * relative_path, long value);
+
+  /**
+   * Set another node's value as a long int.
+   */
+  bool setLongValue (const std::string& relative_path, long value)
+  { return setLongValue(relative_path.c_str(), value); }
 
 
   /**
@@ -1023,17 +1176,35 @@ public:
    */
   bool setFloatValue (const char * relative_path, float value);
 
+  /**
+   * Set another node's value as a float.
+   */
+  bool setFloatValue (const std::string& relative_path, float value)
+  { return setFloatValue(relative_path.c_str(), value); }
+
 
   /**
    * Set another node's value as a double.
    */
   bool setDoubleValue (const char * relative_path, double value);
 
+  /**
+   * Set another node's value as a double.
+   */
+  bool setDoubleValue (const std::string& relative_path, double value)
+  { return setDoubleValue(relative_path.c_str(), value); }
+
 
   /**
    * Set another node's value as a string.
    */
   bool setStringValue (const char * relative_path, const char * value);
+
+  /**
+   * Set another node's value as a string.
+   */
+  bool setStringValue (const std::string& relative_path, const char * value)
+  { return setStringValue(relative_path.c_str(), value); }
 
 
   /**
@@ -1047,12 +1218,24 @@ public:
    */
   bool isTied (const char * relative_path) const;
 
+  /**
+   * Test whether another node is bound to an external data source.
+   */
+  bool isTied (const std::string& relative_path) const
+  { return isTied(relative_path.c_str()); }
 
   /**
    * Bind another node to an external bool source.
    */
   bool tie (const char * relative_path, const SGRawValue<bool> &rawValue,
 	    bool useDefault = true);
+
+  /**
+   * Bind another node to an external bool source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<bool> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
 
 
   /**
@@ -1061,12 +1244,26 @@ public:
   bool tie (const char * relative_path, const SGRawValue<int> &rawValue,
 	    bool useDefault = true);
 
+  /**
+   * Bind another node to an external int source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<int> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
+
 
   /**
    * Bind another node to an external long int source.
    */
   bool tie (const char * relative_path, const SGRawValue<long> &rawValue,
 	    bool useDefault = true);
+
+  /**
+   * Bind another node to an external long int source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<long> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
 
 
   /**
@@ -1075,12 +1272,26 @@ public:
   bool tie (const char * relative_path, const SGRawValue<float> &rawValue,
 	    bool useDefault = true);
 
+  /**
+   * Bind another node to an external float source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<float> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
+
 
   /**
    * Bind another node to an external double source.
    */
   bool tie (const char * relative_path, const SGRawValue<double> &rawValue,
 	    bool useDefault = true);
+
+  /**
+   * Bind another node to an external double source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<double> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
 
 
   /**
@@ -1089,11 +1300,24 @@ public:
   bool tie (const char * relative_path, const SGRawValue<const char *> &rawValue,
 	    bool useDefault = true);
 
+  /**
+   * Bind another node to an external string source.
+   */
+  bool tie (const std::string& relative_path, const SGRawValue<const char*> &rawValue,
+	    bool useDefault = true)
+  { return tie(relative_path.c_str(), rawValue, useDefault); }
+
 
   /**
    * Unbind another node from any external data source.
    */
   bool untie (const char * relative_path);
+
+  /**
+   * Unbind another node from any external data source.
+   */
+  bool untie (const std::string& relative_path)
+  { return untie(relative_path.c_str()); }
 
 
   /**

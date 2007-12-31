@@ -1726,8 +1726,6 @@ public:
   Translation(const SGVec3d& axis) :
     _axis(axis)
   { }
-  void setValue(double value)
-  { _value = value; }
   virtual void transform(osg::Matrix& matrix)
   {
     osg::Matrix tmp;
@@ -1842,14 +1840,15 @@ void
 SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
                                             UpdateCallback* updateCallback)
 {
-  std::string propertyName = config->getStringValue("property", "/null");
+  std::string propertyName = config->getStringValue("property", "");
   SGSharedPtr<SGExpressiond> value;
-  if (getModelRoot()->hasChild(propertyName))
-    value = new SGPropertyExpression<double>(getModelRoot()->getNode(propertyName));
-  else
+  if (propertyName.empty())
     value = new SGConstExpression<double>(0);
+  else {
+    SGPropertyNode* inputProperty = getModelRoot()->getNode(propertyName, true);
+    value = new SGPropertyExpression<double>(inputProperty);
+  }
 
-  SGSharedPtr<SGExpressiond> animationValue;
   SGInterpTable* table = read_interpolation_table(config);
   if (table) {
     value = new SGInterpTableExpression<double>(value, table);
@@ -1859,7 +1858,7 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
     value = new SGStepExpression<double>(value,
                                          config->getDoubleValue("step", 0),
                                          config->getDoubleValue("scroll", 0));
-    animationValue = value->simplify();
+    value = value->simplify();
   } else {
     double biasValue = config->getDoubleValue("bias", 0);
     if (biasValue != 0)
@@ -1874,7 +1873,7 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
       double maxClip = config->getDoubleValue("max", SGLimitsd::max());
       value = new SGClipExpression<double>(value, minClip, maxClip);
     }
-    animationValue = value->simplify();
+    value = value->simplify();
   }
   SGVec3d axis(config->getDoubleValue("axis/x", 0),
                config->getDoubleValue("axis/y", 0),
@@ -1882,21 +1881,22 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
   Translation* translation;
   translation = new Translation(normalize(axis));
   translation->setValue(config->getDoubleValue("starting-position", 0));
-  updateCallback->appendTransform(translation, animationValue);
+  updateCallback->appendTransform(translation, value);
 }
 
 void
 SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
                                          UpdateCallback* updateCallback)
 {
-  std::string propertyName = config->getStringValue("property", "/null");
+  std::string propertyName = config->getStringValue("property", "");
   SGSharedPtr<SGExpressiond> value;
-  if (getModelRoot()->hasChild(propertyName))
-    value = new SGPropertyExpression<double>(getModelRoot()->getNode(propertyName));
-  else
+  if (propertyName.empty())
     value = new SGConstExpression<double>(0);
+  else {
+    SGPropertyNode* inputProperty = getModelRoot()->getNode(propertyName, true);
+    value = new SGPropertyExpression<double>(inputProperty);
+  }
 
-  SGSharedPtr<SGExpressiond> animationValue;
   SGInterpTable* table = read_interpolation_table(config);
   if (table) {
     value = new SGInterpTableExpression<double>(value, table);
@@ -1906,7 +1906,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
     value = new SGStepExpression<double>(value,
                                          config->getDoubleValue("step", 0),
                                          config->getDoubleValue("scroll", 0));
-    animationValue = value->simplify();
+    value = value->simplify();
   } else {
     double biasValue = config->getDoubleValue("bias", 0);
     if (biasValue != 0)
@@ -1921,7 +1921,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
       double maxClip = config->getDoubleValue("max-deg", SGLimitsd::max());
       value = new SGClipExpression<double>(value, minClip, maxClip);
     }
-    animationValue = value->simplify();
+    value = value->simplify();
   }
   SGVec3d axis(config->getDoubleValue("axis/x", 0),
                config->getDoubleValue("axis/y", 0),
@@ -1932,7 +1932,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
   Rotation* rotation;
   rotation = new Rotation(normalize(axis), center);
   rotation->setValue(config->getDoubleValue("starting-position-deg", 0));
-  updateCallback->appendTransform(rotation, animationValue);
+  updateCallback->appendTransform(rotation, value);
 }
 
 

@@ -33,6 +33,9 @@
 class SGClipGroup : public osg::Group {
 public:
   SGClipGroup();
+  SGClipGroup(const SGClipGroup&,
+              const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+  META_Node(simgear, SGClipGroup);
 
   virtual osg::BoundingSphere computeBound() const;
 

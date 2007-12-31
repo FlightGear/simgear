@@ -52,15 +52,15 @@ public:
   {
     osg::State* state = renderInfo.getState();
 
-    glPushAttrib(GL_TRANSFORM_BIT);
-
     state->applyModelViewMatrix(mModelView.get());
-    for (unsigned i = 0; i < mClipPlanes.size(); ++i)
-      mClipPlanes[i]->apply(*state);
+    for (unsigned i = 0; i < mClipPlanes.size(); ++i) {
+      osg::StateAttribute::GLMode planeNum;
+      planeNum = GL_CLIP_PLANE0 + mClipPlanes[i]->getClipPlaneNum();
+      state->applyMode(planeNum, false);
+      glClipPlane(planeNum, mClipPlanes[i]->getClipPlane().ptr());
+    }
 
     osgUtil::RenderBin::drawImplementation(renderInfo, previous);
-
-    glPopAttrib();
   }
 
   virtual void reset()
@@ -108,6 +108,15 @@ SGClipGroup::SGClipGroup()
 {
   getOrCreateStateSet()->setRenderBinDetails(0, "ClipRenderBin");
   setCullCallback(new CullCallback);
+}
+
+SGClipGroup::SGClipGroup(const SGClipGroup& clip, const osg::CopyOp& copyop) :
+  osg::Group(clip, copyop)
+{
+  for (unsigned i = 0; i < mClipPlanes.size(); ++i) {
+    osg::StateAttribute* sa = copyop(mClipPlanes[i].get());
+    mClipPlanes.push_back(static_cast<osg::ClipPlane*>(sa));
+  }
 }
 
 osg::BoundingSphere

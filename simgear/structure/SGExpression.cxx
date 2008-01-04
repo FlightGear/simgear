@@ -94,13 +94,14 @@ static bool
 SGReadNaryOperands(SGNaryExpression<T>* nary,
                    SGPropertyNode *inputRoot, const SGPropertyNode *expression)
 {
-  for (unsigned i = 0; i < expression->nChildren(); ++i) {
+  for (int i = 0; i < expression->nChildren(); ++i) {
     SGExpression<T>* inputExpression;
     inputExpression = SGReadIExpression<T>(inputRoot, expression->getChild(i));
     if (!inputExpression)
       return false;
     nary->addOperand(inputExpression);
   }
+  return true;
 }
 
 // template<typename T>
@@ -199,7 +200,7 @@ SGReadIExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
       clipMin = SGLimits<T>::max();
 
     SGSharedPtr<SGExpression<T> > inputExpression;
-    for (unsigned i = 0; !inputExpression && i < expression->nChildren(); ++i)
+    for (int i = 0; !inputExpression && i < expression->nChildren(); ++i)
       inputExpression = SGReadIExpression<T>(inputRoot, expression->getChild(i));
     if (!inputExpression) {
       SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");

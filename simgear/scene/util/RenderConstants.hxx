@@ -38,7 +38,8 @@ enum NodeMask {
     GROUNDLIGHTS2_BIT = (1 << 9),
     RUNWAYLIGHTS_BIT = (1 << 10),
     LIGHTS_BITS = (GROUNDLIGHTS0_BIT | GROUNDLIGHTS1_BIT | GROUNDLIGHTS2_BIT
-                   | RUNWAYLIGHTS_BIT)
+                   | RUNWAYLIGHTS_BIT),
+    BACKGROUND_BIT = (1 << 11)
 };
 
 // Theory of bin numbering:

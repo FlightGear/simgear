@@ -39,7 +39,11 @@ enum NodeMask {
     RUNWAYLIGHTS_BIT = (1 << 10),
     LIGHTS_BITS = (GROUNDLIGHTS0_BIT | GROUNDLIGHTS1_BIT | GROUNDLIGHTS2_BIT
                    | RUNWAYLIGHTS_BIT),
-    BACKGROUND_BIT = (1 << 11)
+    // Sky parts
+    BACKGROUND_BIT = (1 << 11),
+    // Everything else that isn't terrain. Initially for clouds;
+    // eventually for other models?
+    MODEL_BIT = (1 << 12)
 };
 
 // Theory of bin numbering:

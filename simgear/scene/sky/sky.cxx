@@ -26,6 +26,7 @@
 #endif
 
 #include <simgear/math/sg_random.h>
+#include <simgear/scene/util/RenderConstants.hxx>
 
 #include "sky.hxx"
 #include "cloudfield.hxx"
@@ -44,14 +45,13 @@ SGSky::SGSky( void ) {
     in_cloud  = -1;
 
     pre_root = new osg::Group;
-    post_root = new osg::Group;
+    pre_root->setNodeMask(simgear::BACKGROUND_BIT);
     cloud_root = new osg::Group;
+    cloud_root->setNodeMask(simgear::BACKGROUND_BIT | simgear::MODEL_BIT);
 
     pre_selector = new osg::Switch;
-    post_selector = new osg::Switch;
 
     pre_transform = new osg::MatrixTransform;
-    post_transform = new osg::MatrixTransform;
 }
 
 
@@ -85,10 +85,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 
     pre_selector->addChild( pre_transform.get() );
 
-    post_selector->addChild( post_transform.get() );
-
     pre_root->addChild( pre_selector.get() );
-    post_root->addChild( post_selector.get() );
 }
 
 

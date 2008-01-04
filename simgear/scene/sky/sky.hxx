@@ -217,9 +217,9 @@ private:
     SGSharedPtr<SGStars> stars;
     layer_list_type cloud_layers;
 
-    osg::ref_ptr<osg::Group> pre_root, post_root, cloud_root;
-    osg::ref_ptr<osg::Switch> pre_selector, post_selector;
-    osg::ref_ptr<osg::MatrixTransform> pre_transform, post_transform;
+    osg::ref_ptr<osg::Group> pre_root, cloud_root;
+    osg::ref_ptr<osg::Switch> pre_selector;
+    osg::ref_ptr<osg::MatrixTransform> pre_transform;
 
     SGPath tex_path;
 
@@ -332,7 +332,6 @@ public:
     void modify_vis( float alt, float time_factor );
 
     osg::Node* getPreRoot() { return pre_root.get(); }
-    osg::Node* getPostRoot() { return post_root.get(); }
     osg::Node* getCloudRoot() { return cloud_root.get(); }
 
     /** 
@@ -342,11 +341,9 @@ public:
     inline void texture_path( const string& path ) {
 	tex_path = SGPath( path );
     }
-
     /** Enable drawing of the sky. */
     inline void enable() {
         pre_selector->setValue(0, 1);
-	post_selector->setValue(0, 1);
     }
 
     /**
@@ -355,7 +352,6 @@ public:
      */
     inline void disable() {
         pre_selector->setValue(0, 0);
-	post_selector->setValue(0, 0);
     }
 
     /**

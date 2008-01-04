@@ -707,6 +707,12 @@
 				RelativePath="..\..\simgear\scene\model\placementtrans.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGClipGroup.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGClipGroup.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.cxx">
 			</File>
 			<File
@@ -910,6 +916,12 @@
 				RelativePath="..\..\simgear\structure\SGBinding.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGExpression.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGExpression.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\structure\SGReferenced.hxx">
 			</File>
 			<File
@@ -1090,7 +1102,6 @@
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
 			</File>
-
 		</Filter>
 		<File
 			RelativePath="..\..\simgear\simgear_config.h-msvc71">

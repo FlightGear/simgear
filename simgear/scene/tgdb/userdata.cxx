@@ -34,6 +34,7 @@
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matmodel.hxx>
 
+#include "SGModelBin.hxx"
 #include "userdata.hxx"
 #include "SGReaderWriterBTG.hxx"
 
@@ -66,6 +67,13 @@ void sgUserDataInit( SGModelLib *m, const string &r,
     sim_time_sec = t;
 }
 
+ osg::Node* sgGetRandomModel(SGMatModel *obj) {
+   return obj->get_random_model(modellib, model_root, root_props, sim_time_sec);
+ }
+
+osg::Node* sgGetModel(int i, SGMatModel *obj) {
+   return obj->get_model(i, modellib, model_root, root_props, sim_time_sec);
+ }
 
 static void random_pt_inside_tri( float *res,
                                   float *n1, float *n2, float *n3 )

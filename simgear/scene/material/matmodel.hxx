@@ -34,6 +34,8 @@
 
 #include <osg/ref_ptr>
 #include <osg/Node>
+#include <osg/NodeVisitor>
+#include <osg/Billboard>
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -119,6 +121,7 @@ public:
     HeadingType get_heading_type () const;
 
     virtual ~SGMatModel ();
+    
 
 protected:
 
@@ -198,6 +201,5 @@ private:
     double _range_m;
     vector<SGSharedPtr<SGMatModel> > _objects;
 };
-
 
 #endif // _SG_MAT_MODEL_HXX 

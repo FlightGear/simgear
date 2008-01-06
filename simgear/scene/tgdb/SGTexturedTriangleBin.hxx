@@ -30,6 +30,8 @@
 #include <simgear/math/SGMath.hxx>
 #include "SGTriangleBin.hxx"
 
+
+
 struct SGVertNormTex {
   SGVertNormTex()
   { }
@@ -94,6 +96,11 @@ protected:
 
 class SGTexturedTriangleBin : public SGTriangleBin<SGVertNormTex> {
 public:
+  SGTexturedTriangleBin()
+  {
+    seed = new mt;
+    mt_init(seed, 123);
+  }
 
   // Computes and adds random surface points to the points list.
   // The random points are computed with a density of (coverage points)/1
@@ -118,13 +125,13 @@ public:
       // For partial units of area, use a zombie door method to
       // create the proper random chance of a light being created
       // for this triangle
-      float unit = area + sg_random()*coverage;
+      float unit = area + mt_rand(seed)*coverage;
       
       SGVec3f offsetVector = offset*normalize(normal);
       // generate a light point for each unit of area
       while ( coverage < unit ) {
-        float a = sg_random();
-        float b = sg_random();
+        float a = mt_rand(seed);
+        float b = mt_rand(seed);
         if ( a + b > 1 ) {
           a = 1 - a;
           b = 1 - b;
@@ -133,6 +140,43 @@ public:
         SGVec3f randomPoint = offsetVector + a*v0 + b*v1 + c*v2;
         points.push_back(randomPoint);
         unit -= coverage;
+      }
+    }
+  }
+  
+   void addRandomPoints(float coverage, 
+                        std::vector<SGVec3f>& points) const
+  {
+    unsigned num = getNumTriangles();
+    for (unsigned i = 0; i < num; ++i) {
+      triangle_ref triangleRef = getTriangleRef(i);
+      SGVec3f v0 = getVertex(triangleRef[0]).vertex;
+      SGVec3f v1 = getVertex(triangleRef[1]).vertex;
+      SGVec3f v2 = getVertex(triangleRef[2]).vertex;
+      SGVec3f normal = cross(v1 - v0, v2 - v0);
+      
+      // Compute the area
+      float area = 0.5f*length(normal);
+      if (area <= SGLimitsf::min())
+        continue;
+      
+      // for partial units of area, use a zombie door method to
+      // create the proper random chance of an object being created
+      // for this triangle.
+      double num = area / coverage + mt_rand(seed);
+
+      // place an object each unit of area
+      while ( num > 1.0 ) {
+        float a = mt_rand(seed);
+        float b = mt_rand(seed);
+        if ( a + b > 1 ) {
+          a = 1 - a;
+          b = 1 - b;
+        }
+        float c = 1 - a - b;
+        SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+        points.push_back(randomPoint);
+        num -= 1.0;
       }
     }
   }
@@ -196,6 +240,10 @@ public:
 
   osg::Geometry* buildGeometry() const
   { return buildGeometry(getTriangles()); }
+
+private:
+  // Random seed for the triangle.
+  mt* seed;
 };
 
 #endif

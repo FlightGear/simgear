@@ -14,6 +14,7 @@ include_HEADERS = \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx \
 	SGUpdateVisitor.hxx \
+	QuadTreeBuilder.hxx \
 	RenderConstants.hxx \
 	StateAttributeFactory.hxx \
 	VectorArrayAdapter.hxx
@@ -25,6 +26,7 @@ libsgutil_a_SOURCES = \
 	SGSceneUserData.cxx \
 	SGStateAttributeVisitor.cxx \
 	SGTextureStateAttributeVisitor.cxx \
-	StateAttributeFactory.cxx
+	StateAttributeFactory.cxx \
+	QuadTreeBuilder.cxx
 
 INCLUDES = -I$(top_srcdir)

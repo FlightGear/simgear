@@ -33,6 +33,31 @@ extern "C" {
 #endif                                   
 
 
+#define MT_N 624
+#define MT_M 397
+
+/**
+ * Structure to hold MT algorithm state to easily allow independant
+ * sets of random numbers with different seeds.
+ */
+struct {unsigned int array[MT_N]; int index; } typedef mt;
+
+/**
+ * Initialize a new MT state with a given seed.
+ */
+void mt_init(mt *mt, unsigned int seed);
+
+/**
+ * Generate a new 32-bit random number based on the given MT state.
+ */
+unsigned int mt_rand32( mt *mt);
+
+/**
+ * Generate a new random number between [0.0, 1.0) based 
+ * on the given MT state.
+ */
+double mt_rand(mt *mt);
+ 
 /**
  * Seed the random number generater with time() so we don't see the
  * same sequence every time.
@@ -51,7 +76,7 @@ void sg_srandom_time_10();
  * repeatable randomization.
  * @param seed random number generator seed
  */
-void sg_srandom( unsigned int seed );
+void sg_srandom(unsigned int seed );
 
 /**
  * Return a random number between [0.0, 1.0)

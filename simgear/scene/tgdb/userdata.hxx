@@ -52,6 +52,15 @@ class SGPropertyNode;
 void sgUserDataInit( SGModelLib *m, const string &r,
                      SGPropertyNode *p, double t );
 
+/**
+ * Get a random model.
+ */
+osg::Node* sgGetRandomModel(SGMatModel *obj);
+
+/**
+ * Get a specific model.
+ */
+osg::Node* sgGetModel(int i, SGMatModel *obj);
 
 /**
  * User data for populating leaves when they come in range.

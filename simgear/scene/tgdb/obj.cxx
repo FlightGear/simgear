@@ -49,15 +49,18 @@
 #include <simgear/scene/model/SGOffsetTransform.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>
 
 #include "SGTexturedTriangleBin.hxx"
 #include "SGLightBin.hxx"
+#include "SGModelBin.hxx"
 #include "SGDirectionalLightBin.hxx"
 #include "GroundLightManager.hxx"
 
 
+#include "userdata.hxx"
 #include "pt_lights.hxx"
 
 using namespace simgear;
@@ -76,7 +79,8 @@ struct SGTileGeometryBin {
   SGDirectionalLightListBin rabitLights;
   SGLightListBin odalLights;
   SGDirectionalLightListBin reilLights;
-
+  SGMatModelBin randomModels;
+  
   static SGVec4f
   getMaterialLightColor(const SGMaterial* material)
   {
@@ -397,6 +401,11 @@ struct SGTileGeometryBin {
   void computeRandomSurfaceLights(SGMaterialLib* matlib)
   {
     SGMaterialTriangleMap::const_iterator i;
+        
+    // generate a repeatable random seed
+    mt* seed = new mt;
+    mt_init(seed, unsigned(123));
+    
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       SGMaterial *mat = matlib->find(i->first);
       if (!mat)
@@ -411,16 +420,13 @@ struct SGTileGeometryBin {
         coverage = 10000;
       }
       
-      // generate a repeatable random seed
-      sg_srandom(unsigned(coverage));
-
       std::vector<SGVec3f> randomPoints;
       i->second.addRandomSurfacePoints(coverage, 3, randomPoints);
       std::vector<SGVec3f>::iterator j;
       for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
-        float zombie = sg_random();
+        float zombie = mt_rand(seed);
         // factor = sg_random() ^ 2, range = 0 .. 1 concentrated towards 0
-        float factor = sg_random();
+        float factor = mt_rand(seed);
         factor *= factor;
 
         float bright = 1;
@@ -442,6 +448,44 @@ struct SGTileGeometryBin {
       }
     }
   }
+  
+  void computeRandomObjects(SGMaterialLib* matlib)
+  {
+    SGMaterialTriangleMap::const_iterator i;
+    for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
+      SGMaterial *mat = matlib->find(i->first);
+      if (!mat)
+        continue;
+      
+      int group_count = mat->get_object_group_count();
+      
+      if (group_count > 0)
+      {      
+        for (int j = 0; j < group_count; j++)
+        {      
+          SGMatModelGroup *object_group =  mat->get_object_group(j);
+          int nObjects = object_group->get_object_count();
+          
+          if (nObjects > 0)
+          {
+            // For each of the random models in the group, determine an appropriate
+            // number of random placements and insert them.
+            for (int k = 0; k < nObjects; k++) {
+              SGMatModel * object = object_group->get_object(k);
+              
+              std::vector<SGVec3f> randomPoints;
+
+              i->second.addRandomPoints(object->get_coverage_m2(), randomPoints);
+              std::vector<SGVec3f>::iterator l;
+              for (l = randomPoints.begin(); l != randomPoints.end(); ++l) {
+                randomModels.insert(*l, object);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   bool insertBinObj(const SGBinObject& obj, SGMaterialLib* matlib)
   {
@@ -456,25 +500,79 @@ struct SGTileGeometryBin {
 osg::Node*
 SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects)
 {
-  SGBinObject obj;
-  if (!obj.read_bin(path))
+  SGBinObject tile;
+  if (!tile.read_bin(path))
     return false;
 
   SGTileGeometryBin tileGeometryBin;
-  if (!tileGeometryBin.insertBinObj(obj, matlib))
+  if (!tileGeometryBin.insertBinObj(tile, matlib))
     return false;
 
-  SGVec3d center = obj.get_gbs_center2();
+  SGVec3d center = tile.get_gbs_center2();
   SGGeod geodPos = SGGeod::fromCart(center);
   SGQuatd hlOr = SGQuatd::fromLonLat(geodPos);
   SGVec3f up = toVec3f(hlOr.backTransform(SGVec3d(0, 0, -1)));
+  osg::Matrix world2Tile(-hlOr.osg());
   GroundLightManager* lightManager = GroundLightManager::instance();
 
   osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
+  osg::ref_ptr<osg::Group> randomObjects;
   osg::Group* terrainGroup = new osg::Group;
+
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
   if (node)
     terrainGroup->addChild(node);
+    
+  if (use_random_objects) {
+    tileGeometryBin.computeRandomObjects(matlib);
+    
+    if (tileGeometryBin.randomModels.getNumModels() > 0) {
+      // Generate a repeatable random seed
+      mt* seed = new mt;
+      mt_init(seed, unsigned(123));
+    
+      // Determine an rotation matrix for the models to place them 
+      // perpendicular to the earth's surface. We use the same matrix, 
+      // based on the centre of the tile, as the small angular differences  
+      // between different points on the tile aren't worth worrying about 
+      // for random objects. We also need to flip the orientation 180 degrees
+      static const osg::Matrix flip(1,  0,  0, 0,
+                                    0, -1,  0, 0,
+                                    0,  0, -1, 0,
+                                    0,  0,  0, 1);     
+      osg::Matrix mAtt = flip * osg::Matrix::rotate(hlOr.osg());
+      std::vector<osg::ref_ptr<osg::Node> > models;
+      
+      for (unsigned int i = 0; i < tileGeometryBin.randomModels.getNumModels(); i++) {
+        SGMatModelBin::MatModel obj = tileGeometryBin.randomModels.getMatModel(i);
+        osg::Node* node = sgGetRandomModel(obj.model);
+        
+        // Create a matrix to place the object in the correct location, and then
+        // apply the rotation matrix created above, with an additional random
+        // heading rotation if appropriate.
+        osg::Matrix mPos = osg::Matrix::translate(obj.position.osg());        
+        osg::MatrixTransform* position;
+        
+        if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
+          // Rotate the object around the z axis.
+          double hdg = mt_rand(seed) * M_PI * 2;
+          osg::Matrix rot(cos(hdg), -sin(hdg), 0, 0,
+                          sin(hdg),  cos(hdg), 0, 0,
+                          0,         0, 1, 0,
+                          0,         0, 0, 1);     
+          position = new osg::MatrixTransform(rot * mAtt * mPos);
+        } else {
+          position = new osg::MatrixTransform(mAtt * mPos);
+        }
+
+        position->addChild(node);        
+        models.push_back(position);
+        // Add to the leaf of the quadtree based on object location.
+      }
+      randomObjects = QuadTreeBuilder::makeQuadTree(models, world2Tile);
+      randomObjects->setName("random objects");
+    }
+  }
 
   if (calc_lights) {
     // FIXME: ugly, has a side effect
@@ -590,5 +688,17 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     lightLOD->setNodeMask(nodeMask);
     transform->addChild(lightLOD);
   }
+  
+  if (randomObjects.valid()) {
+  
+    // Add a LoD node, so we don't try to display anything when the tile center
+    // is more than 20km away.
+    osg::LOD* objectLOD = new osg::LOD;
+    objectLOD->addChild(randomObjects.get(), 0, 20000);
+    unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT;
+    objectLOD->setNodeMask(nodeMask);
+    transform->addChild(objectLOD);
+  }
+  
   return transform;
 }

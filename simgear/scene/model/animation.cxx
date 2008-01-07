@@ -174,6 +174,19 @@ read_factor_offset(const SGPropertyNode* configNode, SGExpressiond* expr,
 }
 
 static SGExpressiond*
+read_offset_factor(const SGPropertyNode* configNode, SGExpressiond* expr,
+                   const std::string& factor, const std::string& offset)
+{
+  double offsetValue = configNode->getDoubleValue(offset, 0);
+  if (offsetValue != 0)
+    expr = new SGBiasExpression<double>(expr, offsetValue);
+  double factorValue = configNode->getDoubleValue(factor, 1);
+  if (factorValue != 1)
+    expr = new SGScaleExpression<double>(expr, factorValue);
+  return expr;
+}
+
+static SGExpressiond*
 read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax)
 {
@@ -1866,7 +1879,7 @@ SGTexTransformAnimation::appendTexTranslate(const SGPropertyNode* config,
     value = new SGStepExpression<double>(value,
                                          config->getDoubleValue("step", 0),
                                          config->getDoubleValue("scroll", 0));
-    value = read_factor_offset(config, value, "factor", "offset");
+    value = read_offset_factor(config, value, "factor", "offset");
 
     if (config->hasChild("min") || config->hasChild("max")) {
       double minClip = config->getDoubleValue("min", -SGLimitsd::max());
@@ -1914,7 +1927,7 @@ SGTexTransformAnimation::appendTexRotate(const SGPropertyNode* config,
     value = new SGStepExpression<double>(value,
                                          config->getDoubleValue("step", 0),
                                          config->getDoubleValue("scroll", 0));
-    value = read_factor_offset(config, value, "factor", "offset-deg");
+    value = read_offset_factor(config, value, "factor", "offset-deg");
 
     if (config->hasChild("min-deg") || config->hasChild("max-deg")) {
       double minClip = config->getDoubleValue("min-deg", -SGLimitsd::max());

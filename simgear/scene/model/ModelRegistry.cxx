@@ -100,8 +100,8 @@ public:
     string fileName = getSimpleFileName(fullFilePath);
     // The name that should be found with the current database path
     string fullLiveryFile = findFileInPath(fileName, mPathList);
-    // If they are identical then there is nothing to do
-    if (fullLiveryFile == fullFilePath)
+    // If it is empty or they are identical then there is nothing to do
+    if (fullLiveryFile.empty() || fullLiveryFile == fullFilePath)
       return 0;
 
     image = readImageFile(fullLiveryFile);

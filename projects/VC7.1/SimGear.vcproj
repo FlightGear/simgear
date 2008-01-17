@@ -35,6 +35,7 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="0"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -818,6 +819,9 @@
 				RelativePath="..\..\simgear\scene\tgdb\pt_lights.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGModelBin.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGOceanTile.cxx">
 			</File>
 			<File
@@ -1054,6 +1058,12 @@
 		<Filter
 			Name="Lib_sgutil"
 			Filter="">
+			<File
+				RelativePath="..\..\simgear\scene\util\QuadTreeBuilder.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\QuadTreeBuilder.hxx">
+			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\RenderConstants.hxx">
 			</File>

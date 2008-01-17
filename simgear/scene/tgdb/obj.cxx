@@ -400,11 +400,11 @@ struct SGTileGeometryBin {
 
   void computeRandomSurfaceLights(SGMaterialLib* matlib)
   {
-    SGMaterialTriangleMap::const_iterator i;
+    SGMaterialTriangleMap::iterator i;
         
     // generate a repeatable random seed
-    mt* seed = new mt;
-    mt_init(seed, unsigned(123));
+    mt seed;
+    mt_init(&seed, unsigned(123));
     
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       SGMaterial *mat = matlib->find(i->first);
@@ -424,9 +424,9 @@ struct SGTileGeometryBin {
       i->second.addRandomSurfacePoints(coverage, 3, randomPoints);
       std::vector<SGVec3f>::iterator j;
       for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
-        float zombie = mt_rand(seed);
+        float zombie = mt_rand(&seed);
         // factor = sg_random() ^ 2, range = 0 .. 1 concentrated towards 0
-        float factor = mt_rand(seed);
+        float factor = mt_rand(&seed);
         factor *= factor;
 
         float bright = 1;
@@ -451,7 +451,7 @@ struct SGTileGeometryBin {
   
   void computeRandomObjects(SGMaterialLib* matlib)
   {
-    SGMaterialTriangleMap::const_iterator i;
+    SGMaterialTriangleMap::iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       SGMaterial *mat = matlib->find(i->first);
       if (!mat)
@@ -528,8 +528,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     
     if (tileGeometryBin.randomModels.getNumModels() > 0) {
       // Generate a repeatable random seed
-      mt* seed = new mt;
-      mt_init(seed, unsigned(123));
+      mt seed;
+      mt_init(&seed, unsigned(123));
     
       // Determine an rotation matrix for the models to place them 
       // perpendicular to the earth's surface. We use the same matrix, 
@@ -555,7 +555,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
         
         if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
           // Rotate the object around the z axis.
-          double hdg = mt_rand(seed) * M_PI * 2;
+          double hdg = mt_rand(&seed) * M_PI * 2;
           osg::Matrix rot(cos(hdg), -sin(hdg), 0, 0,
                           sin(hdg),  cos(hdg), 0, 0,
                           0,         0, 1, 0,

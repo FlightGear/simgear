@@ -98,8 +98,7 @@ class SGTexturedTriangleBin : public SGTriangleBin<SGVertNormTex> {
 public:
   SGTexturedTriangleBin()
   {
-    seed = new mt;
-    mt_init(seed, 123);
+    mt_init(&seed, 123);
   }
 
   // Computes and adds random surface points to the points list.
@@ -107,7 +106,7 @@ public:
   // The points are offsetted away from the triangles in
   // offset * positive normal direction.
   void addRandomSurfacePoints(float coverage, float offset,
-                              std::vector<SGVec3f>& points) const
+                              std::vector<SGVec3f>& points)
   {
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
@@ -125,13 +124,13 @@ public:
       // For partial units of area, use a zombie door method to
       // create the proper random chance of a light being created
       // for this triangle
-      float unit = area + mt_rand(seed)*coverage;
+      float unit = area + mt_rand(&seed)*coverage;
       
       SGVec3f offsetVector = offset*normalize(normal);
       // generate a light point for each unit of area
       while ( coverage < unit ) {
-        float a = mt_rand(seed);
-        float b = mt_rand(seed);
+        float a = mt_rand(&seed);
+        float b = mt_rand(&seed);
         if ( a + b > 1 ) {
           a = 1 - a;
           b = 1 - b;
@@ -145,7 +144,7 @@ public:
   }
   
    void addRandomPoints(float coverage, 
-                        std::vector<SGVec3f>& points) const
+                        std::vector<SGVec3f>& points)
   {
     unsigned num = getNumTriangles();
     for (unsigned i = 0; i < num; ++i) {
@@ -163,12 +162,12 @@ public:
       // for partial units of area, use a zombie door method to
       // create the proper random chance of an object being created
       // for this triangle.
-      double num = area / coverage + mt_rand(seed);
+      double num = area / coverage + mt_rand(&seed);
 
       // place an object each unit of area
       while ( num > 1.0 ) {
-        float a = mt_rand(seed);
-        float b = mt_rand(seed);
+        float a = mt_rand(&seed);
+        float b = mt_rand(&seed);
         if ( a + b > 1 ) {
           a = 1 - a;
           b = 1 - b;
@@ -243,7 +242,7 @@ public:
 
 private:
   // Random seed for the triangle.
-  mt* seed;
+  mt seed;
 };
 
 #endif

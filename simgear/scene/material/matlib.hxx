@@ -75,11 +75,6 @@ public:
     // find a material record by material name
     SGMaterial *find( const string& material );
 
-    /**
-     * Load the next deferred texture, if there is any.
-     */
-    void load_next_deferred();
-
     material_map_iterator begin() { return matlib.begin(); }
     const_material_map_iterator begin() const { return matlib.begin(); }
 

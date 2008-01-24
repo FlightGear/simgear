@@ -114,17 +114,9 @@ public:
   ////////////////////////////////////////////////////////////////////
 
   /**
-   * Force the texture to load if it hasn't already.
-   *
-   * @return true if the texture loaded, false if it was loaded
-   * already.
-   */
-  bool load_texture (int n = -1);
-
-  /**
    * Get the textured state.
    */
-  osg::StateSet *get_state (int n = -1) const;
+  osg::StateSet *get_state (int n = -1);
 
 
   /**
@@ -331,7 +323,9 @@ public:
   const SGMaterial* getMaterial() const
   { return mMaterial; }
 private:
-  SGSharedPtr<const SGMaterial> mMaterial;
+  // this cannot be an SGSharedPtr since that would create a cicrular reference
+  // making it impossible to ever free the space needed by SGMaterial
+  const SGMaterial* mMaterial;
 };
 
 void

@@ -52,8 +52,6 @@ SG_USING_STD(map);
 
 #include "mat.hxx"
 
-static map<string, osg::ref_ptr<osg::Texture2D> > _tex_cache;
-
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors and destructor.
@@ -222,35 +220,24 @@ SGMaterial::init ()
     }
 }
 
-bool
-SGMaterial::load_texture ( int n )
-{
-    int i   = (n >= 0) ? n   : 0 ;
-    int end = (n >= 0) ? n+1 : _status.size();
-
-    for (; i < end; i++)
-    {
-        if ( !_status[i].texture_loaded ) {
-            SG_LOG( SG_GENERAL, SG_INFO, "Loading deferred texture "
-                                          << _status[i].texture_path );
-            assignTexture(_status[i].state.get(), _status[i].texture_path,
-                                         wrapu, wrapv, mipmap);
-            _status[i].texture_loaded = true;
-       }
-    }
-    return true;
-}
-
 osg::StateSet *
-SGMaterial::get_state (int n) const
+SGMaterial::get_state (int n)
 {
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No state available.");
         return NULL;
     }
+    
+    int i = n >= 0 ? n : _current_ptr;
 
-    osg::StateSet *st = (n >= 0) ? _status[n].state.get()
-                             : _status[_current_ptr].state.get();
+    if(!_status[i].texture_loaded)
+    {
+        assignTexture(_status[i].state.get(), _status[i].texture_path,
+                      wrapu, wrapv, mipmap);
+        _status[i].texture_loaded = true;
+    }
+    osg::StateSet *st = _status[i].state.get();
+
     _current_ptr += 1;
     if (_current_ptr >= _status.size())
         _current_ptr = 0;
@@ -279,13 +266,7 @@ SGMaterial::build_state( bool defer_tex_load )
 
         stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 
-        if ( !defer_tex_load ) {
-            SG_LOG(SG_INPUT, SG_INFO, "    " << _status[i].texture_path );
-	    assignTexture( stateSet, _status[i].texture_path, wrapu, wrapv);
-            _status[i].texture_loaded = true;
-        } else {
-            _status[i].texture_loaded = false;
-        }
+        _status[i].texture_loaded = false;
 
         osg::Material* material = new osg::Material;
         material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
@@ -320,21 +301,11 @@ void SGMaterial::set_state( osg::StateSet *s )
 void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
                  int _wrapu, int _wrapv, int _mipmap )
 {
-   map<string, osg::ref_ptr<osg::Texture2D> >::iterator _tex_cache_iter;
-   _tex_cache_iter = _tex_cache.find(fname);
-   if (_tex_cache_iter == _tex_cache.end())
-   {
-     osg::Texture2D* texture = SGLoadTexture2D(fname, 0, _wrapu, _wrapv,
-                                                mipmap ? -1 : 0);
-	  texture->setMaxAnisotropy( SGGetTextureFilter());
-      state->setTextureAttributeAndModes(0, texture);
-      _tex_cache[fname] = texture;
-   }
-   else
-   {
-      state->setTextureAttributeAndModes(0, _tex_cache_iter->second.get());
-      // cout << "Cache hit: " << fname << endl;
-   }
+   osg::Texture2D* texture = SGLoadTexture2D(fname, 0, _wrapu, _wrapv,
+                                             mipmap ? -1 : 0);
+   texture->setMaxAnisotropy( SGGetTextureFilter());
+   state->setTextureAttributeAndModes(0, texture);
+
    osg::TexEnv* texEnv = new osg::TexEnv;
    texEnv->setMode(osg::TexEnv::MODULATE);
    state->setTextureAttributeAndModes(0, texEnv);

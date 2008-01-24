@@ -168,23 +168,9 @@ SGMaterial *SGMaterialLib::find( const string& material ) {
     return NULL;
 }
 
-
 // Destructor
 SGMaterialLib::~SGMaterialLib ( void ) {
-}
-
-
-// Load one pending "deferred" texture.  Return true if a texture
-// loaded successfully, false if no pending, or error.
-void SGMaterialLib::load_next_deferred() {
-    // container::iterator it = begin();
-    for ( material_map_iterator it = begin(); it != end(); it++ ) {
-	/* we don't need the key, but here's how we'd get it if we wanted it. */
-        // const string &key = it->first;
-	SGMaterial *slot = it->second;
-	if (slot->load_texture())
-	  return;
-    }
+    SG_LOG( SG_GENERAL, SG_INFO, "SGMaterialLib::~SGMaterialLib() size=" << matlib.size());
 }
 
 const SGMaterial*

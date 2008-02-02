@@ -22,23 +22,28 @@
 #include <osg/Group>
 #include <osg/Matrix>
 #include <osg/Vec2>
+#include <osg/LOD>
+
+#define QUAD_TREE_LEAVES 4
 
 namespace simgear
 {
+typedef std::map<osg::ref_ptr<osg::Node>,int> LodMap;
+
 // Create a quad tree based on x, y extents
 class QuadTreeBuilder {
 public:
     QuadTreeBuilder(const osg::Vec2& min, const osg::Vec2& max);
     ~QuadTreeBuilder() {}
     osg::Group* getRoot() { return _root.get(); }
-    // Add node to the quadtree using its x, y
-    void addNode(osg::Node* node, const osg::Matrix& transform);
-    // Make a quadtree of nodes from a vector of nodes
-    static osg::Group* makeQuadTree(std::vector<osg::ref_ptr<osg::Node> >& nodes,
+    // Add node to the quadtree using its x, y and LoD
+    void addNode(osg::Node* node, int lod, const osg::Matrix& transform);
+    // Make a quadtree of nodes from a map of nodes and LOD values
+    static osg::Group* makeQuadTree(LodMap& nodes,
                                     const osg::Matrix& transform);
 protected:
     osg::ref_ptr<osg::Group> _root;
-    osg::Group* _leaves[4][4];
+    osg::LOD* _leaves[QUAD_TREE_LEAVES][QUAD_TREE_LEAVES];
     osg::Vec2 _min;
     osg::Vec2 _max;
 };

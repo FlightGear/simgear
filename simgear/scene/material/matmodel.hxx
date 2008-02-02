@@ -40,6 +40,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/math/sg_random.h>
 
 SG_USING_STD(string);
 
@@ -112,6 +113,19 @@ public:
      */
     double get_coverage_m2 () const;
 
+    /**
+     * Get the visual range of the object in meters.
+     *
+     * @return The visual range.
+     */
+    double get_range_m () const;
+    
+    /**
+     * Get a randomized visual range
+     *
+     * @return a randomized visual range
+     */    
+    double get_randomized_range_m(mt* seed) const;    
 
     /**
      * Get the heading type for the object.

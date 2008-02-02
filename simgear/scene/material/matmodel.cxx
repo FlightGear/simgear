@@ -142,33 +142,6 @@ SGMatModel::load_models ( SGModelLib *modellib,
         // the billboarding should be handled
         // there).
         
-        // Create multiple LoD nodes so instead of all objects
-        // of the same type appearing at once, some appear further
-        // away.
-        //
-        // Very basic hardcoded distribution:
-        // 4 at normal range
-        // 2 at 1.5 times normal range
-        // 1 at 2 time normal range.
-        //
-        // We achieve this by creating the three different LoD
-        // nodes and adding them to the _models list multiple times.
-        
-        osg::LOD * lod1 = new osg::LOD;
-        lod1->setName("Model LOD");
-        lod1->setRangeMode(osg::LOD::DISTANCE_FROM_EYE_POINT);
-        lod1->setRange(0, 0, _range_m);
-        
-        osg::LOD * lod15 = new osg::LOD;
-        lod15->setName("Model LOD - 1.5");
-        lod15->setRangeMode(osg::LOD::DISTANCE_FROM_EYE_POINT);
-        lod15->setRange(0, 0, 1.5 * _range_m);
-
-        osg::LOD * lod2 = new osg::LOD;
-        lod2->setName("Model LOD - 2.0");
-        lod2->setRangeMode(osg::LOD::DISTANCE_FROM_EYE_POINT);
-        lod2->setRange(0, 0, 2.0 * _range_m);
-        
         if (_heading_type == HEADING_BILLBOARD) {
           // if the model is a billboard, it is likely :
           // 1. a branch with only leaves,
@@ -180,27 +153,10 @@ SGMatModel::load_models ( SGModelLib *modellib,
           stateSet->setAttributeAndModes(alphaFunc,
                                          osg::StateAttribute::OVERRIDE);
           stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-          
-  	      lod1->addChild(entity);
-  	      lod15->addChild(entity);
-  	      lod2->addChild(entity);
-        } else {
-          lod1->addChild(entity);
-          lod15->addChild(entity);
-          lod2->addChild(entity);
-        }
-      
-        // Vary the distribution of LoDs by adding multiple times.
-        _models.push_back(lod1);
-        _models.push_back(lod1);
-        _models.push_back(lod1);
-        _models.push_back(lod1);
-
-        _models.push_back(lod15);
-        _models.push_back(lod15);
-
-        _models.push_back(lod2);
-
+        } 
+        
+        _models.push_back(entity);
+        
       } else {
         SG_LOG(SG_INPUT, SG_ALERT, "Failed to load object " << _paths[i]);
       }
@@ -238,6 +194,24 @@ double
 SGMatModel::get_coverage_m2 () const
 {
   return _coverage_m2;
+}
+
+double SGMatModel::get_range_m() const
+{
+  return _range_m;
+}
+
+double SGMatModel::get_randomized_range_m(mt* seed) const
+{
+  double lrand = mt_rand(seed);
+  
+  // Note that the LoD is not completely randomized.
+  // 10% at 2   * range_m
+  // 30% at 1.5 * range_m
+  // 60% at 1   * range_m
+  if (lrand < 0.1) return 2   * _range_m;
+  if (lrand < 0.4) return 1.5 * _range_m;
+  else return _range_m;
 }
 
 SGMatModel::HeadingType

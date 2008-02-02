@@ -27,48 +27,22 @@
 class SGMatModelBin {
 public:
   struct MatModel {
-    MatModel(const SGVec3f& p, SGMatModel *m) :
-      position(p), model(m)
+    MatModel(const SGVec3f& p, SGMatModel *m, int l) :
+      position(p), model(m), lod(l)
     { }
     SGVec3f position;
     SGMatModel *model;
+    int lod;
   };
   typedef std::vector<MatModel> MatModelList;
 
   void insert(const MatModel& model)
   { 
-    float x = model.position.x();
-    float y = model.position.y();
-    float z = model.position.z();
-  
-    if (_models.size() == 0) 
-    {
-      min_x = x;
-      max_x = x;
-      
-      min_y = y;
-      max_y = y;
-      
-      min_z = z;
-      max_z = z;
-    }
-    else
-    {      
-      min_x = SGMisc<float>::min(min_x, x);
-      max_x = SGMisc<float>::max(max_x, x);
-
-      min_y = SGMisc<float>::min(min_y, y);
-      max_y = SGMisc<float>::max(max_y, y);
-
-      min_z = SGMisc<float>::min(min_z, z);
-      max_z = SGMisc<float>::max(max_z, z);
-    }
-    
     _models.push_back(model);   
   }
   
-  void insert(const SGVec3f& p, SGMatModel *m)
-  { insert(MatModel(p, m)); }
+  void insert(const SGVec3f& p, SGMatModel *m, int l)
+  { insert(MatModel(p, m, l)); }
 
   unsigned getNumModels() const
   { return _models.size(); }
@@ -77,12 +51,6 @@ public:
   
 private:
   MatModelList _models;
-  float min_x;
-  float max_x;
-  float min_y;
-  float max_y;
-  float min_z;
-  float max_z;
 };
 
 #endif

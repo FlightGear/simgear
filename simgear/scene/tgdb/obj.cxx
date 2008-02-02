@@ -56,6 +56,7 @@
 #include "SGTexturedTriangleBin.hxx"
 #include "SGLightBin.hxx"
 #include "SGModelBin.hxx"
+#include "TreeBin.hxx"
 #include "SGDirectionalLightBin.hxx"
 #include "GroundLightManager.hxx"
 
@@ -73,6 +74,7 @@ struct SGTileGeometryBin {
   SGMaterialTriangleMap materialTriangleMap;
   SGLightBin tileLights;
   SGLightBin randomTileLights;
+  TreeBin randomForest;
   SGDirectionalLightBin runwayLights;
   SGDirectionalLightBin taxiLights;
   SGDirectionalLightListBin vasiLights;
@@ -80,7 +82,7 @@ struct SGTileGeometryBin {
   SGLightListBin odalLights;
   SGDirectionalLightListBin reilLights;
   SGMatModelBin randomModels;
-  
+
   static SGVec4f
   getMaterialLightColor(const SGMaterial* material)
   {
@@ -448,10 +450,45 @@ struct SGTileGeometryBin {
       }
     }
   }
+
+  void computeRandomForest(SGMaterialLib* matlib)
+  {
+    SGMaterialTriangleMap::iterator i;
+        
+    // generate a repeatable random seed
+    mt seed;
+    mt_init(&seed, unsigned(586));
+    
+    for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
+      SGMaterial *mat = matlib->find(i->first);
+      if (!mat)
+        continue;
+
+      float coverage = mat->get_tree_coverage();
+      if (coverage <= 0)
+        continue;
+        
+      vector<string> textures = mat->get_tree_textures();
+      
+      std::vector<SGVec3f> randomPoints;
+      i->second.addRandomSurfacePoints(coverage, 0, randomPoints);
+      std::vector<SGVec3f>::iterator j;
+      for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {      
+        int k = mt_rand(&seed) * textures.size();        
+        if (k == textures.size()) k--;         
+        randomForest.insert(*j, textures[k], mat->get_tree_height(), mat->get_tree_width(), mat->get_tree_range());
+      }
+    }
+  }
   
   void computeRandomObjects(SGMaterialLib* matlib)
   {
     SGMaterialTriangleMap::iterator i;
+    
+    // generate a repeatable random seed
+    mt seed;
+    mt_init(&seed, unsigned(123));
+
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       SGMaterial *mat = matlib->find(i->first);
       if (!mat)
@@ -478,7 +515,7 @@ struct SGTileGeometryBin {
               i->second.addRandomPoints(object->get_coverage_m2(), randomPoints);
               std::vector<SGVec3f>::iterator l;
               for (l = randomPoints.begin(); l != randomPoints.end(); ++l) {
-                randomModels.insert(*l, object);
+                randomModels.insert(*l, object, object->get_randomized_range_m(&seed));
               }
             }
           }
@@ -517,13 +554,22 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
   osg::ref_ptr<osg::Group> randomObjects;
+  osg::ref_ptr<osg::Group> randomForest;
   osg::Group* terrainGroup = new osg::Group;
-
+  
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
   if (node)
     terrainGroup->addChild(node);
     
   if (use_random_objects) {
+  
+    // Simple matrix for used for flipping models that have been oriented
+    // with the center of the tile but upside down.
+    static const osg::Matrix flip(1,  0,  0, 0,
+                                  0, -1,  0, 0,
+                                  0,  0, -1, 0,
+                                  0,  0,  0, 1);     
+  
     tileGeometryBin.computeRandomObjects(matlib);
     
     if (tileGeometryBin.randomModels.getNumModels() > 0) {
@@ -536,12 +582,9 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       // based on the centre of the tile, as the small angular differences  
       // between different points on the tile aren't worth worrying about 
       // for random objects. We also need to flip the orientation 180 degrees
-      static const osg::Matrix flip(1,  0,  0, 0,
-                                    0, -1,  0, 0,
-                                    0,  0, -1, 0,
-                                    0,  0,  0, 1);     
       osg::Matrix mAtt = flip * osg::Matrix::rotate(hlOr.osg());
-      std::vector<osg::ref_ptr<osg::Node> > models;
+      
+      LodMap models;
       
       for (unsigned int i = 0; i < tileGeometryBin.randomModels.getNumModels(); i++) {
         SGMatModelBin::MatModel obj = tileGeometryBin.randomModels.getMatModel(i);
@@ -566,12 +609,21 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
         }
 
         position->addChild(node);        
-        models.push_back(position);
-        // Add to the leaf of the quadtree based on object location.
+        models.insert(std::pair<osg::ref_ptr<osg::Node>,int>(position, obj.lod));
       }
+      
       randomObjects = QuadTreeBuilder::makeQuadTree(models, world2Tile);
       randomObjects->setName("random objects");
     }
+      
+    // Now add some random forest.
+    tileGeometryBin.computeRandomForest(matlib);
+    
+    if (tileGeometryBin.randomForest.getNumTrees() > 0) {
+      osg::Matrix forAtt = flip * world2Tile;
+      randomForest = createForest(tileGeometryBin.randomForest, forAtt);
+      randomForest->setName("random trees");      
+    } 
   }
 
   if (calc_lights) {
@@ -606,7 +658,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       lightGroup->addChild(groundLights2);
     }
   }
-
+    
   if (!tileGeometryBin.vasiLights.empty()) {
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = matlib->find("RWY_RED_LIGHTS");
@@ -689,12 +741,15 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     transform->addChild(lightLOD);
   }
   
-  if (randomObjects.valid()) {
+  if (randomObjects.valid() || randomForest.valid()) {
   
     // Add a LoD node, so we don't try to display anything when the tile center
     // is more than 20km away.
     osg::LOD* objectLOD = new osg::LOD;
-    objectLOD->addChild(randomObjects.get(), 0, 20000);
+    
+    if (randomObjects.valid()) objectLOD->addChild(randomObjects.get(), 0, 20000);
+    if (randomForest.valid())  objectLOD->addChild(randomForest.get(), 0, 20000);
+    
     unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT;
     objectLOD->setNodeMask(nodeMask);
     transform->addChild(objectLOD);

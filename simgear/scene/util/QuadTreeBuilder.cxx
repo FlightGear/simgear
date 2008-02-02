@@ -16,6 +16,7 @@
 
 #include <osg/BoundingBox>
 #include <osg/Math>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "QuadTreeBuilder.hxx"
 
@@ -27,35 +28,36 @@ namespace simgear
 QuadTreeBuilder::QuadTreeBuilder(const Vec2& min, const Vec2& max) :
     _root(new osg::Group), _min(min), _max(max)
 {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < QUAD_TREE_LEAVES; ++i) {
         Group* interior = new osg::Group;
         _root->addChild(interior);
-        for (int j = 0; j < 4; ++j) {
-            Group* leaf = new osg::Group;
-            interior->addChild(leaf);
-            _leaves[i][j] = leaf;
+        for (int j = 0; j < QUAD_TREE_LEAVES; ++j) {
+            LOD* lod  = new osg::LOD;
+            interior->addChild(lod);
+            _leaves[i][j] = lod;
         }
     }
 }
 
-void QuadTreeBuilder::addNode(Node* node, const Matrix& transform)
+void QuadTreeBuilder::addNode(Node* node, int lod, const Matrix& transform)
 {
     Vec3 center = node->getBound().center() * transform;
 
-    int x = (int)(4.0 * (center.x() - _min.x()) / (_max.x() - _min.x()));
-    x = clampTo(x, 0, 3);
-    int y = (int)(4.0 * (center.y() - _min.y()) / (_max.y() - _min.y()));
-    y = clampTo(y, 0, 3);
-    _leaves[y][x]->addChild(node);
+    int x = (int)(QUAD_TREE_LEAVES * (center.x() - _min.x()) / (_max.x() - _min.x()));
+    x = clampTo(x, 0, (QUAD_TREE_LEAVES - 1));
+    int y = (int)(QUAD_TREE_LEAVES * (center.y() - _min.y()) / (_max.y() - _min.y()));
+    y = clampTo(y, 0, (QUAD_TREE_LEAVES -1));
+    
+    _leaves[y][x]->addChild(node, 0, lod);
 }
 
-osg::Group* QuadTreeBuilder::makeQuadTree(vector<ref_ptr<Node> >& nodes,
+osg::Group* QuadTreeBuilder::makeQuadTree(LodMap& models,
                                           const Matrix& transform)
 {
     typedef vector<ref_ptr<Node> > NodeList;
     BoundingBox extents;
-    for (NodeList::iterator iter = nodes.begin(); iter != nodes.end(); ++iter) {
-        const Vec3 center = (*iter)->getBound().center() * transform;
+    for (LodMap::iterator iter = models.begin(); iter != models.end(); ++iter) {
+        const Vec3 center = (*iter).first->getBound().center() * transform;
         extents.expandBy(center);
     }
     const Vec2 quadMin(extents.xMin(), extents.yMin());
@@ -63,10 +65,10 @@ osg::Group* QuadTreeBuilder::makeQuadTree(vector<ref_ptr<Node> >& nodes,
     ref_ptr<Group> result;
     {
         QuadTreeBuilder quadTree(quadMin, quadMax);
-        for (NodeList::iterator iter = nodes.begin();
-             iter != nodes.end();
+        for (LodMap::iterator iter = models.begin();
+             iter != models.end();
              ++iter) {
-            quadTree.addNode(iter->get(), transform);
+            quadTree.addNode(iter->first.get(), iter->second, transform);
         }
         result = quadTree.getRoot();
     }

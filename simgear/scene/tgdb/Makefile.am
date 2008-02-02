@@ -18,7 +18,8 @@ include_HEADERS = \
 	SGTexturedTriangleBin.hxx \
 	SGTriangleBin.hxx \
 	SGVertexArrayBin.hxx \
-	GroundLightManager.hxx
+	GroundLightManager.hxx \
+	ShaderGeometry.hxx
 
 libsgtgdb_a_SOURCES = \
 	apt_signs.cxx \
@@ -28,6 +29,8 @@ libsgtgdb_a_SOURCES = \
 	SGOceanTile.cxx \
 	SGReaderWriterBTG.cxx \
 	SGVasiDrawable.cxx \
-	GroundLightManager.cxx
+	GroundLightManager.cxx \
+	ShaderGeometry.cxx \
+	TreeBin.cxx
 
 INCLUDES = -I$(top_srcdir)

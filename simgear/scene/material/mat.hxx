@@ -142,9 +142,46 @@ public:
    *
    * A smaller number means more generated night lighting.
    *
-   * @return The area (m^2?) covered by each light.
+   * @return The area (m^2) covered by each light.
    */
   inline double get_light_coverage () const { return light_coverage; }
+
+  /**
+   * Get the forest coverage.
+   *
+   * A smaller number means more generated forest canopy.
+   *
+   * @return The area (m^2) covered by each canopy.
+   */
+  inline double get_tree_coverage () const { return tree_coverage; }
+
+  /**
+   * Get the forest height.
+   *
+   * @return The average height of the trees.
+   */
+  inline double get_tree_height () const { return tree_height; }
+
+  /**
+   * Get the forest width.
+   *
+   * @return The average width of the trees.
+   */
+  inline double get_tree_width () const { return tree_width; }
+
+  /**
+   * Get the forest LoD range.
+   *
+   * @return The LoD range for the trees.
+   */
+  inline double get_tree_range () const { return tree_range; }
+  
+  /**
+   * Get the list of textures to use for trees in the forest
+   *
+   * @return the vector of forest textures to use.
+   */
+  inline vector<string> get_tree_textures () const { return  tree_textures; }
 
   /**
    * Return if the surface material is solid, if it is not solid, a fluid
@@ -259,6 +296,18 @@ private:
 
   // coverage of night lighting.
   double light_coverage;
+  
+  // coverage of trees
+  double tree_coverage;
+  
+  // Range at which trees become visible
+  double tree_range;
+
+  // Height of the tree
+  double tree_height;
+
+  // Width of the tree
+  double tree_width;
 
   // True if the material is solid, false if it is a fluid
   bool solid;
@@ -286,7 +335,9 @@ private:
 
   // taxiway-/runway-sign texture elements
   map<string, SGSharedPtr<SGMaterialGlyph> > glyphs;
-
+  
+  // The list of forest textures, used when creating trees
+  vector<string> tree_textures;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.

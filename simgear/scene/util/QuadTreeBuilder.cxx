@@ -25,30 +25,48 @@ using namespace osg;
 
 namespace simgear
 {
-QuadTreeBuilder::QuadTreeBuilder(const Vec2& min, const Vec2& max) :
-    _root(new osg::Group), _min(min), _max(max)
+#if 0
+QuadTreeBuilder::QuadTreeBuilder(const Vec2& min, const Vec2& max, int depth) :
+    _root(new osg::Group), _min(min), _max(max), _depth(depth),
+    _dimension(1 << depth), _leafStorage(_dimension * _dimension),
+    _leaves(_leafStorage, _dimension)
 {
-    for (int i = 0; i < QUAD_TREE_LEAVES; ++i) {
-        Group* interior = new osg::Group;
-        _root->addChild(interior);
-        for (int j = 0; j < QUAD_TREE_LEAVES; ++j) {
-            LOD* lod  = new osg::LOD;
-            interior->addChild(lod);
-            _leaves[i][j] = lod;
+    for (LeafVector::iterator iter = _leafStorage.begin();
+         iter != _leafStorage.end();
+         ++iter)
+        *iter = new LOD;
+    vector<Group*> parentNodes(1);
+    parentNodes[0] = _root.get();
+    unsigned leafDim = 2;
+    for (int i = 0; i < depth - 1;  ++i, leafDim *= 2) {
+        VectorArrayAdapter<vector<Group*> > parents(parentNodes, leafDim / 2);
+        vector<Group*> interiorNodes(leafDim * leafDim);
+        VectorArrayAdapter<vector<Group*> > interiors(interiorNodes, leafDim);
+        for (unsigned j = 0; j < leafDim; ++j) {
+            for (unsigned k = 0; k < leafDim; ++k) {
+                interiors(j, k) = new Group;
+                parents(j / 2, k / 2)->addChild(interiors(j, k));
+            }
         }
+        parentNodes.swap(interiorNodes);
     }
+    VectorArrayAdapter<vector<Group*> > leafParents(parentNodes,
+                                                    _dimension / 2);
+    for (int j = 0; j < _dimension; ++j)
+        for (int k =0; k < _dimension; ++k)
+            leafParents(j / 2, k / 2)->addChild(_leaves(j, k));
 }
 
 void QuadTreeBuilder::addNode(Node* node, int lod, const Matrix& transform)
 {
     Vec3 center = node->getBound().center() * transform;
 
-    int x = (int)(QUAD_TREE_LEAVES * (center.x() - _min.x()) / (_max.x() - _min.x()));
-    x = clampTo(x, 0, (QUAD_TREE_LEAVES - 1));
-    int y = (int)(QUAD_TREE_LEAVES * (center.y() - _min.y()) / (_max.y() - _min.y()));
-    y = clampTo(y, 0, (QUAD_TREE_LEAVES -1));
+    int x = (int)(_dimension * (center.x() - _min.x()) / (_max.x() - _min.x()));
+    x = clampTo(x, 0, (_dimension - 1));
+    int y = (int)(_dimension * (center.y() - _min.y()) / (_max.y() - _min.y()));
+    y = clampTo(y, 0, (_dimension -1));
     
-    _leaves[y][x]->addChild(node, 0, lod);
+    _leaves(y, x)->addChild(node, 0, lod);
 }
 
 osg::Group* QuadTreeBuilder::makeQuadTree(LodMap& models,
@@ -74,5 +92,5 @@ osg::Group* QuadTreeBuilder::makeQuadTree(LodMap& models,
     }
     return result.release();
 }
-
+#endif
 }

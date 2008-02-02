@@ -22,6 +22,7 @@
 #ifndef VECTORARRAYADAPTERHXX
 #define VECTORARRAYADAPTERHXX 1
 
+// #define SG_CHECK_VECTOR_ACCESS 1
 namespace simgear
 {
 template <typename Vector>
@@ -44,7 +45,16 @@ public:
         _rowOffset(rowOffset)
     {
     }
-    
+#ifdef SG_CHECK_VECTOR_ACCESS
+    typename Vector::value_type& operator() (int i, int j)
+    {
+        return _v.at(_baseOffset + i * _rowStride + _rowOffset + j);
+    }
+    const typename Vector::value_type& operator() (int i, int j) const
+    {
+        return _v.at(_baseOffset + i * _rowStride + _rowOffset + j);
+    }
+#else
     typename Vector::value_type& operator() (int i, int j)
     {
         return _v[_baseOffset + i * _rowStride + _rowOffset + j];
@@ -53,6 +63,7 @@ public:
     {
         return _v[_baseOffset + i * _rowStride + _rowOffset + j];
     }
+#endif
 private:
     Vector& _v;
     const int _rowStride;

@@ -19,6 +19,10 @@
  *
  */
 
+#include <algorithm>
+#include <string>
+#include <map>
+
 #include <osg/AlphaFunc>
 #include <osg/Billboard>
 #include <osg/BlendFunc>
@@ -36,11 +40,26 @@
 #include <osgDB/FileUtils>
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/scene/util/QuadTreeBuilder.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include "ShaderGeometry.hxx"
 #include "TreeBin.hxx"
 
-#define SG_TREE_QUAD_TREE_SIZE 32
+#define SG_TREE_QUAD_TREE_DEPTH 3
+
+// Comments from Tim Moore:
+// Some work remains for this code. Stuart's enhancement for multiple
+// textures per forest should be integrated. We should try to use one
+// ShaderGeometry for *all* the trees in the scene graph and do the
+// rotation and scale with a MatrixTransform above the trees quad
+// tree. The positions would of course have to be transformed by the
+// inverse of that transform. Also, we should investigate whether it
+// would be better to instantiate trees as polygons in a osg::Geometry
+// object instead of using the ShaderGeometry instancing technique.
+
+using namespace osg;
 
 namespace simgear
 {
@@ -50,24 +69,12 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
 
     //const osg::Vec3& pos = osg::Vec3(0.0f,0.0f,0.0f),
     // set up the coords
+    // Create front and back polygons so we don't need to screw around
+    // with two-sided lighting in the shader.
     osg::Vec3Array& v = *(new osg::Vec3Array(8));
+    osg::Vec3Array& n = *(new osg::Vec3Array(8));
     osg::Vec2Array& t = *(new osg::Vec2Array(8));
     
-    /*
-    float rotation = 0.0f;
-    float sw = sinf(rotation)*w*0.5f;
-    float cw = cosf(rotation)*w*0.5f;
-
-    v[0].set(pos.x()-sw,pos.y()-cw,pos.z()+0.0f);
-    v[1].set(pos.x()+sw,pos.y()+cw,pos.z()+0.0f);
-    v[2].set(pos.x()+sw,pos.y()+cw,pos.z()+h);
-    v[3].set(pos.x()-sw,pos.y()-cw,pos.z()+h);
-
-    v[4].set(pos.x()-cw,pos.y()+sw,pos.z()+0.0f);
-    v[5].set(pos.x()+cw,pos.y()-sw,pos.z()+0.0f);
-    v[6].set(pos.x()+cw,pos.y()-sw,pos.z()+h);
-    v[7].set(pos.x()-cw,pos.y()+sw,pos.z()+h);
-    */
     float cw = w*0.5f;
 
     v[0].set(0.0f,-cw,0.0f);
@@ -89,24 +96,120 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
     t[5].set(1.0f,0.0f);
     t[6].set(1.0f,1.0f);
     t[7].set(0.0f,1.0f);
-    
-    for (unsigned int i = 0; i < 8; i++)
-    {
-      v[i] = v[i] * rotate;      
+
+    // For now the normal is normal to the quad. If we want to get
+    // fancier and approximate a cylindrical tree or something, then
+    // we would really want more geometry.
+    std::fill(n.begin(), n.begin() + 4, Vec3f(1.0f, 0.0f, 0.0f));
+    std::fill(n.begin() + 4, n.end(), Vec3f(0.0f, -1.0f, 0.0f));
+    for (unsigned int i = 0; i < 8; i++) {
+        v[i] = v[i] * rotate;
+        // Should be the inverse transpose, but assume that rotate is
+        // orthonormal.
+        n[i] = n[i] * rotate;     
     }
 
     osg::Geometry *geom = new osg::Geometry;
 
-    geom->setVertexArray( &v );
-
-    geom->setTexCoordArray( 0, &t );
-
-    geom->addPrimitiveSet( new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,8) );
+    geom->setVertexArray(&v);
+    geom->setTexCoordArray(0, &t);
+    geom->setNormalArray(&n);
+    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
+    // No color for now; that's used to pass the position.
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,8));
 
     return geom;
 }
 
-osg::Group* createForest(const TreeBin& forest, const osg::Matrix& transform)
+ static char vertexShaderSource[] = 
+    "varying float fogFactor;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
+    "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
+    "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
+    "  vec3 N = normalize(gl_NormalMatrix * gl_Normal);\n"
+    "  vec3 diffuse = gl_FrontMaterial.diffuse.rgb * max(0.0, dot(N, gl_LightSource[0].position.xyz));\n"
+    "  vec3 backDiffuse = gl_FrontMaterial.diffuse.rgb * max(0.0, dot(-N, gl_LightSource[0].position.xyz));\n"
+    " vec4 ambientColor = gl_FrontLightModelProduct.sceneColor + gl_LightSource[0].ambient * gl_FrontMaterial.ambient;\n"
+    " gl_FrontColor = ambientColor + gl_LightSource[0].diffuse * vec4(diffuse, 1.0);\n"
+    " gl_BackColor = ambientColor + gl_LightSource[0].diffuse * vec4(backDiffuse, 1.0)\n;"
+    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+    " float fogCoord = abs(ecPosition.z);\n"
+    "  fogFactor = exp( -gl_Fog.density * gl_Fog.density * fogCoord * fogCoord);\n"
+    "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
+    "}\n";
+
+static char fragmentShaderSource[] = 
+    "uniform sampler2D baseTexture; \n"
+//        "varying vec3 N;\n"
+//        "varying vec3 v;\n"
+    "varying float fogFactor;\n"
+    "\n"
+    "void main(void) \n"
+    "{ \n"
+    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
+    
+    "  vec4 finalColor = base * gl_Color;\n"
+    "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
+    "}\n";
+
+typedef std::map<std::string, osg::ref_ptr<StateSet> > StateSetMap;
+
+static StateSetMap treeTextureMap;
+
+// Helper classes for creating the quad tree
+namespace
+{
+struct MakeTreesLeaf
+{
+    MakeTreesLeaf(float range, Geometry* geometry) :
+        _range(range), _geometry(geometry)
+    {}
+    MakeTreesLeaf(const MakeTreesLeaf& rhs) :
+        _range(rhs._range), _geometry(rhs._geometry) {}
+    LOD* operator() () const
+    {
+        LOD* result = new LOD;
+        Geode* geode = new Geode;
+        ShaderGeometry* sg = new ShaderGeometry;
+        sg->setGeometry(_geometry);
+        geode->addDrawable(sg);
+        result->addChild(geode, 0, _range);
+        return result;
+    }
+    float _range;
+    Geometry* _geometry;
+};
+
+struct AddTreesLeafObject
+{
+    void operator() (LOD* lod, const TreeBin::Tree& tree) const
+    {
+        Geode* geode = static_cast<Geode*>(lod->getChild(0));
+        ShaderGeometry* sg
+            = static_cast<ShaderGeometry*>(geode->getDrawable(0));
+        sg->addTree(tree.position.osg(), tree.height);
+    }
+};
+
+struct GetTreeCoord
+{
+    GetTreeCoord(const Matrix& transform) : _transform(transform) {}
+    GetTreeCoord(const GetTreeCoord& rhs) : _transform(rhs._transform) {}
+    Vec3 operator() (const TreeBin::Tree& tree) const
+    {
+        return tree.position.osg() * _transform;
+    }
+    Matrix _transform;
+};
+
+typedef QuadTreeBuilder<LOD*, TreeBin::Tree, MakeTreesLeaf, AddTreesLeafObject,
+                        GetTreeCoord> ShaderGeometryQuadtree;
+}
+
+osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
 {
     // Set up some shared structures. 
     // FIXME: Currently we only take the texture, height and width of the first tree in the forest. In the future
@@ -116,129 +219,66 @@ osg::Group* createForest(const TreeBin& forest, const osg::Matrix& transform)
     osg::Geometry* shared_geometry = createOrthQuads(firstTree.width, 
                                                      firstTree.height, 
                                                      transform);
-    osg::Group* group = new osg::Group;
+    ref_ptr<Group> group;
 
-    osg::Texture2D *tex = new osg::Texture2D;
-    tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
-    tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
-    tex->setImage(osgDB::readImageFile(firstTree.texture));
+    osg::StateSet* stateset = 0;
+    StateSetMap::iterator iter = treeTextureMap.find(firstTree.texture);
+    if (iter == treeTextureMap.end()) {
+        osg::Texture2D *tex = new osg::Texture2D;
+        tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
+        tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
+        tex->setImage(osgDB::readImageFile(firstTree.texture));
 
-    osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
-    alphaFunc->setFunction(osg::AlphaFunc::GEQUAL,0.05f);
-
-    osg::StateSet *dstate = new osg::StateSet;
-    dstate->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
-    dstate->setTextureAttribute(0, new osg::TexEnv );
-    dstate->setAttributeAndModes( new osg::BlendFunc, osg::StateAttribute::ON );
-    dstate->setAttributeAndModes( alphaFunc, osg::StateAttribute::ON );
-    dstate->setMode( GL_LIGHTING, osg::StateAttribute::OFF );
-    dstate->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
+        static ref_ptr<AlphaFunc> alphaFunc;
+        static ref_ptr<Program> program;
+        static ref_ptr<Uniform> baseTextureSampler;
+        static ref_ptr<Material> material;
     
-    osg::StateSet* stateset = new osg::StateSet;
-    stateset->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
-    stateset->setRenderingHint( osg::StateSet::TRANSPARENT_BIN );
-
-    osg::Program* program = new osg::Program;
-    stateset->setAttribute(program);
-    osg::Uniform* baseTextureSampler = new osg::Uniform("baseTexture",0);
-    stateset->addUniform(baseTextureSampler);
-
-    /*
-     * FIXME: Currently, calculating the diffuse term results in a bad 
-     * "flickering" and a tendency of the diffuse term be either 
-     * 0.0 of 1.0. Hence, it has been commented out in the shader below.
-     * I (Stuart) suspect it may be because the light is so distant that
-     * we're seeing floating point representation issues.
-     */
-    char vertexShaderSource[] = 
-//        "varying vec3 N;\n"
-//        "varying vec3 v;\n"
-        "varying vec2 texcoord;\n"
-        "varying float fogFactor;\n"
-        "\n"
-        "void main(void)\n"
-        "{\n"
-//        "  v = vec3(gl_ModelViewMatrix * gl_Vertex);\n"
-//        "  N = normalize(gl_NormalMatrix * gl_Normal);\n"
-        "  texcoord = gl_MultiTexCoord0.st;\n"        
-        "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
-        "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
-	    "  const float LOG2 = 1.442695;\n"
-	    "  gl_FogFragCoord = gl_Position.z;\n"
-	    "  fogFactor = exp2( -gl_Fog.density * gl_Fog.density * gl_FogFragCoord * gl_FogFragCoord * LOG2 );\n"
-	    "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
-        "}\n";
-
-    char fragmentShaderSource[] = 
-        "uniform sampler2D baseTexture; \n"
-//        "varying vec3 N;\n"
-//        "varying vec3 v;\n"
-        "varying vec2 texcoord;\n"
-        "varying float fogFactor;\n"
-        "\n"
-        "void main(void) \n"
-        "{ \n"
-        "  vec4 base = texture2D( baseTexture, texcoord);\n"
-//        "  vec3 L = normalize(gl_LightSource[0].position.xyz);\n"
-//        "  vec4 vDiffuse = gl_FrontLightProduct[0].diffuse * max(dot(N,L), 0.0);\n"
-//        "  vDiffuse = sqrt(clamp(vDiffuse, 0.0, 1.0));\n"
-//        "  vec4 vAmbient = gl_FrontLightProduct[0].ambient;\n"
-//        "  vec4 finalColor = base * (vAmbient + vDiffuse);\n"
-          "  vec4 finalColor = base * gl_FrontLightProduct[0].diffuse;\n"
-          "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
-        "}\n";
-
-    osg::Shader* vertex_shader = new osg::Shader(osg::Shader::VERTEX, vertexShaderSource);
-    program->addShader(vertex_shader);
-    
-    osg::Shader* fragment_shader = new osg::Shader(osg::Shader::FRAGMENT, fragmentShaderSource);
-    program->addShader(fragment_shader);
-   
+        stateset = new osg::StateSet;
+        stateset->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
+        stateset->setRenderBinDetails(RANDOM_OBJECTS_BIN, "DepthSortedBin");
+        if (!program.valid()) {
+            alphaFunc = new AlphaFunc;
+            alphaFunc->setFunction(AlphaFunc::GEQUAL,0.33f);
+            program  = new Program;
+            baseTextureSampler = new osg::Uniform("baseTexture", 0);
+            Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
+            program->addShader(vertex_shader);
+            Shader* fragment_shader = new Shader(Shader::FRAGMENT,
+                                                 fragmentShaderSource);
+            program->addShader(fragment_shader);
+            material = new Material;
+            // Don´t track vertex color
+            material->setColorMode(Material::OFF);
+            material->setAmbient(Material::FRONT_AND_BACK,
+                                 Vec4(.6f, .6f, .6f, 1.0f));
+            material->setDiffuse(Material::FRONT_AND_BACK,
+                                 Vec4(.4f, .4f, .4f, 1.0f));
+        }
+        stateset->setAttributeAndModes(alphaFunc.get());
+        stateset->setAttribute(program.get());
+        stateset->addUniform(baseTextureSampler.get());
+        stateset->setMode(GL_VERTEX_PROGRAM_TWO_SIDE, StateAttribute::ON);
+        stateset->setAttribute(material.get());
+        // XXX This should really come from a material definition
+        // instead of being hard-coded.
+        treeTextureMap.insert(StateSetMap::value_type(firstTree.texture,
+                                                      stateset));
+    } else {
+        stateset = iter->second.get();
+    }
     // Now, create a quadtree for the forest.
-    osg::ref_ptr<osg::Group> _root;
-    ShaderGeometry* leaves[SG_TREE_QUAD_TREE_SIZE][SG_TREE_QUAD_TREE_SIZE];
-
-    // Determine the extents of the tree, and a list of the required textures for later.    
-    osg::BoundingBox extents;
-    for (unsigned int i = 0; i < forest.getNumTrees(); i++)
-    {    
-        const osg::Vec3f center = forest.getTree(i).position.osg() * transform;
-        extents.expandBy(center);
+    {
+        ShaderGeometryQuadtree quadtree(GetTreeCoord(Matrix::inverse(transform)),
+                                        AddTreesLeafObject(),
+                                        SG_TREE_QUAD_TREE_DEPTH,
+                                        MakeTreesLeaf(firstTree.range,
+                                                      shared_geometry));
+        quadtree.buildQuadTree(forest._trees.begin(), forest._trees.end());
+        group = quadtree.getRoot();
     }
-    
-    const osg::Vec2 quadMin(extents.xMin(), extents.yMin());
-    const osg::Vec2 quadMax(extents.xMax(), extents.yMax());
-
-    for (int i = 0; i < SG_TREE_QUAD_TREE_SIZE; ++i) {
-      osg::LOD* interior = new osg::LOD;      
-      //osg::Group* interior = new osg::Group;
-      group->addChild(interior);
-      for (int j = 0; j < SG_TREE_QUAD_TREE_SIZE; ++j) {
-        osg::Geode* geode = new osg::Geode;
-        leaves[i][j] = new ShaderGeometry();
-        leaves[i][j]->setGeometry(shared_geometry);
-        geode->setStateSet(stateset);
-        geode->addDrawable(leaves[i][j]);
-        interior->addChild(geode, 0, firstTree.range);        
-      }
-    }
-    
-    // Now we've got our quadtree, add the trees based on location.
-    
-    for (unsigned int i = 0; i < forest.getNumTrees(); i++)
-    {    
-      TreeBin::Tree t = forest.getTree(i);
-      osg::Vec3 center = t.position.osg() * transform;
-
-      int x = (int)(SG_TREE_QUAD_TREE_SIZE * (center.x() - quadMin.x()) / (quadMax.x() - quadMin.x()));
-      x = osg::clampTo(x, 0, (SG_TREE_QUAD_TREE_SIZE - 1));
-      int y = (int)(SG_TREE_QUAD_TREE_SIZE * (center.y() - quadMin.y()) / (quadMax.y() - quadMin.y()));
-      y = osg::clampTo(y, 0, (SG_TREE_QUAD_TREE_SIZE -1));
-    
-      leaves[y][x]->addTree(t.position.osg(), t.height);
-    }
-    
-    return group;
+    group->setStateSet(stateset);
+    return group.release();    
 }
 
 }

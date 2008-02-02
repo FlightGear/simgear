@@ -16,36 +16,115 @@
 #ifndef SIMGEAR_QUADTREEBUILDER_HXX
 #define SIMGEAR_QUADTREEBUILDER_HXX 1
 
+#include <algorithm>
+#include <functional>
 #include <vector>
+#include <osg/BoundingBox>
 #include <osg/ref_ptr>
 #include <osg/Node>
 #include <osg/Group>
 #include <osg/Matrix>
 #include <osg/Vec2>
 #include <osg/LOD>
-
-#define QUAD_TREE_LEAVES 4
+#include "VectorArrayAdapter.hxx"
 
 namespace simgear
 {
 typedef std::map<osg::ref_ptr<osg::Node>,int> LodMap;
 
 // Create a quad tree based on x, y extents
+template <typename LeafType, typename ObjectType, typename MakeLeaf,
+          typename AddLeafObject, typename GetObjectLocalCoords>
 class QuadTreeBuilder {
 public:
-    QuadTreeBuilder(const osg::Vec2& min, const osg::Vec2& max);
+    QuadTreeBuilder(const GetObjectLocalCoords& getLocalCoords,
+                    const AddLeafObject& addLeafObject, int depth = 2,
+                    const MakeLeaf& makeLeaf = MakeLeaf()) :
+        _root(new osg::Group), _depth(depth),
+        _dimension(1 << depth), _leafStorage(_dimension * _dimension),
+        _leaves(_leafStorage, _dimension), _getLocalCoords(getLocalCoords),
+        _addLeafObject(addLeafObject), _makeLeaf(makeLeaf)
+    {
+        using namespace std;
+        using namespace osg;
+        generate(_leafStorage.begin(), _leafStorage.end(), _makeLeaf);
+        vector<Group*> parentNodes(1);
+        parentNodes[0] = _root.get();
+        unsigned leafDim = 2;
+        for (int i = 0; i < depth - 1;  ++i, leafDim *= 2) {
+            VectorArrayAdapter<vector<Group*> > parents(parentNodes, leafDim / 2);
+            vector<Group*> interiorNodes(leafDim * leafDim);
+            VectorArrayAdapter<vector<Group*> > interiors(interiorNodes, leafDim);
+            for (unsigned j = 0; j < leafDim; ++j) {
+                for (unsigned k = 0; k < leafDim; ++k) {
+                    interiors(j, k) = new Group;
+                    parents(j / 2, k / 2)->addChild(interiors(j, k));
+                }
+            }
+            parentNodes.swap(interiorNodes);
+        }
+        VectorArrayAdapter<vector<Group*> > leafParents(parentNodes,
+                                                        _dimension / 2);
+        for (int j = 0; j < _dimension; ++j)
+            for (int k =0; k < _dimension; ++k)
+                leafParents(j / 2, k / 2)->addChild(_leaves(j, k));
+    }
+    osg::Vec2 getMin() { return _min; }
+    void setMin(const osg::Vec2& min) { _min = min; }
+    osg::Vec2 getMax() { return _max; }
+    void setMax(const osg::Vec2& max) { _max = max; }
     ~QuadTreeBuilder() {}
     osg::Group* getRoot() { return _root.get(); }
-    // Add node to the quadtree using its x, y and LoD
-    void addNode(osg::Node* node, int lod, const osg::Matrix& transform);
+
+    void addNode(ObjectType& obj)
+    {
+        using namespace osg;
+        const Vec3 center(_getLocalCoords(obj));
+        int x = (int)(_dimension * (center.x() - _min.x())
+                      / (_max.x() - _min.x()));
+        x = clampTo(x, 0, (_dimension - 1));
+        int y = (int)(_dimension * (center.y() - _min.y())
+                      / (_max.y() - _min.y()));
+        y = clampTo(y, 0, (_dimension -1));
+        _addLeafObject(_leaves(y, x), obj);
+    }
+    // STL craziness
+    struct AddNode
+    {
+        AddNode(QuadTreeBuilder* qt) : _qt(qt) {}
+        AddNode(const AddNode& rhs) : _qt(rhs._qt) {}
+        void operator() (ObjectType& obj) const { _qt->addNode(obj); }
+        QuadTreeBuilder *_qt;
+    };
     // Make a quadtree of nodes from a map of nodes and LOD values
-    static osg::Group* makeQuadTree(LodMap& nodes,
-                                    const osg::Matrix& transform);
+    template <typename ForwardIterator>
+    void buildQuadTree(const ForwardIterator& begin,
+                       const ForwardIterator& end)
+    {
+        using namespace osg;
+        BoundingBox extents;
+        for (ForwardIterator iter = begin; iter != end; ++iter) {
+            const Vec3 center = _getLocalCoords(*iter);
+            extents.expandBy(center);
+        }
+        _min = Vec2(extents.xMin(), extents.yMin());
+        _max = Vec2(extents.xMax(), extents.yMax());
+        std::for_each(begin, end, AddNode(this));
+    }
+
 protected:
+    typedef std::vector<LeafType> LeafVector;
     osg::ref_ptr<osg::Group> _root;
-    osg::LOD* _leaves[QUAD_TREE_LEAVES][QUAD_TREE_LEAVES];
     osg::Vec2 _min;
     osg::Vec2 _max;
+    int _depth;
+    int _dimension;
+    LeafVector _leafStorage;
+    VectorArrayAdapter<LeafVector> _leaves;
+    const GetObjectLocalCoords _getLocalCoords;
+    const AddLeafObject _addLeafObject;
+    const MakeLeaf _makeLeaf;
 };
+
 }
 #endif

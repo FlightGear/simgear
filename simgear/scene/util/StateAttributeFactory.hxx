@@ -25,7 +25,9 @@
 #include <OpenThreads/Mutex>
 #include <osg/ref_ptr>
 #include <osg/AlphaFunc>
+#include <osg/Array>
 #include <osg/BlendFunc>
+#include <osg/CullFace>
 #include <osg/ShadeModel>
 #include <osg/Texture2D>
 #include <osg/TexEnv>
@@ -45,6 +47,11 @@ public:
     osg::ShadeModel* getFlatShadeModel() { return _flat.get(); }
     // White, repeating texture
     osg::Texture2D* getWhiteTexture() { return _whiteTexture.get(); }
+    // White color
+    osg::Vec4Array* getWhiteColor() {return _white.get(); }
+    // cull back facing polygons
+    osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
+    
     static StateAttributeFactory* instance();
 protected:
     StateAttributeFactory();
@@ -54,6 +61,8 @@ protected:
     osg::ref_ptr<osg::BlendFunc> _standardBlendFunc;
     osg::ref_ptr<osg::TexEnv> _standardTexEnv;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
+    osg::ref_ptr<osg::Vec4Array> _white;
+    osg::ref_ptr<osg::CullFace> _cullFaceBack;
     static osg::ref_ptr<StateAttributeFactory> _theInstance;
     static OpenThreads::Mutex _instanceMutex;
 };

@@ -55,12 +55,10 @@ public:
     { return _trees.size(); }
     const Tree& getTree(unsigned i) const
     { return _trees[i]; }
-
-private:
     TreeList _trees;
 };
 
 osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate);
-osg::Group* createForest(const TreeBin& forest, const osg::Matrix& transform);
+osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform);
 }
 #endif

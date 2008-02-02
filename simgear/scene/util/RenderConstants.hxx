@@ -50,6 +50,10 @@ enum NodeMask {
 //
 // Normal opaque objects are assigned bin 0.
 //
+// Random objects like trees may have transparency, but there are too
+// many to depth sort. By drawing them after the terrain we can at
+// least keep the sky under the ground from poking through.
+//
 // Point lights blend with the terrain to simulate attenuation but
 // should completely obscure any transparent geometry behind
 // them. Also, they should be visible through semi-transparent cloud
@@ -62,6 +66,7 @@ enum NodeMask {
 // OSG and its file loaders throw all transparent objects into bin 10.
 
 enum RenderBin {
+    RANDOM_OBJECTS_BIN = 2,
     POINT_LIGHTS_BIN = 8,
     CLOUDS_BIN = 9,
     TRANSPARENT_BIN = 10        // assigned by OSG

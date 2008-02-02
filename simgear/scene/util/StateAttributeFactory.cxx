@@ -57,6 +57,11 @@ StateAttributeFactory::StateAttributeFactory()
     _whiteTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
     _whiteTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
     _whiteTexture->setDataVariance(osg::Object::STATIC);
+    _white = new Vec4Array(1);
+    (*_white)[0].set(1.0f, 1.0f, 1.0f, 1.0f);
+    _white->setDataVariance(Object::STATIC);
+    _cullFaceBack = new CullFace(CullFace::BACK);
+    _cullFaceBack->setDataVariance(Object::STATIC);
 }
 
 osg::ref_ptr<StateAttributeFactory> StateAttributeFactory::_theInstance;

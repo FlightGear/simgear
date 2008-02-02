@@ -47,7 +47,7 @@ class ShaderGeometry : public osg::Drawable
         ShaderGeometry(const ShaderGeometry& ShaderGeometry,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
             osg::Drawable(ShaderGeometry,copyop) {}
 
-        META_Object(osg,ShaderGeometry);
+        META_Object(flightgear, ShaderGeometry);
         
         typedef std::vector<osg::Vec4> PositionSizeList;
         
@@ -55,7 +55,7 @@ class ShaderGeometry : public osg::Drawable
         virtual osg::BoundingBox computeBound() const;
     
         
-        void setGeometry(osg::Geometry* geometry)
+        void setGeometry(osg::Drawable* geometry)
         {
             _geometry = geometry;
         }
@@ -65,7 +65,7 @@ class ShaderGeometry : public osg::Drawable
             _trees.push_back(osg::Vec4(position, scale));
         }
         
-        osg::ref_ptr<osg::Geometry> _geometry;
+        osg::ref_ptr<osg::Drawable> _geometry;
 
         PositionSizeList _trees;
 

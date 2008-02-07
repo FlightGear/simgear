@@ -64,7 +64,7 @@ using namespace osg;
 namespace simgear
 {
 
-osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
+osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matrix& rotate)
 {
 
     //const osg::Vec3& pos = osg::Vec3(0.0f,0.0f,0.0f),
@@ -87,14 +87,19 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
     v[6].set( cw,0.0f,h);
     v[7].set(-cw,0.0f,h);
 
+    // The texture coordinate range is not the
+    // entire coordinate space - as the texture
+    // has a number of different trees on it.
+    float tx = 1.0f/varieties;
+
     t[0].set(0.0f,0.0f);
-    t[1].set(1.0f,0.0f);
-    t[2].set(1.0f,1.0f);
+    t[1].set(  tx,0.0f);
+    t[2].set(  tx,1.0f);
     t[3].set(0.0f,1.0f);
 
     t[4].set(0.0f,0.0f);
-    t[5].set(1.0f,0.0f);
-    t[6].set(1.0f,1.0f);
+    t[5].set(  tx,0.0f);
+    t[6].set(  tx,1.0f);
     t[7].set(0.0f,1.0f);
 
     // For now the normal is normal to the quad. If we want to get
@@ -122,10 +127,13 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
 }
 
  static char vertexShaderSource[] = 
+    "varying vec2 texcoord;\n"
     "varying float fogFactor;\n"
+    "attribute float textureIndex;\n"
     "\n"
     "void main(void)\n"
     "{\n"
+    "  texcoord = gl_MultiTexCoord0.st + vec2(textureIndex, 0.0);\n" 
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
@@ -135,7 +143,7 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
     " vec4 ambientColor = gl_FrontLightModelProduct.sceneColor + gl_LightSource[0].ambient * gl_FrontMaterial.ambient;\n"
     " gl_FrontColor = ambientColor + gl_LightSource[0].diffuse * vec4(diffuse, 1.0);\n"
     " gl_BackColor = ambientColor + gl_LightSource[0].diffuse * vec4(backDiffuse, 1.0)\n;"
-    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+//    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
     " float fogCoord = abs(ecPosition.z);\n"
     "  fogFactor = exp( -gl_Fog.density * gl_Fog.density * fogCoord * fogCoord);\n"
     "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
@@ -143,13 +151,14 @@ osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate)
 
 static char fragmentShaderSource[] = 
     "uniform sampler2D baseTexture; \n"
+    "varying vec2 texcoord;\n"
 //        "varying vec3 N;\n"
 //        "varying vec3 v;\n"
     "varying float fogFactor;\n"
     "\n"
     "void main(void) \n"
     "{ \n"
-    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
+    "  vec4 base = texture2D( baseTexture, texcoord);\n"
     
     "  vec4 finalColor = base * gl_Color;\n"
     "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
@@ -164,22 +173,23 @@ namespace
 {
 struct MakeTreesLeaf
 {
-    MakeTreesLeaf(float range, Geometry* geometry) :
-        _range(range), _geometry(geometry)
+    MakeTreesLeaf(float range, Geometry* geometry, int varieties) :
+        _range(range), _geometry(geometry), _varieties(varieties)
     {}
     MakeTreesLeaf(const MakeTreesLeaf& rhs) :
-        _range(rhs._range), _geometry(rhs._geometry) {}
+        _range(rhs._range), _geometry(rhs._geometry), _varieties(rhs._varieties) {}
     LOD* operator() () const
     {
         LOD* result = new LOD;
         Geode* geode = new Geode;
-        ShaderGeometry* sg = new ShaderGeometry;
+        ShaderGeometry* sg = new ShaderGeometry(_varieties);
         sg->setGeometry(_geometry);
         geode->addDrawable(sg);
         result->addChild(geode, 0, _range);
         return result;
     }
     float _range;
+    int _varieties;
     Geometry* _geometry;
 };
 
@@ -190,7 +200,7 @@ struct AddTreesLeafObject
         Geode* geode = static_cast<Geode*>(lod->getChild(0));
         ShaderGeometry* sg
             = static_cast<ShaderGeometry*>(geode->getDrawable(0));
-        sg->addTree(tree.position.osg(), tree.height);
+        sg->addTree(tree);
     }
 };
 
@@ -212,22 +222,20 @@ typedef QuadTreeBuilder<LOD*, TreeBin::Tree, MakeTreesLeaf, AddTreesLeafObject,
 osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
 {
     // Set up some shared structures. 
-    // FIXME: Currently we only take the texture, height and width of the first tree in the forest. In the future
-    // we should be able to handle multiple textures etc.    
-    TreeBin::Tree firstTree = forest.getTree(0);
-    
-    osg::Geometry* shared_geometry = createOrthQuads(firstTree.width, 
-                                                     firstTree.height, 
+    osg::Geometry* shared_geometry = createOrthQuads(forest.width, 
+                                                     forest.height, 
+                                                     forest.texture_varieties,
                                                      transform);
+
     ref_ptr<Group> group;
 
     osg::StateSet* stateset = 0;
-    StateSetMap::iterator iter = treeTextureMap.find(firstTree.texture);
+    StateSetMap::iterator iter = treeTextureMap.find(forest.texture);
     if (iter == treeTextureMap.end()) {
         osg::Texture2D *tex = new osg::Texture2D;
         tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
         tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
-        tex->setImage(osgDB::readImageFile(firstTree.texture));
+        tex->setImage(osgDB::readImageFile(forest.texture));
 
         static ref_ptr<AlphaFunc> alphaFunc;
         static ref_ptr<Program> program;
@@ -244,6 +252,8 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
             program->addShader(vertex_shader);
+            program->addBindAttribLocation("textureIndex", 1);
+
             Shader* fragment_shader = new Shader(Shader::FRAGMENT,
                                                  fragmentShaderSource);
             program->addShader(fragment_shader);
@@ -260,9 +270,8 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
         stateset->addUniform(baseTextureSampler.get());
         stateset->setMode(GL_VERTEX_PROGRAM_TWO_SIDE, StateAttribute::ON);
         stateset->setAttribute(material.get());
-        // XXX This should really come from a material definition
-        // instead of being hard-coded.
-        treeTextureMap.insert(StateSetMap::value_type(firstTree.texture,
+
+        treeTextureMap.insert(StateSetMap::value_type(forest.texture,
                                                       stateset));
     } else {
         stateset = iter->second.get();
@@ -272,8 +281,9 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
         ShaderGeometryQuadtree quadtree(GetTreeCoord(Matrix::inverse(transform)),
                                         AddTreesLeafObject(),
                                         SG_TREE_QUAD_TREE_DEPTH,
-                                        MakeTreesLeaf(firstTree.range,
-                                                      shared_geometry));
+                                        MakeTreesLeaf(forest.range,
+                                                      shared_geometry,
+                                                      forest.texture_varieties));
         quadtree.buildQuadTree(forest._trees.begin(), forest._trees.end());
         group = quadtree.getRoot();
     }

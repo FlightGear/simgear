@@ -133,7 +133,7 @@ struct SGTileGeometryBin {
       std::string materialName = obj.get_pt_materials()[grp];
       SGMaterial* material = matlib->find(materialName);
       SGVec4f color = getMaterialLightColor(material);
-      
+
       if (3 <= materialName.size() && materialName.substr(0, 3) != "RWY") {
         // Just plain lights. Not something for the runway.
         addPointGeometry(tileLights, obj.get_wgs84_nodes(), color,
@@ -454,11 +454,11 @@ struct SGTileGeometryBin {
   void computeRandomForest(SGMaterialLib* matlib)
   {
     SGMaterialTriangleMap::iterator i;
-        
+
     // generate a repeatable random seed
     mt seed;
     mt_init(&seed, unsigned(586));
-    
+
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       SGMaterial *mat = matlib->find(i->first);
       if (!mat)
@@ -467,24 +467,32 @@ struct SGTileGeometryBin {
       float coverage = mat->get_tree_coverage();
       if (coverage <= 0)
         continue;
-        
-      vector<string> textures = mat->get_tree_textures();
-      
+
+      // Attributes that don't vary by tree
+      randomForest.texture = mat->get_tree_texture();
+      randomForest.range   = mat->get_tree_range();
+      randomForest.width   = mat->get_tree_width();
+      randomForest.height  = mat->get_tree_height();
+      randomForest.texture_varieties = mat->get_tree_varieties();
+
       std::vector<SGVec3f> randomPoints;
       i->second.addRandomSurfacePoints(coverage, 0, randomPoints);
       std::vector<SGVec3f>::iterator j;
-      for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {      
-        int k = (int)(mt_rand(&seed) * textures.size());        
-        if (k == textures.size()) k--;         
-        randomForest.insert(*j, textures[k], mat->get_tree_height(), mat->get_tree_width(), mat->get_tree_range());
+      for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
+
+        // Apply a random scaling factor and texture index.
+        float scale = (mt_rand(&seed) + mt_rand(&seed)) / 2.0f + 0.5f;
+        int v = (int) (mt_rand(&seed) * mat->get_tree_varieties());
+        if (v == mat->get_tree_varieties()) v--;         
+        randomForest.insert(*j, v, scale);
       }
     }
   }
-  
+
   void computeRandomObjects(SGMaterialLib* matlib)
   {
     SGMaterialTriangleMap::iterator i;
-    
+
     // generate a repeatable random seed
     mt seed;
     mt_init(&seed, unsigned(123));
@@ -493,23 +501,23 @@ struct SGTileGeometryBin {
       SGMaterial *mat = matlib->find(i->first);
       if (!mat)
         continue;
-      
+
       int group_count = mat->get_object_group_count();
-      
+
       if (group_count > 0)
-      {      
+      {
         for (int j = 0; j < group_count; j++)
-        {      
+        {
           SGMatModelGroup *object_group =  mat->get_object_group(j);
           int nObjects = object_group->get_object_count();
-          
+
           if (nObjects > 0)
           {
             // For each of the random models in the group, determine an appropriate
             // number of random placements and insert them.
             for (int k = 0; k < nObjects; k++) {
               SGMatModel * object = object_group->get_object(k);
-              
+
               std::vector<SGVec3f> randomPoints;
 
               i->second.addRandomPoints(object->get_coverage_m2(), randomPoints);
@@ -559,7 +567,7 @@ typedef QuadTreeBuilder<osg::LOD*, ModelLOD, MakeQuadLeaf, AddModelLOD,
                         GetModelLODCoord>  RandomObjectsQuadtree;
 
 osg::Node*
-SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects)
+SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects, bool use_random_vegetation)
 {
   SGBinObject tile;
   if (!tile.read_bin(path))
@@ -579,13 +587,13 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   osg::ref_ptr<osg::Group> randomObjects;
   osg::ref_ptr<osg::Group> randomForest;
   osg::Group* terrainGroup = new osg::Group;
-  
+
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
   if (node)
     terrainGroup->addChild(node);
-    
+
   if (use_random_objects) {
-  
+
     // Simple matrix for used for flipping models that have been oriented
     // with the center of the tile but upside down.
     static const osg::Matrix flip(1,  0,  0, 0,
@@ -618,7 +626,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
         // heading rotation if appropriate.
         osg::Matrix mPos = osg::Matrix::translate(obj.position.osg());        
         osg::MatrixTransform* position;
-        
+
         if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
           // Rotate the object around the z axis.
           double hdg = mt_rand(&seed) * M_PI * 2;
@@ -631,7 +639,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
           position = new osg::MatrixTransform(mAtt * mPos);
         }
 
-        position->addChild(node);        
+        position->addChild(node);
         models.push_back(ModelLOD(position, obj.lod));
       }
       RandomObjectsQuadtree quadtree((GetModelLODCoord(world2Tile)),
@@ -640,13 +648,16 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       randomObjects = quadtree.getRoot();
       randomObjects->setName("random objects");
     }
-      
-    // Now add some random forest.
-    tileGeometryBin.computeRandomForest(matlib);
-    
-    if (tileGeometryBin.randomForest.getNumTrees() > 0) {
-      randomForest = createForest(tileGeometryBin.randomForest, mAtt);
-      randomForest->setName("random trees");      
+
+    if (use_random_vegetation)
+    {
+      // Now add some random forest.
+      tileGeometryBin.computeRandomForest(matlib);
+
+      if (tileGeometryBin.randomForest.getNumTrees() > 0) {
+        randomForest = createForest(tileGeometryBin.randomForest, mAtt);
+        randomForest->setName("random trees");
+      }
     } 
   }
 

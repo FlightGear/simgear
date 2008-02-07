@@ -177,11 +177,18 @@ public:
   inline double get_tree_range () const { return tree_range; }
   
   /**
-   * Get the list of textures to use for trees in the forest
+   * Get the number of tree varieties available
    *
-   * @return the vector of forest textures to use.
+   * @return the number of different trees defined in the texture strip
    */
-  inline vector<string> get_tree_textures () const { return  tree_textures; }
+  inline int get_tree_varieties () const { return tree_varieties; }
+  
+  /**
+   * Get the texture strip to use for trees
+   *
+   * @return the texture to use for trees.
+   */
+  inline string get_tree_texture () const { return  tree_texture; }
 
   /**
    * Return if the surface material is solid, if it is not solid, a fluid
@@ -309,6 +316,9 @@ private:
   // Width of the tree
   double tree_width;
 
+  // Number of varieties of tree texture
+  int tree_varieties;
+
   // True if the material is solid, false if it is a fluid
   bool solid;
 
@@ -336,8 +346,8 @@ private:
   // taxiway-/runway-sign texture elements
   map<string, SGSharedPtr<SGMaterialGlyph> > glyphs;
   
-  // The list of forest textures, used when creating trees
-  vector<string> tree_textures;
+  // Tree texture, typically a strip of applicable tree textures
+  string tree_texture;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.

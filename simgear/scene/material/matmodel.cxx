@@ -263,7 +263,4 @@ SGMatModelGroup::get_object (int index) const
   return _objects[index];
 }
 
-
-
-
 // end of matmodel.cxx

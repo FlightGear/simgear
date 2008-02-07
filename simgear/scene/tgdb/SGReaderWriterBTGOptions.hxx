@@ -24,14 +24,17 @@ public:
     SGReaderWriterBTGOptions() {}
     SGReaderWriterBTGOptions(const std::string& str):
         osgDB::ReaderWriter::Options(str),
-        _matlib(0), _calcLights(false), _useRandomObjects(false)
+        _matlib(0), _calcLights(false),
+        _useRandomObjects(false),
+        _useRandomVegetation(false)
     {}
     
     SGReaderWriterBTGOptions(const SGReaderWriterBTGOptions& options,
             const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
         osgDB::ReaderWriter::Options(options, copyop),
         _matlib(options._matlib), _calcLights(options._calcLights),
-        _useRandomObjects(options._useRandomObjects)
+        _useRandomObjects(options._useRandomObjects),
+        _useRandomVegetation(options._useRandomVegetation)
     {
     }
     SGMaterialLib* getMatlib() const { return _matlib; }
@@ -39,15 +42,21 @@ public:
     bool getCalcLights() const { return _calcLights; }
     void setCalcLights(bool calcLights)  { _calcLights = calcLights; }
     bool getUseRandomObjects() const { return _useRandomObjects; }
+    bool getUseRandomVegetation() const { return _useRandomVegetation; }
     void setUseRandomObjects(bool useRandomObjects)
     {
         _useRandomObjects = useRandomObjects;
     }
+    void setUseRandomVegetation(bool useRandomVegetation)
+    {
+        _useRandomVegetation = useRandomVegetation;
+    }
+
 protected:
     virtual ~SGReaderWriterBTGOptions() {}
     SGMaterialLib* _matlib;
     bool _calcLights;
     bool _useRandomObjects;
-
+    bool _useRandomVegetation;
 };
 #endif

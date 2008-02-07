@@ -54,15 +54,18 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
     SGMaterialLib* matlib = 0;
     bool calcLights = false;
     bool useRandomObjects = false;
+    bool useRandomVegetation = false;
     const SGReaderWriterBTGOptions* btgOptions
         = dynamic_cast<const SGReaderWriterBTGOptions*>(options);
     if (btgOptions) {
         matlib = btgOptions->getMatlib();
         calcLights = btgOptions->getCalcLights();
         useRandomObjects = btgOptions->getUseRandomObjects();
+        useRandomVegetation = btgOptions->getUseRandomVegetation();
     }
     osg::Node* result = SGLoadBTG(fileName, matlib, calcLights,
-                                  useRandomObjects);
+                                  useRandomObjects,
+                                  useRandomVegetation);
     if (result)
         return result;
     else

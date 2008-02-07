@@ -145,6 +145,11 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   tree_height = props->getDoubleValue("tree-height-m", 0.0);
   tree_width = props->getDoubleValue("tree-width-m", 0.0);
   tree_range = props->getDoubleValue("tree-range-m", 0.0);
+  tree_varieties = props->getIntValue("tree-varieties", 1);
+
+  SGPath tpath( fg_root );
+  tpath.append(props->getStringValue("tree-texture"));
+  tree_texture = tpath.str();
 
   // surface values for use with ground reactions
   solid = props->getBoolValue("solid", true);
@@ -180,14 +185,6 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
     ((SGPropertyNode *)props)->getChildren("object-group");
   for (unsigned int i = 0; i < object_group_nodes.size(); i++)
     object_groups.push_back(new SGMatModelGroup(object_group_nodes[i]));
-
-  vector<SGPropertyNode_ptr> tree_texture_nodes =
-    ((SGPropertyNode *)props)->getChildren("tree-texture");
-  for (unsigned int i = 0; i < tree_texture_nodes.size(); i++) {
-    SGPath tpath( fg_root );
-    tpath.append(tree_texture_nodes[i]->getStringValue());
-    tree_textures.push_back(tpath.str());
-  }
 
   // read glyph table for taxi-/runway-signs
   vector<SGPropertyNode_ptr> glyph_nodes = props->getChildren("glyph");

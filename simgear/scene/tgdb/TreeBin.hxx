@@ -23,33 +23,39 @@
 #define TREE_BIN_HXX
 
 #include <vector>
+#include <string>
 
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/Matrix>
 
-#include <simgear/math/SGVec3.hxx>
+#include <simgear/math/SGMath.hxx>
 
 namespace simgear
 {
 class TreeBin {
 public:
-    struct Tree {
-        Tree(const SGVec3f& p, string t, float h, float w, double r) :
-            position(p), texture(t), height(h), width(w), range(r)
-        { }
-        SGVec3f position;
-        string texture;
-        float height;
-        float width;
-        double range;
-    };
+  struct Tree {
+    Tree(const SGVec3f& p, int t, float s) :
+      position(p), texture_index(t), scale(s)
+    { }
+    SGVec3f position;
+    int texture_index;
+    float scale;
+  };
+
     typedef std::vector<Tree> TreeList;
+
+    int texture_varieties;
+    double range;
+    float height;
+    float width;
+    std::string texture;
 
     void insert(const Tree& t)
     { _trees.push_back(t); }
-    void insert(const SGVec3f& p, string t, float h, float w, double r)
-    { insert(Tree(p, t, h, w, r)); }
+    void insert(const SGVec3f& p, int t, float s)
+    { insert(Tree(p, t, s)); }
 
     unsigned getNumTrees() const
     { return _trees.size(); }

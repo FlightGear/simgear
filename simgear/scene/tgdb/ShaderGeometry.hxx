@@ -32,6 +32,8 @@
 #include <osg/Vec3>
 #include <osg/Vec4>
 
+#include "TreeBin.hxx"
+
 namespace simgear
 {
 
@@ -39,6 +41,12 @@ class ShaderGeometry : public osg::Drawable
 {
     public:
         ShaderGeometry()
+        { 
+          setUseDisplayList(false); 
+        }
+
+        ShaderGeometry(int v) :
+          varieties(v)
         { 
           setUseDisplayList(false); 
         }
@@ -60,14 +68,15 @@ class ShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-    void addTree(const osg::Vec3& position, float scale)
+        void addTree(TreeBin::Tree tree)
         {
-            _trees.push_back(osg::Vec4(position, scale));
+            _trees.push_back(tree);
         }
         
         osg::ref_ptr<osg::Drawable> _geometry;
 
-        PositionSizeList _trees;
+        TreeBin::TreeList _trees;
+        int varieties;
 
     protected:
     

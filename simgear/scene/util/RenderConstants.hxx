@@ -51,8 +51,8 @@ enum NodeMask {
 // Normal opaque objects are assigned bin 0.
 //
 // Random objects like trees may have transparency, but there are too
-// many to depth sort. By drawing them after the terrain we can at
-// least keep the sky under the ground from poking through.
+// many to depth sort individually. By drawing them after the terrain
+// we can at least keep the sky under the ground from poking through.
 //
 // Point lights blend with the terrain to simulate attenuation but
 // should completely obscure any transparent geometry behind

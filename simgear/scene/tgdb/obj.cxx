@@ -592,7 +592,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (node)
     terrainGroup->addChild(node);
 
-  if (use_random_objects) {
+  if (use_random_objects || use_random_vegetation) {
 
     // Simple matrix for used for flipping models that have been oriented
     // with the center of the tile but upside down.
@@ -608,49 +608,47 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     osg::Matrix mAtt = flip * osg::Matrix::rotate(hlOr.osg());
     // The inverse goes from world coordinates to Z up tile coordinates.
     osg::Matrix world2Tile(osg::Matrix(hlOr.osg().conj()) * flip);
-  
-    tileGeometryBin.computeRandomObjects(matlib);
+
+    if (use_random_objects) {
+      tileGeometryBin.computeRandomObjects(matlib);
     
-    if (tileGeometryBin.randomModels.getNumModels() > 0) {
-      // Generate a repeatable random seed
-      mt seed;
-      mt_init(&seed, unsigned(123));
+      if (tileGeometryBin.randomModels.getNumModels() > 0) {
+        // Generate a repeatable random seed
+        mt seed;
+        mt_init(&seed, unsigned(123));
 
-      std::vector<ModelLOD> models;
-      for (unsigned int i = 0; i < tileGeometryBin.randomModels.getNumModels(); i++) {
-        SGMatModelBin::MatModel obj = tileGeometryBin.randomModels.getMatModel(i);
-        osg::Node* node = sgGetRandomModel(obj.model);
+        std::vector<ModelLOD> models;
+        for (unsigned int i = 0;
+             i < tileGeometryBin.randomModels.getNumModels(); i++) {
+          SGMatModelBin::MatModel obj
+            = tileGeometryBin.randomModels.getMatModel(i);
+          osg::Node* node = sgGetRandomModel(obj.model);
         
-        // Create a matrix to place the object in the correct location, and then
-        // apply the rotation matrix created above, with an additional random
-        // heading rotation if appropriate.
-        osg::Matrix mPos = osg::Matrix::translate(obj.position.osg());        
-        osg::MatrixTransform* position;
-
-        if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
-          // Rotate the object around the z axis.
-          double hdg = mt_rand(&seed) * M_PI * 2;
-          osg::Matrix rot(cos(hdg), -sin(hdg), 0, 0,
-                          sin(hdg),  cos(hdg), 0, 0,
-                          0,         0, 1, 0,
-                          0,         0, 0, 1);     
-          position = new osg::MatrixTransform(rot * mAtt * mPos);
-        } else {
-          position = new osg::MatrixTransform(mAtt * mPos);
+          // Create a matrix to place the object in the correct
+          // location, and then apply the rotation matrix created
+          // above, with an additional random heading rotation if appropriate.
+          osg::Matrix transformMat(mAtt);
+          transformMat.postMult(osg::Matrix::translate(obj.position.osg()));
+          if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
+            // Rotate the object around the z axis.
+            double hdg = mt_rand(&seed) * M_PI * 2;
+            transformMat.preMult(osg::Matrix::rotate(hdg,
+                                                     osg::Vec3d(0.0, 0.0, 1.0)));
+          }
+          osg::MatrixTransform* position =
+            new osg::MatrixTransform(transformMat);
+          position->addChild(node);
+          models.push_back(ModelLOD(position, obj.lod));
         }
-
-        position->addChild(node);
-        models.push_back(ModelLOD(position, obj.lod));
+        RandomObjectsQuadtree quadtree((GetModelLODCoord(world2Tile)),
+                                       (AddModelLOD()));
+        quadtree.buildQuadTree(models.begin(), models.end());
+        randomObjects = quadtree.getRoot();
+        randomObjects->setName("random objects");
       }
-      RandomObjectsQuadtree quadtree((GetModelLODCoord(world2Tile)),
-                                     (AddModelLOD()));
-      quadtree.buildQuadTree(models.begin(), models.end());
-      randomObjects = quadtree.getRoot();
-      randomObjects->setName("random objects");
     }
 
-    if (use_random_vegetation)
-    {
+    if (use_random_vegetation) {
       // Now add some random forest.
       tileGeometryBin.computeRandomForest(matlib);
 

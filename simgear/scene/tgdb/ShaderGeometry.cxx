@@ -22,7 +22,6 @@
 #include <osgDB/Registry>
 #include <osgDB/Input>
 #include <osgDB/ParameterOutput>
-#include <simgear/screen/extensions.hxx>
 
 #include "ShaderGeometry.hxx"
 

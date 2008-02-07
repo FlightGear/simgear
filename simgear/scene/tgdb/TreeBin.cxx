@@ -133,7 +133,7 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
     "\n"
     "void main(void)\n"
     "{\n"
-    "  texcoord = gl_MultiTexCoord0.st + vec2(textureIndex, 0.0);\n" 
+    "  texcoord = gl_MultiTexCoord0.st + vec2(textureIndex, 0.0);\n"
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
@@ -261,9 +261,9 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             // Don´t track vertex color
             material->setColorMode(Material::OFF);
             material->setAmbient(Material::FRONT_AND_BACK,
-                                 Vec4(.6f, .6f, .6f, 1.0f));
+                                 Vec4(.8f, .8f, .8f, 1.0f));
             material->setDiffuse(Material::FRONT_AND_BACK,
-                                 Vec4(.4f, .4f, .4f, 1.0f));
+                                 Vec4(.2f, .2f, .2f, 1.0f));
         }
         stateset->setAttributeAndModes(alphaFunc.get());
         stateset->setAttribute(program.get());

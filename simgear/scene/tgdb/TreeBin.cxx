@@ -127,13 +127,12 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
 }
 
  static char vertexShaderSource[] = 
-    "varying vec2 texcoord;\n"
     "varying float fogFactor;\n"
     "attribute float textureIndex;\n"
     "\n"
     "void main(void)\n"
     "{\n"
-    "  texcoord = gl_MultiTexCoord0.st + vec2(textureIndex, 0.0);\n"
+    "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndex, 0.0, 0.0, 0.0);\n"
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
@@ -151,15 +150,11 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
 
 static char fragmentShaderSource[] = 
     "uniform sampler2D baseTexture; \n"
-    "varying vec2 texcoord;\n"
-//        "varying vec3 N;\n"
-//        "varying vec3 v;\n"
     "varying float fogFactor;\n"
     "\n"
     "void main(void) \n"
     "{ \n"
-    "  vec4 base = texture2D( baseTexture, texcoord);\n"
-    
+    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
     "  vec4 finalColor = base * gl_Color;\n"
     "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
     "}\n";

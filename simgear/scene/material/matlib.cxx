@@ -63,6 +63,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/props/condition.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 
 #include "mat.hxx"
@@ -77,8 +78,9 @@ SGMaterialLib::SGMaterialLib ( void ) {
 }
 
 // Load a library of material properties
-bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char *season ) {
-
+bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char *season,
+        SGPropertyNode *prop_root )
+{
     SGPropertyNode materials;
 
     SG_LOG( SG_INPUT, SG_INFO, "Reading materials from " << mpath );
@@ -92,8 +94,18 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
 
     int nMaterials = materials.nChildren();
     for (int i = 0; i < nMaterials; i++) {
-        const SGPropertyNode * node = materials.getChild(i);
+        const SGPropertyNode *node = materials.getChild(i);
         if (!strcmp(node->getName(), "material")) {
+            const SGPropertyNode *conditionNode = node->getChild("condition");
+            if (conditionNode) {
+                SGSharedPtr<const SGCondition> condition = sgReadCondition(prop_root, conditionNode);
+                if (!condition->test()) {
+                    SG_LOG(SG_INPUT, SG_DEBUG, "Skipping material entry #"
+                        << i << " (condition false)");
+                    continue;
+                }
+            }
+
             SGSharedPtr<SGMaterial> m = new SGMaterial(fg_root, node, season);
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");

@@ -41,6 +41,7 @@
 #include <osg/StateSet>
 
 class SGMaterial;
+class SGPropertyNode;
 
 SG_USING_STD(string);
 SG_USING_STD(map);
@@ -65,7 +66,8 @@ public:
     SGMaterialLib ( void );
 
     // Load a library of material properties
-    bool load( const string &fg_root, const string& mpath, const char *season );
+    bool load( const string &fg_root, const string& mpath, const char *season,
+            SGPropertyNode *prop_root );
 
     // Add the named texture with default properties
     bool add_item( const string &tex_path );

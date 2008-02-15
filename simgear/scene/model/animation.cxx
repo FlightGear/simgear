@@ -186,7 +186,7 @@ read_offset_factor(const SGPropertyNode* configNode, SGExpressiond* expr,
   return expr;
 }
 
-static SGExpressiond*
+SGExpressiond*
 read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax)
 {

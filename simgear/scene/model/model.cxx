@@ -33,6 +33,7 @@
 
 #include "animation.hxx"
 #include "model.hxx"
+#include "particles.hxx"
 
 SG_USING_STD(vector);
 
@@ -248,6 +249,22 @@ sgLoad3DModel( const string &fg_root, const string &path,
             panel->setName((char *)panel_nodes[i]->getStringValue("name"));
         alignmainmodel->addChild(panel.get());
     }
+  }
+
+  std::vector<SGPropertyNode_ptr> particle_nodes;
+  particle_nodes = props.getChildren("particlesystem");
+  for (unsigned i = 0; i < particle_nodes.size(); ++i)
+  {
+    if(i==0)
+    {
+      if (texturepath.extension() != "")
+          texturepath = texturepath.dir();
+
+      options->setDatabasePath(texturepath.str());
+      if (!externalTexturePath.str().empty())
+          options->getDatabasePathList().push_back(externalTexturePath.str());
+    }
+    alignmainmodel.get()->addChild(SGParticles::appendParticles(particle_nodes[i], prop_root, options.get()));
   }
 
   if (data) {

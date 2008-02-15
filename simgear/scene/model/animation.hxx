@@ -31,6 +31,9 @@
 #undef max
 #endif
 
+SGExpressiond*
+read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
+           const char* unit, double defMin, double defMax);
 
 //////////////////////////////////////////////////////////////////////
 // Base class for animation installers

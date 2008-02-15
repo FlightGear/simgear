@@ -37,6 +37,8 @@
 
 SG_USING_STD(vector);
 
+using namespace simgear;
+
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
                 const osgDB::ReaderWriter::Options* options,
@@ -264,7 +266,9 @@ sgLoad3DModel( const string &fg_root, const string &path,
       if (!externalTexturePath.str().empty())
           options->getDatabasePathList().push_back(externalTexturePath.str());
     }
-    alignmainmodel.get()->addChild(SGParticles::appendParticles(particle_nodes[i], prop_root, options.get()));
+    alignmainmodel.get()->addChild(Particles::appendParticles(particle_nodes[i],
+                                                              prop_root,
+                                                              options.get()));
   }
 
   if (data) {

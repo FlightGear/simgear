@@ -1,5 +1,21 @@
 // particles.cxx - classes to manage particles
 // started in 2008 by Tiago Gusmão, using animation.hxx as reference
+// Copyright (C) 2008 Tiago Gusmão
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -23,15 +39,52 @@
 
 #include "particles.hxx"
 
+namespace simgear
+{
+void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    SGQuatd q
+        = SGQuatd::fromLonLatDeg(modelRoot->getFloatValue("/position/longitude-deg",0),
+                                 modelRoot->getFloatValue("/position/latitude-deg",0));
+    osg::Matrix om(q.osg());
+    osg::Vec3 v(0,0,9.81);
+    gravity = om.preMult(v);
+
+    osg::Vec3 w(-modelRoot->getFloatValue("/environment/wind-from-north-fps",0) * SG_FEET_TO_METER, 
+                -modelRoot->getFloatValue("/environment/wind-from-east-fps",0) * SG_FEET_TO_METER, 0);
+    wind = om.preMult(w);
+
+    //SG_LOG(SG_GENERAL, SG_ALERT, "wind vector:"<<w[0]<<","<<w[1]<<","<<w[2]<<"\n");
+}
+
+
 //static members
-osg::Vec3 SGGlobalParticleCallback::gravity;
-osg::Vec3 SGGlobalParticleCallback::wind;
+osg::Vec3 GlobalParticleCallback::gravity;
+osg::Vec3 GlobalParticleCallback::wind;
 
-osg::ref_ptr<osg::Group> SGParticles::commonRoot;
-osg::ref_ptr<osgParticle::ParticleSystemUpdater> SGParticles::psu = new osgParticle::ParticleSystemUpdater;
-osg::ref_ptr<osg::Geode> SGParticles::commonGeode = new osg::Geode;;
+osg::ref_ptr<osg::Group> Particles::commonRoot;
+osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
+osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;;
 
-osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options)
+template <typename Object>
+class PointerGuard{
+public:
+    PointerGuard() : _ptr(0) {}
+    Object* get() { return _ptr; }
+    Object* operator () ()
+    {
+        if (!_ptr)
+            _ptr = new Object;
+        return _ptr;
+    }
+private:
+    Object* _ptr;
+};
+
+osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
+                                          SGPropertyNode* modelRoot,
+                                          const osgDB::ReaderWriter::Options*
+                                          options)
 {
     SG_LOG(SG_GENERAL, SG_DEBUG, "Setting up a particle system!\n");
 
@@ -39,20 +92,22 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
     //create a generic particle system
     std::string type = configNode->getStringValue("type", "normal");
-    if (type == "normal")particleSys= new osgParticle::ParticleSystem;
-    else particleSys= new osgParticle::ConnectedParticleSystem;
-    SGParticles *callback=NULL;  //may not be used depending on the configuration
+    if (type == "normal")
+        particleSys = new osgParticle::ParticleSystem;
+    else
+        particleSys = new osgParticle::ConnectedParticleSystem;
+    //may not be used depending on the configuration
+    PointerGuard<Particles> callback;
 
     getPSU()->addParticleSystem(particleSys); 
-
-    getPSU()->setUpdateCallback(new SGGlobalParticleCallback(modelRoot));
-
+    getPSU()->setUpdateCallback(new GlobalParticleCallback(modelRoot));
     //contains counter, placer and shooter by default
-    osgParticle::ModularEmitter *emitter = new osgParticle::ModularEmitter;
+    osgParticle::ModularEmitter* emitter = new osgParticle::ModularEmitter;
 
     emitter->setParticleSystem(particleSys);
 
     // Set up the alignment node ("stolen" from animation.cxx)
+    // XXX Order of rotations is probably not correct.
     osg::MatrixTransform *align = new osg::MatrixTransform;
     osg::Matrix res_matrix;
     res_matrix.makeRotate(
@@ -65,58 +120,62 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
     osg::Matrix tmat;
     tmat.makeTranslate(configNode->getFloatValue("offsets/x-m", 0.0),
-        configNode->getFloatValue("offsets/y-m", 0.0),
-        configNode->getFloatValue("offsets/z-m", 0.0));
-    align->setMatrix(res_matrix*tmat);
+                       configNode->getFloatValue("offsets/y-m", 0.0),
+                       configNode->getFloatValue("offsets/z-m", 0.0));
+    align->setMatrix(res_matrix * tmat);
 
     align->setName("particle align");
 
-    //if(dynamic_cast<CustomModularEmitter*>(emitter)==0) SG_LOG(SG_GENERAL, SG_ALERT, "observer error\n");
+    //if (dynamic_cast<CustomModularEmitter*>(emitter)==0) SG_LOG(SG_GENERAL, SG_ALERT, "observer error\n");
     //align->addObserver(dynamic_cast<CustomModularEmitter*>(emitter));
 
     align->addChild(emitter);
 
     //this name can be used in the XML animation as if it was a submodel
     std::string name = configNode->getStringValue("name", "");
-    if(!name.empty()) align->setName(name);
-
+    if (!name.empty())
+        align->setName(name);
     std::string attach = configNode->getStringValue("attach", "world");
-
     if (attach == "local") { //local means attached to the model and not the world
-        osg::Geode *g = new osg::Geode;
+        osg::Geode* g = new osg::Geode;
         align->addChild(g);
         g->addDrawable(particleSys);
         emitter->setReferenceFrame(osgParticle::Emitter::ABSOLUTE_RF);
-    } else 
+    } else {
         getCommonGeode()->addDrawable(particleSys);
-
+    }
     std::string textureFile;
-
-    if(configNode->hasValue("texture")) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "requested:"<<configNode->getStringValue("texture","")<<"\n");
-        textureFile= osgDB::findFileInPath(configNode->getStringValue("texture",""),
-            options->getDatabasePathList());
+    if (configNode->hasValue("texture")) {
+        SG_LOG(SG_GENERAL, SG_ALERT,
+               "requested:"<<configNode->getStringValue("texture","")<<"\n");
+        textureFile= osgDB::findFileInPath(configNode->getStringValue("texture",
+                                                                      ""),
+                                           options->getDatabasePathList());
         SG_LOG(SG_GENERAL, SG_ALERT, "found:"<<textureFile<<"\n");
 
-        for(int i=0;i<options->getDatabasePathList().size();++i)
-            SG_LOG(SG_GENERAL, SG_ALERT, "opts:"<<options->getDatabasePathList()[i]<<"\n");
+        for(int i = 0; i < options->getDatabasePathList().size(); ++i)
+            SG_LOG(SG_GENERAL, SG_ALERT,
+                   "opts:"<<options->getDatabasePathList()[i]<<"\n");
 
     }
 
-    if(textureFile.empty())
+    if (textureFile.empty())
         textureFile="";
 
-    particleSys->setDefaultAttributes(textureFile,configNode->getBoolValue("emissive", true),
-        configNode->getBoolValue("lighting", false));
+    particleSys->setDefaultAttributes(textureFile,
+                                      configNode->getBoolValue("emissive",
+                                                               true),
+                                      configNode->getBoolValue("lighting",
+                                                               false));
 
-    std::string alignstr = configNode->getStringValue("align","billboard");
+    std::string alignstr = configNode->getStringValue("align", "billboard");
 
-    if(alignstr == "fixed")
+    if (alignstr == "fixed")
         particleSys->setParticleAlignment(osgParticle::ParticleSystem::FIXED);
 
     const SGPropertyNode* placernode = configNode->getChild("placer");
 
-    if(placernode) {
+    if (placernode) {
         std::string emitterType = placernode->getStringValue("type", "point");
 
         if (emitterType == "sector") {
@@ -125,17 +184,20 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
             minRadius = placernode->getFloatValue("radius-min-m",0);
             maxRadius = placernode->getFloatValue("radius-max-m",1);
-            minPhi = placernode->getFloatValue("phi-min-deg",0) * SG_DEGREES_TO_RADIANS;
-            maxPhi = placernode->getFloatValue("phi-max-deg",360.0f) * SG_DEGREES_TO_RADIANS;
+            minPhi = (placernode->getFloatValue("phi-min-deg",0)
+                      * SG_DEGREES_TO_RADIANS);
+            maxPhi = (placernode->getFloatValue("phi-max-deg",360.0f)
+                      * SG_DEGREES_TO_RADIANS);
 
             splacer->setRadiusRange(minRadius, maxRadius);
             splacer->setPhiRange(minPhi, maxPhi);
             emitter->setPlacer(splacer);
         } else if (emitterType == "segments") {
-            std::vector<SGPropertyNode_ptr> segments = placernode->getChildren("vertex");
-
-            if(segments.size()>1) {
-                osgParticle::MultiSegmentPlacer *msplacer = new  osgParticle::MultiSegmentPlacer();
+            std::vector<SGPropertyNode_ptr> segments
+                = placernode->getChildren("vertex");
+            if (segments.size()>1) {
+                osgParticle::MultiSegmentPlacer *msplacer
+                    = new osgParticle::MultiSegmentPlacer();
                 float x,y,z;
 
                 for (unsigned i = 0; i < segments.size(); ++i) {
@@ -144,22 +206,26 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
                     z = segments[i]->getFloatValue("z-m",0);
                     msplacer->addVertex(x, y, z);
                 }
-
                 emitter->setPlacer(msplacer);
+            } else {
+                SG_LOG(SG_GENERAL, SG_ALERT,
+                       "Detected particle system using segment(s) with less than 2 vertices\n");
             }
-            else SG_LOG(SG_GENERAL, SG_ALERT, "Detected particle system using segment(s) with less than 2 vertices\n");
         } //else the default placer in ModularEmitter is used (PointPlacer)
     }
 
     const SGPropertyNode* shnode = configNode->getChild("shooter");
 
-    if(shnode) {
+    if (shnode) {
         float minTheta, maxTheta, minPhi, maxPhi, speed, spread;
 
-        minTheta = shnode->getFloatValue("theta-min-deg",0) * SG_DEGREES_TO_RADIANS;
-        maxTheta = shnode->getFloatValue("theta-max-deg",360.0f) * SG_DEGREES_TO_RADIANS;
+        minTheta = (shnode->getFloatValue("theta-min-deg",0)
+                    * SG_DEGREES_TO_RADIANS);
+        maxTheta = (shnode->getFloatValue("theta-max-deg",360.0f)
+                    * SG_DEGREES_TO_RADIANS);
         minPhi = shnode->getFloatValue("phi-min-deg",0)* SG_DEGREES_TO_RADIANS;
-        maxPhi = shnode->getFloatValue("phi-max-deg",360.0f)* SG_DEGREES_TO_RADIANS; 
+        maxPhi = (shnode->getFloatValue("phi-max-deg",360.0f)
+                  * SG_DEGREES_TO_RADIANS); 
 
         osgParticle::RadialShooter *shooter = new osgParticle::RadialShooter;
         emitter->setShooter(shooter);
@@ -169,23 +235,19 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
         const SGPropertyNode* speednode = shnode->getChild("speed");
 
-        if(speednode) {
-            if(speednode->hasValue("value")) {
+        if (speednode) {
+            if (speednode->hasValue("value")) {
                 speed = speednode->getFloatValue("value",0);
                 spread = speednode->getFloatValue("spread",0);
                 shooter->setInitialSpeedRange(speed-spread, speed+spread);
             } else {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupShooterSpeedData(speednode, modelRoot);
+                callback()->setupShooterSpeedData(speednode, modelRoot);
             }
         }
 
         const SGPropertyNode* rotspeednode = shnode->getChild("rotspeed");
 
-        if(rotspeednode) {
+        if (rotspeednode) {
             float x1,y1,z1,x2,y2,z2;
             x1 = rotspeednode->getFloatValue("x-min-deg-sec",0) * SG_DEGREES_TO_RADIANS;
             y1 = rotspeednode->getFloatValue("y-min-deg-sec",0) * SG_DEGREES_TO_RADIANS;
@@ -199,236 +261,146 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
     const SGPropertyNode* counternode = configNode->getChild("counter");
 
-    if(counternode) {
-        osgParticle::RandomRateCounter *counter = new osgParticle::RandomRateCounter;
+    if (counternode) {
+        osgParticle::RandomRateCounter* counter
+            = new osgParticle::RandomRateCounter;
         emitter->setCounter(counter);
         float pps, spread;
         const SGPropertyNode* ppsnode = counternode->getChild("pps");
 
-        if(ppsnode) {
+        if (ppsnode) {
 
-            if(ppsnode->hasValue("value")) {
+            if (ppsnode->hasValue("value")) {
                 pps = ppsnode->getFloatValue("value",0);
                 spread = ppsnode->getFloatValue("spread",0);
                 counter->setRateRange(pps-spread, pps+spread);
             } else {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupCounterData(ppsnode, modelRoot);
+                callback()->setupCounterData(ppsnode, modelRoot);
             }
         }
-        const SGPropertyNode* conditionNode = counternode->getChild("condition");
-
-        if(conditionNode) {
-
-            if(!callback)
-                callback = new SGParticles();
-            callback->setupCounterCondition(conditionNode, modelRoot);
-            callback->setupCounterCondition(pps, spread);
+        const SGPropertyNode* conditionNode
+            = counternode->getChild("condition");
+        if (conditionNode) {
+            callback()->setupCounterCondition(conditionNode, modelRoot);
+            callback()->setupCounterCondition(pps, spread);
         }
     } //TODO: else perhaps set higher values than default? 
 
     const SGPropertyNode* particlenode = configNode->getChild("particle");
-
-    if(particlenode) {
-        osgParticle::Particle &particle = particleSys->getDefaultParticleTemplate();
+    if (particlenode) {
+        osgParticle::Particle &particle
+            = particleSys->getDefaultParticleTemplate();
         float r1=0, g1=0, b1=0, a1=1, r2=0, g2=0, b2=0, a2=1;
-
-        const SGPropertyNode* startcolornode = particlenode->getChild("startcolor");
-
-        if(startcolornode) {
-            const SGPropertyNode* componentnode = startcolornode->getChild("red");
-
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+        const SGPropertyNode* startcolornode
+            = particlenode->getChild("startcolor");
+        if (startcolornode) {
+            const SGPropertyNode* componentnode
+                = startcolornode->getChild("red");
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     r1 = componentnode->getFloatValue("value",0);
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 0, 0);
-                }
+                else 
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    0, 0);
             }
-
             componentnode = startcolornode->getChild("green");
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
-                    g1 = componentnode->getFloatValue("value",0);
-
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 0, 1);
-                }
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
+                    g1 = componentnode->getFloatValue("value", 0);
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    0, 1);
             }
-
             componentnode = startcolornode->getChild("blue");
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     b1 = componentnode->getFloatValue("value",0);
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 0, 2);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    0, 2);
             }
-
             componentnode = startcolornode->getChild("alpha");
-
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     a1 = componentnode->getFloatValue("value",0);
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 0, 3);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    0, 3);
             }
         }
-
         const SGPropertyNode* endcolornode = particlenode->getChild("endcolor");
-        if(endcolornode) {
+        if (endcolornode) {
             const SGPropertyNode* componentnode = endcolornode->getChild("red");
 
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     r2 = componentnode->getFloatValue("value",0);
-
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 1, 0);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    1, 0);
             }
-
             componentnode = endcolornode->getChild("green");
-
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     g2 = componentnode->getFloatValue("value",0);
-
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 1, 1);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    1, 1);
             }
-
             componentnode = endcolornode->getChild("blue");
-
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     b2 = componentnode->getFloatValue("value",0);
-
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 1, 2);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    1, 2);
             }
-
             componentnode = endcolornode->getChild("alpha");
-            if(componentnode) {
-
-                if(componentnode->hasValue("value"))
+            if (componentnode) {
+                if (componentnode->hasValue("value"))
                     a2 = componentnode->getFloatValue("value",0);
-
-                else {
-
-                    if(!callback)
-                        callback = new SGParticles();
-
-                    callback->setupColorComponent(componentnode, modelRoot, 1, 3);
-                }
+                else
+                    callback()->setupColorComponent(componentnode, modelRoot,
+                                                    1, 3);
             }
         }
-
-        particle.setColorRange(osgParticle::rangev4( osg::Vec4(r1,g1,b1,a1), osg::Vec4(r2,g2,b2,a2)));
+        particle.setColorRange(osgParticle::rangev4(osg::Vec4(r1,g1,b1,a1),
+                                                    osg::Vec4(r2,g2,b2,a2)));
 
         float startsize=1, endsize=0.1f;
         const SGPropertyNode* startsizenode = particlenode->getChild("startsize");
-
-        if(startsizenode) {
-
-            if(startsizenode->hasValue("value"))
+        if (startsizenode) {
+            if (startsizenode->hasValue("value"))
                 startsize = startsizenode->getFloatValue("value",0);
-
-            else {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupStartSizeData(startsizenode, modelRoot);
-            }
+            else
+                callback()->setupStartSizeData(startsizenode, modelRoot);
         }
-
         const SGPropertyNode* endsizenode = particlenode->getChild("endsize");
-        if(endsizenode) {
-
-            if(endsizenode->hasValue("value"))
+        if (endsizenode) {
+            if (endsizenode->hasValue("value"))
                 endsize = endsizenode->getFloatValue("value",0);
-
-            else {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupEndSizeData(endsizenode, modelRoot);
-            }
+            else
+                callback()->setupEndSizeData(endsizenode, modelRoot);
         }
-
         particle.setSizeRange(osgParticle::rangef(startsize, endsize));
-
         float life=5;
         const SGPropertyNode* lifenode = particlenode->getChild("life-sec");
-
-        if(lifenode) {
-
-            if(lifenode->hasValue("value"))
+        if (lifenode) {
+            if (lifenode->hasValue("value"))
                 life =  lifenode->getFloatValue("value",0);
-
-            else {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupLifeData(lifenode, modelRoot);
-            }
+            else
+                callback()->setupLifeData(lifenode, modelRoot);
         }
 
         particle.setLifeTime(life);
-
-        if(particlenode->hasValue("radius-m"))
+        if (particlenode->hasValue("radius-m"))
             particle.setRadius(particlenode->getFloatValue("radius-m",0));
-
-        if(particlenode->hasValue("mass-kg"))
+        if (particlenode->hasValue("mass-kg"))
             particle.setMass(particlenode->getFloatValue("mass-kg",0));
-
-        if(callback) {
-            callback->setupStaticColorComponent(r1, g1, b1, a1, r2, g2, b2, a2);
-            callback->setupStaticSizeData(startsize, endsize);
+        if (callback.get()) {
+            callback.get()->setupStaticColorComponent(r1, g1, b1, a1,
+                                                      r2, g2, b2, a2);
+            callback.get()->setupStaticSizeData(startsize, endsize);
         }
         //particle.setColorRange(osgParticle::rangev4( osg::Vec4(r1, g1, b1, a1), osg::Vec4(r2, g2, b2, a2)));
     }
@@ -436,10 +408,10 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
     const SGPropertyNode* programnode = configNode->getChild("program");
     osgParticle::FluidProgram *program = new osgParticle::FluidProgram();
 
-    if(programnode) {
+    if (programnode) {
         std::string fluid = programnode->getStringValue("fluid","air");
 
-        if(fluid=="air") 
+        if (fluid=="air") 
             program->setFluidToAir();
 
         else
@@ -447,26 +419,19 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
 
         std::string grav = programnode->getStringValue("gravity","enabled");
 
-        if(grav=="enabled") {
+        if (grav=="enabled") {
 
-            if(attach == "world") {
-
-                if(!callback)
-                    callback = new SGParticles();
-
-                callback->setupProgramGravity(true);
-            } else
+            if (attach == "world")
+                callback()->setupProgramGravity(true);
+            else
                 program->setToGravity();
-
         } else
             program->setAcceleration(osg::Vec3(0,0,0));
 
         std::string wind = programnode->getStringValue("wind","enabled");
-        if(wind=="enabled") {
-            if(!callback)
-                callback = new SGParticles();
-            callback->setupProgramWind(true);
-        } else
+        if (wind=="enabled")
+            callback()->setupProgramWind(true);
+        else
             program->setWind(osg::Vec3(0,0,0));
 
         align->addChild(program);
@@ -475,12 +440,56 @@ osg::Group * SGParticles::appendParticles(const SGPropertyNode* configNode, SGPr
     }
     else {  }
 
-    if(callback) {  //this means we want property-driven changes
+    if (callback.get()) {  //this means we want property-driven changes
         SG_LOG(SG_GENERAL, SG_DEBUG, "setting up particle system user data and callback\n");
         //setup data and callback
-        callback->setGeneralData(dynamic_cast<osgParticle::RadialShooter*>(emitter->getShooter()), dynamic_cast<osgParticle::RandomRateCounter*>(emitter->getCounter()), particleSys, program);
-        emitter->setUpdateCallback(callback);
+        callback.get()->setGeneralData(dynamic_cast<osgParticle::RadialShooter*>(emitter->getShooter()),
+                                       dynamic_cast<osgParticle::RandomRateCounter*>(emitter->getCounter()),
+                                       particleSys, program);
+        emitter->setUpdateCallback(callback.get());
     }
 
     return align;
 }
+
+void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    //SG_LOG(SG_GENERAL, SG_ALERT, "callback!\n");
+
+    if (shooterValue)
+        shooter->setInitialSpeedRange(shooterValue->getValue(),
+                                      (shooterValue->getValue()
+                                       + shooterExtraRange));
+    if (counterValue)
+        counter->setRateRange(counterValue->getValue(),
+                              counterValue->getValue() + counterExtraRange);
+    else if (counterCond)
+        counter->setRateRange(counterStaticValue,
+                              counterStaticValue + counterStaticExtraRange);
+    if (counterCond && !counterCond->test())
+        counter->setRateRange(0, 0);
+    bool colorchange=false;
+    for (int i = 0; i < 8; ++i) {
+        if (colorComponents[i]) {
+            staticColorComponents[i] = colorComponents[i]->getValue();
+            colorchange=true;
+        }
+    }
+    if (colorchange)
+        particleSys->getDefaultParticleTemplate().setColorRange(osgParticle::rangev4( osg::Vec4(staticColorComponents[0], staticColorComponents[1], staticColorComponents[2], staticColorComponents[3]), osg::Vec4(staticColorComponents[4], staticColorComponents[5], staticColorComponents[6], staticColorComponents[7])));
+    if (startSizeValue)
+        startSize = startSizeValue->getValue();
+    if (endSizeValue)
+        endSize = endSizeValue->getValue();
+    if (startSizeValue || endSizeValue)
+        particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
+    if (lifeValue)
+        particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
+    if (program) {
+        if (useGravity)
+            program->setAcceleration(GlobalParticleCallback::getGravityVector());
+        if (useWind)
+            program->setWind(GlobalParticleCallback::getWindVector());
+    }
+}
+} // namespace simgear

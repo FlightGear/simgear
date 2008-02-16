@@ -374,8 +374,7 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
   SGPropertyNode* inputRoot = getModelRoot();
   const SGPropertyNode* node = getConfig()->getChild("property-base");
   if (node)
-    inputRoot = getModelRoot()->getRootNode()->getNode(node->getStringValue(),
-                                                       true);
+    inputRoot = getModelRoot()->getNode(node->getStringValue(), true);
   if (getConfig()->hasChild("texture-prop"))
       osg::StateSet* stateSet = group->getOrCreateStateSet();
   if (getConfig()->hasChild("texture")) {

@@ -100,11 +100,6 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props
   {
     string tname = textures[i]->getStringValue();
     string otname = tname;
-    if (season && strncmp(season, "summer", 6))
-    {
-        if (tname.substr(0,7) == "Terrain")
-            tname.insert(7,"."+string(season));
-    }
 
     if (tname == "") {
         tname = "unknown.rgb";

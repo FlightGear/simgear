@@ -493,7 +493,6 @@ bool SGMetar::scanVisibility()
 		distance = i;
 	} else {
 // M?(\d{1,2}|\d{1,2}/\d{1,2}|\d{1,2} \d{1,2}/\d{1,2})(SM|KM)
-		modifier = 0;
 		if (*m == 'M')
 			m++, modifier = SGMetarVisibility::LESS_THAN;
 

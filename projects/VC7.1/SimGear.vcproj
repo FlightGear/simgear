@@ -690,6 +690,12 @@
 				RelativePath="..\..\simgear\scene\model\ModelRegistry.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\particles.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\particles.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\persparam.cxx">
 			</File>
 			<File
@@ -841,6 +847,18 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\ShaderGeometry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\ShaderGeometry.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TreeBin.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TreeBin.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\userdata.cxx">

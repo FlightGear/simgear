@@ -265,7 +265,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         osgParticle::RandomRateCounter* counter
             = new osgParticle::RandomRateCounter;
         emitter->setCounter(counter);
-        float pps, spread;
+        float pps = 0.0f, spread = 0.0f;
         const SGPropertyNode* ppsnode = counternode->getChild("pps");
 
         if (ppsnode) {

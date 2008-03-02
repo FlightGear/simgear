@@ -103,7 +103,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="../..;../../..;$(ProgramFiles)/OpenThreads/include;$(ProgramFiles)/OpenSceneGraph/include;../../Simgear;../../../3rdparty/include"
+				AdditionalIncludeDirectories="../..;../../..;&quot;$(ProgramFiles)/OpenThreads/include&quot;;&quot;$(ProgramFiles)/OpenSceneGraph/include&quot;;../../Simgear;../../../3rdparty/include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;HAVE_CONFIG_H;ENABLE_THREADS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_CONST_CORRECT_OVERLOADS;NOMINMAX;_USE_MATH_DEFINES"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -892,6 +892,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\GroundLightManager.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\GroundLightManager.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\nasal\hash.c"
 				>
 			</File>
@@ -992,6 +1000,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\ModelRegistry.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\ModelRegistry.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\sky\moon.cxx"
 				>
 			</File>
@@ -1024,7 +1040,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\misc\PathOptions.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\persparam.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\persparam.hxx"
 				>
 			</File>
 			<File
@@ -1045,6 +1069,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\pt_lights.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\QuadTreeBuilder.cxx"
 				>
 			</File>
 			<File
@@ -1108,6 +1136,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGClipGroup.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGClipGroup.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGDirectionalLightBin.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\SGEnlargeBoundingBox.cxx"
 				>
 			</File>
@@ -1116,7 +1156,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGLightBin.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGModelBin.hxx"
 				>
 			</File>
 			<File
@@ -1148,11 +1196,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGSmplhist.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGSmplstat.cxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\SGStateAttributeVisitor.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\sgstream.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGTexturedTriangleBin.hxx"
 				>
 			</File>
 			<File
@@ -1168,7 +1228,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGTriangleBin.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGVertexArrayBin.hxx"
 				>
 			</File>
 			<File
@@ -1201,6 +1269,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\sky\stars.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.cxx"
 				>
 			</File>
 			<File

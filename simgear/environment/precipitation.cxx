@@ -22,50 +22,21 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * @par CVS
- *   $Id$
  */
 
 #include "precipitation.hxx"
 
-
-#include <string>
-#include <list>
-
 #include <simgear/constants.h>
-#include <simgear/math/SGMath.hxx>
-#include <simgear/math/point3d.hxx>
-#include <simgear/scene/model/placement.hxx>
-#include <simgear/misc/sg_path.hxx>
-#include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/structure/SGReferenced.hxx>
-
-
-
-
-SG_USING_STD(string);
-SG_USING_STD(list);
-
 
 /**
  * @brief SGPrecipitation constructor
  *
  * Build a new OSG object from osgParticle.
  */
-SGPrecipitation::SGPrecipitation() {
-	this->setSnowIntensity(0.0);
-	this->setRainIntensity(0.0);
-	this->setFreezing(false);
-	this->setWindProperty(0.0, 0.0);
-
-	precipitationEffect = new osgParticle::PrecipitationEffect;
-}
-
-
-/**
- * @brief SGPrecipitation destructor
- */
-SGPrecipitation::~SGPrecipitation(void) {
+SGPrecipitation::SGPrecipitation() :
+    _freeze(false), _snow_intensity(0.0), _rain_intensity(0.0)
+{
+    _precipitationEffect = new osgParticle::PrecipitationEffect;
 }
 
 
@@ -75,15 +46,16 @@ SGPrecipitation::~SGPrecipitation(void) {
  * This function permits you to create an object precipitationEffect and initialize it.
  * I define by default the color of water (for raining)
  */
-osg::Group* SGPrecipitation::build(void) {
-	group = new osg::Group;
+osg::Group* SGPrecipitation::build(void)
+{
+    osg::Group* group = new osg::Group;
 
-	precipitationEffect->snow(0);	
-	precipitationEffect->rain(0);	
+    _precipitationEffect->snow(0);	
+    _precipitationEffect->rain(0);	
 
-	group->addChild(precipitationEffect.get());
+    group->addChild(_precipitationEffect.get());
 
-	return group;
+    return group;
 }
 
 
@@ -93,13 +65,14 @@ osg::Group* SGPrecipitation::build(void) {
  * This function permits you to define and change the snow intensity
  * The param 'intensity' is normed (0 to 1).
  */
-void SGPrecipitation::setSnowIntensity(float intensity) {
-	if (this->_snow_intensity < intensity-0.001)
-		this->_snow_intensity += 0.001;
-	else if (this->_snow_intensity > intensity+0.001)
-		this->_snow_intensity -= 0.001;
-	else
-		this->_snow_intensity = intensity;
+void SGPrecipitation::setSnowIntensity(float intensity)
+{
+    if (this->_snow_intensity < intensity-0.001)
+        this->_snow_intensity += 0.001;
+    else if (this->_snow_intensity > intensity+0.001)
+        this->_snow_intensity -= 0.001;
+    else
+        this->_snow_intensity = intensity;
 }
 
 
@@ -109,13 +82,14 @@ void SGPrecipitation::setSnowIntensity(float intensity) {
  * This function permits you to define and change the rain intensity
  * The param 'intensity' is normed (0 to 1).
  */
-void SGPrecipitation::setRainIntensity(float intensity) {
-	if (this->_rain_intensity < intensity-0.001)
-		this->_rain_intensity += 0.001;
-	else if (this->_rain_intensity > intensity+0.001)
-		this->_rain_intensity -= 0.001;
-	else
-		this->_rain_intensity = intensity;
+void SGPrecipitation::setRainIntensity(float intensity)
+{
+    if (this->_rain_intensity < intensity-0.001)
+        this->_rain_intensity += 0.001;
+    else if (this->_rain_intensity > intensity+0.001)
+        this->_rain_intensity -= 0.001;
+    else
+        this->_rain_intensity = intensity;
 }
 
 
@@ -126,8 +100,9 @@ void SGPrecipitation::setRainIntensity(float intensity) {
  * 
  * This function permits you to turn off the rain to snow.
  */
-void SGPrecipitation::setFreezing(bool freeze) {
-	this->_freeze = freeze;
+void SGPrecipitation::setFreezing(bool freeze)
+{
+    this->_freeze = freeze;
 }
 
 
@@ -140,17 +115,18 @@ void SGPrecipitation::setFreezing(bool freeze) {
  * x points full south... From wind heading and speed, we can calculate
  * the wind vector.
  */
-void SGPrecipitation::setWindProperty(double heading, double speed) {
-	double x, y, z;
+void SGPrecipitation::setWindProperty(double heading, double speed)
+{
+    double x, y, z;
 
-	heading = (heading + 180) * SGD_DEGREES_TO_RADIANS;
-	speed = speed * SG_FEET_TO_METER;
+    heading = (heading + 180) * SGD_DEGREES_TO_RADIANS;
+    speed = speed * SG_FEET_TO_METER;
 
-	x = -cos(heading) * speed;
-	y = sin(heading) * speed;
-	z = 0;
+    x = -cos(heading) * speed;
+    y = sin(heading) * speed;
+    z = 0;
 
-	this->_wind_vec = osg::Vec3(x, y, z);
+    this->_wind_vec = osg::Vec3(x, y, z);
 }
 
 
@@ -163,43 +139,41 @@ void SGPrecipitation::setWindProperty(double heading, double speed) {
  *
  * The settings come from the osgParticule/PrecipitationEffect.cpp exemple.
  */
-bool SGPrecipitation::update(void) {
-	if (this->_freeze) {
-		if (this->_rain_intensity > 0) 
-			this->_snow_intensity = this->_rain_intensity;
-	}
+bool SGPrecipitation::update(void)
+{
+    if (this->_freeze) {
+        if (this->_rain_intensity > 0) 
+            this->_snow_intensity = this->_rain_intensity;
+    }
 
-	if (this->_snow_intensity > 0) {
-		precipitationEffect->setWind(_wind_vec);
-		precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
+    if (this->_snow_intensity > 0) {
+        _precipitationEffect->setWind(_wind_vec);
+        _precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
 		
-		precipitationEffect->setParticleSize(0.02f + 0.03f*_snow_intensity);
-		precipitationEffect->setMaximumParticleDensity(_snow_intensity * 7.2f);
-		precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_snow_intensity), 5.0f / (0.25f+_snow_intensity), 5.0f));
+        _precipitationEffect->setParticleSize(0.02f + 0.03f*_snow_intensity);
+        _precipitationEffect->setMaximumParticleDensity(_snow_intensity * 7.2f);
+        _precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_snow_intensity), 5.0f / (0.25f+_snow_intensity), 5.0f));
 		
-		precipitationEffect->setNearTransition(25.f);
-		precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_snow_intensity));
+        _precipitationEffect->setNearTransition(25.f);
+        _precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_snow_intensity));
 		
-		precipitationEffect->setParticleColor(osg::Vec4(0.85, 0.85, 0.85, 1.0) - osg::Vec4(0.1, 0.1, 0.1, 1.0) * _snow_intensity);
-	}
-	else if (this->_rain_intensity > 0){
-		precipitationEffect->setWind(_wind_vec);
-		precipitationEffect->setParticleSpeed( -2.0f + -5.0f*_rain_intensity);
+        _precipitationEffect->setParticleColor(osg::Vec4(0.85, 0.85, 0.85, 1.0) - osg::Vec4(0.1, 0.1, 0.1, 1.0) * _snow_intensity);
+    } else if (this->_rain_intensity > 0){
+        _precipitationEffect->setWind(_wind_vec);
+        _precipitationEffect->setParticleSpeed( -2.0f + -5.0f*_rain_intensity);
 		
-		precipitationEffect->setParticleSize(0.01 + 0.02*_rain_intensity);
-		precipitationEffect->setMaximumParticleDensity(_rain_intensity * 7.5f);
-		precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_rain_intensity), 5.0f / (0.25f+_rain_intensity), 5.0f));
+        _precipitationEffect->setParticleSize(0.01 + 0.02*_rain_intensity);
+        _precipitationEffect->setMaximumParticleDensity(_rain_intensity * 7.5f);
+        _precipitationEffect->setCellSize(osg::Vec3(5.0f / (0.25f+_rain_intensity), 5.0f / (0.25f+_rain_intensity), 5.0f));
 		
-		precipitationEffect->setNearTransition(25.f);
-		precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_rain_intensity));
+        _precipitationEffect->setNearTransition(25.f);
+        _precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_rain_intensity));
 		
-		precipitationEffect->setParticleColor( osg::Vec4(0x7A, 0xCE, 0xFF, 0x80));
-	}
-	else {
-		precipitationEffect->snow(0);	
-		precipitationEffect->rain(0);	
-	}
+        _precipitationEffect->setParticleColor( osg::Vec4(0x7A, 0xCE, 0xFF, 0x80));
+    } else {
+        _precipitationEffect->snow(0);	
+        _precipitationEffect->rain(0);	
+    }
 
-	return true;
+    return true;
 }
-

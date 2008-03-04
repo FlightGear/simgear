@@ -22,51 +22,39 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * @par CVS
- *   $Id$
  */
 
 #ifndef _PRECIPITATION_HXX
 #define _PRECIPITATION_HXX
 
-#include <osgDB/ReadFile>
-#include <osgDB/FileUtils>
-#include <osgUtil/Optimizer>
-#include <osgUtil/CullVisitor>
-#include <osgViewer/Viewer>
-
-#include <osg/Depth>
-#include <osg/Stencil>
-#include <osg/ClipPlane>
-#include <osg/ClipNode>
-#include <osg/MatrixTransform>
-#include <osgUtil/TransformCallback>
+#include <osg/Group>
+#include <osg/Referenced>
 #include <osgParticle/PrecipitationEffect>
 
 
-class SGPrecipitation {
+class SGPrecipitation : public osg::Referenced
+{
 private:
-	bool _freeze;
+    bool _freeze;
 
-	float _snow_intensity;
-	float _rain_intensity;
+    float _snow_intensity;
+    float _rain_intensity;
 	
-	int _wind_dir;
-	osg::Vec3 _wind_vec;
+    int _wind_dir;
+    osg::Vec3 _wind_vec;
 	
-	osg::Group *group;
-	osg::ref_ptr<osgParticle::PrecipitationEffect> precipitationEffect;
+    osg::ref_ptr<osgParticle::PrecipitationEffect> _precipitationEffect;
 
 public:
-	SGPrecipitation();
-	~SGPrecipitation();
-	osg::Group* build(void);
-	bool update(void);
+    SGPrecipitation();
+    virtual ~SGPrecipitation() {}
+    osg::Group* build(void);
+    bool update(void);
 	
-	void setWindProperty(double, double);
-	void setFreezing(bool);
-	void setRainIntensity(float);
-	void setSnowIntensity(float);
+    void setWindProperty(double, double);
+    void setFreezing(bool);
+    void setRainIntensity(float);
+    void setSnowIntensity(float);
 };
 
 #endif

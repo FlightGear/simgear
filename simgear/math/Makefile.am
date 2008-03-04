@@ -48,6 +48,7 @@ libsgmath_a_SOURCES = \
 	leastsqs.cxx \
 	sg_random.c \
 	vector.cxx \
+	SGGeod.cxx \
 	SGGeodesy.cxx
 
 INCLUDES = -I$(top_srcdir)

@@ -20,6 +20,8 @@
 
 #include <simgear/constants.h>
 
+#include <osg/Matrix>
+
 // #define SG_GEOD_NATIVE_DEGREE
 
 /// Class representing a geodetic location
@@ -78,6 +80,18 @@ public:
   /// Set the geodetic elevation from the argument given in feet
   void setElevationFt(double elevation);
 
+  // Create a local coordinate frame in the earth-centered frame of
+  // reference. X points north, Z points down.
+  // makeSimulationFrameRelative() only includes rotation.
+    
+  osg::Matrix makeSimulationFrameRelative();
+  osg::Matrix makeSimulationFrame();    
+
+  // Create a Z-up local coordinate frame in the earth-centered frame
+  // of reference. This is what scenery models, etc. expect.
+  // makeZUpFrameRelative() only includes rotation.
+  osg::Matrix makeZUpFrameRelative();
+  osg::Matrix makeZUpFrame();    
 private:
   /// This one is private since construction is not unique if you do
   /// not know the units of the arguments. Use the factory methods for

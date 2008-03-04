@@ -68,18 +68,18 @@ struct pair {
     const char *keyword;
     const char *glyph_name;
 } cmds[] = {
-    {"@u",       "up"},
-    {"@d",       "down"},
-    {"@l",       "left"},
-    {"@lu",      "left-up"},
-    {"@ul",      "left-up"},
-    {"@ld",      "left-down"},
-    {"@dl",      "left-down"},
-    {"@r",       "right"},
-    {"@ru",      "right-up"},
-    {"@ur",      "right-up"},
-    {"@rd",      "right-down"},
-    {"@dr",      "right-down"},
+    {"@u",       "^u"},
+    {"@d",       "^d"},
+    {"@l",       "^l"},
+    {"@lu",      "^lu"},
+    {"@ul",      "^lu"},
+    {"@ld",      "^ld"},
+    {"@dl",      "^ld"},
+    {"@r",       "^r"},
+    {"@ru",      "^ru"},
+    {"@ur",      "^ru"},
+    {"@rd",      "^rd"},
+    {"@dr",      "^rd"},
     {0, 0},
 };
 

@@ -324,6 +324,9 @@
 				RelativePath="..\..\simgear\math\sg_types.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\math\SGGeod.cxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\SGGeodesy.cxx">
 			</File>
 			<File
@@ -1065,6 +1068,12 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\environment\metar.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\environment\precipitation.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\environment\precipitation.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\environment\visual_enviro.cxx">

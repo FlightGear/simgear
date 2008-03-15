@@ -361,7 +361,7 @@ if test "x$ac_cv_header_plib_ul_h" != "xyes"; then
     exit
 fi
 
-AC_MSG_CHECKING([for plib 1.8.4 or newer])
+AC_MSG_CHECKING([for plib 1.8.5 or newer])
 AC_TRY_RUN([
 #include <plib/ul.h>
 

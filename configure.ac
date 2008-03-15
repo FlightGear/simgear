@@ -365,7 +365,7 @@ AC_MSG_CHECKING([for plib 1.8.4 or newer])
 AC_TRY_RUN([
 #include <plib/ul.h>
 
-#define MIN_PLIB_VERSION 184
+#define MIN_PLIB_VERSION 185
 
 int main() {
     int major, minor, micro;
@@ -380,7 +380,7 @@ int main() {
 ],
   AC_MSG_RESULT(yes),
   [AC_MSG_RESULT(wrong version);
-   AC_MSG_ERROR([Install plib 1.8.4 or later first...])],
+   AC_MSG_ERROR([Install plib 1.8.5 or later first...])],
   AC_MSG_RESULT(yes)
 )
 

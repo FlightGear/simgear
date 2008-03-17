@@ -765,12 +765,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (lightGroup->getNumChildren() > 0) {
     osg::LOD* lightLOD = new osg::LOD;
     lightLOD->addChild(lightGroup.get(), 0, 30000);
-    unsigned nodeMask = ~0u;
-    nodeMask &= ~SG_NODEMASK_CASTSHADOW_BIT;
-    nodeMask &= ~SG_NODEMASK_RECIEVESHADOW_BIT;
-    nodeMask &= ~SG_NODEMASK_PICK_BIT;
-    nodeMask &= ~SG_NODEMASK_TERRAIN_BIT;
-    lightLOD->setNodeMask(nodeMask);
+    lightLOD->setNodeMask(LIGHTS_BITS);
     transform->addChild(lightLOD);
   }
   

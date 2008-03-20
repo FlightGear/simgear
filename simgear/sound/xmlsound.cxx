@@ -326,8 +326,7 @@ SGXmlSound::update (double dt)
    }
 
    //
-   // If the mode is ONCE and the sound is still playing,
-   //  we have nothing to do anymore.
+   // mode is ONCE and the sound is still playing?
    //
    if (_active && (_mode == SGXmlSound::ONCE)) {
 
@@ -338,16 +337,16 @@ SGXmlSound::update (double dt)
          _dt_play += dt;
       }
 
-      return;
-   }
+   } else {
 
-   //
-   // Update the playing time, cache the current value and
-   // clear the delay timer.
-   //
-   _dt_play += dt;
-   _prev_value = curr_value;
-   _stopping = 0.0;
+      //
+      // Update the playing time, cache the current value and
+      // clear the delay timer.
+      //
+      _dt_play += dt;
+      _prev_value = curr_value;
+      _stopping = 0.0;
+   }
 
    //
    // Update the volume

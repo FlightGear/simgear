@@ -135,7 +135,7 @@ typedef vector<TimingInfo>::iterator eventTimeVecIterator;
  * subsystems may also override the suspend() and resume() methods to
  * take different actions.</p>
  */
-class SGSubsystem
+class SGSubsystem : public SGReferenced
 {
 public:
 

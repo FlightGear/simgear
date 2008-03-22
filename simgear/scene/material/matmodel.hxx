@@ -46,7 +46,6 @@ SG_USING_STD(string);
 
 
 class SGMatModelGroup;
-class SGModelLib;
 
 
 /**
@@ -76,10 +75,7 @@ public:
      *
      * @return The number of variant models.
      */
-    int get_model_count( SGModelLib *modellib,
-                         const string &fg_root,
-                         SGPropertyNode *prop_root,
-                         double sim_time_sec );
+    int get_model_count( SGPropertyNode *prop_root );
 
 
     /**
@@ -88,11 +84,7 @@ public:
      * @param index The index of the model.
      * @return The model.
      */
-     osg::Node *get_model( int index,
-                          SGModelLib *modellib,
-                          const string &fg_root,
-                          SGPropertyNode *prop_root,
-                          double sim_time_sec );
+     osg::Node *get_model( int index, SGPropertyNode *prop_root );
 
 
     /**
@@ -100,10 +92,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    osg::Node *get_random_model( SGModelLib *modellib,
-                                 const string &fg_root,
-                                 SGPropertyNode *prop_root,
-                                 double sim_time_sec );
+    osg::Node *get_random_model( SGPropertyNode *prop_root );
 
 
     /**
@@ -151,10 +140,7 @@ private:
      * This class uses lazy loading so that models won't be held
      * in memory for materials that are never referenced.
      */
-    void load_models( SGModelLib *modellib,
-                      const string &fg_root,
-                      SGPropertyNode *prop_root,
-                      double sim_time_sec );
+    void load_models( SGPropertyNode *prop_root );
 
     vector<string> _paths;
     mutable vector<osg::ref_ptr<osg::Node> > _models;

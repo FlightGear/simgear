@@ -14,9 +14,13 @@ include_HEADERS = \
 	persparam.hxx \
 	placement.hxx \
 	placementtrans.hxx \
+	CheckSceneryVisitor.hxx \
 	SGClipGroup.hxx \
 	SGMaterialAnimation.hxx \
 	SGOffsetTransform.hxx \
+	SGPagedLOD.hxx \
+	SGReaderWriterXML.hxx \
+	SGReaderWriterXMLOptions.hxx \
 	SGRotateTransform.hxx \
 	SGScaleTransform.hxx \
 	SGTranslateTransform.hxx
@@ -32,9 +36,12 @@ libsgmodel_a_SOURCES = \
 	placement.cxx \
 	placementtrans.cxx \
 	shadanim.cxx \
+	CheckSceneryVisitor.cxx \
 	SGClipGroup.cxx \
 	SGMaterialAnimation.cxx \
 	SGOffsetTransform.cxx \
+	SGPagedLOD.cxx \
+	SGReaderWriterXML.cxx \
 	SGRotateTransform.cxx \
 	SGScaleTransform.cxx \
 	SGTranslateTransform.cxx

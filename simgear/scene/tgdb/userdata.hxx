@@ -49,58 +49,11 @@ class SGPropertyNode;
  * following values (needed by the model loader callback at draw time)
  * before drawing any scenery.
  */
-void sgUserDataInit( SGModelLib *m, const string &r,
-                     SGPropertyNode *p, double t );
+void sgUserDataInit(SGPropertyNode *p);
 
 /**
  * Get a random model.
  */
 osg::Node* sgGetRandomModel(SGMatModel *obj);
-
-/**
- * Get a specific model.
- */
-osg::Node* sgGetModel(int i, SGMatModel *obj);
-
-/**
- * User data for populating leaves when they come in range.
- */
-class SGLeafUserData : public osg::Referenced
-{
-public:
-    bool is_filled_in;
-    osg::Geometry *leaf;
-    SGMaterial *mat;
-    osg::Group *branch;
-    float sin_lat;
-    float cos_lat;
-    float sin_lon;
-    float cos_lon;
-
-    void setup_triangle( int i );
-};
-
-
-/**
- * User data for populating triangles when they come in range.
- */
-class SGTriUserData : public osg::Referenced
-{
-public:
-    bool is_filled_in;
-    float * p1;
-    float * p2;
-    float * p3;
-    osg::Vec3 center;
-    double area;
-    SGMatModelGroup * object_group;
-    osg::Group * branch;
-    SGLeafUserData * leafData;
-    unsigned int seed;
-
-    void fill_in_triangle();
-    void add_object_to_triangle(SGMatModel * object);
-    void makeWorldMatrix (sgMat4 ROT, double hdg_deg );
-};
 
 #endif // _SG_USERDATA_HXX

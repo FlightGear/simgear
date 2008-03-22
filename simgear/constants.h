@@ -75,6 +75,8 @@
  *  6378.165 but this is probably close enough */
 #define SG_EARTH_RAD 6378.155
 
+// Maximum terrain elevation from sea level
+#define SG_MAX_ELEVATION_M 9000.0
 
 // Earth parameters for WGS 84, taken from LaRCsim/ls_constants.h
 

@@ -48,6 +48,8 @@ SG_USING_STD(map);
 
 #include "matmodel.hxx"
 
+using namespace simgear;
+
 
 ////////////////////////////////////////////////////////////////////////
 // Local static functions.
@@ -115,27 +117,19 @@ SGMatModel::~SGMatModel ()
 }
 
 int
-SGMatModel::get_model_count( SGModelLib *modellib,
-                             const string &fg_root,
-                             SGPropertyNode *prop_root,
-                             double sim_time_sec )
+SGMatModel::get_model_count( SGPropertyNode *prop_root )
 {
-  load_models( modellib, fg_root, prop_root, sim_time_sec );
+  load_models( prop_root );
   return _models.size();
 }
 
 inline void
-SGMatModel::load_models ( SGModelLib *modellib,
-                          const string &fg_root,
-                          SGPropertyNode *prop_root,
-                          double sim_time_sec )
+SGMatModel::load_models( SGPropertyNode *prop_root )
 {
 				// Load model only on demand
   if (!_models_loaded) {
     for (unsigned int i = 0; i < _paths.size(); i++) {
-      osg::Node *entity = modellib->load_model( fg_root, _paths[i],
-                                                prop_root, sim_time_sec,
-                                                /*cache_object*/ true );
+      osg::Node *entity = SGModelLib::loadModel(_paths[i], prop_root);
       if (entity != 0) {
         // FIXME: this stuff can be handled
         // in the XML wrapper as well (at least,
@@ -167,22 +161,16 @@ SGMatModel::load_models ( SGModelLib *modellib,
 
 osg::Node*
 SGMatModel::get_model( int index,
-                       SGModelLib *modellib,
-                       const string &fg_root,
-                       SGPropertyNode *prop_root,
-                       double sim_time_sec )
+                       SGPropertyNode *prop_root )
 {
-  load_models( modellib, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
+  load_models( prop_root ); // comment this out if preloading models
   return _models[index].get();
 }
 
 osg::Node*
-SGMatModel::get_random_model( SGModelLib *modellib,
-                              const string &fg_root,
-                              SGPropertyNode *prop_root,
-                              double sim_time_sec )
+SGMatModel::get_random_model( SGPropertyNode *prop_root )
 {
-  load_models( modellib, fg_root, prop_root, sim_time_sec ); // comment this out if preloading models
+  load_models( prop_root ); // comment this out if preloading models
   int nModels = _models.size();
   int index = int(sg_random() * nModels);
   if (index >= nModels)

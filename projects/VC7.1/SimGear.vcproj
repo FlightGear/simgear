@@ -669,6 +669,12 @@
 				RelativePath="..\..\simgear\scene\model\animation.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\CheckSceneryVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\CheckSceneryVisitor.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\location.cxx">
 			</File>
 			<File
@@ -733,6 +739,21 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\SGOffsetTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGPagedLOD.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGPagedLOD.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGReaderWriterXML.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGReaderWriterXML.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGReaderWriterXMLOptions.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\SGRotateTransform.cxx">

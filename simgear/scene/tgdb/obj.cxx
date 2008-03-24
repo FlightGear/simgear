@@ -691,8 +691,9 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       lightGroup->addChild(groundLights2);
     }
   }
-    
+
   if (!tileGeometryBin.vasiLights.empty()) {
+    osg::Geode* vasiGeode = new osg::Geode;
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = matlib->find("RWY_RED_LIGHTS");
     if (mat)
@@ -702,17 +703,14 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     if (mat)
       white = mat->get_light_color();
 
-    osg::Geode* geode = new osg::Geode;
     SGDirectionalLightListBin::const_iterator i;
     for (i = tileGeometryBin.vasiLights.begin();
          i != tileGeometryBin.vasiLights.end(); ++i) {
-      geode->addDrawable(SGLightFactory::getVasi(up, *i, red, white));
+      vasiGeode->addDrawable(SGLightFactory::getVasi(up, *i, red, white));
     }
-    osg::Group* vasiLights = new osg::Group;
-    vasiLights->setCullCallback(new SGPointSpriteLightCullCallback(osg::Vec3(1, 0.0001, 0.000001), 6));
-    vasiLights->setStateSet(lightManager->getRunwayLightStateSet());
-    vasiLights->addChild(geode);
-    lightGroup->addChild(vasiLights);
+    vasiGeode->setCullCallback(new SGPointSpriteLightCullCallback(osg::Vec3(1, 0.0001, 0.000001), 6));
+    vasiGeode->setStateSet(lightManager->getRunwayLightStateSet());
+    lightGroup->addChild(vasiGeode);
   }
 
   if (tileGeometryBin.runwayLights.getNumLights() > 0
@@ -765,7 +763,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (lightGroup->getNumChildren() > 0) {
     osg::LOD* lightLOD = new osg::LOD;
     lightLOD->addChild(lightGroup.get(), 0, 30000);
-    lightLOD->setNodeMask(LIGHTS_BITS);
+    // VASI is always on, so doesn't use light bits.
+    lightLOD->setNodeMask(LIGHTS_BITS | MODEL_BIT); 
     transform->addChild(lightLOD);
   }
   

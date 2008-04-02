@@ -214,10 +214,17 @@ sgLoad3DModel_internal(const string &path,
     for (unsigned i = 0; i < model_nodes.size(); i++) {
         SGPropertyNode_ptr sub_props = model_nodes[i];
 
+        SGPath submodelpath;
         osg::ref_ptr<osg::Node> submodel;
-        const char* submodelFileName = sub_props->getStringValue("path");
+        string submodelFileName = sub_props->getStringValue("path");
+        if ( submodelFileName.size() > 2 && submodelFileName.substr( 0, 2 ) == "./" ) {
+            submodelpath = modelpath.dir();
+            submodelpath.append( submodelFileName.substr( 2 ) );
+        } else {
+            submodelpath = submodelFileName;
+        }
         try {
-            submodel = sgLoad3DModel_internal(submodelFileName, prop_root, 0, load_panel);
+            submodel = sgLoad3DModel_internal(submodelpath.str(), prop_root, 0, load_panel);
         } catch (const sg_throwable &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
             throw;

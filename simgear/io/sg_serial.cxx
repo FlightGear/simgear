@@ -20,6 +20,8 @@
 //
 // $Id$
 
+#include <cstdlib>
+#include <cstring>
 
 #include <simgear/compiler.h>
 
@@ -57,7 +59,7 @@ bool SGSerial::open( const SGProtocolDir d ) {
 
     // cout << "fd = " << port.fd << endl;
 
-    if ( ! port.set_baud( atoi( baud.c_str() ) ) ) {
+    if ( ! port.set_baud( std::atoi( baud.c_str() ) ) ) {
 	SG_LOG( SG_IO, SG_ALERT, "Error setting baud: " << baud );
 	return false;
     }
@@ -80,7 +82,7 @@ int SGSerial::read( char *buf, int length ) {
     result = port.read_port( buf_ptr, length - save_len );
     
     if ( result + save_len == length ) {
-	strncpy( buf, save_buf, length );
+        std::strncpy( buf, save_buf, length );
 	save_len = 0;
 
 	return length;
@@ -114,7 +116,7 @@ int SGSerial::readline( char *buf, int length ) {
     // we found an end of line
 
     // copy to external buffer
-    strncpy( buf, save_buf, result );
+    std::strncpy( buf, save_buf, result );
     buf[result] = '\0';
     SG_LOG( SG_IO, SG_INFO, "fg_serial line = " << buf );
 
@@ -142,7 +144,7 @@ int SGSerial::write( const char *buf, const int length ) {
 
 // write null terminated string to port
 int SGSerial::writestring( const char *str ) {
-    int length = strlen( str );
+    int length = std::strlen( str );
     return write( str, length );
 }
 

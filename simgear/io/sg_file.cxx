@@ -29,6 +29,8 @@
 #  include <io.h>
 #endif
 
+#include <cstring>
+
 #include <simgear/misc/stdint.hxx>
 #include <simgear/debug/logstream.hxx>
 
@@ -129,7 +131,7 @@ int SGFile::write( const char *buf, const int length ) {
 
 // write null terminated string to a file
 int SGFile::writestring( const char *str ) {
-    int length = strlen( str );
+    int length = std::strlen( str );
     return write( str, length );
 }
 

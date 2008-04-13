@@ -20,6 +20,8 @@
 //
 // $Id$
 
+#include <cstdlib>
+
 #include "tabbed_values.hxx"
 
 #include "assert.h"
@@ -86,7 +88,7 @@ double SGTabbedValues::getDoubleAt(const unsigned int offset) const
 		
 	/* this is safe because strtod will stop parsing when it sees an unrecogznied
 	character, which includes tab. */	
-	return strtod(data, NULL);
+	return std::strtod(data, NULL);
 }
 
 long SGTabbedValues::getLongAt(const unsigned int offset) const
@@ -95,5 +97,5 @@ long SGTabbedValues::getLongAt(const unsigned int offset) const
 	if (!data || (*data == '\t'))
 		return 0;
 
-	return strtol(data, NULL, 0);
+	return std::strtol(data, NULL, 0);
 }

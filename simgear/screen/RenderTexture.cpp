@@ -65,6 +65,8 @@
 #include <assert.h>
 #include <stdarg.h>
 
+#include <cstring>
+
 #ifdef _WIN32
 #pragma comment(lib, "gdi32.lib") // required for GetPixelFormat()
 #endif
@@ -298,7 +300,7 @@ void _wglGetLastError()
 * @fn PrintExtensionError( char* strMsg, ... )
 * @brief Prints an error about missing OpenGL extensions.
 */ 
-void PrintExtensionError( char* strMsg, ... )
+void PrintExtensionError( const char* strMsg, ... )
 {
     SG_LOG(SG_GL, SG_ALERT, 
             "Error: RenderTexture requires the following unsupported "

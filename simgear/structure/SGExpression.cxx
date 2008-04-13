@@ -48,7 +48,7 @@ SGReadValueFromString(const char* str, T& value)
 }
 
 template<>
-static bool
+bool
 SGReadValueFromString(const char* str, bool& value)
 {
   if (!str) {

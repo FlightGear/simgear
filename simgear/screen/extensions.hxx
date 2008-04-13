@@ -49,7 +49,7 @@ extern "C" {
 #endif
 
 bool SGSearchExtensionsString(const char *extString, const char *extName);
-bool SGIsOpenGLExtensionSupported(char *extName);
+bool SGIsOpenGLExtensionSupported(const char *extName);
 
 #ifdef __APPLE__
   // don't use an inline function for symbol lookup, since it is too big

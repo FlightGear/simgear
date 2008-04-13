@@ -21,6 +21,8 @@
 // $Id$
 
 #include <ctype.h>
+#include <cstring>
+
 #include "strutils.hxx"
 
 namespace simgear {
@@ -82,7 +84,7 @@ namespace simgear {
 		return split_whitespace( str, maxsplit );
 
 	    vector<string> result;
-	    int n = strlen( sep );
+	    int n = std::strlen( sep );
 	    if (n == 0)
 	    {
 		// Error: empty separator string
@@ -96,7 +98,7 @@ namespace simgear {
 
 	    while (i+n <= len)
 	    {
-		if (s[i] == sep[0] && (n == 1 || memcmp(s+i, sep, n) == 0))
+		if (s[i] == sep[0] && (n == 1 || std::memcmp(s+i, sep, n) == 0))
 		{
 		    result.push_back( str.substr(j,i-j) );
 		    i = j = i + n;

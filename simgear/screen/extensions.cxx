@@ -56,7 +56,7 @@ bool SGSearchExtensionsString(const char *extString, const char *extName) {
     return GL_FALSE;
 }
 
-bool SGIsOpenGLExtensionSupported(char *extName) {
+bool SGIsOpenGLExtensionSupported(const char *extName) {
    // Returns GL_TRUE if the OpenGL Extension whose name is *extName
    // is supported by the system, or GL_FALSE otherwise.
    //

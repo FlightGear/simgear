@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include <cstdlib>
+#include <cstring>
 
 glVertexAttrib1dProc glVertexAttrib1dPtr = NULL;
 glVertexAttrib1dvProc glVertexAttrib1dvPtr = NULL;
@@ -197,17 +199,17 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 		if(*s == '<') {
 			char *name = s;
 			while(*s) {
-				if(strchr("> \t\n\r",*s)) break;
+                                if(std::strchr("> \t\n\r",*s)) break;
 				s++;
 			}
 			if(*s == '>') {		// it`s shader
 				*name++ = '\0';
 				*s++ = '\0';
-				while(*s && strchr(" \t\n\r",*s)) s++;
-				if(vertex == NULL && !strcmp(name,"vertex")) vertex_src = s;
-				if(vertex && !strcmp(name,vertex)) vertex_src = s;
-				if(fragment == NULL && !strcmp(name,"fragment")) fragment_src = s;
-				if(fragment && !strcmp(name,fragment)) fragment_src = s;
+				while(*s && std::strchr(" \t\n\r",*s)) s++;
+				if(vertex == NULL && !std::strcmp(name,"vertex")) vertex_src = s;
+				if(vertex && !std::strcmp(name,vertex)) vertex_src = s;
+				if(fragment == NULL && !std::strcmp(name,"fragment")) fragment_src = s;
+				if(fragment && !std::strcmp(name,fragment)) fragment_src = s;
 			}
 		}
 		s++;
@@ -216,20 +218,20 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 	if(vertex_src) {
 		
 		// ARB vertex program
-		if(VP_supported && !strncmp(vertex_src,"!!ARBvp1.0",10)) {
+		if(VP_supported && !std::strncmp(vertex_src,"!!ARBvp1.0",10)) {
 			vertex_target = GL_VERTEX_PROGRAM_ARB;
 			glGenProgramsPtr(1,&vertex_id);
 			glBindProgramPtr(GL_VERTEX_PROGRAM_ARB,vertex_id);
-			glProgramStringPtr(GL_VERTEX_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)strlen(vertex_src),vertex_src);
+			glProgramStringPtr(GL_VERTEX_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)std::strlen(vertex_src),vertex_src);
 			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB,&pos);
 			if(pos != -1) {
 				SG_LOG(SG_GL, SG_ALERT, "Shader::Shader(): vertex program error in " << name << " file\n" << get_error(vertex_src,pos));
 				return;
 			}
-			char *var = strstr(vertex_src, "#var ");
+			char *var = std::strstr(vertex_src, "#var ");
 			while( var ) {
-				char *eol = strchr( var + 1, '#');
+				char *eol = std::strchr( var + 1, '#');
 				char *c2, *c3, *c4;
 				c2 = strchr( var + 6, ' ');
 				if( c2 ) {
@@ -240,14 +242,14 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 							c4 = strchr( c4 + 1, '[');
 						if( c4 && c4 < eol) {
 							char type[10], name[30];
-							strncpy( type, var + 5, c2-var-5 );
+                                                        std::strncpy( type, var + 5, c2-var-5 );
 							type[c2-var-5] = 0;
-							strncpy( name, c2 + 1, c3-c2-2 );
+                                                        std::strncpy( name, c2 + 1, c3-c2-2 );
 							name[c3-c2-2] = 0;
 							struct Parameter p;
 							p.location = atoi( c4 + 1);
 							p.length = 4;
-							if( ! strcmp(type, "float3") )
+							if( ! std::strcmp(type, "float3") )
 								p.length = 3;
 							else if( ! strcmp(type, "float") )
 								p.length = 1;
@@ -263,7 +265,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 		
 			program = glCreateProgramObjectPtr();
 			
-			GLint length = (GLint)strlen(vertex_src);
+			GLint length = (GLint)std::strlen(vertex_src);
 			GLhandleARB vertex = glCreateShaderObjectPtr(GL_VERTEX_SHADER_ARB);
 			glShaderSourcePtr(vertex,1,(const GLcharARB**)&vertex_src,&length);
 			glCompileShaderPtr(vertex);
@@ -289,11 +291,11 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 	if(fragment_src) {
 		
 		// ARB fragment program
-		if(FP_supported && !strncmp(fragment_src,"!!ARBfp1.0",10)) {
+		if(FP_supported && !std::strncmp(fragment_src,"!!ARBfp1.0",10)) {
 			fragment_target = GL_FRAGMENT_PROGRAM_ARB;
 			glGenProgramsPtr(1,&fragment_id);
 			glBindProgramPtr(GL_FRAGMENT_PROGRAM_ARB,fragment_id);
-			glProgramStringPtr(GL_FRAGMENT_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)strlen(fragment_src),fragment_src);
+			glProgramStringPtr(GL_FRAGMENT_PROGRAM_ARB,GL_PROGRAM_FORMAT_ASCII_ARB,(GLsizei)std::strlen(fragment_src),fragment_src);
 			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_ARB,&pos);
 			if(pos != -1) {
@@ -307,7 +309,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 			fragment_target = GL_FRAGMENT_PROGRAM_NV;
 			glGenProgramsNVPtr(1,&fragment_id);
 			glBindProgramNVPtr(GL_FRAGMENT_PROGRAM_NV,fragment_id);
-			glLoadProgramNVPtr(GL_FRAGMENT_PROGRAM_NV,fragment_id,(GLsizei)strlen(fragment_src),(GLubyte*)fragment_src);
+			glLoadProgramNVPtr(GL_FRAGMENT_PROGRAM_NV,fragment_id,(GLsizei)std::strlen(fragment_src),(GLubyte*)fragment_src);
 			GLint pos = -1;
 			glGetIntegerv(GL_PROGRAM_ERROR_POSITION_NV,&pos);
 			if(pos != -1) {
@@ -321,7 +323,7 @@ Shader::Shader(const char *name,const char *vertex,const char *fragment) {
 			
 			if(!program) program = glCreateProgramObjectPtr();
 			
-			GLint length = (GLint)strlen(fragment_src);
+			GLint length = (GLint)std::strlen(fragment_src);
 			GLhandleARB fragment = glCreateShaderObjectPtr(GL_FRAGMENT_SHADER_ARB);
 			glShaderSourcePtr(fragment,1,(const GLcharARB**)&fragment_src,&length);
 			glCompileShaderPtr(fragment);
@@ -398,11 +400,11 @@ const char *Shader::get_glsl_error() {
 void Shader::getParameter(const char *name,Parameter *parameter) {
 	if( program ) {
 		char buf[1024];
-		strcpy(buf,name);
-		char *s = strchr(buf,':');
+                std::strcpy(buf,name);
+		char *s = std::strchr(buf,':');
 		if(s) {
 			*s++ = '\0';
-			parameter->length = atoi(s);
+			parameter->length = std::atoi(s);
 		} else {
 			parameter->length = 4;
 		}

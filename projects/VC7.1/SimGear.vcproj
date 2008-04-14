@@ -134,6 +134,9 @@
 			Name="Lib_sgdebug"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\debug\debug_types.h">
+			</File>
+			<File
 				RelativePath="..\..\simgear\debug\logstream.cxx">
 			</File>
 			<File

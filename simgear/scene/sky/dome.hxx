@@ -18,9 +18,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
 
 #ifndef _SKYDOME_HXX
 #define _SKYDOME_HXX
@@ -37,23 +34,14 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/math/SGMath.hxx>
 
+class osg::DrawElementsUShort;
+
 class SGSkyDome : public SGReferenced {
     osg::ref_ptr<osg::MatrixTransform> dome_transform;
-
-    osg::ref_ptr<osg::Vec3Array> center_disk_vl;
-    osg::ref_ptr<osg::Vec3Array> center_disk_cl;
-
-    osg::ref_ptr<osg::Vec3Array> upper_ring_vl;
-    osg::ref_ptr<osg::Vec3Array> upper_ring_cl;
-
-    osg::ref_ptr<osg::Vec3Array> middle_ring_vl;
-    osg::ref_ptr<osg::Vec3Array> middle_ring_cl;
-
-    osg::ref_ptr<osg::Vec3Array> lower_ring_vl;
-    osg::ref_ptr<osg::Vec3Array> lower_ring_cl;
-
     double asl;
 
+    osg::ref_ptr<osg::Vec3Array> dome_vl;
+    osg::ref_ptr<osg::Vec3Array> dome_cl;
 public:
 
     // Constructor
@@ -83,6 +71,8 @@ public:
     // sunrise/set effects
     bool reposition( const SGVec3f& p, double asl,
                      double lon, double lat, double spin );
+private:
+    void makeDome(int rings, int bands, osg::DrawElementsUShort& elements);
 };
 
 

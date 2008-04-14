@@ -18,9 +18,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-// $Id$
-
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -38,34 +35,51 @@
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Node>
+#include <osg/Math>
 #include <osg/MatrixTransform>
 #include <osg/Material>
 #include <osg/ShadeModel>
+#include <osg/PrimitiveSet>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/Math.hxx>
+#include <simgear/scene/util/VectorArrayAdapter.hxx>
 
 #include "dome.hxx"
 
-
-#ifdef __MWERKS__
-#  pragma global_optimizer off
-#endif
-
+using namespace osg;
+using namespace simgear;
 
 // proportions of max dimensions fed to the build() routine
 static const float center_elev = 1.0;
 
-static const float upper_radius = 0.6;
-static const float upper_elev = 0.15;
+namespace
+{
+struct DomeParam
+{
+    float radius;
+    float elev;
+} domeParams[] = {{.5, .8660},  // 60deg from horizon
+                  {.8660, .5},  // 30deg from horizon
+                  // Original dome horizon vertices
+                  {0.9701, 0.2425}, {0.9960, 0.0885},
+                  {1.0, 0.0}, {0.9922, -0.1240}};
 
-static const float middle_radius = 0.9;
-static const float middle_elev = 0.08;
+const int numRings = sizeof(domeParams) / sizeof(domeParams[0]);
+const int numBands = 12;
+}
+
+static const float upper_radius = 0.9701; // (.6, 0.15)
+static const float upper_elev = 0.2425;
+
+static const float middle_radius = 0.9960; // (.9, .08)
+static const float middle_elev = 0.0885;
 
 static const float lower_radius = 1.0;
 static const float lower_elev = 0.0;
 
-static const float bottom_radius = 0.8;
-static const float bottom_elev = -0.1;
+static const float bottom_radius = 0.9922; // (.8, -.1)
+static const float bottom_elev = -0.1240;
 
 
 // Constructor
@@ -78,6 +92,53 @@ SGSkyDome::SGSkyDome( void ) {
 SGSkyDome::~SGSkyDome( void ) {
 }
 
+// Generate indices for a dome mesh. Assume a center vertex at 0, then
+// rings of vertices. Each ring's vertices are stored together. An
+// even number of longitudinal bands are assumed.
+
+namespace
+{
+// Calculate the index of a vertex in the grid by using its address in
+// the array that holds its location.
+struct GridIndex
+{
+    VectorArrayAdapter<Vec3Array> gridAdapter;
+    Vec3Array& grid;
+    GridIndex(Vec3Array& array, int rowStride, int baseOffset) :
+        gridAdapter(array, rowStride, baseOffset), grid(array)
+    {
+    }
+    unsigned short operator() (int ring, int band)
+    {
+        return (unsigned short)(&gridAdapter(ring, band) - &grid[0]);
+    }
+};
+}
+void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
+{
+    std::back_insert_iterator<DrawElementsUShort> pusher
+        = std::back_inserter(elements);
+    GridIndex grid(*dome_vl, numBands, 1);
+    for (int i = 0; i < bands; i += 2) {
+        *pusher = 0;  *pusher = grid(0, i);  *pusher = grid(0, i + 1);  
+        // down a band
+        for (int j = 0; j < rings - 1; ++j) {
+            *pusher = grid(j, i);  *pusher = grid(j, i + 1);
+            *pusher = grid(j + 1, i + 1);
+            *pusher = grid(j, i);  *pusher =  grid(j + 1, i + 1);
+            *pusher =  grid(j + 1, i);
+        }
+        // and up the next one
+        for (int j = rings - 1; j > 0; --j) {
+            *pusher = grid(j, i + 1);  *pusher = grid(j - 1, i + 1);
+            *pusher = grid(j, (i + 2) % bands);
+            *pusher = grid(j, (i + 2) % bands); *pusher = grid(j - 1, i + 1);
+            *pusher = grid(j - 1, (i + 2) % bands);
+        }
+        *pusher = grid(0, i + 1);  *pusher = 0;
+        *pusher = grid(0, (i + 2) % bands);
+    }
+}
 
 // initialize the sky object and connect it into our scene graph
 osg::Node*
@@ -99,137 +160,40 @@ SGSkyDome::build( double hscale, double vscale ) {
     stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
     stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
     osg::Material* material = new osg::Material;
-//     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
-//     material->setEmission(osg::Material::FRONT_AND_BACK,
-//                           osg::Vec4(0, 0, 0, 1));
-//     material->setSpecular(osg::Material::FRONT_AND_BACK,
-//                           osg::Vec4(0, 0, 0, 1));
-//     material->setShininess(osg::Material::FRONT_AND_BACK, 0);
     stateSet->setAttribute(material);
 
-    // initialize arrays
-    // initially seed to all blue
-    center_disk_vl = new osg::Vec3Array;
-    center_disk_cl = new osg::Vec3Array;
-    center_disk_cl->assign(14, osg::Vec3(0, 0, 1));
-				       
-    upper_ring_vl = new osg::Vec3Array;
-    upper_ring_cl = new osg::Vec3Array;
-    upper_ring_cl->assign(26, osg::Vec3(0, 0, 1));
-
-    middle_ring_vl = new osg::Vec3Array;
-    middle_ring_cl = new osg::Vec3Array;
-    middle_ring_cl->assign(26, osg::Vec3(0, 0, 1));
-
-    lower_ring_vl = new osg::Vec3Array;
-    lower_ring_cl = new osg::Vec3Array;
-    lower_ring_cl->assign(26, osg::Vec3(0, 0, 1));
-
-
+    dome_vl = new osg::Vec3Array(1 + numRings * numBands);
+    dome_cl = new osg::Vec3Array(1 + numRings * numBands);
     // generate the raw vertex data
-    osg::Vec3 center_vertex(0.0, 0.0, center_elev*vscale);
-    osg::Vec3 upper_vertex[12];
-    osg::Vec3 middle_vertex[12];
-    osg::Vec3 lower_vertex[12];
-    osg::Vec3 bottom_vertex[12];
 
-    for ( int i = 0; i < 12; ++i ) {
+    (*dome_vl)[0].set(0.0, 0.0, center_elev * vscale);
+    simgear::VectorArrayAdapter<Vec3Array> vertices(*dome_vl, numBands, 1);
+
+    for ( int i = 0; i < numBands; ++i ) {
         double theta = (i * 30) * SGD_DEGREES_TO_RADIANS;
         double sTheta = hscale*sin(theta);
         double cTheta = hscale*cos(theta);
-
-	upper_vertex[i] = osg::Vec3(cTheta * upper_radius,
-                                    sTheta * upper_radius,
-                                    upper_elev * vscale);
-
-	middle_vertex[i] = osg::Vec3(cTheta * middle_radius,
-                                     sTheta * middle_radius,
-                                     middle_elev * vscale);
-
-	lower_vertex[i] = osg::Vec3(cTheta * lower_radius,
-                                    sTheta * lower_radius,
-                                    lower_elev * vscale);
-
-	bottom_vertex[i] = osg::Vec3(cTheta * bottom_radius,
-                                     sTheta * bottom_radius,
-                                     bottom_elev * vscale);
+        for (int j = 0; j < numRings; ++j) {
+            vertices(j, i).set(cTheta * domeParams[j].radius,
+                               sTheta * domeParams[j].radius,
+                               domeParams[j].elev * vscale);
+        }
     }
 
-    // generate the center disk vertex/color arrays
-    center_disk_vl->push_back(center_vertex);
-    for ( int i = 11; i >= 0; --i )
-	center_disk_vl->push_back(upper_vertex[i]);
-    center_disk_vl->push_back(upper_vertex[11]);
-
-    // generate the upper ring
-    for ( int i = 0; i < 12; ++i ) {
-	upper_ring_vl->push_back( middle_vertex[i] );
-	upper_ring_vl->push_back( upper_vertex[i] );
-    }
-    upper_ring_vl->push_back( middle_vertex[0] );
-    upper_ring_vl->push_back( upper_vertex[0] );
-
-    // generate middle ring
-    for ( int i = 0; i < 12; i++ ) {
-	middle_ring_vl->push_back( lower_vertex[i] );
-	middle_ring_vl->push_back( middle_vertex[i] );
-    }
-    middle_ring_vl->push_back( lower_vertex[0] );
-    middle_ring_vl->push_back( middle_vertex[0] );
-
-    // generate lower ring
-    for ( int i = 0; i < 12; i++ ) {
-	lower_ring_vl->push_back( bottom_vertex[i] );
-	lower_ring_vl->push_back( lower_vertex[i] );
-    }
-    lower_ring_vl->push_back( bottom_vertex[0] );
-    lower_ring_vl->push_back( lower_vertex[0] );
-
+    DrawElementsUShort* domeElements
+        = new osg::DrawElementsUShort(GL_TRIANGLES);
+    makeDome(numRings, numBands, *domeElements);
+    osg::Geometry* geom = new Geometry;
+    geom->setName("Dome Elements");
+    geom->setUseDisplayList(false);
+    geom->setVertexArray(dome_vl.get());
+    geom->setColorArray(dome_cl.get());
+    geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+    geom->setNormalBinding(osg::Geometry::BIND_OFF);
+    geom->addPrimitiveSet(domeElements);
+    geode->addDrawable(geom);
     // force a repaint of the sky colors with ugly defaults
     repaint(SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), 0.0, 5000.0 );
-
-    // build the ssg scene graph sub tree for the sky and connected
-    // into the provide scene graph branch
-    osg::Geometry* geometry = new osg::Geometry;
-    geometry->setName("Dome Center");
-    geometry->setUseDisplayList(false);
-    geometry->setVertexArray(center_disk_vl.get());
-    geometry->setColorArray(center_disk_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_FAN, 0, 14));
-    geode->addDrawable(geometry);
-
-    geometry = new osg::Geometry;
-    geometry->setName("Dome Upper Ring");
-    geometry->setUseDisplayList(false);
-    geometry->setVertexArray(upper_ring_vl.get());
-    geometry->setColorArray(upper_ring_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 26));
-    geode->addDrawable(geometry);
-
-    geometry = new osg::Geometry;
-    geometry->setName("Dome Middle Ring");
-    geometry->setUseDisplayList(false);
-    geometry->setVertexArray(middle_ring_vl.get());
-    geometry->setColorArray(middle_ring_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 26));
-    geode->addDrawable(geometry);
-
-    geometry = new osg::Geometry;
-    geometry->setName("Dome Lower Ring");
-    geometry->setUseDisplayList(false);
-    geometry->setVertexArray(lower_ring_vl.get());
-    geometry->setColorArray(lower_ring_cl.get());
-    geometry->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
-    geometry->setNormalBinding(osg::Geometry::BIND_OFF);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, 26));
-    geode->addDrawable(geometry);
-
     dome_transform = new osg::MatrixTransform;
     dome_transform->addChild(geode);
 
@@ -238,13 +202,16 @@ SGSkyDome::build( double hscale, double vscale ) {
 
 static void fade_to_black(osg::Vec3 sky_color[], float asl, int count) {
     const float ref_asl = 10000.0f;
-    float d = exp( - asl / ref_asl );
-    for(int i = 0; i < count ; i++) {
-        float f = 1 - d;
-        sky_color[i][0] = sky_color[i][0] - f * sky_color[i][0] ;
-        sky_color[i][1] = sky_color[i][1] - f * sky_color[i][1] ;
-        sky_color[i][2] = sky_color[i][2] - f * sky_color[i][2] ;
-    }
+    const float d = exp( - asl / ref_asl );
+    for(int i = 0; i < count ; i++)
+        sky_color[i] *= d;
+}
+
+inline void clampColor(osg::Vec3& color)
+{
+    color.x() = osg::clampTo(color.x(), 0.0f, 1.0f);
+    color.y() = osg::clampTo(color.y(), 0.0f, 1.0f);
+    color.z() = osg::clampTo(color.z(), 0.0f, 1.0f);
 }
 
 // repaint the sky colors based on current value of sun_angle, sky,
@@ -261,23 +228,18 @@ SGSkyDome::repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
     SGVec3f middle_param, middle_diff;
 
     // Check for sunrise/sunset condition
-    if (sun_angle > 80)
-    {
+    if (sun_angle > 80) {
 	// 0.0 - 0.4
-        outer_param[0] = (10.0 - fabs(90.0 - sun_angle)) / 20.0;
-        outer_param[1] = (10.0 - fabs(90.0 - sun_angle)) / 40.0;
-        outer_param[2] = -(10.0 - fabs(90.0 - sun_angle)) / 30.0;
-
-	middle_param[0] = (10.0 - fabs(90.0 - sun_angle)) / 40.0;
-        middle_param[1] = (10.0 - fabs(90.0 - sun_angle)) / 80.0;
-        middle_param[2] = 0.0;
-
+        double sunAngleFactor = 10.0 - fabs(90.0 - sun_angle);
+        static const SGVec3f outerConstant(1.0 / 20.0, 1.0 / 40.0, -1.0 / 30.0);
+        static const SGVec3f middleConstant(1.0 / 40.0, 1.0 / 80.0, 0.0);
+        outer_param = sunAngleFactor * outerConstant;
+        middle_param = sunAngleFactor * middleConstant;
 	outer_diff = (1.0 / 6.0) * outer_param;
 	middle_diff = (1.0 / 6.0) * middle_param;
     } else {
         outer_param = SGVec3f(0, 0, 0);
 	middle_param = SGVec3f(0, 0, 0);
-
 	outer_diff = SGVec3f(0, 0, 0);
 	middle_diff = SGVec3f(0, 0, 0);
     }
@@ -292,156 +254,49 @@ SGSkyDome::repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
     // First, recalulate the basic colors
     //
 
-    osg::Vec3 center_color;
-    osg::Vec3 upper_color[12];
-    osg::Vec3 middle_color[12];
-    osg::Vec3 lower_color[12];
-    osg::Vec3 bottom_color[12];
+    // Magic factors for coloring the sky according visibility and
+    // zenith angle.
+    const double cvf = osg::clampBelow(vis, 45000.0);
+    const double vis_factor = osg::clampTo((vis - 1000.0) / 2000.0, 0.0, 1.0);
+    const float upperVisFactor = 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000);
+    const float middleVisFactor = 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000);
 
-    double vis_factor, cvf = vis;
-
-    if (cvf > 45000)
-        cvf = 45000;
-
-    vis_factor = (vis - 1000.0) / 2000.0;
-    if ( vis_factor < 0.0 ) {
-        vis_factor = 0.0;
-    } else if ( vis_factor > 1.0) {
-        vis_factor = 1.0;
-    }
-
-    center_color = sky_color.osg();
-
-    for ( int i = 0; i < 6; i++ ) {
-	for ( int j = 0; j < 3; j++ ) {
-            double saif = sun_angle/SG_PI;
-	    double diff = (sky_color[j] - fog_color[j])
-              * (0.8 + j * 0.2) * (0.8 + saif - ((6-i)/10));
-
-	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-	    //        l->sky_color[j], l->fog_color[j], diff);
-
-	    upper_color[i][j] = sky_color[j] - diff *
-              ( 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000) );
-	    middle_color[i][j] = sky_color[j] - diff *
-              ( 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000) ) + middle_amt[j];
-	    lower_color[i][j] = fog_color[j] + outer_amt[j];
-
-	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
-	    if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
-	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
-	    if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
-	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
-	    if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
-	}
-
+    (*dome_cl)[0] = sky_color.osg();
+    simgear::VectorArrayAdapter<Vec3Array> colors(*dome_cl, numBands, 1);
+    const double saif = sun_angle/SG_PI;
+    static const SGVec3f blueShift(0.8, 1.0, 1.2);
+    const SGVec3f skyFogDelta = sky_color - fog_color;
+    // For now the colors of the upper two rings are linearly
+    // interpolated between the zenith color and the first horizon
+    // ring color.
+    
+    for (int i = 0; i < 7; i++) {
+        SGVec3f diff = mult(skyFogDelta, blueShift);
+        diff *= (0.8 + saif - ((6-i)/10));
+        colors(2, i) = (sky_color - upperVisFactor * diff).osg();
+        colors(3, i) = (sky_color - middleVisFactor * diff + middle_amt).osg();
+        colors(4, i) = (fog_color + outer_amt).osg();
+        // Interpolate using distance along dome segment
+        colors(0, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .3942);
+        colors(1, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .7885);
+        for (int j = 0; j < numRings - 1; ++j)
+            clampColor(colors(j, i));
         outer_amt -= outer_diff;
         middle_amt -= middle_diff;
-
-	/*
-	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-	       middle_color[i][3]);
-	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-	       lower_color[i][3]);
-	*/
     }
 
-    outer_amt = SGVec3f(0, 0, 0);
-    middle_amt = SGVec3f(0, 0, 0);
+    for (int i = 7; i < 12; ++i)
+        for (int j = 0; j < 5; ++j)
+            colors(j, i) = colors(j, 12 - i);
 
-    for ( int i = 6; i < 12; i++ ) {
-	for ( int j = 0; j < 3; j++ ) {
-            double saif = sun_angle/SGD_PI;
-            double diff = (sky_color[j] - fog_color[j])
-              * (0.8 + j * 0.2) * (0.8 + saif - ((-i+12)/10));
+    fade_to_black(&(*dome_cl)[0], asl * center_elev, 1);
+    for (int i = 0; i < numRings - 1; ++i)
+        fade_to_black(&colors(i, 0), (asl+0.05f) * domeParams[i].elev,
+                      numBands);
 
-	    // printf("sky = %.2f  fog = %.2f  diff = %.2f\n", 
-	    //        sky_color[j], fog_color[j], diff);
-
-	    upper_color[i][j] = sky_color[j] - diff *
-              ( 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000) );
-	    middle_color[i][j] = sky_color[j] - diff *
-              ( 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000) ) + middle_amt[j];
-	    lower_color[i][j] = fog_color[j] + outer_amt[j];
-
-	    if ( upper_color[i][j] > 1.0 ) { upper_color[i][j] = 1.0; }
-	    if ( upper_color[i][j] < 0.0 ) { upper_color[i][j] = 0.0; }
-	    if ( middle_color[i][j] > 1.0 ) { middle_color[i][j] = 1.0; }
-	    if ( middle_color[i][j] < 0.0 ) { middle_color[i][j] = 0.0; }
-	    if ( lower_color[i][j] > 1.0 ) { lower_color[i][j] = 1.0; }
-	    if ( lower_color[i][j] < 0.0 ) { lower_color[i][j] = 0.0; }
-	}
-
-        outer_amt += outer_diff;
-        middle_amt += middle_diff;
-
-	/*
-	printf("upper_color[%d] = %.2f %.2f %.2f %.2f\n", i, upper_color[i][0],
-	       upper_color[i][1], upper_color[i][2], upper_color[i][3]);
-	printf("middle_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       middle_color[i][0], middle_color[i][1], middle_color[i][2], 
-	       middle_color[i][3]);
-	printf("lower_color[%d] = %.2f %.2f %.2f %.2f\n", i, 
-	       lower_color[i][0], lower_color[i][1], lower_color[i][2], 
-	       lower_color[i][3]);
- 	*/
-   }
-
-    fade_to_black( &center_color, asl * center_elev, 1);
-    fade_to_black( upper_color, (asl+0.05f) * upper_elev, 12);
-    fade_to_black( middle_color, (asl+0.05f) * middle_elev, 12);
-    fade_to_black( lower_color, (asl+0.05f) * lower_elev, 12);
-
-    for ( int i = 0; i < 12; i++ )
-        bottom_color[i] = fog_color.osg();
-
-    //
-    // Second, assign the basic colors to the object color arrays
-    //
-
-    // update the center disk color arrays
-    int counter = 0;
-    (*center_disk_cl)[counter++] = center_color;
-    for ( int i = 11; i >= 0; i-- ) {
-        (*center_disk_cl)[counter++] = upper_color[i];
-    }
-    (*center_disk_cl)[counter++] = upper_color[11];
-    center_disk_cl->dirty();
-
-    // generate the upper ring
-    counter = 0;
-    for ( int i = 0; i < 12; i++ ) {
-        (*upper_ring_cl)[counter++] = middle_color[i];
-	(*upper_ring_cl)[counter++] = upper_color[i];
-    }
-    (*upper_ring_cl)[counter++] = middle_color[0];
-    (*upper_ring_cl)[counter++] = upper_color[0];
-    upper_ring_cl->dirty();
-
-    // generate middle ring
-    counter = 0;
-    for ( int i = 0; i < 12; i++ ) {
-        (*middle_ring_cl)[counter++] = lower_color[i];
-        (*middle_ring_cl)[counter++] = middle_color[i];
-    }
-    (*middle_ring_cl)[counter++] = lower_color[0];
-    (*middle_ring_cl)[counter++] = middle_color[0];
-    middle_ring_cl->dirty();
-
-    // generate lower ring
-    counter = 0;
-    for ( int i = 0; i < 12; i++ ) {
-        (*lower_ring_cl)[counter++] = bottom_color[i];
-        (*lower_ring_cl)[counter++] = lower_color[i];
-    }
-    (*lower_ring_cl)[counter++] = bottom_color[0];
-    (*lower_ring_cl)[counter++] = lower_color[0];
-    lower_ring_cl->dirty();
-
+    for ( int i = 0; i < numBands; i++ )
+        colors(numRings - 1, i) = fog_color.osg();
+    dome_cl->dirty();
     return true;
 }
 

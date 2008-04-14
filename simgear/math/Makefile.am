@@ -20,6 +20,7 @@ include_HEADERS = \
 	sg_random.h \
 	sg_types.hxx \
 	vector.hxx \
+	Math.hxx \
 	SGBox.hxx \
 	SGCMath.hxx \
 	SGGeoc.hxx \

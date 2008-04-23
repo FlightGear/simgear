@@ -2027,14 +2027,16 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
 
   // Contains the normal geometry that is interactive
   osg::ref_ptr<osg::Group> normalGroup = new osg::Group;
+  normalGroup->setName("pick normal group");
   normalGroup->addChild(commonGroup);
 
   // Used to render the geometry with just yellow edges
   osg::Group* highlightGroup = new osg::Group;
+  highlightGroup->setName("pick highlight group");
   highlightGroup->setNodeMask(SG_NODEMASK_PICK_BIT);
   highlightGroup->addChild(commonGroup);
   SGSceneUserData* ud;
-  ud = SGSceneUserData::getOrCreateSceneUserData(highlightGroup);
+  ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
   std::vector<SGPropertyNode_ptr> actions;
   actions = getConfig()->getChildren("action");
   for (unsigned int i = 0; i < actions.size(); ++i)

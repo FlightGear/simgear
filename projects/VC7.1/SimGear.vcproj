@@ -1110,6 +1110,12 @@
 			Name="Lib_sgutil"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\QuadTreeBuilder.cxx">
 			</File>
 			<File
@@ -1162,12 +1168,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx.hxx">
 			</File>
 		</Filter>
 		<File

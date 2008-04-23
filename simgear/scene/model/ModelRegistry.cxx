@@ -19,6 +19,8 @@
 #include "ModelRegistry.hxx"
 
 #include <algorithm>
+#include <utility>
+#include <vector>
 
 #include <OpenThreads/ScopedLock>
 
@@ -41,6 +43,7 @@
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
+#include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/props/props.hxx>
@@ -76,70 +79,93 @@ private:
   ref_ptr<Referenced> mReferenced;
 };
 
-// Visitor for 
-class SGTextureUpdateVisitor : public SGTextureStateAttributeVisitor {
+// Change the StateSets of a model to hold different textures based on
+// a livery path.
+class TextureUpdateVisitor : public NodeAndDrawableVisitor {
 public:
-  SGTextureUpdateVisitor(const FilePathList& pathList) :
-    mPathList(pathList)
-  { }
-  Texture2D* textureReplace(int unit,
-                            StateSet::RefAttributePair& refAttr)
-  {
-    Texture2D* texture;
-    texture = dynamic_cast<Texture2D*>(refAttr.first.get());
-    if (!texture)
-      return 0;
-    
-    ref_ptr<Image> image = texture->getImage(0);
-    if (!image)
-      return 0;
-
-    // The currently loaded file name
-    string fullFilePath = image->getFileName();
-    // The short name
-    string fileName = getSimpleFileName(fullFilePath);
-    // The name that should be found with the current database path
-    string fullLiveryFile = findFileInPath(fileName, mPathList);
-    // If it is empty or they are identical then there is nothing to do
-    if (fullLiveryFile.empty() || fullLiveryFile == fullFilePath)
-      return 0;
-
-    image = readImageFile(fullLiveryFile);
-    if (!image)
-      return 0;
-
-    CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);
-    texture = static_cast<Texture2D*>(copyOp(texture));
-    if (!texture)
-      return 0;
-    texture->setImage(image.get());
-    return texture;
-  }
-  virtual void apply(StateSet* stateSet)
-  {
-    if (!stateSet)
-      return;
-
-    // get a copy that we can safely modify the statesets values.
-    StateSet::TextureAttributeList attrList;
-    attrList = stateSet->getTextureAttributeList();
-    for (unsigned unit = 0; unit < attrList.size(); ++unit) {
-      StateSet::AttributeList::iterator i = attrList[unit].begin();
-      while (i != attrList[unit].end()) {
-        Texture2D* texture = textureReplace(unit, i->second);
-        if (texture) {
-          stateSet->removeTextureAttribute(unit, i->second.first.get());
-          stateSet->setTextureAttribute(unit, texture, i->second.second);
-          stateSet->setTextureMode(unit, GL_TEXTURE_2D, StateAttribute::ON);
-        }
-        ++i;
-      }
+    TextureUpdateVisitor(const FilePathList& pathList) : _pathList(pathList) {}
+    virtual void apply(Node& node)
+    {
+        StateSet* stateSet = cloneStateSet(node.getStateSet());
+        if (stateSet)
+            node.setStateSet(stateSet);
+        traverse(node);
     }
-  }
 
+    virtual void apply(Drawable& drawable)
+    {
+        StateSet* stateSet = cloneStateSet(drawable.getStateSet());
+        if (stateSet)
+            drawable.setStateSet(stateSet);
+    }
+    // Copied whole from Mathias' earlier SGTextureUpdateVisitor
+protected:
+    Texture2D* textureReplace(int unit, const StateAttribute* attr)
+    {
+        const Texture2D* texture = dynamic_cast<const Texture2D*>(attr);
+
+        if (!texture)
+            return 0;
+    
+        const Image* image = texture->getImage(0);
+        if (!image)
+            return 0;
+
+        // The currently loaded file name
+        const string& fullFilePath = image->getFileName();
+        // The short name
+        string fileName = getSimpleFileName(fullFilePath);
+        // The name that should be found with the current database path
+        string fullLiveryFile = findFileInPath(fileName, _pathList);
+        // If it is empty or they are identical then there is nothing to do
+        if (fullLiveryFile.empty() || fullLiveryFile == fullFilePath)
+            return 0;
+
+        Image* newImage = readImageFile(fullLiveryFile);
+        if (!newImage)
+            return 0;
+
+        CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);
+        Texture2D* newTexture = static_cast<Texture2D*>(copyOp(texture));
+        if (!newTexture) {
+            return 0;
+        } else {
+            newTexture->setImage(newImage);
+            return newTexture;
+        }
+    }
+    StateSet* cloneStateSet(const StateSet* stateSet)
+    {
+        typedef pair<int, Texture2D*> Tex2D;
+        vector<Tex2D> newTextures;
+        StateSet* result = 0;
+
+        if (!stateSet)
+            return 0;
+        int numUnits = stateSet->getTextureAttributeList().size();
+        if (numUnits > 0) {
+            for (int i = 0; i < numUnits; ++i) {
+                const StateAttribute* attr
+                    = stateSet->getTextureAttribute(i, StateAttribute::TEXTURE);
+                Texture2D* newTexture = textureReplace(i, attr);
+                if (newTexture)
+                    newTextures.push_back(Tex2D(i, newTexture));
+            }
+            if (!newTextures.empty()) {
+                result = static_cast<StateSet*>(stateSet->clone(CopyOp()));
+                for (vector<Tex2D>::iterator i = newTextures.begin();
+                     i != newTextures.end();
+                     ++i) {
+                    result->setTextureAttribute(i->first, i->second);
+                }
+            }
+        }
+        return result;
+    }
 private:
-  FilePathList mPathList;
+    FilePathList _pathList;
 };
+
 
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
@@ -352,8 +378,9 @@ osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
     res->addObserver(databaseReference);
 
     // Update liveries
-    SGTextureUpdateVisitor liveryUpdate(opt->getDatabasePathList());
+    TextureUpdateVisitor liveryUpdate(opt->getDatabasePathList());
     res->accept(liveryUpdate);
+
     return res;
 }
 

@@ -1163,6 +1163,12 @@
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx.hxx">
+			</File>
 		</Filter>
 		<File
 			RelativePath="..\..\simgear\simgear_config.h-msvc71">

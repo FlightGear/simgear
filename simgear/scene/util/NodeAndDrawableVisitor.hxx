@@ -31,9 +31,9 @@ namespace simgear
 class NodeAndDrawableVisitor : public osg::NodeVisitor
 {
 public:
-    NodeAndDrawableVisitor(osg::NodeVisitor::TraversalMode tm = osg::NodeVisitor::TRAVERSE_NONE);
+    NodeAndDrawableVisitor(osg::NodeVisitor::TraversalMode tm);
     NodeAndDrawableVisitor(osg::NodeVisitor::VisitorType type,
-                           osg::NodeVisitor::TraversalMode tm = osg::NodeVisitor::TRAVERSE_NONE);
+                           osg::NodeVisitor::TraversalMode tm);
     virtual ~NodeAndDrawableVisitor();
     using osg::NodeVisitor::apply;
     virtual void apply(osg::Node& node);

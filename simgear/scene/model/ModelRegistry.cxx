@@ -79,11 +79,57 @@ private:
   ref_ptr<Referenced> mReferenced;
 };
 
+// Set the name of a Texture to the simple name of its image
+// file. This can be used to do livery substitution after the image
+// has been deallocated.
+class TextureNameVisitor  : public NodeAndDrawableVisitor {
+public:
+    TextureNameVisitor(NodeVisitor::TraversalMode tm = NodeVisitor::TRAVERSE_ALL_CHILDREN) :
+        NodeAndDrawableVisitor(tm)
+    {
+    }
+
+    virtual void apply(Node& node)
+    {
+        nameTextures(node.getStateSet());
+        traverse(node);
+    }
+
+    virtual void apply(Drawable& drawable)
+    {
+        nameTextures(drawable.getStateSet());
+    }
+protected:
+    void nameTextures(StateSet* stateSet)
+    {
+        if (!stateSet)
+            return;
+        int numUnits = stateSet->getTextureAttributeList().size();
+        for (int i = 0; i < numUnits; ++i) {
+            StateAttribute* attr
+                = stateSet->getTextureAttribute(i, StateAttribute::TEXTURE);
+            Texture2D* texture = dynamic_cast<Texture2D*>(attr);
+            if (!texture || !texture->getName().empty())
+                continue;
+            const Image *image = texture->getImage();
+            if (!image)
+                continue;
+            texture->setName(image->getFileName());
+        }
+    }
+};
+
 // Change the StateSets of a model to hold different textures based on
 // a livery path.
+
 class TextureUpdateVisitor : public NodeAndDrawableVisitor {
 public:
-    TextureUpdateVisitor(const FilePathList& pathList) : _pathList(pathList) {}
+    TextureUpdateVisitor(const FilePathList& pathList) :
+        NodeAndDrawableVisitor(NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _pathList(pathList)
+    {
+    }
+    
     virtual void apply(Node& node)
     {
         StateSet* stateSet = cloneStateSet(node.getStateSet());
@@ -98,7 +144,7 @@ public:
         if (stateSet)
             drawable.setStateSet(stateSet);
     }
-    // Copied whole from Mathias' earlier SGTextureUpdateVisitor
+    // Copied from Mathias' earlier SGTextureUpdateVisitor
 protected:
     Texture2D* textureReplace(int unit, const StateAttribute* attr)
     {
@@ -107,24 +153,27 @@ protected:
         if (!texture)
             return 0;
     
-        const Image* image = texture->getImage(0);
-        if (!image)
-            return 0;
+        const Image* image = texture->getImage();
+        const string* fullFilePath = 0;
+        if (image) {
+            // The currently loaded file name
+            fullFilePath = &image->getFileName();
 
-        // The currently loaded file name
-        const string& fullFilePath = image->getFileName();
+        } else {
+            fullFilePath = &texture->getName();
+        }
         // The short name
-        string fileName = getSimpleFileName(fullFilePath);
+        string fileName = getSimpleFileName(*fullFilePath);
+        if (fileName.empty())
+            return 0;
         // The name that should be found with the current database path
         string fullLiveryFile = findFileInPath(fileName, _pathList);
         // If it is empty or they are identical then there is nothing to do
-        if (fullLiveryFile.empty() || fullLiveryFile == fullFilePath)
+        if (fullLiveryFile.empty() || fullLiveryFile == *fullFilePath)
             return 0;
-
         Image* newImage = readImageFile(fullLiveryFile);
         if (!newImage)
             return 0;
-
         CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);
         Texture2D* newTexture = static_cast<Texture2D*>(copyOp(texture));
         if (!newTexture) {
@@ -134,6 +183,7 @@ protected:
             return newTexture;
         }
     }
+    
     StateSet* cloneStateSet(const StateSet* stateSet)
     {
         typedef pair<int, Texture2D*> Tex2D;
@@ -261,6 +311,14 @@ struct OptionsPusher {
     }
 };
 } // namespace
+
+Node* DefaultProcessPolicy::process(Node* node, const string& filename,
+                                    const ReaderWriter::Options* opt)
+{
+    TextureNameVisitor nameVisitor;
+    node->accept(nameVisitor);
+    return node;
+}
 
 ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,

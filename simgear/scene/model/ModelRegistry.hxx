@@ -128,10 +128,7 @@ protected:
 struct DefaultProcessPolicy {
     DefaultProcessPolicy(const std::string& extension) {}
     osg::Node* process(osg::Node* node, const std::string& filename,
-                       const osgDB::ReaderWriter::Options* opt)
-    {
-        return node;
-    }
+                       const osgDB::ReaderWriter::Options* opt);
 };
 
 struct DefaultCachePolicy {

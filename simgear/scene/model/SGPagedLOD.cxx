@@ -47,6 +47,8 @@ bool SGPagedLOD::addChild(osg::Node *child)
     if (!PagedLOD::addChild(child))
         return false;
 
+    setRadius(getBound().radius());
+    setCenter(getBound().center());
     // if the model was an .xml-file it will have UserData set
     osg::ref_ptr<SGModelData> d = dynamic_cast<SGModelData*>(child->getUserData());
     if (d.valid())

@@ -91,7 +91,7 @@ public:
     /**
      * Concatenate a string to the end of the path without inserting a
      * path separator.
-     * @param p addtional path suffix
+     * @param p additional path suffix
      */
     void concat( const string& p );
 
@@ -114,8 +114,8 @@ public:
     string base() const;
 
     /**
-     * Get the extention part of the path (everything after the final ".")
-     * @return the extention string
+     * Get the extension part of the path (everything after the final ".")
+     * @return the extension string
      */
     string extension() const;
 
@@ -139,8 +139,9 @@ public:
 
     /**
      * Create the designated directory.
+     * @return 0 on success, or <0 on failure.
      */
-    void create_dir(mode_t mode);
+    int create_dir(mode_t mode);
 
 private:
 

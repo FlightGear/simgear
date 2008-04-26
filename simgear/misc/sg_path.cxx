@@ -165,7 +165,7 @@ string SGPath::base() const {
     }
 }
 
-// get the extention (everything after the final ".")
+// get the extension (everything after the final ".")
 // but make sure no "/" follows the "." character (otherwise it
 // is has to be a directory name containing a ".").
 string SGPath::extension() const {
@@ -193,10 +193,10 @@ bool SGPath::exists() const {
 #endif
 
 
-void SGPath::create_dir( mode_t mode ) {
+int SGPath::create_dir( mode_t mode ) {
     string_list dirlist = sgPathSplit(dir());
     if ( dirlist.empty() )
-        return;
+        return -1;
     string path = dirlist[0];
     string_list path_elements = sgPathBranchSplit(path);
     bool absolute = !path.empty() && path[0] == sgDirPathSep;
@@ -216,19 +216,21 @@ void SGPath::create_dir( mode_t mode ) {
         dir.append(path_elements[i]);
     }
     if ( r == 0 ) {
-        return; // Directory already exists
+        return 0; // Directory already exists
     }
     if ( sgMkDir( dir.c_str(), mode) ) {
         SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
-        return;
+        return -2;
     }
-    for(;i < path_elements.size(); i++) {
+    for(; i < path_elements.size(); i++) {
         dir.append(path_elements[i]);
         if ( sgMkDir( dir.c_str(), mode) ) {
             SG_LOG( SG_IO, SG_ALERT, "Error creating directory: " + dir.str() );
-            break;
+            return -2;
         }
     }
+
+    return 0;
 }
 
 string_list sgPathBranchSplit( const string &dirpath ) {

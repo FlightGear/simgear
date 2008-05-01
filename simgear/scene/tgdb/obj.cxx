@@ -777,7 +777,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     if (randomObjects.valid()) objectLOD->addChild(randomObjects.get(), 0, 20000);
     if (randomForest.valid())  objectLOD->addChild(randomForest.get(), 0, 20000);
     
-    unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT;
+    unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
     objectLOD->setNodeMask(nodeMask);
     transform->addChild(objectLOD);
   }

@@ -60,7 +60,7 @@ void sgUserDataInit( SGPropertyNode *p ) {
     root_props = p;
 }
 
- osg::Node* sgGetRandomModel(SGMatModel *obj) {
+osg::Node* sgGetRandomModel(SGMatModel *obj) {
    return obj->get_random_model( root_props );
  }
 

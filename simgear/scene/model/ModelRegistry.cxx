@@ -252,7 +252,7 @@ public:
     texture = dynamic_cast<Texture*>(refAttr.first.get());
     if (!texture)
       return;
-    
+
     texture->setDataVariance(Object::STATIC);
   }
 
@@ -406,7 +406,7 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
     // STATIC so that textures will be globally shared.
     SGTexDataVarianceVisitor dataVarianceVisitor;
     node->accept(dataVarianceVisitor);
-      
+
     SGTexCompressionVisitor texComp;
     node->accept(texComp);
     return node;
@@ -585,4 +585,4 @@ typedef ModelRegistryCallback<ACProcessPolicy, DefaultCachePolicy,
 namespace
 {
 ModelRegistryCallbackProxy<ACCallback> g_acRegister("ac");
-}   
+}

@@ -15,7 +15,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 #ifndef SGREADERWRITERBTGOPTIONS_HXX
-#define SGREADERWRITERBTGOPTIONS_HXX 1
+#define SGREADERWRITERBTGOPTIONS_HXX
 
 #include <osgDB/ReaderWriter>
 #include <simgear/scene/tgdb/obj.hxx>
@@ -28,7 +28,7 @@ public:
         _useRandomObjects(false),
         _useRandomVegetation(false)
     {}
-    
+
     SGReaderWriterBTGOptions(const SGReaderWriterBTGOptions& options,
             const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
         osgDB::ReaderWriter::Options(options, copyop),

@@ -893,6 +893,21 @@
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\userdata.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TileCache.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TileCache.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TileEntry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TileEntry.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\ReaderWriterSTG.cxx">
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgthread"

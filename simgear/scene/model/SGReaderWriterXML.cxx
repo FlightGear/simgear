@@ -181,6 +181,7 @@ sgLoad3DModel_internal(const string &path,
             throw sg_io_exception("Failed to load 3D model",
                                   sg_location(modelpath.str()));
     }
+    model->setName(modelpath.str());
 
     bool needTransform=false;
     // Set up the alignment node if needed

@@ -9,10 +9,10 @@ http://www.openscenegraph.org/
 
 Build notes:
 
-Unzip the file OpenSceneGraph-2.0.zip and install using the following
+Unzip the file OpenSceneGraph-2.4.zip and install using the following
 commands:
 
-unzip OpenSceneGraph-2.0
+unzip OpenSceneGraph-2.4
 cd OpenSceneGraph
 ccmake .
 

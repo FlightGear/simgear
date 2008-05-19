@@ -1,6 +1,6 @@
 [This file is mirrored in both the FlightGear and SimGear packages.]
 
-You *must* have plib version 1.8.4 or later installed on your system
+You *must* have plib version 1.8.5 or later installed on your system
 to build FlightGear!"  Flight Gear is no longer compatible with the
 earlier versions of the library.
 
@@ -30,19 +30,3 @@ cd plib
 make
 make install
 
-Alternatively, it is relatively straightforward to fix the compilation 
-problems in plib
-
-The two errors reported are the following:
-ssgaSky.h:107: error: extra qualification ‘ssgaCelestialBodyList::’ on member ‘ssgaCelestialBodyList’
-ssgaSky.h:195: error: extra qualification ‘ssgaCloudLayerList::’ on member ‘ssgaCloudLayerList’
-
-To fix, open the file plib-1.8.4/src/ssgAux/ssgaSky.h
-
-and change line 107 to read:
-  ~ssgaCelestialBodyList () { removeAll(); }
-and change line 195 to read:
-  ~ssgaCloudLayerList () { removeAll(); }
-
-In other words, remove the "extra qualification" parts from both lines. 
-After these changes, plib-1.8.4. should build and install correctly.

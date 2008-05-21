@@ -47,7 +47,7 @@ static double _snd_log(double v)   { return log(fabs(v)); }
 // static double _snd_pow3(double v)  { return v*v*v; }
 
 static const struct {
-	char *name;
+	const char *name;
 	double (*fn)(double);
 } __sound_fn[] = {
 //	{"lin", _snd_lin},

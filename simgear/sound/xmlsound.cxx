@@ -70,6 +70,7 @@ SGXmlSound::SGXmlSound()
     _prev_value(0),
     _dt_play(0.0),
     _dt_stop(0.0),
+    _delay(0.0),
     _stopping(0.0)
 {
 }
@@ -119,6 +120,8 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    if (!_property && !_condition)
       SG_LOG(SG_GENERAL, SG_WARN,
              "  Neither a condition nor a property specified");
+
+   _delay = node->getDoubleValue("delay-sec", 0.0);
 
    //
    // set volume properties
@@ -347,6 +350,9 @@ SGXmlSound::update (double dt)
       _prev_value = curr_value;
       _stopping = 0.0;
    }
+
+   if (_dt_play < _delay)
+      return;
 
    //
    // Update the volume

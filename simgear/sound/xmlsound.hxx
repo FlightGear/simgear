@@ -76,6 +76,7 @@ public:
    *    <path/> The relative path to the audio file.
    *    <property/> Take action if this property becomes true.
    *    <condition/> Take action if this condition becomes true.
+   *    <delay-sec/> Time after which the sound should be played.
    *    <volume> or <pitch> Define volume or pitch settings.
    *     <property/> Take the value of this property as a refference for the
    *                 result.
@@ -144,6 +145,7 @@ private:
   double _prev_value;
   double _dt_play;
   double _dt_stop;
+  double _delay;        // time after which the sound should be started (default: 0)
   double _stopping;	// time after the sound should have stopped.
 			// This is usefull for lost packets in in-trasit mode.
 

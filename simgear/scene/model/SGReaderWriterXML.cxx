@@ -132,6 +132,10 @@ sgLoad3DModel_internal(const string &path,
                        SGModelData *data,
                        osg::Node *(*load_panel)(SGPropertyNode *))
 {
+    if ( !prop_root ) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "prop_root NULL: " << path);
+
+    }
     string fg_root=osgDB::Registry::instance()->getDataFilePathList().front();
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;

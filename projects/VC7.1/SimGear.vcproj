@@ -852,6 +852,9 @@
 				RelativePath="..\..\simgear\scene\tgdb\pt_lights.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\ReaderWriterSTG.cxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGModelBin.hxx">
 			</File>
 			<File
@@ -882,18 +885,6 @@
 				RelativePath="..\..\simgear\scene\tgdb\ShaderGeometry.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\tgdb\TreeBin.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\tgdb\TreeBin.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\tgdb\userdata.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\tgdb\userdata.hxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\tgdb\TileCache.cxx">
 			</File>
 			<File
@@ -906,7 +897,16 @@
 				RelativePath="..\..\simgear\scene\tgdb\TileEntry.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\tgdb\ReaderWriterSTG.cxx">
+				RelativePath="..\..\simgear\scene\tgdb\TreeBin.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\TreeBin.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\userdata.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\userdata.hxx">
 			</File>
 		</Filter>
 		<Filter
@@ -1002,9 +1002,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\SGSmplstat.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\structure\ssgSharedPtr.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\subsystem_mgr.cxx">

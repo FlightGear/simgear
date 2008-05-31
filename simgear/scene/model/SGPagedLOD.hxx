@@ -36,7 +36,7 @@ public:
 
     SGPagedLOD(const SGPagedLOD&,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY);
 
-    META_Node(osg, PagedLOD);
+    META_Node(osg, SGPagedLOD);
 
     // virtual void traverse(osg::NodeVisitor& nv);
     virtual void forceLoad(osgDB::DatabasePager* dbp);

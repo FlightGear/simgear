@@ -63,7 +63,7 @@ static bool print_openal_error(const string &s = "unknown") {
     } else {
         SG_LOG( SG_GENERAL, SG_ALERT, "Unhandled error code = " << error );
     }
-    return error;
+    return error != 0;
 }
 
 // empry constructor

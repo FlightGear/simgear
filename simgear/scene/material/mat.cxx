@@ -303,7 +303,7 @@ void SGMaterial::set_state( osg::StateSet *s )
 }
 
 void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
-                 int _wrapu, int _wrapv, int _mipmap )
+                 bool _wrapu, bool _wrapv, bool _mipmap )
 {
    osg::Texture2D* texture = SGLoadTexture2D(fname, 0, _wrapu, _wrapv,
                                              mipmap ? -1 : 0);

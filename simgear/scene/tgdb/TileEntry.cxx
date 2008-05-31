@@ -237,7 +237,7 @@ bool TileEntry::obj_load( const string& path,
     if (node)
       geometry->addChild(node);
 
-    return node;
+    return node != 0;
 }
 
 

@@ -299,7 +299,7 @@ private:
   bool wrapu, wrapv;
 
   // use mipmapping?
-  int mipmap;
+  bool mipmap;
 
   // coverage of night lighting.
   double light_coverage;
@@ -359,7 +359,7 @@ private:
   void build_state( bool defer_tex_load );
   void set_state( osg::StateSet *s );
 
-  void assignTexture( osg::StateSet *state, const std::string &fname, int _wrapu = TRUE, int _wrapv = TRUE, int _mipmap = TRUE );
+  void assignTexture( osg::StateSet *state, const std::string &fname, bool _wrapu = true, bool _wrapv = true, bool _mipmap = true );
 
 };
 

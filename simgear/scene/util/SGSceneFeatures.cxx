@@ -44,14 +44,14 @@ SGSceneFeatures::SGSceneFeatures() :
 {
 }
 
+static SGMutex mutexSGSceneFeatures_instance;
 SGSceneFeatures*
 SGSceneFeatures::instance()
 {
   static SGSharedPtr<SGSceneFeatures> sceneFeatures;
   if (sceneFeatures)
     return sceneFeatures;
-  static SGMutex mutex;
-  SGGuard<SGMutex> guard(mutex);
+  SGGuard<SGMutex> guard(mutexSGSceneFeatures_instance);
   if (sceneFeatures)
     return sceneFeatures;
   sceneFeatures = new SGSceneFeatures;

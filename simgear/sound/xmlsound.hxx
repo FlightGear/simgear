@@ -33,6 +33,8 @@
 # error This library requires C++
 #endif
 
+#include <vector>
+
 #include <simgear/compiler.h>
 #include <simgear/props/condition.hxx>
 
@@ -149,8 +151,8 @@ private:
   double _stopping;	// time after the sound should have stopped.
 			// This is usefull for lost packets in in-trasit mode.
 
-  vector<_snd_prop> _volume;
-  vector<_snd_prop> _pitch;
+  std::vector<_snd_prop> _volume;
+  std::vector<_snd_prop> _pitch;
 
 };
 

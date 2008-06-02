@@ -9,29 +9,17 @@
 #include "props.hxx"
 
 #include <algorithm>
+
 #include <sstream>
 #include <stdio.h>
 #include <string.h>
 
 #if PROPS_STANDALONE
-
 #include <iostream>
-using std::cerr;
-using std::endl;
-using std::find;
-using std::sort;
-using std::vector;
-using std::stringstream;
-
 #else
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-
-SG_USING_STD(sort);
-SG_USING_STD(find);
-SG_USING_STD(vector);
-SG_USING_STD(stringstream);
 
 #if ( _MSC_VER == 1200 )
 // MSVC 6 is buggy, and needs something strange here
@@ -39,8 +27,17 @@ SG_USING_STD(vector<SGPropertyNode_ptr>);
 SG_USING_STD(vector<SGPropertyChangeListener *>);
 SG_USING_STD(vector<SGPropertyNode *>);
 #endif
-
 #endif
+
+#if PROPS_STANDALONE
+using std::cerr;
+#endif
+using std::endl;
+using std::find;
+using std::sort;
+using std::string;
+using std::vector;
+using std::stringstream;
 
 
 

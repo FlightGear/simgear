@@ -208,7 +208,7 @@ public:
   }
 };
     
-typedef map<osg::ref_ptr<osg::Texture2D>, osg::ref_ptr<osg::StateSet> >
+typedef std::map<osg::ref_ptr<osg::Texture2D>, osg::ref_ptr<osg::StateSet> >
 StateSetMap;
 }
 

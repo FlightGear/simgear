@@ -38,6 +38,8 @@ SG_USING_STD(string);
 SG_USING_STD(vector);
 SG_USING_STD(map);
 
+using std::endl;
+
 #define DEFAULT_MODE (SGPropertyNode::READ|SGPropertyNode::WRITE)
 
 

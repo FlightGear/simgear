@@ -33,29 +33,10 @@
 #include <simgear/constants.h>
 #include <simgear/math/SGMath.hxx>
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <cmath>
-#  include <cstdio> // sprintf()
-#else
-#  include <math.h>
-#  include <stdio.h> // sprintf()
-#endif
-
-#include STL_IOSTREAM
-
-// I don't understand ... <math.h> or <cmath> should be included
-// already depending on how you defined SG_HAVE_STD_INCLUDES, but I
-// can go ahead and add this -- CLO
-#ifdef __MWERKS__
-SG_USING_STD(sprintf);
-SG_USING_STD(fabs);
-#endif
-
-#include STL_STRING
-
-SG_USING_STD(string);
-SG_USING_STD(ostream);
-
+#include <cmath>
+#include <cstdio> // sprintf()
+#include <ostream>
+#include <string>
 
 /**
  * standard size of a bucket in degrees (1/8 of a degree)
@@ -210,18 +191,19 @@ public:
      * string form.
      * @return tile index in string form
      */
-    inline string gen_index_str() const {
+    inline std::string gen_index_str() const {
 	char tmp[20];
-	sprintf(tmp, "%ld", 
-                (((long)lon + 180) << 14) + ((lat + 90) << 6) + (y << 3) + x);
-	return (string)tmp;
+	std::sprintf(tmp, "%ld", 
+                     (((long)lon + 180) << 14) + ((lat + 90) << 6)
+                     + (y << 3) + x);
+	return (std::string)tmp;
     }
 
     /**
      * Build the base path name for this bucket.
      * @return base path in string form
      */
-    string gen_base_path() const;
+    std::string gen_base_path() const;
 
     /**
      * @return the center lon of a tile.
@@ -306,7 +288,7 @@ public:
 
     // friends
 
-    friend ostream& operator<< ( ostream&, const SGBucket& );
+    friend std::ostream& operator<< ( std::ostream&, const SGBucket& );
     friend bool operator== ( const SGBucket&, const SGBucket& );
 };
 
@@ -345,8 +327,8 @@ void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy );
  * @param out output stream
  * @param b bucket
  */
-inline ostream&
-operator<< ( ostream& out, const SGBucket& b )
+inline std::ostream&
+operator<< ( std::ostream& out, const SGBucket& b )
 {
     return out << b.lon << ":" << b.x << ", " << b.lat << ":" << b.y;
 }

@@ -41,28 +41,12 @@
 # define exception c_exception
 #endif
 
-#ifdef SG_HAVE_STD_INCLUDES
-# include <iostream>
-# include <cassert>
-# include <cmath>
-#else
-# include <iostream.h>
-# include <assert.h>
-# include <math.h>
-#endif
+#include <ostream>
+#include <istream>
+#include <cassert>
+#include <cmath>
 
 #include "SGMath.hxx"
-
-// I don't understand ... <math.h> or <cmath> should be included
-// already depending on how you defined SG_HAVE_STD_INCLUDES, but I
-// can go ahead and add this -- CLO
-#ifdef __MWERKS__
-SG_USING_NAMESPACE(std);
-#endif
-
-SG_USING_STD(ostream);
-SG_USING_STD(istream);
-
 
 const double fgPoint3_Epsilon = 0.0000001;
 
@@ -70,8 +54,8 @@ enum {PX, PY, PZ};		    // axes
 
 // Kludge for msvc++ 6.0 - requires forward decls of friend functions.
 class Point3D;
-istream& operator>> ( istream&, Point3D& );
-ostream& operator<< ( ostream&, const Point3D& );
+std::istream& operator>> ( std::istream&, Point3D& );
+std::ostream& operator<< ( std::ostream&, const Point3D& );
 Point3D operator- (const Point3D& p);	            // -p1
 bool operator== (const Point3D& a, const Point3D& b);  // p1 == p2?
 
@@ -141,8 +125,8 @@ public:
     // friends
     friend Point3D operator - (const Point3D& p);	            // -p1
     friend bool operator == (const Point3D& a, const Point3D& b);  // p1 == p2?
-    friend istream& operator>> ( istream&, Point3D& );
-    friend ostream& operator<< ( ostream&, const Point3D& );
+    friend std::istream& operator>> ( std::istream&, Point3D& );
+    friend std::ostream& operator<< ( std::ostream&, const Point3D& );
 
     // Special functions
     double distance3D(const Point3D& a) const;        // distance between
@@ -151,8 +135,8 @@ public:
 
 
 // input from stream
-inline istream&
-operator >> ( istream& in, Point3D& p)
+inline std::istream&
+operator >> ( std::istream& in, Point3D& p)
 {
     char c;
 
@@ -183,8 +167,8 @@ operator >> ( istream& in, Point3D& p)
     return in;
 }
 
-inline ostream&
-operator<< ( ostream& out, const Point3D& p )
+inline std::ostream&
+operator<< ( std::ostream& out, const Point3D& p )
 {
     return out << p.n[PX] << ", " << p.n[PY] << ", " << p.n[PZ];
 }

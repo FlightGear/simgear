@@ -128,7 +128,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    unsigned int i;
    float v = 0.0;
-   vector<SGPropertyNode_ptr> kids = node->getChildren("volume");
+   std::vector<SGPropertyNode_ptr> kids = node->getChildren("volume");
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
       _snd_prop volume = {NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
 

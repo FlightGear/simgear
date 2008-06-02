@@ -45,14 +45,10 @@
 
 #include <simgear/misc/zfstream.hxx>
 
-SG_USING_STD(string);
-SG_USING_STD(istream);
-
-
 /**
  * An envelope class for gzifstream.
  */
-class sg_gzifstream : private gzifstream_base, public istream
+class sg_gzifstream : private gzifstream_base, public std::istream
 {
 public:
     /** Default constructor */
@@ -64,7 +60,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    sg_gzifstream( const string& name,
+    sg_gzifstream( const std::string& name,
 		   ios_openmode io_mode = ios_in | ios_binary );
 
     /**
@@ -79,7 +75,7 @@ public:
      * @param name name of file
      * @param io_mode file open mode(s) "or'd" together
      */
-    void open( const string& name,
+    void open( const std::string& name,
 	       ios_openmode io_mode = ios_in|ios_binary );
 
     /**
@@ -108,14 +104,14 @@ private:
  * An istream manipulator that skips to end of line.
  * @param in input stream
  */
-istream& skipeol( istream& in );
+std::istream& skipeol( std::istream& in );
 
 /**
  * \relates sg_gzifstream
  * An istream manipulator that skips over white space.
  * @param in input stream
  */
-istream& skipws( istream& in );
+std::istream& skipws( std::istream& in );
 
 /**
  * \relates sg_gzifstream
@@ -123,7 +119,7 @@ istream& skipws( istream& in );
  * Ignores comments that start with '#'.
  * @param in input stream
  */
-istream& skipcomment( istream& in );
+std::istream& skipcomment( std::istream& in );
 
 
 #endif /* _SGSTREAM_HXX */

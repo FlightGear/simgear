@@ -34,6 +34,7 @@
 
 #include <vector>
 #include STL_STRING
+#include <iostream>
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -45,6 +46,8 @@
 SG_USING_STD( string );
 SG_USING_STD( vector );
 
+using std::cout;
+using std::endl;
 
 enum sgObjectTypes {
     SG_BOUNDING_SPHERE = 0,

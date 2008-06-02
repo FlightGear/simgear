@@ -20,9 +20,11 @@
 //
 // $Id$
 
+#include <iostream>
+
 #include "logstream.hxx"
 
-logstream *global_logstream = NULL;
+logstream *logstream::global_logstream = 0;
 
 bool            logbuf::logging_enabled = true;
 #ifdef _MSC_VER
@@ -90,3 +92,22 @@ logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
     logbuf::set_log_level( c, p );
 }
 
+void
+logstream::initGlobalLogstream()
+{
+    // Force initialization of cerr.
+    static std::ios_base::Init initializer;
+    // XXX Is the following still necessary?
+#ifdef __APPLE__
+    /**
+     * There appears to be a bug in the C++ runtime in Mac OS X that
+     * will crash if certain funtions are called (in this case
+     * cerr.rdbuf()) during static initialization of a class. This
+     * print statement is hack to kick the library in the pants so it
+     * won't crash when cerr.rdbuf() is first called -DW 
+     **/
+    std::cout << "Using Mac OS X hack for initializing C++ stdio..."
+              << std::endl;
+#endif
+    global_logstream = new logstream(std::cerr);
+}

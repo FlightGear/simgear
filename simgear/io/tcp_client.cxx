@@ -7,6 +7,8 @@
 #include <unistd.h>
 #endif
 
+#include <iostream>
+
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_socket.hxx"
@@ -49,7 +51,7 @@ TcpClient::process()
 
     sprintf( wbuf, "hello world\n" );
     int length = channel->writestring( wbuf );
-    cout << "writestring returned " << length << "\n";
+    std::cout << "writestring returned " << length << "\n";
 
     return true;
 }
@@ -67,7 +69,7 @@ main()
     TcpClient client( "localhost", "5500" );
     if (!client.open())
     {
-	cout << "client open failed\n";
+        std::cout << "client open failed\n";
 	return 0;
     }
 

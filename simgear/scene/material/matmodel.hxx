@@ -31,6 +31,7 @@
 #include <simgear/compiler.h>
 
 #include STL_STRING      // Standard C++ string library
+#include <vector>
 
 #include <osg/ref_ptr>
 #include <osg/Node>
@@ -41,8 +42,6 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/math/sg_random.h>
-
-SG_USING_STD(string);
 
 
 class SGMatModelGroup;
@@ -142,8 +141,8 @@ private:
      */
     void load_models( SGPropertyNode *prop_root );
 
-    vector<string> _paths;
-    mutable vector<osg::ref_ptr<osg::Node> > _models;
+    std::vector<std::string> _paths;
+    mutable std::vector<osg::ref_ptr<osg::Node> > _models;
     mutable bool _models_loaded;
     double _coverage_m2;
     double _range_m;
@@ -199,7 +198,7 @@ protected:
 private:
 
     double _range_m;
-    vector<SGSharedPtr<SGMatModel> > _objects;
+    std::vector<SGSharedPtr<SGMatModel> > _objects;
 };
 
 #endif // _SG_MAT_MODEL_HXX 

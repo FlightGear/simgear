@@ -33,7 +33,7 @@
 
 #ifdef SG_HAVE_STD_INCLUDES
 # include <streambuf>
-# include <iostream>
+# include <ostream>
 #else
 # include <iostream.h>
 # include <simgear/sg_traits.hxx>
@@ -43,9 +43,6 @@
 
 SG_USING_STD(streambuf);
 SG_USING_STD(ostream);
-SG_USING_STD(cout);
-SG_USING_STD(cerr);
-SG_USING_STD(endl);
 
 #ifdef __MWERKS__
 SG_USING_STD(iostream);
@@ -67,7 +64,7 @@ SG_USING_STD(iostream);
 #ifdef SG_NEED_STREAMBUF_HACK
 class logbuf : public __streambuf
 #else
-class logbuf : public streambuf
+class logbuf : public std::streambuf
 #endif
 {
 public:
@@ -137,7 +134,7 @@ public:
      * Set the stream buffer
      * @param sb stream buffer
      */
-    void set_sb( streambuf* sb );
+    void set_sb( std::streambuf* sb );
 
 #ifdef _MSC_VER
     static void has_no_console() { has_console = false; }
@@ -155,7 +152,7 @@ protected:
 private:
 
     // The streambuf used for actual output. Defaults to cerr.rdbuf().
-    static streambuf* sbuf;
+    static std::streambuf* sbuf;
 
     static bool logging_enabled;
 #ifdef _MSC_VER
@@ -238,23 +235,23 @@ struct logstream_base
 /**
  * Class to manage the debug logging stream.
  */
-class logstream : private logstream_base, public ostream
+class logstream : private logstream_base, public std::ostream
 {
 public:
     /**
      * The default is to send messages to cerr.
      * @param out output stream
      */
-    logstream( ostream& out )
+    logstream( std::ostream& out )
 	// : logstream_base(out.rdbuf()),
 	: logstream_base(),
-	  ostream(&lbuf) { lbuf.set_sb(out.rdbuf());}
+	  std::ostream(&lbuf) { lbuf.set_sb(out.rdbuf());}
 
     /**
      * Set the output stream
      * @param out output stream
      */
-    void set_output( ostream& out ) { lbuf.set_sb( out.rdbuf() ); }
+    void set_output( std::ostream& out ) { lbuf.set_sb( out.rdbuf() ); }
 
     /**
      * Set the global log class and priority level.
@@ -267,17 +264,19 @@ public:
      * Output operator to capture the debug level and priority of a message.
      * @param l log level
      */
-    inline ostream& operator<< ( const loglevel& l );
+    inline std::ostream& operator<< ( const loglevel& l );
+    friend logstream& sglog();
+protected:
+    static logstream *global_logstream;
+    static void initGlobalLogstream();
 };
 
-inline ostream&
+inline std::ostream&
 logstream::operator<< ( const loglevel& l )
 {
     lbuf.set_log_state( l.logClass, l.logPriority );
     return *this;
 }
-
-extern logstream *global_logstream;
 
 /**
  * \relates logstream
@@ -289,22 +288,10 @@ extern logstream *global_logstream;
 inline logstream&
 sglog()
 {
-  if (global_logstream == NULL) {
-
-#ifdef __APPLE__
-    /**
-     * There appears to be a bug in the C++ runtime in Mac OS X that
-     * will crash if certain funtions are called (in this case
-     * cerr.rdbuf()) during static initialization of a class. This
-     * print statement is hack to kick the library in the pants so it
-     * won't crash when cerr.rdbuf() is first called -DW 
-     **/
-    cout << "Using Mac OS X hack for initializing C++ stdio..." << endl;
-#endif    
-    global_logstream = new logstream (cerr);
+  if (logstream::global_logstream == NULL) {
+      logstream::initGlobalLogstream();
   }
-    
-  return *global_logstream;
+  return *logstream::global_logstream;
 }
 
 
@@ -319,7 +306,7 @@ sglog()
 #elif defined( __MWERKS__ )
 # define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
 #else
-# define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << endl
+# define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << std::endl
 #endif
 
 #define SG_STRINGIFY(x) #x

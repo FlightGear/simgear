@@ -17,29 +17,15 @@
 #endif
 
 #include <vector>
+#include <string>
 
 #if PROPS_STANDALONE
-
-#include <string>
-#include <iostream>
-
-using std::string;
-using std::vector;
-using std::istream;
-using std::ostream;
-
 #else
-
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-#include STL_STRING
-#include STL_IOSTREAM
-SG_USING_STD(string);
-SG_USING_STD(vector);
-SG_USING_STD(istream);
-SG_USING_STD(ostream);
-
 #endif
+
+
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -479,7 +465,7 @@ protected:
   virtual void unregister_property (SGPropertyNode * node);
 
 private:
-  vector<SGPropertyNode *> _properties;
+  std::vector<SGPropertyNode *> _properties;
 };
 
 
@@ -666,12 +652,12 @@ public:
   /**
    * Get a vector of all children with the specified name.
    */
-  vector<SGPropertyNode_ptr> getChildren (const char * name) const;
+  std::vector<SGPropertyNode_ptr> getChildren (const char * name) const;
 
   /**
    * Get a vector of all children with the specified name.
    */
-  vector<SGPropertyNode_ptr> getChildren (const std::string& name) const
+  std::vector<SGPropertyNode_ptr> getChildren (const std::string& name) const
   { return getChildren(name.c_str()); }
 
   /**
@@ -696,14 +682,14 @@ public:
   /**
    * Remove all children with the specified name.
    */
-  vector<SGPropertyNode_ptr> removeChildren (const char * name,
+  std::vector<SGPropertyNode_ptr> removeChildren (const char * name,
                                              bool keep = true);
 
 
   /**
    * Remove all children with the specified name.
    */
-  vector<SGPropertyNode_ptr> removeChildren (const std::string& name,
+  std::vector<SGPropertyNode_ptr> removeChildren (const std::string& name,
                                              bool keep = true)
   { return removeChildren(name.c_str(), keep); }
 
@@ -1422,16 +1408,16 @@ private:
   class hash_table;
 
   int _index;
-  string _name;
-  mutable string _display_name;
+  std::string _name;
+  mutable std::string _display_name;
   /// To avoid cyclic reference counting loops this shall not be a reference
   /// counted pointer
   SGPropertyNode * _parent;
-  vector<SGPropertyNode_ptr> _children;
-  vector<SGPropertyNode_ptr> _removedChildren;
-  vector<hash_table *> _linkedNodes;
-  mutable string _path;
-  mutable string _buffer;
+  std::vector<SGPropertyNode_ptr> _children;
+  std::vector<SGPropertyNode_ptr> _removedChildren;
+  std::vector<hash_table *> _linkedNodes;
+  mutable std::string _path;
+  mutable std::string _buffer;
   hash_table * _path_cache;
   Type _type;
   bool _tied;
@@ -1457,7 +1443,7 @@ private:
     char * string_val;
   } _local_val;
 
-  vector <SGPropertyChangeListener *> * _listeners;
+  std::vector<SGPropertyChangeListener *> * _listeners;
 
 
   /**
@@ -1486,7 +1472,7 @@ private:
       SGPropertyNode * get_value () { return _value; }
       void set_value (SGPropertyNode * value);
     private:
-      string _key;
+      std::string _key;
       SGSharedPtr<SGPropertyNode> _value;
     };
 

@@ -27,6 +27,7 @@
 
 #include STL_STRING
 #include <sstream>
+#include <istream>
 
 #include <osg/Array>
 #include <osg/Geometry>
@@ -252,7 +253,8 @@ typedef enum {
 
 // storage class for deferred object processing in TileEntry::load()
 struct Object {
-    Object(object_type t, const string& token, const SGPath& p, istream& in)
+    Object(object_type t, const string& token, const SGPath& p,
+           std::istream& in)
         : type(t), path(p)
     {
         in >> name;

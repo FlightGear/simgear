@@ -38,7 +38,7 @@
 // Allocate memory for 'get' buffer and zero all buffer pointers.
 //
 gzfilebuf::gzfilebuf()
-    : streambuf(),
+    : std::streambuf(),
       file(NULL),
 #if defined( __MWERKS__ ) || __GNUC__ > 2
       mode(ios_openmode(0)),
@@ -174,10 +174,10 @@ gzfilebuf::close()
 // }
 
 
-streampos
-gzfilebuf::seekoff( streamoff, ios_seekdir, int )
+std::streampos
+gzfilebuf::seekoff( std::streamoff, ios_seekdir, int )
 {
-    return streampos(EOF);
+    return std::streampos(EOF);
 }
 
 gzfilebuf::int_type

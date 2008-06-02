@@ -311,7 +311,7 @@ test_property_nodes ()
   cout << endl;
 
   cout << "Looking for all /hack[0]/bar children" << endl;
-  vector<SGPropertyNode_ptr> bar = child->getChildren("bar");
+  std::vector<SGPropertyNode_ptr> bar = child->getChildren("bar");
   cout << "There are " << bar.size() << " matches" << endl;
   for (int i = 0; i < (int)bar.size(); i++)
     cout << bar[i]->getName() << '[' << bar[i]->getIndex() << ']' << endl;
@@ -337,7 +337,7 @@ int main (int ac, char ** av)
       readProperties(av[i], &root);
       writeProperties(cout, &root, true);
       cout << endl;
-    } catch (string &message) {
+    } catch (std::string &message) {
       cout << "Aborted with " << message << endl;
     }
   }

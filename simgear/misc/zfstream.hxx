@@ -36,21 +36,16 @@
 #  include <streambuf>
 #  include <istream>
 
-#  define ios_openmode ios_base::openmode
-#  define ios_in       ios_base::in
-#  define ios_out      ios_base::out
-#  define ios_app      ios_base::app
-#  define ios_binary   ios_base::binary
+#  define ios_openmode std::ios_base::openmode
+#  define ios_in       std::ios_base::in
+#  define ios_out      std::ios_base::out
+#  define ios_app      std::ios_base::app
+#  define ios_binary   std::ios_base::binary
 
-#  define ios_seekdir  ios_base::seekdir
+#  define ios_seekdir  std::ios_base::seekdir
 
-#  define ios_badbit   ios_base::badbit
-#  define ios_failbit  ios_base::failbit
-
-SG_USING_STD(streambuf);
-SG_USING_STD(ios_base);
-SG_USING_STD(streampos);
-SG_USING_STD(streamoff);
+#  define ios_badbit   std::ios_base::badbit
+#  define ios_failbit  std::ios_base::failbit
 
 #else
 
@@ -88,7 +83,7 @@ SG_USING_STD(streamoff);
 #ifdef SG_NEED_STREAMBUF_HACK
 class gzfilebuf : public __streambuf
 #else
-class gzfilebuf : public streambuf
+class gzfilebuf : public std::streambuf
 #endif
 {
 public:
@@ -132,7 +127,7 @@ public:
     bool is_open() const { return (file != NULL); }
 
     /** @return stream position */
-    virtual streampos seekoff( streamoff off, ios_seekdir way, int which );
+    virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, int which );
 
     /** sync the stream */
     virtual int sync();
@@ -143,7 +138,7 @@ protected:
 #ifndef SG_HAVE_STD_INCLUDES
     virtual int_type overflow( int_type c = traits_type::eof() );
 #else
-    virtual int_type overflow( int_type c = streambuf::traits_type::eof() );
+    virtual int_type overflow( int_type c = std::streambuf::traits_type::eof() );
 #endif
 
 private:

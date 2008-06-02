@@ -33,6 +33,9 @@
 
 #include "sgstream.hxx"
 
+using std::string;
+using std::istream;
+
 sg_gzifstream::sg_gzifstream()
     : istream(&gzbuf)
 {

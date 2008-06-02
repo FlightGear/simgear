@@ -20,25 +20,20 @@
 #include STL_STRING
 #include <vector>
 #include <map>
-#include STL_IOSTREAM
-
-SG_USING_STD(string);
-SG_USING_STD(vector);
-SG_USING_STD(map);
-SG_USING_STD(istream);
-SG_USING_STD(ostream);
+#include <istream>
+#include <ostream>
 
 /**
  * Read properties from an XML input stream.
  */
-void readProperties (istream &input, SGPropertyNode * start_node,
-		     const string &base = "", int default_mode = 0);
+void readProperties (std::istream &input, SGPropertyNode * start_node,
+		     const std::string &base = "", int default_mode = 0);
 
 
 /**
  * Read properties from an XML file.
  */
-void readProperties (const string &file, SGPropertyNode * start_node,
+void readProperties (const std::string &file, SGPropertyNode * start_node,
                      int default_mode = 0);
 
 
@@ -52,7 +47,7 @@ void readProperties (const char *buf, const int size,
 /**
  * Write properties to an XML output stream.
  */
-void writeProperties (ostream &output, const SGPropertyNode * start_node,
+void writeProperties (std::ostream &output, const SGPropertyNode * start_node,
 		      bool write_all = false,
 		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);
 
@@ -60,7 +55,8 @@ void writeProperties (ostream &output, const SGPropertyNode * start_node,
 /**
  * Write properties to an XML file.
  */
-void writeProperties (const string &file, const SGPropertyNode * start_node,
+void writeProperties (const std::string &file,
+                      const SGPropertyNode * start_node,
 		      bool write_all = false,
 		      SGPropertyNode::Attribute archive_flag = SGPropertyNode::ARCHIVE);
 

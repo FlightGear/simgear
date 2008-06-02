@@ -20,8 +20,7 @@
 #include STL_STRING
 #include <vector>
 #include <map>
-#include <istream>
-#include <ostream>
+#include <iosfwd>
 
 /**
  * Read properties from an XML input stream.

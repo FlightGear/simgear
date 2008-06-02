@@ -1009,6 +1009,9 @@
 			<File
 				RelativePath="..\..\simgear\structure\subsystem_mgr.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\structure\OSGVersion.hxx">
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgnasal"

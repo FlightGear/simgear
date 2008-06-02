@@ -8,6 +8,7 @@ include_HEADERS = \
 	exception.hxx \
 	event_mgr.hxx \
 	subsystem_mgr.hxx \
+	OSGVersion.hxx \
 	SGAtomic.hxx \
 	SGBinding.hxx \
 	SGExpression.hxx \

@@ -17,6 +17,7 @@
 #include <osgDB/ReadFile>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/structure/OSGVersion.hxx>
 
 #include "modellib.hxx"
 #include "SGReaderWriterXMLOptions.hxx"
@@ -68,9 +69,15 @@ bool SGPagedLOD::addChild(osg::Node *child)
 
 void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp)
 {
-    //SG_LOG(SG_GENERAL, SG_ALERT, "SGPagedLOD::forceLoad(" << getFileName(getNumChildren()) << ")");
-    setTimeStamp(getNumChildren(),0);
+    //SG_LOG(SG_GENERAL, SG_ALERT, "SGPagedLOD::forceLoad(" <<
+    //getFileName(getNumChildren()) << ")");
+    unsigned childNum = getNumChildren();
+    setTimeStamp(childNum, 0);
     double priority=1.0;
-    dbp->requestNodeFile(getFileName(getNumChildren()),this,priority,0, _readerWriterOptions.get());
+    dbp->requestNodeFile(getFileName(childNum),this,priority,0,
+#if SG_OSG_VERSION >= 25001
+                         getDatabaseRequest(childNum),
+#endif
+                         _readerWriterOptions.get());
 }
 

@@ -73,6 +73,9 @@ private:
 
     // pointer to ssg range selector for this tile
     osg::ref_ptr<osg::LOD> _node;
+    // Reference to DatabaseRequest object set and used by the
+    // osgDB::DatabasePager.
+    osg::ref_ptr<osg::Referenced> _databaseRequest;
 
     static bool obj_load( const std::string& path,
                           osg::Group* geometry,
@@ -169,6 +172,13 @@ public:
 
     inline bool get_inner_ring() const { return is_inner_ring; }
     inline void set_inner_ring( bool val ) { is_inner_ring = val; }
+
+    // Get the ref_ptr to the DatabaseRequest object, in order to pass
+    // this to the pager.
+    osg::ref_ptr<osg::Referenced>& getDatabaseRequest()
+    {
+        return _databaseRequest;
+    }
 };
 
 class ModelLoadHelper {

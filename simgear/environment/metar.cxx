@@ -1181,7 +1181,7 @@ const struct Token *SGMetar::scanToken(char **str, const struct Token *list)
 {
 	const struct Token *longest = 0;
 	int maxlen = 0, len;
-	char *s;
+	const char *s;
 	for (int i = 0; (s = list[i].id); i++) {
 		len = strlen(s);
 		if (!strncmp(s, *str, len) && len > maxlen) {

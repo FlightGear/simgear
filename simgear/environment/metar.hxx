@@ -37,8 +37,8 @@ const double SGMetarNaN = -1E20;
 #define NaN SGMetarNaN
 
 struct Token {
-	char	*id;
-	char	*text;
+	const char *id;
+	const char *text;
 };
 
 
@@ -130,25 +130,21 @@ protected:
 class SGMetarCloud {
 	friend class SGMetar;
 public:
-	SGMetarCloud() :
-		_coverage(-1),
-		_altitude(NaN),
-		_type(0),
-		_type_long(0) {}
+	SGMetarCloud() : _coverage(-1), _altitude(NaN), _type(0), _type_long(0) {}
 
 	void set(double alt, int cov = -1);
 
-	inline int	getCoverage()		const { return _coverage; }
-	inline double	getAltitude_m()		const { return _altitude; }
-	inline double	getAltitude_ft()	const { return _altitude == NaN ? NaN : _altitude * SG_METER_TO_FEET; }
-	inline char	*getTypeString()	const { return _type; }
-	inline char	*getTypeLongString()	const { return _type_long; }
+	inline int getCoverage() const { return _coverage; }
+	inline double getAltitude_m() const { return _altitude; }
+	inline double getAltitude_ft() const { return _altitude == NaN ? NaN : _altitude * SG_METER_TO_FEET; }
+	inline const char *getTypeString() const { return _type; }
+	inline const char *getTypeLongString() const { return _type_long; }
 
 protected:
-	int	_coverage;		// quarters: 0 -> clear ... 4 -> overcast
-	double	_altitude;		// 1000 m
-	char	*_type;			// CU
-	char	*_type_long;		// cumulus
+	int _coverage;          // quarters: 0 -> clear ... 4 -> overcast
+	double _altitude;       // 1000 m
+	const char *_type;      // CU
+	const char *_type_long; // cumulus
 };
 
 

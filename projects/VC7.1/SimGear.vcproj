@@ -35,7 +35,7 @@
 				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="0"
+				DebugInformationFormat="3"
 				CompileAs="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -974,6 +974,9 @@
 				RelativePath="..\..\simgear\structure\exception.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\OSGVersion.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\structure\SGBinding.cxx">
 			</File>
 			<File
@@ -1008,9 +1011,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\subsystem_mgr.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\structure\OSGVersion.hxx">
 			</File>
 		</Filter>
 		<Filter

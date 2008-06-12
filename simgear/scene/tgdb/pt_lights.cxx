@@ -50,14 +50,18 @@
 
 #include <osgUtil/CullVisitor>
 
+#include <OpenThreads/Mutex>
+#include <OpenThreads/ScopedLock>
+
 #include <simgear/math/sg_random.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>
 
 #include "SGVasiDrawable.hxx"
+
+using OpenThreads::Mutex;
+using OpenThreads::ScopedLock;
 
 using namespace simgear;
 
@@ -123,6 +127,8 @@ getPointSpriteImage(int logResolution)
   return image;
 }
 
+static Mutex lightMutex;
+
 static osg::Texture2D*
 gen_standard_light_sprite(void)
 {
@@ -131,8 +137,7 @@ gen_standard_light_sprite(void)
   if (texture.valid())
     return texture.get();
   
-  static SGMutex mutex;
-  SGGuard<SGMutex> guard(mutex);
+  ScopedLock<Mutex> lock(lightMutex);
   if (texture.valid())
     return texture.get();
   

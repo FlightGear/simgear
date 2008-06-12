@@ -50,8 +50,6 @@
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/QuadTreeBuilder.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include "SGTexturedTriangleBin.hxx"
 #include "SGLightBin.hxx"

@@ -36,9 +36,10 @@
 #include <osg/Texture1D>
 #include <osgUtil/HighlightMapGenerator>
 
+#include <OpenThreads/Mutex>
+#include <OpenThreads/ScopedLock>
+
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
@@ -47,6 +48,10 @@
 
 #include "animation.hxx"
 #include "model.hxx"
+
+using OpenThreads::Mutex;
+using OpenThreads::ScopedLock;
+
 /*
     <animation>
         <type>shader</type>
@@ -125,6 +130,8 @@ private:
   SGVec4f _lastLightColor;
 };
 
+static Mutex cubeMutex;
+
 static osg::TextureCubeMap*
 getOrCreateTextureCubeMap()
 {
@@ -132,8 +139,7 @@ getOrCreateTextureCubeMap()
   if (textureCubeMap.get())
     return textureCubeMap.get();
 
-  static SGMutex mutex;
-  SGGuard<SGMutex> locker(mutex);
+  ScopedLock<Mutex> lock(cubeMutex);
   if (textureCubeMap.get())
     return textureCubeMap.get();
 
@@ -212,13 +218,14 @@ typedef std::map<osg::ref_ptr<osg::Texture2D>, osg::ref_ptr<osg::StateSet> >
 StateSetMap;
 }
 
+static Mutex chromeMutex;
+
 // The chrome effect is mixed by the alpha channel of the texture
 // on the model, which will be attached to a node lower in the scene
 // graph: 0 -> completely chrome, 1 -> completely model texture.
 static void create_chrome(osg::Group* group, osg::Texture2D* texture)
 {
-    static SGMutex mutex;
-    SGGuard<SGMutex> locker(mutex);
+    ScopedLock<Mutex> lock(chromeMutex);
     static StateSetMap chromeMap;
     osg::StateSet *stateSet;
     StateSetMap::iterator iterator = chromeMap.find(texture);

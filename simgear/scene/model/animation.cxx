@@ -47,6 +47,10 @@
 #include "SGRotateTransform.hxx"
 #include "SGScaleTransform.hxx"
 
+using OpenThreads::Mutex;
+using OpenThreads::ReentrantMutex;
+using OpenThreads::ScopedLock;
+
 
 ////////////////////////////////////////////////////////////////////////
 // Static utility functions.
@@ -931,12 +935,12 @@ SGScaleAnimation::createAnimationGroup(osg::Group& parent)
 
 namespace
 {
-OpenThreads::Mutex normalizeMutex;
+Mutex normalizeMutex;
 
 osg::StateSet* getNormalizeStateSet()
 {
     static osg::ref_ptr<osg::StateSet> normalizeStateSet;
-    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(normalizeMutex);
+    ScopedLock<Mutex> lock(normalizeMutex);
     if (!normalizeStateSet.valid()) {
         normalizeStateSet = new osg::StateSet;
         normalizeStateSet->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
@@ -1387,13 +1391,12 @@ SGAlphaTestAnimation::SGAlphaTestAnimation(const SGPropertyNode* configNode,
 namespace
 {
 // Keep one copy of the most common alpha test its state set.
-OpenThreads::ReentrantMutex alphaTestMutex;
+ReentrantMutex alphaTestMutex;
 osg::ref_ptr<osg::AlphaFunc> standardAlphaFunc;
 osg::ref_ptr<osg::StateSet> alphaFuncStateSet;
 
 osg::AlphaFunc* makeAlphaFunc(float clamp)
 {
-    using namespace OpenThreads;
     ScopedLock<ReentrantMutex> lock(alphaTestMutex);
     if (osg::equivalent(clamp, 0.01f)) {
         if (standardAlphaFunc.valid())

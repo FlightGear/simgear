@@ -56,6 +56,9 @@ using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
+using OpenThreads::ReentrantMutex;
+using OpenThreads::ScopedLock;
+
 // Little helper class that holds an extra reference to a
 // loaded 3d model.
 // Since we clone all structural nodes from our 3d models,
@@ -324,7 +327,7 @@ ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
                          const ReaderWriter::Options* opt)
 {
-    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(readerMutex);
+    ScopedLock<ReentrantMutex> lock(readerMutex);
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
     // XXX Workaround for OSG plugin bug
@@ -484,7 +487,7 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
-    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(readerMutex);
+    ScopedLock<ReentrantMutex> lock(readerMutex);
     // XXX Workaround for OSG plugin bug.
     OptionsPusher pusher(opt);
     Registry* registry = Registry::instance();

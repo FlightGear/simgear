@@ -309,9 +309,7 @@ sglog()
 # define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << std::endl
 #endif
 
-#define SG_STRINGIFY(x) #x
-#define SG_TOSTRING(x) SG_STRINGIFY(x)
-#define SG_ORIGIN __FILE__ ":" SG_TOSTRING(__LINE__)
+#define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)
 
 #endif // _LOGSTREAM_H
 

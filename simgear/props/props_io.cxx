@@ -192,7 +192,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     SGPropertyNode * node = st.node->getChild(name, index, true);
     if (!node->getAttribute(SGPropertyNode::WRITE)) {
       SG_LOG(SG_INPUT, SG_ALERT, "Not overwriting write-protected property "
-          << node->getPath());
+          << node->getPath(true));
       node = &null;
     }
 

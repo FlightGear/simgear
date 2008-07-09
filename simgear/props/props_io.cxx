@@ -103,6 +103,7 @@ private:
   int _default_mode;
   string _data;
   SGPropertyNode * _root;
+  SGPropertyNode null;
   int _level;
   vector<State> _state_stack;
   string _base;
@@ -189,6 +190,11 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 
 				// Got the index, so grab the node.
     SGPropertyNode * node = st.node->getChild(name, index, true);
+    if (!node->getAttribute(SGPropertyNode::WRITE)) {
+      SG_LOG(SG_INPUT, SG_ALERT, "Not overwriting write-protected property "
+          << node->getPath());
+      node = &null;
+    }
 
 				// Get the access-mode attributes,
 				// but don't set yet (in case they

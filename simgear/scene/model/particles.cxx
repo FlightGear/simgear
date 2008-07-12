@@ -366,14 +366,14 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                                     osg::Vec4(r2,g2,b2,a2)));
 
         float startsize=1, endsize=0.1f;
-        const SGPropertyNode* startsizenode = particlenode->getChild("start/size");
+        const SGPropertyNode* startsizenode = particlenode->getNode("start/size");
         if (startsizenode) {
             if (startsizenode->hasValue("value"))
                 startsize = startsizenode->getFloatValue("value",0);
             else
                 callback()->setupStartSizeData(startsizenode, modelRoot);
         }
-        const SGPropertyNode* endsizenode = particlenode->getChild("end/size");
+        const SGPropertyNode* endsizenode = particlenode->getNode("end/size");
         if (endsizenode) {
             if (endsizenode->hasValue("value"))
                 endsize = endsizenode->getFloatValue("value",0);

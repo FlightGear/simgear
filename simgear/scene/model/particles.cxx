@@ -146,21 +146,17 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
     }
     std::string textureFile;
     if (configNode->hasValue("texture")) {
-        SG_LOG(SG_GENERAL, SG_ALERT,
-               "requested:"<<configNode->getStringValue("texture","")<<"\n");
+        //SG_LOG(SG_GENERAL, SG_ALERT,
+        //       "requested:"<<configNode->getStringValue("texture","")<<"\n");
         textureFile= osgDB::findFileInPath(configNode->getStringValue("texture",
                                                                       ""),
                                            options->getDatabasePathList());
-        SG_LOG(SG_GENERAL, SG_ALERT, "found:"<<textureFile<<"\n");
+        //SG_LOG(SG_GENERAL, SG_ALERT, "found:"<<textureFile<<"\n");
 
-        for(int i = 0; i < options->getDatabasePathList().size(); ++i)
-            SG_LOG(SG_GENERAL, SG_ALERT,
-                   "opts:"<<options->getDatabasePathList()[i]<<"\n");
-
+        //for(unsigned i = 0; i < options->getDatabasePathList().size(); ++i)
+        //    SG_LOG(SG_GENERAL, SG_ALERT,
+        //           "opts:"<<options->getDatabasePathList()[i]<<"\n");
     }
-
-    if (textureFile.empty())
-        textureFile="";
 
     particleSys->setDefaultAttributes(textureFile,
                                       configNode->getBoolValue("emissive",
@@ -233,7 +229,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         shooter->setThetaRange(minTheta, maxTheta);
         shooter->setPhiRange(minPhi, maxPhi);
 
-        const SGPropertyNode* speednode = shnode->getChild("speed");
+        const SGPropertyNode* speednode = shnode->getChild("speed-mps");
 
         if (speednode) {
             if (speednode->hasValue("value")) {
@@ -245,7 +241,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
             }
         }
 
-        const SGPropertyNode* rotspeednode = shnode->getChild("rotspeed");
+        const SGPropertyNode* rotspeednode = shnode->getChild("rotation-speed");
 
         if (rotspeednode) {
             float x1,y1,z1,x2,y2,z2;
@@ -259,27 +255,29 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         }
     } //else ModularEmitter uses the default RadialShooter
 
+
+    const SGPropertyNode* conditionNode = configNode->getChild("condition");
     const SGPropertyNode* counternode = configNode->getChild("counter");
 
-    if (counternode) {
+    if (conditionNode || counternode) {
         osgParticle::RandomRateCounter* counter
             = new osgParticle::RandomRateCounter;
         emitter->setCounter(counter);
         float pps = 0.0f, spread = 0.0f;
-        const SGPropertyNode* ppsnode = counternode->getChild("pps");
 
-        if (ppsnode) {
-
-            if (ppsnode->hasValue("value")) {
-                pps = ppsnode->getFloatValue("value",0);
-                spread = ppsnode->getFloatValue("spread",0);
-                counter->setRateRange(pps-spread, pps+spread);
-            } else {
-                callback()->setupCounterData(ppsnode, modelRoot);
+        if (counternode) {
+            const SGPropertyNode* ppsnode = counternode->getChild("particles-per-sec");
+            if (ppsnode) {
+                if (ppsnode->hasValue("value")) {
+                    pps = ppsnode->getFloatValue("value",0);
+                    spread = ppsnode->getFloatValue("spread",0);
+                    counter->setRateRange(pps-spread, pps+spread);
+                } else {
+                    callback()->setupCounterData(ppsnode, modelRoot);
+                }
             }
         }
-        const SGPropertyNode* conditionNode
-            = counternode->getChild("condition");
+
         if (conditionNode) {
             callback()->setupCounterCondition(conditionNode, modelRoot);
             callback()->setupCounterCondition(pps, spread);
@@ -292,7 +290,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
             = particleSys->getDefaultParticleTemplate();
         float r1=0, g1=0, b1=0, a1=1, r2=0, g2=0, b2=0, a2=1;
         const SGPropertyNode* startcolornode
-            = particlenode->getChild("startcolor");
+            = particlenode->getNode("start/color");
         if (startcolornode) {
             const SGPropertyNode* componentnode
                 = startcolornode->getChild("red");
@@ -328,7 +326,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                                     0, 3);
             }
         }
-        const SGPropertyNode* endcolornode = particlenode->getChild("endcolor");
+        const SGPropertyNode* endcolornode = particlenode->getNode("end/color");
         if (endcolornode) {
             const SGPropertyNode* componentnode = endcolornode->getChild("red");
 
@@ -368,14 +366,14 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                                     osg::Vec4(r2,g2,b2,a2)));
 
         float startsize=1, endsize=0.1f;
-        const SGPropertyNode* startsizenode = particlenode->getChild("startsize");
+        const SGPropertyNode* startsizenode = particlenode->getChild("start/size");
         if (startsizenode) {
             if (startsizenode->hasValue("value"))
                 startsize = startsizenode->getFloatValue("value",0);
             else
                 callback()->setupStartSizeData(startsizenode, modelRoot);
         }
-        const SGPropertyNode* endsizenode = particlenode->getChild("endsize");
+        const SGPropertyNode* endsizenode = particlenode->getChild("end/size");
         if (endsizenode) {
             if (endsizenode->hasValue("value"))
                 endsize = endsizenode->getFloatValue("value",0);
@@ -409,18 +407,14 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
     osgParticle::FluidProgram *program = new osgParticle::FluidProgram();
 
     if (programnode) {
-        std::string fluid = programnode->getStringValue("fluid","air");
+        std::string fluid = programnode->getStringValue("fluid", "air");
 
-        if (fluid=="air") 
+        if (fluid=="air")
             program->setFluidToAir();
-
         else
             program->setFluidToWater();
 
-        std::string grav = programnode->getStringValue("gravity","enabled");
-
-        if (grav=="enabled") {
-
+        if (programnode->getBoolValue("gravity", true)) {
             if (attach == "world")
                 callback()->setupProgramGravity(true);
             else
@@ -428,8 +422,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         } else
             program->setAcceleration(osg::Vec3(0,0,0));
 
-        std::string wind = programnode->getStringValue("wind","enabled");
-        if (wind=="enabled")
+        if (programnode->getBoolValue("wind", true))
             callback()->setupProgramWind(true);
         else
             program->setWind(osg::Vec3(0,0,0));
@@ -438,7 +431,6 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 
         program->setParticleSystem(particleSys);
     }
-    else {  }
 
     if (callback.get()) {  //this means we want property-driven changes
         SG_LOG(SG_GENERAL, SG_DEBUG, "setting up particle system user data and callback\n");

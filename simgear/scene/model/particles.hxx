@@ -79,11 +79,9 @@ public:
         return wind;
     }
 
-
+private:
     static osg::Vec3 gravity;
     static osg::Vec3 wind;
-private:
-
     const SGPropertyNode* modelRoot;
 };
 
@@ -98,11 +96,11 @@ public:
         startSizeValue(NULL),
         endSizeValue(NULL),
         lifeValue(NULL),
+        counterCond(NULL),
         refFrame(NULL),
         program(NULL),
         useGravity(false),
-        useWind(false),
-        counterCond(NULL)
+        useWind(false)
     {
         memset(colorComponents, 0, sizeof(colorComponents));
     }

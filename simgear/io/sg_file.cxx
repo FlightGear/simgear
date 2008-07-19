@@ -39,10 +39,10 @@
 SG_USING_STD(string);
 
 
-SGFile::SGFile( const string &file) {
+SGFile::SGFile(const string &file, bool repeat_)
+    : file_name(file), fp(-1), eof_flag(true), repeat(repeat_)
+{
     set_type( sgFileType );
-    file_name = file;
-    eof_flag = true;
 }
 
 
@@ -84,7 +84,19 @@ int SGFile::read( char *buf, int length ) {
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
     if ( length > 0 && result == 0 ) {
-        eof_flag = true;
+        if (repeat) {
+            // loop reading the file, unless it is empty
+            off_t fileLen = ::lseek(fp, 0, SEEK_CUR);
+            if (fileLen == 0) {
+                eof_flag = true;
+                return 0;
+            } else {
+                ::lseek(fp, 0, SEEK_SET);
+                return ::read(fp, buf, length);
+            }
+        } else {
+            eof_flag = true;
+        }
     }
     return result;
 }
@@ -98,7 +110,12 @@ int SGFile::readline( char *buf, int length ) {
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
     if ( length > 0 && result == 0 ) {
-        eof_flag = true;
+        if (repeat && pos != 0) {
+            pos = ::lseek(fp, 0, SEEK_SET);
+            result = ::read(fp, buf, length);
+        } else {
+            eof_flag = true;
+        }
     }
 
     // find the end of line and reset position

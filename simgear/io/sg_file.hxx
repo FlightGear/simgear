@@ -55,6 +55,7 @@ class SGFile : public SGIOChannel {
     string file_name;
     int fp;
     bool eof_flag;
+    bool repeat;
 
 public:
 
@@ -64,8 +65,9 @@ public:
      * name. This file is not opened immediately, but instead will be
      * opened when the open() method is called.
      * @param file name of file to open
+     * @param repeat On eof restart at the beginning of the file
      */
-    SGFile( const string& file );
+    SGFile( const string& file, bool repeat_ = false );
 
     /** Destructor */
     ~SGFile();

@@ -21,10 +21,9 @@
 #include <simgear/scene/tgdb/obj.hxx>
 class SGReaderWriterBTGOptions : public osgDB::ReaderWriter::Options {
 public:
-    SGReaderWriterBTGOptions() {}
-    SGReaderWriterBTGOptions(const std::string& str):
+    SGReaderWriterBTGOptions(const std::string& str = defaultOptions) :
         osgDB::ReaderWriter::Options(str),
-        _matlib(0), _calcLights(false),
+        _matlib(0), _calcLights(true),
         _useRandomObjects(false),
         _useRandomVegetation(false)
     {}
@@ -58,5 +57,6 @@ protected:
     bool _calcLights;
     bool _useRandomObjects;
     bool _useRandomVegetation;
+    static std::string defaultOptions;
 };
 #endif

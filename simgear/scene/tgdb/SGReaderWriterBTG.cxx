@@ -26,6 +26,11 @@
 
 using namespace simgear;
 
+// SGReaderWriterBTGOptions static value here to avoid an additional,
+// tiny source file.
+
+std::string SGReaderWriterBTGOptions::defaultOptions;
+
 const char* SGReaderWriterBTG::className() const
 {
     return "BTG Database reader";

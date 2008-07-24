@@ -39,13 +39,8 @@
  * define directory path separators
  */
 
-#if defined( macintosh )
-static const char sgDirPathSep = ':';
-static const char sgDirPathSepBad = '/';
-#else
 static const char sgDirPathSep = '/';
 static const char sgDirPathSepBad = '\\';
-#endif
 
 #if defined( WIN32 ) && !defined(__CYGWIN__)
 static const char sgSearchPathSep = ';';

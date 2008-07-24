@@ -40,11 +40,7 @@
 gzfilebuf::gzfilebuf()
     : std::streambuf(),
       file(NULL),
-#if defined( __MWERKS__ ) || __GNUC__ > 2
       mode(ios_openmode(0)),
-#else
-      mode(0),
-#endif
       own_file_descriptor(false),
       ibuf_size(0),
       ibuffer(0)

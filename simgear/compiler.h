@@ -172,40 +172,6 @@
 #endif // __KCC
 
 //
-// Metrowerks 
-//
-#if defined(__MWERKS__)
-/*
-  CodeWarrior compiler from Metrowerks, Inc.
-*/
-#  define SG_HAVE_TRAITS
-#  define SG_HAVE_STD_INCLUDES
-#  define SG_HAVE_STD
-#  define SG_NAMESPACES
-
-#  define STL_ALGORITHM  <algorithm>
-#  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip>
-#  define STL_IOSTREAM   <iostream>
-#  define STL_ITERATOR   <iterator>
-#  define STL_FSTREAM    <fstream>
-#  define STL_STDEXCEPT  <stdexcept>
-#  define STL_STRING     <string>
-
-// Temp:
-#  define bcopy(from, to, n) memcpy(to, from, n)
-
-// -rp- please use FG_MEM_COPY everywhere !
-// #define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
-
-// -dw- currently used glut has no game mode stuff
-#  define GLUT_WRONG_VERSION
-
-#  define SG_COMPILER_STR "Metrowerks CodeWarrior C++ version " SG_STRINGIZE(__MWERKS__)
-
-#endif // __MWERKS__
-
-//
 // Microsoft compilers.
 //
 #ifdef _MSC_VER

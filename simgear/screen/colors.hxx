@@ -26,10 +26,7 @@
 
 #include <math.h>
 
-#if defined( macintosh )
-const float system_gamma = 1.4;
-
-#elif defined (sgi)
+#if defined (sgi)
 const float system_gamma = 2.0/1.7;
 
 #else	// others

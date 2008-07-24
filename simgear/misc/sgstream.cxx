@@ -109,11 +109,7 @@ skipeol( istream& in )
     char c = '\0';
     // skip to end of line.
 
-#ifdef __MWERKS__
-    while ( in.get(c) && c != '\0' ) {
-#else
     while ( in.get(c) ) {
-#endif
     	if ( (c == '\n') || (c == '\r') ) {
 	    break;
 	}	
@@ -125,17 +121,9 @@ skipeol( istream& in )
 istream&
 skipws( istream& in ) {
     char c;
-#ifdef __MWERKS__
-    while ( in.get(c) && c != '\0' ) {
-#else
     while ( in.get(c) ) {
-#endif
 
-#ifdef __MWERKS__
-	if ( ! isspace( c ) && c != '\n' ) {
-#else
 	if ( ! isspace( c ) ) {
-#endif
 	    // put pack the non-space character
 	    in.putback(c);
 	    break;
@@ -150,11 +138,7 @@ skipcomment( istream& in )
     while ( in )
     {
 	// skip whitespace
-#ifdef __MWERKS__
-	in >> ::skipws;
-#else
 	in >> skipws;
-#endif
 
 	char c;
 	if ( in.get( c ) && c != '#' )

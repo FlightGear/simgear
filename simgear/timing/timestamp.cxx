@@ -50,12 +50,6 @@
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
 #endif
 
-// -dw- want to use metrowerks time.h
-#ifdef macintosh
-#  include <time.h>
-#  include <timer.h>
-#endif
-
 #ifdef WIN32
 #  include <windows.h>
 #  if defined( __CYGWIN__ ) || defined( __CYGWIN32__ )
@@ -91,13 +85,6 @@ void SGTimeStamp::stamp() {
     ftime(&current);
     seconds = current.time;
     usec = current.millitm * 1000;
-// -dw- uses time manager
-#elif defined( macintosh )
-    UnsignedWide ms;
-    Microseconds(&ms);
-	
-    seconds = ms.lo / 1000000;
-    usec = ms.lo - ( seconds * 1000000 );
 #else
 # error Port me
 #endif

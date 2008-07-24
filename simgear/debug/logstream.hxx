@@ -44,10 +44,6 @@
 SG_USING_STD(streambuf);
 SG_USING_STD(ostream);
 
-#ifdef __MWERKS__
-SG_USING_STD(iostream);
-#endif
-
 //
 // TODO:
 //
@@ -303,8 +299,6 @@ sglog()
  */
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)
-#elif defined( __MWERKS__ )
-# define SG_LOG(C,P,M) ::sglog() << ::loglevel(C,P) << M << std::endl
 #else
 # define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << std::endl
 #endif

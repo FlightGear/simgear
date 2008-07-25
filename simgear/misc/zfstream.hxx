@@ -50,11 +50,13 @@
  * A C++ I/O streams interface to the zlib gz* functions.
  */
 #ifdef SG_NEED_STREAMBUF_HACK
-class gzfilebuf : public __streambuf
+class gzfilebuf : public __streambuf {
+    typedef __streambuf parent;
 #else
-class gzfilebuf : public std::streambuf
+class gzfilebuf : public std::streambuf {
+    typedef std::streambuf parent;
 #endif
-{
+
 public:
     /** Constructor */
     gzfilebuf();
@@ -97,7 +99,7 @@ protected:
 
     virtual int_type underflow();
 
-    virtual int_type overflow( int_type c = std::streambuf::traits_type::eof() );
+    virtual int_type overflow( int_type c = parent::traits_type::eof() );
 private:
 
     int_type flushbuf();

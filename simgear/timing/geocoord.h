@@ -38,8 +38,6 @@
 #include <math.h>
 #include <vector>
 
-SG_USING_NAMESPACE(std);
-
 #include <simgear/constants.h>
 
 class SGGeoCoord
@@ -65,9 +63,9 @@ public:
   virtual const char * getDescription() {return 0;};
 };
 
-typedef vector<SGGeoCoord*> SGGeoCoordVector;
-typedef vector<SGGeoCoord*>::iterator SGGeoCoordVectorIterator;
-typedef vector<SGGeoCoord*>::const_iterator SGGeoCoordVectorConstIterator;
+typedef std::vector<SGGeoCoord*> SGGeoCoordVector;
+typedef std::vector<SGGeoCoord*>::iterator SGGeoCoordVectorIterator;
+typedef std::vector<SGGeoCoord*>::const_iterator SGGeoCoordVectorConstIterator;
 
 /************************************************************************
  * SGGeoCoordContainer is a simple container class, that stores objects

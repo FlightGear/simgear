@@ -24,9 +24,9 @@
 #include "props.hxx"
 #include "props_io.hxx"
 
-#include STL_IOSTREAM
-#include STL_FSTREAM
-#include STL_STRING
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
 #include <map>
 

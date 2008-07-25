@@ -26,13 +26,8 @@
 #include <simgear/compiler.h>
 
 #include <pthread.h>
-#if defined ( SG_HAVE_STD_INCLUDES )
-#  include <cassert>
-#  include <cerrno>
-#else
-#  include <assert.h>
-#  include <sys/errno.h>
-#endif
+#include <cassert>
+#include <cerrno>
 
 class SGThread;
 

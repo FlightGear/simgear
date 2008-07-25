@@ -44,8 +44,8 @@ class SGTimeZone : public SGGeoCoord
 
 private:
 
-  string countryCode;
-  string descriptor;
+  std::string countryCode;
+  std::string descriptor;
 
 public:
 

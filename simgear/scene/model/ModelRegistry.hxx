@@ -30,7 +30,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 #include <map>
 
 // Class to register per file extension read callbacks with the OSG

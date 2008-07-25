@@ -23,7 +23,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #  include <io.h>

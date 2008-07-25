@@ -40,7 +40,7 @@
 #include SG_GL_H
 
 #include <string.h>
-#include STL_STRING
+#include <string>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -66,7 +66,6 @@
 
 #include "matlib.hxx"
 
-SG_USING_NAMESPACE(std);
 SG_USING_STD(string);
 
 // Constructor

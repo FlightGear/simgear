@@ -31,51 +31,20 @@
 
 #include <zlib.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
 
-#  include <streambuf>
-#  include <istream>
+#include <streambuf>
+#include <istream>
 
-#  define ios_openmode std::ios_base::openmode
-#  define ios_in       std::ios_base::in
-#  define ios_out      std::ios_base::out
-#  define ios_app      std::ios_base::app
-#  define ios_binary   std::ios_base::binary
+#define ios_openmode std::ios_base::openmode
+#define ios_in       std::ios_base::in
+#define ios_out      std::ios_base::out
+#define ios_app      std::ios_base::app
+#define ios_binary   std::ios_base::binary
 
-#  define ios_seekdir  std::ios_base::seekdir
+#define ios_seekdir  std::ios_base::seekdir
 
-#  define ios_badbit   std::ios_base::badbit
-#  define ios_failbit  std::ios_base::failbit
-
-#else
-
-#  ifdef SG_HAVE_STREAMBUF
-#    include <streambuf.h>
-#    include <istream.h>
-#  else
-#    include <iostream.h>
-#  endif
-
-//#  define ios_openmode ios::open_mode
-#  define ios_openmode int
-#  define ios_in       ios::in
-#  define ios_out      ios::out
-#  define ios_app      ios::app
-
-#if defined(__GNUC__) && __GNUC_MINOR__ < 8
-#  define ios_binary   ios::bin
-#else
-#  define ios_binary   ios::binary
-#endif
-
-#  define ios_seekdir  ios::seek_dir
-
-#  define ios_badbit   ios::badbit
-#  define ios_failbit  ios::failbit
-
-#  include <simgear/sg_traits.hxx>
-
-#endif // SG_HAVE_STD_INCLUDES
+#define ios_badbit   std::ios_base::badbit
+#define ios_failbit  std::ios_base::failbit
 
 /**
  * A C++ I/O streams interface to the zlib gz* functions.
@@ -87,14 +56,6 @@ class gzfilebuf : public std::streambuf
 #endif
 {
 public:
-
-#ifndef SG_HAVE_STD_INCLUDES
-    typedef char_traits<char>           traits_type;
-    typedef char_traits<char>::int_type int_type;
-    // typedef char_traits<char>::pos_type pos_type;
-    // typedef char_traits<char>::off_type off_type;
-#endif
-
     /** Constructor */
     gzfilebuf();
 
@@ -135,12 +96,8 @@ public:
 protected:
 
     virtual int_type underflow();
-#ifndef SG_HAVE_STD_INCLUDES
-    virtual int_type overflow( int_type c = traits_type::eof() );
-#else
-    virtual int_type overflow( int_type c = std::streambuf::traits_type::eof() );
-#endif
 
+    virtual int_type overflow( int_type c = traits_type::eof() );
 private:
 
     int_type flushbuf();

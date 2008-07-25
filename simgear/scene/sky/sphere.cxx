@@ -29,7 +29,7 @@
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>
 
-#include STL_IOSTREAM
+#include <iostream>
 
 #include <osg/Node>
 #include <osg/Geometry>

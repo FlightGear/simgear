@@ -31,13 +31,8 @@
 #  include <windows.h>
 #endif
 
-#ifdef SG_HAVE_STD_INCLUDES
-# include <streambuf>
-# include <ostream>
-#else
-# include <iostream.h>
-# include <simgear/sg_traits.hxx>
-#endif
+#include <streambuf>
+#include <ostream>
 
 #include <simgear/debug/debug_types.h>
 
@@ -64,13 +59,6 @@ class logbuf : public std::streambuf
 #endif
 {
 public:
-
-#ifndef SG_HAVE_STD_INCLUDES
-    typedef char_traits<char>           traits_type;
-    typedef char_traits<char>::int_type int_type;
-    // typedef char_traits<char>::pos_type pos_type;
-    // typedef char_traits<char>::off_type off_type;
-#endif
     // logbuf( streambuf* sb ) : sbuf(sb) {}
     /** Constructor */
     logbuf();
@@ -167,11 +155,7 @@ private:
 inline int
 logbuf::sync()
 {
-#ifdef SG_HAVE_STD_INCLUDES
 	return sbuf->pubsync();
-#else
-	return sbuf->sync();
-#endif
 }
 
 inline void

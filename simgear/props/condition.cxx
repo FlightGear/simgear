@@ -11,7 +11,7 @@
 #  include <simgear/compiler.h>
 #endif
 
-// #include STL_IOSTREAM
+// #include <iostream>
 
 #include <simgear/structure/exception.hxx>
 

@@ -21,15 +21,9 @@
 // $Id$
 
 #include <simgear/compiler.h>
-#include STL_STRING 
-
+#include <string>
 #include <ctype.h> // isspace()
-
-#ifdef SG_HAVE_STD_INCLUDES
-# include <cerrno>
-#else
-# include <errno.h>
-#endif
+#include <cerrno>
 
 #include "sgstream.hxx"
 

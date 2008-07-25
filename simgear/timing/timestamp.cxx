@@ -34,11 +34,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <ctime>
-#else
-#  include <time.h>
-#endif
+#include <ctime>
 
 #ifdef HAVE_SYS_TIMEB_H
 #  include <sys/timeb.h> // for ftime() and struct timeb

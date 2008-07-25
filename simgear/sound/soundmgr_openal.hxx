@@ -39,7 +39,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 #include <map>
 
 #if defined( __APPLE__ )

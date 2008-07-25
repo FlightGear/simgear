@@ -1,5 +1,5 @@
 #include <simgear/compiler.h>
-#include STL_IOSTREAM
+#include <iostream>
 
 #ifdef _WIN32
 #include <windows.h>

@@ -11,8 +11,8 @@
 #include <simgear/compiler.h>
 #include <simgear/structure/exception.hxx>
 
-#include STL_IOSTREAM
-#include STL_STRING
+#include <iostream>
+#include <string>
 #include <vector>
 
 SG_USING_STD(istream);

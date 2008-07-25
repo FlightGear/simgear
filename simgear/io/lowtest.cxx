@@ -1,6 +1,6 @@
 #include <simgear/compiler.h>
 
-#include STL_IOSTREAM
+#include <iostream>
 #include "lowlevel.hxx"
 
 

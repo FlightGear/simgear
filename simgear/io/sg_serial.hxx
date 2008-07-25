@@ -36,12 +36,6 @@
 
 #include <string>
 
-// #ifdef SG_HAVE_STD_INCLUDES
-// #  include <ctime>
-// #else
-// #  include <time.h>
-// #endif
-
 #include <simgear/serial/serial.hxx>
 
 #include "iochannel.hxx"

@@ -29,16 +29,12 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 
 #include <vector>
 SG_USING_STD(vector);
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <cstdlib>
-#else
-#  include <stdlib.h>
-#endif
+#include <cstdlib>
 
 SG_USING_STD(string);
 

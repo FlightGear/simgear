@@ -22,8 +22,9 @@
 
 #include <iosfwd>
 // FIXME, make it compile on IRIX
-#include <osg/GL>
-#undef GLUT_APIENTRY_DEFINED // GL/glut.h undef APIENTRY when this symbol is defined. osg/GL defines it (?).
+
+//#include <osg/GL>
+//#undef GLUT_APIENTRY_DEFINED // GL/glut.h undef APIENTRY when this symbol is defined. osg/GL defines it (?).
                              // This probably would work if we didn't use plib/pu.h that include GL/glut.h 
                              //  on its side.
 

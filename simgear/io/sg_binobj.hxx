@@ -39,7 +39,7 @@
 #include <time.h>
 
 #include <list>
-#include STL_STRING
+#include <string>
 
 
 

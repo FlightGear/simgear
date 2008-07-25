@@ -23,13 +23,8 @@
 
 #include <simgear/compiler.h>
 
-#include STL_IOSTREAM
-
-#ifdef SG_HAVE_STD_INCLUDE
-#  include <cerrno>
-#else
-#  include <errno.h>
-#endif
+#include <iostream>
+#include <cerrno>
 
 #if !defined( WIN32 ) || defined( __CYGWIN__) || defined( __CYGWIN32__ )
 #  include <termios.h>

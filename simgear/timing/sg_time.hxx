@@ -35,11 +35,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <ctime>
-#else
-#  include <time.h>
-#endif
+#include <ctime>
 
 #include <simgear/timing/timezone.h>
 
@@ -71,7 +67,7 @@ private:
     SGTimeZoneContainer* tzContainer;
 
     // Points to the current local timezone name;
-    string zonename;
+    std::string zonename;
 
     // Unix "calendar" time in seconds
     time_t cur_time;
@@ -104,7 +100,7 @@ private:
     double gst_diff;
 
     /** init common constructor code */
-    void init( double lon_rad, double lat_rad, const string& root,
+    void init( double lon_rad, double lat_rad, const std::string& root,
                time_t init_time );
 
 public:
@@ -128,14 +124,14 @@ public:
      * @param root root path point to data file location (timezone, etc.)
      * @param init_time provide an initialization time, 0 means use
               current clock time */
-    SGTime( double lon_rad, double lat_rad, const string& root,
+    SGTime( double lon_rad, double lat_rad, const std::string& root,
             time_t init_time );
 
     /**
      * Create an instance given a data file path.
      * @param root root path point to data file location (timezone, etc.)
      */
-    SGTime( const string& root );
+    SGTime( const std::string& root );
 
     /** Destructor */
     ~SGTime();
@@ -165,7 +161,7 @@ public:
      * @param lon_rad current longitude (radians)
      * @param lat_rad current latitude (radians)
      * @param root base path containing time zone directory */
-    void updateLocal( double lon_rad, double lat_rad, const string& root );
+    void updateLocal( double lon_rad, double lat_rad, const std::string& root );
 
     /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };

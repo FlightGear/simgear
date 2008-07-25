@@ -25,7 +25,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/serial/serial.hxx>

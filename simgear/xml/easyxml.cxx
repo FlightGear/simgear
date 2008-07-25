@@ -11,8 +11,8 @@
 #include "easyxml.hxx"
 #include "xmlparse.h"
 
-#include STL_FSTREAM
-#include STL_IOSTREAM
+#include <fstream>
+#include <iostream>
 
 SG_USING_STD(ifstream);
 

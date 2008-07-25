@@ -23,11 +23,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
-# include <cerrno>
-#else
-# include <errno.h>
-#endif
+#include <cerrno>
 #include <memory.h>
 #include <stdio.h>
 

@@ -30,7 +30,7 @@
 #include <simgear/compiler.h>
 
 #include <stdio.h>
-#include STL_IOSTREAM
+#include <iostream>
 
 #include <osg/Array>
 #include <osg/AlphaFunc>

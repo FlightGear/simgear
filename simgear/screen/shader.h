@@ -27,7 +27,7 @@
 #include <vector>
 
 #include <map>
-#include STL_STRING
+#include <string>
 
 SG_USING_STD(map);
 SG_USING_STD(vector);

@@ -30,7 +30,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING      // Standard C++ string library
+#include <string>      // Standard C++ string library
 #include <vector>
 
 #include <osg/ref_ptr>

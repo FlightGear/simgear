@@ -1,7 +1,7 @@
 #include <simgear/compiler.h>
 
-#include STL_STRING
-#include STL_IOSTREAM
+#include <string>
+#include <iostream>
 
 #include <simgear/debug/logstream.hxx>
 

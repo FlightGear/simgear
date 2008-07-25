@@ -36,7 +36,7 @@
 #include <simgear/debug/logstream.hxx>
 
 #include <stdio.h>
-#include STL_IOSTREAM
+#include <iostream>
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>

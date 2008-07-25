@@ -4,7 +4,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_IOSTREAM
+#include <iostream>
 #include "tabbed_values.hxx"
 
 SG_USING_STD(cout);

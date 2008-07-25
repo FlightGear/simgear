@@ -1,7 +1,7 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 
-#include STL_IOSTREAM
+#include <iostream>
 
 #include "route.hxx"
 #include "waypoint.hxx"

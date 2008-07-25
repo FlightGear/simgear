@@ -25,7 +25,7 @@
 #include <simgear/compiler.h>
 #include <plib/ul.h>
 
-#include STL_STRING
+#include <string>
 #include <sstream>
 #include <istream>
 

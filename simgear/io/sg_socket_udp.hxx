@@ -36,7 +36,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_STRING
+#include <string>
 
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>

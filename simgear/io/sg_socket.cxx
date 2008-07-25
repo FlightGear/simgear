@@ -31,7 +31,7 @@
 #include <strings.h>
 #endif
 
-#include STL_IOSTREAM
+#include <iostream>
 
 #include <simgear/debug/logstream.hxx>
 

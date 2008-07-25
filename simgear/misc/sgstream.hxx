@@ -35,7 +35,7 @@
 
 #  include <istream>
 
-#include STL_STRING
+#include <string>
 
 #include <simgear/misc/zfstream.hxx>
 

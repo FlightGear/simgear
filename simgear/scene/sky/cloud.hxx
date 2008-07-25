@@ -32,7 +32,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 
-#include STL_STRING
+#include <string>
 SG_USING_STD(string);
 
 #include <osg/ref_ptr>

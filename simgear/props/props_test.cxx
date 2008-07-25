@@ -5,7 +5,7 @@
 
 #include <simgear/compiler.h>
 
-#include STL_IOSTREAM
+#include <iostream>
 #include "props.hxx"
 #include "props_io.hxx"
 

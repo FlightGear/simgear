@@ -29,15 +29,9 @@
 
 #include <errno.h>		// for errno
 
-#ifdef SG_HAVE_STD_INCLUDES
-#  include <cstdio>
-#  include <cstdlib>
-#  include <ctime>
-#else
-#  include <math.h>
-#  include <stdio.h>
-#  include <stdlib.h>
-#endif
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 #include <string>
 

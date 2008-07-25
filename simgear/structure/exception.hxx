@@ -11,7 +11,7 @@
 #define __SIMGEAR_MISC_EXCEPTION_HXX 1
 
 #include <simgear/compiler.h>
-#include STL_STRING
+#include <string>
 
 SG_USING_STD(string);
 

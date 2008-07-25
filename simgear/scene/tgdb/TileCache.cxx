@@ -31,8 +31,6 @@
 #include "TileEntry.hxx"
 #include "TileCache.hxx"
 
-SG_USING_NAMESPACE(std);
-
 using simgear::TileEntry;
 using simgear::TileCache;
 

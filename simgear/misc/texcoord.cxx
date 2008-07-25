@@ -145,7 +145,7 @@ enter this in the official comments in case I forget again. :-)
 
 #include <simgear/compiler.h>
 
-// #include STL_IOSTREAM
+// #include <iostream>
 
 #include "texcoord.hxx"
 

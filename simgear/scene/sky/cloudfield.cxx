@@ -31,7 +31,7 @@
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/polar3d.hxx>
 
-#include STL_ALGORITHM
+#include <algorithm>
 #include <vector>
 
 SG_USING_STD(vector);

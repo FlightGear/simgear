@@ -3,12 +3,7 @@
 
 #include <simgear/compiler.h>
 
-#if defined ( SG_HAVE_STD_INCLUDES )
-#  include <cassert>
-#else
-#  include <assert.h>
-#endif
-
+#include <cassert>
 #include <queue>
 #include "SGThread.hxx"
 #include "SGGuard.hxx"

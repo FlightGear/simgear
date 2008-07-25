@@ -33,7 +33,7 @@
 #include <time.h>
 
 #include <vector>
-#include STL_STRING
+#include <string>
 #include <iostream>
 
 #include <simgear/bucket/newbucket.hxx>

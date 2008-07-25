@@ -32,7 +32,7 @@
 
 // #include "protocol.hxx"
 
-#include STL_STRING
+#include <string>
 #include <vector>
 
 SG_USING_STD(vector);

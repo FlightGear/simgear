@@ -10,7 +10,7 @@ METAR_DIRS = environment
 EXTRA_DIST = simgear_config.h.vc5 simgear_config.h-msvc71 version.h.in
 
 include_HEADERS = \
-	compiler.h constants.h sg_inlines.h sg_traits.hxx version.h
+	compiler.h constants.h sg_inlines.h version.h
 
 SUBDIRS = \
 	$(compatibility_DIR) \

@@ -32,7 +32,7 @@
 #include <simgear/compiler.h>
 
 #include <vector>
-#include STL_STRING
+#include <string>
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/point3d.hxx>

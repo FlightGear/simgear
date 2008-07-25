@@ -86,8 +86,6 @@
 
 #include "coremag.hxx"
 
-
-static const double pi = 3.14159265358979;
 static const double a = 6378.137;       /* semi-major axis (equatorial radius) of WGS84 ellipsoid */
 static const double b = 6356.7523142;   /* semi-minor axis referenced to the WGS84 ellipsoid */
 static const double r_0 = 6371.2;	/* standard Earth magnetic reference radius  */
@@ -325,7 +323,7 @@ double calc_magvar( double lat, double lon, double h, long dat, double* field )
     }
 
     /* Find geodetic field components: */
-    psi = theta - ((pi / 2.0) - lat);
+    psi = theta - ((M_PI / 2.0) - lat);
     sinpsi = sin(psi);
     cospsi = cos(psi);
     X = -B_theta * cospsi - B_r * sinpsi;

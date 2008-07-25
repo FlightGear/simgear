@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 
-#include STL_STRING
+#include <string>
 #include <vector>
 #include <map>
 #include <iosfwd>

@@ -5,7 +5,7 @@
 #include <simgear/compiler.h>
 
 #include <unistd.h>
-#include STL_IOSTREAM
+#include <iostream>
 
 #include "sg_binobj.hxx"
 

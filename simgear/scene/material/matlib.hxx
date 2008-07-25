@@ -33,7 +33,7 @@
 
 #include <simgear/structure/SGSharedPtr.hxx>
 
-#include STL_STRING		// Standard C++ string library
+#include <string>		// Standard C++ string library
 #include <map>			// STL associative "array"
 #include <vector>		// STL "array"
 

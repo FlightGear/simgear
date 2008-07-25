@@ -23,45 +23,8 @@
  * A set of defines to encapsulate compiler and platform differences.
  * Please refer to the source code for full documentation on this file.
  *
- * Here is a summary of what this file does.
- *
- *  (1)  Defines macros for some STL includes which may be affected
- *       by file name length limitations.
- *
- *  (2)  Defines macros for some features not supported by all C++ compilers.
- *
- *  (3)  Defines 'explicit' as a null macro if the compiler doesn't support
- *       the explicit keyword.
- *
- *  (4)  Defines 'typename' as a null macro if the compiler doesn't support
- *       the typename keyword.
- *
- *  (5)  Defines bool, true and false if the compiler doesn't do so.
- *
- *  (6)  Defines SG_EXPLICIT_FUNCTION_TMPL_ARGS if the compiler
- *       supports calling a function template by providing its template
- *       arguments explicitly.
- *
- *  (7)  Defines SG_NEED_AUTO_PTR if STL doesn't provide auto_ptr<>.
- *
- *  (8)  Defines SG_NO_ARROW_OPERATOR if the compiler is unable
- *       to support operator->() for iterators.
- *
- *  (9)  Defines SG_USE_EXCEPTIONS if the compiler supports exceptions.
- *       Note: no FlightGear code uses exceptions.
- *
- *  (10) Define SG_NAMESPACES if the compiler supports namespaces.
- *
- *  (11) SG_MATH_FN_IN_NAMESPACE_STD -- not used??
- *
- *  (12) Define SG_HAVE_STD if std namespace is supported.
- *
- *  (13) Defines SG_CLASS_PARTIAL_SPECIALIZATION if the compiler 
- *       supports partial specialization of class templates.
- *
- *  (14) Defines SG_HAVE_STD_INCLUDES to use ISO C++ Standard headers.
- *
- *  (15) Defines SG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
+ * This file is useful to set compiler-specific options in every file - for
+ * example, disabling warnings.
  *
  */
 
@@ -77,55 +40,18 @@
 #define SG_DO_STRINGIZE(X) #X
 
 #ifdef __GNUC__
-#  if __GNUC__ >= 3
-       // g++-3.0.x
-#      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#      define SG_NEED_AUTO_PTR
-#      define SG_MEMBER_TEMPLATES
-#      define SG_NAMESPACES
-#      define SG_HAVE_STD
-#      define SG_HAVE_STREAMBUF
-#      define SG_CLASS_PARTIAL_SPECIALIZATION
-#      define SG_HAVE_STD_INCLUDES
-
-#      define STL_ALGORITHM  <algorithm>
-#      define STL_FUNCTIONAL <functional>
-#      define STL_IOMANIP    <iomanip>
-#      define STL_IOSTREAM   <iostream>
-#      define STL_ITERATOR   <iterator>
-#      define STL_FSTREAM    <fstream>
-#      define STL_STDEXCEPT  <stdexcept>
-#      define STL_STRING     <string>
-#      define STL_STRSTREAM  <strstream>
-#  else
+#  if __GNUC__ < 3
 #    error Time to upgrade. GNU compilers < 3.0 not supported
+#  elif (__GNUC__ == 3) && (__GNUC_MINOR__ < 4)
+#    warning GCC compilers prior to 3.4 are suspect  
 #  endif
 
 #  define SG_COMPILER_STR "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
-
 #endif // __GNUC__
 
 /* KAI C++ */
 #if defined(__KCC)
-
-#  define SG_NAMESPACES
-#  define SG_HAVE_STD
-#  define SG_HAVE_STREAMBUF
-#  define SG_HAVE_TRAITS
-#  define SG_HAVE_STD_INCLUDES
-
-#  define STL_ALGORITHM  <algorithm>
-#  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip>
-#  define STL_IOSTREAM   <iostream>
-#  define STL_ITERATOR   <iterator>
-#  define STL_FSTREAM    <fstream>
-#  define STL_STDEXCEPT  <stdexcept>
-#  define STL_STRING     <string>
-#  define STL_STRSTREAM  <strstream>
-
 #  define SG_COMPILER_STR "Kai C++ version " SG_STRINGIZE(__KCC_VERSION)
-
 #endif // __KCC
 
 //
@@ -133,24 +59,8 @@
 //
 #ifdef _MSC_VER
 #  define bcopy(from, to, n) memcpy(to, from, n)
-#  define FG_MEM_COPY(to,from,n) memcpy(to, from, n)
 
 #  if _MSC_VER >= 1200  // msvc++ 6.0 or greater
-#    define SG_NAMESPACES
-#    define SG_HAVE_STD
-#    define SG_HAVE_STD_INCLUDES
-#    define SG_HAVE_STREAMBUF
-
-#    define STL_ALGORITHM  <algorithm>
-#    define STL_FUNCTIONAL <functional>
-#    define STL_IOMANIP    <iomanip>
-#    define STL_IOSTREAM   <iostream>
-#    define STL_ITERATOR   <iterator>
-#    define STL_FSTREAM    <fstream>
-#    define STL_STDEXCEPT  <stdexcept>
-#    define STL_STRING     <string>
-#    define STL_STRSTREAM  <strstream>
-
 #    define isnan _isnan
 #    define snprintf _snprintf
 #    define copysign _copysign
@@ -172,40 +82,18 @@
 //
 
 #if defined ( sgi ) && !defined( __GNUC__ )
-#  define SG_HAVE_NATIVE_SGI_COMPILERS
+# if (_COMPILER_VERSION < 740)
+#  error Need MipsPro 7.4.0 or higher now
+# endif
 
-#  define SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#  define SG_CLASS_PARTIAL_SPECIALIZATION
-#  define SG_NEED_AUTO_PTR
-#  define SG_MEMBER_TEMPLATES
-#  define SG_NAMESPACES
-#  define SG_HAVE_STD
-#  define SG_HAVE_STREAMBUF
-#  define SG_HAVE_TRAITS
-#  define SG_HAVE_STD_INCLUDES
-
-#  define STL_ALGORITHM  <algorithm>
-#  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip>
-#  define STL_IOSTREAM   <iostream>
-#  define STL_ITERATOR   <iterator>
-#  define STL_FSTREAM    <fstream>
-#  define STL_STDEXCEPT  <stdexcept>
-#if (_COMPILER_VERSION < 740)
-#  define STL_STRING     <irix_string>
-#else
-#  define STL_STRING     <string>
-#endif
-#  define STL_STRSTREAM  <strstream>
+#define SG_HAVE_NATIVE_SGI_COMPILERS
 
 #pragma set woff 1001,1012,1014,1116,1155,1172,1174
 #pragma set woff 1401,1460,1551,1552,1681
 
 #ifdef __cplusplus
-#pragma set woff 1682,3303
-#if (_COMPILER_VERSION >= 740)
-#  pragma set woff 3624
-#endif
+# pragma set woff 1682,3303
+# pragma set woff 3624
 #endif
 
 #  define SG_COMPILER_STR "SGI MipsPro compiler version " SG_STRINGIZE(_COMPILER_VERSION)
@@ -235,24 +123,7 @@
 // Intel C++ Compiler
 //
 #if defined(__ICC) || defined (__ECC)
-#  define SG_NAMESPACES
-#  define SG_HAVE_STD
-#  define SG_HAVE_STREAMBUF
-#  define SG_HAVE_TRAITS
-#  define SG_HAVE_STD_INCLUDES
-
-#  define STL_ALGORITHM  <algorithm>
-#  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip>
-#  define STL_IOSTREAM   <iostream>
-#  define STL_ITERATOR   <iterator>
-#  define STL_FSTREAM    <fstream>
-#  define STL_STDEXCEPT  <stdexcept>
-#  define STL_STRING     <string>
-#  define STL_STRSTREAM  <strstream>
-
 #  define SG_COMPILER_STR "Intel C++ version " SG_STRINGIZE(__ICC)
-
 #endif // __ICC
 
 //
@@ -281,58 +152,10 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 // No user modifiable definitions beyond here.
 //
 
-#ifdef SG_NEED_EXPLICIT
-#  define explicit
-#endif
-
-#ifdef SG_NEED_TYPENAME
-#  define typename
-#endif
-
-#ifdef SG_NEED_MUTABLE
-#  define mutable
-#endif
-
-#ifdef SG_NEED_BOOL
-   typedef int bool;
-#  define true 1
-#  define false 0
-#endif
-
-#ifdef SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#  define SG_NULL_TMPL_ARGS <>
-#else
-#  define SG_NULL_TMPL_ARGS
-#endif
-
-#ifdef SG_CLASS_PARTIAL_SPECIALIZATION
-# define SG_TEMPLATE_NULL template<>
-#else
-# define SG_TEMPLATE_NULL
-#endif
-
-// SG_NO_NAMESPACES is a hook so that users can disable namespaces
-// without having to edit library headers.
-#if defined(SG_NAMESPACES) && !defined(SG_NO_NAMESPACES)
-#   define SG_NAMESPACE(X) namespace X {
-#   define SG_NAMESPACE_END }
-#   define SG_USING_NAMESPACE(X) using namespace X
-# else
-#   define SG_NAMESPACE(X)
-#   define SG_NAMESPACE_END
-#   define SG_USING_NAMESPACE(X)
-#endif
-
 /** \def SG_USING_STD(x)
- *  Expands to using std::x if SG_HAVE_STD is defined 
+ *  Expands to using std::X
  */
-# ifdef SG_HAVE_STD
 #  define SG_USING_STD(X) using std::X
-#  define STD std
-# else
-#  define SG_USING_STD(X) 
-#  define STD
-# endif
 
 #endif // _SG_COMPILER_H
 

@@ -20,12 +20,6 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_HAVE_STD_INCLUDES
-// We have cmath from the standard c++ lib available
 #include <cmath>
-#else
-// We only have math.h with the c89 double functions.
-#include <math.h>
-#endif
 
 #endif

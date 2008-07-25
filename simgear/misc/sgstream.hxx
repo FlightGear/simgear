@@ -33,13 +33,7 @@
 
 #include <simgear/compiler.h>
 
-#if defined( SG_HAVE_STD_INCLUDES )
 #  include <istream>
-#elif defined ( __BORLANDC__ )
-#  include <iostream>
-#else
-#  include <istream.h>
-#endif
 
 #include STL_STRING
 

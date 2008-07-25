@@ -34,9 +34,6 @@
 #ifdef SG_HAVE_STD_INCLUDES
 #  include <cmath>
 #else
-#  ifdef SG_MATH_EXCEPTION_CLASH
-#    define exception C_exception
-#  endif
 #  include <math.h>
 #endif
 

@@ -27,9 +27,6 @@
 
 #include <simgear/debug/logstream.hxx>
 
-#ifdef __BORLANDC__
-#  define exception c_exception
-#endif
 #include <math.h>
 
 // #include <FDM/flight.hxx>

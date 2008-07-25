@@ -36,10 +36,6 @@ SG_USING_STD(map);
 #include <osg/StateSet>
 #include <osg/Transform>
 
-#ifdef SG_MATH_EXCEPTION_CLASH
-#  include <math.h>
-#endif
-
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>

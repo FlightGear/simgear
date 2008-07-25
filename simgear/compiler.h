@@ -63,8 +63,6 @@
  *
  *  (15) Defines SG_HAVE_STREAMBUF if <streambuf> of <streambuf.h> are present.
  *
- *  (16) Define SG_MATH_EXCEPTION_CLASH if math.h defines an exception class
- *       that clashes with the one defined in <stdexcept>.
  */
 
 #ifndef _SG_COMPILER_H
@@ -79,48 +77,7 @@
 #define SG_DO_STRINGIZE(X) #X
 
 #ifdef __GNUC__
-#  if __GNUC__ == 2 
-#    if __GNUC_MINOR__ < 8
-
-       // g++-2.7.x
-#      define STL_ALGORITHM  <algorithm>
-#      define STL_FUNCTIONAL <functional>
-#      define STL_IOMANIP    <iomanip.h>
-#      define STL_IOSTREAM   <iostream.h>
-#      define STL_ITERATOR   <iterator.h>
-#      define STL_FSTREAM    <fstream.h>
-#      define STL_STDEXCEPT  <stdexcept>
-#      define STL_STRING     <string>
-#      define STL_STRSTREAM  <strstream.h>
-
-#      define SG_NEED_AUTO_PTR
-#      define SG_NO_DEFAULT_TEMPLATE_ARGS
-#      define SG_INCOMPLETE_FUNCTIONAL
-#      define SG_NO_ARROW_OPERATOR
-
-#    elif __GNUC_MINOR__ >= 8
-
-       // g++-2.8.x and egcs-1.x
-#      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
-#      define SG_NEED_AUTO_PTR
-#      define SG_MEMBER_TEMPLATES
-#      define SG_NAMESPACES
-#      define SG_HAVE_STD
-#      define SG_HAVE_STREAMBUF
-#      define SG_CLASS_PARTIAL_SPECIALIZATION
-
-#      define STL_ALGORITHM  <algorithm>
-#      define STL_FUNCTIONAL <functional>
-#      define STL_IOMANIP    <iomanip>
-#      define STL_IOSTREAM   <iostream>
-#      define STL_ITERATOR   <iterator>
-#      define STL_FSTREAM    <fstream>
-#      define STL_STDEXCEPT  <stdexcept>
-#      define STL_STRING     <string>
-#      define STL_STRSTREAM  <strstream>
-
-#    endif
-#  elif __GNUC__ >= 3
+#  if __GNUC__ >= 3
        // g++-3.0.x
 #      define SG_EXPLICIT_FUNCTION_TMPL_ARGS
 #      define SG_NEED_AUTO_PTR
@@ -141,7 +98,7 @@
 #      define STL_STRING     <string>
 #      define STL_STRSTREAM  <strstream>
 #  else
-#    error Time to upgrade. GNU compilers < 2.7 not supported
+#    error Time to upgrade. GNU compilers < 3.0 not supported
 #  endif
 
 #  define SG_COMPILER_STR "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
@@ -209,40 +166,6 @@
 #    define SG_COMPILER_STR "Microsoft Visual C++ version " SG_STRINGIZE(_MSC_VER)
 
 #endif // _MSC_VER
-
-#ifdef __BORLANDC__
-# if defined(HAVE_SGI_STL_PORT)
-
-// Use quotes around long file names to get around Borland's include hackery
-
-#  define STL_ALGORITHM  "algorithm"
-#  define STL_FUNCTIONAL "functional"
-
-#  define SG_MATH_EXCEPTION_CLASH
-
-# else
-
-#  define STL_ALGORITHM  <algorithm>
-#  define STL_FUNCTIONAL <functional>
-#  define STL_IOMANIP    <iomanip>
-#  define STL_STDEXCEPT  <stdexcept>
-#  define STL_STRSTREAM  <strstream>
-
-#  define SG_INCOMPLETE_FUNCTIONAL
-
-# endif // HAVE_SGI_STL_PORT
-
-#  define STL_IOSTREAM   <iostream>
-#  define STL_ITERATOR   <iterator>
-#  define STL_FSTREAM    <fstream>
-#  define STL_STRING     <string>
-#  define SG_NO_DEFAULT_TEMPLATE_ARGS
-#  define SG_NAMESPACES
-// #  define SG_HAVE_STD
-
-#  define SG_COMPILER_STR "Borland C++ version " SG_STRINGIZE(__BORLANDC__)
-
-#endif // __BORLANDC__
 
 //
 // Native SGI compilers
@@ -343,6 +266,7 @@
 #  define SG_GLEXT_H <OpenGL/glext.h>
 #  define SG_GLUT_H <GLUT/glut.h>
 
+
 inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #else
 #  define SG_GL_H <GL/gl.h>
@@ -409,29 +333,6 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #  define SG_USING_STD(X) 
 #  define STD
 # endif
-
-// Additional <functional> implementation from SGI STL 3.11
-// Adapter function objects: pointers to member functions
-#ifdef SG_INCOMPLETE_FUNCTIONAL
-
-template <class _Ret, class _Tp>
-class const_mem_fun_ref_t
-#ifndef __BORLANDC__
-    : public unary_function<_Tp,_Ret>
-#endif // __BORLANDC__
-{
-public:
-  explicit const_mem_fun_ref_t(_Ret (_Tp::*__pf)() const) : _M_f(__pf) {}
-  _Ret operator()(const _Tp& __r) const { return (__r.*_M_f)(); }
-private:
-  _Ret (_Tp::*_M_f)() const;
-};
-
-template <class _Ret, class _Tp>
-inline const_mem_fun_ref_t<_Ret,_Tp> mem_fun_ref(_Ret (_Tp::*__f)() const)
-  { return const_mem_fun_ref_t<_Ret,_Tp>(__f); }
-
-#endif // SG_INCOMPLETE_FUNCTIONAL
 
 #endif // _SG_COMPILER_H
 

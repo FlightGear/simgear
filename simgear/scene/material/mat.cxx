@@ -33,10 +33,6 @@ SG_USING_STD(map);
 
 #include <plib/ul.h>
 
-#ifdef SG_MATH_EXCEPTION_CLASH
-#  include <math.h>
-#endif
-
 #include <osg/CullFace>
 #include <osg/Material>
 #include <osg/ShadeModel>

@@ -37,10 +37,6 @@
 
 #include <simgear/compiler.h>
 
-#ifdef SG_MATH_EXCEPTION_CLASH
-# define exception c_exception
-#endif
-
 #include <ostream>
 #include <istream>
 #include <cassert>

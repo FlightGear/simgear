@@ -97,7 +97,7 @@ protected:
 
     virtual int_type underflow();
 
-    virtual int_type overflow( int_type c = traits_type::eof() );
+    virtual int_type overflow( int_type c = std::streambuf::traits_type::eof() );
 private:
 
     int_type flushbuf();

@@ -30,7 +30,7 @@
 #include <simgear/scene/model/animation.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/environment/visual_enviro.hxx>
-#include SG_GLU_H
+#include <osg/GLU>
 
 #include "shadowvolume.hxx"
 

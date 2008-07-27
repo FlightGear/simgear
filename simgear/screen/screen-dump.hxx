@@ -23,7 +23,7 @@
 
 #include <simgear/compiler.h>
 
-#include SG_GL_H
+#include <osg/GL>
 
 /**
  * Dump the screen buffer to a ppm file.

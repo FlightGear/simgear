@@ -17,7 +17,7 @@
 # include <windows.h>
 #endif
 
-#include SG_GLU_H
+#include <osg/GLU>
 
 #include <math.h>
 #include <zlib.h>

@@ -9,8 +9,14 @@
 
 #include <simgear/compiler.h>
 
-#include SG_GL_H
-#include SG_GLUT_H
+#include <osg/GL>
+
+#ifdef __APPLE__
+#  include <GLUT/glut.h>
+#else
+#  include <GL/glut.h>
+#endif
+
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
 

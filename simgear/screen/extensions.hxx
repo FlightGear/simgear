@@ -34,11 +34,13 @@
 
 #include <simgear/compiler.h>
 
-#if !defined(WIN32)
-# include SG_GLX_H
-#endif
-#include SG_GL_H
+#include <osg/GL>
 
+#if defined (WIN32)
+#  include <GL/wgl.h>
+#elif !defined(__APPLE__)
+#  include <GL/glx.h>
+#endif
 
 #if defined(__cplusplus)
 extern "C" {

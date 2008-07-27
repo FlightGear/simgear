@@ -496,7 +496,7 @@ bool RenderTexture::Initialize(int width, int height,
         fprintf(stderr, "Couldn't get current context!");
    
         CGLPixelFormatObj pixFormat = NULL;
-        long int iNumFormats;
+        GLint iNumFormats;
         CGLError error;
 
         // Copy the _pixelFormatAttribs into another array to fix
@@ -553,7 +553,7 @@ bool RenderTexture::Initialize(int width, int height,
            return false;
        }
 
-       long screen;
+       GLint screen;
        if (error = CGLGetVirtualScreen(CGLGetCurrentContext(), &screen))
        {
            _cglCheckError(error);

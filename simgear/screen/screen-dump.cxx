@@ -37,7 +37,7 @@
 
 #include <simgear/compiler.h>
 
-#include SG_GL_H
+#include <osg/GL>
 
 #include "screen-dump.hxx"
 

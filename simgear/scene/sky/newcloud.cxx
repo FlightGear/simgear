@@ -34,7 +34,7 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include <algorithm>
-#include SG_GLU_H
+#include <osg/GLU>
 
 #include "cloudfield.hxx"
 #include "newcloud.hxx"

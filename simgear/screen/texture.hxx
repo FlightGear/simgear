@@ -14,7 +14,7 @@
 #define __SG_TEXTURE_HXX 1
 
 #include <simgear/compiler.h>
-#include SG_GL_H
+#include <osg/GL>
 #include <zlib.h>
 
 #include <plib/sg.h>

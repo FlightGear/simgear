@@ -50,15 +50,15 @@
  */
 #include <simgear/compiler.h>
 
-#if !defined( _WIN32 ) && !defined( __MACH__ )
-#  include <X11/Xlib.h>
-#endif
-#include SG_GL_H
-#if defined( __MACH__)
+#include <osg/GL>
+
+#if defined( __APPLE__)
 #  include <OpenGL/OpenGL.h>
 #endif
-#ifndef _WIN32
-#  include SG_GLX_H
+
+#if !defined( _WIN32 ) && !defined( __APPLE__ )
+#  include <X11/Xlib.h>
+#  include <GL/glx.h>
 #endif
 
 #include <string>

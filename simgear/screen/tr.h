@@ -2,6 +2,21 @@
 
 /*
  * $Log$
+ * Revision 1.4  2008/07/27 16:10:37  ehofman
+ *
+ *
+ *  - remove the SG_GLxxxx_H #defines, since OSG provides its own versions
+ *  - this exposed a bizarre issue on Mac where dragging in <AGL/agl.h> in
+ *    extensions.hxx was pulling in all of Carbon to the global namespace
+ *    - very scary. As a result, I now need to explicitly include CoreFoundation
+ *    in fg_init.cxx.
+ *  - change SG_USING_STD(x) to using std::x
+ *
+ * Issues:
+ *
+ *  - the logic for X11 and Win32 in RenderTexture and extensions is tortured,
+ *    please see if you agree I got all the ifdefs correct.
+ *
  * Revision 1.3  2006/02/21 10:47:21  ehofman
  * Back out the previous patch.
  *
@@ -85,7 +100,7 @@
 
 #include <simgear/compiler.h>
 
-#include SG_GL_H
+#include <osg/GL>
 
 
 //#ifdef __cplusplus

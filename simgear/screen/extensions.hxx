@@ -36,9 +36,7 @@
 
 #include <osg/GL>
 
-#if defined (WIN32)
-#  include <GL/wgl.h>
-#elif !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(WIN32)
 #  include <GL/glx.h>
 #endif
 

@@ -25,10 +25,6 @@
 #  include <simgear_config.h>
 #endif
 
-#ifdef HAVE_WINDOWS_H
-#  include <windows.h>
-#endif
-
 #if defined ( __CYGWIN__ )
 #include <ieeefp.h>
 #endif
@@ -36,8 +32,6 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/structure/exception.hxx>
-
-#include SG_GL_H
 
 #include <string.h>
 #include <string>

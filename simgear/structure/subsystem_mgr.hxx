@@ -25,19 +25,6 @@
 
 #include <simgear/compiler.h>
 
-#if 0
-#ifdef HAVE_WINDOWS_H
-#  include <windows.h>
-#  include <float.h>
-#endif
-
-#include <string>
-SG_USING_STD(string);
-
-#include <vector>
-SG_USING_STD(vector);
-#endif
-
 #include <string>
 #include <map>
 #include <vector>

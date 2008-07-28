@@ -29,7 +29,7 @@
 
 #include <string.h>
 #include <map>
-SG_USING_STD(map);
+using std::map;
 
 #include <plib/ul.h>
 

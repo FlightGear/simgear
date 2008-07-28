@@ -38,7 +38,7 @@
 
 #include <simgear/compiler.h>
 #include <string>
-SG_USING_STD(string);
+using std::string;
 
 // if someone know how to do this all with C++ streams let me know
 // #include <stdio.h>

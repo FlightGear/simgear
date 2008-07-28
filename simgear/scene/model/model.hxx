@@ -15,8 +15,8 @@
 #include <vector>
 #include <set>
 
-SG_USING_STD(vector);
-SG_USING_STD(set);
+using std::vector;
+using std::set;
 
 #include <osg/Node>
 #include <osg/Texture2D>

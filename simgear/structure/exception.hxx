@@ -13,7 +13,7 @@
 #include <simgear/compiler.h>
 #include <string>
 
-SG_USING_STD(string);
+using std::string;
 
 
 /**

@@ -14,7 +14,7 @@
 #include <fstream>
 #include <iostream>
 
-SG_USING_STD(ifstream);
+using std::ifstream;
 
 
 

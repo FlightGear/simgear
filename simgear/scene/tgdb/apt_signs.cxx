@@ -41,7 +41,7 @@
 #define SIGN "OBJECT_SIGN: "
 #define RWY "OBJECT_RUNWAY_SIGN: "
 
-SG_USING_STD(vector);
+using std::vector;
 
 // for temporary storage of sign elements
 struct element_info {

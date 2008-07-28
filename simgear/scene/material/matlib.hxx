@@ -43,10 +43,10 @@
 class SGMaterial;
 class SGPropertyNode;
 
-SG_USING_STD(string);
-SG_USING_STD(map);
-SG_USING_STD(vector);
-SG_USING_STD(less);
+using std::string;
+using std::map;
+using std::vector;
+using std::less;
 
 // Material management class
 class SGMaterialLib {

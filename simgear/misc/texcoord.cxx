@@ -149,8 +149,8 @@ enter this in the official comments in case I forget again. :-)
 
 #include "texcoord.hxx"
 
-// SG_USING_STD(cout);
-// SG_USING_STD(endl);
+// using std::cout;
+// using std::endl;
 
 
 #define FG_STANDARD_TEXTURE_DIMENSION 1000.0 // meters

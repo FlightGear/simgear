@@ -6,8 +6,8 @@
 #include "route.hxx"
 #include "waypoint.hxx"
 
-SG_USING_STD(cout);
-SG_USING_STD(endl);
+using std::cout;
+using std::endl;
 
 void dump_route(const SGRoute& route, const char* message)
 {

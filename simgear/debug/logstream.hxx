@@ -36,8 +36,8 @@
 
 #include <simgear/debug/debug_types.h>
 
-SG_USING_STD(streambuf);
-SG_USING_STD(ostream);
+using std::streambuf;
+using std::ostream;
 
 //
 // TODO:

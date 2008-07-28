@@ -45,8 +45,8 @@
 #include "SGLightBin.hxx"
 #include "SGDirectionalLightBin.hxx"
 
-SG_USING_STD(string);
-SG_USING_STD(vector);
+using std::string;
+using std::vector;
 
 // Specify the way we want to draw directional point lights (assuming the
 // appropriate extensions are available.)

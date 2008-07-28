@@ -7,9 +7,9 @@
 #include <iostream>
 #include "tabbed_values.hxx"
 
-SG_USING_STD(cout);
-SG_USING_STD(cerr);
-SG_USING_STD(endl);
+using std::cout;
+using std::cerr;
+using std::endl;
 
 
 int main (int ac, char ** av)

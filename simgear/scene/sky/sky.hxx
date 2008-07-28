@@ -50,7 +50,7 @@
 #include <simgear/scene/sky/oursun.hxx>
 #include <simgear/scene/sky/stars.hxx>
 
-SG_USING_STD(vector);
+using std::vector;
 
 
 typedef struct {

@@ -35,7 +35,7 @@
 #include <osg/Geometry>
 #include <osg/Group>
 
-SG_USING_STD(string);
+using std::string;
 
 class SGMaterial;
 class SGMatModel;

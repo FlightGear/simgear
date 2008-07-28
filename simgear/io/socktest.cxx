@@ -14,8 +14,8 @@ static const int sgEndianTest = 1;
 #define sgIsLittleEndian (*((char *) &sgEndianTest ) != 0)
 #define sgIsBigEndian    (*((char *) &sgEndianTest ) == 0)
 
-SG_USING_STD(cout);
-SG_USING_STD(endl);
+using std::cout;
+using std::endl;
 
 
 int main() {

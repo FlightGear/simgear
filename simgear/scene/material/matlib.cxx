@@ -60,7 +60,7 @@
 
 #include "matlib.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 // Constructor
 SGMaterialLib::SGMaterialLib ( void ) {

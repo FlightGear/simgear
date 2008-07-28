@@ -15,9 +15,9 @@
 #include <string>
 #include <vector>
 
-SG_USING_STD(istream);
-SG_USING_STD(string);
-SG_USING_STD(vector);
+using std::istream;
+using std::string;
+using std::vector;
 
 
 /**

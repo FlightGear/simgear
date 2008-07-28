@@ -32,11 +32,11 @@
 #include <string>
 
 #include <vector>
-SG_USING_STD(vector);
+using std::vector;
 
 #include <cstdlib>
 
-SG_USING_STD(string);
+using std::string;
 
 namespace simgear {
     namespace strutils {

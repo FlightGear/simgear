@@ -30,8 +30,8 @@
 
 #include <simgear/props/props.hxx>
 
-SG_USING_STD(map);
-SG_USING_STD(string);
+using std::map;
+using std::string;
 
 namespace simgear {
 

@@ -36,7 +36,7 @@
 
 #include <vector>
 
-SG_USING_STD(vector);
+using std::vector;
 
 #include <simgear/route/waypoint.hxx>
 

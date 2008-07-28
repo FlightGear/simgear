@@ -31,7 +31,7 @@
 #include "stardata.hxx"
 
 #if defined (_MSC_VER)
-  SG_USING_STD(getline);
+  using std::getline;
 #endif
 
 // Constructor

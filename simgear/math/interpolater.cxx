@@ -33,7 +33,7 @@
 
 #include "interpolater.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 // Constructor -- starts with an empty table.
 SGInterpTable::SGInterpTable()

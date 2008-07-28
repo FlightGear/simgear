@@ -38,7 +38,7 @@
 
 class SGMaterialLib;            // forward declaration
 
-SG_USING_STD(string);
+using std::string;
 
 
 // Generate a generic sign

@@ -30,13 +30,13 @@
 #include <vector>
 #include <map>
 
-SG_USING_STD(istream);
-SG_USING_STD(ifstream);
-SG_USING_STD(ostream);
-SG_USING_STD(ofstream);
-SG_USING_STD(string);
-SG_USING_STD(vector);
-SG_USING_STD(map);
+using std::istream;
+using std::ifstream;
+using std::ostream;
+using std::ofstream;
+using std::string;
+using std::vector;
+using std::map;
 
 using std::endl;
 

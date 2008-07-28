@@ -40,7 +40,7 @@
 
 #include "iochannel.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 /**
  * A serial I/O class based on SGIOChannel.

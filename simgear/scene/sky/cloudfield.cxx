@@ -34,7 +34,7 @@
 #include <algorithm>
 #include <vector>
 
-SG_USING_STD(vector);
+using std::vector;
 
 #include <simgear/environment/visual_enviro.hxx>
 #include "sky.hxx"

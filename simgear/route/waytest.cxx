@@ -5,8 +5,8 @@
 
 #include "waypoint.hxx"
 
-SG_USING_STD(cout);
-SG_USING_STD(endl);
+using std::cout;
+using std::endl;
 
 int main() {
     SGWayPoint a1(-93.216923, 44.880547, 0.0, SGWayPoint::WGS84, "KMSP");

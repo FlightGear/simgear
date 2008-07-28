@@ -36,7 +36,7 @@
 
 #include "sg_file.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 
 SGFile::SGFile(const string &file, bool repeat_)

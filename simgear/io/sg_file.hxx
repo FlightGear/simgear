@@ -44,7 +44,7 @@
 
 #include "iochannel.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 
 /**

@@ -20,7 +20,7 @@
 
 #include "model.hxx"
 
-SG_USING_STD(vector);
+using std::vector;
 
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,

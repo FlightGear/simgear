@@ -41,7 +41,7 @@
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
 
-SG_USING_STD(string);
+using std::string;
 
 /**
  * A UDP socket I/O class based on SGIOChannel and plib/net.

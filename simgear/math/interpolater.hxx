@@ -40,7 +40,7 @@
 #include <map>
 
 #include <string>
-SG_USING_STD(string);
+using std::string;
 
 class SGPropertyNode;
 

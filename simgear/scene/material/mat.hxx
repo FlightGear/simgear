@@ -47,9 +47,9 @@
 
 #include "matmodel.hxx"
 
-SG_USING_STD(string);
-SG_USING_STD(vector);
-SG_USING_STD(map);
+using std::string;
+using std::vector;
+using std::map;
 
 
 class SGMaterialGlyph;

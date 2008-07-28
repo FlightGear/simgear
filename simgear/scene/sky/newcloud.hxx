@@ -30,8 +30,8 @@
 
 #include "bbcache.hxx"
 
-SG_USING_STD(string);
-SG_USING_STD(vector);
+using std::string;
+using std::vector;
 
 /**
  * 3D cloud class.

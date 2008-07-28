@@ -28,8 +28,8 @@
 #include <string>
 #include <vector>
 
-SG_USING_STD(vector);
-SG_USING_STD(string);
+using std::vector;
+using std::string;
 
 class SGLightning;
 class SGSoundMgr;

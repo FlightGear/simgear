@@ -33,7 +33,7 @@
 #include <simgear/structure/SGReferenced.hxx>
 
 #include <string>
-SG_USING_STD(string);
+using std::string;
 
 #include <osg/ref_ptr>
 #include <osg/Array>

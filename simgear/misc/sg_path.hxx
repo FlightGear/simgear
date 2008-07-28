@@ -35,7 +35,7 @@
 
 #include <simgear/math/sg_types.hxx>
 
-SG_USING_STD(string);
+using std::string;
 
 #ifdef _MSC_VER
   typedef int mode_t;

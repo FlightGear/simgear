@@ -41,7 +41,7 @@
 
 #include <plib/netSocket.h>
 
-SG_USING_STD(string);
+using std::string;
 
 #define SG_MAX_SOCKET_QUEUE 32
 

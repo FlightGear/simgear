@@ -28,7 +28,7 @@
 #include <simgear/compiler.h>
 
 #include <map>
-SG_USING_STD(map);
+using std::map;
 
 #include <osg/AlphaFunc>
 #include <osg/Group>

@@ -32,7 +32,7 @@
 
 #include "sg_serial.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 
 SGSerial::SGSerial( const string& device_name, const string& baud_rate ) :

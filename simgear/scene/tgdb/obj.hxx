@@ -38,7 +38,7 @@
 
 #include "SGOceanTile.hxx"
 
-SG_USING_STD(string);
+using std::string;
 
 class SGBucket;
 class SGMaterialLib;

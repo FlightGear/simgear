@@ -5,8 +5,8 @@
 
 #include "sg_socket.hxx"
 
-SG_USING_STD(string);
-SG_USING_STD(cout);
+using std::string;
+using std::cout;
 
 class TcpServer
 {

@@ -48,8 +48,8 @@
 #include <strings.h>
 #endif
 
-SG_USING_STD(string);
-SG_USING_STD(vector);
+using std::string;
+using std::vector;
 
 namespace simgear {
 

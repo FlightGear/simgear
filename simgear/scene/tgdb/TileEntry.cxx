@@ -62,7 +62,7 @@
 #include "ReaderWriterSTG.hxx"
 #include "TileEntry.hxx"
 
-SG_USING_STD(string);
+using std::string;
 using namespace simgear;
 
 ModelLoadHelper *TileEntry::_modelLoader=0;

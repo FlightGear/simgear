@@ -19,9 +19,9 @@
 
 #include <simgear/props/props.hxx>
 
-SG_USING_STD(string);
-SG_USING_STD(map);
-SG_USING_STD(vector);
+using std::string;
+using std::map;
+using std::vector;
 
 
 /**

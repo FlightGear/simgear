@@ -9,9 +9,9 @@
 #include "props.hxx"
 #include "props_io.hxx"
 
-SG_USING_STD(cout);
-SG_USING_STD(cerr);
-SG_USING_STD(endl);
+using std::cout;
+using std::cerr;
+using std::endl;
 
 
 

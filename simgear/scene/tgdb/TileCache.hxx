@@ -30,7 +30,7 @@
 #include <simgear/math/point3d.hxx>
 #include <simgear/scene/tgdb/TileEntry.hxx>
 
-SG_USING_STD(map);
+using std::map;
 
 namespace simgear {
 

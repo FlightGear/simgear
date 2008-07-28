@@ -18,8 +18,8 @@
 #include "props.hxx"
 #include "condition.hxx"
 
-SG_USING_STD(istream);
-SG_USING_STD(ostream);
+using std::istream;
+using std::ostream;
 
 
 

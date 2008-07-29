@@ -28,9 +28,10 @@
 #include <string>
 #include <map>
 #include <vector>
-SG_USING_STD(map);
-SG_USING_STD(vector);
-SG_USING_STD(string);
+
+using std::map;
+using std::vector;
+using std::string;
 
 #include <simgear/props/props.hxx>
 #include <simgear/timing/timestamp.hxx>

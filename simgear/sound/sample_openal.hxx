@@ -63,7 +63,7 @@
  #define USE_SOFTWARE_DOPPLER seem to be necessary
 #endif
 
-SG_USING_STD(string);
+using std::string;
 
 /**
  * manages everything we need to know for an individual sound sample

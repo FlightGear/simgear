@@ -23,9 +23,9 @@
 
 #if ( _MSC_VER == 1200 )
 // MSVC 6 is buggy, and needs something strange here
-SG_USING_STD(vector<SGPropertyNode_ptr>);
-SG_USING_STD(vector<SGPropertyChangeListener *>);
-SG_USING_STD(vector<SGPropertyNode *>);
+using std::vector<SGPropertyNode_ptr>;
+using std::vector<SGPropertyChangeListener *>;
+using std::vector<SGPropertyNode *>;
 #endif
 #endif
 

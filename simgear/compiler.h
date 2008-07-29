@@ -141,10 +141,5 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 // No user modifiable definitions beyond here.
 //
 
-/** \def SG_USING_STD(x)
- *  Expands to using std::X
- */
-#  define SG_USING_STD(X) using std::X
-
 #endif // _SG_COMPILER_H
 

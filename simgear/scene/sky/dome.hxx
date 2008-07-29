@@ -34,7 +34,10 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/math/SGMath.hxx>
 
-class osg::DrawElementsUShort;
+namespace osg
+{
+class DrawElementsUShort;
+}
 
 class SGSkyDome : public SGReferenced {
     osg::ref_ptr<osg::MatrixTransform> dome_transform;

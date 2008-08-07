@@ -39,8 +39,8 @@
 using std::string;
 
 
-SGFile::SGFile(const string &file, bool repeat_)
-    : file_name(file), fp(-1), eof_flag(true), repeat(repeat_)
+SGFile::SGFile(const string &file, int repeat_)
+    : file_name(file), fp(-1), eof_flag(true), repeat(repeat_), iteration(0)
 {
     set_type( sgFileType );
 }
@@ -84,7 +84,8 @@ int SGFile::read( char *buf, int length ) {
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
     if ( length > 0 && result == 0 ) {
-        if (repeat) {
+        if (repeat < 0 || iteration < repeat - 1) {
+            iteration++;
             // loop reading the file, unless it is empty
             off_t fileLen = ::lseek(fp, 0, SEEK_CUR);
             if (fileLen == 0) {
@@ -110,7 +111,8 @@ int SGFile::readline( char *buf, int length ) {
     // read a chunk
     ssize_t result = ::read( fp, buf, length );
     if ( length > 0 && result == 0 ) {
-        if (repeat && pos != 0) {
+        if ((repeat < 0 || iteration < repeat - 1) && pos != 0) {
+            iteration++;
             pos = ::lseek(fp, 0, SEEK_SET);
             result = ::read(fp, buf, length);
         } else {

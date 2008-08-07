@@ -55,7 +55,10 @@ class SGFile : public SGIOChannel {
     string file_name;
     int fp;
     bool eof_flag;
-    bool repeat;
+    // Number of repetitions to play. -1 means loop infinitely.
+    const int repeat;
+    int iteration;              // number of current repetition,
+                                // starting at 0
 
 public:
 
@@ -67,7 +70,7 @@ public:
      * @param file name of file to open
      * @param repeat On eof restart at the beginning of the file
      */
-    SGFile( const string& file, bool repeat_ = false );
+    SGFile( const string& file, int repeat_ = 1 );
 
     /** Destructor */
     ~SGFile();

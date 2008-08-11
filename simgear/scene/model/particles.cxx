@@ -477,7 +477,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
         particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
     if (lifeValue)
         particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
-    if (program) {
+    if (program.valid()) {
         if (useGravity)
             program->setAcceleration(GlobalParticleCallback::getGravityVector());
         if (useWind)

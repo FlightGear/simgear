@@ -97,8 +97,6 @@ public:
         endSizeValue(NULL),
         lifeValue(NULL),
         counterCond(NULL),
-        refFrame(NULL),
-        program(NULL),
         useGravity(false),
         useWind(false)
     {
@@ -265,16 +263,15 @@ protected:
     SGExpressiond* endSizeValue;
     SGExpressiond* lifeValue;
     SGCondition* counterCond;
-    osg::MatrixTransform* refFrame;
     float staticColorComponents[8];
     float startSize;
     float endSize;
     float counterStaticValue;
     float counterStaticExtraRange;
-    osgParticle::RadialShooter* shooter;
-    osgParticle::RandomRateCounter* counter;
-    osgParticle::ParticleSystem* particleSys;
-    osgParticle::FluidProgram* program;
+    osg::ref_ptr<osgParticle::RadialShooter> shooter;
+    osg::ref_ptr<osgParticle::RandomRateCounter> counter;
+    osg::ref_ptr<osgParticle::ParticleSystem> particleSys;
+    osg::ref_ptr<osgParticle::FluidProgram> program;
     bool useGravity;
     bool useWind;
     static osg::ref_ptr<osgParticle::ParticleSystemUpdater> psu;

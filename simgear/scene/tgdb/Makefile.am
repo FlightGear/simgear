@@ -31,12 +31,13 @@ libsgtgdb_a_SOURCES = \
 	userdata.cxx \
 	ReaderWriterSTG.cxx \
 	SGOceanTile.cxx \
-	SGReaderWriterBTG.cxx \
+	SGReaderWriterBTG.cxx SGReaderWriterBTG.hxx \
 	SGVasiDrawable.cxx \
 	GroundLightManager.cxx \
+	SGModelBin.hxx \
 	ShaderGeometry.cxx \
 	TileCache.cxx \
 	TileEntry.cxx \
-	TreeBin.cxx
+	TreeBin.cxx TreeBin.hxx
 
 INCLUDES = -I$(top_srcdir)

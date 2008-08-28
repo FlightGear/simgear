@@ -496,36 +496,6 @@ SOURCE=.\simgear\math\leastsqs.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\math\polar3d.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmath"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmath"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\math\sg_geodesy.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmath"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmath"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\math\sg_random.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -542,6 +512,21 @@ SOURCE=.\simgear\math\sg_random.c
 # Begin Source File
 
 SOURCE=.\simgear\math\vector.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmath"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmath"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\math\SGGeod.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -591,6 +576,21 @@ SOURCE=.\simgear\environment\metar.cxx
 # Begin Source File
 
 SOURCE=.\simgear\environment\visual_enviro.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgenvironment"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgenvironment"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\environment\precipitation.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -712,10 +712,40 @@ SOURCE=.\simgear\misc\interpolator.cxx
 !ENDIF 
 
 # End Source File
+# Begin Source File
+
+SOURCE=.\simgear\misc\PathOptions.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmisc"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmisc"
+
+!ENDIF 
+
+# End Source File
 # End Group
 # Begin Group "Lib_sgnasal"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\nasal\bitslib.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
 # Begin Source File
 
 SOURCE=.\simgear\nasal\code.c
@@ -808,6 +838,36 @@ SOURCE=.\simgear\nasal\hash.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\nasal\iolib.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\nasal\iolib.h
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\nasal\lex.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -853,52 +913,22 @@ SOURCE=.\simgear\nasal\mathlib.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\nasal\iolib.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgnasal"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgnasal"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\nasal\iolib.h
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgnasal"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgnasal"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
-SOURCE=.\simgear\nasal\bitslib.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgnasal"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgnasal"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\nasal\misc.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\nasal\naref.h
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -973,21 +1003,6 @@ SOURCE=.\simgear\nasal\string.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\nasal\vector.c
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgnasal"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgnasal"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\nasal\thread-posix.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1004,6 +1019,51 @@ SOURCE=.\simgear\nasal\thread-posix.c
 # Begin Source File
 
 SOURCE=.\simgear\nasal\thread-win32.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\nasal\threadlib.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\nasal\utf8lib.c
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgnasal"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgnasal"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\nasal\vector.c
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1169,6 +1229,21 @@ SOURCE=.\simgear\scene\model\animation.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\scene\model\particles.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\scene\model\location.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1200,6 +1275,21 @@ SOURCE=.\simgear\scene\model\model.cxx
 # Begin Source File
 
 SOURCE=.\simgear\scene\model\modellib.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\ModelRegistry.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1274,7 +1364,127 @@ SOURCE=.\simgear\scene\model\shadanim.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=.\simgear\scene\model\CheckSceneryVisitor.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGClipGroup.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\simgear\scene\model\SGMaterialAnimation.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGOffsetTransform.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGPagedLOD.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGReaderWriterXML.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGRotateTransform.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGScaleTransform.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgmodel"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgmodel"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\model\SGTranslateTransform.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1462,21 +1672,6 @@ SOURCE=.\simgear\scene\tgdb\apt_signs.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\tgdb\leaf.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgtgdb"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\scene\tgdb\obj.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
@@ -1520,10 +1715,235 @@ SOURCE=.\simgear\scene\tgdb\userdata.cxx
 !ENDIF 
 
 # End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\ReaderWriterSTG.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\SGOceanTile.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\SGReaderWriterBTG.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\SGReaderWriterBTG.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\SGVasiDrawable.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\GroundLightManager.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\SGModelBin.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\ShaderGeometry.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\TileCache.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\TileEntry.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\TreeBin.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\tgdb\TreeBin.hxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgtgdb"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgtgdb"
+
+!ENDIF 
+
+# End Source File
 # End Group
 # Begin Group "Lib_sgutil"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\SGEnlargeBoundingBox.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\SGSceneFeatures.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\SGSceneUserData.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
 # Begin Source File
 
 SOURCE=.\simgear\scene\util\SGStateAttributeVisitor.cxx
@@ -1542,6 +1962,51 @@ SOURCE=.\simgear\scene\util\SGStateAttributeVisitor.cxx
 # Begin Source File
 
 SOURCE=.\simgear\scene\util\SGTextureStateAttributeVisitor.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\NodeAndDrawableVisitor.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\StateAttributeFactory.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgutil"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgutil"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\util\QuadTreeBuilder.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 
@@ -1828,6 +2293,51 @@ SOURCE=.\simgear\structure\SGAtomic.cxx
 # Begin Source File
 
 SOURCE=.\simgear\structure\SGBinding.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgstructure"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgstructure"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\structure\SGExpression.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgstructure"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgstructure"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\structure\SGSmplhist.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgstructure"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgstructure"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\simgear\structure\SGSmplstat.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"
 

@@ -56,26 +56,6 @@ SGLoadTexture2D(bool staticTexture, const std::string& path,
     }
   }
 
-  // Make sure the texture is shared if we already have the same texture
-  // somewhere ...
-  {
-    osg::ref_ptr<osg::Node> tmpNode = new osg::Node;
-    osg::StateSet* stateSet = tmpNode->getOrCreateStateSet();
-    stateSet->setTextureAttribute(0, texture.get());
-
-    // OSGFIXME: don't forget that mutex here
-    osgDB::Registry* registry = osgDB::Registry::instance();
-    registry->getSharedStateManager()->share(tmpNode.get(), 0);
-
-    // should be the same, but be paranoid ...
-    stateSet = tmpNode->getStateSet();
-    osg::StateAttribute* stateAttr;
-    stateAttr = stateSet->getTextureAttribute(0, osg::StateAttribute::TEXTURE);
-    osg::Texture2D* texture2D = dynamic_cast<osg::Texture2D*>(stateAttr);
-    if (texture2D)
-      texture = texture2D;
-  }
-
   return texture.release();
 }
 

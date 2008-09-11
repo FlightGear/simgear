@@ -20,6 +20,7 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osg/MatrixTransform>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
 #include <osg/Switch>

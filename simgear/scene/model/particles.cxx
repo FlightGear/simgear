@@ -21,6 +21,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGGeod.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
@@ -32,10 +34,13 @@
 #include <osgParticle/SectorPlacer>
 #include <osgParticle/ConstantRateCounter>
 #include <osgParticle/ParticleSystemUpdater>
+#include <osgParticle/ParticleSystem>
 #include <osgParticle/FluidProgram>
 
 #include <osg/Geode>
+#include <osg/Group>
 #include <osg/MatrixTransform>
+#include <osg/Node>
 
 #include "particles.hxx"
 
@@ -49,9 +54,8 @@ void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     osg::Matrix om(q.osg());
     osg::Vec3 v(0,0,9.81);
     gravity = om.preMult(v);
-
-    osg::Vec3 w(-modelRoot->getFloatValue("/environment/wind-from-north-fps",0) * SG_FEET_TO_METER, 
-                -modelRoot->getFloatValue("/environment/wind-from-east-fps",0) * SG_FEET_TO_METER, 0);
+    const osg::Vec3& zUpWind = Particles::getWindVector();
+    osg::Vec3 w(zUpWind.y(), zUpWind.x(), - zUpWind.z());
     wind = om.preMult(w);
 
     //SG_LOG(SG_GENERAL, SG_ALERT, "wind vector:"<<w[0]<<","<<w[1]<<","<<w[2]<<"\n");
@@ -65,6 +69,13 @@ osg::Vec3 GlobalParticleCallback::wind;
 osg::ref_ptr<osg::Group> Particles::commonRoot;
 osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
 osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;;
+osg::Vec3 Particles::_wind;
+
+Particles::Particles() : 
+    useGravity(false),
+    useWind(false)
+{
+}
 
 template <typename Object>
 class PointerGuard{
@@ -80,6 +91,36 @@ public:
 private:
     Object* _ptr;
 };
+
+osg::Group* Particles::getCommonRoot()
+{
+    if(!commonRoot.valid())
+    {
+        SG_LOG(SG_GENERAL, SG_DEBUG, "Particle common root called!\n");
+        commonRoot = new osg::Group;
+        commonRoot.get()->setName("common particle system root");
+        commonGeode.get()->setName("common particle system geode");
+        commonRoot.get()->addChild(commonGeode.get());
+        commonRoot.get()->addChild(psu.get());
+    }
+    return commonRoot.get();
+}
+
+// Enable this once particle fix is in OSG.
+// #define OSG_PARTICLE_FIX 1
+void transformParticles(osgParticle::ParticleSystem* particleSys,
+                        const osg::Matrix& mat)
+{
+    const int numParticles = particleSys->numParticles();
+    if (particleSys->areAllParticlesDead())
+        return;
+    for (int i = 0; i < numParticles; ++i) {
+        osgParticle::Particle* P = particleSys->getParticle(i);
+        if (!P->isAlive())
+            continue;
+        P->transformPositionVelocity(mat);
+    }
+}
 
 osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                           SGPropertyNode* modelRoot,
@@ -140,9 +181,19 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
         osg::Geode* g = new osg::Geode;
         align->addChild(g);
         g->addDrawable(particleSys);
+#ifndef OSG_PARTICLE_FIX
         emitter->setReferenceFrame(osgParticle::Emitter::ABSOLUTE_RF);
+#endif
     } else {
+#ifdef OSG_PARTICLE_FIX
+        callback()->particleFrame = new osg::MatrixTransform();
+        osg::Geode* g = new osg::Geode;
+        g->addDrawable(particleSys);
+        callback()->particleFrame->addChild(g);
+        getCommonRoot()->addChild(callback()->particleFrame.get());
+#else
         getCommonGeode()->addDrawable(particleSys);
+#endif
     }
     std::string textureFile;
     if (configNode->hasValue("texture")) {
@@ -415,10 +466,14 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
             program->setFluidToWater();
 
         if (programnode->getBoolValue("gravity", true)) {
+#ifdef OSG_PARTICLE_FIX
+            program->setToGravity();
+#else
             if (attach == "world")
                 callback()->setupProgramGravity(true);
             else
                 program->setToGravity();
+#endif
         } else
             program->setAcceleration(osg::Vec3(0,0,0));
 
@@ -447,7 +502,7 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
     //SG_LOG(SG_GENERAL, SG_ALERT, "callback!\n");
-
+    using namespace osg;
     if (shooterValue)
         shooter->setInitialSpeedRange(shooterValue->getValue(),
                                       (shooterValue->getValue()
@@ -468,7 +523,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
         }
     }
     if (colorchange)
-        particleSys->getDefaultParticleTemplate().setColorRange(osgParticle::rangev4( osg::Vec4(staticColorComponents[0], staticColorComponents[1], staticColorComponents[2], staticColorComponents[3]), osg::Vec4(staticColorComponents[4], staticColorComponents[5], staticColorComponents[6], staticColorComponents[7])));
+        particleSys->getDefaultParticleTemplate().setColorRange(osgParticle::rangev4( Vec4(staticColorComponents[0], staticColorComponents[1], staticColorComponents[2], staticColorComponents[3]), Vec4(staticColorComponents[4], staticColorComponents[5], staticColorComponents[6], staticColorComponents[7])));
     if (startSizeValue)
         startSize = startSizeValue->getValue();
     if (endSizeValue)
@@ -477,11 +532,36 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
         particleSys->getDefaultParticleTemplate().setSizeRange(osgParticle::rangef(startSize, endSize));
     if (lifeValue)
         particleSys->getDefaultParticleTemplate().setLifeTime(lifeValue->getValue());
+#ifdef OSG_PARTICLE_FIX
+    if (particleFrame.valid()) {
+        MatrixList mlist = node->getWorldMatrices();
+        if (!mlist.empty()) {
+            const Matrix& particleMat = particleFrame->getMatrix();
+            Vec3d emitOrigin(mlist[0](3, 0), mlist[0](3, 1), mlist[0](3, 2));
+            Vec3d displace
+                = emitOrigin - Vec3d(particleMat(3, 0), particleMat(3, 1),
+                                     particleMat(3, 2));
+            if (displace * displace > 10000.0 * 10000.0) {
+                // Make new frame for particle system, coincident with
+                // the emitter frame, but oriented with local Z.
+                SGGeod geod = SGGeod::fromCart(SGVec3d(emitOrigin));
+                Matrix newParticleMat = geod.makeZUpFrame();
+                Matrix changeParticleFrame
+                    = particleMat * Matrix::inverse(newParticleMat);
+                particleFrame->setMatrix(newParticleMat);
+                transformParticles(particleSys.get(), changeParticleFrame);
+            }
+        }
+    }
+    if (program.valid() && useWind)
+        program->setWind(_wind);
+#else
     if (program.valid()) {
         if (useGravity)
             program->setAcceleration(GlobalParticleCallback::getGravityVector());
         if (useWind)
             program->setWind(GlobalParticleCallback::getWindVector());
     }
+#endif
 }
 } // namespace simgear

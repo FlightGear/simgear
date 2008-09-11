@@ -20,16 +20,9 @@
 #define _SG_PARTICLES_HXX 1
 
 #include <osg/ref_ptr>
-#include <osg/Group>
-#include <osg/Node>
-#include <osg/NodeVisitor>
-#include <osg/Texture2D>
 #include <osgParticle/SmokeTrailEffect>
 #include <osgParticle/Particle>
 #include <osgParticle/ModularEmitter>
-#include <osgParticle/ParticleSystemUpdater>
-#include <osgParticle/ParticleSystem>
-#include <osg/MatrixTransform>
 #include <osgDB/ReaderWriter>
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
@@ -37,11 +30,25 @@
 #include <osg/Notify>
 #include <osg/Vec3>
 
+namespace osg
+{
+class Group;
+class MatrixTransform;
+class Node;
+class NodeVisitor;
+}
+
+namespace osgParticle
+{
+class ParticleSystem;
+class ParticleSystemUpdater;
+}
 
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/structure/SGExpression.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGQuat.hxx>
 #include <simgear/math/SGMatrix.hxx>
 
@@ -90,18 +97,7 @@ private:
 class Particles : public osg::NodeCallback 
 {
 public:
-    Particles() : 
-        shooterValue(NULL),
-        counterValue(NULL),
-        startSizeValue(NULL),
-        endSizeValue(NULL),
-        lifeValue(NULL),
-        counterCond(NULL),
-        useGravity(false),
-        useWind(false)
-    {
-        memset(colorComponents, 0, sizeof(colorComponents));
-    }
+    Particles();
 
     static osg::Group * appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options);
 
@@ -229,19 +225,7 @@ public:
         staticColorComponents[7] = a2;
     }
 
-    static osg::Group * getCommonRoot()
-    {
-        if(!commonRoot.valid())
-        {
-            SG_LOG(SG_GENERAL, SG_DEBUG, "Particle common root called!\n");
-            commonRoot = new osg::Group;
-            commonRoot.get()->setName("common particle system root");
-            commonGeode.get()->setName("common particle system geode");
-            commonRoot.get()->addChild(commonGeode.get());
-            commonRoot.get()->addChild(psu.get());
-        }
-        return commonRoot.get();
-    }
+    static osg::Group * getCommonRoot();
 
     static osg::Geode * getCommonGeode()
     {
@@ -253,16 +237,23 @@ public:
         return psu.get();
     }
 
+    /**
+     *  Set and get the wind vector for particles in the
+     * atmosphere. This vector is in the Z-up Y-north frame, and the
+     * magnitude is the velocity in meters per second.
+     */
+    static void setWindVector(const osg::Vec3& wind) { _wind = wind; }
+    static const osg::Vec3& getWindVector() { return _wind; }
 protected:
     float shooterExtraRange;
     float counterExtraRange;
-    SGExpressiond* shooterValue;
-    SGExpressiond* counterValue;
-    SGExpressiond* colorComponents[8];
-    SGExpressiond* startSizeValue;
-    SGExpressiond* endSizeValue;
-    SGExpressiond* lifeValue;
-    SGCondition* counterCond;
+    SGSharedPtr<SGExpressiond> shooterValue;
+    SGSharedPtr<SGExpressiond> counterValue;
+    SGSharedPtr<SGExpressiond> colorComponents[8];
+    SGSharedPtr<SGExpressiond> startSizeValue;
+    SGSharedPtr<SGExpressiond> endSizeValue;
+    SGSharedPtr<SGExpressiond> lifeValue;
+    SGSharedPtr<SGCondition> counterCond;
     float staticColorComponents[8];
     float startSize;
     float endSize;
@@ -272,11 +263,14 @@ protected:
     osg::ref_ptr<osgParticle::RandomRateCounter> counter;
     osg::ref_ptr<osgParticle::ParticleSystem> particleSys;
     osg::ref_ptr<osgParticle::FluidProgram> program;
+    osg::ref_ptr<osg::MatrixTransform> particleFrame;
+    
     bool useGravity;
     bool useWind;
     static osg::ref_ptr<osgParticle::ParticleSystemUpdater> psu;
     static osg::ref_ptr<osg::Group> commonRoot;
     static osg::ref_ptr<osg::Geode> commonGeode;
+    static osg::Vec3 _wind;
 };
 }
 #endif

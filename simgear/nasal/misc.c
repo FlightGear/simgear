@@ -77,8 +77,9 @@ naRef naNew(struct Context* c, int type)
 naRef naNewString(struct Context* c)
 {
     naRef s = naNew(c, T_STR);
-    PTR(s).str->len = 0;
-    PTR(s).str->data = 0;
+    PTR(s).str->emblen = 0;
+    PTR(s).str->data.ref.len = 0;
+    PTR(s).str->data.ref.ptr = 0;
     PTR(s).str->hashcode = 0;
     return s;
 }
@@ -177,12 +178,13 @@ int naEqual(naRef a, naRef b)
 int naStrEqual(naRef a, naRef b)
 {
     int i;
-    if(!(IS_STR(a) && IS_STR(b)))
+    char *ap, *bp;
+    if(!IS_STR(a) || !IS_STR(b) || naStr_len(a) != naStr_len(b))
         return 0;
-    if(PTR(a).str->len != PTR(b).str->len)
-        return 0;
-    for(i=0; i<PTR(a).str->len; i++)
-        if(PTR(a).str->data[i] != PTR(b).str->data[i])
+    ap = naStr_data(a);
+    bp = naStr_data(b);
+    for(i=0; i<naStr_len(a); i++)
+        if(ap[i] != bp[i])
             return 0;
     return 1;
 }

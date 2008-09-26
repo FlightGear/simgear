@@ -16,7 +16,7 @@ static struct VecRec* newvecrec(struct VecRec* old)
 static void resize(struct naVec* v)
 {
     struct VecRec* vr = newvecrec(v->rec);
-    naGC_swapfree((void**)&(v->rec), vr);
+    naGC_swapfree((void*)&(v->rec), vr);
 }
 
 void naVec_gcclean(struct naVec* v)
@@ -78,7 +78,7 @@ void naVec_setsize(naRef vec, int sz)
     nv->alloced = sz;
     for(i=0; i<sz; i++)
         nv->array[i] = (v && i < v->size) ? v->array[i] : naNil();
-    naGC_swapfree((void**)&(PTR(vec).vec->rec), nv);
+    naGC_swapfree((void*)&(PTR(vec).vec->rec), nv);
 }
 
 naRef naVec_removelast(naRef vec)

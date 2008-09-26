@@ -214,6 +214,10 @@ static naRef f_compile(naContext c, naRef me, int argc, naRef* args)
 // that it can be reset if we get a die()/naRethrowError() situation
 // later.  Right now, the IP on the stack trace is the line of the
 // die() call, when it should be this one...
+//
+// FIXME: don't use naCall at all here, we don't need it.  Fix up the
+// context stack to tail call the function directly.  There's no need
+// for f_call() to live on the C stack at all.
 static naRef f_call(naContext c, naRef me, int argc, naRef* args)
 {
     naContext subc;
@@ -422,8 +426,8 @@ static naRef f_find(naContext c, naRef me, int argc, naRef* args)
     int start = 0;
     if(argc < 2 || !IS_STR(args[0]) || !IS_STR(args[1])) ARGERR();
     if(argc > 2) start = (int)(naNumValue(args[2]).num);
-    return naNum(find(PTR(args[0]).str->data, PTR(args[0]).str->len,
-                      PTR(args[1]).str->data, PTR(args[1]).str->len,
+    return naNum(find((void*)naStr_data(args[0]), naStr_len(args[0]),
+                      (void*)naStr_data(args[1]), naStr_len(args[1]),
                       start));
 }
 
@@ -537,6 +541,25 @@ static naRef f_sort(naContext c, naRef me, int argc, naRef* args)
     return out;
 }
 
+static naRef f_id(naContext c, naRef me, int argc, naRef* args)
+{
+    char *t = "unk", buf[64];
+    if(argc != 1 || !IS_REF(args[0]))
+        naRuntimeError(c, "bad/missing argument to id()");
+    if     (IS_STR(args[0]))   t = "str";
+    else if(IS_VEC(args[0]))   t = "vec";
+    else if(IS_HASH(args[0]))  t = "hash";
+    else if(IS_CODE(args[0]))  t = "code";
+    else if(IS_FUNC(args[0]))  t = "func";
+    else if(IS_CCODE(args[0])) t = "ccode";
+    else if(IS_GHOST(args[0])) {
+        naGhostType *gt = PTR(args[0]).ghost->gtype;
+        t = gt->name ? (char*)gt->name : "ghost";
+    }
+    sprintf(buf, "%s:%p", (char*)t, (void*)PTR(args[0]).obj);
+    return NEWCSTR(c, buf);
+}
+
 static naCFuncItem funcs[] = {
     { "size", f_size },
     { "keys", f_keys }, 
@@ -565,6 +588,7 @@ static naCFuncItem funcs[] = {
     { "rand", f_rand },
     { "bind", f_bind },
     { "sort", f_sort },
+    { "id", f_id },
     { 0 }
 };
 

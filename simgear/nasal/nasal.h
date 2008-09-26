@@ -153,9 +153,9 @@ naRef naNumValue(naRef n) GCC_PURE;
 naRef naStringValue(naContext c, naRef n);
 
 // String utilities:
-int naStr_len(naRef s);
-char* naStr_data(naRef s);
-naRef naStr_fromdata(naRef dst, char* data, int len);
+int naStr_len(naRef s) GCC_PURE;
+char* naStr_data(naRef s) GCC_PURE;
+naRef naStr_fromdata(naRef dst, const char* data, int len);
 naRef naStr_concat(naRef dest, naRef s1, naRef s2);
 naRef naStr_substr(naRef dest, naRef str, int start, int len);
 naRef naInternSymbol(naRef sym);
@@ -179,7 +179,7 @@ void naHash_keys(naRef dst, naRef hash);
 
 // Ghost utilities:
 typedef struct naGhostType {
-    void (*destroy)(void* ghost);
+    void(*destroy)(void*);
     const char* name;
 } naGhostType;
 naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
@@ -189,16 +189,16 @@ int          naIsGhost(naRef r);
 
 // Acquires a "modification lock" on a context, allowing the C code to
 // modify Nasal data without fear that such data may be "lost" by the
-// garbage collector (nasal data the C stack is not examined in GC!).
-// This disallows garbage collection until the current thread can be
-// blocked.  The lock should be acquired whenever nasal objects are
-// being modified.  It need not be acquired when only read access is
-// needed, PRESUMING that the Nasal data being read is findable by the
-// collector (via naSave, for example) and that another Nasal thread
-// cannot or will not delete the reference to the data.  It MUST NOT
-// be acquired by naCFunction's, as those are called with the lock
-// already held; acquiring two locks for the same thread will cause a
-// deadlock when the GC is invoked.  It should be UNLOCKED by
+// garbage collector (nasal data on the C stack is not examined in
+// GC!).  This disallows garbage collection until the current thread
+// can be blocked.  The lock should be acquired whenever nasal objects
+// are being modified.  It need not be acquired when only read access
+// is needed, PRESUMING that the Nasal data being read is findable by
+// the collector (via naSave, for example) and that another Nasal
+// thread cannot or will not delete the reference to the data.  It
+// MUST NOT be acquired by naCFunction's, as those are called with the
+// lock already held; acquiring two locks for the same thread will
+// cause a deadlock when the GC is invoked.  It should be UNLOCKED by
 // naCFunction's when they are about to do any long term non-nasal
 // processing and/or blocking I/O.  Note that naModLock() may need to
 // block to allow garbage collection to occur, and that garbage

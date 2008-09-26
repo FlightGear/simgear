@@ -31,7 +31,8 @@ static int writec(unsigned int c, unsigned char* s, int len)
 static int readc(unsigned char* s, int len, int* used)
 {
     int n, i, c;
-    if(len > 0 && s[0] < 0x80) { *used = 1; return s[0]; }
+    if(!len) return -1;
+    if(s[0] < 0x80) { *used = 1; return s[0]; }
     for(n=2; n<7; n++)
         if((s[0] & TOPBITS(n+1)) == TOPBITS(n))
             break;
@@ -74,7 +75,7 @@ static naRef f_chstr(naContext ctx, naRef me, int argc, naRef* args)
 static naRef f_size(naContext c, naRef me, int argc, naRef* args)
 {
     unsigned char* s;
-    int sz=0, n, len;
+    int sz=0, n=0, len;
     if(argc < 1 || !naIsString(args[0]))
         naRuntimeError(c, "bad/missing argument to utf8.strc");
     s = (void*)naStr_data(args[0]);

@@ -11,38 +11,44 @@
 static int tonum(unsigned char* s, int len, double* result);
 static int fromnum(double val, unsigned char* s);
 
+#define LEN(s) ((s)->emblen != -1 ? (s)->emblen : (s)->data.ref.len)
+#define DATA(s) ((s)->emblen != -1 ? (s)->data.buf : (s)->data.ref.ptr)
+
 int naStr_len(naRef s)
 {
-    if(!IS_STR(s)) return 0;
-    return PTR(s).str->len;
+    return IS_STR(s) ? LEN(PTR(s).str) : 0;
 }
 
 char* naStr_data(naRef s)
 {
-    if(!IS_STR(s)) return 0;
-    return (char*)PTR(s).str->data;
+    return IS_STR(s) ? (char*)DATA(PTR(s).str) : 0;
 }
 
 static void setlen(struct naStr* s, int sz)
 {
-    if(s->data) naFree(s->data);
-    s->len = sz;
-    s->data = naAlloc(sz+1);
-    s->data[sz] = 0; // nul terminate
+    if(s->emblen == -1 && DATA(s)) naFree(s->data.ref.ptr);
+    if(sz > MAX_STR_EMBLEN) {
+        s->emblen = -1;
+        s->data.ref.len = sz;
+        s->data.ref.ptr = naAlloc(sz+1);
+    } else {
+        s->emblen = sz;
+    }
+    DATA(s)[sz] = 0; // nul terminate
 }
 
 naRef naStr_buf(naRef dst, int len)
 {
     setlen(PTR(dst).str, len);
-    naBZero(PTR(dst).str->data, len);
+    naBZero(DATA(PTR(dst).str), len);
     return dst;
 }
 
-naRef naStr_fromdata(naRef dst, char* data, int len)
+naRef naStr_fromdata(naRef dst, const char* data, int len)
 {
     if(!IS_STR(dst)) return naNil();
     setlen(PTR(dst).str, len);
-    memcpy(PTR(dst).str->data, data, len);
+    memcpy(DATA(PTR(dst).str), data, len);
     return dst;
 }
 
@@ -52,9 +58,9 @@ naRef naStr_concat(naRef dest, naRef s1, naRef s2)
     struct naStr* a = PTR(s1).str;
     struct naStr* b = PTR(s2).str;
     if(!(IS_STR(s1)&&IS_STR(s2)&&IS_STR(dest))) return naNil();
-    setlen(dst, a->len + b->len);
-    memcpy(dst->data, a->data, a->len);
-    memcpy(dst->data + a->len, b->data, b->len);
+    setlen(dst, LEN(a) + LEN(b));
+    memcpy(DATA(dst), DATA(a), LEN(a));
+    memcpy(DATA(dst) + LEN(a), DATA(b), LEN(b));
     return dest;
 }
 
@@ -63,9 +69,9 @@ naRef naStr_substr(naRef dest, naRef str, int start, int len)
     struct naStr* dst = PTR(dest).str;
     struct naStr* s = PTR(str).str;
     if(!(IS_STR(dest)&&IS_STR(str))) return naNil();
-    if(start + len > s->len) { dst->len = 0; dst->data = 0; return naNil(); }
+    if(start + len > LEN(s)) return naNil();
     setlen(dst, len);
-    memcpy(dst->data, s->data + start, len);
+    memcpy(DATA(dst), DATA(s) + start, len);
     return dest;
 }
 
@@ -73,9 +79,9 @@ int naStr_equal(naRef s1, naRef s2)
 {
     struct naStr* a = PTR(s1).str;
     struct naStr* b = PTR(s2).str;
-    if(a->data == b->data) return 1;
-    if(a->len != b->len) return 0;
-    if(memcmp(a->data, b->data, a->len) == 0) return 1;
+    if(DATA(a) == DATA(b)) return 1;
+    if(LEN(a) != LEN(b)) return 0;
+    if(memcmp(DATA(a), DATA(b), LEN(a)) == 0) return 1;
     return 0;
 }
 
@@ -84,7 +90,7 @@ naRef naStr_fromnum(naRef dest, double num)
     struct naStr* dst = PTR(dest).str;
     unsigned char buf[DIGITS+8];
     setlen(dst, fromnum(num, buf));
-    memcpy(dst->data, buf, dst->len);
+    memcpy(DATA(dst), buf, LEN(dst));
     return dest;
 }
 
@@ -95,20 +101,21 @@ int naStr_parsenum(char* str, int len, double* result)
 
 int naStr_tonum(naRef str, double* out)
 {
-    return tonum(PTR(str).str->data, PTR(str).str->len, out);
+    return tonum(DATA(PTR(str).str), LEN(PTR(str).str), out);
 }
 
 int naStr_numeric(naRef str)
 {
     double dummy;
-    return tonum(PTR(str).str->data, PTR(str).str->len, &dummy);
+    return tonum(DATA(PTR(str).str), LEN(PTR(str).str), &dummy);
 }
 
 void naStr_gcclean(struct naStr* str)
 {
-    naFree(str->data);
-    str->data = 0;
-    str->len = 0;
+    if(str->emblen == -1) naFree(str->data.ref.ptr);
+    str->data.ref.ptr = 0;
+    str->data.ref.len = 0;
+    str->emblen = -1;
 }
 
 ////////////////////////////////////////////////////////////////////////

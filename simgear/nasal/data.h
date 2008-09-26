@@ -76,8 +76,7 @@ enum { T_STR, T_VEC, T_HASH, T_CODE, T_FUNC, T_CCODE, T_GHOST,
 #define IS_GHOST(r) (IS_OBJ(r) && PTR(r).obj->type == T_GHOST)
 #define IS_CONTAINER(r) (IS_VEC(r)||IS_HASH(r))
 #define IS_SCALAR(r) (IS_NUM(r) || IS_STR(r))
-#define IDENTICAL(a, b) (IS_REF(a) && IS_REF(b) \
-                         && PTR(a).obj == PTR(b).obj)
+#define IDENTICAL(a, b) (IS_REF(a) && IS_REF(b) && PTR(a).obj == PTR(b).obj)
 
 #define MUTABLE(r) (IS_STR(r) && PTR(r).str->hashcode == 0)
 
@@ -93,11 +92,18 @@ struct naObj {
     GC_HEADER;
 };
 
+#define MAX_STR_EMBLEN 15
 struct naStr {
     GC_HEADER;
-    int len;
-    unsigned char* data;
+    char emblen; /* [0-15], or -1 to indicate "not embedded" */
     unsigned int hashcode;
+    union {
+        unsigned char buf[16];
+        struct {
+            int len;
+            unsigned char* ptr;
+        } ref;
+    } data;
 };
 
 struct VecRec {
@@ -117,14 +123,6 @@ struct HashNode {
     struct HashNode* next;
 };
 
-struct HashRec {
-    int size;
-    int dels;
-    int lgalloced;
-    struct HashNode* nodes;
-    struct HashNode* table[];
-};
-
 struct naHash {
     GC_HEADER;
     struct HashRec* rec;
@@ -132,21 +130,25 @@ struct naHash {
 
 struct naCode {
     GC_HEADER;
-    unsigned char nArgs;
-    unsigned char nOptArgs;
-    unsigned char needArgVector;
+    unsigned int nArgs : 5;
+    unsigned int nOptArgs : 5;
+    unsigned int needArgVector : 1;
     unsigned short nConstants;
-    unsigned short nLines;
     unsigned short codesz;
-    unsigned short* byteCode;
-    naRef* constants;
-    int* argSyms; // indices into constants
-    int* optArgSyms;
-    int* optArgVals;
-    unsigned short* lineIps; // pairs of {ip, line}
+    unsigned short restArgSym; // The "..." vector name, defaults to "arg"
+    unsigned short nLines;
     naRef srcFile;
-    naRef restArgSym; // The "..." vector name, defaults to "arg"
+    naRef* constants;
 };
+
+/* naCode objects store their variable length arrays in a single block
+ * starting with their constants table.  Compute indexes at runtime
+ * for space efficiency: */
+#define BYTECODE(c) ((unsigned short*)((c)->constants+(c)->nConstants))
+#define ARGSYMS(c) (BYTECODE(c)+(c)->codesz)
+#define OPTARGSYMS(c) (ARGSYMS(c)+(c)->nArgs)
+#define OPTARGVALS(c) (OPTARGSYMS(c)+(c)->nOptArgs)
+#define LINEIPS(c) (OPTARGVALS(c)+(c)->nOptArgs)
 
 struct naFunc {
     GC_HEADER;
@@ -194,17 +196,19 @@ int naStr_parsenum(char* str, int len, double* result);
 int naStr_tonum(naRef str, double* out);
 naRef naStr_buf(naRef str, int len);
 
-int naHash_tryset(naRef hash, naRef key, naRef val); // sets if exists
-int naHash_sym(struct naHash* h, struct naStr* sym, naRef* out);
-void naHash_newsym(struct naHash* h, naRef* sym, naRef* val);
+int naiHash_tryset(naRef hash, naRef key, naRef val); // sets if exists
+int naiHash_sym(struct naHash* h, struct naStr* sym, naRef* out);
+void naiHash_newsym(struct naHash* h, naRef* sym, naRef* val);
 
 void naGC_init(struct naPool* p, int type);
 struct naObj** naGC_get(struct naPool* p, int n, int* nout);
 void naGC_swapfree(void** target, void* val);
 void naGC_freedead();
+void naiGCMark(naRef r);
+void naiGCMarkHash(naRef h);
 
 void naStr_gcclean(struct naStr* s);
 void naVec_gcclean(struct naVec* s);
-void naHash_gcclean(struct naHash* s);
+void naiGCHashClean(struct naHash* h);
 
 #endif // _DATA_H

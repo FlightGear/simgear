@@ -16,7 +16,7 @@ static unsigned int fld(naContext c, unsigned char* s,
     int i;
     unsigned int fld = 0;
     if(bit + flen > 8*slen) naRuntimeError(c, "bitfield out of bounds");
-    for(i=0; i<flen; i++) if(BIT(s, slen, i+bit)) fld |= (1<<i);
+    for(i=0; i<flen; i++) if(BIT(s, slen, bit+flen-i-1)) fld |= (1<<i);
     return fld;
 }
 
@@ -32,13 +32,13 @@ static void setfld(naContext c, unsigned char* s, int slen,
 
 static naRef dofld(naContext c, int argc, naRef* args, int sign)
 {
-    struct naStr* s = argc > 0 ? PTR(args[0]).str : 0;
+    naRef s = argc > 0 ? args[0] : naNil();
     int bit = argc > 1 ? (int)naNumValue(args[1]).num : -1;
     int len = argc > 2 ? (int)naNumValue(args[2]).num : -1;
     unsigned int f;
-    if(!s || !MUTABLE(args[0]) || bit < 0 || len < 0)
+    if(!naIsString(s) || !MUTABLE(args[0]) || bit < 0 || len < 0)
         naRuntimeError(c, "missing/bad argument to fld/sfld");
-    f = fld(c, s->data, s->len, bit, len);
+    f = fld(c, (void*)naStr_data(s), naStr_len(s), bit, len);
     if(!sign) return naNum(f);
     if(f & (1 << (len-1))) f |= ~((1<<len)-1); // sign extend
     return naNum((signed int)f);
@@ -56,13 +56,13 @@ static naRef f_fld(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_setfld(naContext c, naRef me, int argc, naRef* args)
 {
-    struct naStr* s = argc > 0 ? PTR(args[0]).str : 0;
+    naRef s = argc > 0 ? args[0] : naNil();
     int bit = argc > 1 ? (int)naNumValue(args[1]).num : -1;
     int len = argc > 2 ? (int)naNumValue(args[2]).num : -1;
     naRef val = argc > 3 ? naNumValue(args[3]) : naNil();
     if(!argc || !MUTABLE(args[0])|| bit < 0 || len < 0 || IS_NIL(val))
         naRuntimeError(c, "missing/bad argument to setfld");
-    setfld(c, s->data, s->len, bit, len, (unsigned int)val.num);
+    setfld(c, (void*)naStr_data(s), naStr_len(s), bit, len, (unsigned int)val.num);
     return naNil();
 }
 

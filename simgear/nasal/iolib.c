@@ -7,7 +7,7 @@
 #include "iolib.h"
 
 static void ghostDestroy(void* g);
-naGhostType naIOGhostType = { ghostDestroy };
+naGhostType naIOGhostType = { ghostDestroy, "iofile" };
 
 static struct naIOGhost* ioghost(naRef r)
 {
@@ -32,9 +32,9 @@ static naRef f_read(naContext c, naRef me, int argc, naRef* args)
     naRef len = argc > 2 ? naNumValue(args[2]) : naNil();
     if(!g || !MUTABLE(str) || !IS_NUM(len))
         naRuntimeError(c, "bad argument to read()");
-    if(PTR(str).str->len < (int)len.num)
+    if(naStr_len(str) < (int)len.num)
         naRuntimeError(c, "string not big enough for read");
-    return naNum(g->type->read(c, g->handle, (char*)PTR(str).str->data,
+    return naNum(g->type->read(c, g->handle, naStr_data(str),
                                (int)len.num));
 }
 
@@ -44,8 +44,8 @@ static naRef f_write(naContext c, naRef me, int argc, naRef* args)
     naRef str = argc > 1 ? args[1] : naNil();
     if(!g || !IS_STR(str))
         naRuntimeError(c, "bad argument to write()");
-    return naNum(g->type->write(c, g->handle, (char*)PTR(str).str->data,
-                                PTR(str).str->len));
+    return naNum(g->type->write(c, g->handle, naStr_data(str),
+                                naStr_len(str)));
 }
 
 static naRef f_seek(naContext c, naRef me, int argc, naRef* args)
@@ -134,8 +134,7 @@ static naRef f_open(naContext c, naRef me, int argc, naRef* args)
     naRef file = argc > 0 ? naStringValue(c, args[0]) : naNil();
     naRef mode = argc > 1 ? naStringValue(c, args[1]) : naNil();
     if(!IS_STR(file)) naRuntimeError(c, "bad argument to open()");
-    f = fopen((char*)PTR(file).str->data,
-              IS_STR(mode) ? (const char*)PTR(mode).str->data : "rb");
+    f = fopen(naStr_data(file), IS_STR(mode) ? naStr_data(mode) : "rb");
     if(!f) naRuntimeError(c, strerror(errno));
     return naIOGhost(c, f);
 }
@@ -159,7 +158,7 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
 {
     naRef result;
     struct naIOGhost* g = argc==1 ? ioghost(args[0]) : 0;
-    int i=0, sz = 128, c, c2;
+    int i=0, c, sz = 128;
     char *buf;
     if(!g || g->type != &naStdIOType)
         naRuntimeError(ctx, "bad argument to readln()");
@@ -168,7 +167,7 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
         c = getcguard(ctx, g->handle, buf);
         if(c == EOF || c == '\n') break;
         if(c == '\r') {
-            c2 = getcguard(ctx, g->handle, buf);
+            int c2 = getcguard(ctx, g->handle, buf);
             if(c2 != EOF && c2 != '\n')
                 if(EOF == ungetc(c2, g->handle))
                     break;
@@ -188,7 +187,7 @@ static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
     struct stat s;
     naRef result, path = argc > 0 ? naStringValue(ctx, args[0]) : naNil();
     if(!IS_STR(path)) naRuntimeError(ctx, "bad argument to stat()");
-    if(stat((char*)PTR(path).str->data, &s) < 0) {
+    if(stat(naStr_data(path), &s) < 0) {
         if(errno == ENOENT) return naNil();
         naRuntimeError(ctx, strerror(errno));
     }

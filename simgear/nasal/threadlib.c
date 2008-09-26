@@ -1,3 +1,4 @@
+#include <string.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -43,7 +44,12 @@ static naRef f_newthread(naContext c, naRef me, int argc, naRef* args)
 #ifdef _WIN32
     CreateThread(0, 0, threadtop, td, 0, 0);
 #else
-    { pthread_t t; pthread_create(&t, 0, threadtop, td); }
+    {
+        pthread_t t; int err;
+        if((err = pthread_create(&t, 0, threadtop, td)))
+            naRuntimeError(c, "newthread failed: %s", strerror(err));
+        pthread_detach(t);
+    }
 #endif
     return naNil();
 }
@@ -55,8 +61,11 @@ static naRef f_newlock(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_lock(naContext c, naRef me, int argc, naRef* args)
 {
-    if(argc > 0 && naGhost_type(args[0]) == &LockType)
+    if(argc > 0 && naGhost_type(args[0]) == &LockType) {
+        naModUnlock();
         naLock(naGhost_ptr(args[0]));
+        naModLock();
+    }
     return naNil();
 }
 
@@ -74,8 +83,11 @@ static naRef f_newsem(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_semdown(naContext c, naRef me, int argc, naRef* args)
 {
-    if(argc > 0 && naGhost_type(args[0]) == &SemType)
+    if(argc > 0 && naGhost_type(args[0]) == &SemType) {
+        naModUnlock();
         naSemDown(naGhost_ptr(args[0]));
+        naModLock();
+    }
     return naNil();
 }
 

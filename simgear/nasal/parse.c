@@ -6,7 +6,7 @@
 // Static precedence table, from low (loose binding, do first) to high
 // (tight binding, do last).
 #define MAX_PREC_TOKS 6
-struct precedence {
+static const struct precedence {
     int toks[MAX_PREC_TOKS];
     int rule;
 } PRECEDENCE[] = {
@@ -31,40 +31,18 @@ struct precedence {
 
 void naParseError(struct Parser* p, char* msg, int line)
 {
-    // Some errors (e.g. code generation of a null pointer) lack a
-    // line number, so we throw -1 and set the line earlier.
     if(line > 0) p->errLine = line;
     p->err = msg;
     longjmp(p->jumpHandle, 1);
 }
 
-// A "generic" (too obfuscated to describe) parser error
-static void oops(struct Parser* p, struct Token* t)
-{
-    naParseError(p, "parse error", t->line);
-}
+static void oops(struct Parser* p) { naParseError(p, "parse error", -1); }
 
 void naParseInit(struct Parser* p)
 {
-    p->buf = 0;
-    p->len = 0;
-    p->lines = 0;
-    p->nLines = 0;
-    p->chunks = 0;
-    p->chunkSizes = 0;
-    p->nChunks = 0;
-    p->leftInChunk = 0;
-    p->cg = 0;
-
+    memset(p, 0, sizeof(*p));
     p->tree.type = TOK_TOP;
     p->tree.line = 1;
-    p->tree.str = 0;
-    p->tree.strlen = 0;
-    p->tree.num = 0;
-    p->tree.next = 0;
-    p->tree.prev = 0;
-    p->tree.children = 0;
-    p->tree.lastChild = 0;
 }
 
 void naParseDestroy(struct Parser* p)
@@ -79,11 +57,8 @@ void naParseDestroy(struct Parser* p)
 void* naParseAlloc(struct Parser* p, int bytes)
 {
     char* result;
-
-    // Round up to 8 byte chunks for alignment
-    if(bytes & 0x7) bytes = ((bytes>>3) + 1) << 3;
+    bytes = (bytes+7) & (~7); // Round up to 8 byte chunks for alignment
     
-    // Need a new chunk?
     if(p->leftInChunk < bytes) {
         void* newChunk;
         void** newChunks;
@@ -113,270 +88,141 @@ void* naParseAlloc(struct Parser* p, int bytes)
 
     result = (char *)p->chunks[0] + p->chunkSizes[0] - p->leftInChunk;
     p->leftInChunk -= bytes;
-    return (void*)result;
+    return result;
 }
 
-// Remove the child from the list where it exists, and insert it at
-// the end of the parents child list.
-static void addNewChild(struct Token* p, struct Token* c)
+static void addChild(struct Token *par, struct Token *ch)
 {
-    if(c->prev) c->prev->next = c->next;
-    if(c->next) c->next->prev = c->prev;
-    if(c == c->parent->children)
-        c->parent->children = c->next;
-    if(c == c->parent->lastChild)
-        c->parent->lastChild = c->prev;
-    c->parent = p;
-    c->next = 0;
-    c->prev = p->lastChild;
-    if(p->lastChild) p->lastChild->next = c;
-    if(!p->children) p->children = c;
-    p->lastChild = c;
+    if(par->lastChild) {
+        ch->prev = par->lastChild;
+        par->lastChild->next = ch;
+    } else
+        par->children = ch;
+    par->lastChild = ch;
 }
 
-// Follows the token list from start (which must be a left brace of
-// some type), placing all tokens found into start's child list until
-// it reaches the matching close brace.
-static void collectBrace(struct Parser* p, struct Token* start)
+static int endBrace(int tok)
 {
-    struct Token* t;
-    int closer = -1;
-    if(start->type == TOK_LPAR)  closer = TOK_RPAR;
-    if(start->type == TOK_LBRA)  closer = TOK_RBRA;
-    if(start->type == TOK_LCURL) closer = TOK_RCURL;
-
-    t = start->next;
-    while(t) {
-        struct Token* next;
-        switch(t->type) {
-        case TOK_LPAR: case TOK_LBRA: case TOK_LCURL:
-            collectBrace(p, t);
-            break;
-        case TOK_RPAR: case TOK_RBRA: case TOK_RCURL:
-            if(t->type != closer)
-                naParseError(p, "mismatched closing brace", t->line);
-
-            // Drop this node on the floor, stitch up the list and return
-            if(start->parent->lastChild == t)
-                start->parent->lastChild = t->prev;
-            start->next = t->next;
-            if(t->next) t->next->prev = start;
-            return;
-        }
-        // Snip t out of the existing list, and append it to start's
-        // children.
-        next = t->next;
-        addNewChild(start, t);
-        t = next;
-    }
-    naParseError(p, "unterminated brace", start->line);
+    if(tok == TOK_LBRA) return TOK_RBRA;
+    if(tok == TOK_LPAR) return TOK_RPAR;
+    if(tok == TOK_LCURL) return TOK_RCURL;
+    return -1;
 }
 
-// Recursively find the contents of all matching brace pairs in the
-// token list and turn them into children of the left token.  The
-// right token disappears.
-static void braceMatch(struct Parser* p, struct Token* start)
+static int isOpenBrace(int t)
 {
-    struct Token* t = start;
-    while(t) {
-        switch(t->type) {
-        case TOK_LPAR: case TOK_LBRA: case TOK_LCURL:
-            collectBrace(p, t);
-            break;
-        case TOK_RPAR: case TOK_RBRA: case TOK_RCURL:
-            if(start->type != TOK_LBRA)
-                naParseError(p, "stray closing brace", t->line);
-            break;
-        }
-        t = t->next;
-    }
+    return t==TOK_LPAR || t==TOK_LBRA || t==TOK_LCURL;
 }
 
-// Allocate and return an "empty" token as a parsing placeholder.
-static struct Token* emptyToken(struct Parser* p)
+static int isLoopoid(int t)
+{
+    return t==TOK_FOR || t==TOK_FOREACH || t==TOK_WHILE || t==TOK_FORINDEX;
+}
+
+static int isBlockoid(int t)
+{
+    return isLoopoid(t)||t==TOK_IF||t==TOK_ELSIF||t==TOK_ELSE||t==TOK_FUNC;
+}
+
+/* Yes, a bare else or elsif ends a block; it means we've reached the
+ * end of the previous if/elsif clause. */
+static int isBlockEnd(int t)
+{
+    return t==TOK_RPAR||t==TOK_RBRA||t==TOK_RCURL||t==TOK_ELSIF||t==TOK_ELSE;
+}
+
+/* To match C's grammar, "blockoid" expressions sometimes need
+ * synthesized terminating semicolons to make them act like
+ * "statements" in C.  Always add one after "loopoid"
+ * (for/foreach/while) expressions.  Add one after a func if it
+ * immediately follows an assignment, and add one after an
+ * if/elsif/else if it is the first token in an expression list */
+static int needsSemi(struct Token* t, struct Token* next)
+{
+    if(!next || next->type == TOK_SEMI || isBlockEnd(next->type)) return 0;
+    if(t->type == TOK_IF)   return !t->prev || t->prev->type == TOK_SEMI;
+    if(t->type == TOK_FUNC) return t->prev && t->prev->type == TOK_ASSIGN;
+    if(isLoopoid(t->type))  return 1;
+    return 0;
+}
+
+static struct Token* newToken(struct Parser* p, int type)
 {
     struct Token* t = naParseAlloc(p, sizeof(struct Token));
-    t->type = TOK_EMPTY;
+    memset(t, 0, sizeof(*t));
+    t->type = type;
     t->line = -1;
-    t->strlen = 0;
-    t->num = 0;
-    t->str = 0;
-    t->next = t->prev = t->children = t->lastChild = 0;
-    t->parent = 0;
     return t;
 }
 
-// Synthesize a curly brace token to wrap token t foward to the end of
-// "statement".  FIXME: unify this with the addNewChild(), which does
-// very similar stuff.
-static void embrace(struct Parser* p, struct Token* t)
+static struct Token* parseToken(struct Parser* p, struct Token** list);
+
+static void parseBlock(struct Parser* p, struct Token *top,
+                       int end, struct Token** list)
 {
-    struct Token *b, *end = t;
-    if(!t) return;
-    while(end->next) {
-        if(end->next->type == TOK_SEMI) {
-            // Slurp up the semi, iff it is followed by an else/elsif,
-            // otherwise leave it in place.
-            if(end->next->next) {
-                if(end->next->next->type == TOK_ELSE)  end = end->next;
-                if(end->next->next->type == TOK_ELSIF) end = end->next;
-            }
-            break;
-        }
-        if(end->next->type == TOK_COMMA) break;
-        if(end->next->type == TOK_ELSE) break;
-        if(end->next->type == TOK_ELSIF) break;
-        end = end->next;
+    struct Token *t;
+    while(*list) {
+        if(isBlockEnd((*list)->type) && (*list)->type != end) break;
+        if(end == TOK_SEMI && (*list)->type == TOK_COMMA) break;
+        t = parseToken(p, list);
+        if(t->type == end) return; /* drop end token on the floor */
+        addChild(top, t);
+        if(needsSemi(t, *list))
+            addChild(top, newToken(p, TOK_SEMI));
     }
-    b = emptyToken(p);
-    b->type = TOK_LCURL;
-    b->line = t->line;
-    b->parent = t->parent;
-    b->prev = t->prev;
-    b->next = end->next;
-    b->children = t;
-    b->lastChild = end;
-    if(t->prev) t->prev->next = b;
-    else b->parent->children = b;
-    if(end->next) end->next->prev = b;
-    else b->parent->lastChild = b;
-    t->prev = 0;
-    end->next = 0;
-    for(; t; t = t->next)
-        t->parent = b;
+    /* Context dependency: end of block is a parse error UNLESS we're
+     * looking for a statement terminator (a braceless block) or a -1
+     * (the top level) */
+    if(end != TOK_SEMI && end != -1) oops(p);
 }
 
-#define NEXT(t) (t ? t->next : 0)
-#define TYPE(t) (t ? t->type : -1)
-
-static void fixBracelessBlocks(struct Parser* p, struct Token* t)
+static struct Token* parseToken(struct Parser* p, struct Token** list)
 {
-    // Find the end, and march *backward*
-    while(t && t->next) t = t->next;
-    for(/**/; t; t=t->prev) {
-        switch(t->type) {
-        case TOK_FOR: case TOK_FOREACH: case TOK_FORINDEX: case TOK_WHILE:
-        case TOK_IF: case TOK_ELSIF:
-            if(TYPE(NEXT(t)) == TOK_LPAR && TYPE(NEXT(NEXT(t))) != TOK_LCURL)
-                    embrace(p, t->next->next);
-            break;
-        case TOK_ELSE:
-            if(TYPE(NEXT(t)) != TOK_LCURL)
-                embrace(p, t->next);
-            break;
-        case TOK_FUNC:
-            if(TYPE(NEXT(t)) == TOK_LPAR) {
-                if(TYPE(NEXT(NEXT(t))) != TOK_LCURL)
-                    embrace(p, NEXT(NEXT(t)));
-            } else if(TYPE(NEXT(t)) != TOK_LCURL)
-                embrace(p, t->next);
-            break;
-        default:
-            break;
+    struct Token *t = *list;
+    *list = t->next;
+    if(t->next) t->next->prev = 0;
+    t->next = t->prev = 0;
+    p->errLine = t->line;
+
+    if(!t) return 0;
+    if(isOpenBrace(t->type)) {
+        parseBlock(p, t, endBrace(t->type), list);
+    } else if(isBlockoid(t->type)) {
+        /* Read an optional paren expression */
+        if(!*list) oops(p);
+        if((*list)->type == TOK_LPAR)
+            addChild(t, parseToken(p, list));
+
+        /* And the code block, which might be implicit/braceless */
+        if(!*list) oops(p);
+        if((*list)->type == TOK_LCURL) {
+            addChild(t, parseToken(p, list));
+        } else {
+            /* Context dependency: if we're reading a braceless block,
+             * and the first (!) token is itself a "blockoid"
+             * expression, it is parsed alone, otherwise, read to the
+             * terminating semicolon. */
+            struct Token *blk = newToken(p, TOK_LCURL);
+            if(isBlockoid((*list)->type)) addChild(blk, parseToken(p, list));
+            else                          parseBlock(p, blk, TOK_SEMI, list);
+            addChild(t, blk);
         }
-    }
-}
 
-// Fixes up parenting for obvious parsing situations, like code blocks
-// being the child of a func keyword, etc...
-static void fixBlockStructure(struct Parser* p, struct Token* start)
-{
-    struct Token *t, *c;
-    fixBracelessBlocks(p, start);
-    t = start;
-    while(t) {
-        switch(t->type) {
-        case TOK_FUNC:
-            // Slurp an optional paren block containing an arglist, then
-            // fall through to parse the curlies...
-            if(t->next && t->next->type == TOK_LPAR) {
-                c = t->next;
-                addNewChild(t, c);
-                fixBlockStructure(p, c);
-            }
-        case TOK_ELSE: // and TOK_FUNC!
-            // These guys precede a single curly block
-            if(!t->next || t->next->type != TOK_LCURL) oops(p, t);
-            c = t->next;
-            addNewChild(t, c);
-            fixBlockStructure(p, c);
-            break;
-        case TOK_FOR: case TOK_FOREACH: case TOK_FORINDEX: case TOK_WHILE:
-        case TOK_IF: case TOK_ELSIF:
-            // Expect a paren and then a curly
-            if(!t->next || t->next->type != TOK_LPAR) oops(p, t);
-            c = t->next;
-            addNewChild(t, c);
-            fixBlockStructure(p, c);
-
-            if(!t->next || t->next->type != TOK_LCURL) oops(p, t);
-            c = t->next;
-            addNewChild(t, c);
-            fixBlockStructure(p, c);
-            break;
-        case TOK_LPAR: case TOK_LBRA: case TOK_LCURL:
-            fixBlockStructure(p, t->children);
-            break;
-        }
-        t = t->next;
-    }
-
-    // Another pass to hook up the elsif/else chains.
-    t = start;
-    while(t) {
+        /* Read the elsif/else chain */
         if(t->type == TOK_IF) {
-            while(t->next && t->next->type == TOK_ELSIF)
-                addNewChild(t, t->next);
-            if(t->next && t->next->type == TOK_ELSE)
-                addNewChild(t, t->next);
+            while(*list && ((*list)->type == TOK_ELSIF))
+                addChild(t, parseToken(p, list));
+            if(*list && (*list)->type == TOK_ELSE)
+                addChild(t, parseToken(p, list));
         }
-        t = t->next;
-    }
 
-    // And a final one to add semicolons.  Always add one after
-    // for/foreach/while expressions.  Add one after a function lambda
-    // if it immediately follows an assignment, and add one after an
-    // if/elsif/else if it is the first token in an expression list
-    // (i.e has no previous token, or is preceded by a ';' or '{').
-    // This mimicks common usage and avoids a conspicuous difference
-    // between this grammar and more common languages.  It can be
-    // "escaped" with extra parenthesis if necessary, e.g.:
-    //      a = (func { join(" ", arg) })(1, 2, 3, 4);
-    t = start;
-    while(t) {
-        int addSemi = 0;
-        switch(t->type) {
-        case TOK_IF:
-            if(!t->prev
-               || t->prev->type == TOK_SEMI
-               || t->prev->type == TOK_LCURL)
-                addSemi = 1;
-            break;
-        case TOK_FOR: case TOK_FOREACH: case TOK_FORINDEX: case TOK_WHILE:
-            addSemi = 1;
-            break;
-        case TOK_FUNC:
-            if(t->prev && t->prev->type == TOK_ASSIGN)
-                addSemi = 1;
-            break;
+        /* Finally, check for proper usage */
+        if(t->type != TOK_FUNC) {
+            if(t->type == TOK_ELSE && t->children->type != TOK_LCURL) oops(p);
+            if(t->type != TOK_ELSE && t->children->type != TOK_LPAR) oops(p);
         }
-        if(!t->next || t->next->type == TOK_SEMI || t->next->type == TOK_COMMA)
-            addSemi = 0; // don't bother, no need
-        if(addSemi) {
-            struct Token* semi = emptyToken(p);
-            semi->type = TOK_SEMI;
-            semi->line = t->line;
-            semi->next = t->next;
-            semi->prev = t;
-            semi->parent = t->parent;
-            if(semi->next) semi->next->prev = semi;
-            else semi->parent->lastChild = semi;
-            t->next = semi;
-            t = semi; // don't bother checking the new one
-        }
-        t = t->next;
     }
-    
+    return t;
 }
 
 // True if the token's type exists in the precedence level.
@@ -389,20 +235,34 @@ static int tokInLevel(struct Token* tok, int level)
     return 0;
 }
 
-static int isBrace(int type)
+static struct Token* parsePrecedence(struct Parser* p, struct Token* start,
+                                     struct Token* end, int level);
+
+static void precChildren(struct Parser* p, struct Token* t)
 {
-    return type == TOK_LPAR || type == TOK_LBRA || type == TOK_LCURL;
+    struct Token* top = parsePrecedence(p, t->children, t->lastChild, 0);
+    t->children = top;
+    t->lastChild = top;
 }
 
-static int isBlock(int t)
+// Run a "block structure" node (if/elsif/else/for/while/foreach)
+// through the precedence parser.  The funny child structure makes
+// this a little more complicated than it should be.
+static void precBlock(struct Parser* p, struct Token* block)
 {
-    return t == TOK_IF  || t == TOK_ELSIF   || t == TOK_ELSE
-        || t == TOK_FOR || t == TOK_FOREACH || t == TOK_WHILE
-        || t == TOK_FUNC || t == TOK_FORINDEX;
+    struct Token* t = block->children;
+    while(t) {
+        if(isOpenBrace(t->type))
+            precChildren(p, t);
+        else if(isBlockoid(t->type))
+            precBlock(p, t);
+        t = t->next;
+    }
 }
 
-static void precChildren(struct Parser* p, struct Token* t);
-static void precBlock(struct Parser* p, struct Token* t);
+/* Binary tokens that get empties synthesized if one side is missing */
+static int oneSidedBinary(int t)
+{ return t == TOK_SEMI || t ==  TOK_COMMA || t == TOK_COLON; }
 
 static struct Token* parsePrecedence(struct Parser* p,
                                      struct Token* start, struct Token* end,
@@ -414,11 +274,11 @@ static struct Token* parsePrecedence(struct Parser* p,
 
     // This is an error.  No "siblings" are allowed at the bottom level.
     if(level >= PRECEDENCE_LEVELS && start != end)
-        oops(p, start);
+        naParseError(p, "parse error", start->line);
 
     // Synthesize an empty token if necessary
     if(end == 0 && start == 0)
-        return emptyToken(p);
+        return newToken(p, TOK_EMPTY);
 
     // Sanify the list.  This is OK, since we're recursing into the
     // list structure; stuff to the left and right has already been
@@ -432,26 +292,19 @@ static struct Token* parsePrecedence(struct Parser* p,
     // Single tokens parse as themselves.  Recurse into braces, and
     // parse children of block structure.
     if(start == end) {
-        if(isBrace(start->type)) {
-            precChildren(p, start);
-        } else if(isBlock(start->type)) {
-            precBlock(p, start);
-        }
+        if     (isOpenBrace(start->type)) precChildren(p, start);
+        else if(isBlockoid(start->type))  precBlock(p, start);
         return start;
     }
 
-    // A context-sensitivity: we want to parse ';' and ',' as binary
-    // operators, but want them to be legal at the beginning and end
-    // of a list (unlike, say, '+' where we want a parse error).
-    // Generate empties as necessary.
-    if(start->type == TOK_SEMI || start->type == TOK_COMMA) {
-        t = emptyToken(p);
+    if(oneSidedBinary(start->type)) {
+        t = newToken(p, TOK_EMPTY);
         start->prev = t;
         t->next = start;
         start = t;
     }
-    if(end->type == TOK_SEMI || end->type == TOK_COMMA) {
-        t = emptyToken(p);
+    if(oneSidedBinary(end->type)) {
+        t = newToken(p, TOK_EMPTY);
         end->next = t;
         t->prev = end;
         end = t;
@@ -534,41 +387,17 @@ static struct Token* parsePrecedence(struct Parser* p,
     if(left) {
         left->next = right;
         left->prev = 0;
-        left->parent = top;
     }
     top->children = left;
 
     if(right) {
         right->next = 0;
         right->prev = left;
-        right->parent = top;
     }
     top->lastChild = right;
 
     top->next = top->prev = 0;
     return top;
-}
-
-static void precChildren(struct Parser* p, struct Token* t)
-{
-    struct Token* top = parsePrecedence(p, t->children, t->lastChild, 0);
-    t->children = top;
-    t->lastChild = top;
-}
-
-// Run a "block structure" node (if/elsif/else/for/while/foreach)
-// through the precedence parser.  The funny child structure makes
-// this a little more complicated than it should be.
-static void precBlock(struct Parser* p, struct Token* block)
-{
-    struct Token* t = block->children;
-    while(t) {
-        if(isBrace(t->type))
-            precChildren(p, t);
-        else if(isBlock(t->type))
-            precBlock(p, t);
-        t = t->next;
-    }
 }
 
 naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
@@ -581,15 +410,17 @@ naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
     // Protect from garbage collection
     naTempSave(c, srcFile);
 
+    naParseInit(&p);
+
     // Catch parser errors here.
-    *errLine = 0;
+    p.errLine = *errLine = 1;
     if(setjmp(p.jumpHandle)) {
         strncpy(c->error, p.err, sizeof(c->error));
         *errLine = p.errLine;
+        naParseDestroy(&p);
         return naNil();
     }
 
-    naParseInit(&p);
     p.context = c;
     p.srcFile = srcFile;
     p.firstLine = firstLine;
@@ -598,8 +429,12 @@ naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
 
     // Lexify, match brace structure, fixup if/for/etc...
     naLex(&p);
-    braceMatch(&p, p.tree.children);
-    fixBlockStructure(&p, p.tree.children);
+
+    // Run the block parser, make sure everything was eaten
+    t = p.tree.children;
+    p.tree.children = p.tree.lastChild = 0;
+    parseBlock(&p, &p.tree, -1, &t);
+    if(t) oops(&p);
 
     // Recursively run the precedence parser, and fixup the treetop
     t = parsePrecedence(&p, p.tree.children, p.tree.lastChild, 0);
@@ -607,7 +442,7 @@ naRef naParseCode(struct Context* c, naRef srcFile, int firstLine,
     p.tree.children = t;
     p.tree.lastChild = t;
 
-    // Generate code!
+    // Generate code
     codeObj = naCodeGen(&p, &(p.tree), 0);
 
     // Clean up our mess

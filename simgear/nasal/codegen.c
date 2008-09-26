@@ -1,3 +1,4 @@
+#include <string.h>
 #include "parse.h"
 #include "code.h"
 
@@ -6,7 +7,7 @@
 // These are more sensical predicate names in most contexts in this file
 #define LEFT(tok)   ((tok)->children)
 #define RIGHT(tok)  ((tok)->lastChild)
-#define BINARY(tok) (LEFT(tok) && RIGHT(tok) && LEFT(tok) != RIGHT(tok))
+#define BINARY(tok) (LEFT(tok) && RIGHT(tok) && LEFT(tok)->next == RIGHT(tok))
 
 // Forward references for recursion
 static void genExpr(struct Parser* p, struct Token* t);
@@ -46,12 +47,7 @@ static int newConstant(struct Parser* p, naRef c)
     naVec_append(p->cg->consts, c);
     i = naVec_size(p->cg->consts) - 1;
     if(i > 0xffff) naParseError(p, "too many constants in code block", 0);
-    return i;
-}
-
-static naRef getConstant(struct Parser* p, int idx)
-{
-    return naVec_get(p->cg->consts, idx);
+   return i;
 }
 
 // Interns a scalar (!) constant and returns its index
@@ -68,6 +64,10 @@ static int internConstant(struct Parser* p, naRef c)
     return newConstant(p, c);
 }
 
+/* FIXME: this API is fundamentally a resource leak, because symbols
+ * can't be deregistered.  The "proper" way to do this would be to
+ * keep a reference count for each symbol, and decrement it when a
+ * code object referencing it is deleted. */
 naRef naInternSymbol(naRef sym)
 {
     naRef result;
@@ -93,19 +93,11 @@ static int findConstantIndex(struct Parser* p, struct Token* t)
 
 static int genScalarConstant(struct Parser* p, struct Token* t)
 {
-    // These opcodes are for special-case use in other constructs, but
-    // we might as well use them here to save a few bytes in the
-    // instruction stream.
-    if(t->str == 0 && t->num == 1) {
-        emit(p, OP_PUSHONE);
-    } else if(t->str == 0 && t->num == 0) {
-        emit(p, OP_PUSHZERO);
-    } else {
-        int idx = findConstantIndex(p, t);
-        emitImmediate(p, OP_PUSHCONST, idx);
-        return idx;
-    }
-    return 0;
+    int idx;
+    if(t->str == 0 && t->num == 1) { emit(p, OP_PUSHONE); return 0; }
+    if(t->str == 0 && t->num == 0) { emit(p, OP_PUSHZERO); return 0; }
+    emitImmediate(p, OP_PUSHCONST, idx = findConstantIndex(p, t));
+    return idx;
 }
 
 static int genLValue(struct Parser* p, struct Token* t, int* cidx)
@@ -135,7 +127,7 @@ static int genLValue(struct Parser* p, struct Token* t, int* cidx)
 
 static void genEqOp(int op, struct Parser* p, struct Token* t)
 {
-    int cidx, setop = genLValue(p, LEFT(t), &cidx);
+    int cidx, n = 2, setop = genLValue(p, LEFT(t), &cidx);
     if(setop == OP_SETMEMBER) {
         emit(p, OP_DUP2);
         emit(p, OP_POP);
@@ -143,10 +135,13 @@ static void genEqOp(int op, struct Parser* p, struct Token* t)
     } else if(setop == OP_INSERT) {
         emit(p, OP_DUP2);
         emit(p, OP_EXTRACT);
-    } else // OP_SETSYM, OP_SETLOCAL
+    } else {
         emitImmediate(p, OP_LOCAL, cidx);
+        n = 1;
+    }
     genExpr(p, RIGHT(t));
     emit(p, op);
+    emit(p, n == 1 ? OP_XCHG : OP_XCHG2);
     emit(p, setop);
 }
 
@@ -169,27 +164,29 @@ static void genArgList(struct Parser* p, struct naCode* c, struct Token* t)
 {
     naRef sym;
     if(t->type == TOK_EMPTY) return;
-    if(!IDENTICAL(c->restArgSym, globals->argRef))
-            naParseError(p, "remainder must be last", t->line);
+    if(!IDENTICAL(p->cg->restArgSym, globals->argRef))
+        naParseError(p, "remainder must be last", t->line);
     if(t->type == TOK_ELLIPSIS) {
         if(LEFT(t)->type != TOK_SYMBOL)
             naParseError(p, "bad function argument expression", t->line);
         sym = naStr_fromdata(naNewString(p->context),
                              LEFT(t)->str, LEFT(t)->strlen);
-        c->restArgSym = naInternSymbol(sym);
+        p->cg->restArgSym = naInternSymbol(sym);
         c->needArgVector = 1;
     } else if(t->type == TOK_ASSIGN) {
         if(LEFT(t)->type != TOK_SYMBOL)
             naParseError(p, "bad function argument expression", t->line);
-        c->optArgSyms[c->nOptArgs] = findConstantIndex(p, LEFT(t));
-        c->optArgVals[c->nOptArgs++] = defArg(p, RIGHT(t));
+        p->cg->optArgSyms[c->nOptArgs] = findConstantIndex(p, LEFT(t));
+        p->cg->optArgVals[c->nOptArgs++] = defArg(p, RIGHT(t));
     } else if(t->type == TOK_SYMBOL) {
         if(c->nOptArgs)
             naParseError(p, "optional arguments must be last", t->line);
         if(c->nArgs >= MAX_FUNARGS)
             naParseError(p, "too many named function arguments", t->line);
-        c->argSyms[c->nArgs++] = findConstantIndex(p, t);
+        p->cg->argSyms[c->nArgs++] = findConstantIndex(p, t);
     } else if(t->type == TOK_COMMA) {
+        if(!LEFT(t) || !RIGHT(t))
+            naParseError(p, "empty function argument", t->line);
         genArgList(p, c, LEFT(t));
         genArgList(p, c, RIGHT(t));
     } else
@@ -219,12 +216,12 @@ static void genLambda(struct Parser* p, struct Token* t)
 
 static int genList(struct Parser* p, struct Token* t, int doAppend)
 {
-    if(t->type == TOK_COMMA) {
+    if(!t || t->type == TOK_EMPTY) {
+        return 0;
+    } else if(t->type == TOK_COMMA) {
         genExpr(p, LEFT(t));
         if(doAppend) emit(p, OP_VAPPEND);
         return 1 + genList(p, RIGHT(t), doAppend);
-    } else if(t->type == TOK_EMPTY) {
-        return 0;
     } else {
         genExpr(p, t);
         if(doAppend) emit(p, OP_VAPPEND);
@@ -234,7 +231,7 @@ static int genList(struct Parser* p, struct Token* t, int doAppend)
 
 static void genHashElem(struct Parser* p, struct Token* t)
 {
-    if(t->type == TOK_EMPTY)
+    if(!t || t->type == TOK_EMPTY)
         return;
     if(t->type != TOK_COLON)
         naParseError(p, "bad hash/object initializer", t->line);
@@ -247,31 +244,45 @@ static void genHashElem(struct Parser* p, struct Token* t)
 
 static void genHash(struct Parser* p, struct Token* t)
 {
-    if(t->type == TOK_COMMA) {
+    if(t && t->type == TOK_COMMA) {
         genHashElem(p, LEFT(t));
         genHash(p, RIGHT(t));
-    } else if(t->type != TOK_EMPTY) {
+    } else if(t && t->type != TOK_EMPTY) {
         genHashElem(p, t);
     }
 }
 
+static int isHashcall(struct Parser* p, struct Token* t)
+{
+    if(t) {
+        int sep = LEFT(t) && t->type == TOK_COMMA ? t->children->type : t->type;
+        return sep == TOK_COLON;
+    }
+    return 0;
+}
+
 static void genFuncall(struct Parser* p, struct Token* t)
 {
-    int op = OP_FCALL;
-    int nargs = 0;
+    int method = 0;
     if(LEFT(t)->type == TOK_DOT) {
+        method = 1;
         genExpr(p, LEFT(LEFT(t)));
         emit(p, OP_DUP);
         emitImmediate(p, OP_MEMBER, findConstantIndex(p, RIGHT(LEFT(t))));
-        op = OP_MCALL;
     } else {
         genExpr(p, LEFT(t));
     }
-    if(RIGHT(t)) nargs = genList(p, RIGHT(t), 0);
-    emitImmediate(p, op, nargs);
+    if(isHashcall(p, RIGHT(t))) {
+        emit(p, OP_NEWHASH);
+        genHash(p, RIGHT(t));
+        emit(p, method ? OP_MCALLH : OP_FCALLH);
+    } else {
+        int nargs = genList(p, RIGHT(t), 0);
+        emitImmediate(p, method ? OP_MCALL : OP_FCALL, nargs);
+    }
 }
 
-static void pushLoop(struct Parser* p, struct Token* label)
+static int startLoop(struct Parser* p, struct Token* label)
 {
     int i = p->cg->loopTop;
     p->cg->loops[i].breakIP = 0xffffff;
@@ -279,13 +290,7 @@ static void pushLoop(struct Parser* p, struct Token* label)
     p->cg->loops[i].label = label;
     p->cg->loopTop++;
     emit(p, OP_MARK);
-}
-
-static void popLoop(struct Parser* p)
-{
-    p->cg->loopTop--;
-    if(p->cg->loopTop < 0) naParseError(p, "BUG: loop stack underflow", -1);
-    emit(p, OP_UNMARK);
+    return p->cg->codesz;
 }
 
 // Emit a jump operation, and return the location of the address in
@@ -352,10 +357,11 @@ static void genQuestion(struct Parser* p, struct Token* t)
     fixJumpTarget(p, jumpEnd);
 }
 
-static int countSemis(struct Token* t)
+static int countList(struct Token* t, int type)
 {
-    if(!t || t->type != TOK_SEMI) return 0;
-    return 1 + countSemis(RIGHT(t));
+    int n;
+    for(n = 1; t && t->type == type; t = RIGHT(t)) n++;
+    return n;
 }
 
 static void genLoop(struct Parser* p, struct Token* body,
@@ -377,7 +383,8 @@ static void genLoop(struct Parser* p, struct Token* body,
     if(update) { genExpr(p, update); emit(p, OP_POP); }
     emitImmediate(p, OP_JMPLOOP, loopTop);
     fixJumpTarget(p, jumpEnd);
-    popLoop(p);
+    p->cg->loopTop--;
+    emit(p, OP_UNMARK);
     emit(p, OP_PUSHNIL); // Leave something on the stack
 }
 
@@ -387,8 +394,7 @@ static void genForWhile(struct Parser* p, struct Token* init,
 {
     int loopTop, jumpEnd;
     if(init) { genExpr(p, init); emit(p, OP_POP); }
-    pushLoop(p, label);
-    loopTop = p->cg->codesz;
+    loopTop = startLoop(p, label);
     genExpr(p, test);
     jumpEnd = emitJump(p, OP_JIFNOTPOP);
     genLoop(p, body, update, label, loopTop, jumpEnd);
@@ -397,14 +403,13 @@ static void genForWhile(struct Parser* p, struct Token* init,
 static void genWhile(struct Parser* p, struct Token* t)
 {
     struct Token *test=LEFT(t)->children, *body, *label=0;
-    int semis = countSemis(test);
-    if(semis == 1) {
+    int len = countList(test, TOK_SEMI);
+    if(len == 2) {
         label = LEFT(test);
         if(!label || label->type != TOK_SYMBOL)
             naParseError(p, "bad loop label", t->line);
         test = RIGHT(test);
-    }
-    else if(semis != 0)
+    } else if(len != 1)
         naParseError(p, "too many semicolons in while test", t->line);
     body = LEFT(RIGHT(t));
     genForWhile(p, 0, test, 0, body, label);
@@ -414,17 +419,14 @@ static void genFor(struct Parser* p, struct Token* t)
 {
     struct Token *init, *test, *body, *update, *label=0;
     struct Token *h = LEFT(t)->children;
-    int semis = countSemis(h);
-    if(semis == 3) {
+    int len = countList(h, TOK_SEMI);
+    if(len == 4) {
         if(!LEFT(h) || LEFT(h)->type != TOK_SYMBOL)
             naParseError(p, "bad loop label", h->line);
         label = LEFT(h);
         h=RIGHT(h);
-    } else if(semis != 2) {
+    } else if(len != 3)
         naParseError(p, "wrong number of terms in for header", t->line);
-    }
-
-    // Parse tree hell :)
     init = LEFT(h);
     test = LEFT(RIGHT(h));
     update = RIGHT(RIGHT(h));
@@ -437,13 +439,13 @@ static void genForEach(struct Parser* p, struct Token* t)
     int loopTop, jumpEnd, assignOp, dummy;
     struct Token *elem, *body, *vec, *label=0;
     struct Token *h = LEFT(LEFT(t));
-    int semis = countSemis(h);
-    if(semis == 2) {
+    int len = countList(h, TOK_SEMI);
+    if(len == 3) {
         if(!LEFT(h) || LEFT(h)->type != TOK_SYMBOL)
             naParseError(p, "bad loop label", h->line);
         label = LEFT(h);
         h = RIGHT(h);
-    } else if (semis != 1) {
+    } else if (len != 2) {
         naParseError(p, "wrong number of terms in foreach header", t->line);
     }
     elem = LEFT(h);
@@ -452,12 +454,10 @@ static void genForEach(struct Parser* p, struct Token* t)
 
     genExpr(p, vec);
     emit(p, OP_PUSHZERO);
-    pushLoop(p, label);
-    loopTop = p->cg->codesz;
+    loopTop = startLoop(p, label);
     emit(p, t->type == TOK_FOREACH ? OP_EACH : OP_INDEX);
     jumpEnd = emitJump(p, OP_JIFEND);
     assignOp = genLValue(p, elem, &dummy);
-    emit(p, OP_XCHG);
     emit(p, assignOp);
     emit(p, OP_POP);
     genLoop(p, body, 0, label, loopTop, jumpEnd);
@@ -511,47 +511,111 @@ static void newLineEntry(struct Parser* p, int line)
     p->cg->lineIps[p->cg->nextLineIp++] = (unsigned short) line;
 }
 
+static int parListLen(struct Token* t)
+{
+    if(t->type != TOK_LPAR || !LEFT(t) || LEFT(t)->type != TOK_COMMA) return 0;
+    return countList(LEFT(t), TOK_COMMA);
+}
+
+static void genCommaList(struct Parser* p, struct Token* t)
+{
+    if(t->type != TOK_COMMA) { genExpr(p, t); return; }
+    genCommaList(p, RIGHT(t));
+    genExpr(p, LEFT(t));
+}
+
+static void genMultiLV(struct Parser* p, struct Token* t, int var)
+{
+    if(!var) { emit(p, genLValue(p, t, &var)); return; }
+    if(t->type != TOK_SYMBOL) naParseError(p, "bad lvalue", t->line);
+    genScalarConstant(p, t);
+    emit(p, OP_SETLOCAL);
+}
+
+static void genAssign(struct Parser* p, struct Token* t)
+{
+    struct Token *lv = LEFT(t), *rv = RIGHT(t);
+    int len, dummy, var=0;
+    if(parListLen(lv) || (lv->type == TOK_VAR && parListLen(RIGHT(lv)))) {
+        if(lv->type == TOK_VAR) { lv = RIGHT(lv); var = 1; }
+        len = parListLen(lv);
+        if(rv->type == TOK_LPAR) {
+            if(len != parListLen(rv))
+                naParseError(p, "bad assignment count", rv->line);
+            genCommaList(p, LEFT(rv));
+        } else {
+            genExpr(p, rv);
+            emitImmediate(p, OP_UNPACK, len);
+        }
+        for(t = LEFT(lv); t && t->type == TOK_COMMA; t = RIGHT(t)) {
+            genMultiLV(p, LEFT(t), var);
+            emit(p, OP_POP);
+        }
+        genMultiLV(p, t, var);
+    } else {
+        genExpr(p, rv);
+        emit(p, genLValue(p, lv, &dummy));
+    }
+}
+
+static void genSlice(struct Parser* p, struct Token* t)
+{
+    if(t->type == TOK_COLON) {
+        genExpr(p, LEFT(t));
+        genExpr(p, RIGHT(t));
+        emit(p, OP_SLICE2);
+    } else {
+        genExpr(p, t);
+        emit(p, OP_SLICE);
+    }
+}
+
+static void genExtract(struct Parser* p, struct Token* t)
+{
+    genExpr(p, LEFT(t));
+    if(countList(RIGHT(t), TOK_COMMA) == 1 && RIGHT(t)->type != TOK_COLON) {
+        genExpr(p, RIGHT(t));
+        emit(p, OP_EXTRACT);
+    } else {
+        emit(p, OP_NEWVEC);
+        for(t = RIGHT(t); t->type == TOK_COMMA; t = RIGHT(t))
+            genSlice(p, LEFT(t));
+        genSlice(p, t);
+        emit(p, OP_XCHG);
+        emit(p, OP_POP);
+    }
+}
+
 static void genExpr(struct Parser* p, struct Token* t)
 {
-    int i, dummy;
+    int i;
     if(!t) naParseError(p, "parse error", -1); // throw line -1...
     p->errLine = t->line;                      // ...to use this one instead
     if(t->line != p->cg->lastLine)
         newLineEntry(p, t->line);
     p->cg->lastLine = t->line;
     switch(t->type) {
-    case TOK_IF:
-        genIfElse(p, t);
-        break;
-    case TOK_QUESTION:
-        genQuestion(p, t);
-        break;
-    case TOK_WHILE:
-        genWhile(p, t);
-        break;
-    case TOK_FOR:
-        genFor(p, t);
-        break;
-    case TOK_FOREACH:
-    case TOK_FORINDEX:
+    case TOK_TOP:      genExprList(p, LEFT(t)); break;
+    case TOK_IF:       genIfElse(p, t);   break;
+    case TOK_QUESTION: genQuestion(p, t); break;
+    case TOK_WHILE:    genWhile(p, t);    break;
+    case TOK_FOR:      genFor(p, t);      break;
+    case TOK_FUNC:     genLambda(p, t);   break;
+    case TOK_ASSIGN:   genAssign(p, t);   break;
+    case TOK_LITERAL:  genScalarConstant(p, t); break;
+    case TOK_FOREACH: case TOK_FORINDEX:
         genForEach(p, t);
         break;
     case TOK_BREAK: case TOK_CONTINUE:
         genBreakContinue(p, t);
         break;
-    case TOK_TOP:
-        genExprList(p, LEFT(t));
-        break;
-    case TOK_FUNC:
-        genLambda(p, t);
-        break;
     case TOK_LPAR:
-        if(BINARY(t) || !RIGHT(t)) genFuncall(p, t); // function invocation
-        else          genExpr(p, LEFT(t)); // simple parenthesis
+        if(BINARY(t) || !RIGHT(t)) genFuncall(p, t);
+        else genExpr(p, LEFT(t));
         break;
     case TOK_LBRA:
         if(BINARY(t)) {
-            genBinOp(OP_EXTRACT, p, t); // a[i]
+            genExtract(p, t);
         } else {
             emit(p, OP_NEWVEC);
             genList(p, LEFT(t), 1);
@@ -560,11 +624,6 @@ static void genExpr(struct Parser* p, struct Token* t)
     case TOK_LCURL:
         emit(p, OP_NEWHASH);
         genHash(p, LEFT(t));
-        break;
-    case TOK_ASSIGN:
-        i = genLValue(p, LEFT(t), &dummy);
-        genExpr(p, RIGHT(t));
-        emit(p, i); // use the op appropriate to the lvalue
         break;
     case TOK_RETURN:
         if(RIGHT(t)) genExpr(p, RIGHT(t));
@@ -578,9 +637,6 @@ static void genExpr(struct Parser* p, struct Token* t)
         break;
     case TOK_SYMBOL:
         emitImmediate(p, OP_LOCAL, findConstantIndex(p, t));
-        break;
-    case TOK_LITERAL:
-        genScalarConstant(p, t);
         break;
     case TOK_MINUS:
         if(BINARY(t)) {
@@ -604,7 +660,8 @@ static void genExpr(struct Parser* p, struct Token* t)
         emitImmediate(p, OP_MEMBER, findConstantIndex(p, RIGHT(t)));
         break;
     case TOK_EMPTY: case TOK_NIL:
-        emit(p, OP_PUSHNIL); break; // *NOT* a noop!
+        emit(p, OP_PUSHNIL);
+        break;
     case TOK_AND: case TOK_OR:
         genShortCircuit(p, t);
         break;
@@ -661,51 +718,42 @@ naRef naCodeGen(struct Parser* p, struct Token* block, struct Token* arglist)
 
     genExprList(p, block);
     emit(p, OP_RETURN);
-
+    
     // Now make a code object
     codeObj = naNewCode(p->context);
     code = PTR(codeObj).code;
-
+    
     // Parse the argument list, if any
-    code->restArgSym = globals->argRef;
+    p->cg->restArgSym = globals->argRef;
     code->nArgs = code->nOptArgs = 0;
-    code->argSyms = code->optArgSyms = code->optArgVals = 0;
+    p->cg->argSyms = p->cg->optArgSyms = p->cg->optArgVals = 0;
     code->needArgVector = 1;
     if(arglist) {
-        code->argSyms    = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
-        code->optArgSyms = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
-        code->optArgVals = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        p->cg->argSyms    = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        p->cg->optArgSyms = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
+        p->cg->optArgVals = naParseAlloc(p, sizeof(int) * MAX_FUNARGS);
         code->needArgVector = 0;
         genArgList(p, code, arglist);
-        if(code->nArgs) {
-            int i, *nsyms;
-            nsyms = naAlloc(sizeof(int) * code->nArgs);
-            for(i=0; i<code->nArgs; i++) nsyms[i] = code->argSyms[i];
-            code->argSyms = nsyms;
-        } else code->argSyms = 0;
-        if(code->nOptArgs) {
-            int i, *nsyms, *nvals;
-            nsyms = naAlloc(sizeof(int) * code->nOptArgs);
-            nvals = naAlloc(sizeof(int) * code->nOptArgs);
-            for(i=0; i<code->nOptArgs; i++) nsyms[i] = code->optArgSyms[i];
-            for(i=0; i<code->nOptArgs; i++) nvals[i] = code->optArgVals[i];
-            code->optArgSyms = nsyms;
-            code->optArgVals = nvals;
-        } else code->optArgSyms = code->optArgVals = 0;
     }
 
-    code->codesz = cg.codesz;
-    code->byteCode = naAlloc(cg.codesz * sizeof(unsigned short));
-    for(i=0; i < cg.codesz; i++)
-        code->byteCode[i] = cg.byteCode[i];
+    code->restArgSym = internConstant(p, p->cg->restArgSym);
+
+    /* Set the size fields and allocate the combined array buffer.
+     * Note cute trick with null pointer to get the array size. */
     code->nConstants = naVec_size(cg.consts);
-    code->constants = naAlloc(code->nConstants * sizeof(naRef));
+    code->codesz = cg.codesz;
+    code->nLines = cg.nextLineIp;
     code->srcFile = p->srcFile;
+    code->constants = 0;
+    code->constants = naAlloc((int)(size_t)(LINEIPS(code)+code->nLines));
     for(i=0; i<code->nConstants; i++)
-        code->constants[i] = getConstant(p, i);
-    code->nLines = p->cg->nextLineIp;
-    code->lineIps = naAlloc(sizeof(unsigned short)*p->cg->nLineIps*2);
-    for(i=0; i<p->cg->nLineIps*2; i++)
-        code->lineIps[i] = p->cg->lineIps[i];
+        code->constants[i] = naVec_get(p->cg->consts, i);
+
+    for(i=0; i<code->nArgs; i++) ARGSYMS(code)[i] = cg.argSyms[i];
+    for(i=0; i<code->nOptArgs; i++) OPTARGSYMS(code)[i] = cg.optArgSyms[i];
+    for(i=0; i<code->nOptArgs; i++) OPTARGVALS(code)[i] = cg.optArgVals[i];
+    for(i=0; i<code->codesz; i++) BYTECODE(code)[i] = cg.byteCode[i];
+    for(i=0; i<code->nLines; i++) LINEIPS(code)[i] = cg.lineIps[i];
+
     return codeObj;
 }

@@ -491,11 +491,12 @@ static void evalUnpack(naContext ctx, int count)
 // FIXME: unify with almost identical checkVec() above
 static int vbound(naContext ctx, naRef v, naRef ir, int end)
 {
-    int i = IS_NIL(ir) ? (end ? -1 : 0) : numify(ctx, ir);
-    if(i < 0) i += naVec_size(v);
-    if(i < 0 || i >= naVec_size(v))
+    int sz=naVec_size(v), i = IS_NIL(ir) ? (end ? -1 : 0) : numify(ctx, ir);
+    if(IS_NIL(ir) && !sz) return i;
+    if(i < 0) i += sz;
+    if(i < 0 || i >= sz)
         naRuntimeError(ctx, "slice index %d out of bounds (size: %d)",
-                       i, naVec_size(v));
+                       i, sz);
     return i;
 }
 

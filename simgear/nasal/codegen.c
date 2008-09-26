@@ -233,7 +233,7 @@ static void genHashElem(struct Parser* p, struct Token* t)
 {
     if(!t || t->type == TOK_EMPTY)
         return;
-    if(t->type != TOK_COLON)
+    if(t->type != TOK_COLON || !LEFT(t))
         naParseError(p, "bad hash/object initializer", t->line);
     if(LEFT(t)->type == TOK_SYMBOL) genScalarConstant(p, LEFT(t));
     else if(LEFT(t)->type == TOK_LITERAL) genExpr(p, LEFT(t));
@@ -560,9 +560,10 @@ static void genAssign(struct Parser* p, struct Token* t)
 
 static void genSlice(struct Parser* p, struct Token* t)
 {
+    if(!t) naParseError(p, "empty slice expression", -1);
     if(t->type == TOK_COLON) {
-        genExpr(p, LEFT(t));
-        genExpr(p, RIGHT(t));
+        if(LEFT(t))  genExpr(p, LEFT(t));  else emit(p, OP_PUSHNIL);
+        if(RIGHT(t)) genExpr(p, RIGHT(t)); else emit(p, OP_PUSHNIL);
         emit(p, OP_SLICE2);
     } else {
         genExpr(p, t);

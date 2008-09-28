@@ -55,9 +55,9 @@
 #include "cloud.hxx"
 
 using namespace simgear;
-// #if defined(__MINGW32__)
-// #define isnan(x) _isnan(x)
-// #endif
+#if defined(__MINGW32__)
+#define isnan(x) _isnan(x)
+#endif
 
 // #if defined (__FreeBSD__)
 // #  if __FreeBSD_version < 500000

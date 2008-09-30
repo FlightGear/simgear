@@ -257,7 +257,7 @@ static int lexHexLiteral(struct Parser* p, int index)
 }
 
 #define ISNUM(c) ((c) >= '0' && (c) <= '9')
-
+#define NUMSTART(c) (ISNUM(c) || (c)=='+' || (c) == '-')
 static int lexNumLiteral(struct Parser* p, int index)
 {
     int len = p->len, i = index;
@@ -267,17 +267,15 @@ static int lexNumLiteral(struct Parser* p, int index)
     if(buf[0] == '0' && i+1<len && buf[i+1] == 'x')
         return lexHexLiteral(p, index+2);
 
-    while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
+    while(i<len && ISNUM(buf[i])) i++;
     if(i<len && buf[i] == '.') {
         i++;
-        while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
+        while(i<len && ISNUM(buf[i])) i++;
     }
-    if(i+1<len && (buf[i] == 'e' || buf[i] == 'E') && ISNUM(buf[i+1])) {
+    if(i+1<len && (buf[i] == 'e' || buf[i] == 'E') && NUMSTART(buf[i+1])) {
         i++;
-        if(i<len
-           && (buf[i] == '-' || buf[i] == '+')
-           && (i+1<len && buf[i+1] >= '0' && buf[i+1] <= '9')) i++;
-        while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
+        if(buf[i] == '-' || buf[i] == '+') i++;
+        while(i<len && ISNUM(buf[i])) i++;
     }
     naStr_parsenum(p->buf + index, i - index, &d);
     newToken(p, index, TOK_LITERAL, 0, 0, d);

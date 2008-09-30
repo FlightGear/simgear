@@ -560,7 +560,7 @@ static void genAssign(struct Parser* p, struct Token* t)
 
 static void genSlice(struct Parser* p, struct Token* t)
 {
-    if(!t) naParseError(p, "empty slice expression", -1);
+    if(!t || t->type==TOK_EMPTY) naParseError(p, "empty slice expression", -1);
     if(t->type == TOK_COLON) {
         if(LEFT(t))  genExpr(p, LEFT(t));  else emit(p, OP_PUSHNIL);
         if(RIGHT(t)) genExpr(p, RIGHT(t)); else emit(p, OP_PUSHNIL);

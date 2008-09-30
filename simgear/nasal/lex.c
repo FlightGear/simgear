@@ -256,20 +256,23 @@ static int lexHexLiteral(struct Parser* p, int index)
     return i;
 }
 
+#define ISNUM(c) ((c) >= '0' && (c) <= '9')
+
 static int lexNumLiteral(struct Parser* p, int index)
 {
     int len = p->len, i = index;
     unsigned char* buf = (unsigned char*)p->buf;
     double d;
 
-    if(i+1<len && buf[i+1] == 'x') return lexHexLiteral(p, index+2);
+    if(buf[0] == '0' && i+1<len && buf[i+1] == 'x')
+        return lexHexLiteral(p, index+2);
 
     while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
     if(i<len && buf[i] == '.') {
         i++;
         while(i<len && buf[i] >= '0' && buf[i] <= '9') i++;
     }
-    if(i<len && (buf[i] == 'e' || buf[i] == 'E')) {
+    if(i+1<len && (buf[i] == 'e' || buf[i] == 'E') && ISNUM(buf[i+1])) {
         i++;
         if(i<len
            && (buf[i] == '-' || buf[i] == '+')
@@ -333,7 +336,6 @@ static int tryLexemes(struct Parser* p, int index, int* lexemeOut)
     return best;
 }
 
-#define ISNUM(c) ((c) >= '0' && (c) <= '9')
 void naLex(struct Parser* p)
 {
     int i = 0;

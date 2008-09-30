@@ -185,9 +185,7 @@ static int tonum(unsigned char* s, int len, double* result)
     int i=0, fraclen=0;
     double sgn=1, val, frac=0, exp=0;
 
-    // Special case, "." is not a number, even though "1." and ".0" are.
-    if(len == 1 && s[0] == '.')
-        return 0;
+    if(len == 1 && (*s=='.' || *s=='-' || *s=='+')) return 0;
 
     // Strip off the leading negative sign first, so we can correctly
     // parse things like -.xxx which would otherwise confuse

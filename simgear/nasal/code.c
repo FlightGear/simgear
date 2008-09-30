@@ -503,7 +503,7 @@ static int vbound(naContext ctx, naRef v, naRef ir, int end)
 static void evalSlice(naContext ctx, naRef src, naRef dst, naRef idx)
 {
     if(!IS_VEC(src)) ERR(ctx, "cannot slice non-vector");
-    naVec_append(dst, naVec_get(src, vbound(ctx, src, idx, 0)));
+    naVec_append(dst, naVec_get(src, checkVec(ctx, src, idx)));
 }
  
 static void evalSlice2(naContext ctx, naRef src, naRef dst,

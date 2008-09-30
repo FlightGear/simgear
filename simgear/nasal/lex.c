@@ -257,15 +257,15 @@ static int lexHexLiteral(struct Parser* p, int index)
 }
 
 #define ISNUM(c) ((c) >= '0' && (c) <= '9')
-#define NUMSTART(c) (ISNUM(c) || (c)=='+' || (c) == '-')
+#define NUMSTART(c) (ISNUM(c) || (c) == '+' || (c) == '-')
 static int lexNumLiteral(struct Parser* p, int index)
 {
     int len = p->len, i = index;
     unsigned char* buf = (unsigned char*)p->buf;
     double d;
 
-    if(buf[0] == '0' && i+1<len && buf[i+1] == 'x')
-        return lexHexLiteral(p, index+2);
+    if(buf[i] == '0' && i+2<len && buf[i+1] == 'x' && ISNUM(buf[i+2]))
+       return lexHexLiteral(p, index+2);
 
     while(i<len && ISNUM(buf[i])) i++;
     if(i<len && buf[i] == '.') {

@@ -135,8 +135,8 @@ sgLoad3DModel_internal(const string &path,
 {
     if ( !prop_root ) {
         SG_LOG(SG_GENERAL, SG_ALERT, "prop_root NULL: " << path);
-
     }
+
     string fg_root=osgDB::Registry::instance()->getDataFilePathList().front();
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
@@ -168,6 +168,10 @@ sgLoad3DModel_internal(const string &path,
         } else {
             model = new osg::Node;
         }
+
+        SGPropertyNode *mp = props->getNode("multiplayer");
+        if (mp && prop_root && prop_root->getParent())
+            copyProperties(mp, prop_root);
     }
 
     osg::ref_ptr<osgDB::ReaderWriter::Options> options

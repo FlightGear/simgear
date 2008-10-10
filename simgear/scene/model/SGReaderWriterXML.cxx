@@ -169,7 +169,7 @@ sgLoad3DModel_internal(const string &path,
             model = new osg::Node;
         }
 
-        SGPropertyNode *mp = props->getNode("multiplayer");
+        SGPropertyNode *mp = props->getNode("multiplay");
         if (mp && prop_root && prop_root->getParent())
             copyProperties(mp, prop_root);
     }

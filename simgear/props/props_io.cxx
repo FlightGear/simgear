@@ -75,22 +75,23 @@ private:
 
   struct State
   {
-    State () : node(0), type(""), mode(DEFAULT_MODE) {}
-    State (SGPropertyNode * _node, const char * _type, int _mode)
-      : node(_node), type(_type), mode(_mode) {}
+    State () : node(0), type(""), mode(DEFAULT_MODE), omit(false) {}
+    State (SGPropertyNode * _node, const char * _type, int _mode, bool _omit)
+      : node(_node), type(_type), mode(_mode), omit(_omit) {}
     SGPropertyNode * node;
     string type;
     int mode;
+    bool omit;
     map<string,int> counters;
   };
 
   State &state () { return _state_stack[_state_stack.size() - 1]; }
 
-  void push_state (SGPropertyNode * node, const char * type, int mode) {
+  void push_state (SGPropertyNode * node, const char * type, int mode, bool omit = false) {
     if (type == 0)
-      _state_stack.push_back(State(node, "unspecified", mode));
+      _state_stack.push_back(State(node, "unspecified", mode, omit));
     else
-      _state_stack.push_back(State(node, type, mode));
+      _state_stack.push_back(State(node, type, mode, omit));
     _level++;
     _data = "";
   }
@@ -228,6 +229,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     }
 
 				// Check for an include.
+    bool omit = false;
     attval = atts.getValue("include");
     if (attval != 0) {
       SGPath path(SGPath(_base).dir());
@@ -238,26 +240,14 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 	setException(e);
       }
 
-      const char *omit = atts.getValue("omit-node");
-      if (omit && !strcmp(omit, "y")) {
-        int nChildren = node->nChildren();
-        for (int i = 0; i < nChildren; i++) {
-          SGPropertyNode *src = node->getChild(i);
-          const char *name = src->getName();
-          int index = st.counters[name];
-          st.counters[name]++;
-          SGPropertyNode *dst = st.node->getChild(name, index, true);
-          copyProperties(src, dst);
-        }
-        st.node->removeChild(node->getName(), node->getIndex(), false);
-        node = st.node;
-      }
+      attval = atts.getValue("omit-node");
+      omit = checkFlag(attval, false);
     }
 
     const char *type = atts.getValue("type");
     if (type)
       node->clearValue();
-    push_state(node, type, mode);
+    push_state(node, type, mode, omit);
   }
 }
 
@@ -307,6 +297,19 @@ PropsVisitor::endElement (const char * name)
 				// assigned.
   st.node->setAttributes(st.mode);
 
+  if (st.omit) {
+    State &parent = _state_stack[_state_stack.size() - 2];
+    int nChildren = st.node->nChildren();
+    for (int i = 0; i < nChildren; i++) {
+      SGPropertyNode *src = st.node->getChild(i);
+      const char *name = src->getName();
+      int index = parent.counters[name];
+      parent.counters[name]++;
+      SGPropertyNode *dst = parent.node->getChild(name, index, true);
+      copyProperties(src, dst);
+    }
+    parent.node->removeChild(st.node->getName(), st.node->getIndex(), false);
+  }
   pop_state();
 }
 

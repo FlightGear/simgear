@@ -77,7 +77,7 @@ SGMoon::build( SGPath path, double moon_size ) {
     osg::ref_ptr<osgDB::ReaderWriter::Options> options
         = makeOptionsFromPath(path);
 
-    osg::Texture2D* texture = SGLoadTexture2D("moon.rgba", options.get());
+    osg::Texture2D* texture = SGLoadTexture2D("moon.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture, osg::StateAttribute::ON);
     osg::TexEnv* texEnv = new osg::TexEnv;
     texEnv->setMode(osg::TexEnv::MODULATE);

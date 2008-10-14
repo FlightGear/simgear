@@ -129,13 +129,13 @@ void SGNewCloud::loadTextures(const string &tex_path) {
 	SGPath cloud_path;
 
     cloud_path.set(tex_path);
-    cloud_path.append("cl_cumulus.rgb");
+    cloud_path.append("cl_cumulus.png");
     // OSGFIXME
 //     cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D( cloud_path.str().c_str(), false, false, false );
     cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D;
 
     cloud_path.set(tex_path);
-    cloud_path.append("cl_stratus.rgb");
+    cloud_path.append("cl_stratus.png");
     // OSGFIXME
 //     cloudTextures[ CLTexture_stratus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
     cloudTextures[ CLTexture_stratus ] = new osg::Texture2D;

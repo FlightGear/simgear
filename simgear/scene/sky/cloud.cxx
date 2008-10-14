@@ -429,24 +429,24 @@ SGCloudLayer::rebuild()
         cubeMap->setImage(osg::TextureCubeMap::NEGATIVE_Z, image);
 
         osg::StateSet* state;
-        state = SGMakeState(texture_path, "overcast.rgb", "overcast_n.rgb");
+        state = SGMakeState(texture_path, "overcast.png", "overcast_n.png");
         layer_states[SG_CLOUD_OVERCAST] = state;
-        state = SGMakeState(texture_path, "overcast_top.rgb", "overcast_top_n.rgb");
+        state = SGMakeState(texture_path, "overcast_top.png", "overcast_top_n.png");
         layer_states2[SG_CLOUD_OVERCAST] = state;
         
-        state = SGMakeState(texture_path, "broken.rgba", "broken_n.rgb");
+        state = SGMakeState(texture_path, "broken.png", "broken_n.png");
         layer_states[SG_CLOUD_BROKEN] = state;
         layer_states2[SG_CLOUD_BROKEN] = state;
         
-        state = SGMakeState(texture_path, "scattered.rgba", "scattered_n.rgb");
+        state = SGMakeState(texture_path, "scattered.png", "scattered_n.png");
         layer_states[SG_CLOUD_SCATTERED] = state;
         layer_states2[SG_CLOUD_SCATTERED] = state;
         
-        state = SGMakeState(texture_path, "few.rgba", "few_n.rgb");
+        state = SGMakeState(texture_path, "few.png", "few_n.png");
         layer_states[SG_CLOUD_FEW] = state;
         layer_states2[SG_CLOUD_FEW] = state;
         
-        state = SGMakeState(texture_path, "cirrus.rgba", "cirrus_n.rgb");
+        state = SGMakeState(texture_path, "cirrus.png", "cirrus_n.png");
         layer_states[SG_CLOUD_CIRRUS] = state;
         layer_states2[SG_CLOUD_CIRRUS] = state;
         

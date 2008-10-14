@@ -111,7 +111,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet->setRenderBinDetails(-6, "RenderBin");
 
     // set up the sun-state
-    osg::Texture2D* texture = SGLoadTexture2D("sun.rgba", options.get());
+    osg::Texture2D* texture = SGLoadTexture2D("sun.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build scenegraph
@@ -147,7 +147,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-7, "RenderBin");
     
-    texture = SGLoadTexture2D("inner_halo.rgba", options.get());
+    texture = SGLoadTexture2D("inner_halo.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure
@@ -185,7 +185,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-8, "RenderBin");
 
-    texture = SGLoadTexture2D("outer_halo.rgba", options.get());
+    texture = SGLoadTexture2D("outer_halo.png", options.get());
     stateSet->setTextureAttributeAndModes(0, texture);
 
     // Build ssg structure

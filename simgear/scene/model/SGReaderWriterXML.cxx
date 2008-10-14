@@ -50,8 +50,9 @@ using namespace simgear;
 osg::Node *
 sgLoad3DModel_internal(const string &path,
                        SGPropertyNode *prop_root,
-                       SGModelData *data=0,
-                       osg::Node *(*load_panel)(SGPropertyNode *) = 0);
+                       SGModelData *data = 0,
+                       osg::Node *(*load_panel)(SGPropertyNode *) = 0,
+                       SGPropertyNode *overlay = 0);
 
 const char* SGReaderWriterXML::className() const
 {
@@ -131,7 +132,8 @@ osg::Node *
 sgLoad3DModel_internal(const string &path,
                        SGPropertyNode *prop_root,
                        SGModelData *data,
-                       osg::Node *(*load_panel)(SGPropertyNode *))
+                       osg::Node *(*load_panel)(SGPropertyNode *),
+                       SGPropertyNode *overlay)
 {
     if ( !prop_root ) {
         SG_LOG(SG_GENERAL, SG_ALERT, "prop_root NULL: " << path);
@@ -158,6 +160,9 @@ sgLoad3DModel_internal(const string &path,
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: " << t.getFormattedMessage());
             throw;
         }
+        if (overlay)
+            copyProperties(overlay, props);
+
         if (props->hasValue("/path")) {
             modelpath = modelpath.dir();
             modelpath.append(props->getStringValue("/path"));
@@ -234,7 +239,8 @@ sgLoad3DModel_internal(const string &path,
             submodelpath = submodelFileName;
         }
         try {
-            submodel = sgLoad3DModel_internal(submodelpath.str(), prop_root, 0, load_panel);
+            submodel = sgLoad3DModel_internal(submodelpath.str(), prop_root, 0, load_panel,
+                                              sub_props->getNode("overlay"));
         } catch (const sg_throwable &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
             throw;

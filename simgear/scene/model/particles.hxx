@@ -86,10 +86,22 @@ public:
         return wind;
     }
 
+    static void setSwitch(const SGPropertyNode* n)
+    {
+        enabledNode = n;
+    }
+
+    static bool getEnabled()
+    {
+        return enabled;
+    }
+
 private:
     static osg::Vec3 gravity;
     static osg::Vec3 wind;
     const SGPropertyNode* modelRoot;
+    static SGConstPropertyNode_ptr enabledNode;
+    static bool enabled;
 };
 
 

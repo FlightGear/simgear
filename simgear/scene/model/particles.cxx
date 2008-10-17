@@ -48,6 +48,9 @@ namespace simgear
 {
 void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
+    enabled = !enabledNode || enabledNode->getBoolValue();
+    if (!enabled)
+        return;
     SGQuatd q
         = SGQuatd::fromLonLatDeg(modelRoot->getFloatValue("/position/longitude-deg",0),
                                  modelRoot->getFloatValue("/position/latitude-deg",0));
@@ -65,6 +68,8 @@ void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
 //static members
 osg::Vec3 GlobalParticleCallback::gravity;
 osg::Vec3 GlobalParticleCallback::wind;
+bool GlobalParticleCallback::enabled = true;
+SGConstPropertyNode_ptr GlobalParticleCallback::enabledNode = 0;
 
 osg::ref_ptr<osg::Group> Particles::commonRoot;
 osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
@@ -513,7 +518,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
     else if (counterCond)
         counter->setRateRange(counterStaticValue,
                               counterStaticValue + counterStaticExtraRange);
-    if (counterCond && !counterCond->test())
+    if (!GlobalParticleCallback::getEnabled() || (counterCond && !counterCond->test()))
         counter->setRateRange(0, 0);
     bool colorchange=false;
     for (int i = 0; i < 8; ++i) {

@@ -310,10 +310,8 @@ sgLoad3DModel_internal(const string &path,
     }
 
     if (data) {
-        SGPropertyNode *nasal = props->getNode("nasal", false);
-        data->setProps(nasal);
+        data->setProps(props);
         group->setUserData(data);
-        //data->modelLoaded(path, nasal, group.get());
     }
 
     std::vector<SGPropertyNode_ptr> animation_nodes;

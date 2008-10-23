@@ -63,14 +63,14 @@ public:
   /**
    * Initialize the sound event.
    *
-   * Prior to initialization of the sound event the propgrams property root
+   * Prior to initialization of the sound event the program's property root
    * has to be defined, the sound configuration XML tree has to be loaded 
    * and a sound manager class has to be defined.
    *
    * A sound configuration file would look like this:
    *  <fx>
    *   <event_name>
-   *    <name/> Define the name of the event. For refference only.
+   *    <name/> Define the name of the event. For reference only.
    *    <mode/> Either:
    *              looped: play this sound looped.
    *              in-transit: play looped while the event is happening.
@@ -80,7 +80,7 @@ public:
    *    <condition/> Take action if this condition becomes true.
    *    <delay-sec/> Time after which the sound should be played.
    *    <volume> or <pitch> Define volume or pitch settings.
-   *     <property/> Take the value of this property as a refference for the
+   *     <property/> Take the value of this property as a reference for the
    *                 result.
    *     <internal/> Either:
    *                   dt_start: the time elapsed since this sound is playing.
@@ -106,7 +106,7 @@ public:
                      const string &);
 
   /**
-   * Check wheter an event has happened and if action has to be taken.
+   * Check whether an event has happened and if action has to be taken.
    */
   virtual void update (double dt);
 
@@ -149,7 +149,7 @@ private:
   double _dt_stop;
   double _delay;        // time after which the sound should be started (default: 0)
   double _stopping;	// time after the sound should have stopped.
-			// This is usefull for lost packets in in-trasit mode.
+			// This is useful for lost packets in in-transit mode.
 
   std::vector<_snd_prop> _volume;
   std::vector<_snd_prop> _pitch;

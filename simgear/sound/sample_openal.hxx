@@ -146,7 +146,7 @@ public:
     /**
      * Start playing this sample.
      *
-     * @param _loop Define wether the sound should be played in a loop.
+     * @param _loop Define whether the sound should be played in a loop.
      */
     void play( bool _loop );
 
@@ -170,7 +170,7 @@ public:
     inline void play_looped() { play(true); }
 
     /**
-     * Test if a sample is curretnly playing.
+     * Test if a sample is currently playing.
      * @return true if is is playing, false otherwise.
      */
     bool is_playing( );
@@ -235,7 +235,7 @@ public:
 
 
     /**
-     * Set maximume distance of sound (the distance where the sound is
+     * Set maximum distance of sound (the distance where the sound is
      * no longer audible.
      */
     void set_max_dist( ALfloat dist );

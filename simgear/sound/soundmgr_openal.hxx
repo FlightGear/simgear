@@ -233,12 +233,12 @@ public:
     }
 
     /**
-     * set the positions of all managaged sound sources 
+     * set the positions of all managed sound sources 
      */
     void set_source_pos_all( ALfloat *pos );
 
     /**
-     * set the velocities of all managaged sound sources 
+     * set the velocities of all managed sound sources 
      */
     void set_source_vel_all( ALfloat *pos );
 };

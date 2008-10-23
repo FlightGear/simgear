@@ -66,7 +66,7 @@ static bool print_openal_error(const string &s = "unknown") {
     return error != 0;
 }
 
-// empry constructor
+// empty constructor
 SGSoundSample::SGSoundSample() :
     buffer(0),
     source(0),

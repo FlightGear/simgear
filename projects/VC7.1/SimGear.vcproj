@@ -509,6 +509,12 @@
 				RelativePath="..\..\simgear\scene\sky\cloudfield.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\sky\CloudShaderGeometry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\sky\CloudShaderGeometry.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\sky\dome.cxx">
 			</File>
 			<File

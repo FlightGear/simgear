@@ -30,6 +30,7 @@
 
 #include "sky.hxx"
 #include "cloudfield.hxx"
+#include "newcloud.hxx"
 
 // Constructor
 SGSky::SGSky( void ) {
@@ -43,6 +44,9 @@ SGSky::SGSky( void ) {
     ramp_down = 0.15;
 
     in_cloud  = -1;
+    
+    clouds_3d_enabled = false;
+    clouds_3d_density = 0.8;
 
     pre_root = new osg::Group;
     pre_root->setNodeMask(simgear::BACKGROUND_BIT);
@@ -85,7 +89,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 
     pre_selector->addChild( pre_transform.get() );
 
-    pre_root->addChild( pre_selector.get() );
+    pre_root->addChild( pre_selector.get() );    
 }
 
 
@@ -161,6 +165,8 @@ SGSky::add_cloud_layer( SGCloudLayer * layer )
 {
     cloud_layers.push_back(layer);
     cloud_root->addChild(layer->getNode());
+
+    layer->set_enable3dClouds(clouds_3d_enabled);
 }
 
 const SGCloudLayer *
@@ -179,6 +185,36 @@ int
 SGSky::get_cloud_layer_count () const
 {
     return cloud_layers.size();
+}
+
+void SGSky::set_3dClouds(bool enable)
+{
+    for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
+        cloud_layers[i]->set_enable3dClouds(enable);
+    }
+
+    clouds_3d_enabled = enable;
+}
+
+bool SGSky::get_3dClouds() const {
+    return clouds_3d_enabled;
+}
+
+double SGSky::get_3dCloudDensity() const {
+    return SGCloudField::get_density();
+}
+
+void SGSky::set_3dCloudDensity(double density)
+{
+    SGCloudField::set_density(density);
+
+    for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
+        cloud_layers[i]->applyDensity();
+    }
+}
+
+void SGSky::texture_path( const string& path ) {
+	tex_path = SGPath( path );
 }
 
 // modify the current visibility based on cloud layers, thickness,
@@ -214,7 +250,7 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	}
 
         if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
-			cloud_layers[i]->get_layer3D()->is3D() && SGCloudField::enable3D) {
+             get_3dClouds()) {
             // do nothing, clear layers aren't drawn, don't affect
             // visibility andn dont' need to be faded in or out.
         } else if ( (cloud_layers[i]->getCoverage() == 
@@ -311,3 +347,5 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 
     effective_visibility = effvis;
 }
+
+

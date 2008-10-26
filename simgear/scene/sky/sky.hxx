@@ -237,6 +237,12 @@ private:
     double ramp_up;		// in seconds
     double ramp_down;		// in seconds
 
+    // 3D clouds enabled
+    bool clouds_3d_enabled;
+
+    // 3D cloud density
+    double clouds_3d_density;
+
 public:
 
     /** Constructor */
@@ -338,9 +344,8 @@ public:
      * Specify the texture path (optional, defaults to current directory)
      * @param path base path to texture locations
      */
-    inline void texture_path( const string& path ) {
-	tex_path = SGPath( path );
-    }
+    void texture_path( const string& path );
+
     /** Enable drawing of the sky. */
     inline void enable() {
         pre_selector->setValue(0, 1);
@@ -408,6 +413,23 @@ public:
     inline void set_visibility( float v ) {
 	effective_visibility = visibility = (v <= 25.0) ? 25.0 : v;
     }
+
+    /** Get whether 3D clouds are enabled */
+    virtual bool get_3dClouds() const;
+
+    /** Set whether 3D clouds are enabled
+     * @param enable Whether to enable 3D clouds
+     */
+    virtual void set_3dClouds(bool enable);
+
+    /** Get 3D cloud density */
+    virtual double get_3dCloudDensity() const;
+
+    /** Set 3D cloud density 
+     * @param density 3D cloud density
+     */
+    virtual void set_3dCloudDensity(double density);
+
 };
 
 

@@ -203,8 +203,6 @@ void SGEnviro::startOfFrame( sgVec3 p, sgVec3 up, double lon, double lat, double
   return;
 	view_in_cloud = false;
 	// ask the impostor cache to do some cleanup
-	if(SGNewCloud::cldCache)
-		SGNewCloud::cldCache->startNewFrame();
 	last_cloud_turbulence = cloud_turbulence;
 	cloud_turbulence = 0.0;
 	elapsed_time += delta_time;
@@ -255,43 +253,10 @@ void SGEnviro::set_view_in_cloud(bool incloud) {
 	view_in_cloud = incloud;
 }
 
-int SGEnviro::get_CacheResolution(void) const {
-	return SGCloudField::get_CacheResolution();
-}
-
-int SGEnviro::get_clouds_CacheSize(void) const {
-	return SGCloudField::get_CacheSize();
-}
-float SGEnviro::get_clouds_visibility(void) const {
-	return SGCloudField::get_CloudVis();
-}
-float SGEnviro::get_clouds_density(void) const {
-	return SGCloudField::get_density();
-}
-bool SGEnviro::get_clouds_enable_state(void) const {
-	return SGCloudField::get_enable3dClouds();
-}
-
 bool SGEnviro::get_turbulence_enable_state(void) const {
 	return turbulence_enable_state;
 }
 
-void SGEnviro::set_CacheResolution(int resolutionPixels) {
-	SGCloudField::set_CacheResolution(resolutionPixels);
-}
-
-void SGEnviro::set_clouds_CacheSize(int sizeKb) {
-	SGCloudField::set_CacheSize(sizeKb);
-}
-void SGEnviro::set_clouds_visibility(float distance) {
-	SGCloudField::set_CloudVis(distance);
-}
-void SGEnviro::set_clouds_density(float density) {
-	SGCloudField::set_density(density);
-}
-void SGEnviro::set_clouds_enable_state(bool enable) {
-	SGCloudField::set_enable3dClouds(enable);
-}
 void SGEnviro::set_turbulence_enable_state(bool enable) {
 	turbulence_enable_state = enable;
 }
@@ -330,7 +295,7 @@ void SGEnviro::setLight(sgVec4 adj_fog_color) {
 	//    ssgGetLight( 0 ) -> setColour( GL_DIFFUSE, l->scene_diffuse() );
 	}
 }
-
+#if 0
 void SGEnviro::callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId) {
 	// send data to wx radar
 	// compute turbulence
@@ -440,6 +405,8 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int family
 				break;
 		}
 }
+
+#endif
 
 list_of_SGWxRadarEcho *SGEnviro::get_radar_echo(void) {
 	return &radarEcho;

@@ -12,7 +12,8 @@ include_HEADERS = \
 	stars.hxx \
 	bbcache.hxx \
 	cloudfield.hxx \
-	newcloud.hxx
+	newcloud.hxx \
+	CloudShaderGeometry.hxx
 
 libsgsky_a_SOURCES = \
 	cloud.cxx \
@@ -24,6 +25,7 @@ libsgsky_a_SOURCES = \
 	stars.cxx \
 	bbcache.cxx \
 	cloudfield.cxx \
-	newcloud.cxx
+	newcloud.cxx \
+	CloudShaderGeometry.cxx
 
 INCLUDES = -I$(top_srcdir)

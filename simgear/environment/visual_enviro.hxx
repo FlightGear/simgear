@@ -125,6 +125,7 @@ public:
 
 	void endOfFrame(void);
 
+#if 0
     /**
      * Whenever a cloud is drawn we check his 'impact' on the environment.
      * @param heading direction of cloud in radians
@@ -134,7 +135,7 @@ public:
      * @param dist  squared dist to cloud in meters
      */
 	void callback_cloud(float heading, float alt, float radius, int family, float dist, int cloudId);
-
+#endif
 	void drawRain(double pitch, double roll, double heading, double hspeed, double rain_norm);
     /**
      * Draw rain or snow precipitation around the viewer.

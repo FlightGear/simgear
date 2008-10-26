@@ -41,6 +41,7 @@
 #include <osg/Texture2D>
 #include <osg/TextureCubeMap>
 #include <osg/TexMat>
+#include <osg/Fog>
 
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/PathOptions.hxx>
@@ -127,6 +128,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 
 // Constructor
 SGCloudLayer::SGCloudLayer( const string &tex_path ) :
+    cloud_root(new osg::Switch),
     layer_root(new osg::Switch),
     group_top(new osg::Group),
     group_bottom(new osg::Group),
@@ -149,6 +151,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     // in bin 10), tops after. The negative numbers on the bottoms
     // RenderBins and the positive numbers on the tops enforce this
     // order.
+  cloud_root->addChild(layer_root.get(), true);
   layer_root->addChild(group_bottom.get());
   layer_root->addChild(group_top.get());
   osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
@@ -192,7 +195,9 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
   group_top->addChild(layer_transform.get());
   group_bottom->addChild(layer_transform.get());
 
-  layer3D = new SGCloudField;
+  layer3D = new SGCloudField();
+  cloud_root->addChild(layer3D->getNode(), false);
+
   rebuild();
 }
 
@@ -452,10 +457,6 @@ SGCloudLayer::rebuild()
         
         layer_states[SG_CLOUD_CLEAR] = 0;
         layer_states2[SG_CLOUD_CLEAR] = 0;
-
-      // OSGFIXME
-// 		SGNewCloud::loadTextures(texture_path.str());
-// 		layer3D->buildTestLayer();
     }
 
     scale = 4000.0;
@@ -560,259 +561,6 @@ SGCloudLayer::rebuild()
     }
 }
 
-#if 0
-            sgMat4 modelview,
-                   tmp,
-                   transform;
-            ssgGetModelviewMatrix( modelview );
-            layer_transform->getTransform( transform );
-
-            sgTransposeNegateMat4( tmp, transform );
-
-            sgPostMultMat4( transform, modelview );
-            ssgLoadModelviewMatrix( transform );
-
-            sgVec3 lightVec;
-            ssgGetLight( 0 )->getPosition( lightVec );
-            sgNegateVec3( lightVec );
-            sgXformVec3( lightVec, tmp );
-
-            for ( int i = 0; i < 25; i++ ) {
-                CloudVertex &v = vertices[ i ];
-                sgSetVec3( v.tangentSpLight,
-                           sgScalarProductVec3( v.sTangent, lightVec ),
-                           sgScalarProductVec3( v.tTangent, lightVec ),
-                           sgScalarProductVec3( v.normal, lightVec ) );
-            }
-
-            ssgTexture *decal = color_map[ layer_coverage ][ top ? 1 : 0 ];
-            if ( top && decal == 0 ) {
-                decal = color_map[ layer_coverage ][ 0 ];
-            }
-            ssgTexture *normal = normal_map[ layer_coverage ][ top ? 1 : 0 ];
-            if ( top && normal == 0 ) {
-                normal = normal_map[ layer_coverage ][ 0 ];
-            }
-
-            glDisable( GL_LIGHTING );
-            glDisable( GL_CULL_FACE );
-//            glDisable( GL_ALPHA_TEST );
-            if ( layer_coverage == SG_CLOUD_FEW ) {
-                glEnable( GL_ALPHA_TEST );
-                glAlphaFunc ( GL_GREATER, 0.01 );
-            }
-            glEnable( GL_BLEND ); 
-            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-
-            glShadeModel( GL_SMOOTH );
-            glEnable( GL_COLOR_MATERIAL ); 
-            sgVec4 color;
-            float emis = 0.05;
-            if ( 1 ) {
-                ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
-                emis = ( color[0]+color[1]+color[2] ) / 3.0;
-                if ( emis < 0.05 )
-                    emis = 0.05;
-            }
-            sgSetVec4( color, emis, emis, emis, 0.0 );
-            glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, color );
-            sgSetVec4( color, 1.0f, 1.0f, 1.0f, 0.0 );
-            glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, color );
-            sgSetVec4( color, 1.0, 1.0, 1.0, 0.0 );
-            glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, color );
-            sgSetVec4( color, 0.0, 0.0, 0.0, 0.0 );
-            glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, color );
-
-            glColor4f( 1.0f, 1.0f, 1.0f, 1.0f );
-
-            glActiveTexturePtr( GL_TEXTURE0_ARB );
-            glBindTexture( GL_TEXTURE_2D, normal->getHandle() );
-            glEnable( GL_TEXTURE_2D );
-
-            //Bind normalisation cube map to texture unit 1
-            glActiveTexturePtr( GL_TEXTURE1_ARB );
-            glBindTexture( GL_TEXTURE_CUBE_MAP_ARB, normalization_cube_map );
-            glEnable( GL_TEXTURE_CUBE_MAP_ARB );
-            glActiveTexturePtr( GL_TEXTURE0_ARB );
-
-            //Set vertex arrays for cloud
-            glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
-            glEnableClientState( GL_VERTEX_ARRAY );
-/*
-            if ( nb_texture_unit >= 3 ) {
-                glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
-                glEnableClientState( GL_COLOR_ARRAY );
-            }
-*/
-            //Send texture coords for normal map to unit 0
-            glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
-            glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-            //Send tangent space light vectors for normalisation to unit 1
-            glClientActiveTexturePtr( GL_TEXTURE1_ARB );
-            glTexCoordPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].tangentSpLight );
-            glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-            //Set up texture environment to do (tex0 dot tex1)*color
-            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_REPLACE );
-            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE );
-            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-
-// use TexEnvCombine to add the highlights to the original lighting
-osg::TexEnvCombine *te = new osg::TexEnvCombine;    
-te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
-te->setCombine_RGB(osg::TexEnvCombine::REPLACE);
-te->setSource0_Alpha(osg::TexEnvCombine::TEXTURE);
-te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
-ss->setTextureAttributeAndModes(0, te, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-
-
-            glActiveTexturePtr( GL_TEXTURE1_ARB );
-
-            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGB_ARB );
-            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-            glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS_ARB );
-            glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_ALPHA_ARB, GL_REPLACE );
-
-osg::TexEnvCombine *te = new osg::TexEnvCombine;    
-te->setSource0_RGB(osg::TexEnvCombine::TEXTURE);
-te->setCombine_RGB(osg::TexEnvCombine::DOT3_RGB);
-te->setSource1_RGB(osg::TexEnvCombine::PREVIOUS);
-te->setSource0_Alpha(osg::TexEnvCombine::PREVIOUS);
-te->setCombine_Alpha(osg::TexEnvCombine::REPLACE);
-ss->setTextureAttributeAndModes(0, te, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-
-
-            if ( nb_texture_unit >= 3 ) {
-                glActiveTexturePtr( GL_TEXTURE2_ARB );
-                glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
-
-                glClientActiveTexturePtr( GL_TEXTURE2_ARB );
-                glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
-                glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
-                glTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_ADD );
-                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
-                glTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
-
-                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
-                glActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                //Draw cloud layer
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
-
-                glDisable( GL_TEXTURE_2D );
-                glActiveTexturePtr( GL_TEXTURE1_ARB );
-                glDisable( GL_TEXTURE_CUBE_MAP_ARB );
-                glActiveTexturePtr( GL_TEXTURE2_ARB );
-                glDisable( GL_TEXTURE_2D );
-                glActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTexturePtr( GL_TEXTURE1_ARB );
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTexturePtr( GL_TEXTURE2_ARB );
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                glDisableClientState( GL_COLOR_ARRAY );
-                glEnable( GL_LIGHTING );
-
-                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-
-            } else {
-                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
-                glActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                //Draw cloud layer
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
-                glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
-
-                //Disable textures
-                glDisable( GL_TEXTURE_2D );
-
-                glActiveTexturePtr( GL_TEXTURE1_ARB );
-                glDisable( GL_TEXTURE_CUBE_MAP_ARB );
-                glActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                //disable vertex arrays
-                glDisableClientState( GL_VERTEX_ARRAY );
-
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTexturePtr( GL_TEXTURE1_ARB );
-                glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                glClientActiveTexturePtr( GL_TEXTURE0_ARB );
-
-                //Return to standard modulate texenv
-                glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-
-                if ( layer_coverage == SG_CLOUD_OVERCAST ) {
-	            glDepthFunc(GL_LEQUAL);
-
-                    glEnable( GL_LIGHTING );
-                    sgVec4 color;
-                    ssgGetLight( 0 )->getColour( GL_DIFFUSE, color );
-                    float average = ( color[0] + color[1] + color[2] ) / 3.0f;
-                    average = 0.15 + average/10;
-                    sgVec4 averageColor;
-                    sgSetVec4( averageColor, average, average, average, 1.0f );
-                    ssgGetLight( 0 )->setColour( GL_DIFFUSE, averageColor );
-
-                    glBlendColorPtr( average, average, average, 1.0f );
-                    glBlendFunc( GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_COLOR );
-
-                    //Perform a second pass to color the torus
-                    //Bind decal texture
-                    glBindTexture( GL_TEXTURE_2D, decal->getHandle() );
-                    glEnable(GL_TEXTURE_2D);
-
-                    //Set vertex arrays for torus
-                    glVertexPointer( 3, GL_FLOAT, sizeof(CloudVertex), &vertices[0].position );
-                    glEnableClientState( GL_VERTEX_ARRAY );
-
-                    //glColorPointer( 4, GL_FLOAT, sizeof(CloudVertex), &vertices[0].color );
-                    //glEnableClientState( GL_COLOR_ARRAY );
-
-                    glNormalPointer( GL_FLOAT, sizeof(CloudVertex), &vertices[0].normal );
-                    glEnableClientState( GL_NORMAL_ARRAY );
-
-                    glTexCoordPointer( 2, GL_FLOAT, sizeof(CloudVertex), &vertices[0].texCoord );
-                    glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-                    //Draw cloud layer
-                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[0] );
-                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[10] );
-                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[20] );
-                    glDrawElements( GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, &indices[30] );
-
-                    ssgGetLight( 0 )->setColour( GL_DIFFUSE, color );
-
-                    glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-                }
-            }
-            //Disable texture
-            glDisable( GL_TEXTURE_2D );
-
-            glDisableClientState( GL_VERTEX_ARRAY );
-            glDisableClientState( GL_NORMAL_ARRAY );
-
-            glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-            glEnable( GL_CULL_FACE );
-	    glDepthFunc(GL_LESS);
-
-            ssgLoadModelviewMatrix( modelview );
-#endif
-
 // repaint the cloud layer colors
 bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
     osg::Vec4f combineColor(fog_color.osg(), cloud_alpha);
@@ -820,6 +568,9 @@ bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
         = dynamic_cast<osg::TexEnvCombine*>(layer_root->getStateSet()
                                             ->getTextureAttribute(1, osg::StateAttribute::TEXENV));
     combiner->setConstantColor(combineColor);
+
+    // Set the fog color for the 3D clouds too.
+    //cloud3dfog->setColor(combineColor);
     return true;
 }
 
@@ -865,6 +616,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
 
     layer_transform->setMatrix( LAT*LON*T );
+
     // The layers need to be drawn in order because they are
     // translucent, but OSG transparency sorting doesn't work because
     // the cloud polys are huge. However, the ordering is simple: the
@@ -967,6 +719,21 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         last_lat = lat;
     }
 
-// 	layer3D->reposition( p, up, lon, lat, alt, dt, direction, speed);
+    layer3D->reposition( p, up, lon, lat, dt);
     return true;
+}
+
+void SGCloudLayer::set_enable3dClouds(bool enable) {
+     
+    if (layer3D->defined3D && enable) {
+        cloud_root->setChildValue(layer3D->getNode(), true);
+        cloud_root->setChildValue(layer_root.get(),   false);
+    } else {
+        cloud_root->setChildValue(layer3D->getNode(), false);
+        cloud_root->setChildValue(layer_root.get(),   true);
+    }        
+}
+
+void SGCloudLayer::applyDensity() {
+    layer3D->applyDensity();
 }

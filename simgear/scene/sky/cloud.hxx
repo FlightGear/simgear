@@ -162,6 +162,12 @@ public:
     /** build the cloud object */
     void rebuild();
 
+    /** Enable/disable 3D clouds in this layer */
+    void set_enable3dClouds(bool enable);
+
+    /** Set 3D cloud density in this layer */
+    void applyDensity();
+
     /**
      * repaint the cloud colors based on the specified fog_color
      * @param fog_color the fog color
@@ -183,16 +189,18 @@ public:
                      double lon, double lat, double alt,
                      double dt = 0.0 );
 
-    osg::Switch* getNode() { return layer_root.get(); }
+    osg::Switch* getNode() { return cloud_root.get(); }
 
     static bool enable_bump_mapping;
 
     /** return the 3D layer cloud associated with this 2D layer */
     SGCloudField *get_layer3D(void) { return layer3D; }
+
 protected:
     void setTextureOffset(const osg::Vec2& offset);
 private:
 
+    osg::ref_ptr<osg::Switch> cloud_root;
     osg::ref_ptr<osg::Switch> layer_root;
     osg::ref_ptr<osg::Group> group_top, group_bottom;
     osg::ref_ptr<osg::MatrixTransform> layer_transform;
@@ -225,6 +233,7 @@ private:
     osg::Vec2 base;
 
     SGCloudField *layer3D;
+
 };
 
 #endif // _SG_CLOUD_HXX_

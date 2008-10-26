@@ -24,793 +24,322 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osg/AlphaFunc>
+#include <osg/Program>
+#include <osg/Uniform>
 #include <osg/ref_ptr>
 #include <osg/Texture2D>
+#include <osg/NodeVisitor>
+#include <osg/PositionAttitudeTransform>
+#include <osg/Material>
+#include <osgUtil/UpdateVisitor>
+#include <osgDB/ReadFile>
+#include <osgDB/FileUtils>
+
 
 #include <simgear/compiler.h>
 
 #include <plib/sg.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/model/model.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 #include <algorithm>
 #include <osg/GLU>
 
 #include "cloudfield.hxx"
 #include "newcloud.hxx"
+#include "CloudShaderGeometry.hxx"
 
+using namespace simgear;
+using namespace osg;
 
-/*
-*/
+typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
 
-static osg::ref_ptr<osg::Texture2D> cloudTextures[SGNewCloud::CLTexture_max];
+static StateSetMap cloudTextureMap;
 
+static char vertexShaderSource[] = 
+    "#version 120\n"
+    "\n"
+    "varying float fogFactor;\n"
+    "varying float alphaBlend;\n"
+    "attribute float textureIndexX;\n"
+    "attribute float textureIndexY;\n"
+    "attribute float wScale;\n"
+    "attribute float hScale;\n"
+    "attribute float shade;\n"
+    "void main(void)\n"
+    "{\n"
+    "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndexX, textureIndexY, 0.0, 0.0);\n"
+    "  vec4 ep = gl_ModelViewMatrixInverse * vec4(0.0,0.0,0.0,1.0);\n"
+    "  vec4 l  = gl_ModelViewMatrixInverse * vec4(0.0,0.0,1.0,1.0);\n"
+    "  vec3 u = normalize(ep.xyz - l.xyz);\n"
+// Find a rotation matrix that rotates 1,0,0 into u. u, r and w are
+// the columns of that matrix.
+    "  vec3 absu = abs(u);\n"
+    "  vec3 r = normalize(vec3(-u.y, u.x, 0));\n"
+    "  vec3 w = cross(u, r);\n"
+// Do the matrix multiplication by [ u r w pos]. Assume no
+// scaling in the homogeneous component of pos.
+    "  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
+    "  gl_Position.xyz = gl_Vertex.x * u * wScale;\n"
+    "  gl_Position.xyz += gl_Vertex.y * r * hScale;\n"
+    "  gl_Position.xyz += gl_Vertex.z * w;\n"
+    "  gl_Position.xyz += gl_Color.xyz;\n"
+// Determine a lighting normal based on the sprites position from the
+// center of the cloud. 
+    "  float n = dot(normalize(gl_LightSource[0].position.xyz), normalize(mat3x3(gl_ModelViewMatrix) * gl_Position.xyz));\n"
+// Determine the position - used for fog and shading calculations        
+    "  vec3 ecPosition = vec3(gl_ModelViewMatrix * gl_Position);\n"
+    "  float fogCoord = abs(ecPosition.z);\n"
+// Final position of the sprite
+    "  gl_Position = gl_ModelViewProjectionMatrix * gl_Position;\n"
+// Limit the normal range from [0,1.0], and apply the shading (vertical factor)
+    "  n = min(smoothstep(-0.5, 0.5, n), shade);\n"
+// This lighting normal is then used to mix between almost pure ambient (0) and diffuse (1.0) light
+    "  vec4 backlight = 0.8 * gl_LightSource[0].ambient + 0.2 * gl_LightSource[0].diffuse;\n"
+    "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
+    "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
+    "  gl_FrontColor.a = smoothstep(10.0, 100.0, fogCoord);\n"
+    "  gl_BackColor = gl_FrontColor;\n"
+// Fog doesn't affect clouds as much as other objects.        
+    "  fogFactor = exp( -gl_Fog.density * fogCoord);\n"
+    "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
+// As we get within 100m of the sprite, it is faded out
+    "  alphaBlend = smoothstep(10.0, 100.0, fogCoord);\n"
+    "}\n";
 
-bool SGNewCloud::useAnisotropic = true;
-SGBbCache *SGNewCloud::cldCache = 0;
-static bool texturesLoaded = false;
-static float minx, maxx, miny, maxy, minz, maxz;
-static int cloudIdCounter = 1;
+static char fragmentShaderSource[] = 
+    "uniform sampler2D baseTexture; \n"
+    "varying float fogFactor;\n"
+    "varying float alphaBlend;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
+    "  vec4 finalColor = base * gl_Color;\n"
+//    "  finalColor.a = min(alphaBlend, finalColor.a);\n"
+    "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
+    "}\n";
 
-float SGNewCloud::nearRadius = 3500.0f;
-bool SGNewCloud::lowQuality = false;
-sgVec3 SGNewCloud::sunlight = {0.5f, 0.5f, 0.5f};
-sgVec3 SGNewCloud::ambLight = {0.5f, 0.5f, 0.5f};
-sgVec3 SGNewCloud::modelSunDir = {0,1,0};
+class SGCloudFogUpdateCallback : public osg::StateAttribute::Callback {
+    public:
+        virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
+        {
+            SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
+            osg::Fog* fog = static_cast<osg::Fog*>(sa);
+            fog->setMode(osg::Fog::EXP);
+            fog->setColor(updateVisitor->getFogColor().osg());
+            fog->setDensity(updateVisitor->getFogExpDensity());
+        }
+};
 
-
-void SGNewCloud::init(void) {
-	bbId = -1;
-	fadeActive = false;
-	duration = 100.0f;
-	fadetimer = 100.0f;
-	pauseLength = 0.0f;
-	last_step = -1.0f;
-	familly = CLFamilly_nn;
-	cloudId = ++cloudIdCounter;
-	sgSetVec3(center, 0.0f, 0.0f, 0.0f);
-	sgSetVec3(cloudpos, 0.0f, 0.0f, 0.0f);
-	radius = 0.0f;
-	delta_base = 0.0f;
-	list_spriteContainer.reserve(8);
-	list_spriteDef.reserve(40);
-
-	if( cldCache == 0 ) {
-		cldCache = new SGBbCache;
-		cldCache->init( 64 );
-	}
-}
-
-// constructor
-SGNewCloud::SGNewCloud(CLFamilly_type classification)
+SGNewCloud::SGNewCloud(const SGPath &tex_path, 
+                       string tex,
+                       double min_w,
+                       double max_w,
+                       double min_h,
+                       double max_h,
+                       double min_sprite_w,
+                       double max_sprite_w,
+                       double min_sprite_h,
+                       double max_sprite_h,
+                       double b,
+                       int n,
+                       int nt_x,
+                       int nt_y) :
+        min_width(min_w),
+        max_width(max_w),
+        min_height(min_h),
+        max_height(max_h),
+        min_sprite_width(min_sprite_w),
+        max_sprite_width(max_sprite_w),
+        min_sprite_height(min_sprite_h),
+        max_sprite_height(max_sprite_h),
+        bottom_shade(b),
+        num_sprites(n),
+        num_textures_x(nt_x),
+        num_textures_y(nt_y),
+        texture(tex)
 {
-	init();
-	familly = classification;
-}
+    // Create a new StateSet for the texture, if required.
+    StateSetMap::iterator iter = cloudTextureMap.find(texture);
 
-SGNewCloud::SGNewCloud(string classification)
-{
-	init();
-	if( classification == "cu" )
-		familly = CLFamilly_cu;
-	else if( classification == "cb" )
-		familly = CLFamilly_cb;
-	else if( classification == "st" )
-		familly = CLFamilly_st;
-	else if( classification == "ns" )
-		familly = CLFamilly_ns;
-	else if( classification == "sc" )
-		familly = CLFamilly_sc;
-	else if( classification == "as" )
-		familly = CLFamilly_as;
-	else if( classification == "ac" )
-		familly = CLFamilly_ac;
-	else if( classification == "ci" )
-		familly = CLFamilly_ci;
-	else if( classification == "cc" )
-		familly = CLFamilly_cc;
-	else if( classification == "cs" )
-		familly = CLFamilly_cs;
+    if (iter == cloudTextureMap.end()) {
+        stateSet = new osg::StateSet;
+                
+        osg::ref_ptr<osgDB::ReaderWriter::Options> options = makeOptionsFromPath(tex_path);
+                
+        osg::Texture2D *tex = new osg::Texture2D;
+        tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
+        tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
+        tex->setImage(osgDB::readImageFile(texture, options.get()));
+                
+        StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
+        
+        stateSet->setMode(GL_LIGHTING,  osg::StateAttribute::ON);
+        stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
+        
+        // Fog handling
+        osg::Fog* fog = new osg::Fog;
+        fog->setUpdateCallback(new SGCloudFogUpdateCallback);
+        stateSet->setAttributeAndModes(fog);
+        stateSet->setDataVariance(osg::Object::DYNAMIC);
+        
+        stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
+        stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
+
+        stateSet->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
+        stateSet->setRenderBinDetails(osg::StateSet::TRANSPARENT_BIN, "DepthSortedBin");
+                
+        static ref_ptr<AlphaFunc> alphaFunc;
+        static ref_ptr<Program> program;
+        static ref_ptr<Uniform> baseTextureSampler;
+        static ref_ptr<Material> material;
+                  
+        // Generate the shader etc, if we don't already have one.
+        if (!program.valid()) {
+            alphaFunc = new AlphaFunc;
+            alphaFunc->setFunction(AlphaFunc::GREATER,0.002f);
+            program  = new Program;
+            baseTextureSampler = new osg::Uniform("baseTexture", 0);
+            Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
+            program->addShader(vertex_shader);
+            program->addBindAttribLocation("textureIndexX", CloudShaderGeometry::TEXTURE_INDEX_X);
+            program->addBindAttribLocation("textureIndexY", CloudShaderGeometry::TEXTURE_INDEX_Y);
+            program->addBindAttribLocation("wScale", CloudShaderGeometry::WIDTH);
+            program->addBindAttribLocation("hScale", CloudShaderGeometry::HEIGHT);
+            program->addBindAttribLocation("shade", CloudShaderGeometry::SHADE);
+                  
+            Shader* fragment_shader = new Shader(Shader::FRAGMENT, fragmentShaderSource);
+            program->addShader(fragment_shader);
+            material = new Material;
+            // Don´t track vertex color
+            material->setColorMode(Material::OFF);
+            
+            // We don't actually use the material information either - see shader.
+            material->setAmbient(Material::FRONT_AND_BACK,
+                                 Vec4(0.5f, 0.5f, 0.5f, 1.0f));
+            material->setDiffuse(Material::FRONT_AND_BACK,
+                                 Vec4(0.5f, 0.5f, 0.5f, 1.0f));
+        }
+                  
+        stateSet->setAttributeAndModes(alphaFunc.get());
+        stateSet->setAttribute(program.get());
+        stateSet->addUniform(baseTextureSampler.get());
+        stateSet->setMode(GL_VERTEX_PROGRAM_TWO_SIDE, StateAttribute::ON);
+        stateSet->setAttribute(material.get());
+                
+        // Add the newly created texture to the map for use later.
+        cloudTextureMap.insert(StateSetMap::value_type(texture,  stateSet));
+    } else {
+        stateSet = iter->second.get();
+    }
 }
 
 SGNewCloud::~SGNewCloud() {
-	list_spriteDef.clear();
-	list_spriteContainer.clear();
-	cldCache->free( bbId, cloudId );
 }
 
+osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y)
+{
+    // Create front and back polygons so we don't need to screw around
+    // with two-sided lighting in the shader.
+    osg::Vec3Array& v = *(new osg::Vec3Array(4));
+    osg::Vec3Array& n = *(new osg::Vec3Array(4));
+    osg::Vec2Array& t = *(new osg::Vec2Array(4));
+    
+    float cw = w*0.5f;
 
-// load all textures used to draw cloud sprites
-void SGNewCloud::loadTextures(const string &tex_path) {
-	if( texturesLoaded )
-		return;
-	texturesLoaded = true;
+    v[0].set(0.0f, -cw, 0.0f);
+    v[1].set(0.0f,  cw, 0.0f);
+    v[2].set(0.0f,  cw, h);
+    v[3].set(0.0f, -cw, h);
+    
+    // The texture coordinate range is not the
+    // entire coordinate space - as the texture
+    // has a number of different clouds on it.
+    float tx = 1.0f/varieties_x;
+    float ty = 1.0f/varieties_y;
 
-	SGPath cloud_path;
+    t[0].set(0.0f, 0.0f);
+    t[1].set(  tx, 0.0f);
+    t[2].set(  tx, ty);
+    t[3].set(0.0f, ty);
 
-    cloud_path.set(tex_path);
-    cloud_path.append("cl_cumulus.png");
-    // OSGFIXME
-//     cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D( cloud_path.str().c_str(), false, false, false );
-    cloudTextures[ CLTexture_cumulus ] = new osg::Texture2D;
+    // The normal isn't actually use in lighting.
+    n[0].set(1.0f, -1.0f, -1.0f);
+    n[1].set(1.0f,  1.0f, -1.0f);
+    n[2].set(1.0f,  1.0f,  1.0f);
+    n[3].set(1.0f, -1.0f,  1.0f);
 
-    cloud_path.set(tex_path);
-    cloud_path.append("cl_stratus.png");
-    // OSGFIXME
-//     cloudTextures[ CLTexture_stratus ] = new ssgTexture( cloud_path.str().c_str(), false, false, false );
-    cloudTextures[ CLTexture_stratus ] = new osg::Texture2D;
+    osg::Geometry *geom = new osg::Geometry;
 
+    geom->setVertexArray(&v);
+    geom->setTexCoordArray(0, &t);
+    geom->setNormalArray(&n);
+    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
+    // No color for now; that's used to pass the position.
+    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
+
+    return geom;
 }
 
-void SGNewCloud::startFade(bool direction, float duration, float pauseLength) {
-      if(duration <= 0.0) {
-              fadeActive = false;
-              return;
-      }
-      this->direction = direction;
-      fadetimer = 0.0;
-      this->duration = duration;
-      this->pauseLength = pauseLength;
-      last_step = -1.0;
-      fadeActive = true;
-}
-void SGNewCloud::setFade(float howMuch) {
-      duration = 100.0;
-      fadetimer = howMuch;
-      fadeActive = false;
-      last_step = -1.0;
-}
-
-
-static inline float rayleighCoeffAngular(float cosAngle) {
-	return 3.0f / 4.0f * (1.0f + cosAngle * cosAngle);
-}
-
-// cp is normalized (len==1)
-static void CartToPolar3d(sgVec3 cp, sgVec3 polar) {
-    polar[0] = atan2(cp[1], cp[0]);
-    polar[1] = SG_PI / 2.0f - atan2(sqrt (cp[0] * cp[0] + cp[1] * cp[1]), cp[2]);
-	polar[2] = 1.0f;
-}
-
-static void PolarToCart3d(sgVec3 p, sgVec3 cart) {
-    float tmp = cos(p[1]);
-    cart[0] = cos(p[0]) * tmp;
-    cart[1] = sin(p[0]) * tmp;
-    cart[2] = sin(p[1]);
-}
-
-
-// compute the light for a cloud sprite corner
-// from the normal and the sun, scaled by the Rayleigh factor
-// and finaly added to the ambient light
-static inline void lightFunction(sgVec3 normal, sgVec4 light, float pf) {
-	float cosAngle = sgScalarProductVec3( normal, SGNewCloud::modelSunDir);
-	float vl = (1.0f - 0.5f + cosAngle * 0.5f) * pf;
-	sgScaleVec3( light, SGNewCloud::sunlight, 0.25f + 0.75f * vl );
-	sgAddVec3( light, SGNewCloud::ambLight );
-	// we need to clamp or else the light will bug when adding transparency
-	if( light[0] > 1.0 )	light[0] = 1.0;
-	if( light[1] > 1.0 )	light[1] = 1.0;
-	if( light[2] > 1.0 )	light[2] = 1.0;
-	light[3] = 1.0;
-}
-
-// compute the light for a cloud sprite
-// we use ambient light and orientation versus sun position
-void SGNewCloud::computeSimpleLight(sgVec3 FakeEyePos) {
-	// constant Rayleigh factor if we are not doing Anisotropic lighting
-	float pf = 1.0f;
-
-	list_of_spriteDef::iterator iSprite;
-	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
-		if( useAnisotropic ) {
-			sgVec3 eyeDir;
-            sgSubVec3(eyeDir, iSprite->pos, FakeEyePos);
-            sgNormaliseVec3(eyeDir);
-            float cosAngle = sgScalarProductVec3(eyeDir, modelSunDir);
-            pf = rayleighCoeffAngular(cosAngle);
-		}
-		lightFunction(iSprite->n0, iSprite->l0, pf);
-		lightFunction(iSprite->n1, iSprite->l1, pf);
-		lightFunction(iSprite->n2, iSprite->l2, pf);
-		lightFunction(iSprite->n3, iSprite->l3, pf);
-
-	}
-}
-
-
-// add a new box to the cloud
-void SGNewCloud::addContainer (float x, float y, float z, float r, CLbox_type type) {
-	spriteContainer cont;
-	sgSetVec3( cont.pos, x, y, z );
-	cont.r = r;
-	cont.cont_type = type;
-	sgSetVec3( cont.center, 0.0f, 0.0f, 0.0f);
-	list_spriteContainer.push_back( cont );
-	// don't place cloud below his base
-	if( y - r*0.50 < delta_base )
-		delta_base = y - r*0.50;
-}
-
-// add a sprite inside a box
-void SGNewCloud::addSprite(float x, float y, float z, float r, CLbox_type type, int box) {
-	spriteDef newSpriteDef;
-	int rank = list_spriteDef.size();
-	sgSetVec3( newSpriteDef.pos, x, y - delta_base, z);
-	newSpriteDef.box = box;
-	newSpriteDef.sprite_type = type;
-	newSpriteDef.rank = rank;
-	newSpriteDef.r = r;
-	list_spriteDef.push_back( newSpriteDef );
-	spriteContainer *thisBox = &list_spriteContainer[box];
-	sgVec3 deltaPos;
-	sgSubVec3( deltaPos, newSpriteDef.pos, thisBox->pos );
-	sgAddVec3( thisBox->center, deltaPos );
-
-	r = r * 0.70f;	// 0.5 * 1.xxx
-    if( x - r < minx )
-		minx = x - r;
-    if( y - r < miny )
-		miny = y - r;
-    if( z - r < minz )
-		minz = z - r;
-    if( x + r > maxx )
-		maxx = x + r;
-    if( y + r > maxy )
-		maxy = y + r;
-    if( z + r > maxz )
-		maxz = z + r;
-
-}
-
-// return a random number between -n/2 and n/2
+// return a random number between -n/2 and n/2, tending to 0
 static float Rnd(float n) {
-	return n * (-0.5f + sg_random());
+    return n * (-0.5f + (sg_random() + sg_random()) / 2.0f);
 }
 
-// generate all sprite with defined boxes
-void SGNewCloud::genSprites( void ) {
-	float x, y, z, r;
-    int N, sc;
-	minx = miny = minz = 99999.0;
-	maxx = maxy = maxz = -99999.0;
+osg::ref_ptr<LOD> SGNewCloud::genCloud() {
+    LOD* result = new LOD;
+    Geode* geode = new Geode;
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y);
+    
+    Geometry* quad = createOrthQuad(min_sprite_width, min_sprite_height, num_textures_x, num_textures_y);
+    
+    // Determine how big this specific cloud instance is.
+    float width = min_width + sg_random() * (max_width - min_width);
+    float height = min_height + sg_random() * (max_height - min_height);
+    
+    // Determine the cull distance. This is used to remove sprites that are too close together.
+    // The value is squared as we use vector calculations.
+    float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
+    
+    for (int i = 0; i < num_sprites; i++)
+    {
+        // Determine the position of the sprite.
+        SGVec3f *pos = new SGVec3f(Rnd(width),
+                                   Rnd(width),
+                                   Rnd(height));
 
-    N = list_spriteContainer.size();
-	for(int i = 0 ; i < N ; i++ ) {
-		spriteContainer *thisBox = & list_spriteContainer[i];
-		// the type defines how the sprites can be positioned inside the box, their size, etc
-		switch(thisBox->cont_type) {
-			case CLbox_sc:
-				sc = 1;
-				r = thisBox->r + Rnd(0.2f);
-				x = thisBox->pos[SG_X] + Rnd(thisBox->r * 0.75f);
-				y = thisBox->pos[SG_Y] + Rnd(thisBox->r * 0.75f);
-				z = thisBox->pos[SG_Z] + Rnd(thisBox->r * 0.75f);
-				addSprite(x, y, z, r, thisBox->cont_type, i);
-				break;
-			case CLbox_stratus:
-				sc = 1;
-				r = thisBox->r;
-				x = thisBox->pos[SG_X];
-				y = thisBox->pos[SG_Y];
-				z = thisBox->pos[SG_Z];
-				addSprite(x, y, z, r, thisBox->cont_type, i);
-				break;
-			case CLbox_cumulus:
-				for( sc = 0 ; sc <= 4 ; sc ++ ) {
-					r = thisBox->r + Rnd(0.2f);
-					x = thisBox->pos[SG_X] + Rnd(thisBox->r * 0.75f);
-					y = thisBox->pos[SG_Y] + Rnd(thisBox->r * 0.5f);
-					z = thisBox->pos[SG_Z] + Rnd(thisBox->r * 0.75f);
-					if ( y < thisBox->pos[SG_Y] - thisBox->r / 10.0f )
-						y = thisBox->pos[SG_Y] - thisBox->r / 10.0f;
-					addSprite(x, y, z, r, thisBox->cont_type, i);
-				}
-				break;
-			default:
-				for( sc = 0 ; sc <= 4 ; sc ++ ) {
-					r = thisBox->r + Rnd(0.2f);
-					x = thisBox->pos[SG_X] + Rnd(thisBox->r);
-					y = thisBox->pos[SG_Y] + Rnd(thisBox->r);
-					z = thisBox->pos[SG_Z] + Rnd(thisBox->r);
-					addSprite(x, y, z, r, thisBox->cont_type, i);
-				}
-				break;
-		}
-        sgScaleVec3(thisBox->center, 1.0f / sc);
-	}
-
-	radius = maxx - minx;
-    if ( (maxy - miny) > radius )
-		radius = (maxy - miny);
-    if ( (maxz - minz) > radius )
-		radius = (maxz - minz);
-    radius /= 2.0f;
-    sgSetVec3( center, (maxx + minx) / 2.0f, (maxy + miny) / 2.0f, (maxz + minz) / 2.0f );
-
-	const float ang = 45.0f * SG_PI / 180.0f;
-
-	// compute normals
-	list_of_spriteDef::iterator iSprite;
-	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
-		sgVec3 normal;
-		spriteContainer *thisSpriteContainer = &list_spriteContainer[iSprite->box];
-		if( familly == CLFamilly_sc || familly == CLFamilly_cu || familly == CLFamilly_cb) {
-			sgSubVec3(normal, iSprite->pos, center);
-		} else {
-			sgSubVec3(normal, iSprite->pos, thisSpriteContainer->pos);
-			sgSubVec3(normal, thisSpriteContainer->center);
-			sgSubVec3(normal, cloudpos);
-		}
-		if( normal[0] == 0.0f && normal[1] == 0.0f && normal[2] == 0.0f )
-			sgSetVec3( normal, 0.0f, 1.0f, 0.0f );
-        sgNormaliseVec3(normal);
-		// use exotic lightning function, this will give more 'relief' to the clouds
-		// compute a normal for each vextex this will simulate a smooth shading for a round shape
-		sgVec3 polar, pt;
-		// I suspect this code to be bugged...
-        CartToPolar3d(normal, polar);
-		sgCopyVec3(iSprite->normal, normal);
-
-		// offset the normal vector by some angle for each vertex
-        sgSetVec3(pt, polar[0] - ang, polar[1] - ang, polar[2]);
-        PolarToCart3d(pt, iSprite->n0);
-        sgSetVec3(pt, polar[0] + ang, polar[1] - ang, polar[2]);
-        PolarToCart3d(pt, iSprite->n1);
-        sgSetVec3(pt, polar[0] + ang, polar[1] + ang, polar[2]);
-        PolarToCart3d(pt, iSprite->n2);
-        sgSetVec3(pt, polar[0] - ang, polar[1] + ang, polar[2]);
-        PolarToCart3d(pt, iSprite->n3);
-	}
-
-	// experimental : clouds are dissipating with time
-	if( familly == CLFamilly_cu ) {
-		startFade(true, 300.0f, 30.0f);
-		fadetimer = sg_random() * 300.0f;
-	}
+        // Determine the height and width as scaling factors on the minimum size (used to create the quad)
+        float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
+        float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
+        
+        // The shade varies from bottom_shade to 1.0 non-linearly
+        float shade;
+        if (pos->z() > 0.0f) { 
+            shade = 1.0f; 
+        } else {
+            shade = ((2 * pos->z() + height) / height) * (1 - bottom_shade) + bottom_shade;
+        }
+        
+        // Determine the sprite texture indexes;
+        int index_x = (int) floor(sg_random() * num_textures_x);
+        if (index_x == num_textures_x) { index_x--; }
+        
+        int index_y = (int) floor(sg_random() * num_textures_y);
+        if (index_y == num_textures_y) { index_y--; }
+        
+        sg->addSprite(*pos, index_x, index_y, sprite_width, sprite_height, shade, cull_distance_squared);
+    }
+    
+    sg->setGeometry(quad);
+    geode->addDrawable(sg);
+    geode->setName("3D cloud");
+    geode->setStateSet(stateSet.get());
+    result->addChild(geode, 0, 20000);
+    return result;
 }
-
-
-// definition of a cu cloud, only for testing
-void SGNewCloud::new_cu(void) {
-	float s = 250.0f;
-	float r = Rnd(1.0) + 0.5;
-	if( r < 0.5f ) {
-		addContainer(0.0f, 0.0f, 0.0f, s, CLbox_cumulus);
-		addContainer(s, 0, 0, s, CLbox_cumulus);
-		addContainer(0, 0, 2 * s, s, CLbox_cumulus);
-		addContainer(s, 0, 2 * s, s, CLbox_cumulus);
-
-		addContainer(-1.2f * s, 0.2f * s, s, s * 1.4f, CLbox_cumulus);
-		addContainer(0.2f * s, 0.2f * s, s, s * 1.4f, CLbox_cumulus);
-		addContainer(1.6f * s, 0.2f * s, s, s * 1.4f, CLbox_cumulus);
-	} else if ( r < 0.90f ) {
-		addContainer(0, 0, 0, s * 1.2, CLbox_cumulus);
-		addContainer(s, 0, 0, s, CLbox_cumulus);
-		addContainer(0, 0, s, s, CLbox_cumulus);
-		addContainer(s * 1.1, 0, s, s * 1.2, CLbox_cumulus);
-
-		addContainer(-1.2 * s, 1 + 0.2 * s, s * 0.5, s * 1.4, CLbox_standard);
-		addContainer(0.2 * s, 1 + 0.25 * s, s * 0.5, s * 1.5, CLbox_standard);
-		addContainer(1.6 * s, 1 + 0.2 * s, s * 0.5, s * 1.4, CLbox_standard);
-
-	} else {
-		// cb
-		s = 675.0f;
-		addContainer(0, 0, 0, s, CLbox_cumulus);
-		addContainer(0, 0, s, s, CLbox_cumulus);
-		addContainer(s, 0, s, s, CLbox_cumulus);
-		addContainer(s, 0, 0, s, CLbox_cumulus);
-
-		addContainer(s / 2, s, s / 2, s * 1.5, CLbox_standard);
-
-		addContainer(0, 2 * s, 0, s, CLbox_standard);
-		addContainer(0, 2 * s, s, s, CLbox_standard);
-		addContainer(s, 2 * s, s, s, CLbox_standard);
-		addContainer(s, 2 * s, 0, s, CLbox_standard);
-
-	}
-	genSprites();
-}
-
-
-// define the new position of the cloud (inside the cloud field, not on sphere)
-void SGNewCloud::SetPos(sgVec3 newPos) {
-    int N = list_spriteDef.size();
-    sgVec3 deltaPos;
-	sgSubVec3( deltaPos, newPos, cloudpos );
-
-    // for each particle
-	for(int i = 0 ; i < N ; i ++) {
-		sgAddVec3( list_spriteDef[i].pos, deltaPos );
-	}
-	sgAddVec3( center, deltaPos );
-    sgSetVec3( cloudpos, newPos[SG_X], newPos[SG_Y], newPos[SG_Z]);
-}
-
-
-
-
-void SGNewCloud::drawContainers() {
-
-
-}
-
-
-
-// sort on distance to eye because of transparency
-void SGNewCloud::sortSprite( sgVec3 eye ) {
-	list_of_spriteDef::iterator iSprite;
-
-	// compute distance from sprite to eye
-	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
-		sgVec3 dist;
-		sgSubVec3( dist, iSprite->pos, eye );
-		iSprite->dist = -(dist[0]*dist[0] + dist[1]*dist[1] + dist[2]*dist[2]);
-	}
-	std::sort( list_spriteDef.begin(), list_spriteDef.end() );
-}
-
-// render the cloud on screen or on the RTT texture to build the impostor
-void SGNewCloud::Render3Dcloud( bool drawBB, sgVec3 FakeEyePos, sgVec3 deltaPos, float dist_center ) {
-
-	float step = ( list_spriteDef.size() * (direction ? fadetimer : duration-fadetimer)) / duration;
-	int clrank = (int) step;
-	float clfadeinrank = (step - clrank);
-	last_step = step;
-
-	float CloudVisFade = 1.0 / (0.7f * SGCloudField::get_CloudVis());
-	// blend clouds with sky based on distance to limit the contrast of distant cloud
-	float t = 1.0f - dist_center * CloudVisFade;
-//	if ( t < 0.0f ) 
-//		return;
-
-    computeSimpleLight( FakeEyePos );
-
-    // view point sort, we sort because of transparency
-	sortSprite( FakeEyePos );
-
-	float dark = (familly == CLFamilly_cb ? 0.9f : 1.0f);
-
-	GLint previousTexture = -1, thisTexture;
-	list_of_spriteDef::iterator iSprite;
-	for( iSprite = list_spriteDef.begin() ; iSprite != list_spriteDef.end() ; iSprite++ ) {
-		// skip this sprite if faded
-		if(iSprite->rank > clrank)
-			continue;
-		// choose texture to use depending on sprite type
-		switch(iSprite->sprite_type) {
-			case CLbox_stratus:
-				thisTexture = CLTexture_stratus;
-				break;
-			default:
-				thisTexture = CLTexture_cumulus;
-				break;
-		}
-		// in practice there is no texture switch (atm)
-		if( previousTexture != thisTexture ) {
-			previousTexture = thisTexture;
-                        // OSGFIXME
-// 			glBindTexture(GL_TEXTURE_2D, cloudTextures[thisTexture]->getHandle());
-		}
-
-			sgVec3 translate;
-			sgSubVec3( translate, iSprite->pos, deltaPos);
-
-
-			// flipx and flipy are random texture flip flags, this gives more random clouds
-			float flipx = (float) ( iSprite->rank & 1 );
-			float flipy = (float) ( (iSprite->rank >> 1) & 1 );
-			// cu texture have a flat bottom so we can't do a vertical flip
-			if( iSprite->sprite_type == CLbox_cumulus )
-				flipy = 0.0f;
-//			if( iSprite->sprite_type == CLbox_stratus )
-//				flipx = 0.0f;
-			// adjust colors depending on cloud type
-			// TODO : rewrite that later, still experimental
-			switch(iSprite->sprite_type) {
-				case CLbox_cumulus:
-					// dark bottom
-                    sgScaleVec3(iSprite->l0, 0.8f * dark);
-                    sgScaleVec3(iSprite->l1, 0.8f * dark);
-					sgScaleVec3(iSprite->l2, dark);
-					sgScaleVec3(iSprite->l3, dark);
-					break;
-				case CLbox_stratus:
-					// usually dark grey
-					if( familly == CLFamilly_st ) {
-						sgScaleVec3(iSprite->l0, 0.8f);
-						sgScaleVec3(iSprite->l1, 0.8f);
-						sgScaleVec3(iSprite->l2, 0.8f);
-						sgScaleVec3(iSprite->l3, 0.8f);
-					} else {
-						sgScaleVec3(iSprite->l0, 0.7f);
-						sgScaleVec3(iSprite->l1, 0.7f);
-						sgScaleVec3(iSprite->l2, 0.7f);
-						sgScaleVec3(iSprite->l3, 0.7f);
-					}
-					break;
-				default:
-					// darker bottom than top
-                    sgScaleVec3(iSprite->l0, 0.8f);
-                    sgScaleVec3(iSprite->l1, 0.8f);
-					break;
-			}
-			float r = iSprite->r * 0.5f;
-
-			sgVec4 l0, l1, l2, l3;
-			sgCopyVec4 ( l0, iSprite->l0 );
-			sgCopyVec4 ( l1, iSprite->l1 );
-			sgCopyVec4 ( l2, iSprite->l2 );
-			sgCopyVec4 ( l3, iSprite->l3 );
-			if( ! drawBB ) {
-				// now clouds at the far plane are half blended
-				sgScaleVec4( l0, t );
-				sgScaleVec4( l1, t );
-				sgScaleVec4( l2, t );
-				sgScaleVec4( l3, t );
-			}
-			if( iSprite->rank == clrank ) {
-				sgScaleVec4( l0, clfadeinrank );
-				sgScaleVec4( l1, clfadeinrank );
-				sgScaleVec4( l2, clfadeinrank );
-				sgScaleVec4( l3, clfadeinrank );
-			}
-			// compute the rotations so that the quad is facing the camera
-			sgVec3 pos;
-			sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
-			sgCopyVec3( translate, pos );
-			translate[2] -= FakeEyePos[1];
-//			sgNormaliseVec3( translate );
-			float dist_sprite = sgLengthVec3 ( translate );
-			sgScaleVec3 ( translate, SG_ONE / dist_sprite ) ;
-			sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
-			if( dist_sprite > 2*r ) {
-				sgVectorProductVec3(x, translate, up);
-				sgVectorProductVec3(y, x, translate);
-			} else {
-				sgCopyVec3( x, SGCloudField::view_X );
-				sgCopyVec3( y, SGCloudField::view_Y );
-			}
-			sgScaleVec3(x, r);
-			sgScaleVec3(y, r);
- 
-			sgVec3 left, right;
-			if( drawBB )
-				sgSetVec3( left, iSprite->pos[SG_X], iSprite->pos[SG_Z], iSprite->pos[SG_Y]);
-			else
-				sgCopyVec3( left, pos );
-			sgSubVec3 (left, y);
-			sgAddVec3 (right, left, x);
-			sgSubVec3 (left, x);
-
-			glBegin(GL_QUADS);
-				glColor4fv(l0);
-                glTexCoord2f(flipx, 1.0f - flipy);
-                glVertex3fv(left);
-                glColor4fv(l1);
-                glTexCoord2f(1.0f - flipx, 1.0f - flipy);
-                glVertex3fv(right);
-				sgScaleVec3( y, 2.0 );
-				sgAddVec3( left, y);
-				sgAddVec3( right, y);
-                glColor4fv(l2);
-                glTexCoord2f(1.0f - flipx, flipy);
-                glVertex3fv(right);
-                glColor4fv(l3);
-                glTexCoord2f(flipx, flipy);
-                glVertex3fv(left);
-
-			glEnd();	
-
-	}
-}
-
-
-// compute rotations so that a quad is facing the camera
-// TODO:change obsolete code because we dont use glrotate anymore
-void SGNewCloud::CalcAngles(sgVec3 refpos, sgVec3 FakeEyePos, float *angleY, float *angleX) {
-    sgVec3 upAux, lookAt, objToCamProj, objToCam;
-	float angle, angle2;
-
-    sgSetVec3(objToCamProj, -FakeEyePos[SG_X] + refpos[SG_X], -FakeEyePos[SG_Z] + refpos[SG_Z], 0.0f);
-    sgNormaliseVec3(objToCamProj);
-
-    sgSetVec3(lookAt, 0.0f, 1.0f, 0.0f);
-    sgVectorProductVec3(upAux, lookAt, objToCamProj);
-    angle = sgScalarProductVec3(lookAt, objToCamProj);
-	if( (angle < 0.9999f) && (angle > -0.9999f) ) {
-        angle = acos(angle) * 180.0f / SG_PI;
-        if( upAux[2] < 0.0f )
-            angle = -angle;
-	} else
-        angle = 0.0f;
-
-    sgSetVec3(objToCam, -FakeEyePos[SG_X] + refpos[SG_X], -FakeEyePos[SG_Z] + refpos[SG_Z], -FakeEyePos[SG_Y] + refpos[SG_Y]);
-	sgNormaliseVec3(objToCam);
-
-    angle2 = sgScalarProductVec3(objToCamProj, objToCam);
-	if( (angle2 < 0.9999f) && (angle2 > -0.9999f) ) {
-        angle2 = -acos(angle2) * 180.0f / SG_PI;
-        if(  objToCam[2] > 0.0f )
-            angle2 = -angle2;
-	} else
-        angle2 = 0.0f;
-
-	angle2 += 90.0f;
-
-	*angleY = angle;
-    *angleX = angle2;
-}
-
-// draw a cloud but this time we use the impostor texture
-void SGNewCloud::RenderBB(sgVec3 deltaPos, bool first_time, float dist_center) {
-
-		sgVec3 translate;
-		sgSubVec3( translate, center, deltaPos);
-
-		// blend clouds with sky based on distance to limit the contrast of distant cloud
-		float CloudVisFade = (1.0f * SGCloudField::get_CloudVis());
-
-		float t = 1.0f - (dist_center - 1.0*radius) / CloudVisFade;
-		if ( t < 0.0f ) 
-			return;
-		if( t > 1.0f )
-			t = 1.0f;
-		if( t > 0.50f )
-			t *= 1.1f;
-        glColor4f(t, t, t, t);
-        float r = radius;
-		// compute the rotations so that the quad is facing the camera
-		sgVec3 pos;
-		sgSetVec3( pos, translate[SG_X], translate[SG_Z], translate[SG_Y] );
-		sgCopyVec3( translate, pos );
-		pos[2] += deltaPos[1];
-
-		sgNormaliseVec3( translate );
-		sgVec3 x, y, up = {0.0f, 0.0f, 1.0f};
-		sgVectorProductVec3(x, translate, up);
-		sgVectorProductVec3(y, x, translate);
-		if(first_time) {
-			sgCopyVec3( rotX, x );
-			sgCopyVec3( rotY, y );
-		} else if(fabs(sgScalarProductVec3(rotX, x)) < 0.93f || fabs(sgScalarProductVec3(rotY, y)) < 0.93f ) {
-			// ask for a redraw of this impostor if the view angle changed too much
-			sgCopyVec3( rotX, x );
-			sgCopyVec3( rotY, y );
-			cldCache->invalidate(cloudId, bbId);
-		}
-		sgScaleVec3(x, r);
-		sgScaleVec3(y, r);
-
-		sgVec3 left, right;
-		sgCopyVec3( left, pos );
-		sgSubVec3 (left, y);
-		sgAddVec3 (right, left, x);
-		sgSubVec3 (left, x);
-
-		glBegin(GL_QUADS);
-			glTexCoord2f(0.0f, 0.0f);
-            glVertex3fv(left);
-			glTexCoord2f(1.0f, 0.0f);
-            glVertex3fv(right);
-			sgScaleVec3( y, 2.0 );
-			sgAddVec3( left, y);
-			sgAddVec3( right, y);
-			glTexCoord2f(1.0f, 1.0f);
-            glVertex3fv(right);
-			glTexCoord2f(0.0f, 1.0f);
-            glVertex3fv(left);
-		glEnd();
-
-#if 0	// debug only
-		int age = cldCache->queryImpostorAge(bbId);
-		// draw a red border for the newly generated BBs else draw a white border
-        if( age < 200 )
-            glColor3f(1, 0, 0);
-		else
-            glColor3f(1, 1, 1);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glBegin(GL_QUADS);
-            glVertex2f(-r, -r);
-            glVertex2f(r, -r);
-            glVertex2f(r, r);
-            glVertex2f(-r, r);
-        glEnd();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-#endif
-
-}
-
-// determine if it is a good idea to use an impostor to render the cloud
-bool SGNewCloud::isBillboardable(float dist) {
-
-	if( dist <= ( 2.1f * radius ) ) {
-        // inside cloud
-        return false;
-	}
-	if( (dist-radius) <= nearRadius ) {
-        // near clouds we don't want to use BB
-        return false;
-	}
-	return true;
-}
-
-
-
-// render the cloud, fakepos is a relative position inside the cloud field
-void SGNewCloud::Render(sgVec3 FakeEyePos) {
-	sgVec3 dist;
-
-	sgVec3 deltaPos;
-	sgCopyVec3( deltaPos, FakeEyePos);
-	deltaPos[1] = 0.0;
-    sgSubVec3( dist, center, FakeEyePos);
-    float dist_center = sgLengthVec3(dist);
-
-	if( fadeActive ) {
-		fadetimer += SGCloudField::timer_dt;
-		if( fadetimer > duration + pauseLength ) {
-			// fade out after fade in, and vice versa
-			direction = ! direction;
-			fadetimer = 0.0;
-		}
-	}
-
-	if( !isBillboardable(dist_center) ) {
-		// not a good candidate for impostors, draw a real cloud
-		Render3Dcloud(false, FakeEyePos, deltaPos, dist_center);
-	} else {
-		GLuint texID = 0;
-			bool first_time = false;
-			// lets use our impostor
-			if( bbId >= 0)
-				texID = cldCache->QueryTexID(cloudId, bbId);
-
-			// ok someone took our impostor, so allocate a new one
-			if( texID == 0 ) {
-                // allocate a new Impostor
-                bbId = cldCache->alloc(cloudId);
-				texID = cldCache->QueryTexID(cloudId, bbId);
-				first_time = true;
-			}
-			if( texID == 0 ) {
-                // no more free texture in the pool
-                Render3Dcloud(false, FakeEyePos, deltaPos, dist_center);
-			} else {
-                float angleX=0.0f, angleY=0.0f;
-
-				// force a redraw of the impostor if the cloud shape has changed enought
-				float step = ( list_spriteDef.size() * (direction ? fadetimer : duration-fadetimer)) / duration;
-				if( fabs(step - last_step) > 0.5f )
-					cldCache->invalidate(cloudId, bbId);
-
-				if( ! cldCache->isBbValid( cloudId, bbId, angleY, angleX)) {
-                    // we must build or rebuild this billboard
-					// start render to texture
-                    cldCache->beginCapture();
-					// set transformation matrices
-                    cldCache->setRadius(radius, dist_center);
-					gluLookAt(FakeEyePos[SG_X], FakeEyePos[SG_Z], FakeEyePos[SG_Y], center[SG_X], center[SG_Z], center[SG_Y], 0.0, 0.0, 1.0);
-					// draw into texture
-                    Render3Dcloud(true, FakeEyePos, deltaPos, dist_center);
-					// save rotation angles for later use
-					// TODO:this is not ok
-					cldCache->setReference(cloudId, bbId, angleY, angleX);
-					// save the rendered cloud into the cache
-					cldCache->setTextureData( bbId );
-					// finish render to texture and go back into standard context
-                    cldCache->endCapture();
-				}
-                // draw the newly built BB or an old one
-                glBindTexture(GL_TEXTURE_2D, texID);
-                RenderBB(FakeEyePos, first_time, dist_center);
-			}
-	}
-
-}
-

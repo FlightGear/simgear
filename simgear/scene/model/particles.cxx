@@ -26,6 +26,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/structure/OSGVersion.hxx>
 
 #include <osgParticle/SmokeTrailEffect>
 #include <osgParticle/FireEffect>
@@ -43,6 +44,10 @@
 #include <osg/Node>
 
 #include "particles.hxx"
+
+#if SG_OSG_VERSION >= 27004
+#define OSG_PARTICLE_FIX 1
+#endif
 
 namespace simgear
 {
@@ -111,8 +116,6 @@ osg::Group* Particles::getCommonRoot()
     return commonRoot.get();
 }
 
-// Enable this once particle fix is in OSG.
-// #define OSG_PARTICLE_FIX 1
 void transformParticles(osgParticle::ParticleSystem* particleSys,
                         const osg::Matrix& mat)
 {

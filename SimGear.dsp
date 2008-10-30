@@ -1651,6 +1651,21 @@ SOURCE=.\simgear\scene\sky\newcloud.cxx
 !ENDIF 
 
 # End Source File
+# Begin Source File
+
+SOURCE=.\simgear\scene\sky\CloudShaderGeometry.cxx
+
+!IF  "$(CFG)" == "SimGear - Win32 Release"
+
+# PROP Intermediate_Dir "Release\Lib_sgsky"
+
+!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
+
+# PROP Intermediate_Dir "Debug\Lib_sgsky"
+
+!ENDIF 
+
+# End Source File
 # End Group
 # Begin Group "Lib_sgtgdb"
 

@@ -58,7 +58,7 @@ public:
 	~SGNewCloud();
 
         // Generate a Cloud
-        osg::ref_ptr<osg::LOD> genCloud ();
+        osg::ref_ptr<osg::Geode> genCloud ();
 
 private:
 
@@ -75,8 +75,10 @@ private:
         int num_textures_x;
         int num_textures_y;
         const string texture;
-        
+        osg::Geometry* quad;
         osg::ref_ptr<osg::StateSet> stateSet;
+
+        osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 
 public:
 

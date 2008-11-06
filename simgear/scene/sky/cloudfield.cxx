@@ -74,92 +74,109 @@ void SGCloudField::set_density(float density) {
 bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
         		       double dt )
 {
-        osg::Matrix T, LON, LAT;
-
+    osg::Matrix T, LON, LAT;
+    
+    SGGeoc pos = SGGeoc::fromGeod(SGGeod::fromRad(lon, lat));
+    
+    double dist = SGGeodesy::distanceM(cld_pos, pos);
+    
+    if (dist > (fieldSize * 2)) {
+        // First time or very large distance
+        SGVec3<double> cart;
+        SGGeodesy::SGGeodToCart(SGGeod::fromRad(lon, lat), cart);
+        T.makeTranslate(cart.osg());
+        
         LON.makeRotate(lon, osg::Vec3(0, 0, 1));
         LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
 
-        osg::Vec3 u = up.osg();
-        u.normalize();
-
-        if ((last_lon == 0.0f) || (fabs(last_lon - lon) > 1.0) || (fabs(last_lat - lat) > 1.0))
-        {
-                // First time, or large delta requires repositioning from scratch.
-                // TODO: Make this calculation better - a 0.5 degree shift will take a number
-                // of reposition calls to correct at the moment.
-                
-                // combine p and asl (meters) to get translation offset.
-                osg::Vec3 pos = p.osg();
-                pos += u;
-                
-                T.makeTranslate(pos);
-
-                field_transform->setMatrix( LAT*LON*T );
-                last_lon = lon;
-                last_lat = lat;
-                last_pos = p.osg();
+        field_transform->setMatrix( LAT*LON*T );
+        cld_pos = SGGeoc::fromGeod(SGGeod::fromRad(lon, lat));
+    } else if (dist > fieldSize) {
+        // Distance requires repositioning of cloud field.
+        
+        // We can easily work out the direction to reposition
+        // from the course between the cloud position and the
+        // camera position.
+        SGGeoc pos = SGGeoc::fromGeod(SGGeod::fromRad(lon, lat));
+        
+        float crs = SGGeoc::courseDeg(cld_pos, pos);
+        if ((crs < 45.0) || (crs > 315.0)) {
+            SGGeodesy::advanceRadM(cld_pos, 0.0, fieldSize, cld_pos);
         }
-        else
-        {
-                // Rotation positon back to simple X-Z space.
-                osg::Vec3 pos = last_pos;
-                pos += u;
-                
-                T.makeTranslate(pos);
-                
-                osg::Matrix U = LAT*LON;
-                osg::Vec3 x = osg::Vec3f(fieldSize, 0.0, 0.0)*U;
-                osg::Vec3 y = osg::Vec3f(0.0, fieldSize, 0.0)*U;
-
-                osg::Matrix V;
-                V.makeIdentity();
-                V.invert(U*T);
-                
-                osg::Vec3 q = pos*V;
-                
-                // Shift the field if we've moved away from the centre box.
-                if (q.x() >  fieldSize) last_pos = last_pos + x;
-                if (q.x() < -fieldSize) last_pos = last_pos - x;
-                if (q.y() >  fieldSize) last_pos = last_pos + y;
-                if (q.y() < -fieldSize) last_pos = last_pos - y;
-                
-                pos = last_pos;
-                pos += u;
-                
-                T.makeTranslate(pos);
-                field_transform->setMatrix( LAT*LON*T );
+        
+        if ((crs > 45.0) && (crs < 135.0)) {
+            SGGeodesy::advanceRadM(cld_pos, SGD_PI_2, fieldSize, cld_pos);
         }
+
+        if ((crs > 135.0) && (crs < 225.0)) {
+            SGGeodesy::advanceRadM(cld_pos, SGD_PI, fieldSize, cld_pos);
+        }
+        
+        if ((crs > 225.0) && (crs < 315.0)) {
+            SGGeodesy::advanceRadM(cld_pos, SGD_PI + SGD_PI_2, fieldSize, cld_pos);
+        }
+        
+        SGVec3<double> cart;
+        SGGeodesy::SGGeodToCart(SGGeod::fromRad(cld_pos.getLongitudeRad(), cld_pos.getLatitudeRad()), cart);
+        T.makeTranslate(cart.osg());
+        
+        LON.makeRotate(cld_pos.getLongitudeRad(), osg::Vec3(0, 0, 1));
+        LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - cld_pos.getLatitudeRad(), osg::Vec3(0, 1, 0));
+
+        field_transform->setMatrix( LAT*LON*T );
+    }
     return true;
 }
 
 SGCloudField::SGCloudField() :
         field_root(new osg::Group),
         field_transform(new osg::MatrixTransform),
-        field_group(new osg::Switch),
 	deltax(0.0),
 	deltay(0.0),
-        last_lon(0.0),
-        last_lat(0.0),
 	last_course(0.0),
 	last_density(0.0),
         defined3D(false)               
 {
-        field_root->addChild(field_transform.get()); 
-        field_group->setName("3Dcloud");
-
-        // We duplicate the defined field group in a 3x3 array. This way,
-        // we can simply shift entire groups around.
-        for(int x = -1 ; x <= 1 ; x++) {
-                for(int y = -1 ; y <= 1 ; y++ ) {
-                        osg::ref_ptr<osg::PositionAttitudeTransform> transform =
-                                new osg::PositionAttitudeTransform;
-                        transform->addChild(field_group.get());
-                        transform->setPosition(osg::Vec3(x*fieldSize, y * fieldSize, 0.0));
-
-                        field_transform->addChild(transform.get());
-                }
+    cld_pos = SGGeoc();
+    field_root->addChild(field_transform.get());         
+    
+    osg::ref_ptr<osg::Group> quad_root = new osg::Group();
+    osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
+    
+    for (int i = 0; i < BRANCH_SIZE; i++) {
+        for (int j = 0; j < BRANCH_SIZE; j++) {
+            quad[i][j] = new osg::LOD();
+            quad[i][j]->setName("Quad");
+            quad_root->addChild(quad[i][j].get());
         }
+    }
+    
+    for (int x = 0; x < QUADTREE_SIZE; x++) {
+        for (int y = 0; y < QUADTREE_SIZE; y++) {
+            field_group[x][y]= new osg::Switch;
+            field_group[x][y]->setName("3D cloud group");
+            
+            // Work out where to put this node in the quad tree
+            int i = (int) (BRANCH_SIZE * ((float) x) / ((float) QUADTREE_SIZE));
+            int j = (int) (BRANCH_SIZE * ((float) y) / ((float) QUADTREE_SIZE));
+            quad[i][j]->addChild(field_group[x][y].get(), 0.0f, 20000.0f);
+        }
+    }
 
+    // We duplicate the defined field group in a 3x3 array. This way,
+    // we can simply shift entire groups around.
+    // TODO: "Bend" the edge groups so when shifted they line up.
+    // Currently the clouds "jump down" when we reposition them.
+    for(int x = -1 ; x <= 1 ; x++) {
+        for(int y = -1 ; y <= 1 ; y++ ) {
+            osg::ref_ptr<osg::PositionAttitudeTransform> transform =
+                    new osg::PositionAttitudeTransform;
+            transform->addChild(quad_root.get());
+            transform->setPosition(osg::Vec3(x*fieldSize, y * fieldSize, 0.0));
+
+            field_transform->addChild(transform.get());
+        }
+    }
 }
 
 SGCloudField::~SGCloudField() {
@@ -167,12 +184,17 @@ SGCloudField::~SGCloudField() {
 
 
 void SGCloudField::clear(void) {
-        int num_children = field_group->getNumChildren();
+    for (int x = 0; x < QUADTREE_SIZE; x++) {
+        for (int y = 0; y < QUADTREE_SIZE; y++) {
+            int num_children = field_group[x][y]->getNumChildren();
 
-        for (int i = 0; i < num_children; i++) {
-                field_group->removeChild(i);
+            for (int i = 0; i < num_children; i++) {
+                field_group[x][y]->removeChild(i);
+            }
         }
-        SGCloudField::defined3D = false;
+    }
+    
+    SGCloudField::defined3D = false;
 }
 
 // use a table or else we see poping when moving the slider...
@@ -194,18 +216,22 @@ void SGCloudField::applyDensity(void) {
 
         int row = (int) (density / 10.0);
         int col = 0;
-        int num_children = field_group->getNumChildren();
 
         if (density != last_density) {
+            for (int x = 0; x < QUADTREE_SIZE; x++) {
+                for (int y = 0; y < QUADTREE_SIZE; y++) {
                 // Switch on/off the children depending on the required density.
-                for (int i = 0; i < num_children; i++) {
+                    int num_children = field_group[x][y]->getNumChildren();
+                    for (int i = 0; i < num_children; i++) {
                         if (++col > 9) col = 0;
                         if ( densTable[row][col] ) {
-                                field_group->setValue(i, true);
+                            field_group[x][y]->setValue(i, true);
                         } else {
-                                field_group->setValue(i, false);
+                            field_group[x][y]->setValue(i, false);
                         }
+                    }
                 }
+            }
         }
 
         last_density = density;
@@ -213,11 +239,21 @@ void SGCloudField::applyDensity(void) {
 
 void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
         defined3D = true;
-        osg::ref_ptr<osg::LOD> lod = cloud->genCloud();
+        osg::ref_ptr<osg::Geode> geode = cloud->genCloud();
+        
+        // Determine which quadtree to put it in.
+        int x = (int) floor((pos.x() + fieldSize/2.0) * QUADTREE_SIZE / fieldSize);
+        if (x >= QUADTREE_SIZE) x = (QUADTREE_SIZE - 1);
+        if (x < 0) x = 0;
+        
+        int y = (int) floor((pos.y() + fieldSize/2.0) * QUADTREE_SIZE / fieldSize);
+        if (y >= QUADTREE_SIZE) y = (QUADTREE_SIZE - 1);
+        if (y < 0) y = 0;
+
         osg::ref_ptr<osg::PositionAttitudeTransform> transform = new osg::PositionAttitudeTransform;
 
         transform->setPosition(pos.osg());
-        transform->addChild(lod.get());
-
-        field_group->addChild(transform.get());
+        transform->addChild(geode.get());
+        
+        field_group[x][y]->addChild(transform.get());
 }

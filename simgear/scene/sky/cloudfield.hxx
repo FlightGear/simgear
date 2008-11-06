@@ -56,6 +56,10 @@ private:
 	};
 
         float Rnd(float);
+        
+        // We create a quadtree two levels deep
+        static const int BRANCH_SIZE = 16;
+        static const int QUADTREE_SIZE = 32;
 
 	// this is a relative position only, with that we can move all clouds at once
 	sgVec3 relative_position;
@@ -63,13 +67,14 @@ private:
 
         osg::ref_ptr<osg::Group> field_root;
         osg::ref_ptr<osg::MatrixTransform> field_transform;
-        osg::ref_ptr<osg::Switch> field_group;
+        osg::ref_ptr<osg::Switch> field_group[QUADTREE_SIZE][QUADTREE_SIZE];
+        osg::ref_ptr<osg::LOD> field_lod;
 
 	double deltax, deltay, alt;
-        double last_lon, last_lat, last_course;
+        double last_course;
         sgSphere field_sphere;
 	float	last_density;
-        osg::Vec3 last_pos;
+        SGGeoc cld_pos;
 
 public:
 

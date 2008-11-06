@@ -35,16 +35,36 @@ namespace simgear
 void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
 {
     osg::State& state = *renderInfo.getState();
+    osg::Matrix vm = state.getModelViewMatrix();
+    
+    //TODO: It isn't clear whether this is worth the perf hit ATM.
+    
+    // Do a single iteration of a bubble sort. We do this in reverse
+    // so that elements closest to the camera bubble to the front than
+    // the elements further away
+    for(int i = (_cloudsprites.size() -2); i >= 0; i--)
+    {
+        osg::Vec4f p = vm * osg::Vec4f(_cloudsprites[i]->position.osg(),   1.0f);
+        osg::Vec4f q = vm * osg::Vec4f(_cloudsprites[i+1]->position.osg(), 1.0f);
+        
+        if (p.z() > q.z())
+        {
+            CloudSprite c = *_cloudsprites[i];
+            *_cloudsprites[i] = *_cloudsprites[i+1];
+            *_cloudsprites[i+1] = c;
+        }
+    }
+    
     const Extensions* extensions = getExtensions(state.getContextID(),true);
 
     for(CloudSpriteList::const_iterator t = _cloudsprites.begin(); t != _cloudsprites.end(); ++t)
     {
-        extensions->glVertexAttrib1f(TEXTURE_INDEX_X, (GLfloat) t->texture_index_x/varieties_x);
-        extensions->glVertexAttrib1f(TEXTURE_INDEX_Y, (GLfloat) t->texture_index_y/varieties_y);
-        extensions->glVertexAttrib1f(WIDTH, (GLfloat) t->width);
-        extensions->glVertexAttrib1f(HEIGHT, (GLfloat) t->height);
-        extensions->glVertexAttrib1f(SHADE, (GLfloat) t->shade);
-        glColor4f(t->position.x(), t->position.y(), t->position.z(), 1.0);
+        extensions->glVertexAttrib1f(TEXTURE_INDEX_X, (GLfloat) (*t)->texture_index_x/varieties_x);
+        extensions->glVertexAttrib1f(TEXTURE_INDEX_Y, (GLfloat) (*t)->texture_index_y/varieties_y);
+        extensions->glVertexAttrib1f(WIDTH, (GLfloat) (*t)->width);
+        extensions->glVertexAttrib1f(HEIGHT, (GLfloat) (*t)->height);
+        extensions->glVertexAttrib1f(SHADE, (GLfloat) (*t)->shade);
+        glColor4f((*t)->position.x(), (*t)->position.y(), (*t)->position.z(), 1.0);
         _geometry->draw(renderInfo);
     }
 }
@@ -56,10 +76,10 @@ BoundingBox CloudShaderGeometry::computeBound() const
     for(CloudSpriteList::const_iterator itr = _cloudsprites.begin();
         itr != _cloudsprites.end();
         ++itr) {
-         bb.expandBy(geom_box.corner(0)*itr->width +
-                     osg::Vec3( itr->position.x(), itr->position.y(), itr->position.z() ));
-         bb.expandBy(geom_box.corner(7)*itr->height +
-                     osg::Vec3( itr->position.x(), itr->position.y(), itr->position.z() ));
+         bb.expandBy(geom_box.corner(0)*(*itr)->width +
+                 osg::Vec3( (*itr)->position.x(), (*itr)->position.y(), (*itr)->position.z() ));
+         bb.expandBy(geom_box.corner(7)*(*itr)->height +
+                 osg::Vec3( (*itr)->position.x(), (*itr)->position.y(), (*itr)->position.z() ));
     }
     return bb;
 }
@@ -95,7 +115,7 @@ bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
                 fr[4].getFloat(w) && fr[4].getFloat(h)&& fr[4].getFloat(s)) {
                     fr += 5;
                     //SGVec3f* v = new SGVec3f(v.x(), v.y(), v.z());
-                    geom._cloudsprites.push_back(CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s));
+                    geom._cloudsprites.push_back(new CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s));
             } else {
                 ++fr;
             }
@@ -113,14 +133,14 @@ bool CloudShaderGeometry_writeLocalData(const Object& obj, Output& fw)
     fw.indent() << "instances " << geom._cloudsprites.size() << std::endl;
     fw.indent() << "{" << std::endl;
     fw.moveIn();
-    for (CloudShaderGeometry::CloudSpriteList::const_iterator iter
+    for (CloudShaderGeometry::CloudSpriteList::const_iterator itr
              = geom._cloudsprites.begin();
-         iter != geom._cloudsprites.end();
-         ++iter) {
-        fw.indent() << iter->position.x() << " " << iter->position.y() << " " 
-                << iter->position.z() << " " << iter->texture_index_x << " "
-                << iter->texture_index_y << " "  
-                << iter->width << " " << iter->height << " " << iter->shade << std::endl;
+         itr != geom._cloudsprites.end();
+         ++itr) {
+             fw.indent() << (*itr)->position.x() << " " << (*itr)->position.y() << " " 
+                     << (*itr)->position.z() << " " << (*itr)->texture_index_x << " "
+                     << (*itr)->texture_index_y << " "  
+                     << (*itr)->width << " " << (*itr)->height << " " << (*itr)->shade << std::endl;
     }
     fw.moveOut();
     fw.indent() << "}" << std::endl;

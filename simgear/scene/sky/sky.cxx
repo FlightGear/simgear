@@ -187,19 +187,6 @@ SGSky::get_cloud_layer_count () const
     return cloud_layers.size();
 }
 
-void SGSky::set_3dClouds(bool enable)
-{
-    for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
-        cloud_layers[i]->set_enable3dClouds(enable);
-    }
-
-    clouds_3d_enabled = enable;
-}
-
-bool SGSky::get_3dClouds() const {
-    return clouds_3d_enabled;
-}
-
 double SGSky::get_3dCloudDensity() const {
     return SGCloudField::get_density();
 }
@@ -250,7 +237,7 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	}
 
         if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
-             get_3dClouds()) {
+             cloud_layers[i]->get_layer3D()->defined3D) {
             // do nothing, clear layers aren't drawn, don't affect
             // visibility andn dont' need to be faded in or out.
         } else if ( (cloud_layers[i]->getCoverage() == 

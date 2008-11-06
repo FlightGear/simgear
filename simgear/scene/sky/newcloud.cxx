@@ -65,7 +65,6 @@ static char vertexShaderSource[] =
     "#version 120\n"
     "\n"
     "varying float fogFactor;\n"
-    "varying float alphaBlend;\n"
     "attribute float textureIndexX;\n"
     "attribute float textureIndexY;\n"
     "attribute float wScale;\n"
@@ -103,25 +102,22 @@ static char vertexShaderSource[] =
     "  vec4 backlight = 0.8 * gl_LightSource[0].ambient + 0.2 * gl_LightSource[0].diffuse;\n"
     "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
     "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
+// As we get within 100m of the sprite, it is faded out
     "  gl_FrontColor.a = smoothstep(10.0, 100.0, fogCoord);\n"
     "  gl_BackColor = gl_FrontColor;\n"
 // Fog doesn't affect clouds as much as other objects.        
-    "  fogFactor = exp( -gl_Fog.density * fogCoord);\n"
+    "  fogFactor = exp( -gl_Fog.density * fogCoord * 0.5);\n"
     "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
-// As we get within 100m of the sprite, it is faded out
-    "  alphaBlend = smoothstep(10.0, 100.0, fogCoord);\n"
     "}\n";
 
 static char fragmentShaderSource[] = 
     "uniform sampler2D baseTexture; \n"
     "varying float fogFactor;\n"
-    "varying float alphaBlend;\n"
     "\n"
     "void main(void)\n"
     "{\n"
     "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
     "  vec4 finalColor = base * gl_Color;\n"
-//    "  finalColor.a = min(alphaBlend, finalColor.a);\n"
     "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
     "}\n";
 
@@ -238,12 +234,14 @@ SGNewCloud::SGNewCloud(const SGPath &tex_path,
     } else {
         stateSet = iter->second.get();
     }
+    
+    quad = createOrthQuad(min_sprite_width, min_sprite_height, num_textures_x, num_textures_y);
 }
 
 SGNewCloud::~SGNewCloud() {
 }
 
-osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y)
+osg::Geometry* SGNewCloud::createOrthQuad(float w, float h, int varieties_x, int varieties_y)
 {
     // Create front and back polygons so we don't need to screw around
     // with two-sided lighting in the shader.
@@ -292,16 +290,16 @@ static float Rnd(float n) {
     return n * (-0.5f + (sg_random() + sg_random()) / 2.0f);
 }
 
-osg::ref_ptr<LOD> SGNewCloud::genCloud() {
-    LOD* result = new LOD;
+osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     Geode* geode = new Geode;
     CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y);
     
-    Geometry* quad = createOrthQuad(min_sprite_width, min_sprite_height, num_textures_x, num_textures_y);
     
-    // Determine how big this specific cloud instance is.
-    float width = min_width + sg_random() * (max_width - min_width);
-    float height = min_height + sg_random() * (max_height - min_height);
+    // Determine how big this specific cloud instance is. Note that we subtract
+    // the sprite size because the width/height is used to define the limits of
+    // the center of the sprites, not their edges.
+    float width = min_width + sg_random() * (max_width - min_width) - max_sprite_width;
+    float height = min_height + sg_random() * (max_height - min_height) - max_sprite_height;
     
     // Determine the cull distance. This is used to remove sprites that are too close together.
     // The value is squared as we use vector calculations.
@@ -309,10 +307,14 @@ osg::ref_ptr<LOD> SGNewCloud::genCloud() {
     
     for (int i = 0; i < num_sprites; i++)
     {
-        // Determine the position of the sprite.
-        SGVec3f *pos = new SGVec3f(Rnd(width),
-                                   Rnd(width),
-                                   Rnd(height));
+        // Determine the position of the sprite. Rather than being completely random,
+        // sprites are placed on a squashed sphere.
+        double theta = sg_random() * SGD_2PI;
+        float x = width * cos(theta) * 0.5f;
+        float y = width * sin(theta) * 0.5f;
+        float z = height * cos(sg_random() * SGD_2PI) * 0.5f; 
+        
+        SGVec3f *pos = new SGVec3f(x, y, z); 
 
         // Determine the height and width as scaling factors on the minimum size (used to create the quad)
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
@@ -320,10 +322,10 @@ osg::ref_ptr<LOD> SGNewCloud::genCloud() {
         
         // The shade varies from bottom_shade to 1.0 non-linearly
         float shade;
-        if (pos->z() > 0.0f) { 
+        if (z > 0.0f) { 
             shade = 1.0f; 
         } else {
-            shade = ((2 * pos->z() + height) / height) * (1 - bottom_shade) + bottom_shade;
+            shade = ((2 * z + height) / height) * (1 - bottom_shade) + bottom_shade;
         }
         
         // Determine the sprite texture indexes;
@@ -340,6 +342,5 @@ osg::ref_ptr<LOD> SGNewCloud::genCloud() {
     geode->addDrawable(sg);
     geode->setName("3D cloud");
     geode->setStateSet(stateSet.get());
-    result->addChild(geode, 0, 20000);
-    return result;
+    return geode;
 }

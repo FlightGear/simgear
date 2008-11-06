@@ -414,14 +414,6 @@ public:
 	effective_visibility = visibility = (v <= 25.0) ? 25.0 : v;
     }
 
-    /** Get whether 3D clouds are enabled */
-    virtual bool get_3dClouds() const;
-
-    /** Set whether 3D clouds are enabled
-     * @param enable Whether to enable 3D clouds
-     */
-    virtual void set_3dClouds(bool enable);
-
     /** Get 3D cloud density */
     virtual double get_3dCloudDensity() const;
 

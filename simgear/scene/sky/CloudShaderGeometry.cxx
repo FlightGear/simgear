@@ -34,27 +34,32 @@ namespace simgear
 {
 void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
 {
+    if (!_cloudsprites.size()) return;
+    
     osg::State& state = *renderInfo.getState();
     osg::Matrix vm = state.getModelViewMatrix();
     
     //TODO: It isn't clear whether this is worth the perf hit ATM.
     
-    // Do a single iteration of a bubble sort. We do this in reverse
-    // so that elements closest to the camera bubble to the front than
-    // the elements further away
-    for(int i = (_cloudsprites.size() -2); i >= 0; i--)
+    // Transform the viewing direction, represented by the eye space vector (0,0,-1, 0), into model-space
+    // (here we simply take the opposite direction and reverse the ordering when sorting)
+    osg::Vec3f view_dir(vm(0, 2), vm(1, 2), vm(2, 2));      // Caveat: OpenSceneGraph matrices are transposed!
+
+    float p = view_dir*_cloudsprites[0]->position.osg();
+    // Do a single iteration of a bubble sort, sorting
+    // back to front.
+    for(int i = 0; i < _cloudsprites.size() - 1; i++)
     {
-        osg::Vec4f p = vm * osg::Vec4f(_cloudsprites[i]->position.osg(),   1.0f);
-        osg::Vec4f q = vm * osg::Vec4f(_cloudsprites[i+1]->position.osg(), 1.0f);
-        
-        if (p.z() > q.z())
-        {
+        float q = view_dir*_cloudsprites[i+1]->position.osg();
+        if (p > q) {  
             CloudSprite c = *_cloudsprites[i];
             *_cloudsprites[i] = *_cloudsprites[i+1];
             *_cloudsprites[i+1] = c;
         }
+        else
+            p = q;
     }
-    
+
     const Extensions* extensions = getExtensions(state.getContextID(),true);
 
     for(CloudSpriteList::const_iterator t = _cloudsprites.begin(); t != _cloudsprites.end(); ++t)

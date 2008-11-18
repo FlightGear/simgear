@@ -1508,6 +1508,72 @@ private:
 
 };
 
+// Convenice functions for use in templates
+template<typename T>
+T getValue(const SGPropertyNode*);
+
+template<>
+inline bool getValue<bool>(const SGPropertyNode* node) { return node->getBoolValue(); }
+
+template<>
+inline int getValue<int>(const SGPropertyNode* node) { return node->getIntValue(); }
+
+template<>
+inline long getValue<long>(const SGPropertyNode* node) { return node->getLongValue(); }
+
+template<>
+inline float getValue<float>(const SGPropertyNode* node)
+{
+    return node->getFloatValue();
+}
+
+template<>
+inline double getValue<double>(const SGPropertyNode* node)
+{
+    return node->getDoubleValue();
+}
+
+template<>
+inline const char * getValue<const char*>(const SGPropertyNode* node)
+{
+    return node->getStringValue ();
+}
+
+inline bool setValue(SGPropertyNode* node, bool value)
+{
+    return node->setBoolValue(value);
+}
+
+inline bool setValue(SGPropertyNode* node, int value)
+{
+    return node->setIntValue(value);
+}
+
+inline bool setValue(SGPropertyNode* node, long value)
+{
+    return node->setLongValue(value);
+}
+
+inline bool setValue(SGPropertyNode* node, float value)
+{
+    return node->setFloatValue(value);
+}
+
+inline bool setValue(SGPropertyNode* node, double value)
+{
+    return node->setDoubleValue(value);
+}
+
+inline bool setValue(SGPropertyNode* node, const char* value)
+{
+    return node->setStringValue(value);
+}
+
+inline bool setValue (SGPropertyNode* node, const std::string& value)
+{
+    return node->setStringValue(value.c_str());
+}
+
 #endif // __PROPS_HXX
 
 // end of props.hxx

@@ -69,6 +69,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         extensions->glVertexAttrib1f(WIDTH, (GLfloat) (*t)->width);
         extensions->glVertexAttrib1f(HEIGHT, (GLfloat) (*t)->height);
         extensions->glVertexAttrib1f(SHADE, (GLfloat) (*t)->shade);
+        extensions->glVertexAttrib1f(CLOUD_HEIGHT, (GLfloat) (*t)->cloud_height);
         glColor4f((*t)->position.x(), (*t)->position.y(), (*t)->position.z(), 1.0);
         _geometry->draw(renderInfo);
     }
@@ -114,13 +115,13 @@ bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
         while (!fr.eof() && fr[0].getNoNestedBrackets() > entry) {
             SGVec3f v;
             int tx, ty;
-            float w, h, s;
+            float w, h, s, ch;
             if (fr[0].getFloat(v.x()) && fr[1].getFloat(v.y())
-                && fr[2].getFloat(v.z()) && fr[3].getInt(tx) && fr[3].getInt(ty) &&  
-                fr[4].getFloat(w) && fr[4].getFloat(h)&& fr[4].getFloat(s)) {
+                && fr[2].getFloat(v.z()) && fr[3].getInt(tx) && fr[4].getInt(ty) &&  
+                fr[5].getFloat(w) && fr[6].getFloat(h)&& fr[7].getFloat(s) && fr[8].getFloat(ch)) {
                     fr += 5;
                     //SGVec3f* v = new SGVec3f(v.x(), v.y(), v.z());
-                    geom._cloudsprites.push_back(new CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s));
+                    geom._cloudsprites.push_back(new CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s,ch));
             } else {
                 ++fr;
             }
@@ -144,8 +145,9 @@ bool CloudShaderGeometry_writeLocalData(const Object& obj, Output& fw)
          ++itr) {
              fw.indent() << (*itr)->position.x() << " " << (*itr)->position.y() << " " 
                      << (*itr)->position.z() << " " << (*itr)->texture_index_x << " "
-                     << (*itr)->texture_index_y << " "  
-                     << (*itr)->width << " " << (*itr)->height << " " << (*itr)->shade << std::endl;
+                     << (*itr)->texture_index_y << " "  << (*itr)->width << " " 
+                     << (*itr)->height << " " << (*itr)->shade 
+                     << (*itr)->cloud_height << " "<< std::endl;
     }
     fw.moveOut();
     fw.indent() << "}" << std::endl;

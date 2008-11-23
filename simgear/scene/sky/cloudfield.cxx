@@ -61,9 +61,10 @@ using std::vector;
 #include <ieeefp.h>
 #endif
 
-double SGCloudField::fieldSize = 50000.0;
-float SGCloudField::density = 100.0;
+float SGCloudField::fieldSize = 50000.0f;
+float SGCloudField::density = 100.0f;
 double SGCloudField::timer_dt = 0.0;
+int reposition_count = 0;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
 void SGCloudField::set_density(float density) {
@@ -75,6 +76,11 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         		       double dt )
 {
     osg::Matrix T, LON, LAT;
+    
+    // Calculating the reposition information is expensive. 
+    // Only perform the reposition every 60 frames.
+    reposition_count = (reposition_count + 1) % 60;
+    if ((reposition_count != 0) || !defined3D) return false;
     
     SGGeoc pos = SGGeoc::fromGeod(SGGeod::fromRad(lon, lat));
     

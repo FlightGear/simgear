@@ -47,6 +47,7 @@ class CloudShaderGeometry : public osg::Drawable
         const static unsigned int WIDTH = 13;
         const static unsigned int HEIGHT = 14;
         const static unsigned int SHADE = 15;
+        const static unsigned int CLOUD_HEIGHT = 16;
         
         CloudShaderGeometry()
         { 
@@ -66,8 +67,8 @@ class CloudShaderGeometry : public osg::Drawable
         META_Object(flightgear, CloudShaderGeometry);
         
         struct CloudSprite {
-            CloudSprite(SGVec3f& p, int tx, int ty, float w, float h, float s) :
-                    position(p), texture_index_x(tx), texture_index_y(ty), width(w), height(h), shade(s)
+            CloudSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float ch) :
+                    position(p), texture_index_x(tx), texture_index_y(ty), width(w), height(h), shade(s), cloud_height(ch)
                     { }
         
                     SGVec3f position;
@@ -76,14 +77,15 @@ class CloudShaderGeometry : public osg::Drawable
                     float width;
                     float height;
                     float shade;
+                    float cloud_height;
         };
         
         typedef std::vector<CloudSprite*> CloudSpriteList;
         
         void insert(CloudSprite* t)
         { _cloudsprites.push_back(t); }
-        void insert(SGVec3f& p, int tx, int ty, float w, float h, float s)
-        { insert(new CloudSprite(p, tx, ty, w, h, s)); }
+        void insert(SGVec3f& p, int tx, int ty, float w, float h, float s, float ch)
+        { insert(new CloudSprite(p, tx, ty, w, h, s, ch)); }
         
         unsigned getNumCloudSprite() const
         { return _cloudsprites.size(); }
@@ -102,7 +104,7 @@ class CloudShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-        void addSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float cull)
+        void addSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float cull, float cloud_height)
         {
             // Only add the sprite if it is further than the cull distance to all other sprites
             for (CloudShaderGeometry::CloudSpriteList::iterator iter = _cloudsprites.begin();
@@ -116,7 +118,7 @@ class CloudShaderGeometry : public osg::Drawable
                 }
             }
 
-            _cloudsprites.push_back(new CloudSprite(p, tx, ty, w, h, s));
+            _cloudsprites.push_back(new CloudSprite(p, tx, ty, w, h, s, cloud_height));
         }
         
         osg::ref_ptr<osg::Drawable> _geometry;

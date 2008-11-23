@@ -70,6 +70,7 @@ static char vertexShaderSource[] =
     "attribute float wScale;\n"
     "attribute float hScale;\n"
     "attribute float shade;\n"
+    "attribute float cloud_height;\n"
     "void main(void)\n"
     "{\n"
     "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndexX, textureIndexY, 0.0, 0.0);\n"
@@ -88,18 +89,19 @@ static char vertexShaderSource[] =
     "  gl_Position.xyz += gl_Vertex.y * r * hScale;\n"
     "  gl_Position.xyz += gl_Vertex.z * w;\n"
     "  gl_Position.xyz += gl_Color.xyz;\n"
-// Determine a lighting normal based on the sprites position from the
-// center of the cloud. 
+// Determine a lighting normal based on the vertex position from the
+// center of the cloud, so that sprite on the opposite side of the cloud to the sun are darker.
     "  float n = dot(normalize(gl_LightSource[0].position.xyz), normalize(mat3x3(gl_ModelViewMatrix) * gl_Position.xyz));\n"
 // Determine the position - used for fog and shading calculations        
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * gl_Position);\n"
     "  float fogCoord = abs(ecPosition.z);\n"
+    "  float fract = smoothstep(0.0, cloud_height, gl_Position.z + cloud_height);\n"
 // Final position of the sprite
     "  gl_Position = gl_ModelViewProjectionMatrix * gl_Position;\n"
 // Limit the normal range from [0,1.0], and apply the shading (vertical factor)
-    "  n = min(smoothstep(-0.5, 0.5, n), shade);\n"
+    "  n = min(smoothstep(-0.5, 0.5, n), shade * (1.0 - fract) + fract);\n"
 // This lighting normal is then used to mix between almost pure ambient (0) and diffuse (1.0) light
-    "  vec4 backlight = 0.8 * gl_LightSource[0].ambient + 0.2 * gl_LightSource[0].diffuse;\n"
+    "  vec4 backlight = 0.9 * gl_LightSource[0].ambient + 0.1 * gl_LightSource[0].diffuse;\n"
     "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
     "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
 // As we get within 100m of the sprite, it is faded out
@@ -199,7 +201,7 @@ SGNewCloud::SGNewCloud(const SGPath &tex_path,
         // Generate the shader etc, if we don't already have one.
         if (!program.valid()) {
             alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(AlphaFunc::GREATER,0.002f);
+            alphaFunc->setFunction(AlphaFunc::GREATER,0.001f);
             program  = new Program;
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
@@ -209,6 +211,7 @@ SGNewCloud::SGNewCloud(const SGPath &tex_path,
             program->addBindAttribLocation("wScale", CloudShaderGeometry::WIDTH);
             program->addBindAttribLocation("hScale", CloudShaderGeometry::HEIGHT);
             program->addBindAttribLocation("shade", CloudShaderGeometry::SHADE);
+            program->addBindAttribLocation("cloud_height", CloudShaderGeometry::CLOUD_HEIGHT);
                   
             Shader* fragment_shader = new Shader(Shader::FRAGMENT, fragmentShaderSource);
             program->addShader(fragment_shader);
@@ -294,25 +297,44 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     Geode* geode = new Geode;
     CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y);
     
-    
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of
     // the center of the sprites, not their edges.
-    float width = min_width + sg_random() * (max_width - min_width) - max_sprite_width;
-    float height = min_height + sg_random() * (max_height - min_height) - max_sprite_height;
+    float width = min_width + sg_random() * (max_width - min_width) - min_sprite_width;
+    float height = min_height + sg_random() * (max_height - min_height) - min_sprite_height;
     
     // Determine the cull distance. This is used to remove sprites that are too close together.
     // The value is squared as we use vector calculations.
-    float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
+    float cull_distance_squared = min_sprite_height * min_sprite_height * 0.05f;
     
     for (int i = 0; i < num_sprites; i++)
     {
         // Determine the position of the sprite. Rather than being completely random,
-        // sprites are placed on a squashed sphere.
-        double theta = sg_random() * SGD_2PI;
-        float x = width * cos(theta) * 0.5f;
-        float y = width * sin(theta) * 0.5f;
-        float z = height * cos(sg_random() * SGD_2PI) * 0.5f; 
+        // we place them on the surface of a distorted sphere. However, we place
+        // the first and second sprites on the top and bottom, and the third in the
+        // center of the sphere (and at maximum size) to ensure good coverage and
+        // reduce the chance of there being "holes" in our cloud.
+        float x, y, z;
+        
+        if (i == 0) {
+            x = 0;
+            y = 0;
+            z = height * 0.5f;
+        } else if (i == 1) {
+            x = 0;
+            y = 0;
+            z = - height * 0.5f;
+        } else if (i == 2) {
+            x = 0;
+            y = 0;
+            z = 0;
+        } else {
+            double theta = sg_random() * SGD_2PI;
+            double elev  = sg_random() * SGD_PI;
+            x = width * cos(theta) * 0.5f * sin(elev);
+            y = width * sin(theta) * 0.5f * sin(elev);
+            z = height * cos(elev) * 0.5f; 
+        }
         
         SGVec3f *pos = new SGVec3f(x, y, z); 
 
@@ -320,12 +342,10 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
         
-        // The shade varies from bottom_shade to 1.0 non-linearly
-        float shade;
-        if (z > 0.0f) { 
-            shade = 1.0f; 
-        } else {
-            shade = ((2 * z + height) / height) * (1 - bottom_shade) + bottom_shade;
+        if (i == 2) {
+            // The center sprite is always maximum size to fill up any holes.
+            sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
+            sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
         }
         
         // Determine the sprite texture indexes;
@@ -335,7 +355,14 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
         int index_y = (int) floor(sg_random() * num_textures_y);
         if (index_y == num_textures_y) { index_y--; }
         
-        sg->addSprite(*pos, index_x, index_y, sprite_width, sprite_height, shade, cull_distance_squared);
+        sg->addSprite(*pos, 
+                      index_x, 
+                      index_y, 
+                      sprite_width, 
+                      sprite_height, 
+                      bottom_shade, 
+                      cull_distance_squared, 
+                      height * 0.5f);
     }
     
     sg->setGeometry(quad);

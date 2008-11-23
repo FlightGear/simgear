@@ -109,7 +109,7 @@ public:
 
 	static float density;
 	static double timer_dt;
-	static double fieldSize;
+	static float fieldSize;
 	
         bool defined3D;
 

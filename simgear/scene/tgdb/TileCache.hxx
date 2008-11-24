@@ -53,6 +53,8 @@ private:
     // Free a tile cache entry
     void entry_free( long cache_index );
 
+    double current_time;
+
 public:
     tile_map_iterator begin() { return tile_cache.begin(); }
     tile_map_iterator end() { return tile_cache.end(); }
@@ -122,6 +124,9 @@ public:
      * @return success/failure
      */
     bool insert_tile( simgear::TileEntry* e );
+
+    void set_current_time(double val) { current_time = val; }
+    double get_current_time() const { return current_time; }
 };
 
 }

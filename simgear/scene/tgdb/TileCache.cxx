@@ -35,7 +35,7 @@ using simgear::TileEntry;
 using simgear::TileCache;
 
 TileCache::TileCache( void ) :
-    max_cache_size(100)
+    max_cache_size(100), current_time(0.0)
 {
     tile_cache.clear();
 }
@@ -167,6 +167,7 @@ bool TileCache::insert_tile( TileEntry *e ) {
     // register tile in the cache
     long tile_index = e->get_tile_bucket().gen_index();
     tile_cache[tile_index] = e;
+    e->set_timestamp(current_time);
 
     return true;
 }

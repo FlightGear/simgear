@@ -42,12 +42,12 @@ class CloudShaderGeometry : public osg::Drawable
 {
     public:
         
+        const static unsigned int CLOUD_HEIGHT = 10;
         const static unsigned int TEXTURE_INDEX_X = 11;
         const static unsigned int TEXTURE_INDEX_Y = 12;
         const static unsigned int WIDTH = 13;
         const static unsigned int HEIGHT = 14;
         const static unsigned int SHADE = 15;
-        const static unsigned int CLOUD_HEIGHT = 16;
         
         CloudShaderGeometry()
         { 

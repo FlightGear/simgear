@@ -157,14 +157,16 @@ SGCloudField::SGCloudField() :
         }
     }
     
+    int leafs = QUADTREE_SIZE / BRANCH_SIZE;
+
     for (int x = 0; x < QUADTREE_SIZE; x++) {
         for (int y = 0; y < QUADTREE_SIZE; y++) {
             field_group[x][y]= new osg::Switch;
             field_group[x][y]->setName("3D cloud group");
             
             // Work out where to put this node in the quad tree
-            int i = (int) (BRANCH_SIZE * ((float) x) / ((float) QUADTREE_SIZE));
-            int j = (int) (BRANCH_SIZE * ((float) y) / ((float) QUADTREE_SIZE));
+            int i = x / leafs;
+            int j = y / leafs;
             quad[i][j]->addChild(field_group[x][y].get(), 0.0f, 20000.0f);
         }
     }

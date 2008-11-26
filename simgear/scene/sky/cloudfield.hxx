@@ -75,7 +75,7 @@ private:
         sgSphere field_sphere;
 	float	last_density;
         SGGeoc cld_pos;
-
+        int reposition_count;
 public:
 
 	SGCloudField();

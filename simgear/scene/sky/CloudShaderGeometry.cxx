@@ -37,27 +37,56 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     if (!_cloudsprites.size()) return;
     
     osg::State& state = *renderInfo.getState();
-    osg::Matrix vm = state.getModelViewMatrix();
     
-    //TODO: It isn't clear whether this is worth the perf hit ATM.
+    // If the cloud is already sorted, then it is likely to still be sorted.
+    // Therefore we can avoid re-sorting it for a period. If it is still
+    // sorted after that period, then we can wait for a longer period before
+    // checking again. In this way, only clouds that are changing regularly
+    // are sorted.
     
-    // Transform the viewing direction, represented by the eye space vector (0,0,-1, 0), into model-space
-    // (here we simply take the opposite direction and reverse the ordering when sorting)
-    osg::Vec3f view_dir(vm(0, 2), vm(1, 2), vm(2, 2));      // Caveat: OpenSceneGraph matrices are transposed!
-
-    float p = view_dir*_cloudsprites[0]->position.osg();
-    // Do a single iteration of a bubble sort, sorting
-    // back to front.
-    for(int i = 0; i < _cloudsprites.size() - 1; i++)
+    skip_info->skip_count = (skip_info->skip_count + 1) % skip_info->skip_limit;
+    
+    if (skip_info->skip_count == 0)
     {
-        float q = view_dir*_cloudsprites[i+1]->position.osg();
-        if (p > q) {  
-            CloudSprite c = *_cloudsprites[i];
-            *_cloudsprites[i] = *_cloudsprites[i+1];
-            *_cloudsprites[i+1] = c;
+        osg::Matrix vm = state.getModelViewMatrix();
+        bool sorted = true;
+        
+        // Transform the viewing direction, represented by the eye space vector (0,0,-1, 0), into model-space
+        // (here we simply take the opposite direction and reverse the ordering when sorting)
+        osg::Vec3f view_dir(vm(0, 2), vm(1, 2), vm(2, 2));      // Caveat: OpenSceneGraph matrices are transposed!
+    
+        float p = view_dir*_cloudsprites[0]->position.osg();
+        // Do a single iteration of a bubble sort, sorting
+        // back to front.
+        for(int i = 0; i < _cloudsprites.size() - 1; i++)
+        {
+            float q = view_dir*_cloudsprites[i+1]->position.osg();
+            if (p > q) {  
+                CloudSprite c = *_cloudsprites[i];
+                *_cloudsprites[i] = *_cloudsprites[i+1];
+                *_cloudsprites[i+1] = c;
+                
+                sorted = false;
+            }
+            else
+                p = q;
+        }
+        
+        if (sorted)
+        {
+            // This cloud is sorted, so no need to re-sort.
+            // Maximum of every 128 frames (2 - 4 seconds)
+            skip_info->skip_limit = skip_info->skip_limit * 2;
+            if (skip_info->skip_limit > 128) 
+            {
+                skip_info->skip_limit = 128;
+            }
         }
         else
-            p = q;
+        {
+            // This cloud is unsorted, so we need to sort next frame
+            skip_info->skip_limit = 1;
+        }
     }
 
     const Extensions* extensions = getExtensions(state.getContextID(),true);
@@ -74,7 +103,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         _geometry->draw(renderInfo);
     }
 }
-
+    
 BoundingBox CloudShaderGeometry::computeBound() const
 {
     BoundingBox geom_box = _geometry->getBound();

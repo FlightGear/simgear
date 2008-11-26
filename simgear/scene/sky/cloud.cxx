@@ -731,7 +731,7 @@ void SGCloudLayer::set_enable3dClouds(bool enable) {
     } else {
         cloud_root->setChildValue(layer3D->getNode(), false);
         cloud_root->setChildValue(layer_root.get(),   true);
-    }        
+    }
 }
 
 void SGCloudLayer::applyDensity() {

@@ -64,7 +64,6 @@ using std::vector;
 float SGCloudField::fieldSize = 50000.0f;
 float SGCloudField::density = 100.0f;
 double SGCloudField::timer_dt = 0.0;
-int reposition_count = 0;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
 void SGCloudField::set_density(float density) {
@@ -99,7 +98,6 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         cld_pos = SGGeoc::fromGeod(SGGeod::fromRad(lon, lat));
     } else if (dist > fieldSize) {
         // Distance requires repositioning of cloud field.
-        
         // We can easily work out the direction to reposition
         // from the course between the cloud position and the
         // camera position.
@@ -141,10 +139,12 @@ SGCloudField::SGCloudField() :
 	deltay(0.0),
 	last_course(0.0),
 	last_density(0.0),
-        defined3D(false)               
+        defined3D(false),
+        reposition_count(0)
 {
     cld_pos = SGGeoc();
-    field_root->addChild(field_transform.get());         
+    field_root->addChild(field_transform.get());
+    field_root->setName("3D Cloud field root");
     
     osg::ref_ptr<osg::Group> quad_root = new osg::Group();
     osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
@@ -263,5 +263,5 @@ void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
         transform->setPosition(pos.osg());
         transform->addChild(geode.get());
         
-        field_group[x][y]->addChild(transform.get());
+        field_group[x][y]->addChild(transform.get(), true);
 }

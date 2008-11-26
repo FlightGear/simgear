@@ -52,12 +52,14 @@ class CloudShaderGeometry : public osg::Drawable
         CloudShaderGeometry()
         { 
             setUseDisplayList(false); 
+            skip_info = new SkipInfo();
         }
 
         CloudShaderGeometry(int vx, int vy) :
             varieties_x(vx), varieties_y(vy)
         { 
             setUseDisplayList(false); 
+            skip_info = new SkipInfo();
         }
         
         /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
@@ -65,6 +67,14 @@ class CloudShaderGeometry : public osg::Drawable
             osg::Drawable(CloudShaderGeometry,copyop) {}
 
         META_Object(flightgear, CloudShaderGeometry);
+        
+        struct SkipInfo {
+            SkipInfo() : skip_count(0), skip_limit(1) {}
+            int skip_count;
+            int skip_limit;
+        };
+        
+        SkipInfo* skip_info;
         
         struct CloudSprite {
             CloudSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float ch) :
@@ -128,8 +138,13 @@ class CloudShaderGeometry : public osg::Drawable
         
     protected:
     
-        virtual ~CloudShaderGeometry() {}
-        
+        virtual ~CloudShaderGeometry() {
+            delete skip_info;
+            for (int i = 0; i < _cloudsprites.size(); i++)
+            {
+                delete _cloudsprites[i];
+            }
+        }
 };
 
 }

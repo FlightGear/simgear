@@ -34,6 +34,17 @@ sgDebugClass    logbuf::logClass        = SG_NONE;
 sgDebugPriority logbuf::logPriority     = SG_INFO;
 streambuf*      logbuf::sbuf            = NULL;
 
+namespace {
+struct ignore_me
+{
+    ignore_me()
+    {
+        logstream::initGlobalLogstream();
+    }
+};
+static ignore_me im;
+}
+
 logbuf::logbuf()
 {
 //     if ( sbuf == NULL )
@@ -92,10 +103,12 @@ logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
     logbuf::set_log_level( c, p );
 }
 
-void
+logstream *
 logstream::initGlobalLogstream()
 {
     // Force initialization of cerr.
     static std::ios_base::Init initializer;
-    global_logstream = new logstream(std::cerr);
+    if( !global_logstream )
+        global_logstream = new logstream(std::cerr);
+    return global_logstream;
 }

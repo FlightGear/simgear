@@ -78,6 +78,8 @@ public:
      */
     void set_log_state( sgDebugClass c, sgDebugPriority p );
 
+    bool would_log( sgDebugClass c, sgDebugPriority p ) const;
+
     /**
      * Set the global logging level.
      * @param c debug class
@@ -164,6 +166,12 @@ logbuf::set_log_state( sgDebugClass c, sgDebugPriority p )
     logging_enabled = ((c & logClass) != 0 && p >= logPriority);
 }
 
+inline bool
+logbuf::would_log( sgDebugClass c, sgDebugPriority p ) const
+{
+    return ((c & logClass) != 0 && p >= logPriority);
+}
+
 inline logbuf::int_type
 logbuf::overflow( int c )
 {
@@ -240,15 +248,20 @@ public:
      */
     void setLogLevels( sgDebugClass c, sgDebugPriority p );
 
+    bool would_log(  sgDebugClass c, sgDebugPriority p ) const
+    {
+        return lbuf.would_log( c, p );
+    };
+
     /**
      * Output operator to capture the debug level and priority of a message.
      * @param l log level
      */
     inline std::ostream& operator<< ( const loglevel& l );
     friend logstream& sglog();
+    static logstream *initGlobalLogstream();
 protected:
     static logstream *global_logstream;
-    static void initGlobalLogstream();
 };
 
 inline std::ostream&
@@ -268,10 +281,7 @@ logstream::operator<< ( const loglevel& l )
 inline logstream&
 sglog()
 {
-  if (logstream::global_logstream == NULL) {
-      logstream::initGlobalLogstream();
-  }
-  return *logstream::global_logstream;
+    return *logstream::initGlobalLogstream();
 }
 
 
@@ -284,7 +294,11 @@ sglog()
 #ifdef FG_NDEBUG
 # define SG_LOG(C,P,M)
 #else
-# define SG_LOG(C,P,M) sglog() << loglevel(C,P) << M << std::endl
+# define SG_LOG(C,P,M) do {                     \
+	logstream& __tmplogstreamref(sglog());                      \
+	if(__tmplogstreamref.would_log(C,P)) {                      \
+        __tmplogstreamref << loglevel(C,P) << M << std::endl; } \
+	} while(0)
 #endif
 
 #define SG_ORIGIN __FILE__ ":" SG_STRINGIZE(__LINE__)

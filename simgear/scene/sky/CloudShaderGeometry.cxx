@@ -104,21 +104,6 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     }
 }
     
-BoundingBox CloudShaderGeometry::computeBound() const
-{
-    BoundingBox geom_box = _geometry->getBound();
-    BoundingBox bb;
-    for(CloudSpriteList::const_iterator itr = _cloudsprites.begin();
-        itr != _cloudsprites.end();
-        ++itr) {
-         bb.expandBy(geom_box.corner(0)*(*itr)->width +
-                 osg::Vec3( (*itr)->position.x(), (*itr)->position.y(), (*itr)->position.z() ));
-         bb.expandBy(geom_box.corner(7)*(*itr)->height +
-                 osg::Vec3( (*itr)->position.x(), (*itr)->position.y(), (*itr)->position.z() ));
-    }
-    return bb;
-}
-
 bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
 {
     bool iteratorAdvanced = false;

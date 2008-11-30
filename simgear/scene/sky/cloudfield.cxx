@@ -40,6 +40,7 @@
 using std::vector;
 
 #include <simgear/environment/visual_enviro.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 #include "sky.hxx"
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
@@ -55,6 +56,8 @@ using std::vector;
      }
 #  endif
 #endif
+
+using namespace simgear;
 
 
 #if defined (__CYGWIN__)
@@ -72,7 +75,7 @@ void SGCloudField::set_density(float density) {
 
 // reposition the cloud layer at the specified origin and orientation
 bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
-        		       double dt )
+        		       double dt, int asl )
 {
     osg::Matrix T, LON, LAT;
     
@@ -129,6 +132,9 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 
         field_transform->setMatrix( LAT*LON*T );
     }
+    
+    field_root->getStateSet()->setRenderBinDetails(asl, "RenderBin");
+
     return true;
 }
 
@@ -145,6 +151,8 @@ SGCloudField::SGCloudField() :
     cld_pos = SGGeoc();
     field_root->addChild(field_transform.get());
     field_root->setName("3D Cloud field root");
+    osg::StateSet *rootSet = field_root->getOrCreateStateSet();
+    rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
     
     osg::ref_ptr<osg::Group> quad_root = new osg::Group();
     osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
@@ -257,7 +265,7 @@ void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
         int y = (int) floor((pos.y() + fieldSize/2.0) * QUADTREE_SIZE / fieldSize);
         if (y >= QUADTREE_SIZE) y = (QUADTREE_SIZE - 1);
         if (y < 0) y = 0;
-
+        
         osg::ref_ptr<osg::PositionAttitudeTransform> transform = new osg::PositionAttitudeTransform;
 
         transform->setPosition(pos.osg());

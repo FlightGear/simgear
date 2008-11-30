@@ -295,7 +295,8 @@ static float Rnd(float n) {
 
 osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     Geode* geode = new Geode;
-    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y);
+    
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
     
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of

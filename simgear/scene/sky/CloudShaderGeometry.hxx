@@ -55,11 +55,15 @@ class CloudShaderGeometry : public osg::Drawable
             skip_info = new SkipInfo();
         }
 
-        CloudShaderGeometry(int vx, int vy) :
+        CloudShaderGeometry(int vx, int vy, float width, float height) :
             varieties_x(vx), varieties_y(vy)
         { 
             setUseDisplayList(false); 
             skip_info = new SkipInfo();
+            float x = width/2.0f;
+            float z = height/2.0f;
+            _bbox.expandBy(-x, -x, -z);
+            _bbox.expandBy(x, x, z);
         }
         
         /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
@@ -106,8 +110,10 @@ class CloudShaderGeometry : public osg::Drawable
         typedef std::vector<osg::Vec4> PositionSizeList;
         
         virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
-        virtual osg::BoundingBox computeBound() const;
-    
+        virtual osg::BoundingBox computeBound() const
+        {
+            return _bbox;
+        }
         
         void setGeometry(osg::Drawable* geometry)
         {
@@ -135,6 +141,9 @@ class CloudShaderGeometry : public osg::Drawable
 
         int varieties_x;
         int varieties_y;
+        
+        // Bounding box extents.
+        osg::BoundingBox _bbox;
         
     protected:
     

@@ -719,7 +719,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         last_lat = lat;
     }
 
-    layer3D->reposition( p, up, lon, lat, dt);
+    layer3D->reposition( p, up, lon, lat, dt, layer_asl);
     return true;
 }
 

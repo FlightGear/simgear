@@ -93,12 +93,11 @@ public:
         * @param up the local up vector
         * @param lon specifies a rotation about the Z axis
         * @param lat specifies a rotation about the new Y axis
-        * @param spin specifies a rotation about the new Z axis
-        *        (and orients the sunrise/set effects)
         * @param dt the time elapsed since the last call
+        * @param asl altitude of the layer
         */
         bool reposition( const SGVec3f& p, const SGVec3f& up,
-                        double lon, double lat, double dt = 0.0 );
+                        double lon, double lat, double dt, int asl);
 
         osg::Group* getNode() { return field_root.get(); }
 

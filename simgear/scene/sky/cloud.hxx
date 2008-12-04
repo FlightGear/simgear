@@ -165,9 +165,6 @@ public:
     /** Enable/disable 3D clouds in this layer */
     void set_enable3dClouds(bool enable);
 
-    /** Set 3D cloud density in this layer */
-    void applyDensity();
-
     /**
      * repaint the cloud colors based on the specified fog_color
      * @param fog_color the fog color

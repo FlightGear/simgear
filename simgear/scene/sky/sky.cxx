@@ -188,16 +188,33 @@ SGSky::get_cloud_layer_count () const
 }
 
 double SGSky::get_3dCloudDensity() const {
-    return SGCloudField::get_density();
+    return SGNewCloud::getDensity();
 }
 
 void SGSky::set_3dCloudDensity(double density)
 {
-    SGCloudField::set_density(density);
+    SGNewCloud::setDensity(density);
+}
 
-    for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
-        cloud_layers[i]->applyDensity();
+float SGSky::get_3dCloudVisRange() const {
+    return SGCloudField::getVisRange();
+}
+
+void SGSky::set_3dCloudVisRange(float vis)
+{
+    SGCloudField::setVisRange(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisRange();
     }
+}
+
+float SGSky::get_3dCloudNumFlavours() const {
+    return (float) SGNewCloud::getNumFlavours();
+}
+
+void SGSky::set_3dCloudNumFlavours(float n)
+{
+    SGNewCloud::setNumFlavours((int) n);
 }
 
 void SGSky::texture_path( const string& path ) {

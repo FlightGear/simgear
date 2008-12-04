@@ -68,12 +68,14 @@ private:
         osg::ref_ptr<osg::Group> field_root;
         osg::ref_ptr<osg::MatrixTransform> field_transform;
         osg::ref_ptr<osg::Switch> field_group[QUADTREE_SIZE][QUADTREE_SIZE];
+        osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
+        
         osg::ref_ptr<osg::LOD> field_lod;
 
 	double deltax, deltay, alt;
         double last_course;
         sgSphere field_sphere;
-	float	last_density;
+	float	last_coverage;
         SGGeoc cld_pos;
         int reposition_count;
 public:
@@ -106,17 +108,21 @@ public:
 
 	static sgVec3 view_vec, view_X, view_Y;
 
-	static float density;
-	static double timer_dt;
+	static float coverage;
+        static float view_distance;
+        static double timer_dt;
 	static float fieldSize;
 	
         bool defined3D;
 
-	static float get_density(void) { return density; }
+	static float getCoverage(void) { return coverage; }
+	static void setCoverage(float coverage) { coverage = coverage; }
 
-	static void set_density(float density);
-
-        void applyDensity(void);
+        static float getVisRange(void) { return view_distance; }
+        static void setVisRange(float d) { view_distance = d; }
+        
+        void applyCoverage(void);
+        void applyVisRange(void);
 };
 
 #endif // _CLOUDFIELD_HXX

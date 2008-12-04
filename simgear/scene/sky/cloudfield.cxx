@@ -65,13 +65,11 @@ using namespace simgear;
 #endif
 
 float SGCloudField::fieldSize = 50000.0f;
-float SGCloudField::density = 100.0f;
+float SGCloudField::coverage = 1.0f;
 double SGCloudField::timer_dt = 0.0;
+float SGCloudField::view_distance = 20000.0f;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
-void SGCloudField::set_density(float density) {
-	SGCloudField::density = density;
-}
 
 // reposition the cloud layer at the specified origin and orientation
 bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
@@ -144,7 +142,7 @@ SGCloudField::SGCloudField() :
 	deltax(0.0),
 	deltay(0.0),
 	last_course(0.0),
-	last_density(0.0),
+	last_coverage(0.0),
         defined3D(false),
         reposition_count(0)
 {
@@ -155,7 +153,6 @@ SGCloudField::SGCloudField() :
     rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
     
     osg::ref_ptr<osg::Group> quad_root = new osg::Group();
-    osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
     
     for (int i = 0; i < BRANCH_SIZE; i++) {
         for (int j = 0; j < BRANCH_SIZE; j++) {
@@ -175,7 +172,7 @@ SGCloudField::SGCloudField() :
             // Work out where to put this node in the quad tree
             int i = x / leafs;
             int j = y / leafs;
-            quad[i][j]->addChild(field_group[x][y].get(), 0.0f, 20000.0f);
+            quad[i][j]->addChild(field_group[x][y].get(), 0.0f, view_distance);
         }
     }
 
@@ -189,7 +186,7 @@ SGCloudField::SGCloudField() :
                     new osg::PositionAttitudeTransform;
             transform->addChild(quad_root.get());
             transform->setPosition(osg::Vec3(x*fieldSize, y * fieldSize, 0.0));
-
+            
             field_transform->addChild(transform.get());
         }
     }
@@ -228,15 +225,16 @@ static int densTable[][10] = {
 	{1,1,1,1,1,1,1,1,1,1}
 };
 
-void SGCloudField::applyDensity(void) {
+void SGCloudField::applyCoverage(void) {
 
-        int row = (int) (density / 10.0);
+        int row = (int) (coverage * 10.0);
+        if (row > 10) row = 9;
         int col = 0;
 
-        if (density != last_density) {
+        if (coverage != last_coverage) {
             for (int x = 0; x < QUADTREE_SIZE; x++) {
                 for (int y = 0; y < QUADTREE_SIZE; y++) {
-                // Switch on/off the children depending on the required density.
+                // Switch on/off the children depending on the required coverage.
                     int num_children = field_group[x][y]->getNumChildren();
                     for (int i = 0; i < num_children; i++) {
                         if (++col > 9) col = 0;
@@ -250,7 +248,7 @@ void SGCloudField::applyDensity(void) {
             }
         }
 
-        last_density = density;
+        last_coverage = coverage;
 }
 
 void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
@@ -273,3 +271,16 @@ void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
         
         field_group[x][y]->addChild(transform.get(), true);
 }
+
+void SGCloudField::applyVisRange(void) { 
+    
+    for (int x = 0; x < BRANCH_SIZE; x++) {
+        for (int y = 0; y < BRANCH_SIZE; y++) {
+            int num_children = quad[x][y]->getNumChildren(); 
+            for (int i = 0; i < num_children; i++) { 
+                quad[x][y]->setRange(i, 0.0f, view_distance);
+            }
+        }
+    }
+}
+

@@ -40,7 +40,8 @@ using std::vector;
 class SGNewCloud {
 
 public:
-        SGNewCloud(const SGPath &tex_path, 
+        SGNewCloud(string type,
+                   const SGPath &tex_path, 
                     string tex,
                     double min_w,
                     double max_w,
@@ -54,11 +55,36 @@ public:
                     int n,
                     int nt_x,
                     int nt_y);
-        
-	~SGNewCloud();
+
+        ~SGNewCloud();
 
         // Generate a Cloud
         osg::ref_ptr<osg::Geode> genCloud ();
+
+        static double getDensity(void)
+        {
+            return sprite_density;
+        }
+    
+        // Set the sprite density
+        static void setDensity(double d)
+        {
+            sprite_density = d;
+        }
+        
+        static int getNumFlavours(void)
+        {
+            return num_flavours;
+        }
+    
+        // Set the number of flavours of this cloud.
+        // This is the number of different instances
+        // to generate.
+        static void setNumFlavours(int d)
+        {
+            num_flavours = d;
+        }
+        
 
 private:
 
@@ -75,14 +101,17 @@ private:
         int num_textures_x;
         int num_textures_y;
         const string texture;
+        const string name;
         osg::Geometry* quad;
         osg::ref_ptr<osg::StateSet> stateSet;
+        static double sprite_density;
+        static int num_flavours; 
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 
-public:
-
 };
+
+
 
 
 #endif // _NEWCLOUD_HXX

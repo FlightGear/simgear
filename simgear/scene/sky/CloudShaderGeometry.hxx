@@ -33,6 +33,7 @@
 #include <osg/Vec4>
 
 #include <simgear/math/SGMath.hxx>
+#include <simgear/math/sg_random.h>
 
 
 namespace simgear
@@ -95,6 +96,7 @@ class CloudShaderGeometry : public osg::Drawable
         };
         
         typedef std::vector<CloudSprite*> CloudSpriteList;
+        CloudSpriteList _cloudsprites;
         
         void insert(CloudSprite* t)
         { _cloudsprites.push_back(t); }
@@ -105,9 +107,6 @@ class CloudShaderGeometry : public osg::Drawable
         { return _cloudsprites.size(); }
         CloudSprite* getCloudSprite(unsigned i) const
         { return _cloudsprites[i]; }
-        CloudSpriteList _cloudsprites;
-        
-        typedef std::vector<osg::Vec4> PositionSizeList;
         
         virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
         virtual osg::BoundingBox computeBound() const

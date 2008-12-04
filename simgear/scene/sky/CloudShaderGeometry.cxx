@@ -29,6 +29,7 @@
 
 using namespace osg;
 using namespace osgDB;
+using namespace simgear;
 
 namespace simgear
 {
@@ -72,14 +73,23 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
                 p = q;
         }
         
+        
         if (sorted)
         {
             // This cloud is sorted, so no need to re-sort.
-            // Maximum of every 128 frames (2 - 4 seconds)
             skip_info->skip_limit = skip_info->skip_limit * 2;
+            
+            if (skip_info->skip_limit > 30) 
+            {
+                // Jitter the skip frames to avoid synchronized sorts
+                // which will cause periodic frame-rate drops
+                skip_info->skip_limit += sg_random() * 10;
+            }
+            
             if (skip_info->skip_limit > 128) 
             {
-                skip_info->skip_limit = 128;
+                // Maximum of every 128 frames (2 - 4 seconds)
+                skip_info->skip_limit = 128 + sg_random() * 10;
             }
         }
         else

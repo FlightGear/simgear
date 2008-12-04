@@ -277,6 +277,19 @@ SGCloudLayer::setCoverage (Coverage coverage)
     if (coverage != layer_coverage) {
         layer_coverage = coverage;
         rebuild();
+        
+        double coverage_norm = 0.0;
+        if( coverage ==  SG_CLOUD_FEW)
+            coverage_norm = 2.0/8.0;	// <1-2
+        else if( coverage == SG_CLOUD_SCATTERED )
+            coverage_norm = 4.0/8.0;	// 3-4
+        else if( coverage == SG_CLOUD_BROKEN )
+            coverage_norm = 6.0/8.0;	// 5-7
+        else if( coverage == SG_CLOUD_OVERCAST )
+            coverage_norm = 8.0/8.0;	// 8
+        
+        layer3D->setCoverage(coverage_norm);
+        layer3D->applyCoverage();
     }
 }
 
@@ -732,8 +745,4 @@ void SGCloudLayer::set_enable3dClouds(bool enable) {
         cloud_root->setChildValue(layer3D->getNode(), false);
         cloud_root->setChildValue(layer_root.get(),   true);
     }
-}
-
-void SGCloudLayer::applyDensity() {
-    layer3D->applyDensity();
 }

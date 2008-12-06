@@ -98,7 +98,7 @@ static int recsize(int lgsz)
 {
     HashRec hr;
     hr.lgsz = lgsz;
-    return (int)((char*)&TAB(&hr)[POW2(lgsz+1)] - (char*)&hr);
+    return (int)((char*)&TAB(&hr)[POW2(lgsz+1)] - (char*)&hr) + sizeof(naRef);
 }
 
 static HashRec* resize(struct naHash* hash)

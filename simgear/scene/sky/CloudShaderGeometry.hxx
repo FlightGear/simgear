@@ -43,12 +43,8 @@ class CloudShaderGeometry : public osg::Drawable
 {
     public:
         
-        const static unsigned int CLOUD_HEIGHT = 10;
-        const static unsigned int TEXTURE_INDEX_X = 11;
-        const static unsigned int TEXTURE_INDEX_Y = 12;
-        const static unsigned int WIDTH = 13;
-        const static unsigned int HEIGHT = 14;
-        const static unsigned int SHADE = 15;
+        const static unsigned int USR_ATTR_1 = 10;
+        const static unsigned int USR_ATTR_2 = 11;
         
         CloudShaderGeometry()
         { 
@@ -148,7 +144,7 @@ class CloudShaderGeometry : public osg::Drawable
     
         virtual ~CloudShaderGeometry() {
             delete skip_info;
-            for (int i = 0; i < _cloudsprites.size(); i++)
+            for (unsigned int i = 0; i < _cloudsprites.size(); i++)
             {
                 delete _cloudsprites[i];
             }

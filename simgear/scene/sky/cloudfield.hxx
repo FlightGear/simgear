@@ -123,6 +123,9 @@ public:
         
         void applyCoverage(void);
         void applyVisRange(void);
+        
+        typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
+        static StateSetMap cloudTextureMap;
 };
 
 #endif // _CLOUDFIELD_HXX

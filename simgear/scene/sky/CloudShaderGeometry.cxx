@@ -59,7 +59,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         float p = view_dir*_cloudsprites[0]->position.osg();
         // Do a single iteration of a bubble sort, sorting
         // back to front.
-        for(int i = 0; i < _cloudsprites.size() - 1; i++)
+        for(unsigned int i = 0; i < _cloudsprites.size() - 1; i++)
         {
             float q = view_dir*_cloudsprites[i+1]->position.osg();
             if (p > q) {  
@@ -103,12 +103,10 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
 
     for(CloudSpriteList::const_iterator t = _cloudsprites.begin(); t != _cloudsprites.end(); ++t)
     {
-        extensions->glVertexAttrib1f(TEXTURE_INDEX_X, (GLfloat) (*t)->texture_index_x/varieties_x);
-        extensions->glVertexAttrib1f(TEXTURE_INDEX_Y, (GLfloat) (*t)->texture_index_y/varieties_y);
-        extensions->glVertexAttrib1f(WIDTH, (GLfloat) (*t)->width);
-        extensions->glVertexAttrib1f(HEIGHT, (GLfloat) (*t)->height);
-        extensions->glVertexAttrib1f(SHADE, (GLfloat) (*t)->shade);
-        extensions->glVertexAttrib1f(CLOUD_HEIGHT, (GLfloat) (*t)->cloud_height);
+      GLfloat ua1[3] = { (GLfloat) (*t)->texture_index_x/varieties_x, (GLfloat) (*t)->texture_index_y/varieties_y, (*t)->width };
+      GLfloat ua2[3] = { (GLfloat) (*t)->height, (*t)->shade, (GLfloat) (*t)->cloud_height };
+        extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
+        extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
         glColor4f((*t)->position.x(), (*t)->position.y(), (*t)->position.z(), 1.0);
         _geometry->draw(renderInfo);
     }

@@ -41,6 +41,7 @@ using std::vector;
 
 #include <simgear/environment/visual_enviro.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include "sky.hxx"
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
@@ -69,7 +70,7 @@ float SGCloudField::coverage = 1.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
-
+SGCloudField::StateSetMap SGCloudField::cloudTextureMap;
 
 // reposition the cloud layer at the specified origin and orientation
 bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
@@ -136,6 +137,29 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     return true;
 }
 
+struct threeDCloudsFogUpdater : public osg::NodeCallback {
+    threeDCloudsFogUpdater() {};
+
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv) {
+        SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
+        //running at 5 times frame
+        SGCloudField::StateSetMap::iterator iter;
+        osg::Fog * fog;
+        for( iter = SGCloudField::cloudTextureMap.begin(); iter != SGCloudField::cloudTextureMap.end(); ++iter) {
+            fog = static_cast<osg::Fog*>(iter->second->getAttribute( osg::StateAttribute::FOG, 0 ));
+            fog->setMode(osg::Fog::EXP);
+            osg::Vec4f fogC = updateVisitor->getFogColor().osg();
+            fogC[3] = 0.0;
+            fog->setColor(fogC);
+            fog->setDensity(updateVisitor->getFogExpDensity());
+        }
+
+        if (node->getNumChildrenRequiringUpdateTraversal()>0)
+          traverse(node,nv);
+    }
+};
+
+
 SGCloudField::SGCloudField() :
         field_root(new osg::Group),
         field_transform(new osg::MatrixTransform),
@@ -147,6 +171,7 @@ SGCloudField::SGCloudField() :
         reposition_count(0)
 {
     cld_pos = SGGeoc();
+    field_root->setUpdateCallback( new threeDCloudsFogUpdater() );
     field_root->addChild(field_transform.get());
     field_root->setName("3D Cloud field root");
     osg::StateSet *rootSet = field_root->getOrCreateStateSet();

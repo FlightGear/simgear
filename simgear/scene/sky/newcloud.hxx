@@ -105,12 +105,11 @@ private:
         osg::Geometry* quad;
         osg::ref_ptr<osg::StateSet> stateSet;
         static double sprite_density;
-        static int num_flavours; 
+        static unsigned int num_flavours; 
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 
 };
-
 
 
 

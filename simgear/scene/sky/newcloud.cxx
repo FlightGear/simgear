@@ -61,21 +61,23 @@ typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
 typedef std::vector< osg::ref_ptr<osg::Geode> > GeodeList;
 typedef std::map<std::string, GeodeList*> CloudMap;
 
-static StateSetMap cloudTextureMap;
+StateSetMap cloudTextureMap;
 static CloudMap cloudMap;
 double SGNewCloud::sprite_density = 1.0;
-int SGNewCloud::num_flavours = 10;
+unsigned int SGNewCloud::num_flavours = 10;
 
 static char vertexShaderSource[] = 
     "#version 120\n"
     "\n"
     "varying float fogFactor;\n"
-    "attribute float textureIndexX;\n"
-    "attribute float textureIndexY;\n"
-    "attribute float wScale;\n"
-    "attribute float hScale;\n"
-    "attribute float shade;\n"
-    "attribute float cloud_height;\n"
+    "attribute vec3 usrAttr1;\n"
+    "attribute vec3 usrAttr2;\n"
+    "float textureIndexX = usrAttr1.r;\n"
+    "float textureIndexY = usrAttr1.g;\n"
+    "float wScale = usrAttr1.b;\n"
+    "float hScale = usrAttr2.r;\n"
+    "float shade = usrAttr2.g;\n"
+    "float cloud_height = usrAttr2.b;\n"
     "void main(void)\n"
     "{\n"
     "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndexX, textureIndexY, 0.0, 0.0);\n"
@@ -171,9 +173,9 @@ SGNewCloud::SGNewCloud(string type,
         name(type)
 {
     // Create a new StateSet for the texture, if required.
-    StateSetMap::iterator iter = cloudTextureMap.find(texture);
+    StateSetMap::iterator iter = SGCloudField::cloudTextureMap.find(texture);
 
-    if (iter == cloudTextureMap.end()) {
+    if (iter == SGCloudField::cloudTextureMap.end()) {
         stateSet = new osg::StateSet;
                 
         osg::ref_ptr<osgDB::ReaderWriter::Options> options = makeOptionsFromPath(tex_path);
@@ -213,13 +215,8 @@ SGNewCloud::SGNewCloud(string type,
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
             program->addShader(vertex_shader);
-            program->addBindAttribLocation("textureIndexX", CloudShaderGeometry::TEXTURE_INDEX_X);
-            program->addBindAttribLocation("textureIndexY", CloudShaderGeometry::TEXTURE_INDEX_Y);
-            program->addBindAttribLocation("wScale", CloudShaderGeometry::WIDTH);
-            program->addBindAttribLocation("hScale", CloudShaderGeometry::HEIGHT);
-            program->addBindAttribLocation("shade", CloudShaderGeometry::SHADE);
-            program->addBindAttribLocation("cloud_height", CloudShaderGeometry::CLOUD_HEIGHT);
-                  
+            program->addBindAttribLocation("usrAttr1", CloudShaderGeometry::USR_ATTR_1);
+            program->addBindAttribLocation("usrAttr2", CloudShaderGeometry::USR_ATTR_2);
             Shader* fragment_shader = new Shader(Shader::FRAGMENT, fragmentShaderSource);
             program->addShader(fragment_shader);
             material = new Material;
@@ -240,7 +237,7 @@ SGNewCloud::SGNewCloud(string type,
         stateSet->setAttribute(material.get());
                 
         // Add the newly created texture to the map for use later.
-        cloudTextureMap.insert(StateSetMap::value_type(texture,  stateSet));
+        SGCloudField::cloudTextureMap.insert(StateSetMap::value_type(texture,  stateSet));
     } else {
         stateSet = iter->second.get();
     }
@@ -310,10 +307,9 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     // allows us to strike a balance between performance and
     // visual complexity.
     
-    GeodeList* g = (*iter).second;
-
-    if (iter == cloudMap.end() || g->size() < num_flavours) 
+    if (iter == cloudMap.end() || (*iter).second->size() < num_flavours) 
     {
+        
         geode = new Geode;
         
         CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
@@ -405,7 +401,7 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
         else
         {
             // Add the new cloud to the list of geodes
-            (*iter).second->push_back(geode.get());
+            (*iter).second->push_back(geode);
         }
     
     } else {

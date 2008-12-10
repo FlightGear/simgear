@@ -29,7 +29,6 @@
 
 #include <string.h>
 #include <map>
-using std::map;
 
 #include <plib/ul.h>
 
@@ -45,8 +44,12 @@ using std::map;
 #include <simgear/misc/sgstream.hxx>
 
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include "mat.hxx"
+
+using std::map;
+using namespace simgear;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -249,20 +252,15 @@ SGMaterial::get_state (int n)
 void 
 SGMaterial::build_state( bool defer_tex_load )
 {
+    StateAttributeFactory *attrFact = StateAttributeFactory::instance();
     for (unsigned int i = 0; i < _status.size(); i++)
     {
         osg::StateSet *stateSet = new osg::StateSet;
         stateSet->setUserData(new SGMaterialUserData(this));
 
         // Set up the textured state
-        osg::ShadeModel* shadeModel = new osg::ShadeModel;
-        shadeModel->setMode(osg::ShadeModel::SMOOTH);
-        stateSet->setAttribute(shadeModel);
-
-        osg::CullFace* cullFace = new osg::CullFace;
-        cullFace->setMode(osg::CullFace::BACK);
-        stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
-        stateSet->setAttribute(cullFace);
+        stateSet->setAttribute(attrFact->getSmoothShadeModel());
+        stateSet->setAttributeAndModes(attrFact->getCullFaceBack());
 
         stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 

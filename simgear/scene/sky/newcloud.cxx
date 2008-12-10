@@ -129,20 +129,9 @@ static char fragmentShaderSource[] =
     "{\n"
     "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
     "  vec4 finalColor = base * gl_Color;\n"
-    "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
+    "  gl_FragColor.rgb = mix(gl_Fog.color.rgb, finalColor.rgb, fogFactor );\n"
+    "  gl_FragColor.a = finalColor.a;\n"
     "}\n";
-
-class SGCloudFogUpdateCallback : public osg::StateAttribute::Callback {
-    public:
-        virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor* nv)
-        {
-            SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-            osg::Fog* fog = static_cast<osg::Fog*>(sa);
-            fog->setMode(osg::Fog::EXP);
-            fog->setColor(updateVisitor->getFogColor().osg());
-            fog->setDensity(updateVisitor->getFogExpDensity());
-        }
-};
 
 SGNewCloud::SGNewCloud(string type,
                        const SGPath &tex_path, 
@@ -193,11 +182,6 @@ SGNewCloud::SGNewCloud(string type,
         stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
         
         // Fog handling
-        osg::Fog* fog = new osg::Fog;
-        fog->setUpdateCallback(new SGCloudFogUpdateCallback);
-        stateSet->setAttributeAndModes(fog);
-        stateSet->setDataVariance(osg::Object::DYNAMIC);
-        
         stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
         stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
 

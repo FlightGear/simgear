@@ -26,7 +26,7 @@
 #include <plib/sg.h>
 #include <simgear/compiler.h>
 #include <vector>
-#include <osgSim/Impostor>
+
 #include <osgDB/ReaderWriter>
 
 #include <osg/ref_ptr>
@@ -34,9 +34,16 @@
 #include <osg/Geometry>
 #include <osg/Group>
 #include <osg/Switch>
-#include <osg/Billboard>
+
+namespace osg
+{
+        class Fog;
+        class StateSet;
+        class Vec4f;
+}
 
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/structure/Singleton.hxx>
 
 using std::vector;
 
@@ -78,6 +85,11 @@ private:
 	float	last_coverage;
         SGGeoc cld_pos;
         int reposition_count;
+        struct CloudFog : public simgear::Singleton<CloudFog>
+        {
+                CloudFog();
+                osg::ref_ptr<osg::Fog> fog;
+        };
 public:
 
 	SGCloudField();
@@ -126,6 +138,12 @@ public:
         
         typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
         static StateSetMap cloudTextureMap;
+
+        static osg::Fog* getFog()
+        {
+                return CloudFog::instance()->fog.get();
+        }
+        static void updateFog(double visibility, const osg::Vec4f& color);
 };
 
 #endif // _CLOUDFIELD_HXX

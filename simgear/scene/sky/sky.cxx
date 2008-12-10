@@ -128,7 +128,8 @@ bool SGSky::repaint( const SGSkyColor &sc )
 	// turn off sky
 	disable();
     }
-
+    SGCloudField::updateFog((double)effective_visibility,
+                            osg::Vec4f(sc.fog_color.osg(), 1.0f));
     return true;
 }
 

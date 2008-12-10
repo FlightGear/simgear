@@ -24,8 +24,10 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osg/Fog>
 #include <osg/Texture2D>
 #include <osg/PositionAttitudeTransform>
+#include <osg/Vec4f>
 
 #include <simgear/compiler.h>
 
@@ -137,29 +139,6 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     return true;
 }
 
-struct threeDCloudsFogUpdater : public osg::NodeCallback {
-    threeDCloudsFogUpdater() {};
-
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv) {
-        SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-        //running at 5 times frame
-        SGCloudField::StateSetMap::iterator iter;
-        osg::Fog * fog;
-        for( iter = SGCloudField::cloudTextureMap.begin(); iter != SGCloudField::cloudTextureMap.end(); ++iter) {
-            fog = static_cast<osg::Fog*>(iter->second->getAttribute( osg::StateAttribute::FOG, 0 ));
-            fog->setMode(osg::Fog::EXP);
-            osg::Vec4f fogC = updateVisitor->getFogColor().osg();
-            fogC[3] = 0.0;
-            fog->setColor(fogC);
-            fog->setDensity(updateVisitor->getFogExpDensity());
-        }
-
-        if (node->getNumChildrenRequiringUpdateTraversal()>0)
-          traverse(node,nv);
-    }
-};
-
-
 SGCloudField::SGCloudField() :
         field_root(new osg::Group),
         field_transform(new osg::MatrixTransform),
@@ -171,11 +150,11 @@ SGCloudField::SGCloudField() :
         reposition_count(0)
 {
     cld_pos = SGGeoc();
-    field_root->setUpdateCallback( new threeDCloudsFogUpdater() );
     field_root->addChild(field_transform.get());
     field_root->setName("3D Cloud field root");
     osg::StateSet *rootSet = field_root->getOrCreateStateSet();
     rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
+    rootSet->setAttributeAndModes(getFog());
     
     osg::ref_ptr<osg::Group> quad_root = new osg::Group();
     
@@ -309,3 +288,17 @@ void SGCloudField::applyVisRange(void) {
     }
 }
 
+SGCloudField::CloudFog::CloudFog()
+{
+    fog = new osg::Fog;
+    fog->setMode(osg::Fog::EXP2);
+    fog->setDataVariance(osg::Object::DYNAMIC);
+}
+
+void SGCloudField::updateFog(double visibility, const osg::Vec4f& color)
+{
+    const double sqrt_m_log01 = sqrt(-log(0.01));
+    osg::Fog* fog = CloudFog::instance()->fog.get();
+    fog->setColor(color);
+    fog->setDensity(sqrt_m_log01 / visibility);
+}

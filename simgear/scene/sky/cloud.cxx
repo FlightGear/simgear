@@ -32,6 +32,7 @@
 
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
+#include <osg/CullFace>
 #include <osg/Geode>
 #include <osg/Geometry>
 #include <osg/Material>
@@ -56,6 +57,8 @@
 #include "cloud.hxx"
 
 using namespace simgear;
+using namespace osg;
+
 #if defined(__MINGW32__)
 #define isnan(x) _isnan(x)
 #endif
@@ -95,7 +98,6 @@ SGMakeState(const SGPath &path, const char* colorTexture,
     StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
     stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-    stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
     stateSet->setAttributeAndModes(attribFactory->getStandardAlphaFunc());
     stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
 
@@ -157,6 +159,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
   osg::StateSet *rootSet = layer_root->getOrCreateStateSet();
   rootSet->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
   rootSet->setTextureAttribute(0, new osg::TexMat);
+  rootSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
   // Combiner for fog color and cloud alpha
   osg::TexEnvCombine* combine0 = new osg::TexEnvCombine;
   osg::TexEnvCombine* combine1 = new osg::TexEnvCombine;
@@ -191,7 +194,6 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
   rootSet->setDataVariance(osg::Object::DYNAMIC);
 
   base = osg::Vec2(sg_random(), sg_random());
-
   group_top->addChild(layer_transform.get());
   group_bottom->addChild(layer_transform.get());
 
@@ -303,6 +305,15 @@ SGCloudLayer::setTextureOffset(const osg::Vec2& offset)
         return;
     texMat->setMatrix(osg::Matrix::translate(offset[0], offset[1], 0.0));
 }
+
+// colors for debugging the cloud layers
+#ifdef CLOUD_DEBUG
+Vec3 cloudColors[] = {Vec3(1.0f, 1.0f, 1.0f), Vec3(1.0f, 0.0f, 0.0f),
+                      Vec3(0.0f, 1.0f, 0.0f), Vec3(0.0f, 0.0f, 1.0f)};
+#else
+Vec3 cloudColors[] = {Vec3(1.0f, 1.0f, 1.0f), Vec3(1.0f, 1.0f, 1.0f),
+                      Vec3(1.0f, 1.0f, 1.0f), Vec3(1.0f, 1.0f, 1.0f)};
+#endif
 
 // build the cloud object
 void
@@ -470,6 +481,19 @@ SGCloudLayer::rebuild()
         
         layer_states[SG_CLOUD_CLEAR] = 0;
         layer_states2[SG_CLOUD_CLEAR] = 0;
+        osg::CopyOp copyOp;
+        for (int i = 0; i < SG_MAX_CLOUD_COVERAGES; ++i) {
+            StateAttributeFactory *saf = StateAttributeFactory::instance();
+            if (layer_states[i].valid()) {
+                if (layer_states[i] == layer_states2[i])
+                    layer_states2[i] = static_cast<osg::StateSet*>(layer_states[i]->clone(copyOp));
+                layer_states[i]->setAttribute(saf ->getCullFaceFront());
+                layer_states2[i]->setAttribute(saf ->getCullFaceBack());
+            }
+        }
+      // OSGFIXME
+// 		SGNewCloud::loadTextures(texture_path.str());
+// 		layer3D->buildTestLayer();
     }
 
     scale = 4000.0;
@@ -503,7 +527,7 @@ SGCloudLayer::rebuild()
       osg::Vec3 vertex(layer_span*(i-2)/2, -layer_span,
                        alt_diff * (sin(i*mpi) - 2));
       osg::Vec2 tc(layer_scale * i/4, 0.0f);
-      osg::Vec4 color(1.0f, 1.0f, 1.0f, (i == 0) ? 0.0f : 0.15f);
+      osg::Vec4 color(cloudColors[0], (i == 0) ? 0.0f : 0.15f);
       
       cl[i]->push_back(color);
       vl[i]->push_back(vertex);
@@ -513,7 +537,7 @@ SGCloudLayer::rebuild()
         vertex = osg::Vec3(layer_span*(i-1)/2, layer_span*(j-2)/2,
                            alt_diff * (sin((i+1)*mpi) + sin(j*mpi) - 2));
         tc = osg::Vec2(layer_scale * (i+1)/4, layer_scale * j/4);
-        color = osg::Vec4(1.0f, 1.0f, 1.0f,
+        color = osg::Vec4(cloudColors[0],
                           ( (j == 0) || (i == 3)) ?  
                           ( (j == 0) && (i == 3)) ? 0.0f : 0.15f : 1.0f );
         
@@ -524,7 +548,7 @@ SGCloudLayer::rebuild()
         vertex = osg::Vec3(layer_span*(i-2)/2, layer_span*(j-1)/2,
                            alt_diff * (sin(i*mpi) + sin((j+1)*mpi) - 2) );
         tc = osg::Vec2(layer_scale * i/4, layer_scale * (j+1)/4 );
-        color = osg::Vec4(1.0f, 1.0f, 1.0f,
+        color = osg::Vec4(cloudColors[0],
                           ((j == 3) || (i == 0)) ?
                           ((j == 3) && (i == 0)) ? 0.0f : 0.15f : 1.0f );
         cl[i]->push_back(color);
@@ -537,7 +561,7 @@ SGCloudLayer::rebuild()
       
       tc = osg::Vec2(layer_scale * (i+1)/4, layer_scale);
       
-      color = osg::Vec4(1.0f, 1.0f, 1.0f, (i == 3) ? 0.0f : 0.15f );
+      color = osg::Vec4(cloudColors[0], (i == 3) ? 0.0f : 0.15f );
       
       cl[i]->push_back( color );
       vl[i]->push_back( vertex );
@@ -568,7 +592,7 @@ SGCloudLayer::rebuild()
       osg::StateSet* stateSet = static_cast<osg::StateSet*>(layer_states2[layer_coverage]->clone(copyOp));
       stateSet->setDataVariance(osg::Object::DYNAMIC);
       group_top->setStateSet(stateSet);
-      stateSet = static_cast<osg::StateSet*>(layer_states2[layer_coverage]->clone(copyOp));
+      stateSet = static_cast<osg::StateSet*>(layer_states[layer_coverage]->clone(copyOp));
       stateSet->setDataVariance(osg::Object::DYNAMIC);
       group_bottom->setStateSet(stateSet);
     }

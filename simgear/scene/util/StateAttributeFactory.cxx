@@ -60,6 +60,8 @@ StateAttributeFactory::StateAttributeFactory()
     _white = new Vec4Array(1);
     (*_white)[0].set(1.0f, 1.0f, 1.0f, 1.0f);
     _white->setDataVariance(Object::STATIC);
+    _cullFaceFront = new CullFace(CullFace::FRONT);
+    _cullFaceFront->setDataVariance(Object::STATIC);
     _cullFaceBack = new CullFace(CullFace::BACK);
     _cullFaceBack->setDataVariance(Object::STATIC);
 }

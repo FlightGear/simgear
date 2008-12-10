@@ -49,7 +49,8 @@ public:
     osg::Texture2D* getWhiteTexture() { return _whiteTexture.get(); }
     // White color
     osg::Vec4Array* getWhiteColor() {return _white.get(); }
-    // cull back facing polygons
+    // cull front and back facing polygons
+    osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
     
     static StateAttributeFactory* instance();
@@ -62,6 +63,7 @@ protected:
     osg::ref_ptr<osg::TexEnv> _standardTexEnv;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
     osg::ref_ptr<osg::Vec4Array> _white;
+    osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
     static osg::ref_ptr<StateAttributeFactory> _theInstance;
     static OpenThreads::Mutex _instanceMutex;

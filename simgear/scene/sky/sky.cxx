@@ -25,12 +25,15 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/math/sg_random.h>
-#include <simgear/scene/util/RenderConstants.hxx>
-
 #include "sky.hxx"
 #include "cloudfield.hxx"
 #include "newcloud.hxx"
+
+#include <simgear/math/sg_random.h>
+#include <simgear/scene/util/RenderConstants.hxx>
+
+#include <osg/StateSet>
+#include <osg/Depth>
 
 // Constructor
 SGSky::SGSky( void ) {
@@ -50,8 +53,12 @@ SGSky::SGSky( void ) {
 
     pre_root = new osg::Group;
     pre_root->setNodeMask(simgear::BACKGROUND_BIT);
+    osg::StateSet* preStateSet = new osg::StateSet;
+    preStateSet->setAttribute(new osg::Depth(osg::Depth::LESS, 0.0, 1.0,
+                                             false));
+    pre_root->setStateSet(preStateSet);
     cloud_root = new osg::Group;
-    cloud_root->setNodeMask(simgear::BACKGROUND_BIT | simgear::MODEL_BIT);
+    cloud_root->setNodeMask(simgear::MODEL_BIT);
 
     pre_selector = new osg::Switch;
 

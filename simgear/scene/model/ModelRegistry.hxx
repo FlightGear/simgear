@@ -29,6 +29,7 @@
 #include <osgDB/Registry>
 
 #include <simgear/compiler.h>
+#include <simgear/structure/Singleton.hxx>
 
 #include <string>
 #include <map>
@@ -200,7 +201,8 @@ typedef ModelRegistryCallback<DefaultProcessPolicy, DefaultCachePolicy,
                               OSGSubstitutePolicy> DefaultCallback;
 
 // The manager for the callbacks
-class ModelRegistry : public osgDB::Registry::ReadFileCallback {
+class ModelRegistry : public osgDB::Registry::ReadFileCallback,
+                      public ReferencedSingleton<ModelRegistry> {
 public:
     ModelRegistry();
     virtual osgDB::ReaderWriter::ReadResult
@@ -215,10 +217,8 @@ public:
     void addNodeCallbackForExtension(const std::string& extension,
                                      osgDB::Registry::ReadFileCallback*
                                      callback);
-    static ModelRegistry* getInstance();
     virtual ~ModelRegistry() {}
 protected:
-    static osg::ref_ptr<ModelRegistry> instance;
     typedef std::map<std::string, osg::ref_ptr<osgDB::Registry::ReadFileCallback> >
     CallbackMap;
     CallbackMap imageCallbackMap;
@@ -243,7 +243,7 @@ class ModelRegistryCallbackProxy
 public:
     ModelRegistryCallbackProxy(std::string extension)
     {
-        ModelRegistry::getInstance()
+        ModelRegistry::instance()
             ->addNodeCallbackForExtension(extension, new T(extension));
     }
 };

@@ -30,12 +30,6 @@ GroundLightManager::GroundLightManager()
     groundLightSS = makeLightSS();
 }
 
-GroundLightManager* GroundLightManager::instance()
-{
-    static ref_ptr<GroundLightManager> manager = new GroundLightManager;
-    return manager.get();
-}
-
 void GroundLightManager::update(const SGUpdateVisitor* updateVisitor)
 {
     osg::Fog* fog;

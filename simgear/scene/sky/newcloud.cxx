@@ -48,7 +48,9 @@
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 #include <algorithm>
+#include <osg/BlendFunc>
 #include <osg/GLU>
+#include <osg/ShadeModel>
 
 #include "cloudfield.hxx"
 #include "newcloud.hxx"

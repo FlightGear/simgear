@@ -24,18 +24,25 @@
 
 #include <OpenThreads/Mutex>
 #include <osg/ref_ptr>
-#include <osg/AlphaFunc>
 #include <osg/Array>
-#include <osg/BlendFunc>
-#include <osg/CullFace>
-#include <osg/ShadeModel>
-#include <osg/Texture2D>
-#include <osg/TexEnv>
+
+namespace osg
+{
+class AlphaFunc;
+class BlendFunc;
+class CullFace;
+class ShadeModel;
+class Texture2D;
+class TexEnv;
+}
+
+#include <simgear/structure/Singleton.hxx>
 
 // Return read-only instances of common OSG state attributes.
 namespace simgear
 {
-class StateAttributeFactory : public osg::Referenced {
+class StateAttributeFactory :
+        public ReferencedSingleton<StateAttributeFactory> {
 public:
     // Alpha test > .01
     osg::AlphaFunc* getStandardAlphaFunc() { return _standardAlphaFunc.get(); }
@@ -52,10 +59,8 @@ public:
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
-    
-    static StateAttributeFactory* instance();
+    StateAttributeFactory();    
 protected:
-    StateAttributeFactory();
     osg::ref_ptr<osg::AlphaFunc> _standardAlphaFunc;
     osg::ref_ptr<osg::ShadeModel> _smooth;
     osg::ref_ptr<osg::ShadeModel> _flat;
@@ -65,8 +70,6 @@ protected:
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
-    static osg::ref_ptr<StateAttributeFactory> _theInstance;
-    static OpenThreads::Mutex _instanceMutex;
 };
 }
 #endif

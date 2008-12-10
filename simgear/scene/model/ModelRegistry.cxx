@@ -473,16 +473,6 @@ ModelRegistry::addNodeCallbackForExtension(const string& extension,
     nodeCallbackMap.insert(CallbackMap::value_type(extension, callback));
 }
 
-ref_ptr<ModelRegistry> ModelRegistry::instance;
-
-ModelRegistry* ModelRegistry::getInstance()
-
-{
-    if (!instance.valid())
-        instance = new ModelRegistry;
-    return instance.get();
-}
-
 ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
@@ -516,7 +506,7 @@ public:
     registry->setOptions(options);
     registry->getOrCreateSharedStateManager()->
       setShareMode(SharedStateManager::SHARE_STATESETS);
-    registry->setReadFileCallback(ModelRegistry::getInstance());
+    registry->setReadFileCallback(ModelRegistry::instance());
   }
 };
 

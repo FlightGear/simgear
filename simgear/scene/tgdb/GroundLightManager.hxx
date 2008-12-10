@@ -22,11 +22,14 @@
 #include <osg/Vec4>
 #include <osg/Referenced>
 #include <osg/StateSet>
+
+
+#include <simgear/structure/Singleton.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 namespace simgear
 {
-class GroundLightManager : public osg::Referenced {
+class GroundLightManager : public ReferencedSingleton<GroundLightManager> {
 public:
     GroundLightManager();
     osg::StateSet* getRunwayLightStateSet() { return runwayLightSS.get(); }
@@ -36,7 +39,6 @@ public:
     // so use it.
     void update (const SGUpdateVisitor* updateVisitor);
     unsigned getLightNodeMask(const SGUpdateVisitor* updateVisitor);
-    static GroundLightManager* instance();
 protected:
     osg::ref_ptr<osg::StateSet> runwayLightSS;
     osg::ref_ptr<osg::StateSet> taxiLightSS;

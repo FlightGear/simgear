@@ -37,6 +37,11 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AX_BOOST_BASE([1.34.0])
+
+if test "x$BOOST_CPPFLAGS" != "x-I/usr/include" ; then
+   CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+fi
 
 dnl set the $host variable based on local machine/os
 AC_CANONICAL_HOST
@@ -393,6 +398,16 @@ if test "x$ac_cv_header_osg_Version" != "xyes"; then
     echo "to build this version of SimGear!"
     echo
     echo "Please see README.OSG for more details."
+    echo
+    echo "configure aborted."
+    exit
+fi
+
+AC_CHECK_HEADER(boost/version.hpp)
+if test "x$ac_cv_header_boost_version_hpp" != "xyes"; then
+    echo
+    echo "You *must* have the Boost library installed on your system"
+    echo "to build this version of SimGear!"
     echo
     echo "configure aborted."
     exit

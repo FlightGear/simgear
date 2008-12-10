@@ -16,7 +16,8 @@ include_HEADERS = \
 	SGReferenced.hxx \
 	SGSharedPtr.hxx \
 	SGSmplhist.hxx \
-	SGSmplstat.hxx
+	SGSmplstat.hxx \
+	Singleton.hxx
 
 libsgstructure_a_SOURCES = \
 	commands.cxx \

@@ -18,11 +18,17 @@
  * MA 02110-1301, USA.
  *
  */
+#include "StateAttributeFactory.hxx"
 
-#include <OpenThreads/ScopedLock>
+#include <osg/AlphaFunc>
+#include <osg/Array>
+#include <osg/BlendFunc>
+#include <osg/CullFace>
+#include <osg/ShadeModel>
+#include <osg/Texture2D>
+#include <osg/TexEnv>
 
 #include <osg/Image>
-#include "StateAttributeFactory.hxx"
 
 using namespace osg;
 
@@ -66,15 +72,4 @@ StateAttributeFactory::StateAttributeFactory()
     _cullFaceBack->setDataVariance(Object::STATIC);
 }
 
-osg::ref_ptr<StateAttributeFactory> StateAttributeFactory::_theInstance;
-OpenThreads::Mutex StateAttributeFactory::_instanceMutex;
-
-StateAttributeFactory* StateAttributeFactory::instance()
-{
-    OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_instanceMutex);
-    if (!_theInstance.valid()) {
-        _theInstance = new StateAttributeFactory;
-    }
-    return _theInstance.get();
-}
 }

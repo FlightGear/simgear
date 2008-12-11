@@ -60,13 +60,9 @@ using namespace simgear;
 using namespace osg;
 
 typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
-typedef std::vector< osg::ref_ptr<osg::Geode> > GeodeList;
-typedef std::map<std::string, GeodeList*> CloudMap;
 
 StateSetMap cloudTextureMap;
-static CloudMap cloudMap;
 double SGNewCloud::sprite_density = 1.0;
-unsigned int SGNewCloud::num_flavours = 10;
 
 static char vertexShaderSource[] = 
     "#version 120\n"
@@ -113,8 +109,8 @@ static char vertexShaderSource[] =
     "  vec4 backlight = 0.9 * gl_LightSource[0].ambient + 0.1 * gl_LightSource[0].diffuse;\n"
     "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
     "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
-// As we get within 100m of the sprite, it is faded out
-    "  gl_FrontColor.a = smoothstep(10.0, 100.0, fogCoord);\n"
+// As we get within 100m of the sprite, it is faded out. Equally at large distances it also fades out.
+    "  gl_FrontColor.a = min(smoothstep(10.0, 100.0, fogCoord), 1 - smoothstep(15000.0, 20000.0, fogCoord));\n"
     "  gl_BackColor = gl_FrontColor;\n"
 // Fog doesn't affect clouds as much as other objects.        
     "  fogFactor = exp( -gl_Fog.density * fogCoord * 0.5);\n"
@@ -285,118 +281,85 @@ static float Rnd(float n) {
 
 osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     
-    CloudMap::iterator iter = cloudMap.find(name);
-    osg::ref_ptr<osg::Geode> geode;
+    osg::ref_ptr<osg::Geode> geode = new Geode;
+        
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
     
-    // We generate up to num_flavours of different versions
-    // of the same cloud before we start re-using them. This
-    // allows us to strike a balance between performance and
-    // visual complexity.
+    // Determine how big this specific cloud instance is. Note that we subtract
+    // the sprite size because the width/height is used to define the limits of
+    // the center of the sprites, not their edges.
+    float width = min_width + sg_random() * (max_width - min_width) - min_sprite_width;
+    float height = min_height + sg_random() * (max_height - min_height) - min_sprite_height;
     
-    if (iter == cloudMap.end() || (*iter).second->size() < num_flavours) 
+    // Determine the cull distance. This is used to remove sprites that are too close together.
+    // The value is squared as we use vector calculations.
+    float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
+    
+    // The number of sprites we actually used is a function of the (user-controlled) density
+    int n_sprites = num_sprites * sprite_density;
+    
+    for (int i = 0; i < n_sprites; i++)
     {
+        // Determine the position of the sprite. Rather than being completely random,
+        // we place them on the surface of a distorted sphere. However, we place
+        // the first and second sprites on the top and bottom, and the third in the
+        // center of the sphere (and at maximum size) to ensure good coverage and
+        // reduce the chance of there being "holes" in our cloud.
+        float x, y, z;
         
-        geode = new Geode;
-        
-        CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
-        
-        // Determine how big this specific cloud instance is. Note that we subtract
-        // the sprite size because the width/height is used to define the limits of
-        // the center of the sprites, not their edges.
-        float width = min_width + sg_random() * (max_width - min_width) - min_sprite_width;
-        float height = min_height + sg_random() * (max_height - min_height) - min_sprite_height;
-        
-        // Determine the cull distance. This is used to remove sprites that are too close together.
-        // The value is squared as we use vector calculations.
-        float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
-        
-        // The number of sprites we actually used is a function of the (user-controlled) density
-        int n_sprites = num_sprites * sprite_density;
-        
-        for (int i = 0; i < n_sprites; i++)
-        {
-            // Determine the position of the sprite. Rather than being completely random,
-            // we place them on the surface of a distorted sphere. However, we place
-            // the first and second sprites on the top and bottom, and the third in the
-            // center of the sphere (and at maximum size) to ensure good coverage and
-            // reduce the chance of there being "holes" in our cloud.
-            float x, y, z;
-            
-            if (i == 0) {
-                x = 0;
-                y = 0;
-                z = height * 0.5f;
-            } else if (i == 1) {
-                x = 0;
-                y = 0;
-                z = - height * 0.5f;
-            } else if (i == 2) {
-                x = 0;
-                y = 0;
-                z = 0;
-            } else {
-                double theta = sg_random() * SGD_2PI;
-                double elev  = sg_random() * SGD_PI;
-                x = width * cos(theta) * 0.5f * sin(elev);
-                y = width * sin(theta) * 0.5f * sin(elev);
-                z = height * cos(elev) * 0.5f; 
-            }
-            
-            SGVec3f *pos = new SGVec3f(x, y, z); 
-    
-            // Determine the height and width as scaling factors on the minimum size (used to create the quad)
-            float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
-            float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
-            
-            if (i == 2) {
-                // The center sprite is always maximum size to fill up any holes.
-                sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
-                sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
-            }
-            
-            // Determine the sprite texture indexes;
-            int index_x = (int) floor(sg_random() * num_textures_x);
-            if (index_x == num_textures_x) { index_x--; }
-            
-            int index_y = (int) floor(sg_random() * num_textures_y);
-            if (index_y == num_textures_y) { index_y--; }
-            
-            sg->addSprite(*pos, 
-                        index_x, 
-                        index_y, 
-                        sprite_width, 
-                        sprite_height, 
-                        bottom_shade, 
-                        cull_distance_squared, 
-                        height * 0.5f);
+        if (i == 0) {
+            x = 0;
+            y = 0;
+            z = height * 0.5f;
+        } else if (i == 1) {
+            x = 0;
+            y = 0;
+            z = - height * 0.5f;
+        } else if (i == 2) {
+            x = 0;
+            y = 0;
+            z = 0;
+        } else {
+            double theta = sg_random() * SGD_2PI;
+            double elev  = sg_random() * SGD_PI;
+            x = width * cos(theta) * 0.5f * sin(elev);
+            y = width * sin(theta) * 0.5f * sin(elev);
+            z = height * cos(elev) * 0.5f; 
         }
         
+        SGVec3f *pos = new SGVec3f(x, y, z); 
+
+        // Determine the height and width as scaling factors on the minimum size (used to create the quad)
+        float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
+        float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
         
-        sg->setGeometry(quad);
-        geode->addDrawable(sg);
-        geode->setName("3D cloud");
-        geode->setStateSet(stateSet.get());
-        
-        if (iter == cloudMap.end())
-        {
-            // This is the first of this cloud to be generated.
-            GeodeList* geodelist = new GeodeList;
-            geodelist->push_back(geode);
-            cloudMap.insert(CloudMap::value_type(name,  geodelist));
+        if (i == 2) {
+            // The center sprite is always maximum size to fill up any holes.
+            sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
+            sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
         }
-        else
-        {
-            // Add the new cloud to the list of geodes
-            (*iter).second->push_back(geode);
-        }
-    
-    } else {
         
-        int index = sg_random() * num_flavours;
-        if (index == num_flavours) index--;
+        // Determine the sprite texture indexes;
+        int index_x = (int) floor(sg_random() * num_textures_x);
+        if (index_x == num_textures_x) { index_x--; }
         
-        geode = iter->second->at(index);
+        int index_y = (int) floor(sg_random() * num_textures_y);
+        if (index_y == num_textures_y) { index_y--; }
+        
+        sg->addSprite(*pos, 
+                    index_x, 
+                    index_y, 
+                    sprite_width, 
+                    sprite_height, 
+                    bottom_shade, 
+                    cull_distance_squared, 
+                    height * 0.5f);
     }
+    
+    sg->setGeometry(quad);
+    geode->addDrawable(sg);
+    geode->setName("3D cloud");
+    geode->setStateSet(stateSet.get());
     
     return geode;
 }

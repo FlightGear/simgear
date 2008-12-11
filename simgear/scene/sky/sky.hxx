@@ -430,14 +430,6 @@ public:
      */
     virtual void set_3dCloudVisRange(float vis);
 
-    /** Get 3D cloud number of flavours*/
-    virtual float get_3dCloudNumFlavours() const;
-
-    /** Set 3D cloud number of flavours
-     * @param density 3D cloud number of flavours
-     */
-    virtual void set_3dCloudNumFlavours(float n);
-    
 };
 
 

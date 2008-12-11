@@ -72,19 +72,6 @@ public:
             sprite_density = d;
         }
         
-        static int getNumFlavours(void)
-        {
-            return num_flavours;
-        }
-    
-        // Set the number of flavours of this cloud.
-        // This is the number of different instances
-        // to generate.
-        static void setNumFlavours(int d)
-        {
-            num_flavours = d;
-        }
-        
 
 private:
 
@@ -105,7 +92,6 @@ private:
         osg::Geometry* quad;
         osg::ref_ptr<osg::StateSet> stateSet;
         static double sprite_density;
-        static unsigned int num_flavours; 
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 

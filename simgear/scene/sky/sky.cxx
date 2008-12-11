@@ -216,15 +216,6 @@ void SGSky::set_3dCloudVisRange(float vis)
     }
 }
 
-float SGSky::get_3dCloudNumFlavours() const {
-    return (float) SGNewCloud::getNumFlavours();
-}
-
-void SGSky::set_3dCloudNumFlavours(float n)
-{
-    SGNewCloud::setNumFlavours((int) n);
-}
-
 void SGSky::texture_path( const string& path ) {
 	tex_path = SGPath( path );
 }

@@ -1820,6 +1820,7 @@ SGTexTransformAnimation::createAnimationGroup(osg::Group& parent)
   osg::Group* group = new osg::Group;
   group->setName("texture transform group");
   osg::StateSet* stateSet = group->getOrCreateStateSet();
+  stateSet->setDataVariance(osg::Object::DYNAMIC);  
   osg::TexMat* texMat = new osg::TexMat;
   UpdateCallback* updateCallback = new UpdateCallback(getCondition());
   // interpret the configs ...

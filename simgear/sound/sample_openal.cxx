@@ -145,6 +145,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file, bool _no_Doppl
     alBufferData( buffer, format, data, size, freq );
 
     if ( print_openal_error("constructor (alBufferData)") ) {
+        SG_LOG( SG_GENERAL, SG_ALERT, "Trying to use file " << file );
         throw sg_exception("Failed to buffer data.");
     }
 

@@ -375,8 +375,10 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
   const SGPropertyNode* node = getConfig()->getChild("property-base");
   if (node)
     inputRoot = getModelRoot()->getNode(node->getStringValue(), true);
-  if (getConfig()->hasChild("texture-prop"))
+  if (getConfig()->hasChild("texture-prop")) {
       osg::StateSet* stateSet = group->getOrCreateStateSet();
+      stateSet->setDataVariance(osg::Object::DYNAMIC);
+  }
   if (getConfig()->hasChild("texture")) {
     std::string textureName = getConfig()->getStringValue("texture");
     std::string textureFile;

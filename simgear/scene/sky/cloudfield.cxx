@@ -80,6 +80,10 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 {
     osg::Matrix T, LON, LAT;
     
+    // Always update the altitude transform, as this allows
+    // the clouds to rise and fall smoothly depending on environment updates.
+    altitude_transform->setPosition(osg::Vec3d(0.0, 0.0, (double) asl));
+    
     // Calculating the reposition information is expensive. 
     // Only perform the reposition every 60 frames.
     reposition_count = (reposition_count + 1) % 60;
@@ -142,6 +146,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 SGCloudField::SGCloudField() :
         field_root(new osg::Group),
         field_transform(new osg::MatrixTransform),
+        altitude_transform(new osg::PositionAttitudeTransform),
 	deltax(0.0),
 	deltay(0.0),
 	last_course(0.0),
@@ -179,7 +184,9 @@ SGCloudField::SGCloudField() :
             quad[i][j]->addChild(field_group[x][y].get(), 0.0f, view_distance);
         }
     }
-
+    
+    field_transform->addChild(altitude_transform.get());
+            
     // We duplicate the defined field group in a 3x3 array. This way,
     // we can simply shift entire groups around.
     // TODO: "Bend" the edge groups so when shifted they line up.
@@ -191,7 +198,7 @@ SGCloudField::SGCloudField() :
             transform->addChild(quad_root.get());
             transform->setPosition(osg::Vec3(x*fieldSize, y * fieldSize, 0.0));
             
-            field_transform->addChild(transform.get());
+            altitude_transform->addChild(transform.get());
         }
     }
 }

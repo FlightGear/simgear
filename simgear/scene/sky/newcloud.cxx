@@ -192,7 +192,7 @@ SGNewCloud::SGNewCloud(string type,
         // Generate the shader etc, if we don't already have one.
         if (!program.valid()) {
             alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(AlphaFunc::GREATER,0.001f);
+            alphaFunc->setFunction(AlphaFunc::GREATER,0.05f);
             program  = new Program;
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);

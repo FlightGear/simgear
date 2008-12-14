@@ -74,6 +74,7 @@ private:
 
         osg::ref_ptr<osg::Group> field_root;
         osg::ref_ptr<osg::MatrixTransform> field_transform;
+        osg::ref_ptr<osg::PositionAttitudeTransform> altitude_transform;
         osg::ref_ptr<osg::Switch> field_group[QUADTREE_SIZE][QUADTREE_SIZE];
         osg::ref_ptr<osg::LOD> quad[BRANCH_SIZE][BRANCH_SIZE];
         

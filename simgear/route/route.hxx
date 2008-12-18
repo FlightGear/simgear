@@ -113,6 +113,10 @@ public:
 	}
     }
 
+    inline int current_index() const {
+        return current_wp;
+    }
+
     /** Increment the current waypoint pointer. */
     inline void increment_current() {
 	if ( current_wp < (int)route.size() - 1 ) {

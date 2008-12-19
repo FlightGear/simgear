@@ -83,7 +83,8 @@ private:
 	double deltax, deltay, alt;
         double last_course;
         sgSphere field_sphere;
-	float	last_coverage;
+	float last_coverage;
+        float coverage;
         SGGeoc cld_pos;
         int reposition_count;
         struct CloudFog : public simgear::Singleton<CloudFog>
@@ -121,15 +122,14 @@ public:
 
 	static sgVec3 view_vec, view_X, view_Y;
 
-	static float coverage;
         static float view_distance;
         static double timer_dt;
 	static float fieldSize;
 	
         bool defined3D;
 
-	static float getCoverage(void) { return coverage; }
-	static void setCoverage(float coverage) { coverage = coverage; }
+	float getCoverage(void) { return coverage; }
+	void setCoverage(float c) { coverage = c; }
 
         static float getVisRange(void) { return view_distance; }
         static void setVisRange(float d) { view_distance = d; }

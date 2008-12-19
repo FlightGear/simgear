@@ -68,7 +68,6 @@ using namespace simgear;
 #endif
 
 float SGCloudField::fieldSize = 50000.0f;
-float SGCloudField::coverage = 1.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
@@ -151,6 +150,7 @@ SGCloudField::SGCloudField() :
 	deltay(0.0),
 	last_course(0.0),
 	last_coverage(0.0),
+        coverage(0.0),
         defined3D(false),
         reposition_count(0)
 {
@@ -211,10 +211,7 @@ void SGCloudField::clear(void) {
     for (int x = 0; x < QUADTREE_SIZE; x++) {
         for (int y = 0; y < QUADTREE_SIZE; y++) {
             int num_children = field_group[x][y]->getNumChildren();
-
-            for (int i = 0; i < num_children; i++) {
-                field_group[x][y]->removeChild(i);
-            }
+            field_group[x][y]->removeChildren(0, num_children);
         }
     }
     
@@ -239,7 +236,7 @@ static int densTable[][10] = {
 void SGCloudField::applyCoverage(void) {
 
         int row = (int) (coverage * 10.0);
-        if (row > 10) row = 9;
+        if (row > 9) row = 9;
         int col = 0;
 
         if (coverage != last_coverage) {

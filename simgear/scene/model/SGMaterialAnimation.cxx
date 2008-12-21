@@ -256,7 +256,7 @@ public:
     _specular(configNode->getChild("specular"), modelRoot),
     _emission(configNode->getChild("emission"), modelRoot),
     _shininess("shininess", "shininess-prop",
-               configNode->getChild("shininess"), modelRoot),
+               configNode/*->getChild("shininess")*/, modelRoot),
     _transparency("alpha", "alpha-prop",
                   configNode->getChild("transparency"), modelRoot),
     _texturePathList(texturePathList)
@@ -269,6 +269,7 @@ public:
     node = configNode->getChild("texture-prop");
     if (node)
       _textureProp = modelRoot->getNode(node->getStringValue(), true);
+    _shininess.max = 128;
   }
 
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)

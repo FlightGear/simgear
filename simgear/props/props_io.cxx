@@ -27,6 +27,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>		// strcmp()
 #include <vector>
 #include <map>
 

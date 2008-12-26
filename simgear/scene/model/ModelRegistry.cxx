@@ -345,6 +345,11 @@ ModelRegistry::readImage(const string& fileName,
         Registry* registry = Registry::instance();
         ReaderWriter::ReadResult res;
         res = registry->readImageImplementation(absFileName, opt);
+        if (!res.success()) {
+          SG_LOG(SG_IO, SG_WARN, "Image loading failed:" << res.message());
+          return res;
+        }
+        
         if (res.loadedFromCache())
             SG_LOG(SG_IO, SG_INFO, "Returning cached image \""
                    << res.getImage()->getFileName() << "\"");

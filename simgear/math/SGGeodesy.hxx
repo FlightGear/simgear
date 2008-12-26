@@ -53,6 +53,10 @@ public:
   static bool inverse(const SGGeod& p1, const SGGeod& p2, double& course1,
                       double& course2, double& distance);
 
+  static double courseDeg(const SGGeod& from, const SGGeod& to);
+  static double distanceM(const SGGeod& from, const SGGeod& to);
+  static double distanceNm(const SGGeod& from, const SGGeod& to);
+    
   // Geocentric course/distance computation
   static void advanceRadM(const SGGeoc& geoc, double course, double distance,
                           SGGeoc& result);

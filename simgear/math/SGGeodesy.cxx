@@ -21,6 +21,7 @@
 
 #include <cmath>
 
+#include "structure/exception.hxx"
 #include "SGMath.hxx"
 
 // These are hard numbers from the WGS84 standard.  DON'T MODIFY
@@ -421,6 +422,40 @@ SGGeodesy::inverse(const SGGeod& p1, const SGGeod& p2, double& course1,
                                 p2.getLatitudeDeg(), p2.getLongitudeDeg(),
                                 &course1, &course2, &distance);
   return ret == 0;
+}
+
+double
+SGGeodesy::courseDeg(const SGGeod& p1, const SGGeod& p2)
+{
+  double course1, course2, distance;
+  int r = _geo_inverse_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
+                                p2.getLatitudeDeg(), p2.getLongitudeDeg(),
+                                &course1, &course2, &distance);
+  if (r != 0) {
+    throw sg_exception("SGGeodesy::courseDeg, unable to compute course");
+  }
+  
+  return course1;
+}
+
+double
+SGGeodesy::distanceM(const SGGeod& p1, const SGGeod& p2)
+{
+  double course1, course2, distance;
+  int r = _geo_inverse_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
+                                p2.getLatitudeDeg(), p2.getLongitudeDeg(),
+                                &course1, &course2, &distance);
+  if (r != 0) {
+    throw sg_exception("SGGeodesy::distanceM, unable to compute distance");
+  }
+  
+  return distance;
+}
+
+double
+SGGeodesy::distanceNm(const SGGeod& from, const SGGeod& to)
+{
+  return distanceM(from, to) * SG_METER_TO_NM;
 }
 
 /// Geocentric routines

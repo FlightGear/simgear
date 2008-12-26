@@ -31,4 +31,5 @@ routetest_LDADD = \
 	libsgroute.a \
 	$(top_builddir)/simgear/math/libsgmath.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/structure/libsgstructure.a \
 	$(base_LIBS)

@@ -21,7 +21,7 @@
 
 #include <cmath>
 
-#include "structure/exception.hxx"
+#include <simgear/structure/exception.hxx>
 #include "SGMath.hxx"
 
 // These are hard numbers from the WGS84 standard.  DON'T MODIFY

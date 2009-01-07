@@ -2013,7 +2013,7 @@ public:
     SGBindingList::const_iterator i;
     for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
       (*i)->fire();
-    _repeatTime = 0;
+    _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
     return true;
   }
   virtual void buttonReleased(void)

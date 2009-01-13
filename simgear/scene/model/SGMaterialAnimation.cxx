@@ -406,16 +406,12 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
   const SGPropertyNode* node = getConfig()->getChild("property-base");
   if (node)
     inputRoot = getModelRoot()->getNode(node->getStringValue(), true);
-  if (getConfig()->hasChild("texture-prop")) {
-      osg::StateSet* stateSet = group->getOrCreateStateSet();
-      stateSet->setDataVariance(osg::Object::DYNAMIC);
-  }
+  osg::StateSet* stateSet = group->getOrCreateStateSet();  
   if (getConfig()->hasChild("texture")) {
     std::string textureName = getConfig()->getStringValue("texture");
     std::string textureFile;
     textureFile = osgDB::findFileInPath(textureName, texturePathList);
     if (!textureFile.empty()) {
-      osg::StateSet* stateSet = group->getOrCreateStateSet();
       osg::Texture2D* texture2D = SGLoadTexture2D(textureFile);
       if (texture2D) {
         stateSet->setTextureAttribute(0, texture2D,
@@ -430,7 +426,6 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
   }
   if (getConfig()->hasChild("threshold-prop") ||
       getConfig()->hasChild("threshold")) {
-    osg::StateSet* stateSet = group->getOrCreateStateSet();
     osg::AlphaFunc* alphaFunc = new osg::AlphaFunc;
     alphaFunc->setFunction(osg::AlphaFunc::GREATER);
     float threshold = getConfig()->getFloatValue("threshold", 0);
@@ -452,83 +447,92 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
     suppliedColors |= SHININESS;
   if (getConfig()->hasChild("transparency"))
     suppliedColors |= TRANSPARENCY;
-
+  osg::Material* mat = 0;
   if (suppliedColors != 0) {
-      osg::StateSet* stateSet = group->getOrCreateStateSet();
-      osg::Material* mat;
+    if (defaultMaterial.valid()) {
+      mat = defaultMaterial.get();
 
-      if (defaultMaterial.valid()) {
-	mat = defaultMaterial.get();
-
+    } else {
+      mat = new osg::Material;
+      mat->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+    }
+    mat->setDataVariance(osg::Object::DYNAMIC);
+    unsigned defaultColorModeMask = 0;
+    mat->setUpdateCallback(0); // Just to make sure.
+    switch (mat->getColorMode()) {
+    case osg::Material::OFF:
+      defaultColorModeMask = 0;
+      break;
+    case osg::Material::AMBIENT:
+      defaultColorModeMask = AMBIENT;
+      break;
+    case osg::Material::DIFFUSE:
+      defaultColorModeMask = DIFFUSE;
+      break;
+    case osg::Material::AMBIENT_AND_DIFFUSE:
+      defaultColorModeMask = AMBIENT | DIFFUSE;
+      break;
+    case osg::Material::SPECULAR:
+      defaultColorModeMask = SPECULAR;
+      break;
+    case osg::Material::EMISSION:
+      defaultColorModeMask = EMISSION;
+      break;
+    }
+    // Copy the color found by traversing geometry into the material
+    // in case we need to specify it (e.g., transparency) and it is
+    // not specified by the animation.
+    if (defaultAmbientDiffuse.x() >= 0) {
+      if (defaultColorModeMask & AMBIENT)
+        mat->setAmbient(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
+      if (defaultColorModeMask & DIFFUSE)
+        mat->setDiffuse(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
+    }
+    // Compute which colors in the animation override colors set via
+    // colorMode / glColor, and set the colorMode for the animation's
+    // material accordingly. 
+    if (suppliedColors & TRANSPARENCY) {
+      // All colors will be affected by the material. Hope all the
+      // defaults are fine, if needed.
+      mat->setColorMode(osg::Material::OFF);
+    } else if ((suppliedColors & defaultColorModeMask) != 0) {
+      // First deal with the complicated AMBIENT/DIFFUSE case.
+      if ((defaultColorModeMask & AMBIENT_DIFFUSE) != 0) {
+        // glColor can supply colors not specified by the animation.
+        unsigned matColorModeMask = ((~suppliedColors & defaultColorModeMask)
+                                     & AMBIENT_DIFFUSE);
+        if ((matColorModeMask & DIFFUSE) != 0)
+          mat->setColorMode(osg::Material::DIFFUSE);
+        else if ((matColorModeMask & AMBIENT) != 0)
+          mat->setColorMode(osg::Material::AMBIENT);
+        else
+          mat->setColorMode(osg::Material::OFF);
       } else {
-	mat = new osg::Material;
-	mat->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
+        // The animation overrides the glColor color.
+        mat->setColorMode(osg::Material::OFF);
       }
-      mat->setDataVariance(osg::Object::DYNAMIC);
-      unsigned defaultColorModeMask = 0;
-      mat->setUpdateCallback(0); // Just to make sure.
-      switch (mat->getColorMode()) {
-      case osg::Material::OFF:
-	defaultColorModeMask = 0;
-	break;
-      case osg::Material::AMBIENT:
-	defaultColorModeMask = AMBIENT;
-	break;
-      case osg::Material::DIFFUSE:
-	defaultColorModeMask = DIFFUSE;
-	break;
-      case osg::Material::AMBIENT_AND_DIFFUSE:
-	defaultColorModeMask = AMBIENT | DIFFUSE;
-	break;
-      case osg::Material::SPECULAR:
-	defaultColorModeMask = SPECULAR;
-	break;
-      case osg::Material::EMISSION:
-	defaultColorModeMask = EMISSION;
-	break;
-      }
-      // Copy the color found by traversing geometry into the material
-      // in case we need to specify it (e.g., transparency) and it is
-      // not specified by the animation.
-      if (defaultAmbientDiffuse.x() >= 0) {
-	if (defaultColorModeMask & AMBIENT)
-	  mat->setAmbient(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
-	if (defaultColorModeMask & DIFFUSE)
-	  mat->setDiffuse(osg::Material::FRONT_AND_BACK, defaultAmbientDiffuse);
-      }
-      // Compute which colors in the animation override colors set via
-      // colorMode / glColor, and set the colorMode for the animation's
-      // material accordingly. 
-      if (suppliedColors & TRANSPARENCY) {
-	// All colors will be affected by the material. Hope all the
-	// defaults are fine, if needed.
-	mat->setColorMode(osg::Material::OFF);
-      } else if ((suppliedColors & defaultColorModeMask) != 0) {
-	// First deal with the complicated AMBIENT/DIFFUSE case.
-	if ((defaultColorModeMask & AMBIENT_DIFFUSE) != 0) {
-	  // glColor can supply colors not specified by the animation.
-	  unsigned matColorModeMask = ((~suppliedColors & defaultColorModeMask)
-				       & AMBIENT_DIFFUSE);
-	  if ((matColorModeMask & DIFFUSE) != 0)
-	    mat->setColorMode(osg::Material::DIFFUSE);
-	  else if ((matColorModeMask & AMBIENT) != 0)
-	    mat->setColorMode(osg::Material::AMBIENT);
-	  else
-	    mat->setColorMode(osg::Material::OFF);
-	} else {
-	  // The animation overrides the glColor color.
-	  mat->setColorMode(osg::Material::OFF);
-	}
-      } else {
-	// No overlap between the animation and color mode, so leave
-	// the color mode alone.
-      }
-      stateSet->setAttribute(mat,(osg::StateAttribute::ON
-				  | osg::StateAttribute::OVERRIDE));
+    } else {
+      // No overlap between the animation and color mode, so leave
+      // the color mode alone.
+    }
+    stateSet->setAttribute(mat,(osg::StateAttribute::ON
+                                | osg::StateAttribute::OVERRIDE));
   }
-  group->setUpdateCallback(new UpdateCallback(texturePathList,
-					      getCondition(),
-					      getConfig(), inputRoot));
+  bool matAnimated = false;
+  if (mat) {
+    MaterialPropertyAdapter adapter(getConfig(), inputRoot);
+    adapter.setMaterialValues(stateSet);
+    matAnimated = adapter.isAnimated();
+  }
+  if (matAnimated || getConfig()->hasChild("texture-prop")
+      || getConfig()->hasChild("threshold-prop") || getCondition()) {
+    stateSet->setDataVariance(osg::Object::DYNAMIC);
+    group->setUpdateCallback(new UpdateCallback(texturePathList,
+                                                getCondition(),
+                                                getConfig(), inputRoot));
+  } else {
+    stateSet->setDataVariance(osg::Object::STATIC);
+  }
   parent.addChild(group);
   return group;
 }

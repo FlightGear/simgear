@@ -245,20 +245,78 @@ public:
   osg::Vec4 ambientDiffuse;
 };
 
+class MaterialPropertyAdapter
+{
+public:
+    MaterialPropertyAdapter(const SGPropertyNode* configNode,
+                            SGPropertyNode* modelRoot) :
+        _ambient(configNode->getChild("ambient"), modelRoot),
+        _diffuse(configNode->getChild("diffuse"), modelRoot),
+        _specular(configNode->getChild("specular"), modelRoot),
+        _emission(configNode->getChild("emission"), modelRoot),
+        _shininess("shininess", "shininess-prop",
+                   configNode/*->getChild("shininess")*/, modelRoot),
+        _transparency("alpha", "alpha-prop",
+                      configNode->getChild("transparency"), modelRoot)
+    {
+        _shininess.max = 128;
+        _isAnimated = (_ambient.live() || _diffuse.live() || _specular.live()
+                       || _emission.live() || _shininess.live()
+                       || _transparency.live());
+    }
+    bool isAnimated() { return _isAnimated; }
+    // This takes a StateSet argument because the rendering bin will
+    // be changed if there is transparency.
+    void setMaterialValues(osg::StateSet* stateSet)
+    {
+        osg::StateAttribute* stateAttribute
+            = stateSet->getAttribute(osg::StateAttribute::MATERIAL);
+        osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
+        if (material) {
+            if (_ambient.live() || _ambient.dirty())
+                material->setAmbient(osg::Material::FRONT_AND_BACK,
+                                     _ambient.rgbaVec4());	
+            if (_diffuse.live() || _diffuse.dirty())
+                material->setDiffuse(osg::Material::FRONT_AND_BACK,
+                                     _diffuse.rgbaVec4());
+            if (_specular.live() || _specular.dirty())
+                material->setSpecular(osg::Material::FRONT_AND_BACK,
+                                      _specular.rgbaVec4());
+            if (_emission.live() || _emission.dirty())
+                material->setEmission(osg::Material::FRONT_AND_BACK,
+                                      _emission.rgbaVec4());
+            if (_shininess.live() || _shininess.dirty())
+                material->setShininess(osg::Material::FRONT_AND_BACK,
+                                       _shininess.getValue());
+            if (_transparency.live() || _transparency.dirty()) {
+                float alpha = _transparency.getValue();
+                material->setAlpha(osg::Material::FRONT_AND_BACK, alpha);
+                if (alpha < 1.0f) {
+                    stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+                    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
+                } else {
+                    stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
+                }
+            }
+        }
+    }
+    ColorSpec _ambient;
+    ColorSpec _diffuse;
+    ColorSpec _specular;
+    ColorSpec _emission;
+    PropSpec _shininess;
+    PropSpec _transparency;
+    bool _isAnimated;
+
+};
+
 class UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const osgDB::FilePathList& texturePathList,
                  const SGCondition* condition,
                  const SGPropertyNode* configNode, SGPropertyNode* modelRoot) :
     _condition(condition),
-    _ambient(configNode->getChild("ambient"), modelRoot),
-    _diffuse(configNode->getChild("diffuse"), modelRoot),
-    _specular(configNode->getChild("specular"), modelRoot),
-    _emission(configNode->getChild("emission"), modelRoot),
-    _shininess("shininess", "shininess-prop",
-               configNode/*->getChild("shininess")*/, modelRoot),
-    _transparency("alpha", "alpha-prop",
-                  configNode->getChild("transparency"), modelRoot),
+    _materialProps(configNode, modelRoot),
     _texturePathList(texturePathList),
     _prevState(false)
   {
@@ -270,7 +328,6 @@ public:
     node = configNode->getChild("texture-prop");
     if (node)
       _textureProp = modelRoot->getNode(node->getStringValue(), true);
-    _shininess.max = 128;
   }
 
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
@@ -302,40 +359,13 @@ public:
         osg::StateSet* stateSet = node->getOrCreateStateSet();
         osg::StateAttribute* stateAttribute;
         stateAttribute = stateSet->getAttribute(osg::StateAttribute::ALPHAFUNC);
-        osg::AlphaFunc* alphaFunc = dynamic_cast<osg::AlphaFunc*>(stateAttribute);
+        osg::AlphaFunc* alphaFunc
+            = dynamic_cast<osg::AlphaFunc*>(stateAttribute);
 	assert(alphaFunc);
         alphaFunc->setReferenceValue(_thresholdProp->getFloatValue());
       }
-      osg::StateAttribute* stateAttribute
-	= stateSet->getAttribute(osg::StateAttribute::MATERIAL);
-      osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
-      if (material) {
-	if (_ambient.live() || (!_prevState && _ambient.dirty()))
-	  material->setAmbient(osg::Material::FRONT_AND_BACK,
-			       _ambient.rgbaVec4());	
-	if (_diffuse.live() || (!_prevState && _diffuse.dirty()))
-	  material->setDiffuse(osg::Material::FRONT_AND_BACK,
-			       _diffuse.rgbaVec4());
-	if (_specular.live() || (!_prevState && _specular.dirty()))
-	  material->setSpecular(osg::Material::FRONT_AND_BACK,
-				_specular.rgbaVec4());
-	if (_emission.live() || (!_prevState && _emission.dirty()))
-	  material->setEmission(osg::Material::FRONT_AND_BACK,
-				_emission.rgbaVec4());
-	if (_shininess.live() || (!_prevState && _shininess.dirty()))
-	  material->setShininess(osg::Material::FRONT_AND_BACK,
-				 _shininess.getValue());
-	if (_transparency.live() || (!_prevState && _transparency.dirty())) {
-	  float alpha = _transparency.getValue();
-	  material->setAlpha(osg::Material::FRONT_AND_BACK, alpha);
-	  if (alpha < 1.0f) {
-	    stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-	    stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-	  } else {
-	    stateSet->setRenderingHint(osg::StateSet::DEFAULT_BIN);
-	  }
-	}
-      }
+      if (_materialProps.isAnimated() || !_prevState)
+          _materialProps.setMaterialValues(stateSet);
       _prevState = true;
     } else {
       _prevState = false;
@@ -347,12 +377,7 @@ private:
   SGSharedPtr<const SGPropertyNode> _textureProp;
   SGSharedPtr<const SGPropertyNode> _thresholdProp;
   std::string _textureName;
-  ColorSpec _ambient;
-  ColorSpec _diffuse;
-  ColorSpec _specular;
-  ColorSpec _emission;
-  PropSpec _shininess;
-  PropSpec _transparency;
+  MaterialPropertyAdapter _materialProps;
   osgDB::FilePathList _texturePathList;
   bool _prevState;
 };

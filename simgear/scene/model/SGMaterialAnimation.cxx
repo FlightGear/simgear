@@ -259,7 +259,8 @@ public:
                configNode/*->getChild("shininess")*/, modelRoot),
     _transparency("alpha", "alpha-prop",
                   configNode->getChild("transparency"), modelRoot),
-    _texturePathList(texturePathList)
+    _texturePathList(texturePathList),
+    _prevState(false)
   {
     const SGPropertyNode* node;
 
@@ -309,22 +310,22 @@ public:
 	= stateSet->getAttribute(osg::StateAttribute::MATERIAL);
       osg::Material* material = dynamic_cast<osg::Material*>(stateAttribute);
       if (material) {
-	if (_ambient.live())
+	if (_ambient.live() || (!_prevState && _ambient.dirty()))
 	  material->setAmbient(osg::Material::FRONT_AND_BACK,
 			       _ambient.rgbaVec4());	
-	if (_diffuse.live())
+	if (_diffuse.live() || (!_prevState && _diffuse.dirty()))
 	  material->setDiffuse(osg::Material::FRONT_AND_BACK,
 			       _diffuse.rgbaVec4());
-	if (_specular.live())
+	if (_specular.live() || (!_prevState && _specular.dirty()))
 	  material->setSpecular(osg::Material::FRONT_AND_BACK,
 				_specular.rgbaVec4());
-	if (_emission.live())
+	if (_emission.live() || (!_prevState && _emission.dirty()))
 	  material->setEmission(osg::Material::FRONT_AND_BACK,
 				_emission.rgbaVec4());
-	if (_shininess.live())
+	if (_shininess.live() || (!_prevState && _shininess.dirty()))
 	  material->setShininess(osg::Material::FRONT_AND_BACK,
 				 _shininess.getValue());
-	if (_transparency.live())	{
+	if (_transparency.live() || (!_prevState && _transparency.dirty())) {
 	  float alpha = _transparency.getValue();
 	  material->setAlpha(osg::Material::FRONT_AND_BACK, alpha);
 	  if (alpha < 1.0f) {
@@ -335,6 +336,9 @@ public:
 	  }
 	}
       }
+      _prevState = true;
+    } else {
+      _prevState = false;
     }
     traverse(node, nv);
   }
@@ -350,6 +354,7 @@ private:
   PropSpec _shininess;
   PropSpec _transparency;
   osgDB::FilePathList _texturePathList;
+  bool _prevState;
 };
 } // namespace
 

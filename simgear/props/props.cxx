@@ -477,6 +477,7 @@ SGPropertyNode::clearValue ()
   case NONE:
     break;
   case ALIAS:
+    put(_value.alias);
     _value.alias = 0;
     break;
   case BOOL:
@@ -661,6 +662,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
     break;
   case ALIAS:
     _value.alias = node._value.alias;
+    get(_value.alias);
     _tied = false;
     break;
   case BOOL:
@@ -776,6 +778,7 @@ SGPropertyNode::alias (SGPropertyNode * target)
   if (target == 0 || _type == ALIAS || _tied)
     return false;
   clearValue();
+  get(target);
   _value.alias = target;
   _type = ALIAS;
   return true;
@@ -800,8 +803,7 @@ SGPropertyNode::unalias ()
 {
   if (_type != ALIAS)
     return false;
-  _type = NONE;
-  _value.alias = 0;
+  clearValue();
   return true;
 }
 

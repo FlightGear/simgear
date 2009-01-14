@@ -280,39 +280,6 @@ public:
   }
 };
 
-// Work around an OSG bug - the file loaders don't use the file path
-// in options while the file is being loaded.
-
-struct OptionsPusher {
-    FilePathList localPathList;
-    bool validOptions;
-    OptionsPusher(const ReaderWriter::Options* options):
-        validOptions(false)
-    {
-        if (!options)
-            return;
-        Registry* registry = Registry::instance();
-        localPathList = registry->getDataFilePathList();
-        const FilePathList& regPathList = registry->getDataFilePathList();
-        const FilePathList& optionsPathList = options->getDatabasePathList();
-        for (FilePathList::const_iterator iter = optionsPathList.begin();
-             iter != optionsPathList.end();
-             ++iter) {
-            if (find(regPathList.begin(), regPathList.end(), *iter)
-                == regPathList.end())
-                localPathList.push_back(*iter);
-        }
-        // Save the current Registry path list and install the augmented one.
-        localPathList.swap(registry->getDataFilePathList());
-        validOptions = true;
-    }
-    ~OptionsPusher()
-    {
-        // Restore the old path list
-        if (validOptions)
-            localPathList.swap(Registry::instance()->getDataFilePathList());
-    }
-};
 } // namespace
 
 Node* DefaultProcessPolicy::process(Node* node, const string& filename,
@@ -332,10 +299,9 @@ ModelRegistry::readImage(const string& fileName,
         = imageCallbackMap.find(getFileExtension(fileName));
     // XXX Workaround for OSG plugin bug
     {
-        OptionsPusher pusher(opt);
         if (iter != imageCallbackMap.end() && iter->second.valid())
             return iter->second->readImage(fileName, opt);
-        string absFileName = findDataFile(fileName);
+        string absFileName = findDataFile(fileName, opt);
         if (!fileExists(absFileName)) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
                    << fileName << "\"");
@@ -484,7 +450,6 @@ ModelRegistry::readNode(const string& fileName,
 {
     ScopedLock<ReentrantMutex> lock(readerMutex);
     // XXX Workaround for OSG plugin bug.
-    OptionsPusher pusher(opt);
     Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
     Node* cached = 0;

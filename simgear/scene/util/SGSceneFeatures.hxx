@@ -22,6 +22,8 @@
 #ifndef SG_SCENE_FEATURES_HXX
 #define SG_SCENE_FEATURES_HXX
 
+#include <OpenThreads/Mutex>
+
 #include <simgear/structure/SGReferenced.hxx>
 
 namespace osg { class Texture; }
@@ -94,6 +96,8 @@ private:
   bool _pointSpriteLights;
   bool _distanceAttenuationLights;
   int  _textureFilter;
+
+  static OpenThreads::Mutex _instanceMutex;
 };
 
 #endif

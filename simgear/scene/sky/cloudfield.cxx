@@ -137,7 +137,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         field_transform->setMatrix( LAT*LON*T );
     }
     
-    field_root->getStateSet()->setRenderBinDetails(asl, "RenderBin");
+    field_root->getStateSet()->setRenderBinDetails(asl, "DepthSortedBin");
 
     return true;
 }

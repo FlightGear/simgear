@@ -6,8 +6,9 @@
 
 #include <memory>
 #include <simgear/props/props_io.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
+
+#include <OpenThreads/Mutex>
+#include <OpenThreads/ScopedLock>
 
 #include "commands.hxx"
 
@@ -28,6 +29,8 @@ SGCommandMgr::~SGCommandMgr ()
   // no-op
 }
 
+OpenThreads::Mutex SGCommandMgr::_instanceMutex;
+
 SGCommandMgr*
 SGCommandMgr::instance()
 {
@@ -35,8 +38,7 @@ SGCommandMgr::instance()
   if (mgr.get())
     return mgr.get();
 
-  static SGMutex lock;
-  SGGuard<SGMutex> guard(lock);
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(_instanceMutex);
   if (mgr.get())
     return mgr.get();
 

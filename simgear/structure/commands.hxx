@@ -17,6 +17,8 @@
 #include <map>
 #include <vector>
 
+#include <OpenThreads/Mutex>
+
 #include <simgear/props/props.hxx>
 
 using std::string;
@@ -108,6 +110,8 @@ private:
 
   typedef map<string,command_t> command_map;
   command_map _commands;
+
+  static OpenThreads::Mutex _instanceMutex;
 
 };
 

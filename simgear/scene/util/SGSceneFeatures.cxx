@@ -31,9 +31,10 @@
 #include <osg/PointSprite>
 #include <osg/Texture>
 
+#include <OpenThreads/Mutex>
+#include <OpenThreads/ScopedLock>
+
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/threads/SGThread.hxx>
-#include <simgear/threads/SGGuard.hxx>
 
 SGSceneFeatures::SGSceneFeatures() :
   _textureCompression(UseARBCompression),
@@ -44,14 +45,14 @@ SGSceneFeatures::SGSceneFeatures() :
 {
 }
 
-static SGMutex mutexSGSceneFeatures_instance;
+static OpenThreads::Mutex mutexSGSceneFeatures_instance;
 SGSceneFeatures*
 SGSceneFeatures::instance()
 {
   static SGSharedPtr<SGSceneFeatures> sceneFeatures;
   if (sceneFeatures)
     return sceneFeatures;
-  SGGuard<SGMutex> guard(mutexSGSceneFeatures_instance);
+  OpenThreads::ScopedLock<OpenThreads::Mutex> lock(mutexSGSceneFeatures_instance);
   if (sceneFeatures)
     return sceneFeatures;
   sceneFeatures = new SGSceneFeatures;

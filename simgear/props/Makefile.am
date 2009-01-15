@@ -20,6 +20,7 @@ props_test_LDADD = \
 	$(top_builddir)/simgear/xml/libsgxml.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
-	$(top_builddir)/simgear/structure/libsgstructure.a
+	$(top_builddir)/simgear/structure/libsgstructure.a \
+	-lOpenThreads
 
 INCLUDES = -I$(top_srcdir)

@@ -30,6 +30,7 @@ openal_test2_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/structure/libsgstructure.a \
-	$(openal_LIBS)
+	$(openal_LIBS) \
+	-lOpenThreads
 
 INCLUDES = -I$(top_srcdir) -DSRC_DIR=\"$(top_srcdir)/simgear/sound\"

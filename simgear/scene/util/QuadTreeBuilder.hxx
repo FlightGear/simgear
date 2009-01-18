@@ -80,10 +80,14 @@ public:
     {
         using namespace osg;
         const Vec3 center(_getLocalCoords(obj));
-        int x = (int)(_dimension * (center.x() - _min.x())
+        int x = 0;
+        if (_max.x() != _min.x())
+            x = (int)(_dimension * (center.x() - _min.x())
                       / (_max.x() - _min.x()));
         x = clampTo(x, 0, (_dimension - 1));
-        int y = (int)(_dimension * (center.y() - _min.y())
+        int y = 0;
+        if (_max.y() != _min.y())
+            y = (int)(_dimension * (center.y() - _min.y())
                       / (_max.y() - _min.y()));
         y = clampTo(y, 0, (_dimension -1));
         _addLeafObject(_leaves(y, x), obj);

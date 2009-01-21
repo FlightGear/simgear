@@ -128,11 +128,17 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
 
  static char vertexShaderSource[] = 
     "varying float fogFactor;\n"
+#ifndef TSG_PACKED_ATTRIBUTES
     "attribute float textureIndex;\n"
+#endif
     "\n"
     "void main(void)\n"
     "{\n"
+#ifdef TSG_PACKED_ATTRIBUTES
+    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
+#else
     "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndex, 0.0, 0.0, 0.0);\n"
+#endif
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
@@ -247,7 +253,9 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
             program->addShader(vertex_shader);
+#ifndef TSG_PACKED_ATTRIBUTES
             program->addBindAttribLocation("textureIndex", 1);
+#endif
 
             Shader* fragment_shader = new Shader(Shader::FRAGMENT,
                                                  fragmentShaderSource);

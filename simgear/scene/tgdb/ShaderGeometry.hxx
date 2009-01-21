@@ -37,45 +37,36 @@
 namespace simgear
 {
 
-class ShaderGeometry : public osg::Drawable
+class ShaderGeometry : public osg::Geometry
 {
     public:
-        ShaderGeometry()
+        ShaderGeometry() :
+          varieties(1)
         { 
-          setUseDisplayList(false); 
         }
 
         ShaderGeometry(int v) :
           varieties(v)
         { 
-          setUseDisplayList(false); 
         }
         
         /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
         ShaderGeometry(const ShaderGeometry& ShaderGeometry,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
-            osg::Drawable(ShaderGeometry,copyop) {}
+            osg::Geometry(ShaderGeometry,copyop) {}
 
         META_Object(flightgear, ShaderGeometry);
         
-        typedef std::vector<osg::Vec4> PositionSizeList;
-        
-        virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
         virtual osg::BoundingBox computeBound() const;
-    
         
-        void setGeometry(osg::Drawable* geometry)
+        void setGeometry(osg::Geometry* geometry)
         {
             _geometry = geometry;
         }
         
-        void addTree(TreeBin::Tree tree)
-        {
-            _trees.push_back(tree);
-        }
-        
-        osg::ref_ptr<osg::Drawable> _geometry;
+        void addTree(const TreeBin::Tree& tree);
 
-        TreeBin::TreeList _trees;
+        osg::ref_ptr<osg::Geometry> _geometry;
+
         int varieties;
 
     protected:

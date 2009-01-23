@@ -42,12 +42,13 @@ public:
                     const MakeLeaf& makeLeaf = MakeLeaf()) :
         _root(new osg::Group), _depth(depth),
         _dimension(1 << depth), _leafStorage(_dimension * _dimension),
-        _leaves(_leafStorage, _dimension), _getLocalCoords(getLocalCoords),
+        _leaves(_leafStorage, _dimension),
+        _leafParents(_leafParentStorage, _dimension / 2),
+        _getLocalCoords(getLocalCoords),
         _addLeafObject(addLeafObject), _makeLeaf(makeLeaf)
     {
         using namespace std;
         using namespace osg;
-        generate(_leafStorage.begin(), _leafStorage.end(), _makeLeaf);
         vector<Group*> parentNodes(1);
         parentNodes[0] = _root.get();
         unsigned leafDim = 2;
@@ -63,11 +64,8 @@ public:
             }
             parentNodes.swap(interiorNodes);
         }
-        VectorArrayAdapter<vector<Group*> > leafParents(parentNodes,
-                                                        _dimension / 2);
-        for (int j = 0; j < _dimension; ++j)
-            for (int k =0; k < _dimension; ++k)
-                leafParents(j / 2, k / 2)->addChild(_leaves(j, k));
+        // Save leaf parents for later when we add leaves
+        _leafParentStorage = parentNodes;
     }
     osg::Vec2 getMin() { return _min; }
     void setMin(const osg::Vec2& min) { _min = min; }
@@ -90,6 +88,10 @@ public:
             y = (int)(_dimension * (center.y() - _min.y())
                       / (_max.y() - _min.y()));
         y = clampTo(y, 0, (_dimension -1));
+        if (!_leaves(y, x)) {
+            _leaves(y, x) = _makeLeaf();
+            _leafParents(y / 2, x / 2)->addChild(_leaves(y, x));
+        }
         _addLeafObject(_leaves(y, x), obj);
     }
     // STL craziness
@@ -125,6 +127,8 @@ protected:
     int _dimension;
     LeafVector _leafStorage;
     VectorArrayAdapter<LeafVector> _leaves;
+    std::vector<osg::Group*> _leafParentStorage;
+    VectorArrayAdapter<std::vector<osg::Group*> > _leafParents;
     const GetObjectLocalCoords _getLocalCoords;
     const AddLeafObject _addLeafObject;
     const MakeLeaf _makeLeaf;

@@ -25,35 +25,52 @@
 
 #include "ShaderGeometry.hxx"
 
+#include <algorithm>
+
 using namespace osg;
 using namespace osgDB;
 
 namespace simgear
 {
-void ShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
+void ShaderGeometry::addTree(const TreeBin::Tree& t)
 {
-    osg::State& state = *renderInfo.getState();
-    const Extensions* extensions = getExtensions(state.getContextID(),true);
-
-    for(TreeBin::TreeList::const_iterator t = _trees.begin(); t != _trees.end(); ++t)
-    {
-        extensions->glVertexAttrib1f(1, (float) t->texture_index/varieties);
-        glColor4f(t->position.x(), t->position.y(), t->position.z(), t->scale);
-        _geometry->draw(renderInfo);
+    if (!getVertexArray()) {
+        setVertexData(_geometry->getVertexData());
+        setNormalData(_geometry->getNormalData());
+        setTexCoordData(0, _geometry->getTexCoordData(0));
+        setColorArray(new Vec4Array());
+        setColorBinding(Geometry::BIND_PER_PRIMITIVE_SET);
+        setVertexAttribArray(1, new FloatArray());
+        setVertexAttribBinding(1, Geometry::BIND_PER_PRIMITIVE_SET);
     }
+    Geometry::PrimitiveSetList& modelSets = _geometry->getPrimitiveSetList();
+    size_t numSets = modelSets.size();
+    Vec4Array *colors = static_cast<Vec4Array*>(getColorArray());
+    FloatArray *vertexAttribs
+        = static_cast<FloatArray*>(getVertexAttribArray(1));
+    colors->insert(colors->end(), numSets, Vec4(t.position.osg(), t.scale));
+    vertexAttribs->insert(vertexAttribs->end(), numSets,
+                          (float)t.texture_index / varieties);
+    _primitives.insert(_primitives.end(), modelSets.begin(), modelSets.end());
+    dirtyDisplayList();
+    dirtyBound();
 }
 
 BoundingBox ShaderGeometry::computeBound() const
 {
     BoundingBox geom_box = _geometry->getBound();
     BoundingBox bb;
-    for(TreeBin::TreeList::const_iterator itr = _trees.begin();
-        itr != _trees.end();
-        ++itr) {
-         bb.expandBy(geom_box.corner(0)*itr->scale +
-                     osg::Vec3( itr->position.x(), itr->position.y(), itr->position.z() ));
-         bb.expandBy(geom_box.corner(7)*itr->scale +
-                     osg::Vec3( itr->position.x(), itr->position.y(), itr->position.z() ));
+    unsigned numSets = _geometry->getNumPrimitiveSets();
+    const Vec4Array* posScales = static_cast<const Vec4Array*>(getColorArray());
+    if (!posScales)
+        return bb;
+    size_t numPosScales = posScales->size();
+    for (int i = 0; i < numPosScales; i += numSets) {
+        const Vec4& posScale((*posScales)[i]);
+        const float scale = posScale.w();
+        const Vec3 pos(posScale.x(), posScale.y(), posScale.z());
+        for (unsigned j = 0; j < 7; ++j)
+            bb.expandBy(geom_box.corner(j) * scale + pos);
     }
     return bb;
 }
@@ -67,32 +84,9 @@ bool ShaderGeometry_readLocalData(Object& obj, Input& fr)
     if ((fr[0].matchWord("geometry"))) {
         ++fr;
         iteratorAdvanced = true;
-        osg::Drawable* drawable = fr.readDrawable();
+        osg::Geometry* drawable = dynamic_cast<osg::Geometry*>(fr.readDrawable());
         if (drawable) {
             geom._geometry = drawable;
-        }
-    }
-    if ((fr.matchSequence("instances %i"))) {
-        int entry = fr[0].getNoNestedBrackets();
-        int capacity;
-        fr[1].getInt(capacity);
-        geom._trees.reserve(capacity);
-        fr += 3;
-        iteratorAdvanced = true;
-        // skip {
-        while (!fr.eof() && fr[0].getNoNestedBrackets() > entry) {
-            SGVec3f v;
-            int t;
-            float s;
-            if (fr[0].getFloat(v.x()) && fr[1].getFloat(v.y())
-                && fr[2].getFloat(v.z()) && fr[3].getInt(t) && fr[4].getFloat(s)) {
-                    fr += 4;
-                    //SGVec3f* v = new SGVec3f(v.x(), v.y(), v.z());
-                    //TreeBin::Tree tree = new TreeBin::Tree(v, t, s);
-                    geom._trees.push_back(TreeBin::Tree(v, t, s));
-            } else {
-                ++fr;
-            }
         }
     }
     return iteratorAdvanced;
@@ -104,18 +98,6 @@ bool ShaderGeometry_writeLocalData(const Object& obj, Output& fw)
 
     fw.indent() << "geometry" << std::endl;
     fw.writeObject(*geom._geometry);
-    fw.indent() << "instances " << geom._trees.size() << std::endl;
-    fw.indent() << "{" << std::endl;
-    fw.moveIn();
-    for (TreeBin::TreeList::const_iterator iter
-             = geom._trees.begin();
-         iter != geom._trees.end();
-         ++iter) {
-        fw.indent() << iter->position.x() << " " << iter->position.y() << " " << iter->position.z() << " "
-                    << iter->texture_index << " " << iter->scale << std::endl;
-    }
-    fw.moveOut();
-    fw.indent() << "}" << std::endl;
     return true;
 }
 
@@ -123,8 +105,9 @@ osgDB::RegisterDotOsgWrapperProxy shaderGeometryProxy
 (
     new ShaderGeometry,
     "ShaderGeometry",
-    "Object Drawable ShaderGeometry",
+    "Object Drawable Geometry ShaderGeometry",
     &ShaderGeometry_readLocalData,
     &ShaderGeometry_writeLocalData
     );
 }
+

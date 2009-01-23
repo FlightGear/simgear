@@ -494,13 +494,14 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
     {
         ref_ptr<Node> optimized
             = OptimizeModelPolicy::optimize(node, fileName, opt);
+        Group* group = dynamic_cast<Group*>(optimized.get());
         MatrixTransform* transform
             = dynamic_cast<MatrixTransform*>(optimized.get());
-        if (transform && transform->getMatrix().isIdentity()
-            && transform->getName().empty()
-            && transform->getNumChildren() == 1) {
-            optimized = static_cast<Node*>(transform->getChild(0));
-            Group* group = dynamic_cast<Group*>(optimized.get());
+        if (((transform && transform->getMatrix().isIdentity()) || group)
+            && group->getName().empty()
+            && group->getNumChildren() == 1) {
+            optimized = static_cast<Node*>(group->getChild(0));
+            group = dynamic_cast<Group*>(optimized.get());
             if (group && group->getName().empty()
                 && group->getNumChildren() == 1)
                 optimized = static_cast<Node*>(group->getChild(0));

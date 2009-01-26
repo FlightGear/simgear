@@ -42,7 +42,6 @@ SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
   if (_command_name.empty()) {
     SG_LOG(SG_INPUT, SG_WARN, "No command supplied for binding.");
     _command = 0;
-    return;
   }
 
   _arg = const_cast<SGPropertyNode*>(node);

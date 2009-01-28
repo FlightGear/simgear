@@ -195,9 +195,9 @@ void SGTime::update( double lon_rad, double lat_rad,
 {
     double gst_precise, gst_course;
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+
     tm * gmt = &m_gmt;
-#endif
+
 
     SG_LOG( SG_EVENT, SG_DEBUG, "Updating time" );
 
@@ -213,11 +213,8 @@ void SGTime::update( double lon_rad, double lat_rad,
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
-#if defined(_MSC_VER) || defined(__MINGW32__)
+
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
-#else
-    gmt = gmtime(&cur_time);
-#endif
     SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
 	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "
@@ -367,12 +364,8 @@ double sgTimeCalcMJD(int mn, double dy, int yr) {
 // since 1900 jan 0.5), mjd.
 double sgTimeCurrentMJD( time_t ct, long int warp ) {
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
     struct tm m_gmt;    // copy of system gmtime(&time_t) structure
     struct tm *gmt = &m_gmt;
-#else
-    struct tm *gmt;
-#endif
 
     // get current Unix calendar time (in seconds)
     // warp += warp_delta;
@@ -387,11 +380,7 @@ double sgTimeCurrentMJD( time_t ct, long int warp ) {
 	    << "  warp = " << warp );
 
     // get GMT break down for current time
-#if defined(_MSC_VER) || defined(__MINGW32__)
     memcpy( gmt, gmtime(&cur_time), sizeof(tm) );
-#else
-    gmt = gmtime(&cur_time);
-#endif
     SG_LOG( SG_EVENT, SG_DEBUG, 
 	    "  Current GMT = " << gmt->tm_mon+1 << "/" 
 	    << gmt->tm_mday << "/" << (1900 + gmt->tm_year) << " "

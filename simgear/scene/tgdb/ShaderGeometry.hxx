@@ -55,7 +55,8 @@ class ShaderGeometry : public osg::Geometry
             osg::Geometry(ShaderGeometry,copyop) {}
 
         META_Object(flightgear, ShaderGeometry);
-        
+
+        virtual void drawImplementation(osg::RenderInfo& renderInfo) const;
         virtual osg::BoundingBox computeBound() const;
         
         void setGeometry(osg::Geometry* geometry)

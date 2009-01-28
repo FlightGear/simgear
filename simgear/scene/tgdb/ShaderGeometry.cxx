@@ -43,17 +43,50 @@ void ShaderGeometry::addTree(const TreeBin::Tree& t)
         setVertexAttribArray(1, new FloatArray());
         setVertexAttribBinding(1, Geometry::BIND_PER_PRIMITIVE_SET);
     }
-    Geometry::PrimitiveSetList& modelSets = _geometry->getPrimitiveSetList();
-    size_t numSets = modelSets.size();
     Vec4Array *colors = static_cast<Vec4Array*>(getColorArray());
     FloatArray *vertexAttribs
         = static_cast<FloatArray*>(getVertexAttribArray(1));
-    colors->insert(colors->end(), numSets, Vec4(t.position.osg(), t.scale));
-    vertexAttribs->insert(vertexAttribs->end(), numSets,
-                          (float)t.texture_index / varieties);
-    _primitives.insert(_primitives.end(), modelSets.begin(), modelSets.end());
+    colors->push_back(Vec4(t.position.osg(), t.scale));
+    vertexAttribs->push_back((float)t.texture_index / varieties);
     dirtyDisplayList();
     dirtyBound();
+}
+
+// The good bits from osg::Geometry::drawImplementation
+void ShaderGeometry::drawImplementation(osg::RenderInfo& renderInfo) const
+{
+    osg::State& state = *renderInfo.getState();
+    const Extensions* extensions = getExtensions(state.getContextID(), true);
+    state.setVertexPointer(_vertexData.array->getDataSize(),
+                           _vertexData.array->getDataType(), 0,
+                           _vertexData.array->getDataPointer());
+    if (_normalData.array.valid())
+        state.setNormalPointer(_normalData.array->getDataType(), 0,
+                               _normalData.array->getDataPointer());
+    else
+        state.disableNormalPointer();
+    Array* texArray = _texCoordList[0].array.get();
+    state.setTexCoordPointer(0, texArray->getDataSize(),
+                             texArray->getDataType(), 0,
+                             texArray->getDataPointer());
+    const Vec4Array* colors = static_cast<const Vec4Array*>(getColorArray());
+    const FloatArray* vertexAttribs
+        = static_cast<const FloatArray*>(getVertexAttribArray(1));
+    Vec4Array::const_iterator citer = colors->begin(), cend = colors->end();
+    FloatArray::const_iterator viter = vertexAttribs->begin();
+    const Geometry::PrimitiveSetList& modelSets
+        = _geometry->getPrimitiveSetList();
+    for (; citer != cend; ++citer, ++viter) {
+        const Vec4& color = *citer;
+        const float attrib = *viter;
+        glColor4fv(color.ptr());
+        extensions->glVertexAttrib1f(1, attrib);
+        for (Geometry::PrimitiveSetList::const_iterator piter = modelSets.begin(),
+                 e = modelSets.end();
+             piter != e;
+            ++piter)
+            (*piter)->draw(state, false);
+    }
 }
 
 BoundingBox ShaderGeometry::computeBound() const

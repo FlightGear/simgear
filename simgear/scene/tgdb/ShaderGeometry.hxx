@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include <osg/Array>
 #include <osg/BoundingBox>
 #include <osg/CopyOp>
 #include <osg/Drawable>
@@ -37,22 +38,24 @@
 namespace simgear
 {
 
-class ShaderGeometry : public osg::Geometry
+class ShaderGeometry : public osg::Drawable
 {
     public:
         ShaderGeometry() :
           varieties(1)
-        { 
+        {
+                setSupportsDisplayList(false);
         }
 
         ShaderGeometry(int v) :
           varieties(v)
-        { 
+        {
+                setSupportsDisplayList(false);
         }
         
         /** Copy constructor using CopyOp to manage deep vs shallow copy.*/
         ShaderGeometry(const ShaderGeometry& ShaderGeometry,const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
-            osg::Geometry(ShaderGeometry,copyop) {}
+            osg::Drawable(ShaderGeometry,copyop) {}
 
         META_Object(flightgear, ShaderGeometry);
 
@@ -69,11 +72,12 @@ class ShaderGeometry : public osg::Geometry
         osg::ref_ptr<osg::Geometry> _geometry;
 
         int varieties;
+        osg::ref_ptr<osg::Vec4Array> _posScaleArray;
+        osg::ref_ptr<osg::FloatArray> _vertexAttribArray;
 
     protected:
     
         virtual ~ShaderGeometry() {}
-        
 };
 
 }

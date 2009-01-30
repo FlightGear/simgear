@@ -20,8 +20,11 @@
  */
 
 #include <algorithm>
+#include <vector>
 #include <string>
 #include <map>
+
+#include <boost/tuple/tuple_comparison.hpp>
 
 #include <osg/AlphaFunc>
 #include <osg/Billboard>
@@ -64,8 +67,17 @@ using namespace osg;
 namespace simgear
 {
 
+// memoize geometry
+typedef boost::tuple<float, float, int> ForestTuple;
+typedef std::map<ForestTuple, ref_ptr<Geometry> > OrthQuadMap;
+
 osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matrix& rotate)
 {
+    static OrthQuadMap orthQuadMap;
+    OrthQuadMap::iterator giter
+        = orthQuadMap.find(ForestTuple(w, h, varieties));
+    if (giter != orthQuadMap.end())
+        return giter->second.get();
 
     //const osg::Vec3& pos = osg::Vec3(0.0f,0.0f,0.0f),
     // set up the coords
@@ -123,22 +135,17 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
     // No color for now; that's used to pass the position.
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,8));
 
+    orthQuadMap.insert(std::make_pair(ForestTuple(w, h, varieties), geom));
     return geom;
 }
 
  static char vertexShaderSource[] = 
     "varying float fogFactor;\n"
-#ifndef TSG_PACKED_ATTRIBUTES
     "attribute float textureIndex;\n"
-#endif
     "\n"
     "void main(void)\n"
     "{\n"
-#ifdef TSG_PACKED_ATTRIBUTES
-    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-#else
     "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndex, 0.0, 0.0, 0.0);\n"
-#endif
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
@@ -207,26 +214,41 @@ struct AddTreesLeafObject
 
 struct GetTreeCoord
 {
-    GetTreeCoord(const Matrix& transform) : _transform(transform) {}
-    GetTreeCoord(const GetTreeCoord& rhs) : _transform(rhs._transform) {}
     Vec3 operator() (const TreeBin::Tree& tree) const
     {
-        return tree.position.osg() * _transform;
+        return tree.position.osg();
     }
-    Matrix _transform;
 };
 
 typedef QuadTreeBuilder<LOD*, TreeBin::Tree, MakeTreesLeaf, AddTreesLeafObject,
                         GetTreeCoord> ShaderGeometryQuadtree;
 }
 
+struct TreeTransformer
+{
+    TreeTransformer(Matrix& mat_) : mat(mat_) {}
+    TreeBin::Tree operator()(const TreeBin::Tree& tree) const
+    {
+        const Vec3& pos = tree.position.osg();
+        return TreeBin::Tree(SGVec3f(pos * mat), tree.texture_index,
+                             tree.scale);
+    }
+    Matrix mat;
+};
+
+// This actually returns a MatrixTransform node. If we rotate the whole
+// forest into the local Z-up coordinate system we can reuse the
+// primitive tree geometry for all the forests of the same type.
+
 osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
 {
+    Matrix transInv = Matrix::inverse(transform);
+    static Matrix ident;
     // Set up some shared structures. 
     osg::Geometry* shared_geometry = createOrthQuads(forest.width, 
                                                      forest.height, 
                                                      forest.texture_varieties,
-                                                     transform);
+                                                     ident);
 
     ref_ptr<Group> group;
 
@@ -253,9 +275,7 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
             program->addShader(vertex_shader);
-#ifndef TSG_PACKED_ATTRIBUTES
             program->addBindAttribLocation("textureIndex", 1);
-#endif
 
             Shader* fragment_shader = new Shader(Shader::FRAGMENT,
                                                  fragmentShaderSource);
@@ -281,17 +301,28 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
     }
     // Now, create a quadtree for the forest.
     {
-        ShaderGeometryQuadtree quadtree(GetTreeCoord(Matrix::inverse(transform)),
+        ShaderGeometryQuadtree quadtree(GetTreeCoord(),
                                         AddTreesLeafObject(),
                                         SG_TREE_QUAD_TREE_DEPTH,
                                         MakeTreesLeaf(forest.range,
                                                       shared_geometry,
                                                       forest.texture_varieties));
-        quadtree.buildQuadTree(forest._trees.begin(), forest._trees.end());
+        // Transform tree positions from the "geocentric" positions we
+        // get from the scenery polys into the local Z-up coordinate
+        // system.
+        std::vector<TreeBin::Tree> rotatedTrees;
+        rotatedTrees.reserve(forest._trees.size());
+        std::transform(forest._trees.begin(), forest._trees.end(),
+                       std::back_inserter(rotatedTrees),
+                       TreeTransformer(transInv));
+        quadtree.buildQuadTree(rotatedTrees.begin(), rotatedTrees.end());
         group = quadtree.getRoot();
     }
-    group->setStateSet(stateset);
-    return group.release();    
+    MatrixTransform* mt = new MatrixTransform(transform);
+    for (int i = 0; i < group->getNumChildren(); ++i)
+        mt->addChild(group->getChild(i));
+    mt->setStateSet(stateset);
+    return mt;
 }
 
 }

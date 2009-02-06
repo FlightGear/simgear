@@ -31,6 +31,7 @@ namespace osg
 class AlphaFunc;
 class BlendFunc;
 class CullFace;
+class Depth;
 class ShadeModel;
 class Texture2D;
 class TexEnv;
@@ -59,6 +60,8 @@ public:
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
+    // Standard depth with writes disabled.
+    osg::Depth* getDepthWritesDisabled() { return _depthWritesDisabled.get(); }
     StateAttributeFactory();    
 protected:
     osg::ref_ptr<osg::AlphaFunc> _standardAlphaFunc;
@@ -70,6 +73,7 @@ protected:
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;
+    osg::ref_ptr<osg::Depth> _depthWritesDisabled;
 };
 }
 #endif

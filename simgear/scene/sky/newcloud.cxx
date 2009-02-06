@@ -25,6 +25,7 @@
 #endif
 
 #include <osg/AlphaFunc>
+#include <osg/Depth>
 #include <osg/Program>
 #include <osg/Uniform>
 #include <osg/ref_ptr>
@@ -183,7 +184,10 @@ SGNewCloud::SGNewCloud(string type,
 
         stateSet->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
         stateSet->setRenderBinDetails(osg::StateSet::TRANSPARENT_BIN, "DepthSortedBin");
-                
+        // Turn off z buffer writes. Standard hack for
+        // semi-transparent geometry to avoid sorting / flickering
+        // artifacts.
+        stateSet->setAttributeAndModes(attribFactory->getDepthWritesDisabled());
         static ref_ptr<AlphaFunc> alphaFunc;
         static ref_ptr<Program> program;
         static ref_ptr<Uniform> baseTextureSampler;

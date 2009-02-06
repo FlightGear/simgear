@@ -290,9 +290,9 @@ SGSubsystemGroup::Member::Member ()
 {
 }
 
+// This shouldn't be called due to subsystem pointer ownership issues.
 SGSubsystemGroup::Member::Member (const Member &)
 {
-    Member();
 }
 
 SGSubsystemGroup::Member::~Member ()

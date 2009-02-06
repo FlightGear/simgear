@@ -24,6 +24,7 @@
 #include <osg/Array>
 #include <osg/BlendFunc>
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/ShadeModel>
 #include <osg/Texture2D>
 #include <osg/TexEnv>
@@ -70,6 +71,8 @@ StateAttributeFactory::StateAttributeFactory()
     _cullFaceFront->setDataVariance(Object::STATIC);
     _cullFaceBack = new CullFace(CullFace::BACK);
     _cullFaceBack->setDataVariance(Object::STATIC);
+    _depthWritesDisabled = new Depth(Depth::LESS, 0.0, 1.0, false);
+    _depthWritesDisabled->setDataVariance(Object::STATIC);
 }
 
 }

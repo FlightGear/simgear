@@ -317,10 +317,12 @@ public:
 
 private:
 
-    struct Member {
+    class Member {
 
-        Member ();
+    private:
         Member (const Member &member);
+    public:
+        Member ();
         virtual ~Member ();
 
         virtual void update (double delta_time_sec);

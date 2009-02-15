@@ -15,6 +15,7 @@ struct naIOType {
     int  (*write)(naContext c, void* f, char* buf, unsigned int len);
     void (*seek) (naContext c, void* f, unsigned int off, int whence);
     int  (*tell) (naContext c, void* f);
+    void (*flush) (naContext c, void* f);
     void (*destroy)(void* f);
 };
 

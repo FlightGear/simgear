@@ -67,6 +67,15 @@ static naRef f_tell(naContext c, naRef me, int argc, naRef* args)
     return naNum(g->type->tell(c, g->handle));
 }
 
+static naRef f_flush(naContext c, naRef me, int argc, naRef* args)
+{
+    struct naIOGhost* g = argc==1 ? ioghost(args[0]) : 0;
+    if(!g)
+        naRuntimeError(c, "bad argument to flush()");
+    g->type->flush(c, g->handle);
+    return naNil();
+}
+
 static void ghostDestroy(void* g)
 {
     struct naIOGhost* io = (struct naIOGhost*)g;
@@ -111,6 +120,11 @@ static int iotell(naContext c, void* f)
     return n;
 }
 
+static void ioflush(naContext c, void* f)
+{
+    if(fflush(f)) naRuntimeError(c, strerror(errno));
+}
+
 static void iodestroy(void* f)
 {
     if(f != stdin && f != stdout && f != stderr)
@@ -118,7 +132,7 @@ static void iodestroy(void* f)
 }
 
 struct naIOType naStdIOType = { ioclose, ioread, iowrite, ioseek,
-                                iotell, iodestroy };
+                                iotell, ioflush, iodestroy };
 
 naRef naIOGhost(naContext c, FILE* f)
 {
@@ -181,6 +195,25 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
     return result;
 }
 
+#ifdef _WIN32
+#define S_ISREG(m) (((m)&_S_IFMT)==_S_IFREG)
+#define S_ISDIR(m) (((m)&_S_IFMT)==_S_IFDIR)
+#define S_ISCHR(m) (((m)&_S_IFMT)==_S_IFCHR)
+#define S_ISFIFO(m) (((m)&_S_IFMT)==_S_IFIFO)
+#define S_ISBLK(m) 0
+#define S_ISLNK(m) 0
+#define S_ISSOCK(m) 0
+#endif
+static naRef ftype(naContext ctx, mode_t m)
+{
+    const char* t = "unk";
+    if(S_ISREG(m))  t = "reg";
+    else if(S_ISDIR(m)) t = "dir"; else if(S_ISCHR(m))  t = "chr";
+    else if(S_ISBLK(m)) t = "blk"; else if(S_ISFIFO(m)) t = "fifo";
+    else if(S_ISLNK(m)) t = "lnk"; else if(S_ISSOCK(m)) t = "sock";
+    return naStr_fromdata(naNewString(ctx), t, strlen(t));
+}
+
 static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
 {
     int n=0;
@@ -192,11 +225,12 @@ static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
         naRuntimeError(ctx, strerror(errno));
     }
     result = naNewVector(ctx);
-    naVec_setsize(result, 11);
+    naVec_setsize(result, 12);
 #define FLD(x) naVec_set(result, n++, naNum(s.st_##x));
     FLD(dev);  FLD(ino);  FLD(mode);  FLD(nlink);  FLD(uid);  FLD(gid);
     FLD(rdev); FLD(size); FLD(atime); FLD(mtime);  FLD(ctime);
 #undef FLD
+    naVec_set(result, n++, ftype(ctx, s.st_mode));
     return result;
 }
 
@@ -206,6 +240,7 @@ static naCFuncItem funcs[] = {
     { "write", f_write },
     { "seek", f_seek },
     { "tell", f_tell },
+    { "flush", f_flush },
     { "open", f_open },
     { "readln", f_readln },
     { "stat", f_stat },

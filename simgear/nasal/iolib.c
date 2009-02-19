@@ -195,7 +195,7 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
     return result;
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #define S_ISREG(m) (((m)&_S_IFMT)==_S_IFREG)
 #define S_ISDIR(m) (((m)&_S_IFMT)==_S_IFDIR)
 #define S_ISCHR(m) (((m)&_S_IFMT)==_S_IFCHR)
@@ -203,6 +203,7 @@ static naRef f_readln(naContext ctx, naRef me, int argc, naRef* args)
 #define S_ISBLK(m) 0
 #define S_ISLNK(m) 0
 #define S_ISSOCK(m) 0
+typedef unsigned short mode_t;
 #endif
 static naRef ftype(naContext ctx, mode_t m)
 {

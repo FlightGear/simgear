@@ -655,9 +655,20 @@ SGTranslateAnimation::SGTranslateAnimation(const SGPropertyNode* configNode,
   else
     _initialValue = 0;
 
-  _axis[0] = configNode->getDoubleValue("axis/x", 0);
-  _axis[1] = configNode->getDoubleValue("axis/y", 0);
-  _axis[2] = configNode->getDoubleValue("axis/z", 0);
+  if (configNode->hasValue("axis/x1-m")) {
+    SGVec3d v1, v2;
+    v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
+    v1[1] = configNode->getDoubleValue("axis/y1-m", 0);
+    v1[2] = configNode->getDoubleValue("axis/z1-m", 0);
+    v2[0] = configNode->getDoubleValue("axis/x2-m", 0);
+    v2[1] = configNode->getDoubleValue("axis/y2-m", 0);
+    v2[2] = configNode->getDoubleValue("axis/z2-m", 0);
+    _axis = v2 - v1;
+  } else {
+    _axis[0] = configNode->getDoubleValue("axis/x", 0);
+    _axis[1] = configNode->getDoubleValue("axis/y", 0);
+    _axis[2] = configNode->getDoubleValue("axis/z", 0);
+  }
   if (8*SGLimitsd::min() < norm(_axis))
     _axis = normalize(_axis);
 }

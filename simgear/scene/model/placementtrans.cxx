@@ -64,7 +64,6 @@ public:
 
 SGPlacementTransform::SGPlacementTransform(void) :
   _placement_offset(0, 0, 0),
-  _scenery_center(0, 0, 0),
   _rotation(1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
@@ -77,7 +76,6 @@ SGPlacementTransform::SGPlacementTransform(const SGPlacementTransform& trans,
                                            const osg::CopyOp& copyop):
   osg::Transform(trans, copyop),
   _placement_offset(trans._placement_offset),
-  _scenery_center(trans._scenery_center),
   _rotation(trans._rotation)
 {
   
@@ -96,7 +94,7 @@ SGPlacementTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
     for (int j = 0; j < 3; ++j) {
       t(j, i) = _rotation(i, j);
     }
-    t(3, i) = _placement_offset(i) - _scenery_center(i);
+    t(3, i) = _placement_offset(i);
   }
   
   if (_referenceFrame == RELATIVE_RF)
@@ -115,7 +113,7 @@ SGPlacementTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
     for (int j = 0; j < 3; ++j) {
       t(j, i) = _rotation(i, j);
     }
-    t(3, i) = _placement_offset(i) - _scenery_center(i);
+    t(3, i) = _placement_offset(i);
   }
   t = osg::Matrix::inverse(t);
 
@@ -139,7 +137,6 @@ bool PlacementTrans_readLocalData(osg::Object& obj, osgDB::Input& fr)
                        0, 0, 1, 0,
                        0, 0, 0, 1);
     SGVec3d placementOffset(0, 0, 0);
-    SGVec3d sceneryCenter(0, 0, 0);
     
     if (fr[0].matchWord("rotation") && fr[1].isOpenBracket()) {
         fr += 2;
@@ -163,15 +160,7 @@ bool PlacementTrans_readLocalData(osg::Object& obj, osgDB::Input& fr)
         else
             return false;
     }
-    if (fr[0].matchWord("sceneryCenter")) {
-        ++fr;
-        if (fr.readSequence(sceneryCenter.osg()))
-            fr += 3;
-        else
-            return false;
-    }
     trans.setTransform(placementOffset, rotation);
-    trans.setSceneryCenter(sceneryCenter);
     return true;
 }
 
@@ -181,7 +170,6 @@ bool PlacementTrans_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
         = static_cast<const SGPlacementTransform&>(obj);
     const SGMatrixd& rotation = trans.getRotation();
     const SGVec3d& placement = trans.getGlobalPos();
-    const SGVec3d& sceneryCenter = trans.getSceneryCenter();
     
     fw.indent() << "rotation {" << std::endl;
     fw.moveIn();
@@ -199,11 +187,6 @@ bool PlacementTrans_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
     fw.indent() << "placement ";
     for (int i = 0; i < 3; i++) {
         fw << placement(i) << " ";
-    }
-    fw << std::endl;
-    fw.indent() << "sceneryCenter ";
-    for (int i = 0; i < 3; i++) {
-        fw << sceneryCenter(i) << " ";
     }
     fw << std::endl;
     fw.precision(prec);

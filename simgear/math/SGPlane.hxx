@@ -23,13 +23,24 @@ class SGPlane {
 public:
   SGPlane()
   { }
-  SGPlane(const SGVec3<T>& normal, T dist) :
+  SGPlane(const SGVec3<T>& normal, const T& dist) :
     _normal(normal), _dist(dist)
+  { }
+  SGPlane(const SGVec3<T>& normal, const SGVec3<T>& point) :
+    _normal(normal), _dist(-dot(normal, point))
   { }
   SGPlane(const SGVec3<T> vertices[3]) :
     _normal(normalize(cross(vertices[1] - vertices[0],
                             vertices[2] - vertices[0]))),
     _dist(-dot(_normal, vertices[0]))
+  { }
+  SGPlane(const SGVec3<T>& v0, const SGVec3<T>& v1, const SGVec3<T>& v2) :
+    _normal(normalize(cross(v1 - v0, v2 - v0))),
+    _dist(-dot(_normal, v0))
+  { }
+  template<typename S>
+  explicit SGPlane(const SGPlane<S>& plane) :
+    _normal(plane.getNormal()), _dist(plane.getDist())
   { }
 
   void setNormal(const SGVec3<T>& normal)
@@ -41,6 +52,10 @@ public:
   { _dist = dist; }
   const T& getDist() const
   { return _dist; }
+
+  /// Return a point on the plane 
+  SGVec3<T> getPointOnPlane() const
+  { return -_dist*_normal; }
 
   /// That is the distance where we measure positive in direction of the normal
   T getPositiveDist() const

@@ -25,6 +25,20 @@ public:
     _min(SGLimits<T>::max(), SGLimits<T>::max(), SGLimits<T>::max()),
     _max(-SGLimits<T>::max(), -SGLimits<T>::max(), -SGLimits<T>::max())
   { }
+  SGBox(const SGVec3<T>& pt) :
+    _min(pt),
+    _max(pt)
+  { }
+  SGBox(const SGVec3<T>& min, const SGVec3<T>& max) :
+    _min(min),
+    _max(max)
+  { }
+  template<typename S>
+  explicit SGBox(const SGBox<S>& box) :
+    _min(box.getMin()),
+    _max(box.getMax())
+  { }
+
   void setMin(const SGVec3<T>& min)
   { _min = min; }
   const SGVec3<T>& getMin() const
@@ -35,6 +49,29 @@ public:
   const SGVec3<T>& getMax() const
   { return _max; }
 
+  SGVec3<T> getCorner(unsigned i) const
+  { return SGVec3<T>((i&1) ? _min[0] : _max[0],
+                     (i&2) ? _min[1] : _max[1],
+                     (i&4) ? _min[2] : _max[2]); }
+
+  template<typename S>
+  SGVec3<T> getNearestCorner(const SGVec3<S>& pt) const
+  {
+    SGVec3<T> center = getCenter();
+    return SGVec3<T>((pt[0] <= center[0]) ? _min[0] : _max[0],
+                     (pt[1] <= center[1]) ? _min[1] : _max[1],
+                     (pt[2] <= center[2]) ? _min[2] : _max[2]);
+  }
+  template<typename S>
+  SGVec3<T> getFarestCorner(const SGVec3<S>& pt) const
+  {
+    SGVec3<T> center = getCenter();
+    return SGVec3<T>((pt[0] > center[0]) ? _min[0] : _max[0],
+                     (pt[1] > center[1]) ? _min[1] : _max[1],
+                     (pt[2] > center[2]) ? _min[2] : _max[2]);
+  }
+
+
   // Only works for floating point types
   SGVec3<T> getCenter() const
   { return T(0.5)*(_min + _max); }
@@ -42,6 +79,8 @@ public:
   // Only valid for nonempty boxes
   SGVec3<T> getSize() const
   { return _max - _min; }
+  SGVec3<T> getHalfSize() const
+  { return T(0.5)*getSize(); }
 
   T getVolume() const
   {
@@ -83,10 +122,22 @@ public:
   // Note that this only works if the box is nonmepty
   unsigned getBroadestAxis() const
   {
-    SGVec3d size = getSize();
+    SGVec3<T> size = getSize();
     if (size[1] <= size[0] && size[2] <= size[0])
       return 0;
     else if (size[2] <= size[1])
+      return 1;
+    else
+      return 2;
+  }
+
+  // Note that this only works if the box is nonmepty
+  unsigned getSmallestAxis() const
+  {
+    SGVec3<T> size = getSize();
+    if (size[1] >= size[0] && size[2] >= size[0])
+      return 0;
+    else if (size[2] >= size[1])
       return 1;
     else
       return 2;

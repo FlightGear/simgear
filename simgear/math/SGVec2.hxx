@@ -96,6 +96,9 @@ public:
   /// make sure it has at least 2 elements
   explicit SGVec2(const T* d)
   { data()[0] = d[0]; data()[1] = d[1]; }
+  template<typename S>
+  explicit SGVec2(const SGVec2<S>& d)
+  { data()[0] = d[0]; data()[1] = d[1]; }
   explicit SGVec2(const osg::Vec2f& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
   explicit SGVec2(const osg::Vec2d& d)

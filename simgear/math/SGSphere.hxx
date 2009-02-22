@@ -28,6 +28,11 @@ public:
     _center(center),
     _radius(radius)
   { }
+  template<typename S>
+  explicit SGSphere(const SGSphere<S>& sphere) :
+    _center(sphere.getCenter()),
+    _radius(sphere.getRadius())
+  { }
 
   const SGVec3<T>& getCenter() const
   { return _center; }
@@ -41,7 +46,7 @@ public:
   T getRadius2() const
   { return _radius*_radius; }
 
-  const bool empty() const
+  bool empty() const
   { return !valid(); }
 
   bool valid() const
@@ -66,6 +71,65 @@ public:
     T newRadius = T(0.5)*(_radius + dist);
     _center += ((newRadius - _radius)/dist)*(v - _center);
     _radius = newRadius;
+  }
+
+  void expandBy(const SGSphere<T>& s)
+  {
+    if (s.empty())
+      return;
+
+    if (empty()) {
+      _center = s.getCenter();
+      _radius = s.getRadius();
+      return;
+    }
+
+    T dist = length(_center - s.getCenter());
+    if (dist <= SGLimits<T>::min()) {
+      _radius = SGMisc<T>::max(_radius, s._radius);
+      return;
+    }
+
+    // already included
+    if (dist + s.getRadius() <= _radius)
+      return;
+
+    // new one includes all
+    if (dist + _radius <= s.getRadius()) {
+      _center = s.getCenter();
+      _radius = s.getRadius();
+      return;
+    }
+
+    T newRadius = T(0.5)*(_radius + dist + s.getRadius());
+    T ratio = (newRadius - _radius) / dist;
+    _radius = newRadius;
+
+    _center[0] += ratio*(s._center[0] - _center[0]);
+    _center[1] += ratio*(s._center[1] - _center[1]);
+    _center[2] += ratio*(s._center[2] - _center[2]);
+  }
+
+  void expandBy(const SGBox<T>& box)
+  {
+    if (box.empty())
+      return;
+
+    if (empty()) {
+      _center = box.getCenter();
+      _radius = T(0.5)*length(box.getSize());
+      return;
+    }
+
+    SGVec3<T> boxCenter = box.getCenter();
+    SGVec3<T> corner;
+    for (unsigned i = 0; i < 3; ++i) {
+      if (_center[i] < boxCenter[i])
+        corner[i] = box.getMax()[i];
+      else
+        corner[i] = box.getMin()[i];
+    }
+    expandBy(corner);
   }
 
 private:

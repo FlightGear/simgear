@@ -26,6 +26,10 @@ public:
   SGRay(const SGVec3<T>& origin, const SGVec3<T>& dir) :
     _origin(origin), _direction(dir)
   { }
+  template<typename S>
+  explicit SGRay(const SGRay<S>& ray) :
+    _origin(ray.getOrigin()), _direction(ray.getDirection())
+  { }
 
   void set(const SGVec3<T>& origin, const SGVec3<T>& dir)
   { _origin = origin; _direction = dir; }

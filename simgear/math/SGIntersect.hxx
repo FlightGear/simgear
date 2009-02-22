@@ -20,7 +20,21 @@
 
 template<typename T>
 inline bool
-intersects(const SGBox<T>& box, const SGSphere<T>& sphere)
+intersects(const SGSphere<T>& s1, const SGSphere<T>& s2)
+{
+  if (s1.empty())
+    return false;
+  if (s2.empty())
+    return false;
+
+  T dist = s1.getRadius() + s2.getRadius();
+  return distSqr(s1.getCenter(), s2.getCenter()) <= dist*dist;
+}
+
+
+template<typename T1, typename T2>
+inline bool
+intersects(const SGBox<T1>& box, const SGSphere<T2>& sphere)
 {
   if (sphere.empty())
     return false;
@@ -45,15 +59,15 @@ intersects(const SGBox<T>& box, const SGSphere<T>& sphere)
   return true;
 }
 // make it symmetric
-template<typename T>
+template<typename T1, typename T2>
 inline bool
-intersects(const SGSphere<T>& sphere, const SGBox<T>& box)
+intersects(const SGSphere<T1>& sphere, const SGBox<T2>& box)
 { return intersects(box, sphere); }
 
 
-template<typename T>
+template<typename T1, typename T2>
 inline bool
-intersects(const SGVec3<T>& v, const SGBox<T>& box)
+intersects(const SGVec3<T1>& v, const SGBox<T2>& box)
 {
   if (v[0] < box.getMin()[0])
     return false;
@@ -69,9 +83,9 @@ intersects(const SGVec3<T>& v, const SGBox<T>& box)
     return false;
   return true;
 }
-template<typename T>
+template<typename T1, typename T2>
 inline bool
-intersects(const SGBox<T>& box, const SGVec3<T>& v)
+intersects(const SGBox<T1>& box, const SGVec3<T2>& v)
 { return intersects(v, box); }
 
 
@@ -529,7 +543,7 @@ template<typename T>
 inline bool
 intersects(const SGTriangle<T>& tri, const SGLineSegment<T>& lineSegment, T eps = 0)
 {
-  // FIXME: for now just wrap the othr method. When that has prooven
+  // FIXME: for now just wrap the other method. When that has prooven
   // well optimized, implement that special case
   SGVec3<T> dummy;
   return intersects(dummy, tri, lineSegment, eps);
@@ -557,9 +571,9 @@ intersects(const SGBox<T>& box, const SGLineSegment<T>& lineSegment)
   // See Tomas Akeniene - Moeller/Eric Haines: Real Time Rendering
 
   SGVec3<T> c = lineSegment.getCenter() - box.getCenter();
-  SGVec3<T> w = 0.5*lineSegment.getDirection();
+  SGVec3<T> w = T(0.5)*lineSegment.getDirection();
   SGVec3<T> v(fabs(w.x()), fabs(w.y()), fabs(w.z()));
-  SGVec3<T> h = 0.5*box.getSize();
+  SGVec3<T> h = T(0.5)*box.getSize();
 
   if (fabs(c[0]) > v[0] + h[0])
     return false;
@@ -623,5 +637,27 @@ template<typename T>
 inline bool
 intersects(const SGRay<T>& ray, const SGBox<T>& box)
 { return intersects(box, ray); }
+
+template<typename T1, typename T2>
+inline bool
+intersects(const SGBox<T1>& box1, const SGBox<T2>& box2)
+{
+  if (box2.getMax()[0] < box1.getMin()[0])
+    return false;
+  if (box1.getMax()[0] < box2.getMin()[0])
+    return false;
+
+  if (box2.getMax()[1] < box1.getMin()[1])
+    return false;
+  if (box1.getMax()[1] < box2.getMin()[1])
+    return false;
+
+  if (box2.getMax()[2] < box1.getMin()[2])
+    return false;
+  if (box1.getMax()[2] < box2.getMin()[2])
+    return false;
+
+  return true;
+}
 
 #endif

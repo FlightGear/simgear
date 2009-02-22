@@ -47,13 +47,10 @@ public:
   { _placement_offset = off; dirtyBound(); }
   void setTransform(const SGVec3d& off, const SGMatrixd& rot)
   { _placement_offset = off; _rotation = rot; dirtyBound(); }
-  void setSceneryCenter(const SGVec3d& center)
-  { _scenery_center = center; dirtyBound(); }
   
   const SGVec3d& getGlobalPos() const
   { return _placement_offset; }
   const SGMatrixd& getRotation() const { return _rotation; }
-  const SGVec3d& getSceneryCenter() const { return _scenery_center; }
   
   virtual bool computeLocalToWorldMatrix(osg::Matrix&,osg::NodeVisitor*) const;
   virtual bool computeWorldToLocalMatrix(osg::Matrix&,osg::NodeVisitor*) const;
@@ -70,7 +67,6 @@ private:
   //////////////////////////////////////////////////////////////////
   
   SGVec3d _placement_offset;
-  SGVec3d _scenery_center;
   SGMatrixd _rotation;
 };
 

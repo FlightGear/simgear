@@ -78,9 +78,6 @@ public:
                                double heading_deg);
   void setOrientation(const SGQuatd& orientation);
   
-  SGPlacementTransform * getTransform(void)
-  { return _position.get(); }
-
 private:
 
                                 // Geodetic position

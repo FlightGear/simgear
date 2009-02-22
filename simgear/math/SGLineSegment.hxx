@@ -27,6 +27,11 @@ public:
     _start(start),
     _direction(end - start)
   { }
+  template<typename S>
+  explicit SGLineSegment(const SGLineSegment<S>& lineSegment) :
+    _start(lineSegment.getStart()),
+    _direction(lineSegment.getDirection())
+  { }
 
   void set(const SGVec3<T>& start, const SGVec3<T>& end)
   { _start = start; _direction = end - start; }

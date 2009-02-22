@@ -184,16 +184,22 @@ public:
   template<typename S>
   SGMatrix& preMultTranslate(const SGVec3<S>& t)
   {
-    for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i)
-      (*this)(i,3) += T(t(i));
-    return *this;
+    for (unsigned i = 0; i < 3; ++i) {
+      T tmp = T(t(i));
+      if (tmp == 0)
+        continue;
+      (*this)(i,0) += tmp*(*this)(3,0);
+      (*this)(i,1) += tmp*(*this)(3,1);
+      (*this)(i,2) += tmp*(*this)(3,2);
+      (*this)(i,3) += tmp*(*this)(3,3);
+    }
   }
   template<typename S>
   SGMatrix& postMultTranslate(const SGVec3<S>& t)
   {
     SGVec4<T> col3((*this)(0,3), (*this)(1,3), (*this)(2,3), (*this)(3,3));
     for (unsigned i = 0; i < SGMatrix<T>::nCols-1; ++i) {
-      SGVec4<T> tmp((*this)(0,3), (*this)(1,3), (*this)(2,3), (*this)(3,3));
+      SGVec4<T> tmp((*this)(0,i), (*this)(1,i), (*this)(2,i), (*this)(3,i));
       col3 += T(t(i))*tmp;
     }
     (*this)(0,3) = col3(0); (*this)(1,3) = col3(1);

@@ -92,6 +92,9 @@ public:
   /// make sure it has at least 3 elements
   explicit SGVec4(const T* d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+  template<typename S>
+  explicit SGVec4(const SGVec4<S>& d)
+  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
   explicit SGVec4(const osg::Vec4f& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
   explicit SGVec4(const osg::Vec4d& d)

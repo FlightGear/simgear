@@ -175,7 +175,7 @@ SGMaterialLib::~SGMaterialLib ( void ) {
 }
 
 const SGMaterial*
-SGMaterialLib::findMaterial(const osg::StateSet* stateSet) const
+SGMaterialLib::findMaterial(const osg::StateSet* stateSet)
 {
   if (!stateSet)
     return 0;

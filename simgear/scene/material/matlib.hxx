@@ -83,7 +83,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    const SGMaterial* findMaterial(const osg::StateSet* stateSet) const;
+    static const SGMaterial* findMaterial(const osg::StateSet* stateSet);
 
     // Destructor
     ~SGMaterialLib ( void );

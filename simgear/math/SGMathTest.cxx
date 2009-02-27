@@ -174,15 +174,21 @@ MatrixTest(void)
   // Create some test matrix
   SGVec3<T> v0(2, 7, 17);
   SGQuat<T> q0 = SGQuat<T>::fromAngleAxis(SGMisc<T>::pi(), normalize(v0));
-  SGMatrix<T> m0;
+  SGMatrix<T> m0 = SGMatrix<T>::unit();
   m0.postMultTranslate(v0);
   m0.postMultRotate(q0);
 
-  // Check the tqo forms of the inverse for that kind of special matrix
-  SGMatrix<T> m1, m2;
-  invert(m1, m0);
-  m2 = transNeg(m0);
+  // Check the three forms of the inverse for that kind of special matrix
+  SGMatrix<T> m1 = SGMatrix<T>::unit();
+  m1.preMultTranslate(-v0);
+  m1.preMultRotate(inverse(q0));
+
+  SGMatrix<T> m2, m3;
+  invert(m2, m0);
+  m3 = transNeg(m0);
   if (!equivalent(m1, m2))
+    return false;
+  if (!equivalent(m2, m3))
     return false;
 
   // Check matrix multiplication and inversion
@@ -194,6 +200,10 @@ MatrixTest(void)
     return false;
   if (!equivalent(m2*m0, SGMatrix<T>::unit()))
     return false;
+  if (!equivalent(m0*m3, SGMatrix<T>::unit()))
+    return false;
+  if (!equivalent(m3*m0, SGMatrix<T>::unit()))
+    return false;
   
   return true;
 }
@@ -202,10 +212,10 @@ bool
 GeodesyTest(void)
 {
   // We know that the values are on the order of 1
-  double epsDeg = 10*SGLimits<double>::epsilon();
+  double epsDeg = 10*360*SGLimits<double>::epsilon();
   // For the altitude values we need to tolerate relative errors in the order
   // of the radius
-  double epsM = 1e6*SGLimits<double>::epsilon();
+  double epsM = 10*6e6*SGLimits<double>::epsilon();
 
   SGVec3<double> cart0, cart1;
   SGGeod geod0, geod1;

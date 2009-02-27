@@ -213,7 +213,7 @@ public:
   {
     T nAxis = norm(axis);
     if (nAxis <= SGLimits<T>::min())
-      return SGQuat(1, 0, 0, 0);
+      return SGQuat::unit();
     T angle2 = 0.5*nAxis;
     return fromRealImag(cos(angle2), T(sin(angle2)/nAxis)*axis);
   }

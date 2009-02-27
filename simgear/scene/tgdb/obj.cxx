@@ -551,14 +551,13 @@ struct AddModelLOD {
     }
 };
 struct GetModelLODCoord {
-    GetModelLODCoord(const osg::Matrix& transform) : _transform(transform) {}
-    GetModelLODCoord(const GetModelLODCoord& rhs) : _transform(rhs._transform)
+    GetModelLODCoord() {}
+    GetModelLODCoord(const GetModelLODCoord& rhs)
     {}
     osg::Vec3 operator() (const ModelLOD& mlod) const
     {
-        return mlod.first->getBound().center() * _transform;
+        return mlod.first->getBound().center();
     }
-    osg::Matrix _transform;
 };
 
 typedef QuadTreeBuilder<osg::LOD*, ModelLOD, MakeQuadLeaf, AddModelLOD,
@@ -571,14 +570,28 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (!tile.read_bin(path))
     return false;
 
+  SGVec3d center = tile.get_gbs_center2();
+  SGGeod geodPos = SGGeod::fromCart(center);
+  SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
+
+  // rotate the tiles so that the bounding boxes get nearly axis aligned.
+  // this will help the collision tree's bounding boxes a bit ...
+  std::vector<SGVec3d> nodes = tile.get_wgs84_nodes();
+  for (unsigned i = 0; i < nodes.size(); ++i)
+    nodes[i] = hlOr.transform(nodes[i]);
+  tile.set_wgs84_nodes(nodes);
+
+  SGQuatf hlOrf(hlOr[0], hlOr[1], hlOr[2], hlOr[3]);
+  std::vector<SGVec3f> normals = tile.get_normals();
+  for (unsigned i = 0; i < normals.size(); ++i)
+    normals[i] = hlOrf.transform(normals[i]);
+  tile.set_normals(normals);
+
   SGTileGeometryBin tileGeometryBin;
   if (!tileGeometryBin.insertBinObj(tile, matlib))
     return false;
 
-  SGVec3d center = tile.get_gbs_center2();
-  SGGeod geodPos = SGGeod::fromCart(center);
-  SGQuatd hlOr = SGQuatd::fromLonLat(geodPos);
-  SGVec3f up = toVec3f(hlOr.backTransform(SGVec3d(0, 0, -1)));
+  SGVec3f up(0, 0, 1);
   GroundLightManager* lightManager = GroundLightManager::instance();
 
   osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
@@ -591,22 +604,6 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     terrainGroup->addChild(node);
 
   if (use_random_objects || use_random_vegetation) {
-
-    // Simple matrix for used for flipping models that have been oriented
-    // with the center of the tile but upside down.
-    static const osg::Matrix flip(1,  0,  0, 0,
-                                  0, -1,  0, 0,
-                                  0,  0, -1, 0,
-                                  0,  0,  0, 1);     
-    // Determine an rotation matrix for the models to place them 
-    // perpendicular to the earth's surface. We use the same matrix, 
-    // based on the centre of the tile, as the small angular differences  
-    // between different points on the tile aren't worth worrying about 
-    // for random objects. We also need to flip the orientation 180 degrees
-    osg::Matrix mAtt = flip * osg::Matrix::rotate(hlOr.osg());
-    // The inverse goes from world coordinates to Z up tile coordinates.
-    osg::Matrix world2Tile(osg::Matrix(hlOr.osg().conj()) * flip);
-
     if (use_random_objects) {
       tileGeometryBin.computeRandomObjects(matlib);
     
@@ -625,8 +622,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
           // Create a matrix to place the object in the correct
           // location, and then apply the rotation matrix created
           // above, with an additional random heading rotation if appropriate.
-          osg::Matrix transformMat(mAtt);
-          transformMat.postMult(osg::Matrix::translate(obj.position.osg()));
+          osg::Matrix transformMat;
+          transformMat = osg::Matrix::translate(obj.position.osg());
           if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
             // Rotate the object around the z axis.
             double hdg = mt_rand(&seed) * M_PI * 2;
@@ -638,8 +635,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
           position->addChild(node);
           models.push_back(ModelLOD(position, obj.lod));
         }
-        RandomObjectsQuadtree quadtree((GetModelLODCoord(world2Tile)),
-                                       (AddModelLOD()));
+        RandomObjectsQuadtree quadtree((GetModelLODCoord()), (AddModelLOD()));
         quadtree.buildQuadTree(models.begin(), models.end());
         randomObjects = quadtree.getRoot();
         randomObjects->setName("random objects");
@@ -651,7 +647,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       tileGeometryBin.computeRandomForest(matlib);
 
       if (tileGeometryBin.randomForest.getNumTrees() > 0) {
-        randomForest = createForest(tileGeometryBin.randomForest, mAtt);
+        randomForest = createForest(tileGeometryBin.randomForest,
+                                    osg::Matrix::identity());
         randomForest->setName("random trees");
       }
     } 
@@ -756,7 +753,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   // The toplevel transform for that tile.
   osg::MatrixTransform* transform = new osg::MatrixTransform;
   transform->setName(path);
-  transform->setMatrix(osg::Matrix::translate(center.osg()));
+  transform->setMatrix(osg::Matrix::rotate(hlOr.osg())*
+                       osg::Matrix::translate(center.osg()));
   transform->addChild(terrainGroup);
   if (lightGroup->getNumChildren() > 0) {
     osg::LOD* lightLOD = new osg::LOD;

@@ -42,13 +42,7 @@ public:
   }
 
   SGVec3<T> getCenter() const
-  {
-    SGBox<T> box;
-    box.expandBy(_v0);
-    box.expandBy(_v0 + _d[0]);
-    box.expandBy(_v0 + _d[1]);
-    return box.getCenter();
-  }
+  { return _v0 + T(1)/T(3)*(_d[0] + _d[1]); }
 
   // note that the index is unchecked
   SGVec3<T> getVertex(unsigned i) const

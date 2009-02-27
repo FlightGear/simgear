@@ -44,6 +44,8 @@ TriangleLineIntersectionTest(void)
     
     SGTriangle<T> tri(v0, v1, v2);
 
+    T triangleEps = 100*SGLimits<T>::epsilon();
+
     // generate random coeficients
     T u = 4*sg_random() - 2;
     T v = 4*sg_random() - 2;
@@ -59,7 +61,7 @@ TriangleLineIntersectionTest(void)
     
     if (intersects(isectres, tri, lineSegment)) {
       if (0 <= u && 0 <= v && u+v <= 1 && 0 <= t && t <= 1) {
-        if (!equivalent(isectres, isectpt)) {
+        if (!equivalent(isectres, isectpt, triangleEps)) {
           std::cout << "Failed line segment intersection test #" << i
                     << ": not equivalent!\nu = "
                     << u << ", v = " << v << ", t = " << t
@@ -87,7 +89,7 @@ TriangleLineIntersectionTest(void)
     ray.set(isectpt - t*dir, dir);
     if (intersects(isectres, tri, ray)) {
       if (0 <= u && 0 <= v && u+v <= 1 && 0 <= t) {
-        if (!equivalent(isectres, isectpt)) {
+        if (!equivalent(isectres, isectpt, triangleEps)) {
           std::cout << "Failed ray intersection test #" << i
                     << ": not equivalent!\nu = "
                     << u << ", v = " << v << ", t = " << t
@@ -421,6 +423,8 @@ main(void)
   std::cout << "Testing Geometry intersection routines.\n"
             << "Some of these tests can fail due to roundoff problems...\n"
             << "Dont worry if only a few of them fail..." << std::endl;
+
+  sg_srandom(17);
 
   if (!TriangleLineIntersectionTest<float>())
     return EXIT_FAILURE;

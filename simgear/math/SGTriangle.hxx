@@ -41,9 +41,9 @@ public:
     _d[1] = v[2] - v[0];
   }
 
-  SGVec3d getCenter() const
+  SGVec3<T> getCenter() const
   {
-    SGBoxd box;
+    SGBox<T> box;
     box.expandBy(_v0);
     box.expandBy(_v0 + _d[0]);
     box.expandBy(_v0 + _d[1]);

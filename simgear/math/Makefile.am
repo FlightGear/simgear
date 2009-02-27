@@ -4,10 +4,10 @@ check_PROGRAMS  = SGMathTest SGGeometryTest
 TESTS           = $(check_PROGRAMS)
 
 SGMathTest_SOURCES = SGMathTest.cxx
-SGMathTest_LDADD = libsgmath.a $(base_LIBS)
+SGMathTest_LDADD = libsgmath.a -lsgstructure $(base_LIBS)
 
 SGGeometryTest_SOURCES = SGGeometryTest.cxx
-SGGeometryTest_LDADD = libsgmath.a $(base_LIBS)
+SGGeometryTest_LDADD = libsgmath.a -lsgstructure $(base_LIBS)
 
 lib_LIBRARIES = libsgmath.a
 

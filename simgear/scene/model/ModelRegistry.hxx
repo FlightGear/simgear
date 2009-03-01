@@ -227,6 +227,7 @@ protected:
     // Protect against simultaneous calls from main thread (MP models)
     // and pager thread.
     OpenThreads::ReentrantMutex readerMutex;
+    unsigned _nestingLevel;
 };
 
 // Callback that only loads the file without any caching or

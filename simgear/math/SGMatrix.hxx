@@ -193,6 +193,7 @@ public:
       (*this)(i,2) += tmp*(*this)(3,2);
       (*this)(i,3) += tmp*(*this)(3,3);
     }
+    return *this;
   }
   template<typename S>
   SGMatrix& postMultTranslate(const SGVec3<S>& t)

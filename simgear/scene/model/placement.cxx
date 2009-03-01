@@ -9,9 +9,7 @@
 
 #include <simgear/compiler.h>
 
-#include <string.h>             // for strcmp()
-
-#include <plib/ul.h>
+#include <simgear/scene/util/SGSceneUserData.hxx>
 
 #include "location.hxx"
 #include "placementtrans.hxx"
@@ -49,7 +47,6 @@ SGModelPlacement::init( osg::Node * model )
       _position->addChild(model);
   }
   _selector->addChild(_position.get());
-//   _selector->setNodeMask(_selector->getNodeMask() & ~SG_HOT_TRAVERSAL_BIT);
   _selector->setValue(0, 1);
 }
 
@@ -145,6 +142,26 @@ void
 SGModelPlacement::setOrientation (const SGQuatd& orientation)
 {
   orientation.getEulerDeg(_heading_deg, _pitch_deg, _roll_deg);
+}
+
+void
+SGModelPlacement::setBodyLinearVelocity(const SGVec3d& linear)
+{
+  SGSceneUserData* userData;
+  userData = SGSceneUserData::getOrCreateSceneUserData(_position);
+  SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
+  SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
+  vel->linear = orientation.backTransform(linear);
+}
+
+void
+SGModelPlacement::setBodyAngularVelocity(const SGVec3d& angular)
+{
+  SGSceneUserData* userData;
+  userData = SGSceneUserData::getOrCreateSceneUserData(_position);
+  SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
+  SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
+  vel->angular = orientation.backTransform(angular);
 }
 
 // end of model.cxx

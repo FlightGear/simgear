@@ -77,6 +77,9 @@ public:
   virtual void setOrientation (double roll_deg, double pitch_deg,
                                double heading_deg);
   void setOrientation(const SGQuatd& orientation);
+
+  void setBodyLinearVelocity(const SGVec3d& velocity);
+  void setBodyAngularVelocity(const SGVec3d& velocity);
   
 private:
 

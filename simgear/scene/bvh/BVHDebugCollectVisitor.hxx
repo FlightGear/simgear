@@ -1,0 +1,222 @@
+// Copyright (C) 2008 - 2009  Mathias Froehlich - Mathias.Froehlich@web.de
+//
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+
+#ifndef BVHDebugCollectVisitor_hxx
+#define BVHDebugCollectVisitor_hxx
+
+#include <osg/ref_ptr>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/Group>
+#include <osg/PolygonOffset>
+#include <osg/PrimitiveSet>
+#include <osg/MatrixTransform>
+#include <osg/PositionAttitudeTransform>
+#include <osg/ShapeDrawable>
+#include <osg/Shape>
+#include <osg/Depth>
+#include <osg/BlendFunc>
+#include <osg/StateSet>
+
+#include <simgear/math/SGGeometry.hxx>
+
+#include "BVHVisitor.hxx"
+#include "BVHNode.hxx"
+#include "BVHGroup.hxx"
+#include "BVHTransform.hxx"
+#include "BVHMotionTransform.hxx"
+#include "BVHStaticGeometry.hxx"
+
+#include "BVHStaticData.hxx"
+
+#include "BVHStaticNode.hxx"
+#include "BVHStaticLeaf.hxx"
+#include "BVHStaticTriangle.hxx"
+#include "BVHStaticBinary.hxx"
+
+#include "BVHBoundingBoxVisitor.hxx"
+
+namespace simgear {
+
+class BVHNode;
+class BVHStaticNode;
+
+class BVHDebugCollectVisitor : public BVHVisitor {
+public:
+    BVHDebugCollectVisitor(unsigned level = ~0u) :
+        _group(new osg::Group),
+        _level(level),
+        _currentLevel(0)
+    {
+        osg::StateSet* stateSet = _group->getOrCreateStateSet();
+        stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+        stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+        stateSet->setAttribute(new osg::Depth(osg::Depth::LESS, 0, 1, false));
+        osg::BlendFunc *blendFunc;
+        blendFunc = new osg::BlendFunc(osg::BlendFunc::SRC_ALPHA,
+                                       osg::BlendFunc::DST_ALPHA);
+        stateSet->setAttributeAndModes(blendFunc);
+        osg::PolygonOffset* polygonOffset = new osg::PolygonOffset(-1, -1);
+        stateSet->setAttributeAndModes(polygonOffset);
+    }
+    virtual ~BVHDebugCollectVisitor()
+    { }
+
+    virtual void apply(BVHGroup& node)
+    {
+        addNodeSphere(node);
+        ++_currentLevel;
+        node.traverse(*this);
+        --_currentLevel;
+    }
+    virtual void apply(BVHTransform& node)
+    {
+        addNodeSphere(node);
+        osg::ref_ptr<osg::Group> oldGroup = _group;
+        osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
+        transform->setMatrix(osg::Matrix(node.getToWorldTransform().data()));
+        _group = transform;
+        ++_currentLevel;
+        node.traverse(*this);
+        --_currentLevel;
+        _group = oldGroup;
+        if (transform->getNumChildren())
+            _group->addChild(transform.get());
+    }
+    virtual void apply(BVHMotionTransform& node)
+    {
+        addNodeSphere(node);
+        osg::ref_ptr<osg::Group> oldGroup = _group;
+        osg::ref_ptr<osg::PositionAttitudeTransform> transform;
+        transform = new osg::PositionAttitudeTransform;
+        double tt = node.getReferenceTime() - node.getEndTime();
+        tt = 100*tt;
+        tt += node.getReferenceTime();
+//     transform->setPosition(node.getPosition(node.getEndTime()).osg());
+        transform->setPosition(node.getPosition().osg());
+        transform->setAttitude(inverse(node.getOrientation(tt)).osg());
+//     transform->setPosition(node.getPosition().osg());
+//     transform->setAttitude(inverse(node.getOrientation()).osg());
+        _group = transform;
+        ++_currentLevel;
+        node.traverse(*this);
+        --_currentLevel;
+        _group = oldGroup;
+        if (transform->getNumChildren())
+            _group->addChild(transform.get());
+    }
+    virtual void apply(BVHLineGeometry&)
+    {
+    }
+    virtual void apply(BVHStaticGeometry& node)
+    {
+        addNodeSphere(node);
+        ++_currentLevel;
+        node.traverse(*this);
+        --_currentLevel;
+    }
+
+    virtual void apply(const BVHStaticBinary& node, const BVHStaticData& data)
+    {
+        addNodeBox(node, data);
+        ++_currentLevel;
+        node.traverse(*this, data);
+        --_currentLevel;
+    }
+    virtual void apply(const BVHStaticLeaf& node, const BVHStaticData& data)
+    {
+        addNodeBox(node, data);
+    }
+    virtual void apply(const BVHStaticTriangle& node, const BVHStaticData& data)
+    {
+        addNodeBox(node, data);
+        addTriangle(node.getTriangle(data), osg::Vec4(0.5, 0, 0.5, 0.2));
+    }
+
+    osg::Node* getNode() const { return _group.get(); }
+
+    static unsigned allLevels() { return ~0u; }
+    static unsigned triangles() { return ~0u - 1; }
+
+private:
+    void addTriangle(const SGTrianglef& triangle, const osg::Vec4& color)
+    {
+        if (_level != triangles())
+            return;
+        
+        osg::Geometry* geometry = new osg::Geometry;
+        
+        osg::Vec3Array* vertices = new osg::Vec3Array;
+        vertices->push_back(triangle.getVertex(0).osg());
+        vertices->push_back(triangle.getVertex(1).osg());
+        vertices->push_back(triangle.getVertex(2).osg());
+        
+        osg::Vec4Array* colors = new osg::Vec4Array;
+        colors->push_back(color);
+        
+        geometry->setVertexArray(vertices);
+        geometry->setColorArray(colors);
+        geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+        
+        geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLES, 0, 3));
+        
+        osg::Geode* geode = new osg::Geode;
+        geode->addDrawable(geometry);
+        _group->addChild(geode);
+    }
+    
+    void addNodeSphere(const BVHNode& node)
+    {
+        if (_level != ~0u && _level != _currentLevel)
+            return;
+        SGSphered sphere = node.getBoundingSphere();
+        osg::Sphere* shape = new osg::Sphere;
+        shape->setCenter(SGVec3f(sphere.getCenter()).osg());
+        shape->setRadius(sphere.getRadius());
+        addShape(shape, osg::Vec4(0.5f, 0.5f, 0.5f, 0.1f));
+    }
+    
+    void addNodeBox(const BVHStaticNode& node, const BVHStaticData& data)
+    {
+        if (_level != ~0u && _level != _currentLevel)
+            return;
+        BVHBoundingBoxVisitor bbv;
+        node.accept(bbv, data);
+        osg::Box* shape = new osg::Box;
+        shape->setCenter(bbv.getBox().getCenter().osg());
+        shape->setHalfLengths((0.5*bbv.getBox().getSize()).osg());
+        addShape(shape, osg::Vec4(0.5f, 0, 0, 0.1f));
+    }
+    
+    void addShape(osg::Shape* shape, const osg::Vec4& color)
+    {
+        osg::ShapeDrawable* shapeDrawable = new osg::ShapeDrawable;
+        shapeDrawable->setColor(color);
+        shapeDrawable->setShape(shape);
+        osg::Geode* geode = new osg::Geode;
+        geode->addDrawable(shapeDrawable);
+        _group->addChild(geode);
+    }
+    
+    osg::ref_ptr<osg::Group> _group;
+    const unsigned _level;
+    unsigned _currentLevel;
+};
+
+}
+
+#endif

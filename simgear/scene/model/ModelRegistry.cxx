@@ -50,6 +50,8 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 
+#include "BoundingVolumeBuildVisitor.hxx"
+
 using namespace std;
 using namespace osg;
 using namespace osgUtil;
@@ -426,7 +428,8 @@ string OSGSubstitutePolicy::substitute(const string& name,
 }
 
 ModelRegistry::ModelRegistry() :
-    _defaultCallback(new DefaultCallback(""))
+    _defaultCallback(new DefaultCallback("")),
+    _nestingLevel(0)
 {
 }
 
@@ -449,15 +452,29 @@ ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
     ScopedLock<ReentrantMutex> lock(readerMutex);
+    ++_nestingLevel;
+
     // XXX Workaround for OSG plugin bug.
     Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
-    Node* cached = 0;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));
+    ReaderWriter::ReadResult result;
     if (iter != nodeCallbackMap.end() && iter->second.valid())
-        return iter->second->readNode(fileName, opt);
-    return _defaultCallback->readNode(fileName, opt);
+        result = iter->second->readNode(fileName, opt);
+    else
+        result = _defaultCallback->readNode(fileName, opt);
+
+    if (0 == --_nestingLevel) {
+        SG_LOG(SG_IO, SG_INFO, "Building boundingvolume tree for \""
+               << fileName << "\".");
+        BoundingVolumeBuildVisitor bvBuilder;
+        result.getNode()->accept(bvBuilder);
+    } else {
+        SG_LOG(SG_IO, SG_INFO, "Defering boundingvolume tree built for \""
+               << fileName << "\" to parent.");
+    }
+    return result;
 }
 
 class SGReadCallbackInstaller {

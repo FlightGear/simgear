@@ -71,6 +71,16 @@ public:
     _d[0] = _d[1];
     _d[1] = tmp;
   }
+
+  SGTriangle<T> transform(const SGMatrix<T>& matrix) const
+  {
+    SGTriangle<T> triangle;
+    triangle._v0 = matrix.xformPt(_v0);
+    triangle._d[0] = matrix.xformVec(_d[0]);
+    triangle._d[1] = matrix.xformVec(_d[1]);
+    return triangle;
+  }
+
 private:
   /// Store one vertex directly, _d is the offset of the other two
   /// vertices wrt the base vertex

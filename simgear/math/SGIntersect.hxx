@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2006-2009  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -548,6 +548,416 @@ intersects(const SGTriangle<T>& tri, const SGLineSegment<T>& lineSegment, T eps 
   SGVec3<T> dummy;
   return intersects(dummy, tri, lineSegment, eps);
 }
+
+
+template<typename T>
+inline SGVec3<T>
+closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
+{
+  // This method minimizes the distance function Q(u, v) = || p - x ||
+  // where x is a point in the trialgle given by the vertices v_i
+  //  x = v_0 + u*(v_1 - v_0) + v*(v_2 - v_0)
+  // The theoretical analysis is somehow too long for a comment.
+  // May be it is sufficient to see that this code passes all the tests.
+
+  SGVec3<T> off = tri.getBaseVertex() - p;
+  T a = dot(tri.getEdge(0), tri.getEdge(0));
+  T b = dot(tri.getEdge(0), tri.getEdge(1));
+  T c = dot(tri.getEdge(1), tri.getEdge(1));
+  T d = dot(tri.getEdge(0), off);
+  T e = dot(tri.getEdge(1), off);
+  
+  T det = a*c - b*b;
+
+  T u = b*e - c*d;
+  T v = b*d - a*e;
+
+  // Regions
+  // \2|
+  //  \|
+  //   |\
+  // 3 |0\ 1
+  //----------
+  // 4 | 5 \ 6
+
+  if (u + v <= det) {
+    if (u < 0) {
+      if (v < 0) {
+        // region 4
+        if (d < 0) {
+          if (a <= -d) {
+            // u = 1;
+            // v = 0;
+            return tri.getBaseVertex() + tri.getEdge(0);
+          } else {
+            u = -d/a;
+            // v = 0;
+            return tri.getBaseVertex() + u*tri.getEdge(0);
+          }
+        } else {
+          if (0 < e) {
+            // u = 0;
+            // v = 0;
+            return tri.getBaseVertex();
+          } else if (c <= -e) {
+            // u = 0;
+            // v = 1;
+            return tri.getBaseVertex() + tri.getEdge(1);
+          } else {
+            // u = 0;
+            v = -e/c;
+            return tri.getBaseVertex() + v*tri.getEdge(1);
+          }
+        }
+      } else {
+        // region 3
+        if (0 <= e) {
+          // u = 0;
+          // v = 0;
+          return tri.getBaseVertex();
+        } else if (c <= -e) {
+          // u = 0;
+          // v = 1;
+          return tri.getBaseVertex() + tri.getEdge(1);
+        } else {
+          // u = 0;
+          v = -e/c;
+          return tri.getBaseVertex() + v*tri.getEdge(1);
+        }
+      }
+    } else if (v < 0) {
+      // region 5
+      if (0 <= d) {
+        // u = 0;
+        // v = 0;
+        return tri.getBaseVertex();
+      } else if (a <= -d) {
+        // u = 1;
+        // v = 0;
+        return tri.getBaseVertex() + tri.getEdge(0);
+      } else {
+        u = -d/a;
+        // v = 0;
+        return tri.getBaseVertex() + u*tri.getEdge(0);
+      }
+    } else {
+      // region 0
+      if (det <= SGLimits<T>::min()) {
+        u = 0;
+        v = 0;
+        return tri.getBaseVertex();
+      } else {
+        T invDet = 1/det;
+        u *= invDet;
+        v *= invDet;
+        return tri.getBaseVertex() + u*tri.getEdge(0) + v*tri.getEdge(1);
+      }
+    }
+  } else {
+    if (u < 0) {
+      // region 2
+      T tmp0 = b + d;
+      T tmp1 = c + e;
+      if (tmp0 < tmp1) {
+        T numer = tmp1 - tmp0;
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 1;
+          // v = 0;
+          return tri.getBaseVertex() + tri.getEdge(0);
+        } else {
+          u = numer/denom;
+          v = 1 - u;
+          return tri.getBaseVertex() + u*tri.getEdge(0) + v*tri.getEdge(1);
+        }
+      } else {
+        if (tmp1 <= 0) {
+          // u = 0;
+          // v = 1;
+          return tri.getBaseVertex() + tri.getEdge(1);
+        } else if (0 <= e) {
+          // u = 0;
+          // v = 0;
+          return tri.getBaseVertex();
+        } else {
+          // u = 0;
+          v = -e/c;
+          return tri.getBaseVertex() + v*tri.getEdge(1);
+        }
+      }
+    } else if (v < 0) {
+      // region 6
+      T tmp0 = b + e;
+      T tmp1 = a + d;
+      if (tmp0 < tmp1) {
+        T numer = tmp1 - tmp0;
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 0;
+          // v = 1;
+          return tri.getBaseVertex() + tri.getEdge(1);
+        } else {
+          v = numer/denom;
+          u = 1 - v;
+          return tri.getBaseVertex() + u*tri.getEdge(0) + v*tri.getEdge(1);
+        }
+      } else {
+        if (tmp1 < 0) {
+          // u = 1;
+          // v = 0;
+          return tri.getBaseVertex() + tri.getEdge(0);
+        } else if (0 <= d) {
+          // u = 0;
+          // v = 0;
+          return tri.getBaseVertex();
+        } else {
+          u = -d/a;
+          // v = 0;
+          return tri.getBaseVertex() + u*tri.getEdge(0);
+        }
+      }
+    } else {
+      // region 1
+      T numer = c + e - b - d;
+      if (numer <= 0) {
+        // u = 0;
+        // v = 1;
+        return tri.getVertex(2);
+      } else {
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 1;
+          // v = 0;
+          return tri.getBaseVertex() + tri.getEdge(0);
+        } else {
+          u = numer/denom;
+          v = 1 - u;
+          return tri.getBaseVertex() + u*tri.getEdge(0) + v*tri.getEdge(1);
+        }
+      }
+    }
+  }
+}
+template<typename T>
+inline SGVec3<T>
+closestPoint(const SGVec3<T>& p, const SGTriangle<T>& tri)
+{ return closestPoint(tri, p); }
+
+template<typename T>
+inline bool
+intersects(const SGTriangle<T>& tri, const SGSphere<T>& sphere)
+{
+  // This method minimizes the distance function Q(u, v) = || p - x ||
+  // where x is a point in the trialgle given by the vertices v_i
+  //  x = v_0 + u*(v_1 - v_0) + v*(v_2 - v_0)
+  // The theoretical analysis is somehow too long for a comment.
+  // May be it is sufficient to see that this code passes all the tests.
+
+  SGVec3<T> off = tri.getBaseVertex() - sphere.getCenter();
+  T baseDist2 = dot(off, off);
+  T a = dot(tri.getEdge(0), tri.getEdge(0));
+  T b = dot(tri.getEdge(0), tri.getEdge(1));
+  T c = dot(tri.getEdge(1), tri.getEdge(1));
+  T d = dot(tri.getEdge(0), off);
+  T e = dot(tri.getEdge(1), off);
+  
+  T det = a*c - b*b;
+
+  T u = b*e - c*d;
+  T v = b*d - a*e;
+
+  // Regions
+  // \2|
+  //  \|
+  //   |\
+  // 3 |0\ 1
+  //----------
+  // 4 | 5 \ 6
+
+  if (u + v <= det) {
+    if (u < 0) {
+      if (v < 0) {
+        // region 4
+        if (d < 0) {
+          if (a <= -d) {
+            // u = 1;
+            // v = 0;
+            T sqrDist = a + 2*d + baseDist2;
+            return sqrDist <= sphere.getRadius2();
+          } else {
+            u = -d/a;
+            // v = 0;
+            T sqrDist = d*u + baseDist2;
+            return sqrDist <= sphere.getRadius2();
+          }
+        } else {
+          if (0 < e) {
+            // u = 0;
+            // v = 0;
+            return baseDist2 <= sphere.getRadius2();
+          } else if (c <= -e) {
+            // u = 0;
+            // v = 1;
+            T sqrDist = c + 2*e + baseDist2;
+            return sqrDist <= sphere.getRadius2();
+          } else {
+            // u = 0;
+            v = -e/c;
+            T sqrDist = e*v + baseDist2;
+            return sqrDist <= sphere.getRadius2();
+          }
+        }
+      } else {
+        // region 3
+        if (0 <= e) {
+          // u = 0;
+          // v = 0;
+          return baseDist2 <= sphere.getRadius2();
+        } else if (c <= -e) {
+          // u = 0;
+          // v = 1;
+          T sqrDist = c + 2*e + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else {
+          // u = 0;
+          v = -e/c;
+          T sqrDist = e*v + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      }
+    } else if (v < 0) {
+      // region 5
+      if (0 <= d) {
+        // u = 0;
+        // v = 0;
+        return baseDist2 <= sphere.getRadius2();
+      } else if (a <= -d) {
+        // u = 1;
+        // v = 0;
+        T sqrDist = a + 2*d + baseDist2;
+        return sqrDist <= sphere.getRadius2();
+      } else {
+        u = -d/a;
+        // v = 0;
+        T sqrDist = d*u + baseDist2;
+        return sqrDist <= sphere.getRadius2();
+      }
+    } else {
+      // region 0
+      if (det <= SGLimits<T>::min()) {
+        // sqrDist = baseDist2;
+        u = 0;
+        v = 0;
+        return baseDist2 <= sphere.getRadius2();
+      } else {
+        T invDet = 1/det;
+        u *= invDet;
+        v *= invDet;
+        T sqrDist = u*(a*u + b*v + 2*d) + v*(b*u + c*v + 2*e) + baseDist2;
+        return sqrDist <= sphere.getRadius2();
+      }
+    }
+  } else {
+    if (u < 0) {
+      // region 2
+      T tmp0 = b + d;
+      T tmp1 = c + e;
+      if (tmp0 < tmp1) {
+        T numer = tmp1 - tmp0;
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 1;
+          // v = 0;
+          T sqrDist = a + 2*d + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else {
+          u = numer/denom;
+          v = 1 - u;
+          T sqrDist = u*(a*u + b*v + 2*d) + v*(b*u + c*v + 2*e) + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      } else {
+        if (tmp1 <= 0) {
+          // u = 0;
+          // v = 1;
+          T sqrDist = c + 2*e + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else if (0 <= e) {
+          // u = 0;
+          // v = 0;
+          return baseDist2 <= sphere.getRadius2();
+        } else {
+          // u = 0;
+          v = -e/c;
+          T sqrDist = e*v + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      }
+    } else if (v < 0) {
+      // region 6
+      T tmp0 = b + e;
+      T tmp1 = a + d;
+      if (tmp0 < tmp1) {
+        T numer = tmp1 - tmp0;
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 0;
+          // v = 1;
+          T sqrDist = c + 2*e + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else {
+          v = numer/denom;
+          u = 1 - v;
+          T sqrDist = u*(a*u + b*v + 2*d) + v*(b*u + c*v + 2*e)+baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      } else {
+        if (tmp1 < 0) {
+          // u = 1;
+          // v = 0;
+          T sqrDist = a + 2*d + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else if (0 <= d) {
+          // sqrDist = baseDist2;
+          // u = 0;
+          // v = 0;
+          return baseDist2 <= sphere.getRadius2();
+        } else {
+          u = -d/a;
+          // v = 0;
+          T sqrDist = d*u + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      }
+    } else {
+      // region 1
+      T numer = c + e - b - d;
+      if (numer <= 0) {
+        // u = 0;
+        // v = 1;
+        T sqrDist = c + 2*e + baseDist2;
+        return sqrDist <= sphere.getRadius2();
+      } else {
+        T denom = a - 2*b + c;
+        if (denom <= numer) {
+          // u = 1;
+          // v = 0;
+          T sqrDist = a + 2*d + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        } else {
+          u = numer/denom;
+          v = 1 - u;
+          T sqrDist = u*(a*u + b*v + 2*d) + v*(b*u + c*v + 2*e) + baseDist2;
+          return sqrDist <= sphere.getRadius2();
+        }
+      }
+    }
+  }
+}
+template<typename T>
+inline bool
+intersects(const SGSphere<T>& sphere, const SGTriangle<T>& tri)
+{ return intersects(tri, sphere); }
 
 
 template<typename T>

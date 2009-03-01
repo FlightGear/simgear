@@ -48,6 +48,14 @@ public:
   SGVec3<T> getCenter() const
   { return _start + T(0.5)*_direction; }
 
+  SGLineSegment<T> transform(const SGMatrix<T>& matrix) const
+  {
+    SGLineSegment<T> lineSegment;
+    lineSegment._start = matrix.xformPt(_start);
+    lineSegment._direction = matrix.xformVec(_direction);
+    return lineSegment;
+  }
+
 private:
   SGVec3<T> _start;
   SGVec3<T> _direction;

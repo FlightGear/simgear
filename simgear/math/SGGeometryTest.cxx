@@ -33,6 +33,102 @@ SGVec3<T> rndVec3(void)
 
 template<typename T>
 bool
+TriangleClosestPointIntersectionTest(void)
+{
+  unsigned nTests = 100000;
+  unsigned failedCount = 0;
+  for (unsigned i = 0; i < nTests; ++i) {
+      // test triangle
+      SGTriangle<T> triangle(rndVec3<T>(), rndVec3<T>(), rndVec3<T>());
+      T triangleEps = 100*SGLimits<T>::epsilon();
+
+      // generate random point in the triangle
+      T u = 4*sg_random() - 2;
+      T v = 4*sg_random() - 2;
+      if (1 < u + v) {
+        v = T(0.5)*(v + 1 - u);
+        u = 1 - v;
+      }
+      u = SGMisc<T>::clip(u, 0, 1);
+      v = SGMisc<T>::clip(v, 0, 1);
+
+      SGVec3<T> testClosest;
+      testClosest = triangle.getBaseVertex();
+      testClosest += u*triangle.getEdge(0) + v*triangle.getEdge(1);
+
+      SGVec3<T> n = triangle.getNormal();
+      SGVec3<T> e0 = triangle.getEdge(0);
+      SGVec3<T> e1 = triangle.getEdge(1);
+
+      // The normals to the edges
+      SGVec3<T> a0 = cross(e0, n);
+      SGVec3<T> a1 = cross(e1 - e0, n);
+      SGVec3<T> a2 = cross(n, e1);
+
+      SGVec3<T> testPoint = testClosest;
+      // Ok, if we are at some edge, go perpandicular to the triangle away
+      if (u == 0) {
+        if (v == 0) {
+          testPoint += sg_random()*a0 + sg_random()*a2;
+        } else if (v == 1) {
+          testPoint += sg_random()*a1 + sg_random()*a2;
+        } else {
+          testPoint += sg_random()*a2;
+        }
+      } else if (u == 1) {
+        testPoint += sg_random()*a0 + sg_random()*a1;
+      } else {
+        if (v == 0) {
+          testPoint += sg_random()*a0;
+        } else if (u + v == 1) {
+          testPoint += sg_random()*a1;
+        }
+      }
+      testPoint += (2*sg_random() - 1)*n;
+
+      // Test the closest point function
+      SGVec3<T> closest = closestPoint(triangle, testPoint);
+      if (!equivalent(closest, testClosest, triangleEps)) {
+        std::cout << "Failed closest point test #" << i
+                  << ": not equivalent!\nu = "
+                  << u << ", v = " << v
+                  << "\ntestPoint = " << testPoint
+                  << ", testClosest = " << testClosest
+                  << ", closest = " << closest << "\n"
+                  << triangle << std::endl;
+        ++failedCount;
+      }
+
+      // Test the triangle sphere intersection
+      SGSphere<T> sphere(testPoint, sg_random());
+      bool exactIntersection = intersects(sphere, testClosest);
+//       bool exactIntersection = intersects(sphere, closest);
+      bool sphereTriangleIntersection = intersects(sphere, triangle);
+    
+      if (sphereTriangleIntersection != exactIntersection) {
+        std::cout << "Failed triangle sphere intersection test #" << i
+                  << ": not equivalent!\nu = "
+                  << u << ", v = " << v
+                  << "\ntestPoint = " << testPoint
+                  << ", testClosest = " << testClosest
+                  << ", closest = " << closest << "\n"
+                  << triangle << std::endl;
+        ++failedCount;
+      }
+  }
+
+  if (nTests < 100*failedCount) {
+    std::cout << "Failed box line intersection tests: " << failedCount
+              << " tests out of " << nTests
+              << " went wrong. Abort!" << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+template<typename T>
+bool
 TriangleLineIntersectionTest(void)
 {
   unsigned nTests = 100000;
@@ -425,6 +521,11 @@ main(void)
             << "Dont worry if only a few of them fail..." << std::endl;
 
   sg_srandom(17);
+
+  if (!TriangleClosestPointIntersectionTest<float>())
+    return EXIT_FAILURE;
+  if (!TriangleClosestPointIntersectionTest<double>())
+    return EXIT_FAILURE;
 
   if (!TriangleLineIntersectionTest<float>())
     return EXIT_FAILURE;

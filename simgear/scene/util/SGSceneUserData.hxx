@@ -25,6 +25,7 @@
 #include <vector>
 #include <osg/Referenced>
 #include <osg/Node>
+#include <simgear/scene/bvh/BVHNode.hxx>
 #include "SGPickCallback.hxx"
 
 class SGSceneUserData : public osg::Referenced {
@@ -38,8 +39,33 @@ public:
   SGPickCallback* getPickCallback(unsigned i) const;
   void setPickCallback(SGPickCallback* pickCallback);
   void addPickCallback(SGPickCallback* pickCallback);
+
+  const simgear::BVHNode* getBVHNode() const
+  { return _bvhNode; }
+  simgear::BVHNode* getBVHNode()
+  { return _bvhNode; }
+  void setBVHNode(simgear::BVHNode* bvhNode)
+  { _bvhNode = bvhNode; }
+
+  struct Velocity : public SGReferenced {
+    Velocity() : linear(SGVec3d::zeros()), angular(SGVec3d::zeros()) {}
+    SGVec3d linear;
+    SGVec3d angular;
+  };
+  const Velocity* getVelocity() const
+  { return _velocity; }
+  Velocity* getOrCreateVelocity()
+  { if (!_velocity) _velocity = new Velocity; return _velocity; }
+  void setVelocity(Velocity* velocity)
+  { _velocity = velocity; }
   
 private:
+  // If this node has a collision tree attached, it is stored here
+  SGSharedPtr<simgear::BVHNode> _bvhNode;
+
+  // Velocity in the childs local coordinate system
+  SGSharedPtr<Velocity> _velocity;
+
   /// Scene interaction callbacks
   std::vector<SGSharedPtr<SGPickCallback> > _pickCallbacks;
 };

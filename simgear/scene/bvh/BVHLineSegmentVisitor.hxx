@@ -66,7 +66,7 @@ public:
     virtual void apply(const BVHStaticTriangle&, const BVHStaticData&);
     
 protected:
-    bool setLineSegmentEnd(const SGVec3d& end)
+    void setLineSegmentEnd(const SGVec3d& end)
     {
         // Ok, you need to make sure that the new end is in the previous
         // direction and that the line segment is not enlarged by that call.

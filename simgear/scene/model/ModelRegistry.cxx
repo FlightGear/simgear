@@ -396,6 +396,13 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
 osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
                     const osgDB::ReaderWriter::Options* opt)
 {
+    /// Crude hack for the bounding volume sharing problem.
+    /// Better solution this week.
+    /// Note that this does not really build in the case we come here
+    /// the second time for the same node
+    BoundingVolumeBuildVisitor bvBuilder;
+    model->accept(bvBuilder);
+
     // Add an extra reference to the model stored in the database.
     // That it to avoid expiring the object from the cache even if it is still
     // in use. Note that the object cache will think that a model is unused

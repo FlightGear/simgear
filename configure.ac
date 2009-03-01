@@ -480,6 +480,7 @@ AC_CONFIG_FILES([ \
 	simgear/props/Makefile \
 	simgear/route/Makefile \
 	simgear/scene/Makefile \
+	simgear/scene/bvh/Makefile \
 	simgear/scene/material/Makefile \
 	simgear/scene/model/Makefile \
 	simgear/scene/sky/Makefile \

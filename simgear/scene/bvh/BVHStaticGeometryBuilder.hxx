@@ -117,6 +117,7 @@ public:
         const BVHStaticNode* tree = buildTreeRecursive(_leafRefList);
         if (!tree)
             return 0;
+        _staticData->trim();
         return new BVHStaticGeometry(tree, _staticData);
     }
 

@@ -1136,7 +1136,6 @@
 			<File
 				RelativePath="..\..\simgear\scene\util\PrimitiveUtils.hxx">
 			</File>
-
 			<File
 				RelativePath="..\..\simgear\scene\util\QuadTreeBuilder.cxx">
 			</File>
@@ -1190,6 +1189,97 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
+			</File>
+		</Filter>
+		<Filter
+			Name="Lib_sgbvh"
+			Filter="">
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHBoundingBoxVisitor.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHDebugCollectVisitor.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHGroup.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHGroup.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHLineGeometry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHLineGeometry.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHMotionTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHMotionTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHNode.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHNode.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticBinary.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticBinary.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticData.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticGeometry.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticGeometry.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticGeometryBuilder.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticLeaf.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticLeaf.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticNode.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticNode.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticTriangle.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHStaticTriangle.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHSubTreeCollector.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHSubTreeCollector.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHTransform.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHTransform.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\bvh\BVHVisitor.hxx">
 			</File>
 		</Filter>
 		<File

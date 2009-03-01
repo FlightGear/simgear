@@ -44,6 +44,12 @@ public:
     { _materials.push_back(material); return _materials.size() - 1; }
     const SGMaterial* getMaterial(unsigned i) const
     { if (_materials.size() <= i) return 0; return _materials[i]; }
+
+    void trim()
+    {
+        std::vector<SGVec3f>(_vertices).swap(_vertices);
+        std::vector<const SGMaterial*>(_materials).swap(_materials);
+    }
     
 private:
     std::vector<SGVec3f> _vertices;

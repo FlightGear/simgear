@@ -26,7 +26,6 @@
 #include "BVHStaticData.hxx"
 
 #include "BVHStaticNode.hxx"
-#include "BVHStaticLeaf.hxx"
 #include "BVHStaticTriangle.hxx"
 #include "BVHStaticBinary.hxx"
 #include "BVHStaticGeometry.hxx"
@@ -178,15 +177,6 @@ BVHSubTreeCollector::apply(const BVHStaticBinary& node,
             }
         }
     }
-}
-
-void
-BVHSubTreeCollector::apply(const BVHStaticLeaf& node,
-                           const BVHStaticData& data)
-{
-    if (!intersects(_sphere, node.computeBoundingBox(data)))
-        return;
-    _staticNode = &node;
 }
 
 void

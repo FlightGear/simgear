@@ -17,6 +17,7 @@ include_HEADERS = \
 	BVHLineSegmentVisitor.hxx \
 	BVHLineGeometry.hxx \
 	BVHMotionTransform.hxx \
+	BVHNearestPointVisitor.hxx \
 	BVHNode.hxx \
 	BVHStaticBinary.hxx \
 	BVHStaticData.hxx \

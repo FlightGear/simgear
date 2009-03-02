@@ -29,7 +29,6 @@ class BVHStaticGeometry;
 class BVHLineGeometry;
 
 class BVHStaticBinary;
-class BVHStaticLeaf;
 class BVHStaticTriangle;
 
 class BVHVisitor {
@@ -49,7 +48,6 @@ public:
     
     // Static tree nodes to handle
     virtual void apply(const BVHStaticBinary&, const BVHStaticData&) = 0;
-    virtual void apply(const BVHStaticLeaf&, const BVHStaticData&) = 0;
     virtual void apply(const BVHStaticTriangle&, const BVHStaticData&) = 0;
 };
 

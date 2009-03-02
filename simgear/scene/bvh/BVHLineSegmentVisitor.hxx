@@ -62,7 +62,6 @@ public:
     virtual void apply(BVHStaticGeometry& node);
     
     virtual void apply(const BVHStaticBinary&, const BVHStaticData&);
-    virtual void apply(const BVHStaticLeaf&, const BVHStaticData&);
     virtual void apply(const BVHStaticTriangle&, const BVHStaticData&);
     
 protected:

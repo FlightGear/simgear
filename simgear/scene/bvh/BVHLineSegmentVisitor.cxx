@@ -31,7 +31,6 @@
 #include "BVHStaticData.hxx"
 
 #include "BVHStaticNode.hxx"
-#include "BVHStaticLeaf.hxx"
 #include "BVHStaticTriangle.hxx"
 #include "BVHStaticBinary.hxx"
 
@@ -129,12 +128,6 @@ BVHLineSegmentVisitor::apply(const BVHStaticBinary& node,
     // even need to walk the other one, since the line segment is
     // then already short enough to not intersect the other one anymore.
     node.traverse(*this, data, _lineSegment.getStart());
-}
-
-void
-BVHLineSegmentVisitor::apply(const BVHStaticLeaf& node,
-                             const BVHStaticData& data)
-{
 }
 
 void

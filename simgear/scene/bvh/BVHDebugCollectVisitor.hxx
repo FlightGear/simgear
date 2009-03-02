@@ -25,7 +25,6 @@
 #include <osg/PolygonOffset>
 #include <osg/PrimitiveSet>
 #include <osg/MatrixTransform>
-#include <osg/PositionAttitudeTransform>
 #include <osg/ShapeDrawable>
 #include <osg/Shape>
 #include <osg/Depth>
@@ -44,7 +43,6 @@
 #include "BVHStaticData.hxx"
 
 #include "BVHStaticNode.hxx"
-#include "BVHStaticLeaf.hxx"
 #include "BVHStaticTriangle.hxx"
 #include "BVHStaticBinary.hxx"
 
@@ -101,16 +99,9 @@ public:
     {
         addNodeSphere(node);
         osg::ref_ptr<osg::Group> oldGroup = _group;
-        osg::ref_ptr<osg::PositionAttitudeTransform> transform;
-        transform = new osg::PositionAttitudeTransform;
+        osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
+        transform->setMatrix(osg::Matrix(node.getToWorldReferenceTransform().data()));
         double tt = node.getReferenceTime() - node.getEndTime();
-        tt = 100*tt;
-        tt += node.getReferenceTime();
-//     transform->setPosition(node.getPosition(node.getEndTime()).osg());
-        transform->setPosition(node.getPosition().osg());
-        transform->setAttitude(inverse(node.getOrientation(tt)).osg());
-//     transform->setPosition(node.getPosition().osg());
-//     transform->setAttitude(inverse(node.getOrientation()).osg());
         _group = transform;
         ++_currentLevel;
         node.traverse(*this);
@@ -136,10 +127,6 @@ public:
         ++_currentLevel;
         node.traverse(*this, data);
         --_currentLevel;
-    }
-    virtual void apply(const BVHStaticLeaf& node, const BVHStaticData& data)
-    {
-        addNodeBox(node, data);
     }
     virtual void apply(const BVHStaticTriangle& node, const BVHStaticData& data)
     {

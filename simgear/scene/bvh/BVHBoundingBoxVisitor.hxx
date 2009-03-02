@@ -30,7 +30,6 @@
 #include "BVHStaticData.hxx"
 
 #include "BVHStaticNode.hxx"
-#include "BVHStaticLeaf.hxx"
 #include "BVHStaticTriangle.hxx"
 #include "BVHStaticBinary.hxx"
 #include "BVHStaticGeometry.hxx"
@@ -57,8 +56,6 @@ public:
     
     virtual void apply(const BVHStaticBinary& node, const BVHStaticData& data)
     { expandBy(node.getBoundingBox()); }
-    virtual void apply(const BVHStaticLeaf& node, const BVHStaticData& data)
-    { expandBy(node.computeBoundingBox(data)); }
     virtual void apply(const BVHStaticTriangle& node, const BVHStaticData& data)
     { expandBy(node.computeBoundingBox(data)); }
     

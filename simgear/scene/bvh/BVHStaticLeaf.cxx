@@ -24,10 +24,4 @@ BVHStaticLeaf::~BVHStaticLeaf()
 {
 }
 
-void
-BVHStaticLeaf::accept(BVHVisitor& visitor, const BVHStaticData& data) const
-{
-  visitor.apply(*this, data);
-}
-
 }

@@ -33,6 +33,7 @@
 #include "BVHBoundingBoxVisitor.hxx"
 #include "BVHSubTreeCollector.hxx"
 #include "BVHLineSegmentVisitor.hxx"
+#include "BVHNearestPointVisitor.hxx"
 
 using namespace simgear;
 
@@ -109,10 +110,33 @@ testLineIntersections()
     return true;
 }
 
+bool
+testNearestPoint()
+{
+    SGVec3f v1(-1, -1, 0);
+    SGVec3f v2(1, -1, 0);
+    SGVec3f v3(-1, 1, 0);
+    SGSharedPtr<BVHNode> node = buildSingleTriangle(v1, v2, v3);
+
+    SGSphered sphere(SGVec3d(0, 0, -1), 2);
+    {
+      BVHNearestPointVisitor nearestPointVisitor(sphere, 0);
+        node->accept(nearestPointVisitor);
+        if (nearestPointVisitor.empty())
+            return false;
+        if (!equivalent(nearestPointVisitor.getPoint(), SGVec3d(0, 0, 0)))
+            return false;
+    }
+
+    return true;
+}
+
 int
 main(int argc, char** argv)
 {
     if (!testLineIntersections())
+        return EXIT_FAILURE;
+    if (!testNearestPoint())
         return EXIT_FAILURE;
     return EXIT_SUCCESS;
 }

@@ -49,7 +49,6 @@ public:
     virtual void apply(BVHStaticGeometry&);
     
     virtual void apply(const BVHStaticBinary&, const BVHStaticData&);
-    virtual void apply(const BVHStaticLeaf&, const BVHStaticData&);
     virtual void apply(const BVHStaticTriangle&, const BVHStaticData&);
     
     void setSphere(const SGSphered& sphere)

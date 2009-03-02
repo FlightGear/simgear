@@ -27,7 +27,7 @@ class BVHStaticLeaf : public BVHStaticNode {
 public:
   virtual ~BVHStaticLeaf();
 
-  virtual void accept(BVHVisitor& visitor, const BVHStaticData& data) const;
+  virtual void accept(BVHVisitor& visitor, const BVHStaticData& data) const = 0;
 
   virtual SGBoxf computeBoundingBox(const BVHStaticData&) const = 0;
   virtual SGVec3f computeCenter(const BVHStaticData&) const = 0;

@@ -18,6 +18,10 @@
 #ifndef BVHStaticGeometryBuilder_hxx
 #define BVHStaticGeometryBuilder_hxx
 
+#include <algorithm>
+#include <map>
+#include <set>
+
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -71,6 +75,9 @@ public:
     typedef std::map<SGVec3f, unsigned> VertexMap;
     VertexMap _vertexMap;
 
+    typedef std::set<SGVec3<unsigned> > TriangleSet;
+    TriangleSet _triangleSet;
+
     void setCurrentMaterial(const SGMaterial* material)
     {
         _currentMaterial = material;
@@ -98,6 +105,11 @@ public:
     void addTriangle(const SGVec3f& v1, const SGVec3f& v2, const SGVec3f& v3)
     {
         unsigned indices[3] = { addVertex(v1), addVertex(v2), addVertex(v3) };
+        std::sort(indices, indices + 3);
+        SGVec3<unsigned> indexKey(indices);
+        if (_triangleSet.find(indexKey) != _triangleSet.end())
+            return;
+        _triangleSet.insert(indexKey);
         BVHStaticTriangle* staticTriangle;
         staticTriangle = new BVHStaticTriangle(_currentMaterialIndex, indices);
         _leafRefList.push_back(LeafRef(staticTriangle, *_staticData));

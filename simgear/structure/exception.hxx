@@ -10,11 +10,11 @@
 #ifndef __SIMGEAR_MISC_EXCEPTION_HXX
 #define __SIMGEAR_MISC_EXCEPTION_HXX 1
 
+#include <exception>
 #include <simgear/compiler.h>
 #include <string>
 
 using std::string;
-
 
 /**
  * Information encapsulating a single location in an external resource
@@ -26,20 +26,22 @@ using std::string;
 class sg_location
 {
 public:
+  enum {MAX_PATH = 1024};
   sg_location ();
-  sg_location (const string &path, int line = -1, int column = -1);
-  virtual ~sg_location ();
-  virtual const string &getPath () const;
-  virtual void setPath (const string &path);
+  sg_location(const std::string& path, int line = -1, int column = -1);  
+  explicit sg_location(const char* path, int line = -1, int column = -1);
+  virtual ~sg_location() throw ();
+  virtual const char* getPath() const;
+  virtual void setPath (const char* path);
   virtual int getLine () const;
   virtual void setLine (int line);
   virtual int getColumn () const;
   virtual void setColumn (int column);
   virtual int getByte () const;
   virtual void setByte (int byte);
-  virtual string asString () const;
+  virtual std::string asString () const;
 private:
-  string _path;
+  char _path[MAX_PATH];
   int _line;
   int _column;
   int _byte;
@@ -49,20 +51,22 @@ private:
 /**
  * Abstract base class for all throwables.
  */
-class sg_throwable
+class sg_throwable : public std::exception
 {
 public:
+  enum {MAX_TEXT_LEN = 1024};
   sg_throwable ();
-  sg_throwable (const string &message, const string &origin = "");
-  virtual ~sg_throwable ();
-  virtual const string &getMessage () const;
-  virtual const string getFormattedMessage () const;
-  virtual void setMessage (const string &message);
-  virtual const string &getOrigin () const;
-  virtual void setOrigin (const string &origin);
+  sg_throwable (const char* message, const char* origin = 0);
+  virtual ~sg_throwable () throw ();
+  virtual const char* getMessage () const;
+  virtual const std::string getFormattedMessage () const;
+  virtual void setMessage (const char* message);
+  virtual const char* getOrigin () const;
+  virtual void setOrigin (const char *origin);
+  virtual const char* what() const throw();
 private:
-  string _message;
-  string _origin;
+  char _message[MAX_TEXT_LEN];
+  char _origin[MAX_TEXT_LEN];
 };
 
 
@@ -80,8 +84,9 @@ class sg_error : public sg_throwable
 {
 public:
   sg_error ();
-  sg_error (const string &message, const string &origin = "");
-  virtual ~sg_error ();
+  sg_error (const char* message, const char* origin = 0);
+  sg_error (const std::string& message, const std::string& origin = "");  
+  virtual ~sg_error () throw ();
 };
 
 
@@ -103,8 +108,9 @@ class sg_exception : public sg_throwable
 {
 public:
   sg_exception ();
-  sg_exception (const string &message, const string &origin = "");
-  virtual ~sg_exception ();
+  sg_exception (const char* message, const char* origin = 0);
+  sg_exception (const std::string& message, const std::string& = "");
+  virtual ~sg_exception () throw ();
 };
 
 
@@ -123,11 +129,12 @@ class sg_io_exception : public sg_exception
 {
 public:
   sg_io_exception ();
-  sg_io_exception (const string &message, const string &origin = "");
-  sg_io_exception (const string &message, const sg_location &location,
-		   const string &origin = "");
-  virtual ~sg_io_exception ();
-  virtual const string getFormattedMessage () const;
+  sg_io_exception (const char* message, const char* origin = 0);
+  sg_io_exception (const char* message, const sg_location &location,
+		   const char* origin = 0);
+  sg_io_exception (const std::string &message, const std::string &origin = "");
+  virtual ~sg_io_exception () throw ();
+  virtual const std::string getFormattedMessage () const;
   virtual const sg_location &getLocation () const;
   virtual void setLocation (const sg_location &location);
 private:
@@ -150,13 +157,15 @@ class sg_format_exception : public sg_exception
 {
 public:
   sg_format_exception ();
-  sg_format_exception (const string &message, const string &text,
-		       const string &origin = "");
-  virtual ~sg_format_exception ();
-  virtual const string &getText () const;
-  virtual void setText (const string &text);
+  sg_format_exception (const char* message, const char* text,
+		       const char* origin = 0);
+  sg_format_exception (const std::string& message, const std::string& text,
+		       const std::string& origin = "");
+  virtual ~sg_format_exception () throw ();
+  virtual const char* getText () const;
+  virtual void setText (const char* text);
 private:
-  string _text;
+  char _text[MAX_TEXT_LEN];
 };
 
 
@@ -173,8 +182,11 @@ class sg_range_exception : public sg_exception
 {
 public:
   sg_range_exception ();
-  sg_range_exception (const string &message, const string &origin = "");
-  virtual ~sg_range_exception ();
+  sg_range_exception (const char* message,
+                      const char* origin = 0);
+  sg_range_exception (const std::string& message,
+                      const std::string& origin = "");
+  virtual ~sg_range_exception () throw ();
 };
 
 #endif

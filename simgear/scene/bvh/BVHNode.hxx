@@ -45,6 +45,13 @@ public:
         return _boundingSphere;
     }
     virtual SGSphered computeBoundingSphere() const = 0;
+
+    /// A unique id for some kind of BVHNodes.
+    /// Currently only motions transforms.
+    typedef unsigned Id;
+
+    // Factory to get a new id
+    static Id getNewId();
     
 protected:
     friend class BVHGroup;

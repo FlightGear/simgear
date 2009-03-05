@@ -97,6 +97,8 @@ BVHLineSegmentVisitor::apply(BVHMotionTransform& transform)
         SGVec3d localEnd = _lineSegment.getEnd();
         _lineSegment.set(lineSegment.getStart(), toWorld.xformPt(localEnd));
         _normal = toWorld.xformVec(_normal);
+        if (!_id)
+            _id = transform.getId();
     } else {
         _lineSegment = lineSegment;
         _haveHit = haveHit;
@@ -143,6 +145,7 @@ BVHLineSegmentVisitor::apply(const BVHStaticTriangle& triangle,
     _linearVelocity = SGVec3d::zeros();
     _angularVelocity = SGVec3d::zeros();
     _material = data.getMaterial(triangle.getMaterialIndex());
+    _id = 0;
     _haveHit = true;
 }
 

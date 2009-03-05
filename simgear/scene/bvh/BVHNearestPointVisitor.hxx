@@ -42,6 +42,7 @@ public:
         _sphere(sphere),
         _time(t),
         _material(0),
+        _id(0),
         _havePoint(false)
     { }
     
@@ -91,6 +92,8 @@ public:
             _linearVelocity = toWorld.xformVec(_linearVelocity);
             _angularVelocity = toWorld.xformVec(_angularVelocity);
             _point = toWorld.xformPt(_point);
+            if (!_id)
+                _id = transform.getId();
         }
         _havePoint |= havePoint;
         _sphere.setCenter(sphere.getCenter());
@@ -123,6 +126,7 @@ public:
         // The trick is to decrease the radius of the search sphere.
         _sphere.setRadius(length(closest - _sphere.getCenter()));
         _havePoint = true;
+        _id = 0;
     }
     
     void setSphere(const SGSphered& sphere)
@@ -138,9 +142,9 @@ public:
     { return _angularVelocity; }
     const SGMaterial* getMaterial() const
     { return _material; }
+    BVHNode::Id getId() const
+    { return _id; }
     
-    bool getHavePoint() const
-    { return _havePoint; }
     bool empty() const
     { return !_havePoint; }
     
@@ -152,7 +156,8 @@ private:
     SGVec3d _linearVelocity;
     SGVec3d _angularVelocity;
     const SGMaterial* _material;
-    
+    BVHNode::Id _id;
+
     bool _havePoint;
 };
 

@@ -48,9 +48,14 @@ public:
   { _bvhNode = bvhNode; }
 
   struct Velocity : public SGReferenced {
-    Velocity() : linear(SGVec3d::zeros()), angular(SGVec3d::zeros()) {}
+    Velocity() :
+        linear(SGVec3d::zeros()),
+        angular(SGVec3d::zeros()),
+        id(simgear::BVHNode::getNewId())
+    {}
     SGVec3d linear;
     SGVec3d angular;
+    simgear::BVHNode::Id id;
   };
   const Velocity* getVelocity() const
   { return _velocity; }

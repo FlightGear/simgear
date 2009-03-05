@@ -23,6 +23,7 @@
 #include <simgear/scene/material/mat.hxx>
 
 #include "BVHVisitor.hxx"
+#include "BVHNode.hxx"
 
 namespace simgear {
 
@@ -33,6 +34,7 @@ public:
         _lineSegment(lineSegment),
         _time(t),
         _material(0),
+        _id(0),
         _haveHit(false)
     { }
     virtual ~BVHLineSegmentVisitor()
@@ -54,6 +56,8 @@ public:
     { return _angularVelocity; }
     const SGMaterial* getMaterial() const
     { return _material; }
+    BVHNode::Id getId() const
+    { return _id; }
 
     virtual void apply(BVHGroup& group);
     virtual void apply(BVHTransform& transform);
@@ -84,6 +88,7 @@ private:
     SGVec3d _linearVelocity;
     SGVec3d _angularVelocity;
     const SGMaterial* _material;
+    BVHNode::Id _id;
     
     bool _haveHit;
 };

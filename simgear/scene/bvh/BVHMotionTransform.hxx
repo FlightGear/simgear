@@ -92,6 +92,11 @@ public:
         return SGSphered(center, radius);
     }
 
+    void setId(Id id)
+    { _id = id; }
+    Id getId() const
+    { return _id; }
+
 private:
     virtual SGSphered computeBoundingSphere() const;
     void updateAmplificationFactors();
@@ -106,6 +111,8 @@ private:
 
     double _referenceTime;
     double _endTime;
+
+    Id _id;
 };
 
 }

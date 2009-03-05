@@ -31,7 +31,8 @@ BVHMotionTransform::BVHMotionTransform() :
     _linearVelocity(0, 0, 0),
     _angularVelocity(0, 0, 0),
     _referenceTime(0),
-    _endTime(0)
+    _endTime(0),
+    _id(0)
 {
 }
 
@@ -56,6 +57,7 @@ BVHMotionTransform::setTransform(const BVHMotionTransform& transform)
     _angularVelocity = transform._angularVelocity;
     _referenceTime = transform._referenceTime;
     _endTime = transform._endTime;
+    _id = transform._id;
     invalidateParentBound();
 }
 

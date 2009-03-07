@@ -42,6 +42,10 @@ public:
   static SGGeod fromRadM(double lon, double lat, double elevation);
   /// Factory from angular values in degrees and elevation in m
   static SGGeod fromDegM(double lon, double lat, double elevation);
+  /// Factory from an other SGGeod and a different elevation in m
+  static SGGeod fromGeodM(const SGGeod& geod, double elevation);
+  /// Factory from an other SGGeod and a different elevation in ft
+  static SGGeod fromGeodFt(const SGGeod& geod, double elevation);
   /// Factory to convert position from a cartesian position assumed to be
   /// in wgs84 measured in meters
   /// Note that this conversion is relatively expensive to compute
@@ -190,6 +194,20 @@ SGGeod::fromDegM(double lon, double lat, double elevation)
   return SGGeod(lon*SGD_DEGREES_TO_RADIANS, lat*SGD_DEGREES_TO_RADIANS,
                 elevation);
 #endif
+}
+
+inline
+SGGeod
+SGGeod::fromGeodM(const SGGeod& geod, double elevation)
+{
+  return SGGeod(geod._lon, geod._lat, elevation);
+}
+
+inline
+SGGeod
+SGGeod::fromGeodFt(const SGGeod& geod, double elevation)
+{
+  return SGGeod(geod._lon, geod._lat, elevation*SG_FEET_TO_METER);
 }
 
 inline

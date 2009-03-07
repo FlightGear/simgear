@@ -57,15 +57,16 @@ public:
   virtual bool getVisible () const;
   virtual void setVisible (bool visible);
 
-  virtual double getLongitudeDeg () const { return _lon_deg; }
-  virtual double getLatitudeDeg () const { return _lat_deg; }
-  virtual double getElevationFt () const { return _elev_ft; }
+  virtual double getLongitudeDeg () const { return _position.getLongitudeDeg(); }
+  virtual double getLatitudeDeg () const { return _position.getLatitudeDeg(); }
+  virtual double getElevationFt () const { return _position.getElevationFt(); }
 
   virtual void setLongitudeDeg (double lon_deg);
   virtual void setLatitudeDeg (double lat_deg);
   virtual void setElevationFt (double elev_ft);
   virtual void setPosition (double lon_deg, double lat_deg, double elev_ft);
   void setPosition(const SGGeod& position);
+  const SGGeod& getPosition() const { return _position; }
 
   virtual double getRollDeg () const { return _roll_deg; }
   virtual double getPitchDeg () const { return _pitch_deg; }
@@ -84,9 +85,7 @@ public:
 private:
 
                                 // Geodetic position
-  double _lon_deg;
-  double _lat_deg;
-  double _elev_ft;
+  SGGeod _position;
 
                                 // Orientation
   double _roll_deg;
@@ -94,7 +93,7 @@ private:
   double _heading_deg;
 
   osg::ref_ptr<osg::Switch> _selector;
-  osg::ref_ptr<SGPlacementTransform> _position;
+  osg::ref_ptr<SGPlacementTransform> _transform;
 
                                 // Location
   SGLocation * _location;

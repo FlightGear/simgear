@@ -22,15 +22,13 @@
 // Implementation of SGModelPlacement.
 ////////////////////////////////////////////////////////////////////////
 
-SGModelPlacement::SGModelPlacement ()
-  : _lon_deg(0),
-    _lat_deg(0),
-    _elev_ft(0),
+SGModelPlacement::SGModelPlacement () :
+    _position(SGGeod::fromRad(0, 0)),
     _roll_deg(0),
     _pitch_deg(0),
     _heading_deg(0),
     _selector(new osg::Switch),
-    _position(new SGPlacementTransform),
+    _transform(new SGPlacementTransform),
     _location(new SGLocation)
 {
 }
@@ -44,16 +42,18 @@ void
 SGModelPlacement::init( osg::Node * model )
 {
   if (model != 0) {
-      _position->addChild(model);
+      _transform->addChild(model);
   }
-  _selector->addChild(_position.get());
+  _selector->addChild(_transform.get());
   _selector->setValue(0, 1);
 }
 
 void
 SGModelPlacement::update()
 {
-  _location->setPosition( _lon_deg, _lat_deg, _elev_ft );
+  _location->setPosition( _position.getLongitudeDeg(),
+                          _position.getLatitudeDeg(),
+                          _position.getElevationFt() );
   _location->setOrientation( _roll_deg, _pitch_deg, _heading_deg );
 
   const sgVec4 *t = _location->getTransformMatrix();
@@ -62,7 +62,7 @@ SGModelPlacement::update()
     for (unsigned j = 0; j < 4; ++j)
       rotation(i, j) = t[j][i];
   SGVec3d pos(_location->get_absolute_view_pos());
-  _position->setTransform(pos, rotation);
+  _transform->setTransform(pos, rotation);
 }
 
 bool
@@ -80,35 +80,31 @@ SGModelPlacement::setVisible (bool visible)
 void
 SGModelPlacement::setLongitudeDeg (double lon_deg)
 {
-  _lon_deg = lon_deg;
+  _position.setLongitudeDeg(lon_deg);
 }
 
 void
 SGModelPlacement::setLatitudeDeg (double lat_deg)
 {
-  _lat_deg = lat_deg;
+  _position.setLatitudeDeg(lat_deg);
 }
 
 void
 SGModelPlacement::setElevationFt (double elev_ft)
 {
-  _elev_ft = elev_ft;
+  _position.setElevationFt(elev_ft);
 }
 
 void
 SGModelPlacement::setPosition (double lon_deg, double lat_deg, double elev_ft)
 {
-  _lon_deg = lon_deg;
-  _lat_deg = lat_deg;
-  _elev_ft = elev_ft;
+  _position = SGGeod::fromDegFt(lon_deg, lat_deg, elev_ft);
 }
 
 void
 SGModelPlacement::setPosition(const SGGeod& position)
 {
-  _lon_deg = position.getLongitudeDeg();
-  _lat_deg = position.getLatitudeDeg();
-  _elev_ft = position.getElevationFt();
+  _position = position;
 }
 
 void
@@ -148,7 +144,7 @@ void
 SGModelPlacement::setBodyLinearVelocity(const SGVec3d& linear)
 {
   SGSceneUserData* userData;
-  userData = SGSceneUserData::getOrCreateSceneUserData(_position);
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
   SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
   vel->linear = orientation.backTransform(linear);
@@ -158,7 +154,7 @@ void
 SGModelPlacement::setBodyAngularVelocity(const SGVec3d& angular)
 {
   SGSceneUserData* userData;
-  userData = SGSceneUserData::getOrCreateSceneUserData(_position);
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
   SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
   vel->angular = orientation.backTransform(angular);

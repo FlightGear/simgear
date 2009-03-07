@@ -7,7 +7,6 @@ noinst_HEADERS =
 include_HEADERS = \
 	animation.hxx \
 	particles.hxx \
-	location.hxx \
 	model.hxx \
 	modellib.hxx \
 	ModelRegistry.hxx \
@@ -28,7 +27,6 @@ include_HEADERS = \
 libsgmodel_a_SOURCES = \
 	animation.cxx \
 	particles.cxx \
-	location.cxx \
 	model.cxx \
 	modellib.cxx \
 	ModelRegistry.cxx \

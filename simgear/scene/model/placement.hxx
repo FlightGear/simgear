@@ -19,10 +19,6 @@
 
 #include "placementtrans.hxx"
 
-// Don't pull in the headers, since we don't need them here.
-class SGLocation;
-
-
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
 #undef min
@@ -51,8 +47,6 @@ public:
   virtual void update();
 
   virtual osg::Node* getSceneGraph () { return _selector.get(); }
-
-  virtual SGLocation * getSGLocation () { return _location; }
 
   virtual bool getVisible () const;
   virtual void setVisible (bool visible);
@@ -94,9 +88,6 @@ private:
 
   osg::ref_ptr<osg::Switch> _selector;
   osg::ref_ptr<SGPlacementTransform> _transform;
-
-                                // Location
-  SGLocation * _location;
 };
 
 #endif // _SG_PLACEMENT_HXX

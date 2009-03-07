@@ -98,70 +98,65 @@ public:
 
         virtual void drawArrays(GLenum mode, GLint first, GLsizei count)
         {
-            if (_vertices.empty() || count==0)
+            if (_vertices.empty() || count <= 0)
                 return;
 
+            GLsizei end = first + count;
             switch(mode) {
             case (GL_TRIANGLES):
-                for (GLsizei i = first; i < first + count; i += 3) {
+                for (GLsizei i = first; i < end - 2; i += 3) {
                     addTriangle(i, i + 1, i + 2);
                 }
                 break;
 
             case (GL_TRIANGLE_STRIP):
-                for (GLsizei i = 0; i < count; i += 3) {
-                    if (i%2)
-                        addTriangle(first + i, first + i + 2, first + i + 1);
-                    else
-                        addTriangle(first + i, first + i + 1, first + i + 2);
+                for (GLsizei i = first; i < end - 2; ++i) {
+                    addTriangle(i, i + 1, i + 2);
                 }
                 break;
 
             case (GL_QUADS):
-                for (GLsizei i = first; i < first + count; i += 4) {
+                for (GLsizei i = first; i < end - 3; i += 4) {
                     addQuad(i, i + 1, i + 2, i + 3);
                 }
                 break;
 
             case (GL_QUAD_STRIP):
-                for (GLsizei i = 0; i < count - 2; i += 2) {
-                    if (i%4)
-                        addQuad(first + i + 1, first + i, i + 3, first + i + 2);
-                    else
-                        addQuad(first + i, first + i + 1, first + i + 2, first + i + 3);
+                for (GLsizei i = first; i < end - 3; i += 2) {
+                    addQuad(i, i + 1, i + 2, i + 3);
                 }
                 break;
 
             case (GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
             case (GL_TRIANGLE_FAN):
-                for (GLsizei i = first + 2; i < first + count; ++i) {
-                    addTriangle(first, i - 1, i);
+                for (GLsizei i = first; i < end - 2; ++i) {
+                    addTriangle(first, i + 1, i + 2);
                 }
                 break;
 
             case (GL_POINTS):
-                for (GLsizei i = 0; i < count; ++i) {
-                    addPoint(first + i);
+                for (GLsizei i = first; i < end; ++i) {
+                    addPoint(i);
                 }
                 break;
 
             case (GL_LINES):
-                for (GLsizei i = first; i < first + count; i += 2) {
+                for (GLsizei i = first; i < end - 1; i += 2) {
                     addLine(i, i + 1);
                 }
                 break;
 
             case (GL_LINE_STRIP):
-                for (GLsizei i = first; i < first + count; ++i) {
+                for (GLsizei i = first; i < end - 1; ++i) {
                     addLine(i, i + 1);
                 }
                 break;
 
             case (GL_LINE_LOOP):
-                for (GLsizei i = first; i < first + count; ++i) {
+                for (GLsizei i = first; i < end - 1; ++i) {
                     addLine(i, i + 1);
                 }
-                addLine(first + count - 1, first);
+                addLine(end - 1, first);
                 break;
 
             default:
@@ -226,44 +221,38 @@ public:
         void drawElementsTemplate(GLenum mode, GLsizei count,
                                   const index_type* indices)
         {
-            if (_vertices.empty() || indices == 0 || count == 0)
+            if (_vertices.empty() || indices == 0 || count <= 0)
                 return;
     
             switch(mode) {
             case (GL_TRIANGLES):
-                for (GLsizei i = 0; i < count; i += 3) {
+                for (GLsizei i = 0; i < count - 2; i += 3) {
                     addTriangle(indices[i], indices[i + 1], indices[i + 2]);
                 }
                 break;
 
             case (GL_TRIANGLE_STRIP):
-                for (GLsizei i = 2; i < count; ++i) {
-                    if (i%2)
-                        addTriangle(indices[i - 2], indices[i], indices[i - 1]);
-                    else
-                        addTriangle(indices[i - 2], indices[i - 1], indices[i]);
+                for (GLsizei i = 0; i < count - 2; ++i) {
+                    addTriangle(indices[i], indices[i + 1], indices[i + 2]);
                 }
                 break;
 
             case (GL_QUADS):
-                for (GLsizei i = 0; i < count; i += 4) {
+                for (GLsizei i = 0; i < count - 3; i += 4) {
                     addQuad(indices[i], indices[i + 1], indices[i + 2], indices[i + 3]);
                 }
                 break;
 
             case (GL_QUAD_STRIP):
-                for (GLsizei i = 3; i < count; i += 2) {
-                    if (i%4)
-                        addQuad(indices[i - 2], indices[i - 3], indices[i], indices[i - 1]);
-                    else
-                        addQuad(indices[i - 3], indices[i - 2], indices[i - 1], indices[i]);
+                for (GLsizei i = 0; i < count - 3; i += 2) {
+                    addQuad(indices[i], indices[i + 1], indices[i + 2], indices[i + 3]);
                 }
                 break;
 
             case (GL_POLYGON):
             case (GL_TRIANGLE_FAN):
-                for (GLsizei i = 2; i < count; ++i) {
-                    addTriangle(indices[0], indices[i - 1], indices[i]);
+                for (GLsizei i = 0; i < count - 2; ++i) {
+                    addTriangle(indices[0], indices[i + 1], indices[i + 2]);
                 }
                 break;
 
@@ -274,19 +263,19 @@ public:
                 break;
 
             case (GL_LINES):
-                for (GLsizei i = 0; i < count; i += 2) {
+                for (GLsizei i = 0; i < count - 1; i += 2) {
                     addLine(indices[i], indices[i + 1]);
                 }
                 break;
 
             case (GL_LINE_STRIP):
-                for (GLsizei i = 0; i < count; ++i) {
+                for (GLsizei i = 0; i < count - 1; ++i) {
                     addLine(indices[i], indices[i + 1]);
                 }
                 break;
 
             case (GL_LINE_LOOP):
-                for (GLsizei i = 0; i < count; ++i) {
+                for (GLsizei i = 0; i < count - 1; ++i) {
                     addLine(indices[i], indices[i + 1]);
                 }
                 addLine(indices[count - 1], indices[0]);

@@ -296,10 +296,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\location.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\debug\logstream.hxx"
 				>
 			</File>
@@ -937,10 +933,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\nasal\lib.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\location.cxx"
 				>
 			</File>
 			<File

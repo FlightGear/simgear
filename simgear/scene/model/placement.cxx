@@ -11,7 +11,6 @@
 
 #include <simgear/scene/util/SGSceneUserData.hxx>
 
-#include "location.hxx"
 #include "placementtrans.hxx"
 
 #include "placement.hxx"
@@ -28,14 +27,12 @@ SGModelPlacement::SGModelPlacement () :
     _pitch_deg(0),
     _heading_deg(0),
     _selector(new osg::Switch),
-    _transform(new SGPlacementTransform),
-    _location(new SGLocation)
+    _transform(new SGPlacementTransform)
 {
 }
 
 SGModelPlacement::~SGModelPlacement ()
 {
-  delete _location;
 }
 
 void
@@ -51,18 +48,16 @@ SGModelPlacement::init( osg::Node * model )
 void
 SGModelPlacement::update()
 {
-  _location->setPosition( _position.getLongitudeDeg(),
-                          _position.getLatitudeDeg(),
-                          _position.getElevationFt() );
-  _location->setOrientation( _roll_deg, _pitch_deg, _heading_deg );
+  // The cartesian position
+  SGVec3d position = SGVec3d::fromGeod(_position);
 
-  const sgVec4 *t = _location->getTransformMatrix();
-  SGMatrixd rotation;
-  for (unsigned i = 0; i < 4; ++i)
-    for (unsigned j = 0; j < 4; ++j)
-      rotation(i, j) = t[j][i];
-  SGVec3d pos(_location->get_absolute_view_pos());
-  _transform->setTransform(pos, rotation);
+  // The orientation, composed from the horizontal local orientation and the
+  // orientation wrt the horizontal local frame
+  SGQuatd orient = SGQuatd::fromLonLat(_position);
+  orient *= SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
+  orient *= SGQuatd::fromYawPitchRollDeg(-_heading_deg, _pitch_deg, -_roll_deg);
+  SGMatrixd rotation(inverse(orient));
+  _transform->setTransform(position, rotation);
 }
 
 bool

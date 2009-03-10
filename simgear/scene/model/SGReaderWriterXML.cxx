@@ -47,7 +47,7 @@
 
 using namespace simgear;
 
-osg::Node *
+static osg::Node *
 sgLoad3DModel_internal(const string &path,
                        SGPropertyNode *prop_root,
                        SGModelData *data = 0,
@@ -128,7 +128,7 @@ private:
     SGSharedPtr<SGCondition> mCondition;
 };
 
-osg::Node *
+static osg::Node *
 sgLoad3DModel_internal(const string &path,
                        SGPropertyNode *prop_root,
                        SGModelData *data,

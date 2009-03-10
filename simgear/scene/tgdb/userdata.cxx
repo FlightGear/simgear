@@ -64,23 +64,3 @@ osg::Node* sgGetRandomModel(SGMatModel *obj) {
    return obj->get_random_model( root_props );
  }
 
-osg::Node* sgGetModel(int i, SGMatModel *obj) {
-   return obj->get_model(i, root_props );
- }
-
-static void random_pt_inside_tri( float *res,
-                                  float *n1, float *n2, float *n3 )
-{
-    double a = sg_random();
-    double b = sg_random();
-    if ( a + b > 1.0 ) {
-        a = 1.0 - a;
-        b = 1.0 - b;
-    }
-    double c = 1 - a - b;
-
-    res[0] = n1[0]*a + n2[0]*b + n3[0]*c;
-    res[1] = n1[1]*a + n2[1]*b + n3[1]*c;
-    res[2] = n1[2]*a + n2[2]*b + n3[2]*c;
-}
-

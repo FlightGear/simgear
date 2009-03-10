@@ -27,22 +27,10 @@
 
 #include <simgear/compiler.h>
 
-#include <string>
+#include <osg/Node>
 
-#include <plib/sg.h>
-
-#include <osg/Referenced>
-#include <osg/Geometry>
-#include <osg/Group>
-
-using std::string;
-
-class SGMaterial;
 class SGMatModel;
-class SGMatModelGroup;
-class SGModelLib;
 class SGPropertyNode;
-
 
 /**
  * the application must call sgUserDataInit() and specify the

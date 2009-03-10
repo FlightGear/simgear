@@ -48,28 +48,6 @@ using namespace simgear;
 
 
 ////////////////////////////////////////////////////////////////////////
-// Local static functions.
-////////////////////////////////////////////////////////////////////////
-
-/**
- * Internal method to test whether a file exists.
- *
- * TODO: this should be moved to a SimGear library of local file
- * functions.
- */
-static inline bool
-local_file_exists( const string& path ) {
-    sg_gzifstream in( path );
-    if ( ! in.is_open() ) {
-	return false;
-    } else {
-	return true;
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////////////
 // Implementation of SGMatModel.
 ////////////////////////////////////////////////////////////////////////
 
@@ -153,14 +131,6 @@ SGMatModel::load_models( SGPropertyNode *prop_root )
     }
   }
   _models_loaded = true;
-}
-
-osg::Node*
-SGMatModel::get_model( int index,
-                       SGPropertyNode *prop_root )
-{
-  load_models( prop_root ); // comment this out if preloading models
-  return _models[index].get();
 }
 
 osg::Node*

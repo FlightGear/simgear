@@ -78,15 +78,6 @@ public:
 
 
     /**
-     * Get a specific variant model for the object.
-     *
-     * @param index The index of the model.
-     * @return The model.
-     */
-     osg::Node *get_model( int index, SGPropertyNode *prop_root );
-
-
-    /**
      * Get a randomly-selected variant model for the object.
      *
      * @return A randomly select model from the variants.

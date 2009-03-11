@@ -63,7 +63,6 @@ static const struct {
 
 SGXmlSound::SGXmlSound()
   : _sample(NULL),
-    _condition(NULL),
     _active(false),
     _name(""),
     _mode(SGXmlSound::ONCE),
@@ -79,8 +78,6 @@ SGXmlSound::~SGXmlSound()
 {
     if (_sample)
         _sample->stop();
-
-    delete _condition;
 
     _volume.clear();
     _pitch.clear();

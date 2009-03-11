@@ -138,7 +138,7 @@ private:
   SGSoundMgr * _mgr;
   SGSharedPtr<SGSoundSample> _sample;
 
-  SGCondition * _condition;
+  SGSharedPtr<SGCondition> _condition;
   SGPropertyNode_ptr _property;
 
   bool _active;

@@ -36,10 +36,15 @@
 #  include <sys/timeb.h> // for ftime() and struct timeb
 #endif
 #ifdef HAVE_UNISTD_H
-#  include <unistd.h>    // for gettimeofday()
+#  include <unistd.h>    // for gettimeofday() and the _POSIX_TIMERS define
 #endif
 #ifdef HAVE_SYS_TIME_H
 #  include <sys/time.h>  // for get/setitimer, gettimeofday, struct timeval
+#endif
+
+#if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
+#  include <time.h>
+#  include <errno.h>
 #endif
 
 #ifdef WIN32
@@ -53,43 +58,49 @@
 
 #include "timestamp.hxx"
 
-
 void SGTimeStamp::stamp() {
 #if defined( WIN32 ) && !defined(__CYGWIN__)
     unsigned int t;
     t = timeGetTime();
-    seconds = t / 1000;
-    usec = ( t - ( seconds * 1000 ) ) * 1000;
+    _sec = t / 1000;
+    _nsec = ( t - ( seconds * 1000 ) ) * 1000 * 1000;
+#elif defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
+    struct timespec ts;
+#if defined(_POSIX_MONOTONIC_CLOCK)
+    static clockid_t clockid = CLOCK_MONOTONIC;
+    static bool firstTime = true;
+    if (firstTime) {
+        firstTime = false;
+        // For the first time test if the monotonic clock is available.
+        // If so use this if not use the realtime clock.
+        if (-1 == clock_gettime(clockid, &ts) && errno == EINVAL)
+            clockid = CLOCK_REALTIME;
+    }
+    clock_gettime(clockid, &ts);
+#else
+    clock_gettime(CLOCK_REALTIME, &ts);
+#endif
+    _sec = ts.tv_sec;
+    _nsec = ts.tv_nsec;
 #elif defined( HAVE_GETTIMEOFDAY )
     struct timeval current;
     struct timezone tz;
     // sg_timestamp currtime;
     gettimeofday(&current, &tz);
-    seconds = current.tv_sec;
-    usec = current.tv_usec;
+    _sec = current.tv_sec;
+    _nsec = current.tv_usec * 1000;
 #elif defined( HAVE_GETLOCALTIME )
     SYSTEMTIME current;
     GetLocalTime(&current);
-    seconds = current.wSecond;
-    usec = current.wMilliseconds * 1000;
+    _sec = current.wSecond;
+    _nsec = current.wMilliseconds * 1000 * 1000;
 #elif defined( HAVE_FTIME )
     struct timeb current;
     ftime(&current);
-    seconds = current.time;
-    usec = current.millitm * 1000;
+    _sec = current.time;
+    _nsec = current.millitm * 1000 * 1000;
 #else
 # error Port me
 #endif
 }
 
-// increment the time stamp by the number of microseconds (usec)
-SGTimeStamp operator + (const SGTimeStamp& t, const long& m) {
-    return SGTimeStamp( t.seconds + ( t.usec + m ) / 1000000,
-			( t.usec + m ) % 1000000 );
-}
-
-// difference between time stamps in microseconds (usec)
-long operator - (const SGTimeStamp& a, const SGTimeStamp& b)
-{
-    return 1000000 * (a.seconds - b.seconds) + (a.usec - b.usec);
-}

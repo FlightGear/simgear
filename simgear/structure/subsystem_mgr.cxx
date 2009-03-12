@@ -74,29 +74,27 @@ SGSubsystem::is_suspended () const
 void
 SGSubsystem::printTimingInformation ()
 {
-  SGTimeStamp startTime, endTime;
-   long duration;
+   SGTimeStamp startTime;
    for ( eventTimeVecIterator i = timingInfo.begin();
           i != timingInfo.end();
           i++) {
        if (i == timingInfo.begin()) {
            startTime = i->getTime();
        } else {
-           endTime = i->getTime();
-           duration = (endTime - startTime);
+           SGTimeStamp endTime = i->getTime();
+           SG_LOG(SG_GENERAL, SG_ALERT, "- Getting to timestamp :   "
+                  << i->getName() << " takes " << endTime - startTime
+                  << " sec.");
 	   startTime = endTime;
-           SG_LOG(SG_GENERAL, SG_ALERT, "- Getting to timestamp :   " << i->getName() << " takes " << duration << " usec.");
        }
    }
 }
 
 
 
-void SGSubsystem::stamp(string name)
+void SGSubsystem::stamp(const string& name)
 {
-    SGTimeStamp now;
-    now.stamp();
-    timingInfo.push_back(TimingInfo(name, now));
+    timingInfo.push_back(TimingInfo(name, SGTimeStamp::now()));
 }
 
 
@@ -157,11 +155,10 @@ SGSubsystemGroup::update (double delta_time_sec)
 {
     for (unsigned int i = 0; i < _members.size(); i++)
     {
-         SGTimeStamp start, now;
-         start.stamp();
+         SGTimeStamp timeStamp = SGTimeStamp::now();
          _members[i]->update(delta_time_sec); // indirect call
-         now.stamp();
-         long b = ( now - start );
+         timeStamp = timeStamp - SGTimeStamp::now();
+         double b = timeStamp.toUSecs();
          _members[i]->updateExecutionTime(b);
          double threshold = _members[i]->getTimeWarningThreshold();
          if (( b > threshold ) && (b > 10000)) {

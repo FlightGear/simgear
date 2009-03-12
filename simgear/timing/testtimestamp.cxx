@@ -14,7 +14,7 @@ int main()
     do {
         nb += 1;
         now.stamp();
-    } while ( ( now - start ) < 5000000 );
+    } while ( ( now - start ).toMicroSeconds() < 5000000 );
 
     cout << ( nb / 5 ) << " iterations per seconds. Press ENTER to quit." << endl;
     c = cin.get();

@@ -45,9 +45,11 @@ private:
     SGTimeStamp time;
 
 public: 
-    TimingInfo(string name, SGTimeStamp &t) { eventName = name; time = t;};
-    string getName() { return eventName; };
-    SGTimeStamp getTime() { return time; };
+    TimingInfo(const string& name, const SGTimeStamp &t) :
+        eventName(name), time(t)
+    { }
+    const string& getName() const { return eventName; }
+    const SGTimeStamp& getTime() const { return time; }
 };
 
 typedef vector<TimingInfo> eventTimeVec;
@@ -271,7 +273,7 @@ public:
    * Place time stamps at strategic points in the execution of subsystems 
    * update() member functions. Predominantly for debugging purposes.
    */
-  void stamp(string name);
+  void stamp(const string& name);
   
 
 

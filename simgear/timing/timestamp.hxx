@@ -59,8 +59,8 @@ public:
 
     /** Default constructor, initialize time to zero. */
     SGTimeStamp() :
-      _sec(0),
-      _nsec(0)
+      _nsec(0),
+      _sec(0)
     { }
 
     /** Hmm, might reenable them at some time, but since it is not clear

@@ -226,6 +226,28 @@ private:
     FilePathList _pathList;
 };
 
+// Create new userdata structs in a copied model.
+// The BVH trees are shared with the original model, but the velocity fields
+// should usually be distinct fields for distinct models.
+class UserDataCopyVisitor : public osg::NodeVisitor {
+public:
+    UserDataCopyVisitor() :
+        osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
+                         osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
+    {
+    }
+    virtual void apply(osg::Node& node)
+    {
+        osg::ref_ptr<SGSceneUserData> userData;
+        userData = SGSceneUserData::getSceneUserData(&node);
+        if (userData.valid()) {
+            SGSceneUserData* newUserData  = new SGSceneUserData(*userData);
+            newUserData->setVelocity(0);
+            node.setUserData(newUserData);
+        }
+        node.traverse(*this);
+    }
+};
 
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
@@ -426,6 +448,11 @@ osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
     // Update liveries
     TextureUpdateVisitor liveryUpdate(opt->getDatabasePathList());
     res->accept(liveryUpdate);
+
+    // Copy the userdata fields, still sharing the boundingvolumes,
+    // but introducing new data for velocities.
+    UserDataCopyVisitor userDataCopyVisitor;
+    res->accept(userDataCopyVisitor);
 
     return res;
 }

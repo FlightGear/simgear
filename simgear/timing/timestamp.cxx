@@ -63,7 +63,7 @@ void SGTimeStamp::stamp() {
     unsigned int t;
     t = timeGetTime();
     _sec = t / 1000;
-    _nsec = ( t - ( seconds * 1000 ) ) * 1000 * 1000;
+    _nsec = ( t - ( _sec * 1000 ) ) * 1000 * 1000;
 #elif defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
     struct timespec ts;
 #if defined(_POSIX_MONOTONIC_CLOCK)

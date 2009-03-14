@@ -416,17 +416,10 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
 }
 
 osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
-                    const osgDB::ReaderWriter::Options* opt)
+                                   const osgDB::ReaderWriter::Options* opt)
 {
-    /// Crude hack for the bounding volume sharing problem.
-    /// Better solution this week.
-    /// Note that this does not really build in the case we come here
-    /// the second time for the same node
-    BoundingVolumeBuildVisitor bvBuilder;
-    model->accept(bvBuilder);
-
     // Add an extra reference to the model stored in the database.
-    // That it to avoid expiring the object from the cache even if it is still
+    // That is to avoid expiring the object from the cache even if it is still
     // in use. Note that the object cache will think that a model is unused
     // if the reference count is 1. If we clone all structural nodes here
     // we need that extra reference to the original object
@@ -466,9 +459,34 @@ string OSGSubstitutePolicy::substitute(const string& name,
     return absFileName;
 }
 
+
+void
+BuildLeafBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
+{
+    SG_LOG(SG_IO, SG_INFO, "Building leaf attached boundingvolume tree for \""
+           << fileName << "\".");
+    BoundingVolumeBuildVisitor bvBuilder(true);
+    node->accept(bvBuilder);
+}
+
+void
+BuildGroupBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
+{
+    SG_LOG(SG_IO, SG_INFO, "Building group attached boundingvolume tree for \""
+           << fileName << "\".");
+    BoundingVolumeBuildVisitor bvBuilder(false);
+    node->accept(bvBuilder);
+}
+
+void
+NoBuildBVHPolicy::buildBVH(const std::string& fileName, osg::Node*)
+{
+    SG_LOG(SG_IO, SG_INFO, "Omitting boundingvolume tree for \""
+           << fileName << "\".");
+}
+
 ModelRegistry::ModelRegistry() :
-    _defaultCallback(new DefaultCallback("")),
-    _nestingLevel(0)
+    _defaultCallback(new DefaultCallback(""))
 {
 }
 
@@ -491,7 +509,6 @@ ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
     ScopedLock<ReentrantMutex> lock(readerMutex);
-    ++_nestingLevel;
 
     // XXX Workaround for OSG plugin bug.
     Registry* registry = Registry::instance();
@@ -504,15 +521,6 @@ ModelRegistry::readNode(const string& fileName,
     else
         result = _defaultCallback->readNode(fileName, opt);
 
-    if (0 == --_nestingLevel) {
-        SG_LOG(SG_IO, SG_INFO, "Building boundingvolume tree for \""
-               << fileName << "\".");
-        BoundingVolumeBuildVisitor bvBuilder;
-        result.getNode()->accept(bvBuilder);
-    } else {
-        SG_LOG(SG_IO, SG_INFO, "Defering boundingvolume tree built for \""
-               << fileName << "\" to parent.");
-    }
     return result;
 }
 
@@ -600,7 +608,8 @@ struct ACProcessPolicy {
 
 typedef ModelRegistryCallback<ACProcessPolicy, DefaultCachePolicy,
                               ACOptimizePolicy, DefaultCopyPolicy,
-                              OSGSubstitutePolicy> ACCallback;
+                              OSGSubstitutePolicy, BuildLeafBVHPolicy>
+ACCallback;
 
 namespace
 {

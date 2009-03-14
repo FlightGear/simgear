@@ -61,13 +61,13 @@ namespace simgear
 // readNode function is specified as a template with a bunch of
 // pluggable (and predefined) policies.
 template <typename ProcessPolicy, typename CachePolicy, typename OptimizePolicy,
-          typename CopyPolicy, typename SubstitutePolicy>
+          typename CopyPolicy, typename SubstitutePolicy, typename BVHPolicy>
 class ModelRegistryCallback : public osgDB::Registry::ReadFileCallback {
 public:
     ModelRegistryCallback(const std::string& extension) :
         _processPolicy(extension), _cachePolicy(extension),
         _optimizePolicy(extension), _copyPolicy(extension),
-        _substitutePolicy(extension)
+        _substitutePolicy(extension), _bvhPolicy(extension)
     {
     }
     virtual osgDB::ReaderWriter::ReadResult
@@ -97,11 +97,12 @@ public:
                 optimizedNode = _optimizePolicy.optimize(processedNode.get(),
                                                          fileName, opt);
             }
+            _bvhPolicy.buildBVH(fileName, optimizedNode.get());
             _cachePolicy.addToCache(fileName, optimizedNode.get());
         }
-        return ReaderWriter::ReadResult(_copyPolicy.copy(optimizedNode.get(),
-                                                         fileName,
-                                                         opt));
+        osg::ref_ptr<osg::Node> copyNode;
+        copyNode = _copyPolicy.copy(optimizedNode.get(), fileName, opt);
+        return ReaderWriter::ReadResult(copyNode);
     }
 protected:
     static osgDB::ReaderWriter::ReadResult
@@ -121,6 +122,7 @@ protected:
     OptimizePolicy _optimizePolicy;
     CopyPolicy _copyPolicy;
     SubstitutePolicy _substitutePolicy;
+    BVHPolicy _bvhPolicy;
     virtual ~ModelRegistryCallback() {}
 };
 
@@ -196,9 +198,26 @@ struct NoSubstitutePolicy {
         return std::string();
     }
 };
+
+struct BuildLeafBVHPolicy {
+    BuildLeafBVHPolicy(const std::string& extension) {}
+    void buildBVH(const std::string& fileName, osg::Node* node);
+};
+
+struct BuildGroupBVHPolicy {
+    BuildGroupBVHPolicy(const std::string& extension) {}
+    void buildBVH(const std::string& fileName, osg::Node* node);
+};
+
+struct NoBuildBVHPolicy {
+    NoBuildBVHPolicy(const std::string& extension) {}
+    void buildBVH(const std::string& fileName, osg::Node* node);
+};
+
 typedef ModelRegistryCallback<DefaultProcessPolicy, DefaultCachePolicy,
                               OptimizeModelPolicy, DefaultCopyPolicy,
-                              OSGSubstitutePolicy> DefaultCallback;
+                              OSGSubstitutePolicy, BuildLeafBVHPolicy>
+DefaultCallback;
 
 // The manager for the callbacks
 class ModelRegistry : public osgDB::Registry::ReadFileCallback,
@@ -227,14 +246,14 @@ protected:
     // Protect against simultaneous calls from main thread (MP models)
     // and pager thread.
     OpenThreads::ReentrantMutex readerMutex;
-    unsigned _nestingLevel;
 };
 
 // Callback that only loads the file without any caching or
 // postprocessing.
 typedef ModelRegistryCallback<DefaultProcessPolicy, NoCachePolicy,
                               NoOptimizePolicy, NoCopyPolicy,
-                              NoSubstitutePolicy> LoadOnlyCallback;
+                              NoSubstitutePolicy, BuildLeafBVHPolicy>
+LoadOnlyCallback;
 
 // Proxy for registering extension-based callbacks
 

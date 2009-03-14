@@ -368,32 +368,11 @@ struct SGTileGeometryBin {
     osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
-      // CHUNCKED (sic) here splits up unconnected triangles parts of
-      // the mesh into different Geometry sets, presumably for better
-      // culling. I (timoore) believe it is more performant to build
-      // the biggest indexed sets possible at the expense of tight
-      // culling.
-//#define CHUNCKED
-#ifdef CHUNCKED
-      SGMaterial *mat = matlib->find(i->first);
-
-      std::list<SGTexturedTriangleBin::TriangleVector> connectSets;
-      i->second.getConnectedSets(connectSets);
-
-      std::list<SGTexturedTriangleBin::TriangleVector>::iterator j;
-      for (j = connectSets.begin(); j != connectSets.end(); ++j) {
-        osg::Geometry* geometry = i->second.buildGeometry(*j);
-        if (mat)
-          geometry->setStateSet(mat->get_state());
-        geode->addDrawable(geometry);
-      }
-#else
       osg::Geometry* geometry = i->second.buildGeometry();
       SGMaterial *mat = matlib->find(i->first);
       if (mat)
         geometry->setStateSet(mat->get_state());
       geode->addDrawable(geometry);
-#endif
     }
     return geode;
   }

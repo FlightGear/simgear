@@ -55,8 +55,9 @@ class BVHStaticNode;
 
 class BVHDebugCollectVisitor : public BVHVisitor {
 public:
-    BVHDebugCollectVisitor(unsigned level = ~0u) :
+    BVHDebugCollectVisitor(const double& time, unsigned level = ~0u) :
         _group(new osg::Group),
+        _time(time),
         _level(level),
         _currentLevel(0)
     {
@@ -100,8 +101,7 @@ public:
         addNodeSphere(node);
         osg::ref_ptr<osg::Group> oldGroup = _group;
         osg::ref_ptr<osg::MatrixTransform> transform = new osg::MatrixTransform;
-        transform->setMatrix(osg::Matrix(node.getToWorldReferenceTransform().data()));
-        double tt = node.getReferenceTime() - node.getEndTime();
+        transform->setMatrix(osg::Matrix(node.getToWorldTransform(_time).data()));
         _group = transform;
         ++_currentLevel;
         node.traverse(*this);
@@ -200,6 +200,7 @@ private:
     }
     
     osg::ref_ptr<osg::Group> _group;
+    const double _time;
     const unsigned _level;
     unsigned _currentLevel;
 };

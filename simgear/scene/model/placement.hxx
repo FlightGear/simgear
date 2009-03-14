@@ -73,6 +73,7 @@ public:
                                double heading_deg);
   void setOrientation(const SGQuatd& orientation);
 
+  void setReferenceTime(const double& referenceTime);
   void setBodyLinearVelocity(const SGVec3d& velocity);
   void setBodyAngularVelocity(const SGVec3d& velocity);
   

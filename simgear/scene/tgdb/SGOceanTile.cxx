@@ -87,7 +87,8 @@ public:
     VectorArrayAdapter<osg::Vec3Array> nlArray;
     VectorArrayAdapter<osg::Vec2Array> tlArray;
 
-    void calcMesh(const SGVec3d& cartCenter, double clon, double clat,
+    void calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
+                  double clon, double clat,
                   double height, double width, double tex_width);
     void calcApronPt(int latIdx, int lonIdx, int latInner, int lonInner,
                      int destIdx, double tex_width);
@@ -96,7 +97,8 @@ public:
 };
 }
 
-void OceanMesh::calcMesh(const SGVec3d& cartCenter, double clon, double clat,
+void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
+                         double clon, double clat,
                          double height, double width, double tex_width)
 {
     // Calculate vertices. By splitting the tile up into 4 quads on a
@@ -111,8 +113,8 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, double clon, double clat,
         for (int i = 0; i < lonPoints; i++) {
             geod[j][i] = SGGeod::fromDeg(startLon + i * longInc, lat);
             SGVec3d cart = SGVec3d::fromGeod(geod[j][i]);
-            rel[j][i] = cart - cartCenter;
-            normals[j][i] = toVec3f(normalize(cart));
+            rel[j][i] = orient.transform(cart - cartCenter);
+            normals[j][i] = toVec3f(orient.transform(normalize(cart)));
         }
     }
     
@@ -271,13 +273,15 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
     OceanMesh grid;
     // Calculate center point
     SGVec3d cartCenter = SGVec3d::fromGeod(b.get_center());
-  
+    SGGeod geodPos = SGGeod::fromCart(cartCenter);
+    SGQuatd hlOr = SGQuatd::fromLonLat(geodPos);
+
     double clon = b.get_center_lon();
     double clat = b.get_center_lat();
     double height = b.get_height();
     double width = b.get_width();
 
-    grid.calcMesh(cartCenter, clon, clat, height, width, tex_width);
+    grid.calcMesh(cartCenter, hlOr, clon, clat, height, width, tex_width);
     grid.calcApronPts(tex_width);
   
     osg::Vec4Array* cl = new osg::Vec4Array;
@@ -306,7 +310,8 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
 
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName("Ocean");
-    transform->setMatrix(osg::Matrix::translate(cartCenter.osg()));
+    transform->setMatrix(osg::Matrix::rotate(hlOr.osg())*
+                         osg::Matrix::translate(cartCenter.osg()));
     transform->addChild(geode);
   
     return transform;

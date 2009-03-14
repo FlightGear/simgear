@@ -23,7 +23,6 @@
 #include <osg/Drawable>
 #include <osg/Geode>
 #include <osg/Group>
-#include <osg/MatrixTransform>
 #include <osg/PagedLOD>
 #include <osg/Transform>
 #include <osg/TriangleFunctor>
@@ -375,8 +374,9 @@ public:
     //     virtual void end() = 0;
     // };
 
-    BoundingVolumeBuildVisitor() :
-        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN)
+    BoundingVolumeBuildVisitor(bool dumpIntoLeafs) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
+        _dumpIntoLeafs(dumpIntoLeafs)
     {
         setTraversalMask(SG_NODEMASK_TERRAIN_BIT);
     }
@@ -402,57 +402,39 @@ public:
 
     virtual void apply(osg::Geode& geode)
     {
+        if (hasBoundingVolumeTree(geode))
+            return;
+
         const SGMaterial* oldMaterial = pushMaterial(geode.getStateSet());
 
-        if (!hasBoundingVolumeTree(geode))
+        bool flushHere = getNodePath().size() <= 1 || _dumpIntoLeafs;
+        if (flushHere) {
+            // push the current active primitive list
+            PFunctor previousPrimitives;
+            _primitiveFunctor.swap(previousPrimitives);
+
+            // walk the children
             for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
                 fillWith(geode.getDrawable(i));
 
-        // Flush the bounding volume tree if we reached the topmost group
-        if (getNodePath().size() <= 1)
+            // Flush the bounding volume tree if we reached the topmost group
             addBoundingVolumeTreeToNode(geode);
+
+            // pop the current active primitive list
+            _primitiveFunctor.swap(previousPrimitives);
+        } else {
+            for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
+                fillWith(geode.getDrawable(i));
+        }
+
         _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     virtual void apply(osg::Group& group)
-    {
-        // Note that we do not need to push the already collected list of
-        // primitives, since we are now in the topmost node ...
-
-        const SGMaterial* oldMaterial = pushMaterial(group.getStateSet());
-
-        if (!hasBoundingVolumeTree(group))
-            traverse(group);
-
-        // Flush the bounding volume tree if we reached the topmost group
-        if (getNodePath().size() <= 1)
-            addBoundingVolumeTreeToNode(group);
-
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
-    }
+    { traverseAndCollect(group); }
 
     virtual void apply(osg::Transform& transform)
-    {
-        // push the current active primitive list
-        PFunctor previousPrimitives;
-        _primitiveFunctor.swap(previousPrimitives);
-
-        const SGMaterial* oldMaterial = pushMaterial(transform.getStateSet());
-
-        // walk the children
-        if (!hasBoundingVolumeTree(transform))
-            traverse(transform);
-
-        // We know whenever we see a transform, we need to flush the
-        // collected bounding volume tree since these transforms are not
-        // handled by the plain leafs.
-        addBoundingVolumeTreeToNode(transform);
-
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
-
-        // pop the current active primitive list
-        _primitiveFunctor.swap(previousPrimitives);
-    }
+    { traverseAndDump(transform); }
 
     virtual void apply(osg::PagedLOD&)
     {
@@ -463,7 +445,55 @@ public:
     {
         if (camera.getRenderOrder() != osg::Camera::NESTED_RENDER)
             return;
-        apply(static_cast<osg::Transform&>(camera));
+        traverseAndDump(camera);
+    }
+
+    void traverseAndDump(osg::Node& node)
+    {
+        if (hasBoundingVolumeTree(node))
+            return;
+
+        const SGMaterial* oldMaterial = pushMaterial(node.getStateSet());
+
+        // push the current active primitive list
+        PFunctor previousPrimitives;
+        _primitiveFunctor.swap(previousPrimitives);
+
+        // walk the children
+        traverse(node);
+
+        // We know whenever we see a transform, we need to flush the
+        // collected bounding volume tree since these transforms are not
+        // handled by the plain leafs.
+        addBoundingVolumeTreeToNode(node);
+
+        // pop the current active primitive list
+        _primitiveFunctor.swap(previousPrimitives);
+
+        _primitiveFunctor.setCurrentMaterial(oldMaterial);
+    }
+
+    void traverseAndCollect(osg::Node& node)
+    {
+        // Already been here??
+        if (hasBoundingVolumeTree(node))
+            return;
+
+        // Force a flush of the bvtree if we are in the topmost node.
+        if (getNodePath().size() <= 1) {
+            traverseAndDump(node);
+            return;
+        }
+
+        // Note that we do not need to push the already collected list of
+        // primitives, since we are now in the topmost node ...
+
+        const SGMaterial* oldMaterial = pushMaterial(node.getStateSet());
+
+        // walk the children
+        traverse(node);
+
+        _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     void addBoundingVolumeTreeToNode(osg::Node& node)
@@ -493,6 +523,7 @@ public:
 
 private:
     PFunctor _primitiveFunctor;
+    bool _dumpIntoLeafs;
 };
 
 }

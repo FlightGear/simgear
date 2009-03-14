@@ -136,6 +136,15 @@ SGModelPlacement::setOrientation (const SGQuatd& orientation)
 }
 
 void
+SGModelPlacement::setReferenceTime(const double& referenceTime)
+{
+  SGSceneUserData* userData;
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
+  SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
+  vel->referenceTime = referenceTime;
+}
+
+void
 SGModelPlacement::setBodyLinearVelocity(const SGVec3d& linear)
 {
   SGSceneUserData* userData;

@@ -51,10 +51,12 @@ public:
     Velocity() :
         linear(SGVec3d::zeros()),
         angular(SGVec3d::zeros()),
+        referenceTime(0),
         id(simgear::BVHNode::getNewId())
     {}
     SGVec3d linear;
     SGVec3d angular;
+    double referenceTime;
     simgear::BVHNode::Id id;
   };
   const Velocity* getVelocity() const

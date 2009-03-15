@@ -77,7 +77,13 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
         return ReadResult::FILE_NOT_HANDLED;
 }
 
+
+typedef ModelRegistryCallback<DefaultProcessPolicy, NoCachePolicy,
+                              NoOptimizePolicy, NoCopyPolicy,
+                              NoSubstitutePolicy, BuildGroupBVHPolicy>
+BTGCallback;
+
 namespace
 {
-ModelRegistryCallbackProxy<LoadOnlyCallback> g_btgCallbackProxy("btg");
+ModelRegistryCallbackProxy<BTGCallback> g_btgCallbackProxy("btg");
 }

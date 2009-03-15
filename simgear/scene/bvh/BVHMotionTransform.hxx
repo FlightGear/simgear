@@ -50,6 +50,11 @@ public:
     const double& getReferenceTime() const
     { return _referenceTime; }
 
+    void setStartTime(const double& startTime)
+    { _startTime = startTime; }
+    const double& getStartTime() const
+    { return _startTime; }
+
     void setEndTime(const double& endTime)
     { _endTime = endTime; }
     const double& getEndTime() const
@@ -57,9 +62,9 @@ public:
     
     SGMatrixd getToWorldTransform(const double& t) const
     {
-        double dt = t - _referenceTime;
-        if (0 == dt)
+        if (t == _referenceTime)
             return _toWorldReference;
+        double dt = t - _referenceTime;
         SGMatrixd matrix(_toWorldReference);
         matrix.postMultRotate(SGQuatd::fromAngleAxis(dt*_angularVelocity));
         matrix.postMultTranslate(dt*_linearVelocity);
@@ -67,9 +72,9 @@ public:
     }
     SGMatrixd getToLocalTransform(const double& t) const
     {
-        double dt = _referenceTime - t;
-        if (0 == dt)
+        if (t == _referenceTime)
             return _toLocalReference;
+        double dt = _referenceTime - t;
         SGMatrixd matrix(_toLocalReference);
         matrix.preMultRotate(SGQuatd::fromAngleAxis(dt*_angularVelocity));
         matrix.preMultTranslate(dt*_linearVelocity);
@@ -110,6 +115,7 @@ private:
     SGVec3d _angularVelocity;
 
     double _referenceTime;
+    double _startTime;
     double _endTime;
 
     Id _id;

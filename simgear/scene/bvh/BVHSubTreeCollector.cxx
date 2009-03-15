@@ -90,7 +90,7 @@ BVHSubTreeCollector::apply(BVHMotionTransform& transform)
         return;
 
     SGSphered sphere = _sphere;
-    _sphere = transform.sphereToLocal(sphere, transform.getReferenceTime());
+    _sphere = transform.sphereToLocal(sphere, transform.getStartTime());
     _sphere.expandBy(transform.sphereToLocal(sphere, transform.getEndTime()));
     
     NodeList parentNodeList;

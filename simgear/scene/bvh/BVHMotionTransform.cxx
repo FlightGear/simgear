@@ -31,6 +31,7 @@ BVHMotionTransform::BVHMotionTransform() :
     _linearVelocity(0, 0, 0),
     _angularVelocity(0, 0, 0),
     _referenceTime(0),
+    _startTime(0),
     _endTime(0),
     _id(0)
 {
@@ -56,6 +57,7 @@ BVHMotionTransform::setTransform(const BVHMotionTransform& transform)
     _linearVelocity = transform._linearVelocity;
     _angularVelocity = transform._angularVelocity;
     _referenceTime = transform._referenceTime;
+    _startTime = transform._startTime;
     _endTime = transform._endTime;
     _id = transform._id;
     invalidateParentBound();
@@ -85,7 +87,8 @@ BVHMotionTransform::computeBoundingSphere() const
     SGSphered sphere(BVHGroup::computeBoundingSphere());
     if (sphere.empty())
         return sphere;
-    SGVec3d centerStart = _toWorldReference.xformPt(sphere.getCenter());
+    SGMatrixd toWorldStart = getToWorldTransform(_startTime);
+    SGVec3d centerStart = toWorldStart.xformPt(sphere.getCenter());
     SGMatrixd toWorldEnd = getToWorldTransform(_endTime);
     SGVec3d centerEnd = toWorldEnd.xformPt(sphere.getCenter());
     double rad = 0.5*length(centerStart - centerEnd) + sphere.getRadius();

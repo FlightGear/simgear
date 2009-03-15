@@ -743,9 +743,9 @@ inline SGVec3<T>
 closestPoint(const SGVec3<T>& p, const SGTriangle<T>& tri)
 { return closestPoint(tri, p); }
 
-template<typename T>
+template<typename T, typename T2>
 inline bool
-intersects(const SGTriangle<T>& tri, const SGSphere<T>& sphere)
+intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
 {
   // This method minimizes the distance function Q(u, v) = || p - x ||
   // where x is a point in the trialgle given by the vertices v_i
@@ -753,7 +753,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T>& sphere)
   // The theoretical analysis is somehow too long for a comment.
   // May be it is sufficient to see that this code passes all the tests.
 
-  SGVec3<T> off = tri.getBaseVertex() - sphere.getCenter();
+  SGVec3<T> off = tri.getBaseVertex() - SGVec3<T>(sphere.getCenter());
   T baseDist2 = dot(off, off);
   T a = dot(tri.getEdge(0), tri.getEdge(0));
   T b = dot(tri.getEdge(0), tri.getEdge(1));
@@ -954,9 +954,9 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T>& sphere)
     }
   }
 }
-template<typename T>
+template<typename T1, typename T2>
 inline bool
-intersects(const SGSphere<T>& sphere, const SGTriangle<T>& tri)
+intersects(const SGSphere<T1>& sphere, const SGTriangle<T2>& tri)
 { return intersects(tri, sphere); }
 
 

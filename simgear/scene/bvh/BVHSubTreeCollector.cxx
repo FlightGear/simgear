@@ -183,7 +183,7 @@ void
 BVHSubTreeCollector::apply(const BVHStaticTriangle& node,
                            const BVHStaticData& data)
 {
-    if (!intersects(_sphere, node.computeBoundingBox(data)))
+    if (!intersects(_sphere, node.getTriangle(data)))
         return;
     _staticNode = &node;
 }

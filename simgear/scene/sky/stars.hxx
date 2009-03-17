@@ -30,8 +30,6 @@
 
 
 #include <osg/Array>
-#include <osg/Node>
-#include <osg/MatrixTransform>
 
 #include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGReferenced.hxx>
@@ -39,7 +37,6 @@
 
 class SGStars : public SGReferenced {
 
-    osg::ref_ptr<osg::MatrixTransform> stars_transform;
     osg::ref_ptr<osg::Vec4Array> cl;
 
     int old_phase;		// data for optimization
@@ -62,11 +59,6 @@ public:
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
     bool repaint( double sun_angle, int num, const SGVec3d star_data[] );
-
-    // reposition the stars for the specified time (GST rotation),
-    // offset by our current position (p) so that it appears fixed at
-    // a great distance from the viewer.
-    bool reposition( const SGVec3f& p, double angle );
 };
 
 

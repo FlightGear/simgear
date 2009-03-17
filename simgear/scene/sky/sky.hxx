@@ -44,6 +44,8 @@
 #include <osg/Node>
 #include <osg/Switch>
 
+#include <simgear/ephemeris/ephemeris.hxx>
+
 #include <simgear/scene/sky/cloud.hxx>
 #include <simgear/scene/sky/dome.hxx>
 #include <simgear/scene/sky/moon.hxx>
@@ -57,8 +59,8 @@ typedef struct {
 	SGVec3f view_pos, zero_elev, view_up;
 	double lon, lat, alt, spin;
 	double gst;
-	double sun_ra, sun_dec, sun_dist;
-	double moon_ra, moon_dec, moon_dist;
+	double sun_dist;
+	double moon_dist;
 	double sun_angle;
 } SGSkyState;
 
@@ -66,9 +68,6 @@ typedef struct {
 	SGVec3f sky_color, fog_color;
 	SGVec3f cloud_color;
 	double sun_angle, moon_angle;
-	int nplanets, nstars;
-        SGVec3d *planet_data;
-        SGVec3d *star_data;
 } SGSkyColor;
 
 /**
@@ -219,7 +218,9 @@ private:
 
     osg::ref_ptr<osg::Group> pre_root, cloud_root;
     osg::ref_ptr<osg::Switch> pre_selector;
-    osg::ref_ptr<osg::MatrixTransform> pre_transform;
+    osg::ref_ptr<osg::Group> pre_transform;
+
+    osg::ref_ptr<osg::MatrixTransform> _ephTransform;
 
     SGPath tex_path;
 
@@ -268,8 +269,7 @@ public:
      */
     void build( double h_radius_m, double v_radius_m,
                 double sun_size, double moon_size,
-                int nplanets, SGVec3d planet_data[7],
-                int nstars, SGVec3d star_data[], SGPropertyNode *property_tree_node );
+                const SGEphemeris& eph, SGPropertyNode *property_tree_node );
 
     /**
      * Repaint the sky components based on current value of sun_angle,
@@ -295,7 +295,7 @@ public:
      * @param star_data an array of star right ascensions, declinations,
      *        and magnitudes
      */
-    bool repaint( const SGSkyColor &sc );
+    bool repaint( const SGSkyColor &sc, const SGEphemeris& eph );
 
     /**
      * Reposition the sky at the specified origin and orientation
@@ -325,7 +325,7 @@ public:
      * @param moon_dec the moon's current declination
      * @param moon_dist the moon's distance from the current view point. 
      */
-    bool reposition( SGSkyState &st, double dt = 0.0 );
+    bool reposition( const SGSkyState &st, const SGEphemeris& eph, double dt = 0.0 );
 
     /**
      * Modify the given visibility based on cloud layers, thickness,

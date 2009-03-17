@@ -46,6 +46,7 @@
 #include <osg/Material>
 #include <osg/Point>
 #include <osg/ShadeModel>
+#include <osg/Node>
 
 #include "stars.hxx"
 
@@ -64,26 +65,11 @@ SGStars::~SGStars( void ) {
 // initialize the stars object and connect it into our scene graph root
 osg::Node*
 SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
-    // build the ssg scene graph sub tree for the sky and connected
-    // into the provide scene graph branch
-    stars_transform = new osg::MatrixTransform;
-
     osg::Geode* geode = new osg::Geode;
     osg::StateSet* stateSet = geode->getOrCreateStateSet();
     stateSet->setRenderBinDetails(-9, "RenderBin");
 
     // set up the star state
-
-    // Ok, the old implementation did have a color material set.
-    // But with lighting off, I don't see how this should change the result
-    osg::Material* material = new osg::Material;
-//     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
-//     material->setEmission(osg::Material::FRONT_AND_BACK,
-//                           osg::Vec4(0, 0, 0, 1));
-//     material->setSpecular(osg::Material::FRONT_AND_BACK,
-//                               osg::Vec4(0, 0, 0, 1));
-    stateSet->setAttribute(material);
-
     osg::BlendFunc* blendFunc = new osg::BlendFunc;
     blendFunc->setFunction(osg::BlendFunc::SRC_ALPHA,
                            osg::BlendFunc::ONE_MINUS_SRC_ALPHA);
@@ -126,11 +112,7 @@ SGStars::build( int num, const SGVec3d star_data[], double star_dist ) {
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_POINTS, 0, vl->size()));
     geode->addDrawable(geometry);
 
-    stars_transform->addChild(geode);
-
-    SG_LOG( SG_EVENT, SG_INFO, "stars = " << stars_transform.get());
-
-    return stars_transform.get();
+    return geode;
 }
 
 
@@ -202,7 +184,6 @@ bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
             mag = star_data[i][2];
             if ( mag < cutoff ) {
                 nmag = ( 4.5 - mag ) / 5.5; // translate to 0 ... 1.0 scale
-                // alpha = nmag * 0.7 + 0.3; // translate to a 0.3 ... 1.0 scale
                 alpha = nmag * 0.85 + 0.15; // translate to a 0.15 ... 1.0 scale
                 alpha *= factor;          // dim when the sun is brighter
             } else {
@@ -222,23 +203,6 @@ bool SGStars::repaint( double sun_angle, int num, const SGVec3d star_data[] ) {
 
     // cout << "min = " << min << " max = " << max << " count = " << num 
     //      << endl;
-
-    return true;
-}
-
-
-// reposition the stars for the specified time (GST rotation),
-// offset by our current position (p) so that it appears fixed at a
-// great distance from the viewer.
-bool
-SGStars::reposition( const SGVec3f& p, double angle )
-{
-    osg::Matrix T1, GST;
-    T1.makeTranslate(p.osg());
-
-    GST.makeRotate(angle*SGD_DEGREES_TO_RADIANS, osg::Vec3(0, 0, -1));
-
-    stars_transform->setMatrix(GST*T1);
 
     return true;
 }

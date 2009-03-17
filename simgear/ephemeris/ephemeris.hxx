@@ -158,6 +158,7 @@ public:
      * @return planets array
      */
     inline SGVec3d *getPlanets() { return planets; }
+    inline const SGVec3d *getPlanets() const { return planets; }
 
     /** @return the numbers of defined stars. */
     inline int getNumStars() const { return stars->getNumStars(); }
@@ -170,6 +171,7 @@ public:
      * @returns star array
      */
     inline SGVec3d *getStars() { return stars->getStars(); }
+    inline const SGVec3d *getStars() const { return stars->getStars(); }
 };
 
 

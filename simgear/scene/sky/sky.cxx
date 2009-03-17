@@ -62,7 +62,9 @@ SGSky::SGSky( void ) {
 
     pre_selector = new osg::Switch;
 
-    pre_transform = new osg::MatrixTransform;
+    pre_transform = new osg::Group;
+
+    _ephTransform = new osg::MatrixTransform;
 }
 
 
@@ -76,23 +78,23 @@ SGSky::~SGSky( void )
 // the provided branch
 void SGSky::build( double h_radius_m, double v_radius_m,
                    double sun_size, double moon_size,
-		   int nplanets, SGVec3d planet_data[7],
-		   int nstars, SGVec3d star_data[], SGPropertyNode *property_tree_node )
+                   const SGEphemeris& eph, SGPropertyNode *property_tree_node )
 {
     dome = new SGSkyDome;
     pre_transform->addChild( dome->build( h_radius_m, v_radius_m ) );
 
+    pre_transform->addChild(_ephTransform.get());
     planets = new SGStars;
-    pre_transform->addChild(planets->build(nplanets, planet_data, h_radius_m));
+    _ephTransform->addChild( planets->build(eph.getNumPlanets(), eph.getPlanets(), h_radius_m) );
 
     stars = new SGStars;
-    pre_transform->addChild( stars->build(nstars, star_data, h_radius_m) );
+    _ephTransform->addChild( stars->build(eph.getNumStars(), eph.getStars(), h_radius_m) );
     
     moon = new SGMoon;
-    pre_transform->addChild( moon->build(tex_path, moon_size) );
+    _ephTransform->addChild( moon->build(tex_path, moon_size) );
 
     oursun = new SGSun;
-    pre_transform->addChild( oursun->build(tex_path, sun_size, property_tree_node ) );
+    _ephTransform->addChild( oursun->build(tex_path, sun_size, property_tree_node ) );
 
     pre_selector->addChild( pre_transform.get() );
 
@@ -107,15 +109,15 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 // 0 degrees = high noon
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
-bool SGSky::repaint( const SGSkyColor &sc )
+bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
     if ( effective_visibility > 1000.0 ) {
 	enable();
 	dome->repaint( sc.sky_color, sc.fog_color, sc.sun_angle,
                        effective_visibility );
 
-        stars->repaint( sc.sun_angle, sc.nstars, sc.star_data );
-        planets->repaint( sc.sun_angle, sc.nplanets, sc.planet_data );
+        stars->repaint( sc.sun_angle, eph.getNumStars(), eph.getStars() );
+        planets->repaint( sc.sun_angle, eph.getNumPlanets(), eph.getPlanets() );
 	oursun->repaint( sc.sun_angle, effective_visibility );
 	moon->repaint( sc.moon_angle );
 
@@ -133,7 +135,6 @@ bool SGSky::repaint( const SGSkyColor &sc )
     return true;
 }
 
-
 // reposition the sky at the specified origin and orientation
 //
 // lon specifies a rotation about the Z axis
@@ -141,21 +142,24 @@ bool SGSky::repaint( const SGSkyColor &sc )
 // spin specifies a rotation about the new Z axis (this allows
 // additional orientation for the sunrise/set effects and is used by
 // the skydome and perhaps clouds.
-bool SGSky::reposition( SGSkyState &st, double dt )
+bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt )
 {
-
     double angle = st.gst * 15;	// degrees
+    double angleRad = SGMiscd::deg2rad(angle);
 
     dome->reposition( st.zero_elev, st.alt, st.lon, st.lat, st.spin );
 
-    stars->reposition( st.view_pos, angle );
-    planets->reposition( st.view_pos, angle );
+    osg::Matrix m = osg::Matrix::rotate(angleRad, osg::Vec3(0, 0, -1));
+    m.postMultTranslate(st.view_pos.osg());
+    _ephTransform->setMatrix(m);
 
-    oursun->reposition( st.view_pos, angle,
-                        st.sun_ra, st.sun_dec, st.sun_dist, st.lat, st.alt, st.sun_angle );
+    double sun_ra = eph.getSunRightAscension();
+    double sun_dec = eph.getSunDeclination();
+    oursun->reposition( sun_ra, sun_dec, st.sun_dist, st.lat, st.alt, st.sun_angle );
 
-    moon->reposition( st.view_pos, angle,
-                      st.moon_ra, st.moon_dec, st.moon_dist );
+    double moon_ra = eph.getMoonRightAscension();
+    double moon_dec = eph.getMoonDeclination();
+    moon->reposition( moon_ra, moon_dec, st.moon_dist );
 
     for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {

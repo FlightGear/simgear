@@ -363,15 +363,11 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
 // Then calculate stuff needed for the sun-coloring
-bool SGSun::reposition( const SGVec3f& p, double angle,
-			double rightAscension, double declination, 
+bool SGSun::reposition( double rightAscension, double declination, 
 			double sun_dist, double lat, double alt_asl, double sun_angle)
 {
     // GST - GMT sidereal time 
-    osg::Matrix T1, T2, GST, RA, DEC;
-
-    T1.makeTranslate(p.osg());
-    GST.makeRotate(SGD_DEGREES_TO_RADIANS*angle, osg::Vec3(0, 0, -1));
+    osg::Matrix T2, RA, DEC;
 
     // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
     //             0.0, 0.0, 1.0);
@@ -383,7 +379,7 @@ bool SGSun::reposition( const SGVec3f& p, double angle,
     // xglTranslatef(0,sun_dist);
     T2.makeTranslate(osg::Vec3(0, sun_dist, 0));
 
-    sun_transform->setMatrix(T2*DEC*RA*GST*T1);
+    sun_transform->setMatrix(T2*DEC*RA);
 
     // Suncolor related things:
     if ( prev_sun_angle != sun_angle ) {

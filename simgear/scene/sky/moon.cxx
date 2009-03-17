@@ -165,28 +165,19 @@ bool SGMoon::repaint( double moon_angle ) {
 // declination, offset by our current position (p) so that it appears
 // fixed at a great distance from the viewer.  Also add in an optional
 // rotation (i.e. for the current time of day.)
-bool SGMoon::reposition( const SGVec3f& p, double angle,
-			 double rightAscension, double declination,
+bool SGMoon::reposition( double rightAscension, double declination,
 			 double moon_dist )
 {
-    osg::Matrix T1, T2, GST, RA, DEC;
+    osg::Matrix T2, RA, DEC;
 
-    T1.makeTranslate(p.osg());
-
-    GST.makeRotate(SGD_DEGREES_TO_RADIANS*angle, osg::Vec3(0, 0, -1));
-
-    // xglRotatef( ((SGD_RADIANS_TO_DEGREES * rightAscension)- 90.0),
-    //             0.0, 0.0, 1.0);
     RA.makeRotate(rightAscension - 90.0 * SGD_DEGREES_TO_RADIANS,
                   osg::Vec3(0, 0, 1));
 
-    // xglRotatef((SGD_RADIANS_TO_DEGREES * declination), 1.0, 0.0, 0.0);
     DEC.makeRotate(declination, osg::Vec3(1, 0, 0));
 
-    // xglTranslatef(0,moon_dist);
     T2.makeTranslate(osg::Vec3(0, moon_dist, 0));
 
-    moon_transform->setMatrix(T2*DEC*RA*GST*T1);
+    moon_transform->setMatrix(T2*DEC*RA);
 
     return true;
 }

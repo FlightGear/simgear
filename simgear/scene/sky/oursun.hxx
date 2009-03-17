@@ -75,8 +75,7 @@ public:
     // declination, offset by our current position (p) so that it
     // appears fixed at a great distance from the viewer.  Also add in
     // an optional rotation (i.e. for the current time of day.)
-    bool reposition( const SGVec3f& p, double angle,
-		     double rightAscension, double declination,
+    bool reposition( double rightAscension, double declination,
 		     double sun_dist, double lat, double alt_asl, double sun_angle );
 
     // retrun the current color of the sun

@@ -297,18 +297,6 @@ public:
   }
 };
 
-class SGAcMaterialCrippleVisitor : public SGStateAttributeVisitor {
-public:
-  virtual void apply(StateSet::RefAttributePair& refAttr)
-  {
-    Material* material;
-    material = dynamic_cast<Material*>(refAttr.first.get());
-    if (!material)
-      return;
-    material->setColorMode(Material::AMBIENT_AND_DIFFUSE);
-  }
-};
-
 } // namespace
 
 Node* DefaultProcessPolicy::process(Node* node, const string& filename,
@@ -592,16 +580,7 @@ struct ACProcessPolicy {
         transform->setDataVariance(Object::STATIC);
         transform->setMatrix(m);
         transform->addChild(node);
-        // Ok, this step is questionable.
-        // It is there to have the same visual appearance of ac objects for the
-        // first cut. Osg's ac3d loader will correctly set materials from the
-        // ac file. But the old plib loader used GL_AMBIENT_AND_DIFFUSE for the
-        // materials that in effect igored the ambient part specified in the
-        // file. We emulate that for the first cut here by changing all
-        // ac models here. But in the long term we should use the
-        // unchanged model and fix the input files instead ...
-        SGAcMaterialCrippleVisitor matCriple;
-        root->accept(matCriple);
+
         return root;
     }
 };

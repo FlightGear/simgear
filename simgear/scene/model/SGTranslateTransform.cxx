@@ -29,16 +29,6 @@
 
 #include "SGTranslateTransform.hxx"
 
-static inline void
-set_translation (osg::Matrix &matrix, double position_m, const SGVec3d &axis)
-{
-  SGVec3d xyz = axis * position_m;
-  matrix.makeIdentity();
-  matrix(3, 0) = xyz[0];
-  matrix(3, 1) = xyz[1];
-  matrix(3, 2) = xyz[2];
-}
-
 SGTranslateTransform::SGTranslateTransform() :
   _axis(0, 0, 0),
   _value(0)
@@ -59,13 +49,9 @@ SGTranslateTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor* nv) const 
 {
   if (_referenceFrame == RELATIVE_RF) {
-    osg::Matrix tmp;
-    set_translation(tmp, _value, _axis);
-    matrix.preMult(tmp);
+    matrix.preMultTranslate((_value*_axis).osg());
   } else {
-    osg::Matrix tmp;
-    set_translation(tmp, _value, _axis);
-    matrix = tmp;
+    matrix.setTrans((_value*_axis).osg());
   }
   return true;
 }
@@ -75,13 +61,9 @@ SGTranslateTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor* nv) const
 {
   if (_referenceFrame == RELATIVE_RF) {
-    osg::Matrix tmp;
-    set_translation(tmp, -_value, _axis);
-    matrix.postMult(tmp);
+    matrix.postMultTranslate((-_value*_axis).osg());
   } else {
-    osg::Matrix tmp;
-    set_translation(tmp, -_value, _axis);
-    matrix = tmp;
+    matrix.setTrans((-_value*_axis).osg());
   }
   return true;
 }

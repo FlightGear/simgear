@@ -53,8 +53,11 @@ SGModelPlacement::update()
   // The orientation, composed from the horizontal local orientation and the
   // orientation wrt the horizontal local frame
   SGQuatd orient = SGQuatd::fromLonLat(_position);
+  orient *= SGQuatd::fromYawPitchRollDeg(_heading_deg, _pitch_deg, _roll_deg);
+  // Convert to the scenegraph orientation where we just rotate around
+  // the y axis 180 degrees.
   orient *= SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0));
-  orient *= SGQuatd::fromYawPitchRollDeg(-_heading_deg, _pitch_deg, -_roll_deg);
+
   _transform->setTransform(position, orient);
 }
 

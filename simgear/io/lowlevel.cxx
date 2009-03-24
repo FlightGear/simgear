@@ -55,21 +55,25 @@ void sgWriteChar ( gzFile fd, const char var )
 
 void sgReadFloat ( gzFile fd, float *var )
 {
-    if ( gzread ( fd, var, sizeof(float) ) != sizeof(float) ) {
+    union { float v; uint32_t u; } buf;
+    if ( gzread ( fd, &buf.u, sizeof(float) ) != sizeof(float) ) {
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint32_t *)var);
+        sgEndianSwap( &buf.u );
     }
+    *var = buf.v;
 }
 
 
 void sgWriteFloat ( gzFile fd, const float var )
 {
+    union { float v; uint32_t u; } buf;
+    buf.v = var;
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint32_t *)&var);
+        sgEndianSwap( &buf.u );
     }
-    if ( gzwrite ( fd, (void *)(&var), sizeof(float) ) != sizeof(float) ) {
+    if ( gzwrite ( fd, (void *)(&buf.u), sizeof(float) ) != sizeof(float) ) {
         write_error = true ;
     }
 }
@@ -77,21 +81,25 @@ void sgWriteFloat ( gzFile fd, const float var )
 
 void sgReadDouble ( gzFile fd, double *var )
 {
-    if ( gzread ( fd, var, sizeof(double) ) != sizeof(double) ) {
+    union { double v; uint64_t u; } buf;
+    if ( gzread ( fd, &buf.u, sizeof(double) ) != sizeof(double) ) {
         read_error = true ;
     }
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64_t *)var);
+        sgEndianSwap( &buf.u );
     }
+    *var = buf.v;
 }
 
 
 void sgWriteDouble ( gzFile fd, const double var )
 {
+    union { double v; uint64_t u; } buf;
+    buf.v = var;
     if ( sgIsBigEndian() ) {
-        sgEndianSwap( (uint64_t *)&var);
+        sgEndianSwap( &buf.u );
     }
-    if ( gzwrite ( fd, (void *)(&var), sizeof(double) ) != sizeof(double) ) {
+    if ( gzwrite ( fd, (void *)(&buf.u), sizeof(double) ) != sizeof(double) ) {
         write_error = true ;
     }
 }

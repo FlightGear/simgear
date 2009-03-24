@@ -45,7 +45,6 @@
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/polar3d.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/math/SGMath.hxx>

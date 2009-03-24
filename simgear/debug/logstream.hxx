@@ -33,6 +33,7 @@
 
 #include <streambuf>
 #include <ostream>
+#include <cstdio>
 
 #include <simgear/debug/debug_types.h>
 

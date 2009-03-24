@@ -45,12 +45,13 @@ public:
   
   void setTransform(const SGVec3d& off)
   { _placement_offset = off; dirtyBound(); }
-  void setTransform(const SGVec3d& off, const SGMatrixd& rot)
+  void setTransform(const SGVec3d& off, const SGQuatd& rot)
   { _placement_offset = off; _rotation = rot; dirtyBound(); }
   
   const SGVec3d& getGlobalPos() const
   { return _placement_offset; }
-  const SGMatrixd& getRotation() const { return _rotation; }
+  const SGQuatd& getRotation() const
+  { return _rotation; }
   
   virtual bool computeLocalToWorldMatrix(osg::Matrix&,osg::NodeVisitor*) const;
   virtual bool computeWorldToLocalMatrix(osg::Matrix&,osg::NodeVisitor*) const;
@@ -67,7 +68,7 @@ private:
   //////////////////////////////////////////////////////////////////
   
   SGVec3d _placement_offset;
-  SGMatrixd _rotation;
+  SGQuatd _rotation;
 };
 
 #endif // _SG_LOCATION_HXX

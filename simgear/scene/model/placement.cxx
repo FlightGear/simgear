@@ -10,8 +10,7 @@
 #include <simgear/compiler.h>
 
 #include <simgear/scene/util/SGSceneUserData.hxx>
-
-#include "placementtrans.hxx"
+#include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 #include "placement.hxx"
 
@@ -54,10 +53,9 @@ SGModelPlacement::update()
   // The orientation, composed from the horizontal local orientation and the
   // orientation wrt the horizontal local frame
   SGQuatd orient = SGQuatd::fromLonLat(_position);
-  orient *= SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
+  orient *= SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0));
   orient *= SGQuatd::fromYawPitchRollDeg(-_heading_deg, _pitch_deg, -_roll_deg);
-  SGMatrixd rotation(inverse(orient));
-  _transform->setTransform(position, rotation);
+  _transform->setTransform(position, orient);
 }
 
 bool
@@ -150,8 +148,7 @@ SGModelPlacement::setBodyLinearVelocity(const SGVec3d& linear)
   SGSceneUserData* userData;
   userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
-  SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
-  vel->linear = orientation.backTransform(linear);
+  vel->linear = SGVec3d(-linear[0], linear[1], -linear[2]);
 }
 
 void
@@ -160,8 +157,7 @@ SGModelPlacement::setBodyAngularVelocity(const SGVec3d& angular)
   SGSceneUserData* userData;
   userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
-  SGQuatd orientation = SGQuatd::fromAngleAxisDeg(180, SGVec3d(0, 1, 0));
-  vel->angular = orientation.backTransform(angular);
+  vel->angular = SGVec3d(-angular[0], angular[1], -angular[2]);
 }
 
 // end of model.cxx

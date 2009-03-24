@@ -64,10 +64,7 @@ public:
 
 SGPlacementTransform::SGPlacementTransform(void) :
   _placement_offset(0, 0, 0),
-  _rotation(1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1)
+  _rotation(SGQuatd::unit())
 {
   setUpdateCallback(new UpdateCallback);
 }
@@ -89,18 +86,13 @@ bool
 SGPlacementTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor*) const
 {
-  osg::Matrix t;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      t(j, i) = _rotation(i, j);
-    }
-    t(3, i) = _placement_offset(i);
+  if (_referenceFrame == RELATIVE_RF) {
+    matrix.preMultTranslate(_placement_offset.osg());
+    matrix.preMultRotate(_rotation.osg());
+  } else {
+    matrix.makeRotate(_rotation.osg());
+    matrix.postMultTranslate(_placement_offset.osg());
   }
-  
-  if (_referenceFrame == RELATIVE_RF)
-    matrix.preMult(t);
-  else
-    matrix = t;
   return true;
 }
 
@@ -108,19 +100,13 @@ bool
 SGPlacementTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor*) const
 {
-  osg::Matrix t;
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      t(j, i) = _rotation(i, j);
-    }
-    t(3, i) = _placement_offset(i);
+  if (_referenceFrame == RELATIVE_RF) {
+    matrix.postMultTranslate(-_placement_offset.osg());
+    matrix.postMultRotate(inverse(_rotation).osg());
+  } else {
+    matrix.makeRotate(inverse(_rotation).osg());
+    matrix.preMultTranslate(-_placement_offset.osg());
   }
-  t = osg::Matrix::inverse(t);
-
-  if (_referenceFrame == RELATIVE_RF)
-    matrix.postMult(t);
-  else
-    matrix = t;
   return true;
 }
 
@@ -132,25 +118,16 @@ namespace {
 bool PlacementTrans_readLocalData(osg::Object& obj, osgDB::Input& fr)
 {
     SGPlacementTransform& trans = static_cast<SGPlacementTransform&>(obj);
-    SGMatrixd rotation(1, 0, 0, 0,
-                       0, 1, 0, 0,
-                       0, 0, 1, 0,
-                       0, 0, 0, 1);
+    SGQuatd rotation = SGQuatd::unit();
     SGVec3d placementOffset(0, 0, 0);
     
-    if (fr[0].matchWord("rotation") && fr[1].isOpenBracket()) {
-        fr += 2;
-        for (int i = 0; i < 3; i++) {
-            SGVec3d scratch;
-            if (!fr.readSequence(scratch.osg()))
-                return false;
-            fr += 3;
-            for (int j = 0; j < 3; j++)
-                rotation(j, i) = scratch[j];
-        }
-        if (fr[0].isCloseBracket())
-            ++fr;
-        else
+    if (fr[0].matchWord("rotation")) {
+        ++fr;
+        osg::Vec4d vec4;
+        if (fr.readSequence(vec4)) {
+            rotation = SGQuatd(vec4[0], vec4[1], vec4[2], vec4[3]);
+            fr += 4;
+        } else
             return false;
     }
     if (fr[0].matchWord("placement")) {
@@ -168,20 +145,14 @@ bool PlacementTrans_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
 {
     const SGPlacementTransform& trans
         = static_cast<const SGPlacementTransform&>(obj);
-    const SGMatrixd& rotation = trans.getRotation();
+    const SGQuatd& rotation = trans.getRotation();
     const SGVec3d& placement = trans.getGlobalPos();
     
-    fw.indent() << "rotation {" << std::endl;
-    fw.moveIn();
-    for (int i = 0; i < 3; i++) {
-        fw.indent();
-        for (int j = 0; j < 3; j++) {
-            fw << rotation(j, i) << " ";
-        }
-        fw << std::endl;
+    fw.indent() << "rotation ";
+    for (int i = 0; i < 4; i++) {
+        fw << rotation(i) << " ";
     }
-    fw.moveOut();
-    fw.indent() << "}" << std::endl;
+    fw << std::endl;
     int prec = fw.precision();
     fw.precision(15);
     fw.indent() << "placement ";

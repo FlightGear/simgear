@@ -106,7 +106,7 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
     } else if ( span <= 1.0 ) {
 	x = (int)((dlon - lon) / span);
     } else {
-	if ( (dlon >= 0) || (fabs(diff) < SG_EPSILON) ) {
+	if ( dlon >= 0 ) {
 	    lon = (int)( (int)(lon / span) * span);
 	} else {
 	    // cout << " lon = " << lon 

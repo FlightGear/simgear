@@ -95,7 +95,6 @@ static double sg_bucket_span( double l ) {
 class SGBucket {
 
 private:
-    double cx, cy;  // centerpoint (lon, lat) in degrees of bucket
     short lon;        // longitude index (-180 to 179)
     short lat;        // latitude index (-90 to 89)
     char x;          // x subdivision (0 to 7)

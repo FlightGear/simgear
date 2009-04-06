@@ -396,6 +396,7 @@ bool SGSun::reposition( double rightAscension, double declination,
 
          double gamma =  SG_PI - sun_angle;
          double sin_beta =  ( position_radius * sin ( gamma )  ) / r_tropo;
+         if (sin_beta > 1.0) sin_beta = 1.0;
          double alpha =  SG_PI - gamma - asin( sin_beta );
 
          // OK, now let's calculate the distance the light travels

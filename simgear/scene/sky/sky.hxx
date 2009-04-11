@@ -65,7 +65,9 @@ typedef struct {
 } SGSkyState;
 
 typedef struct {
-	SGVec3f sky_color, fog_color;
+	SGVec3f sky_color;
+        SGVec3f adj_sky_color;
+        SGVec3f fog_color;
 	SGVec3f cloud_color;
 	double sun_angle, moon_angle;
 } SGSkyColor;

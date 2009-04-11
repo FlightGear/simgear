@@ -113,8 +113,8 @@ bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
     if ( effective_visibility > 1000.0 ) {
 	enable();
-	dome->repaint( sc.sky_color, sc.fog_color, sc.sun_angle,
-                       effective_visibility );
+	dome->repaint( sc.adj_sky_color, sc.sky_color, sc.fog_color,
+                       sc.sun_angle, effective_visibility );
 
         stars->repaint( sc.sun_angle, eph.getNumStars(), eph.getStars() );
         planets->repaint( sc.sun_angle, eph.getNumPlanets(), eph.getPlanets() );

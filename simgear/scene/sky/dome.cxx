@@ -189,7 +189,7 @@ SGSkyDome::build( double hscale, double vscale ) {
     geom->addPrimitiveSet(domeElements);
     geode->addDrawable(geom);
     // force a repaint of the sky colors with ugly defaults
-    repaint(SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), 0.0, 5000.0 );
+    repaint(SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), SGVec3f(1, 1, 1), 0.0, 5000.0 );
     dome_transform = new osg::MatrixTransform;
     dome_transform->addChild(geode);
 
@@ -217,8 +217,8 @@ inline void clampColor(osg::Vec3& color)
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool
-SGSkyDome::repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
-                    double sun_angle, double vis )
+SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
+                    const SGVec3f& fog_color, double sun_angle, double vis )
 {
     SGVec3f outer_param, outer_diff;
     SGVec3f middle_param, middle_diff;
@@ -262,26 +262,37 @@ SGSkyDome::repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
     const double saif = sun_angle/SG_PI;
     static const SGVec3f blueShift(0.8, 1.0, 1.2);
     const SGVec3f skyFogDelta = sky_color - fog_color;
+    const SGVec3f sunSkyDelta = sun_color - sky_color;
     // For now the colors of the upper two rings are linearly
     // interpolated between the zenith color and the first horizon
     // ring color.
     
-    for (int i = 0; i < 7; i++) {
+    int halfBands = numBands/2;
+    float ialpha_init = 1.0/halfBands;
+    float alpha = 1.0, ialpha = 0.0;
+    for (int i = 0; i < halfBands+1; i++) {
         SGVec3f diff = mult(skyFogDelta, blueShift);
-        diff *= (0.8 + saif - ((6-i)/10));
+        diff *= (0.8 + saif - ((halfBands-i)/10));
         colors(2, i) = (sky_color - upperVisFactor * diff).osg();
         colors(3, i) = (sky_color - middleVisFactor * diff + middle_amt).osg();
         colors(4, i) = (fog_color + outer_amt).osg();
         // Interpolate using distance along dome segment
-        colors(0, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .3942);
-        colors(1, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .7885);
+        SGVec3f trans_color;
+        trans_color[0] = sun_color[0]*alpha + sky_color[0]*ialpha;
+        trans_color[1] = sun_color[1]*alpha + sky_color[1]*ialpha;
+        trans_color[2] = sun_color[2]*alpha + sky_color[2]*ialpha;
+        ialpha += ialpha_init;
+        alpha -= ialpha_init;
+        colors(0, i) = simgear::math::lerp(trans_color.osg(), colors(2, i), .3942);
+        colors(1, i) = simgear::math::lerp(trans_color.osg(), colors(2, i), .7885);
         for (int j = 0; j < numRings - 1; ++j)
             clampColor(colors(j, i));
         outer_amt -= outer_diff;
         middle_amt -= middle_diff;
     }
+printf("\n");
 
-    for (int i = 7; i < 12; ++i)
+    for (int i = halfBands+1; i < numBands; ++i)
         for (int j = 0; j < 5; ++j)
             colors(j, i) = colors(j, 12 - i);
 

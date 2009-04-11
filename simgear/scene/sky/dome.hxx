@@ -64,8 +64,8 @@ public:
     // 0 degrees = high noon
     // 90 degrees = sun rise/set
     // 180 degrees = darkest midnight
-    bool repaint( const SGVec3f& sky_color, const SGVec3f& fog_color,
-                  double sun_angle, double vis );
+    bool repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
+                  const SGVec3f& fog_color, double sun_angle, double vis );
 
     // reposition the sky at the specified origin and orientation
     // lon specifies a rotation about the Z axis

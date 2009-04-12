@@ -63,6 +63,7 @@ struct DomeParam
 
 const int numRings = sizeof(domeParams) / sizeof(domeParams[0]);
 const int numBands = 12;
+const int halfBands = numBands/2;
 }
 
 static const float upper_radius = 0.9701; // (.6, 0.15)
@@ -267,24 +268,14 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     // interpolated between the zenith color and the first horizon
     // ring color.
     
-    int halfBands = numBands/2;
-    float ialpha_init = 1.0/halfBands;
-    float alpha = 1.0, ialpha = 0.0;
     for (int i = 0; i < halfBands+1; i++) {
         SGVec3f diff = mult(skyFogDelta, blueShift);
         diff *= (0.8 + saif - ((halfBands-i)/10));
         colors(2, i) = (sky_color - upperVisFactor * diff).osg();
         colors(3, i) = (sky_color - middleVisFactor * diff + middle_amt).osg();
         colors(4, i) = (fog_color + outer_amt).osg();
-        // Interpolate using distance along dome segment
-        SGVec3f trans_color;
-        trans_color[0] = sun_color[0]*alpha + sky_color[0]*ialpha;
-        trans_color[1] = sun_color[1]*alpha + sky_color[1]*ialpha;
-        trans_color[2] = sun_color[2]*alpha + sky_color[2]*ialpha;
-        ialpha += ialpha_init;
-        alpha -= ialpha_init;
-        colors(0, i) = simgear::math::lerp(trans_color.osg(), colors(2, i), .3942);
-        colors(1, i) = simgear::math::lerp(trans_color.osg(), colors(2, i), .7885);
+        colors(0, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .3942);
+        colors(1, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .7885);
         for (int j = 0; j < numRings - 1; ++j)
             clampColor(colors(j, i));
         outer_amt -= outer_diff;
@@ -293,7 +284,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
 
     for (int i = halfBands+1; i < numBands; ++i)
         for (int j = 0; j < 5; ++j)
-            colors(j, i) = colors(j, 12 - i);
+            colors(j, i) = colors(j, numBands - i);
 
     fade_to_black(&(*dome_cl)[0], asl * center_elev, 1);
     for (int i = 0; i < numRings - 1; ++i)

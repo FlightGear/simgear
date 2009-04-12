@@ -290,7 +290,6 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
         outer_amt -= outer_diff;
         middle_amt -= middle_diff;
     }
-printf("\n");
 
     for (int i = halfBands+1; i < numBands; ++i)
         for (int j = 0; j < 5; ++j)

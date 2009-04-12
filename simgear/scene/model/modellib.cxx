@@ -32,7 +32,6 @@
 #include "SGReaderWriterXML.hxx"
 #include "SGReaderWriterXMLOptions.hxx"
 
-//#include "model.hxx"
 #include "modellib.hxx"
 
 
@@ -69,6 +68,8 @@ SGModelLib::loadModel(const string &path,
     osg::Node *n = readNodeFile(path, opt.get());
     if(data)
         data->modelLoaded(path, data->getProperties(), n);
+    if (n->getName().empty())
+        n->setName("Direct loaded model \"" + path + "\"");
     return n;
 
 }
@@ -90,6 +91,7 @@ SGModelLib::loadPagedModel(const string &path,
                            SGModelData *data)
 {
     SGPagedLOD *plod = new SGPagedLOD;
+    plod->setName("Paged LOD for \"" + path + "\"");
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 

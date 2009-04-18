@@ -149,14 +149,12 @@ osg::Geometry* createOrthQuads(float w, float h, int varieties, const osg::Matri
     "  vec3 position = gl_Vertex.xyz * gl_Color.w + gl_Color.xyz;\n"
     "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
-    "  vec3 N = normalize(gl_NormalMatrix * gl_Normal);\n"
-    "  vec3 diffuse = gl_FrontMaterial.diffuse.rgb * max(0.0, dot(N, gl_LightSource[0].position.xyz));\n"
-    "  vec3 backDiffuse = gl_FrontMaterial.diffuse.rgb * max(0.0, dot(-N, gl_LightSource[0].position.xyz));\n"
-    " vec4 ambientColor = gl_FrontLightModelProduct.sceneColor + gl_LightSource[0].ambient * gl_FrontMaterial.ambient;\n"
-    " gl_FrontColor = ambientColor + gl_LightSource[0].diffuse * vec4(diffuse, 1.0);\n"
-    " gl_BackColor = ambientColor + gl_LightSource[0].diffuse * vec4(backDiffuse, 1.0)\n;"
-//    "  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-    " float fogCoord = abs(ecPosition.z);\n"
+    "  float n = dot(normalize(gl_LightSource[0].position.xyz), normalize(-ecPosition));\n"
+    "  vec3 diffuse = gl_FrontMaterial.diffuse.rgb * max(0.1, n);\n"
+    "  vec4 ambientColor = gl_FrontLightModelProduct.sceneColor + gl_LightSource[0].ambient * gl_FrontMaterial.ambient;\n"
+    "  gl_FrontColor = ambientColor + gl_LightSource[0].diffuse * vec4(diffuse, 1.0);\n"
+    "  gl_BackColor = gl_FrontColor;\n"
+    "  float fogCoord = abs(ecPosition.z);\n"
     "  fogFactor = exp( -gl_Fog.density * gl_Fog.density * fogCoord * fogCoord);\n"
     "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
     "}\n";
@@ -284,9 +282,9 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             // Don´t track vertex color
             material->setColorMode(Material::OFF);
             material->setAmbient(Material::FRONT_AND_BACK,
-                                 Vec4(.8f, .8f, .8f, 1.0f));
+                                 Vec4(1.0f, 1.0f, 1.0f, 1.0f));
             material->setDiffuse(Material::FRONT_AND_BACK,
-                                 Vec4(.2f, .2f, .2f, 1.0f));
+                                 Vec4(1.0f, 1.0f, 1.0f, 1.0f));
         }
         stateset->setAttributeAndModes(alphaFunc.get());
         stateset->setAttribute(program.get());

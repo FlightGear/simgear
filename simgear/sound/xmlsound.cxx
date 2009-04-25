@@ -297,6 +297,11 @@ SGXmlSound::update (double dt)
    if (_property)
        curr_value = _property->getDoubleValue();
 
+   // If a condition is defined, test whether it is FALSE,
+   // else
+   //   if a property is defined then test if it's value is FALSE
+   //      or if the mode is IN_TRANSIT then
+   //            test whether the current value matches the previous value.
    if (							// Lisp, anyone?
        (_condition && !_condition->test()) ||
        (!_condition && _property &&

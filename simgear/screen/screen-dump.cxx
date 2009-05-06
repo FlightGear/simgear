@@ -55,6 +55,7 @@ bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
     ibuffer = (unsigned char *) malloc(win_width*win_height*RGB3);
 
     if ( (fp = fopen(filename, "wb")) == NULL ) {
+	free(ibuffer);
 	printf("Warning: cannot open %s\n", filename);
 	return false;
     }

@@ -122,11 +122,7 @@ SGTime::SGTime() {
 
 SGTime::~SGTime()
 {
-    if ( tzContainer != NULL ) {
-        SGTimeZoneContainer *tmp = tzContainer;
-        tzContainer = NULL;
-	delete tmp;
-    }
+    delete tzContainer;
 }
 
 

@@ -26,7 +26,7 @@ TcpServer::TcpServer()
     channel = new SGSocket( "", "5500", "tcp" );
 }
 
-TcpServer::~Tcpserver()
+TcpServer::~TcpServer()
 {
     delete channel;
 }

@@ -229,11 +229,13 @@ parse_path (const string &path, vector<PathComponent> &components)
 static char *
 copy_string (const char * s)
 {
-				// FIXME: potential buffer overflow.
-				// For some reason, strnlen and
-				// strncpy cause all kinds of crashes.
-  char * copy = new char[strlen(s) + 1];
-  strcpy(copy, s);
+  unsigned long int slen = strlen(s);
+  char * copy = new char[slen + 1];
+
+  // the source string length is known so no need to check for '\0'
+  // when copying every single character
+  memcpy(copy, s, slen);
+  *(copy + slen) = '\0';
   return copy;
 }
 
@@ -252,10 +254,30 @@ find_child (const char * name, int index, const vector<SGPropertyNode_ptr>& node
   int nNodes = nodes.size();
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
-    if (compare_strings(node->getName(), name) && node->getIndex() == index)
+
+    // searching for a mathing index is a lot less time consuming than
+    // comparing two strings so do that first.
+    if (node->getIndex() == index && compare_strings(node->getName(), name))
       return i;
   }
   return -1;
+}
+
+/**
+ * Locate the last child node with a given name.
+*/
+static int
+find_last_child (const char * name, const vector<SGPropertyNode_ptr>& nodes)
+{
+  int nNodes = nodes.size();
+  int pos = -1;
+
+  for (int i = 0; i < nNodes; i++) {
+    SGPropertyNode * node = nodes[i];
+    if (compare_strings(node->getName(), name))
+      pos++;
+  }
+  return pos;
 }
 
 
@@ -822,6 +844,21 @@ const SGPropertyNode *
 SGPropertyNode::getAliasTarget () const
 {
   return (_type == ALIAS ? _value.alias : 0);
+}
+
+/**
+ * create a non-const child by name after the last node with the same name.
+ */
+SGPropertyNode *
+SGPropertyNode::addChild (const char * name)
+{
+  int pos = find_last_child(name, _children);
+
+  SGPropertyNode_ptr node;
+  node = new SGPropertyNode(name, ++pos, this);
+  _children.push_back(node);
+  fireChildAdded(node);
+  return node;
 }
 
 

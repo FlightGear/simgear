@@ -622,6 +622,10 @@ public:
     return (getChild(name, index) != 0);
   }
 
+  /**
+   * Create a child node after the last node with the same name.
+   */
+  SGPropertyNode * addChild (const char * name);
 
   /**
    * Get a child node by name and index.

@@ -1,5 +1,5 @@
 #include <string>
-#include "Debug/logstream.hxx"
+#include <simgear/debug/logstream.hxx>
 
 class Test {
 

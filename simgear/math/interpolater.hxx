@@ -35,7 +35,7 @@
 
 #include <simgear/compiler.h>
 
-#include "simgear/structure/SGReferenced.hxx"
+#include <simgear/structure/SGReferenced.hxx>
 
 #include <map>
 

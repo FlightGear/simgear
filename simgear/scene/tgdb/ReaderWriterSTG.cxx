@@ -33,15 +33,18 @@
 
 using namespace simgear;
 
+ReaderWriterSTG::ReaderWriterSTG()
+{
+    supportsExtension("stg", "SimGear stg database format");
+}
+
+ReaderWriterSTG::~ReaderWriterSTG()
+{
+}
+
 const char* ReaderWriterSTG::className() const
 {
     return "STG Database reader";
-}
-
-bool ReaderWriterSTG::acceptsExtension(const std::string& extension) const
-{
-    return (osgDB::equalCaseInsensitive(extension, "gz")
-            || osgDB::equalCaseInsensitive(extension, "stg"));
 }
 
 //#define SLOW_PAGER 1
@@ -53,22 +56,8 @@ osgDB::ReaderWriter::ReadResult
 ReaderWriterSTG::readNode(const std::string& fileName,
                           const osgDB::ReaderWriter::Options* options) const
 {
-    std::string ext = osgDB::getLowerCaseFileExtension(fileName);
-    if(!acceptsExtension(ext))
-        return ReadResult::FILE_NOT_HANDLED;
-    std::string stgFileName;
-    if (osgDB::equalCaseInsensitive(ext, "gz")) {
-        stgFileName = osgDB::getNameLessExtension(fileName);
-        if (!acceptsExtension(
-                osgDB::getLowerCaseFileExtension(stgFileName))) {
-            return ReadResult::FILE_NOT_HANDLED;
-        }
-    } else {
-        stgFileName = fileName;
-    }
-    osg::Node* result
-        = TileEntry::loadTileByName(osgDB::getNameLessExtension(stgFileName),
-                                      options);
+    std::string tileName = osgDB::getNameLessExtension(fileName);
+    osg::Node* result = TileEntry::loadTileByName(tileName, options);
     // For debugging race conditions
 #ifdef SLOW_PAGER
     sleep(5);

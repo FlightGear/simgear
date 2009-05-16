@@ -28,9 +28,10 @@ namespace simgear {
 
 class ReaderWriterSTG : public osgDB::ReaderWriter {
 public:
-    virtual const char* className() const;
+    ReaderWriterSTG();
+    virtual ~ReaderWriterSTG();
 
-    virtual bool acceptsExtension(const std::string& extension) const;
+    virtual const char* className() const;
 
     virtual ReadResult readNode(const std::string& fileName,
                                 const osgDB::ReaderWriter::Options* options)

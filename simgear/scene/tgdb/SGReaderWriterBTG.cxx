@@ -31,31 +31,24 @@ using namespace simgear;
 
 std::string SGReaderWriterBTGOptions::defaultOptions;
 
+SGReaderWriterBTG::SGReaderWriterBTG()
+{
+    supportsExtension("btg", "SimGear btg database format");
+}
+
+SGReaderWriterBTG::~SGReaderWriterBTG()
+{
+}
+
 const char* SGReaderWriterBTG::className() const
 {
     return "BTG Database reader";
-}
-
-bool SGReaderWriterBTG::acceptsExtension(const std::string& extension) const
-{
-    return (osgDB::equalCaseInsensitive(extension, "gz")
-            || osgDB::equalCaseInsensitive(extension, "btg"));
 }
 
 osgDB::ReaderWriter::ReadResult
 SGReaderWriterBTG::readNode(const std::string& fileName,
                             const osgDB::ReaderWriter::Options* options) const
 {
-    std::string ext = osgDB::getLowerCaseFileExtension(fileName);
-    if(!acceptsExtension(ext))
-        return ReadResult::FILE_NOT_HANDLED;
-    if (osgDB::equalCaseInsensitive(ext, "gz")) {
-        std::string btgFileName = osgDB::getNameLessExtension(fileName);
-        if (!acceptsExtension(
-                osgDB::getLowerCaseFileExtension(btgFileName))) {
-            return ReadResult::FILE_NOT_HANDLED;
-        }
-    }
     SGMaterialLib* matlib = 0;
     bool calcLights = false;
     bool useRandomObjects = false;

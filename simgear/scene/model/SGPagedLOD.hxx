@@ -17,7 +17,11 @@
 #ifndef SGPAGEDLOD_HXX
 #define SGPAGEDLOD_HXX 1
 
+#include <simgear/structure/OSGVersion.hxx>
 #include <osg/PagedLOD>
+#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
+#include <osgDB/Options>
+#endif
 #include <osgDB/ReaderWriter>
 #include <simgear/props/props.hxx>
 
@@ -44,19 +48,21 @@ public:
     // reimplemented to notify the loading through ModelData
     bool addChild(osg::Node *child);
 
-    void setReaderWriterOptions(osgDB::ReaderWriter::Options *o) {
-        _readerWriterOptions=o;
-        _readerWriterOptions->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
+    void setReaderWriterOptions(osgDB::ReaderWriter::Options *options) {
+        _readerWriterOptions = options;
+        options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
+#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
+        setDatabaseOptions(options);
+#endif
     }
 
-    osgDB::ReaderWriter::Options * getReaderWriterOptions() {
+    osgDB::ReaderWriter::Options* getReaderWriterOptions() {
         return _readerWriterOptions.get();
     }
 
 protected:
     virtual ~SGPagedLOD();
     osg::ref_ptr<osgDB::ReaderWriter::Options> _readerWriterOptions;
-    SGPropertyNode_ptr _props;
 };
 }
 #endif

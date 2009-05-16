@@ -75,9 +75,7 @@ void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp)
     setTimeStamp(childNum, 0);
     double priority=1.0;
     dbp->requestNodeFile(getFileName(childNum),this,priority,0,
-#if SG_OSG_VERSION >= 25001
                          getDatabaseRequest(childNum),
-#endif
                          _readerWriterOptions.get());
 }
 

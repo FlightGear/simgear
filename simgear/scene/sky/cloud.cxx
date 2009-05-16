@@ -30,6 +30,7 @@
 
 #include <math.h>
 
+#include <simgear/structure/OSGVersion.hxx>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/CullFace>
@@ -43,6 +44,9 @@
 #include <osg/TextureCubeMap>
 #include <osg/TexMat>
 #include <osg/Fog>
+#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
+#include <osgDB/Options>
+#endif
 
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/PathOptions.hxx>

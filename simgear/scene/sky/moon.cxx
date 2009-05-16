@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <iostream>
 
+#include <simgear/structure/OSGVersion.hxx>
 #include <osg/Array>
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
@@ -42,6 +43,9 @@
 #include <osg/ShadeModel>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
+#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
+#include <osgDB/Options>
+#endif
 
 #include <simgear/constants.h>
 #include <simgear/screen/colors.hxx>

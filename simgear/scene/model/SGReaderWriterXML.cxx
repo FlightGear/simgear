@@ -54,14 +54,19 @@ sgLoad3DModel_internal(const string &path,
                        osg::Node *(*load_panel)(SGPropertyNode *) = 0,
                        SGPropertyNode *overlay = 0);
 
+
+SGReaderWriterXML::SGReaderWriterXML()
+{
+    supportsExtension("xml", "SimGear xml database format");
+}
+
+SGReaderWriterXML::~SGReaderWriterXML()
+{
+}
+
 const char* SGReaderWriterXML::className() const
 {
     return "XML database reader";
-}
-
-bool SGReaderWriterXML::acceptsExtension(const std::string& extension) const
-{
-    return (osgDB::equalCaseInsensitive(extension, "xml"));
 }
 
 osgDB::ReaderWriter::ReadResult
@@ -69,10 +74,6 @@ SGReaderWriterXML::readNode(const std::string& fileName,
                             const osgDB::ReaderWriter::Options* options) const
 {
     // SG_LOG(SG_GENERAL, SG_ALERT, "SGReaderWriterXML::readNode(" << fileName << ")");
-
-    std::string ext = osgDB::getLowerCaseFileExtension(fileName);
-    if (!acceptsExtension(ext))
-        return ReadResult::FILE_NOT_HANDLED;
 
     const SGReaderWriterXMLOptions* xmlOptions
     = dynamic_cast<const SGReaderWriterXMLOptions*>(options);

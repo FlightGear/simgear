@@ -23,10 +23,11 @@
 
 class SGReaderWriterBTG : public osgDB::ReaderWriter {
 public:
+    SGReaderWriterBTG();
+    virtual ~SGReaderWriterBTG();
+
     virtual const char* className() const;
  
-    virtual bool acceptsExtension(const std::string& extension) const;
-
     virtual ReadResult readNode(const std::string& fileName,
                                 const osgDB::ReaderWriter::Options* options)
         const;

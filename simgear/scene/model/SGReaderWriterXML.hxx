@@ -27,9 +27,10 @@ namespace simgear
 class SGReaderWriterXML : public osgDB::ReaderWriter
 {
 public:
-    virtual const char* className() const;
+    SGReaderWriterXML();
+    virtual ~SGReaderWriterXML();
 
-    virtual bool acceptsExtension(const std::string& extension) const;
+    virtual const char* className() const;
 
     virtual ReadResult readNode(const std::string& fileName,
                                 const osgDB::ReaderWriter::Options* options)

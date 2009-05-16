@@ -179,9 +179,8 @@ sgLoad3DModel_internal(const string &path,
             copyProperties(mp, prop_root);
     }
 
-    osg::ref_ptr<osgDB::ReaderWriter::Options> options
-    = new osgDB::ReaderWriter::Options(*osgDB::Registry::instance()
-                                       ->getOptions());
+    osg::ref_ptr<SGReaderWriterXMLOptions> options
+    = new SGReaderWriterXMLOptions(*osgDB::Registry::instance()->getOptions());
 
     // Assume that textures are in
     // the same location as the XML file.
@@ -311,7 +310,7 @@ sgLoad3DModel_internal(const string &path,
 
     if (data) {
         data->setProps(props);
-        group->setUserData(data);
+        options->setModelData(data);
     }
 
     std::vector<SGPropertyNode_ptr> animation_nodes;

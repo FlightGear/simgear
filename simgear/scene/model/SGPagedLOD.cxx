@@ -50,19 +50,13 @@ bool SGPagedLOD::addChild(osg::Node *child)
 
     setRadius(getBound().radius());
     setCenter(getBound().center());
-    // if the model was an .xml-file it will have UserData set
-    osg::ref_ptr<SGModelData> d = dynamic_cast<SGModelData*>(child->getUserData());
-    if (d.valid())
-        d->modelLoaded(getFileName(getNumChildren()-1), d->getProperties(), this);
-    else // this calls modelLoaded for non-xml models
+    SGReaderWriterXMLOptions* opts;
+    opts = dynamic_cast<SGReaderWriterXMLOptions*>(_readerWriterOptions.get());
+    if(opts)
     {
-        SGReaderWriterXMLOptions *o=dynamic_cast<SGReaderWriterXMLOptions*>(_readerWriterOptions.get());
-        if(o)
-        {
-            d = o->getModelData();
-            if(d.valid())
-                d->modelLoaded(getFileName(getNumChildren()-1), 0, this);
-        }
+        osg::ref_ptr<SGModelData> d = opts->getModelData();
+        if(d.valid())
+            d->modelLoaded(getFileName(getNumChildren()-1), 0, this);
     }
     return true;
 }

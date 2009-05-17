@@ -12,6 +12,7 @@ class TcpServer
 {
 public:
     TcpServer();
+    ~TcpServer();
     bool open();
     bool process();
     bool close();
@@ -23,6 +24,11 @@ private:
 TcpServer::TcpServer()
 {
     channel = new SGSocket( "", "5500", "tcp" );
+}
+
+TcpServer::~TcpServer()
+{
+    delete channel;
 }
 
 bool

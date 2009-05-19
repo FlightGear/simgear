@@ -10,7 +10,6 @@ include_HEADERS = \
 	pt_lights.hxx \
 	userdata.hxx \
 	ReaderWriterSTG.hxx \
-	SGOceanTile.hxx \
 	SGVasiDrawable.hxx \
 	SGDirectionalLightBin.hxx \
 	SGLightBin.hxx \

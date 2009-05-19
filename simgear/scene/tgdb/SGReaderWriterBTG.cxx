@@ -45,6 +45,15 @@ const char* SGReaderWriterBTG::className() const
     return "BTG Database reader";
 }
 
+bool
+SGReaderWriterBTG::acceptsExtension(const std::string& extension) const
+{
+    std::string lowercase_ext = osgDB::convertToLowerCase(extension);
+    if (lowercase_ext == "gz")
+        return true;
+    return osgDB::ReaderWriter::acceptsExtension(extension);
+}
+
 osgDB::ReaderWriter::ReadResult
 SGReaderWriterBTG::readNode(const std::string& fileName,
                             const osgDB::ReaderWriter::Options* options) const

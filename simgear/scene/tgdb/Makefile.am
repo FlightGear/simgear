@@ -15,6 +15,7 @@ include_HEADERS = \
 	SGDirectionalLightBin.hxx \
 	SGLightBin.hxx \
 	SGOceanTile.hxx \
+	SGReaderWriterBTG.hxx \
 	SGReaderWriterBTGOptions.hxx \
 	SGTexturedTriangleBin.hxx \
 	SGTriangleBin.hxx \

@@ -67,7 +67,7 @@ SGMaterialLib::SGMaterialLib ( void ) {
 }
 
 // Load a library of material properties
-bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char *season,
+bool SGMaterialLib::load( const string &fg_root, const string& mpath,
         SGPropertyNode *prop_root )
 {
     SGPropertyNode materials;
@@ -95,7 +95,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath, const char
                 }
             }
 
-            SGSharedPtr<SGMaterial> m = new SGMaterial(fg_root, node, season);
+            SGSharedPtr<SGMaterial> m = new SGMaterial(fg_root, node);
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {

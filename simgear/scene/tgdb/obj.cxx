@@ -129,7 +129,9 @@ struct SGTileGeometryBin {
 
     for (unsigned grp = 0; grp < obj.get_pts_v().size(); ++grp) {
       std::string materialName = obj.get_pt_materials()[grp];
-      SGMaterial* material = matlib->find(materialName);
+      SGMaterial* material = 0;
+      if (matlib)
+          material = matlib->find(materialName);
       SGVec4f color = getMaterialLightColor(material);
 
       if (3 <= materialName.size() && materialName.substr(0, 3) != "RWY") {
@@ -369,7 +371,9 @@ struct SGTileGeometryBin {
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       osg::Geometry* geometry = i->second.buildGeometry();
-      SGMaterial *mat = matlib->find(i->first);
+      SGMaterial *mat = 0;
+      if (matlib)
+        mat = matlib->find(i->first);
       if (mat)
         geometry->setStateSet(mat->get_state());
       geode->addDrawable(geometry);
@@ -584,7 +588,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   if (use_random_objects || use_random_vegetation) {
     if (use_random_objects) {
-      tileGeometryBin.computeRandomObjects(matlib);
+      if (matlib)
+        tileGeometryBin.computeRandomObjects(matlib);
     
       if (tileGeometryBin.randomModels.getNumModels() > 0) {
         // Generate a repeatable random seed
@@ -621,7 +626,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       }
     }
 
-    if (use_random_vegetation) {
+    if (use_random_vegetation && matlib) {
       // Now add some random forest.
       tileGeometryBin.computeRandomForest(matlib);
 
@@ -635,7 +640,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   if (calc_lights) {
     // FIXME: ugly, has a side effect
-    tileGeometryBin.computeRandomSurfaceLights(matlib);
+    if (matlib)
+      tileGeometryBin.computeRandomSurfaceLights(matlib);
 
     if (tileGeometryBin.tileLights.getNumLights() > 0
         || tileGeometryBin.randomTileLights.getNumLights() > 0) {
@@ -669,11 +675,15 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (!tileGeometryBin.vasiLights.empty()) {
     osg::Geode* vasiGeode = new osg::Geode;
     SGVec4f red(1, 0, 0, 1);
-    SGMaterial* mat = matlib->find("RWY_RED_LIGHTS");
+    SGMaterial* mat = 0;
+    if (matlib)
+      mat = matlib->find("RWY_RED_LIGHTS");
     if (mat)
       red = mat->get_light_color();
     SGVec4f white(1, 1, 1, 1);
-    mat = matlib->find("RWY_WHITE_LIGHTS");
+    mat = 0;
+    if (matlib)
+      mat = matlib->find("RWY_WHITE_LIGHTS");
     if (mat)
       white = mat->get_light_color();
 

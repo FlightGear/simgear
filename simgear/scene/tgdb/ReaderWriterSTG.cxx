@@ -57,6 +57,7 @@ ReaderWriterSTG::readNode(const std::string& fileName,
                           const osgDB::ReaderWriter::Options* options) const
 {
     std::string tileName = osgDB::getNameLessExtension(fileName);
+
     osg::Node* result = TileEntry::loadTileByName(tileName, options);
     // For debugging race conditions
 #ifdef SLOW_PAGER

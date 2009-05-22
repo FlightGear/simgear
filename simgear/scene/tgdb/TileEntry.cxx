@@ -141,7 +141,6 @@ TileEntry::TileEntry ( const SGBucket& b )
     : tile_bucket( b ),
       _node( new osg::LOD ),
       is_inner_ring(false),
-      free_tracker(0),
       tileFileName(b.gen_index_str())
 {
     _node->setUpdateCallback(new FGTileUpdateCallback);
@@ -172,50 +171,16 @@ static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
 }
 
 
-// Free "n" leaf elements of an ssg tree.  returns the number of
-// elements freed.  An empty branch node is considered a leaf.  This
-// is intended to spread the load of freeing a complex tile out over
-// several frames.
-static int fgPartialFreeSSGtree( osg::Group *b, int n ) {
-    int num_deletes = b->getNumChildren();
-
-    b->removeChildren(0, b->getNumChildren());
-
-    return num_deletes;
-}
-
-
 // Clean up the memory used by this tile and delete the arrays used by
 // ssg as well as the whole ssg branch
 bool TileEntry::free_tile() {
-    int delete_size = 100;
     SG_LOG( SG_TERRAIN, SG_DEBUG,
             "FREEING TILE = (" << tile_bucket << ")" );
 
-    SG_LOG( SG_TERRAIN, SG_DEBUG, "(start) free_tracker = " << free_tracker );
+    _node->removeChildren(0, _node->getNumChildren());
+    _node = 0;
 
-    if ( !(free_tracker & NODES) ) {
-        free_tracker |= NODES;
-    } else if ( !(free_tracker & VEC_PTRS) ) {
-        free_tracker |= VEC_PTRS;
-    } else if ( !(free_tracker & TERRA_NODE) ) {
-        // delete the terrain branch (this should already have been
-        // disconnected from the scene graph)
-        SG_LOG( SG_TERRAIN, SG_DEBUG, "FREEING terra_transform" );
-        if ( fgPartialFreeSSGtree( _node.get(), delete_size ) == 0 ) {
-            _node = 0;
-            free_tracker |= TERRA_NODE;
-        }
-    } else if ( !(free_tracker & LIGHTMAPS) ) {
-        free_tracker |= LIGHTMAPS;
-    } else {
-        return true;
-    }
-
-    SG_LOG( SG_TERRAIN, SG_DEBUG, "(end) free_tracker = " << free_tracker );
-
-    // if we fall down to here, we still have work todo, return false
-    return false;
+    return true;
 }
 
 
@@ -230,8 +195,8 @@ void TileEntry::prep_ssg_node(float vis) {
     _node->setRange( 0, 0, vis + bounding_radius );
 }
 
-bool TileEntry::obj_load( const string& path,
-                            osg::Group *geometry, bool is_base, const osgDB::ReaderWriter::Options*options)
+bool TileEntry::obj_load(const string& path, osg::Group *geometry, bool is_base,
+                         const osgDB::ReaderWriter::Options* options)
 {
     osg::Node* node = osgDB::readNodeFile(path, options);
     if (node)
@@ -386,7 +351,13 @@ TileEntry::loadTileByName(const string& index_str,
         }
     }
 
-    SGReaderWriterBTGOptions *opt = new SGReaderWriterBTGOptions(*dynamic_cast<const SGReaderWriterBTGOptions *>(options));
+    const SGReaderWriterBTGOptions* btgOpt;
+    btgOpt = dynamic_cast<const SGReaderWriterBTGOptions *>(options);
+    osg::ref_ptr<SGReaderWriterBTGOptions> opt;
+    if (btgOpt)
+        opt = new SGReaderWriterBTGOptions(*btgOpt);
+    else
+        opt = new SGReaderWriterBTGOptions;
 
     // obj_load() will generate ground lighting for us ...
     osg::Group* new_tile = new osg::Group;
@@ -394,7 +365,7 @@ TileEntry::loadTileByName(const string& index_str,
     if (found_tile_base) {
         // load tile if found ...
         opt->setCalcLights(true);
-        obj_load( object_base.str(), new_tile, true, options);
+        obj_load( object_base.str(), new_tile, true, opt);
 
     } else {
         // ... or generate an ocean tile on the fly
@@ -415,7 +386,7 @@ TileEntry::loadTileByName(const string& index_str,
             SGPath custom_path = obj->path;
             custom_path.append( obj->name );
             opt->setCalcLights(true);
-            obj_load( custom_path.str(), new_tile, false, options);
+            obj_load( custom_path.str(), new_tile, false, opt);
 
         } else if (obj->type == OBJECT_SHARED || obj->type == OBJECT_STATIC) {
             // object loading is deferred to main render thread,

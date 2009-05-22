@@ -91,22 +91,6 @@ private:
      */
     bool is_inner_ring;
 
-    /**
-     * this variable tracks the status of the incremental memory
-     * freeing.
-     */
-    enum {
-        NODES = 0x01,
-        VEC_PTRS = 0x02,
-        TERRA_NODE = 0x04,
-        GROUND_LIGHTS = 0x08,
-        VASI_LIGHTS = 0x10,
-        RWY_LIGHTS = 0x20,
-        TAXI_LIGHTS = 0x40,
-        LIGHTMAPS = 0x80
-    };
-    int free_tracker;
-
     static ModelLoadHelper *_modelLoader;
 
 public:

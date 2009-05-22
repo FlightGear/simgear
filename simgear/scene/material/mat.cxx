@@ -57,10 +57,10 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 
 
-SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props, const char *season )
+SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
 {
     init();
-    read_properties( fg_root, props, season );
+    read_properties( fg_root, props );
     build_state( false );
 }
 
@@ -84,23 +84,20 @@ SGMaterial::~SGMaterial (void)
 {
 }
 
-
 
 ////////////////////////////////////////////////////////////////////////
 // Public methods.
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties( const string &fg_root, const SGPropertyNode * props, const char *season )
+SGMaterial::read_properties( const string &fg_root, const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
   vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
   for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
-    string otname = tname;
-
-    if (tname == "") {
+    if (tname.empty()) {
         tname = "unknown.rgb";
     }
 
@@ -304,9 +301,8 @@ void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
    texture->setMaxAnisotropy( SGGetTextureFilter());
    state->setTextureAttributeAndModes(0, texture);
 
-   osg::TexEnv* texEnv = new osg::TexEnv;
-   texEnv->setMode(osg::TexEnv::MODULATE);
-   state->setTextureAttributeAndModes(0, texEnv);
+   StateAttributeFactory *attrFact = StateAttributeFactory::instance();
+   state->setTextureAttributeAndModes(0, attrFact->getStandardTexEnv());
 }
 
 SGMaterialGlyph* SGMaterial::get_glyph (const string& name) const

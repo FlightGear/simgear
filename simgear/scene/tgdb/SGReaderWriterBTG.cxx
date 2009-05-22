@@ -26,11 +26,6 @@
 
 using namespace simgear;
 
-// SGReaderWriterBTGOptions static value here to avoid an additional,
-// tiny source file.
-
-std::string SGReaderWriterBTGOptions::defaultOptions;
-
 SGReaderWriterBTG::SGReaderWriterBTG()
 {
     supportsExtension("btg", "SimGear btg database format");

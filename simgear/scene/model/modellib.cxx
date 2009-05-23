@@ -68,7 +68,7 @@ SGModelLib::loadModel(const string &path,
     osg::Node *n = readNodeFile(path, opt.get());
     if(data)
         data->modelLoaded(path, data->getProperties(), n);
-    if (n->getName().empty())
+    if (n && n->getName().empty())
         n->setName("Direct loaded model \"" + path + "\"");
     return n;
 

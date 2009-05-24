@@ -118,8 +118,8 @@ public:
     /**
      * Transition to OSG database pager
      */
-    static osg::Node* loadTileByName(const std::string& index_str,
-                                     const osgDB::ReaderWriter::Options*);
+    static osg::Node* loadTileByFileName(const std::string& index_str,
+                                         const osgDB::ReaderWriter::Options*);
     /**
      * Return true if the tile entry is loaded, otherwise return false
      * indicating that the loading thread is still working on this.

@@ -242,9 +242,12 @@ struct Object {
 // what we'll want to do with the database pager.
 
 osg::Node*
-TileEntry::loadTileByName(const string& index_str,
-                          const osgDB::ReaderWriter::Options* options)
+TileEntry::loadTileByFileName(const string& fileName,
+                              const osgDB::ReaderWriter::Options* options)
 {
+    std::string index_str = osgDB::getNameLessExtension(fileName);
+    index_str = osgDB::getSimpleFileName(index_str);
+
     long tileIndex;
     {
         std::istringstream idxStream(index_str);
@@ -261,6 +264,8 @@ TileEntry::loadTileByName(const string& index_str,
     SG_LOG( SG_TERRAIN, SG_INFO, "Loading tile " << index_str );
 
     osgDB::FilePathList path_list=options->getDatabasePathList();
+    // Make sure we find the original filename here...
+    path_list.push_front(osgDB::getFilePath(fileName));
 
     // scan and parse all files and store information
     for (unsigned int i = 0; i < path_list.size(); i++) {

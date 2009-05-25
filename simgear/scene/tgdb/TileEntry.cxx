@@ -265,7 +265,9 @@ TileEntry::loadTileByFileName(const string& fileName,
 
     osgDB::FilePathList path_list=options->getDatabasePathList();
     // Make sure we find the original filename here...
-    path_list.push_front(osgDB::getFilePath(fileName));
+    std::string filePath = osgDB::getFilePath(fileName);
+    if (!filePath.empty())
+        path_list.push_front(filePath);
 
     // scan and parse all files and store information
     for (unsigned int i = 0; i < path_list.size(); i++) {

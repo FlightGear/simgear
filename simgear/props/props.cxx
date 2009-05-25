@@ -264,20 +264,23 @@ find_child (const char * name, int index, const vector<SGPropertyNode_ptr>& node
 }
 
 /**
- * Locate the last child node with a given name.
-*/
+ * Locate the child node with the highest index of the same name
+ */
 static int
 find_last_child (const char * name, const vector<SGPropertyNode_ptr>& nodes)
 {
   int nNodes = nodes.size();
-  int pos = -1;
+  int index = 0;
 
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
     if (compare_strings(node->getName(), name))
-      pos++;
+    {
+      int idx = node->getIndex();
+      if (idx > index) index = idx;
+    }
   }
-  return pos;
+  return index;
 }
 
 
@@ -852,10 +855,10 @@ SGPropertyNode::getAliasTarget () const
 SGPropertyNode *
 SGPropertyNode::addChild (const char * name)
 {
-  int pos = find_last_child(name, _children);
+  int pos = find_last_child(name, _children)+1;
 
   SGPropertyNode_ptr node;
-  node = new SGPropertyNode(name, ++pos, this);
+  node = new SGPropertyNode(name, pos, this);
   _children.push_back(node);
   fireChildAdded(node);
   return node;

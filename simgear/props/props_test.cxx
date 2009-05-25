@@ -324,6 +324,26 @@ test_property_nodes ()
   cout << endl;
 }
 
+void test_addChild()
+{
+  SGPropertyNode root;
+
+  cout << "Testing the addChild function " << endl;
+  cout << "Created root node " << root.getPath() << endl;
+
+  SGPropertyNode *test = root.getChild("test", 0, true);
+  SGPropertyNode *n = test->getNode("foo", true);
+  n->getChild("child", 1, true)->setIntValue(1);
+  n->getChild("child", 2, true)->setIntValue(2);
+  n->getChild("child", 4, true)->setIntValue(2);
+  dump_node(&root);
+
+  SGPropertyNode *ch = n->addChild("child");
+  ch->setIntValue(3);
+  cerr << endl << "ADDED: " << ch->getPath() << endl << endl;
+  dump_node(&root);
+}
+
 
 int main (int ac, char ** av)
 {
@@ -341,6 +361,8 @@ int main (int ac, char ** av)
       cout << "Aborted with " << message << endl;
     }
   }
+
+  test_addChild();
 
   return 0;
 }

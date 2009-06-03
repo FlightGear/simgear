@@ -79,7 +79,7 @@ SGReaderWriterXML::readNode(const std::string& fileName,
     = dynamic_cast<const SGReaderWriterXMLOptions*>(options);
 
     string fg_root;
-    SGPropertyNode *prop_root=0;
+    SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
     SGModelData *model_data=0;
     SGPath externalTexturePath;
@@ -88,6 +88,9 @@ SGReaderWriterXML::readNode(const std::string& fileName,
         prop_root = xmlOptions->getPropRoot();
         load_panel = xmlOptions->getLoadPanel();
         model_data = xmlOptions->getModelData();
+    }
+    if (!prop_root) {
+        prop_root = new SGPropertyNode;
     }
 
     fg_root=osgDB::Registry::instance()->getDataFilePathList().front();

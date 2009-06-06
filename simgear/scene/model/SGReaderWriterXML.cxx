@@ -78,11 +78,9 @@ SGReaderWriterXML::readNode(const std::string& fileName,
     const SGReaderWriterXMLOptions* xmlOptions
     = dynamic_cast<const SGReaderWriterXMLOptions*>(options);
 
-    string fg_root;
     SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
     SGModelData *model_data=0;
-    SGPath externalTexturePath;
 
     if (xmlOptions) {
         prop_root = xmlOptions->getPropRoot();
@@ -92,8 +90,6 @@ SGReaderWriterXML::readNode(const std::string& fileName,
     if (!prop_root) {
         prop_root = new SGPropertyNode;
     }
-
-    fg_root=osgDB::Registry::instance()->getDataFilePathList().front();
 
     osg::Node *result=0;
 
@@ -143,25 +139,28 @@ sgLoad3DModel_internal(const string &path,
         SG_LOG(SG_GENERAL, SG_ALERT, "prop_root NULL: " << path);
     }
 
-    string fg_root=osgDB::Registry::instance()->getDataFilePathList().front();
+    osgDB::FilePathList filePathList;
+    filePathList = osgDB::Registry::instance()->getDataFilePathList();
+    filePathList.push_front(osgDB::convertFileNameToNativeStyle("/"));
+
+    SGPath modelpath = osgDB::findFileInPath(path, filePathList);
+    if (modelpath.str().empty()) {
+        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path << "\"");
+        return 0;
+    }
+    SGPath texturepath = modelpath;
+
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
     SGPropertyNode_ptr props = new SGPropertyNode;
 
-    // Load the 3D object itself
-    SGPath modelpath = path, texturepath = path;
-    if ( !ulIsAbsolutePathName( path.c_str() ) ) {
-        SGPath tmp = fg_root;
-        tmp.append(modelpath.str());
-        modelpath = texturepath = tmp;
-    }
-
     // Check for an XML wrapper
-    if (modelpath.str().substr(modelpath.str().size() - 4, 4) == ".xml") {
-        try {
+    if (modelpath.extension() == "xml") {
+       try {
             readProperties(modelpath.str(), props);
         } catch (const sg_throwable &t) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: " << t.getFormattedMessage());
+            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: "
+                   << t.getFormattedMessage());
             throw;
         }
         if (overlay)

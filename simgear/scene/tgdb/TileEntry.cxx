@@ -56,7 +56,6 @@
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/tgdb/SGReaderWriterBTGOptions.hxx>
 #include <simgear/scene/model/placementtrans.hxx>
-#include <simgear/scene/util/SGUpdateVisitor.hxx>
 
 #include "ReaderWriterSTG.hxx"
 #include "TileEntry.hxx"
@@ -70,24 +69,6 @@ namespace {
 osgDB::RegisterReaderWriterProxy<ReaderWriterSTG> g_readerWriterSTGProxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
 }
-
-// FIXME: investigate what huge update flood is clamped away here ...
-class FGTileUpdateCallback : public osg::NodeCallback {
-public:
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    assert(dynamic_cast<SGUpdateVisitor*>(nv));
-    SGUpdateVisitor* updateVisitor = static_cast<SGUpdateVisitor*>(nv);
-
-    osg::Vec3 center = node->getBound().center();
-    double distance = dist(updateVisitor->getGlobalEyePos(),
-                           SGVec3d(center[0], center[1], center[2]));
-    if (updateVisitor->getVisibility() + node->getBound().radius() < distance)
-      return;
-
-    traverse(node, nv);
-  }
-};
 
 namespace
 {
@@ -143,7 +124,6 @@ TileEntry::TileEntry ( const SGBucket& b )
       is_inner_ring(false),
       tileFileName(b.gen_index_str())
 {
-    _node->setUpdateCallback(new FGTileUpdateCallback);
     _node->setCullCallback(new TileCullCallback);
     tileFileName += ".stg";
     _node->setName(tileFileName);

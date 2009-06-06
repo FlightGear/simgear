@@ -1334,21 +1334,6 @@ SOURCE=.\simgear\scene\model\placement.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=.\simgear\scene\model\placementtrans.cxx
-
-!IF  "$(CFG)" == "SimGear - Win32 Release"
-
-# PROP Intermediate_Dir "Release\Lib_sgmodel"
-
-!ELSEIF  "$(CFG)" == "SimGear - Win32 Debug"
-
-# PROP Intermediate_Dir "Debug\Lib_sgmodel"
-
-!ENDIF 
-
-# End Source File
-# Begin Source File
-
 SOURCE=.\simgear\scene\model\shadanim.cxx
 
 !IF  "$(CFG)" == "SimGear - Win32 Release"

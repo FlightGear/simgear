@@ -55,7 +55,6 @@
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/tgdb/SGReaderWriterBTGOptions.hxx>
-#include <simgear/scene/model/placementtrans.hxx>
 
 #include "ReaderWriterSTG.hxx"
 #include "TileEntry.hxx"

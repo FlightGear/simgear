@@ -37,7 +37,6 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/point3d.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/scene/model/placementtrans.hxx>
 
 #include <osg/ref_ptr>
 #include <osgDB/ReaderWriter>

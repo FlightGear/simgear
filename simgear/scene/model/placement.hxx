@@ -14,10 +14,9 @@
 #include <osg/ref_ptr>
 #include <osg/Node>
 #include <osg/Switch>
+#include <osg/PositionAttitudeTransform>
 
-#include <simgear/props/props.hxx>
-
-#include "placementtrans.hxx"
+#include <simgear/math/SGMath.hxx>
 
 // Has anyone done anything *really* stupid, like making min and max macros?
 #ifdef min
@@ -78,7 +77,6 @@ public:
   void setBodyAngularVelocity(const SGVec3d& velocity);
   
 private:
-
                                 // Geodetic position
   SGGeod _position;
 
@@ -88,7 +86,7 @@ private:
   double _heading_deg;
 
   osg::ref_ptr<osg::Switch> _selector;
-  osg::ref_ptr<SGPlacementTransform> _transform;
+  osg::ref_ptr<osg::PositionAttitudeTransform> _transform;
 };
 
 #endif // _SG_PLACEMENT_HXX

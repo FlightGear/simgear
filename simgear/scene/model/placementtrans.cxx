@@ -36,37 +36,10 @@
 
 #include "placementtrans.hxx"
 
-#include <simgear/scene/util/SGUpdateVisitor.hxx>
-
-class SGPlacementTransform::UpdateCallback : public osg::NodeCallback {
-public:
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    // short circuit updates if the model we place with that branch
-    // out of sight.
-    // Note that the transform is still correct.
-    SGUpdateVisitor* updateVisitor = dynamic_cast<SGUpdateVisitor*>(nv);
-    if (updateVisitor) {
-      SGPlacementTransform* placementTransform;
-      placementTransform = static_cast<SGPlacementTransform*>(node);
-      double dist2 = distSqr(updateVisitor->getGlobalEyePos(),
-                             placementTransform->getGlobalPos());
-      if (updateVisitor->getSqrVisibility() < dist2)
-        return;
-    }
-    // note, callback is responsible for scenegraph traversal so
-    // should always include call traverse(node,nv) to ensure 
-    // that the rest of cullbacks and the scene graph are traversed.
-    traverse(node, nv);
-  }
-};
-
-
 SGPlacementTransform::SGPlacementTransform(void) :
   _placement_offset(0, 0, 0),
   _rotation(SGQuatd::unit())
 {
-  setUpdateCallback(new UpdateCallback);
 }
 
 SGPlacementTransform::SGPlacementTransform(const SGPlacementTransform& trans,

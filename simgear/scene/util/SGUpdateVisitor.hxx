@@ -32,16 +32,14 @@ public:
   SGUpdateVisitor() :
     mVisibility(-1)
   {
-    // Need to traverse all children, else some LOD nodes do not get updated
-    // Note that the broad number of updates is not done due to
-    // the update callback in the global position node.
-    setTraversalMode(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN);
+    setTraversalMode(osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN);
     setVisibility(10000);
   }
   void setViewData(const SGVec3d& globalEyePos,
                    const SGQuatd& globalViewOrientation)
   {
     mGlobalGeodEyePos = SGGeod::fromCart(globalEyePos);
+    _currentEyePos = globalEyePos.osg();
     mGlobalEyePos = globalEyePos;
     mGlobalViewOr = globalViewOrientation;
     mGlobalHorizLocalOr = SGQuatd::fromLonLat(mGlobalGeodEyePos);
@@ -134,8 +132,34 @@ public:
 
   double getSunAngleDeg() const
   { return mSunAngleDeg; }
+    
+  // To be able to traverse correctly only the active children, we need to
+  // track the model view matrices during update.
+  virtual void apply(osg::Transform& transform)
+  {
+    osg::Matrix matrix = _matrix;
+    transform.computeLocalToWorldMatrix(_matrix, this);
+    osgUtil::UpdateVisitor::apply(transform);
+    _matrix = matrix;
+  }
+  virtual void apply(osg::Camera& camera)
+  {
+    if (camera.getReferenceFrame() == osg::Camera::ABSOLUTE_RF) {
+      osg::Vec3d currentEyePos = _currentEyePos;
+      _currentEyePos = osg::Vec3d(0, 0, 0);
+      apply(static_cast<osg::Transform&>(camera));
+      _currentEyePos = currentEyePos;
+    } else {
+      apply(static_cast<osg::Transform&>(camera));
+    }
+  }
+  virtual float getDistanceToViewPoint(const osg::Vec3& pos, bool) const
+  { return (_currentEyePos - _matrix.preMult(osg::Vec3d(pos))).length(); }
 
 private:
+  osg::Matrix _matrix;
+  osg::Vec3d _currentEyePos;
+
   SGGeod mGlobalGeodEyePos;
   SGVec3d mGlobalEyePos;
   SGQuatd mGlobalViewOr;

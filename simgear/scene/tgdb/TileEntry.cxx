@@ -23,7 +23,6 @@
 #endif
 
 #include <simgear/compiler.h>
-#include <plib/ul.h>
 
 #include <string>
 #include <sstream>

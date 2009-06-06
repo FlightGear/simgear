@@ -30,14 +30,13 @@
 #include <string.h>
 #include <map>
 
-#include <plib/ul.h>
-
 #include <osg/CullFace>
 #include <osg/Material>
 #include <osg/ShadeModel>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
+#include <osgDB/FileUtils>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -104,13 +103,13 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode *props)
     SGPath tpath( fg_root );
     tpath.append("Textures.high");
     tpath.append(tname);
-    if ( !ulFileExists(tpath.c_str()) ) {
+    if ( !osgDB::fileExists(tpath.str()) ) {
       tpath = SGPath( fg_root );
       tpath.append("Textures");
       tpath.append(tname);
     }
 
-    if ( ulFileExists(tpath.c_str()) ) {
+    if ( osgDB::fileExists(tpath.str()) ) {
       _internal_state st( NULL, tpath.str(), false );
       _status.push_back( st );
     }

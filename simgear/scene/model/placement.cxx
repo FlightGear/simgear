@@ -7,13 +7,10 @@
 #include <simgear_config.h>
 #endif
 
-#include <simgear/compiler.h>
-
-#include <simgear/scene/util/SGSceneUserData.hxx>
-#include <simgear/scene/util/SGUpdateVisitor.hxx>
-
 #include "placement.hxx"
 
+#include <simgear/compiler.h>
+#include <simgear/scene/util/SGSceneUserData.hxx>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -26,7 +23,7 @@ SGModelPlacement::SGModelPlacement () :
     _pitch_deg(0),
     _heading_deg(0),
     _selector(new osg::Switch),
-    _transform(new SGPlacementTransform)
+    _transform(new osg::PositionAttitudeTransform)
 {
 }
 
@@ -49,6 +46,7 @@ SGModelPlacement::update()
 {
   // The cartesian position
   SGVec3d position = SGVec3d::fromGeod(_position);
+  _transform->setPosition(position.osg());
 
   // The orientation, composed from the horizontal local orientation and the
   // orientation wrt the horizontal local frame
@@ -58,7 +56,7 @@ SGModelPlacement::update()
   // the y axis 180 degrees.
   orient *= SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0));
 
-  _transform->setTransform(position, orient);
+  _transform->setAttitude(orient.osg());
 }
 
 bool

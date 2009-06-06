@@ -12,7 +12,6 @@ include_HEADERS = \
 	ModelRegistry.hxx \
 	persparam.hxx \
 	placement.hxx \
-	placementtrans.hxx \
 	CheckSceneryVisitor.hxx \
 	SGClipGroup.hxx \
 	SGMaterialAnimation.hxx \
@@ -32,7 +31,6 @@ libsgmodel_a_SOURCES = \
 	ModelRegistry.cxx \
 	persparam.cxx \
 	placement.cxx \
-	placementtrans.cxx \
 	shadanim.cxx \
 	CheckSceneryVisitor.cxx \
 	SGClipGroup.cxx \

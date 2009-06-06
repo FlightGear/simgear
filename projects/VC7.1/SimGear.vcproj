@@ -720,12 +720,6 @@
 				RelativePath="..\..\simgear\scene\model\placement.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\placementtrans.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\placementtrans.hxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\model\SGClipGroup.cxx">
 			</File>
 			<File

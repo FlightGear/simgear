@@ -392,10 +392,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\placementtrans.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\ephemeris\pluto.hxx"
 				>
 			</File>
@@ -1045,10 +1041,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\placement.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\placementtrans.cxx"
 				>
 			</File>
 			<File

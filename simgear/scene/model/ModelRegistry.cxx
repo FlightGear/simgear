@@ -258,9 +258,13 @@ public:
     if (!texture)
       return;
 
-    // Hmm, true??
-    texture->setDataVariance(osg::Object::STATIC);
+    // Do not touch dynamically generated textures.
+    if (texture->getReadPBuffer())
+      return;
+    if (texture->getDataVariance() == osg::Object::DYNAMIC)
+      return;
 
+    // If no image attached, we assume this one is dynamically generated
     Image* image = texture->getImage(0);
     if (!image)
       return;
@@ -285,6 +289,16 @@ public:
     if (!texture)
       return;
 
+    // Cannot be static if this is a render to texture thing
+    if (texture->getReadPBuffer())
+      return;
+    if (texture->getDataVariance() == osg::Object::DYNAMIC)
+      return;
+    // If no image attached, we assume this one is dynamically generated
+    Image* image = texture->getImage(0);
+    if (!image)
+      return;
+    
     texture->setDataVariance(Object::STATIC);
   }
 
@@ -292,8 +306,8 @@ public:
   {
     if (!stateSet)
       return;
-    SGTextureStateAttributeVisitor::apply(stateSet);
     stateSet->setDataVariance(Object::STATIC);
+    SGTextureStateAttributeVisitor::apply(stateSet);
   }
 };
 

@@ -312,7 +312,6 @@ sgLoad3DModel_internal(const string &path,
     }
 
     if (data) {
-        data->setProps(props);
         options->setModelData(data);
     }
 

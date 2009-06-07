@@ -83,16 +83,8 @@ protected:
 class SGModelData : public osg::Referenced {
 public:
     virtual ~SGModelData() {}
-    virtual void modelLoaded( const string& path, SGPropertyNode *prop,
-                              osg::Node*branch) = 0;
-
-    virtual void setProps(SGPropertyNode *p)
-        { _props = p; }
-
-    SGPropertyNode *getProperties()
-        { return _props; }
-protected:
-    SGPropertyNode_ptr _props;
+    virtual void modelLoaded(const string& path, SGPropertyNode *prop,
+                             osg::Node* branch) = 0;
 };
 
 }

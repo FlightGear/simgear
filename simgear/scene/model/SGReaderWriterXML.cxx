@@ -42,16 +42,11 @@
 #include "particles.hxx"
 #include "model.hxx"
 
-#include "SGReaderWriterXMLOptions.hxx"
-#include "SGReaderWriterXML.hxx"
-
 using namespace simgear;
 
 static osg::Node *
-sgLoad3DModel_internal(const string &path,
-                       SGPropertyNode *prop_root,
-                       SGModelData *data = 0,
-                       osg::Node *(*load_panel)(SGPropertyNode *) = 0,
+sgLoad3DModel_internal(const std::string& path,
+                       const osgDB::ReaderWriter::Options* options,
                        SGPropertyNode *overlay = 0);
 
 
@@ -73,28 +68,9 @@ osgDB::ReaderWriter::ReadResult
 SGReaderWriterXML::readNode(const std::string& fileName,
                             const osgDB::ReaderWriter::Options* options) const
 {
-    // SG_LOG(SG_GENERAL, SG_ALERT, "SGReaderWriterXML::readNode(" << fileName << ")");
-
-    const SGReaderWriterXMLOptions* xmlOptions
-    = dynamic_cast<const SGReaderWriterXMLOptions*>(options);
-
-    SGSharedPtr<SGPropertyNode> prop_root;
-    osg::Node *(*load_panel)(SGPropertyNode *)=0;
-    SGModelData *model_data=0;
-
-    if (xmlOptions) {
-        prop_root = xmlOptions->getPropRoot();
-        load_panel = xmlOptions->getLoadPanel();
-        model_data = xmlOptions->getModelData();
-    }
-    if (!prop_root) {
-        prop_root = new SGPropertyNode;
-    }
-
     osg::Node *result=0;
-
     try {
-        result=sgLoad3DModel_internal(fileName, prop_root, model_data, load_panel);
+        result=sgLoad3DModel_internal(fileName, options);
     } catch (const sg_throwable &t) {
         SG_LOG(SG_INPUT, SG_ALERT, "Failed to load model: " << t.getFormattedMessage());
         result=new osg::Node;
@@ -130,18 +106,28 @@ private:
 
 static osg::Node *
 sgLoad3DModel_internal(const string &path,
-                       SGPropertyNode *prop_root,
-                       SGModelData *data,
-                       osg::Node *(*load_panel)(SGPropertyNode *),
+                       const osgDB::ReaderWriter::Options* options_,
                        SGPropertyNode *overlay)
 {
-    if ( !prop_root ) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "prop_root NULL: " << path);
+    const SGReaderWriterXMLOptions* xmlOptions;
+    xmlOptions = dynamic_cast<const SGReaderWriterXMLOptions*>(options_);
+
+    SGSharedPtr<SGPropertyNode> prop_root;
+    osg::Node *(*load_panel)(SGPropertyNode *)=0;
+    SGModelData *data=0;
+
+    if (xmlOptions) {
+        prop_root = xmlOptions->getPropRoot();
+        load_panel = xmlOptions->getLoadPanel();
+        data = xmlOptions->getModelData();
+    }
+    if (!prop_root) {
+        prop_root = new SGPropertyNode;
     }
 
     osgDB::FilePathList filePathList;
     filePathList = osgDB::Registry::instance()->getDataFilePathList();
-    filePathList.push_front(osgDB::convertFileNameToNativeStyle("/"));
+    filePathList.push_front(std::string());
 
     SGPath modelpath = osgDB::findFileInPath(path, filePathList);
     if (modelpath.str().empty()) {
@@ -205,6 +191,7 @@ sgLoad3DModel_internal(const string &path,
     if (offsets) {
         needTransform=true;
         osg::MatrixTransform *alignmainmodel = new osg::MatrixTransform;
+        alignmainmodel->setDataVariance(osg::Object::STATIC);
         osg::Matrix res_matrix;
         res_matrix.makeRotate(
             offsets->getFloatValue("pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
@@ -241,7 +228,7 @@ sgLoad3DModel_internal(const string &path,
             submodelpath = submodelFileName;
         }
         try {
-            submodel = sgLoad3DModel_internal(submodelpath.str(), prop_root, 0, load_panel,
+            submodel = sgLoad3DModel_internal(submodelpath.str(), options_,
                                               sub_props->getNode("overlay"));
         } catch (const sg_throwable &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
@@ -253,6 +240,7 @@ sgLoad3DModel_internal(const string &path,
         if (offs) {
             osg::Matrix res_matrix;
             osg::ref_ptr<osg::MatrixTransform> align = new osg::MatrixTransform;
+            align->setDataVariance(osg::Object::STATIC);
             res_matrix.makeIdentity();
             res_matrix.makeRotate(
                 offs->getDoubleValue("pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
@@ -292,7 +280,7 @@ sgLoad3DModel_internal(const string &path,
             SG_LOG(SG_INPUT, SG_DEBUG, "Loading a panel");
             osg::ref_ptr<osg::Node> panel = load_panel(panel_nodes[i]);
             if (panel_nodes[i]->hasValue("name"))
-                panel->setName((char *)panel_nodes[i]->getStringValue("name"));
+                panel->setName(panel_nodes[i]->getStringValue("name"));
             group->addChild(panel.get());
         }
     }

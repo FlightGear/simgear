@@ -188,7 +188,7 @@ sgLoad3DModel_internal(const string &path,
     // Assume that textures are in
     // the same location as the XML file.
     if (!model) {
-        if (texturepath.extension() != "")
+        if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
         options->setDatabasePath(texturepath.str());
@@ -301,7 +301,7 @@ sgLoad3DModel_internal(const string &path,
     particle_nodes = props->getChildren("particlesystem");
     for (unsigned i = 0; i < particle_nodes.size(); ++i) {
         if (i==0) {
-            if (texturepath.extension() != "")
+            if (!texturepath.extension().empty())
                 texturepath = texturepath.dir();
 
             options->setDatabasePath(texturepath.str());
@@ -322,16 +322,16 @@ sgLoad3DModel_internal(const string &path,
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
                              options.get());
 
-    if (props->hasChild("debug-outfile")) {
-        std::string outputfile = props->getStringValue("debug-outfile",
-                                 "debug-model.osg");
-        osgDB::writeNodeFile(*group, outputfile);
-    }
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);
         group->removeChild(model.get());
         model->setUserData(group->getUserData());
         return model.release();
+    }
+    if (props->hasChild("debug-outfile")) {
+        std::string outputfile = props->getStringValue("debug-outfile",
+                                 "debug-model.osg");
+        osgDB::writeNodeFile(*group, outputfile);
     }
 
     return group.release();

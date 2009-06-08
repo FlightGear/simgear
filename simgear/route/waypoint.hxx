@@ -35,9 +35,10 @@
 
 #include <simgear/compiler.h>
 
-#include <string>
+#include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGGeod.hxx>
 
-using std::string;
+#include <string>
 
 
 /**
@@ -57,26 +58,21 @@ public:
      *      the world is a perfect sphere.  This is less compuntationally
      *      expensive than using wgs84 math and still a fairly good
      *      approximation of the real world, especially over shorter distances.
-     * <li> CARTESIAN requests all math be done assuming the coordinates specify
-     *      position in a Z = up world.
      */
     enum modetype { 
 	WGS84 = 0,
 	SPHERICAL = 1,
-	CARTESIAN = 2
     };
 
 private:
 
     modetype mode;
 
-    double target_lon;
-    double target_lat;
-    double target_alt;
+    SGGeod pos;
     double distance;
 
-    string id;
-    string name;
+    std::string id;
+    std::string name;
 
 public:
 
@@ -91,7 +87,12 @@ public:
      */
     SGWayPoint( const double lon = 0.0, const double lat = 0.0,
 		const double alt = 0.0, const modetype m = WGS84,
-		const string& s = "", const string& n = "" );
+		const std::string& s = "", const std::string& n = "" );
+  
+    /**
+     * Construct from a geodetic position, in WGS84 coordinates
+     */
+    SGWayPoint(const SGGeod& pos, const std::string& s = "", const std::string& n = "" );
 
     /** Destructor */
     ~SGWayPoint();
@@ -112,6 +113,9 @@ public:
 			    const double cur_alt,
 			    double *course, double *dist ) const;
 
+    void CourseAndDistance(const SGGeod& current,
+			    double& course, double& dist ) const;
+
     /**
      * Calculate course and distances between a specified starting waypoint
      * and this waypoint.
@@ -122,17 +126,16 @@ public:
     void CourseAndDistance( const SGWayPoint &wp,
 			    double *course, double *dist ) const;
 
-    /** @return waypoint mode */
-    inline modetype get_mode() const { return mode; }
-
     /** @return waypoint longitude */
-    inline double get_target_lon() const { return target_lon; }
+    inline double get_target_lon() const { return pos.getLongitudeDeg(); }
 
     /** @return waypoint latitude */
-    inline double get_target_lat() const { return target_lat; }
+    inline double get_target_lat() const { return pos.getLatitudeDeg(); }
 
     /** @return waypoint altitude */
-    inline double get_target_alt() const { return target_alt; }
+    inline double get_target_alt() const { return pos.getElevationM(); }
+
+    inline const SGGeod& get_target() const { return pos; }
 
     /**
      * This value is not calculated by this class.  It is simply a
@@ -153,10 +156,10 @@ public:
     inline void set_distance( double d ) { distance = d; }
 
     /** @return waypoint id */
-    inline const string& get_id() const { return id; }
+    inline const std::string& get_id() const { return id; }
 
     /** @return waypoint name */
-    inline const string& get_name() const { return name; }
+    inline const std::string& get_name() const { return name; }
 
 };
 

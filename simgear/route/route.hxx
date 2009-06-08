@@ -142,14 +142,11 @@ public:
 
     /** Delete waypoint waypoint with index n  (last one if n < 0) */
     void delete_waypoint( int n = 0 );
-
+    
     /**
-     * Calculate perpendicular distance from the current route segment
-     * This routine assumes all points are laying on a flat plane and
-     * ignores the altitude (or Z) dimension.  For most accurate
-     * results, use with CARTESIAN way points.
+     * Helper, sum the distance members of each waypoint
      */
-    double distance_off_route( double x, double y ) const;
+    double total_distance() const;
 };
 
 

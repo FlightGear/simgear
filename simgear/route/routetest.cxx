@@ -23,7 +23,7 @@ void dump_route(const SGRoute& route, const char* message)
 int main()
 {
     SGRoute route;
-
+/*
     route.add_waypoint( SGWayPoint(0, 0, 0, SGWayPoint::CARTESIAN, "Start") );
     route.add_waypoint( SGWayPoint(1, 0, 0, SGWayPoint::CARTESIAN, "1") );
     route.add_waypoint( SGWayPoint(2, 0, 0, SGWayPoint::CARTESIAN, "2") );
@@ -48,6 +48,6 @@ int main()
 
     route.add_waypoint(wp2, 3);
     dump_route(route, "added back WP2 after WP3");
-
+*/
     return 0;
 }

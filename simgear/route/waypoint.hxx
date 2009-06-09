@@ -92,7 +92,7 @@ public:
     /**
      * Construct from a geodetic position, in WGS84 coordinates
      */
-    SGWayPoint(const SGGeod& pos, const std::string& s = "", const std::string& n = "" );
+    SGWayPoint(const SGGeod& pos, const std::string& s, const std::string& n);
 
     /** Destructor */
     ~SGWayPoint();

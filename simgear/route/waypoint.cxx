@@ -81,5 +81,5 @@ void SGWayPoint::CourseAndDistance( const double cur_lon,
 // Calculate course and distances between two waypoints
 void SGWayPoint::CourseAndDistance( const SGWayPoint &wp,
 			double *course, double *dist ) const {
-    CourseAndDistance( wp.get_target(), course, dist );
+    CourseAndDistance( wp.get_target(), *course, *dist );
 }

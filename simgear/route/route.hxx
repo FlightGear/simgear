@@ -52,7 +52,7 @@ private:
     route_list route;
     int current_wp;
 
-    void update_distance(int index);
+    void update_distance_and_track(int index);
 
 public:
 
@@ -98,6 +98,22 @@ public:
     inline SGWayPoint get_current() const {
 	if ( current_wp < (int)route.size() ) {
 	    return route[current_wp];
+	} else {
+	    return SGWayPoint( 0.0, 0.0, 0.0, SGWayPoint::WGS84, "invalid" );
+	}
+    }
+    
+    inline SGWayPoint get_previous() const {
+	if ( (current_wp > 0) && (current_wp < (int)route.size()) ) {
+	    return route[current_wp - 1];
+	} else {
+	    return SGWayPoint( 0.0, 0.0, 0.0, SGWayPoint::WGS84, "invalid" );
+	}
+    }
+
+    inline SGWayPoint get_next() const {
+	if ( (current_wp + 1) < (int)route.size() ) {
+	    return route[current_wp+1];
 	} else {
 	    return SGWayPoint( 0.0, 0.0, 0.0, SGWayPoint::WGS84, "invalid" );
 	}

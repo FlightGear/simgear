@@ -27,12 +27,6 @@
 #ifndef _WAYPOINT_HXX
 #define _WAYPOINT_HXX
 
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
-
 #include <simgear/compiler.h>
 
 #include <simgear/math/SGMath.hxx>
@@ -61,19 +55,18 @@ public:
      */
     enum modetype { 
 	WGS84 = 0,
-	SPHERICAL = 1,
     };
 
 private:
-
-    modetype mode;
-
     SGGeod pos;
-    double distance;
-
     std::string id;
     std::string name;
-
+    
+  // route data associated with the waypoint
+    double _distance;
+    double _track;
+    double _speed;
+    
 public:
 
     /**
@@ -147,14 +140,20 @@ public:
      * is for your convenience only.
      * @return waypoint distance holder (what ever the user has stashed here)
      */
-    inline double get_distance() const { return distance; }
+    inline double get_distance() const { return _distance; }
 
     /**
      * Set the waypoint distance value to a value of our choice.
      * @param d distance 
      */
-    inline void set_distance( double d ) { distance = d; }
+    inline void set_distance( double d ) { _distance = d; }
 
+    inline double get_track() const { return _track; }
+    inline void set_track(double t) { _track = t; }
+
+    inline double get_speed() const { return _speed; }
+    inline void set_speed(double v) { _speed = v; }
+    
     /** @return waypoint id */
     inline const std::string& get_id() const { return id; }
 

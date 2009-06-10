@@ -42,19 +42,21 @@ SGRoute::~SGRoute() {
 }
 
 /** Update the length of the leg ending at waypoint index */
-void SGRoute::update_distance(int index)
+void SGRoute::update_distance_and_track(int index)
 {
-    SGWayPoint& curr = route[ index ];
-    double course, dist;
+  SGWayPoint& curr = route[ index ];
+  double course, dist;
 
-    if ( index == 0 ) {
-	dist = 0;
-    } else {
-	const SGWayPoint& prev = route[ index - 1 ];
-	curr.CourseAndDistance( prev, &course, &dist );
-    }
+  if ( index == 0 ) {
+    dist = 0;
+    course = 0.0;
+  } else {
+    const SGWayPoint& prev = route[index - 1];
+    curr.CourseAndDistance( prev, &course, &dist );
+  }
 
-    curr.set_distance( dist );
+  curr.set_distance(dist);
+  curr.set_track(course);
 }
 
 /**
@@ -69,9 +71,9 @@ void SGRoute::add_waypoint( const SGWayPoint &wp, int n ) {
     } else {
         route.insert( route.begin() + n, 1, wp );
         // update distance of next leg if not at end of route
-        update_distance( n + 1 );
+        update_distance_and_track( n + 1 );
     }
-    update_distance( n );
+    update_distance_and_track( n );
 }
 
 /** Delete waypoint with index n  (last one if n < 0) */
@@ -85,7 +87,7 @@ void SGRoute::delete_waypoint( int n ) {
     route.erase( route.begin() + n );
     // update distance of next leg if not at end of route
     if ( n < size - 1 )
-        update_distance( n );
+        update_distance_and_track( n );
 }
 
 double SGRoute::total_distance() const {

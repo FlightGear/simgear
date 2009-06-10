@@ -33,21 +33,23 @@ using std::string;
 
 // Constructor
 SGWayPoint::SGWayPoint( const double lon, const double lat, const double alt,
-			const modetype m, const string& s, const string& n ) :
-  mode(m),
+			const modetype, const string& s, const string& n ) :
   pos(SGGeod::fromDegM(lon, lat, alt)),
-  distance(0.0),
   id(s),
-  name(n)
+  name(n),
+  _distance(0.0),
+  _track(0.0),
+  _speed(0.0)
 {
 }
 
 SGWayPoint::SGWayPoint(const SGGeod& geod, const string& s, const string& n ) :
-  mode(WGS84),
   pos(geod),
-  distance(0.0),
   id(s),
-  name(n)
+  name(n),
+  _distance(0.0),
+  _track(0.0),
+  _speed(0.0)
 {
 }
 
@@ -56,15 +58,8 @@ SGWayPoint::~SGWayPoint() {
 }
 
 void SGWayPoint::CourseAndDistance(const SGGeod& cur, double& course, double& dist ) const {
-  if ( mode == WGS84 ) {
-    double reverse;
-    SGGeodesy::inverse(cur, pos, course, reverse, dist);
-  } else if ( mode == SPHERICAL ) {
-    Point3D currentPoint(cur.getLongitudeRad(), cur.getLatitudeRad(), 0.0 );
-    Point3D targetPoint(pos.getLongitudeRad(), pos.getLatitudeRad(), 0.0 );
-    calc_gc_course_dist( currentPoint, targetPoint, &course, &dist );
-    course = 360.0 - course * SGD_RADIANS_TO_DEGREES;
-  }
+  double reverse;
+  SGGeodesy::inverse(cur, pos, course, reverse, dist);
 }
 
 // Calculate course and distances.  For WGS84 and SPHERICAL

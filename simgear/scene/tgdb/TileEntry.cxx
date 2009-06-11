@@ -388,6 +388,7 @@ TileEntry::loadTileByFileName(const string& fileName,
             WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
 
             osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
+            obj_trans->setDataVariance(osg::Object::STATIC);
             obj_trans->setMatrix( obj_pos );
 
             // wire as much of the scene graph together as we can
@@ -408,6 +409,7 @@ TileEntry::loadTileByFileName(const string& fileName,
             WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
 
             osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
+            obj_trans->setDataVariance(osg::Object::STATIC);
             obj_trans->setMatrix( obj_pos );
 
             osg::Node *custom_obj = 0;

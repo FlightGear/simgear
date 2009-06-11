@@ -85,6 +85,13 @@ public:
     virtual ~SGModelData() {}
     virtual void modelLoaded(const string& path, SGPropertyNode *prop,
                              osg::Node* branch) = 0;
+    void setConfigProperties(SGPropertyNode *configProperties)
+    { _configProperties = configProperties; }
+    SGPropertyNode *getConfigProperties()
+    { return _configProperties; }
+
+private:
+    SGSharedPtr<SGPropertyNode> _configProperties;
 };
 
 }

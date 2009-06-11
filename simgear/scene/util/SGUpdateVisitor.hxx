@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2006 Mathias Froehlich 
+ * Copyright (C) 2006-2009 Mathias Froehlich 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -132,11 +132,20 @@ public:
 
   double getSunAngleDeg() const
   { return mSunAngleDeg; }
-    
+
+  virtual void apply(osg::Node& node)
+  {
+    if (!needToEnterNode(node))
+      return;
+    osgUtil::UpdateVisitor::apply(node);
+  }
+
   // To be able to traverse correctly only the active children, we need to
   // track the model view matrices during update.
   virtual void apply(osg::Transform& transform)
   {
+    if (!needToEnterNode(transform))
+      return;
     osg::Matrix matrix = _matrix;
     transform.computeLocalToWorldMatrix(_matrix, this);
     osgUtil::UpdateVisitor::apply(transform);
@@ -144,6 +153,8 @@ public:
   }
   virtual void apply(osg::Camera& camera)
   {
+    if (!needToEnterNode(camera))
+      return;
     if (camera.getReferenceFrame() == osg::Camera::ABSOLUTE_RF) {
       osg::Vec3d currentEyePos = _currentEyePos;
       _currentEyePos = osg::Vec3d(0, 0, 0);
@@ -156,6 +167,19 @@ public:
   virtual float getDistanceToViewPoint(const osg::Vec3& pos, bool) const
   { return (_currentEyePos - _matrix.preMult(osg::Vec3d(pos))).length(); }
 
+protected:
+  bool needToEnterNode(const osg::Node& node) const
+  {
+    if (!node.isCullingActive())
+      return true;
+    return isSphereInRange(node.getBound());
+  }
+  bool isSphereInRange(const osg::BoundingSphere& sphere) const
+  {
+    float maxDist = mVisibility + 2*sphere._radius;
+    return getDistanceToViewPoint(sphere._center, false) < maxDist;
+  }
+    
 private:
   osg::Matrix _matrix;
   osg::Vec3d _currentEyePos;

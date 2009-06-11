@@ -23,6 +23,7 @@
 #define SG_SCENE_UPDATEVISITOR_HXX
 
 #include <osg/NodeVisitor>
+#include <osg/PagedLOD>
 #include <osgUtil/UpdateVisitor>
 
 #include "simgear/math/SGMath.hxx"
@@ -139,7 +140,17 @@ public:
       return;
     osgUtil::UpdateVisitor::apply(node);
   }
-
+  // To avoid expiry of LOD nodes that are in range and that are updated,
+  // mark them with the last traversal number, even if they are culled away
+  // by the cull frustum.
+  virtual void apply(osg::PagedLOD& pagedLOD)
+  {
+    if (!needToEnterNode(pagedLOD))
+      return;
+    if (getFrameStamp())
+      pagedLOD.setFrameNumberOfLastTraversal(getFrameStamp()->getFrameNumber());
+    osgUtil::UpdateVisitor::apply(pagedLOD);
+  }
   // To be able to traverse correctly only the active children, we need to
   // track the model view matrices during update.
   virtual void apply(osg::Transform& transform)
@@ -164,6 +175,8 @@ public:
       apply(static_cast<osg::Transform&>(camera));
     }
   }
+  // Function to make the LOD traversal only enter that children that
+  // are visible on the screen.
   virtual float getDistanceToViewPoint(const osg::Vec3& pos, bool) const
   { return (_currentEyePos - _matrix.preMult(osg::Vec3d(pos))).length(); }
 
@@ -176,8 +189,11 @@ protected:
   }
   bool isSphereInRange(const osg::BoundingSphere& sphere) const
   {
-    float maxDist = mVisibility + 2*sphere._radius;
-    return getDistanceToViewPoint(sphere._center, false) < maxDist;
+    if (!sphere.valid())
+      return false;
+    float maxDist = mVisibility + sphere._radius;
+    osg::Vec3d center = _matrix.preMult(osg::Vec3d(sphere._center));
+    return (_currentEyePos - center).length2() <= maxDist*maxDist;
   }
     
 private:

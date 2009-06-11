@@ -56,8 +56,8 @@ bool SGPagedLOD::addChild(osg::Node *child)
     {
         osg::ref_ptr<SGModelData> d = opts->getModelData();
         if(d.valid())
-            d->modelLoaded(getFileName(getNumChildren()-1), opts->getPropRoot(),
-                           this);
+            d->modelLoaded(getFileName(getNumChildren()-1),
+                           d->getConfigProperties(), this);
     }
     return true;
 }

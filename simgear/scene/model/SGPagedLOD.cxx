@@ -44,21 +44,11 @@ SGPagedLOD::SGPagedLOD(const SGPagedLOD& plod,const CopyOp& copyop)
 
 bool SGPagedLOD::addChild(osg::Node *child)
 {
-    //SG_LOG(SG_GENERAL, SG_ALERT, "SGPagedLOD::addChild(" << getFileName(getNumChildren()) << ")");
     if (!PagedLOD::addChild(child))
         return false;
 
     setRadius(getBound().radius());
     setCenter(getBound().center());
-    SGReaderWriterXMLOptions* opts;
-    opts = dynamic_cast<SGReaderWriterXMLOptions*>(_readerWriterOptions.get());
-    if(opts)
-    {
-        osg::ref_ptr<SGModelData> d = opts->getModelData();
-        if(d.valid())
-            d->modelLoaded(getFileName(getNumChildren()-1),
-                           d->getConfigProperties(), this);
-    }
     return true;
 }
 

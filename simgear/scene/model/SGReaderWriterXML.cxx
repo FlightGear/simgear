@@ -114,7 +114,7 @@ sgLoad3DModel_internal(const string &path,
 
     SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
-    SGModelData *data=0;
+    osg::ref_ptr<SGModelData> data;
 
     if (xmlOptions) {
         prop_root = xmlOptions->getPropRoot();
@@ -227,8 +227,11 @@ sgLoad3DModel_internal(const string &path,
         } else {
             submodelpath = submodelFileName;
         }
+        osg::ref_ptr<SGReaderWriterXMLOptions> options;
+        options = new SGReaderWriterXMLOptions(*options_);
+        options->setPropRoot(prop_root);
         try {
-            submodel = sgLoad3DModel_internal(submodelpath.str(), options_,
+            submodel = sgLoad3DModel_internal(submodelpath.str(), options.get(),
                                               sub_props->getNode("overlay"));
         } catch (const sg_throwable &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
@@ -299,11 +302,6 @@ sgLoad3DModel_internal(const string &path,
                         options.get()));
     }
 
-    if (data) {
-        data->setConfigProperties(props);
-        options->setModelData(data);
-    }
-
     std::vector<SGPropertyNode_ptr> animation_nodes;
     animation_nodes = props->getChildren("animation");
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
@@ -314,9 +312,12 @@ sgLoad3DModel_internal(const string &path,
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);
         group->removeChild(model.get());
-        model->setUserData(group->getUserData());
+        if (data.valid())
+            data->modelLoaded(modelpath.str(), props, model.get());
         return model.release();
     }
+    if (data.valid())
+        data->modelLoaded(modelpath.str(), props, group.get());
     if (props->hasChild("debug-outfile")) {
         std::string outputfile = props->getStringValue("debug-outfile",
                                  "debug-model.osg");

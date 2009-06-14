@@ -24,7 +24,6 @@ namespace simgear
 {
 GroundLightManager::GroundLightManager()
 {
-    osg::Fog* fog;
     runwayLightSS = makeLightSS();
     taxiLightSS = makeLightSS();
     groundLightSS = makeLightSS();

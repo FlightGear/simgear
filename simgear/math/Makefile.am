@@ -42,7 +42,8 @@ include_HEADERS = \
 	SGTriangle.hxx \
 	SGVec2.hxx \
 	SGVec3.hxx \
-	SGVec4.hxx
+	SGVec4.hxx \
+	beziercurve.hxx
 
 libsgmath_a_SOURCES = \
 	interpolater.cxx \

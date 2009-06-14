@@ -288,6 +288,9 @@
 			Name="Lib_sgmath"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\math\beziercurve.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\interpolater.cxx">
 			</File>
 			<File

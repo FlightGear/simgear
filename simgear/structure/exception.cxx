@@ -7,42 +7,58 @@
 
 #include "exception.hxx"
 #include <stdio.h>
+#include <cstring>
+#include <sstream>
 
+using std::string;
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_location class.
 ////////////////////////////////////////////////////////////////////////
 
 sg_location::sg_location ()
-  : _path(""),
-    _line(-1),
+  : _line(-1),
     _column(-1),
     _byte(-1)
 {
+    _path[0] = '\0';
 }
 
-sg_location::sg_location (const string &path, int line, int column)
-  : _path(path),
-    _line(line),
+sg_location::sg_location (const string& path, int line, int column)
+  : _line(line),
     _column(column),
     _byte(-1)
 {
+  setPath(path.c_str());
 }
 
-sg_location::~sg_location ()
+sg_location::sg_location (const char* path, int line, int column)
+  : _line(line),
+    _column(column),
+    _byte(-1)
+{
+  setPath(path);
+}
+
+sg_location::~sg_location () throw ()
 {
 }
 
-const string &
+const char*
 sg_location::getPath () const
 {
   return _path;
 }
 
 void
-sg_location::setPath (const string &path)
+sg_location::setPath (const char* path)
 {
-  _path = path;
+  if (path) {
+    strncpy(_path, path, MAX_PATH);
+    _path[MAX_PATH -1] = '\0';
+  } else {
+    _path[0] = '\0';
+  }
 }
 
 int
@@ -84,25 +100,21 @@ sg_location::setByte (int byte)
 string
 sg_location::asString () const
 {
-  char buf[128];
-  string out = "";
-  if (!_path.empty()) {
-    out += _path;
+  std::ostringstream out;
+  if (_path[0]) {
+    out << _path;
     if (_line != -1 || _column != -1)
-      out += ",\n";
+      out << ",\n";
   }
   if (_line != -1) {
-    sprintf(buf, "line %d", _line);
-    out += buf;
+    out << "line " << _line;
     if (_column != -1)
-      out += ", ";
+      out << ", ";
   }
   if (_column != -1) {
-    sprintf(buf, "column %d", _column);
-    out += buf;
+    out << "column " << _column;
   }
-  return out;
-    
+  return out.str();
 }
 
 
@@ -112,22 +124,22 @@ sg_location::asString () const
 ////////////////////////////////////////////////////////////////////////
 
 sg_throwable::sg_throwable ()
-  : _message(""),
-    _origin("")
+{
+  _message[0] = '\0';
+  _origin[0] = '\0';
+}
+
+sg_throwable::sg_throwable (const char* message, const char* origin)
+{
+  setMessage(message);
+  setOrigin(origin);
+}
+
+sg_throwable::~sg_throwable () throw ()
 {
 }
 
-sg_throwable::sg_throwable (const string &message, const string &origin)
-  : _message(message),
-    _origin(origin)
-{
-}
-
-sg_throwable::~sg_throwable ()
-{
-}
-
-const string &
+const char*
 sg_throwable::getMessage () const
 {
   return _message;
@@ -136,27 +148,43 @@ sg_throwable::getMessage () const
 const string
 sg_throwable::getFormattedMessage () const
 {
-  return getMessage();
+  return string(getMessage());
 }
 
 void
-sg_throwable::setMessage (const string &message)
+sg_throwable::setMessage (const char* message)
 {
-  _message = message;
+  strncpy(_message, message, MAX_TEXT_LEN);
+  _message[MAX_TEXT_LEN - 1] = '\0';
+
 }
 
-const string &
+const char*
 sg_throwable::getOrigin () const
 {
   return _origin;
 }
 
 void
-sg_throwable::setOrigin (const string &origin)
+sg_throwable::setOrigin (const char* origin)
 {
-  _origin = origin;
+  if (origin) {
+    strncpy(_origin, origin, MAX_TEXT_LEN);
+    _origin[MAX_TEXT_LEN - 1] = '\0';
+  } else {
+    _origin[0] = '\0';
+  }
 }
 
+const char* sg_throwable::what() const throw()
+{
+  try {
+    return getMessage();
+  }
+  catch (...) {
+    return "";
+  }
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -168,16 +196,19 @@ sg_error::sg_error ()
 {
 }
 
-sg_error::sg_error (const string &message, const string &origin)
+sg_error::sg_error (const char* message, const char *origin)
   : sg_throwable(message, origin)
 {
 }
 
-sg_error::~sg_error ()
+sg_error::sg_error (const string& message, const string& origin)
+  : sg_throwable(message.c_str(), origin.c_str())
 {
 }
 
-
+sg_error::~sg_error () throw ()
+{
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_exception class.
@@ -188,16 +219,19 @@ sg_exception::sg_exception ()
 {
 }
 
-sg_exception::sg_exception (const string &message, const string &origin)
+sg_exception::sg_exception (const char* message, const char* origin)
   : sg_throwable(message, origin)
 {
 }
 
-sg_exception::~sg_exception ()
+sg_exception::sg_exception (const string& message, const string& origin)
+  : sg_throwable(message.c_str(), origin.c_str())
 {
 }
 
-
+sg_exception::~sg_exception () throw ()
+{
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of sg_io_exception.
@@ -208,20 +242,25 @@ sg_io_exception::sg_io_exception ()
 {
 }
 
-sg_io_exception::sg_io_exception (const string &message, const string &origin)
+sg_io_exception::sg_io_exception (const char* message, const char* origin)
   : sg_exception(message, origin)
 {
 }
 
-sg_io_exception::sg_io_exception (const string &message,
+sg_io_exception::sg_io_exception (const char* message,
 				  const sg_location &location,
-				  const string &origin)
+				  const char* origin)
   : sg_exception(message, origin),
     _location(location)
 {
 }
 
-sg_io_exception::~sg_io_exception ()
+sg_io_exception::sg_io_exception (const string& message, const string& origin)
+  : sg_exception(message, origin)
+{
+}
+
+sg_io_exception::~sg_io_exception () throw ()
 {
 }
 
@@ -256,33 +295,46 @@ sg_io_exception::setLocation (const sg_location &location)
 ////////////////////////////////////////////////////////////////////////
 
 sg_format_exception::sg_format_exception ()
-  : sg_exception(),
-    _text("")
+  : sg_exception()
+{
+  _text[0] = '\0';
+}
+
+sg_format_exception::sg_format_exception (const char* message,
+					  const char* text,
+					  const char* origin)
+  : sg_exception(message, origin)
+{
+  setText(text);
+}
+
+sg_format_exception::sg_format_exception (const string& message,
+					  const string& text,
+					  const string& origin)
+  : sg_exception(message, origin)
+{
+  setText(text.c_str());
+}
+
+sg_format_exception::~sg_format_exception () throw ()
 {
 }
 
-sg_format_exception::sg_format_exception (const string &message,
-					  const string &text,
-					  const string &origin)
-  : sg_exception(message, origin),
-    _text(text)
-{
-}
-
-sg_format_exception::~sg_format_exception ()
-{
-}
-
-const string &
+const char*
 sg_format_exception::getText () const
 {
   return _text;
 }
 
 void
-sg_format_exception::setText (const string &text)
+sg_format_exception::setText (const char* text)
 {
-  _text = text;
+  if (text) {
+    strncpy(_text, text, MAX_TEXT_LEN);
+    _text[MAX_TEXT_LEN] = '\0';
+  } else {
+    _text[0] = '\0';
+  }
 }
 
 
@@ -296,15 +348,19 @@ sg_range_exception::sg_range_exception ()
 {
 }
 
-sg_range_exception::sg_range_exception (const string &message,
-					const string &origin)
+sg_range_exception::sg_range_exception (const char* message,
+					const char* origin)
   : sg_exception(message, origin)
 {
 }
 
-sg_range_exception::~sg_range_exception ()
+sg_range_exception::sg_range_exception(const string& message,
+                                       const string& origin)
+  : sg_exception(message, origin)
 {
 }
 
-
+sg_range_exception::~sg_range_exception () throw ()
+{
+}
 // end of exception.cxx

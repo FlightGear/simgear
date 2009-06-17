@@ -26,7 +26,7 @@ using std::string;
 class sg_location
 {
 public:
-  enum {MAX_PATH = 1024};
+  enum {max_path = 1024};
   sg_location ();
   sg_location(const std::string& path, int line = -1, int column = -1);  
   explicit sg_location(const char* path, int line = -1, int column = -1);
@@ -41,7 +41,7 @@ public:
   virtual void setByte (int byte);
   virtual std::string asString () const;
 private:
-  char _path[MAX_PATH];
+  char _path[max_path];
   int _line;
   int _column;
   int _byte;

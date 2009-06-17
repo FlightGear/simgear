@@ -54,8 +54,8 @@ void
 sg_location::setPath (const char* path)
 {
   if (path) {
-    strncpy(_path, path, MAX_PATH);
-    _path[MAX_PATH -1] = '\0';
+    strncpy(_path, path, max_path);
+    _path[max_path -1] = '\0';
   } else {
     _path[0] = '\0';
   }

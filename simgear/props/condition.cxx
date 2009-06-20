@@ -213,8 +213,10 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
+  default:
+    throw sg_exception("condition: unrecognized node type in comparison");
   }
-  throw sg_exception("condition: unrecognized node type in comparison");
+  
   return 0;
 }
 

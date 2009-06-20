@@ -575,7 +575,7 @@ closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
   // Regions
   // \2|
   //  \|
-  //   |\
+  //   |\ 
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6
@@ -769,7 +769,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
   // Regions
   // \2|
   //  \|
-  //   |\
+  //   |\ 
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6

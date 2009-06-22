@@ -14,6 +14,7 @@ include_HEADERS = \
 	placement.hxx \
 	CheckSceneryVisitor.hxx \
 	SGClipGroup.hxx \
+	SGInteractionAnimation.hxx \
 	SGMaterialAnimation.hxx \
 	SGOffsetTransform.hxx \
 	SGPagedLOD.hxx \
@@ -34,6 +35,7 @@ libsgmodel_a_SOURCES = \
 	shadanim.cxx \
 	CheckSceneryVisitor.cxx \
 	SGClipGroup.cxx \
+	SGInteractionAnimation.cxx \
 	SGMaterialAnimation.cxx \
 	SGOffsetTransform.cxx \
 	SGPagedLOD.cxx \

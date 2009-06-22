@@ -46,6 +46,7 @@
 #include "SGMaterialAnimation.hxx"
 #include "SGRotateTransform.hxx"
 #include "SGScaleTransform.hxx"
+#include "SGInteractionAnimation.hxx"
 
 using OpenThreads::Mutex;
 using OpenThreads::ReentrantMutex;
@@ -400,6 +401,9 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     animInst.apply(node);
   } else if (type == "flash") {
     SGFlashAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
+  } else if (type == "interaction") {
+    SGInteractionAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "material") {
     SGMaterialAnimation animInst(configNode, modelRoot, options);

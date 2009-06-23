@@ -426,9 +426,6 @@
 				RelativePath="..\..\simgear\screen\colors.hxx">
 			</File>
 			<File
-				RelativePath="..\..\simgear\screen\colours.h">
-			</File>
-			<File
 				RelativePath="..\..\simgear\screen\extensions.cxx">
 			</File>
 			<File
@@ -463,12 +460,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\screen\shader.h">
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\texture.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\texture.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\screen\tr.cxx">
@@ -727,6 +718,12 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\SGClipGroup.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGInteractionAnimation.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGInteractionAnimation.hxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\model\SGMaterialAnimation.cxx">

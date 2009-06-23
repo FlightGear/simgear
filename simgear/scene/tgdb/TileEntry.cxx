@@ -28,14 +28,10 @@
 #include <sstream>
 #include <istream>
 
-#include <osg/Array>
-#include <osg/Geometry>
-#include <osg/Geode>
 #include <osg/LOD>
 #include <osg/MatrixTransform>
 #include <osg/Math>
 #include <osg/NodeCallback>
-#include <osg/Switch>
 
 #include <osgDB/FileNameUtils>
 #include <osgDB/ReaderWriter>

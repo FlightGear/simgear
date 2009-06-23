@@ -29,7 +29,6 @@
 
 #include <OpenThreads/ScopedLock>
 
-#include <osg/observer_ptr>
 #include <osg/ref_ptr>
 #include <osg/Group>
 #include <osg/NodeCallback>

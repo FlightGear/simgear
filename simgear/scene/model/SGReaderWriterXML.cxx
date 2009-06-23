@@ -169,7 +169,9 @@ sgLoad3DModel_internal(const string &path,
     }
 
     osg::ref_ptr<SGReaderWriterXMLOptions> options
-    = new SGReaderWriterXMLOptions(*osgDB::Registry::instance()->getOptions());
+    = new SGReaderWriterXMLOptions(*options_);
+    options->setPropRoot(prop_root);
+    options->setLoadPanel(load_panel);
 
     // Assume that textures are in
     // the same location as the XML file.
@@ -230,6 +232,7 @@ sgLoad3DModel_internal(const string &path,
         osg::ref_ptr<SGReaderWriterXMLOptions> options;
         options = new SGReaderWriterXMLOptions(*options_);
         options->setPropRoot(prop_root);
+        options->setLoadPanel(load_panel);
         try {
             submodel = sgLoad3DModel_internal(submodelpath.str(), options.get(),
                                               sub_props->getNode("overlay"));

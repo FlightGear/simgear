@@ -20,13 +20,8 @@
 
 #ifndef SGReferenced_HXX
 #define SGReferenced_HXX
-#define USE_OPENTHREADS_ATOMIC
 
-#ifndef USE_OPENTHREADS_ATOMIC
 #include "SGAtomic.hxx"
-#else
-#include <OpenThreads/Atomic>
-#endif
 
 /// Base class for all reference counted SimGear objects
 /// Classes derived from this one are meant to be managed with
@@ -54,11 +49,7 @@ public:
   { if (ref) return 1u < ref->_refcount; else return false; }
 
 private:
-#ifndef USE_OPENTHREADS_ATOMIC
   mutable SGAtomic _refcount;
-#else
-  mutable OpenThreads::Atomic _refcount;
-#endif
 };
 
 #endif

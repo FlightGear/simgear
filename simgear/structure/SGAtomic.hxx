@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2005-2006 Mathias Froehlich 
+ * Copyright (C) 2005-2009 Mathias Froehlich 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -81,7 +81,25 @@ public:
     SGGuard<SGMutex> lock(mMutex);
     return mValue;
 #endif
- }
+  }
+
+  bool compareAndExchange(unsigned oldValue, unsigned newValue)
+  {
+#if defined(SGATOMIC_USE_GCC4_BUILTINS)
+    return __sync_bool_compare_and_swap(&mValue, oldValue, newValue);
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+    return __compare_and_swap(&mValue, oldValue, newValue);
+#elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
+    long volatile* lvPtr = reinterpret_cast<long volatile*>(&mValue);
+    return oldValue == InterlockedCompareExchange(lvPtr, newValue, oldValue);
+#else
+    SGGuard<SGMutex> lock(mMutex);
+    if (mValue != oldValue)
+      return false;
+    mValue = newValue;
+    return true;
+#endif
+  }
 
 private:
   SGAtomic(const SGAtomic&);
@@ -91,9 +109,6 @@ private:
   && !defined(SGATOMIC_USE_MIPOSPRO_BUILTINS) \
   && !defined(SGATOMIC_USE_WIN32_INTERLOCKED)
   mutable SGMutex mMutex;
-#endif
-#ifdef SGATOMIC_USE_WIN32_INTERLOCKED
-  __declspec(align(32))
 #endif
   unsigned mValue;
 };

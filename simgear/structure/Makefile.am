@@ -17,6 +17,8 @@ include_HEADERS = \
 	SGSharedPtr.hxx \
 	SGSmplhist.hxx \
 	SGSmplstat.hxx \
+	SGWeakPtr.hxx \
+	SGWeakReferenced.hxx \
 	Singleton.hxx
 
 libsgstructure_a_SOURCES = \

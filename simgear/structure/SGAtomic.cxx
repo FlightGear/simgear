@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2005-2006 Mathias Froehlich 
+ * Copyright (C) 2005-2009 Mathias Froehlich 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -51,6 +51,18 @@ unsigned __sync_add_and_fetch_4(volatile void *ptr, unsigned value)
                        : "0" (value), "m" (*mem)
                        : "memory");
   return result + value;
+}
+
+unsigned __sync_bool_compare_and_swap_4(volatile void *ptr,
+                                        unsigned oldValue, unsigned newValue)
+{
+  register volatile unsigned* mem = reinterpret_cast<volatile unsigned*>(ptr);
+  unsigned before;
+  __asm__ __volatile__("lock; cmpxchg{l} {%1,%2|%1,%2}"
+                       : "=a"(before)
+                       : "q"(newValue), "m"(*mem), "0"(oldValue)
+                       : "memory");
+  return before == oldValue;
 }
 
 void __sync_synchronize()

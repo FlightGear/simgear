@@ -317,7 +317,7 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
         group = quadtree.getRoot();
     }
     MatrixTransform* mt = new MatrixTransform(transform);
-    for (int i = 0; i < group->getNumChildren(); ++i)
+    for (size_t i = 0; i < group->getNumChildren(); ++i)
         mt->addChild(group->getChild(i));
     mt->setStateSet(stateset);
     return mt;

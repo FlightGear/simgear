@@ -52,7 +52,6 @@ void TileCache::entry_free( long cache_index ) {
     TileEntry *tile = tile_cache[cache_index];
     tile->removeFromSceneGraph();
 
-    tile->free_tile();
     delete tile;
 
     tile_cache.erase( cache_index );

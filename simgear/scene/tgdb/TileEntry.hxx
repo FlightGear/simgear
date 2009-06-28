@@ -102,14 +102,6 @@ public:
 
     static void setModelLoadHelper(ModelLoadHelper *m) { _modelLoader=m; }
 
-    // Clean up the memory used by this tile and delete the arrays
-    // used by ssg as well as the whole ssg branch.  This does a
-    // partial clean up and exits so we can spread the load across
-    // multiple frames.  Returns false if work remaining to be done,
-    // true if dynamically allocated memory used by this tile is
-    // completely freed.
-    bool free_tile();
-
     // Update the ssg transform node for this tile so it can be
     // properly drawn relative to our (0,0,0) point
     void prep_ssg_node(float vis);

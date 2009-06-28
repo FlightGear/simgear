@@ -145,19 +145,6 @@ static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
 }
 
 
-// Clean up the memory used by this tile and delete the arrays used by
-// ssg as well as the whole ssg branch
-bool TileEntry::free_tile() {
-    SG_LOG( SG_TERRAIN, SG_DEBUG,
-            "FREEING TILE = (" << tile_bucket << ")" );
-
-    _node->removeChildren(0, _node->getNumChildren());
-    _node = 0;
-
-    return true;
-}
-
-
 // Update the ssg transform node for this tile so it can be
 // properly drawn relative to our (0,0,0) point
 void TileEntry::prep_ssg_node(float vis) {

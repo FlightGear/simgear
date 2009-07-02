@@ -17,12 +17,16 @@
 #  include <GL/glut.h>
 #endif
 
+#include <simgear/debug/logstream.hxx>
 #include <simgear/screen/extensions.hxx>
 #include <simgear/screen/RenderTexture.h>
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define dbg_printf
+//#define dbg_printf printf
 
 void Reshape(int w, int h);
 
@@ -91,6 +95,10 @@ RenderTexture* CreateRenderTexture(const char *initstr)
     if (!rt2->Initialize(texWidth, texHeight))
     {
         fprintf(stderr, "RenderTexture Initialization failed!\n");
+    }
+    else
+    {
+        printf("RenderTexture Initialization done.\n");
     }
 
     // for shadow mapping we still have to bind it and set the correct 
@@ -203,7 +211,8 @@ void Keyboard(unsigned char key, int x, int y)
         bShowDepthTexture = !bShowDepthTexture;
         break;
     case 13:
-        ++g_currentString%=g_numModeTestStrings;
+        ++g_currentString %= g_numModeTestStrings;
+        dbg_printf("Changed to #%d = [%s]\n", g_currentString, g_modeTestStrings[g_currentString]);
         DestroyRenderTexture(rt);
         rt = CreateRenderTexture(g_modeTestStrings[g_currentString]);
         break;
@@ -338,11 +347,18 @@ int main(int argc, char *argv[])
 
     rt = CreateRenderTexture(g_modeTestStrings[g_currentString]);
 
+    if (rt->IsInitialized() && rt->BeginCapture()) {
+      rt->EndCapture();
+      dbg_printf("Torus should also be shown.\n");
+    } else {
+      dbg_printf("No Torus init = %s\n", (rt->IsInitialized() ? "ok" : "NOT INITIALISED"));
+    }
+    
     printf("Press Enter to change RenderTexture parameters.\n"
            "Press 'r' to toggle the rectangle's motion.\n"
            "Press 't' to toggle the torus' motion.\n");
-    
 
+    
     glutMainLoop();
     return 0;
 }

@@ -29,6 +29,8 @@
 // OS X: Alexander Powell (someone please help)
 // Various Bug Fixes: Daniel (Redge) Sperl 
 //                    Bill Baxter
+// Ubuntu 8.04 64bit: Geoff McLane - 2009-07-01
+// to work even when version 1.2 is returned.
 //
 // --------------------------------------------------------------------------
 /**
@@ -68,6 +70,24 @@
 #endif
 
 using namespace std;
+
+// DEBUG - add a lot of noise
+//#ifndef _DEBUG
+//#define _DEBUG
+//#endif
+
+#ifdef _DEBUG
+#define dbg_printf printf
+const char * get_attr_name( int val, int * pdef );
+#else
+#define dbg_printf
+#endif
+
+// CHOP/NOT CHOP SOME CODE TO GET SOMETHING WORKING!
+#define ADD_QUERY_BUFFER    
+#define ADD_GET_DRAWABLE
+// =======================================
+
 
 #ifdef _WIN32
 static bool fctPtrInited = false;
@@ -152,10 +172,12 @@ RenderTexture::RenderTexture(const char *strMode)
     _iDepthTextureID(0),
     _pPoorDepthTexture(0) // [Redge]
 {
+    dbg_printf("RenderTexture::RenderTexture(%s) BGN instantiation.\n", strMode );
     _iNumColorBits[0] = _iNumColorBits[1] = 
         _iNumColorBits[2] = _iNumColorBits[3] = 0;
 
 #ifdef _WIN32
+    dbg_printf("RenderTexture::RenderTexture in _WIN32.\n" );
     _pixelFormatAttribs.push_back(WGL_DRAW_TO_PBUFFER_ARB);
     _pixelFormatAttribs.push_back(true);
     _pixelFormatAttribs.push_back(WGL_SUPPORT_OPENGL_ARB);
@@ -164,11 +186,13 @@ RenderTexture::RenderTexture(const char *strMode)
     _pbufferAttribs.push_back(WGL_PBUFFER_LARGEST_ARB);
     _pbufferAttribs.push_back(true);
 #elif defined( __MACH__ )
+    dbg_printf("RenderTexture::RenderTexture in __MACH__.\n" );
     //_pixelFormatAttribs.push_back(kCGLPFANoRecovery);
     _pixelFormatAttribs.push_back(kCGLPFAAccelerated);
     _pixelFormatAttribs.push_back(kCGLPFAWindow);
     _pixelFormatAttribs.push_back(kCGLPFAPBuffer);
 #else
+    dbg_printf("RenderTexture::RenderTexture !_WIN32 and !__MACH__.\n" );
     _pbufferAttribs.push_back(GLX_RENDER_TYPE_SGIX);
     _pbufferAttribs.push_back(GLX_RGBA_BIT_SGIX);
     _pbufferAttribs.push_back(GLX_DRAWABLE_TYPE_SGIX);
@@ -186,6 +210,10 @@ RenderTexture::RenderTexture(const char *strMode)
 #else
     _pixelFormatAttribs.push_back(None);
 #endif
+
+    dbg_printf("RenderTexture::RenderTexture(%s) END instantiation. pf=%d pb=%d\n",
+      strMode, _pixelFormatAttribs.size(), _pbufferAttribs.size() );
+
 }
 
 
@@ -199,6 +227,7 @@ RenderTexture::RenderTexture(const char *strMode)
 */ 
 RenderTexture::~RenderTexture()
 {
+    dbg_printf("RenderTexture::~RenderTexture: destructor.\n" );
     _Invalidate();
 }
 
@@ -312,8 +341,8 @@ void PrintExtensionError( const char* strMsg, ... )
     va_end(args);
     
     SG_LOG(SG_GL, SG_ALERT, strMsg);
+    dbg_printf("Error: RenderTexture requires the following unsupported OpenGL extensions: \n[%s]\n", strMsg);
 }
-
 
 //---------------------------------------------------------------------------
 // Function     	: RenderTexture::Initialize
@@ -332,6 +361,8 @@ bool RenderTexture::Initialize(int width, int height,
 {
     assert(width > 0 && height > 0);
 
+    dbg_printf("RenderTexture::Initialize w=%d h=%d\n", width, height );
+    
     _iWidth = width; _iHeight = height;
     _bPowerOf2 = IsPowerOfTwo(width) && IsPowerOfTwo(height);
 
@@ -339,8 +370,10 @@ bool RenderTexture::Initialize(int width, int height,
     _bCopyContext  = copyContext;
 
     // Check if this is an NVXX GPU and verify necessary extensions.
-    if (!_VerifyExtensions())
-        return false;
+    if (!_VerifyExtensions()) {
+       dbg_printf("RenderTexture::Initialize: _VerifyExtensions() FAILED - returning false.\n" );
+       return false;
+    }
     
     if (_bInitialized)
         _Invalidate();
@@ -617,33 +650,71 @@ bool RenderTexture::Initialize(int width, int height,
 #endif
 
 #else // !_WIN32, !__MACH_
+
     _pDisplay = glXGetCurrentDisplay();
+    if ( !_pDisplay ) {
+        dbg_printf("RenderTexture::Initialize: ERROR: glXGetCurrentDisplay() returned NULL! return false\n");
+        return false;
+    }
+    dbg_printf("RenderTexture::Initialize: got glXGetCurrentDisplay() _pDisplay=[%p]\n", _pDisplay);
+    // glXGetCurrentContext returns the current context, as specified by glXMakeCurrent.
+    // If there is no current context, NULL is returned.
     GLXContext context = glXGetCurrentContext();
+    if ( !context ) {
+        dbg_printf("RenderTexture::Initialize: ERROR: glXGetCurrentContext() returned NULL! return false\n");
+        return false;
+    }
+    dbg_printf("RenderTexture::Initialize: got glXGetCurrentContext() context=[%p]\n", context);
     int screen = DefaultScreen(_pDisplay);
+    dbg_printf("RenderTexture::Initialize: DefaultScreen(_pDisplay) screen=%d\n", screen);
+    
     XVisualInfo *visInfo = NULL;
     
     GLXFBConfig *fbConfigs;
     int nConfigs;
-    
+#ifdef _DEBUG
+    dbg_printf("Using %d pixelFormatAttribs array\n", _pixelFormatAttribs.size());
+    size_t max = _pixelFormatAttribs.size() / 2;
+    int dat = 0;
+    size_t n;
+    for (n = 0; n < max; n++) {
+      const char * cp = get_attr_name(_pixelFormatAttribs[n*2], &dat);
+      printf( "%s(%d) = %d (def=%d)\n",
+       cp, _pixelFormatAttribs[n*2], _pixelFormatAttribs[(n*2)+1], dat );
+    }
+    n *= 2;
+    if ( n < _pixelFormatAttribs.size() )
+      printf( "Array ends with %d\n", _pixelFormatAttribs[n] );
+    else
+      printf( "WARNING: Array does not appear ODD! which is ODD\n" );
+      
+#endif
     fbConfigs = glXChooseFBConfigPtr(_pDisplay, screen, 
                                       &_pixelFormatAttribs[0], &nConfigs);
+    // NOTE: ref: http://www.opengl.org/sdk/docs/man/xhtml/glXChooseFBConfig.xml says
+    // Next, call glXGetFBConfigAttrib to retrieve additional attributes for the frame buffer configurations and then select between them.
     
-    if (nConfigs == 0 || !fbConfigs) 
+    if (nConfigs <= 0 || !fbConfigs) 
     {
         SG_LOG(SG_GL, SG_ALERT,
             "RenderTexture Error: Couldn't find a suitable pixel format.");
+        dbg_printf("RenderTexture Error: Couldn't find a suitable pixel format. return false\n");
         return false;
     }
     
+    dbg_printf("RenderTexture::Initialize: glXChooseFBConfigPtr() nConfigs = %d, fbConfigs=[%p]\n", nConfigs, fbConfigs);
+    
+    int pbufAttrib[] = {
+      GLX_PBUFFER_WIDTH,   _iWidth,
+      GLX_PBUFFER_HEIGHT,  _iHeight,
+      GLX_LARGEST_PBUFFER, False,
+      None
+    };
     // Pick the first returned format that will return a pbuffer
-    if (glXVersion1_3Present)
+    // if (glXVersion1_3Present)
+    if (glXCreatePbufferPtr && glXGetVisualFromFBConfigPtr && glXCreateContextPtr) 
     {
-        int pbufAttrib[] = {
-            GLX_PBUFFER_WIDTH,   _iWidth,
-            GLX_PBUFFER_HEIGHT,  _iHeight,
-            GLX_LARGEST_PBUFFER, False,
-            None
-        };
+        dbg_printf("RenderTexture::Initialize: glXVersion1_3Present = TRUE\n");
         for (int i=0;i<nConfigs;i++)
         {
             _hPBuffer = glXCreatePbufferPtr(_pDisplay, fbConfigs[i], pbufAttrib);
@@ -656,6 +727,7 @@ bool RenderTexture::Initialize(int width, int height,
                                                True);
                 if (!_hGLContext)
                 {
+                    dbg_printf("RenderTexture Error: glXCreateContextPtr(_pDisplay, visInfo,..) FAILED! return false\n");
                     return false;
                 }
                 XFree( visInfo );
@@ -670,27 +742,37 @@ bool RenderTexture::Initialize(int width, int height,
         int iNumFormats;
         int attrib = 0;
 #endif
-        for (int i=0;i<nConfigs;i++)
+        dbg_printf("RenderTexture::Initialize: glXVersion1_3Present = FALSE w=%d h=%d\n", _iWidth, _iHeight);
+        for (int i=0; i < nConfigs; i++)
         {
+             dbg_printf("RenderTexture::Initialize: %d: glXCreateGLXPbufferPtr() get buffer ptr\n", (i + 1));
             _hPBuffer = glXCreateGLXPbufferPtr(_pDisplay, fbConfigs[i], 
-                                               _iWidth, _iHeight, NULL);
+                                               _iWidth, _iHeight,
+                                               &pbufAttrib[0] ); //NULL);
             if (_hPBuffer) 
             {
+                dbg_printf("RenderTexture::Initialize: %d: glXCreateGLXPbufferPtr() got buffer [%p]\n", (i + 1), _hPBuffer);
                 _hGLContext = glXCreateContextWithConfigPtr(_pDisplay, 
                                                              fbConfigs[i], 
                                                              GLX_RGBA_TYPE, 
                                                              _bShareObjects ? context : NULL, 
                                                              True);
+                dbg_printf("RenderTexture::Initialize: %d: glXCreateContextWithConfigPtr() _hGLContext=[%p]\n", (i + 1), _hGLContext);
                 break;
+            } else {
+                dbg_printf("RenderTexture::Initialize: %d: glXCreateGLXPbufferPtr() NO buffer\n", (i + 1));
             }
         }
     }
+    
+    dbg_printf("RenderTexture::Initialize: doing XFree( fbConfigs=[%p].\n", fbConfigs);
     XFree( fbConfigs );
     
     if (!_hPBuffer)
     {
         SG_LOG(SG_GL, SG_ALERT, 
                 "RenderTexture Error: glXCreateGLXPbufferPtr() failed.");
+        dbg_printf("RenderTexture Error: glXCreateGLXPbufferPtr() failed.\n");
         return false;
     }
     
@@ -703,20 +785,29 @@ bool RenderTexture::Initialize(int width, int height,
         {
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Error: glXCreateContext() failed.");
+            dbg_printf("RenderTexture Error: glXCreateContext() failed. return false\n");
             return false;
         }
     }
     
-    if (!glXVersion1_3Present)
+    // if (!glXVersion1_3Present)
+    if ((!glXCreatePbufferPtr || !glXGetVisualFromFBConfigPtr || !glXCreateContextPtr) &&
+        (!glXVersion1_3Present))
     {
+#ifdef ADD_QUERY_BUFFER    
+        dbg_printf("RenderTexture::Initialize: Doing glXQueryGLXPbufferSGIXPtr with GLX_WIDTH_SGIX\n");
         glXQueryGLXPbufferSGIXPtr(_pDisplay, _hPBuffer, GLX_WIDTH_SGIX, 
                                   (GLuint*)&_iWidth);
+        dbg_printf("RenderTexture::Initialize: Doing glXQueryGLXPbufferSGIXPtr with GLX_HEIGHT_SGIX\n");
         glXQueryGLXPbufferSGIXPtr(_pDisplay, _hPBuffer, GLX_HEIGHT_SGIX, 
                                   (GLuint*)&_iHeight);
+#else
+        dbg_printf("RenderTexture::Initialize: SKIPPED doing glXQueryGLXPbufferSGIXPtr with GLX_WIDTH_SGIX and GLX_HEIGHT_SGIX\n");
+#endif // #ifdef ADD_QUERY_BUFFER    
     }
     
     _bInitialized = true;
-    
+    dbg_printf( "RenderTexture::Initialize: _bIniialized set TRUE\n" );
     // XXX Query the color format
     
 #endif
@@ -740,13 +831,26 @@ bool RenderTexture::Initialize(int width, int height,
         return false;
     }
 #else
+
+#ifdef ADD_GET_DRAWABLE
+     dbg_printf( "RenderTexture::Initialize: doing glXGetCurrentContext()\n" );
     _hPreviousContext = glXGetCurrentContext();
+     dbg_printf( "RenderTexture::Initialize: doing glXGetCurrentDrawable()\n" );
     _hPreviousDrawable = glXGetCurrentDrawable();
+#else
+    _hPreviousContext = context;
+    _hPreviousDrawable = 0;
+     dbg_printf( "RenderTexture::Initialize: SKIPPED doing glXGetCurrentContext(2nd) AND glXGetCurrentDrawable()\n" );
+#endif // #ifdef ADD_GET_DRAWABLE
     
+    dbg_printf( "RenderTexture::Initialize: doing glXMakeCurrent(_pDisplay(%p), _hPBuffer(%p), _hGLContext(%p))\n",
+       _pDisplay, _hPBuffer, _hGLContext );
     if (False == glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext)) 
     {
+        dbg_printf( "glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext) FAILED. return false\n" );
         return false;
     }
+    
 #endif
     
     bool result = _InitializeTextures();   
@@ -773,16 +877,23 @@ bool RenderTexture::Initialize(int width, int height,
     if (False == glXMakeCurrent(_pDisplay, 
                                 _hPreviousDrawable, _hPreviousContext))
     {
+        dbg_printf("glXMakeCurrent(_pDisplay, _hPreviousDrawable, _hPreviousContext)) FAILED! return false\n" );
         return false;
     }
+    
     if (glXVersion1_3Present)
+    //if ((glXVersion1_3Present) ||
+    //    (glXCreatePbufferPtr && glXGetVisualFromFBConfigPtr && glXCreateContextPtr && glXQueryDrawablePtr)) 
     {
+        dbg_printf( "RenderTexture::Initialize: doing glXGetCurrentDrawable()\n" );
         GLXDrawable draw = glXGetCurrentDrawable();
+        dbg_printf( "RenderTexture::Initialize: doing glXQueryDrawablePtr for GLX_WIDTH and GLX_HEIGHT\n" );
         glXQueryDrawablePtr(_pDisplay, draw, GLX_WIDTH, (unsigned int*)&_iWidth);
         glXQueryDrawablePtr(_pDisplay, draw, GLX_HEIGHT, (unsigned int*)&_iHeight);
     }
 #endif
 
+    dbg_printf( "RenderTexture::Initialize(w=%d,h=%d): returning %s\n", _iWidth, _iHeight, (result ? "TRUE" : "FALSE") );
     return result;
 }
 
@@ -798,6 +909,8 @@ bool RenderTexture::Initialize(int width, int height,
 */ 
 bool RenderTexture::_Invalidate()
 {
+    dbg_printf( "RenderTexture::_Invalidate() called...\n" );
+    
     _iNumColorBits[0] = _iNumColorBits[1] = 
         _iNumColorBits[2] = _iNumColorBits[3] = 0;
     _iNumDepthBits = 0;
@@ -845,10 +958,12 @@ bool RenderTexture::_Invalidate()
             glXMakeCurrent(_pDisplay, _hPBuffer, 0);
         glXDestroyPbufferPtr(_pDisplay, _hPBuffer);
         _hPBuffer = 0;
+       dbg_printf( "RenderTexture::_Invalidate: glXDestroyPbufferPtr(_pDisplay, _hPBuffer); return true\n" );
         return true;
     }
 #endif
 
+    dbg_printf( "RenderTexture::_Invalidate: return false\n" );
     // [WVB] do we need to call _ReleaseBoundBuffers() too?
     return false;
 }
@@ -867,6 +982,8 @@ bool RenderTexture::_Invalidate()
 */ 
 bool RenderTexture::Reset(const char *strMode, ...)
 {
+   dbg_printf("RenderTexure:Reset(): with %s\n", strMode);
+   
     _iWidth = 0; _iHeight = 0; 
     _bIsTexture = false; _bIsDepthTexture = false,
     _bHasARBDepthTexture = true;
@@ -889,11 +1006,21 @@ bool RenderTexture::Reset(const char *strMode, ...)
     _pPoorDepthTexture = 0;
     _pixelFormatAttribs.clear();
     _pbufferAttribs.clear();
-
-    if (IsInitialized() && !_Invalidate())
+    if (IsInitialized())
     {
-        SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Reset(): failed to invalidate.");
+      if (!_Invalidate())
+      {
+        dbg_printf( "RenderTexture::Reset(): failed to invalidate. return false\n");
         return false;
+      }
+      else
+      {
+        dbg_printf( "RenderTexture::Reset(): was Initialized, and now _Invalidate() ok.");
+      }
+    }
+    else
+    {
+      dbg_printf("RenderTexure:Reset(): previous NOT initialised!\n");
     }
     
     _iNumColorBits[0] = _iNumColorBits[1] = 
@@ -939,6 +1066,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
 #else
     _pixelFormatAttribs.push_back(None);
 #endif
+    dbg_printf("RenderTexure:Reset(): returning true.\n");
     return true;
 }
 
@@ -1307,6 +1435,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
                                      vector<int> &pfAttribs, 
                                      vector<int> &pbAttribs)
 {
+    dbg_printf("RenderTexture::_ParseModeString(%s). BGN vf=%d vp=%d\n", modeString, pfAttribs.size(), pbAttribs.size() );
     if (!modeString || strcmp(modeString, "") == 0)
         return;
 
@@ -1384,10 +1513,14 @@ void RenderTexture::_ParseModeString(const char *modeString,
 	    _iNumComponents += 3;
             continue;
         }
-		else if (kv.first == "rgb") 
+		else if (kv.first == "rgb")
+       {
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
                     "(rgb + " << _iNumComponents << ").");
+            dbg_printf("RenderTexture Warning 1: mistake in components definition "
+                    "(rgb + %d).\n", _iNumComponents );
+       }
         
         if (kv.first == "rgba" && (_iNumComponents == 0))
         {
@@ -1444,9 +1577,13 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "rgba") 
+      {
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
                     "(rgba + " << _iNumComponents << ").");
+            dbg_printf("RenderTexture Warning 2: mistake in components definition "
+                    "(rgb + %d).\n", _iNumComponents );
+      }
         
         if (kv.first == "r" && (_iNumComponents <= 1))
         {
@@ -1474,10 +1611,13 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 	else if (kv.first == "r") 
+   {
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
                     "(r + " << _iNumComponents << ").");
-
+            dbg_printf("RenderTexture Warning 3: mistake in components definition "
+                    "(rgb + %d).\n", _iNumComponents );
+   }
         if (kv.first == "rg" && (_iNumComponents <= 1))
         {
             if (kv.second.find("f") != kv.second.npos)
@@ -1515,9 +1655,13 @@ void RenderTexture::_ParseModeString(const char *modeString,
             continue;
         }
 		else if (kv.first == "rg") 
+      {
             SG_LOG(SG_GL, SG_ALERT, 
                     "RenderTexture Warning: mistake in components definition "
                     "(rg + " << _iNumComponents << ").");
+            dbg_printf("RenderTexture Warning 4: mistake in components definition "
+                    "(rgb + %d).\n", _iNumComponents );
+      }
 
         if (kv.first == "depth")
         {
@@ -1680,6 +1824,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
         SG_LOG(SG_GL, SG_ALERT, 
                 "RenderTexture Error: Unknown pbuffer attribute: " <<
                 token.c_str());
+        dbg_printf("RenderTexture Error: Uknown pbuffer attribute: %s\n",
+            token.c_str() );
     }
 
     // Processing of some options must be last because of interactions.
@@ -1690,6 +1836,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
         SG_LOG(SG_GL, SG_ALERT,
                 "RenderTexture Warning: Depth and Color texture targets "
                 "should match.");
+        dbg_printf( "RenderTexture Warning: Depth and Color texture targets should match.\n");
     }
 
     // Apply default bit format if none specified
@@ -1760,6 +1907,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
         SG_LOG(SG_GL, SG_ALERT, "RenderTexture Warning: No support found for "
                 "render to depth texture.");
 #endif
+        dbg_printf("RenderTexture Warning: No support found for render to depth texture.\n");
         _bIsDepthTexture = false;
     }
 #endif
@@ -1878,6 +2026,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
                             "RenderTexture Warning: Bad number of components "
                             "(r=1,rg=2,rgb=3,rgba=4): " <<
                             _iNumComponents);
+                    dbg_printf("RenderTexture Warning 1: Bad number of components (r=1,rg=2,rgb=3,rgba=4): %d\n",
+                            _iNumComponents);
                     break;
                 }
             }
@@ -1925,6 +2075,8 @@ void RenderTexture::_ParseModeString(const char *modeString,
                 SG_LOG(SG_GL, SG_ALERT, 
                         "RenderTexture Warning: Bad number of components "
                         "(r=1,rg=2,rgb=3,rgba=4): " << _iNumComponents);
+                dbg_printf("RenderTexture Warning 2: Bad number of components (r=1,rg=2,rgb=3,rgba=4): %d\n",
+                            _iNumComponents);
                 break;
             }
         }
@@ -2023,9 +2175,9 @@ void RenderTexture::_ParseModeString(const char *modeString,
         }
 #elif defined(DEBUG) || defined(_DEBUG)
         SG_LOG(SG_GL, SG_ALERT, 
-                "RenderTexture Error: Render to Texture not supported in "
-                "Linux or MacOS\ n");
+                "RenderTexture Error: Render to Texture not supported in Linux or MacOS");
 #endif  
+      dbg_printf( "RenderTexture Error 1: Render to Texture not supported in Linux or MacOS\n");
     }
         
     if (_bIsDepthTexture && (RT_RENDER_TO_TEXTURE == _eUpdateMode))
@@ -2052,7 +2204,10 @@ void RenderTexture::_ParseModeString(const char *modeString,
         SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: Render to Texture not supported in "
                "Linux or MacOS");
 #endif 
+      dbg_printf( "RenderTexture Error 2: Render to Texture not supported in Linux or MacOS\n");
     }
+    dbg_printf("RenderTexture::_ParseModeString(%s). END vf=%d vp=%d\n", modeString, pfAttribs.size(), pbAttribs.size() );
+
 }
 
 //---------------------------------------------------------------------------
@@ -2122,6 +2277,7 @@ vector<int> RenderTexture::_ParseBitVector(string bitVector)
 */ 
 bool RenderTexture::_VerifyExtensions()
 {
+   dbg_printf("RenderTexture::_VerifyExtensions() called...\n");
 #ifdef _WIN32
 	// a second call to _VerifyExtensions will allways return true, causing a crash
 	// if the extension is not supported
@@ -2205,15 +2361,42 @@ bool RenderTexture::_VerifyExtensions()
 #else
     Display* dpy = glXGetCurrentDisplay();
     int minor = 0, major = 0;
-    if (!glXQueryVersion(dpy, &major, &minor))
+    if (!dpy) {
+        dbg_printf("_VerifyExtensions: glXGetCurrentDisplay() returned NULL! returning false\n");
         return false;
+    }
+    if (!glXQueryVersion(dpy, &major, &minor)) 
+    {
+        dbg_printf("_VerifyExtensions: glXQueryVersion(dpy, &major, &minor) FAILED! returning false\n");
+        return false;
+    }
+    else
+    {
+        dbg_printf("_VerifyExtensions: glXQueryVersion(dpy, major=%d, minor=%d)\n", major, minor);
+    }
 
     int screen = DefaultScreen(dpy);
     const char* extString = glXQueryExtensionsString(dpy, screen);
+    dbg_printf("_VerifyExtensions: glXQueryExtensionsString(dpy, screen) returned -\n[%s]\n",
+      (extString ? extString : "<NULL>") );
     if (!SGSearchExtensionsString(extString, "GLX_SGIX_fbconfig") ||
         !SGSearchExtensionsString(extString, "GLX_SGIX_pbuffer"))
-        return false;
-
+    {
+        dbg_printf("_VerifyExtensions: glXQueryExtensionsString(dpy,screen) does NOT contain GLX_SGIX_fbconfig or GLX_SGIX_pbuffer!\n" );
+        const char * extClient = glXGetClientString( dpy, GLX_EXTENSIONS );
+        if (!extClient ||
+            !SGSearchExtensionsString(extClient, "GLX_SGIX_fbconfig") ||
+            !SGSearchExtensionsString(extClient, "GLX_SGIX_pbuffer"))
+        {
+            dbg_printf("_VerifyExtensions: AND glXGetClientString(dpy,GLX_EXTENSIONS) also! returning false\n" );
+            return false;
+        }
+        else
+        {
+            dbg_printf("_VerifyExtensions: BUT glXGetClientString(dpy,GLX_EXTENSIONS) returned \n[%s]\n", extClient );
+            dbg_printf("Since this DOES contain fbconfig and pbuffer, continuing...\n");
+        }
+    }
     // First try the glX version 1.3 functions.
     glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfig");
     glXCreatePbufferPtr = (glXCreatePbufferProc)SGLookupFunction("glXCreatePbuffer");
@@ -2228,10 +2411,22 @@ bool RenderTexture::_VerifyExtensions()
         glXGetVisualFromFBConfigPtr &&
         glXCreateContextPtr &&
         glXDestroyPbufferPtr &&
-        glXQueryDrawablePtr)
+        glXQueryDrawablePtr) {
+        dbg_printf("_VerifyExtensions: setting glXVersion1_3Present TRUE\n" );
         glXVersion1_3Present = true;
+    }
     else
     {
+        dbg_printf("_VerifyExtensions: setting glXVersion1_3Present FALSE\n Reason: " );
+        if ( !((1 <= major && 3 <= minor) || 2 <= major) ) { dbg_printf( "Version wrong %d.%d ", major, minor ); }
+        if ( !glXChooseFBConfigPtr ) { dbg_printf( "missing glXChooseFBConfigPtr " ); }
+        if ( !glXCreatePbufferPtr ) { dbg_printf( "missing glXCreatePbufferPtr " ); }
+        if ( !glXGetVisualFromFBConfigPtr ) { dbg_printf( "missing glXGetVisualFromFBConfigPtr " ); }
+        if ( !glXCreateContextPtr ) { dbg_printf( "missing glXCreateContextPtr " ); }
+        if ( !glXDestroyPbufferPtr ) { dbg_printf( "missing glXDestroyPbufferPtr " ); }
+        if ( !glXQueryDrawablePtr ) { dbg_printf( "missing glXQueryDrawablePtr " ); }
+        dbg_printf("\n");
+        
         glXChooseFBConfigPtr = (glXChooseFBConfigProc)SGLookupFunction("glXChooseFBConfigSGIX");
         glXCreateGLXPbufferPtr = (glXCreateGLXPbufferProc)SGLookupFunction("glXCreateGLXPbufferSGIX");
         glXGetVisualFromFBConfigPtr =  (glXGetVisualFromFBConfigProc)SGLookupFunction("glXGetVisualFromFBConfigSGIX");
@@ -2239,14 +2434,25 @@ bool RenderTexture::_VerifyExtensions()
         glXDestroyPbufferPtr = (glXDestroyPbufferProc)SGLookupFunction("glXDestroyGLXPbufferSGIX");
         glXQueryGLXPbufferSGIXPtr = (glXQueryGLXPbufferSGIXProc)SGLookupFunction("glXQueryGLXPbufferSGIX");
 
-
         if (!glXChooseFBConfigPtr ||
             !glXCreateGLXPbufferPtr ||
             !glXGetVisualFromFBConfigPtr ||
             !glXCreateContextWithConfigPtr ||
             !glXDestroyPbufferPtr ||
             !glXQueryGLXPbufferSGIXPtr)
-            return false;
+            {
+               dbg_printf("_VerifyExtensions: some pointer is NULL! return false\n" );
+               if ( !glXCreateGLXPbufferPtr ) {
+                  dbg_printf("RenderTexture::Initialize: ERROR glXCreateGLXPbufferPtr = NULL!\n");
+               } else if ( !glXCreateContextWithConfigPtr ) {
+                  dbg_printf("RenderTexture::Initialize: ERROR glXCreateContextWithConfigPtr = NULL!\n");
+               } else if ( !glXVersion1_3Present && !glXQueryGLXPbufferSGIXPtr ) {
+                  dbg_printf("RenderTexture::Initialize: ERROR glXQueryGLXPbufferSGIXPtr = NULL!\n");
+               }
+               return false;
+            } else {
+               dbg_printf("_VerifyExtensions: appear to have all 'procs' glXCreateGLXPbufferPtr=[%p]\n", glXCreateGLXPbufferPtr );
+            }
     }
 
     if (_bIsDepthTexture && !GL_ARB_depth_texture)
@@ -2266,6 +2472,7 @@ bool RenderTexture::_VerifyExtensions()
     }
 #endif
   
+    dbg_printf("RenderTexture::_VerifyExtensions: return true.\n");
     return true;
 }
 
@@ -2279,7 +2486,9 @@ bool RenderTexture::_VerifyExtensions()
 */ 
 bool RenderTexture::_InitializeTextures()
 {
+   dbg_printf( "RenderTexture::_InitializeTextures() called\n" );
     // Determine the appropriate texture formats and filtering modes.
+    
     if (_bIsTexture || _bIsDepthTexture)
     {
         if (_bRectangle && GL_NV_texture_rectangle)
@@ -2315,6 +2524,7 @@ bool RenderTexture::_InitializeTextures()
                     SG_LOG(SG_GL, SG_ALERT, 
                         "RenderTexture Error: mipmapped float textures not "
                         "supported.");
+                    dbg_printf( "RenderTexture Error: mipmapped float textures not supported. return false\n");
                     return false;
                 }
             
@@ -2378,6 +2588,8 @@ bool RenderTexture::_InitializeTextures()
                     SG_LOG(SG_GL, SG_INFO, "RenderTexture Error: "
                            "Invalid number of components: " <<
                            _iNumComponents);
+                    dbg_printf( "RenderTexture Error: Invalid number of components: %d - return false\n",
+                        _iNumComponents);
                     return false;
                 }
             }
@@ -2436,6 +2648,7 @@ bool RenderTexture::_InitializeTextures()
         }
     }
 
+    dbg_printf( "RenderTexture::_InitializeTextures() returning true\n" );
     return true;
 }
 
@@ -2567,7 +2780,7 @@ bool RenderTexture::_ReleaseBoundBuffers()
 * @fn RenderTexture::_MakeCurrent()
 * @brief Makes the RenderTexture's context current
 */ 
-
+static GLXContext last_hGLContext = 0;
 bool RenderTexture::_MakeCurrent() 
 {
 #ifdef _WIN32
@@ -2588,10 +2801,15 @@ bool RenderTexture::_MakeCurrent()
 #else
     if (false == glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext)) 
     {
+        dbg_printf( "_MakeCurrent: glXMakeCurrent FAILED! returning false\n");
         return false;
     }
 #endif
 
+    if ( last_hGLContext != _hGLContext ) {
+      last_hGLContext = _hGLContext;
+      dbg_printf( "_MakeCurrent: glXMakeCurrent set to [%p] SUCCESS! returning true\n", _hGLContext );
+    }
     return true;
 }
 
@@ -2657,6 +2875,7 @@ RenderTexture::RenderTexture(int width, int height,
     SG_LOG(SG_GL, SG_ALERT, 
             "RenderTexture Warning: Deprecated Contructor interface used.");
 #endif
+    dbg_printf("RenderTexture Warning: Deprecated Contructor interface used.\n");
     
     _iNumColorBits[0] = _iNumColorBits[1] = 
         _iNumColorBits[2] = _iNumColorBits[3] = 0;
@@ -2694,6 +2913,7 @@ bool RenderTexture::Initialize(bool         bShare       /* = true */,
     SG_LOG(SG_GL, SG_ALERT, 
             "RenderTexture Warning: Deprecated Initialize() interface used.");
 #endif   
+    dbg_printf("RenderTexture Warning: Deprecated Initialize() interface used.\n");
 
     // create a mode string.
     string mode = "";
@@ -2800,14 +3020,195 @@ bool RenderTexture::Reset(int iWidth, int iHeight)
 {
     SG_LOG(SG_GL, SG_ALERT, 
             "RenderTexture Warning: Deprecated Reset() interface used.");
+            
+    dbg_printf("RenderTexture Warning: Deprecated Reset(x,y) interface used.\n");
 
     if (!_Invalidate())
     {
         SG_LOG(SG_GL, SG_ALERT, "RenderTexture::Reset(): failed to invalidate.");
+        dbg_printf( "RenderTexture::Reset(x,y): failed to invalidate. returning false\n");
         return false;
     }
     _iWidth     = iWidth;
     _iHeight    = iHeight;
     
+    dbg_printf( "RenderTexture::Reset(x,y): succeeded. returning true\n");
     return true;
 }
+
+#ifdef _DEBUG
+/* just some DEBUG ONLY code, to show the 'attributes' */
+
+typedef struct tagPXATTS {
+   int attr;
+   const char * name;
+   const char * desc;
+   int def;
+}PXATTS, * PPXATTS;
+
+static PXATTS pxAtts[] = {
+   { GLX_FBCONFIG_ID, "GLX_FBCONFIG_ID",
+     "followed by a valid XID that indicates the desired GLX frame buffer configuration. "
+     "When a GLX_FBCONFIG_ID is specified, all attributes are ignored. The default value is GLX_DONT_CARE.",
+     GLX_DONT_CARE },
+   { GLX_BUFFER_SIZE, "GLX_BUFFER_SIZE",
+   "Must be followed by a nonnegative integer that indicates the desired color index buffer size."
+   "The smallest index buffer of at least the specified size is preferred. This attribute is ignored if GLX_COLOR_INDEX_BIT is not set "
+   "in GLX_RENDER_TYPE. The default value is 0.",
+    0 },
+   { GLX_LEVEL, "GLX_LEVEL",
+   "Must be followed by an integer buffer-level specification. This specification is honored exactly."
+   "Buffer level 0 corresponds to the default frame buffer of the display. "
+   "Buffer level 1 is the first overlay frame buffer, level two the second overlay frame buffer, and so on."
+   "Negative buffer levels correspond to underlay frame buffers. The default value is 0.",
+    0 },
+   { GLX_DOUBLEBUFFER, "GLX_DOUBLEBUFFER",
+   "Must be followed by True or False. If True is specified, then only double-buffered frame buffer configurations are considered;"
+   "if False is specified, then only single-buffered frame buffer configurations are considered. The default value is GLX_DONT_CARE.",
+    GLX_DONT_CARE },
+   { GLX_STEREO, "GLX_STEREO",
+   "Must be followed by True or False. If True is specified, then only stereo frame buffer configurations are considered;"
+   " if False is specified, then only monoscopic frame buffer configurations are considered. The default value is False.",
+   False },
+   { GLX_AUX_BUFFERS, "GLX_AUX_BUFFERS",
+   "Must be followed by a nonnegative integer that indicates the desired number of auxiliary buffers."
+   " Configurations with the  smallest number of auxiliary buffers that meet or exceed the specified number are preferred."
+   " The default value is 0.",
+   0 },
+   { GLX_RED_SIZE, "GLX_RED_SIZE",
+   "must be followed by a nonnegative minimum size",
+   0 },
+   { GLX_GREEN_SIZE, "GLX_GREEN_SIZE",
+   "must be followed by a nonnegative minimum size",
+   0 },
+   { GLX_BLUE_SIZE, "GLX_BLUE_SIZE",
+   "must be followed by a nonnegative minimum size",
+   0 },
+   { GLX_ALPHA_SIZE, "GLX_ALPHA_SIZE",
+   "Each attribute, if present, must be followed by a nonnegative minimum size specification or GLX_DONT_CARE."
+   " The largest available total RGBA color buffer size (sum of GLX_RED_SIZE, GLX_GREEN_SIZE, GLX_BLUE_SIZE, and GLX_ALPHA_SIZE) "
+   " of at least the minimum size specified for each color component is preferred. If the requested number of bits for a color "
+   " component is 0 or GLX_DONT_CARE, it is not considered. The default value for each color component is 0.",
+   0 },
+   { GLX_DEPTH_SIZE, "GLX_DEPTH_SIZE",
+   "Must be followed by a nonnegative minimum size specification. If this value is zero, "
+   "frame buffer configurations with no depth buffer are preferred."
+   "Otherwise, the largest available depth buffer of at least the minimum size is preferred. The default value is 0.",
+   0 },
+   { GLX_STENCIL_SIZE, "GLX_STENCIL_SIZE",
+   "Must be followed by a nonnegative integer that indicates the desired number of stencil bitplanes."
+   "The smallest stencil buffer of at least the specified size is preferred. If the desired value is zero,"
+   " frame buffer configurations with no stencil buffer are preferred. The default value is 0.",
+   0 },
+   { GLX_ACCUM_RED_SIZE, "GLX_ACCUM_RED_SIZE",
+   "Must be followed by a nonnegative minimum size specification. If this value is zero, "
+   " frame buffer configurations with no red accumulation buffer are preferred."
+   " Otherwise, the largest possible red accumulation buffer of at least the minimum size is preferred. The default value is 0.",
+   0 },
+   { GLX_ACCUM_GREEN_SIZE, "GLX_ACCUM_GREEN_SIZE",
+   "Must be followed by a nonnegative minimum size specification. If this value is zero, "
+   "frame buffer configurations with no green accumulation buffer are preferred. "
+   "Otherwise, the largest possible green accumulation buffer of at least the minimum size is preferred. The default value is 0.",
+   0 },
+   { GLX_ACCUM_BLUE_SIZE, "GLX_ACCUM_BLUE_SIZE",
+   "Must be followed by a nonnegative minimum size specification. If this value is zero, "
+   "frame buffer configurations with no blue accumulation buffer are preferred. "
+   "Otherwise, the largest possible blue accumulation buffer of at least the minimum size is preferred. The default value is 0.",
+   0 },
+   { GLX_ACCUM_ALPHA_SIZE, "GLX_ACCUM_ALPHA_SIZE",
+   "Must be followed by a nonnegative minimum size specification. If this value is zero, "
+   "frame buffer configurations with no alpha accumulation buffer are preferred. "
+   "Otherwise, the largest possible alpha accumulation buffer of at least the minimum size is preferred. The default value is 0.",
+   0 },
+   { GLX_RENDER_TYPE, "GLX_RENDER_TYPE",
+   "Must be followed by a mask indicating which OpenGL rendering modes the frame buffer configuration must support. "
+   "Valid bits are GLX_RGBA_BIT and GLX_COLOR_INDEX_BIT. If the mask is set to GLX_RGBA_BIT | GLX_COLOR_INDEX_BIT, "
+   "then only frame buffer configurations that can be bound to both RGBA contexts and color index contexts will be considered. "
+   "The default value is GLX_RGBA_BIT.",
+    GLX_RGBA_BIT },
+   { GLX_DRAWABLE_TYPE, "GLX_DRAWABLE_TYPE",
+   "Must be followed by a mask indicating which GLX drawable types the frame buffer configuration must support. "
+   "Valid bits are GLX_WINDOW_BIT, GLX_PIXMAP_BIT, and GLX_PBUFFER_BIT. For example, if mask is set to "
+   "GLX_WINDOW_BIT | GLX_PIXMAP_BIT,  only frame buffer configurations that support both windows and GLX pixmaps "
+   "will be considered. The default value is GLX_WINDOW_BIT.", 
+   GLX_WINDOW_BIT },
+   { GLX_X_RENDERABLE, "GLX_X_RENDERABLE",
+   "Must be followed by True or False. If True is specified, then only frame buffer configurations that "
+   "have associated X visuals (and can be used to render to Windows and/or GLX pixmaps) will be considered. "
+   "The default value is GLX_DONT_CARE. ",
+   GLX_DONT_CARE },
+   { GLX_X_VISUAL_TYPE, "GLX_X_VISUAL_TYPE",
+   "Must be followed by one of GLX_TRUE_COLOR, GLX_DIRECT_COLOR, GLX_PSEUDO_COLOR, GLX_STATIC_COLOR, "
+   "GLX_GRAY_SCALE, or GLX_STATIC_GRAY, indicating the desired X visual type. "
+   "Not all frame buffer configurations have an associated X visual. If GLX_DRAWABLE_TYPE is specified in attrib_list and the "
+   "mask that follows does not have GLX_WINDOW_BIT set, then this value is ignored. It is also ignored if "
+   "GLX_X_RENDERABLE is specified as False. RGBA rendering may be supported for visuals of type "
+   "GLX_TRUE_COLOR, GLX_DIRECT_COLOR, GLX_PSEUDO_COLOR, or GLX_STATIC_COLOR, "
+   "but color index rendering is only supported for visuals of type GLX_PSEUDO_COLOR or GLX_STATIC_COLOR "
+   "(i.e., single-channel visuals). The tokens GLX_GRAY_SCALE and GLX_STATIC_GRAY will "
+   "not match current OpenGL enabled visuals, but are included for future use."
+   "The default value for GLX_X_VISUAL_TYPE is GLX_DONT_CARE.",
+   GLX_DONT_CARE },
+   { GLX_CONFIG_CAVEAT, "GLX_CONFIG_CAVEAT",
+   "Must be followed by one of GLX_NONE, GLX_SLOW_CONFIG, GLX_NON_CONFORMANT_CONFIG. "
+   "If GLX_NONE is specified, then only frame buffer configurations with "
+   "no caveats will be considered; if GLX_SLOW_CONFIG is specified, then only slow frame buffer configurations will be considered; if "
+   "GLX_NON_CONFORMANT_CONFIG is specified, then only nonconformant frame buffer configurations will be considered."
+   "The default value is GLX_DONT_CARE.",
+   GLX_DONT_CARE },
+   { GLX_TRANSPARENT_TYPE, "GLX_TRANSPARENT_TYPE",
+   "Must be followed by one of GLX_NONE, GLX_TRANSPARENT_RGB, GLX_TRANSPARENT_INDEX. "
+   "If GLX_NONE is specified, then only opaque frame buffer configurations will be considered; "
+   "if GLX_TRANSPARENT_RGB is specified, then only transparent frame buffer configurations that support RGBA rendering will be considered; "
+   "if GLX_TRANSPARENT_INDEX is specified, then only transparent frame buffer configurations that support color index rendering will be considered."
+   "The default value is GLX_NONE.",
+    GLX_NONE },
+   { GLX_TRANSPARENT_INDEX_VALUE, "GLX_TRANSPARENT_INDEX_VALUE",
+   "Must be followed by an integer value indicating the transparent index value; the value must be between 0 and the maximum "
+   "frame buffer value for indices. Only frame buffer configurations that use the "
+   "specified transparent index value will be considered. The default value is GLX_DONT_CARE. "
+   "This attribute is ignored unless GLX_TRANSPARENT_TYPE is included in attrib_list and specified as GLX_TRANSPARENT_INDEX.",
+   GLX_DONT_CARE },
+   { GLX_TRANSPARENT_RED_VALUE, "GLX_TRANSPARENT_RED_VALUE",
+   "Must be followed by an integer value indicating the transparent red value; the value must be between 0 and the maximum "
+   "frame buffer value for red. Only frame buffer configurations that use the specified transparent red value will be considered. "
+   "The default value is GLX_DONT_CARE. This attribute is ignored unless GLX_TRANSPARENT_TYPE is included in "
+   "attrib_list and specified as GLX_TRANSPARENT_RGB.",
+   GLX_DONT_CARE },
+   { GLX_TRANSPARENT_GREEN_VALUE, "GLX_TRANSPARENT_GREEN_VALUE",
+   "Must be followed by an integer value indicating the transparent green value; the value must be between 0 and the maximum "
+   "frame buffer value for green. Only frame buffer configurations that use the specified transparent green value will be considered."
+   "The default value is GLX_DONT_CARE. This attribute is "
+   "ignored unless GLX_TRANSPARENT_TYPE is included in attrib_list and specified as GLX_TRANSPARENT_RGB.",
+   GLX_DONT_CARE },
+   { GLX_TRANSPARENT_BLUE_VALUE, "GLX_TRANSPARENT_BLUE_VALUE",
+   "Must be followed by an integer value indicating the transparent blue value; the value must be between 0 and the maximum "
+   "frame buffer value for blue. Only frame buffer configurations that use the specified transparent blue value will be considered."
+   "The default value is GLX_DONT_CARE. This attribute is ignored unless GLX_TRANSPARENT_TYPE is included in "
+   "attrib_list and specified as GLX_TRANSPARENT_RGB. ",
+   GLX_DONT_CARE },
+   { GLX_TRANSPARENT_ALPHA_VALUE, "GLX_TRANSPARENT_ALPHA_VALUE",
+   "Must be followed by an integer value indicating the transparent alpha value; the value must be between 0 and the maximum "
+   "frame buffer value for alpha. Only frame buffer configurations that use the "
+   "specified transparent alpha value will be considered. The default value is GLX_DONT_CARE.",
+   GLX_DONT_CARE },
+   { 0, NULL, NULL, -1 }
+};
+
+const char * get_attr_name( int val, int * pdef )
+{
+   PPXATTS pat = &pxAtts[0];
+   while( pat->name )
+   {
+      if ( pat->attr == val ) {
+         *pdef = pat->def;
+         return pat->name;
+      }
+      pat++;
+   }
+   *pdef = -1;
+   return "VALUE NOT IN LIST";
+}
+
+#endif
+// eof - RenderTexture.cpp

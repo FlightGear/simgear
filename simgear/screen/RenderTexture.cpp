@@ -2780,7 +2780,6 @@ bool RenderTexture::_ReleaseBoundBuffers()
 * @fn RenderTexture::_MakeCurrent()
 * @brief Makes the RenderTexture's context current
 */ 
-static GLXContext last_hGLContext = 0;
 bool RenderTexture::_MakeCurrent() 
 {
 #ifdef _WIN32
@@ -2805,11 +2804,6 @@ bool RenderTexture::_MakeCurrent()
         return false;
     }
 #endif
-
-    if ( last_hGLContext != _hGLContext ) {
-      last_hGLContext = _hGLContext;
-      dbg_printf( "_MakeCurrent: glXMakeCurrent set to [%p] SUCCESS! returning true\n", _hGLContext );
-    }
     return true;
 }
 

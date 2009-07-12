@@ -2798,10 +2798,16 @@ bool RenderTexture::_MakeCurrent()
         return false;
     }
 #else
+static GLXContext last_hGLContext = 0;
     if (false == glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext)) 
     {
         dbg_printf( "_MakeCurrent: glXMakeCurrent FAILED! returning false\n");
         return false;
+    }
+
+    if ( last_hGLContext != _hGLContext ) {
+      last_hGLContext = _hGLContext;
+      dbg_printf( "_MakeCurrent: glXMakeCurrent set to [%p] SUCCESS! returning true\n", _hGLContext );
     }
 #endif
     return true;
@@ -3030,7 +3036,7 @@ bool RenderTexture::Reset(int iWidth, int iHeight)
     return true;
 }
 
-#ifdef _DEBUG
+#if defined( _DEBUG ) && !defined( _WIN32 ) && !defined( __MACH__ )
 /* just some DEBUG ONLY code, to show the 'attributes' */
 
 typedef struct tagPXATTS {

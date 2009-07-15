@@ -231,31 +231,6 @@ SGMaterial::init ()
     }
 }
 
-osg::StateSet *
-SGMaterial::get_state (int n)
-{
-    if (_status.size() == 0) {
-        SG_LOG( SG_GENERAL, SG_WARN, "No state available.");
-        return NULL;
-    }
-    
-    int i = n >= 0 ? n : _current_ptr;
-
-    if(!_status[i].texture_loaded)
-    {
-        assignTexture(_status[i].state.get(), _status[i].texture_path,
-                      wrapu, wrapv, mipmap);
-        _status[i].texture_loaded = true;
-    }
-    osg::StateSet *st = _status[i].state.get();
-
-    _current_ptr += 1;
-    if (_current_ptr >= _status.size())
-        _current_ptr = 0;
-
-    return st;
-}
-
 Effect* SGMaterial::get_effect(int n)
 {
     if (_status.size() == 0) {

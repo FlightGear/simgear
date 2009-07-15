@@ -27,6 +27,8 @@
 #include <osg/Transform>
 #include <osg/TriangleFunctor>
 
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
@@ -384,10 +386,10 @@ public:
     {
     }
 
-    const SGMaterial* pushMaterial(osg::StateSet* stateSet)
+    const SGMaterial* pushMaterial(Effect* effect)
     {
         const SGMaterial* oldMaterial = _primitiveFunctor.getCurrentMaterial();
-        const SGMaterial* material = SGMaterialLib::findMaterial(stateSet);
+        const SGMaterial* material = SGMaterialLib::findMaterial(effect);
         if (material)
             _primitiveFunctor.setCurrentMaterial(material);
         return oldMaterial;
@@ -395,9 +397,7 @@ public:
 
     void fillWith(osg::Drawable* drawable)
     {
-        const SGMaterial* oldMaterial = pushMaterial(drawable->getStateSet());
         drawable->accept(_primitiveFunctor);
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     virtual void apply(osg::Geode& geode)
@@ -405,7 +405,11 @@ public:
         if (hasBoundingVolumeTree(geode))
             return;
 
-        const SGMaterial* oldMaterial = pushMaterial(geode.getStateSet());
+        const SGMaterial* oldMaterial = 0;
+
+        EffectGeode *eg = dynamic_cast<EffectGeode*>(&geode);
+        if (eg)
+            oldMaterial = pushMaterial(eg->getEffect());
 
         bool flushHere = getNodePath().size() <= 1 || _dumpIntoLeafs;
         if (flushHere) {
@@ -426,8 +430,8 @@ public:
             for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
                 fillWith(geode.getDrawable(i));
         }
-
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
+        if (eg)
+            _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     virtual void apply(osg::Group& group)
@@ -453,8 +457,6 @@ public:
         if (hasBoundingVolumeTree(node))
             return;
 
-        const SGMaterial* oldMaterial = pushMaterial(node.getStateSet());
-
         // push the current active primitive list
         PFunctor previousPrimitives;
         _primitiveFunctor.swap(previousPrimitives);
@@ -469,8 +471,6 @@ public:
 
         // pop the current active primitive list
         _primitiveFunctor.swap(previousPrimitives);
-
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     void traverseAndCollect(osg::Node& node)
@@ -488,12 +488,8 @@ public:
         // Note that we do not need to push the already collected list of
         // primitives, since we are now in the topmost node ...
 
-        const SGMaterial* oldMaterial = pushMaterial(node.getStateSet());
-
         // walk the children
         traverse(node);
-
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     void addBoundingVolumeTreeToNode(osg::Node& node)

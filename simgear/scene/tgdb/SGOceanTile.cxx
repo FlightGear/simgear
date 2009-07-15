@@ -37,8 +37,11 @@
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/misc/texcoord.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
+
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 
 using namespace simgear;
@@ -254,7 +257,7 @@ void fillDrawElementsWithApron(short height, short width,
 
 osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
 {
-    osg::StateSet *stateSet = 0;
+    Effect *effect = 0;
 
     double tex_width = 1000.0;
   
@@ -266,7 +269,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
         tex_width = mat->get_xsize();
     
         // set OSG State
-        stateSet = mat->get_state();
+        effect = mat->get_effect();
     } else {
         SG_LOG( SG_TERRAIN, SG_ALERT, "Ack! unknown use material name = Ocean");
     }
@@ -302,10 +305,10 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
                                            + 2 * (latPoints - 1)));
     fillDrawElementsWithApron(latPoints, lonPoints, drawElements->begin());
     geometry->addPrimitiveSet(drawElements);
-    geometry->setStateSet(stateSet);
 
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* geode = new EffectGeode;
     geode->setName("Ocean tile");
+    geode->setEffect(effect);
     geode->addDrawable(geometry);
 
     osg::MatrixTransform* transform = new osg::MatrixTransform;

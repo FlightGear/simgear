@@ -32,6 +32,7 @@
 #include <vector>
 #include<string>
 
+#include <boost/foreach.hpp>
 #include "mat.hxx"
 
 #include <osg/CullFace>
@@ -40,14 +41,17 @@
 #include <osg/StateSet>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
+#include <osgDB/Options>
 #include <osgDB/ReadFile>
+#include <osgDB/Registry>
 #include <osgDB/FileUtils>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
-
+#include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include "Effect.hxx"
@@ -55,6 +59,7 @@
 #include "Pass.hxx"
 
 using std::map;
+using std::string;
 using namespace simgear;
 
 
@@ -62,33 +67,18 @@ using namespace simgear;
 // Constructors and destructor.
 ////////////////////////////////////////////////////////////////////////
 
-SGMaterial::_internal_state::_internal_state(osg::StateSet *s,
-                                             const std::string &t, bool l ) :
-    state(s), texture_path(t), texture_loaded(l)
+SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
+                                             const osgDB::Options* o ) :
+  effect(e), texture_path(t), effect_realized(l), options(o)
 {
 }
 
-SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
+SGMaterial::SGMaterial( const osgDB::Options* options,
+                        const SGPropertyNode *props )
 {
     init();
-    read_properties( fg_root, props );
-    build_state( false );
-}
-
-SGMaterial::SGMaterial( const string &texpath )
-{
-    init();
-
-    _internal_state st( NULL, texpath, false );
-    _status.push_back( st );
-
-    build_state( true );
-}
-
-SGMaterial::SGMaterial( osg::StateSet *s )
-{
-    init();
-    set_state( s );
+    read_properties( options, props );
+    buildEffectProperties(options);
 }
 
 SGMaterial::~SGMaterial (void)
@@ -101,7 +91,8 @@ SGMaterial::~SGMaterial (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties( const string &fg_root, const SGPropertyNode *props)
+SGMaterial::read_properties(const osgDB::Options* options,
+                            const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
   vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
@@ -111,29 +102,29 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode *props)
     if (tname.empty()) {
         tname = "unknown.rgb";
     }
-
-    SGPath tpath( fg_root );
-    tpath.append("Textures.high");
+    SGPath tpath("Textures.high");
     tpath.append(tname);
-    if ( !osgDB::fileExists(tpath.str()) ) {
-      tpath = SGPath( fg_root );
-      tpath.append("Textures");
+    osgDB::Registry* reg = osgDB::Registry::instance();
+    string fullTexPath = reg->findDataFile(tpath.str(), options,
+                                           osgDB::CASE_SENSITIVE);
+    if (fullTexPath.empty()) {
+      tpath = SGPath("Textures");
       tpath.append(tname);
+      fullTexPath = reg->findDataFile(tpath.str(), options,
+                                      osgDB::CASE_SENSITIVE);
     }
 
-    if ( osgDB::fileExists(tpath.str()) ) {
-      _internal_state st( NULL, tpath.str(), false );
+    if (!fullTexPath.empty() ) {
+      _internal_state st( NULL, fullTexPath, false, options );
       _status.push_back( st );
     }
   }
 
   if (textures.size() == 0) {
-    string tname = "unknown.rgb";
-    SGPath tpath( fg_root );
-    tpath.append("Textures");
+    SGPath tpath("Textures");
     tpath.append("Terrain");
-    tpath.append(tname);
-    _internal_state st( NULL, tpath.str(), true );
+    tpath.append("unknown.rgb");
+    _internal_state st( NULL, tpath.str(), true, options );
     _status.push_back( st );
   }
 
@@ -148,10 +139,12 @@ SGMaterial::read_properties( const string &fg_root, const SGPropertyNode *props)
   tree_width = props->getDoubleValue("tree-width-m", 0.0);
   tree_range = props->getDoubleValue("tree-range-m", 0.0);
   tree_varieties = props->getIntValue("tree-varieties", 1);
-
-  SGPath tpath( fg_root );
-  tpath.append(props->getStringValue("tree-texture"));
-  tree_texture = tpath.str();
+  const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
+  if (treeTexNode) {
+    string treeTexPath = props->getStringValue("tree-texture");
+    tree_texture = osgDB::Registry::instance()
+      ->findDataFile(treeTexPath, options, osgDB::CASE_SENSITIVE);
+  }
 
   // surface values for use with ground reactions
   solid = props->getBoolValue("solid", true);
@@ -238,10 +231,9 @@ Effect* SGMaterial::get_effect(int n)
         return 0;
     }
     int i = n >= 0 ? n : _current_ptr;
-    if(!_status[i].texture_loaded) {
-        assignTexture(_status[i].state.get(), _status[i].texture_path,
-                      wrapu, wrapv, mipmap);
-        _status[i].texture_loaded = true;
+    if(!_status[i].effect_realized) {
+        _status[i].effect->realizeTechniques(_status[i].options.get());
+        _status[i].effect_realized = true;
     }
     // XXX This business of returning a "random" alternate texture is
     // really bogus. It means that the appearance of the terrain
@@ -250,70 +242,42 @@ Effect* SGMaterial::get_effect(int n)
     return _status[i].effect.get();
 }
 
-void 
-SGMaterial::build_state( bool defer_tex_load )
+void SGMaterial::buildEffectProperties(const osgDB::Options* options)
 {
-    StateAttributeFactory *attrFact = StateAttributeFactory::instance();
-    SGMaterialUserData* user = new SGMaterialUserData(this);
-    for (unsigned int i = 0; i < _status.size(); i++)
-    {
-        Pass *pass = new Pass;
-        pass->setUserData(user);
-
-        // Set up the textured state
-        pass->setAttribute(attrFact->getSmoothShadeModel());
-        pass->setAttributeAndModes(attrFact->getCullFaceBack());
-
-        pass->setMode(GL_LIGHTING, osg::StateAttribute::ON);
-
-        _status[i].texture_loaded = false;
-
-        osg::Material* material = new osg::Material;
-        material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
-        material->setAmbient(osg::Material::FRONT_AND_BACK, ambient.osg());
-        material->setDiffuse(osg::Material::FRONT_AND_BACK, diffuse.osg());
-        material->setSpecular(osg::Material::FRONT_AND_BACK, specular.osg());
-        material->setEmission(osg::Material::FRONT_AND_BACK, emission.osg());
-        material->setShininess(osg::Material::FRONT_AND_BACK, shininess );
-        pass->setAttribute(material);
-
-        if (ambient[3] < 1 || diffuse[3] < 1 ||
-            specular[3] < 1 || emission[3] < 1) {
-          pass->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-          pass->setMode(GL_BLEND, osg::StateAttribute::ON);
-          pass->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-        } else {
-          pass->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-          pass->setMode(GL_BLEND, osg::StateAttribute::OFF);
-          pass->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
-        }
-
-        _status[i].state = pass;
-        Technique* tniq = new Technique(true);
-        tniq->passes.push_back(pass);
-        Effect* effect = new Effect;
-        effect->techniques.push_back(tniq);
-        effect->setUserData(user);
-        _status[i].effect = effect;
+    using namespace osg;
+    SGPropertyNode_ptr propRoot = new SGPropertyNode();
+    makeChild(propRoot, "inherits-from")
+        ->setStringValue("Effects/terrain-default");
+    SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
+    SGPropertyNode* materialProp = makeChild(paramProp, "material");
+    makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));    
+    makeChild(materialProp, "diffuse")->setValue(SGVec4d(diffuse));
+    makeChild(materialProp, "specular")->setValue(SGVec4d(specular));
+    makeChild(materialProp, "emissive")->setValue(SGVec4d(emission));
+    makeChild(materialProp, "shininess")->setFloatValue(shininess);
+    if (ambient[3] < 1 || diffuse[3] < 1 ||
+        specular[3] < 1 || emission[3] < 1) {
+        makeChild(paramProp, "transparent")->setBoolValue(true);
+        SGPropertyNode* binProp = makeChild(paramProp, "render-bin");
+        makeChild(binProp, "bin-number")->setIntValue(TRANSPARENT_BIN);
+        makeChild(binProp, "bin-name")->setStringValue("DepthSortedBin");
     }
-}
-
-
-void SGMaterial::set_state( osg::StateSet *s )
-{
-    _status.push_back( _internal_state( s, "", true ) );
-}
-
-void SGMaterial::assignTexture( osg::StateSet *state, const std::string &fname,
-                 bool _wrapu, bool _wrapv, bool _mipmap )
-{
-   osg::Texture2D* texture = SGLoadTexture2D(fname, 0, _wrapu, _wrapv,
-                                             mipmap ? -1 : 0);
-   texture->setMaxAnisotropy( SGGetTextureFilter());
-   state->setTextureAttributeAndModes(0, texture);
-
-   StateAttributeFactory *attrFact = StateAttributeFactory::instance();
-   state->setTextureAttributeAndModes(0, attrFact->getStandardTexEnv());
+    BOOST_FOREACH(_internal_state& matState, _status)
+    {
+        SGPropertyNode_ptr effectProp = new SGPropertyNode();
+        copyProperties(propRoot, effectProp);
+        SGPropertyNode* effectParamProp = effectProp->getChild("parameters", 0);
+        SGPropertyNode* texProp = makeChild(effectParamProp, "texture");
+        SGPropertyNode* tex2dProp = makeChild(texProp, "texture2d");
+        makeChild(tex2dProp, "image")->setStringValue(matState.texture_path);
+        makeChild(tex2dProp, "filter")
+            ->setStringValue(mipmap ? "linear-mipmap-linear" : "nearest");
+        makeChild(tex2dProp, "wrap-s")
+            ->setStringValue(wrapu ? "repeat" : "clamp");
+        makeChild(tex2dProp, "wrap-t")
+            ->setStringValue(wrapv ? "repeat" : "clamp");
+        matState.effect = makeEffect(effectProp, false, options);
+    }
 }
 
 SGMaterialGlyph* SGMaterial::get_glyph (const string& name) const

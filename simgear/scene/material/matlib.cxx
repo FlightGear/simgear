@@ -36,18 +36,7 @@
 #include <string.h>
 #include <string>
 
-#include <osg/AlphaFunc>
-#include <osg/BlendFunc>
-#include <osg/CullFace>
-#include <osg/Material>
-#include <osg/Point>
-#include <osg/PointSprite>
-#include <osg/PolygonMode>
-#include <osg/PolygonOffset>
-#include <osg/StateSet>
-#include <osg/TexEnv>
-#include <osg/TexGen>
-#include <osg/Texture2D>
+#include <osgDB/Options>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -82,7 +71,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
                 << ex.getMessage() );
         throw;
     }
-
+    osg::ref_ptr<osgDB::Options> options = new osgDB::Options;
+    options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
+    options->setDatabasePath(fg_root);
     int nMaterials = materials.nChildren();
     for (int i = 0; i < nMaterials; i++) {
         const SGPropertyNode *node = materials.getChild(i);
@@ -97,7 +88,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
                 }
             }
 
-            SGSharedPtr<SGMaterial> m = new SGMaterial(fg_root, node);
+            SGSharedPtr<SGMaterial> m = new SGMaterial(options.get(), node);
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {

@@ -45,6 +45,11 @@ namespace osg
 class StateSet;
 }
 
+namespace osgDB
+{
+class Options;
+}
+
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
@@ -83,28 +88,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const std::string &fg_root, const SGPropertyNode *props);
-
-
-  /**
-   * Construct a material from an absolute texture path.
-   *
-   * @param texture_path A string containing an absolute path
-   * to a texture file (usually RGB).
-   */
-  SGMaterial( const std::string &texpath );
-
-
-  /**
-   * Construct a material around an existing state.
-   *
-   * This constructor allows the application to create a custom,
-   * low-level state for the scene graph and wrap a material around
-   * it.  Note: the pointer ownership is transferred to the material.
-   *
-   * @param s The state for this material.
-   */
-  SGMaterial( osg::StateSet *s );
+  SGMaterial( const osgDB::Options*, const SGPropertyNode *props);
 
   /**
    * Destructor.
@@ -275,11 +259,12 @@ protected:
 protected:
 
   struct _internal_state {
-      _internal_state( osg::StateSet *s, const std::string &t, bool l );
-      osg::ref_ptr<osg::StateSet> state;
+      _internal_state(simgear::Effect *e, const std::string &t, bool l,
+                      const osgDB::Options *o);
       osg::ref_ptr<simgear::Effect> effect;
       std::string texture_path;
-      bool texture_loaded;
+      bool effect_realized;
+      osg::ref_ptr<const osgDB::Options> options;
   };
 
 private:
@@ -356,14 +341,9 @@ private:
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  SGMaterial( const std::string &fg_root, const SGMaterial &mat ); // unimplemented
-
-  void read_properties( const std::string &fg_root, const SGPropertyNode *props );
-  void build_state( bool defer_tex_load );
-  void set_state( osg::StateSet *s );
-
-  void assignTexture( osg::StateSet *state, const std::string &fname, bool _wrapu = true, bool _wrapv = true, bool _mipmap = true );
-
+  void read_properties(const osgDB::Options* options,
+                        const SGPropertyNode *props);
+  void buildEffectProperties(const osgDB::Options* options);
 };
 
 

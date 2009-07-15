@@ -15,6 +15,7 @@
 #include <osgDB/Input>
 #include <osgDB/ParameterOutput>
 
+#include <simgear/props/props.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 
 namespace simgear
@@ -217,6 +218,14 @@ public:
     }
 };
 
+Expression* glVersionParser(const SGPropertyNode* exp,
+                            expression::Parser* parser)
+{
+    return new GLVersionExpression();
+}
+
+expression::ExpParserRegistrar glVersionRegistrar("glversion", glVersionParser);
+
 class ExtensionSupportedExpression
     : public GeneralNaryExpression<bool, int>
 {
@@ -237,6 +246,18 @@ protected:
     string _extString;
 };
 
+Expression* extensionSupportedParser(const SGPropertyNode* exp,
+                                     expression::Parser* parser)
+{
+    if (exp->getType() == props::STRING
+        || exp->getType() == props::UNSPECIFIED)
+        return new ExtensionSupportedExpression(exp->getStringValue());
+    throw expression::ParseError("extension-supported expression has wrong type");
+}
+
+expression::ExpParserRegistrar
+extensionSupportedRegistrar("extension-supported", extensionSupportedParser);
+
 void Technique::setGLExtensionsPred(float glVersion,
                                     const std::vector<std::string>& extensions)
 {
@@ -246,9 +267,14 @@ void Technique::setGLExtensionsPred(float glVersion,
     int contextLoc = layout.addBinding("__contextId", INT);
     VariableExpression<int>* contextExp
         = new VariableExpression<int>(contextLoc);
+    SGExpression<bool>* versionTest
+        = makePredicate<std::less_equal>(new SGConstExpression<float>(glVersion),
+                        new GLVersionExpression);
+#if 0
     LessEqualExpression<float>* versionTest
         = new LessEqualExpression<float>(new SGConstExpression<float>(glVersion),
                                          new GLVersionExpression);
+#endif
     AndExpression* extensionsExp = 0;
     for (vector<string>::const_iterator itr = extensions.begin(),
              e = extensions.end();
@@ -285,7 +311,7 @@ bool Technique_writeLocalData(const Object& obj, osgDB::Output& fw)
         fw.indent() << "shadowingStateSet\n";
         fw.writeObject(*tniq.getShadowingStateSet());
     }
-    fw.indent() << "passes\n";
+    fw.indent() << "num_passes " << tniq.passes.size() << "\n";
     BOOST_FOREACH(const ref_ptr<Pass>& pass, tniq.passes) {
         fw.writeObject(*pass);
     }

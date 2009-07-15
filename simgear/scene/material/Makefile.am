@@ -22,6 +22,7 @@ libsgmaterial_a_SOURCES = \
 	GLPredicate.cxx \
 	Pass.cxx \
 	Technique.cxx \
+	makeEffect.cxx \
 	mat.cxx \
 	matlib.cxx \
 	matmodel.cxx

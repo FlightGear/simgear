@@ -30,6 +30,14 @@
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
+// XXX This whole file should be in the simgear namespace, but I don't
+// have the guts yet...
+
+namespace simgear
+{
+/**
+ * Property value types.
+ */
 
 #ifdef NONE
 #pragma warn A sloppy coder has defined NONE as a macro!
@@ -76,6 +84,66 @@
 #undef STRING
 #endif
 
+namespace props
+{
+enum Type {
+    NONE = 0,
+    ALIAS,
+    BOOL,
+    INT,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    STRING,
+    UNSPECIFIED
+};
+
+
+template<typename T>
+struct PropertyTraits
+{
+    static const Type type_tag = NONE;
+};
+
+template<>
+struct PropertyTraits<bool>
+{
+    static const Type type_tag = BOOL;
+};
+
+template<>
+struct PropertyTraits<int>
+{
+    static const Type type_tag = INT;
+};
+
+template<>
+struct PropertyTraits<long>
+{
+    static const Type type_tag = LONG;
+};
+
+template<>
+struct PropertyTraits<float>
+{
+    static const Type type_tag = FLOAT;
+};
+
+template<>
+struct PropertyTraits<double>
+{
+    static const Type type_tag = DOUBLE;
+};
+
+template<>
+struct PropertyTraits<const char *>
+{
+    static const Type type_tag = STRING;
+};
+}
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -90,6 +158,13 @@
 // a small performance hit for that.
 ////////////////////////////////////////////////////////////////////////
 
+/** Base for virtual destructor
+ */
+class SGRawBase
+{
+public:
+    virtual ~SGRawBase() {}
+};
 
 /**
  * Abstract base class for a raw value.
@@ -129,7 +204,7 @@
  * @see SGRawValueMethodsIndexed
  */
 template <class T>
-class SGRawValue
+class SGRawValue : public SGRawBase
 {
 public:
 
@@ -194,6 +269,16 @@ public:
   virtual SGRawValue * clone () const = 0;
 };
 
+////////////////////////////////////////////////////////////////////////
+// Default values for every type.
+////////////////////////////////////////////////////////////////////////
+
+template<> const bool SGRawValue<bool>::DefaultValue;
+template<> const int SGRawValue<int>::DefaultValue;
+template<> const long SGRawValue<long>::DefaultValue;
+template<> const float SGRawValue<float>::DefaultValue;
+template<> const double SGRawValue<double>::DefaultValue;
+template<> const char * const SGRawValue<const char *>::DefaultValue;
 
 /**
  * A raw value bound to a pointer.
@@ -485,22 +570,6 @@ public:
   };
 
   /**
-   * Property value types.
-   */
-  enum Type {
-    NONE = 0,
-    ALIAS,
-    BOOL,
-    INT,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    STRING,
-    UNSPECIFIED
-  };
-
-
-  /**
    * Access mode attributes.
    *
    * <p>The ARCHIVE attribute is strictly advisory, and controls
@@ -550,7 +619,7 @@ public:
   /**
    * Test whether this node contains a primitive leaf value.
    */
-  bool hasValue () const { return (_type != NONE); }
+    bool hasValue () const { return (_type != simgear::props::NONE); }
 
 
   /**
@@ -729,7 +798,7 @@ public:
   /**
    * Test whether the node's leaf value is aliased to another's.
    */
-  bool isAlias () const { return (_type == ALIAS); }
+  bool isAlias () const { return (_type == simgear::props::ALIAS); }
 
 
   /**
@@ -874,7 +943,7 @@ public:
   /**
    * Get the type of leaf value, if any, for this node.
    */
-  Type getType () const;
+  simgear::props::Type getType () const;
 
 
   /**
@@ -972,42 +1041,11 @@ public:
    */
   bool isTied () const { return _tied; }
 
-
-  /**
-   * Bind this node to an external bool source.
-   */
-  bool tie (const SGRawValue<bool> &rawValue, bool useDefault = true);
-
-
-  /**
-   * Bind this node to an external int source.
-   */
-  bool tie (const SGRawValue<int> &rawValue, bool useDefault = true);
-
-
-  /**
-   * Bind this node to an external long int source.
-   */
-  bool tie (const SGRawValue<long> &rawValue, bool useDefault = true);
-
-
-  /**
-   * Bind this node to an external float source.
-   */
-  bool tie (const SGRawValue<float> &rawValue, bool useDefault = true);
-
-
-  /**
-   * Bind this node to an external double source.
-   */
-  bool tie (const SGRawValue<double> &rawValue, bool useDefault = true);
-
-
-  /**
-   * Bind this node to an external string source.
-   */
-  bool tie (const SGRawValue<const char *> &rawValue, bool useDefault = true);
-
+    /**
+     * Bind this node to an external source.
+     */
+    template<typename T>
+    bool tie(const SGRawValue<T> &rawValue, bool useDefault = true);
 
   /**
    * Unbind this node from any external data source.
@@ -1024,12 +1062,12 @@ public:
   /**
    * Get another node's type.
    */
-  Type getType (const char * relative_path) const;
+  simgear::props::Type getType (const char * relative_path) const;
 
   /**
    * Get another node's type.
    */
-  Type getType (const std::string& relative_path) const
+  simgear::props::Type getType (const std::string& relative_path) const
   { return getType(relative_path.c_str()); }
 
   /**
@@ -1423,19 +1461,14 @@ private:
   mutable std::string _path;
   mutable std::string _buffer;
   hash_table * _path_cache;
-  Type _type;
+  simgear::props::Type _type;
   bool _tied;
   int _attr;
 
 				// The right kind of pointer...
   union {
     SGPropertyNode * alias;
-    SGRawValue<bool> * bool_val;
-    SGRawValue<int> * int_val;
-    SGRawValue<long> * long_val;
-    SGRawValue<float> * float_val;
-    SGRawValue<double> * double_val;
-    SGRawValue<const char *> * string_val;
+    SGRawBase* val;
   } _value;
 
   union {
@@ -1512,7 +1545,7 @@ private:
 
 };
 
-// Convenice functions for use in templates
+// Convenience functions for use in templates
 template<typename T>
 T getValue(const SGPropertyNode*);
 
@@ -1577,6 +1610,31 @@ inline bool setValue (SGPropertyNode* node, const std::string& value)
 {
     return node->setStringValue(value.c_str());
 }
+
+template<typename T>
+bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
+{
+    if (_type == simgear::props::ALIAS || _tied)
+        return false;
+
+    useDefault = useDefault && hasValue();
+    T old_val = SGRawValue<T>::DefaultValue;
+    if (useDefault)
+        old_val = getValue<T>(this);
+    clearValue();
+    _type = simgear::props::PropertyTraits<T>::type_tag;
+    _tied = true;
+    _value.val = rawValue.clone();
+
+    if (useDefault)
+        setValue(this, old_val);
+
+    return true;
+}
+
+template<>
+bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
+                          bool useDefault);
 
 #endif // __PROPS_HXX
 

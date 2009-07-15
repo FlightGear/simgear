@@ -485,7 +485,7 @@ SGCloudLayer::rebuild()
         
         layer_states[SG_CLOUD_CLEAR] = 0;
         layer_states2[SG_CLOUD_CLEAR] = 0;
-#if 0
+#if 1
         // experimental optimization that may not make any difference
         // at all :/
         osg::CopyOp copyOp;

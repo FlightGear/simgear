@@ -46,9 +46,7 @@ StateSet* Effect::getDefaultStateSet()
     if (!tniq)
         return 0;
     Pass* pass = tniq->passes.front().get();
-    if (!pass)
-        return 0;
-    return pass->getStateSet();
+    return pass;
 }
 
 // There should always be a valid technique in an effect.

@@ -145,7 +145,7 @@ Technique::processDrawables(const EffectGeode::DrawablesIterator& begin,
     EffectGeode::DrawablesIterator drawablesEnd = itr;
     BOOST_FOREACH(ref_ptr<Pass>& pass, passes)
     {
-        cv->pushStateSet(pass->getStateSet());
+        cv->pushStateSet(pass.get());
         int i = 0;
         for (itr = begin; itr != drawablesEnd; ++itr, ++i) {
             if (depth[i] != FLT_MAX)

@@ -4,6 +4,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include <vector>
 #include <string>
 
 #include <osg/GLExtensions>
@@ -45,13 +46,15 @@ void ValidateOperation::operator() (GraphicsContext* gc)
 }
 
 Technique::Technique(bool alwaysValid)
-    : _alwaysValid(alwaysValid), _glVersion(1.1f)
+    : _alwaysValid(alwaysValid), _contextIdLocation(-1)
 {
 }
 
 Technique::Technique(const Technique& rhs, const osg::CopyOp& copyop) :
     _contextMap(rhs._contextMap), _alwaysValid(rhs._alwaysValid),
-    _shadowingStateSet(rhs._shadowingStateSet), _glVersion(rhs._glVersion)
+    _shadowingStateSet(rhs._shadowingStateSet),
+    _validExpression(rhs._validExpression),
+    _contextIdLocation(rhs._contextIdLocation)
 {
     using namespace std;
     using namespace boost;
@@ -81,8 +84,12 @@ Technique::Status Technique::valid(osg::RenderInfo* renderInfo)
         return contextInfo.valid();
     }
     ref_ptr<ValidateOperation> validOp = new ValidateOperation(this);
-    renderInfo->getState()->getGraphicsContext()->getGraphicsThread()
-        ->add(validOp.get());
+    GraphicsContext* context = renderInfo->getState()->getGraphicsContext();
+    GraphicsThread* thread = context->getGraphicsThread();
+    if (thread)
+        thread->add(validOp.get());
+    else
+        context->add(validOp.get());
     return newStatus;
 }
 
@@ -96,10 +103,13 @@ Technique::Status Technique::getValidStatus(const RenderInfo* renderInfo) const
 
 void Technique::validateInContext(GraphicsContext* gc)
 {
-    ContextInfo& contextInfo = _contextMap[gc->getState()->getContextID()];
+    unsigned int contextId = gc->getState()->getContextID();
+    ContextInfo& contextInfo = _contextMap[contextId];
     Status oldVal = contextInfo.valid();
     Status newVal = INVALID;
-    if (getGLVersionNumber() >= _glVersion)
+    expression::FixedLengthBinding<1> binding;
+    binding.getBindings()[_contextIdLocation].val.intVal = contextId;
+    if (_validExpression->getValue(&binding))
         newVal = VALID;
     contextInfo.valid.compareAndSwap(oldVal, newVal);
 }
@@ -187,12 +197,90 @@ void Technique::releaseGLObjects(osg::State* state) const
     }
 }
 
+void Technique::setValidExpression(SGExpressionb* exp,
+                                   const simgear::expression
+                                   ::BindingLayout& layout)
+{
+    using namespace simgear::expression;
+    _validExpression = exp;
+    VariableBinding binding;
+    if (layout.findBinding("__contextId", binding))
+        _contextIdLocation = binding.location;
+}
+
+class GLVersionExpression : public SGExpression<float>
+{
+public:
+    void eval(float& value, const expression::Binding*) const
+    {
+        value = getGLVersionNumber();
+    }
+};
+
+class ExtensionSupportedExpression
+    : public GeneralNaryExpression<bool, int>
+{
+public:
+    ExtensionSupportedExpression() {}
+    ExtensionSupportedExpression(const string& extString)
+        : _extString(extString)
+    {
+    }
+    const string& getExtensionString() { return _extString; }
+    void setExtensionString(const string& extString) { _extString = extString; }
+    void eval(bool&value, const expression::Binding* b) const
+    {
+        int contextId = getOperand(0)->getValue(b);
+        value = isGLExtensionSupported((unsigned)contextId, _extString.c_str());
+    }
+protected:
+    string _extString;
+};
+
+void Technique::setGLExtensionsPred(float glVersion,
+                                    const std::vector<std::string>& extensions)
+{
+    using namespace std;
+    using namespace expression;
+    BindingLayout layout;
+    int contextLoc = layout.addBinding("__contextId", INT);
+    VariableExpression<int>* contextExp
+        = new VariableExpression<int>(contextLoc);
+    LessEqualExpression<float>* versionTest
+        = new LessEqualExpression<float>(new SGConstExpression<float>(glVersion),
+                                         new GLVersionExpression);
+    AndExpression* extensionsExp = 0;
+    for (vector<string>::const_iterator itr = extensions.begin(),
+             e = extensions.end();
+         itr != e;
+         ++itr) {
+        if (!extensionsExp)
+            extensionsExp = new AndExpression;
+        ExtensionSupportedExpression* supported
+            = new ExtensionSupportedExpression(*itr);
+        supported->addOperand(contextExp);
+        extensionsExp->addOperand(supported);
+    }
+    SGExpressionb* predicate = 0;
+    if (extensionsExp) {
+        OrExpression* orExp = new OrExpression;
+        orExp->addOperand(versionTest);
+        orExp->addOperand(extensionsExp);
+        predicate = orExp;
+    } else {
+        predicate = versionTest;
+    }
+    setValidExpression(predicate, layout);
+}
+
 bool Technique_writeLocalData(const Object& obj, osgDB::Output& fw)
 {
     const Technique& tniq = static_cast<const Technique&>(obj);
     fw.indent() << "alwaysValid "
                 << (tniq.getAlwaysValid() ? "TRUE\n" : "FALSE\n");
+#if 0
     fw.indent() << "glVersion " << tniq.getGLVersion() << "\n";
+#endif
     if (tniq.getShadowingStateSet()) {
         fw.indent() << "shadowingStateSet\n";
         fw.writeObject(*tniq.getShadowingStateSet());

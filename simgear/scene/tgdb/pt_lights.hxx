@@ -45,8 +45,10 @@
 #include "SGLightBin.hxx"
 #include "SGDirectionalLightBin.hxx"
 
-using std::string;
-using std::vector;
+namespace simgear
+{
+class Effect;
+}
 
 // Specify the way we want to draw directional point lights (assuming the
 // appropriate extensions are available.)
@@ -59,28 +61,19 @@ inline void SGConfigureDirectionalLights( bool use_point_sprites,
   sceneFeatures->setEnableDistanceAttenuationLights(distance_attenuation);
 }
 
-class SGPointSpriteLightCullCallback : public osg::NodeCallback {
-public:
-  SGPointSpriteLightCullCallback(const osg::Vec3& da = osg::Vec3(1, 0.001, 0.0002),
-                                 float sz = 4);
-  SGPointSpriteLightCullCallback(osg::Point* point);
-
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-
-private:
-  osg::ref_ptr<osg::StateSet> _pointSpriteStateSet;
-  osg::ref_ptr<osg::StateSet> _distanceAttenuationStateSet;
-};
-
 class SGLightFactory {
 public:
 
-  static osg::Node*
-  getLight(const SGLightBin::Light& light);
+  static osg::Drawable*
+  getLightDrawable(const SGLightBin::Light& light);
 
-  static osg::Node*
-  getLight(const SGDirectionalLightBin::Light& light);
+  static osg::Drawable*
+  getLightDrawable(const SGDirectionalLightBin::Light& light);
 
+  /**
+   * Return a drawable for a very simple point light that isn't
+   * distance scaled.
+   */
   static osg::Drawable*
   getLights(const SGLightBin& lights, unsigned inc = 1, float alphaOff = 0);
 
@@ -98,4 +91,6 @@ public:
   getOdal(const SGLightBin& lights);
 };
 
+simgear::Effect* getLightEffect(float size, const osg::Vec3& attenuation,
+                                float minSize, float maxSize, bool directional);
 #endif // _SG_PT_LIGHTS_HXX

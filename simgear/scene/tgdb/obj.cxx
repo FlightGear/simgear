@@ -683,7 +683,10 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   }
 
   if (!tileGeometryBin.vasiLights.empty()) {
-    osg::Geode* vasiGeode = new osg::Geode;
+    EffectGeode* vasiGeode = new EffectGeode;
+    Effect* vasiEffect
+        = getLightEffect(6, osg::Vec3(1, 0.0001, 0.000001), 1, 6, true);
+    vasiGeode->setEffect(vasiEffect);
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = 0;
     if (matlib)
@@ -696,27 +699,31 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
       mat = matlib->find("RWY_WHITE_LIGHTS");
     if (mat)
       white = mat->get_light_color();
-
     SGDirectionalLightListBin::const_iterator i;
     for (i = tileGeometryBin.vasiLights.begin();
          i != tileGeometryBin.vasiLights.end(); ++i) {
       vasiGeode->addDrawable(SGLightFactory::getVasi(up, *i, red, white));
     }
-    vasiGeode->setCullCallback(new SGPointSpriteLightCullCallback(osg::Vec3(1, 0.0001, 0.000001), 6));
     vasiGeode->setStateSet(lightManager->getRunwayLightStateSet());
     lightGroup->addChild(vasiGeode);
   }
-
+  Effect* runwayEffect = 0;
+  if (tileGeometryBin.runwayLights.getNumLights() > 0
+      || !tileGeometryBin.rabitLights.empty()
+      || !tileGeometryBin.reilLights.empty()
+      || !tileGeometryBin.odalLights.empty()
+      || tileGeometryBin.taxiLights.getNumLights() > 0)
+      runwayEffect = getLightEffect(4, osg::Vec3(1, 0.001, 0.0002), 1, 4, true);
   if (tileGeometryBin.runwayLights.getNumLights() > 0
       || !tileGeometryBin.rabitLights.empty()
       || !tileGeometryBin.reilLights.empty()
       || !tileGeometryBin.odalLights.empty()) {
     osg::Group* rwyLights = new osg::Group;
-    rwyLights->setCullCallback(new SGPointSpriteLightCullCallback);
     rwyLights->setStateSet(lightManager->getRunwayLightStateSet());
     rwyLights->setNodeMask(RUNWAYLIGHTS_BIT);
     if (tileGeometryBin.runwayLights.getNumLights() != 0) {
-      osg::Geode* geode = new osg::Geode;
+      EffectGeode* geode = new EffectGeode;
+      geode->setEffect(runwayEffect);
       geode->addDrawable(SGLightFactory::getLights(tileGeometryBin
                                                    .runwayLights));
       rwyLights->addChild(geode);
@@ -740,10 +747,10 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   if (tileGeometryBin.taxiLights.getNumLights() > 0) {
     osg::Group* taxiLights = new osg::Group;
-    taxiLights->setCullCallback(new SGPointSpriteLightCullCallback);
     taxiLights->setStateSet(lightManager->getTaxiLightStateSet());
     taxiLights->setNodeMask(RUNWAYLIGHTS_BIT);
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* geode = new EffectGeode;
+    geode->setEffect(runwayEffect);
     geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.taxiLights));
     taxiLights->addChild(geode);
     lightGroup->addChild(taxiLights);

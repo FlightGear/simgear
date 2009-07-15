@@ -252,7 +252,7 @@ compare_strings (const char * s1, const char * s2)
  * Locate a child node by name and index.
  */
 static int
-find_child (const char * name, int index, const vector<SGPropertyNode_ptr>& nodes)
+find_child (const char * name, int index, const PropertyList& nodes)
 {
   int nNodes = nodes.size();
   for (int i = 0; i < nNodes; i++) {
@@ -270,7 +270,7 @@ find_child (const char * name, int index, const vector<SGPropertyNode_ptr>& node
  * Locate the child node with the highest index of the same name
  */
 static int
-find_last_child (const char * name, const vector<SGPropertyNode_ptr>& nodes)
+find_last_child (const char * name, const PropertyList& nodes)
 {
   int nNodes = nodes.size();
   int index = 0;
@@ -854,7 +854,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
     SGPropertyNode_ptr node;
     pos = find_child(name, index, _removedChildren);
     if (pos >= 0) {
-      vector<SGPropertyNode_ptr>::iterator it = _removedChildren.begin();
+      PropertyList::iterator it = _removedChildren.begin();
       it += pos;
       node = _removedChildren[pos];
       _removedChildren.erase(it);
@@ -888,10 +888,10 @@ SGPropertyNode::getChild (const char * name, int index) const
 /**
  * Get all children with the same name (but different indices).
  */
-vector<SGPropertyNode_ptr>
+PropertyList
 SGPropertyNode::getChildren (const char * name) const
 {
-  vector<SGPropertyNode_ptr> children;
+  PropertyList children;
   int max = _children.size();
 
   for (int i = 0; i < max; i++)
@@ -929,7 +929,7 @@ SGPropertyNode::removeChild (int pos, bool keep)
   if (pos < 0 || pos >= (int)_children.size())
     return node;
 
-  vector<SGPropertyNode_ptr>::iterator it = _children.begin();
+  PropertyList::iterator it = _children.begin();
   it += pos;
   node = _children[pos];
   _children.erase(it);
@@ -962,10 +962,10 @@ SGPropertyNode::removeChild (const char * name, int index, bool keep)
 /**
   * Remove all children with the specified name.
   */
-vector<SGPropertyNode_ptr>
+PropertyList
 SGPropertyNode::removeChildren (const char * name, bool keep)
 {
-  vector<SGPropertyNode_ptr> children;
+  PropertyList children;
 
   for (int pos = _children.size() - 1; pos >= 0; pos--)
     if (compare_strings(_children[pos]->getName(), name))

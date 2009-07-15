@@ -697,6 +697,11 @@ class SGPropertyNode;
 typedef SGSharedPtr<SGPropertyNode> SGPropertyNode_ptr;
 typedef SGSharedPtr<const SGPropertyNode> SGConstPropertyNode_ptr;
 
+namespace simgear
+{
+typedef std::vector<SGPropertyNode_ptr> PropertyList;
+}
+
 
 /**
  * The property change listener interface.
@@ -892,12 +897,12 @@ public:
   /**
    * Get a vector of all children with the specified name.
    */
-  std::vector<SGPropertyNode_ptr> getChildren (const char * name) const;
+  simgear::PropertyList getChildren (const char * name) const;
 
   /**
    * Get a vector of all children with the specified name.
    */
-  std::vector<SGPropertyNode_ptr> getChildren (const std::string& name) const
+  simgear::PropertyList getChildren (const std::string& name) const
   { return getChildren(name.c_str()); }
 
   /**
@@ -922,15 +927,13 @@ public:
   /**
    * Remove all children with the specified name.
    */
-  std::vector<SGPropertyNode_ptr> removeChildren (const char * name,
-                                             bool keep = true);
-
+  simgear::PropertyList removeChildren (const char * name, bool keep = true);
 
   /**
    * Remove all children with the specified name.
    */
-  std::vector<SGPropertyNode_ptr> removeChildren (const std::string& name,
-                                             bool keep = true)
+  simgear::PropertyList removeChildren (const std::string& name,
+                                        bool keep = true)
   { return removeChildren(name.c_str(), keep); }
 
   //
@@ -1649,8 +1652,8 @@ private:
   /// To avoid cyclic reference counting loops this shall not be a reference
   /// counted pointer
   SGPropertyNode * _parent;
-  std::vector<SGPropertyNode_ptr> _children;
-  std::vector<SGPropertyNode_ptr> _removedChildren;
+  simgear::PropertyList _children;
+  simgear::PropertyList _removedChildren;
   std::vector<hash_table *> _linkedNodes;
   mutable std::string _path;
   mutable std::string _buffer;
@@ -1900,6 +1903,15 @@ inline bool SGPropertyNode::setValue(const T& val,
                                      ::PropertyTraits<T>::Internal>::type* dummy)
 {
   return ::setValue(this, val);
+}
+
+/**
+ * Utility function for creation of a child property node
+ */
+inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name,
+                                 int index = 0)
+{
+    return parent->getChild(name, index, true);
 }
 #endif // __PROPS_HXX
 

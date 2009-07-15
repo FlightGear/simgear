@@ -795,11 +795,10 @@ public:
    */
   const char * getName () const { return _name.c_str(); }
 
-
   /**
    * Get the node's pretty display name, with subscript when needed.
    */
-  const char * getDisplayName (bool simplify = false) const;
+    std::string getDisplayName (bool simplify = false) const;
 
 
   /**
@@ -1642,7 +1641,6 @@ private:
 
   int _index;
   std::string _name;
-  mutable std::string _display_name;
   /// To avoid cyclic reference counting loops this shall not be a reference
   /// counted pointer
   SGPropertyNode * _parent;

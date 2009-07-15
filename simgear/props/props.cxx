@@ -994,16 +994,16 @@ SGPropertyNode::remove_linked_node (hash_table * node)
 }
 
 
-const char *
+string
 SGPropertyNode::getDisplayName (bool simplify) const
 {
-  _display_name = _name;
+  string display_name = _name;
   if (_index != 0 || !simplify) {
     stringstream sstr;
     sstr << '[' << _index << ']';
-    _display_name += sstr.str();
+    display_name += sstr.str();
   }
-  return _display_name.c_str();
+  return display_name;
 }
 
 

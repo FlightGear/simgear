@@ -14,44 +14,26 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#ifndef SIMGEAR_EFFECT_CULL_VISITOR_HXX
+#define SIMGEAR_EFFECT_CULL_VISITOR_HXX 1
 
-#ifndef SIMGEAR_EFFECT_HXX
-#define SIMGEAR_EFFECT_HXX 1
-
-#include <vector>
-
-#include <osg/Object>
+#include <osgUtil/CullVisitor>
 
 namespace osg
 {
-class Drawable;
-class StateSet;
-class RenderInfo;
-}
-
-namespace osgUtil
-{
-class CullVisitor;
+class Geode;
 }
 
 namespace simgear
 {
-class Technique;
-
-class Effect : public osg::Object
+class EffectCullVisitor : public osgUtil::CullVisitor
 {
 public:
-    META_Object(simgear,Effect)
-    Effect();
-    Effect(const Effect& rhs,
-           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
-    osg::StateSet* getDefaultStateSet();
-    std::vector<osg::ref_ptr<Technique> > techniques;
-    Technique* chooseTechnique(osg::RenderInfo* renderInfo);
-    virtual void resizeGLObjectBuffers(unsigned int maxSize);
-    virtual void releaseGLObjects(osg::State* state = 0) const;
-protected:
-    ~Effect();
+    EffectCullVisitor();
+    EffectCullVisitor(const EffectCullVisitor&);
+    virtual osgUtil::CullVisitor* clone() const;
+    using osgUtil::CullVisitor::apply;
+    virtual void apply(osg::Geode& node);
 };
 }
 #endif

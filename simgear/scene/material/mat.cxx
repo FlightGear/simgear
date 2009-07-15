@@ -30,9 +30,12 @@
 #include <string.h>
 #include <map>
 
+#include "mat.hxx"
+
 #include <osg/CullFace>
 #include <osg/Material>
 #include <osg/ShadeModel>
+#include <osg/StateSet>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
 #include <osgDB/ReadFile>
@@ -45,7 +48,9 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 
-#include "mat.hxx"
+#include "Effect.hxx"
+#include "Technique.hxx"
+#include "Pass.hxx"
 
 using std::map;
 using namespace simgear;
@@ -55,6 +60,11 @@ using namespace simgear;
 // Constructors and destructor.
 ////////////////////////////////////////////////////////////////////////
 
+SGMaterial::_internal_state::_internal_state(osg::StateSet *s,
+                                             const std::string &t, bool l ) :
+    state(s), texture_path(t), texture_loaded(l)
+{
+}
 
 SGMaterial::SGMaterial( const string &fg_root, const SGPropertyNode *props )
 {
@@ -244,15 +254,34 @@ SGMaterial::get_state (int n)
     return st;
 }
 
+Effect* SGMaterial::get_effect(int n)
+{
+    if (_status.size() == 0) {
+        SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
+        return 0;
+    }
+    int i = n >= 0 ? n : _current_ptr;
+    if(!_status[i].texture_loaded) {
+        assignTexture(_status[i].state.get(), _status[i].texture_path,
+                      wrapu, wrapv, mipmap);
+        _status[i].texture_loaded = true;
+    }
+    // XXX This business of returning a "random" alternate texture is
+    // really bogus. It means that the appearance of the terrain
+    // depends on the order in which it is paged in!
+    _current_ptr = (_current_ptr + 1) % _status.size();
+    return _status[i].effect.get();
+}
 
 void 
 SGMaterial::build_state( bool defer_tex_load )
 {
     StateAttributeFactory *attrFact = StateAttributeFactory::instance();
+    SGMaterialUserData* user = new SGMaterialUserData(this);
     for (unsigned int i = 0; i < _status.size(); i++)
     {
         osg::StateSet *stateSet = new osg::StateSet;
-        stateSet->setUserData(new SGMaterialUserData(this));
+        stateSet->setUserData(user);
 
         // Set up the textured state
         stateSet->setAttribute(attrFact->getSmoothShadeModel());
@@ -283,6 +312,14 @@ SGMaterial::build_state( bool defer_tex_load )
         }
 
         _status[i].state = stateSet;
+        Pass* pass = new Pass;
+        pass->setStateSet(_status[i].state.get());
+        Technique* tniq = new Technique(true);
+        tniq->passes.push_back(pass);
+        Effect* effect = new Effect;
+        effect->techniques.push_back(tniq);
+        effect->setUserData(user);
+        _status[i].effect = effect;
     }
 }
 

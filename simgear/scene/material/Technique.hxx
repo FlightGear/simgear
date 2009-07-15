@@ -52,7 +52,7 @@ class Technique : public osg::Object
 {
 public:
     META_Object(simgear,Technique);
-    Technique();
+    Technique(bool alwaysValid = false);
     Technique(const Technique& rhs,
               const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     virtual ~Technique();
@@ -83,14 +83,20 @@ public:
                      bool isCullingActive);
     std::vector<osg::ref_ptr<Pass> > passes;
     osg::StateSet* getShadowingStateSet() { return _shadowingStateSet.get(); }
+    const osg::StateSet* getShadowingStateSet() const
+    {
+        return _shadowingStateSet.get();
+    }
     void setShadowingStateSet(osg::StateSet* ss) { _shadowingStateSet = ss; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* state = 0) const;
     // Initial validity testing. Either the minimum OpenGL version
     // must be supported, or the list of extensions must be supported.
-    float getGLVersion() { return _glVersion; }
+    float getGLVersion() const { return _glVersion; }
     void setGLVersion(float glVersion) { _glVersion = glVersion; }
     std::vector<std::string> glExtensions;
+    bool getAlwaysValid() const { return _alwaysValid; }
+    void setAlwaysValid(bool val) { _alwaysValid = val; }
 protected:
     // Validity of technique in a graphics context.
     struct ContextInfo : public osg::Referenced
@@ -105,6 +111,7 @@ protected:
     };
     typedef osg::buffered_object<ContextInfo> ContextMap;
     mutable ContextMap _contextMap;
+    bool _alwaysValid;
     osg::ref_ptr<osg::StateSet> _shadowingStateSet;
     float _glVersion;
 };

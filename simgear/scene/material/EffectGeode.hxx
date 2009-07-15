@@ -30,12 +30,13 @@ public:
     EffectGeode(const EffectGeode& rhs,
                 const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     META_Node(simgear,EffectGeode);
-    virtual void traverse(osg::NodeVisitor& nv);
     Effect* getEffect() const { return _effect.get(); }
-    void setEffect(Effect* effect);
+    void setEffect(Effect* effect) { _effect = effect; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* = 0) const;
     typedef DrawableList::iterator DrawablesIterator;
+    DrawablesIterator drawablesBegin() { return _drawables.begin(); }
+    DrawablesIterator drawablesEnd() { return _drawables.end(); }
 private:
     osg::ref_ptr<Effect> _effect;
 };

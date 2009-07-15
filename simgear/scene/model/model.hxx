@@ -15,9 +15,6 @@
 #include <vector>
 #include <set>
 
-using std::vector;
-using std::set;
-
 #include <osg/Node>
 #include <osg/Texture2D>
 #include <osgDB/ReaderWriter>

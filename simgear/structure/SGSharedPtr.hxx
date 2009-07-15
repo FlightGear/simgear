@@ -111,4 +111,12 @@ private:
   friend class SGWeakPtr;
 };
 
+/**
+ * Support for boost::mem_fn
+ */
+template<typename T>
+T* get_pointer(SGSharedPtr<T> const & p)
+{
+  return p.ptr();
+}
 #endif

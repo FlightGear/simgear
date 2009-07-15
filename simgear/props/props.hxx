@@ -1419,12 +1419,17 @@ public:
    */
   bool setStringValue (const char * relative_path, const char * value);
 
+  bool setStringValue(const char * relative_path, const std::string& value)
+  { return setStringValue(relative_path, value.c_str()); }
   /**
    * Set another node's value as a string.
    */
   bool setStringValue (const std::string& relative_path, const char * value)
   { return setStringValue(relative_path.c_str(), value); }
 
+  bool setStringValue (const std::string& relative_path,
+                       const std::string& value)
+  { return setStringValue(relative_path.c_str(), value.c_str()); }
 
   /**
    * Set another node's value with no specified type.

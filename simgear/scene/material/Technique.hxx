@@ -20,6 +20,7 @@
 #include "EffectGeode.hxx"
 
 #include <simgear/structure/SGAtomic.hxx>
+#include <simgear/structure/SGExpression.hxx>
 
 #include <map>
 #include <vector>
@@ -90,13 +91,12 @@ public:
     void setShadowingStateSet(osg::StateSet* ss) { _shadowingStateSet = ss; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* state = 0) const;
-    // Initial validity testing. Either the minimum OpenGL version
-    // must be supported, or the list of extensions must be supported.
-    float getGLVersion() const { return _glVersion; }
-    void setGLVersion(float glVersion) { _glVersion = glVersion; }
-    std::vector<std::string> glExtensions;
     bool getAlwaysValid() const { return _alwaysValid; }
     void setAlwaysValid(bool val) { _alwaysValid = val; }
+    void setValidExpression(SGExpressionb* exp,
+                            const simgear::expression::BindingLayout&);
+    void setGLExtensionsPred(float glVersion,
+                             const std::vector<std::string>& extensions);
 protected:
     // Validity of technique in a graphics context.
     struct ContextInfo : public osg::Referenced
@@ -113,7 +113,8 @@ protected:
     mutable ContextMap _contextMap;
     bool _alwaysValid;
     osg::ref_ptr<osg::StateSet> _shadowingStateSet;
-    float _glVersion;
+    SGSharedPtr<SGExpressionb> _validExpression;
+    int _contextIdLocation;
 };
 }
 #endif

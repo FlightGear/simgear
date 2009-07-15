@@ -18,6 +18,10 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <sstream>
+
+#include <boost/utility.hpp>
 
 #if PROPS_STANDALONE
 #else
@@ -35,6 +39,30 @@
 
 namespace simgear
 {
+template<typename T>
+std::istream& readFrom(std::istream& stream, T& result)
+{
+    stream >> result;
+    return stream;
+}
+
+/**
+ * Parse a string as an object of a given type.
+ * XXX no error behavior yet.
+ *
+ * @tparam T the return type
+ * @param str the string
+ * @return the object.
+ */
+template<typename T>
+inline T parseString(const std::string& str)
+{
+    std::istringstream stream(str);
+    T result;
+    readFrom(stream, result);
+    return result;
+}
+
 /**
  * Property value types.
  */
@@ -86,60 +114,45 @@ namespace simgear
 
 namespace props
 {
+/**
+ * The possible types of an SGPropertyNode. Types that appear after
+ * EXTENDED are not stored in the SGPropertyNode itself.
+ */
 enum Type {
-    NONE = 0,
-    ALIAS,
+    NONE = 0, /**< The node hasn't been assigned a value yet. */
+    ALIAS, /**< The node "points" to another node. */
     BOOL,
     INT,
     LONG,
     FLOAT,
     DOUBLE,
     STRING,
-    UNSPECIFIED
+    UNSPECIFIED,
+    EXTENDED  /**< The node's value is not stored in the property;
+               * the actual value and type is retrieved from an
+               * SGRawValue node. This type is never returned by @see
+               * SGPropertyNode::getType.
+               */
 };
 
+template<typename T> struct PropertyTraits;
 
-template<typename T>
-struct PropertyTraits
-{
-    static const Type type_tag = NONE;
-};
+#define DEFINTERNALPROP(TYPE, PROP) \
+template<> \
+struct PropertyTraits<TYPE> \
+{ \
+    static const Type type_tag = PROP; \
+    enum  { Internal = 1 }; \
+}
 
-template<>
-struct PropertyTraits<bool>
-{
-    static const Type type_tag = BOOL;
-};
+DEFINTERNALPROP(bool, BOOL);
+DEFINTERNALPROP(int, INT);
+DEFINTERNALPROP(long, LONG);
+DEFINTERNALPROP(float, FLOAT);
+DEFINTERNALPROP(double, DOUBLE);
+DEFINTERNALPROP(const char *, STRING);
+#undef DEFINTERNALPROP
 
-template<>
-struct PropertyTraits<int>
-{
-    static const Type type_tag = INT;
-};
-
-template<>
-struct PropertyTraits<long>
-{
-    static const Type type_tag = LONG;
-};
-
-template<>
-struct PropertyTraits<float>
-{
-    static const Type type_tag = FLOAT;
-};
-
-template<>
-struct PropertyTraits<double>
-{
-    static const Type type_tag = DOUBLE;
-};
-
-template<>
-struct PropertyTraits<const char *>
-{
-    static const Type type_tag = STRING;
-};
 }
 }
 
@@ -158,12 +171,73 @@ struct PropertyTraits<const char *>
 // a small performance hit for that.
 ////////////////////////////////////////////////////////////////////////
 
-/** Base for virtual destructor
+/**
+ * Base class for SGRawValue classes that holds no type
+ * information. This allows some generic manipulation of the
+ * SGRawValue object.
  */
-class SGRawBase
+class SGRaw
 {
 public:
-    virtual ~SGRawBase() {}
+    /**
+     * Get the type enumeration for the raw value.
+     *
+     * @return the type.
+     */
+    virtual simgear::props::Type getType() const = 0;
+    virtual ~SGRaw() {}
+    
+    /**
+     * Create a new deep copy of this raw value.
+     *
+     * The copy will contain its own version of the underlying value
+     * as well, and will be the same type.
+     *
+     * @return A deep copy of the current object.
+     */
+    virtual SGRaw* clone() const = 0;
+
+};
+
+class SGRawExtended : public SGRaw
+{
+public:
+    /**    
+     * Make an SGRawValueContainer from the SGRawValue.
+     *
+     * This is a virtual function of SGRawExtended so that
+     * SGPropertyNode::untie doesn't need to know the type of an
+     * extended property.
+     */
+    virtual SGRawExtended* makeContainer() const = 0;
+    /**
+     * Write value out to a stream
+     */
+    virtual std::ostream& printOn(std::ostream& stream) const = 0;
+    /**
+     * Read value from a stream and store it.
+     */
+    virtual std::istream& readFrom(std::istream& stream) = 0;
+};
+
+// Choose between different base classes based on whether the value is
+// stored internal to the property node. This frees us from defining
+// the virtual functions in the SGRawExtended interface where they
+// don't make sense, e.g. readFrom for the const char* type.
+template<typename T, int internal = simgear::props::PropertyTraits<T>::Internal>
+class SGRawBase;
+
+template<typename T>
+class SGRawBase<T, 1> : public SGRaw
+{
+};
+
+template<typename T>
+class SGRawBase<T, 0> : public SGRawExtended
+{
+    virtual SGRawExtended* makeContainer() const;
+    virtual std::ostream& printOn(std::ostream& stream) const;
+    virtual std::istream& readFrom(std::istream& stream);
 };
 
 /**
@@ -183,10 +257,7 @@ public:
  * set, and clone the underlying value.  The SGRawValue may change
  * frequently during a session as a value is retyped or bound and
  * unbound to various data source, but the abstract SGPropertyNode
- * layer insulates the application from those changes.  The raw value
- * contains no facilities for data binding or for type conversion: it
- * is simply the abstraction of a primitive data type (or a compound
- * data type, in the case of a string).</p>
+ * layer insulates the application from those changes.
  *
  * <p>The SGPropertyNode class always keeps a *copy* of a raw value,
  * not the original one passed to it; if you override a derived class
@@ -202,9 +273,10 @@ public:
  * @see SGRawValueFunctionsIndexed
  * @see SGRawValueMethods
  * @see SGRawValueMethodsIndexed
+ * @see SGRawValueContainer
  */
 template <class T>
-class SGRawValue : public SGRawBase
+class SGRawValue : public SGRawBase<T>
 {
 public:
 
@@ -259,15 +331,15 @@ public:
 
 
   /**
-   * Create a new deep copy of this raw value.
-   *
-   * The copy will contain its own version of the underlying value
-   * as well.
-   *
-   * @return A deep copy of the current object.
+   * Return the type tag for this raw value type.
    */
-  virtual SGRawValue * clone () const = 0;
+  virtual simgear::props::Type getType() const
+  {
+    return simgear::props::PropertyTraits<T>::type_tag;
+  }
 };
+
+
 
 ////////////////////////////////////////////////////////////////////////
 // Default values for every type.
@@ -332,8 +404,8 @@ public:
    *
    * The copy will use the same external pointer as the original.
    */
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValuePointer<T>(_ptr);
+  virtual SGRaw* clone () const {
+    return new SGRawValuePointer(_ptr);
   }
 
 private:
@@ -407,8 +479,8 @@ public:
   /**
    * Create a copy of this raw value, bound to the same functions.
    */
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValueFunctions<T>(_getter,_setter);
+  virtual SGRaw* clone () const {
+    return new SGRawValueFunctions(_getter,_setter);
   }
 
 private:
@@ -444,8 +516,8 @@ public:
     if (_setter) { (*_setter)(_index, value); return true; }
     else return false;
   }
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValueFunctionsIndexed<T>(_index, _getter, _setter);
+  virtual SGRaw* clone () const {
+    return new SGRawValueFunctionsIndexed(_index, _getter, _setter);
   }
 private:
   int _index;
@@ -477,8 +549,8 @@ public:
     if (_setter) { (_obj.*_setter)(value); return true; }
     else return false;
   }
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValueMethods<C,T>(_obj, _getter, _setter);
+  virtual SGRaw* clone () const {
+    return new SGRawValueMethods(_obj, _getter, _setter);
   }
 private:
   C &_obj;
@@ -511,8 +583,8 @@ public:
     if (_setter) { (_obj.*_setter)(_index, value); return true; }
     else return false;
   }
-  virtual SGRawValue<T> * clone () const {
-    return new SGRawValueMethodsIndexed<C,T>(_obj, _index, _getter, _setter);
+  virtual SGRaw* clone () const {
+    return new SGRawValueMethodsIndexed(_obj, _index, _getter, _setter);
   }
 private:
   C &_obj;
@@ -521,6 +593,71 @@ private:
   setter_t _setter;
 };
 
+/**
+ * A raw value that contains its value. This provides a way for
+ * property nodes to contain values that shouldn't be stored in the
+ * property node itself.
+ */
+template <class T>
+class SGRawValueContainer : public SGRawValue<T>
+{
+public:
+
+    /**
+     * Explicit constructor.
+     */
+    SGRawValueContainer(const T& obj) : _obj(obj) {}
+
+    /**
+     * Destructor.
+     */
+    virtual ~SGRawValueContainer() {}
+
+    /**
+     * Get the underlying value.
+     */
+    virtual T getValue() const { return _obj; }
+
+    /**
+     * Set the underlying value.
+     *
+     * This method will dereference the pointer and change the
+     * variable's value.
+     */
+    virtual bool setValue (T value) { _obj = value; return true; }
+
+    /**
+     * Create a copy of this raw value.
+     */
+    virtual SGRaw* clone () const {
+        return new SGRawValueContainer(_obj);
+    }
+
+private:
+    T _obj;
+};
+
+template<typename T>
+SGRawExtended* SGRawBase<T, 0>::makeContainer() const
+{
+    return new SGRawValueContainer<T>(static_cast<const SGRawValue<T>*>(this)
+                                      ->getValue());
+}
+
+template<typename T>
+std::ostream& SGRawBase<T, 0>::printOn(std::ostream& stream) const
+{
+    return stream << static_cast<SGRawValue<T>*>(this)->getValue();
+}
+
+template<typename T>
+std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
+{
+    T value;
+    simgear::readFrom(stream, value);
+    static_cast<SGRawValue<T>*>(this)->setValue(value);
+    return stream;
+}
 
 /**
  * The smart pointer that manage reference counting
@@ -981,7 +1118,17 @@ public:
    */
   const char * getStringValue () const;
 
-
+  /**
+   * Get a value from a node. If the actual type of the node doesn't
+   * match the desired type, a conversion isn't guaranteed.
+   */
+  template<typename T>
+  T getValue(typename boost::enable_if_c<simgear::props::PropertyTraits<T>::Internal>
+             ::type* dummy = 0) const;
+  // Getter for extended property
+  template<typename T>
+  T getValue(typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
+             ::type* dummy = 0) const;
 
   /**
    * Set a bool value for this node.
@@ -1030,7 +1177,21 @@ public:
    */
   bool setUnspecifiedValue (const char * value);
 
+  template<typename T>
+  bool setValue(const T& val,
+                typename boost::enable_if_c<simgear::props::PropertyTraits<T>::Internal>
+                ::type* dummy = 0);
 
+  template<typename T>
+  bool setValue(const T& val,
+                typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
+                ::type* dummy = 0);
+  
+  /**
+   * Print the value of the property to a stream.
+   */
+  std::ostream& printOn(std::ostream& stream) const;
+  
   //
   // Data binding.
   //
@@ -1428,7 +1589,6 @@ private:
    */
   const char * make_string () const;
 
-
   /**
    * Trace a read access.
    */
@@ -1468,7 +1628,7 @@ private:
 				// The right kind of pointer...
   union {
     SGPropertyNode * alias;
-    SGRawBase* val;
+    SGRaw* val;
   } _value;
 
   union {
@@ -1614,7 +1774,8 @@ inline bool setValue (SGPropertyNode* node, const std::string& value)
 template<typename T>
 bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
 {
-    if (_type == simgear::props::ALIAS || _tied)
+    using namespace simgear::props;
+    if (_type == ALIAS || _tied)
         return false;
 
     useDefault = useDefault && hasValue();
@@ -1622,13 +1783,14 @@ bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
     if (useDefault)
         old_val = getValue<T>(this);
     clearValue();
-    _type = simgear::props::PropertyTraits<T>::type_tag;
+    if (PropertyTraits<T>::Internal)
+        _type = PropertyTraits<T>::type_tag;
+    else
+        _type = EXTENDED;
     _tied = true;
     _value.val = rawValue.clone();
-
     if (useDefault)
-        setValue(this, old_val);
-
+        setValue(old_val);
     return true;
 }
 
@@ -1636,6 +1798,75 @@ template<>
 bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
                           bool useDefault);
 
+template<typename T>
+T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
+                           ::PropertyTraits<T>::Internal>::type* dummy) const
+{
+    using namespace simgear::props;
+    if (_attr == (READ|WRITE) && _type == EXTENDED
+        && _value.val->getType() == PropertyTraits<T>::type_tag) {
+        return static_cast<SGRawValue<T>*>(_value.val)->getValue();
+    }
+    if (getAttribute(TRACE_READ))
+        trace_read();
+    if (!getAttribute(READ))
+        return SGRawValue<T>::DefaultValue;
+    switch (_type) {
+    case EXTENDED:
+        if (_value.val->getType() == PropertyTraits<T>::type_tag)
+            return static_cast<SGRawValue<T>*>(_value.val)->getValue();
+        break;
+    case STRING:
+    case UNSPECIFIED:
+        return simgear::parseString<T>(make_string());
+        break;
+    }
+    return SGRawValue<T>::DefaultValue;
+}
+
+template<typename T>
+inline T SGPropertyNode::getValue(typename boost::enable_if_c<simgear::props
+                                  ::PropertyTraits<T>::Internal>::type* dummy) const
+{
+  return ::getValue<T>(this);
+}
+
+template<typename T>
+bool SGPropertyNode::setValue(const T& val,
+                              typename boost::disable_if_c<simgear::props
+                              ::PropertyTraits<T>::Internal>::type* dummy)
+{
+    using namespace simgear::props;
+    if (_attr == (READ|WRITE) && _type == EXTENDED
+        && _value.val->getType() == PropertyTraits<T>::type_tag) {
+        static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
+        return true;
+    }
+    if (getAttribute(WRITE)
+        && ((_type == EXTENDED
+            && _value.val->getType() == PropertyTraits<T>::type_tag)
+            || _type == NONE || _type == UNSPECIFIED)) {
+        if (_type == NONE || _type == UNSPECIFIED) {
+            clearValue();
+            _type = EXTENDED;
+            _value.val = new SGRawValueContainer<T>(val);
+        } else {
+            static_cast<SGRawValue<T>*>(_value.val)->setValue(val);
+        }
+        if (getAttribute(TRACE_WRITE))
+            trace_write();
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+inline bool SGPropertyNode::setValue(const T& val,
+                                     typename boost::enable_if_c<simgear::props
+                                     ::PropertyTraits<T>::Internal>::type* dummy)
+{
+  return ::setValue(this, val);
+}
 #endif // __PROPS_HXX
 
 // end of props.hxx

@@ -11,6 +11,7 @@
 #include <algorithm>
 
 #include <sstream>
+#include <iomanip>
 #include <stdio.h>
 #include <string.h>
 
@@ -385,7 +386,7 @@ inline const char *
 SGPropertyNode::get_string () const
 {
   if (_tied)
-    return static_cast<SGRawValue<const char*>*>(_value.val)->getValue();
+      return static_cast<SGRawValue<const char*>*>(_value.val)->getValue();
   else
     return _local_val.string_val;
 }
@@ -479,7 +480,7 @@ inline bool
 SGPropertyNode::set_string (const char * val)
 {
   if (_tied) {
-    if (static_cast<SGRawValue<const char*>*>(_value.val)->setValue(val)) {
+      if (static_cast<SGRawValue<const char*>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -538,53 +539,43 @@ SGPropertyNode::clearValue ()
 const char *
 SGPropertyNode::make_string () const
 {
-  if (!getAttribute(READ))
-    return "";
-
-  switch (_type) {
-  case ALIAS:
-    return _value.alias->getStringValue();
-  case BOOL:
-    if (get_bool())
-      return "true";
-    else
-      return "false";
-  case INT:
-    {
-      stringstream sstr;
-      sstr << get_int();
-      _buffer = sstr.str();
-      return _buffer.c_str();
+    if (!getAttribute(READ))
+        return "";
+    switch (_type) {
+    case ALIAS:
+        return _value.alias->getStringValue();
+    case BOOL:
+        return get_bool() ? "true" : "false";
+    case STRING:
+    case UNSPECIFIED:
+        return get_string();
+    case NONE:
+        return "";
+    default:
+        break;
     }
-  case LONG:
-    {
-      stringstream sstr;
-      sstr << get_long();
-      _buffer = sstr.str();
-      return _buffer.c_str();
+    stringstream sstr;
+    switch (_type) {
+    case INT:
+        sstr << get_int();
+        break;
+    case LONG:
+        sstr << get_long();
+        break;
+    case FLOAT:
+        sstr << get_float();
+        break;
+    case DOUBLE:
+        sstr << std::setprecision(10) << get_double();
+        break;
+    case EXTENDED:
+        static_cast<SGRawExtended*>(_value.val)->printOn(sstr);
+        break;
+    default:
+        return "";
     }
-  case FLOAT:
-    {
-      stringstream sstr;
-      sstr << get_float();
-      _buffer = sstr.str();
-      return _buffer.c_str();
-    }
-  case DOUBLE:
-    {
-      stringstream sstr;
-      sstr.precision( 10 );
-      sstr << get_double();
-      _buffer = sstr.str();
-      return _buffer.c_str();
-    }
-  case STRING:
-  case UNSPECIFIED:
-    return get_string();
-  case NONE:
-  default:
-    return "";
-  }
+    _buffer = sstr.str();
+    return _buffer.c_str();
 }
 
 /**
@@ -660,68 +651,39 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 {
   _local_val.string_val = 0;
   _value.val = 0;
-  switch (_type) {
-  case NONE:
-    break;
-  case ALIAS:
+  if (_type == NONE)
+    return;
+  if (_type == ALIAS) {
     _value.alias = node._value.alias;
     get(_value.alias);
     _tied = false;
-    break;
+    return;
+  }
+  if (_tied || _type == EXTENDED) {
+    _value.val = node._value.val->clone();
+    return;
+  }
+  switch (_type) {
   case BOOL:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<bool>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_bool(node.get_bool());
-    }
+    set_bool(node.get_bool());    
     break;
   case INT:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<int>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_int(node.get_int());
-    }
+    set_int(node.get_int());
     break;
   case LONG:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<long>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_long(node.get_long());
-    }
+    set_long(node.get_long());
     break;
   case FLOAT:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<float>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_float(node.get_float());
-    }
+    set_float(node.get_float());
     break;
   case DOUBLE:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<double>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_double(node.get_double());
-    }
+    set_double(node.get_double());
     break;
   case STRING:
   case UNSPECIFIED:
-    if (_tied) {
-      _tied = true;
-      _value.val = static_cast<SGRawValue<const char*>*>(node._value.val)->clone();
-    } else {
-      _tied = false;
-      set_string(node.get_string());
-    }
+    set_string(node.get_string());
+    break;
+  default:
     break;
   }
 }
@@ -1053,6 +1015,8 @@ SGPropertyNode::getType () const
 {
   if (_type == ALIAS)
     return _value.alias->getType();
+  else if (_type == EXTENDED)
+      return _value.val->getType();
   else
     return _type;
 }
@@ -1528,6 +1492,12 @@ SGPropertyNode::setStringValue (const char * value)
   case UNSPECIFIED:
     result = set_string(value);
     break;
+  case EXTENDED:
+  {
+    stringstream sstr(value);
+    static_cast<SGRawExtended*>(_value.val)->readFrom(sstr);
+  }
+  break;
   case NONE:
   default:
     break;
@@ -1547,8 +1517,10 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
     clearValue();
     _type = UNSPECIFIED;
   }
-
-  switch (_type) {
+  Type type = _type;
+  if (type == EXTENDED)
+      type = _value.val->getType();
+  switch (type) {
   case ALIAS:
     result = _value.alias->setUnspecifiedValue(value);
     break;
@@ -1580,6 +1552,41 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   if (getAttribute(TRACE_WRITE))
     trace_write();
   return result;
+}
+
+std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
+{
+    if (!getAttribute(READ))
+        return stream;
+    switch (_type) {
+    case ALIAS:
+        return _value.alias->printOn(stream);
+    case BOOL:
+        stream << (get_bool() ? "true" : "false");
+        break;
+    case INT:
+        stream << get_int();
+        break;
+    case LONG:
+        stream << get_long();
+        break;
+    case FLOAT:
+        stream << get_float();
+        break;
+    case DOUBLE:
+        stream << get_double();
+        break;
+    case STRING:
+    case UNSPECIFIED:
+        stream << get_string();
+        break;
+    case EXTENDED:
+        static_cast<SGRawExtended*>(_value.val)->printOn(stream);
+        break;
+    case NONE:
+        break;
+    }
+    return stream;
 }
 
 template<>
@@ -1651,6 +1658,15 @@ SGPropertyNode::untie ()
     clearValue();
     _type = STRING;
     _local_val.string_val = copy_string(val.c_str());
+    break;
+  }
+  case EXTENDED: {
+    SGRawExtended* val = static_cast<SGRawExtended*>(_value.val);
+    _value.val = 0;             // Prevent clearValue() from deleting
+    clearValue();
+    _type = EXTENDED;
+    _value.val = val->makeContainer();
+    delete val;
     break;
   }
   case NONE:

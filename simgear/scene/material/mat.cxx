@@ -176,6 +176,9 @@ SGMaterial::read_properties(const osgDB::Options* options,
 
   shininess = props->getDoubleValue("shininess", 1.0);
 
+  if (props->hasChild("effect"))
+      effect = props->getStringValue("effect");
+  
   vector<SGPropertyNode_ptr> object_group_nodes =
     ((SGPropertyNode *)props)->getChildren("object-group");
   for (unsigned int i = 0; i < object_group_nodes.size(); i++)
@@ -222,6 +225,7 @@ SGMaterial::init ()
         diffuse[i]  = (i < 3) ? 0.8 : 1.0;
         emission[i] = (i < 3) ? 0.0 : 1.0;
     }
+    effect = "Effects/terrain-default";
 }
 
 Effect* SGMaterial::get_effect(int n)
@@ -246,8 +250,7 @@ void SGMaterial::buildEffectProperties(const osgDB::Options* options)
 {
     using namespace osg;
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
-    makeChild(propRoot, "inherits-from")
-        ->setStringValue("Effects/terrain-default");
+    makeChild(propRoot, "inherits-from")->setStringValue(effect);
     SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
     SGPropertyNode* materialProp = makeChild(paramProp, "material");
     makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));    

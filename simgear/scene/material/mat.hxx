@@ -326,6 +326,9 @@ private:
   SGVec4f ambient, diffuse, specular, emission;
   double shininess;
 
+  // effect for this material
+  std::string effect;
+
   // the list of names for this material. May be empty.
   std::vector<std::string> _names;
 

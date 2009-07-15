@@ -39,6 +39,8 @@ using std::string;
 using std::vector;
 using std::stringstream;
 
+using namespace simgear;
+using namespace simgear::props;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -64,8 +66,6 @@ public:
 
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Default values for every type.
@@ -77,8 +77,6 @@ template<> const long SGRawValue<long>::DefaultValue = 0L;
 template<> const float SGRawValue<float>::DefaultValue = 0.0;
 template<> const double SGRawValue<double>::DefaultValue = 0.0L;
 template<> const char * const SGRawValue<const char *>::DefaultValue = "";
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
@@ -342,7 +340,7 @@ inline bool
 SGPropertyNode::get_bool () const
 {
   if (_tied)
-    return _value.bool_val->getValue();
+    return static_cast<SGRawValue<bool>*>(_value.val)->getValue();
   else
     return _local_val.bool_val;
 }
@@ -351,7 +349,7 @@ inline int
 SGPropertyNode::get_int () const
 {
   if (_tied)
-    return _value.int_val->getValue();
+      return (static_cast<SGRawValue<int>*>(_value.val))->getValue();
   else
     return _local_val.int_val;
 }
@@ -360,7 +358,7 @@ inline long
 SGPropertyNode::get_long () const
 {
   if (_tied)
-    return _value.long_val->getValue();
+    return static_cast<SGRawValue<long>*>(_value.val)->getValue();
   else
     return _local_val.long_val;
 }
@@ -369,7 +367,7 @@ inline float
 SGPropertyNode::get_float () const
 {
   if (_tied)
-    return _value.float_val->getValue();
+    return static_cast<SGRawValue<float>*>(_value.val)->getValue();
   else
     return _local_val.float_val;
 }
@@ -378,7 +376,7 @@ inline double
 SGPropertyNode::get_double () const
 {
   if (_tied)
-    return _value.double_val->getValue();
+    return static_cast<SGRawValue<double>*>(_value.val)->getValue();
   else
     return _local_val.double_val;
 }
@@ -387,7 +385,7 @@ inline const char *
 SGPropertyNode::get_string () const
 {
   if (_tied)
-    return _value.string_val->getValue();
+    return static_cast<SGRawValue<const char*>*>(_value.val)->getValue();
   else
     return _local_val.string_val;
 }
@@ -396,7 +394,7 @@ inline bool
 SGPropertyNode::set_bool (bool val)
 {
   if (_tied) {
-    if (_value.bool_val->setValue(val)) {
+    if (static_cast<SGRawValue<bool>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -413,7 +411,7 @@ inline bool
 SGPropertyNode::set_int (int val)
 {
   if (_tied) {
-    if (_value.int_val->setValue(val)) {
+    if (static_cast<SGRawValue<int>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -430,7 +428,7 @@ inline bool
 SGPropertyNode::set_long (long val)
 {
   if (_tied) {
-    if (_value.long_val->setValue(val)) {
+    if (static_cast<SGRawValue<long>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -447,7 +445,7 @@ inline bool
 SGPropertyNode::set_float (float val)
 {
   if (_tied) {
-    if (_value.float_val->setValue(val)) {
+    if (static_cast<SGRawValue<float>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -464,7 +462,7 @@ inline bool
 SGPropertyNode::set_double (double val)
 {
   if (_tied) {
-    if (_value.double_val->setValue(val)) {
+    if (static_cast<SGRawValue<double>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -481,7 +479,7 @@ inline bool
 SGPropertyNode::set_string (const char * val)
 {
   if (_tied) {
-    if (_value.string_val->setValue(val)) {
+    if (static_cast<SGRawValue<const char*>*>(_value.val)->setValue(val)) {
       fireValueChanged();
       return true;
     } else {
@@ -498,61 +496,39 @@ SGPropertyNode::set_string (const char * val)
 void
 SGPropertyNode::clearValue ()
 {
-  switch (_type) {
-  case NONE:
-    break;
-  case ALIAS:
-    put(_value.alias);
-    _value.alias = 0;
-    break;
-  case BOOL:
-    if (_tied) {
-      delete _value.bool_val;
-      _value.bool_val = 0;
+    if (_type == ALIAS) {
+        put(_value.alias);
+        _value.alias = 0;
+    } else if (_type != NONE) {
+        switch (_type) {
+        case BOOL:
+            _local_val.bool_val = SGRawValue<bool>::DefaultValue;
+            break;
+        case INT:
+            _local_val.int_val = SGRawValue<int>::DefaultValue;
+            break;
+        case LONG:
+            _local_val.long_val = SGRawValue<long>::DefaultValue;
+            break;
+        case FLOAT:
+            _local_val.float_val = SGRawValue<float>::DefaultValue;
+            break;
+        case DOUBLE:
+            _local_val.double_val = SGRawValue<double>::DefaultValue;
+            break;
+        case STRING:
+        case UNSPECIFIED:
+            if (!_tied) {
+                delete [] _local_val.string_val;
+            }
+            _local_val.string_val = 0;
+            break;
+        }
+        delete _value.val;
+        _value.val = 0;
     }
-    _local_val.bool_val = SGRawValue<bool>::DefaultValue;
-    break;
-  case INT:
-    if (_tied) {
-      delete _value.int_val;
-      _value.int_val = 0;
-    }
-    _local_val.int_val = SGRawValue<int>::DefaultValue;
-    break;
-  case LONG:
-    if (_tied) {
-      delete _value.long_val;
-      _value.long_val = 0L;
-    }
-    _local_val.long_val = SGRawValue<long>::DefaultValue;
-    break;
-  case FLOAT:
-    if (_tied) {
-      delete _value.float_val;
-      _value.float_val = 0;
-    }
-    _local_val.float_val = SGRawValue<float>::DefaultValue;
-    break;
-  case DOUBLE:
-    if (_tied) {
-      delete _value.double_val;
-      _value.double_val = 0;
-    }
-    _local_val.double_val = SGRawValue<double>::DefaultValue;
-    break;
-  case STRING:
-  case UNSPECIFIED:
-    if (_tied) {
-      delete _value.string_val;
-      _value.string_val = 0;
-    } else {
-      delete [] _local_val.string_val;
-    }
-    _local_val.string_val = 0;
-    break;
-  }
-  _tied = false;
-  _type = NONE;
+    _tied = false;
+    _type = NONE;
 }
 
 
@@ -665,6 +641,7 @@ SGPropertyNode::SGPropertyNode ()
     _listeners(0)
 {
   _local_val.string_val = 0;
+  _value.val = 0;
 }
 
 
@@ -682,6 +659,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
     _listeners(0)		// CHECK!!
 {
   _local_val.string_val = 0;
+  _value.val = 0;
   switch (_type) {
   case NONE:
     break;
@@ -693,7 +671,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case BOOL:
     if (_tied) {
       _tied = true;
-      _value.bool_val = node._value.bool_val->clone();
+      _value.val = static_cast<SGRawValue<bool>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_bool(node.get_bool());
@@ -702,7 +680,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case INT:
     if (_tied) {
       _tied = true;
-      _value.int_val = node._value.int_val->clone();
+      _value.val = static_cast<SGRawValue<int>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_int(node.get_int());
@@ -711,7 +689,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case LONG:
     if (_tied) {
       _tied = true;
-      _value.long_val = node._value.long_val->clone();
+      _value.val = static_cast<SGRawValue<long>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_long(node.get_long());
@@ -720,7 +698,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case FLOAT:
     if (_tied) {
       _tied = true;
-      _value.float_val = node._value.float_val->clone();
+      _value.val = static_cast<SGRawValue<float>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_float(node.get_float());
@@ -729,7 +707,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case DOUBLE:
     if (_tied) {
       _tied = true;
-      _value.double_val = node._value.double_val->clone();
+      _value.val = static_cast<SGRawValue<double>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_double(node.get_double());
@@ -739,7 +717,7 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
   case UNSPECIFIED:
     if (_tied) {
       _tied = true;
-      _value.string_val = node._value.string_val->clone();
+      _value.val = static_cast<SGRawValue<const char*>*>(node._value.val)->clone();
     } else {
       _tied = false;
       set_string(node.get_string());
@@ -764,11 +742,11 @@ SGPropertyNode::SGPropertyNode (const char * name,
     _listeners(0)
 {
   int i = 0;
+  _local_val.string_val = 0;
+  _value.val = 0;
   _name = parse_name(name, i);
   if (i != int(strlen(name)) || name[0] == '.')
     throw string("plain name expected instead of '") + name + '\'';
-
-  _local_val.string_val = 0;
 }
 
 
@@ -1070,7 +1048,7 @@ SGPropertyNode::getPath (bool simplify) const
   return _path.c_str();
 }
 
-SGPropertyNode::Type
+Type
 SGPropertyNode::getType () const
 {
   if (_type == ALIAS)
@@ -1604,139 +1582,27 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   return result;
 }
 
-bool
-SGPropertyNode::tie (const SGRawValue<bool> &rawValue, bool useDefault)
+template<>
+bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
+                          bool useDefault)
 {
-  if (_type == ALIAS || _tied)
-    return false;
+    if (_type == ALIAS || _tied)
+        return false;
 
-  useDefault = useDefault && hasValue();
-  bool old_val = false;
-  if (useDefault)
-    old_val = getBoolValue();
+    useDefault = useDefault && hasValue();
+    std::string old_val;
+    if (useDefault)
+        old_val = getStringValue();
+    clearValue();
+    _type = STRING;
+    _tied = true;
+    _value.val = rawValue.clone();
 
-  clearValue();
-  _type = BOOL;
-  _tied = true;
-  _value.bool_val = rawValue.clone();
+    if (useDefault)
+        setStringValue(old_val.c_str());
 
-  if (useDefault)
-    setBoolValue(old_val);
-
-  return true;
+    return true;
 }
-
-bool
-SGPropertyNode::tie (const SGRawValue<int> &rawValue, bool useDefault)
-{
-  if (_type == ALIAS || _tied)
-    return false;
-
-  useDefault = useDefault && hasValue();
-  int old_val = 0;
-  if (useDefault)
-    old_val = getIntValue();
-
-  clearValue();
-  _type = INT;
-  _tied = true;
-  _value.int_val = rawValue.clone();
-
-  if (useDefault)
-    setIntValue(old_val);
-
-  return true;
-}
-
-bool
-SGPropertyNode::tie (const SGRawValue<long> &rawValue, bool useDefault)
-{
-  if (_type == ALIAS || _tied)
-    return false;
-
-  useDefault = useDefault && hasValue();
-  long old_val = 0;
-  if (useDefault)
-    old_val = getLongValue();
-
-  clearValue();
-  _type = LONG;
-  _tied = true;
-  _value.long_val = rawValue.clone();
-
-  if (useDefault)
-    setLongValue(old_val);
-
-  return true;
-}
-
-bool
-SGPropertyNode::tie (const SGRawValue<float> &rawValue, bool useDefault)
-{
-  if (_type == ALIAS || _tied)
-    return false;
-
-  useDefault = useDefault && hasValue();
-  float old_val = 0.0;
-  if (useDefault)
-    old_val = getFloatValue();
-
-  clearValue();
-  _type = FLOAT;
-  _tied = true;
-  _value.float_val = rawValue.clone();
-
-  if (useDefault)
-    setFloatValue(old_val);
-
-  return true;
-}
-
-bool
-SGPropertyNode::tie (const SGRawValue<double> &rawValue, bool useDefault)
-{
-  if (_type == ALIAS || _tied)
-    return false;
-
-  useDefault = useDefault && hasValue();
-  double old_val = 0.0;
-  if (useDefault)
-    old_val = getDoubleValue();
-
-  clearValue();
-  _type = DOUBLE;
-  _tied = true;
-  _value.double_val = rawValue.clone();
-
-  if (useDefault)
-    setDoubleValue(old_val);
-
-  return true;
-
-}
-
-bool
-SGPropertyNode::tie (const SGRawValue<const char *> &rawValue, bool useDefault)
-{
-  if (_type == ALIAS || _tied)
-    return false;
-
-  useDefault = useDefault && hasValue();
-  string old_val;
-  if (useDefault)
-    old_val = getStringValue();
-
-  clearValue();
-  _type = STRING;
-  _tied = true;
-  _value.string_val = rawValue.clone();
-
-  if (useDefault)
-    setStringValue(old_val.c_str());
-
-  return true;
-}
-
 bool
 SGPropertyNode::untie ()
 {
@@ -1874,7 +1740,7 @@ SGPropertyNode::hasValue (const char * relative_path) const
 /**
  * Get the value type for another node.
  */
-SGPropertyNode::Type
+Type
 SGPropertyNode::getType (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);

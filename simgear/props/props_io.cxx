@@ -400,25 +400,26 @@ void readProperties (const char *buf, const int size,
  * Return the type name.
  */
 static const char *
-getTypeName (SGPropertyNode::Type type)
+getTypeName (simgear::props::Type type)
 {
+  using namespace simgear::props;
   switch (type) {
-  case SGPropertyNode::UNSPECIFIED:
+  case UNSPECIFIED:
     return "unspecified";
-  case SGPropertyNode::BOOL:
+  case BOOL:
     return "bool";
-  case SGPropertyNode::INT:
+  case INT:
     return "int";
-  case SGPropertyNode::LONG:
+  case LONG:
     return "long";
-  case SGPropertyNode::FLOAT:
+  case FLOAT:
     return "float";
-  case SGPropertyNode::DOUBLE:
+  case DOUBLE:
     return "double";
-  case SGPropertyNode::STRING:
+  case STRING:
     return "string";
-  case SGPropertyNode::ALIAS:
-  case SGPropertyNode::NONE:
+  case ALIAS:
+  case NONE:
     return "unspecified";
   }
 
@@ -525,7 +526,7 @@ writeNode (ostream &output, const SGPropertyNode * node,
       output << " alias=\"" << node->getAliasTarget()->getPath()
 	     << "\"/>" << endl;
     } else {
-      if (node->getType() != SGPropertyNode::UNSPECIFIED)
+      if (node->getType() != simgear::props::UNSPECIFIED)
 	output << " type=\"" << getTypeName(node->getType()) << '"';
       output << '>';
       writeData(output, node->getStringValue());
@@ -600,37 +601,38 @@ writeProperties (const string &file, const SGPropertyNode * start_node,
 bool
 copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 {
+  using namespace simgear::props;
   bool retval = true;
 
 				// First, copy the actual value,
 				// if any.
   if (in->hasValue()) {
     switch (in->getType()) {
-    case SGPropertyNode::BOOL:
+    case BOOL:
       if (!out->setBoolValue(in->getBoolValue()))
 	retval = false;
       break;
-    case SGPropertyNode::INT:
+    case INT:
       if (!out->setIntValue(in->getIntValue()))
 	retval = false;
       break;
-    case SGPropertyNode::LONG:
+    case LONG:
       if (!out->setLongValue(in->getLongValue()))
 	retval = false;
       break;
-    case SGPropertyNode::FLOAT:
+    case FLOAT:
       if (!out->setFloatValue(in->getFloatValue()))
 	retval = false;
       break;
-    case SGPropertyNode::DOUBLE:
+    case DOUBLE:
       if (!out->setDoubleValue(in->getDoubleValue()))
 	retval = false;
       break;
-    case SGPropertyNode::STRING:
+    case STRING:
       if (!out->setStringValue(in->getStringValue()))
 	retval = false;
       break;
-    case SGPropertyNode::UNSPECIFIED:
+    case UNSPECIFIED:
       if (!out->setUnspecifiedValue(in->getStringValue()))
 	retval = false;
       break;

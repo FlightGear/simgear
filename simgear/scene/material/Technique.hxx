@@ -97,6 +97,7 @@ public:
                             const simgear::expression::BindingLayout&);
     void setGLExtensionsPred(float glVersion,
                              const std::vector<std::string>& extensions);
+    void refreshValidity();
 protected:
     // Validity of technique in a graphics context.
     struct ContextInfo : public osg::Referenced
@@ -115,6 +116,18 @@ protected:
     osg::ref_ptr<osg::StateSet> _shadowingStateSet;
     SGSharedPtr<SGExpressionb> _validExpression;
     int _contextIdLocation;
+};
+
+class TechniquePredParser : public expression::ExpressionParser
+{
+public:
+    void setTechnique(Technique* tniq) { _tniq = tniq; }
+    Technique* getTechnique() { return _tniq.get(); }
+//    void setEffect(Effect* effect) { _effect = effect; }
+//    Effect* getEffect() { return _effect.get(); }
+protected:
+    osg::ref_ptr<Technique> _tniq;
+    // osg::ref_ptr<Effect> _effect;
 };
 }
 #endif

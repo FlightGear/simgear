@@ -901,96 +901,131 @@ namespace simgear
 {
   namespace expression
   {
-    class Parser;
-    /**
-     * Function that parses a property tree, producing an expression.
-     */
-    typedef Expression* (*exp_parser)(const SGPropertyNode* exp,
-                                     Parser* parser);
-    void addExpParser(const std::string&, exp_parser);
-    Expression* read(const SGPropertyNode* exp, Parser* parser = 0);
-    /**
-     * Constructor for registering parser functions.
-     */
-    struct ExpParserRegistrar
-    {
-      ExpParserRegistrar(const std::string& token, exp_parser parser)
-      {
-        addExpParser(token, parser);
-      }
-    };
-
-    struct ParseError : public sg_exception
-    {
+  struct ParseError : public sg_exception
+  {
       ParseError(const string& message = std::string())
-        : sg_exception(message) {}
-    };
+          : sg_exception(message) {}
+  };
     
-    // Support for binding variables around an expression.
-    class Binding
-    {
-    public:
+  // Support for binding variables around an expression.
+  class Binding
+  {
+  public:
       virtual ~Binding() {}
       const virtual Value* getBindings() const = 0;
       virtual Value* getBindings() = 0;
-    };
+  };
 
-    class VariableLengthBinding : public Binding
-    {
-    public:
+  class VariableLengthBinding : public Binding
+  {
+  public:
       const Value* getBindings() const
       {
-        if (_bindings.empty())
-          return 0;
-        else
-          return &_bindings[0];
+          if (_bindings.empty())
+              return 0;
+          else
+              return &_bindings[0];
       }
       Value* getBindings()
       {
-        if (_bindings.empty())
-          return 0;
-        else
-          return &_bindings[0];
+          if (_bindings.empty())
+              return 0;
+          else
+              return &_bindings[0];
       }
       std::vector<Value> _bindings;
-    };
+  };
 
-    template<int Size> class FixedLengthBinding : public Binding
-    {
-    public:
+  template<int Size> class FixedLengthBinding : public Binding
+  {
+  public:
       Value* getBindings()
       {
-        return &_bindings[0];
+          return &_bindings[0];
       }
       const Value* getBindings() const
       {
-        return &_bindings[0];
+          return &_bindings[0];
       }
       Value _bindings[Size];
-    };
+  };
 
-    struct VariableBinding
-    {
+  struct VariableBinding
+  {
       VariableBinding() : type(expression::DOUBLE), location(-1) {}
 
       VariableBinding(const std::string& name_, expression::Type type_,
                       int location_)
-        : name(name_), type(type_), location(location_)
+          : name(name_), type(type_), location(location_)
       {
       }
       std::string name;
       expression::Type type;
       int location;
-    };
+  };
 
-    class BindingLayout
-    {
-    public:
+  class BindingLayout
+  {
+  public:
       int addBinding(const std::string& name, expression::Type type);
       bool findBinding(const string& name, VariableBinding& result) const;
-    protected:
       std::vector<VariableBinding> bindings;
-    };
+  };
+
+  class Parser {
+  public:
+      typedef Expression* (*exp_parser)(const SGPropertyNode* exp,
+                                        Parser* parser);
+      void addParser(const std::string& name, exp_parser parser)
+      {
+          getParserMap().insert(std::make_pair(name, parser));
+      }
+      Expression* read(const SGPropertyNode* exp)
+      {
+          ParserMap& map = getParserMap();
+          ParserMap::iterator itr = map.find(exp->getName());
+          if (itr == map.end())
+              throw ParseError(string("unknown expression ") + exp->getName());
+          exp_parser parser = itr->second;
+          return (*parser)(exp, this);
+      }
+      // XXX vector of SGSharedPtr?
+      bool readChildren(const SGPropertyNode* exp,
+                        std::vector<Expression*>& result);
+      /**
+       * Function that parses a property tree, producing an expression.
+       */
+      typedef std::map<const std::string, exp_parser> ParserMap;
+      virtual ParserMap& getParserMap() = 0;
+      /**
+       * After an expression is parsed, the binding layout may contain
+       * references that need to be bound during evaluation.
+       */
+      BindingLayout& getBindingLayout() { return _bindingLayout; }
+  protected:
+      BindingLayout _bindingLayout;
+  };
+
+  class ExpressionParser : public Parser
+  {
+  public:
+      ParserMap& getParserMap() { return _parserTable; }
+      static void addExpParser(const std::string&, exp_parser);
+  protected:
+      static ParserMap _parserTable;
+  };
+
+  /**
+   * Constructor for registering parser functions.
+   */
+  struct ExpParserRegistrar
+  {
+      ExpParserRegistrar(const std::string& token, Parser::exp_parser parser)
+      {
+          ExpressionParser::addExpParser(token, parser);
+      }
+  };
+
   }
 
   /**

@@ -7,6 +7,7 @@ include_HEADERS = \
 	commands.hxx \
 	exception.hxx \
 	event_mgr.hxx \
+	intern.hxx \
 	subsystem_mgr.hxx \
 	OSGUtils.hxx \
 	OSGVersion.hxx \
@@ -19,18 +20,21 @@ include_HEADERS = \
 	SGSmplstat.hxx \
 	SGWeakPtr.hxx \
 	SGWeakReferenced.hxx \
-	Singleton.hxx
+	Singleton.hxx \
+	StringTable.hxx
 
 libsgstructure_a_SOURCES = \
 	commands.cxx \
 	exception.cxx \
 	event_mgr.cxx\
+	intern.hxx \
 	subsystem_mgr.cxx \
 	SGAtomic.cxx \
 	SGBinding.cxx \
 	SGExpression.cxx \
 	SGSmplhist.cxx \
-	SGSmplstat.cxx
+	SGSmplstat.cxx \
+	StringTable.cxx
 
 INCLUDES = -I$(top_srcdir)
 

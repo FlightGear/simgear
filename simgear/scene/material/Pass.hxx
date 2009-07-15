@@ -18,30 +18,18 @@
 #define SIMGEAR_PASS_HXX 1
 
 #include <osg/ref_ptr>
-#include <osg/Object>
-
-namespace osg
-{
-class StateSet;
-}
+#include <osg/StateSet>
 
 namespace simgear
 {
 
-class Pass : public osg::Object
+class Pass : public osg::StateSet
 {
 public:
     META_Object(simgear,Pass);
     Pass() {}
     Pass(const Pass& rhs,
          const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
-    osg::StateSet* getStateSet() { return _stateSet.get(); }
-    const osg::StateSet* getStateSet() const { return _stateSet.get(); }
-    void setStateSet(osg::StateSet* stateSet) { _stateSet = stateSet; }
-    virtual void resizeGLObjectBuffers(unsigned int maxSize);
-    virtual void releaseGLObjects(osg::State* state = 0) const;
-protected:
-    osg::ref_ptr<osg::StateSet> _stateSet;
 };
 
 }

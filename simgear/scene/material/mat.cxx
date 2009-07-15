@@ -280,14 +280,14 @@ SGMaterial::build_state( bool defer_tex_load )
     SGMaterialUserData* user = new SGMaterialUserData(this);
     for (unsigned int i = 0; i < _status.size(); i++)
     {
-        osg::StateSet *stateSet = new osg::StateSet;
-        stateSet->setUserData(user);
+        Pass *pass = new Pass;
+        pass->setUserData(user);
 
         // Set up the textured state
-        stateSet->setAttribute(attrFact->getSmoothShadeModel());
-        stateSet->setAttributeAndModes(attrFact->getCullFaceBack());
+        pass->setAttribute(attrFact->getSmoothShadeModel());
+        pass->setAttributeAndModes(attrFact->getCullFaceBack());
 
-        stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
+        pass->setMode(GL_LIGHTING, osg::StateAttribute::ON);
 
         _status[i].texture_loaded = false;
 
@@ -298,22 +298,20 @@ SGMaterial::build_state( bool defer_tex_load )
         material->setSpecular(osg::Material::FRONT_AND_BACK, specular.osg());
         material->setEmission(osg::Material::FRONT_AND_BACK, emission.osg());
         material->setShininess(osg::Material::FRONT_AND_BACK, shininess );
-        stateSet->setAttribute(material);
+        pass->setAttribute(material);
 
         if (ambient[3] < 1 || diffuse[3] < 1 ||
             specular[3] < 1 || emission[3] < 1) {
-          stateSet->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
-          stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-          stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
+          pass->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+          pass->setMode(GL_BLEND, osg::StateAttribute::ON);
+          pass->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
         } else {
-          stateSet->setRenderingHint(osg::StateSet::OPAQUE_BIN);
-          stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
-          stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+          pass->setRenderingHint(osg::StateSet::OPAQUE_BIN);
+          pass->setMode(GL_BLEND, osg::StateAttribute::OFF);
+          pass->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
         }
 
-        _status[i].state = stateSet;
-        Pass* pass = new Pass;
-        pass->setStateSet(_status[i].state.get());
+        _status[i].state = pass;
         Technique* tniq = new Technique(true);
         tniq->passes.push_back(pass);
         Effect* effect = new Effect;

@@ -8,6 +8,7 @@ include_HEADERS = \
 	Effect.hxx \
 	EffectCullVisitor.hxx \
 	EffectGeode.hxx \
+	GLPredicate.hxx \
 	Pass.hxx \
 	Technique.hxx \
 	mat.hxx \
@@ -18,6 +19,7 @@ libsgmaterial_a_SOURCES = \
 	Effect.cxx \
 	EffectCullVisitor.cxx \
 	EffectGeode.cxx \
+	GLPredicate.cxx \
 	Pass.cxx \
 	Technique.cxx \
 	mat.cxx \

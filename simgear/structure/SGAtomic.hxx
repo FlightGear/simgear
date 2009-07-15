@@ -113,4 +113,86 @@ private:
   unsigned mValue;
 };
 
+// Value that can be atomically compared and swapped.
+class SGSwappable
+{
+public:
+    typedef unsigned long value_type;
+    SGSwappable(unsigned long value = 0) : mValue(value) {}
+    operator unsigned long() const
+    {
+#if defined(SGATOMIC_USE_GCC4_BUILTINS)
+        __sync_synchronize();
+        return mValue;
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+        __synchronize();
+        return mValue;
+#elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
+        return static_cast<long const volatile &>(mValue);
+#else
+        SGGuard<SGMutex> lock(mMutex);
+        return mValue;
+#endif
+    }
+
+    bool compareAndSwap(unsigned long oldVal, unsigned long newVal)
+    {
+#if defined(SGATOMIC_USE_GCC4_BUILTINS)
+        return __sync_bool_compare_and_swap(&mValue, oldVal, newVal);
+#elif defined(SGATOMIC_USE_MIPOSPRO_BUILTINS)
+        return __compare_and_swap(&mValue, oldVal, newVal);
+#elif defined(SGATOMIC_USE_WIN32_INTERLOCKED)
+        long previous
+            = InterlockedCompareExchange(reinterpret_cast<long volatile*>(&mValue),
+                                         (long)newVal,
+                                         (long)oldVal);
+        return previous == (long)oldVal;
+#else
+        SGGuard<SGMutex> lock(mMutex);
+        if (oldVal == mValue) {
+            mValue = newVal;
+            return true;
+        } else {
+            return false;
+        }
+#endif
+    }
+
+private:
+    SGSwappable(const SGAtomic&);
+    SGSwappable& operator=(const SGAtomic&);
+
+#if !defined(SGATOMIC_USE_GCC4_BUILTINS)        \
+    && !defined(SGATOMIC_USE_MIPOSPRO_BUILTINS) \
+    && !defined(SGATOMIC_USE_WIN32_INTERLOCKED)
+    mutable SGMutex mMutex;
+#endif
+#ifdef SGATOMIC_USE_WIN32_INTERLOCKED
+    __declspec(align(32))
+#endif
+    value_type mValue;
+
+};
+
+namespace simgear
+{
+// Typesafe wrapper around SGSwappable
+template <typename T>
+class Swappable : private SGSwappable
+{
+public:
+    Swappable(const T& value) : SGSwappable(static_cast<value_type>(value))
+    {
+    }
+    T operator() () const
+    {
+        return static_cast<T>(SGSwappable::operator unsigned long ());
+    }
+    bool compareAndSwap(const T& oldVal, const T& newVal)
+    {
+        return SGSwappable::compareAndSwap(static_cast<value_type>(oldVal),
+                                           static_cast<value_type>(newVal));
+    }
+};
+}
 #endif

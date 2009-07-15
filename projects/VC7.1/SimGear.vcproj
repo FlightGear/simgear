@@ -817,6 +817,45 @@
 			<File
 				RelativePath="..\..\simgear\scene\material\matmodel.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Effect.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Effect.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\EffectCullVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\EffectCullVisitor.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\EffectGeode.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\EffectGeode.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\GLPredicate.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\GLPredicate.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Pass.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Pass.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Technique.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Technique.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\makeEffect.cxx">
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgtgdb"

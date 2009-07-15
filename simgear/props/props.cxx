@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <simgear/math/SGMath.hxx>
+
 #if PROPS_STANDALONE
 #include <iostream>
 #else
@@ -78,6 +80,8 @@ template<> const long SGRawValue<long>::DefaultValue = 0L;
 template<> const float SGRawValue<float>::DefaultValue = 0.0;
 template<> const double SGRawValue<double>::DefaultValue = 0.0L;
 template<> const char * const SGRawValue<const char *>::DefaultValue = "";
+template<> const SGVec3d SGRawValue<SGVec3d>::DefaultValue = SGVec3d();
+template<> const SGVec4d SGRawValue<SGVec4d>::DefaultValue = SGVec4d();
 
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
@@ -569,7 +573,13 @@ SGPropertyNode::make_string () const
         sstr << std::setprecision(10) << get_double();
         break;
     case EXTENDED:
+    {
+        Type realType = _value.val->getType();
+        // Perhaps this should be done for all types?
+        if (realType == VEC3D || realType == VEC4D)
+            sstr.precision(10);
         static_cast<SGRawExtended*>(_value.val)->printOn(sstr);
+    }
         break;
     default:
         return "";
@@ -1544,6 +1554,12 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
   case UNSPECIFIED:
     result = set_string(value);
     break;
+  case VEC3D:
+      result = static_cast<SGRawValue<SGVec3d>*>(_value.val)->setValue(parseString<SGVec3d>(value));
+      break;
+  case VEC4D:
+      result = static_cast<SGRawValue<SGVec4d>*>(_value.val)->setValue(parseString<SGVec4d>(value));
+      break;
   case NONE:
   default:
     break;
@@ -2296,5 +2312,52 @@ SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
     _properties.erase(it);
 }
 
+namespace simgear
+{
+template<>
+std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const
+{
+    const SGVec3d vec
+        = static_cast<const SGRawValue<SGVec3d>*>(this)->getValue();
+    for (int i = 0; i < 3; ++i) {
+        stream << vec[i];
+        if (i < 2)
+            stream << ' ';
+    }
+    return stream;
+}
+
+template<>
+std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result)
+{
+    for (int i = 0; i < 3; ++i) {
+        stream >> result[i];
+    }
+    return stream;
+}
+
+template<>
+std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
+{
+    const SGVec4d vec
+        = static_cast<const SGRawValue<SGVec4d>*>(this)->getValue();    
+    for (int i = 0; i < 4; ++i) {
+        stream << vec[i];
+        if (i < 3)
+            stream << ' ';
+    }
+    return stream;
+}
+
+template<>
+std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
+{
+    for (int i = 0; i < 4; ++i) {
+        stream >> result[i];
+    }
+    return stream;
+}
+
+}
 
 // end of props.cxx

@@ -30,7 +30,7 @@
 #endif
 
 
-
+#include <simgear/math/SGMathFwd.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 
@@ -63,6 +63,13 @@ inline T parseString(const std::string& str)
     return result;
 }
 
+// Extended properties
+template<>
+std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result);
+template<>
+std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result);
+
+    
 /**
  * Property value types.
  */
@@ -128,11 +135,14 @@ enum Type {
     DOUBLE,
     STRING,
     UNSPECIFIED,
-    EXTENDED  /**< The node's value is not stored in the property;
+    EXTENDED, /**< The node's value is not stored in the property;
                * the actual value and type is retrieved from an
                * SGRawValue node. This type is never returned by @see
                * SGPropertyNode::getType.
                */
+    // Extended properties
+    VEC3D,
+    VEC4D
 };
 
 template<typename T> struct PropertyTraits;
@@ -153,6 +163,19 @@ DEFINTERNALPROP(double, DOUBLE);
 DEFINTERNALPROP(const char *, STRING);
 #undef DEFINTERNALPROP
 
+template<>
+struct PropertyTraits<SGVec3d>
+{
+    static const Type type_tag = VEC3D;
+    enum  { Internal = 0 };
+};
+
+template<>
+struct PropertyTraits<SGVec4d>
+{
+    static const Type type_tag = VEC4D;
+    enum  { Internal = 0 };
+};
 }
 }
 
@@ -351,6 +374,8 @@ template<> const long SGRawValue<long>::DefaultValue;
 template<> const float SGRawValue<float>::DefaultValue;
 template<> const double SGRawValue<double>::DefaultValue;
 template<> const char * const SGRawValue<const char *>::DefaultValue;
+template<> const SGVec3d SGRawValue<SGVec3d>::DefaultValue;
+template<> const SGVec4d SGRawValue<SGVec4d>::DefaultValue;
 
 /**
  * A raw value bound to a pointer.
@@ -658,6 +683,12 @@ std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
     static_cast<SGRawValue<T>*>(this)->setValue(value);
     return stream;
 }
+
+template<>
+std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const;
+template<>
+std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const;
+
 
 /**
  * The smart pointer that manage reference counting

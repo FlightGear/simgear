@@ -150,11 +150,11 @@ public:
   void setOffset(double offset)
   { _offset = offset; }
 
-  virtual void eval(double& value) const
+  virtual void eval(double& value, const simgear::expression::Binding* b) const
   {
     _offset.shuffle();
     _scale.shuffle();
-    value = _offset + _scale*getOperand()->getValue();
+    value = _offset + _scale*getOperand()->getValue(b);
   }
 
   virtual bool isConst() const { return false; }

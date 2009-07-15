@@ -22,25 +22,115 @@
 #ifndef _SG_EXPRESSION_HXX
 #define _SG_EXPRESSION_HXX 1
 
+#include <string>
+#include <vector>
+
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/math/interpolater.hxx>
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/model/persparam.hxx>
+#include <simgear/structure/exception.hxx>
 
 /// Expression tree implementation.
 
+namespace simgear
+{
+  namespace expression
+  {
+    enum Type {
+      BOOL = 0,
+      INT,
+      FLOAT,
+      DOUBLE
+    };
+    template<typename T> struct TypeTraits;
+    template<> struct TypeTraits<bool> {
+      static const Type typeTag = BOOL;
+    };
+    template<> struct TypeTraits<int> {
+      static const Type typeTag = INT;
+    };
+    template<> struct TypeTraits<float> {
+      static const Type typeTag = FLOAT;
+    };
+    template<> struct TypeTraits<double> {
+      static const Type typeTag = DOUBLE;
+    };
+
+    struct Value
+    {
+      Type typeTag;
+      union {
+        bool boolVal;
+        int intVal;
+        float floatVal;
+        double doubleVal;
+      } val;
+
+      Value() : typeTag(DOUBLE)
+      {
+        val.doubleVal = 0.0;
+      }
+
+      Value(bool val_) : typeTag(BOOL)
+      {
+        val.boolVal = val_;
+      }
+
+      Value(int val_) : typeTag(INT)
+      {
+        val.intVal = val_;
+      }
+
+      Value(float val_) : typeTag(FLOAT)
+      {
+        val.floatVal = val_;
+      }
+
+      Value(double val_) : typeTag(DOUBLE)
+      {
+        val.doubleVal = val_;
+      }
+
+    };
+
+    class Binding;
+  }
+
+  class Expression : public SGReferenced
+  {
+  public:
+    virtual ~Expression() {}
+    virtual expression::Type getType() const = 0;
+  };
+
+  const expression::Value eval(const Expression* exp,
+                               const expression::Binding* binding = 0);
+
+}
+
 template<typename T>
-class SGExpression : public SGReferenced {
+class SGExpression : public simgear::Expression {
 public:
   virtual ~SGExpression() {}
-  virtual void eval(T&) const = 0;
+  typedef T result_type;
+  typedef T operand_type;
+  virtual void eval(T&, const simgear::expression::Binding*) const = 0;
 
-  T getValue() const
-  { T value; eval(value); return value; }
+  T getValue(const simgear::expression::Binding* binding = 0) const
+  { T value; eval(value, binding); return value; }
 
   virtual bool isConst() const { return false; }
   virtual SGExpression* simplify();
+  virtual simgear::expression::Type getType() const
+  {
+    return simgear::expression::TypeTraits<T>::typeTag;
+  }
+  virtual simgear::expression::Type getOperandType() const
+  {
+    return simgear::expression::TypeTraits<T>::typeTag;
+  }
 };
 
 /// Constant value expression
@@ -51,9 +141,9 @@ public:
   { }
   void setValue(const T& value)
   { _value = value; }
-  const T& getValue() const
+  const T& getValue(const simgear::expression::Binding* binding = 0) const
   { return _value; }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding*) const
   { value = _value; }
   virtual bool isConst() const { return true; }
 private:
@@ -148,6 +238,15 @@ public:
     return _expressions.size() - 1;
   }
 
+  template<typename Iter>
+  void addOperands(Iter begin, Iter end)
+  {
+    for (Iter iter = begin; iter != end; ++iter)
+      {
+        addOperand(static_cast< ::SGExpression<T>*>(*iter));
+      }
+  }
+
   virtual bool isConst() const
   {
     for (unsigned i = 0; i < _expressions.size(); ++i)
@@ -182,7 +281,7 @@ public:
   { }
   void setPropertyNode(const SGPropertyNode* prop)
   { _prop = prop; }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding*) const
   { doEval(value); }
 private:
   void doEval(float& value) const
@@ -205,8 +304,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = getOperand()->getValue(); if (value <= 0) value = -value; }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = getOperand()->getValue(b); if (value <= 0) value = -value; }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -218,8 +317,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = acos(SGMisc<T>::clip(getOperand()->getValue(), -1, 1)); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = acos(SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -231,8 +330,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = asin(SGMisc<T>::clip(getOperand()->getValue(), -1, 1)); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = asin(SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -244,8 +343,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = atan(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = atan(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -257,8 +356,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = ceil(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = ceil(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -270,8 +369,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = cos(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = cos(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -283,8 +382,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = cosh(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = cosh(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -296,8 +395,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = exp(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = exp(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -309,8 +408,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = floor(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = floor(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -322,8 +421,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = log(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = log(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -335,8 +434,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = log10(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = log10(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -348,8 +447,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = sin(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = sin(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -361,8 +460,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = sinh(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = sinh(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -374,8 +473,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = getOperand()->getValue(); value = value*value; }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = getOperand()->getValue(b); value = value*value; }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -387,8 +486,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = sqrt(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = sqrt(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -400,8 +499,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = tan(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = tan(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -413,8 +512,8 @@ public:
     : SGUnaryExpression<T>(expr)
   { }
 
-  virtual void eval(T& value) const
-  { value = tanh(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = tanh(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -430,8 +529,8 @@ public:
   const T& getScale() const
   { return _scale; }
 
-  virtual void eval(T& value) const
-  { value = _scale * getOperand()->getValue(); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = _scale * getOperand()->getValue(b); }
 
   virtual SGExpression<T>* simplify()
   {
@@ -457,8 +556,8 @@ public:
   const T& getBias() const
   { return _bias; }
 
-  virtual void eval(T& value) const
-  { value = _bias + getOperand()->getValue(); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = _bias + getOperand()->getValue(b); }
 
   virtual SGExpression<T>* simplify()
   {
@@ -481,10 +580,10 @@ public:
     _interpTable(interpTable)
   { }
 
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     if (_interpTable)
-      value = _interpTable->interpolate(getOperand()->getValue());
+      value = _interpTable->interpolate(getOperand()->getValue(b));
   }
 
   using SGUnaryExpression<T>::getOperand;
@@ -517,9 +616,9 @@ public:
   const T& getClipMax() const
   { return _clipMax; }
 
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
-    value = SGMisc<T>::clip(getOperand()->getValue(), _clipMin, _clipMax);
+    value = SGMisc<T>::clip(getOperand()->getValue(b), _clipMin, _clipMax);
   }
 
   virtual SGExpression<T>* simplify()
@@ -554,8 +653,8 @@ public:
   const T& getScroll() const
   { return _scroll; }
 
-  virtual void eval(T& value) const
-  { value = apply_mods(getOperand()->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = apply_mods(getOperand()->getValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 
@@ -603,10 +702,10 @@ public:
   void setDisabledValue(const T& disabledValue)
   { _disabledValue = disabledValue; }
 
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     if (_enable->test())
-      value = getOperand()->getValue();
+      value = getOperand()->getValue(b);
     else
       value = _disabledValue;
   }
@@ -630,8 +729,8 @@ public:
   SGAtan2Expression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGBinaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
-  { value = atan2(getOperand(0)->getValue(), getOperand(1)->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = atan2(getOperand(0)->getValue(b), getOperand(1)->getValue(b)); }
   using SGBinaryExpression<T>::getOperand;
 };
 
@@ -641,8 +740,8 @@ public:
   SGDivExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGBinaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
-  { value = getOperand(0)->getValue() / getOperand(1)->getValue(); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = getOperand(0)->getValue(b) / getOperand(1)->getValue(b); }
   using SGBinaryExpression<T>::getOperand;
 };
 
@@ -652,8 +751,8 @@ public:
   SGModExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGBinaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
-  { value = mod(getOperand(0)->getValue(), getOperand(1)->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = mod(getOperand(0)->getValue(b), getOperand(1)->getValue(b)); }
   using SGBinaryExpression<T>::getOperand;
 private:
   int mod(const int& v0, const int& v1) const
@@ -670,8 +769,8 @@ public:
   SGPowExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGBinaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
-  { value = pow(getOperand(0)->getValue(), getOperand(1)->getValue()); }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  { value = pow(getOperand(0)->getValue(b), getOperand(1)->getValue(b)); }
   using SGBinaryExpression<T>::getOperand;
 };
 
@@ -683,12 +782,12 @@ public:
   SGSumExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGNaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     value = T(0);
     unsigned sz = SGNaryExpression<T>::getNumOperands();
     for (unsigned i = 0; i < sz; ++i)
-      value += getOperand(i)->getValue();
+      value += getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;
   using SGNaryExpression<T>::getOperand;
@@ -702,12 +801,12 @@ public:
   SGProductExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGNaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     value = T(1);
     unsigned sz = SGNaryExpression<T>::getNumOperands();
     for (unsigned i = 0; i < sz; ++i)
-      value *= getOperand(i)->getValue();
+      value *= getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;
   using SGNaryExpression<T>::getOperand;
@@ -721,15 +820,15 @@ public:
   SGMinExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGNaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     unsigned sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
     
-    value = getOperand(0)->getValue();
+    value = getOperand(0)->getValue(b);
     for (unsigned i = 1; i < sz; ++i)
-      value = SGMisc<T>::min(value, getOperand(i)->getValue());
+      value = SGMisc<T>::min(value, getOperand(i)->getValue(b));
   }
   using SGNaryExpression<T>::getOperand;
 };
@@ -742,15 +841,15 @@ public:
   SGMaxExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
     : SGNaryExpression<T>(expr0, expr1)
   { }
-  virtual void eval(T& value) const
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
     unsigned sz = SGNaryExpression<T>::getNumOperands();
     if (sz < 1)
       return;
     
-    value = getOperand(0)->getValue();
+    value = getOperand(0)->getValue(b);
     for (unsigned i = 1; i < sz; ++i)
-      value = SGMisc<T>::max(value, getOperand(i)->getValue());
+      value = SGMisc<T>::max(value, getOperand(i)->getValue(b));
   }
   using SGNaryExpression<T>::getOperand;
 };
@@ -798,4 +897,309 @@ SGExpression<bool>*
 SGReadBoolExpression(SGPropertyNode *inputRoot,
                      const SGPropertyNode *configNode);
 
+namespace simgear
+{
+  namespace expression
+  {
+    class Parser;
+    /**
+     * Function that parses a property tree, producing an expression.
+     */
+    typedef Expression* (*exp_parser)(const SGPropertyNode* exp,
+                                     Parser* parser);
+    void addExpParser(const std::string&, exp_parser);
+    Expression* read(const SGPropertyNode* exp, Parser* parser = 0);
+    /**
+     * Constructor for registering parser functions.
+     */
+    struct ExpParserRegistrar
+    {
+      ExpParserRegistrar(const std::string& token, exp_parser parser)
+      {
+        addExpParser(token, parser);
+      }
+    };
+
+    struct ParseError : public sg_exception
+    {
+      ParseError(const string& message = std::string())
+        : sg_exception(message) {}
+    };
+    
+    // Support for binding variables around an expression.
+    class Binding
+    {
+    public:
+      virtual ~Binding() {}
+      const virtual Value* getBindings() const = 0;
+      virtual Value* getBindings() = 0;
+    };
+
+    class VariableLengthBinding : public Binding
+    {
+    public:
+      const Value* getBindings() const
+      {
+        if (_bindings.empty())
+          return 0;
+        else
+          return &_bindings[0];
+      }
+      Value* getBindings()
+      {
+        if (_bindings.empty())
+          return 0;
+        else
+          return &_bindings[0];
+      }
+      std::vector<Value> _bindings;
+    };
+
+    template<int Size> class FixedLengthBinding : public Binding
+    {
+    public:
+      Value* getBindings()
+      {
+        return &_bindings[0];
+      }
+      const Value* getBindings() const
+      {
+        return &_bindings[0];
+      }
+      Value _bindings[Size];
+    };
+
+    struct VariableBinding
+    {
+      VariableBinding() : type(expression::DOUBLE), location(-1) {}
+
+      VariableBinding(const std::string& name_, expression::Type type_,
+                      int location_)
+        : name(name_), type(type_), location(location_)
+      {
+      }
+      std::string name;
+      expression::Type type;
+      int location;
+    };
+
+    class BindingLayout
+    {
+    public:
+      int addBinding(const std::string& name, expression::Type type);
+      bool findBinding(const string& name, VariableBinding& result) const;
+    protected:
+      std::vector<VariableBinding> bindings;
+    };
+  }
+
+  /**
+   * Access a variable definition. Use a location from a BindingLayout.
+   */
+  template<typename T>
+  class VariableExpression : public ::SGExpression<T> {
+  public:
+    VariableExpression(int location) : _location(location) {}
+    virtual ~VariableExpression() {}
+    virtual void eval(T& value, const simgear::expression::Binding* b) const
+    {
+      const expression::Value* values = b->getBindings();
+      value = *reinterpret_cast<const T *>(&values[_location].val);
+    }
+  protected:
+    int _location;
+
+  };
+
+  /**
+   * An n-ary expression where the types of the argument aren't the
+   * same as the return type.
+   */
+  template<typename T, typename OpType>
+  class GeneralNaryExpression : public ::SGExpression<T> {
+  public:
+    typedef OpType operand_type;
+    unsigned getNumOperands() const
+    { return _expressions.size(); }
+    const ::SGExpression<OpType>* getOperand(unsigned i) const
+    { return _expressions[i]; }
+    ::SGExpression<OpType>* getOperand(unsigned i)
+    { return _expressions[i]; }
+    unsigned addOperand(::SGExpression<OpType>* expression)
+    {
+      if (!expression)
+        return ~unsigned(0);
+      _expressions.push_back(expression);
+      return _expressions.size() - 1;
+    }
+    
+    template<typename Iter>
+    void addOperands(Iter begin, Iter end)
+    {
+      for (Iter iter = begin; iter != end; ++iter)
+        {
+          addOperand(static_cast< ::SGExpression<OpType>*>(*iter));
+        }
+    }
+    
+    virtual bool isConst() const
+    {
+      for (unsigned i = 0; i < _expressions.size(); ++i)
+        if (!_expressions[i]->isConst())
+          return false;
+      return true;
+    }
+    virtual ::SGExpression<T>* simplify()
+    {
+      for (unsigned i = 0; i < _expressions.size(); ++i)
+        _expressions[i] = _expressions[i]->simplify();
+      return SGExpression<T>::simplify();
+    }
+
+    simgear::expression::Type getOperandType() const
+    {
+      return simgear::expression::TypeTraits<OpType>::typeTag;
+    }
+    
+  protected:
+    GeneralNaryExpression()
+    { }
+    GeneralNaryExpression(::SGExpression<OpType>* expr0,
+                          ::SGExpression<OpType>* expr1)
+    { addOperand(expr0); addOperand(expr1); }
+
+    std::vector<SGSharedPtr<SGExpression<OpType> > > _expressions;
+  };
+
+  /**
+   * A predicate that wraps, for example the STL template predicate
+   * expressions like std::equal_to.
+   */
+  template<typename OpType, template<typename PredOp> class Pred>
+  class PredicateExpression : public GeneralNaryExpression<bool, OpType> {
+  public:
+    PredicateExpression()
+    {
+    }
+    PredicateExpression(::SGExpression<OpType>* expr0,
+                        ::SGExpression<OpType>* expr1)
+      : GeneralNaryExpression<bool, OpType>(expr0, expr1)
+    {
+    }
+    virtual void eval(bool& value, const simgear::expression::Binding* b) const
+    {
+      unsigned sz = this->getNumOperands();
+      if (sz != 2)
+        return;
+      value = _pred(this->getOperand(0)->getValue(b),
+                    this->getOperand(1)->getValue(b));
+    }
+  protected:
+    Pred<OpType> _pred;
+  };
+
+  template<template<typename OT> class Pred, typename OpType>
+  PredicateExpression<OpType, Pred>*
+  makePredicate(SGExpression<OpType>* op1, SGExpression<OpType>* op2)
+  {
+    return new PredicateExpression<OpType, Pred>(op1, op2);
+  }
+  
+  template<typename OpType>
+  class EqualToExpression : public PredicateExpression<OpType, std::equal_to>
+  {
+  public:
+    EqualToExpression() {}
+    EqualToExpression(::SGExpression<OpType>* expr0,
+                      ::SGExpression<OpType>* expr1)
+      : PredicateExpression<OpType, std::equal_to>(expr0, expr1)
+    {
+    }
+  };
+
+  template<typename OpType>
+  class LessExpression : public PredicateExpression<OpType, std::less>
+  {
+  public:
+    LessExpression() {}
+    LessExpression(::SGExpression<OpType>* expr0, ::SGExpression<OpType>* expr1)
+      : PredicateExpression<OpType, std::less>(expr0, expr1)
+    {
+    }
+  };
+
+  template<typename OpType>
+  class LessEqualExpression
+    : public PredicateExpression<OpType, std::less_equal>
+  {
+  public:
+    LessEqualExpression() {}
+    LessEqualExpression(::SGExpression<OpType>* expr0,
+                        ::SGExpression<OpType>* expr1)
+      : PredicateExpression<OpType, std::less_equal>(expr0, expr1)
+    {
+    }
+  };
+
+  class NotExpression : public ::SGUnaryExpression<bool>
+  {
+  public:
+    NotExpression(::SGExpression<bool>* expr = 0)
+      : ::SGUnaryExpression<bool>(expr)
+    {
+    }
+    void eval(bool& value, const expression::Binding* b) const
+    {
+      value = !getOperand()->getValue(b);
+    }
+  };
+
+  class OrExpression : public ::SGNaryExpression<bool>
+  {
+  public:
+    void eval(bool& value, const expression::Binding* b) const
+    {
+      value = false;
+      for (int i = 0; i < getNumOperands(); ++i) {
+        value = value || getOperand(i)->getValue(b);
+        if (value)
+          return;
+      }
+    }
+  };
+
+  class AndExpression : public ::SGNaryExpression<bool>
+  {
+  public:
+    void eval(bool& value, const expression::Binding* b) const
+    {
+      value = true;
+      for (int i = 0; i < getNumOperands(); ++i) {
+        value = value && getOperand(i)->getValue(b);
+        if (!value)
+          return;
+      }
+    }
+  };
+
+  /**
+   * Convert an operand from OpType to T.
+   */
+  template<typename T, typename OpType>
+  class ConvertExpression : public GeneralNaryExpression<T, OpType>
+  {
+  public:
+    ConvertExpression() {}
+    ConvertExpression(::SGExpression<OpType>* expr0)
+    {
+      addOperand(expr0);
+    }
+    virtual void eval(T& value, const simgear::expression::Binding* b) const
+    {
+      typename ConvertExpression::operand_type result;
+      this->_expressions.at(0)->eval(result, b);
+      value = result;
+    }
+  };
+}
 #endif // _SG_EXPRESSION_HXX

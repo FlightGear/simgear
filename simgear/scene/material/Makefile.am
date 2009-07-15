@@ -6,6 +6,7 @@ noinst_HEADERS =
 
 include_HEADERS = \
 	Effect.hxx \
+	EffectCullVisitor.hxx \
 	EffectGeode.hxx \
 	Pass.hxx \
 	Technique.hxx \
@@ -15,6 +16,7 @@ include_HEADERS = \
 
 libsgmaterial_a_SOURCES = \
 	Effect.cxx \
+	EffectCullVisitor.cxx \
 	EffectGeode.cxx \
 	Pass.cxx \
 	Technique.cxx \

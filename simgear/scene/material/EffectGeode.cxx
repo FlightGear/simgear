@@ -20,29 +20,24 @@
 
 #include <osgUtil/CullVisitor>
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/ParameterOutput>
+
 namespace simgear
 {
 
 using namespace osg;
 using namespace osgUtil;
 
-void EffectGeode::traverse(NodeVisitor& nv)
+EffectGeode::EffectGeode()
 {
-    CullVisitor* cv = dynamic_cast<CullVisitor*>(&nv);
-    if (!cv || !_effect.valid()) {
-        Geode::traverse(nv);
-        return;
-    }
-    Technique* technique = _effect->chooseTechnique(&cv->getRenderInfo());
-    if (!technique) {
-        Geode::traverse(nv);
-        return;
-    }
-    for (DrawablesIterator beginItr = _drawables.begin();
-         beginItr != _drawables.end();
-         beginItr = technique->processDrawables(beginItr, _drawables.end(), cv,
-                                                isCullingActive()))
-        ;
+}
+
+EffectGeode::EffectGeode(const EffectGeode& rhs, const CopyOp& copyop) :
+    Geode(rhs, copyop)
+{
+    _effect = static_cast<Effect*>(rhs._effect->clone(copyop));
 }
 
 void EffectGeode::resizeGLObjectBuffers(unsigned int maxSize)
@@ -59,4 +54,24 @@ void EffectGeode::releaseGLObjects(osg::State* state) const
     Geode::releaseGLObjects(state);
 }
 
+bool EffectGeode_writeLocalData(const Object& obj, osgDB::Output& fw)
+{
+    const EffectGeode& eg = static_cast<const EffectGeode&>(obj);
+
+    fw.indent() << "effect\n";
+    fw.writeObject(*eg.getEffect());
+    return true;
+}
+
+namespace
+{
+osgDB::RegisterDotOsgWrapperProxy effectGeodeProxy
+(
+    new EffectGeode,
+    "simgear::EffectGeode",
+    "Object Node Geode simgear::EffectGeode",
+    0,
+    &EffectGeode_writeLocalData
+    );
+}
 }

@@ -36,6 +36,7 @@ public:
     Pass(const Pass& rhs,
          const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     osg::StateSet* getStateSet() { return _stateSet.get(); }
+    const osg::StateSet* getStateSet() const { return _stateSet.get(); }
     void setStateSet(osg::StateSet* stateSet) { _stateSet = stateSet; }
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* state = 0) const;

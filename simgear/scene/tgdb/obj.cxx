@@ -44,6 +44,8 @@
 #include <simgear/io/sg_binobj.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.h>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/model/SGOffsetTransform.hxx>
@@ -367,18 +369,26 @@ struct SGTileGeometryBin {
     if (materialTriangleMap.empty())
       return 0;
 
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* eg = 0;
+    osg::Group* group = (materialTriangleMap.size() > 1 ? new osg::Group : 0);
+    //osg::Geode* geode = new osg::Geode;
     SGMaterialTriangleMap::const_iterator i;
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {
       osg::Geometry* geometry = i->second.buildGeometry();
       SGMaterial *mat = 0;
       if (matlib)
         mat = matlib->find(i->first);
+      eg = new EffectGeode;
       if (mat)
-        geometry->setStateSet(mat->get_state());
-      geode->addDrawable(geometry);
+        eg->setEffect(mat->get_effect());
+      eg->addDrawable(geometry);
+      if (group)
+        group->addChild(eg);
     }
-    return geode;
+    if (group)
+        return group;
+    else
+        return eg;
   }
 
   void computeRandomSurfaceLights(SGMaterialLib* matlib)

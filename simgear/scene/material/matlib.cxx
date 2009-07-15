@@ -58,6 +58,8 @@
 
 #include "mat.hxx"
 
+#include "Effect.hxx"
+#include "Technique.hxx"
 #include "matlib.hxx"
 
 using std::string;

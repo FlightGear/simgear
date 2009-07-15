@@ -39,7 +39,11 @@
 #include <simgear/math/SGMath.hxx>
 
 #include <osg/ref_ptr>
-#include <osg/StateSet>
+
+namespace osg
+{
+class StateSet;
+}
 
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -47,10 +51,10 @@
 
 #include "matmodel.hxx"
 
-using std::string;
-using std::vector;
-using std::map;
-
+namespace simgear
+{
+class Effect;
+}
 
 class SGMaterialGlyph;
 
@@ -79,7 +83,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const string &fg_root, const SGPropertyNode *props);
+  SGMaterial( const std::string &fg_root, const SGPropertyNode *props);
 
 
   /**
@@ -88,7 +92,7 @@ public:
    * @param texture_path A string containing an absolute path
    * to a texture file (usually RGB).
    */
-  SGMaterial( const string &texpath );
+  SGMaterial( const std::string &texpath );
 
 
   /**
@@ -117,7 +121,7 @@ public:
    * Get the textured state.
    */
   osg::StateSet *get_state (int n = -1);
-
+  simgear::Effect *get_effect(int n = -1);
 
   /**
    * Get the number of textures assigned to this material.
@@ -188,7 +192,7 @@ public:
    *
    * @return the texture to use for trees.
    */
-  inline string get_tree_texture () const { return  tree_texture; }
+  inline std::string get_tree_texture () const { return  tree_texture; }
 
   /**
    * Return if the surface material is solid, if it is not solid, a fluid
@@ -219,12 +223,12 @@ public:
   /**
    * Get the list of names for this material
    */
-  const vector<string>& get_names() const { return _names; }
+  const std::vector<std::string>& get_names() const { return _names; }
 
   /**
    * add the given name to the list of names this material is known
    */
-  void add_name(const string& name) { _names.push_back(name); }
+  void add_name(const std::string& name) { _names.push_back(name); }
 
   /**
    * Get the number of randomly-placed objects defined for this material.
@@ -241,7 +245,7 @@ public:
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
    */
-  SGMaterialGlyph * get_glyph (const string& name) const;
+  SGMaterialGlyph * get_glyph (const std::string& name) const;
 
   void set_light_color(const SGVec4f& color)
   { emission = color; }
@@ -272,10 +276,10 @@ protected:
 protected:
 
   struct _internal_state {
-      _internal_state( osg::StateSet *s, const string &t, bool l )
-                  : state(s), texture_path(t), texture_loaded(l) {}
+      _internal_state( osg::StateSet *s, const std::string &t, bool l );
       osg::ref_ptr<osg::StateSet> state;
-      string texture_path;
+      osg::ref_ptr<simgear::Effect> effect;
+      std::string texture_path;
       bool texture_loaded;
   };
 
@@ -287,7 +291,7 @@ private:
   ////////////////////////////////////////////////////////////////////
 
   // texture status
-  vector<_internal_state> _status;
+  std::vector<_internal_state> _status;
 
   // Round-robin counter
   mutable unsigned int _current_ptr;
@@ -339,23 +343,23 @@ private:
   double shininess;
 
   // the list of names for this material. May be empty.
-  vector<string> _names;
+  std::vector<std::string> _names;
 
-  vector<SGSharedPtr<SGMatModelGroup> > object_groups;
+  std::vector<SGSharedPtr<SGMatModelGroup> > object_groups;
 
   // taxiway-/runway-sign texture elements
-  map<string, SGSharedPtr<SGMaterialGlyph> > glyphs;
+  std::map<std::string, SGSharedPtr<SGMaterialGlyph> > glyphs;
   
   // Tree texture, typically a strip of applicable tree textures
-  string tree_texture;
+  std::string tree_texture;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  SGMaterial( const string &fg_root, const SGMaterial &mat ); // unimplemented
+  SGMaterial( const std::string &fg_root, const SGMaterial &mat ); // unimplemented
 
-  void read_properties( const string &fg_root, const SGPropertyNode *props );
+  void read_properties( const std::string &fg_root, const SGPropertyNode *props );
   void build_state( bool defer_tex_load );
   void set_state( osg::StateSet *s );
 

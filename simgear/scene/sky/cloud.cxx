@@ -485,6 +485,9 @@ SGCloudLayer::rebuild()
         
         layer_states[SG_CLOUD_CLEAR] = 0;
         layer_states2[SG_CLOUD_CLEAR] = 0;
+#if 0
+        // experimental optimization that may not make any difference
+        // at all :/
         osg::CopyOp copyOp;
         for (int i = 0; i < SG_MAX_CLOUD_COVERAGES; ++i) {
             StateAttributeFactory *saf = StateAttributeFactory::instance();
@@ -495,9 +498,7 @@ SGCloudLayer::rebuild()
                 layer_states2[i]->setAttribute(saf ->getCullFaceBack());
             }
         }
-      // OSGFIXME
-// 		SGNewCloud::loadTextures(texture_path.str());
-// 		layer3D->buildTestLayer();
+#endif
     }
 
     scale = 4000.0;

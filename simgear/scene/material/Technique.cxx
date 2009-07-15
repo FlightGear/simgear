@@ -10,6 +10,10 @@
 #include <osg/Math>
 #include <osgUtil/CullVisitor>
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/ParameterOutput>
+
 #include <simgear/structure/OSGUtils.hxx>
 
 namespace simgear
@@ -40,13 +44,14 @@ void ValidateOperation::operator() (GraphicsContext* gc)
 }
 }
 
-Technique::Technique() : _glVersion(1.1f)
+Technique::Technique(bool alwaysValid)
+    : _alwaysValid(alwaysValid), _glVersion(1.1f)
 {
 }
 
 Technique::Technique(const Technique& rhs, const osg::CopyOp& copyop) :
-    _contextMap(rhs._contextMap), _shadowingStateSet(rhs._shadowingStateSet),
-    _glVersion(rhs._glVersion)
+    _contextMap(rhs._contextMap), _alwaysValid(rhs._alwaysValid),
+    _shadowingStateSet(rhs._shadowingStateSet), _glVersion(rhs._glVersion)
 {
     using namespace std;
     using namespace boost;
@@ -62,6 +67,8 @@ Technique::~Technique()
 
 Technique::Status Technique::valid(osg::RenderInfo* renderInfo)
 {
+    if (_alwaysValid)
+        return VALID;
     unsigned contextID = renderInfo->getContextID();
     ContextInfo& contextInfo = _contextMap[contextID];
     Status status = contextInfo.valid();
@@ -81,6 +88,8 @@ Technique::Status Technique::valid(osg::RenderInfo* renderInfo)
 
 Technique::Status Technique::getValidStatus(const RenderInfo* renderInfo) const
 {
+    if (_alwaysValid)
+        return VALID;
     ContextInfo& contextInfo = _contextMap[renderInfo->getContextID()];
     return contextInfo.valid();
 }
@@ -176,5 +185,34 @@ void Technique::releaseGLObjects(osg::State* state) const
         Status oldVal = info.valid();
         info.valid.compareAndSwap(oldVal, UNKNOWN);
     }
+}
+
+bool Technique_writeLocalData(const Object& obj, osgDB::Output& fw)
+{
+    const Technique& tniq = static_cast<const Technique&>(obj);
+    fw.indent() << "alwaysValid "
+                << (tniq.getAlwaysValid() ? "TRUE\n" : "FALSE\n");
+    fw.indent() << "glVersion " << tniq.getGLVersion() << "\n";
+    if (tniq.getShadowingStateSet()) {
+        fw.indent() << "shadowingStateSet\n";
+        fw.writeObject(*tniq.getShadowingStateSet());
+    }
+    fw.indent() << "passes\n";
+    BOOST_FOREACH(const ref_ptr<Pass>& pass, tniq.passes) {
+        fw.writeObject(*pass);
+    }
+    return true;
+}
+
+namespace
+{
+osgDB::RegisterDotOsgWrapperProxy TechniqueProxy
+(
+    new Technique,
+    "simgear::Technique",
+    "Object simgear::Technique",
+    0,
+    &Technique_writeLocalData
+    );
 }
 }

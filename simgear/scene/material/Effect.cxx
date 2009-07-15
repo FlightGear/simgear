@@ -33,6 +33,7 @@
 #include <osg/CullFace>
 #include <osg/Drawable>
 #include <osg/Material>
+#include <osg/PolygonMode>
 #include <osg/Program>
 #include <osg/Referenced>
 #include <osg/RenderInfo>
@@ -40,6 +41,7 @@
 #include <osg/StateSet>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
+#include <osg/Uniform>
 #include <osg/Vec4d>
 #include <osgUtil/CullVisitor>
 #include <osgDB/FileUtils>
@@ -667,7 +669,9 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                 if (sitr != shaderMap.end()) {
                     program->addShader(sitr->second.get());
                 } else {
-                    string fileName = osgDB::findDataFile(shaderName, options);
+                    string fileName = osgDB::Registry::instance()
+                        ->findDataFile(shaderName, options,
+                                       osgDB::CASE_SENSITIVE);
                     if (!fileName.empty()) {
                         ref_ptr<Shader> shader = new Shader(stype);
                         if (shader->loadShaderSourceFromFile(fileName)) {
@@ -684,6 +688,86 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     }
     pass->setAttributeAndModes(program);
 }
+
+InstallAttributeBuilder<ShaderProgramBuilder> installShaderProgram("program");
+
+EffectNameValue<Uniform::Type> uniformTypes[] =
+{
+    {"float", Uniform::FLOAT},
+    {"float-vec3", Uniform::FLOAT_VEC3},
+    {"float-vec4", Uniform::FLOAT_VEC4},
+    {"sampler-1d", Uniform::SAMPLER_1D},
+    {"sampler-2d", Uniform::SAMPLER_2D},
+    {"sampler-3d", Uniform::SAMPLER_3D}
+};
+
+struct UniformBuilder :public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        using namespace simgear::props;
+        const SGPropertyNode* nameProp = prop->getChild("name");
+        const SGPropertyNode* typeProp = prop->getChild("type");
+        const SGPropertyNode* valProp
+            = getEffectPropertyChild(effect, prop, "value");
+        string name;
+        Uniform::Type uniformType = Uniform::FLOAT;
+        if (nameProp) {
+            name = nameProp->getStringValue();
+        } else {
+            SG_LOG(SG_INPUT, SG_ALERT, "No name for uniform property ");
+            return;
+        }
+        if (!valProp) {
+            SG_LOG(SG_INPUT, SG_ALERT, "No value for uniform property "
+                   << name);
+            return;
+        }
+        if (!typeProp) {
+            props::Type propType = valProp->getType();
+            switch (propType) {
+            case FLOAT:
+            case DOUBLE:
+                break;          // default float type;
+            case VEC3D:
+                uniformType = Uniform::FLOAT_VEC3;
+                break;
+            case VEC4D:
+                uniformType = Uniform::FLOAT_VEC4;
+                break;
+            default:
+                SG_LOG(SG_INPUT, SG_ALERT, "Can't deduce type of uniform "
+                       << name);
+                return;
+            }
+        } else {
+            findAttr(uniformTypes, typeProp, uniformType);
+        }
+        ref_ptr<Uniform> uniform = new Uniform;
+        uniform->setName(name);
+        uniform->setType(uniformType);
+        switch (uniformType) {
+        case Uniform::FLOAT:
+            uniform->set(valProp->getValue<float>());
+            break;
+        case Uniform::FLOAT_VEC3:
+            uniform->set(Vec3f(valProp->getValue<SGVec3d>().osg()));
+            break;
+        case Uniform::FLOAT_VEC4:
+            uniform->set(Vec4f(valProp->getValue<SGVec4d>().osg()));
+            break;
+        case Uniform::SAMPLER_1D:
+        case Uniform::SAMPLER_2D:
+        case Uniform::SAMPLER_3D:
+            uniform->set(valProp->getValue<int>());
+            break;
+        }
+        pass->addUniform(uniform.get());
+    }
+};
+
+InstallAttributeBuilder<UniformBuilder> installUniform("uniform");
 
 // Not sure what to do with "name". At one point I wanted to use it to
 // order the passes, but I do support render bin and stuff too...
@@ -702,6 +786,38 @@ struct NameBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<NameBuilder> installName("name");
 
+EffectNameValue<PolygonMode::Mode> polygonModeModes[] =
+{
+    {"fill", PolygonMode::FILL},
+    {"line", PolygonMode::LINE},
+    {"point", PolygonMode::POINT}
+};
+
+struct PolygonModeBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* frontProp
+            = getEffectPropertyChild(effect, prop, "front");
+        const SGPropertyNode* backProp
+            = getEffectPropertyChild(effect, prop, "back");
+        ref_ptr<PolygonMode> pmode = new PolygonMode;
+        PolygonMode::Mode frontMode = PolygonMode::FILL;
+        PolygonMode::Mode backMode = PolygonMode::FILL;
+        if (frontProp) {
+            findAttr(polygonModeModes, frontProp, frontMode);
+            pmode->setMode(PolygonMode::FRONT, frontMode);
+        }
+        if (backProp) {
+            findAttr(polygonModeModes, backProp, backMode);
+            pmode->setMode(PolygonMode::BACK, backMode);
+        }
+        pass->setAttribute(pmode.get());
+    }
+};
+
+InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const osgDB::ReaderWriter::Options* options)
 {

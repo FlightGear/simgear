@@ -48,6 +48,11 @@ using std::map;
 using std::vector;
 using std::less;
 
+namespace simgear
+{
+class Effect;
+}
+
 // Material management class
 class SGMaterialLib {
 
@@ -77,7 +82,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    static const SGMaterial* findMaterial(const osg::StateSet* stateSet);
+    static const SGMaterial* findMaterial(const simgear::Effect* effect);
 
     // Destructor
     ~SGMaterialLib ( void );

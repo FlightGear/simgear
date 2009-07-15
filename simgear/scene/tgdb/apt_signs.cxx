@@ -33,6 +33,8 @@
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_types.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 
@@ -42,17 +44,18 @@
 #define RWY "OBJECT_RUNWAY_SIGN: "
 
 using std::vector;
+using namespace simgear;
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, osg::StateSet *s, SGMaterialGlyph *g, double h)
+    element_info(SGMaterial *m, Effect *s, SGMaterialGlyph *g, double h)
         : material(m), state(s), glyph(g), height(h)
     {
         scale = h * m->get_xsize()
                 / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
     }
     SGMaterial *material;
-    osg::StateSet *state;
+    Effect *state;
     SGMaterialGlyph *glyph;
     double height;
     double scale;
@@ -104,8 +107,8 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     object->setName(content);
 
     SGMaterial *material;
-    osg::StateSet *lighted_state;
-    osg::StateSet *unlighted_state;
+    Effect *lighted_state;
+    Effect *unlighted_state;
 
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
@@ -224,12 +227,12 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
             }
 
             // set material states (lighted & unlighted)
-            lighted_state = material->get_state();
+            lighted_state = material->get_effect();
             string u = newmat + ".unlighted";
 
             SGMaterial *m = matlib->find(u);
             if (m) {
-                unlighted_state = m->get_state();
+                unlighted_state = m->get_effect();
             } else {
                 SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
                 unlighted_state = lighted_state;
@@ -244,7 +247,7 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
         }
 
         // in managed mode push frame stop and frame start first
-        osg::StateSet *state = lighted ? lighted_state : unlighted_state;
+        Effect *state = lighted ? lighted_state : unlighted_state;
         element_info *e;
         if (newtype && newtype != oldtype) {
             if (close) {
@@ -319,9 +322,9 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
         geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
         geometry->setTexCoordArray(0, tl);
         geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
-        osg::Geode* geode = new osg::Geode;
+        EffectGeode* geode = new EffectGeode;
         geode->addDrawable(geometry);
-        geode->setStateSet(element->state);
+        geode->setEffect(element->state);
 
         object->addChild(geode);
         hpos += abswidth;
@@ -344,11 +347,11 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     geometry->setNormalArray(nl);
     geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* geode = new EffectGeode;
     geode->addDrawable(geometry);
     SGMaterial *mat = matlib->find("BlackSign");
     if (mat)
-      geode->setStateSet(mat->get_state());
+      geode->setEffect(mat->get_effect());
     object->addChild(geode);
 
     return object;
@@ -367,14 +370,12 @@ SGMakeRunwaySign(SGMaterialLib *matlib, const string& path, const string& name)
     osg::Vec3 heightVec(0, 0, 1);
     osg::Geometry* geometry;
     geometry = osg::createTexturedQuadGeometry(corner, widthVec, heightVec);
-
-    SGMaterial *mat = matlib->find(name);
-    if (mat)
-      geometry->setStateSet(mat->get_state());
-
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* geode = new EffectGeode;
     geode->setName(name);
     geode->addDrawable(geometry);
+    SGMaterial *mat = matlib->find(name);
+    if (mat)
+      geode->setEffect(mat->get_effect());
 
     return geode;
 }

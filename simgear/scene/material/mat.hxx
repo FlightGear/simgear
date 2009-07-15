@@ -120,7 +120,6 @@ public:
   /**
    * Get the textured state.
    */
-  osg::StateSet *get_state (int n = -1);
   simgear::Effect *get_effect(int n = -1);
 
   /**

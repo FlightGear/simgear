@@ -135,19 +135,15 @@ SGMaterialLib::~SGMaterialLib ( void ) {
 }
 
 const SGMaterial*
-SGMaterialLib::findMaterial(const osg::StateSet* stateSet)
+SGMaterialLib::findMaterial(const simgear::Effect* effect)
 {
-  if (!stateSet)
-    return 0;
-  
-  const osg::Referenced* base = stateSet->getUserData();
-  if (!base)
+  if (!effect)
     return 0;
 
   const SGMaterialUserData* matUserData
-    = dynamic_cast<const SGMaterialUserData*>(base);
+    = dynamic_cast<const SGMaterialUserData*>(effect->getUserData());
   if (!matUserData)
     return 0;
-
-  return matUserData->getMaterial();
+  else
+    return matUserData->getMaterial();
 }

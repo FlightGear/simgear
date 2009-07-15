@@ -14,6 +14,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+#include <osg/StateSet>
+
 #include "EffectCullVisitor.hxx"
 
 #include "EffectGeode.hxx"
@@ -53,11 +55,19 @@ void EffectCullVisitor::apply(osg::Geode& node)
         CullVisitor::apply(node);
         return;
     }
+    // push the node's state.
+    osg::StateSet* node_state = node.getStateSet();
+    if (node_state)
+        pushStateSet(node_state);
     for (EffectGeode::DrawablesIterator beginItr = eg->drawablesBegin(),
              e = eg->drawablesEnd();
          beginItr != e;
          beginItr = technique->processDrawables(beginItr, e, this,
                                                 eg->isCullingActive()))
         ;
+    // pop the node's state off the geostate stack.
+    if (node_state)
+        popStateSet();
+
 }
 }

@@ -26,6 +26,9 @@
 
 #include "pt_lights.hxx"
 
+#include <map>
+#include <boost/tuple/tuple_comparison.hpp>
+
 #include <osg/Array>
 #include <osg/Geometry>
 #include <osg/CullFace>
@@ -57,12 +60,19 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
+
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/material/Technique.hxx>
+#include <simgear/scene/material/Pass.hxx>
 
 #include "SGVasiDrawable.hxx"
 
 using OpenThreads::Mutex;
 using OpenThreads::ScopedLock;
 
+using namespace osg;
 using namespace simgear;
 
 static void
@@ -132,12 +142,8 @@ static Mutex lightMutex;
 static osg::Texture2D*
 gen_standard_light_sprite(void)
 {
-  // double checked locking ...
+  // Always called from when the lightMutex is already taken
   static osg::ref_ptr<osg::Texture2D> texture;
-  if (texture.valid())
-    return texture.get();
-  
-  ScopedLock<Mutex> lock(lightMutex);
   if (texture.valid())
     return texture.get();
   
@@ -149,80 +155,84 @@ gen_standard_light_sprite(void)
   return texture.get();
 }
 
-SGPointSpriteLightCullCallback::SGPointSpriteLightCullCallback(const osg::Vec3& da,
-                                                               float sz) :
-  _pointSpriteStateSet(new osg::StateSet),
-  _distanceAttenuationStateSet(new osg::StateSet)
+namespace
 {
-  osg::PointSprite* pointSprite = new osg::PointSprite;
-  _pointSpriteStateSet->setTextureAttributeAndModes(0, pointSprite,
-                                                    osg::StateAttribute::ON);
-  osg::Texture2D* texture = gen_standard_light_sprite();
-  _pointSpriteStateSet->setTextureAttribute(0, texture);
-  _pointSpriteStateSet->setTextureMode(0, GL_TEXTURE_2D,
-                                       osg::StateAttribute::ON);
-  osg::TexEnv* texEnv = new osg::TexEnv;
-  texEnv->setMode(osg::TexEnv::MODULATE);
-  _pointSpriteStateSet->setTextureAttribute(0, texEnv);
-  
-  osg::Point* point = new osg::Point;
-  point->setFadeThresholdSize(1);
-  point->setMinSize(1);
-  point->setMaxSize(sz);
-  point->setSize(sz);
-  point->setDistanceAttenuation(da);
-  _distanceAttenuationStateSet->setAttributeAndModes(point);
+typedef boost::tuple<float, osg::Vec3, float, float, bool> PointParams;
+typedef std::map<PointParams, ref_ptr<Effect> > EffectMap;
+
+EffectMap effectMap;
+
+ref_ptr<PolygonMode> polyMode = new PolygonMode(PolygonMode::FRONT,
+                                                PolygonMode::POINT);
+ref_ptr<PointSprite> pointSprite = new PointSprite;
 }
 
-// FIXME make state sets static
-SGPointSpriteLightCullCallback::SGPointSpriteLightCullCallback(osg::Point* point) :
-  _pointSpriteStateSet(new osg::StateSet),
-  _distanceAttenuationStateSet(new osg::StateSet)
+Effect* getLightEffect(float size, const Vec3& attenuation,
+                       float minSize, float maxSize, bool directional)
 {
-  osg::PointSprite* pointSprite = new osg::PointSprite;
-  _pointSpriteStateSet->setTextureAttributeAndModes(0, pointSprite,
-                                                    osg::StateAttribute::ON);
-  osg::Texture2D* texture = gen_standard_light_sprite();
-  _pointSpriteStateSet->setTextureAttribute(0, texture);
-  _pointSpriteStateSet->setTextureMode(0, GL_TEXTURE_2D,
-                                       osg::StateAttribute::ON);
-  osg::TexEnv* texEnv = new osg::TexEnv;
-  texEnv->setMode(osg::TexEnv::MODULATE);
-  _pointSpriteStateSet->setTextureAttribute(0, texEnv);
-  
-  _distanceAttenuationStateSet->setAttributeAndModes(point);
+    PointParams pointParams(size, attenuation, minSize, maxSize, directional);
+    ScopedLock<Mutex> lock(lightMutex);
+    EffectMap::iterator eitr = effectMap.find(pointParams);
+    if (eitr != effectMap.end())
+        return eitr->second.get();
+    // Basic stuff; no sprite or attenuation support
+    Pass *basicPass = new Pass;
+    basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+    basicPass->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    StateAttributeFactory *attrFact = StateAttributeFactory::instance();
+    basicPass->setAttributeAndModes(attrFact->getStandardBlendFunc());
+    basicPass->setAttributeAndModes(attrFact->getStandardAlphaFunc());
+    if (directional) {
+        basicPass->setAttributeAndModes(attrFact->getCullFaceBack());
+        basicPass->setAttribute(polyMode.get());
+    }
+    Pass *attenuationPass = clone(basicPass, CopyOp::SHALLOW_COPY);
+    osg::Point* point = new osg::Point;
+    point->setMinSize(minSize);
+    point->setMaxSize(maxSize);
+    point->setSize(size);
+    point->setDistanceAttenuation(attenuation);
+    attenuationPass->setAttributeAndModes(point);
+    Pass *spritePass = clone(basicPass, CopyOp::SHALLOW_COPY);
+    spritePass->setTextureAttributeAndModes(0, pointSprite,
+                                            osg::StateAttribute::ON);
+    Texture2D* texture = gen_standard_light_sprite();
+    spritePass->setTextureAttribute(0, texture);
+    spritePass->setTextureMode(0, GL_TEXTURE_2D,
+                               osg::StateAttribute::ON);
+    spritePass->setTextureAttribute(0, attrFact->getStandardTexEnv());
+    Pass *combinedPass = clone(spritePass, CopyOp::SHALLOW_COPY);
+    combinedPass->setAttributeAndModes(point);
+    Effect* effect = new Effect;
+    std::vector<std::string> combinedExtensions;
+    combinedExtensions.push_back("GL_ARB_point_sprite");
+    combinedExtensions.push_back("GL_ARB_point_parameters");
+    Technique* combinedTniq = new Technique;
+    combinedTniq->passes.push_back(combinedPass);
+    combinedTniq->setGLExtensionsPred(2.0, combinedExtensions);
+    effect->techniques.push_back(combinedTniq);
+    std::vector<std::string> spriteExtensions;
+    spriteExtensions.push_back(combinedExtensions.front());
+    Technique* spriteTniq = new Technique;
+    spriteTniq->passes.push_back(spritePass);
+    spriteTniq->setGLExtensionsPred(2.0, spriteExtensions);
+    effect->techniques.push_back(spriteTniq);
+    std::vector<std::string> parameterExtensions;
+    parameterExtensions.push_back(combinedExtensions.back());
+    Technique* parameterTniq = new Technique;
+    parameterTniq->passes.push_back(attenuationPass);
+    parameterTniq->setGLExtensionsPred(1.4, parameterExtensions);
+    effect->techniques.push_back(parameterTniq);
+    Technique* basicTniq = new Technique(true);
+    basicTniq->passes.push_back(basicPass);
+    effect->techniques.push_back(basicTniq);
+    effectMap.insert(std::make_pair(pointParams, effect));
+    return effect;
 }
 
-void
-SGPointSpriteLightCullCallback::operator()(osg::Node* node,
-                                           osg::NodeVisitor* nv)
-{
-  assert(dynamic_cast<osgUtil::CullVisitor*>(nv));
-  osgUtil::CullVisitor* cv = static_cast<osgUtil::CullVisitor*>(nv);
-  
-  // Test for point sprites and point parameters availibility
-  unsigned contextId = cv->getRenderInfo().getContextID();
-  SGSceneFeatures* features = SGSceneFeatures::instance();
-  bool usePointSprite = features->getEnablePointSpriteLights(contextId);
-  bool usePointParameters = features->getEnableDistanceAttenuationLights(contextId);
-  
-  if (usePointSprite)
-    cv->pushStateSet(_pointSpriteStateSet.get());
-  
-  if (usePointParameters)
-    cv->pushStateSet(_distanceAttenuationStateSet.get());
-  
-  traverse(node, nv);
-  
-  if (usePointParameters)
-    cv->popStateSet();
-  
-  if (usePointSprite)
-    cv->popStateSet();
-}
 
-osg::Node*
-SGLightFactory::getLight(const SGLightBin::Light& light)
+osg::Drawable*
+SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
 {
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
@@ -244,28 +254,11 @@ SGLightFactory::getLight(const SGLightBin::Light& light)
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
-  
-  osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-  
-  osg::Geode* geode = new osg::Geode;
-  geode->addDrawable(geometry);
-
-  return geode;
+  return geometry;
 }
 
-osg::Node*
-SGLightFactory::getLight(const SGDirectionalLightBin::Light& light)
+osg::Drawable*
+SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
 {
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
@@ -297,40 +290,13 @@ SGLightFactory::getLight(const SGDirectionalLightBin::Light& light)
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
-  
-  osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-
-  osg::Material* material = new osg::Material;
-  material->setColorMode(osg::Material::OFF);
-  stateSet->setAttribute(material);
-
-  osg::CullFace* cullFace = new osg::CullFace;
-  cullFace->setMode(osg::CullFace::BACK);
-  stateSet->setAttribute(cullFace, osg::StateAttribute::ON);
-  stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
-  
-  osg::PolygonMode* polygonMode = new osg::PolygonMode;
-  polygonMode->setMode(osg::PolygonMode::FRONT, osg::PolygonMode::POINT);
-  stateSet->setAttribute(polygonMode);
-
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-  
-  osg::Geode* geode = new osg::Geode;
-  geode->addDrawable(geometry);
-
-  return geode;
+  return geometry;
 }
 
+namespace
+{
+  ref_ptr<StateSet> simpleLightSS;
+}
 osg::Drawable*
 SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff)
 {
@@ -358,21 +324,19 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::POINTS,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
-  
-  osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
 
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-  
+  {
+    ScopedLock<Mutex> lock(lightMutex);
+    if (!simpleLightSS.valid()) {
+      StateAttributeFactory *attrFact = StateAttributeFactory::instance();
+      simpleLightSS = new StateSet;
+      simpleLightSS->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+      simpleLightSS->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+      simpleLightSS->setAttributeAndModes(attrFact->getStandardBlendFunc());
+      simpleLightSS->setAttributeAndModes(attrFact->getStandardAlphaFunc());
+    }
+  }
+  geometry->setStateSet(simpleLightSS.get());
   return geometry;
 }
 
@@ -413,34 +377,6 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
   drawArrays = new osg::DrawArrays(osg::PrimitiveSet::TRIANGLES,
                                    0, vertices->size());
   geometry->addPrimitiveSet(drawArrays);
-  
-  osg::StateSet* stateSet = geometry->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-
-  osg::Material* material = new osg::Material;
-  material->setColorMode(osg::Material::OFF);
-  stateSet->setAttribute(material);
-
-  osg::CullFace* cullFace = new osg::CullFace;
-  cullFace->setMode(osg::CullFace::BACK);
-  stateSet->setAttribute(cullFace, osg::StateAttribute::ON);
-  stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
-  
-  osg::PolygonMode* polygonMode = new osg::PolygonMode;
-  polygonMode->setMode(osg::PolygonMode::FRONT, osg::PolygonMode::POINT);
-  stateSet->setAttribute(polygonMode);
-
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-  
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-  
   return geometry;
 }
 
@@ -523,35 +459,19 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
   float flashTime = 2e-2 + 5e-3*sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-
-  for (int i = lights.getNumLights() - 1; 0 <= i; --i)
-    sequence->addChild(getLight(lights.getLight(i)), flashTime);
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
+                                  6.0f, 10.0f, true);
+  for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
+    EffectGeode* egeode = new EffectGeode;
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    sequence->addChild(egeode, flashTime);
+  }
   sequence->addChild(new osg::Group, 1 + 1e-1*sg_random());
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
   sequence->setSync(true);
-
-  osg::StateSet* stateSet = sequence->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-
-  osg::Point* point = new osg::Point;
-  point->setMinSize(6);
-  point->setMaxSize(10);
-  point->setSize(10);
-  point->setDistanceAttenuation(osg::Vec3(1.0, 0.0001, 0.00000001));
-  sequence->setCullCallback(new SGPointSpriteLightCullCallback(point));
-
   return sequence;
 }
 
@@ -566,15 +486,23 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   float flashTime = 2e-2 + 5e-3*sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
+                                  6.0, 10.0, false);
   // centerline lights
-  for (int i = lights.getNumLights() - 1; 2 <= i; --i)
-    sequence->addChild(getLight(lights.getLight(i)), flashTime);
-
+  for (int i = lights.getNumLights() - 1; 2 <= i; --i) {
+    EffectGeode* egeode = new EffectGeode;
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    sequence->addChild(egeode, flashTime);
+  }
   // runway end lights
   osg::Group* group = new osg::Group;
-  for (unsigned i = 0; i < 2; ++i)
-    group->addChild(getLight(lights.getLight(i)));
+  for (unsigned i = 0; i < 2; ++i) {
+    EffectGeode* egeode = new EffectGeode;
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    group->addChild(egeode);
+  }
   sequence->addChild(group, flashTime);
 
   // add an extra empty group for a break
@@ -583,26 +511,6 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
   sequence->setSync(true);
-
-  osg::StateSet* stateSet = sequence->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
-  stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
-
-  osg::BlendFunc* blendFunc = new osg::BlendFunc;
-  stateSet->setAttribute(blendFunc);
-  stateSet->setMode(GL_BLEND, osg::StateAttribute::ON);
-  
-  osg::AlphaFunc* alphaFunc;
-  alphaFunc = new osg::AlphaFunc(osg::AlphaFunc::GREATER, 0.01);
-  stateSet->setAttribute(alphaFunc);
-  stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::ON);
-
-  osg::Point* point = new osg::Point;
-  point->setMinSize(6);
-  point->setMaxSize(10);
-  point->setSize(10);
-  point->setDistanceAttenuation(osg::Vec3(1.0, 0.0001, 0.00000001));
-  sequence->setCullCallback(new SGPointSpriteLightCullCallback(point));
 
   return sequence;
 }

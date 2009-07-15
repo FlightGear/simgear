@@ -314,8 +314,7 @@ SGMaterial::build_state( bool defer_tex_load )
         }
 
         _status[i].state = pass;
-        Technique* tniq = new Technique();
-        tniq->setGLExtensionsPred(1.1, std::vector<std::string>());
+        Technique* tniq = new Technique(true);
         tniq->passes.push_back(pass);
         Effect* effect = new Effect;
         effect->techniques.push_back(tniq);

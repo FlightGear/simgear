@@ -68,12 +68,6 @@ public:
     // Load a library of material properties
     bool load( const string &fg_root, const string& mpath,
             SGPropertyNode *prop_root );
-
-    // Add the named texture with default properties
-    bool add_item( const string &tex_path );
-    bool add_item( const string &mat_name, const string &tex_path );
-    bool add_item( const string &mat_name, osg::StateSet *state );
-
     // find a material record by material name
     SGMaterial *find( const string& material );
 

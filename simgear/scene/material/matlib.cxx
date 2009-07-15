@@ -115,48 +115,6 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
     return true;
 }
 
-
-// Load a library of material properties
-bool SGMaterialLib::add_item ( const string &tex_path )
-{
-    string material_name = tex_path;
-    int pos = tex_path.rfind( "/" );
-    material_name = material_name.substr( pos + 1 );
-
-    return add_item( material_name, tex_path );
-}
-
-
-// Load a library of material properties
-bool SGMaterialLib::add_item ( const string &mat_name, const string &full_path )
-{
-    int pos = full_path.rfind( "/" );
-    string tex_name = full_path.substr( pos + 1 );
-    string tex_path = full_path.substr( 0, pos );
-
-    SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material " 
-	    << mat_name << " (" << full_path << ")");
-
-    matlib[mat_name] = new SGMaterial( full_path );
-    matlib[mat_name]->add_name(mat_name);
-
-    return true;
-}
-
-
-// Load a library of material properties
-bool SGMaterialLib::add_item ( const string &mat_name, osg::StateSet *state )
-{
-    matlib[mat_name] = new SGMaterial( state );
-    matlib[mat_name]->add_name(mat_name);
-
-    SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material given a premade "
-	    << "osg::StateSet = " << mat_name );
-
-    return true;
-}
-
-
 // find a material record by material name
 SGMaterial *SGMaterialLib::find( const string& material ) {
     SGMaterial *result = NULL;

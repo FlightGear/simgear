@@ -26,21 +26,23 @@
  * Read properties from an XML input stream.
  */
 void readProperties (std::istream &input, SGPropertyNode * start_node,
-		     const std::string &base = "", int default_mode = 0);
+		     const std::string &base = "", int default_mode = 0,
+                     bool extended = false);
 
 
 /**
  * Read properties from an XML file.
  */
 void readProperties (const std::string &file, SGPropertyNode * start_node,
-                     int default_mode = 0);
+                     int default_mode = 0, bool extended = false);
 
 
 /**
  * Read properties from an in-memory buffer.
  */
 void readProperties (const char *buf, const int size,
-                     SGPropertyNode * start_node, int default_mode = 0);
+                     SGPropertyNode * start_node, int default_mode = 0,
+                     bool extended = false);
 
 
 /**

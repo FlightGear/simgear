@@ -18,6 +18,7 @@
 
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/xml/easyxml.hxx>
 
@@ -53,8 +54,11 @@ class PropsVisitor : public XMLVisitor
 {
 public:
 
-  PropsVisitor (SGPropertyNode * root, const string &base, int default_mode = 0)
-    : _default_mode(default_mode), _root(root), _level(0), _base(base), _hasException(false) {}
+  PropsVisitor (SGPropertyNode * root, const string &base, int default_mode = 0,
+                bool extended = false)
+    : _default_mode(default_mode), _root(root), _level(0), _base(base),
+      _hasException(false), _extended(extended)
+  {}
 
   virtual ~PropsVisitor () {}
 
@@ -111,6 +115,7 @@ private:
   string _base;
   sg_io_exception _exception;
   bool _hasException;
+  bool _extended;
 };
 
 void
@@ -168,7 +173,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       SGPath path(SGPath(_base).dir());
       path.append(attval);
       try {
-	readProperties(path.str(), _root);
+	readProperties(path.str(), _root, 0, _extended);
       } catch (sg_io_exception &e) {
 	setException(e);
       }
@@ -236,7 +241,7 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
       SGPath path(SGPath(_base).dir());
       path.append(attval);
       try {
-	readProperties(path.str(), node);
+	readProperties(path.str(), node, 0, _extended);
       } catch (sg_io_exception &e) {
 	setException(e);
       }
@@ -276,6 +281,12 @@ PropsVisitor::endElement (const char * name)
       ret = st.node->setDoubleValue(strtod(_data.c_str(), 0));
     } else if (st.type == "string") {
       ret = st.node->setStringValue(_data.c_str());
+    } else if (st.type == "vec3d" && _extended) {
+      ret = st.node
+        ->setValue(simgear::parseString<SGVec3d>(_data));
+    } else if (st.type == "vec4d" && _extended) {
+      ret = st.node
+        ->setValue(simgear::parseString<SGVec4d>(_data));
     } else if (st.type == "unspecified") {
       ret = st.node->setUnspecifiedValue(_data.c_str());
     } else if (_level == 1) {
@@ -345,9 +356,9 @@ PropsVisitor::warning (const char * message, int line, int column)
  */
 void
 readProperties (istream &input, SGPropertyNode * start_node,
-		const string &base, int default_mode)
+		const string &base, int default_mode, bool extended)
 {
-  PropsVisitor visitor(start_node, base, default_mode);
+  PropsVisitor visitor(start_node, base, default_mode, extended);
   readXML(input, visitor, base);
   if (visitor.hasException())
     throw visitor.getException();
@@ -363,9 +374,9 @@ readProperties (istream &input, SGPropertyNode * start_node,
  */
 void
 readProperties (const string &file, SGPropertyNode * start_node,
-                int default_mode)
+                int default_mode, bool extended)
 {
-  PropsVisitor visitor(start_node, file, default_mode);
+  PropsVisitor visitor(start_node, file, default_mode, extended);
   readXML(file, visitor);
   if (visitor.hasException())
     throw visitor.getException();
@@ -381,9 +392,10 @@ readProperties (const string &file, SGPropertyNode * start_node,
  * @return true if the read succeeded, false otherwise.
  */
 void readProperties (const char *buf, const int size,
-                     SGPropertyNode * start_node, int default_mode)
+                     SGPropertyNode * start_node, int default_mode,
+                     bool extended)
 {
-  PropsVisitor visitor(start_node, "", default_mode);
+  PropsVisitor visitor(start_node, "", default_mode, extended);
   readXML(buf, size, visitor);
   if (visitor.hasException())
     throw visitor.getException();
@@ -418,6 +430,10 @@ getTypeName (simgear::props::Type type)
     return "double";
   case STRING:
     return "string";
+  case VEC3D:
+    return "vec3d";
+  case VEC4D:
+    return "vec4d";
   case ALIAS:
   case NONE:
     return "unspecified";
@@ -635,6 +651,14 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
     case UNSPECIFIED:
       if (!out->setUnspecifiedValue(in->getStringValue()))
 	retval = false;
+      break;
+    case VEC3D:
+      if (!out->setValue(in->getValue<SGVec3d>()))
+        retval = false;
+      break;
+    case VEC4D:
+      if (!out->setValue(in->getValue<SGVec4d>()))
+        retval = false;
       break;
     default:
       if (in->isAlias())

@@ -682,50 +682,19 @@ namespace simgear
 namespace expression
 {
 
-class Parser {
-public:
-    void addParser(const std::string& name, exp_parser parser)
-    {
-        _parserTable.insert(std::make_pair(name, parser));
-    }
-    Expression* read(const SGPropertyNode* exp)
-    {
-        ParserMap::iterator itr = _parserTable.find(exp->getName());
-        if (itr == _parserTable.end())
-            throw ParseError(string("unknown expression ") + exp->getName());
-        exp_parser parser = itr->second;
-        return (*parser)(exp, this);
-    }
-    // XXX vector of SGSharedPtr?
-    bool readChildren(const SGPropertyNode* exp,
-                      vector<Expression*>& result);
-protected:
-    typedef std::map<const std::string, exp_parser> ParserMap;
-    ParserMap _parserTable;
-};
-
-class ExpressionParser : public Parser, public Singleton<ExpressionParser>
-{
-};
-
-void addExpParser(const string& token, exp_parser parsefn)
-{
-    ExpressionParser::instance()->addParser(token, parsefn);
-}
-
-Expression* read(const SGPropertyNode* exp, Parser* parser)
-{
-    if (!parser)
-        parser = ExpressionParser::instance();
-    return parser->read(exp);
-}
-
 bool Parser::readChildren(const SGPropertyNode* exp,
                           vector<Expression*>& result)
 {
     for (int i = 0; i < exp->nChildren(); ++i)
         result.push_back(read(exp->getChild(i)));
     return true;
+}
+
+Parser::ParserMap ExpressionParser::_parserTable;
+
+void ExpressionParser::addExpParser(const string& token, exp_parser parsefn)
+{
+    _parserTable.insert(std::make_pair(token, parsefn));
 }
 
 Expression* valueParser(const SGPropertyNode* exp, Parser* parser)
@@ -867,10 +836,14 @@ Expression* logicopParser(const SGPropertyNode* exp, Parser* parser)
 ExpParserRegistrar andRegistrar("and", logicopParser<AndExpression>);
 ExpParserRegistrar orRegistrar("or", logicopParser<OrExpression>);
 
-
 int BindingLayout::addBinding(const string& name, Type type)
 {
     //XXX error checkint
+    vector<VariableBinding>::iterator itr
+        = find_if(bindings.begin(), bindings.end(),
+                  bind(&VariableBinding::name, _1) == name);
+    if (itr != bindings.end())
+        return itr->location;
     int result = bindings.size();
     bindings.push_back(VariableBinding(name, type, bindings.size()));
     return result;

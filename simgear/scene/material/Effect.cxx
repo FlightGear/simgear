@@ -828,11 +828,13 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
         tniq->setAlwaysValid(true);
     } else {
         try {
-            expression::BindingLayout layout;
+            TechniquePredParser parser;
+            parser.setTechnique(tniq);
+            expression::BindingLayout& layout = parser.getBindingLayout();
             int contextLoc = layout.addBinding("__contextId", expression::INT);
             SGExpressionb* validExp
-                = dynamic_cast<SGExpressionb*>(expression::read(predProp
-                                                                ->getChild(0)));
+                = dynamic_cast<SGExpressionb*>(parser.read(predProp
+                                                           ->getChild(0)));
             if (validExp)
                 tniq->setValidExpression(validExp, layout);
             else

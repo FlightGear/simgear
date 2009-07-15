@@ -214,7 +214,11 @@ class GLVersionExpression : public SGExpression<float>
 public:
     void eval(float& value, const expression::Binding*) const
     {
+#ifdef TECHNIQUE_TEST_EXTENSIONS
+        value = 1.1;
+#else
         value = getGLVersionNumber();
+#endif
     }
 };
 
@@ -250,8 +254,16 @@ Expression* extensionSupportedParser(const SGPropertyNode* exp,
                                      expression::Parser* parser)
 {
     if (exp->getType() == props::STRING
-        || exp->getType() == props::UNSPECIFIED)
-        return new ExtensionSupportedExpression(exp->getStringValue());
+        || exp->getType() == props::UNSPECIFIED) {
+        ExtensionSupportedExpression* esp
+            = new ExtensionSupportedExpression(exp->getStringValue());
+        int location = parser->getBindingLayout().addBinding("__contextId",
+                                                             expression::INT);
+        VariableExpression<int>* contextExp
+            = new VariableExpression<int>(location);
+        esp->addOperand(contextExp);
+        return esp;
+    }
     throw expression::ParseError("extension-supported expression has wrong type");
 }
 
@@ -270,11 +282,6 @@ void Technique::setGLExtensionsPred(float glVersion,
     SGExpression<bool>* versionTest
         = makePredicate<std::less_equal>(new SGConstExpression<float>(glVersion),
                         new GLVersionExpression);
-#if 0
-    LessEqualExpression<float>* versionTest
-        = new LessEqualExpression<float>(new SGConstExpression<float>(glVersion),
-                                         new GLVersionExpression);
-#endif
     AndExpression* extensionsExp = 0;
     for (vector<string>::const_iterator itr = extensions.begin(),
              e = extensions.end();
@@ -297,6 +304,16 @@ void Technique::setGLExtensionsPred(float glVersion,
         predicate = versionTest;
     }
     setValidExpression(predicate, layout);
+}
+
+void Technique::refreshValidity()
+{
+    for (int i = 0; i < _contextMap.size(); ++i) {
+        ContextInfo& info = _contextMap[i];
+        Status oldVal = info.valid();
+        // What happens if we lose the race here?
+        info.valid.compareAndSwap(oldVal, UNKNOWN);
+    }
 }
 
 bool Technique_writeLocalData(const Object& obj, osgDB::Output& fw)

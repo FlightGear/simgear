@@ -36,7 +36,7 @@
 #include <string.h>
 #include <string>
 
-#include <osgDB/ReaderWriter>
+#include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>

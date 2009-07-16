@@ -128,8 +128,7 @@ Effect* makeEffect(const string& name,
     string effectFileName(name);
     effectFileName += ".eff";
     string absFileName
-        = osgDB::Registry::instance()->findDataFile(effectFileName, options,
-                                                    osgDB::CASE_SENSITIVE);
+        = osgDB::findDataFile(effectFileName, options);
     if (absFileName.empty())
         return 0;
     SGPropertyNode_ptr effectProps = new SGPropertyNode();

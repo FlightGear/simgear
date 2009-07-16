@@ -669,9 +669,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                 if (sitr != shaderMap.end()) {
                     program->addShader(sitr->second.get());
                 } else {
-                    string fileName = osgDB::Registry::instance()
-                        ->findDataFile(shaderName, options,
-                                       osgDB::CASE_SENSITIVE);
+                    string fileName = osgDB::findDataFile(shaderName, options);
                     if (!fileName.empty()) {
                         ref_ptr<Shader> shader = new Shader(stype);
                         if (shader->loadShaderSourceFromFile(fileName)) {

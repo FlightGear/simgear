@@ -41,7 +41,7 @@
 #include <osg/StateSet>
 #include <osg/TexEnv>
 #include <osg/Texture2D>
-#include <osgDB/Options>
+#include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 #include <osgDB/FileUtils>
@@ -68,12 +68,12 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 
 SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
-                                             const osgDB::Options* o ) :
+                                             const osgDB::ReaderWriter::Options* o ) :
   effect(e), texture_path(t), effect_realized(l), options(o)
 {
 }
 
-SGMaterial::SGMaterial( const osgDB::Options* options,
+SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
                         const SGPropertyNode *props )
 {
     init();
@@ -91,7 +91,7 @@ SGMaterial::~SGMaterial (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties(const osgDB::Options* options,
+SGMaterial::read_properties(const osgDB::ReaderWriter::Options* options,
                             const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
@@ -104,14 +104,11 @@ SGMaterial::read_properties(const osgDB::Options* options,
     }
     SGPath tpath("Textures.high");
     tpath.append(tname);
-    osgDB::Registry* reg = osgDB::Registry::instance();
-    string fullTexPath = reg->findDataFile(tpath.str(), options,
-                                           osgDB::CASE_SENSITIVE);
+    string fullTexPath = osgDB::findDataFile(tpath.str(), options);
     if (fullTexPath.empty()) {
       tpath = SGPath("Textures");
       tpath.append(tname);
-      fullTexPath = reg->findDataFile(tpath.str(), options,
-                                      osgDB::CASE_SENSITIVE);
+      fullTexPath = osgDB::findDataFile(tpath.str(), options);
     }
 
     if (!fullTexPath.empty() ) {
@@ -142,8 +139,7 @@ SGMaterial::read_properties(const osgDB::Options* options,
   const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
   if (treeTexNode) {
     string treeTexPath = props->getStringValue("tree-texture");
-    tree_texture = osgDB::Registry::instance()
-      ->findDataFile(treeTexPath, options, osgDB::CASE_SENSITIVE);
+    tree_texture = osgDB::findDataFile(treeTexPath, options);
   }
 
   // surface values for use with ground reactions
@@ -246,7 +242,8 @@ Effect* SGMaterial::get_effect(int n)
     return _status[i].effect.get();
 }
 
-void SGMaterial::buildEffectProperties(const osgDB::Options* options)
+void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
+                                       options)
 {
     using namespace osg;
     SGPropertyNode_ptr propRoot = new SGPropertyNode();

@@ -39,15 +39,11 @@
 #include <simgear/math/SGMath.hxx>
 
 #include <osg/ref_ptr>
+#include <osgDB/ReaderWriter>
 
 namespace osg
 {
 class StateSet;
-}
-
-namespace osgDB
-{
-class Options;
 }
 
 #include <simgear/props/props.hxx>
@@ -88,7 +84,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const osgDB::Options*, const SGPropertyNode *props);
+  SGMaterial( const osgDB::ReaderWriter::Options*, const SGPropertyNode *props);
 
   /**
    * Destructor.
@@ -260,11 +256,11 @@ protected:
 
   struct _internal_state {
       _internal_state(simgear::Effect *e, const std::string &t, bool l,
-                      const osgDB::Options *o);
+                      const osgDB::ReaderWriter::Options *o);
       osg::ref_ptr<simgear::Effect> effect;
       std::string texture_path;
       bool effect_realized;
-      osg::ref_ptr<const osgDB::Options> options;
+      osg::ref_ptr<const osgDB::ReaderWriter::Options> options;
   };
 
 private:
@@ -344,9 +340,9 @@ private:
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  void read_properties(const osgDB::Options* options,
+  void read_properties(const osgDB::ReaderWriter::Options* options,
                         const SGPropertyNode *props);
-  void buildEffectProperties(const osgDB::Options* options);
+  void buildEffectProperties(const osgDB::ReaderWriter::Options* options);
 };
 
 

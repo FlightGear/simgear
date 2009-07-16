@@ -36,7 +36,7 @@
 #include <string.h>
 #include <string>
 
-#include <osgDB/Options>
+#include <osgDB/ReaderWriter>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -71,8 +71,9 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
                 << ex.getMessage() );
         throw;
     }
-    osg::ref_ptr<osgDB::Options> options = new osgDB::Options;
-    options->setObjectCacheHint(osgDB::Options::CACHE_ALL);
+    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+        = new osgDB::ReaderWriter::Options;
+    options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_ALL);
     options->setDatabasePath(fg_root);
     int nMaterials = materials.nChildren();
     for (int i = 0; i < nMaterials; i++) {

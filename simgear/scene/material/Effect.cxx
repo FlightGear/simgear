@@ -72,7 +72,7 @@ Effect::Effect(const Effect& rhs, const CopyOp& copyop)
 {
     using namespace boost;
     transform(rhs.techniques.begin(), rhs.techniques.end(),
-              backRefInsertIterator(techniques),
+              back_inserter(techniques),
               bind(simgear::clone_ref<Technique>, _1, copyop));
 }
 

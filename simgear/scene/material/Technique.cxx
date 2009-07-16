@@ -4,6 +4,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
+#include <iterator>
 #include <vector>
 #include <string>
 
@@ -60,7 +61,7 @@ Technique::Technique(const Technique& rhs, const osg::CopyOp& copyop) :
     using namespace std;
     using namespace boost;
     transform(rhs.passes.begin(), rhs.passes.end(),
-              backRefInsertIterator(passes),
+              back_inserter(passes),
               bind(simgear::clone_ref<Pass>, _1, copyop));
 
 }

@@ -704,7 +704,6 @@ struct UniformBuilder :public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
-        using namespace simgear::props;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
         const SGPropertyNode* valProp
@@ -725,13 +724,13 @@ struct UniformBuilder :public PassAttributeBuilder
         if (!typeProp) {
             props::Type propType = valProp->getType();
             switch (propType) {
-            case FLOAT:
-            case DOUBLE:
+            case props::FLOAT:
+            case props::DOUBLE:
                 break;          // default float type;
-            case VEC3D:
+            case props::VEC3D:
                 uniformType = Uniform::FLOAT_VEC3;
                 break;
-            case VEC4D:
+            case props::VEC4D:
                 uniformType = Uniform::FLOAT_VEC4;
                 break;
             default:

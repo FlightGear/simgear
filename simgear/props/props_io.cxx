@@ -414,28 +414,28 @@ void readProperties (const char *buf, const int size,
 static const char *
 getTypeName (simgear::props::Type type)
 {
-  using namespace simgear::props;
+  using namespace simgear;
   switch (type) {
-  case UNSPECIFIED:
+  case props::UNSPECIFIED:
     return "unspecified";
-  case BOOL:
+  case props::BOOL:
     return "bool";
-  case INT:
+  case props::INT:
     return "int";
-  case LONG:
+  case props::LONG:
     return "long";
-  case FLOAT:
+  case props::FLOAT:
     return "float";
-  case DOUBLE:
+  case props::DOUBLE:
     return "double";
-  case STRING:
+  case props::STRING:
     return "string";
-  case VEC3D:
+  case props::VEC3D:
     return "vec3d";
-  case VEC4D:
+  case props::VEC4D:
     return "vec4d";
-  case ALIAS:
-  case NONE:
+  case props::ALIAS:
+  case props::NONE:
     return "unspecified";
   }
 
@@ -617,46 +617,46 @@ writeProperties (const string &file, const SGPropertyNode * start_node,
 bool
 copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
 {
-  using namespace simgear::props;
+  using namespace simgear;
   bool retval = true;
 
 				// First, copy the actual value,
 				// if any.
   if (in->hasValue()) {
     switch (in->getType()) {
-    case BOOL:
+    case props::BOOL:
       if (!out->setBoolValue(in->getBoolValue()))
 	retval = false;
       break;
-    case INT:
+    case props::INT:
       if (!out->setIntValue(in->getIntValue()))
 	retval = false;
       break;
-    case LONG:
+    case props::LONG:
       if (!out->setLongValue(in->getLongValue()))
 	retval = false;
       break;
-    case FLOAT:
+    case props::FLOAT:
       if (!out->setFloatValue(in->getFloatValue()))
 	retval = false;
       break;
-    case DOUBLE:
+    case props::DOUBLE:
       if (!out->setDoubleValue(in->getDoubleValue()))
 	retval = false;
       break;
-    case STRING:
+    case props::STRING:
       if (!out->setStringValue(in->getStringValue()))
 	retval = false;
       break;
-    case UNSPECIFIED:
+    case props::UNSPECIFIED:
       if (!out->setUnspecifiedValue(in->getStringValue()))
 	retval = false;
       break;
-    case VEC3D:
+    case props::VEC3D:
       if (!out->setValue(in->getValue<SGVec3d>()))
         retval = false;
       break;
-    case VEC4D:
+    case props::VEC4D:
       if (!out->setValue(in->getValue<SGVec4d>()))
         retval = false;
       break;

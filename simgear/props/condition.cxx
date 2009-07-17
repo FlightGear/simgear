@@ -144,9 +144,9 @@ SGOrCondition::addCondition (SGCondition * condition)
 static int
 doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
 {
-  using namespace simgear::props;
+  using namespace simgear;
   switch (left->getType()) {
-  case BOOL: {
+  case props::BOOL: {
     bool v1 = left->getBoolValue();
     bool v2 = right->getBoolValue();
     if (v1 < v2)
@@ -157,7 +157,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case INT: {
+  case props::INT: {
     int v1 = left->getIntValue();
     int v2 = right->getIntValue();
     if (v1 < v2)
@@ -168,7 +168,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case LONG: {
+  case props::LONG: {
     long v1 = left->getLongValue();
     long v2 = right->getLongValue();
     if (v1 < v2)
@@ -179,7 +179,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case FLOAT: {
+  case props::FLOAT: {
     float v1 = left->getFloatValue();
     float v2 = right->getFloatValue();
     if (v1 < v2)
@@ -190,7 +190,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case DOUBLE: {
+  case props::DOUBLE: {
     double v1 = left->getDoubleValue();
     double v2 = right->getDoubleValue();
     if (v1 < v2)
@@ -201,9 +201,9 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
       return SGComparisonCondition::EQUALS;
     break;
   }
-  case STRING:
-  case NONE:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::NONE:
+  case props::UNSPECIFIED: {
     string v1 = left->getStringValue();
     string v2 = right->getStringValue();
     if (v1 < v2)

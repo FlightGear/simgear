@@ -106,7 +106,7 @@ protected:
         ContextInfo(const ContextInfo& rhs) : valid(rhs.valid()) {}
         ContextInfo& operator=(const ContextInfo& rhs)
         {
-            valid = rhs.valid();
+            valid = rhs.valid;
         }
         Swappable<Status> valid;
     };

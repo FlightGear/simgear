@@ -246,6 +246,7 @@ void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
                                        options)
 {
     using namespace osg;
+    ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
     SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
@@ -277,6 +278,7 @@ void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
         makeChild(tex2dProp, "wrap-t")
             ->setStringValue(wrapv ? "repeat" : "clamp");
         matState.effect = makeEffect(effectProp, false, options);
+        matState.effect->setUserData(user.get());
     }
 }
 

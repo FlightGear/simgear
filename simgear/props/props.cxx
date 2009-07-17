@@ -43,7 +43,6 @@ using std::vector;
 using std::stringstream;
 
 using namespace simgear;
-using namespace simgear::props;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -489,28 +488,28 @@ SGPropertyNode::set_string (const char * val)
 void
 SGPropertyNode::clearValue ()
 {
-    if (_type == ALIAS) {
+    if (_type == props::ALIAS) {
         put(_value.alias);
         _value.alias = 0;
-    } else if (_type != NONE) {
+    } else if (_type != props::NONE) {
         switch (_type) {
-        case BOOL:
+        case props::BOOL:
             _local_val.bool_val = SGRawValue<bool>::DefaultValue();
             break;
-        case INT:
+        case props::INT:
             _local_val.int_val = SGRawValue<int>::DefaultValue();
             break;
-        case LONG:
+        case props::LONG:
             _local_val.long_val = SGRawValue<long>::DefaultValue();
             break;
-        case FLOAT:
+        case props::FLOAT:
             _local_val.float_val = SGRawValue<float>::DefaultValue();
             break;
-        case DOUBLE:
+        case props::DOUBLE:
             _local_val.double_val = SGRawValue<double>::DefaultValue();
             break;
-        case STRING:
-        case UNSPECIFIED:
+        case props::STRING:
+        case props::UNSPECIFIED:
             if (!_tied) {
                 delete [] _local_val.string_val;
             }
@@ -521,7 +520,7 @@ SGPropertyNode::clearValue ()
         _value.val = 0;
     }
     _tied = false;
-    _type = NONE;
+    _type = props::NONE;
 }
 
 
@@ -534,37 +533,37 @@ SGPropertyNode::make_string () const
     if (!getAttribute(READ))
         return "";
     switch (_type) {
-    case ALIAS:
+    case props::ALIAS:
         return _value.alias->getStringValue();
-    case BOOL:
+    case props::BOOL:
         return get_bool() ? "true" : "false";
-    case STRING:
-    case UNSPECIFIED:
+    case props::STRING:
+    case props::UNSPECIFIED:
         return get_string();
-    case NONE:
+    case props::NONE:
         return "";
     default:
         break;
     }
     stringstream sstr;
     switch (_type) {
-    case INT:
+    case props::INT:
         sstr << get_int();
         break;
-    case LONG:
+    case props::LONG:
         sstr << get_long();
         break;
-    case FLOAT:
+    case props::FLOAT:
         sstr << get_float();
         break;
-    case DOUBLE:
+    case props::DOUBLE:
         sstr << std::setprecision(10) << get_double();
         break;
-    case EXTENDED:
+    case props::EXTENDED:
     {
-        Type realType = _value.val->getType();
+        props::Type realType = _value.val->getType();
         // Perhaps this should be done for all types?
-        if (realType == VEC3D || realType == VEC4D)
+        if (realType == props::VEC3D || realType == props::VEC4D)
             sstr.precision(10);
         static_cast<SGRawExtended*>(_value.val)->printOn(sstr);
     }
@@ -624,7 +623,7 @@ SGPropertyNode::SGPropertyNode ()
   : _index(0),
     _parent(0),
     _path_cache(0),
-    _type(NONE),
+    _type(props::NONE),
     _tied(false),
     _attr(READ|WRITE),
     _listeners(0)
@@ -649,36 +648,36 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 {
   _local_val.string_val = 0;
   _value.val = 0;
-  if (_type == NONE)
+  if (_type == props::NONE)
     return;
-  if (_type == ALIAS) {
+  if (_type == props::ALIAS) {
     _value.alias = node._value.alias;
     get(_value.alias);
     _tied = false;
     return;
   }
-  if (_tied || _type == EXTENDED) {
+  if (_tied || _type == props::EXTENDED) {
     _value.val = node._value.val->clone();
     return;
   }
   switch (_type) {
-  case BOOL:
+  case props::BOOL:
     set_bool(node.get_bool());    
     break;
-  case INT:
+  case props::INT:
     set_int(node.get_int());
     break;
-  case LONG:
+  case props::LONG:
     set_long(node.get_long());
     break;
-  case FLOAT:
+  case props::FLOAT:
     set_float(node.get_float());
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     set_double(node.get_double());
     break;
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     set_string(node.get_string());
     break;
   default:
@@ -696,7 +695,7 @@ SGPropertyNode::SGPropertyNode (const char * name,
   : _index(index),
     _parent(parent),
     _path_cache(0),
-    _type(NONE),
+    _type(props::NONE),
     _tied(false),
     _attr(READ|WRITE),
     _listeners(0)
@@ -738,12 +737,12 @@ SGPropertyNode::~SGPropertyNode ()
 bool
 SGPropertyNode::alias (SGPropertyNode * target)
 {
-  if (target == 0 || _type == ALIAS || _tied)
+  if (target == 0 || _type == props::ALIAS || _tied)
     return false;
   clearValue();
   get(target);
   _value.alias = target;
-  _type = ALIAS;
+  _type = props::ALIAS;
   return true;
 }
 
@@ -764,7 +763,7 @@ SGPropertyNode::alias (const char * path)
 bool
 SGPropertyNode::unalias ()
 {
-  if (_type != ALIAS)
+  if (_type != props::ALIAS)
     return false;
   clearValue();
   return true;
@@ -777,14 +776,14 @@ SGPropertyNode::unalias ()
 SGPropertyNode *
 SGPropertyNode::getAliasTarget ()
 {
-  return (_type == ALIAS ? _value.alias : 0);
+  return (_type == props::ALIAS ? _value.alias : 0);
 }
 
 
 const SGPropertyNode *
 SGPropertyNode::getAliasTarget () const
 {
-  return (_type == ALIAS ? _value.alias : 0);
+  return (_type == props::ALIAS ? _value.alias : 0);
 }
 
 /**
@@ -1008,12 +1007,12 @@ SGPropertyNode::getPath (bool simplify) const
   return _path.c_str();
 }
 
-Type
+props::Type
 SGPropertyNode::getType () const
 {
-  if (_type == ALIAS)
+  if (_type == props::ALIAS)
     return _value.alias->getType();
-  else if (_type == EXTENDED)
+  else if (_type == props::EXTENDED)
       return _value.val->getType();
   else
     return _type;
@@ -1024,7 +1023,7 @@ bool
 SGPropertyNode::getBoolValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == BOOL)
+  if (_attr == (READ|WRITE) && _type == props::BOOL)
     return get_bool();
 
   if (getAttribute(TRACE_READ))
@@ -1032,22 +1031,22 @@ SGPropertyNode::getBoolValue () const
   if (!getAttribute(READ))
     return SGRawValue<bool>::DefaultValue();
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     return _value.alias->getBoolValue();
-  case BOOL:
+  case props::BOOL:
     return get_bool();
-  case INT:
+  case props::INT:
     return get_int() == 0 ? false : true;
-  case LONG:
+  case props::LONG:
     return get_long() == 0L ? false : true;
-  case FLOAT:
+  case props::FLOAT:
     return get_float() == 0.0 ? false : true;
-  case DOUBLE:
+  case props::DOUBLE:
     return get_double() == 0.0L ? false : true;
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     return (compare_strings(get_string(), "true") || getDoubleValue() != 0.0L);
-  case NONE:
+  case props::NONE:
   default:
     return SGRawValue<bool>::DefaultValue();
   }
@@ -1057,7 +1056,7 @@ int
 SGPropertyNode::getIntValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == INT)
+  if (_attr == (READ|WRITE) && _type == props::INT)
     return get_int();
 
   if (getAttribute(TRACE_READ))
@@ -1065,22 +1064,22 @@ SGPropertyNode::getIntValue () const
   if (!getAttribute(READ))
     return SGRawValue<int>::DefaultValue();
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     return _value.alias->getIntValue();
-  case BOOL:
+  case props::BOOL:
     return int(get_bool());
-  case INT:
+  case props::INT:
     return get_int();
-  case LONG:
+  case props::LONG:
     return int(get_long());
-  case FLOAT:
+  case props::FLOAT:
     return int(get_float());
-  case DOUBLE:
+  case props::DOUBLE:
     return int(get_double());
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     return atoi(get_string());
-  case NONE:
+  case props::NONE:
   default:
     return SGRawValue<int>::DefaultValue();
   }
@@ -1090,7 +1089,7 @@ long
 SGPropertyNode::getLongValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == LONG)
+  if (_attr == (READ|WRITE) && _type == props::LONG)
     return get_long();
 
   if (getAttribute(TRACE_READ))
@@ -1098,22 +1097,22 @@ SGPropertyNode::getLongValue () const
   if (!getAttribute(READ))
     return SGRawValue<long>::DefaultValue();
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     return _value.alias->getLongValue();
-  case BOOL:
+  case props::BOOL:
     return long(get_bool());
-  case INT:
+  case props::INT:
     return long(get_int());
-  case LONG:
+  case props::LONG:
     return get_long();
-  case FLOAT:
+  case props::FLOAT:
     return long(get_float());
-  case DOUBLE:
+  case props::DOUBLE:
     return long(get_double());
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     return strtol(get_string(), 0, 0);
-  case NONE:
+  case props::NONE:
   default:
     return SGRawValue<long>::DefaultValue();
   }
@@ -1123,7 +1122,7 @@ float
 SGPropertyNode::getFloatValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == FLOAT)
+  if (_attr == (READ|WRITE) && _type == props::FLOAT)
     return get_float();
 
   if (getAttribute(TRACE_READ))
@@ -1131,22 +1130,22 @@ SGPropertyNode::getFloatValue () const
   if (!getAttribute(READ))
     return SGRawValue<float>::DefaultValue();
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     return _value.alias->getFloatValue();
-  case BOOL:
+  case props::BOOL:
     return float(get_bool());
-  case INT:
+  case props::INT:
     return float(get_int());
-  case LONG:
+  case props::LONG:
     return float(get_long());
-  case FLOAT:
+  case props::FLOAT:
     return get_float();
-  case DOUBLE:
+  case props::DOUBLE:
     return float(get_double());
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     return atof(get_string());
-  case NONE:
+  case props::NONE:
   default:
     return SGRawValue<float>::DefaultValue();
   }
@@ -1156,7 +1155,7 @@ double
 SGPropertyNode::getDoubleValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == DOUBLE)
+  if (_attr == (READ|WRITE) && _type == props::DOUBLE)
     return get_double();
 
   if (getAttribute(TRACE_READ))
@@ -1165,22 +1164,22 @@ SGPropertyNode::getDoubleValue () const
     return SGRawValue<double>::DefaultValue();
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     return _value.alias->getDoubleValue();
-  case BOOL:
+  case props::BOOL:
     return double(get_bool());
-  case INT:
+  case props::INT:
     return double(get_int());
-  case LONG:
+  case props::LONG:
     return double(get_long());
-  case FLOAT:
+  case props::FLOAT:
     return double(get_float());
-  case DOUBLE:
+  case props::DOUBLE:
     return get_double();
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     return strtod(get_string(), 0);
-  case NONE:
+  case props::NONE:
   default:
     return SGRawValue<double>::DefaultValue();
   }
@@ -1190,7 +1189,7 @@ const char *
 SGPropertyNode::getStringValue () const
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == STRING)
+  if (_attr == (READ|WRITE) && _type == props::STRING)
     return get_string();
 
   if (getAttribute(TRACE_READ))
@@ -1204,41 +1203,41 @@ bool
 SGPropertyNode::setBoolValue (bool value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == BOOL)
+  if (_attr == (READ|WRITE) && _type == props::BOOL)
     return set_bool(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
     _tied = false;
-    _type = BOOL;
+    _type = props::BOOL;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setBoolValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool(value);
     break;
-  case INT:
+  case props::INT:
     result = set_int(int(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(long(value));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(float(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(double(value));
     break;
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     result = set_string(value ? "true" : "false");
     break;
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1252,44 +1251,44 @@ bool
 SGPropertyNode::setIntValue (int value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == INT)
+  if (_attr == (READ|WRITE) && _type == props::INT)
     return set_int(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
-    _type = INT;
+    _type = props::INT;
     _local_val.int_val = 0;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setIntValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool(value == 0 ? false : true);
     break;
-  case INT:
+  case props::INT:
     result = set_int(value);
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(long(value));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(float(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(double(value));
     break;
-  case STRING:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%d", value);
     result = set_string(buf);
     break;
   }
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1303,44 +1302,44 @@ bool
 SGPropertyNode::setLongValue (long value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == LONG)
+  if (_attr == (READ|WRITE) && _type == props::LONG)
     return set_long(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
-    _type = LONG;
+    _type = props::LONG;
     _local_val.long_val = 0L;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setLongValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool(value == 0L ? false : true);
     break;
-  case INT:
+  case props::INT:
     result = set_int(int(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(value);
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(float(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(double(value));
     break;
-  case STRING:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%ld", value);
     result = set_string(buf);
     break;
   }
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1354,44 +1353,44 @@ bool
 SGPropertyNode::setFloatValue (float value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == FLOAT)
+  if (_attr == (READ|WRITE) && _type == props::FLOAT)
     return set_float(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
-    _type = FLOAT;
+    _type = props::FLOAT;
     _local_val.float_val = 0;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setFloatValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool(value == 0.0 ? false : true);
     break;
-  case INT:
+  case props::INT:
     result = set_int(int(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(long(value));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(value);
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(double(value));
     break;
-  case STRING:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%f", value);
     result = set_string(buf);
     break;
   }
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1405,44 +1404,44 @@ bool
 SGPropertyNode::setDoubleValue (double value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == DOUBLE)
+  if (_attr == (READ|WRITE) && _type == props::DOUBLE)
     return set_double(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
     _local_val.double_val = value;
-    _type = DOUBLE;
+    _type = props::DOUBLE;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setDoubleValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool(value == 0.0L ? false : true);
     break;
-  case INT:
+  case props::INT:
     result = set_int(int(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(long(value));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(float(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(value);
     break;
-  case STRING:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::UNSPECIFIED: {
     char buf[128];
     sprintf(buf, "%f", value);
     result = set_string(buf);
     break;
   }
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1456,47 +1455,47 @@ bool
 SGPropertyNode::setStringValue (const char * value)
 {
 				// Shortcut for common case
-  if (_attr == (READ|WRITE) && _type == STRING)
+  if (_attr == (READ|WRITE) && _type == props::STRING)
     return set_string(value);
 
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE || _type == UNSPECIFIED) {
+  if (_type == props::NONE || _type == props::UNSPECIFIED) {
     clearValue();
-    _type = STRING;
+    _type = props::STRING;
   }
 
   switch (_type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setStringValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool((compare_strings(value, "true")
 		       || atoi(value)) ? true : false);
     break;
-  case INT:
+  case props::INT:
     result = set_int(atoi(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(strtol(value, 0, 0));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(atof(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(strtod(value, 0));
     break;
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     result = set_string(value);
     break;
-  case EXTENDED:
+  case props::EXTENDED:
   {
     stringstream sstr(value);
     static_cast<SGRawExtended*>(_value.val)->readFrom(sstr);
   }
   break;
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1511,44 +1510,44 @@ SGPropertyNode::setUnspecifiedValue (const char * value)
 {
   bool result = false;
   TEST_WRITE;
-  if (_type == NONE) {
+  if (_type == props::NONE) {
     clearValue();
-    _type = UNSPECIFIED;
+    _type = props::UNSPECIFIED;
   }
-  Type type = _type;
-  if (type == EXTENDED)
+  props::Type type = _type;
+  if (type == props::EXTENDED)
       type = _value.val->getType();
   switch (type) {
-  case ALIAS:
+  case props::ALIAS:
     result = _value.alias->setUnspecifiedValue(value);
     break;
-  case BOOL:
+  case props::BOOL:
     result = set_bool((compare_strings(value, "true")
 		       || atoi(value)) ? true : false);
     break;
-  case INT:
+  case props::INT:
     result = set_int(atoi(value));
     break;
-  case LONG:
+  case props::LONG:
     result = set_long(strtol(value, 0, 0));
     break;
-  case FLOAT:
+  case props::FLOAT:
     result = set_float(atof(value));
     break;
-  case DOUBLE:
+  case props::DOUBLE:
     result = set_double(strtod(value, 0));
     break;
-  case STRING:
-  case UNSPECIFIED:
+  case props::STRING:
+  case props::UNSPECIFIED:
     result = set_string(value);
     break;
-  case VEC3D:
+  case props::VEC3D:
       result = static_cast<SGRawValue<SGVec3d>*>(_value.val)->setValue(parseString<SGVec3d>(value));
       break;
-  case VEC4D:
+  case props::VEC4D:
       result = static_cast<SGRawValue<SGVec4d>*>(_value.val)->setValue(parseString<SGVec4d>(value));
       break;
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1563,31 +1562,31 @@ std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
     if (!getAttribute(READ))
         return stream;
     switch (_type) {
-    case ALIAS:
+    case props::ALIAS:
         return _value.alias->printOn(stream);
-    case BOOL:
+    case props::BOOL:
         stream << (get_bool() ? "true" : "false");
         break;
-    case INT:
+    case props::INT:
         stream << get_int();
         break;
-    case LONG:
+    case props::LONG:
         stream << get_long();
         break;
-    case FLOAT:
+    case props::FLOAT:
         stream << get_float();
         break;
-    case DOUBLE:
+    case props::DOUBLE:
         stream << get_double();
         break;
-    case STRING:
-    case UNSPECIFIED:
+    case props::STRING:
+    case props::UNSPECIFIED:
         stream << get_string();
         break;
-    case EXTENDED:
+    case props::EXTENDED:
         static_cast<SGRawExtended*>(_value.val)->printOn(stream);
         break;
-    case NONE:
+    case props::NONE:
         break;
     }
     return stream;
@@ -1597,7 +1596,7 @@ template<>
 bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
                           bool useDefault)
 {
-    if (_type == ALIAS || _tied)
+    if (_type == props::ALIAS || _tied)
         return false;
 
     useDefault = useDefault && hasValue();
@@ -1605,7 +1604,7 @@ bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
     if (useDefault)
         old_val = getStringValue();
     clearValue();
-    _type = STRING;
+    _type = props::STRING;
     _tied = true;
     _value.val = rawValue.clone();
 
@@ -1621,59 +1620,59 @@ SGPropertyNode::untie ()
     return false;
 
   switch (_type) {
-  case BOOL: {
+  case props::BOOL: {
     bool val = getBoolValue();
     clearValue();
-    _type = BOOL;
+    _type = props::BOOL;
     _local_val.bool_val = val;
     break;
   }
-  case INT: {
+  case props::INT: {
     int val = getIntValue();
     clearValue();
-    _type = INT;
+    _type = props::INT;
     _local_val.int_val = val;
     break;
   }
-  case LONG: {
+  case props::LONG: {
     long val = getLongValue();
     clearValue();
-    _type = LONG;
+    _type = props::LONG;
     _local_val.long_val = val;
     break;
   }
-  case FLOAT: {
+  case props::FLOAT: {
     float val = getFloatValue();
     clearValue();
-    _type = FLOAT;
+    _type = props::FLOAT;
     _local_val.float_val = val;
     break;
   }
-  case DOUBLE: {
+  case props::DOUBLE: {
     double val = getDoubleValue();
     clearValue();
-    _type = DOUBLE;
+    _type = props::DOUBLE;
     _local_val.double_val = val;
     break;
   }
-  case STRING:
-  case UNSPECIFIED: {
+  case props::STRING:
+  case props::UNSPECIFIED: {
     string val = getStringValue();
     clearValue();
-    _type = STRING;
+    _type = props::STRING;
     _local_val.string_val = copy_string(val.c_str());
     break;
   }
-  case EXTENDED: {
+  case props::EXTENDED: {
     SGRawExtended* val = static_cast<SGRawExtended*>(_value.val);
     _value.val = 0;             // Prevent clearValue() from deleting
     clearValue();
-    _type = EXTENDED;
+    _type = props::EXTENDED;
     _value.val = val->makeContainer();
     delete val;
     break;
   }
-  case NONE:
+  case props::NONE:
   default:
     break;
   }
@@ -1760,11 +1759,11 @@ SGPropertyNode::hasValue (const char * relative_path) const
 /**
  * Get the value type for another node.
  */
-Type
+props::Type
 SGPropertyNode::getType (const char * relative_path) const
 {
   const SGPropertyNode * node = getNode(relative_path);
-  return (node == 0 ? UNSPECIFIED : (Type)(node->getType()));
+  return (node == 0 ? props::UNSPECIFIED : node->getType());
 }
 
 

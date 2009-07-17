@@ -70,19 +70,7 @@ public:
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
 
-////////////////////////////////////////////////////////////////////////
-// Default values for every type.
-////////////////////////////////////////////////////////////////////////
 
-template<> const bool SGRawValue<bool>::DefaultValue = false;
-template<> const int SGRawValue<int>::DefaultValue = 0;
-template<> const long SGRawValue<long>::DefaultValue = 0L;
-template<> const float SGRawValue<float>::DefaultValue = 0.0;
-template<> const double SGRawValue<double>::DefaultValue = 0.0L;
-template<> const char * const SGRawValue<const char *>::DefaultValue = "";
-template<> const SGVec3d SGRawValue<SGVec3d>::DefaultValue = SGVec3d();
-template<> const SGVec4d SGRawValue<SGVec4d>::DefaultValue = SGVec4d();
-
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
 ////////////////////////////////////////////////////////////////////////
@@ -507,19 +495,19 @@ SGPropertyNode::clearValue ()
     } else if (_type != NONE) {
         switch (_type) {
         case BOOL:
-            _local_val.bool_val = SGRawValue<bool>::DefaultValue;
+            _local_val.bool_val = SGRawValue<bool>::DefaultValue();
             break;
         case INT:
-            _local_val.int_val = SGRawValue<int>::DefaultValue;
+            _local_val.int_val = SGRawValue<int>::DefaultValue();
             break;
         case LONG:
-            _local_val.long_val = SGRawValue<long>::DefaultValue;
+            _local_val.long_val = SGRawValue<long>::DefaultValue();
             break;
         case FLOAT:
-            _local_val.float_val = SGRawValue<float>::DefaultValue;
+            _local_val.float_val = SGRawValue<float>::DefaultValue();
             break;
         case DOUBLE:
-            _local_val.double_val = SGRawValue<double>::DefaultValue;
+            _local_val.double_val = SGRawValue<double>::DefaultValue();
             break;
         case STRING:
         case UNSPECIFIED:
@@ -1042,7 +1030,7 @@ SGPropertyNode::getBoolValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<bool>::DefaultValue;
+    return SGRawValue<bool>::DefaultValue();
   switch (_type) {
   case ALIAS:
     return _value.alias->getBoolValue();
@@ -1061,7 +1049,7 @@ SGPropertyNode::getBoolValue () const
     return (compare_strings(get_string(), "true") || getDoubleValue() != 0.0L);
   case NONE:
   default:
-    return SGRawValue<bool>::DefaultValue;
+    return SGRawValue<bool>::DefaultValue();
   }
 }
 
@@ -1075,7 +1063,7 @@ SGPropertyNode::getIntValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<int>::DefaultValue;
+    return SGRawValue<int>::DefaultValue();
   switch (_type) {
   case ALIAS:
     return _value.alias->getIntValue();
@@ -1094,7 +1082,7 @@ SGPropertyNode::getIntValue () const
     return atoi(get_string());
   case NONE:
   default:
-    return SGRawValue<int>::DefaultValue;
+    return SGRawValue<int>::DefaultValue();
   }
 }
 
@@ -1108,7 +1096,7 @@ SGPropertyNode::getLongValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<long>::DefaultValue;
+    return SGRawValue<long>::DefaultValue();
   switch (_type) {
   case ALIAS:
     return _value.alias->getLongValue();
@@ -1127,7 +1115,7 @@ SGPropertyNode::getLongValue () const
     return strtol(get_string(), 0, 0);
   case NONE:
   default:
-    return SGRawValue<long>::DefaultValue;
+    return SGRawValue<long>::DefaultValue();
   }
 }
 
@@ -1141,7 +1129,7 @@ SGPropertyNode::getFloatValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<float>::DefaultValue;
+    return SGRawValue<float>::DefaultValue();
   switch (_type) {
   case ALIAS:
     return _value.alias->getFloatValue();
@@ -1160,7 +1148,7 @@ SGPropertyNode::getFloatValue () const
     return atof(get_string());
   case NONE:
   default:
-    return SGRawValue<float>::DefaultValue;
+    return SGRawValue<float>::DefaultValue();
   }
 }
 
@@ -1174,7 +1162,7 @@ SGPropertyNode::getDoubleValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<double>::DefaultValue;
+    return SGRawValue<double>::DefaultValue();
 
   switch (_type) {
   case ALIAS:
@@ -1194,7 +1182,7 @@ SGPropertyNode::getDoubleValue () const
     return strtod(get_string(), 0);
   case NONE:
   default:
-    return SGRawValue<double>::DefaultValue;
+    return SGRawValue<double>::DefaultValue();
   }
 }
 
@@ -1208,7 +1196,7 @@ SGPropertyNode::getStringValue () const
   if (getAttribute(TRACE_READ))
     trace_read();
   if (!getAttribute(READ))
-    return SGRawValue<const char *>::DefaultValue;
+    return SGRawValue<const char *>::DefaultValue();
   return make_string();
 }
 

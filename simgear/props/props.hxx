@@ -312,7 +312,10 @@ public:
    * may need different kinds of default values (such as epoch for a
    * date type).  The default value is used when creating new values.
    */
-  static const T DefaultValue;	// Default for this kind of raw value.
+  static T DefaultValue()
+  {
+    return T();
+  }
 
 
   /**
@@ -368,14 +371,15 @@ public:
 // Default values for every type.
 ////////////////////////////////////////////////////////////////////////
 
-template<> const bool SGRawValue<bool>::DefaultValue;
-template<> const int SGRawValue<int>::DefaultValue;
-template<> const long SGRawValue<long>::DefaultValue;
-template<> const float SGRawValue<float>::DefaultValue;
-template<> const double SGRawValue<double>::DefaultValue;
-template<> const char * const SGRawValue<const char *>::DefaultValue;
-template<> const SGVec3d SGRawValue<SGVec3d>::DefaultValue;
-template<> const SGVec4d SGRawValue<SGVec4d>::DefaultValue;
+template<> inline bool SGRawValue<bool>::DefaultValue()
+{
+  return false;
+}
+
+template<> inline const char * SGRawValue<const char *>::DefaultValue()
+{
+  return "";
+}
 
 /**
  * A raw value bound to a pointer.
@@ -486,7 +490,7 @@ public:
    */
   virtual T getValue () const {
     if (_getter) return (*_getter)();
-    else return SGRawValue<T>::DefaultValue;
+    else return SGRawValue<T>::DefaultValue();
   }
 
   /**
@@ -535,7 +539,7 @@ public:
   virtual ~SGRawValueFunctionsIndexed () {}
   virtual T getValue () const {
     if (_getter) return (*_getter)(_index);
-    else return SGRawValue<T>::DefaultValue;
+    else return SGRawValue<T>::DefaultValue();
   }
   virtual bool setValue (T value) {
     if (_setter) { (*_setter)(_index, value); return true; }
@@ -568,7 +572,7 @@ public:
   virtual ~SGRawValueMethods () {}
   virtual T getValue () const {
     if (_getter) { return (_obj.*_getter)(); }
-    else { return SGRawValue<T>::DefaultValue; }
+    else { return SGRawValue<T>::DefaultValue(); }
   }
   virtual bool setValue (T value) {
     if (_setter) { (_obj.*_setter)(value); return true; }
@@ -602,7 +606,7 @@ public:
   virtual ~SGRawValueMethodsIndexed () {}
   virtual T getValue () const {
     if (_getter) { return (_obj.*_getter)(_index); }
-    else { return SGRawValue<T>::DefaultValue; }
+    else { return SGRawValue<T>::DefaultValue(); }
   }
   virtual bool setValue (T value) {
     if (_setter) { (_obj.*_setter)(_index, value); return true; }
@@ -1816,7 +1820,7 @@ bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
         return false;
 
     useDefault = useDefault && hasValue();
-    T old_val = SGRawValue<T>::DefaultValue;
+    T old_val = SGRawValue<T>::DefaultValue();
     if (useDefault)
         old_val = getValue<T>(this);
     clearValue();
@@ -1847,7 +1851,7 @@ T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
     if (getAttribute(TRACE_READ))
         trace_read();
     if (!getAttribute(READ))
-        return SGRawValue<T>::DefaultValue;
+      return SGRawValue<T>::DefaultValue();
     switch (_type) {
     case EXTENDED:
         if (_value.val->getType() == PropertyTraits<T>::type_tag)
@@ -1858,7 +1862,7 @@ T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
         return simgear::parseString<T>(make_string());
         break;
     }
-    return SGRawValue<T>::DefaultValue;
+    return SGRawValue<T>::DefaultValue();
 }
 
 template<typename T>

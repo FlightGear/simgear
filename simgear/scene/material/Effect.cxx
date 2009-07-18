@@ -861,6 +861,7 @@ bool Effect::realizeTechniques(const osgDB::ReaderWriter::Options* options)
          itr != e;
          ++itr)
         buildTechnique(this, *itr, options);
+    return true;
 }
 
 bool Effect_writeLocalData(const Object& obj, osgDB::Output& fw)

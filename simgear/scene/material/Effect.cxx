@@ -415,6 +415,7 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
     if ((color = getEffectPropertyChild(effect, prop, "emissive-back")))
         mat->setEmission(Material::BACK, getColor(color));        
     const SGPropertyNode* shininess = 0;
+    mat->setShininess(Material::FRONT_AND_BACK, 0.0f);
     if ((shininess = getEffectPropertyChild(effect, prop, "shininess")))
         mat->setShininess(Material::FRONT_AND_BACK, shininess->getFloatValue());
     if ((shininess = getEffectPropertyChild(effect, prop, "shininess-front")))

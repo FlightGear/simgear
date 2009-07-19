@@ -690,11 +690,10 @@ bool Parser::readChildren(const SGPropertyNode* exp,
     return true;
 }
 
-Parser::ParserMap ExpressionParser::_parserTable;
-
 void ExpressionParser::addExpParser(const string& token, exp_parser parsefn)
 {
-    _parserTable.insert(std::make_pair(token, parsefn));
+    ParserMapSingleton::instance()
+        ->_parserTable.insert(std::make_pair(token, parsefn));
 }
 
 Expression* valueParser(const SGPropertyNode* exp, Parser* parser)

@@ -2299,8 +2299,6 @@ SGPropertyChangeListener::unregister_property (SGPropertyNode * node)
     _properties.erase(it);
 }
 
-namespace simgear
-{
 template<>
 std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const
 {
@@ -2314,6 +2312,8 @@ std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const
     return stream;
 }
 
+namespace simgear
+{
 template<>
 std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result)
 {
@@ -2322,7 +2322,7 @@ std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result)
     }
     return stream;
 }
-
+}
 template<>
 std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
 {
@@ -2336,6 +2336,8 @@ std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const
     return stream;
 }
 
+namespace simgear
+{
 template<>
 std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
 {
@@ -2344,7 +2346,6 @@ std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
     }
     return stream;
 }
-
 }
 
 // end of props.cxx

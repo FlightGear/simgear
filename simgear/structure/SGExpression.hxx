@@ -31,6 +31,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/scene/model/persparam.hxx>
 #include <simgear/structure/exception.hxx>
+#include <simgear/structure/Singleton.hxx>
 
 /// Expression tree implementation.
 
@@ -1009,10 +1010,16 @@ namespace simgear
   class ExpressionParser : public Parser
   {
   public:
-      ParserMap& getParserMap() { return _parserTable; }
+      ParserMap& getParserMap()
+      {
+          return ParserMapSingleton::instance()->_parserTable;
+      }
       static void addExpParser(const std::string&, exp_parser);
   protected:
-      static ParserMap _parserTable;
+      struct ParserMapSingleton : public simgear::Singleton<ParserMapSingleton>
+      {
+          ParserMap _parserTable;
+      };
   };
 
   /**

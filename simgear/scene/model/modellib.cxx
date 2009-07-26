@@ -34,6 +34,8 @@
 
 #include "modellib.hxx"
 
+#include <simgear/Math/SGMath.hxx>
+
 
 using namespace simgear;
 

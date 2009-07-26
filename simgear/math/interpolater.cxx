@@ -22,6 +22,9 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <simgear/compiler.h>
 
@@ -32,6 +35,8 @@
 #include <simgear/props/props.hxx>
 
 #include "interpolater.hxx"
+
+#include <simgear/Math/SGMath.hxx>
 
 using std::string;
 

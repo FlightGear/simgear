@@ -800,24 +800,6 @@
 			Name="Lib_sgmaterial"
 			Filter="">
 			<File
-				RelativePath="..\..\simgear\scene\material\mat.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\mat.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\matlib.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\matlib.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\matmodel.cxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\matmodel.hxx">
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\material\Effect.cxx">
 			</File>
 			<File
@@ -842,6 +824,27 @@
 				RelativePath="..\..\simgear\scene\material\GLPredicate.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\material\makeEffect.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\mat.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\mat.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\matlib.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\matlib.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\matmodel.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\matmodel.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\material\Pass.cxx">
 			</File>
 			<File
@@ -852,9 +855,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\material\Technique.hxx">
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\makeEffect.cxx">
 			</File>
 		</Filter>
 		<Filter

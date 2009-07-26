@@ -2,8 +2,14 @@
  * $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/props/props.hxx>
 #include "persparam.hxx"
+
+#include <simgear/Math/SGMath.hxx>
 
 template <> double
 SGPersonalityParameter<double>::getNodeValue( const SGPropertyNode *props,

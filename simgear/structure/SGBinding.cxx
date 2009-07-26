@@ -7,8 +7,14 @@
  * $Id$
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
+
+#include <simgear/Math/SGMath.hxx>
 
 SGBinding::SGBinding()
   : _command(0),

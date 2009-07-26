@@ -192,7 +192,7 @@ void Technique::releaseGLObjects(osg::State* state) const
         pass->releaseGLObjects(state);
     }
     if (state == 0) {
-        for (int i = 0; i < _contextMap.size(); ++i) {
+        for (int i = 0; i < (int)_contextMap.size(); ++i) {
             ContextInfo& info = _contextMap[i];
             Status oldVal = info.valid();
             info.valid.compareAndSwap(oldVal, UNKNOWN);
@@ -314,7 +314,7 @@ void Technique::setGLExtensionsPred(float glVersion,
 
 void Technique::refreshValidity()
 {
-    for (int i = 0; i < _contextMap.size(); ++i) {
+    for (int i = 0; i < (int)_contextMap.size(); ++i) {
         ContextInfo& info = _contextMap[i];
         Status oldVal = info.valid();
         // What happens if we lose the race here?

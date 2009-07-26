@@ -836,7 +836,7 @@ public:
   /**
    * Get the number of child nodes.
    */
-  int nChildren () const { return _children.size(); }
+  int nChildren () const { return (int)_children.size(); }
 
 
   /**
@@ -1568,7 +1568,7 @@ public:
   /**
    * Get the number of listeners.
    */
-  int nListeners () const { return _listeners ? _listeners->size() : 0; }
+  int nListeners () const { return _listeners ? (int)_listeners->size() : 0; }
 
 
   /**

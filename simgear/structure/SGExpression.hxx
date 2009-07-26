@@ -1202,7 +1202,7 @@ namespace simgear
     void eval(bool& value, const expression::Binding* b) const
     {
       value = false;
-      for (int i = 0; i < getNumOperands(); ++i) {
+      for (int i = 0; i < (int)getNumOperands(); ++i) {
         value = value || getOperand(i)->getValue(b);
         if (value)
           return;
@@ -1216,7 +1216,7 @@ namespace simgear
     void eval(bool& value, const expression::Binding* b) const
     {
       value = true;
-      for (int i = 0; i < getNumOperands(); ++i) {
+      for (int i = 0; i < (int)getNumOperands(); ++i) {
         value = value && getOperand(i)->getValue(b);
         if (!value)
           return;

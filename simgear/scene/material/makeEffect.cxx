@@ -1,3 +1,8 @@
+
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include "Effect.hxx"
 #include "Technique.hxx"
 #include "Pass.hxx"

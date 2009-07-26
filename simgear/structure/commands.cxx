@@ -4,6 +4,10 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <memory>
 #include <simgear/props/props_io.hxx>
 
@@ -11,6 +15,8 @@
 #include <OpenThreads/ScopedLock>
 
 #include "commands.hxx"
+
+#include <simgear/Math/SGMath.hxx>
 
 
 

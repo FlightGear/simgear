@@ -1,5 +1,7 @@
 #include "event_mgr.hxx"
 
+#include <simgear/Math/SGMath.hxx>
+
 void SGEventMgr::add(SGCallback* cb,
                      double interval, double delay,
                      bool repeat, bool simtime)

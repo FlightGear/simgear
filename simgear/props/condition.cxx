@@ -8,7 +8,7 @@
 // $Id$
 
 #ifdef HAVE_CONFIG_H
-#  include <simgear/compiler.h>
+#  include <simgear_config.h>
 #endif
 
 // #include <iostream>
@@ -17,6 +17,8 @@
 
 #include "props.hxx"
 #include "condition.hxx"
+
+#include <simgear/Math/SGMath.hxx>
 
 using std::istream;
 using std::ostream;

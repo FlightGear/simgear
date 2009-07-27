@@ -14,7 +14,7 @@
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 SGBinding::SGBinding()
   : _command(0),

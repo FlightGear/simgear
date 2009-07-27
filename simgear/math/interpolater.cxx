@@ -36,7 +36,7 @@
 
 #include "interpolater.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 using std::string;
 

@@ -5,7 +5,7 @@
 #include "exception.hxx"
 #include "subsystem_mgr.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 
 

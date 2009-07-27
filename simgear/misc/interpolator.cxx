@@ -18,7 +18,7 @@
 
 #include "interpolator.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 void SGInterpolator::addNew(SGPropertyNode* prop, int nPoints)
 {

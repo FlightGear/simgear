@@ -27,7 +27,7 @@
 #include "SGReaderWriterXMLOptions.hxx"
 #include "SGPagedLOD.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 using namespace osg;
 using namespace simgear;

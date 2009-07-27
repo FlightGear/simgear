@@ -18,7 +18,7 @@
 #include "props.hxx"
 #include "condition.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 using std::istream;
 using std::ostream;

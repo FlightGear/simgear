@@ -16,7 +16,7 @@
 
 #include "commands.hxx"
 
-#include <simgear/Math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 
 

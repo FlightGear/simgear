@@ -23,13 +23,21 @@
 #define SG_SCENE_USERDATA_HXX
 
 #include <vector>
-#include <osg/Referenced>
 #include <osg/Node>
+#include <osg/Object>
 #include <simgear/scene/bvh/BVHNode.hxx>
 #include "SGPickCallback.hxx"
 
-class SGSceneUserData : public osg::Referenced {
+class SGSceneUserData : public osg::Object {
 public:
+  META_Object(simgear, SGSceneUserData);
+  SGSceneUserData() {}
+  SGSceneUserData(const SGSceneUserData& rhs,
+                  const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
+    : _bvhNode(rhs._bvhNode), _velocity(rhs._velocity),
+      _pickCallbacks(rhs._pickCallbacks)
+  {
+  }
   static SGSceneUserData* getSceneUserData(osg::Node* node);
   static const SGSceneUserData* getSceneUserData(const osg::Node* node);
   static SGSceneUserData* getOrCreateSceneUserData(osg::Node* node);

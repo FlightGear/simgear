@@ -1976,12 +1976,16 @@ class SGPickAnimation::PickCallback : public SGPickCallback {
 public:
   PickCallback(const SGPropertyNode* configNode,
                SGPropertyNode* modelRoot) :
-    _button(configNode->getIntValue("button", -1)),
     _repeatable(configNode->getBoolValue("repeatable", false)),
     _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
   {
     SG_LOG(SG_INPUT, SG_DEBUG, "Reading all bindings");
     std::vector<SGPropertyNode_ptr> bindings;
+
+    bindings = configNode->getChildren("button");
+    for (unsigned int i = 0; i < bindings.size(); ++i) {
+      _buttons.push_back( bindings[i]->getIntValue() );
+    }
     bindings = configNode->getChildren("binding");
     for (unsigned int i = 0; i < bindings.size(); ++i) {
       _bindingsDown.push_back(new SGBinding(bindings[i], modelRoot));
@@ -1997,7 +2001,14 @@ public:
   }
   virtual bool buttonPressed(int button, const Info&)
   {
-    if (0 <= _button && button != _button)
+    bool found = false;
+    for( std::vector<int>::iterator it = _buttons.begin(); it != _buttons.end(); it++ ) {
+      if( *it == button ) {
+        found = true;
+        break;
+      }
+    }
+    if (!found )
       return false;
     SGBindingList::const_iterator i;
     for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
@@ -2027,7 +2038,7 @@ public:
 private:
   SGBindingList _bindingsDown;
   SGBindingList _bindingsUp;
-  int _button;
+  std::vector<int> _buttons;
   bool _repeatable;
   double _repeatInterval;
   double _repeatTime;

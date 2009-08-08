@@ -269,13 +269,12 @@ void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
         copyProperties(propRoot, effectProp);
         SGPropertyNode* effectParamProp = effectProp->getChild("parameters", 0);
         SGPropertyNode* texProp = makeChild(effectParamProp, "texture");
-        SGPropertyNode* tex2dProp = makeChild(texProp, "texture2d");
-        makeChild(tex2dProp, "image")->setStringValue(matState.texture_path);
-        makeChild(tex2dProp, "filter")
+        makeChild(texProp, "image")->setStringValue(matState.texture_path);
+        makeChild(texProp, "filter")
             ->setStringValue(mipmap ? "linear-mipmap-linear" : "nearest");
-        makeChild(tex2dProp, "wrap-s")
+        makeChild(texProp, "wrap-s")
             ->setStringValue(wrapu ? "repeat" : "clamp");
-        makeChild(tex2dProp, "wrap-t")
+        makeChild(texProp, "wrap-t")
             ->setStringValue(wrapv ? "repeat" : "clamp");
         matState.effect = makeEffect(effectProp, false, options);
         matState.effect->setUserData(user.get());

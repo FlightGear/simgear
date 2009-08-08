@@ -55,10 +55,7 @@ OpenThreads::ReentrantMutex effectMutex;
  * of the result. Otherwise the left children are placed after the
  * right children in the result.
  *
- * Nodes are considered identical if:
- * Their names are equal;
- * Either they both have "name" children and their values are equal;
- * or their indexes are equal.
+ * Nodes are considered equal if their names and indexes are equal.
  */
 
 struct PropPredicate
@@ -69,15 +66,7 @@ struct PropPredicate
     {
         if (strcmp(node->getName(), arg->getName()))
             return false;
-        const SGPropertyNode* nodeName = node->getChild("name");
-        const SGPropertyNode* argName = arg->getChild("name");
-        if (nodeName && argName)
-            return !strcmp(nodeName->getStringValue(),
-                           argName->getStringValue());
-        else if (!(nodeName || argName))
-            return node->getIndex() == arg->getIndex();
-        else
-            return false;
+        return node->getIndex() == arg->getIndex();
     }
     const SGPropertyNode* node;
 };
@@ -93,8 +82,6 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
     RawPropVector leftChildren;
     for (int i = 0; i < left->nChildren(); ++i)
         leftChildren.push_back(left->getChild(i));
-    // Maximum index of nodes (with same names) we've created.
-    map<string, int> nodeIndex;
     // Merge identical nodes
     for (int i = 0; i < right->nChildren(); ++i) {
         const SGPropertyNode* node = right->getChild(i);
@@ -102,8 +89,7 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
             = find_if(leftChildren.begin(), leftChildren.end(),
                       PropPredicate(node));
         SGPropertyNode* newChild
-            = resultNode->getChild(node->getName(),
-                                   nodeIndex[node->getName()]++, true);
+            = resultNode->getChild(node->getName(), node->getIndex(), true);
         if (litr != leftChildren.end()) {
             mergePropertyTrees(newChild, *litr, node);
             leftChildren.erase(litr);
@@ -111,13 +97,13 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
             copyProperties(node, newChild);
         }
     }
+    // Now copy nodes remaining in the left tree
     for (RawPropVector::iterator itr = leftChildren.begin(),
              e = leftChildren.end();
          itr != e;
          ++itr) {
         SGPropertyNode* newChild
-            = resultNode->getChild((*itr)->getName(),
-                                   nodeIndex[(*itr)->getName()]++, true);
+            = resultNode->getChild((*itr)->getName(), (*itr)->getIndex(), true);
         copyProperties(*itr, newChild);
     }
 }
@@ -134,8 +120,10 @@ Effect* makeEffect(const string& name,
     effectFileName += ".eff";
     string absFileName
         = osgDB::findDataFile(effectFileName, options);
-    if (absFileName.empty())
+    if (absFileName.empty()) {
+        SG_LOG(SG_INPUT, SG_WARN, "can't find \"" << effectFileName << "\"");
         return 0;
+    }
     SGPropertyNode_ptr effectProps = new SGPropertyNode();
     readProperties(absFileName, effectProps.ptr(), 0, true);
     Effect* result = makeEffect(effectProps.ptr(), realizeTechniques, options);
@@ -179,9 +167,15 @@ Effect* makeEffect(SGPropertyNode* prop,
     if (inheritProp) {
         parent = makeEffect(inheritProp->getStringValue(), realizeTechniques,
                             options);
-        effect->root = new SGPropertyNode;
-        mergePropertyTrees(effect->root, prop, parent->root);
-        effect->root->removeChild("inherits-from");
+        if(parent)
+        {
+            effect->root = new SGPropertyNode;
+            mergePropertyTrees(effect->root, prop, parent->root);
+            effect->root->removeChild("inherits-from");
+        } else {
+            effect->root = prop;
+            effect->root->removeChild("inherits-from");
+        }
     } else {
         effect->root = prop;
     }

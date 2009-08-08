@@ -55,6 +55,7 @@ class StateSet;
 namespace simgear
 {
 class Effect;
+void reload_shaders();
 }
 
 class SGMaterialGlyph;

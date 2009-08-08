@@ -1,3 +1,9 @@
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#include <simgear/math/SGMath.hxx>
+
 #include "EffectBuilder.hxx"
 #include "Effect.hxx"
 

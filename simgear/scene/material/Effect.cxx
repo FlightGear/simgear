@@ -19,8 +19,10 @@
 #endif
 
 #include "Effect.hxx"
+#include "EffectBuilder.hxx"
 #include "Technique.hxx"
 #include "Pass.hxx"
+#include "TextureBuilder.hxx"
 
 #include <algorithm>
 #include <functional>
@@ -44,7 +46,10 @@
 #include <osg/ShadeModel>
 #include <osg/StateSet>
 #include <osg/TexEnv>
+#include <osg/Texture1D>
 #include <osg/Texture2D>
+#include <osg/Texture3D>
+#include <osg/TextureRectangle>
 #include <osg/Uniform>
 #include <osg/Vec4d>
 #include <osgUtil/CullVisitor>
@@ -142,56 +147,6 @@ struct InstallAttributeBuilder
         passAttrMap.insert(make_pair(name, new T));
     }
 };
-// Simple tables of strings and OSG constants. The table intialization
-// *must* be in alphabetical order.
-template <typename T>
-struct EffectNameValue
-{
-    // Don't use std::pair because we want to use aggregate intialization.
-
-    const char* first;
-    T second;
-    class Compare
-    {
-    private:
-        static bool compare(const char* lhs, const char* rhs)
-        {
-            return strcmp(lhs, rhs) < 0;
-        }
-    public:
-        bool operator()(const EffectNameValue& lhs,
-                        const EffectNameValue& rhs) const
-        {
-            return compare(lhs.first, rhs.first);
-        }
-        bool operator()(const char* lhs, const EffectNameValue& rhs) const
-        {
-            return compare(lhs, rhs.first);
-        }
-        bool operator()(const EffectNameValue& lhs, const char* rhs) const
-        {
-            return compare (lhs.first, rhs);
-        }
-    };
-};
-
-template<typename ENV, typename T, int N>
-bool findAttr(const ENV (&attrs)[N], const SGPropertyNode* prop, T& result)
-{
-    if (!prop)
-        return false;
-    const char* name = prop->getStringValue();
-    if (!name)
-        return false;
-    std::pair<const ENV*, const ENV*> itrs
-        = std::equal_range(&attrs[0], &attrs[N], name, typename ENV::Compare());
-    if (itrs.first == itrs.second) {
-        return false;
-    } else {
-        result = itrs.first->second;
-        return true;
-    }
-}
 
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                const osgDB::ReaderWriter::Options* options)
@@ -233,35 +188,6 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
         result[3] = alphaProp ? alphaProp->getValue<float>() : 1.0f;
         return result;
     }
-}
-
-// Given a property node from a pass, get its value either from it or
-// from the effect parameters.
-const SGPropertyNode* getEffectPropertyNode(Effect* effect,
-                                            const SGPropertyNode* prop)
-{
-    if (!prop)
-        return 0;
-    if (prop->nChildren() > 0) {
-        const SGPropertyNode* useProp = prop->getChild("use");
-        if (!useProp || !effect->parametersProp)
-            return prop;
-        return effect->parametersProp->getNode(useProp->getStringValue());
-    }
-    return prop;
-}
-
-// Get a named child property from pass parameters or effect
-// parameters.
-const SGPropertyNode* getEffectPropertyChild(Effect* effect,
-                                             const SGPropertyNode* prop,
-                                             const char* name)
-{
-    const SGPropertyNode* child = prop->getChild(name);
-    if (!child)
-        return 0;
-    else
-        return getEffectPropertyNode(effect, child);
 }
 
 struct LightingBuilder : public PassAttributeBuilder
@@ -467,25 +393,6 @@ struct AlphaTestBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 
-EffectNameValue<Texture::FilterMode> filterModes[] =
-{
-    { "linear", Texture::LINEAR },
-    { "linear-mipmap-linear", Texture::LINEAR_MIPMAP_LINEAR},
-    { "linear-mipmap-nearest", Texture::LINEAR_MIPMAP_NEAREST},
-    { "nearest", Texture::NEAREST},
-    { "nearest-mipmap-linear", Texture::NEAREST_MIPMAP_LINEAR},
-    { "nearest-mipmap-nearest", Texture::NEAREST_MIPMAP_NEAREST}
-};
-
-EffectNameValue<Texture::WrapMode> wrapModes[] =
-{
-    {"clamp", Texture::CLAMP},
-    {"clamp-to-border", Texture::CLAMP_TO_BORDER},
-    {"clamp-to-edge", Texture::CLAMP_TO_EDGE},
-    {"mirror", Texture::MIRROR},
-    {"repeat", Texture::REPEAT}
-};
-
 EffectNameValue<TexEnv::Mode> texEnvModes[] =
 {
     {"add", TexEnv::ADD},
@@ -514,13 +421,6 @@ TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
     return env;
  }
 
-typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
-                     Texture::WrapMode, Texture::WrapMode,
-                     Texture::WrapMode> TexTuple;
-
-typedef map<TexTuple, ref_ptr<Texture2D> > TexMap;
-
-TexMap texMap;
 
 struct TextureUnitBuilder : PassAttributeBuilder
 {
@@ -532,68 +432,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
                                         const osgDB::ReaderWriter::Options* options)
 {
-    // First, all the texture properties
-    const SGPropertyNode* pTexture2d = prop->getChild("texture2d");
-    if (!pTexture2d)
-        return;
-    const SGPropertyNode* pImage
-        = getEffectPropertyChild(effect, pTexture2d, "image");
-    if (!pImage)
-        return;
-    const char* imageName = pImage->getStringValue();
-    Texture::FilterMode minFilter = Texture::LINEAR_MIPMAP_LINEAR;
-    findAttr(filterModes, getEffectPropertyChild(effect, pTexture2d, "filter"),
-             minFilter);
-    Texture::FilterMode magFilter = Texture::LINEAR;
-    findAttr(filterModes, getEffectPropertyChild(effect, pTexture2d,
-                                                 "mag-filter"),
-             magFilter);
-    const SGPropertyNode* pWrapS
-        = getEffectPropertyChild(effect, pTexture2d, "wrap-s");
-    Texture::WrapMode sWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapS, sWrap);
-    const SGPropertyNode* pWrapT
-        = getEffectPropertyChild(effect, pTexture2d, "wrap-t");
-    Texture::WrapMode tWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapT, tWrap);
-    const SGPropertyNode* pWrapR
-        = getEffectPropertyChild(effect, pTexture2d, "wrap-r");
-    Texture::WrapMode rWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapR, rWrap);
-    TexTuple tuple(imageName, minFilter, magFilter, sWrap, tWrap, rWrap);
-    TexMap::iterator texIter = texMap.find(tuple);
-    Texture2D* texture = 0;
-    if (texIter != texMap.end()) {
-        texture = texIter->second.get();
-    } else {
-        texture = new Texture2D;
-        osgDB::ReaderWriter::ReadResult result
-            = osgDB::Registry::instance()->readImage(imageName, options);
-        if (result.success()) {
-            osg::Image* image = result.getImage();
-            texture->setImage(image);
-            int s = image->s();
-            int t = image->t();
 
-            if (s <= t && 32 <= s) {
-                SGSceneFeatures::instance()->setTextureCompression(texture);
-            } else if (t < s && 32 <= t) {
-                SGSceneFeatures::instance()->setTextureCompression(texture);
-            }
-            texture->setMaxAnisotropy(SGSceneFeatures::instance()
-                                      ->getTextureFilter());
-        } else {
-            SG_LOG(SG_INPUT, SG_ALERT, "failed to load effect texture file "
-                   << imageName);
-        }
-        // texture->setDataVariance(osg::Object::STATIC);
-        texture->setFilter(Texture::MIN_FILTER, minFilter);
-        texture->setFilter(Texture::MAG_FILTER, magFilter);
-        texture->setWrap(Texture::WRAP_S, sWrap);
-        texture->setWrap(Texture::WRAP_T, tWrap);
-        texture->setWrap(Texture::WRAP_R, rWrap);
-        texMap.insert(make_pair(tuple, texture));
-    }
     // Decode the texture unit
     int unit = 0;
     const SGPropertyNode* pUnit = prop->getChild("unit");
@@ -609,6 +448,21 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                        << lex.what());
             }
     }
+    const SGPropertyNode* pType = prop->getChild("type");
+    string type;
+    if (!pType)
+        type = "2d";
+    else
+        type = pType->getStringValue();
+    Texture* texture = 0;
+    try {
+        texture = TextureBuilder::buildFromType(effect, type, prop,
+                                                options);
+    }
+    catch (BuilderException& e) {
+        SG_LOG(SG_INPUT, SG_ALERT, "No image file for texture, using white ");
+        texture = StateAttributeFactory::instance()->getWhiteTexture();
+    }
     pass->setTextureAttributeAndModes(unit, texture);
     const SGPropertyNode* envProp = prop->getChild("environment");
     if (envProp) {
@@ -618,6 +472,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     }
 }
 
+
+
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 
 typedef map<string, ref_ptr<Program> > ProgramMap;
@@ -625,6 +481,18 @@ ProgramMap programMap;
 
 typedef map<string, ref_ptr<Shader> > ShaderMap;
 ShaderMap shaderMap;
+
+void reload_shaders()
+{
+    for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
+    {
+	Shader *shader = sitr->second.get();
+        string fileName = osgDB::findDataFile(sitr->first);
+        if (!fileName.empty()) {
+	    shader->loadShaderSourceFromFile(fileName);
+        }
+    }
+}
 
 struct ShaderProgramBuilder : PassAttributeBuilder
 {
@@ -662,6 +530,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         program = pitr->second.get();
     } else {
         program = new Program;
+        program->setName(programKey);
         // Add vertex shaders, then fragment shaders
         PropertyList& pvec = pVertShaders;
         Shader::Type stype = Shader::VERTEX;
@@ -678,8 +547,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                     if (!fileName.empty()) {
                         ref_ptr<Shader> shader = new Shader(stype);
                         if (shader->loadShaderSourceFromFile(fileName)) {
-                            shaderMap.insert(make_pair(shaderName, shader));
                             program->addShader(shader.get());
+                            shaderMap.insert(make_pair(shaderName, shader));
                         }
                     }
                 }

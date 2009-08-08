@@ -806,6 +806,12 @@
 				RelativePath="..\..\simgear\scene\material\Effect.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\material\EffectBuilder.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\EffectBuilder.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\material\EffectCullVisitor.cxx">
 			</File>
 			<File
@@ -823,6 +829,20 @@
 			<File
 				RelativePath="..\..\simgear\scene\material\GLPredicate.hxx">
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Noise.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\Noise.hxx">
+			</File>
+
+			<File
+				RelativePath="..\..\simgear\scene\material\TextureBuilder.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\TextureBuilder.hxx">
+			</File>
+
 			<File
 				RelativePath="..\..\simgear\scene\material\makeEffect.cxx">
 			</File>

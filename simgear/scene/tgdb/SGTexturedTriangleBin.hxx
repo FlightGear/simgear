@@ -128,9 +128,12 @@ public:
       
       SGVec3f offsetVector = offset*normalize(normal);
       // generate a light point for each unit of area
+
       while ( coverage < unit ) {
+
         float a = mt_rand(&seed);
         float b = mt_rand(&seed);
+
         if ( a + b > 1 ) {
           a = 1 - a;
           b = 1 - b;
@@ -139,6 +142,102 @@ public:
         SGVec3f randomPoint = offsetVector + a*v0 + b*v1 + c*v2;
         points.push_back(randomPoint);
         unit -= coverage;
+      }
+    }
+  }
+
+  // Computes and adds random surface points to the points list for tree
+  // coverage.
+  void addRandomTreePoints(float wood_coverage, 
+                           float tree_density,
+                           float wood_size,
+                           std::vector<SGVec3f>& points)
+  {
+    unsigned num = getNumTriangles();
+    for (unsigned i = 0; i < num; ++i) {
+      triangle_ref triangleRef = getTriangleRef(i);
+      SGVec3f v0 = getVertex(triangleRef[0]).vertex;
+      SGVec3f v1 = getVertex(triangleRef[1]).vertex;
+      SGVec3f v2 = getVertex(triangleRef[2]).vertex;
+      SGVec3f normal = cross(v1 - v0, v2 - v0);
+      
+      // Compute the area
+      float area = 0.5f*length(normal);
+      if (area <= SGLimitsf::min())
+        continue;
+      
+      // For partial units of area, use a zombie door method to
+      // create the proper random chance of a point being created
+      // for this triangle
+      float unit = area + mt_rand(&seed)*wood_coverage;
+
+      int woodcount = (int) (unit / wood_coverage);
+
+      for (unsigned j = 0; j < woodcount; j++) {
+
+        if (wood_size < area) {
+          // We need to place a wood within the triangle and populate it
+
+          // Determine the center of the wood
+          float x = mt_rand(&seed);
+          float y = mt_rand(&seed);
+
+          // Determine the size of this wood in m^2, and the number
+          // of trees in the wood
+          float ws = wood_size + wood_size * (mt_rand(&seed) - 0.5f);
+          unsigned total_trees = ws / tree_density;
+          float wood_length = sqrt(ws);
+
+          // From our wood size, work out the fraction on the two axis.
+          // This will be used as a factor when placing trees in the wood.
+          float x_tree_factor = wood_length / length(v1 -v0);
+          float y_tree_factor = wood_length / length(v2 -v0);
+
+          for (unsigned k = 0; k <= total_trees; k++) {
+
+            float a = x + x_tree_factor * (mt_rand(&seed) - 0.5f);
+            float b = y + y_tree_factor * (mt_rand(&seed) - 0.5f);
+
+
+            // In some cases, the triangle side lengths are so small that the
+            // tree_factors become so large as to make placing the tree within
+            // the triangle almost impossible. In this case, we place them
+            // randomly across the triangle.
+            if (a < 0.0f || a > 1.0f) a = mt_rand(&seed);
+            if (b < 0.0f || b > 1.0f) b = mt_rand(&seed);
+            
+            if ( a + b > 1.0f ) {
+              a = 1.0f - a;
+              b = 1.0f - b;
+            }
+              
+            float c = 1.0f - a - b;
+
+            SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+
+            points.push_back(randomPoint);
+          }
+        } else {
+          // This triangle is too small to contain a complete wood, so just
+          // distribute trees across it.
+          unsigned total_trees = area / tree_density;
+
+          for (unsigned k = 0; k <= total_trees; k++) {
+
+            float a = mt_rand(&seed);
+            float b = mt_rand(&seed);
+
+            if ( a + b > 1.0f ) {
+              a = 1.0f - a;
+              b = 1.0f - b;
+            }
+
+            float c = 1.0f - a - b;
+
+            SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+            points.push_back(randomPoint);
+          }
+        }
       }
     }
   }

@@ -131,11 +131,14 @@ SGMaterial::read_properties(const osgDB::ReaderWriter::Options* options,
   wrapv = props->getBoolValue("wrapv", true);
   mipmap = props->getBoolValue("mipmap", true);
   light_coverage = props->getDoubleValue("light-coverage", 0.0);
-  tree_coverage = props->getDoubleValue("tree-coverage", 0.0);
+  wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
+  wood_size = props->getDoubleValue("wood-size", 0.0);
+  tree_density = props->getDoubleValue("tree-density", 1.0);
   tree_height = props->getDoubleValue("tree-height-m", 0.0);
   tree_width = props->getDoubleValue("tree-width-m", 0.0);
   tree_range = props->getDoubleValue("tree-range-m", 0.0);
   tree_varieties = props->getIntValue("tree-varieties", 1);
+
   const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
   if (treeTexNode) {
     string treeTexPath = props->getStringValue("tree-texture");

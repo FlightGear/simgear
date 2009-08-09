@@ -455,8 +455,8 @@ struct SGTileGeometryBin {
       if (!mat)
         continue;
 
-      float coverage = mat->get_tree_coverage();
-      if (coverage <= 0)
+      float wood_coverage = mat->get_wood_coverage();
+      if (wood_coverage <= 0)
         continue;
 
       // Attributes that don't vary by tree
@@ -467,7 +467,11 @@ struct SGTileGeometryBin {
       randomForest.texture_varieties = mat->get_tree_varieties();
 
       std::vector<SGVec3f> randomPoints;
-      i->second.addRandomSurfacePoints(coverage, 0, randomPoints);
+      i->second.addRandomTreePoints(wood_coverage,
+                                    mat->get_tree_density(),
+                                    mat->get_wood_size(),
+                                    randomPoints);
+      
       std::vector<SGVec3f>::iterator j;
       for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
 

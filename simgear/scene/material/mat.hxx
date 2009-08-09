@@ -131,23 +131,37 @@ public:
   inline double get_light_coverage () const { return light_coverage; }
 
   /**
-   * Get the forest coverage.
+   * Get the wood coverage.
    *
-   * A smaller number means more generated forest canopy.
+   * A smaller number means more generated woods within the forest.
    *
-   * @return The area (m^2) covered by each canopy.
+   * @return The area (m^2) covered by each wood.
    */
-  inline double get_tree_coverage () const { return tree_coverage; }
+  inline double get_wood_coverage () const { return wood_coverage; }
 
   /**
-   * Get the forest height.
+   * Get the density of the wood
+   *
+   * @return The area (m^2) covered by each tree in the wood.
+   */
+  inline double get_tree_density () const { return tree_density; }
+  
+  /**
+   * Get the size of each wood
+   *
+   * @return the average area (m^2) of each wood
+   */
+  inline double get_wood_size () const { return wood_size; }
+  
+  /**
+   * Get the tree height.
    *
    * @return The average height of the trees.
    */
   inline double get_tree_height () const { return tree_height; }
 
   /**
-   * Get the forest width.
+   * Get the tree width.
    *
    * @return The average width of the trees.
    */
@@ -289,9 +303,15 @@ private:
   // coverage of night lighting.
   double light_coverage;
   
-  // coverage of trees
-  double tree_coverage;
-  
+  // coverage of woods
+  double wood_coverage;
+
+  // The size of each wood
+  double wood_size;
+
+  // Tree density within the wood
+  double tree_density;
+
   // Range at which trees become visible
   double tree_range;
 

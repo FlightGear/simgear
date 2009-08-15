@@ -24,6 +24,10 @@
 
 #include <osgDB/Registry>
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+
 #include <simgear/props/props.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
@@ -79,55 +83,110 @@ protected:
     }
 };
 
-// Simple tables of strings and constants. The table intialization
-// *must* be in alphabetical order.
+// Tables of strings and constants. We want to reconstruct the effect
+// property tree from OSG state sets, so the tables should be bi-directional.
+
+// two-way map for building StateSets from property descriptions, and
+// vice versa. Mostly copied from the boost documentation.
+
+namespace effect
+{
+using boost::multi_index_container;
+using namespace boost::multi_index;
+
+// tags for accessing both sides of a bidirectional map
+
+struct from{};
+struct to{};
+
 template <typename T>
 struct EffectNameValue
 {
     // Don't use std::pair because we want to use aggregate intialization.
-
     const char* first;
     T second;
-    class Compare
-    {
-    private:
-        static bool compare(const char* lhs, const char* rhs)
-        {
-            return std::strcmp(lhs, rhs) < 0;
-        }
-    public:
-        bool operator()(const EffectNameValue& lhs,
-                        const EffectNameValue& rhs) const
-        {
-            return compare(lhs.first, rhs.first);
-        }
-        bool operator()(const char* lhs, const EffectNameValue& rhs) const
-        {
-            return compare(lhs, rhs.first);
-        }
-        bool operator()(const EffectNameValue& lhs, const char* rhs) const
-        {
-            return compare (lhs.first, rhs);
-        }
-    };
 };
 
-template<typename ENV, typename T, int N>
-bool findAttr(const ENV (&attrs)[N], const SGPropertyNode* prop, T& result)
+// The class template bidirectional_map wraps the specification
+// of a bidirectional map based on multi_index_container.
+
+template<typename FromType,typename ToType>
+struct bidirectional_map
 {
+    typedef std::pair<FromType,ToType> value_type;
+
+    /* A bidirectional map can be simulated as a multi_index_container
+     * of pairs of (FromType,ToType) with two unique indices, one
+     * for each member of the pair.
+     */
+
+    typedef multi_index_container<
+        value_type,
+        indexed_by<
+            ordered_unique<
+                tag<from>, member<value_type, FromType, &value_type::first> >,
+            ordered_unique<
+                tag<to>,  member<value_type, ToType, &value_type::second> >
+            >
+        > type;
+};
+
+template<typename T>
+struct EffectPropertyMap
+{
+    typedef typename bidirectional_map<std::string, T>::type BMap;
+    BMap _map;
+    template<int N>
+    EffectPropertyMap(const EffectNameValue<T> (&attrs)[N]);
+};
+
+template<typename T>
+template<int N>
+EffectPropertyMap<T>::EffectPropertyMap(const EffectNameValue<T> (&attrs)[N])
+{
+    for (int i = 0; i < N; ++i)
+        _map.insert(typename BMap::value_type(attrs[i].first, attrs[i].second));
+}
+
+}
+
+template<typename T>
+bool findAttr(const effect::EffectPropertyMap<T>& pMap,
+              const SGPropertyNode* prop,
+              T& result)
+{
+    using namespace effect;
     if (!prop)
         return false;
     const char* name = prop->getStringValue();
     if (!name)
         return false;
-    std::pair<const ENV*, const ENV*> itrs
-        = std::equal_range(&attrs[0], &attrs[N], name, typename ENV::Compare());
-    if (itrs.first == itrs.second) {
+    typename EffectPropertyMap<T>::BMap::iterator itr
+        = pMap._map.get<from>().find(name);
+    if (itr == pMap._map.end()) {
         return false;
     } else {
-        result = itrs.first->second;
+        result = itr->second;
         return true;
     }
+}
+
+template<typename T>
+std::string findName(const effect::EffectPropertyMap<T>& pMap, T value)
+{
+    using namespace effect;
+    std::string result;
+    typename EffectPropertyMap<T>::BMap::template index_iterator<to>::type itr
+        = pMap._map.get<to>().find(value);
+    if (itr != pMap._map.get<to>().end())
+        result = itr->first;
+    return result;
+}
+
+template<typename T>
+std::string findName(const effect::EffectPropertyMap<T>& pMap, GLenum value)
+{
+    return findName(pMap, static_cast<T>(value));
 }
 
 /**

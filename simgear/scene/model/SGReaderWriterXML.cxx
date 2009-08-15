@@ -193,6 +193,9 @@ sgLoad3DModel_internal(const string &path,
         SGPropertyNode *mp = props->getNode("multiplay");
         if (mp && prop_root && prop_root->getParent())
             copyProperties(mp, prop_root);
+    } else {
+        SG_LOG(SG_INPUT, SG_DEBUG, "model without wrapper: "
+               << modelpath.str());
     }
 
     osg::ref_ptr<SGReaderWriterXMLOptions> options

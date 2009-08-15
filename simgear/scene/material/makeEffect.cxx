@@ -32,6 +32,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
+#include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
 namespace simgear

@@ -41,6 +41,8 @@ namespace simgear
 using namespace std;
 using namespace osg;
 
+using namespace effect;
+
 // Hack to force inclusion of TextureBuilder.cxx in library
 osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
                                             const SGPropertyNode*props,
@@ -56,7 +58,7 @@ typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
 
 namespace
 {
-EffectNameValue<Texture::FilterMode> filterModes[] =
+EffectNameValue<Texture::FilterMode> filterModesInit[] =
 {
     { "linear", Texture::LINEAR },
     { "linear-mipmap-linear", Texture::LINEAR_MIPMAP_LINEAR},
@@ -65,8 +67,9 @@ EffectNameValue<Texture::FilterMode> filterModes[] =
     { "nearest-mipmap-linear", Texture::NEAREST_MIPMAP_LINEAR},
     { "nearest-mipmap-nearest", Texture::NEAREST_MIPMAP_NEAREST}
 };
+EffectPropertyMap<Texture::FilterMode> filterModes(filterModesInit);
 
-EffectNameValue<Texture::WrapMode> wrapModes[] =
+EffectNameValue<Texture::WrapMode> wrapModesInit[] =
 {
     {"clamp", Texture::CLAMP},
     {"clamp-to-border", Texture::CLAMP_TO_BORDER},
@@ -74,7 +77,7 @@ EffectNameValue<Texture::WrapMode> wrapModes[] =
     {"mirror", Texture::MIRROR},
     {"repeat", Texture::REPEAT}
 };
-
+EffectPropertyMap<Texture::WrapMode> wrapModes(wrapModesInit);
 
 
 TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,

@@ -420,5 +420,11 @@ bool SGSun::reposition( double rightAscension, double declination,
 SGVec4f
 SGSun::get_color()
 {
+    return SGVec4f((*sun_cl)[0][0], (*sun_cl)[0][1], (*sun_cl)[0][2], (*sun_cl)[0][3]);
+}
+
+SGVec4f
+SGSun::get_scene_color()
+{
     return SGVec4f((*scene_cl)[0][0], (*scene_cl)[0][1], (*scene_cl)[0][2], (*scene_cl)[0][3]);
 }

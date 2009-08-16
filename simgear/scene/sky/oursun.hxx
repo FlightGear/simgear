@@ -42,6 +42,7 @@ class SGSun : public SGReferenced {
     osg::ref_ptr<osg::MatrixTransform> sun_transform;
 
     osg::ref_ptr<osg::Vec4Array> sun_cl;
+    osg::ref_ptr<osg::Vec4Array> scene_cl;
     osg::ref_ptr<osg::Vec4Array> ihalo_cl;
     osg::ref_ptr<osg::Vec4Array> ohalo_cl;
 

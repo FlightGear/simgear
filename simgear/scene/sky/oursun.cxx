@@ -81,10 +81,8 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
  
     osg::Material* material = new osg::Material;
     material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
-    material->setEmission(osg::Material::FRONT_AND_BACK,
-                          osg::Vec4(0, 0, 0, 1));
-    material->setSpecular(osg::Material::FRONT_AND_BACK,
-                          osg::Vec4(0, 0, 0, 1));
+    material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4(0,0,0,1));
+    material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4(0,0,0,1));
     stateSet->setAttribute(material);
 
     osg::ShadeModel* shadeModel = new osg::ShadeModel;
@@ -117,6 +115,9 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
     // Build scenegraph
     sun_cl = new osg::Vec4Array;
     sun_cl->push_back(osg::Vec4(1, 1, 1, 1));
+
+    scene_cl = new osg::Vec4Array;
+    scene_cl->push_back(osg::Vec4(1, 1, 1, 1));
 
     osg::Vec3Array* sun_vl = new osg::Vec3Array;
     sun_vl->push_back(osg::Vec3(-sun_size, 0, -sun_size));
@@ -217,7 +218,6 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     sun_transform->addChild( geode );
 
-
     // force a repaint of the sun colors with arbitrary defaults
     repaint( 0.0, 1.0 );
 
@@ -232,126 +232,126 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 // 180 degrees = darkest midnight
 bool SGSun::repaint( double sun_angle, double new_visibility ) {
     
-	if ( visibility != new_visibility ) {
-        	visibility = new_visibility;
+    if ( visibility != new_visibility ) {
+        visibility = new_visibility;
 
-        	static const double sqrt_m_log01 = sqrt( -log( 0.01 ) );
-        	sun_exp2_punch_through = sqrt_m_log01 / ( visibility * 15 );
-    	}
+        if (new_visibility < 100.0) new_visibility = 100.0;
+        else if (new_visibility > 45000.0) new_visibility = 45000.0;
+        sun_exp2_punch_through = 2.0/log(visibility);
+    }
 
-    	if ( prev_sun_angle != sun_angle ) {
-        	prev_sun_angle = sun_angle;
+    if ( prev_sun_angle != sun_angle ) {
+        prev_sun_angle = sun_angle;
 
-		// determine how much aerosols are in the air (rough guess)
-		double aerosol_factor;
-		if ( visibility < 100 ){
-        		aerosol_factor = 8000;
-		}
-		else {
-        		aerosol_factor = 80.5 / log( visibility / 100 );
-		}
+        // determine how much aerosols are in the air (rough guess)
+        double aerosol_factor;
+        if ( visibility < 100 ) {
+            aerosol_factor = 8000;
+        }
+        else {
+            aerosol_factor = 80.5 / log( visibility / 100 );
+        }
 
-		// get environmental data from property tree or use defaults
-		double rel_humidity, density_avg;
+        // get environmental data from property tree or use defaults
+        double rel_humidity, density_avg;
 
-		if ( !env_node )
-		{
-			rel_humidity = 0.5;
-			density_avg = 0.7;
-		}
-		else
-		{
-			rel_humidity = env_node->getFloatValue( "relative-humidity" ); 
-			density_avg =  env_node->getFloatValue( "atmosphere/density-tropo-avg" );
-		}
+        if ( !env_node ) {
+            rel_humidity = 0.5;
+            density_avg = 0.7;
+        }
+        else {
+            rel_humidity = env_node->getFloatValue( "relative-humidity" ); 
+            density_avg =  env_node->getFloatValue( "atmosphere/density-tropo-avg" );
+        }
 
-		// ok, now let's go and generate the sun color
-                osg::Vec4 i_halo_color, o_halo_color, sun_color;
+        // ok, now let's go and generate the sun and scene color
+        osg::Vec4 i_halo_color, o_halo_color, scene_color, sun_color;
 
-		// Some comments: 
-		// When the sunangle changes, light has to travel a longer distance through the atmosphere.
-		// So it's scattered more due to raleigh scattering, which affects blue more than green light.
-		// Red is almost not scattered and effectively only get's touched when the sun is near the horizon.
-		// Visability also affects suncolor inasmuch as more particles are in the air that cause more scattering.
-		// We base our calculation on the halo's color, which is most scattered. 
+        // Some comments: 
+        // * When the sunangle changes, light has to travel a longer
+        //   distance through the atmosphere. So it's scattered more due
+        //   to raleigh scattering, which affects blue more than green
+        //   light.
+        // * Red is almost not scattered and effectively only get's
+        //   touched when the sun is near the horizon.
+        // * Visability also affects suncolor inasmuch as more particles
+        //   are in the air that cause more scattering.
+        // * We base our calculation on the halo's color, which is most
+        //   scattered. 
+        double red_scat_f, red_scat_corr_f, green_scat_f, blue_scat_f;
  
-		// Red - is almost not scattered 	
-		// Lambda is 700 nm
-		
-		double red_scat_f = ( aerosol_factor * path_distance * density_avg ) / 5E+07;
-		sun_color[0] = 1 - red_scat_f;
-		i_halo_color[0] = 1 - ( 1.1 * red_scat_f );
-		o_halo_color[0] = 1 - ( 1.4 * red_scat_f );
-
-		// Green - 546.1 nm
-		double green_scat_f = ( aerosol_factor * path_distance * density_avg ) / 8.8938E+06;
-		sun_color[1] = 1 - green_scat_f;
-		i_halo_color[1] = 1 - ( 1.1 * green_scat_f );
-		o_halo_color[1] = 1 - ( 1.4 * green_scat_f );
- 
-		// Blue - 435.8 nm
-		double blue_scat_f = ( aerosol_factor * path_distance * density_avg ) / 3.607E+06;
-		sun_color[2] = 1 - blue_scat_f;
-		i_halo_color[2] = 1 - ( 1.1 * blue_scat_f );
-		o_halo_color[2] = 1 - ( 1.4 * blue_scat_f );
-
-		// Alpha
-		sun_color[3] = 1;
-		i_halo_color[3] = 1;
-
-		o_halo_color[3] = blue_scat_f; 
-		if ( ( new_visibility < 10000 ) &&  ( blue_scat_f > 1 )){
-			o_halo_color[3] = 2 - blue_scat_f; 
-		}
-
-
-		// Now that we have the color calculated 
-		// let's consider the saturation which is produced by mie scattering
-		double saturation = 1 - ( rel_humidity / 200 );
-		sun_color[1] += (( 1 - saturation ) * ( 1 - sun_color[1] ));
-		sun_color[2] += (( 1 - saturation ) * ( 1 - sun_color[2] ));
-
-		i_halo_color[1] += (( 1 - saturation ) * ( 1 - i_halo_color[1] ));
-		i_halo_color[2] += (( 1 - saturation ) * ( 1 - i_halo_color[2] )); 
-
-		o_halo_color[1] += (( 1 - saturation ) * ( 1 - o_halo_color[1] )); 
-		o_halo_color[2] += (( 1 - saturation ) * ( 1 - o_halo_color[2] )); 
-
-		// just to make sure we're in the limits
-		if ( sun_color[0] < 0 ) sun_color[0] = 0;
-		else if ( sun_color[0] > 1) sun_color[0] = 1;
-		if ( i_halo_color[0] < 0 ) i_halo_color[0] = 0;
-		else if ( i_halo_color[0] > 1) i_halo_color[0] = 1;
-		if ( o_halo_color[0] < 0 ) o_halo_color[0] = 0;
-		else if ( o_halo_color[0] > 1) o_halo_color[0] = 1;
-
-		if ( sun_color[1] < 0 ) sun_color[1] = 0;
-		else if ( sun_color[1] > 1) sun_color[1] = 1;
-		if ( i_halo_color[1] < 0 ) i_halo_color[1] = 0;
-		else if ( i_halo_color[1] > 1) i_halo_color[1] = 1;
-		if ( o_halo_color[1] < 0 ) o_halo_color[1] = 0;
-		else if ( o_halo_color[1] > 1) o_halo_color[1] = 1;
-
-		if ( sun_color[2] < 0 ) sun_color[2] = 0;
-		else if ( sun_color[2] > 1) sun_color[2] = 1;
-		if ( i_halo_color[2] < 0 ) i_halo_color[2] = 0;
-		else if ( i_halo_color[2] > 1) i_halo_color[2] = 1;
-		if ( o_halo_color[2] < 0 ) o_halo_color[2] = 0;
-		else if ( o_halo_color[2] > 1) o_halo_color[2] = 1;
-		if ( o_halo_color[3] < 0 ) o_halo_color[3] = 0;
-		else if ( o_halo_color[3] > 1) o_halo_color[3] = 1;
-
+        // Red - is almost not scattered     
+        // Lambda is 700 nm
         
-		gamma_correct_rgb( i_halo_color._v );
-		gamma_correct_rgb( o_halo_color._v );
-		gamma_correct_rgb( sun_color._v );	
+        red_scat_f = (aerosol_factor * path_distance * density_avg)/5E+07;
+        red_scat_corr_f = sun_exp2_punch_through / (1 - red_scat_f);
+        sun_color[0] = 1;
+        scene_color[0] = 1 - red_scat_f;
 
-        	(*sun_cl)[0] = sun_color;
-                sun_cl->dirty();
-        	(*ihalo_cl)[0] = i_halo_color;
-                ihalo_cl->dirty();
-        	(*ohalo_cl)[0] = o_halo_color;
-                ohalo_cl->dirty();
+        // Green - 546.1 nm
+        green_scat_f = (aerosol_factor * path_distance * density_avg)/8.8938E+06;
+        sun_color[1] = 1 - green_scat_f * red_scat_corr_f;
+        scene_color[1] = 1 - green_scat_f;
+ 
+        // Blue - 435.8 nm
+        blue_scat_f = (aerosol_factor * path_distance * density_avg)/3.607E+06;
+        sun_color[2] = 1 - blue_scat_f * red_scat_corr_f;
+        scene_color[2] = 1 - blue_scat_f;
+
+        // Alpha
+        sun_color[3] = 1;
+        scene_color[3] = 1;
+
+        // Now that we have the color calculated 
+        // let's consider the saturation which is produced by mie scattering
+        double saturation = 1 - ( rel_humidity / 200 );
+        scene_color[1] += (( 1 - saturation ) * ( 1 - scene_color[1] ));
+        scene_color[2] += (( 1 - saturation ) * ( 1 - scene_color[2] ));
+
+        if (sun_color[0] > 1.0) sun_color[0] = 1.0;
+        if (sun_color[0] < 0.0) sun_color[0] = 0.0;
+        if (sun_color[1] > 1.0) sun_color[1] = 1.0;
+        if (sun_color[1] < 0.0) sun_color[1] = 0.0;
+        if (sun_color[2] > 1.0) sun_color[2] = 1.0;
+        if (sun_color[2] < 0.0) sun_color[2] = 0.0;
+
+        if (scene_color[0] > 1.0) scene_color[0] = 1.0;
+        if (scene_color[0] < 0.0) scene_color[0] = 0.0;
+        if (scene_color[1] > 1.0) scene_color[1] = 1.0;
+        if (scene_color[1] < 0.0) scene_color[1] = 0.0;
+        if (scene_color[2] > 1.0) scene_color[2] = 1.0;
+        if (scene_color[2] < 0.0) scene_color[2] = 0.0;
+
+        double scene_f = 0.5 * (1 / (1 - red_scat_f));
+        double sun_f = 1.0 - scene_f;
+        i_halo_color[0] = sun_f * sun_color[0] + scene_f * scene_color[0];
+        i_halo_color[1] = sun_f * sun_color[1] + scene_f * scene_color[1];
+        i_halo_color[2] = sun_f * sun_color[2] + scene_f * scene_color[2];
+        i_halo_color[3] = 1;
+
+        o_halo_color[0] = 0.2 * sun_color[0] + 0.8 * scene_color[0];
+        o_halo_color[1] = 0.2 * sun_color[1] + 0.8 * scene_color[1];
+        o_halo_color[2] = 0.2 * sun_color[2] + 0.8 * scene_color[2];
+        o_halo_color[3] = blue_scat_f;
+        if ((new_visibility < 10000) && (blue_scat_f > 1)) {
+            o_halo_color[3] = 2 - blue_scat_f;
+        }
+        if (o_halo_color[3] > 1) o_halo_color[3] = 1;
+        if (o_halo_color[3] < 0) o_halo_color[3] = 0;
+
+        gamma_correct_rgb( i_halo_color._v );
+        gamma_correct_rgb( o_halo_color._v );
+        gamma_correct_rgb( scene_color._v );    
+        gamma_correct_rgb( sun_color._v );
+
+        (*sun_cl)[0] = sun_color;
+        sun_cl->dirty();
+        (*scene_cl)[0] = scene_color;
+        scene_cl->dirty();
+        (*ihalo_cl)[0] = i_halo_color;
+        ihalo_cl->dirty();
+        (*ohalo_cl)[0] = o_halo_color;
+        ohalo_cl->dirty();
     }
 
     return true;
@@ -364,7 +364,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
 // rotation (i.e. for the current time of day.)
 // Then calculate stuff needed for the sun-coloring
 bool SGSun::reposition( double rightAscension, double declination, 
-			double sun_dist, double lat, double alt_asl, double sun_angle)
+                        double sun_dist, double lat, double alt_asl, double sun_angle)
 {
     // GST - GMT sidereal time 
     osg::Matrix T2, RA, DEC;
@@ -420,5 +420,5 @@ bool SGSun::reposition( double rightAscension, double declination,
 SGVec4f
 SGSun::get_color()
 {
-    return SGVec4f((*sun_cl)[0][0], (*sun_cl)[0][1], (*sun_cl)[0][2], (*sun_cl)[0][3]);
+    return SGVec4f((*scene_cl)[0][0], (*scene_cl)[0][1], (*scene_cl)[0][2], (*scene_cl)[0][3]);
 }

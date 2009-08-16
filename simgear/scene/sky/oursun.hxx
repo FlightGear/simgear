@@ -81,6 +81,7 @@ public:
 
     // retrun the current color of the sun
     SGVec4f get_color();
+    SGVec4f get_scene_color();
 };
 
 

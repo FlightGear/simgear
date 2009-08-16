@@ -367,6 +367,11 @@ public:
     inline SGVec4f get_sun_color() { return oursun->get_color(); }
 
     /**
+     * Get the current scene color
+     */
+    inline SGVec4f get_scene_color() { return oursun->get_scene_color(); }
+
+    /**
      * Add a cloud layer.
      *
      * Transfer pointer ownership to this object.

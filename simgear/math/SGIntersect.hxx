@@ -572,6 +572,7 @@ closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
   T u = b*e - c*d;
   T v = b*d - a*e;
 
+/*
   // Regions
   // \2|
   //  \|
@@ -579,6 +580,7 @@ closestPoint(const SGTriangle<T>& tri, const SGVec3<T>& p)
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6
+*/
 
   if (u + v <= det) {
     if (u < 0) {
@@ -766,6 +768,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
   T u = b*e - c*d;
   T v = b*d - a*e;
 
+/*
   // Regions
   // \2|
   //  \|
@@ -773,6 +776,7 @@ intersects(const SGTriangle<T>& tri, const SGSphere<T2>& sphere)
   // 3 |0\ 1
   //----------
   // 4 | 5 \ 6
+*/
 
   if (u + v <= det) {
     if (u < 0) {

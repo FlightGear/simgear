@@ -57,7 +57,7 @@ const double SGGeodesy::POLRAD = _POLRAD;
 #define E2 fabs(1 - _SQUASH*_SQUASH)
 static double a = _EQURAD;
 static double ra2 = 1/(_EQURAD*_EQURAD);
-static double e = sqrt(E2);
+//static double e = sqrt(E2);
 static double e2 = E2;
 static double e4 = E2*E2;
 
@@ -315,7 +315,7 @@ static int _geo_inverse_wgs_84( double lat1, double lon1, double lat2,
     double sinphi2 = sin(phi2), cosphi2 = cos(phi2);
 	
     if( (fabs(lat1-lat2) < testv && 
-	 ( fabs(lon1-lon2) < testv) || fabs(lat1-90.0) < testv ) )
+	 ( fabs(lon1-lon2) < testv)) || (fabs(lat1-90.0) < testv ) )
     {	
 	// TWO STATIONS ARE IDENTICAL : SET DISTANCE & AZIMUTHS TO ZERO */
 	*az1 = 0.0; *az2 = 0.0; *s = 0.0;

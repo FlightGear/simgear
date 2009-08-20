@@ -114,9 +114,9 @@ void TileEntry::set_timestamp(double time_ms)
 // Constructor
 TileEntry::TileEntry ( const SGBucket& b )
     : tile_bucket( b ),
+      tileFileName(b.gen_index_str()),
       _node( new osg::LOD ),
-      is_inner_ring(false),
-      tileFileName(b.gen_index_str())
+      is_inner_ring(false)
 {
     _node->setCullCallback(new TileCullCallback);
     tileFileName += ".stg";

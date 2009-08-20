@@ -278,10 +278,12 @@ osg::Geometry* SGNewCloud::createOrthQuad(float w, float h, int varieties_x, int
     return geom;
 }
 
+#if 0
 // return a random number between -n/2 and n/2, tending to 0
 static float Rnd(float n) {
     return n * (-0.5f + (sg_random() + sg_random()) / 2.0f);
 }
+#endif
 
 osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     

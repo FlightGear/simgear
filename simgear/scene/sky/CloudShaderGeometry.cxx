@@ -58,7 +58,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     if (!sortData.spriteIdx)
         sortData.spriteIdx = new SortData::SortItemList;
     if (sortData.spriteIdx->size() < _cloudsprites.size()) {
-        for (int i = sortData.spriteIdx->size(); i < _cloudsprites.size(); ++i)
+        for (unsigned i = sortData.spriteIdx->size(); i < (unsigned)_cloudsprites.size(); ++i)
             sortData.spriteIdx->push_back(SortData::SortItem(i, 0.0f));
         sortData.frameSorted = frameNumber - (sortData.skip_limit + 1);
     }

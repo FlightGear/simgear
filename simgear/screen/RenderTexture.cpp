@@ -39,7 +39,9 @@
 * Implementation of class RenderTexture.  A multi-format render to 
 * texture wrapper.
 */
+#ifdef _MSC_VER
 #pragma warning(disable:4786)
+#endif
 
 /*
  * Changelog:
@@ -76,12 +78,16 @@ using namespace std;
 //#define _DEBUG
 //#endif
 
-#ifdef _DEBUG
-#define dbg_printf printf
+#if defined (_DEBUG) 
 const char * get_attr_name( int val, int * pdef );
+#define dbg_printf printf
 #else
-#define dbg_printf
-#endif
+#if defined (__GNUC__)
+#define dbg_printf(format,args...) ((void)0)
+#else // defined (__GNUC__)
+#define dbg_printf(
+#endif // defined (__GNUC__)
+#endif // defined (_DEBUG)
 
 // CHOP/NOT CHOP SOME CODE TO GET SOMETHING WORKING!
 #define ADD_QUERY_BUFFER    
@@ -212,7 +218,7 @@ RenderTexture::RenderTexture(const char *strMode)
 #endif
 
     dbg_printf("RenderTexture::RenderTexture(%s) END instantiation. pf=%d pb=%d\n",
-      strMode, _pixelFormatAttribs.size(), _pbufferAttribs.size() );
+      strMode, (int)_pixelFormatAttribs.size(), (int)_pbufferAttribs.size() );
 
 }
 
@@ -673,7 +679,7 @@ bool RenderTexture::Initialize(int width, int height,
     GLXFBConfig *fbConfigs;
     int nConfigs;
 #ifdef _DEBUG
-    dbg_printf("Using %d pixelFormatAttribs array\n", _pixelFormatAttribs.size());
+    dbg_printf("Using %d pixelFormatAttribs array\n", (int)_pixelFormatAttribs.size());
     size_t max = _pixelFormatAttribs.size() / 2;
     int dat = 0;
     size_t n;
@@ -751,7 +757,7 @@ bool RenderTexture::Initialize(int width, int height,
                                                &pbufAttrib[0] ); //NULL);
             if (_hPBuffer) 
             {
-                dbg_printf("RenderTexture::Initialize: %d: glXCreateGLXPbufferPtr() got buffer [%p]\n", (i + 1), _hPBuffer);
+                dbg_printf("RenderTexture::Initialize: %d: glXCreateGLXPbufferPtr() got buffer [%p]\n", (i + 1), (void*)_hPBuffer);
                 _hGLContext = glXCreateContextWithConfigPtr(_pDisplay, 
                                                              fbConfigs[i], 
                                                              GLX_RGBA_TYPE, 
@@ -844,7 +850,7 @@ bool RenderTexture::Initialize(int width, int height,
 #endif // #ifdef ADD_GET_DRAWABLE
     
     dbg_printf( "RenderTexture::Initialize: doing glXMakeCurrent(_pDisplay(%p), _hPBuffer(%p), _hGLContext(%p))\n",
-       _pDisplay, _hPBuffer, _hGLContext );
+       _pDisplay, (void*)_hPBuffer, _hGLContext );
     if (False == glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext)) 
     {
         dbg_printf( "glXMakeCurrent(_pDisplay, _hPBuffer, _hGLContext) FAILED. return false\n" );
@@ -1435,7 +1441,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
                                      vector<int> &pfAttribs, 
                                      vector<int> &pbAttribs)
 {
-    dbg_printf("RenderTexture::_ParseModeString(%s). BGN vf=%d vp=%d\n", modeString, pfAttribs.size(), pbAttribs.size() );
+    dbg_printf("RenderTexture::_ParseModeString(%s). BGN vf=%d vp=%d\n", modeString, (int)pfAttribs.size(), (int)pbAttribs.size() );
     if (!modeString || strcmp(modeString, "") == 0)
         return;
 
@@ -2206,7 +2212,7 @@ void RenderTexture::_ParseModeString(const char *modeString,
 #endif 
       dbg_printf( "RenderTexture Error 2: Render to Texture not supported in Linux or MacOS\n");
     }
-    dbg_printf("RenderTexture::_ParseModeString(%s). END vf=%d vp=%d\n", modeString, pfAttribs.size(), pbAttribs.size() );
+    dbg_printf("RenderTexture::_ParseModeString(%s). END vf=%d vp=%d\n", modeString, (int)pfAttribs.size(), (int)pbAttribs.size() );
 
 }
 

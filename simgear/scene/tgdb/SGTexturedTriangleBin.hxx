@@ -173,7 +173,7 @@ public:
 
       int woodcount = (int) (unit / wood_coverage);
 
-      for (unsigned j = 0; j < woodcount; j++) {
+      for (int j = 0; j < woodcount; j++) {
 
         if (wood_size < area) {
           // We need to place a wood within the triangle and populate it

@@ -66,7 +66,7 @@ BoundingBox ShaderGeometry::computeBound() const
     const Vec4Array* posScales = _posScaleArray.get();
     if (!posScales)
         return bb;
-    size_t numPosScales = posScales->size();
+//    size_t numPosScales = posScales->size();
     for (Vec4Array::const_iterator iter = _posScaleArray->begin(),
              e = _posScaleArray->end();
          iter != e;
@@ -94,7 +94,7 @@ bool ShaderGeometry_readLocalData(Object& obj, Input& fr)
             geom._geometry = drawable;
         }
     }
-    int capacity = 0;
+//    int capacity = 0;
     if (fr.matchSequence("posScale %i {")) {
         int entry = fr[1].getNoNestedBrackets();
         int capacity;

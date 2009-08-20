@@ -20,7 +20,7 @@
  */
 
 #include "PrimitiveUtils.hxx"
-
+#include <iostream>
 using namespace osg;
 
 namespace
@@ -302,6 +302,9 @@ protected:
             return count - 2;
         case GL_QUAD_STRIP:
             return (count - 2) / 2;
+        default:
+            std::cerr << "FATAL: unknown GL mode " << mode << std::endl;
+            throw new std::exception();
         }
     }
     unsigned _primitiveIndex;

@@ -331,7 +331,7 @@ sg_format_exception::setText (const char* text)
 {
   if (text) {
     strncpy(_text, text, MAX_TEXT_LEN);
-    _text[MAX_TEXT_LEN] = '\0';
+    _text[MAX_TEXT_LEN-1] = '\0';
   } else {
     _text[0] = '\0';
   }

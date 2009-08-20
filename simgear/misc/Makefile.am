@@ -24,13 +24,13 @@ libsgmisc_a_SOURCES = \
 	interpolator.cxx \
 	PathOptions.cxx
 
-noinst_PROGRAMS = tabbed_value_test swap_test
+#noinst_PROGRAMS = tabbed_value_test swap_test
 
-tabbed_value_test_SOURCES = tabbed_values_test.cxx
-tabbed_value_test_LDADD = \
-	libsgmisc.a \
-	$(top_builddir)/simgear/xml/libsgxml.a \
-	$(top_builddir)/simgear/debug/libsgdebug.a
+#tabbed_value_test_SOURCES = tabbed_values_test.cxx
+#tabbed_value_test_LDADD = \
+#	libsgmisc.a \
+#	$(top_builddir)/simgear/xml/libsgxml.a \
+#	$(top_builddir)/simgear/debug/libsgdebug.a
 
 $(top_builddir)/simgear/xml/libsgxml.a:
 	cd $(top_builddir)/simgear/xml && $(MAKE) $(AM_MAKEFLAGS) libsgxml.a
@@ -38,6 +38,6 @@ $(top_builddir)/simgear/xml/libsgxml.a:
 $(top_builddir)/simgear/debug/libsgdebug.a:
 	cd $(top_builddir)/simgear/debug && $(MAKE) $(AM_MAKEFLAGS) libsgdebug.a
 
-swap_test_SOURCES = swap_test.cpp
+#swap_test_SOURCES = swap_test.cpp
 
 INCLUDES = -I$(top_srcdir)

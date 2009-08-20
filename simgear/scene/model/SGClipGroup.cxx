@@ -98,11 +98,13 @@ public:
   }
 };
 
+#if 0
 static osg::Vec4d clipPlane(const osg::Vec2& p0, const osg::Vec2& p1)
 {
   osg::Vec2d v(p1[0] - p0[0], p1[1] - p0[1]);
   return osg::Vec4d(v[1], -v[0], 0, v[0]*p0[1] - v[1]*p0[0]);
 }
+#endif
 
 SGClipGroup::SGClipGroup()
 {

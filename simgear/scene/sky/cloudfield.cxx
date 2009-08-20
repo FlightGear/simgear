@@ -151,8 +151,8 @@ SGCloudField::SGCloudField() :
 	last_course(0.0),
 	last_coverage(0.0),
         coverage(0.0),
-        defined3D(false),
-        reposition_count(0)
+        reposition_count(0),
+        defined3D(false)
 {
     cld_pos = SGGeoc();
     field_root->addChild(field_transform.get());

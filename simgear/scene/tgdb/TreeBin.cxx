@@ -180,10 +180,10 @@ namespace
 struct MakeTreesLeaf
 {
     MakeTreesLeaf(float range, Geometry* geometry, int varieties) :
-        _range(range), _geometry(geometry), _varieties(varieties)
+        _range(range), _varieties(varieties), _geometry(geometry)
     {}
     MakeTreesLeaf(const MakeTreesLeaf& rhs) :
-        _range(rhs._range), _geometry(rhs._geometry), _varieties(rhs._varieties) {}
+        _range(rhs._range), _varieties(rhs._varieties), _geometry(rhs._geometry) {}
     LOD* operator() () const
     {
         LOD* result = new LOD;

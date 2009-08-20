@@ -437,6 +437,8 @@ getTypeName (simgear::props::Type type)
   case props::ALIAS:
   case props::NONE:
     return "unspecified";
+  default: // avoid compiler warning
+    break;
   }
 
   // keep the compiler from squawking

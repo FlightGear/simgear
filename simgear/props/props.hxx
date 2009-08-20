@@ -1861,6 +1861,8 @@ T SGPropertyNode::getValue(typename boost::disable_if_c<simgear::props
     case UNSPECIFIED:
         return simgear::parseString<T>(make_string());
         break;
+    default: // avoid compiler warning
+        break;
     }
     return SGRawValue<T>::DefaultValue();
 }

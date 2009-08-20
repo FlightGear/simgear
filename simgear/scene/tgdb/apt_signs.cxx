@@ -106,10 +106,6 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     osg::Group* object = new osg::Group;
     object->setName(content);
 
-    SGMaterial *material;
-    Effect *lighted_state;
-    Effect *unlighted_state;
-
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
         string name;
@@ -219,26 +215,30 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
             }
         }
 
+        SGMaterial *material = NULL;
+
         if (newmat.size()) {
             material = matlib->find(newmat);
-            if (!material) {
-                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
-                continue;
-            }
-
-            // set material states (lighted & unlighted)
-            lighted_state = material->get_effect();
-            string u = newmat + ".unlighted";
-
-            SGMaterial *m = matlib->find(u);
-            if (m) {
-                unlighted_state = m->get_effect();
-            } else {
-                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
-                unlighted_state = lighted_state;
-            }
-            newmat = "";
         }
+        if (!material) {
+            SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
+            continue;
+        }
+
+
+        // set material states (lighted & unlighted)
+        Effect *lighted_state = material->get_effect();
+        Effect *unlighted_state;
+        string u = newmat + ".unlighted";
+
+        SGMaterial *m = matlib->find(u);
+        if (m) {
+            unlighted_state = m->get_effect();
+        } else {
+            SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
+            unlighted_state = lighted_state;
+        }
+        newmat = "";
 
         SGMaterialGlyph *glyph = material->get_glyph(name);
         if (!glyph) {

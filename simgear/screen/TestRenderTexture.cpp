@@ -25,8 +25,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define dbg_printf
-//#define dbg_printf printf
+// DEBUG - add a lot of noise
+//#ifndef _DEBUG
+//#define _DEBUG
+//#endif
+
+#if defined (_DEBUG) 
+const char * get_attr_name( int val, int * pdef );
+#define dbg_printf printf
+#else
+#if defined (__GNUC__)
+#define dbg_printf(format,args...) ((void)0)
+#else // defined (__GNUC__)
+#define dbg_printf(
+#endif // defined (__GNUC__)
+#endif // defined (_DEBUG)
+
 
 void Reshape(int w, int h);
 
@@ -64,7 +78,7 @@ static int g_currentString      = 0;
 // Function     	: PrintGLerror
 // Description	    : 
 //---------------------------------------------------------------------------
-void PrintGLerror( char *msg )
+void PrintGLerror( const char *msg )
 {
     GLenum errCode;
     const GLubyte *errStr;

@@ -347,7 +347,7 @@ struct DoDrawArraysVisitor : public osg::NodeVisitor {
         using namespace osg;
         using namespace std;
 
-        for (int i = 0; i < geode.getNumDrawables(); ++i)
+        for (int i = 0; i < (int)geode.getNumDrawables(); ++i)
             geode.getDrawable(i)->setUseDisplayList(false);
     }
 };

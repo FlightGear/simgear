@@ -132,6 +132,7 @@ private:
 
 static Mutex cubeMutex;
 
+#if 0
 static osg::TextureCubeMap*
 getOrCreateTextureCubeMap()
 {
@@ -181,6 +182,7 @@ static void create_specular_highlights(osg::Node *node)
   te->setOperand1_RGB(osg::TexEnvCombine::SRC_COLOR);
   ss->setTextureAttributeAndModes(0, te, osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
 }
+#endif
 
 
 SGShaderAnimation::SGShaderAnimation(const SGPropertyNode* configNode,

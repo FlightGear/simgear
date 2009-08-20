@@ -512,7 +512,7 @@ ModelRegistry::readNode(const string& fileName,
     ScopedLock<ReentrantMutex> lock(readerMutex);
 
     // XXX Workaround for OSG plugin bug.
-    Registry* registry = Registry::instance();
+//    Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));

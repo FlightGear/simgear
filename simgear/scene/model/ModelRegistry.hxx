@@ -77,7 +77,7 @@ public:
         using namespace osg;
         using namespace osgDB;
         using osgDB::ReaderWriter;
-        Registry* registry = Registry::instance();
+//        Registry* registry = Registry::instance();
         ref_ptr<osg::Node> optimizedNode = _cachePolicy.find(fileName, opt);
         if (!optimizedNode.valid()) {
             std::string otherFileName = _substitutePolicy.substitute(fileName,

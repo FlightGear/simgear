@@ -722,7 +722,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         double xoff = (ax + bx) / (2 * scale);
         double yoff = (ay + by) / (2 * scale);
 
-        const float layer_scale = layer_span / scale;
+//        const float layer_scale = layer_span / scale;
 
         // cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
         base[0] += xoff;

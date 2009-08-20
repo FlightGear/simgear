@@ -519,6 +519,8 @@ SGPropertyNode::clearValue ()
             }
             _local_val.string_val = 0;
             break;
+        default: // avoid compiler warning
+            break;
         }
         delete _value.val;
         _value.val = 0;
@@ -1591,6 +1593,8 @@ std::ostream& SGPropertyNode::printOn(std::ostream& stream) const
         static_cast<SGRawExtended*>(_value.val)->printOn(stream);
         break;
     case props::NONE:
+        break;
+    default: // avoid compiler warning
         break;
     }
     return stream;

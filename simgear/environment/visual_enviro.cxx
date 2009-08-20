@@ -737,7 +737,7 @@ void SGEnviro::drawLightning(void) {
   return;
 	list_of_lightning::iterator iLightning;
 	// play 'thunder' for lightning
-	if( snd_active )
+	if( snd_active ) {
 		if( !snd_playing ) {
 			// wait until sound has reached us
 			snd_timer += dt;
@@ -765,6 +765,7 @@ void SGEnviro::drawLightning(void) {
 			}
 		}
 
+	}
 	if( ! lightning_enable_state )
 		return;
 

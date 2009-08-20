@@ -37,7 +37,7 @@ const char * get_attr_name( int val, int * pdef );
 #if defined (__GNUC__)
 #define dbg_printf(format,args...) ((void)0)
 #else // defined (__GNUC__)
-#define dbg_printf(
+#define dbg_printf
 #endif // defined (__GNUC__)
 #endif // defined (_DEBUG)
 

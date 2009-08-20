@@ -633,6 +633,8 @@ struct UniformBuilder :public PassAttributeBuilder
         case Uniform::SAMPLER_3D:
             uniform->set(valProp->getValue<int>());
             break;
+        default: // avoid compiler warning
+            break;
         }
         pass->addUniform(uniform.get());
     }
@@ -702,7 +704,7 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
             TechniquePredParser parser;
             parser.setTechnique(tniq);
             expression::BindingLayout& layout = parser.getBindingLayout();
-            int contextLoc = layout.addBinding("__contextId", expression::INT);
+            /*int contextLoc = */layout.addBinding("__contextId", expression::INT);
             SGExpressionb* validExp
                 = dynamic_cast<SGExpressionb*>(parser.read(predProp
                                                            ->getChild(0)));

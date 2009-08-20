@@ -139,20 +139,20 @@ Effect* makeEffect(SGPropertyNode* prop,
 {
     // Give default names to techniques and passes
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");
-    for (int i = 0; i < techniques.size(); ++i) {
+    for (int i = 0; i < (int)techniques.size(); ++i) {
         SGPropertyNode* tniqProp = techniques[i].ptr();
         if (!tniqProp->hasChild("name"))
             setValue(tniqProp->getChild("name", 0, true),
                      boost::lexical_cast<string>(i));
         vector<SGPropertyNode_ptr> passes = tniqProp->getChildren("pass");
-        for (int j = 0; j < passes.size(); ++j) {
+        for (int j = 0; j < (int)passes.size(); ++j) {
             SGPropertyNode* passProp = passes[j].ptr();
             if (!passProp->hasChild("name"))
                 setValue(passProp->getChild("name", 0, true),
                          boost::lexical_cast<string>(j));
             vector<SGPropertyNode_ptr> texUnits
                 = passProp->getChildren("texture-unit");
-            for (int k = 0; k < texUnits.size(); ++k) {
+            for (int k = 0; k < (int)texUnits.size(); ++k) {
                 SGPropertyNode* texUnitProp = texUnits[k].ptr();
                 if (!texUnitProp->hasChild("name"))
                     setValue(texUnitProp->getChild("name", 0, true),

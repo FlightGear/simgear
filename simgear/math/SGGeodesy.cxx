@@ -84,6 +84,14 @@ SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
   double q = Z*Z*(1-e2)*ra2;
   double r = 1/6.0*(p+q-e4);
   double s = e4*p*q/(4*r*r*r);
+/* 
+  s*(2+s) is negative for s = [-2..0]
+  slightly negative values for s due to floating point rounding errors
+  cause nan for sqrt(s*(2+s))
+  We can probably clamp the resulting parable to positive numbers
+*/
+  if( s >= -2.0 && s <= 0.0 )
+    s = 0.0;
   double t = pow(1+s+sqrt(s*(2+s)), 1/3.0);
   double u = r*(1+t+1/t);
   double v = sqrt(u*u+e4*q);

@@ -231,12 +231,11 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 // 90 degrees = sun rise/set
 // 180 degrees = darkest midnight
 bool SGSun::repaint( double sun_angle, double new_visibility ) {
-    
-    if ( visibility != new_visibility ) {
-        visibility = new_visibility;
 
+    if ( visibility != new_visibility ) {
         if (new_visibility < 100.0) new_visibility = 100.0;
         else if (new_visibility > 45000.0) new_visibility = 45000.0;
+        visibility = new_visibility;
         sun_exp2_punch_through = 2.0/log(visibility);
     }
 
@@ -249,7 +248,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
             aerosol_factor = 8000;
         }
         else {
-            aerosol_factor = 80.5 / log( visibility / 100 );
+            aerosol_factor = 80.5 / log( visibility / 99.9 );
         }
 
         // get environmental data from property tree or use defaults
@@ -333,7 +332,7 @@ bool SGSun::repaint( double sun_angle, double new_visibility ) {
         o_halo_color[1] = 0.2 * sun_color[1] + 0.8 * scene_color[1];
         o_halo_color[2] = 0.2 * sun_color[2] + 0.8 * scene_color[2];
         o_halo_color[3] = blue_scat_f;
-        if ((new_visibility < 10000) && (blue_scat_f > 1)) {
+        if ((visibility < 10000) && (blue_scat_f > 1)) {
             o_halo_color[3] = 2 - blue_scat_f;
         }
         if (o_halo_color[3] > 1) o_halo_color[3] = 1;

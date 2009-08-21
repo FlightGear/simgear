@@ -215,11 +215,11 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
             }
         }
 
-        SGMaterial *material = NULL;
 
-        if (newmat.size()) {
-            material = matlib->find(newmat);
-        }
+        if (newmat.size() == 0 )
+          continue;
+
+        SGMaterial *material = matlib->find(newmat);
         if (!material) {
             SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
             continue;

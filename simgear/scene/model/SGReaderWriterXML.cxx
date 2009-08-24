@@ -41,6 +41,7 @@
 #include "animation.hxx"
 #include "particles.hxx"
 #include "model.hxx"
+#include "SGText.hxx"
 
 using namespace simgear;
 
@@ -301,6 +302,14 @@ sgLoad3DModel_internal(const string &path,
             options->setDatabasePath(texturepath.str());
         }
         group->addChild(Particles::appendParticles(particle_nodes[i],
+                        prop_root,
+                        options.get()));
+    }
+
+    std::vector<SGPropertyNode_ptr> text_nodes;
+    text_nodes = props->getChildren("text");
+    for (unsigned i = 0; i < text_nodes.size(); ++i) {
+        group->addChild(SGText::appendText(text_nodes[i],
                         prop_root,
                         options.get()));
     }

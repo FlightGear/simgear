@@ -22,7 +22,8 @@ include_HEADERS = \
 	SGReaderWriterXMLOptions.hxx \
 	SGRotateTransform.hxx \
 	SGScaleTransform.hxx \
-	SGTranslateTransform.hxx
+	SGTranslateTransform.hxx \
+	SGText.hxx
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
@@ -42,6 +43,7 @@ libsgmodel_a_SOURCES = \
 	SGReaderWriterXML.cxx \
 	SGRotateTransform.cxx \
 	SGScaleTransform.cxx \
-	SGTranslateTransform.cxx
+	SGTranslateTransform.cxx \
+	SGText.cxx
 
 INCLUDES = -I$(top_srcdir)

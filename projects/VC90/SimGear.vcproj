@@ -1155,6 +1155,14 @@
 				RelativePath="..\..\simgear\scene\model\shadanim.cxx"
 				>
 			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGText.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGText.hxx"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgsound"

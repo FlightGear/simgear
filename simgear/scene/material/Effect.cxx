@@ -36,9 +36,12 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <osg/AlphaFunc>
+#include <osg/BlendFunc>
 #include <osg/CullFace>
 #include <osg/Drawable>
 #include <osg/Material>
+#include <osg/Math>
 #include <osg/PolygonMode>
 #include <osg/Program>
 #include <osg/Referenced>
@@ -240,8 +243,10 @@ struct CullFaceBuilder : PassAttributeBuilder
                         const osgDB::ReaderWriter::Options* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
-        if (!realProp)
+        if (!realProp) {
+            pass->setMode(GL_CULL_FACE, StateAttribute::OFF);
             return;
+        }
         StateAttributeFactory *attrFact = StateAttributeFactory::instance();
         string propVal = realProp->getStringValue();
         if (propVal == "front")
@@ -250,6 +255,8 @@ struct CullFaceBuilder : PassAttributeBuilder
             pass->setAttributeAndModes(attrFact->getCullFaceBack());
         else if (propVal == "front-back")
             pass->setAttributeAndModes(new CullFace(CullFace::FRONT_AND_BACK));
+        else if (propVal == "off")
+            pass->setMode(GL_CULL_FACE, StateAttribute::OFF);
         else
             SG_LOG(SG_INPUT, SG_ALERT,
                    "invalid cull face property " << propVal);            
@@ -365,33 +372,166 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
 
 InstallAttributeBuilder<MaterialBuilder> installMaterial("material");
 
+EffectNameValue<BlendFunc::BlendFuncMode> blendFuncModesInit[] =
+{
+    {"dst-alpha", BlendFunc::DST_ALPHA},
+    {"dst-color", BlendFunc::DST_COLOR},
+    {"one", BlendFunc::ONE},
+    {"one-minus-dst-alpha", BlendFunc::ONE_MINUS_DST_ALPHA},
+    {"one-minus-dst-color", BlendFunc::ONE_MINUS_DST_COLOR},
+    {"one-minus-src-alpha", BlendFunc::ONE_MINUS_SRC_ALPHA},
+    {"one-minus-src-color", BlendFunc::ONE_MINUS_SRC_COLOR},
+    {"src-alpha", BlendFunc::SRC_ALPHA},
+    {"src-alpha-saturate", BlendFunc::SRC_ALPHA_SATURATE},
+    {"src-color", BlendFunc::SRC_COLOR},
+    {"constant-color", BlendFunc::CONSTANT_COLOR},
+    {"one-minus-constant-color", BlendFunc::ONE_MINUS_CONSTANT_COLOR},
+    {"constant-alpha", BlendFunc::CONSTANT_ALPHA},
+    {"one-minus-constant-alpha", BlendFunc::ONE_MINUS_CONSTANT_ALPHA},
+    {"zero", BlendFunc::ZERO}
+};
+EffectPropertyMap<BlendFunc::BlendFuncMode> blendFuncModes(blendFuncModesInit);
+
 struct BlendBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        // XXX Compatibility with early <blend> syntax; should go away
+        // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        pass->setMode(GL_BLEND, (realProp->getBoolValue()
-                                 ? StateAttribute::ON
-                                 : StateAttribute::OFF));
+        if (realProp->nChildren() == 0) {
+            pass->setMode(GL_BLEND, (realProp->getBoolValue()
+                                     ? StateAttribute::ON
+                                     : StateAttribute::OFF));
+            return;
+        }
+
+        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
+                                                             "mode");
+        // XXX When dynamic parameters are supported, this code should
+        // create the blend function even if the mode is off.
+        if (pmode && !pmode->getValue<bool>()) {
+            pass->setMode(GL_BLEND, StateAttribute::OFF);
+            return;
+        }
+        const SGPropertyNode* psource = getEffectPropertyChild(effect, prop,
+                                                              "source");
+        const SGPropertyNode* pdestination
+            = getEffectPropertyChild(effect, prop, "destination");
+        const SGPropertyNode* psourceRGB
+            = getEffectPropertyChild(effect, prop, "source-rgb");
+        const SGPropertyNode* psourceAlpha
+            = getEffectPropertyChild(effect, prop, "source-alpha");
+        const SGPropertyNode* pdestRGB
+            = getEffectPropertyChild(effect, prop, "destination-rgb");
+        const SGPropertyNode* pdestAlpha
+            = getEffectPropertyChild(effect, prop, "destination-alpha");
+        BlendFunc::BlendFuncMode sourceMode = BlendFunc::ONE;
+        BlendFunc::BlendFuncMode destMode = BlendFunc::ZERO;
+        if (psource)
+            findAttr(blendFuncModes, psource, sourceMode);
+        if (pdestination)
+            findAttr(blendFuncModes, pdestination, destMode);
+        if (psource && pdestination
+            && !(psourceRGB || psourceAlpha || pdestRGB || pdestAlpha)
+            && sourceMode == BlendFunc::SRC_ALPHA
+            && destMode == BlendFunc::ONE_MINUS_SRC_ALPHA) {
+            pass->setAttributeAndModes(StateAttributeFactory::instance()
+                                       ->getStandardBlendFunc());
+            return;
+        }
+        BlendFunc* blendFunc = new BlendFunc;
+        if (psource)
+            blendFunc->setSource(sourceMode);
+        if (pdestination)
+            blendFunc->setDestination(destMode);
+        if (psourceRGB) {
+            BlendFunc::BlendFuncMode sourceRGBMode;
+            findAttr(blendFuncModes, psourceRGB, sourceRGBMode);
+            blendFunc->setSourceRGB(sourceRGBMode);
+        }
+        if (pdestRGB) {
+            BlendFunc::BlendFuncMode destRGBMode;
+            findAttr(blendFuncModes, pdestRGB, destRGBMode);
+            blendFunc->setDestinationRGB(destRGBMode);
+        }
+        if (psourceAlpha) {
+            BlendFunc::BlendFuncMode sourceAlphaMode;
+            findAttr(blendFuncModes, psourceAlpha, sourceAlphaMode);
+            blendFunc->setSourceAlpha(sourceAlphaMode);
+        }
+        if (pdestAlpha) {
+            BlendFunc::BlendFuncMode destAlphaMode;
+            findAttr(blendFuncModes, pdestAlpha, destAlphaMode);
+            blendFunc->setDestinationAlpha(destAlphaMode);
+        }
+        pass->setAttributeAndModes(blendFunc);
     }
 };
 
 InstallAttributeBuilder<BlendBuilder> installBlend("blend");
+
+EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
+{
+    {"never", AlphaFunc::NEVER},
+    {"less", AlphaFunc::LESS},
+    {"equal", AlphaFunc::EQUAL},
+    {"lequal", AlphaFunc::LEQUAL},
+    {"greater", AlphaFunc::GREATER},
+    {"notequal", AlphaFunc::NOTEQUAL},
+    {"gequal", AlphaFunc::GEQUAL},
+    {"always", AlphaFunc::ALWAYS}
+};
+EffectPropertyMap<AlphaFunc::ComparisonFunction>
+alphaComparison(alphaComparisonInit);
 
 struct AlphaTestBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        // XXX Compatibility with early <alpha-test> syntax; should go away
+        // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        pass->setMode(GL_ALPHA_TEST, (realProp->getBoolValue()
-                                      ? StateAttribute::ON
-                                      : StateAttribute::OFF));
+        if (realProp->nChildren() == 0) {
+            pass->setMode(GL_ALPHA_TEST, (realProp->getBoolValue()
+                                     ? StateAttribute::ON
+                                     : StateAttribute::OFF));
+            return;
+        }
+
+        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
+                                                             "mode");
+        // XXX When dynamic parameters are supported, this code should
+        // create the blend function even if the mode is off.
+        if (pmode && !pmode->getValue<bool>()) {
+            pass->setMode(GL_ALPHA_TEST, StateAttribute::OFF);
+            return;
+        }
+        const SGPropertyNode* pComp = getEffectPropertyChild(effect, prop,
+                                                             "comparison");
+        const SGPropertyNode* pRef = getEffectPropertyChild(effect, prop,
+                                                             "reference");
+        AlphaFunc::ComparisonFunction func = AlphaFunc::ALWAYS;
+        float refValue = 1.0f;
+        if (pComp)
+            findAttr(alphaComparison, pComp, func);
+        if (pRef)
+            refValue = pRef->getValue<float>();
+        if (func == AlphaFunc::GREATER && osg::equivalent(refValue, 1.0f)) {
+            pass->setAttributeAndModes(StateAttributeFactory::instance()
+                                       ->getStandardAlphaFunc());
+        } else {
+            AlphaFunc* alphaFunc = new AlphaFunc;
+            alphaFunc->setFunction(func);
+            alphaFunc->setReferenceValue(refValue);
+            pass->setAttributeAndModes(alphaFunc);
+        }
     }
 };
 
@@ -733,6 +873,61 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
          ++itr) {
         buildPass(effect, tniq, itr->ptr(), options);
     }
+}
+
+// Specifically for .ac files...
+bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
+{
+    SGPropertyNode* matNode = paramRoot->getChild("material", 0, true);
+    Vec4f ambVal, difVal, specVal, emisVal;
+    float shininess = 0.0f;
+    const Material* mat
+        = static_cast<const Material*>(ss->getAttribute(StateAttribute
+                                                        ::MATERIAL));
+    if (mat) {
+        ambVal = mat->getAmbient(Material::FRONT_AND_BACK);
+        difVal = mat->getDiffuse(Material::FRONT_AND_BACK);
+        specVal = mat->getSpecular(Material::FRONT_AND_BACK);
+        emisVal = mat->getEmission(Material::FRONT_AND_BACK);
+        shininess = mat->getShininess(Material::FRONT_AND_BACK);
+    }
+    matNode->getChild("ambient", 0, true)->setValue(toVec4d(toSG(ambVal)));
+    matNode->getChild("diffuse", 0, true)->setValue(toVec4d(toSG(difVal)));
+    matNode->getChild("specular", 0, true)->setValue(toVec4d(toSG(specVal)));
+    matNode->getChild("emissive", 0, true)->setValue(toVec4d(toSG(emisVal)));
+    matNode->getChild("shininess", 0, true)->setValue(shininess);
+    matNode->getChild("color-mode", 0, true)->setStringValue("diffuse");
+    const ShadeModel* sm
+        = static_cast<const ShadeModel*>(ss->getAttribute(StateAttribute
+                                                          ::SHADEMODEL));
+    string shadeModelString("smooth");
+    if (sm) {
+        ShadeModel::Mode smMode = sm->getMode();
+        if (smMode == ShadeModel::FLAT)
+            shadeModelString = "flat";
+    }
+    paramRoot->getChild("shade-model", 0, true)
+        ->setStringValue(shadeModelString);
+    string cullFaceString("off");
+    const CullFace* cullFace
+        = static_cast<const CullFace*>(ss->getAttribute(StateAttribute
+                                                        ::CULLFACE));
+    if (cullFace) {
+        switch (cullFace->getMode()) {
+        case CullFace::FRONT:
+            cullFaceString = "front";
+            break;
+        case CullFace::BACK:
+            cullFaceString = "back";
+            break;
+        case CullFace::FRONT_AND_BACK:
+            cullFaceString = "front-back";
+            break;
+        default:
+            break;
+        }
+    }
+    paramRoot->getChild("cull-face", 0, true)->setStringValue(cullFaceString);
 }
 
 // Walk the techniques property tree, building techniques and

@@ -763,4 +763,3 @@ osgDB::RegisterDotOsgWrapperProxy effectProxy
     );
 }
 }
-

@@ -474,12 +474,7 @@ struct SGTileGeometryBin {
       
       std::vector<SGVec3f>::iterator j;
       for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
-
-        // Apply a random scaling factor and texture index.
-        float scale = (mt_rand(&seed) + mt_rand(&seed)) / 2.0f + 0.5f;
-        int v = (int) (mt_rand(&seed) * mat->get_tree_varieties());
-        if (v == mat->get_tree_varieties()) v--;         
-        randomForest.insert(*j, v, scale);
+        randomForest.insert(*j);
       }
     }
   }

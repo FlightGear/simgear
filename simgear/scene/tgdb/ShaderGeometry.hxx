@@ -33,8 +33,6 @@
 #include <osg/Vec3>
 #include <osg/Vec4>
 
-#include "TreeBin.hxx"
-
 namespace simgear
 {
 
@@ -67,7 +65,7 @@ class ShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-        void addTree(const TreeBin::Tree& tree);
+    void addObject(const osg::Vec3& position, float scale, int texture_index);
 
         osg::ref_ptr<osg::Geometry> _geometry;
 

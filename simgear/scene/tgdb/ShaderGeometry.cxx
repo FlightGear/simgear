@@ -32,14 +32,15 @@ using namespace osgDB;
 
 namespace simgear
 {
-void ShaderGeometry::addTree(const TreeBin::Tree& t)
+void ShaderGeometry::addObject(const Vec3& position, float scale,
+                               int texture_index)
 {
     if (!_posScaleArray.valid()) {
         _posScaleArray = new Vec4Array();
         _vertexAttribArray = new FloatArray();
     }
-    _posScaleArray->push_back(Vec4(t.position.osg(), t.scale));
-    _vertexAttribArray->push_back((float)t.texture_index / varieties);
+    _posScaleArray->push_back(Vec4(position, scale));
+    _vertexAttribArray->push_back((float)texture_index / varieties);
     dirtyBound();
 }
 

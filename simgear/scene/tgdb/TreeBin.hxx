@@ -36,12 +36,10 @@ namespace simgear
 class TreeBin {
 public:
   struct Tree {
-    Tree(const SGVec3f& p, int t, float s) :
-      position(p), texture_index(t), scale(s)
+    Tree(const SGVec3f& p) :
+      position(p)
     { }
     SGVec3f position;
-    int texture_index;
-    float scale;
   };
 
     typedef std::vector<Tree> TreeList;
@@ -55,7 +53,7 @@ public:
     void insert(const Tree& t)
     { _trees.push_back(t); }
     void insert(const SGVec3f& p, int t, float s)
-    { insert(Tree(p, t, s)); }
+    { insert(Tree(p)); }
 
     unsigned getNumTrees() const
     { return _trees.size(); }
@@ -64,7 +62,6 @@ public:
     TreeList _trees;
 };
 
-osg::Geometry* createOrthQuads(float w, float h, const osg::Matrix& rotate);
 osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform);
 }
 #endif

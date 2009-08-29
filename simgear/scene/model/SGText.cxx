@@ -81,46 +81,16 @@ void SGText::UpdateCallback::operator()(osg::Node * node, osg::NodeVisitor *nv )
   traverse( node, nv );
 }
 
-osg::Group * SGText::appendText(const SGPropertyNode* configNode, 
+osg::Node * SGText::appendText(const SGPropertyNode* configNode, 
   SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options)
 {
   SGConstPropertyNode_ptr p;
 
   SG_LOG(SG_GENERAL, SG_DEBUG, "Creating a text object");
 
-  // Set up the alignment node ("stolen" from animation.cxx)
-  // XXX Order of rotations is probably not correct.
-  osg::MatrixTransform *align = new osg::MatrixTransform;
-  osg::Matrix res_matrix;
-  res_matrix.makeRotate(
-      configNode->getFloatValue("offsets/pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-      osg::Vec3(0, 1, 0),
-      configNode->getFloatValue("offsets/roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-      osg::Vec3(1, 0, 0),
-      configNode->getFloatValue("offsets/heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
-      osg::Vec3(0, 0, 1));
-
-  osg::Matrix tmat;
-  tmat.makeTranslate(configNode->getFloatValue("offsets/x-m", 0.0),
-                     configNode->getFloatValue("offsets/y-m", 0.0),
-                     configNode->getFloatValue("offsets/z-m", 0.0));
-
-  align->setMatrix(res_matrix * tmat);
-
-  if( (p = configNode->getNode( "name" )) != NULL )
-    align->setName(p->getStringValue());
-  else
-    align->setName("text align");
-/*
-  Create a fragment of the graph:
-  MatrixTransform
-   +-Geode
-    +-Text
-*/
   osgText::Text * text = new osgText::Text();
   osg::Geode * g = new osg::Geode;
   g->addDrawable( text );
-  align->addChild( g );
 
   SGPath path("Fonts" );
   path.append( configNode->getStringValue( "font", "Helvetica" ));
@@ -248,5 +218,35 @@ osg::Group * SGText::appendText(const SGPropertyNode* configNode,
     }
   }
 
-  return align;
+  osg::Node * reply = NULL;
+  if( (p = configNode->getNode( "offsets")) == NULL ) {
+    reply = g;
+  } else {
+    // Set up the alignment node ("stolen" from animation.cxx)
+    // XXX Order of rotations is probably not correct.
+    osg::MatrixTransform *align = new osg::MatrixTransform;
+    osg::Matrix res_matrix;
+    res_matrix.makeRotate(
+        p->getFloatValue("pitch-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+        osg::Vec3(0, 1, 0),
+        p->getFloatValue("roll-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+        osg::Vec3(1, 0, 0),
+        p->getFloatValue("heading-deg", 0.0)*SG_DEGREES_TO_RADIANS,
+        osg::Vec3(0, 0, 1));
+
+    osg::Matrix tmat;
+    tmat.makeTranslate(configNode->getFloatValue("offsets/x-m", 0.0),
+                       configNode->getFloatValue("offsets/y-m", 0.0),
+                       configNode->getFloatValue("offsets/z-m", 0.0));
+
+    align->setMatrix(res_matrix * tmat);
+    align->addChild( g );
+    reply = align;
+  }
+
+  if( (p = configNode->getNode( "name" )) != NULL )
+    reply->setName(p->getStringValue());
+  else
+    reply->setName("text");
+  return reply;
 }

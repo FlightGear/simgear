@@ -142,21 +142,21 @@ bool RotateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
     SGRotateTransform& rot = static_cast<SGRotateTransform&>(obj);
     if (fr[0].matchWord("center")) {
         ++fr;
-        SGVec3d center;
-        if (fr.readSequence(center.osg()))
+        osg::Vec3d center;
+        if (fr.readSequence(center))
             fr += 3;
         else
             return false;
-        rot.setCenter(center);
+        rot.setCenter(SGVec3d(center));
     }
     if (fr[0].matchWord("axis")) {
         ++fr;
-        SGVec3d axis;
-        if (fr.readSequence(axis.osg()))
+        osg::Vec3d axis;
+        if (fr.readSequence(axis))
             fr += 3;
         else
             return false;
-        rot.setCenter(axis);
+        rot.setCenter(SGVec3d(axis));
     }
     if (fr[0].matchWord("angle")) {
         ++fr;

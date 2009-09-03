@@ -84,12 +84,12 @@ bool TranslateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
 
     if (fr[0].matchWord("axis")) {
         ++fr;
-        SGVec3d axis;
-        if (fr.readSequence(axis.osg()))
+        osg::Vec3d axis;
+        if (fr.readSequence(axis))
             fr += 3;
         else
             return false;
-        trans.setAxis(axis);
+        trans.setAxis(SGVec3d(axis));
     }
     if (fr[0].matchWord("value")) {
         ++fr;

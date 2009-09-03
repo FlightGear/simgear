@@ -107,21 +107,21 @@ bool ScaleTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
     SGScaleTransform& scale = static_cast<SGScaleTransform&>(obj);
     if (fr[0].matchWord("center")) {
         ++fr;
-        SGVec3d center;
-        if (fr.readSequence(center.osg()))
+        osg::Vec3d center;
+        if (fr.readSequence(center))
             fr += 3;
         else
             return false;
-        scale.setCenter(center);
+        scale.setCenter(SGVec3d(center));
     }
     if (fr[0].matchWord("scaleFactor")) {
         ++fr;
-        SGVec3d scaleFactor;
-        if (fr.readSequence(scaleFactor.osg()))
+        osg::Vec3d scaleFactor;
+        if (fr.readSequence(scaleFactor))
             fr += 3;
         else
             return false;
-        scale.setScaleFactor(scaleFactor);
+        scale.setScaleFactor(SGVec3d(scaleFactor));
     }
     return true;
 }

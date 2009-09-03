@@ -98,7 +98,7 @@ struct ColorSpec {
     return v;
   }
 
-  osg::Vec4& rgbaVec4()
+  osg::Vec4 rgbaVec4()
   {
     return rgba().osg();
   }

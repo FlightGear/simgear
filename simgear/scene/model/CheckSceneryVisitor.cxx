@@ -29,7 +29,7 @@
 
 using namespace simgear;
 
-CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, osg::Vec3 &position, double range)
+CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range)
 :osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
                   osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
 _position(position), _range(range), _loaded(true), _dbp(dbp)

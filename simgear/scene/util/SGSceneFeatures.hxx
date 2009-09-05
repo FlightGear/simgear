@@ -22,8 +22,6 @@
 #ifndef SG_SCENE_FEATURES_HXX
 #define SG_SCENE_FEATURES_HXX
 
-#include <OpenThreads/Mutex>
-
 #include <simgear/structure/SGReferenced.hxx>
 
 namespace osg { class Texture; }
@@ -73,13 +71,12 @@ public:
     return getHaveShaderPrograms(contextId);
   }
   
-  void setTextureFilter( int max) 
+  void setTextureFilter(int max) 
   { _textureFilter = max; }
-  int getTextureFilter() const {
-	  return _textureFilter;
-  }
+  int getTextureFilter() const
+  { return _textureFilter; }
 
-protected:  
+protected:
   bool getHavePointSprites(unsigned contextId) const;
   bool getHaveFragmentPrograms(unsigned contextId) const;
   bool getHaveVertexPrograms(unsigned contextId) const;
@@ -96,8 +93,6 @@ private:
   bool _pointSpriteLights;
   bool _distanceAttenuationLights;
   int  _textureFilter;
-
-  static OpenThreads::Mutex _instanceMutex;
 };
 
 #endif

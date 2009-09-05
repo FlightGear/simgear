@@ -2,11 +2,9 @@ includedir = @includedir@/magvar
 
 lib_LIBRARIES = libsgmagvar.a
 
-include_HEADERS = magvar.hxx
+include_HEADERS = magvar.hxx coremag.hxx
 
-libsgmagvar_a_SOURCES = \
-	coremag.hxx coremag.cxx \
-	magvar.cxx
+libsgmagvar_a_SOURCES = coremag.cxx magvar.cxx
 
 noinst_PROGRAMS = testmagvar
 

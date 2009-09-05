@@ -132,48 +132,10 @@ public:
   { return fromLonLatRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
 
 
-  /// Return a quaternion rotation from the earth centered to the
-  /// OpenGL/viewer horizontal local frame from given longitude and latitude.
-  /// This frame matches the usual OpenGL axis directions. That is the target
-  /// frame has an x-axis pointing eastwards, y-axis pointing up and y z-axis
-  /// pointing south.
-  static SGQuat viewHLRad(T lon, T lat)
-  {
-    // That bails down to a 3-2-1 euler sequence lon+pi/2, 0, -lat-pi
-    // what is here is again the hand optimized version ...
-    SGQuat q;
-    T xd2 = -T(0.5)*lat - T(0.5)*SGMisc<T>::pi();
-    T zd2 = T(0.5)*lon + T(0.25)*SGMisc<T>::pi();
-    T Szd2 = sin(zd2);
-    T Sxd2 = sin(xd2);
-    T Czd2 = cos(zd2);
-    T Cxd2 = cos(xd2);
-    q.w() = Cxd2*Czd2;
-    q.x() = Sxd2*Czd2;
-    q.y() = Sxd2*Szd2;
-    q.z() = Cxd2*Szd2;
-    return q;
-  }
-  /// Like the above provided for convenience
-  static SGQuat viewHLDeg(T lon, T lat)
-  { return viewHLRad(SGMisc<T>::deg2rad(lon), SGMisc<T>::deg2rad(lat)); }
-  /// Like the above provided for convenience
-  static SGQuat viewHL(const SGGeod& geod)
-  { return viewHLRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
-
-  /// Convert a quaternion rotation from the simulation frame
-  /// to the view (OpenGL) frame. That is it just swaps the axis part of
-  /// this current quaternion.
-  /// That proves useful when you want to use the euler 3-2-1 sequence
-  /// for the usual heading/pitch/roll sequence within the context of
-  /// OpenGL/viewer frames.
-  static SGQuat simToView(const SGQuat& q)
-  { return SGQuat(q.y(), -q.z(), -q.x(), q.w()); }
-
   /// Create a quaternion from the angle axis representation
   static SGQuat fromAngleAxis(T angle, const SGVec3<T>& axis)
   {
-    T angle2 = 0.5*angle;
+    T angle2 = T(0.5)*angle;
     return fromRealImag(cos(angle2), T(sin(angle2))*axis);
   }
 
@@ -188,33 +150,35 @@ public:
     T nAxis = norm(axis);
     if (nAxis <= SGLimits<T>::min())
       return SGQuat::unit();
-    T angle2 = 0.5*nAxis;
+    T angle2 = T(0.5)*nAxis;
     return fromRealImag(cos(angle2), T(sin(angle2)/nAxis)*axis);
   }
 
+  /// Return a quaternion that rotates the from vector onto the to vector.
   static SGQuat fromRotateTo(const SGVec3<T>& from, const SGVec3<T>& to)
   {
     T nfrom = norm(from);
     T nto = norm(to);
-    if (nfrom < SGLimits<T>::min() || nto < SGLimits<T>::min())
+    if (nfrom <= SGLimits<T>::min() || nto <= SGLimits<T>::min())
       return SGQuat::unit();
 
     return SGQuat::fromRotateToNorm((1/nfrom)*from, (1/nto)*to);
   }
 
-  // FIXME more finegrained error behavour.
+  /// Return a quaternion that rotates v1 onto the i1-th unit vector
+  /// and v2 into a plane that is spanned by the i2-th and i1-th unit vector.
   static SGQuat fromRotateTo(const SGVec3<T>& v1, unsigned i1,
                              const SGVec3<T>& v2, unsigned i2)
   {
     T nrmv1 = norm(v1);
     T nrmv2 = norm(v2);
-    if (nrmv1 < SGLimits<T>::min() || nrmv2 < SGLimits<T>::min())
+    if (nrmv1 <= SGLimits<T>::min() || nrmv2 <= SGLimits<T>::min())
       return SGQuat::unit();
 
     SGVec3<T> nv1 = (1/nrmv1)*v1;
     SGVec3<T> nv2 = (1/nrmv2)*v2;
     T dv1v2 = dot(nv1, nv2);
-    if (fabs(fabs(dv1v2)-1) < SGLimits<T>::epsilon())
+    if (fabs(fabs(dv1v2)-1) <= SGLimits<T>::epsilon())
       return SGQuat::unit();
 
     // The target vector for the first rotation
@@ -235,12 +199,12 @@ public:
 
     SGVec3<T> tnv2 = q.transform(nv2);
     T cosang = dot(nto2, tnv2);
-    T cos05ang = T(0.5+0.5*cosang);
+    T cos05ang = T(0.5)+T(0.5)*cosang;
     if (cos05ang <= 0)
-      cosang = T(0);
+      cosang = 0;
     cos05ang = sqrt(cos05ang);
     T sig = dot(nto1, cross(nto2, tnv2));
-    T sin05ang = T(0.5-0.5*cosang);
+    T sin05ang = T(0.5)-T(0.5)*cosang;
     if (sin05ang <= 0)
       sin05ang = 0;
     sin05ang = copysign(sqrt(sin05ang), sig);
@@ -303,24 +267,24 @@ public:
 
     T num = 2*(y()*z() + w()*x());
     T den = sqrQW - sqrQX - sqrQY + sqrQZ;
-    if (fabs(den) < SGLimits<T>::min() &&
-        fabs(num) < SGLimits<T>::min())
+    if (fabs(den) <= SGLimits<T>::min() &&
+        fabs(num) <= SGLimits<T>::min())
       xRad = 0;
     else
       xRad = atan2(num, den);
     
     T tmp = 2*(x()*z() - w()*y());
-    if (tmp < -1)
-      yRad = 0.5*SGMisc<T>::pi();
-    else if (1 < tmp)
-      yRad = -0.5*SGMisc<T>::pi();
+    if (tmp <= -1)
+      yRad = T(0.5)*SGMisc<T>::pi();
+    else if (1 <= tmp)
+      yRad = -T(0.5)*SGMisc<T>::pi();
     else
       yRad = -asin(tmp);
    
     num = 2*(x()*y() + w()*z()); 
     den = sqrQW + sqrQX - sqrQY - sqrQZ;
-    if (fabs(den) < SGLimits<T>::min() &&
-        fabs(num) < SGLimits<T>::min())
+    if (fabs(den) <= SGLimits<T>::min() &&
+        fabs(num) <= SGLimits<T>::min())
       zRad = 0;
     else {
       T psi = atan2(num, den);
@@ -343,14 +307,14 @@ public:
   void getAngleAxis(T& angle, SGVec3<T>& axis) const
   {
     T nrm = norm(*this);
-    if (nrm < SGLimits<T>::min()) {
+    if (nrm <= SGLimits<T>::min()) {
       angle = 0;
       axis = SGVec3<T>(0, 0, 0);
     } else {
       T rNrm = 1/nrm;
       angle = acos(SGMisc<T>::max(-1, SGMisc<T>::min(1, rNrm*w())));
       T sAng = sin(angle);
-      if (fabs(sAng) < SGLimits<T>::min())
+      if (fabs(sAng) <= SGLimits<T>::min())
         axis = SGVec3<T>(1, 0, 0);
       else 
         axis = (rNrm/sAng)*imag(*this);
@@ -466,10 +430,10 @@ public:
   {
     SGQuat deriv;
 
-    deriv.w() = 0.5*(-x()*angVel(0) - y()*angVel(1) - z()*angVel(2));
-    deriv.x() = 0.5*( w()*angVel(0) - z()*angVel(1) + y()*angVel(2));
-    deriv.y() = 0.5*( z()*angVel(0) + w()*angVel(1) - x()*angVel(2));
-    deriv.z() = 0.5*(-y()*angVel(0) + x()*angVel(1) + w()*angVel(2));
+    deriv.w() = T(0.5)*(-x()*angVel(0) - y()*angVel(1) - z()*angVel(2));
+    deriv.x() = T(0.5)*( w()*angVel(0) - z()*angVel(1) + y()*angVel(2));
+    deriv.y() = T(0.5)*( z()*angVel(0) + w()*angVel(1) - x()*angVel(2));
+    deriv.z() = T(0.5)*(-y()*angVel(0) + x()*angVel(1) + w()*angVel(2));
     
     return deriv;
   }
@@ -494,7 +458,7 @@ private:
     // in the interval [-pi,pi]. That means that 0.5*angle is in the interval
     // [-pi/2,pi/2]. But in that range the cosine is allways >= 0.
     // So we do not need to care for egative roots in the following equation:
-    T cos05ang = sqrt(0.5+0.5*cosang);
+    T cos05ang = sqrt(T(0.5)+T(0.5)*cosang);
 
 
     // Now our assumption of angles <= 90 deg comes in play.
@@ -734,7 +698,7 @@ interpolate(T t, const SGQuat<T>& src, const SGQuat<T>& dst)
   // need the scales now, if the angle is very small, do linear interpolation
   // to avoid instabilities
   T scale0, scale1;
-  if (fabs(o) < SGLimits<T>::epsilon()) {
+  if (fabs(o) <= SGLimits<T>::epsilon()) {
     scale0 = 1 - t;
     scale1 = t;
   } else {

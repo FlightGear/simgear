@@ -274,8 +274,8 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
         colors(2, i) = (sky_color - upperVisFactor * diff).osg();
         colors(3, i) = (sky_color - middleVisFactor * diff + middle_amt).osg();
         colors(4, i) = (fog_color + outer_amt).osg();
-        colors(0, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .3942);
-        colors(1, i) = simgear::math::lerp(sky_color.osg(), colors(2, i), .7885);
+        colors(0, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .3942);
+        colors(1, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .7885);
         for (int j = 0; j < numRings - 1; ++j)
             clampColor(colors(j, i));
         outer_amt -= outer_diff;

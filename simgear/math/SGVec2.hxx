@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2006-2009  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -22,58 +22,14 @@
 #include <ieeefp.h>
 #endif
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Vec2f>
 #include <osg/Vec2d>
-
-template<typename T>
-struct SGVec2Storage {
-  /// Readonly raw storage interface
-  const T (&data(void) const)[2]
-  { return _data; }
-  /// Readonly raw storage interface
-  T (&data(void))[2]
-  { return _data; }
-
-  void osg() const
-  { }
-
-private:
-  T _data[2];
-};
-
-template<>
-struct SGVec2Storage<float> : public osg::Vec2f {
-  /// Access raw data by index, the index is unchecked
-  const float (&data(void) const)[2]
-  { return osg::Vec2f::_v; }
-  /// Access raw data by index, the index is unchecked
-  float (&data(void))[2]
-  { return osg::Vec2f::_v; }
-
-  const osg::Vec2f& osg() const
-  { return *this; }
-  osg::Vec2f& osg()
-  { return *this; }
-};
-
-template<>
-struct SGVec2Storage<double> : public osg::Vec2d {
-  /// Access raw data by index, the index is unchecked
-  const double (&data(void) const)[2]
-  { return osg::Vec2d::_v; }
-  /// Access raw data by index, the index is unchecked
-  double (&data(void))[2]
-  { return osg::Vec2d::_v; }
-
-  const osg::Vec2d& osg() const
-  { return *this; }
-  osg::Vec2d& osg()
-  { return *this; }
-};
+#endif
 
 /// 2D Vector Class
 template<typename T>
-class SGVec2 : protected SGVec2Storage<T> {
+class SGVec2 {
 public:
   typedef T value_type;
 
@@ -99,10 +55,12 @@ public:
   template<typename S>
   explicit SGVec2(const SGVec2<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
   explicit SGVec2(const osg::Vec2f& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
   explicit SGVec2(const osg::Vec2d& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
+#endif
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -131,18 +89,17 @@ public:
   T& y(void)
   { return data()[1]; }
 
-  /// Get the data pointer
-  using SGVec2Storage<T>::data;
+  /// Access raw data
+  const T (&data(void) const)[2]
+  { return _data; }
+  /// Access raw data
+  T (&data(void))[2]
+  { return _data; }
 
-  /// Readonly interface function to ssg's sgVec2/sgdVec2
-  const T (&sg(void) const)[2]
-  { return data(); }
-  /// Interface function to ssg's sgVec2/sgdVec2
-  T (&sg(void))[2]
-  { return data(); }
-
-  /// Interface function to osg's Vec2*
-  using SGVec2Storage<T>::osg;
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+  osg::Vec2d osg() const
+  { return osg::Vec2d(data()[0], data()[1]); }
+#endif
 
   /// Inplace addition
   SGVec2& operator+=(const SGVec2& v)
@@ -167,6 +124,9 @@ public:
   { return SGVec2(1, 0); }
   static SGVec2 e2(void)
   { return SGVec2(0, 1); }
+
+private:
+  T _data[2];
 };
 
 /// Unary +, do nothing ...
@@ -408,5 +368,28 @@ inline
 SGVec2d
 toVec2d(const SGVec2f& v)
 { return SGVec2d(v(0), v(1)); }
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+inline
+SGVec2d
+toSG(const osg::Vec2d& v)
+{ return SGVec2d(v[0], v[1]); }
+
+inline
+SGVec2f
+toSG(const osg::Vec2f& v)
+{ return SGVec2f(v[0], v[1]); }
+
+inline
+osg::Vec2d
+toOsg(const SGVec2d& v)
+{ return osg::Vec2d(v[0], v[1]); }
+
+inline
+osg::Vec2f
+toOsg(const SGVec2f& v)
+{ return osg::Vec2f(v[0], v[1]); }
+
+#endif
 
 #endif

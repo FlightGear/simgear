@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2006-2009  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -18,58 +18,14 @@
 #ifndef SGVec4_H
 #define SGVec4_H
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Vec4f>
 #include <osg/Vec4d>
-
-template<typename T>
-struct SGVec4Storage {
-  /// Readonly raw storage interface
-  const T (&data(void) const)[4]
-  { return _data; }
-  /// Readonly raw storage interface
-  T (&data(void))[4]
-  { return _data; }
-
-  void osg() const
-  { }
-
-private:
-  T _data[4];
-};
-
-template<>
-struct SGVec4Storage<float> : public osg::Vec4f {
-  /// Access raw data by index, the index is unchecked
-  const float (&data(void) const)[4]
-  { return osg::Vec4f::_v; }
-  /// Access raw data by index, the index is unchecked
-  float (&data(void))[4]
-  { return osg::Vec4f::_v; }
-
-  const osg::Vec4f& osg() const
-  { return *this; }
-  osg::Vec4f& osg()
-  { return *this; }
-};
-
-template<>
-struct SGVec4Storage<double> : public osg::Vec4d {
-  /// Access raw data by index, the index is unchecked
-  const double (&data(void) const)[4]
-  { return osg::Vec4d::_v; }
-  /// Access raw data by index, the index is unchecked
-  double (&data(void))[4]
-  { return osg::Vec4d::_v; }
-
-  const osg::Vec4d& osg() const
-  { return *this; }
-  osg::Vec4d& osg()
-  { return *this; }
-};
+#endif
 
 /// 4D Vector Class
 template<typename T>
-class SGVec4 : protected SGVec4Storage<T> {
+class SGVec4 {
 public:
   typedef T value_type;
 
@@ -95,13 +51,14 @@ public:
   template<typename S>
   explicit SGVec4(const SGVec4<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+  explicit SGVec4(const SGVec3<T>& v3, const T& v4 = 0)
+  { data()[0] = v3[0]; data()[1] = v3[1]; data()[2] = v3[2]; data()[3] = v4; }
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
   explicit SGVec4(const osg::Vec4f& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
   explicit SGVec4(const osg::Vec4d& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
-  explicit SGVec4(const SGVec3<T>& v3, const T& v4 = 0)
-  { data()[0] = v3[0]; data()[1] = v3[1]; data()[2] = v3[2]; data()[3] = v4; }
-
+#endif
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -142,18 +99,17 @@ public:
   T& w(void)
   { return data()[3]; }
 
-  /// Get the data pointer
-  using SGVec4Storage<T>::data;
+  /// Readonly raw storage interface
+  const T (&data(void) const)[4]
+  { return _data; }
+  /// Readonly raw storage interface
+  T (&data(void))[4]
+  { return _data; }
 
-  /// Readonly interface function to ssg's sgVec4/sgdVec4
-  const T (&sg(void) const)[4]
-  { return data(); }
-  /// Interface function to ssg's sgVec4/sgdVec4
-  T (&sg(void))[4]
-  { return data(); }
-
-  /// Interface function to osg's Vec4*
-  using SGVec4Storage<T>::osg;
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+  osg::Vec4d osg() const
+  { return osg::Vec4d(data()[0], data()[1], data()[2], data()[3]); }
+#endif
 
   /// Inplace addition
   SGVec4& operator+=(const SGVec4& v)
@@ -182,6 +138,9 @@ public:
   { return SGVec4(0, 0, 1, 0); }
   static SGVec4 e4(void)
   { return SGVec4(0, 0, 0, 1); }
+
+private:
+  T _data[4];
 };
 
 /// Unary +, do nothing ...
@@ -462,5 +421,27 @@ inline
 SGVec4d
 toVec4d(const SGVec4f& v)
 { return SGVec4d(v(0), v(1), v(2), v(3)); }
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+inline
+SGVec4d
+toSG(const osg::Vec4d& v)
+{ return SGVec4d(v[0], v[1], v[2], v[3]); }
+
+inline
+SGVec4f
+toSG(const osg::Vec4f& v)
+{ return SGVec4f(v[0], v[1], v[2], v[3]); }
+
+inline
+osg::Vec4d
+toOsg(const SGVec4d& v)
+{ return osg::Vec4d(v[0], v[1], v[2], v[3]); }
+
+inline
+osg::Vec4f
+toOsg(const SGVec4f& v)
+{ return osg::Vec4f(v[0], v[1], v[2], v[3]); }
+#endif
 
 #endif

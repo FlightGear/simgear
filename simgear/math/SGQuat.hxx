@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2006-2009  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,42 +26,13 @@
 #undef max
 #endif
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Quat>
+#endif
 
+/// Quaternion Class
 template<typename T>
-struct SGQuatStorage {
-  /// Readonly raw storage interface
-  const T (&data(void) const)[4]
-  { return _data; }
-  /// Readonly raw storage interface
-  T (&data(void))[4]
-  { return _data; }
-
-  void osg() const
-  { }
-
-private:
-  T _data[4];
-};
-
-template<>
-struct SGQuatStorage<double> : public osg::Quat {
-  /// Access raw data by index, the index is unchecked
-  const double (&data(void) const)[4]
-  { return osg::Quat::_v; }
-  /// Access raw data by index, the index is unchecked
-  double (&data(void))[4]
-  { return osg::Quat::_v; }
-
-  const osg::Quat& osg() const
-  { return *this; }
-  osg::Quat& osg()
-  { return *this; }
-};
-
-/// 3D Vector Class
-template<typename T>
-class SGQuat : protected SGQuatStorage<T> {
+class SGQuat {
 public:
   typedef T value_type;
 
@@ -84,8 +55,10 @@ public:
   /// make sure it has at least 4 elements
   explicit SGQuat(const T* d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
   explicit SGQuat(const osg::Quat& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
+#endif
 
   /// Return a unit quaternion
   static SGQuat unit(void)
@@ -157,6 +130,7 @@ public:
   /// Like the above provided for convenience
   static SGQuat fromLonLat(const SGGeod& geod)
   { return fromLonLatRad(geod.getLongitudeRad(), geod.getLatitudeRad()); }
+
 
   /// Return a quaternion rotation from the earth centered to the
   /// OpenGL/viewer horizontal local frame from given longitude and latitude.
@@ -432,17 +406,16 @@ public:
   { return data()[3]; }
 
   /// Get the data pointer
-  using SGQuatStorage<T>::data;
+  const T (&data(void) const)[4]
+  { return _data; }
+  /// Get the data pointer
+  T (&data(void))[4]
+  { return _data; }
 
-  /// Readonly interface function to ssg's sgQuat/sgdQuat
-  const T (&sg(void) const)[4]
-  { return data(); }
-  /// Interface function to ssg's sgQuat/sgdQuat
-  T (&sg(void))[4]
-  { return data(); }
-
-  /// Interface function to osg's Quat*
-  using SGQuatStorage<T>::osg;
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+  osg::Quat osg() const
+  { return osg::Quat(data()[0], data()[1], data()[2], data()[3]); }
+#endif
 
   /// Inplace addition
   SGQuat& operator+=(const SGQuat& v)
@@ -561,6 +534,8 @@ private:
     SGQuat q2 = SGQuat::fromRotateToSmaller90Deg(-cosang, -from, to);
     return q1*q2;
   }
+
+  T _data[4];
 };
 
 /// Unary +, do nothing ...
@@ -789,5 +764,17 @@ inline
 SGQuatd
 toQuatd(const SGQuatf& v)
 { return SGQuatd(v(0), v(1), v(2), v(3)); }
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+inline
+SGQuatd
+toSG(const osg::Quat& q)
+{ return SGQuatd(q[0], q[1], q[2], q[3]); }
+
+inline
+osg::Quat
+toOsg(const SGQuatd& q)
+{ return osg::Quat(q[0], q[1], q[2], q[3]); }
+#endif
 
 #endif

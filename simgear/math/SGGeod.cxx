@@ -17,13 +17,15 @@
 
 #include "SGMath.hxx"
 
-osg::Matrix SGGeod::makeSimulationFrameRelative()
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+
+osg::Matrix SGGeod::makeSimulationFrameRelative() const
 {
     SGQuatd hlOr = SGQuatd::fromLonLat(*this);
     return osg::Matrix(hlOr.osg());
 }
 
-osg::Matrix SGGeod::makeSimulationFrame()
+osg::Matrix SGGeod::makeSimulationFrame() const
 {
     osg::Matrix result(makeSimulationFrameRelative());
     SGVec3d coord;
@@ -32,7 +34,7 @@ osg::Matrix SGGeod::makeSimulationFrame()
     return result;
 }
 
-osg::Matrix SGGeod::makeZUpFrameRelative()
+osg::Matrix SGGeod::makeZUpFrameRelative() const
 {
     osg::Matrix result(makeSimulationFrameRelative());
     // 180 degree rotation around Y axis
@@ -41,7 +43,7 @@ osg::Matrix SGGeod::makeZUpFrameRelative()
     return result;
 }
 
-osg::Matrix SGGeod::makeZUpFrame()
+osg::Matrix SGGeod::makeZUpFrame() const
 {
     osg::Matrix result(makeZUpFrameRelative());
     SGVec3d coord;
@@ -49,3 +51,5 @@ osg::Matrix SGGeod::makeZUpFrame()
     result.setTrans(coord.osg());
     return result;
 }
+
+#endif

@@ -20,7 +20,9 @@
 
 #include <simgear/constants.h>
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Matrix>
+#endif
 
 // #define SG_GEOD_NATIVE_DEGREE
 
@@ -84,25 +86,27 @@ public:
   /// Set the geodetic elevation from the argument given in feet
   void setElevationFt(double elevation);
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
   // Create a local coordinate frame in the earth-centered frame of
   // reference. X points north, Z points down.
   // makeSimulationFrameRelative() only includes rotation.
-    
-  osg::Matrix makeSimulationFrameRelative();
-  osg::Matrix makeSimulationFrame();    
+  osg::Matrix makeSimulationFrameRelative() const;
+  osg::Matrix makeSimulationFrame() const;
 
   // Create a Z-up local coordinate frame in the earth-centered frame
   // of reference. This is what scenery models, etc. expect.
   // makeZUpFrameRelative() only includes rotation.
-  osg::Matrix makeZUpFrameRelative();
-  osg::Matrix makeZUpFrame();    
+  osg::Matrix makeZUpFrameRelative() const;
+  osg::Matrix makeZUpFrame() const;
+#endif
 private:
   /// This one is private since construction is not unique if you do
   /// not know the units of the arguments. Use the factory methods for
   /// that purpose
   SGGeod(double lon, double lat, double elevation);
 
-  /// The actual data, angles in degree, elevation in meters
+  //// FIXME: wrong comment!
+  /// The actual data, angles in degrees, elevation in meters
   /// The rationale for storing the values in degrees is that most code places
   /// in flightgear/terragear use degrees as a nativ input and output value.
   /// The places where it makes sense to use radians is when we convert

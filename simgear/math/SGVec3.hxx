@@ -1,4 +1,4 @@
-// Copyright (C) 2006  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2006-2009  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -18,58 +18,14 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Vec3f>
 #include <osg/Vec3d>
-
-template<typename T>
-struct SGVec3Storage {
-  /// Readonly raw storage interface
-  const T (&data(void) const)[3]
-  { return _data; }
-  /// Readonly raw storage interface
-  T (&data(void))[3]
-  { return _data; }
-
-  void osg() const
-  { }
-
-private:
-  T _data[3];
-};
-
-template<>
-struct SGVec3Storage<float> : public osg::Vec3f {
-  /// Access raw data by index, the index is unchecked
-  const float (&data(void) const)[3]
-  { return osg::Vec3f::_v; }
-  /// Access raw data by index, the index is unchecked
-  float (&data(void))[3]
-  { return osg::Vec3f::_v; }
-
-  const osg::Vec3f& osg() const
-  { return *this; }
-  osg::Vec3f& osg()
-  { return *this; }
-};
-
-template<>
-struct SGVec3Storage<double> : public osg::Vec3d {
-  /// Access raw data by index, the index is unchecked
-  const double (&data(void) const)[3]
-  { return osg::Vec3d::_v; }
-  /// Access raw data by index, the index is unchecked
-  double (&data(void))[3]
-  { return osg::Vec3d::_v; }
-
-  const osg::Vec3d& osg() const
-  { return *this; }
-  osg::Vec3d& osg()
-  { return *this; }
-};
+#endif
 
 /// 3D Vector Class
 template<typename T>
-class SGVec3 : protected SGVec3Storage<T> {
+class SGVec3 {
 public:
   typedef T value_type;
 
@@ -95,12 +51,14 @@ public:
   template<typename S>
   explicit SGVec3(const SGVec3<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
+  explicit SGVec3(const SGVec2<T>& v2, const T& v3 = 0)
+  { data()[0] = v2[0]; data()[1] = v2[1]; data()[2] = v3; }
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
   explicit SGVec3(const osg::Vec3f& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
   explicit SGVec3(const osg::Vec3d& d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; }
-  explicit SGVec3(const SGVec2<T>& v2, const T& v3 = 0)
-  { data()[0] = v2[0]; data()[1] = v2[1]; data()[2] = v3; }
+#endif
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -135,18 +93,17 @@ public:
   T& z(void)
   { return data()[2]; }
 
-  /// Get the data pointer
-  using SGVec3Storage<T>::data;
+  /// Readonly raw storage interface
+  const T (&data(void) const)[3]
+  { return _data; }
+  /// Readonly raw storage interface
+  T (&data(void))[3]
+  { return _data; }
 
-  /// Readonly interface function to ssg's sgVec3/sgdVec3
-  const T (&sg(void) const)[3]
-  { return data(); }
-  /// Interface function to ssg's sgVec3/sgdVec3
-  T (&sg(void))[3]
-  { return data(); }
-
-  /// Interface function to osg's Vec3*
-  using SGVec3Storage<T>::osg;
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+  osg::Vec3d osg() const
+  { return osg::Vec3d(data()[0], data()[1], data()[2]); }
+#endif
 
   /// Inplace addition
   SGVec3& operator+=(const SGVec3& v)
@@ -180,6 +137,9 @@ public:
   /// Constructor. Initialize by a geocentric coordinate
   /// Note that this conversion is relatively expensive to compute
   static SGVec3 fromGeoc(const SGGeoc& geoc);
+
+private:
+  T _data[3];
 };
 
 template<>
@@ -526,5 +486,27 @@ inline
 SGVec3d
 toVec3d(const SGVec3f& v)
 { return SGVec3d(v(0), v(1), v(2)); }
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+inline
+SGVec3d
+toSG(const osg::Vec3d& v)
+{ return SGVec3d(v[0], v[1], v[2]); }
+
+inline
+SGVec3f
+toSG(const osg::Vec3f& v)
+{ return SGVec3f(v[0], v[1], v[2]); }
+
+inline
+osg::Vec3d
+toOsg(const SGVec3d& v)
+{ return osg::Vec3d(v[0], v[1], v[2]); }
+
+inline
+osg::Vec3f
+toOsg(const SGVec3f& v)
+{ return osg::Vec3f(v[0], v[1], v[2]); }
+#endif
 
 #endif

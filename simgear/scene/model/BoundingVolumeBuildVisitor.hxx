@@ -27,8 +27,6 @@
 #include <osg/Transform>
 #include <osg/TriangleFunctor>
 
-#include <simgear/scene/material/Effect.hxx>
-#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
@@ -386,10 +384,10 @@ public:
     {
     }
 
-    const SGMaterial* pushMaterial(Effect* effect)
+    const SGMaterial* pushMaterial(osg::Geode* geode)
     {
         const SGMaterial* oldMaterial = _primitiveFunctor.getCurrentMaterial();
-        const SGMaterial* material = SGMaterialLib::findMaterial(effect);
+        const SGMaterial* material = SGMaterialLib::findMaterial(geode);
         if (material)
             _primitiveFunctor.setCurrentMaterial(material);
         return oldMaterial;
@@ -405,17 +403,16 @@ public:
         if (hasBoundingVolumeTree(geode))
             return;
 
-        const SGMaterial* oldMaterial = 0;
-
-        EffectGeode *eg = dynamic_cast<EffectGeode*>(&geode);
-        if (eg)
-            oldMaterial = pushMaterial(eg->getEffect());
+        const SGMaterial* oldMaterial = pushMaterial(&geode);
 
         bool flushHere = getNodePath().size() <= 1 || _dumpIntoLeafs;
         if (flushHere) {
             // push the current active primitive list
             PFunctor previousPrimitives;
             _primitiveFunctor.swap(previousPrimitives);
+
+            const SGMaterial* mat = previousPrimitives.getCurrentMaterial();
+            _primitiveFunctor.setCurrentMaterial(mat);
 
             // walk the children
             for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
@@ -430,8 +427,8 @@ public:
             for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
                 fillWith(geode.getDrawable(i));
         }
-        if (eg)
-            _primitiveFunctor.setCurrentMaterial(oldMaterial);
+
+        _primitiveFunctor.setCurrentMaterial(oldMaterial);
     }
 
     virtual void apply(osg::Group& group)
@@ -460,6 +457,9 @@ public:
         // push the current active primitive list
         PFunctor previousPrimitives;
         _primitiveFunctor.swap(previousPrimitives);
+
+        const SGMaterial* mat = previousPrimitives.getCurrentMaterial();
+        _primitiveFunctor.setCurrentMaterial(mat);
 
         // walk the children
         traverse(node);

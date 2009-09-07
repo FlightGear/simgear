@@ -127,15 +127,20 @@ SGMaterialLib::~SGMaterialLib ( void ) {
 }
 
 const SGMaterial*
-SGMaterialLib::findMaterial(const simgear::Effect* effect)
+SGMaterialLib::findMaterial(const osg::Geode* geode)
 {
-  if (!effect)
-    return 0;
-
-  const SGMaterialUserData* matUserData
-    = dynamic_cast<const SGMaterialUserData*>(effect->getUserData());
-  if (!matUserData)
-    return 0;
-  else
-    return matUserData->getMaterial();
+    if (!geode)
+        return 0;
+    const simgear::EffectGeode* effectGeode;
+    effectGeode = dynamic_cast<const simgear::EffectGeode*>(geode);
+    if (!effectGeode)
+        return 0;
+    const simgear::Effect* effect = effectGeode->getEffect();
+    if (!effect)
+        return 0;
+    const SGMaterialUserData* userData;
+    userData = dynamic_cast<const SGMaterialUserData*>(effect->getUserData());
+    if (!userData)
+        return 0;
+    return userData->getMaterial();
 }

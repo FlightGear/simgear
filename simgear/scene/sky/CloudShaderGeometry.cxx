@@ -74,7 +74,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
              itr != end;
              ++itr) {
             Vec4f projPos
-                = Vec4f(_cloudsprites[itr->idx].position.osg(), 1.0f) * mvp;
+                = Vec4f(toOsg(_cloudsprites[itr->idx].position), 1.0f) * mvp;
             itr->depth = projPos.z() / projPos.w();
         }
         // Already sorted?

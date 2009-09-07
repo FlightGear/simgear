@@ -131,7 +131,7 @@ bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 	disable();
     }
     SGCloudField::updateFog((double)effective_visibility,
-                            osg::Vec4f(sc.fog_color.osg(), 1.0f));
+                            osg::Vec4f(toOsg(sc.fog_color), 1.0f));
     return true;
 }
 
@@ -150,7 +150,7 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     dome->reposition( st.zero_elev, st.alt, st.lon, st.lat, st.spin );
 
     osg::Matrix m = osg::Matrix::rotate(angleRad, osg::Vec3(0, 0, -1));
-    m.postMultTranslate(st.view_pos.osg());
+    m.postMultTranslate(toOsg(st.view_pos));
     _ephTransform->setMatrix(m);
 
     double sun_ra = eph.getSunRightAscension();

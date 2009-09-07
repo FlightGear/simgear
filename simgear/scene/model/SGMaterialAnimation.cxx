@@ -100,7 +100,7 @@ struct ColorSpec {
 
   osg::Vec4 rgbaVec4()
   {
-    return rgba().osg();
+    return toOsg(rgba());
   }
   
   SGVec4f &initialRgba() {

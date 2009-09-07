@@ -40,7 +40,7 @@ public:
                    const SGQuatd& globalViewOrientation)
   {
     mGlobalGeodEyePos = SGGeod::fromCart(globalEyePos);
-    _currentEyePos = globalEyePos.osg();
+    _currentEyePos = toOsg(globalEyePos);
     mGlobalEyePos = globalEyePos;
     mGlobalViewOr = globalViewOrientation;
     mGlobalHorizLocalOr = SGQuatd::fromLonLat(mGlobalGeodEyePos);

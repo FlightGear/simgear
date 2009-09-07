@@ -22,7 +22,7 @@
 osg::Matrix SGGeod::makeSimulationFrameRelative() const
 {
     SGQuatd hlOr = SGQuatd::fromLonLat(*this);
-    return osg::Matrix(hlOr.osg());
+    return osg::Matrix(toOsg(hlOr));
 }
 
 osg::Matrix SGGeod::makeSimulationFrame() const
@@ -30,7 +30,7 @@ osg::Matrix SGGeod::makeSimulationFrame() const
     osg::Matrix result(makeSimulationFrameRelative());
     SGVec3d coord;
     SGGeodesy::SGGeodToCart(*this, coord);
-    result.setTrans(coord.osg());
+    result.setTrans(toOsg(coord));
     return result;
 }
 
@@ -48,7 +48,7 @@ osg::Matrix SGGeod::makeZUpFrame() const
     osg::Matrix result(makeZUpFrameRelative());
     SGVec3d coord;
     SGGeodesy::SGGeodToCart(*this, coord);
-    result.setTrans(coord.osg());
+    result.setTrans(toOsg(coord));
     return result;
 }
 

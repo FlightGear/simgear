@@ -616,7 +616,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
           // location, and then apply the rotation matrix created
           // above, with an additional random heading rotation if appropriate.
           osg::Matrix transformMat;
-          transformMat = osg::Matrix::translate(obj.position.osg());
+          transformMat = osg::Matrix::translate(toOsg(obj.position));
           if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
             // Rotate the object around the z axis.
             double hdg = mt_rand(&seed) * M_PI * 2;
@@ -758,8 +758,8 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   // The toplevel transform for that tile.
   osg::MatrixTransform* transform = new osg::MatrixTransform;
   transform->setName(path);
-  transform->setMatrix(osg::Matrix::rotate(hlOr.osg())*
-                       osg::Matrix::translate(center.osg()));
+  transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
+                       osg::Matrix::translate(toOsg(center)));
   transform->addChild(terrainGroup);
   if (lightGroup->getNumChildren() > 0) {
     osg::LOD* lightLOD = new osg::LOD;

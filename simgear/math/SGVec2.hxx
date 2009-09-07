@@ -55,12 +55,6 @@ public:
   template<typename S>
   explicit SGVec2(const SGVec2<S>& d)
   { data()[0] = d[0]; data()[1] = d[1]; }
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  explicit SGVec2(const osg::Vec2f& d)
-  { data()[0] = d[0]; data()[1] = d[1]; }
-  explicit SGVec2(const osg::Vec2d& d)
-  { data()[0] = d[0]; data()[1] = d[1]; }
-#endif
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -95,11 +89,6 @@ public:
   /// Access raw data
   T (&data(void))[2]
   { return _data; }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  osg::Vec2d osg() const
-  { return osg::Vec2d(data()[0], data()[1]); }
-#endif
 
   /// Inplace addition
   SGVec2& operator+=(const SGVec2& v)

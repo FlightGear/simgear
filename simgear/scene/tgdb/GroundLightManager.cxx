@@ -35,15 +35,15 @@ void GroundLightManager::update(const SGUpdateVisitor* updateVisitor)
     SGVec4f fogColor = updateVisitor->getFogColor();
     fog = static_cast<osg::Fog*>(runwayLightSS
                                  ->getAttribute(StateAttribute::FOG));
-    fog->setColor(fogColor.osg());
+    fog->setColor(toOsg(fogColor));
     fog->setDensity(updateVisitor->getRunwayFogExp2Density());
     fog = static_cast<osg::Fog*>(taxiLightSS
                                  ->getAttribute(StateAttribute::FOG));
-    fog->setColor(fogColor.osg());
+    fog->setColor(toOsg(fogColor));
     fog->setDensity(updateVisitor->getTaxiFogExp2Density());
     fog = static_cast<osg::Fog*>(groundLightSS
                                  ->getAttribute(StateAttribute::FOG));
-    fog->setColor(fogColor.osg());
+    fog->setColor(toOsg(fogColor));
     fog->setDensity(updateVisitor->getGroundLightsFogExp2Density());
 }
 

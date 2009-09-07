@@ -96,7 +96,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         // First time or very large distance
         SGVec3<double> cart;
         SGGeodesy::SGGeodToCart(SGGeod::fromRad(lon, lat), cart);
-        T.makeTranslate(cart.osg());
+        T.makeTranslate(toOsg(cart));
         
         LON.makeRotate(lon, osg::Vec3(0, 0, 1));
         LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
@@ -129,7 +129,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         
         SGVec3<double> cart;
         SGGeodesy::SGGeodToCart(SGGeod::fromRad(cld_pos.getLongitudeRad(), cld_pos.getLatitudeRad()), cart);
-        T.makeTranslate(cart.osg());
+        T.makeTranslate(toOsg(cart));
         
         LON.makeRotate(cld_pos.getLongitudeRad(), osg::Vec3(0, 0, 1));
         LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - cld_pos.getLatitudeRad(), osg::Vec3(0, 1, 0));
@@ -274,7 +274,7 @@ void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
         
         osg::ref_ptr<osg::PositionAttitudeTransform> transform = new osg::PositionAttitudeTransform;
 
-        transform->setPosition(pos.osg());
+        transform->setPosition(toOsg(pos));
         transform->addChild(geode.get());
         
         field_group[x][y]->addChild(transform.get(), true);

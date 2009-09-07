@@ -309,25 +309,25 @@ public:
       triangle_ref triangle = triangles[i];
       if (indexMap[triangle[0]] == invalid) {
         indexMap[triangle[0]] = vertices->size();
-        vertices->push_back(getVertex(triangle[0]).vertex.osg());
-        normals->push_back(getVertex(triangle[0]).normal.osg());
-        texCoords->push_back(getVertex(triangle[0]).texCoord.osg());
+        vertices->push_back(toOsg(getVertex(triangle[0]).vertex));
+        normals->push_back(toOsg(getVertex(triangle[0]).normal));
+        texCoords->push_back(toOsg(getVertex(triangle[0]).texCoord));
       }
       deFacade.push_back(indexMap[triangle[0]]);
 
       if (indexMap[triangle[1]] == invalid) {
         indexMap[triangle[1]] = vertices->size();
-        vertices->push_back(getVertex(triangle[1]).vertex.osg());
-        normals->push_back(getVertex(triangle[1]).normal.osg());
-        texCoords->push_back(getVertex(triangle[1]).texCoord.osg());
+        vertices->push_back(toOsg(getVertex(triangle[1]).vertex));
+        normals->push_back(toOsg(getVertex(triangle[1]).normal));
+        texCoords->push_back(toOsg(getVertex(triangle[1]).texCoord));
       }
       deFacade.push_back(indexMap[triangle[1]]);
 
       if (indexMap[triangle[2]] == invalid) {
         indexMap[triangle[2]] = vertices->size();
-        vertices->push_back(getVertex(triangle[2]).vertex.osg());
-        normals->push_back(getVertex(triangle[2]).normal.osg());
-        texCoords->push_back(getVertex(triangle[2]).texCoord.osg());
+        vertices->push_back(toOsg(getVertex(triangle[2]).vertex));
+        normals->push_back(toOsg(getVertex(triangle[2]).normal));
+        texCoords->push_back(toOsg(getVertex(triangle[2]).texCoord));
       }
       deFacade.push_back(indexMap[triangle[2]]);
     }

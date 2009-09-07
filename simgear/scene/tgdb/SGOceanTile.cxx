@@ -140,9 +140,9 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
   
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; ++i) {
-            vlArray(j, i) = rel[j][i].osg();
-            nlArray(j, i) = normals[j][i].osg();
-            tlArray(j, i) = texsArray(j, i).toSGVec2f().osg();
+            vlArray(j, i) = toOsg(rel[j][i]);
+            nlArray(j, i) = toOsg(normals[j][i]);
+            tlArray(j, i) = toOsg(texsArray(j, i).toSGVec2f());
         }
     }
 
@@ -313,8 +313,8 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
 
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName("Ocean");
-    transform->setMatrix(osg::Matrix::rotate(hlOr.osg())*
-                         osg::Matrix::translate(cartCenter.osg()));
+    transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
+                         osg::Matrix::translate(toOsg(cartCenter)));
     transform->addChild(geode);
   
     return transform;

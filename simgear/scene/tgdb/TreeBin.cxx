@@ -181,7 +181,7 @@ Geode* createTreeGeode(float width, float height, int varieties)
 
 void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
 {
-    const Vec3& pos = p.osg();
+    Vec3 pos = toOsg(p);
     unsigned int numDrawables = geode->getNumDrawables();
     Geometry* geom
         = static_cast<Geometry*>(geode->getDrawable(numDrawables - 1));
@@ -287,7 +287,7 @@ struct GetTreeCoord
 {
     Vec3 operator() (const TreeBin::Tree& tree) const
     {
-        return tree.position.osg();
+        return toOsg(tree.position);
     }
 };
 
@@ -300,8 +300,8 @@ struct TreeTransformer
     TreeTransformer(Matrix& mat_) : mat(mat_) {}
     TreeBin::Tree operator()(const TreeBin::Tree& tree) const
     {
-        const Vec3& pos = tree.position.osg();
-        return TreeBin::Tree(SGVec3f(pos * mat));
+        Vec3 pos = toOsg(tree.position);
+        return TreeBin::Tree(toSG(pos * mat));
     }
     Matrix mat;
 };

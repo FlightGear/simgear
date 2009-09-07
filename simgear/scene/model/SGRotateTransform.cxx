@@ -128,7 +128,7 @@ osg::BoundingSphere
 SGRotateTransform::computeBound() const
 {
   osg::BoundingSphere bs = osg::Group::computeBound();
-  osg::BoundingSphere centerbs(_center.osg(), bs.radius());
+  osg::BoundingSphere centerbs(toOsg(_center), bs.radius());
   centerbs.expandBy(bs);
   return centerbs;
 }
@@ -147,7 +147,7 @@ bool RotateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
             fr += 3;
         else
             return false;
-        rot.setCenter(SGVec3d(center));
+        rot.setCenter(toSG(center));
     }
     if (fr[0].matchWord("axis")) {
         ++fr;
@@ -156,7 +156,7 @@ bool RotateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
             fr += 3;
         else
             return false;
-        rot.setCenter(SGVec3d(axis));
+        rot.setCenter(toSG(axis));
     }
     if (fr[0].matchWord("angle")) {
         ++fr;

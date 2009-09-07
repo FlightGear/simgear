@@ -237,8 +237,8 @@ SGLightFactory::getLightDrawable(const SGLightBin::Light& light)
   osg::Vec3Array* vertices = new osg::Vec3Array;
   osg::Vec4Array* colors = new osg::Vec4Array;
 
-  vertices->push_back(light.position.osg());
-  colors->push_back(light.color.osg());
+  vertices->push_back(toOsg(light.position));
+  colors->push_back(toOsg(light.color));
   
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setVertexArray(vertices);
@@ -270,12 +270,12 @@ SGLightFactory::getLightDrawable(const SGDirectionalLightBin::Light& light)
   SGVec3f perp1 = perpendicular(normal);
   SGVec3f perp2 = cross(normal, perp1);
   SGVec3f position = light.position;
-  vertices->push_back(position.osg());
-  vertices->push_back((position + perp1).osg());
-  vertices->push_back((position + perp2).osg());
-  colors->push_back(visibleColor.osg());
-  colors->push_back(invisibleColor.osg());
-  colors->push_back(invisibleColor.osg());
+  vertices->push_back(toOsg(position));
+  vertices->push_back(toOsg(position + perp1));
+  vertices->push_back(toOsg(position + perp2));
+  colors->push_back(toOsg(visibleColor));
+  colors->push_back(toOsg(invisibleColor));
+  colors->push_back(toOsg(invisibleColor));
   
   osg::Geometry* geometry = new osg::Geometry;
   geometry->setVertexArray(vertices);
@@ -307,10 +307,10 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
   osg::Vec4Array* colors = new osg::Vec4Array;
 
   for (unsigned i = 0; i < lights.getNumLights(); i += inc) {
-    vertices->push_back(lights.getLight(i).position.osg());
+    vertices->push_back(toOsg(lights.getLight(i).position));
     SGVec4f color = lights.getLight(i).color;
     color[3] = SGMiscf::max(0, SGMiscf::min(1, color[3] + alphaOff));
-    colors->push_back(color.osg());
+    colors->push_back(toOsg(color));
   }
   
   osg::Geometry* geometry = new osg::Geometry;
@@ -358,12 +358,12 @@ SGLightFactory::getLights(const SGDirectionalLightBin& lights)
     SGVec3f perp1 = perpendicular(normal);
     SGVec3f perp2 = cross(normal, perp1);
     SGVec3f position = lights.getLight(i).position;
-    vertices->push_back(position.osg());
-    vertices->push_back((position + perp1).osg());
-    vertices->push_back((position + perp2).osg());
-    colors->push_back(visibleColor.osg());
-    colors->push_back(invisibleColor.osg());
-    colors->push_back(invisibleColor.osg());
+    vertices->push_back(toOsg(position));
+    vertices->push_back(toOsg(position + perp1));
+    vertices->push_back(toOsg(position + perp2));
+    colors->push_back(toOsg(visibleColor));
+    colors->push_back(toOsg(invisibleColor));
+    colors->push_back(toOsg(invisibleColor));
   }
   
   osg::Geometry* geometry = new osg::Geometry;

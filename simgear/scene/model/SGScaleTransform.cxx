@@ -112,7 +112,7 @@ bool ScaleTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
             fr += 3;
         else
             return false;
-        scale.setCenter(SGVec3d(center));
+        scale.setCenter(toSG(center));
     }
     if (fr[0].matchWord("scaleFactor")) {
         ++fr;
@@ -121,7 +121,7 @@ bool ScaleTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
             fr += 3;
         else
             return false;
-        scale.setScaleFactor(SGVec3d(scaleFactor));
+        scale.setScaleFactor(toSG(scaleFactor));
     }
     return true;
 }

@@ -107,8 +107,8 @@ public:
     // FIXME: need an update or callback ...
     // generate the six highlight map images (light direction = [1, 1, -1])
     osg::ref_ptr<osgUtil::HighlightMapGenerator> mapgen;
-    mapgen = new osgUtil::HighlightMapGenerator(_lastLightDirection.osg(),
-                                                _lastLightColor.osg(), 5);
+    mapgen = new osgUtil::HighlightMapGenerator(toOsg(_lastLightDirection),
+                                                toOsg(_lastLightColor), 5);
     mapgen->generateMap();
 
     // assign the six images to the texture object
@@ -209,8 +209,8 @@ public:
     if (!combine)
 	return;
     // An approximation for light reflected back by chrome.
-    osg::Vec4 globalColor = (updateVisitor->getAmbientLight().osg() * .4f
-			     + updateVisitor->getDiffuseLight().osg());
+    osg::Vec4 globalColor = toOsg(updateVisitor->getAmbientLight() * .4f
+                                  + updateVisitor->getDiffuseLight());
     globalColor.a() = 1.0f;
     combine->setConstantColor(globalColor);
   }

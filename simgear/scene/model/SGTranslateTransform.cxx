@@ -49,9 +49,9 @@ SGTranslateTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor* nv) const 
 {
   if (_referenceFrame == RELATIVE_RF) {
-    matrix.preMultTranslate((_value*_axis).osg());
+    matrix.preMultTranslate(toOsg(_value*_axis));
   } else {
-    matrix.setTrans((_value*_axis).osg());
+    matrix.setTrans(toOsg(_value*_axis));
   }
   return true;
 }
@@ -61,9 +61,9 @@ SGTranslateTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
                                                 osg::NodeVisitor* nv) const
 {
   if (_referenceFrame == RELATIVE_RF) {
-    matrix.postMultTranslate((-_value*_axis).osg());
+    matrix.postMultTranslate(toOsg(-_value*_axis));
   } else {
-    matrix.setTrans((-_value*_axis).osg());
+    matrix.setTrans(toOsg(-_value*_axis));
   }
   return true;
 }
@@ -72,7 +72,7 @@ osg::BoundingSphere
 SGTranslateTransform::computeBound() const
 {
   osg::BoundingSphere bs = osg::Group::computeBound();
-  bs._center += _axis.osg()*_value;
+  bs._center += toOsg(_axis)*_value;
   return bs;
 }
 
@@ -89,7 +89,7 @@ bool TranslateTransform_readLocalData(osg::Object& obj, osgDB::Input& fr)
             fr += 3;
         else
             return false;
-        trans.setAxis(SGVec3d(axis));
+        trans.setAxis(toSG(axis));
     }
     if (fr[0].matchWord("value")) {
         ++fr;

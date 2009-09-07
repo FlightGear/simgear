@@ -605,7 +605,7 @@ SGCloudLayer::rebuild()
 
 // repaint the cloud layer colors
 bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
-    osg::Vec4f combineColor(fog_color.osg(), cloud_alpha);
+    osg::Vec4f combineColor(toOsg(fog_color), cloud_alpha);
     osg::TexEnvCombine* combiner
         = dynamic_cast<osg::TexEnvCombine*>(layer_root->getStateSet()
                                             ->getTextureAttribute(1, osg::StateAttribute::TEXENV));
@@ -625,7 +625,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         		       double alt, double dt )
 {
     // combine p and asl (meters) to get translation offset
-    osg::Vec3 asl_offset(up.osg());
+    osg::Vec3 asl_offset(toOsg(up));
     asl_offset.normalize();
     if ( alt <= layer_asl ) {
         asl_offset *= layer_asl;
@@ -635,7 +635,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 
     // cout << "asl_offset = " << asl_offset[0] << "," << asl_offset[1]
     //      << "," << asl_offset[2] << endl;
-    asl_offset += p.osg();
+    asl_offset += toOsg(p);
     // cout << "  asl_offset = " << asl_offset[0] << "," << asl_offset[1]
     //      << "," << asl_offset[2] << endl;
 

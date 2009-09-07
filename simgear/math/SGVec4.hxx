@@ -53,12 +53,6 @@ public:
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
   explicit SGVec4(const SGVec3<T>& v3, const T& v4 = 0)
   { data()[0] = v3[0]; data()[1] = v3[1]; data()[2] = v3[2]; data()[3] = v4; }
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  explicit SGVec4(const osg::Vec4f& d)
-  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
-  explicit SGVec4(const osg::Vec4d& d)
-  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
-#endif
 
   /// Access by index, the index is unchecked
   const T& operator()(unsigned i) const
@@ -105,11 +99,6 @@ public:
   /// Readonly raw storage interface
   T (&data(void))[4]
   { return _data; }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  osg::Vec4d osg() const
-  { return osg::Vec4d(data()[0], data()[1], data()[2], data()[3]); }
-#endif
 
   /// Inplace addition
   SGVec4& operator+=(const SGVec4& v)

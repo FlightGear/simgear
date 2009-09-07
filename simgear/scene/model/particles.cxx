@@ -59,7 +59,7 @@ void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     SGQuatd q
         = SGQuatd::fromLonLatDeg(modelRoot->getFloatValue("/position/longitude-deg",0),
                                  modelRoot->getFloatValue("/position/latitude-deg",0));
-    osg::Matrix om(q.osg());
+    osg::Matrix om(toOsg(q));
     osg::Vec3 v(0,0,9.81);
     gravity = om.preMult(v);
     const osg::Vec3& zUpWind = Particles::getWindVector();
@@ -552,7 +552,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
             if (displace * displace > 10000.0 * 10000.0) {
                 // Make new frame for particle system, coincident with
                 // the emitter frame, but oriented with local Z.
-                SGGeod geod = SGGeod::fromCart(SGVec3d(emitOrigin));
+                SGGeod geod = SGGeod::fromCart(toSG(emitOrigin));
                 Matrix newParticleMat = geod.makeZUpFrame();
                 Matrix changeParticleFrame
                     = particleMat * Matrix::inverse(newParticleMat);

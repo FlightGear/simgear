@@ -94,7 +94,7 @@ SGVasiDrawable::drawImplementation(osg::RenderInfo& renderInfo) const
   // Retrieve the eye point in local coords
   osg::Matrix m;
   m.invert(renderInfo.getState()->getModelViewMatrix());
-  SGVec3f eyePoint(m.preMult(osg::Vec3(0, 0, 0)));
+  SGVec3f eyePoint(toSG(m.preMult(osg::Vec3(0, 0, 0))));
   
   // paint the points
   for (unsigned i = 0; i < _lights.size(); ++i)
@@ -106,7 +106,7 @@ SGVasiDrawable::computeBound() const
 {
   osg::BoundingBox bb;
   for (unsigned i = 0; i < _lights.size(); ++i)
-    bb.expandBy(_lights[i].position.osg());
+    bb.expandBy(toOsg(_lights[i].position));
   
   // blow up to avoid being victim to small feature culling ...
   bb.expandBy(bb._min - osg::Vec3(1, 1, 1));

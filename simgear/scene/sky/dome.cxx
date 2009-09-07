@@ -258,7 +258,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     const float upperVisFactor = 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000);
     const float middleVisFactor = 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000);
 
-    (*dome_cl)[0] = sky_color.osg();
+    (*dome_cl)[0] = toOsg(sky_color);
     simgear::VectorArrayAdapter<Vec3Array> colors(*dome_cl, numBands, 1);
     const double saif = sun_angle/SG_PI;
     static const SGVec3f blueShift(0.8, 1.0, 1.2);
@@ -271,9 +271,9 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     for (int i = 0; i < halfBands+1; i++) {
         SGVec3f diff = mult(skyFogDelta, blueShift);
         diff *= (0.8 + saif - ((halfBands-i)/10));
-        colors(2, i) = (sky_color - upperVisFactor * diff).osg();
-        colors(3, i) = (sky_color - middleVisFactor * diff + middle_amt).osg();
-        colors(4, i) = (fog_color + outer_amt).osg();
+        colors(2, i) = toOsg(sky_color - upperVisFactor * diff);
+        colors(3, i) = toOsg(sky_color - middleVisFactor * diff + middle_amt);
+        colors(4, i) = toOsg(fog_color + outer_amt);
         colors(0, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .3942);
         colors(1, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .7885);
         for (int j = 0; j < numRings - 1; ++j)
@@ -292,7 +292,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
                       numBands);
 
     for ( int i = 0; i < numBands; i++ )
-        colors(numRings - 1, i) = fog_color.osg();
+        colors(numRings - 1, i) = toOsg(fog_color);
     dome_cl->dirty();
     return true;
 }
@@ -313,7 +313,7 @@ SGSkyDome::reposition( const SGVec3f& p, double _asl,
     // Translate to view position
     // Point3D zero_elev = current_view.get_cur_zero_elev();
     // xglTranslatef( zero_elev.x(), zero_elev.y(), zero_elev.z() );
-    T.makeTranslate( p.osg() );
+    T.makeTranslate( toOsg(p) );
 
     // printf("  Translated to %.2f %.2f %.2f\n", 
     //        zero_elev.x, zero_elev.y, zero_elev.z );

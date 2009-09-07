@@ -1024,7 +1024,7 @@ private:
     if (!nv)
       return 1;
 
-    double scale_factor = (_center.osg() - nv->getEyePoint()).length();
+    double scale_factor = (toOsg(_center) - nv->getEyePoint()).length();
     if (_table == 0) {
       scale_factor = _factor * scale_factor + _offset;
     } else {

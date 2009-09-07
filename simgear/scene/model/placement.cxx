@@ -46,7 +46,7 @@ SGModelPlacement::update()
 {
   // The cartesian position
   SGVec3d position = SGVec3d::fromGeod(_position);
-  _transform->setPosition(position.osg());
+  _transform->setPosition(toOsg(position));
 
   // The orientation, composed from the horizontal local orientation and the
   // orientation wrt the horizontal local frame
@@ -56,7 +56,7 @@ SGModelPlacement::update()
   // the y axis 180 degrees.
   orient *= SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0));
 
-  _transform->setAttitude(orient.osg());
+  _transform->setAttitude(toOsg(orient));
 }
 
 bool

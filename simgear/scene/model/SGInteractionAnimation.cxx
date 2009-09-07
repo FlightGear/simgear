@@ -80,8 +80,8 @@ public:
         // Trick to get the ends in the right order.
         // Use the x axis in the original coordinate system. Choose the
         // most negative x-axis as the one pointing forward
-        SGVec3f tv1(_matrix.preMult(v1));
-        SGVec3f tv2(_matrix.preMult(v2));
+        SGVec3f tv1(toSG(_matrix.preMult(v1)));
+        SGVec3f tv2(toSG(_matrix.preMult(v2)));
         if (tv1[0] > tv2[0])
             _lineSegments.push_back(SGLineSegmentf(tv1, tv2));
         else

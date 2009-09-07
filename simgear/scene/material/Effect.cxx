@@ -168,9 +168,9 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
 {
     if (prop->nChildren() == 0) {
         if (prop->getType() == props::VEC4D) {
-            return osg::Vec4f(prop->getValue<SGVec4d>().osg());
+            return osg::Vec4f(toOsg(prop->getValue<SGVec4d>()));
         } else if (prop->getType() == props::VEC3D) {
-            return osg::Vec4f(prop->getValue<SGVec3d>().osg(), 1.0f);
+            return osg::Vec4f(toOsg(prop->getValue<SGVec3d>()), 1.0f);
         } else {
             SG_LOG(SG_INPUT, SG_ALERT,
                    "invalid color property " << prop->getName() << " "
@@ -417,7 +417,7 @@ TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
     }
     TexEnv* env = new TexEnv(mode);
     if (colorProp)
-        env->setColor(colorProp->getValue<SGVec4d>().osg());
+        env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
     return env;
  }
 
@@ -623,10 +623,10 @@ struct UniformBuilder :public PassAttributeBuilder
             uniform->set(valProp->getValue<float>());
             break;
         case Uniform::FLOAT_VEC3:
-            uniform->set(Vec3f(valProp->getValue<SGVec3d>().osg()));
+            uniform->set(toOsg(valProp->getValue<SGVec3d>()));
             break;
         case Uniform::FLOAT_VEC4:
-            uniform->set(Vec4f(valProp->getValue<SGVec4d>().osg()));
+            uniform->set(toOsg(valProp->getValue<SGVec4d>()));
             break;
         case Uniform::SAMPLER_1D:
         case Uniform::SAMPLER_2D:

@@ -55,10 +55,6 @@ public:
   /// make sure it has at least 4 elements
   explicit SGQuat(const T* d)
   { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  explicit SGQuat(const osg::Quat& d)
-  { data()[0] = d[0]; data()[1] = d[1]; data()[2] = d[2]; data()[3] = d[3]; }
-#endif
 
   /// Return a unit quaternion
   static SGQuat unit(void)
@@ -375,11 +371,6 @@ public:
   /// Get the data pointer
   T (&data(void))[4]
   { return _data; }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  osg::Quat osg() const
-  { return osg::Quat(data()[0], data()[1], data()[2], data()[3]); }
-#endif
 
   /// Inplace addition
   SGQuat& operator+=(const SGQuat& v)

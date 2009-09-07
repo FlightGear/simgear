@@ -37,8 +37,7 @@
 #include <map>			// STL associative "array"
 #include <vector>		// STL "array"
 
-#include <osg/Node>
-#include <osg/StateSet>
+#include <osg/Geode>
 
 class SGMaterial;
 class SGPropertyNode;
@@ -82,7 +81,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    static const SGMaterial* findMaterial(const simgear::Effect* effect);
+    static const SGMaterial* findMaterial(const osg::Geode* geode);
 
     // Destructor
     ~SGMaterialLib ( void );

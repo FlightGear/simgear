@@ -97,6 +97,7 @@ SGSoundMgr::SGSoundMgr() {
         SG_LOG( SG_GENERAL, SG_ALERT, "   "+string(alutGetErrorString(error)));
         working = false;
         context = 0;
+        return;
     }
     else
     {
@@ -111,7 +112,8 @@ SGSoundMgr::SGSoundMgr() {
     } else {
         working = false;
         context = 0;
-	SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
+        SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
+        return;
     }
 #endif
 
@@ -136,7 +138,7 @@ SGSoundMgr::SGSoundMgr() {
     alListenerfv( AL_ORIENTATION, listener_ori );
     alGetError();
     if ( alGetError() != AL_NO_ERROR) {
-	SG_LOG( SG_GENERAL, SG_ALERT,
+        SG_LOG( SG_GENERAL, SG_ALERT,
                 "Oops AL error after audio initialization!" );
     }
 
@@ -190,7 +192,7 @@ SGSoundMgr::pause ()
     if (context) {
         alcSuspendContext( context );
         if ( alGetError() != AL_NO_ERROR) {
-	    SG_LOG( SG_GENERAL, SG_ALERT,
+            SG_LOG( SG_GENERAL, SG_ALERT,
                     "Oops AL error after soundmgr pause()!" );
         }
     }
@@ -203,7 +205,7 @@ SGSoundMgr::resume ()
     if (context) {
         alcProcessContext( context );
         if ( alGetError() != AL_NO_ERROR) {
-	    SG_LOG( SG_GENERAL, SG_ALERT,
+            SG_LOG( SG_GENERAL, SG_ALERT,
                     "Oops AL error after soundmgr resume()!" );
         }
     }
@@ -230,12 +232,12 @@ bool SGSoundMgr::remove( const string &refname ) {
 
     sample_map_iterator sample_it = samples.find( refname );
     if ( sample_it != samples.end() ) {
-	// first stop the sound from playing (so we don't bomb the
-	// audio scheduler)
+        // first stop the sound from playing (so we don't bomb the
+        // audio scheduler)
         samples.erase( sample_it );
 
         // cout << "sndmgr: removed -> " << refname << endl;
-	return true;
+        return true;
     } else {
         // cout << "sndmgr: failed remove -> " << refname << endl;
         return false;
@@ -247,9 +249,9 @@ bool SGSoundMgr::remove( const string &refname ) {
 bool SGSoundMgr::exists( const string &refname ) {
     sample_map_iterator sample_it = samples.find( refname );
     if ( sample_it != samples.end() ) {
-	return true;
+        return true;
     } else {
-	return false;
+        return false;
     }
 }
 
@@ -259,9 +261,9 @@ bool SGSoundMgr::exists( const string &refname ) {
 SGSoundSample *SGSoundMgr::find( const string &refname ) {
     sample_map_iterator sample_it = samples.find( refname );
     if ( sample_it != samples.end() ) {
-	return sample_it->second;
+        return sample_it->second;
     } else {
-	return NULL;
+        return NULL;
     }
 }
 
@@ -328,7 +330,7 @@ void SGSoundMgr::set_source_pos_all( ALfloat *pos ) {
     sample_map_iterator sample_current = samples.begin();
     sample_map_iterator sample_end = samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
-	SGSoundSample *sample = sample_current->second;
+        SGSoundSample *sample = sample_current->second;
         sample->set_source_pos( pos );
     }
 }
@@ -344,7 +346,7 @@ void SGSoundMgr::set_source_vel_all( ALfloat *vel ) {
     sample_map_iterator sample_current = samples.begin();
     sample_map_iterator sample_end = samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
-	SGSoundSample *sample = sample_current->second;
+        SGSoundSample *sample = sample_current->second;
         sample->set_source_vel( vel, listener_vel );
     }
 }

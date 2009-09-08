@@ -91,6 +91,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    // set global sound properties
    //
+
+   if (sndmgr->is_working() == false) {
+       return;
+   }
    
    _name = node->getStringValue("name", "");
    SG_LOG(SG_GENERAL, SG_INFO, "Loading sound information for: " << _name );

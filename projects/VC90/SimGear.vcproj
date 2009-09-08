@@ -1706,6 +1706,14 @@
 			Name="Lib_sgutil"
 			>
 			<File
+				RelativePath="..\..\simgear\scene\util\CopyOp.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\CopyOp.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx"
 				>
 			</File>

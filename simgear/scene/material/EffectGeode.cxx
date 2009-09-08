@@ -38,10 +38,10 @@ EffectGeode::EffectGeode()
 {
 }
 
-EffectGeode::EffectGeode(const EffectGeode& rhs, const CopyOp& copyop) :
-    Geode(rhs, copyop)
+EffectGeode::EffectGeode(const EffectGeode& rhs, const osg::CopyOp& copyop) :
+    Geode(rhs, copyop),
+    _effect(static_cast<Effect*>(copyop(rhs._effect.get())))
 {
-    _effect = static_cast<Effect*>(rhs._effect->clone(copyop));
 }
 
 void EffectGeode::resizeGLObjectBuffers(unsigned int maxSize)

@@ -14,6 +14,7 @@ include_HEADERS = \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx \
 	SGUpdateVisitor.hxx \
+	CopyOp.hxx \
 	NodeAndDrawableVisitor.hxx \
 	PrimitiveUtils.hxx \
 	QuadTreeBuilder.hxx \
@@ -29,6 +30,7 @@ libsgutil_a_SOURCES = \
 	SGSceneUserData.cxx \
 	SGStateAttributeVisitor.cxx \
 	SGTextureStateAttributeVisitor.cxx \
+	CopyOp.cxx \
 	NodeAndDrawableVisitor.cxx \
 	PrimitiveUtils.cxx \
 	SplicingVisitor.cxx \

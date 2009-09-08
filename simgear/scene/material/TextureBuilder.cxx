@@ -285,19 +285,29 @@ TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
 
 bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
 {
+    SGPropertyNode* texUnit = makeChild(paramRoot, "texture");
     const Texture* tex = getStateAttribute<Texture>(0, ss);
     const Texture2D* texture = dynamic_cast<const Texture2D*>(tex);
-    if (!tex)
+    makeChild(texUnit, "unit")->setValue(0);
+    if (!tex) {
+        makeChild(texUnit, "active")->setValue(false);
+        makeChild(texUnit, "type")->setValue("white");
         return false;
+    }
     const Image* image = texture->getImage();
     string imageName;
-    if (image)
+    if (image) {
         imageName = image->getFileName();
+    } else {
+        makeChild(texUnit, "active")->setValue(false);
+        makeChild(texUnit, "type")->setValue("white");
+        return false;
+    }
+    makeChild(texUnit, "active")->setValue(true);
+    makeChild(texUnit, "type")->setValue("2d");
     string wrapS = findName(wrapModes, texture->getWrap(Texture::WRAP_S));
     string wrapT = findName(wrapModes, texture->getWrap(Texture::WRAP_T));
     string wrapR = findName(wrapModes, texture->getWrap(Texture::WRAP_R));
-    SGPropertyNode* texUnit = makeChild(paramRoot, "texture-unit");
-    makeChild(texUnit, "unit")->setValue(0);
     makeChild(texUnit, "image")->setStringValue(imageName);
     makeChild(texUnit, "wrap-s")->setStringValue(wrapS);
     makeChild(texUnit, "wrap-t")->setStringValue(wrapT);

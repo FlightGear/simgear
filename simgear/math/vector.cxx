@@ -29,6 +29,20 @@
 #include "vector.hxx"
 
 
+// calculate the projection, p, of u along the direction of d.
+void sgProjection(sgVec3 p, const sgVec3 u, const sgVec3 d){
+    double denom = sgScalarProductVec3(d,d);
+    if (denom == 0.) sgCopyVec3(p, u);
+    else sgScaleVec3(p, d, sgScalarProductVec3(u,d) / denom);
+}
+
+// Same thing, except using double precision
+void sgProjection(sgdVec3 p, const sgdVec3 u, const sgdVec3 d){
+    double denom = sgdScalarProductVec3(d,d);
+    if (denom == 0.) sgdCopyVec3(p, u);
+    else sgdScaleVec3(p, d, sgdScalarProductVec3(u,d) / denom);
+}
+
 // Given a point p, and a line through p0 with direction vector d,
 // find the closest point (p1) on the line
 void sgClosestPointToLine( sgVec3 p1, const sgVec3 p, const sgVec3 p0,
@@ -40,8 +54,7 @@ void sgClosestPointToLine( sgVec3 p1, const sgVec3 p, const sgVec3 p0,
     sgSubVec3(u, p, p0);
 
     // calculate the projection, u1, of u along d.
-    // u1 = ( dot_prod(u, d) / dot_prod(d, d) ) * d;
-    sgScaleVec3( u1, d, sgScalarProductVec3(u,d) / sgScalarProductVec3(d,d) );
+    sgProjection(u1, u, d);
 
     // calculate the point p1 along the line that is closest to p
     // p0 = p1 + u1
@@ -60,12 +73,7 @@ void sgdClosestPointToLine( sgdVec3 p1, const sgdVec3 p, const sgdVec3 p0,
     sgdSubVec3(u, p, p0);
 
     // calculate the projection, u1, of u along d.
-    // u1 = ( dot_prod(u, d) / dot_prod(d, d) ) * d;
-    double ud = sgdScalarProductVec3(u, d);
-    double dd = sgdScalarProductVec3(d, d);
-    double tmp = ud / dd;
-
-    sgdScaleVec3(u1, d, tmp);;
+    sgProjection(u1, u, d);
 
     // calculate the point p1 along the line that is closest to p
     // p0 = p1 + u1
@@ -84,8 +92,7 @@ double sgClosestPointToLineDistSquared( const sgVec3 p, const sgVec3 p0,
     sgSubVec3(u, p, p0);
 
     // calculate the projection, u1, of u along d.
-    // u1 = ( dot_prod(u, d) / dot_prod(d, d) ) * d;
-    sgScaleVec3( u1, d, sgScalarProductVec3(u,d) / sgScalarProductVec3(d,d) );
+    sgProjection(u1, u, d);
 
     // v = u - u1 = vector from closest point on line, p1, to the
     // original point, p.
@@ -106,12 +113,7 @@ double sgdClosestPointToLineDistSquared( const sgdVec3 p, const sgdVec3 p0,
     sgdSubVec3(u, p, p0);
 
     // calculate the projection, u1, of u along d.
-    // u1 = ( dot_prod(u, d) / dot_prod(d, d) ) * d;
-    double ud = sgdScalarProductVec3(u, d);
-    double dd = sgdScalarProductVec3(d, d);
-    double tmp = ud / dd;
-
-    sgdScaleVec3(u1, d, tmp);;
+    sgProjection(u1, u, d);
 
     // v = u - u1 = vector from closest point on line, p1, to the
     // original point, p.

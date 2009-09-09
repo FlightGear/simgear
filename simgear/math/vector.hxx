@@ -38,7 +38,17 @@
 
 
 /**
- * Map a vector onto a plane.
+ * calculate the projection, p, of u along the direction of d.
+ * @param p (out) the projection
+ * @param u (in) the vector to be projected
+ * @param d (in) the direction onto which we project
+ */
+void sgProjection(sgVec3 p, const sgVec3 u, const sgVec3 d);
+void sgProjection(sgdVec3 p, const sgdVec3 u, const sgdVec3 d);
+
+
+/**
+ * Map i.e. project a vector onto a plane.
  * @param normal (in) normal vector for the plane
  * @param v0 (in) a point on the plane
  * @param vec (in) the vector to map onto the plane

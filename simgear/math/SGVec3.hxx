@@ -352,12 +352,16 @@ perpendicular(const SGVec3<T>& v)
   }
 }
 
-/// The euclidean norm of the vector, that is what most people call length
+/// Construct a unit vector in the given direction.
+/// or the zero vector if the input vector is zero.
 template<typename T>
 inline
 SGVec3<T>
 normalize(const SGVec3<T>& v)
-{ return (1/norm(v))*v; }
+{ T normv = norm(v);
+  if (normv > 0.0) return (1/norm(v))*v;
+  else return v;
+}
 
 /// Return true if exactly the same
 template<typename T>
@@ -475,6 +479,15 @@ inline
 SGVec3d
 toVec3d(const SGVec3f& v)
 { return SGVec3d(v(0), v(1), v(2)); }
+
+// calculate the projection of u along the direction of d.
+template<typename T>
+inline SGVec3<T> SGProjection(const SGVec3<T>& u, const SGVec3<T>& d)
+{
+  T denom = dot(d, d);
+  if (denom == 0.) return u;
+  else return  d * (dot(u,d) / denom);
+}
 
 #ifndef NO_OPENSCENEGRAPH_INTERFACE
 inline

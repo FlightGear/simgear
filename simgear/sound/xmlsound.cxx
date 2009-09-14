@@ -318,7 +318,7 @@ SGXmlSound::update (double dt)
    {
        if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME)) {
            if (_sample->is_playing()) {
-               SG_LOG(SG_GENERAL, SG_INFO, "Stopping audio after " << _dt_play
+               SG_LOG(SG_GENERAL, SG_DEBUG, "Stopping audio after " << _dt_play
                       << " sec: " << _name );
 
                _sample->stop();
@@ -439,7 +439,7 @@ SGXmlSound::update (double dt)
 
    double vol = volume_offset + volume;
    if (vol > 1.0) {
-      SG_LOG(SG_GENERAL, SG_WARN, "Sound volume too large for '"
+      SG_LOG(SG_GENERAL, SG_DEBUG, "Sound volume too large for '"
               << _name << "':  " << vol << "  ->  clipping to 1.0");
       vol = 1.0;
    }
@@ -458,9 +458,9 @@ SGXmlSound::update (double dt)
       else
          _sample->play(true);
 
-      SG_LOG(SG_GENERAL, SG_INFO, "Playing audio after " << _dt_stop 
+      SG_LOG(SG_GENERAL, SG_DEBUG, "Playing audio after " << _dt_stop 
                                    << " sec: " << _name);
-      SG_LOG(SG_GENERAL, SG_BULK,
+      SG_LOG(SG_GENERAL, SG_DEBUG,
                          "Playing " << ((_mode == ONCE) ? "once" : "looped"));
 
       _active = true;

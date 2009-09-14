@@ -464,7 +464,7 @@ string OSGSubstitutePolicy::substitute(const string& name,
 void
 BuildLeafBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
 {
-    SG_LOG(SG_IO, SG_INFO, "Building leaf attached boundingvolume tree for \""
+    SG_LOG(SG_IO, SG_BULK, "Building leaf attached boundingvolume tree for \""
            << fileName << "\".");
     BoundingVolumeBuildVisitor bvBuilder(true);
     node->accept(bvBuilder);
@@ -473,7 +473,7 @@ BuildLeafBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
 void
 BuildGroupBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
 {
-    SG_LOG(SG_IO, SG_INFO, "Building group attached boundingvolume tree for \""
+    SG_LOG(SG_IO, SG_BULK, "Building group attached boundingvolume tree for \""
            << fileName << "\".");
     BoundingVolumeBuildVisitor bvBuilder(false);
     node->accept(bvBuilder);
@@ -482,7 +482,7 @@ BuildGroupBVHPolicy::buildBVH(const std::string& fileName, osg::Node* node)
 void
 NoBuildBVHPolicy::buildBVH(const std::string& fileName, osg::Node*)
 {
-    SG_LOG(SG_IO, SG_INFO, "Omitting boundingvolume tree for \""
+    SG_LOG(SG_IO, SG_BULK, "Omitting boundingvolume tree for \""
            << fileName << "\".");
 }
 

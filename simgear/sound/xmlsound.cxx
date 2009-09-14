@@ -97,7 +97,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    }
    
    _name = node->getStringValue("name", "");
-   SG_LOG(SG_GENERAL, SG_INFO, "Loading sound information for: " << _name );
+   SG_LOG(SG_GENERAL, SG_DEBUG, "Loading sound information for: " << _name );
 
    const char *mode_str = node->getStringValue("mode", "");
    if ( !strcmp(mode_str, "looped") ) {
@@ -110,7 +110,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
       _mode = SGXmlSound::ONCE;
 
       if ( strcmp(mode_str, "") )
-         SG_LOG(SG_GENERAL,SG_INFO, "  Unknown sound mode, default to 'once'");
+         SG_LOG(SG_GENERAL,SG_INFO, "Unknown sound mode for '" << _name << "', default to 'once'");
    }
 
    _property = root->getNode(node->getStringValue("property", ""), true);

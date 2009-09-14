@@ -188,9 +188,9 @@ struct Object {
         in >> ::skipeol;
 
         if (type == OBJECT)
-            SG_LOG(SG_TERRAIN, SG_INFO, "    " << token << "  " << name);
+            SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  " << name);
         else
-            SG_LOG(SG_TERRAIN, SG_INFO, "    " << token << "  " << name << "  lon=" <<
+            SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  " << name << "  lon=" <<
                     lon << "  lat=" << lat << "  elev=" << elev << "  hdg=" << hdg);
     }
     object_type type;
@@ -252,7 +252,7 @@ TileEntry::loadTileByFileName(const string& fileName,
         SGPath basename = tile_path;
         basename.append( index_str );
 
-        SG_LOG( SG_TERRAIN, SG_INFO, "  Trying " << basename.str() );
+        SG_LOG( SG_TERRAIN, SG_DEBUG, "  Trying " << basename.str() );
 
 
         // Check for master .stg (scene terra gear) file
@@ -275,7 +275,7 @@ TileEntry::loadTileByFileName(const string& fileName,
             if ( token == "OBJECT_BASE" ) {
                 string name;
                 in >> name >> ::skipws;
-                SG_LOG( SG_TERRAIN, SG_INFO, "    " << token << " " << name );
+                SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
 
                 if (!found_tile_base) {
                     found_tile_base = true;
@@ -285,7 +285,7 @@ TileEntry::loadTileByFileName(const string& fileName,
                     object_base.append(name);
 
                 } else
-                    SG_LOG(SG_TERRAIN, SG_INFO, "    (skipped)");
+                    SG_LOG(SG_TERRAIN, SG_BULK, "    (skipped)");
 
                             // Load only if base is not in another file
             } else if ( token == "OBJECT" ) {
@@ -294,7 +294,7 @@ TileEntry::loadTileByFileName(const string& fileName,
                 else {
                     string name;
                     in >> name >> ::skipeol;
-                    SG_LOG(SG_TERRAIN, SG_INFO, "    " << token << "  "
+                    SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  "
                             << name << "  (skipped)");
                 }
 

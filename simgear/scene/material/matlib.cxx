@@ -97,7 +97,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
                 // cerr << "Material " << name << endl;
                 matlib[name] = m;
                 m->add_name(name);
-                SG_LOG( SG_TERRAIN, SG_INFO, "  Loading material "
+                SG_LOG( SG_TERRAIN, SG_DEBUG, "  Loading material "
                         << names[j]->getStringValue() );
             }
         } else {

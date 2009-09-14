@@ -347,10 +347,10 @@ ModelRegistry::readImage(const string& fileName,
         }
         
         if (res.loadedFromCache())
-            SG_LOG(SG_IO, SG_INFO, "Returning cached image \""
+            SG_LOG(SG_IO, SG_BULK, "Returning cached image \""
                    << res.getImage()->getFileName() << "\"");
         else
-            SG_LOG(SG_IO, SG_INFO, "Reading image \""
+            SG_LOG(SG_IO, SG_BULK, "Reading image \""
                    << res.getImage()->getFileName() << "\"");
 
         return res;
@@ -365,10 +365,10 @@ osg::Node* DefaultCachePolicy::find(const string& fileName,
     osg::Node* cached
         = dynamic_cast<Node*>(registry->getFromObjectCache(fileName));
     if (cached)
-        SG_LOG(SG_IO, SG_INFO, "Got cached model \""
+        SG_LOG(SG_IO, SG_BULK, "Got cached model \""
                << fileName << "\"");
     else
-        SG_LOG(SG_IO, SG_INFO, "Reading model \""
+        SG_LOG(SG_IO, SG_BULK, "Reading model \""
                << fileName << "\"");
     return cached;
 }

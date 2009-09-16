@@ -27,6 +27,8 @@ public:
   { }
   SGWeakPtr(const SGWeakPtr& p) : mWeakData(p.mWeakData)
   { }
+  SGWeakPtr(T* ptr)
+  { assign(ptr); }
   template<typename U>
   SGWeakPtr(const SGSharedPtr<U>& p)
   { SGSharedPtr<T> sharedPtr = p; assign(sharedPtr.get()); }

@@ -358,9 +358,11 @@ template<typename T>
 inline
 SGVec3<T>
 normalize(const SGVec3<T>& v)
-{ T normv = norm(v);
-  if (normv > 0.0) return (1/norm(v))*v;
-  else return v;
+{
+  T normv = norm(v);
+  if (normv <= SGLimits<T>::min())
+    return SGVec3<T>::zeros();
+  return (1/normv)*v;
 }
 
 /// Return true if exactly the same
@@ -452,6 +454,18 @@ T
 distSqr(const SGVec3<T>& v1, const SGVec3<T>& v2)
 { SGVec3<T> tmp = v1 - v2; return dot(tmp, tmp); }
 
+// calculate the projection of u along the direction of d.
+template<typename T>
+inline
+SGVec3<T>
+projection(const SGVec3<T>& u, const SGVec3<T>& d)
+{
+  T denom = dot(d, d);
+  T ud = dot(u, d);
+  if (SGLimits<T>::min() < denom) return u;
+  else return d * (dot(u, d) / denom);
+}
+
 #ifndef NDEBUG
 template<typename T>
 inline
@@ -479,15 +493,6 @@ inline
 SGVec3d
 toVec3d(const SGVec3f& v)
 { return SGVec3d(v(0), v(1), v(2)); }
-
-// calculate the projection of u along the direction of d.
-template<typename T>
-inline SGVec3<T> SGProjection(const SGVec3<T>& u, const SGVec3<T>& d)
-{
-  T denom = dot(d, d);
-  if (denom == 0.) return u;
-  else return  d * (dot(u,d) / denom);
-}
 
 #ifndef NO_OPENSCENEGRAPH_INTERFACE
 inline

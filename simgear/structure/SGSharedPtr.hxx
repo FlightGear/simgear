@@ -98,6 +98,8 @@ public:
 private:
   void assign(T* p)
   { get(p); put(); _ptr = p; }
+  void assignNonRef(T* p)
+  { put(); _ptr = p; }
 
   void get(const T* p) const
   { T::get(p); }

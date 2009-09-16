@@ -26,36 +26,54 @@ noinst_PROGRAMS = decode_binobj socktest lowtest tcp_server tcp_client
 
 tcp_server_SOURCES = tcp_server.cxx
 
+if HAVE_FRAMEWORK_PLIB
+tcp_server_LDFLAGS = $(plib_FRAMEWORK)
+else
+tcp_server_PLIB_LIBS = -lplibnet -lplibul
+endif
+
 tcp_server_LDADD = \
 	libsgio.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
-	-lplibnet -lplibul -lz \
+	$(tcp_server_PLIB_LIBS) -lz \
 	$(network_LIBS) \
 	$(base_LIBS)
 
 tcp_client_SOURCES = tcp_client.cxx
+
+if HAVE_FRAMEWORK_PLIB
+tcp_client_LDFLAGS = $(plib_FRAMEWORK)
+else
+tcp_client_PLIB_LIBS = -lplibnet -lplibul
+endif
 
 tcp_client_LDADD = \
 	libsgio.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
-	-lplibnet -lplibul -lz \
+	$(tcp_client_PLIB_LIBS) -lz \
 	$(network_LIBS) \
 	$(base_LIBS)
 
 socktest_SOURCES = socktest.cxx
+
+if HAVE_FRAMEWORK_PLIB
+socktest_LDFLAGS = $(plib_FRAMEWORK)
+else
+socktest_PLIB_LIBS = -lplibnet -lplibul
+endif
 
 socktest_LDADD = \
 	libsgio.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
-	-lplibnet -lplibul -lz \
+        $(socktest_PLIB_LIBS) -lz
 	$(network_LIBS) \
-	$(base_LIBS)
+	$(base_LIBS) 
 
 lowtest_SOURCES = lowtest.cxx
 

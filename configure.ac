@@ -126,12 +126,24 @@ if test "x$with_plib" != "x" ; then
     EXTRA_DIRS="${EXTRA_DIRS} $with_plib"
 fi
 
+AC_ARG_WITH(plib_framework, [ --with-plib-framework=PREFIX      Specify the prefix path to PLIB.framework ])
+
+if test "x$with_plib_framework" != "x"; then
+    echo "plib framework prefix is $with_plib_framework"
+fi
+
 # specify the osg location
 AC_ARG_WITH(osg, [  --with-osg=PREFIX       Specify the prefix path to osg])
 
 if test "x$with_osg" != "x" ; then
     echo "osg prefix is $with_osg"
     EXTRA_DIRS="${EXTRA_DIRS} $with_osg"
+fi
+
+AC_ARG_WITH(osg_framework, [ --with-osg-framework=PREFIX      Specify the prefix path to OSG.framework ])
+
+if test "x$with_osg_framework" != "x"; then
+    echo "osg framework prefix is $with_osg_framework"
 fi
 
 dnl Determine an extra directories to add to include/lib search paths
@@ -295,6 +307,36 @@ case "${host}" in
     # not sure how to test if OpenAL exists on MacOS (does it come by default?)
     OPENAL_OK="yes"
     ALUT_OK="yes"
+
+    dnl Thank you Christian Bauer from SheepSaver
+    dnl Modified by Tatsuhiro Nishioka for accepting a given framework path
+    dnl AC_CHECK_FRAMEWORK($1=NAME, $2=INCLUDES, $3=FRAMEWORK_PATH) ; $3 is optional
+    AC_DEFUN([AC_CHECK_FRAMEWORK], [
+    AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1])dnl
+    AC_CACHE_CHECK([whether compiler supports framework $1],
+        ac_Framework, [
+        saved_LIBS="$LIBS"
+        FRAMEWORKS="$FRAMEWORKS -framework $1"
+        if test "$3" = ""; then
+            FRAMEWORKS="$FRAMEWORKS $ADD2LD"
+        elif test "`echo $FRAMEWORKS | grep -- -F$3`" = ""; then
+            FRAMEWORKS="$FRAMEWORKS -F$3"
+            CXXFLAGS="$CXXFLAGS -F$3"
+            CCFLAGS="$CCFLAGS -F$3"
+            dnl This is needed for AC_TRY_LINK when a framework path is specified
+            export DYLD_FRAMEWORK_PATH="${DYLD_FRAMEWORK_PATH}:$3"
+        fi
+        AC_TRY_LINK(
+        [$2], [],
+        [AS_VAR_SET(ac_Framework, yes)], [AS_VAR_SET(ac_Framework, no); LIBS="$saved_LIBS"]
+        )
+    ])
+    AS_IF([test AS_VAR_GET(ac_Framework) = yes],
+        [AC_DEFINE(AS_TR_CPP(HAVE_FRAMEWORK_$1), 1, [Define if framework $1 is available.])]
+    )
+    AS_VAR_POPDEF([ac_Framework])dnl
+    ])
+
     ;;
 
 *)
@@ -351,9 +393,23 @@ AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
 # The following are C++ items that need to be tested for with the c++
 # compiler
 
+CXXCPP="g++ -E"
 AC_LANG_PUSH(C++)
 
 dnl Check for "plib" without which we cannot go on
+case ${host} in 
+*-apple-darwin*)
+    # Check PLIB framework availability when with-plib-framework is specified 
+    if test "x$with_plib_framework" != "x"; then
+        AC_CHECK_FRAMEWORK(PLIB, [#include <plib/ul.h>], $with_plib_framework)
+        plib_FRAMEWORK="$FRAMEWORKS"
+        FRAMEWORKS=""
+        AC_SUBST(plib_FRAMEWORK)
+    fi
+    ;;
+esac
+AM_CONDITIONAL(HAVE_FRAMEWORK_PLIB, test "x$ac_cv_framework_PLIB" != "x")
+
 AC_CHECK_HEADER(plib/ul.h)
 if test "x$ac_cv_header_plib_ul_h" != "xyes"; then
     echo
@@ -391,8 +447,40 @@ int main() {
 
 LIBS="$saved_LIBS"
 
+# OpenSceneGraph
+case "${host}" in
+*-apple-darwin*)
+    if test "x$with_osg_framework" != "x"; then
+        AC_CHECK_FRAMEWORK(osgViewer, [#include <osgViewer/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgGA, [#include <osgGA/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgText, [#include <osgText/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgFX, [#include <osgFX/AnisotropicLighting>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgUtil, [#include <osgUtil/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgDB, [#include <osgDB/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgSim, [#include <osgSim/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osgParticle, [#include <osgParticle/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osg, [#include <osg/Version>], $with_osg_framework)
+        osg_FRAMEWORKS="$FRAMEWORKS"
+        FRAMEWORKS=""
+        AC_SUBST(osg_FRAMEWORKS)
+        AC_CHECK_FRAMEWORK(OpenThreads, [#include <OpenThreads/Version>], $with_osg_framework)
+        openthreads_FRAMEWORK="$FRAMEWORKS"
+        FRAMEWORKS=""
+        AC_SUBST(openthreads_FRAMEWORK)
+    else
+        dnl
+        dnl This is needed when osg dynamic libs are specified 
+        dnl instead of OSG frameworks on Mac OS X
+        dnl
+        LDFLAGS="$LDFLAGS -L$with_osg"
+    fi
+    ;;
+esac
+AM_CONDITIONAL(HAVE_FRAMEWORK_OSG, test "x$ac_cv_framework_osg" != "x")
+
 AC_CHECK_HEADER(osg/Version)
 if test "x$ac_cv_header_osg_Version" != "xyes"; then
+  if test "x$ac_cv_framework_osg" != "xyes"; then
     echo
     echo "You *must* have the OpenSceneGraph support library installed on your system"
     echo "to build this version of SimGear!"
@@ -401,6 +489,7 @@ if test "x$ac_cv_header_osg_Version" != "xyes"; then
     echo
     echo "configure aborted."
     exit
+  fi
 fi
 
 AC_CHECK_HEADER(boost/version.hpp)

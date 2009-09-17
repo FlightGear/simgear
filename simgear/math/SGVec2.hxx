@@ -244,7 +244,12 @@ template<typename T>
 inline
 SGVec2<T>
 normalize(const SGVec2<T>& v)
-{ return (1/norm(v))*v; }
+{
+  T normv = norm(v);
+  if (normv <= SGLimits<T>::min())
+    return SGVec2<T>::zeros();
+  return (1/normv)*v;
+}
 
 /// Return true if exactly the same
 template<typename T>
@@ -330,6 +335,18 @@ inline
 T
 distSqr(const SGVec2<T>& v1, const SGVec2<T>& v2)
 { SGVec2<T> tmp = v1 - v2; return dot(tmp, tmp); }
+
+// calculate the projection of u along the direction of d.
+template<typename T>
+inline
+SGVec2<T>
+projection(const SGVec2<T>& u, const SGVec2<T>& d)
+{
+  T denom = dot(d, d);
+  T ud = dot(u, d);
+  if (SGLimits<T>::min() < denom) return u;
+  else return d * (dot(u, d) / denom);
+}
 
 #ifndef NDEBUG
 template<typename T>

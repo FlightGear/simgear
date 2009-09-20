@@ -105,6 +105,32 @@ private:
     SGSharedPtr<SGCondition> mCondition;
 };
 
+
+// Little helper class that holds an extra reference to a
+// loaded 3d model.
+// Since we clone all structural nodes from our 3d models,
+// the database pager will only see one single reference to
+// top node of the model and expire it relatively fast.
+// We attach that extra reference to every model cloned from
+// a base model in the pager. When that cloned model is deleted
+// this extra reference is deleted too. So if there are no
+// cloned models left the model will expire.
+namespace {
+class SGDatabaseReference : public osg::Observer
+{
+public:
+    SGDatabaseReference(osg::Referenced* referenced) :
+        mReferenced(referenced)
+    { }
+    virtual void objectDeleted(void*)
+    {
+        mReferenced = 0;
+    }
+private:
+    osg::ref_ptr<osg::Referenced> mReferenced;
+};
+}
+
 static osg::Node *
 sgLoad3DModel_internal(const string &path,
                        const osgDB::ReaderWriter::Options* options_,
@@ -181,10 +207,31 @@ sgLoad3DModel_internal(const string &path,
             texturepath = texturepath.dir();
 
         options->setDatabasePath(texturepath.str());
-        model = osgDB::readNodeFile(modelpath.str(), options.get());
-        if (model == 0)
+        osg::Node* origModel
+            = osgDB::readNodeFile(modelpath.str(), options.get());
+
+        if (!origModel)
             throw sg_io_exception("Failed to load 3D model",
                                   sg_location(modelpath.str()));
+        model = copyModel(origModel);
+        // Add an extra reference to the model stored in the database.
+        // That is to avoid expiring the object from the cache even if
+        // it is still in use. Note that the object cache will think
+        // that a model is unused if the reference count is 1. If we
+        // clone all structural nodes here we need that extra
+        // reference to the original object
+        SGDatabaseReference* databaseReference;
+        databaseReference = new SGDatabaseReference(origModel);
+        model->addObserver(databaseReference);
+
+        // Update liveries
+        TextureUpdateVisitor liveryUpdate(options->getDatabasePathList());
+        model->accept(liveryUpdate);
+
+        // Copy the userdata fields, still sharing the boundingvolumes,
+        // but introducing new data for velocities.
+        UserDataCopyVisitor userDataCopyVisitor;
+        model->accept(userDataCopyVisitor);
     }
     model->setName(modelpath.str());
 

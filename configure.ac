@@ -215,6 +215,7 @@ LIBS=""
 
 dnl check for some default libraries
 AC_SEARCH_LIBS(cos, m)
+AC_SEARCH_LIBS(clock_gettime, rt)
 
 base_LIBS="$LIBS"
 
@@ -429,8 +430,6 @@ AC_TRY_RUN([
 #define MIN_PLIB_VERSION 185
 
 int main() {
-    int major, minor, micro;
-
     if ( PLIB_VERSION < MIN_PLIB_VERSION ) {
 	 return -1;
     }

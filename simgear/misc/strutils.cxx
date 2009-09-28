@@ -25,6 +25,11 @@
 
 #include "strutils.hxx"
 
+#include <osgDB/FileNameUtils> // for convertToLowerCase
+
+using std::string;
+using std::vector;
+
 namespace simgear {
     namespace strutils {
 
@@ -179,6 +184,13 @@ namespace simgear {
 	{
 	    return do_strip( s, BOTHSTRIP );
 	}
+
+  string convertToLowerCase(const string& str)
+  {
+    // proxy onto osgDB - easy to reimplement here, but let's avoid
+    // code duplication for the moment.
+    return osgDB::convertToLowerCase(str);
+  }
 
     } // end namespace strutils
 } // end namespace simgear

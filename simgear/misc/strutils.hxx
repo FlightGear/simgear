@@ -79,9 +79,6 @@ namespace simgear {
 	split( const std::string& s,
 	       const char* sep = 0,
 	       int maxsplit = 0 );
-
-
-  std::string convertToLowerCase(const std::string& str);
   
   } // end namespace strutils
 } // end namespace simgear

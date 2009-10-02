@@ -91,23 +91,23 @@ static char vertexShaderSource[] =
 // Do the matrix multiplication by [ u r w pos]. Assume no
 // scaling in the homogeneous component of pos.
     "  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
-    "  gl_Position.xyz = gl_Vertex.x * u * wScale;\n"
-    "  gl_Position.xyz += gl_Vertex.y * r * hScale;\n"
-    "  gl_Position.xyz += gl_Vertex.z * w;\n"
+    "  gl_Position.xyz = gl_Vertex.x * u;\n"
+    "  gl_Position.xyz += gl_Vertex.y * r * wScale;\n"
+    "  gl_Position.xyz += gl_Vertex.z * w * hScale;\n"
     "  gl_Position.xyz += gl_Color.xyz;\n"
 // Determine a lighting normal based on the vertex position from the
 // center of the cloud, so that sprite on the opposite side of the cloud to the sun are darker.
-    "  float n = dot(normalize(gl_LightSource[0].position.xyz), normalize(mat3x3(gl_ModelViewMatrix) * gl_Position.xyz));\n"
+    "  float n = dot(normalize(- gl_LightSource[0].position.xyz), normalize(mat3x3(gl_ModelViewMatrix) * (- gl_Position.xyz)));\n"
 // Determine the position - used for fog and shading calculations        
     "  vec3 ecPosition = vec3(gl_ModelViewMatrix * gl_Position);\n"
     "  float fogCoord = abs(ecPosition.z);\n"
     "  float fract = smoothstep(0.0, cloud_height, gl_Position.z + cloud_height);\n"
 // Final position of the sprite
     "  gl_Position = gl_ModelViewProjectionMatrix * gl_Position;\n"
-// Limit the normal range from [0,1.0], and apply the shading (vertical factor)
-    "  n = min(smoothstep(-0.5, 0.5, n), shade * (1.0 - fract) + fract);\n"
-// This lighting normal is then used to mix between almost pure ambient (0) and diffuse (1.0) light
-    "  vec4 backlight = 0.9 * gl_LightSource[0].ambient + 0.1 * gl_LightSource[0].diffuse;\n"
+// Determine the shading of the sprite based on its vertical position and position relative to the sun.
+    "  n = min(smoothstep(-0.5, 0.0, n), fract);\n"
+// Determine the shading based on a mixture from the backlight to the front
+    "  vec4 backlight = gl_LightSource[0].diffuse * shade;\n"
     "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
     "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
 // As we get within 100m of the sprite, it is faded out. Equally at large distances it also fades out.
@@ -127,7 +127,7 @@ static char fragmentShaderSource[] =
     "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
     "  vec4 finalColor = base * gl_Color;\n"
     "  gl_FragColor.rgb = mix(gl_Fog.color.rgb, finalColor.rgb, fogFactor );\n"
-    "  gl_FragColor.a = finalColor.a;\n"
+    "  gl_FragColor.a = mix(0.0, finalColor.a, fogFactor);\n"
     "}\n";
 
 SGNewCloud::SGNewCloud(string type,
@@ -196,7 +196,7 @@ SGNewCloud::SGNewCloud(string type,
         // Generate the shader etc, if we don't already have one.
         if (!program.valid()) {
             alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(AlphaFunc::GREATER,0.05f);
+            alphaFunc->setFunction(AlphaFunc::GREATER,0.01f);
             program  = new Program;
             baseTextureSampler = new osg::Uniform("baseTexture", 0);
             Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
@@ -301,27 +301,19 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     // The value is squared as we use vector calculations.
     float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
     
-    // The number of sprites we actually used is a function of the (user-controlled) density
-    int n_sprites = num_sprites * sprite_density;
+    // The number of sprites we actually use is a function of the (user-controlled) density
+    int n_sprites = num_sprites * sprite_density * (0.5 + sg_random());
     
     for (int i = 0; i < n_sprites; i++)
     {
         // Determine the position of the sprite. Rather than being completely random,
         // we place them on the surface of a distorted sphere. However, we place
-        // the first and second sprites on the top and bottom, and the third in the
-        // center of the sphere (and at maximum size) to ensure good coverage and
-        // reduce the chance of there being "holes" in our cloud.
+        // the first sprite in the center of the sphere (and at maximum size) to
+	// ensure good coverage and reduce the chance of there being "holes" in our
+
         float x, y, z;
-        
+
         if (i == 0) {
-            x = 0;
-            y = 0;
-            z = height * 0.5f;
-        } else if (i == 1) {
-            x = 0;
-            y = 0;
-            z = - height * 0.5f;
-        } else if (i == 2) {
             x = 0;
             y = 0;
             z = 0;
@@ -330,26 +322,35 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
             double elev  = sg_random() * SGD_PI;
             x = width * cos(theta) * 0.5f * sin(elev);
             y = width * sin(theta) * 0.5f * sin(elev);
-            z = height * cos(elev) * 0.5f; 
+            z = height * cos(elev) * 0.5f;
         }
         
         SGVec3f *pos = new SGVec3f(x, y, z); 
 
-        // Determine the height and width as scaling factors on the minimum size (used to create the quad)
+        // Determine the height and width as scaling factors on the minimum size (used to create the quad).
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
-        
-        if (i == 2) {
+
+        // Sprites are never taller than square.
+        if (sprite_height * min_sprite_height > sprite_width * min_sprite_width)
+        {
+            sprite_height = sprite_width * min_sprite_width / min_sprite_height;
+        }
+
+        if (i == 0) {
             // The center sprite is always maximum size to fill up any holes.
             sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
             sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
         }
-        
-        // Determine the sprite texture indexes;
+
+        // Determine the sprite texture indexes.
         int index_x = (int) floor(sg_random() * num_textures_x);
         if (index_x == num_textures_x) { index_x--; }
-        
-        int index_y = (int) floor(sg_random() * num_textures_y);
+
+        // The y index depends on the positing of the sprite within the cloud.
+        // This allows cloud designers to have particular sprites for the base
+        // and tops of the cloud.
+        int index_y = (int) floor((z / height + 0.5f) * num_textures_y);
         if (index_y == num_textures_y) { index_y--; }
         
         sg->addSprite(*pos, 

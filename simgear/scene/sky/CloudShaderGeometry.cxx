@@ -40,7 +40,7 @@ struct SpriteComp
     bool operator() (const CloudShaderGeometry::SortData::SortItem& lhs,
                      const CloudShaderGeometry::SortData::SortItem& rhs) const
     {
-        return lhs.depth < rhs.depth;
+        return lhs.depth > rhs.depth;
     }
 };
 }
@@ -108,11 +108,11 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         itr != end;
         ++itr) {
         const CloudSprite& t = _cloudsprites[itr->idx];
-        GLfloat ua1[3] = { (GLfloat)t.texture_index_x/varieties_x,
-                           (GLfloat)t.texture_index_y/varieties_y,
-                           t.width };
-        GLfloat ua2[3] = { (GLfloat)t.height,
-                           t.shade,
+        GLfloat ua1[3] = { (GLfloat) t.texture_index_x/varieties_x,
+                           (GLfloat) t.texture_index_y/varieties_y,
+			   (GLfloat) t.width };
+        GLfloat ua2[3] = { (GLfloat) t.height,
+		           (GLfloat) t.shade,
                            (GLfloat) t.cloud_height };
         extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
         extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
@@ -126,15 +126,18 @@ void CloudShaderGeometry::addSprite(SGVec3f& p, int tx, int ty,
                                     float s, float cull, float cloud_height)
 {
     // Only add the sprite if it is further than the cull distance to all other sprites
+    // except for the center sprite.	
     for (CloudShaderGeometry::CloudSpriteList::iterator iter = _cloudsprites.begin();
          iter != _cloudsprites.end();
          ++iter) 
     {
-        if (distSqr(iter->position, p) < cull) {
+        if ((iter != _cloudsprites.begin()) &&
+	    (distSqr(iter->position, p) < cull)) {
             // Too close - cull it
             return;
         }
     }
+
     _cloudsprites.push_back(CloudSprite(p, tx, ty, w, h, s, cloud_height));
 }
 

@@ -32,7 +32,7 @@ using std::vector;
 using std::string;
 
 class SGLightning;
-class SGSoundMgr;
+class SGSampleGroup;
 
 /**
  * Simulate some echo on a weather radar.
@@ -84,7 +84,7 @@ private:
 	sgVec4	fog_color;
 	sgMat4 transform;
 	double last_lon, last_lat, last_alt;
-	SGSoundMgr	*soundMgr;
+	SGSampleGroup	*sampleGroup;
 	bool		snd_active, snd_playing;
 	double		snd_timer, snd_wait, snd_pos_lat, snd_pos_lon, snd_dist;
 	double		min_time_before_lt;
@@ -243,7 +243,7 @@ public:
      * Forward the sound manager instance to be able to play samples.
      * @param mgr a running sound manager
      */
-	void set_soundMgr(SGSoundMgr *mgr);
+	void set_sampleGroup(SGSampleGroup *sgr);
 
 	void setFOV( float w, float h );
 	void getFOV( float &w, float &h );

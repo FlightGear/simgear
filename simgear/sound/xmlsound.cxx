@@ -50,14 +50,11 @@ static const struct {
 	const char *name;
 	double (*fn)(double);
 } __sound_fn[] = {
-//	{"lin", _snd_lin},
 	{"inv", _snd_inv},
 	{"abs", _snd_abs},
 	{"sqrt", _snd_sqrt},
 	{"log", _snd_log10},
 	{"ln", _snd_log},
-//	{"sqr", _snd_sqr},
-//	{"pow3", _snd_pow3},
 	{"", NULL}
 };
 
@@ -84,18 +81,14 @@ SGXmlSound::~SGXmlSound()
 }
 
 void
-SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
-                 const string &path)
+SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
+                 SGSampleGroup *sgrp, const string &path)
 {
 
    //
    // set global sound properties
    //
 
-   if (sndmgr->is_working() == false) {
-       return;
-   }
-   
    _name = node->getStringValue("name", "");
    SG_LOG(SG_GENERAL, SG_DEBUG, "Loading sound information for: " << _name );
 
@@ -236,8 +229,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    // Relative position
    //
-   sgVec3 offset_pos;
-   sgSetVec3( offset_pos, 0.0, 0.0, 0.0 );
+   SGVec3f offset_pos = SGVec3f::zeros();
    SGPropertyNode_ptr pos = node->getChild("position");
    if ( pos != NULL ) {
        offset_pos[0] = pos->getDoubleValue("x", 0.0);
@@ -248,9 +240,8 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    // Orientation
    //
-   sgVec3 dir;
+   SGVec3f dir = SGVec3f::zeros();
    float inner, outer, outer_gain;
-   sgSetVec3( dir, 0.0, 0.0, 0.0 );
    inner = outer = 360.0;
    outer_gain = 0.0;
    pos = node->getChild("orientation");
@@ -266,8 +257,8 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    // Initialize the sample
    //
-   _mgr = sndmgr;
-   if ( (_sample = _mgr->find(_name)) == NULL ) {
+   _sgrp = sgrp;
+   if ( (_sample = _sgrp->find(_name)) == NULL ) {
        // FIXME: Does it make sense to overwrite a previous entry's
        // configuration just because a new entry has the same name?
        // Note that we can't match on identical "path" because we the
@@ -276,17 +267,16 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
        // "alSource".  The semantics of what is going on here seems
        // confused and needs to be thought through more carefully.
         _sample = new SGSoundSample( path.c_str(),
-                                    node->getStringValue("path", ""),
-                                    false );
-
-       _mgr->add( _sample, _name );
+                                    node->getStringValue("path", "") );
+       _sgrp->add( _sample, _name );
    }
 
-   _sample->set_offset_pos( offset_pos );
-   _sample->set_orientation(dir, inner, outer, outer_gain);
-   _sample->set_volume(v);
+   _sample->set_relative_position( offset_pos );
+   _sample->set_orientation( dir );
+   _sample->set_audio_cone(inner, outer, outer_gain);
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );
+   _sample->set_volume(v);
    _sample->set_pitch(p);
 }
 
@@ -316,7 +306,8 @@ SGXmlSound::update (double dt)
         )
        )
    {
-       if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME)) {
+       if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME))
+       {
            if (_sample->is_playing()) {
                SG_LOG(SG_GENERAL, SG_DEBUG, "Stopping audio after " << _dt_play
                       << " sec: " << _name );

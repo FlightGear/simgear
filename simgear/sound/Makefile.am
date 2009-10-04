@@ -7,11 +7,13 @@ lib_LIBRARIES = libsgsound.a
 noinst_HEADERS =
 
 include_HEADERS = \
+	sample_group.hxx \
 	sample_openal.hxx \
 	soundmgr_openal.hxx \
 	xmlsound.hxx 
 
 libsgsound_a_SOURCES = \
+	sample_group.cxx \
 	sample_openal.cxx  \
 	soundmgr_openal.cxx \
 	xmlsound.cxx 
@@ -27,10 +29,10 @@ libsgsound_a_SOURCES = \
 
 #openal_test2_LDADD = \
 #	libsgsound.a \
+#	$(top_builddir)/simgear/structure/libsgstructure.a \
+#	$(top_builddir)/simgear/timing/libsgtiming.a \
 #	$(top_builddir)/simgear/debug/libsgdebug.a \
 #	$(top_builddir)/simgear/misc/libsgmisc.a \
-#	$(top_builddir)/simgear/structure/libsgstructure.a \
-#	$(openal_LIBS) \
-#	-lOpenThreads
+#	$(openal_LIBS)
 
 INCLUDES = -I$(top_srcdir) -DSRC_DIR=\"$(top_srcdir)/simgear/sound\"

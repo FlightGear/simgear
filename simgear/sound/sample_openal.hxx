@@ -32,36 +32,15 @@
 # error This library requires C++
 #endif
 
-#include <simgear/compiler.h>
-
 #include <string>
 
+#include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include <plib/sg.h>
-
-#if defined(__APPLE__)
-# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
-# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
-# include <OpenAL/al.h>
-# include <OpenAL/alut.h>
-#else
-# include <AL/al.h>
-# include <AL/alut.h>
-#endif
-
-#ifndef HAVE_WINDOWS_H
- #ifdef AL_VERSION_1_2
-  #define USE_OPEN_AL_DOPPLER should work
- #else
-  #define USE_OPEN_AL_DOPPLER_WITH_FIXED_LISTENER better than nothing
- #endif
-#else
- // the Open_AL Doppler calculation seems to be buggy on windows
- #define USE_SOFTWARE_DOPPLER seem to be necessary
-#endif
 
 using std::string;
 
@@ -73,45 +52,51 @@ class SGSoundSample : public SGReferenced {
 
 private:
 
-    string sample_name;
-
-    // Buffers hold sound data.
-    ALuint buffer;
-
-    // Sources are points emitting sound.
-    ALuint source;
-
     // Position of the source sound.
-    ALfloat source_pos[3];
-
-    // A constant offset to be applied to the final source_pos
-    ALfloat offset_pos[3];
+    SGVec3d _absolute_pos;	// absolute position
+    SGVec3f _relative_pos;	// position relative to the base position
+    SGVec3d _base_pos;		// base position
 
     // The orientation of the sound (direction and cut-off angles)
-    ALfloat direction[3];
-    ALfloat inner, outer, outergain;
+    SGVec3f _direction;
 
     // Velocity of the source sound.
-    ALfloat source_vel[3];
+    SGVec3f _velocity;
+
+    string _sample_name;
+    unsigned char *_data;
 
     // configuration values
-    ALenum format;
-    ALsizei size;
-    ALsizei freq;
+    int _format;
+    int _size;
+    int _freq;
 
-    double pitch;
-    double volume;
-#ifdef USE_SOFTWARE_DOPPLER
-    double doppler_pitch_factor;
-    double doppler_volume_factor;
-#endif
-    double reference_dist;
-    double max_dist;
-    ALboolean loop;
+    // Buffers hold sound data.
+    bool _valid_buffer;
+    unsigned int _buffer;
 
-    bool playing;
-    bool bind_source();
-    bool no_Doppler_effect;
+    // Sources are points emitting sound.
+    bool _valid_source;
+    unsigned int _source;
+
+    // The orientation of the sound (direction and cut-off angles)
+    float _inner_angle;
+    float _outer_angle;
+    float _outer_gain;
+
+    float _pitch;
+    float _volume;
+    float _master_volume;
+    float _reference_dist;
+    float _max_dist;
+    bool _loop;
+
+    bool _playing;
+    bool _changed;
+    bool _static_changed;
+    bool _is_file;
+
+    void update_absolute_position();
 
 public:
 
@@ -128,7 +113,7 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( const char *path, const char *file, bool no_Doppler_effect = true );
+    SGSoundSample( const char *path, const char *file );
 
     /**
      * Constructor.
@@ -139,23 +124,50 @@ public:
        should usually be true unless you want to manipulate the data
        later.)
      */
-    SGSoundSample( unsigned char *_data, int len, int _freq, bool no_Doppler_effect = true );
+    SGSoundSample( unsigned char *data, int len, int freq, int format = AL_FORMAT_MONO8 );
 
-    ~SGSoundSample();
+    ~SGSoundSample ();
+
+    /**
+     * detect wheter the sample holds the information of a sound file
+     */
+    inline bool is_file() const { return _is_file; }
+
+    /**
+     * Test whether this sample has a changed configuration since the last
+     * call. (Calling this function resets the value).
+     */
+    inline bool has_changed() {
+        bool b = _changed; _changed = false; return b;
+    }
+
+    inline bool has_static_data_changed() {
+        bool b = _static_changed; _static_changed = false; return b;
+    }
+
 
     /**
      * Start playing this sample.
      *
      * @param _loop Define whether the sound should be played in a loop.
      */
-    void play( bool _loop );
+    inline void play( bool loop ) {
+        _playing = true; _loop = loop; _changed = true;
+    }
+
+    /**
+     * Return if the sample is looping or not.
+     */
+    inline bool get_looping() { return _loop; }
 
     /**
      * Stop playing this sample.
      *
      * @param sched A pointer to the appropriate scheduler.
      */
-    void stop();
+    inline void stop() {
+        _playing = false; _changed = true;
+    }
 
     /**
      * Play this sample once.
@@ -173,77 +185,226 @@ public:
      * Test if a sample is currently playing.
      * @return true if is is playing, false otherwise.
      */
-    bool is_playing( );
+    inline bool is_playing() { return _playing; }
+
+    /**
+     * set the data associated with this sample
+     */
+    inline void set_data( unsigned char* data ) {
+        _data = data;
+    }
+
+    /**
+     * @return the data associated with this sample
+     */
+    inline void* get_data() const { return _data; }
+
+    /**
+     * free the data associated with this sample
+     */
+    inline void free_data() {
+        if (_data != NULL) { delete[] _data; _data = NULL; }
+    }
+
+    /**
+     * set the source id of this source
+     */
+    inline void set_source(unsigned int s) {
+        _source = s; _valid_source = true; _changed = true;
+    }
+
+    /**
+     * get the source id of this source
+     */
+    inline unsigned int get_source() { return _source; }
+
+    /**
+     * detect wheter the source id of the sample is valid
+     */
+    inline bool is_valid_source() const { return _valid_source; }
+
+    /**
+     * set the source id of the sample to invalid.
+     */
+    inline void no_valid_source() {
+        _valid_source = false;
+    }
+
+    /**
+     * set the buffer id of this source
+     */
+    inline void set_buffer(unsigned int b) {
+        _buffer = b; _valid_buffer = true; _changed = true;
+    } 
+
+    /**
+     * get the buffer id of this source
+     */
+    inline unsigned int get_buffer() { return _buffer; }
+
+    /**
+     * detect wheter the source id of the sample is valid
+     */
+    inline bool is_valid_buffer() const { return _valid_buffer; }
+
+    /**
+     * set the source id of the sample to invalid.
+     */
+    inline void no_valid_buffer() {
+        _valid_buffer = false;
+    }
 
     /**
      * Get the current pitch setting of this sample.
      */
-    inline double get_pitch() const { return pitch; }
+    inline float get_pitch() { return _pitch; }
 
     /**
      * Set the pitch of this sample.
      */
-    void set_pitch( double p );
+    inline void set_pitch( float p ) {
+        _pitch = p; _changed = true;
+    }
 
     /**
      * Get the current volume setting of this sample.
      */
-    inline double get_volume() const { return volume; }
+    inline float get_volume() { return _volume * _master_volume; }
+
+    /**
+     * Set the master (sampel group) volume of this sample.
+     */
+    inline void set_master_volume( float v ) {
+        _master_volume = v; _changed = true;
+    }
 
     /**
      * Set the volume of this sample.
      */
-    void set_volume( double v );
+    inline void set_volume( float v ) {
+        _volume = v; _changed = true;
+    }
+
+    /**
+     * Set the format of the sounds sample
+     */
+    inline void set_format( int format ) {
+        _format = format;
+    }
+
+    /**
+     * Returns the format of the sounds sample
+     */
+    inline int get_format() { return _format; }
+
+
+    /**
+     * Set the frequency of the sounds sample
+     */
+    inline void set_frequency( int freq ) {
+        _freq = freq; _changed = true;
+    }
+
+    /**
+     * Returns the frequency of the sounds sample
+     */
+    inline int get_frequency() { return _freq; }
 
     /**
      * Returns the size of the sounds sample
      */
-    inline int get_size() {
-        return size;
+    inline void set_size( int size ) {
+        _size = size;
     }
 
     /**
-     * Set position of sound source (uses same coordinate system as opengl)
+     * Returns the size of the sounds sample
      */
-    void set_source_pos( ALfloat *pos );
+    inline int get_size() const { return _size; }
 
     /**
-     * Set "constant" offset position of sound source (uses same
-     * coordinate system as opengl)
+     * Set position of the sound source (uses same coordinate system as opengl)
      */
-    void set_offset_pos( ALfloat *pos );
+    void set_base_position( SGVec3d pos );
+    void set_relative_position( SGVec3f pos );
+
+    /**
+     * Get position of the sound source (uses same coordinate system as opengl)
+     */
+    inline float *get_position() const { return toVec3f(_absolute_pos).data(); }
 
     /**
      * Set the orientation of the sound source, both for direction
      * and audio cut-off angles.
      */
-    void set_orientation( ALfloat *dir, ALfloat inner_angle=360.0,
-                                               ALfloat outer_angle=360.0,
-                                               ALfloat outer_gain=0.0);
+    void set_orientation( SGVec3f dir );
 
     /**
-     * Set velocity of sound source (uses same coordinate system as opengl)
+     * Define the audio cone parameters for directional audio
      */
-    void set_source_vel( ALfloat *vel, ALfloat *listener_vel );
+    inline void set_audio_cone( float inner, float outer, float gain ) {
+        _inner_angle = inner;
+        _outer_angle = outer;
+        _outer_gain = gain;
+        _static_changed = true;
+    }
+
+    /**
+     * Get the orientation of the sound source, the inner or outer angle
+     * or outer gain.
+     */
+    inline float *get_orientation() { return _direction.data(); }
+    inline float *get_direction() { return _direction.data(); }
+    inline float get_innerangle() { return _inner_angle; }
+    inline float get_outerangle() { return _outer_angle; }
+    inline float get_outergain() { return _outer_gain; }
+
+    /**
+     * Set velocity of the sound source (uses same coordinate system as opengl)
+     */
+    inline void set_velocity( SGVec3f vel ) {
+        _velocity = SGVec3f(vel); _changed = true;
+    }
+
+    /**
+     * Get velocity of the sound source (uses same coordinate system as opengl)
+     */
+    inline float *get_velocity() { return _velocity.data(); }
 
 
     /**
      * Set reference distance of sound (the distance where the gain
      * will be half.)
      */
-    void set_reference_dist( ALfloat dist );
+    inline void set_reference_dist( float dist ) {
+        _reference_dist = dist; _static_changed = true;
+    }
+
+    /**
+     * Get reference distance of sound (the distance where the gain
+     * will be half.)
+     */
+    inline float get_reference_dist() { return _reference_dist; }
 
 
     /**
      * Set maximum distance of sound (the distance where the sound is
      * no longer audible.
      */
-    void set_max_dist( ALfloat dist );
+    void set_max_dist( float dist ) {
+        _max_dist = dist; _static_changed = true;
+    }
 
     /**
-     * Load a sound file into a memory buffer only.
+     * Get maximum istance of sound (the distance where the sound is
+     * no longer audible.
      */
-    ALvoid* load_file(const char *path, const char *file);
+    inline float get_max_dist() { return _max_dist; }
+
+    /**
+     * Get the name of this sample
+     */
+    inline string get_sample_name() { return _sample_name; }
 };
 
 

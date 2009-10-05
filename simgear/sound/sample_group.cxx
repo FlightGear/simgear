@@ -62,6 +62,7 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
 {
     _smgr->add(this, refname);
     _active = _smgr->is_working();
+    _refname = refname;
     _samples.clear();
 }
 
@@ -434,7 +435,7 @@ bool SGSampleGroup::testForALError(string s)
 {
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_GENERAL, SG_ALERT, "AL Error (sample group): "
+       SG_LOG( SG_GENERAL, SG_ALERT, "AL Error (" << _refname << "): "
                                       << alGetString(error) << " at " << s);
        return true;
     }

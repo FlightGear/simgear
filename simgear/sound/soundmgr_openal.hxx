@@ -45,9 +45,11 @@
 # define AL_ILLEGAL_ENUM AL_INVALID_ENUM
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
+# include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
 #else
 # include <AL/al.h>
+# include <AL/alc.h>
 # include <AL/alut.h>
 #endif
 

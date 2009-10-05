@@ -55,7 +55,7 @@ int SGSoundMgr::_alut_init = 0;
 SGSoundMgr::SGSoundMgr() :
     _working(false),
     _changed(true),
-    _volume(0.5),
+    _volume(0.0),
     _device(NULL),
     _context(NULL),
     _listener_pos(SGVec3d::zeros().data()),
@@ -204,6 +204,8 @@ void SGSoundMgr::update( double dt )
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
     if (_working) {
+        // alcSuspendContext(_context);
+
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -220,6 +222,7 @@ void SGSoundMgr::update_late( double dt ) {
             testForALError("update");
             _changed = false;
         }
+        // alcProcessContext(_context);
     }
 }
 

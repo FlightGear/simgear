@@ -80,6 +80,7 @@ public:
     void bind();
     void unbind();
     void update(double dt);
+    void update_late(double dt);
     
     void suspend();
     void resume();
@@ -157,8 +158,8 @@ public:
      */
     void release_source( unsigned int source );
 
-    bool load(string &samplepath, void **data, int *format, unsigned int*size,
-                                  int *freq );
+    static bool load(string &samplepath, void **data, int *format,
+                                         unsigned int*size, int *freq );
 
 
 private:

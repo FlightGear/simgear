@@ -194,9 +194,15 @@ void SGSoundMgr::unbind ()
     _sources_in_use.clear();
 }
 
+void SGSoundMgr::update( double dt )
+{
+    // nothing to do in the regular update,e verything is done on the following
+    // function
+}
+
 
 // run the audio scheduler
-void SGSoundMgr::update( double dt ) {
+void SGSoundMgr::update_late( double dt ) {
     if (_working) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
@@ -334,7 +340,7 @@ void SGSoundMgr::release_source( unsigned int source )
             if ( result == AL_PLAYING ) {
                 alSourceStop( source );
             }
-            testForALError("free_source");
+            testForALError("release source");
 
             _free_sources.push_back(source);
             _sources_in_use.erase(_sources_in_use.begin()+i,

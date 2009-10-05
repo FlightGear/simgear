@@ -174,6 +174,8 @@ private:
     bool testForALError(string s);
     bool testForError(void *p, string s);
 
+    string _refname;
+
     void update_sample_config( SGSoundSample *sound );
 };
 

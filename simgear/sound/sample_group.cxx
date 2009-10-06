@@ -149,7 +149,7 @@ void SGSampleGroup::update( double dt ) {
 
                 alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                 alSourcei( source, AL_LOOPING, looping );
-                alSourcef( source, AL_ROLLOFF_FACTOR, 1.2 )
+                alSourcef( source, AL_ROLLOFF_FACTOR, 1.2 );
                 alSourcePlay( source );
                 testForALError("sample play");
             } else {

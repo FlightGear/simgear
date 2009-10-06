@@ -143,12 +143,6 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
 
 // destructor
 SGSoundSample::~SGSoundSample() {
-#if 0
-    if (_data != NULL) {
-        delete[] _data;
-        _data = NULL;
-    }
-#endif
 }
 
 void SGSoundSample::set_base_position( SGVec3d pos ) {

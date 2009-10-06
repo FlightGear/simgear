@@ -20,7 +20,7 @@
 
 #include "SGAtomic.hxx"
 
-#if defined(SGATOMIC_USE_GCC4_BUILTINS) && defined(__i386__)
+#if !defined(SGATOMIC_USE_GCC4_BUILTINS) && defined (__i386__)
 
 // Usually the apropriate functions are inlined by gcc.
 // But if gcc is called with something aequivalent to -march=i386,

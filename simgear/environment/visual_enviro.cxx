@@ -30,7 +30,7 @@
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/point3d.hxx>
 #include <simgear/math/polar3d.hxx>
-#include <simgear/sound/soundmgr_openal.hxx>
+#include <simgear/sound/sample_group.hxx>
 #include <simgear/scene/sky/cloudfield.hxx>
 #include <simgear/scene/sky/newcloud.hxx>
 #include <simgear/props/props.hxx>
@@ -175,7 +175,7 @@ SGEnviro::SGEnviro() :
 	lightning_enable_state(false),
 	elapsed_time(0.0),
 	dt(0.0),
-	soundMgr(NULL),
+	sampleGroup(NULL),
 	snd_active(false),
 	snd_dist(0.0),
 	min_time_before_lt(0.0),
@@ -189,6 +189,8 @@ SGEnviro::SGEnviro() :
 }
 
 SGEnviro::~SGEnviro(void) {
+	if (sampleGroup) delete sampleGroup;
+
   // OSGFIXME
   return;
 	list_of_lightning::iterator iLightning;
@@ -530,8 +532,8 @@ void SGEnviro::drawRain(double pitch, double roll, double heading, double hspeed
 
 }
 
-void SGEnviro::set_soundMgr(SGSoundMgr *mgr) {
-	soundMgr = mgr;
+void SGEnviro::set_sampleGroup(SGSampleGroup *sgr) {
+	sampleGroup = sgr;
 }
 
 void SGEnviro::drawPrecipitation(double rain_norm, double snow_norm, double hail_norm, double pitch, double roll, double heading, double hspeed) {
@@ -616,7 +618,7 @@ void SGLightning::lt_build(void) {
     top[PY] = alt;
     top[PZ] = 0;
     lt_build_tree_branch(0, top, 1.0, 50, top[PY] / 8.0);
-	if( ! sgEnviro.soundMgr )
+	if( ! sgEnviro.sampleGroup )
 		return;
 	Point3D start( sgEnviro.last_lon*SG_DEGREES_TO_RADIANS, sgEnviro.last_lat*SG_DEGREES_TO_RADIANS, 0.0 );
 	Point3D dest( lon*SG_DEGREES_TO_RADIANS, lat*SG_DEGREES_TO_RADIANS, 0.0 );
@@ -751,15 +753,15 @@ void SGEnviro::drawLightning(void) {
 				double ax = 0.0, ay = 0.0;
 				ax = cos(course) * dist;
 				ay = sin(course) * dist;
-				SGSharedPtr<SGSoundSample> snd = soundMgr->find("thunder");
+				SGSharedPtr<SGSoundSample> snd = sampleGroup->find("thunder");
 				if( snd ) {
-					ALfloat pos[3]={ax, ay, -sgEnviro.last_alt };
-					snd->set_source_pos(pos);
+					SGVec3d pos = SGVec3d(ax, ay, -sgEnviro.last_alt);
+					snd->set_base_position(pos);
 					snd->play_once();
 				}
 			}
 		} else {
-			if( !soundMgr->is_playing("thunder") ) {
+			if( !sampleGroup->is_playing("thunder") ) {
 				snd_active = false;
 				snd_playing = false;
 			}

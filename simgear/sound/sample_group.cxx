@@ -44,10 +44,9 @@ extern "C" int isinf (double);
 SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _active(false),
-    _changed(true),
-    _position_changed(true),
     _position(SGVec3d::zeros().data()),
-    _orientation(SGVec3f::zeros().data())
+    _orientation(SGVec3f::zeros().data()),
+    _tied_to_listener(false)
 {
     _samples.clear();
 }
@@ -55,10 +54,9 @@ SGSampleGroup::SGSampleGroup () :
 SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _smgr(smgr),
     _active(false), 
-    _changed(true),
-    _position_changed(true),
     _position(SGVec3d::zeros().data()),
-    _orientation(SGVec3f::zeros().data())
+    _orientation(SGVec3f::zeros().data()),
+    _tied_to_listener(false)
 {
     _smgr->add(this, refname);
     _active = _smgr->is_working();
@@ -132,6 +130,12 @@ void SGSampleGroup::update( double dt ) {
                 }
 
                 sample->set_buffer(buffer);
+            }
+
+            if ( _tied_to_listener && _smgr->has_changed() ) {
+                sample->set_base_position( _smgr->get_position_vec() );
+                sample->set_orientation( _smgr->get_direction() );
+                sample->set_velocity( _smgr->get_velocity() );
             }
 
             // start playing the sample
@@ -324,11 +328,13 @@ void SGSampleGroup::set_position( SGVec3d pos ) {
         return;
     }
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        sample->set_base_position( pos );
+    if ( !_tied_to_listener ) {
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
+            sample->set_base_position( pos );
+        }
     }
 }
 

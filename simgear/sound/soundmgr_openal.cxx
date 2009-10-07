@@ -204,7 +204,7 @@ void SGSoundMgr::update( double dt )
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
     if (_working) {
-        // alcSuspendContext(_context);
+        alcSuspendContext(_context);
 
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
@@ -222,7 +222,7 @@ void SGSoundMgr::update_late( double dt ) {
             testForALError("update");
             _changed = false;
         }
-        // alcProcessContext(_context);
+        alcProcessContext(_context);
     }
 }
 

@@ -458,6 +458,7 @@ bool SGSoundMgr::testForALCError(string s)
 
 bool SGSoundMgr::testForALUTError(string s)
 {
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALenum error;
     error =  alutGetError ();
     if (error != ALUT_ERROR_NO_ERROR) {
@@ -466,5 +467,6 @@ bool SGSoundMgr::testForALUTError(string s)
                                        << s);
         return true;
     }
+#endif
     return false;
 }

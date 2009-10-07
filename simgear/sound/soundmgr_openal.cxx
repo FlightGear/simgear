@@ -412,8 +412,8 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
  */
 void SGSoundMgr::set_orientation( SGQuatd ori )
 {
-    SGVec3d sgv_up = ori.rotate(SGVec3d::e2());
-    SGVec3d sgv_at = ori.rotate(SGVec3d::e3());
+    SGVec3d sgv_up = ori.rotate(SGVec3d::e3());
+    SGVec3d sgv_at = ori.rotate(SGVec3d::e2());
     for (int i=0; i<3; i++) {
        _listener_ori[i] = sgv_at[i];
        _listener_ori[i+3] = sgv_up[i];

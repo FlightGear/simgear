@@ -149,6 +149,7 @@ void SGSampleGroup::update( double dt ) {
 
                 alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                 alSourcei( source, AL_LOOPING, looping );
+                alSourcef( source, AL_ROLLOFF_FACTOR, 1.2 );
                 alSourcePlay( source );
                 testForALError("sample play");
             } else {
@@ -382,7 +383,6 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
             alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
             testForALError("audio cone");
 
-            alSourcef( source, AL_ROLLOFF_FACTOR, 1.0 );
             alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );
             alSourcef( source, AL_REFERENCE_DISTANCE,
                                sample->get_reference_dist() );

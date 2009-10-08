@@ -18,8 +18,8 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id$
 
@@ -124,9 +124,8 @@ public:
         _changed = true;
     }
 
-    inline double *get_position() {
-       return _listener_pos.data();
-    }
+    inline double *get_position() { return _listener_pos.data(); }
+    inline SGVec3d get_position_vec() { return _listener_pos; };
 
     /**
      * set the velocity of the listener (in opengl coordinates)
@@ -136,10 +135,16 @@ public:
         _changed = true;
     }
 
+    inline SGVec3f get_velocity() { return _listener_vel; }
+
     /**
      * set the orientation of the listener (in opengl coordinates)
      */
     void set_orientation( SGQuatd ori );
+
+    inline SGVec3f get_direction() {
+        return SGVec3f(_listener_ori[0], _listener_ori[1], _listener_ori[2]);
+    }
 
     enum {
         NO_SOURCE = (unsigned int)-1,
@@ -160,8 +165,15 @@ public:
      */
     void release_source( unsigned int source );
 
+
+    /**
+     * returns true if the position has changed
+     */
+    inline bool has_changed() { return _changed; }
+
     static bool load(string &samplepath, void **data, int *format,
                                          unsigned int*size, int *freq );
+
 
 
 private:

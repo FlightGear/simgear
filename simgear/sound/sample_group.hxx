@@ -156,18 +156,18 @@ public:
      */
     void load_file(SGSoundSample *sound);
 
+    inline void tie_to_listener() { _tied_to_listener = true; }
+
+
 protected:
     SGSoundMgr *_smgr;
     bool _active;
 
 private:
-    bool _changed;
-    bool _position_changed;
-
     float _volume;
-
     SGVec3d _position;
     SGVec3f _orientation;
+    bool _tied_to_listener;
 
     sample_map _samples;
 

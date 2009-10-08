@@ -204,7 +204,7 @@ void SGSoundMgr::update( double dt )
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
     if (_working) {
-        // alcSuspendContext(_context);
+        alcSuspendContext(_context);
 
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
@@ -222,7 +222,7 @@ void SGSoundMgr::update_late( double dt ) {
             testForALError("update");
             _changed = false;
         }
-        // alcProcessContext(_context);
+        alcProcessContext(_context);
     }
 }
 
@@ -458,6 +458,7 @@ bool SGSoundMgr::testForALCError(string s)
 
 bool SGSoundMgr::testForALUTError(string s)
 {
+#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALenum error;
     error =  alutGetError ();
     if (error != ALUT_ERROR_NO_ERROR) {
@@ -466,5 +467,6 @@ bool SGSoundMgr::testForALUTError(string s)
                                        << s);
         return true;
     }
+#endif
     return false;
 }

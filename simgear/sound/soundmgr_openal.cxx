@@ -34,6 +34,7 @@
 #endif
 
 #include <iostream>
+#include <algorithm>
 
 #include "soundmgr_openal.hxx"
 
@@ -77,6 +78,7 @@ SGSoundMgr::SGSoundMgr() :
 // destructor
 
 SGSoundMgr::~SGSoundMgr() {
+
     stop();
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     _alut_init--;
@@ -151,6 +153,16 @@ void SGSoundMgr::stop() {
     if (_working) {
         _working = false;
 
+        // clear any OpenAL buffers before shutting down
+        buffer_map_iterator buffers_current = _buffers.begin();
+        buffer_map_iterator buffers_end = _buffers.end();
+        for ( ; buffers_current != buffers_end; ++buffers_current ) {
+            refUint ref = buffers_current->second;
+            ALuint buffer = ref.id;
+            alDeleteBuffers(1, &buffer);
+            _buffers.erase( buffers_current );
+        }
+
         _context = alcGetCurrentContext();
         _device = alcGetContextsDevice(_context);
         alcMakeContextCurrent(NULL);
@@ -196,7 +208,7 @@ void SGSoundMgr::unbind ()
 
 void SGSoundMgr::update( double dt )
 {
-    // nothing to do in the regular update,e verything is done on the following
+    // nothing to do in the regular update, everything is done on the following
     // function
 }
 
@@ -325,7 +337,6 @@ unsigned int SGSoundMgr::request_source()
     if (_free_sources.size() > 0) {
        source = _free_sources.back();
        _free_sources.pop_back();
-
        _sources_in_use.push_back(source);
     }
 
@@ -335,21 +346,93 @@ unsigned int SGSoundMgr::request_source()
 // Free up a source id for further use
 void SGSoundMgr::release_source( unsigned int source )
 {
-    for (unsigned int i = 0; i<_sources_in_use.size(); i++) {
-        if ( _sources_in_use[i] == source ) {
-            ALint result;
+    vector<ALuint>::iterator it;
 
-            alGetSourcei( source, AL_SOURCE_STATE, &result );
-            if ( result == AL_PLAYING ) {
-                alSourceStop( source );
-            }
-            testForALError("release source");
+    it = std::find(_sources_in_use.begin(), _sources_in_use.end(), source);
+    if ( it != _sources_in_use.end() ) {
+        ALint result;
 
-            _free_sources.push_back(source);
-            _sources_in_use.erase(_sources_in_use.begin()+i,
-                                  _sources_in_use.begin()+i+1);
-            break;
+        alGetSourcei( source, AL_SOURCE_STATE, &result );
+        if ( result == AL_PLAYING )
+            alSourceStop( source );
+        testForALError("release source");
+
+        _free_sources.push_back(source);
+        _sources_in_use.erase(it, it+1);
+    }
+}
+
+unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
+{
+    ALuint buffer = NO_BUFFER;
+
+    if ( !sample->is_valid_buffer() ) {
+        // sample was not yet loaded or removed again
+        string sample_name = sample->get_sample_name();
+
+        // see if the sample name is already cached
+        buffer_map_iterator buffer_it = _buffers.find( sample_name );
+        if ( buffer_it != _buffers.end() ) {
+            buffer_it->second.refctr++;
+            buffer = buffer_it->second.id;
+            sample->set_buffer( buffer );
+            return buffer;
         }
+
+        // sample name was not found in the buffer cache.
+        if ( sample->is_file() ) {
+            unsigned int size;
+            int freq, format;
+            void *data;
+
+            load(sample_name, &data, &format, &size, &freq);
+            sample->set_data( (unsigned char *)data );
+            sample->set_frequency( freq );
+            sample->set_format( format );
+            sample->set_size( size );
+        }
+
+        // create an OpenAL buffer handle
+        alGenBuffers(1, &buffer);
+        if ( !testForALError("generate buffer") ) {
+            // Copy data to the internal OpenAL buffer
+
+            const ALvoid *data = sample->get_data();
+            ALenum format = sample->get_format();
+            ALsizei size = sample->get_size();
+            ALsizei freq = sample->get_frequency();
+            alBufferData( buffer, format, data, size, freq );
+            sample->free_data();
+
+            if ( !testForALError("buffer add data") ) {
+                sample->set_buffer(buffer);
+                _buffers[sample_name] = refUint(buffer);
+            }
+        }
+    }
+    else
+        buffer = sample->get_buffer();
+
+    return buffer;
+}
+
+void SGSoundMgr::release_buffer(SGSoundSample *sample)
+{
+    string sample_name = sample->get_sample_name();
+
+    buffer_map_iterator buffer_it = _buffers.find( sample_name );
+    if ( buffer_it == _buffers.end() ) {
+        // buffer was not found
+        return;
+    }
+
+    sample->no_valid_buffer();
+    buffer_it->second.refctr--;
+    if (buffer_it->second.refctr == 0) {
+        ALuint buffer = buffer_it->second.id;
+        _buffers.erase( buffer_it );
+        alDeleteBuffers(1, &buffer);
+        testForALError("release buffer");
     }
 }
 

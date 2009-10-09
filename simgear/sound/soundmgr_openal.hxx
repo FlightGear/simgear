@@ -60,13 +60,24 @@
 #include "sample_group.hxx"
 #include "sample_openal.hxx"
 
-using std::map;
 using std::string;
 
-typedef map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+struct refUint {
+    unsigned int refctr;
+    ALuint id;
+
+    refUint() { refctr = 0; id = (ALuint)-1; };
+    refUint(ALuint i) { refctr = 1; id = i; };
+    ~refUint() {};
+};
+
+typedef std::map < string, refUint > buffer_map;
+typedef buffer_map::iterator buffer_map_iterator;
+typedef buffer_map::const_iterator  const_buffer_map_iterator;
+
+typedef std::map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
-
 
 /**
  * Manage a collection of SGSampleGroup instances
@@ -156,7 +167,7 @@ public:
 
     /**
      * get a new OpenAL source id
-     * returns NO_SOURCE is no source is available
+     * returns NO_SOURCE if no source is available
      */
     unsigned int request_source();
 
@@ -164,6 +175,18 @@ public:
      * give back an OpenAL source id for further use.
      */
     void release_source( unsigned int source );
+
+    /**
+     * get a new OpenAL buffer id
+     * returns NO_BUFFER if loading of the buffer failed.
+     */
+    unsigned int request_buffer(SGSoundSample *sample);
+
+    /**
+     * give back an OpenAL source id for further use.
+     */
+    void release_buffer( SGSoundSample *sample );
+
 
 
     /**
@@ -197,6 +220,7 @@ private:
     ALfloat _listener_ori[6];
 
     sample_group_map _sample_groups;
+    buffer_map _buffers;
 
     vector<ALuint> _free_sources;
     vector<ALuint> _sources_in_use;

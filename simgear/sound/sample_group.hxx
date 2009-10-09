@@ -151,11 +151,6 @@ public:
      */
     void set_orientation( SGVec3f ori );
 
-    /**
-     * load the data of the sound sample
-     */
-    void load_file(SGSoundSample *sound);
-
     inline void tie_to_listener() { _tied_to_listener = true; }
 
 

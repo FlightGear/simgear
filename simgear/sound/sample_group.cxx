@@ -76,6 +76,7 @@ SGSampleGroup::~SGSampleGroup ()
         if ( sample->is_valid_source() && sample->is_playing() ) {
             sample->no_valid_source();
             _smgr->release_source( sample->get_source() );
+            _smgr->release_buffer( sample );
         }
     }
 
@@ -97,40 +98,8 @@ void SGSampleGroup::update( double dt ) {
             //
             // a request to start playing a sound has been filed.
             //
-            ALboolean looping = sample->get_looping() ? AL_TRUE : AL_FALSE;
-
-            if ( !sample->is_valid_buffer() ) {
-                // sample was not yet loaded or removed again
-
-// TODO: Create a buffer cache that checks whether a file is already present
-//       as an OpenAL buffer since buffers can be shared among sources.
-                load_file(sample);
-                if ( testForALError("load sample") ) {
-                    throw sg_exception("Failed to load sound sample.");
-                    continue;
-                }
-
-                // create an OpenAL buffer handle
-                ALuint buffer;
-                alGenBuffers(1, &buffer);
-                if ( testForALError("generate buffer") ) {
-                    throw sg_exception("Failed to generate OpenAL buffer.");
-                    continue;
-                }
-
-                // Copy data to the internal OpenAL buffer
-                const ALvoid *data = sample->get_data();
-                ALenum format = sample->get_format();
-                ALsizei size = sample->get_size();
-                ALsizei freq = sample->get_frequency();
-                alBufferData( buffer, format, data, size, freq );
-                sample->free_data();
-                if ( testForALError("buffer add data") ) {
-                    continue;
-                }
-
-                sample->set_buffer(buffer);
-            }
+            if ( _smgr->request_buffer(sample) == SGSoundMgr::NO_BUFFER )
+                continue;
 
             if ( _tied_to_listener && _smgr->has_changed() ) {
                 sample->set_base_position( _smgr->get_position_vec() );
@@ -139,6 +108,7 @@ void SGSampleGroup::update( double dt ) {
             }
 
             // start playing the sample
+            ALboolean looping = sample->get_looping() ? AL_TRUE : AL_FALSE;
             ALuint buffer = sample->get_buffer();
             ALuint source = _smgr->request_source();
             if (alIsSource(source) == AL_TRUE && alIsBuffer(buffer) == AL_TRUE)
@@ -186,7 +156,6 @@ void SGSampleGroup::update( double dt ) {
                 sample->no_valid_source();
                 sample->stop();
                 _smgr->release_source( source );
-
             }
         }
         testForALError("update");
@@ -216,7 +185,10 @@ bool SGSampleGroup::remove( const string &refname ) {
         return false;
     }
 
-    _samples.erase( sample_it );
+    // remove the sources buffer
+    _smgr->release_buffer( sample_it->second );
+    _samples.erase( refname );
+
     return true;
 }
 
@@ -394,23 +366,6 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
                                sample->get_reference_dist() );
             testForALError("distance rolloff");
         }
-    }
-}
-
-ALvoid
-SGSampleGroup::load_file(SGSoundSample *sample) {
-    if (sample->is_file()) {
-        unsigned int size;
-        int freq, format;
-        void *data;
-
-        string sample_name = sample->get_sample_name();
-        _smgr->load(sample_name, &data, &format, &size, &freq);
-
-        sample->set_data( (unsigned char *)data );
-        sample->set_frequency( freq );
-        sample->set_format( format );
-        sample->set_size( size );
     }
 }
 

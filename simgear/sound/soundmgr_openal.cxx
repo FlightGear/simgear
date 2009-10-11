@@ -34,6 +34,7 @@
 #endif
 
 #include <iostream>
+#include <algorithm>
 
 #include "soundmgr_openal.hxx"
 
@@ -58,8 +59,8 @@ SGSoundMgr::SGSoundMgr() :
     _volume(0.0),
     _device(NULL),
     _context(NULL),
-    _listener_pos(SGVec3d::zeros().data()),
-    _listener_vel(SGVec3f::zeros().data()),
+    _position(SGVec3d::zeros().data()),
+    _velocity(SGVec3f::zeros().data()),
     _devname(NULL)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
@@ -77,6 +78,7 @@ SGSoundMgr::SGSoundMgr() :
 // destructor
 
 SGSoundMgr::~SGSoundMgr() {
+
     stop();
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     _alut_init--;
@@ -109,15 +111,15 @@ void SGSoundMgr::init() {
     _context = context;
     _working = true;
 
-    _listener_ori[0] = 0.0; _listener_ori[1] = 0.0; _listener_ori[2] = -1.0;
-    _listener_ori[3] = 0.0; _listener_ori[4] = 1.0; _listener_ori[5] = 0.0;
+    _orientation[0] = 0.0; _orientation[1] = 0.0; _orientation[2] = -1.0;
+    _orientation[3] = 0.0; _orientation[4] = 1.0; _orientation[5] = 0.0;
 
     alListenerf( AL_GAIN, 0.2f );
-    alListenerfv( AL_POSITION, toVec3f(_listener_pos).data() );
-    alListenerfv( AL_ORIENTATION, _listener_ori );
-    alListenerfv( AL_VELOCITY, _listener_vel.data() );
+    alListenerfv( AL_POSITION, toVec3f(_position).data() );
+    alListenerfv( AL_ORIENTATION, _orientation );
+    alListenerfv( AL_VELOCITY, _velocity.data() );
 
-    alDopplerFactor(1.0);
+    alDopplerFactor(0.5);
     alDopplerVelocity(340.3);   // speed of sound in meters per second.
 
     if ( alIsExtensionPresent((const ALchar*)"EXT_exponent_distance") ) {
@@ -150,6 +152,16 @@ void SGSoundMgr::init() {
 void SGSoundMgr::stop() {
     if (_working) {
         _working = false;
+
+        // clear any OpenAL buffers before shutting down
+        buffer_map_iterator buffers_current = _buffers.begin();
+        buffer_map_iterator buffers_end = _buffers.end();
+        for ( ; buffers_current != buffers_end; ++buffers_current ) {
+            refUint ref = buffers_current->second;
+            ALuint buffer = ref.id;
+            alDeleteBuffers(1, &buffer);
+            _buffers.erase( buffers_current );
+        }
 
         _context = alcGetCurrentContext();
         _device = alcGetContextsDevice(_context);
@@ -196,7 +208,7 @@ void SGSoundMgr::unbind ()
 
 void SGSoundMgr::update( double dt )
 {
-    // nothing to do in the regular update,e verything is done on the following
+    // nothing to do in the regular update, everything is done on the following
     // function
 }
 
@@ -215,9 +227,9 @@ void SGSoundMgr::update_late( double dt ) {
 
         if (_changed) {
             alListenerf( AL_GAIN, _volume );
-            alListenerfv( AL_VELOCITY, _listener_vel.data() );
-            alListenerfv( AL_ORIENTATION, _listener_ori );
-            alListenerfv( AL_POSITION, toVec3f(_listener_pos).data() );
+            alListenerfv( AL_VELOCITY, _velocity.data() );
+            alListenerfv( AL_ORIENTATION, _orientation );
+            alListenerfv( AL_POSITION, toVec3f(_position).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;
@@ -309,6 +321,30 @@ void SGSoundMgr::set_volume( float v )
     _changed = true;
 }
 
+/**
+ * set the orientation of the listener (in opengl coordinates)
+ *
+ * Description: ORIENTATION is a pair of 3-tuples representing the
+ * 'at' direction vector and 'up' direction of the Object in
+ * Cartesian space. AL expects two vectors that are orthogonal to
+ * each other. These vectors are not expected to be normalized. If
+ * one or more vectors have zero length, implementation behavior
+ * is undefined. If the two vectors are linearly dependent,
+ * behavior is undefined.
+ */
+void SGSoundMgr::set_orientation( SGQuatd ori )
+{
+    SGVec3d sgv_up = ori.rotate(SGVec3d::e2());
+    SGVec3d sgv_at = ori.rotate(SGVec3d::e3());
+    _orientation[0] = sgv_at[0];
+    _orientation[1] = sgv_at[1];
+    _orientation[2] = sgv_at[2];
+    _orientation[3] = sgv_up[0];
+    _orientation[4] = sgv_up[1];
+    _orientation[5] = sgv_up[2];
+    _changed = true;
+}
+
 // Get an unused source id
 //
 // The Sound Manager should keep track of the sources in use, the distance
@@ -325,7 +361,6 @@ unsigned int SGSoundMgr::request_source()
     if (_free_sources.size() > 0) {
        source = _free_sources.back();
        _free_sources.pop_back();
-
        _sources_in_use.push_back(source);
     }
 
@@ -335,21 +370,93 @@ unsigned int SGSoundMgr::request_source()
 // Free up a source id for further use
 void SGSoundMgr::release_source( unsigned int source )
 {
-    for (unsigned int i = 0; i<_sources_in_use.size(); i++) {
-        if ( _sources_in_use[i] == source ) {
-            ALint result;
+    vector<ALuint>::iterator it;
 
-            alGetSourcei( source, AL_SOURCE_STATE, &result );
-            if ( result == AL_PLAYING ) {
-                alSourceStop( source );
-            }
-            testForALError("release source");
+    it = std::find(_sources_in_use.begin(), _sources_in_use.end(), source);
+    if ( it != _sources_in_use.end() ) {
+        ALint result;
 
-            _free_sources.push_back(source);
-            _sources_in_use.erase(_sources_in_use.begin()+i,
-                                  _sources_in_use.begin()+i+1);
-            break;
+        alGetSourcei( source, AL_SOURCE_STATE, &result );
+        if ( result == AL_PLAYING )
+            alSourceStop( source );
+        testForALError("release source");
+
+        _free_sources.push_back(source);
+        _sources_in_use.erase(it, it+1);
+    }
+}
+
+unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
+{
+    ALuint buffer = NO_BUFFER;
+
+    if ( !sample->is_valid_buffer() ) {
+        // sample was not yet loaded or removed again
+        string sample_name = sample->get_sample_name();
+
+        // see if the sample name is already cached
+        buffer_map_iterator buffer_it = _buffers.find( sample_name );
+        if ( buffer_it != _buffers.end() ) {
+            buffer_it->second.refctr++;
+            buffer = buffer_it->second.id;
+            sample->set_buffer( buffer );
+            return buffer;
         }
+
+        // sample name was not found in the buffer cache.
+        if ( sample->is_file() ) {
+            unsigned int size;
+            int freq, format;
+            void *data;
+
+            load(sample_name, &data, &format, &size, &freq);
+            sample->set_data( (unsigned char *)data );
+            sample->set_frequency( freq );
+            sample->set_format( format );
+            sample->set_size( size );
+        }
+
+        // create an OpenAL buffer handle
+        alGenBuffers(1, &buffer);
+        if ( !testForALError("generate buffer") ) {
+            // Copy data to the internal OpenAL buffer
+
+            const ALvoid *data = sample->get_data();
+            ALenum format = sample->get_format();
+            ALsizei size = sample->get_size();
+            ALsizei freq = sample->get_frequency();
+            alBufferData( buffer, format, data, size, freq );
+            sample->free_data();
+
+            if ( !testForALError("buffer add data") ) {
+                sample->set_buffer(buffer);
+                _buffers[sample_name] = refUint(buffer);
+            }
+        }
+    }
+    else
+        buffer = sample->get_buffer();
+
+    return buffer;
+}
+
+void SGSoundMgr::release_buffer(SGSoundSample *sample)
+{
+    string sample_name = sample->get_sample_name();
+
+    buffer_map_iterator buffer_it = _buffers.find( sample_name );
+    if ( buffer_it == _buffers.end() ) {
+        // buffer was not found
+        return;
+    }
+
+    sample->no_valid_buffer();
+    buffer_it->second.refctr--;
+    if (buffer_it->second.refctr == 0) {
+        ALuint buffer = buffer_it->second.id;
+        _buffers.erase( buffer_it );
+        alDeleteBuffers(1, &buffer);
+        testForALError("release buffer");
     }
 }
 
@@ -396,29 +503,6 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     *frq = (int)freq;
 
     return true;
-}
-
-
-/**
- * set the orientation of the listener (in opengl coordinates)
- *
- * Description: ORIENTATION is a pair of 3-tuples representing the
- * 'at' direction vector and 'up' direction of the Object in
- * Cartesian space. AL expects two vectors that are orthogonal to
- * each other. These vectors are not expected to be normalized. If
- * one or more vectors have zero length, implementation behavior
- * is undefined. If the two vectors are linearly dependent,
- * behavior is undefined.
- */
-void SGSoundMgr::set_orientation( SGQuatd ori )
-{
-    SGVec3d sgv_up = ori.rotate(SGVec3d::e3());
-    SGVec3d sgv_at = ori.rotate(SGVec3d::e2());
-    for (int i=0; i<3; i++) {
-       _listener_ori[i] = sgv_at[i];
-       _listener_ori[i+3] = sgv_up[i];
-    }
-    _changed = true;
 }
 
 

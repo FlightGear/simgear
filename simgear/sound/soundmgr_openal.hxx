@@ -47,6 +47,10 @@
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
+#elif defined(_WIN32)
+# include <al.h>
+# include <alc.h>
+# include <AL/alut.h>
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
@@ -60,13 +64,24 @@
 #include "sample_group.hxx"
 #include "sample_openal.hxx"
 
-using std::map;
 using std::string;
 
-typedef map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+struct refUint {
+    unsigned int refctr;
+    ALuint id;
+
+    refUint() { refctr = 0; id = (ALuint)-1; };
+    refUint(ALuint i) { refctr = 1; id = i; };
+    ~refUint() {};
+};
+
+typedef std::map < string, refUint > buffer_map;
+typedef buffer_map::iterator buffer_map_iterator;
+typedef buffer_map::const_iterator  const_buffer_map_iterator;
+
+typedef std::map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
-
 
 /**
  * Manage a collection of SGSampleGroup instances
@@ -119,23 +134,27 @@ public:
     /**
      * set the position of the listener (in opengl coordinates)
      */
-    inline void set_position( SGVec3d pos ) {
-        _listener_pos = pos;
-        _changed = true;
+    void set_position( SGVec3d pos ) {
+        if (_position != pos) {
+            _position = pos;
+            _changed = true;
+        }
     }
 
-    inline double *get_position() { return _listener_pos.data(); }
-    inline SGVec3d get_position_vec() { return _listener_pos; };
+    inline double *get_position() { return _position.data(); }
+    inline SGVec3d get_position_vec() { return _position; };
 
     /**
      * set the velocity of the listener (in opengl coordinates)
      */
-    inline void set_velocity( SGVec3f vel ) {
-        _listener_vel = vel;
-        _changed = true;
+    void set_velocity( SGVec3f vel ) {
+        if (_velocity != vel) {
+            _velocity = vel;
+            _changed = true;
+        }
     }
 
-    inline SGVec3f get_velocity() { return _listener_vel; }
+    inline SGVec3f get_velocity() { return _velocity; }
 
     /**
      * set the orientation of the listener (in opengl coordinates)
@@ -143,7 +162,7 @@ public:
     void set_orientation( SGQuatd ori );
 
     inline SGVec3f get_direction() {
-        return SGVec3f(_listener_ori[0], _listener_ori[1], _listener_ori[2]);
+        return SGVec3f(_orientation[0], _orientation[1], _orientation[2]);
     }
 
     enum {
@@ -156,7 +175,7 @@ public:
 
     /**
      * get a new OpenAL source id
-     * returns NO_SOURCE is no source is available
+     * returns NO_SOURCE if no source is available
      */
     unsigned int request_source();
 
@@ -164,6 +183,18 @@ public:
      * give back an OpenAL source id for further use.
      */
     void release_source( unsigned int source );
+
+    /**
+     * get a new OpenAL buffer id
+     * returns NO_BUFFER if loading of the buffer failed.
+     */
+    unsigned int request_buffer(SGSoundSample *sample);
+
+    /**
+     * give back an OpenAL source id for further use.
+     */
+    void release_buffer( SGSoundSample *sample );
+
 
 
     /**
@@ -187,16 +218,17 @@ private:
     ALCcontext *_context;
 
     // Position of the listener.
-    SGVec3d _listener_pos;
+    SGVec3d _position;
 
     // Velocity of the listener.
-    SGVec3f _listener_vel;
+    SGVec3f _velocity;
 
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
-    ALfloat _listener_ori[6];
+    ALfloat _orientation[6];
 
     sample_group_map _sample_groups;
+    buffer_map _buffers;
 
     vector<ALuint> _free_sources;
     vector<ALuint> _sources_in_use;

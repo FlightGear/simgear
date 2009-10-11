@@ -43,24 +43,27 @@ extern "C" int isinf (double);
 
 SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
+    _refname(""),
     _active(false),
-    _position(SGVec3d::zeros().data()),
-    _orientation(SGVec3f::zeros().data()),
-    _tied_to_listener(false)
+    _tied_to_listener(false),
+    _position(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
+    _orientation(SGVec3f::zeros())
 {
     _samples.clear();
 }
 
 SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _smgr(smgr),
+    _refname(refname),
     _active(false), 
-    _position(SGVec3d::zeros().data()),
-    _orientation(SGVec3f::zeros().data()),
-    _tied_to_listener(false)
+    _tied_to_listener(false),
+    _position(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
+    _orientation(SGVec3f::zeros())
 {
     _smgr->add(this, refname);
     _active = _smgr->is_working();
-    _refname = refname;
     _samples.clear();
 }
 
@@ -300,13 +303,14 @@ void SGSampleGroup::set_position( SGVec3d pos ) {
         return;
     }
 
-    if ( !_tied_to_listener ) {
+    if ( !_tied_to_listener && _position != pos ) {
         sample_map_iterator sample_current = _samples.begin();
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
             SGSoundSample *sample = sample_current->second;
             sample->set_base_position( pos );
         }
+        _position = pos;
     }
 }
 
@@ -318,11 +322,13 @@ void SGSampleGroup::set_velocity( SGVec3f vel ) {
         return;
     }
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        sample->set_velocity( vel );
+    if (_velocity != vel) {
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
+            sample->set_velocity( vel );
+        }
     }
 }
 
@@ -334,11 +340,13 @@ void SGSampleGroup::set_orientation( SGVec3f ori ) {
         return;
     }
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        sample->set_orientation( ori );
+    if (_orientation != ori) {
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
+            sample->set_orientation( ori );
+        }
     }
 }
 
@@ -347,7 +355,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         unsigned int source = sample->get_source();
 
         alSourcefv( source, AL_POSITION, sample->get_position());
-        alSourcefv( source, AL_DIRECTION, sample->get_direction() );
+        alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
         alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
         testForALError("position and orientation");
 

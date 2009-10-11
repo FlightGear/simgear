@@ -58,7 +58,8 @@ private:
     SGVec3d _base_pos;		// base position
 
     // The orientation of the sound (direction and cut-off angles)
-    SGVec3f _direction;
+    SGVec3f _orientation;	// base orientation
+    SGVec3f _direction;		// orientation offset
 
     // Velocity of the source sound.
     SGVec3f _velocity;
@@ -337,7 +338,13 @@ public:
      * Set the orientation of the sound source, both for direction
      * and audio cut-off angles.
      */
-    void set_orientation( SGVec3f dir );
+    void set_orientation( SGVec3f ori );
+
+    /**
+     * Set the relative direction of the sound source, both for direction
+     * and audio cut-off angles.
+     */
+    void set_direction( SGVec3f dir );
 
     /**
      * Define the audio cone parameters for directional audio
@@ -353,8 +360,8 @@ public:
      * Get the orientation of the sound source, the inner or outer angle
      * or outer gain.
      */
-    inline float *get_orientation() { return _direction.data(); }
-    inline float *get_direction() { return _direction.data(); }
+    float *get_orientation();
+
     inline float get_innerangle() { return _inner_angle; }
     inline float get_outerangle() { return _outer_angle; }
     inline float get_outergain() { return _outer_gain; }

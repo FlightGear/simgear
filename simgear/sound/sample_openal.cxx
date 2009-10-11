@@ -42,6 +42,7 @@ SGSoundSample::SGSoundSample() :
     _absolute_pos(SGVec3d::zeros().data()),
     _relative_pos(SGVec3f::zeros().data()),
     _base_pos(SGVec3d::zeros().data()),
+    _orientation(SGVec3f::zeros().data()),
     _direction(SGVec3f::zeros().data()),
     _velocity(SGVec3f::zeros().data()),
     _sample_name(""),
@@ -74,6 +75,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _absolute_pos(SGVec3d::zeros().data()),
     _relative_pos(SGVec3f::zeros().data()),
     _base_pos(SGVec3d::zeros().data()),
+    _orientation(SGVec3f::zeros().data()),
     _direction(SGVec3f::zeros().data()),
     _velocity(SGVec3f::zeros().data()),
     _format(AL_FORMAT_MONO8),
@@ -112,6 +114,7 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _absolute_pos(SGVec3d::zeros().data()),
     _relative_pos(SGVec3f::zeros().data()),
     _base_pos(SGVec3d::zeros().data()),
+    _orientation(SGVec3f::zeros().data()),
     _direction(SGVec3f::zeros().data()),
     _velocity(SGVec3f::zeros().data()),
     _data(data),
@@ -145,6 +148,16 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
 SGSoundSample::~SGSoundSample() {
 }
 
+float *SGSoundSample::get_orientation() {
+#if 0
+    SGQuatf quat = SGQuatf::fromAngleAxis(_orientation);
+    SGVec3f orient = quat.transform(_direction);
+    return orient.data();
+#else
+    return _orientation.data();
+#endif
+}
+
 void SGSoundSample::set_base_position( SGVec3d pos ) {
     _base_pos = pos;
     update_absolute_position();
@@ -157,14 +170,24 @@ void SGSoundSample::set_relative_position( SGVec3f pos ) {
     _changed = true;
 }
 
-void SGSoundSample::set_orientation( SGVec3f dir ) {
+void SGSoundSample::set_orientation( SGVec3f ori ) {
+    _orientation = ori;
+    update_absolute_position();
+    _changed = true;
+}
+
+void SGSoundSample::set_direction( SGVec3f dir ) {
     _direction = dir;
     update_absolute_position();
     _changed = true;
 }
 
 void SGSoundSample::update_absolute_position() {
-    SGQuatf orient = SGQuatf::fromAngleAxis(_direction);
+#if 0
+    SGQuatf orient = SGQuatf::fromAngleAxis(_orientation);
     SGVec3f modified_relative_pos = orient.transform(_relative_pos);
     _absolute_pos = _base_pos + toVec3d(modified_relative_pos);
+#else
+    _absolute_pos = _base_pos;
+#endif
 }

@@ -230,11 +230,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    // Relative position
    //
    SGVec3f offset_pos = SGVec3f::zeros();
-   SGPropertyNode_ptr pos = node->getChild("position");
-   if ( pos != NULL ) {
-       offset_pos[0] = pos->getDoubleValue("x", 0.0);
-       offset_pos[1] = -pos->getDoubleValue("y", 0.0);
-       offset_pos[2] = pos->getDoubleValue("z", 0.0);
+   SGPropertyNode_ptr prop = node->getChild("position");
+   if ( prop != NULL ) {
+       offset_pos[0] = prop->getDoubleValue("x", 0.0);
+       offset_pos[1] = -prop->getDoubleValue("y", 0.0);
+       offset_pos[2] = prop->getDoubleValue("z", 0.0);
    }
 
    //
@@ -244,40 +244,29 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    float inner, outer, outer_gain;
    inner = outer = 360.0;
    outer_gain = 0.0;
-   pos = node->getChild("orientation");
-   if ( pos != NULL ) {
-      dir[0] = pos->getDoubleValue("x", 0.0);
-      dir[1] = -pos->getDoubleValue("y", 0.0);
-      dir[2] = pos->getDoubleValue("z", 0.0);
-      inner = pos->getDoubleValue("inner-angle", 360.0);
-      outer = pos->getDoubleValue("outer-angle", 360.0);
-      outer_gain = pos->getDoubleValue("outer-gain", 0.0);
+   prop = node->getChild("orientation");
+   if ( prop != NULL ) {
+      dir[0] = prop->getDoubleValue("x", 0.0);
+      dir[1] = -prop->getDoubleValue("y", 0.0);
+      dir[2] = prop->getDoubleValue("z", 0.0);
+      inner = prop->getDoubleValue("inner-angle", 360.0);
+      outer = prop->getDoubleValue("outer-angle", 360.0);
+      outer_gain = prop->getDoubleValue("outer-gain", 0.0);
    }
    
    //
    // Initialize the sample
    //
    _sgrp = sgrp;
-   if ( (_sample = _sgrp->find(_name)) == NULL ) {
-       // FIXME: Does it make sense to overwrite a previous entry's
-       // configuration just because a new entry has the same name?
-       // Note that we can't match on identical "path" because we the
-       // new entry could be at a different location with different
-       // configuration so we need a new sample which creates a new
-       // "alSource".  The semantics of what is going on here seems
-       // confused and needs to be thought through more carefully.
-        _sample = new SGSoundSample( path.c_str(),
-                                    node->getStringValue("path", "") );
-       _sgrp->add( _sample, _name );
-   }
-
+   _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
    _sample->set_relative_position( offset_pos );
-   _sample->set_orientation( dir );
+   _sample->set_direction( dir );
    _sample->set_audio_cone(inner, outer, outer_gain);
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );
    _sample->set_volume(v);
    _sample->set_pitch(p);
+   _sgrp->add( _sample, _name );
 }
 
 void

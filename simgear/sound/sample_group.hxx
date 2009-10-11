@@ -35,6 +35,8 @@
 
 #if defined(__APPLE__)
 # include <OpenAL/al.h>
+#elif defined(_WIN32)
+# include <al.h>
 #else
 # include <AL/al.h>
 #endif
@@ -156,20 +158,21 @@ public:
 
 protected:
     SGSoundMgr *_smgr;
+    string _refname;
     bool _active;
 
 private:
     float _volume;
-    SGVec3d _position;
-    SGVec3f _orientation;
     bool _tied_to_listener;
+
+    SGVec3d _position;
+    SGVec3f _velocity;
+    SGVec3f _orientation;
 
     sample_map _samples;
 
     bool testForALError(string s);
     bool testForError(void *p, string s);
-
-    string _refname;
 
     void update_sample_config( SGSoundSample *sound );
 };

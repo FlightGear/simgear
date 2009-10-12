@@ -37,7 +37,8 @@
 
 #include <simgear/compiler.h>
 
-#include <osg/GL>
+#include <osg/Image>
+#include <osgDB/WriteFile>
 
 #include "screen-dump.hxx"
 
@@ -78,21 +79,11 @@ bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 }
 
 
-// dump the screen buffer to a ppm file
+// dump the screen buffer to a png file
 bool sg_glDumpWindow(const char *filename, int win_width, int win_height) {
-    GLubyte *buffer;
-    bool result;
-
-    buffer = (GLubyte *) malloc(win_width*win_height*RGBA);
-
-    // read window contents from color buffer with glReadPixels
-    glFinish();
-    glReadPixels(0, 0, win_width, win_height, 
-		 GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-    result = sg_glWritePPMFile( filename, buffer, win_width, win_height,
-				GL_RGBA );
-    free(buffer);
-
-    return result;
+  osg::ref_ptr<osg::Image> img(new osg::Image);
+  img->readPixels(0,0, win_width, win_height, GL_RGB, GL_UNSIGNED_BYTE);
+  osgDB::writeImageFile(*img, filename);
+  return true;
 }
 

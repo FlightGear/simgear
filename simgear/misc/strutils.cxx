@@ -25,6 +25,9 @@
 
 #include "strutils.hxx"
 
+using std::string;
+using std::vector;
+
 namespace simgear {
     namespace strutils {
 

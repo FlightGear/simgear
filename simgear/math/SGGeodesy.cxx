@@ -79,6 +79,17 @@ SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
   double Y = cart(1);
   double Z = cart(2);
   double XXpYY = X*X+Y*Y;
+  if( XXpYY + Z*Z < 25 ) {
+    // This function fails near the geocenter region, so catch that special case here.
+    // Define the innermost sphere of small radius as earth center and return the 
+    // coordinates 0/0/-EQURAD. It may be any other place on geoide's surface,
+    // the Northpole, Hawaii or Wentorf. This one was easy to code ;-)
+    geod.setLongitudeRad( 0.0 );
+    geod.setLongitudeRad( 0.0 );
+    geod.setElevationM( -EQURAD );
+    return;
+  }
+    
   double sqrtXXpYY = sqrt(XXpYY);
   double p = XXpYY*ra2;
   double q = Z*Z*(1-e2)*ra2;

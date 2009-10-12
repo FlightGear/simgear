@@ -30,16 +30,12 @@
 #include <simgear/compiler.h>
 
 #include <string>
-
 #include <vector>
-using std::vector;
-
 #include <cstdlib>
 
-using std::string;
 
 namespace simgear {
-    namespace strutils {
+  namespace strutils {
 
 // 	/** 
 // 	 * atof() wrapper for "string" type
@@ -64,9 +60,9 @@ namespace simgear {
 	 * @param s String to strip.
 	 * @return The stripped string.
 	 */
-	string lstrip( const string& s );
-	string rstrip( const string& s );
-	string strip( const string& s );
+	std::string lstrip( const std::string& s );
+	std::string rstrip( const std::string& s );
+	std::string strip( const std::string& s );
 
 	/**
 	 * Split a string into a words using 'sep' as the delimiter string.
@@ -79,12 +75,12 @@ namespace simgear {
 	 * resulting in at most maxsplit+1 words.
 	 * @return Array of words.
 	 */
-	vector<string>
-	split( const string& s,
+	std::vector<std::string>
+	split( const std::string& s,
 	       const char* sep = 0,
 	       int maxsplit = 0 );
-
-    } // end namespace strutils
+  
+  } // end namespace strutils
 } // end namespace simgear
 
 #endif // STRUTILS_H

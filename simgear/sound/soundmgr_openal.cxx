@@ -154,9 +154,9 @@ void SGSoundMgr::stop() {
         _working = false;
 
         // clear any OpenAL buffers before shutting down
-        buffer_map_iterator buffers_current = _buffers.begin();
-        buffer_map_iterator buffers_end = _buffers.end();
-        for ( ; buffers_current != buffers_end; ++buffers_current ) {
+        buffer_map_iterator buffers_current;
+        while(_buffers.size()){
+            buffers_current = _buffers.begin();
             refUint ref = buffers_current->second;
             ALuint buffer = ref.id;
             alDeleteBuffers(1, &buffer);

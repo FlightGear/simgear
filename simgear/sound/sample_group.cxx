@@ -63,7 +63,6 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _orientation(SGQuatd::zeros())
 {
     _smgr->add(this, refname);
-    _active = _smgr->is_working();
     _samples.clear();
 }
 

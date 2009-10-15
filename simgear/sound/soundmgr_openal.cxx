@@ -70,7 +70,6 @@ SGSoundMgr::SGSoundMgr() :
             testForALUTError("alut initialization");
             return;
         }
-        _alut_init++;
     }
     _alut_init++;
 #endif
@@ -151,6 +150,13 @@ void SGSoundMgr::init() {
 
     if (_free_sources.size() == 0) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
+    }
+
+    sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+    sample_group_map_iterator sample_grp_end = _sample_groups.end();
+    for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+        SGSampleGroup *sgrp = sample_grp_current->second;
+        sgrp->activate();
     }
 }
 
@@ -471,9 +477,9 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
                                           unsigned int *sz, int *frq )
 {
-    ALenum format = (ALenum)*fmt;
-    ALsizei size = (ALsizei)*sz;
-    ALsizei freq = (ALsizei)*frq;
+    ALenum format;
+    ALsizei size;
+    ALsizei freq;
     ALvoid *data;
 
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1

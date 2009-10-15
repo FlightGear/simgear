@@ -155,6 +155,7 @@ public:
 
     inline void tie_to_listener() { _tied_to_listener = true; }
 
+    inline void activate() { _active = true; }
 
 protected:
     SGSoundMgr *_smgr;

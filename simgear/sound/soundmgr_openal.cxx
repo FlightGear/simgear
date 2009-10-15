@@ -101,11 +101,14 @@ void SGSoundMgr::init() {
 
     ALCcontext *context = alcCreateContext(device, NULL);
     if ( testForError(context, "Unable to create a valid context.") ) {
+        alcCloseDevice (device);
         return;
     }
 
     if ( !alcMakeContextCurrent(context) ) {
         testForALCError("context initialization");
+        alcDestroyContext (context);
+        alcCloseDevice (device);
         return;
     }
 
@@ -116,11 +119,11 @@ void SGSoundMgr::init() {
     _at_up_vec[3] = 0.0; _at_up_vec[4] = 1.0; _at_up_vec[5] = 0.0;
 
     alListenerf( AL_GAIN, 0.2f );
-    alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
     alListenerfv( AL_ORIENTATION, _at_up_vec );
-    alListenerfv( AL_VELOCITY, toVec3f(_velocity).data() );
+    alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
+    alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
 
-    alDopplerFactor(0.5);
+    alDopplerFactor(1.0);
     alDopplerVelocity(340.3);   // speed of sound in meters per second.
 
     if ( alIsExtensionPresent((const ALchar*)"EXT_exponent_distance") ) {
@@ -130,8 +133,6 @@ void SGSoundMgr::init() {
     }
 
     testForALError("listener initialization");
-
-    alGetError(); // clear any undetetced error, just to be sure
 
     // get a free source one at a time
     // if an error is returned no more (hardware) sources are available
@@ -146,6 +147,10 @@ void SGSoundMgr::init() {
             _free_sources.push_back( source );
         }
         else break;
+    }
+
+    if (_free_sources.size() == 0) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
 }
 

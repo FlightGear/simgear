@@ -139,19 +139,19 @@ public:
     void set_volume( float vol );
 
     /**
-     * set the positions of all managed sound sources
-     */
-    void set_position( SGVec3d pos );
-
-    /**
      * set the velocities of all managed sound sources
      */
-    void set_velocity( SGVec3f vel );
+    void set_velocity( SGVec3d& vel );
+
+    /**
+     * set the position of all managed sound sources
+     */
+    void set_position( SGGeod pos );
 
     /**
      * set the orientation of all managed sound sources
      */
-    void set_orientation( SGVec3f ori );
+    void set_orientation( SGQuatd ori );
 
     inline void tie_to_listener() { _tied_to_listener = true; }
 
@@ -165,9 +165,9 @@ private:
     float _volume;
     bool _tied_to_listener;
 
-    SGVec3d _position;
-    SGVec3f _velocity;
-    SGVec3f _orientation;
+    SGVec3d _velocity;
+    SGGeod _position;
+    SGQuatd _orientation;
 
     sample_map _samples;
 

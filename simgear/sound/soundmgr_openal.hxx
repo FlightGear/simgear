@@ -199,7 +199,7 @@ public:
      */
     inline bool has_changed() { return _changed; }
 
-    static bool load(string &samplepath, void **data, int *format,
+    bool load(string &samplepath, void **data, int *format,
                                          unsigned int*size, int *freq );
 
 

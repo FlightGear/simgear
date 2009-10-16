@@ -40,7 +40,7 @@
 // empty constructor
 SGSoundSample::SGSoundSample() :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -74,7 +74,7 @@ SGSoundSample::SGSoundSample() :
 // constructor
 SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -114,7 +114,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
 // constructor
 SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format ) :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -164,7 +164,7 @@ void SGSoundSample::set_direction( SGVec3d dir ) {
 }
 
 void SGSoundSample::set_relative_position( SGVec3f pos ) {
-    _relative_pos = pos;
+    _relative_pos = toVec3d(pos);
     update_absolute_position();
     _changed = true;
 }
@@ -179,6 +179,6 @@ void SGSoundSample::update_absolute_position() {
     SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
     _orivec = -toVec3f(orient.rotate(_direction));
 
-    _absolute_pos = -SGVec3d::fromGeod(_base_pos);
-    // TODO: add relative position
+     orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
+    _absolute_pos = -SGVec3d::fromGeod(_base_pos) -orient.rotate(SGVec3d::e1());
 }

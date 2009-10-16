@@ -20,6 +20,7 @@
 
 #include "Effect.hxx"
 #include "EffectBuilder.hxx"
+#include "EffectGeode.hxx"
 #include "Technique.hxx"
 #include "Pass.hxx"
 #include "TextureBuilder.hxx"
@@ -856,6 +857,8 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
     } else {
         makeChild(blendNode, "active")->setValue(false);
     }
+    string renderingHint = findName(renderingHints, ss->getRenderingHint());
+    makeChild(paramRoot, "rendering-hint")->setStringValue(renderingHint);
     makeTextureParameters(paramRoot, ss);
     return true;
 }
@@ -870,6 +873,26 @@ bool Effect::realizeTechniques(const osgDB::ReaderWriter::Options* options)
          ++itr)
         buildTechnique(this, *itr, options);
     return true;
+}
+
+void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
+{
+    EffectGeode* eg = dynamic_cast<EffectGeode*>(node);
+    if (!eg)
+        return;
+    Effect* effect = eg->getEffect();
+    if (!effect)
+        return;
+    SGPropertyNode* root = getPropertyRoot();
+    for (vector<SGSharedPtr<Updater> >::iterator itr = effect->_extraData.begin(),
+             end = effect->_extraData.end();
+         itr != end;
+         ++itr) {
+        InitializeWhenAdded* adder
+            = dynamic_cast<InitializeWhenAdded*>(itr->ptr());
+        if (adder)
+            adder->initOnAdd(effect, root);
+    }
 }
 
 bool Effect_writeLocalData(const Object& obj, osgDB::Output& fw)

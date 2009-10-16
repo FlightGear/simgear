@@ -21,6 +21,7 @@ include_HEADERS = \
 	RenderConstants.hxx \
 	SplicingVisitor.hxx \
 	StateAttributeFactory.hxx \
+	UpdateOnceCallback.hxx \
 	VectorArrayAdapter.hxx
 
 
@@ -35,6 +36,7 @@ libsgutil_a_SOURCES = \
 	PrimitiveUtils.cxx \
 	SplicingVisitor.cxx \
 	StateAttributeFactory.cxx \
-	QuadTreeBuilder.cxx
+	QuadTreeBuilder.cxx \
+	UpdateOnceCallback.cxx
 
 INCLUDES = -I$(top_srcdir)

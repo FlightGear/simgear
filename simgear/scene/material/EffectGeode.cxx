@@ -44,6 +44,14 @@ EffectGeode::EffectGeode(const EffectGeode& rhs, const osg::CopyOp& copyop) :
 {
 }
 
+void EffectGeode::setEffect(Effect* effect)
+{
+    _effect = effect;
+    if (!_effect)
+        return;
+    addUpdateCallback(new Effect::InitializeCallback);
+}
+
 void EffectGeode::resizeGLObjectBuffers(unsigned int maxSize)
 {
     if (_effect.valid())

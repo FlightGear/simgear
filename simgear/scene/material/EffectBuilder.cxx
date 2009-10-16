@@ -2,6 +2,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <simgear/scene/tgdb/userdata.hxx>
+
 #include <simgear/math/SGMath.hxx>
 
 #include "EffectBuilder.hxx"
@@ -39,6 +41,16 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
         return getEffectPropertyNode(effect, child);
 }
 
+string getGlobalProperty(const SGPropertyNode* prop)
+{
+    if (!prop)
+        return string();
+    const SGPropertyNode* useProp = prop->getChild("use");
+    if (!useProp)
+        return string();
+    return useProp->getStringValue();
+}
+
 BuilderException::BuilderException()
 {
 }
@@ -66,4 +78,8 @@ bool isAttributeActive(Effect* effect, const SGPropertyNode* prop)
     return !activeProp || activeProp->getValue<bool>();
 }
 
+namespace effect
+{
+const char* colorFields[] = {"red", "green", "blue", "alpha"};
+}
 }

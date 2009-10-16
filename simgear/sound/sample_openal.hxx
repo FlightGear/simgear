@@ -93,6 +93,7 @@ private:
     bool _static_changed;
     bool _is_file;
 
+    SGVec3f _orivec;
     void update_absolute_position();
 
 public:
@@ -359,11 +360,10 @@ public:
      * Get the orientation of the sound source, the inner or outer angle
      * or outer gain.
      */
-    float *get_orientation();
-
-    inline float get_innerangle() { return _inner_angle; }
-    inline float get_outerangle() { return _outer_angle; }
-    inline float get_outergain() { return _outer_gain; }
+    float *get_orientation() { return _orivec.data(); }
+    float get_innerangle() { return _inner_angle; }
+    float get_outerangle() { return _outer_angle; }
+    float get_outergain() { return _outer_gain; }
 
     /**
      * Set velocity of the sound source (uses same coordinate system as opengl)

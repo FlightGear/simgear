@@ -134,35 +134,32 @@ public:
     /**
      * set the position of the listener (in opengl coordinates)
      */
-    void set_position( SGVec3d pos ) {
-        if (_position != pos) {
-            _position = pos;
-            _changed = true;
-        }
+    void set_position( const SGVec3d& pos ) {
+        _position = -pos;
+        _changed = true;
     }
 
-    inline double *get_position() { return _position.data(); }
-    inline SGVec3d get_position_vec() { return _position; };
+    inline SGVec3f get_position() { return toVec3f(_position); }
 
     /**
-     * set the velocity of the listener (in opengl coordinates)
+     * set the velocity direction of the listener (in opengl coordinates)
      */
-    void set_velocity( SGVec3f vel ) {
-        if (_velocity != vel) {
-            _velocity = vel;
-            _changed = true;
-        }
+    void set_velocity( SGVec3d& dir ) {
+        _velocity = dir;
+        _changed = true;
     }
 
-    inline SGVec3f get_velocity() { return _velocity; }
+    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
 
     /**
      * set the orientation of the listener (in opengl coordinates)
      */
     void set_orientation( SGQuatd ori );
 
+    inline const SGQuatd& get_orientation() { return _orientation; }
+
     inline SGVec3f get_direction() {
-        return SGVec3f(_orientation[0], _orientation[1], _orientation[2]);
+        return SGVec3f(_at_up_vec[0], _at_up_vec[1], _at_up_vec[2]);
     }
 
     enum {
@@ -202,7 +199,7 @@ public:
      */
     inline bool has_changed() { return _changed; }
 
-    static bool load(string &samplepath, void **data, int *format,
+    bool load(string &samplepath, void **data, int *format,
                                          unsigned int*size, int *freq );
 
 
@@ -221,11 +218,12 @@ private:
     SGVec3d _position;
 
     // Velocity of the listener.
-    SGVec3f _velocity;
+    SGVec3d _velocity;
 
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
-    ALfloat _orientation[6];
+    SGQuatd _orientation;
+    ALfloat _at_up_vec[6];
 
     sample_group_map _sample_groups;
     buffer_map _buffers;

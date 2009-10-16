@@ -240,20 +240,20 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
    // Orientation
    //
-   SGVec3f dir = SGVec3f::zeros();
+   SGVec3d dir = SGVec3d::zeros();
    float inner, outer, outer_gain;
    inner = outer = 360.0;
    outer_gain = 0.0;
    prop = node->getChild("orientation");
    if ( prop != NULL ) {
-      dir[0] = prop->getDoubleValue("x", 0.0);
-      dir[1] = -prop->getDoubleValue("y", 0.0);
-      dir[2] = prop->getDoubleValue("z", 0.0);
+      dir = SGVec3d(-prop->getDoubleValue("x", 0.0),
+                    -prop->getDoubleValue("y", 0.0),
+                    -prop->getDoubleValue("z", 0.0));
       inner = prop->getDoubleValue("inner-angle", 360.0);
       outer = prop->getDoubleValue("outer-angle", 360.0);
       outer_gain = prop->getDoubleValue("outer-gain", 0.0);
    }
-   
+
    //
    // Initialize the sample
    //

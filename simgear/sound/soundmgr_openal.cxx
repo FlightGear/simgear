@@ -59,8 +59,9 @@ SGSoundMgr::SGSoundMgr() :
     _volume(0.0),
     _device(NULL),
     _context(NULL),
-    _position(SGVec3d::zeros().data()),
-    _velocity(SGVec3f::zeros().data()),
+    _position(SGVec3d::zeros()),
+    _velocity(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros()),
     _devname(NULL)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
@@ -69,7 +70,6 @@ SGSoundMgr::SGSoundMgr() :
             testForALUTError("alut initialization");
             return;
         }
-        _alut_init++;
     }
     _alut_init++;
 #endif
@@ -100,26 +100,29 @@ void SGSoundMgr::init() {
 
     ALCcontext *context = alcCreateContext(device, NULL);
     if ( testForError(context, "Unable to create a valid context.") ) {
+        alcCloseDevice (device);
         return;
     }
 
     if ( !alcMakeContextCurrent(context) ) {
         testForALCError("context initialization");
+        alcDestroyContext (context);
+        alcCloseDevice (device);
         return;
     }
 
     _context = context;
     _working = true;
 
-    _orientation[0] = 0.0; _orientation[1] = 0.0; _orientation[2] = -1.0;
-    _orientation[3] = 0.0; _orientation[4] = 1.0; _orientation[5] = 0.0;
+    _at_up_vec[0] = 0.0; _at_up_vec[1] = 0.0; _at_up_vec[2] = -1.0;
+    _at_up_vec[3] = 0.0; _at_up_vec[4] = 1.0; _at_up_vec[5] = 0.0;
 
     alListenerf( AL_GAIN, 0.2f );
-    alListenerfv( AL_POSITION, toVec3f(_position).data() );
-    alListenerfv( AL_ORIENTATION, _orientation );
-    alListenerfv( AL_VELOCITY, _velocity.data() );
+    alListenerfv( AL_ORIENTATION, _at_up_vec );
+    alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
+    alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
 
-    alDopplerFactor(0.5);
+    alDopplerFactor(1.0);
     alDopplerVelocity(340.3);   // speed of sound in meters per second.
 
     if ( alIsExtensionPresent((const ALchar*)"EXT_exponent_distance") ) {
@@ -129,8 +132,6 @@ void SGSoundMgr::init() {
     }
 
     testForALError("listener initialization");
-
-    alGetError(); // clear any undetetced error, just to be sure
 
     // get a free source one at a time
     // if an error is returned no more (hardware) sources are available
@@ -145,6 +146,17 @@ void SGSoundMgr::init() {
             _free_sources.push_back( source );
         }
         else break;
+    }
+
+    if (_free_sources.size() == 0) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
+    }
+
+    sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+    sample_group_map_iterator sample_grp_end = _sample_groups.end();
+    for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+        SGSampleGroup *sgrp = sample_grp_current->second;
+        sgrp->activate();
     }
 }
 
@@ -227,9 +239,9 @@ void SGSoundMgr::update_late( double dt ) {
 
         if (_changed) {
             alListenerf( AL_GAIN, _volume );
-            alListenerfv( AL_VELOCITY, _velocity.data() );
-            alListenerfv( AL_ORIENTATION, _orientation );
+            alListenerfv( AL_ORIENTATION, _at_up_vec );
             alListenerfv( AL_POSITION, toVec3f(_position).data() );
+            alListenerfv( AL_VELOCITY, toVec3f(_velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;
@@ -334,14 +346,16 @@ void SGSoundMgr::set_volume( float v )
  */
 void SGSoundMgr::set_orientation( SGQuatd ori )
 {
+    _orientation = ori;
+
     SGVec3d sgv_up = ori.rotate(SGVec3d::e2());
     SGVec3d sgv_at = ori.rotate(SGVec3d::e3());
-    _orientation[0] = sgv_at[0];
-    _orientation[1] = sgv_at[1];
-    _orientation[2] = sgv_at[2];
-    _orientation[3] = sgv_up[0];
-    _orientation[4] = sgv_up[1];
-    _orientation[5] = sgv_up[2];
+    _at_up_vec[0] = sgv_at[0];
+    _at_up_vec[1] = sgv_at[1];
+    _at_up_vec[2] = sgv_at[2];
+    _at_up_vec[3] = sgv_up[0];
+    _at_up_vec[4] = sgv_up[1];
+    _at_up_vec[5] = sgv_up[2];
     _changed = true;
 }
 
@@ -463,9 +477,9 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
                                           unsigned int *sz, int *frq )
 {
-    ALenum format = (ALenum)*fmt;
-    ALsizei size = (ALsizei)*sz;
-    ALsizei freq = (ALsizei)*frq;
+    ALenum format;
+    ALsizei size;
+    ALsizei freq;
     ALvoid *data;
 
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1

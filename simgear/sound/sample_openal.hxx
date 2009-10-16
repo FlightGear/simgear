@@ -40,9 +40,7 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
 
-#include <plib/sg.h>
-
-using std::string;
+// #include <plib/sg.h>
 
 /**
  * manages everything we need to know for an individual sound sample
@@ -55,16 +53,14 @@ private:
     // Position of the source sound.
     SGVec3d _absolute_pos;	// absolute position
     SGVec3f _relative_pos;	// position relative to the base position
-    SGVec3d _base_pos;		// base position
+    SGVec3d _direction;		// orientation offset
+    SGVec3d _velocity;		// Velocity of the source sound.
 
-    // The orientation of the sound (direction and cut-off angles)
-    SGVec3f _orientation;	// base orientation
-    SGVec3f _direction;		// orientation offset
+    // The position and orientation of the sound
+    SGGeod _base_pos;
+    SGQuatd _orientation;	// base orientation
 
-    // Velocity of the source sound.
-    SGVec3f _velocity;
-
-    string _sample_name;
+    std::string _sample_name;
     unsigned char *_data;
 
     // configuration values
@@ -326,7 +322,6 @@ public:
     /**
      * Set position of the sound source (uses same coordinate system as opengl)
      */
-    void set_base_position( SGVec3d pos );
     void set_relative_position( SGVec3f pos );
 
     /**
@@ -335,16 +330,20 @@ public:
     inline float *get_position() const { return toVec3f(_absolute_pos).data(); }
 
     /**
-     * Set the orientation of the sound source, both for direction
-     * and audio cut-off angles.
+     * Set the position of the sound source
      */
-    void set_orientation( SGVec3f ori );
+    void set_position( SGGeod pos );
+
+    /**
+     * Set the orientation of the sound source
+     */
+    void set_orientation( SGQuatd ori );
 
     /**
      * Set the relative direction of the sound source, both for direction
      * and audio cut-off angles.
      */
-    void set_direction( SGVec3f dir );
+    void set_direction( SGVec3d dir );
 
     /**
      * Define the audio cone parameters for directional audio
@@ -369,14 +368,15 @@ public:
     /**
      * Set velocity of the sound source (uses same coordinate system as opengl)
      */
-    inline void set_velocity( SGVec3f vel ) {
-        _velocity = SGVec3f(vel); _changed = true;
+    inline void set_velocity( SGVec3d& vel ) {
+        _velocity = vel;
+        _changed = true;
     }
 
     /**
      * Get velocity of the sound source (uses same coordinate system as opengl)
      */
-    inline float *get_velocity() { return _velocity.data(); }
+    inline float *get_velocity() { return toVec3f(_velocity).data(); }
 
 
     /**
@@ -411,7 +411,7 @@ public:
     /**
      * Get the name of this sample
      */
-    inline string get_sample_name() { return _sample_name; }
+    inline std::string get_sample_name() { return _sample_name; }
 };
 
 

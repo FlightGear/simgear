@@ -52,7 +52,7 @@ private:
 
     // Position of the source sound.
     SGVec3d _absolute_pos;	// absolute position
-    SGVec3f _relative_pos;	// position relative to the base position
+    SGVec3d _relative_pos;	// position relative to the base position
     SGVec3d _direction;		// orientation offset
     SGVec3d _velocity;		// Velocity of the source sound.
 
@@ -201,7 +201,7 @@ public:
      * free the data associated with this sample
      */
     inline void free_data() {
-        if (_data != NULL) { delete[] _data; _data = NULL; }
+        if (_data != NULL) { delete _data; _data = NULL; }
     }
 
     /**

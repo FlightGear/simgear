@@ -306,7 +306,7 @@ void SGSampleGroup::set_velocity( SGVec3d &vel ) {
     }
 }
 
-// ste the source orientation of all managed sounds
+// set the source position of all managed sounds
 void SGSampleGroup::set_position( SGGeod pos ) {
 
     sample_map_iterator sample_current = _samples.begin();
@@ -319,7 +319,7 @@ void SGSampleGroup::set_position( SGGeod pos ) {
 }
 
 
-// ste the source orientation of all managed sounds
+// set the source orientation of all managed sounds
 void SGSampleGroup::set_orientation( SGQuatd ori ) {
 
     if (_orientation != ori) {
@@ -356,7 +356,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
             alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
             alSourcefv( source, AL_VELOCITY, _smgr->get_velocity().data() );
         } else {
-            alSourcefv( source, AL_POSITION, sample->get_position());
+            alSourcefv( source, AL_POSITION, sample->get_position() );
             alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
             alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
         }

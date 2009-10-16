@@ -32,6 +32,13 @@ public:
                                        const osgDB::ReaderWriter::Options* options);
 };
 
+struct TextureUnitBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options);
+};
+
+
 bool makeTextureParameters(SGPropertyNode* paramRoot, const osg::StateSet* ss);
 }
 #endif

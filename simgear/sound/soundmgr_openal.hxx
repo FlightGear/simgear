@@ -4,8 +4,10 @@
 // <david_j_findlay@yahoo.com.au> 2001
 //
 // C++-ified by Curtis Olson, started March 2001.
+// Modified for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -96,7 +98,7 @@ public:
     void init();
     void bind();
     void unbind();
-    void update(double dt);
+    void update(double dt) {};
     void update_late(double dt);
     
     void suspend();
@@ -106,59 +108,92 @@ public:
     inline void reinit() { stop(); init(); }
 
     /**
-     * is audio working?
+     * Test is the sound manager is in a working condition.
+     * @return true is the sound manager is working
      */
     inline bool is_working() const { return _working; }
 
     /**
-     * add a sample group, return true if successful
+     * Register a sample group to the sound manager.
+     * @para sgrp Pointer to a sample group to add
+     * @param refname Reference name of the sample group
+     * @return true if successful, false otherwise
      */
     bool add( SGSampleGroup *sgrp, const string& refname );
 
     /** 
-     * remove a sample group, return true if successful
+     * Remove a sample group from the sound manager.
+     * @param refname Reference name of the sample group to remove
+     * @return true if successful, false otherwise
      */
     bool remove( const string& refname );
 
     /**
-     * return true of the specified sound exists in the sound manager system
+     * Test if a specified sample group is registered at the sound manager
+     * @param refname Reference name of the sample group test for
+     * @return true if the specified sample group exists
      */
     bool exists( const string& refname );
 
     /**
-     * return a pointer to the SGSampleGroup if the specified sound
-     * exists in the sound manager system, otherwise return NULL
+     * Find a specified sample group in the sound manager
+     * @param refname Reference name of the sample group to find
+     * @return A pointer to the SGSampleGroup
      */
     SGSampleGroup *find( const string& refname, bool create = false );
 
     /**
-     * set the position of the listener (in opengl coordinates)
+     * Set the position of the sound manager.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @param pos OpenAL listener position
      */
     void set_position( const SGVec3d& pos ) {
         _position = -pos;
         _changed = true;
     }
 
-    inline SGVec3f get_position() { return toVec3f(_position); }
+    /**
+     * Get the position of the sound manager.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @return OpenAL listener position
+     */
+    SGVec3f get_position() { return toVec3f(_position); }
 
     /**
-     * set the velocity direction of the listener (in opengl coordinates)
+     * Set the velocity vector of the sound manager
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @param vel Velocity vector of the OpenAL listener
      */
     void set_velocity( SGVec3d& dir ) {
         _velocity = dir;
         _changed = true;
     }
 
+    /**
+     * Get the velocity vector of the sound manager
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @return Velocity vector of the OpenAL listener
+     */
     inline SGVec3f get_velocity() { return toVec3f(_velocity); }
 
     /**
-     * set the orientation of the listener (in opengl coordinates)
+     * Set the orientation of the sound manager
+     * @param ori Quaternation containing the orientation information
      */
     void set_orientation( SGQuatd ori );
 
+    /**
+     * Get the orientation of the sound manager
+     * @return Quaternation containing the orientation information
+     */
     inline const SGQuatd& get_orientation() { return _orientation; }
 
-    inline SGVec3f get_direction() {
+    /**
+     * Get the direction vector of the sound manager
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @return Look-at direction of the OpenAL listener
+     */
+    SGVec3f get_direction() {
         return SGVec3f(_at_up_vec[0], _at_up_vec[1], _at_up_vec[2]);
     }
 
@@ -167,42 +202,62 @@ public:
         NO_BUFFER = (unsigned int)-1
     };
 
-    void set_volume( float v );
+    /**
+     * Set the master volume.
+     * @param vol Volume (must be between 0.0 and 1.0)
+     */
+    void set_volume( float vol );
+
+    /**
+     * Get the master volume.
+     * @return Volume (must be between 0.0 and 1.0)
+     */
     inline float get_volume() { return _volume; }
 
     /**
-     * get a new OpenAL source id
-     * returns NO_SOURCE if no source is available
+     * Get a free OpenAL source-id
+     * @return NO_SOURCE if no source is available
      */
     unsigned int request_source();
 
     /**
-     * give back an OpenAL source id for further use.
+     * Free an OpenAL source-id for future use
+     * @param source OpenAL source-id to free
      */
     void release_source( unsigned int source );
 
     /**
-     * get a new OpenAL buffer id
-     * returns NO_BUFFER if loading of the buffer failed.
+     * Get a free OpenAL buffer-id
+     * The buffer-id will be asigned to the sample by calling this function.
+     * @param sample Pointer to an audio sample to assign the buffer-id to
+     * @return NO_BUFFER if loading of the buffer failed.
      */
     unsigned int request_buffer(SGSoundSample *sample);
 
     /**
-     * give back an OpenAL source id for further use.
+     * Free an OpenAL buffer-id for this sample
+     * @param sample Pointer to an audio sample for which to free the buffer
      */
     void release_buffer( SGSoundSample *sample );
 
-
-
     /**
-     * returns true if the position has changed
+     * Test if the position of the sound manager has changed.
+     * The value will be set to false upon the next call to update_late()
+     * @return true if the position has changed
      */
     inline bool has_changed() { return _changed; }
 
+    /**
+     * Load a sample file and return it's configuration and data.
+     * @param samplepath Path to the file to load
+     * @param data Pointer to a variable that points to the allocated data
+     * @param format Pointer to a vairable that gets the OpenAL format
+     * @param size Pointer to a vairable that gets the sample size in bytes
+     * @param freq Pointer to a vairable that gets the sample frequency in Herz
+     * @return true if succesful, false on error
+     */
     bool load(string &samplepath, void **data, int *format,
-                                         unsigned int*size, int *freq );
-
-
+                                         size_t *size, int *freq );
 
 private:
     static int _alut_init;
@@ -237,6 +292,7 @@ private:
     bool testForALCError(string s);
     bool testForALUTError(string s);
     bool testForError(void *p, string s);
+
     void update_sample_config( SGSampleGroup *sound );
 };
 

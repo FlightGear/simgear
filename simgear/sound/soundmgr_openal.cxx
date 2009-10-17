@@ -4,8 +4,10 @@
 // <david_j_findlay@yahoo.com.au> 2001
 //
 // C++-ified by Curtis Olson, started March 2001.
+// Modified for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -218,16 +220,9 @@ void SGSoundMgr::unbind ()
     _sources_in_use.clear();
 }
 
-void SGSoundMgr::update( double dt )
-{
-    // nothing to do in the regular update, everything is done on the following
-    // function
-}
-
-
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
-    if (_working) {
+    if (_working && dt != 0.0) {
         alcSuspendContext(_context);
 
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
@@ -420,7 +415,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 
         // sample name was not found in the buffer cache.
         if ( sample->is_file() ) {
-            unsigned int size;
+            size_t size;
             int freq, format;
             void *data;
 
@@ -476,7 +471,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 }
 
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
-                                          unsigned int *sz, int *frq )
+                                          size_t *sz, int *frq )
 {
     ALenum format;
     ALsizei size;
@@ -514,7 +509,7 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 
     *dbuf = (void *)data;
     *fmt = (int)format;
-    *sz = (unsigned int)size;
+    *sz = (size_t)size;
     *frq = (int)freq;
 
     return true;

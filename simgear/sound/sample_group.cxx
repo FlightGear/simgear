@@ -1,3 +1,25 @@
+// sample_group.cxx -- Manage a group of samples relative to a base position
+//
+// Written for the new SoundSystem by Erik Hofman, October 2009
+//
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+// $Id$
+
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
 #endif
@@ -47,8 +69,8 @@ SGSampleGroup::SGSampleGroup () :
     _active(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _position(SGGeod()),
-    _orientation(SGQuatd::zeros())
+    _orientation(SGQuatd::zeros()),
+    _position(SGGeod())
 {
     _samples.clear();
 }
@@ -59,8 +81,8 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _active(false), 
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _position(SGGeod()),
-    _orientation(SGQuatd::zeros())
+    _orientation(SGQuatd::zeros()),
+    _position(SGGeod())
 {
     _smgr->add(this, refname);
     _samples.clear();
@@ -288,7 +310,7 @@ bool SGSampleGroup::stop( const string& refname ) {
 }
 
 // set source velocity of all managed sounds
-void SGSampleGroup::set_velocity( SGVec3d &vel ) {
+void SGSampleGroup::set_velocity( const SGVec3d &vel ) {
     if ( isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2]) )
     {
         SG_LOG( SG_GENERAL, SG_ALERT, "NAN's found in SampleGroup velocity");
@@ -307,7 +329,7 @@ void SGSampleGroup::set_velocity( SGVec3d &vel ) {
 }
 
 // set the source position of all managed sounds
-void SGSampleGroup::set_position( SGGeod pos ) {
+void SGSampleGroup::set_position( const SGGeod& pos ) {
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
@@ -320,7 +342,7 @@ void SGSampleGroup::set_position( SGGeod pos ) {
 
 
 // set the source orientation of all managed sounds
-void SGSampleGroup::set_orientation( SGQuatd ori ) {
+void SGSampleGroup::set_orientation( const SGQuatd& ori ) {
 
     if (_orientation != ori) {
         sample_map_iterator sample_current = _samples.begin();

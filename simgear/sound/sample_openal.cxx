@@ -1,8 +1,10 @@
-// sample.cxx -- Sound sample encapsulation class
+// sample_openal.cxx -- Audio sample encapsulation class
 // 
 // Written by Curtis Olson, started April 2004.
+// Modified to match the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2004  Curtis L. Olson - http://www.flightgear.org/~curt
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -43,9 +45,10 @@ SGSoundSample::SGSoundSample() :
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
-    _base_pos(SGGeod()),
     _orientation(SGQuatd::zeros()),
-    _sample_name(""),
+    _orivec(SGVec3f::zeros()),
+    _base_pos(SGGeod()),
+    _refname(""),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
     _size(0),
@@ -66,8 +69,7 @@ SGSoundSample::SGSoundSample() :
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(false),
-    _orivec(SGVec3f::zeros())
+    _is_file(false)
 {
 }
 
@@ -77,8 +79,9 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
-    _base_pos(SGGeod()),
     _orientation(SGQuatd::zeros()),
+    _orivec(SGVec3f::zeros()),
+    _base_pos(SGGeod()),
     _format(AL_FORMAT_MONO8),
     _size(0),
     _freq(0),
@@ -98,14 +101,13 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(true),
-    _orivec(SGVec3f::zeros())
+    _is_file(true)
 {
     SGPath samplepath( path );
     if ( strlen(file) ) {
         samplepath.append( file );
     }
-    _sample_name = samplepath.str();
+    _refname = samplepath.str();
 
      SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
             << samplepath.str() );
@@ -117,8 +119,9 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
-    _base_pos(SGGeod()),
     _orientation(SGQuatd::zeros()),
+    _orivec(SGVec3f::zeros()),
+    _base_pos(SGGeod()),
     _data(data),
     _format(format),
     _size(len),
@@ -139,10 +142,9 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(false),
-    _orivec(SGVec3f::zeros())
+    _is_file(false)
 {
-    _sample_name = "unknown, data supplied by caller";
+    _refname = "unknown, data supplied by caller";
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
 }
 
@@ -151,25 +153,25 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
 SGSoundSample::~SGSoundSample() {
 }
 
-void SGSoundSample::set_orientation( SGQuatd ori ) {
+void SGSoundSample::set_orientation( const SGQuatd& ori ) {
     _orientation = ori;
     update_absolute_position();
     _changed = true;
 }
 
-void SGSoundSample::set_direction( SGVec3d dir ) {
+void SGSoundSample::set_direction( const SGVec3d& dir ) {
     _direction = dir;
     update_absolute_position();
     _changed = true;
 }
 
-void SGSoundSample::set_relative_position( SGVec3f pos ) {
+void SGSoundSample::set_relative_position( const SGVec3f& pos ) {
     _relative_pos = toVec3d(pos);
     update_absolute_position();
     _changed = true;
 }
 
-void SGSoundSample::set_position( SGGeod pos ) {
+void SGSoundSample::set_position( const SGGeod& pos ) {
     _base_pos = pos;
     update_absolute_position();
     _changed = true;
@@ -181,4 +183,7 @@ void SGSoundSample::update_absolute_position() {
 
      orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
     _absolute_pos = -SGVec3d::fromGeod(_base_pos) -orient.rotate(SGVec3d::e1());
+
+    float vel = length(_velocity);
+    _velocity = toVec3d(_orivec * vel);
 }

@@ -1,8 +1,8 @@
-// soundmgr.hxx -- Sound effect management class
+// sample_group.hxx -- Manage a group of samples relative to a base position
 //
-// Sampel Group handler initially written by Erik Hofman
+// Written for the new SoundSystem by Erik Hofman, October 2009
 //
-// Copyright (C) 2009  Erik Hofman - <erik@ehofman.com>
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -64,98 +64,149 @@ class SGSoundMgr;
 class SGSampleGroup : public SGReferenced
 {
 public:
+
+    /**
+     * Empty constructor for class encapsulation.
+     * Note: The sample group should still be activated before use
+     */
     SGSampleGroup ();
+
+    /**
+     * Constructor
+     * Register this sample group at the sound manager using refname
+     * Note: The sample group should still be activated before use
+     * @param smgr Pointer to a pre-initialized sound manager class
+     * @param refname Name of this group for reference purposes.
+     */
     SGSampleGroup ( SGSoundMgr *smgr, const string &refname );
+
+    /**
+     * Destructor
+     */
     ~SGSampleGroup ();
 
+    /**
+     * Set the status of this sample group to active.
+     */
+    inline void activate() { _active = true; }
+
+    /**
+     * Update function.
+     * Call this function periodically to update the OpenAL state of all
+     * samples associated with this class. None op the configuration changes
+     * take place without a call to this function.
+     */
     virtual void update (double dt);
 
     /**
-     * add a sound effect, return true if successful
+     * Register an audio sample to this group.
+     * @param sound Pointer to a pre-initialized audio sample
+     * @param refname Name of this audio sample for reference purposes
+     * @return return true if successful
      */
     bool add( SGSoundSample *sound, const string& refname );
 
     /**
-     * remove a sound effect, return true if successful
+     * Remove an audio sample from this group.
+     * @param refname Reference name of the audio sample to remove
+     * @return return true if successful
      */
     bool remove( const string& refname );
 
     /**
-     * return true of the specified sound exists in the sound manager system
+     * Test if a specified audio sample is registered at this sample group
+     * @param refname Reference name of the audio sample to test for
+     * @return true if the specified audio sample exists
      */
     bool exists( const string& refname );
 
     /**
-     * return a pointer to the SGSoundSample if the specified sound
-     * exists in the sound manager system, otherwise return NULL
+     * Find a specified audio sample in this sample group
+     * @param refname Reference name of the audio sample to find
+     * @return A pointer to the SGSoundSample
      */
     SGSoundSample *find( const string& refname );
 
     /**
-     * request to stop playing all associated samples until further notice
+     * Request to stop playing all audio samples until further notice.
      */
     void suspend();
 
     /**
-     * request to resume playing all associated samples
+     * Request to resume playing all audio samples.
      */
     void resume();
 
-
     /**
-     * request to start playing the associated samples
+     * Request to start playing the refered audio sample.
+     * @param refname Reference name of the audio sample to start playing
+     * @param looping Define if the sound should loop continuously
+     * @return true if the audio sample exsists and is scheduled for playing
      */
     bool play( const string& refname, bool looping );
     
     /**
-     * tell the scheduler to play the indexed sample in a continuous
-     * loop
+     * Request to start playing the refered audio sample looping.
+     * @param refname Reference name of the audio sample to start playing
+     * @return true if the audio sample exsists and is scheduled for playing
      */
     inline bool play_looped( const string& refname ) {
         return play( refname, true );
     }
 
     /**
-     * tell the scheduler to play the indexed sample once
+     * Request to start playing the refered audio sample once.
+     * @param refname Reference name of the audio sample to start playing
+     * @return true if the audio sample exsists and is scheduled for playing
      */
     inline bool play_once( const string& refname ) {
         return play( refname, false );
     }
 
     /**
-     * return true of the specified sound is currently being played
+     * Test if a referenced sample is playing or not.
+     * @param refname Reference name of the audio sample to test for
+     * @return True of the specified sound is currently playing
      */
     bool is_playing( const string& refname );
 
     /**
-     * request to stop playing the associated samples
+     * Request to stop playing the refered audio sample.
+     * @param refname Reference name of the audio sample to stop
+     * @return true if the audio sample exsists and is scheduled to stop
      */
     bool stop( const string& refname );
 
     /**
-     * set overall volume for the application.
-     * @param must be between 0.0 and 1.0
+     * Set the master volume for this sample group.
+     * @param vol Volume (must be between 0.0 and 1.0)
      */
     void set_volume( float vol );
 
     /**
-     * set the velocities of all managed sound sources
+     * Set the velocity vector of this sample group.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @param vel Velocity vector 
      */
-    void set_velocity( SGVec3d& vel );
+    void set_velocity( const SGVec3d& vel );
 
     /**
-     * set the position of all managed sound sources
+     * Set the position of this sample group.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @param pos Base position
      */
-    void set_position( SGGeod pos );
+    void set_position( const SGGeod& pos );
 
     /**
-     * set the orientation of all managed sound sources
+     * Set the orientation of this sample group.
+     * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( SGQuatd ori );
+    void set_orientation( const SGQuatd& ori );
 
+    /**
+     * Tie this sample group to the listener position, orientation and velocity
+     */
     void tie_to_listener() { _tied_to_listener = true; }
-
-    void activate() { _active = true; }
 
 protected:
     SGSoundMgr *_smgr;
@@ -167,8 +218,8 @@ private:
     bool _tied_to_listener;
 
     SGVec3d _velocity;
-    SGGeod _position;
     SGQuatd _orientation;
+    SGGeod _position;
 
     sample_map _samples;
 

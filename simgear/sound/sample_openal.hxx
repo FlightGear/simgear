@@ -1,8 +1,10 @@
-// sample.hxx -- Sound sample encapsulation class
+// sample_openal.hxx -- Audio sample encapsulation class
 // 
 // Written by Curtis Olson, started April 2004.
+// Modified to match the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2004  Curtis L. Olson - http://www.flightgear.org/~curt
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -15,14 +17,14 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id$
 
 /**
- * \file sample.hxx
- * Provides a sound sample encapsulation
+ * \file audio sample.hxx
+ * Provides a audio sample encapsulation
  */
 
 #ifndef _SG_SAMPLE_HXX
@@ -43,59 +45,10 @@
 // #include <plib/sg.h>
 
 /**
- * manages everything we need to know for an individual sound sample
+ * manages everything we need to know for an individual audio sample
  */
 
 class SGSoundSample : public SGReferenced {
-
-private:
-
-    // Position of the source sound.
-    SGVec3d _absolute_pos;	// absolute position
-    SGVec3d _relative_pos;	// position relative to the base position
-    SGVec3d _direction;		// orientation offset
-    SGVec3d _velocity;		// Velocity of the source sound.
-
-    // The position and orientation of the sound
-    SGGeod _base_pos;
-    SGQuatd _orientation;	// base orientation
-
-    std::string _sample_name;
-    unsigned char *_data;
-
-    // configuration values
-    int _format;
-    int _size;
-    int _freq;
-
-    // Buffers hold sound data.
-    bool _valid_buffer;
-    unsigned int _buffer;
-
-    // Sources are points emitting sound.
-    bool _valid_source;
-    unsigned int _source;
-
-    // The orientation of the sound (direction and cut-off angles)
-    float _inner_angle;
-    float _outer_angle;
-    float _outer_gain;
-
-    float _pitch;
-    float _volume;
-    float _master_volume;
-    float _reference_dist;
-    float _max_dist;
-    bool _loop;
-
-    bool _playing;
-    bool _changed;
-    bool _static_changed;
-    bool _is_file;
-
-    SGVec3f _orivec;
-    void update_absolute_position();
-
 public:
 
      /**
@@ -115,241 +68,269 @@ public:
 
     /**
      * Constructor.
-     * @param _data Pointer to a memory buffer containing the sample data
-       the application is responsible for freeing the buffer data.
+     * @param data Pointer to a memory buffer containing this audio sample data
+       buffer data is freed by this audio sample manager.
      * @param len Byte length of array
-     * @param _freq Frequency of the provided data (bytes per second)
-       should usually be true unless you want to manipulate the data
-       later.)
+     * @param freq Frequency of the provided data (bytes per second)
+     * @param format OpenAL format id of the data
      */
-    SGSoundSample( unsigned char *data, int len, int freq, int format = AL_FORMAT_MONO8 );
+    SGSoundSample( unsigned char *data, int len, int freq,
+                   int format = AL_FORMAT_MONO8 );
 
+    /**
+     * Destructor
+     */
     ~SGSoundSample ();
 
     /**
-     * detect wheter the sample holds the information of a sound file
+     * Detect wheter this audio sample holds the information of a sound file.
+     * @return Return true if this audio sample is to be constructed from a file.
      */
     inline bool is_file() const { return _is_file; }
 
     /**
-     * Test whether this sample has a changed configuration since the last
-     * call. (Calling this function resets the value).
+     * Test if this audio sample configuration has changed since the last call.
+     * Calling this function will reset the flag so calling it a second
+     * time in a row will return false.
+     * @return Return true is the configuration has changed in the mean time.
      */
-    inline bool has_changed() {
+    bool has_changed() {
         bool b = _changed; _changed = false; return b;
     }
 
-    inline bool has_static_data_changed() {
+    /**
+     * Test if static dataa of audio sample configuration has changed.
+     * Calling this function will reset the flag so calling it a second
+     * time in a row will return false.
+     * @return Return true is the static data has changed in the mean time.
+     */
+    bool has_static_data_changed() {
         bool b = _static_changed; _static_changed = false; return b;
     }
 
-
     /**
-     * Start playing this sample.
-     *
-     * @param _loop Define whether the sound should be played in a loop.
+     * Schedule this audio sample for playing. Actual playing will only start
+     * at the next call op SoundGroup::update()
+     * @param _loop Define whether this sound should be played in a loop.
      */
-    inline void play( bool loop ) {
+    void play( bool loop ) {
         _playing = true; _loop = loop; _changed = true;
     }
 
     /**
-     * Return if the sample is looping or not.
+     * Check if this audio sample is set to be continuous looping.
+     * @return Return true if this audio sample is set to looping.
      */
     inline bool get_looping() { return _loop; }
 
     /**
-     * Stop playing this sample.
-     *
-     * @param sched A pointer to the appropriate scheduler.
+     * Schedule this audio sample to stop playing.
      */
-    inline void stop() {
+    void stop() {
         _playing = false; _changed = true;
     }
 
     /**
-     * Play this sample once.
+     * Schedule this audio sample to play once.
      * @see #play
      */
     inline void play_once() { play(false); }
 
     /** 
-     * Play this sample looped.
+     * Schedule this audio sample to play looped.
      * @see #play
      */
     inline void play_looped() { play(true); }
 
     /**
-     * Test if a sample is currently playing.
-     * @return true if is is playing, false otherwise.
+     * Test if a audio sample is scheduled for playing.
+     * @return true if this audio sample is playing, false otherwise.
      */
     inline bool is_playing() { return _playing; }
 
     /**
-     * set the data associated with this sample
+     * sSt the data associated with this audio sample
+     * @param data Pointer to a memory block containg this audio sample data.
      */
-    inline void set_data( unsigned char* data ) {
-        _data = data;
-    }
+    inline void set_data( unsigned char* data ) { _data = data; }
 
     /**
-     * @return the data associated with this sample
+     * Return the data associated with this audio sample.
+     * @return A pointer to this sound data of this audio sample.
      */
     inline void* get_data() const { return _data; }
 
     /**
-     * free the data associated with this sample
+     * Free the data associated with this audio sample
      */
-    inline void free_data() {
+    void free_data() {
         if (_data != NULL) { delete _data; _data = NULL; }
     }
 
     /**
-     * set the source id of this source
+     * Set the source id of this source
+     * @param sid OpenAL source-id
      */
-    inline void set_source(unsigned int s) {
-        _source = s; _valid_source = true; _changed = true;
+    void set_source(unsigned int sid) {
+        _source = sid; _valid_source = true; _changed = true;
     }
 
     /**
-     * get the source id of this source
+     * Get the OpenAL source id of this source
+     * @return OpenAL source-id
      */
     inline unsigned int get_source() { return _source; }
 
     /**
-     * detect wheter the source id of the sample is valid
+     * Test if the source-id of this audio sample may be passed to OpenAL.
+     * @return true if the source-id is valid
      */
     inline bool is_valid_source() const { return _valid_source; }
 
     /**
-     * set the source id of the sample to invalid.
+     * Set the source-id of this audio sample to invalid.
      */
-    inline void no_valid_source() {
-        _valid_source = false;
-    }
+    inline void no_valid_source() { _valid_source = false; }
 
     /**
-     * set the buffer id of this source
+     * Set the OpenAL buffer-id of this source
+     * @param bid OpenAL buffer-id
      */
-    inline void set_buffer(unsigned int b) {
-        _buffer = b; _valid_buffer = true; _changed = true;
+    void set_buffer(unsigned int bid) {
+        _buffer = bid; _valid_buffer = true; _changed = true;
     } 
 
     /**
-     * get the buffer id of this source
+     * Get the OpenAL buffer-id of this source
+     * @return OpenAL buffer-id
      */
     inline unsigned int get_buffer() { return _buffer; }
 
     /**
-     * detect wheter the source id of the sample is valid
+     * Test if the buffer-id of this audio sample may be passed to OpenAL.
+     * @return true if the buffer-id is valid
      */
     inline bool is_valid_buffer() const { return _valid_buffer; }
 
     /**
-     * set the source id of the sample to invalid.
+     * Set the buffer-id of this audio sample to invalid.
      */
-    inline void no_valid_buffer() {
-        _valid_buffer = false;
-    }
+    inline void no_valid_buffer() { _valid_buffer = false; }
 
     /**
-     * Get the current pitch setting of this sample.
+     * Set the playback pitch of this audio sample. 
+     * Should be between 0.0 and 2.0 for maximum compatibility.
+     * @param p Pitch
+     */
+    inline void set_pitch( float p ) { _pitch = p; _changed = true; }
+
+    /**
+     * Get the current pitch value of this audio sample.
+     * @return Pitch
      */
     inline float get_pitch() { return _pitch; }
 
     /**
-     * Set the pitch of this sample.
-     */
-    inline void set_pitch( float p ) {
-        _pitch = p; _changed = true;
-    }
-
-    /**
-     * Get the current volume setting of this sample.
-     */
-    inline float get_volume() { return _volume * _master_volume; }
-
-    /**
-     * Set the master (sampel group) volume of this sample.
+     * Set the master volume of this sample. Should be between 0.0 and 1.0.
+     * The final volume is calculated by multiplying the master and audio sample
+     * volume.
+     * @param v Volume
      */
     inline void set_master_volume( float v ) {
         _master_volume = v; _changed = true;
     }
 
     /**
-     * Set the volume of this sample.
+     * Set the volume of this audio sample. Should be between 0.0 and 1.0.
+     * The final volume is calculated by multiplying the master and audio sample
+     * volume.
+     * @param v Volume
      */
-    inline void set_volume( float v ) {
-        _volume = v; _changed = true;
-    }
+    inline void set_volume( float v ) { _volume = v; _changed = true; }
 
     /**
-     * Set the format of the sounds sample
+     * Get the final volume value of this audio sample.
+     * @return Volume
      */
-    inline void set_format( int format ) {
-        _format = format;
-    }
+    inline float get_volume() { return _volume * _master_volume; }
 
     /**
-     * Returns the format of the sounds sample
+     * Set the OpenAL format of this audio sample.
+     * @param format OpenAL format-id
+     */
+    inline void set_format( int format ) { _format = format; }
+
+    /**
+     * Returns the format of this audio sample.
+     * @return OpenAL format-id
      */
     inline int get_format() { return _format; }
 
-
     /**
-     * Set the frequency of the sounds sample
+     * Set the frequency (in Herz) of this audio sample.
+     * @param freq Frequency
      */
-    inline void set_frequency( int freq ) {
-        _freq = freq; _changed = true;
-    }
+    inline void set_frequency( int freq ) { _freq = freq; _changed = true; }
 
     /**
-     * Returns the frequency of the sounds sample
+     * Returns the frequency (in Herz) of this audio sample.
+     * @return Frequency
      */
     inline int get_frequency() { return _freq; }
 
     /**
-     * Returns the size of the sounds sample
+     * Sets the size (in bytes) of this audio sample.
+     * @param size Data size
      */
-    inline void set_size( int size ) {
-        _size = size;
-    }
+    inline void set_size( size_t size ) { _size = size; }
 
     /**
-     * Returns the size of the sounds sample
+     * Returns the size (in bytes) of this audio sample.
+     * @return Data size
      */
-    inline int get_size() const { return _size; }
+    inline size_t get_size() const { return _size; }
 
     /**
-     * Set position of the sound source (uses same coordinate system as opengl)
+     * Set the position of this sound relative to the base position.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @param pos Relative position of this sound
      */
-    void set_relative_position( SGVec3f pos );
+    void set_relative_position( const SGVec3f& pos );
 
     /**
-     * Get position of the sound source (uses same coordinate system as opengl)
+     * Set the base position of this sound in Geodetic coordinates.
+     * @param pos Geodetic position
      */
-    inline float *get_position() const { return toVec3f(_absolute_pos).data(); }
+    void set_position( const SGGeod& pos );
 
     /**
-     * Set the position of the sound source
+     * Get the absolute position of this sound.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @return Absolute position
      */
-    void set_position( SGGeod pos );
+    float *get_position() const { return toVec3f(_absolute_pos).data(); }
 
     /**
-     * Set the orientation of the sound source
+     * Set the orientation of this sound.
+     * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( SGQuatd ori );
+    void set_orientation( const SGQuatd& ori );
 
     /**
-     * Set the relative direction of the sound source, both for direction
-     * and audio cut-off angles.
+     * Set direction of this sound relative to the orientation.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @param dir Sound emission direction
      */
-    void set_direction( SGVec3d dir );
+    void set_direction( const SGVec3d& dir );
 
     /**
-     * Define the audio cone parameters for directional audio
+     * Define the audio cone parameters for directional audio.
+     * Note: setting it to 1 degree will result in 0.5 degrees to both sides.
+     * @param inner Inner cone angle (0 - 360 degrees)
+     * @param outer Outer cone angle (0 - 360 degrees)
+     * @param gain Remaining gain at the edge of the outer cone (0.0 - 1.0)
      */
-    inline void set_audio_cone( float inner, float outer, float gain ) {
+    void set_audio_cone( float inner, float outer, float gain ) {
         _inner_angle = inner;
         _outer_angle = outer;
         _outer_gain = gain;
@@ -357,61 +338,133 @@ public:
     }
 
     /**
-     * Get the orientation of the sound source, the inner or outer angle
-     * or outer gain.
+     * Get the orientation vector of this sound.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @return Orientaton vector
      */
     float *get_orientation() { return _orivec.data(); }
+
+    /**
+     * Get the inner angle of the audio cone.
+     * @return Inner angle in degrees
+     */
     float get_innerangle() { return _inner_angle; }
+
+    /**
+     * Get the outer angle of the audio cone.
+     * @return Outer angle in degrees
+     */
     float get_outerangle() { return _outer_angle; }
+
+    /**
+     * Get the remaining gain at the edge of the outer cone.
+     * @return Gain
+     */
     float get_outergain() { return _outer_gain; }
 
     /**
-     * Set velocity of the sound source (uses same coordinate system as opengl)
+     * Set the velocity vector (in meters per second) of this sound.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @param Velocity vector
      */
-    inline void set_velocity( SGVec3d& vel ) {
-        _velocity = vel;
-        _changed = true;
+    inline void set_velocity( const SGVec3d& vel ) {
+        _velocity = vel; _changed = true;
     }
 
     /**
-     * Get velocity of the sound source (uses same coordinate system as opengl)
+     * Get velocity vector (in meters per second) of this sound.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @return Velocity vector
      */
-    inline float *get_velocity() { return toVec3f(_velocity).data(); }
+    float *get_velocity() { return toVec3f(_velocity).data(); }
 
 
     /**
-     * Set reference distance of sound (the distance where the gain
-     * will be half.)
+     * Set reference distance (in meters) of this sound.
+     * This is the distance where the gain will be half.
+     * @param dist Reference distance
      */
     inline void set_reference_dist( float dist ) {
         _reference_dist = dist; _static_changed = true;
     }
 
     /**
-     * Get reference distance of sound (the distance where the gain
-     * will be half.)
+     * Get reference distance ((in meters) of this sound.
+     * This is the distance where the gain will be half.
+     * @return Reference distance
      */
     inline float get_reference_dist() { return _reference_dist; }
 
 
     /**
-     * Set maximum distance of sound (the distance where the sound is
-     * no longer audible.
+     * Set maximum distance (in meters) of this sound.
+     * This is the distance where this sound is no longer audible.
+     * @param dist Maximum distance
      */
-    void set_max_dist( float dist ) {
+    inline void set_max_dist( float dist ) {
         _max_dist = dist; _static_changed = true;
     }
 
     /**
-     * Get maximum istance of sound (the distance where the sound is
-     * no longer audible.
+     * Get maximum distance (in meters) of this sound.
+     * This is the distance where this sound is no longer audible.
+     * @return dist Maximum distance
      */
     inline float get_max_dist() { return _max_dist; }
 
     /**
-     * Get the name of this sample
+     * Get the reference name of this audio sample.
+     * @return Sample name
      */
-    inline std::string get_sample_name() { return _sample_name; }
+    inline std::string get_sample_name() const { return _refname; }
+
+private:
+
+    // Position of the source sound.
+    SGVec3d _absolute_pos;      // absolute position
+    SGVec3d _relative_pos;      // position relative to the base position
+    SGVec3d _direction;         // orientation offset
+    SGVec3d _velocity;          // Velocity of the source sound.
+
+    // The position and orientation of this sound
+    SGQuatd _orientation;       // base orientation
+    SGVec3f _orivec;		// orientation vector for OpenAL
+    SGGeod _base_pos;		// base position
+
+    std::string _refname;	// name or file path
+    unsigned char *_data;
+
+    // configuration values
+    int _format;
+    size_t _size;
+    int _freq;
+
+    // Buffers hold sound data.
+    bool _valid_buffer;
+    unsigned int _buffer;
+
+    // Sources are points emitting sound.
+    bool _valid_source;
+    unsigned int _source;
+
+    // The orientation of this sound (direction and cut-off angles)
+    float _inner_angle;
+    float _outer_angle;
+    float _outer_gain;
+
+    float _pitch;
+    float _volume;
+    float _master_volume;
+    float _reference_dist;
+    float _max_dist;
+    bool _loop;
+
+    bool _playing;
+    bool _changed;
+    bool _static_changed;
+    bool _is_file;
+
+    void update_absolute_position();
 };
 
 

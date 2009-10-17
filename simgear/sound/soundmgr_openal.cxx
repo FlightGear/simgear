@@ -222,7 +222,7 @@ void SGSoundMgr::unbind ()
 
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
-    if (_working) {
+    if (_working && dt != 0.0) {
         alcSuspendContext(_context);
 
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();

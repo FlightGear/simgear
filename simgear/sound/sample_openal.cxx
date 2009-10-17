@@ -183,4 +183,7 @@ void SGSoundSample::update_absolute_position() {
 
      orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
     _absolute_pos = -SGVec3d::fromGeod(_base_pos) -orient.rotate(SGVec3d::e1());
+
+    float vel = length(_velocity);
+    _velocity = toVec3d(_orivec * vel);
 }

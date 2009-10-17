@@ -40,7 +40,7 @@
 // empty constructor
 SGSoundSample::SGSoundSample() :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -66,14 +66,15 @@ SGSoundSample::SGSoundSample() :
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(false)
+    _is_file(false),
+    _orivec(SGVec3f::zeros())
 {
 }
 
 // constructor
 SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -97,7 +98,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(true)
+    _is_file(true),
+    _orivec(SGVec3f::zeros())
 {
     SGPath samplepath( path );
     if ( strlen(file) ) {
@@ -112,7 +114,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
 // constructor
 SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format ) :
     _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3f::zeros()),
+    _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _base_pos(SGGeod()),
@@ -137,7 +139,8 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _playing(false),
     _changed(true),
     _static_changed(true),
-    _is_file(false)
+    _is_file(false),
+    _orivec(SGVec3f::zeros())
 {
     _sample_name = "unknown, data supplied by caller";
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
@@ -160,14 +163,8 @@ void SGSoundSample::set_direction( SGVec3d dir ) {
     _changed = true;
 }
 
-float *SGSoundSample::get_orientation() {
-    SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
-    SGVec3d orivec = -orient.rotate(_direction);
-    return toVec3f(orivec).data();
-}
-
 void SGSoundSample::set_relative_position( SGVec3f pos ) {
-    _relative_pos = pos;
+    _relative_pos = toVec3d(pos);
     update_absolute_position();
     _changed = true;
 }
@@ -179,6 +176,9 @@ void SGSoundSample::set_position( SGGeod pos ) {
 }
 
 void SGSoundSample::update_absolute_position() {
-    _absolute_pos = -SGVec3d::fromGeod(_base_pos);
-    // TODO: add relative position
+    SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
+    _orivec = -toVec3f(orient.rotate(_direction));
+
+     orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
+    _absolute_pos = -SGVec3d::fromGeod(_base_pos) -orient.rotate(SGVec3d::e1());
 }

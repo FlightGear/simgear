@@ -52,7 +52,7 @@ private:
 
     // Position of the source sound.
     SGVec3d _absolute_pos;	// absolute position
-    SGVec3f _relative_pos;	// position relative to the base position
+    SGVec3d _relative_pos;	// position relative to the base position
     SGVec3d _direction;		// orientation offset
     SGVec3d _velocity;		// Velocity of the source sound.
 
@@ -93,6 +93,7 @@ private:
     bool _static_changed;
     bool _is_file;
 
+    SGVec3f _orivec;
     void update_absolute_position();
 
 public:
@@ -200,7 +201,7 @@ public:
      * free the data associated with this sample
      */
     inline void free_data() {
-        if (_data != NULL) { delete[] _data; _data = NULL; }
+        if (_data != NULL) { delete _data; _data = NULL; }
     }
 
     /**
@@ -359,11 +360,10 @@ public:
      * Get the orientation of the sound source, the inner or outer angle
      * or outer gain.
      */
-    float *get_orientation();
-
-    inline float get_innerangle() { return _inner_angle; }
-    inline float get_outerangle() { return _outer_angle; }
-    inline float get_outergain() { return _outer_gain; }
+    float *get_orientation() { return _orivec.data(); }
+    float get_innerangle() { return _inner_angle; }
+    float get_outerangle() { return _outer_angle; }
+    float get_outergain() { return _outer_gain; }
 
     /**
      * Set velocity of the sound source (uses same coordinate system as opengl)

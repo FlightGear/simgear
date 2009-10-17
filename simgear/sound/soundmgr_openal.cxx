@@ -274,6 +274,7 @@ bool SGSoundMgr::add( SGSampleGroup *sgrp, const string& refname )
         return false;
     }
 
+    if (_working) sgrp->activate();
     _sample_groups[refname] = sgrp;
 
     return true;
@@ -502,8 +503,8 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALboolean loop;
     alutLoadWAVFile( fname, &format, &data, &size, &freq, &loop );
 # endif
-    ALenum error =  alutGetError();
-    if ( error != ALUT_ERROR_NO_ERROR ) {
+    ALenum error =  alGetError();
+    if ( error != AL_NO_ERROR ) {
         string msg = "Failed to load wav file: ";
         msg.append(alutGetErrorString(error));
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));

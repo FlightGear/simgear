@@ -149,6 +149,7 @@ enter this in the official comments in case I forget again. :-)
 
 #include "texcoord.hxx"
 
+#include <simgear/math/point3d.hxx>
 // using std::cout;
 // using std::endl;
 

@@ -22,6 +22,8 @@
 #ifndef SG_LIGHT_BIN_HXX
 #define SG_LIGHT_BIN_HXX
 
+#include <simgear/math/SGMath.hxx>
+
 class SGLightBin {
 public:
   struct Light {

@@ -33,6 +33,7 @@
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/math/sg_types.hxx>
+#include <simgear/math/point3d.hxx>
 #include <simgear/bucket/newbucket.hxx>
 
 #include <stdio.h>

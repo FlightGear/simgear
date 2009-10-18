@@ -38,7 +38,7 @@
 #include <string>
 #include <vector>
 
-#include <simgear/math/point3d.hxx>
+class Point3D;
 
 using std::vector;
 using std::string;

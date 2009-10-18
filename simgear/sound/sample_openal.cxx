@@ -151,6 +151,10 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
 
 // destructor
 SGSoundSample::~SGSoundSample() {
+    if (_data != NULL) {
+        delete _data;
+        _data = NULL;
+    }
 }
 
 void SGSoundSample::set_orientation( const SGQuatd& ori ) {

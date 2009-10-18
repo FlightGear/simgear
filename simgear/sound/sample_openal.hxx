@@ -61,15 +61,15 @@ public:
      * Constructor
      * @param path Path name to sound
      * @param file File name of sound
-       should usually be true unless you want to manipulate the data
-       later.)
+       Buffer data is freed by the sample group
      */
     SGSoundSample( const char *path, const char *file );
 
     /**
      * Constructor.
      * @param data Pointer to a memory buffer containing this audio sample data
-       buffer data is freed by this audio sample manager.
+       The application may free the data by calling free_data(), otherwise it
+       will be resident untill the class is destroyed.
      * @param len Byte length of array
      * @param freq Frequency of the provided data (bytes per second)
      * @param format OpenAL format id of the data

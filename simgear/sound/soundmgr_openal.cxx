@@ -436,7 +436,11 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();
             alBufferData( buffer, format, data, size, freq );
-            sample->free_data();
+
+            // If this sample was read from a file we have all the information
+            // needed to read it again. For data buffers provided by the
+            // program we don't; so don't delete it's data.
+            if (sample->is_file()) sample->free_data();
 
             if ( !testForALError("buffer add data") ) {
                 sample->set_buffer(buffer);

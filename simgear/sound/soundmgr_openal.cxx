@@ -179,6 +179,8 @@ void SGSoundMgr::stop() {
             _buffers.erase( buffers_current );
         }
 
+        _context = alcGetCurrentContext();
+        _device = alcGetContextsDevice(_context);
         alcDestroyContext(_context);
         alcCloseDevice(_device);
     }

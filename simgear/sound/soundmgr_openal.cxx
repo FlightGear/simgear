@@ -500,7 +500,7 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALenum error =  alGetError();
     if ( error != AL_NO_ERROR ) {
         string msg = "Failed to load wav file: ";
-        msg.append(alutGetErrorString(error));
+        msg.append(alGetErrorString(error));
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
         return false;
     }

@@ -49,10 +49,6 @@
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
-#elif defined(_WIN32)
-# include <al.h>
-# include <alc.h>
-# include <AL/alut.h>
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
@@ -112,6 +108,17 @@ public:
      * @return true is the sound manager is working
      */
     inline bool is_working() const { return _working; }
+
+    /**
+     * Set the sound manager to a  working condition.
+     */
+    inline void activate() { _active = true; }
+
+    /**
+     * Test is the sound manager is in an active and working condition.
+     * @return true is the sound manager is active
+     */
+    inline bool is_active() const { return (_working && _active); }
 
     /**
      * Register a sample group to the sound manager.
@@ -263,6 +270,7 @@ private:
     static int _alut_init;
 
     bool _working;
+    bool _active;
     bool _changed;
     float _volume;
 

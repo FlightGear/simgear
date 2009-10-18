@@ -57,6 +57,7 @@ int SGSoundMgr::_alut_init = 0;
 // constructor
 SGSoundMgr::SGSoundMgr() :
     _working(false),
+    _active(false),
     _changed(true),
     _volume(0.0),
     _device(NULL),
@@ -162,10 +163,11 @@ void SGSoundMgr::init() {
     }
 }
 
-// suspend the sound manager
+// stop the sound manager
 void SGSoundMgr::stop() {
     if (_working) {
         _working = false;
+        _active = false;
 
         // clear any OpenAL buffers before shutting down
         buffer_map_iterator buffers_current;
@@ -177,25 +179,34 @@ void SGSoundMgr::stop() {
             _buffers.erase( buffers_current );
         }
 
-        _context = alcGetCurrentContext();
-        _device = alcGetContextsDevice(_context);
-        alcMakeContextCurrent(NULL);
         alcDestroyContext(_context);
         alcCloseDevice(_device);
     }
 }
 
 void SGSoundMgr::suspend() {
-    if (_working) {
+    if (_active) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
             SGSampleGroup *sgrp = sample_grp_current->second;
             sgrp->suspend();
         }
+        _active = false;
     }
 }
 
+void SGSoundMgr::resume() {
+    if (!_active) {
+        sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+        sample_group_map_iterator sample_grp_end = _sample_groups.end();
+        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+            SGSampleGroup *sgrp = sample_grp_current->second;
+            sgrp->resume();
+        }
+        _active = true;
+    }
+}
 
 void SGSoundMgr::bind ()
 {
@@ -222,9 +233,7 @@ void SGSoundMgr::unbind ()
 
 // run the audio scheduler
 void SGSoundMgr::update_late( double dt ) {
-    if (_working && dt != 0.0) {
-        alcSuspendContext(_context);
-
+    if (_active) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -241,26 +250,10 @@ void SGSoundMgr::update_late( double dt ) {
             testForALError("update");
             _changed = false;
         }
-        alcProcessContext(_context);
     }
 }
 
-
-void
-SGSoundMgr::resume ()
-{
-    if (_working) {
-        sample_group_map_iterator sample_grp_current = _sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = _sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
-            sgrp->resume();
-        }
-    }
-}
-
-
-// add a sampel group, return true if successful
+// add a sample group, return true if successful
 bool SGSoundMgr::add( SGSampleGroup *sgrp, const string& refname )
 {
     sample_group_map_iterator sample_grp_it = _sample_groups.find( refname );

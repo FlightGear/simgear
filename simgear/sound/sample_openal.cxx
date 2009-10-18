@@ -29,7 +29,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/math/SGQuat.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include "soundmgr_openal.hxx"
 #include "sample_openal.hxx"

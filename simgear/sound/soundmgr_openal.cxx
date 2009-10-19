@@ -415,7 +415,10 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             void *data;
 
             load(sample_name, &data, &format, &size, &freq);
-            sample->set_data( (unsigned char *)data );
+            std::auto_ptr<unsigned char> ptr;
+            ptr.reset((unsigned char *)data);
+
+            sample->set_data( ptr );
             sample->set_frequency( freq );
             sample->set_format( format );
             sample->set_size( size );

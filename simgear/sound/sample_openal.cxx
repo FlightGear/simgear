@@ -116,7 +116,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format ) :
+SGSoundSample::SGSoundSample( std::auto_ptr<unsigned char>& data,
+                              int len, int freq, int format ) :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
@@ -125,7 +126,7 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod()),
     _refname(random_string()),
-    _data(data),
+    _data(data.release()),
     _format(format),
     _size(len),
     _freq(freq),
@@ -153,10 +154,6 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
 
 // destructor
 SGSoundSample::~SGSoundSample() {
-    if (_data != NULL) {
-        delete _data;
-        _data = NULL;
-    }
 }
 
 void SGSoundSample::set_orientation( const SGQuatd& ori ) {

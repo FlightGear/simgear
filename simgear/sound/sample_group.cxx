@@ -111,7 +111,7 @@ void SGSampleGroup::update( double dt ) {
 
     if ( !_active ) return;
 
-    // testForALError("start of update!!\n");
+    testForALError("start of update!!\n");
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
@@ -141,7 +141,7 @@ void SGSampleGroup::update( double dt ) {
 
                 alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                 alSourcei( source, AL_LOOPING, looping );
-                alSourcef( source, AL_ROLLOFF_FACTOR, 1.2 );
+                alSourcef( source, AL_ROLLOFF_FACTOR, 1.0 );
                 alSourcePlay( source );
                 testForALError("sample play");
             } else {
@@ -247,8 +247,7 @@ SGSampleGroup::suspend ()
         SGSoundSample *sample = sample_current->second;
 
         if ( sample->is_valid_source() && sample->is_playing() ) {
-            unsigned int source = sample->get_source();
-            alSourcePause( source );
+            alSourcePause( sample->get_source() );
         }
     }
     testForALError("suspend");
@@ -264,8 +263,7 @@ SGSampleGroup::resume ()
         SGSoundSample *sample = sample_current->second;
 
         if ( sample->is_valid_source() && sample->is_playing() ) {
-            unsigned int source = sample->get_source();
-            alSourcePlay( source );
+            alSourcePlay( sample->get_source() );
         }
     }
     testForALError("resume");

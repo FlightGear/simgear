@@ -35,6 +35,7 @@
 #endif
 
 #include <string>
+#include <memory>
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
@@ -74,7 +75,7 @@ public:
      * @param freq Frequency of the provided data (bytes per second)
      * @param format OpenAL format id of the data
      */
-    SGSoundSample( unsigned char *data, int len, int freq,
+    SGSoundSample( std::auto_ptr<unsigned char>& data, int len, int freq,
                    int format = AL_FORMAT_MONO8 );
 
     /**
@@ -152,19 +153,21 @@ public:
      * sSt the data associated with this audio sample
      * @param data Pointer to a memory block containg this audio sample data.
      */
-    inline void set_data( unsigned char* data ) { _data = data; }
+    inline void set_data( std::auto_ptr<unsigned char>& data ) {
+        _data = data;
+    }
 
     /**
      * Return the data associated with this audio sample.
      * @return A pointer to this sound data of this audio sample.
      */
-    inline void* get_data() const { return _data; }
+    inline void* get_data() const { return _data.get(); }
 
     /**
      * Free the data associated with this audio sample
      */
     void free_data() {
-        if (_data != NULL) { delete _data; _data = NULL; }
+        delete _data.release();
     }
 
     /**
@@ -432,7 +435,7 @@ private:
     SGGeod _base_pos;		// base position
 
     std::string _refname;	// name or file path
-    unsigned char *_data;
+    std::auto_ptr<unsigned char> _data;
 
     // configuration values
     int _format;
@@ -465,6 +468,7 @@ private:
     bool _is_file;
 
     void update_absolute_position();
+    string random_string();
 };
 
 

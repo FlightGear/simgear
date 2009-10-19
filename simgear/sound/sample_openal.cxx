@@ -26,6 +26,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <stdlib.h>	// rand()
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
@@ -48,7 +50,7 @@ SGSoundSample::SGSoundSample() :
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod()),
-    _refname(""),
+    _refname(random_string()),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
     _size(0),
@@ -122,6 +124,7 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod()),
+    _refname(random_string()),
     _data(data),
     _format(format),
     _size(len),
@@ -144,7 +147,6 @@ SGSoundSample::SGSoundSample( unsigned char *data, int len, int freq, int format
     _static_changed(true),
     _is_file(false)
 {
-    _refname = "unknown, data supplied by caller";
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
 }
 
@@ -186,8 +188,16 @@ void SGSoundSample::update_absolute_position() {
     _orivec = -toVec3f(orient.rotate(_direction));
 
      orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
-    _absolute_pos = -SGVec3d::fromGeod(_base_pos) -orient.rotate(SGVec3d::e1());
+    _absolute_pos = -SGVec3d::fromGeod(_base_pos); // -orient.rotate(SGVec3d::e1());
+}
 
-    float vel = length(_velocity);
-    _velocity = toVec3d(_orivec * vel);
+string SGSoundSample::random_string() {
+      static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"
+                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      string rstr;
+      for (int i=0; i<10; i++) {
+          rstr.push_back( r[rand() % strlen(r)] );
+      }
+
+      return rstr;
 }

@@ -120,7 +120,7 @@ void SGSoundMgr::init() {
     _at_up_vec[0] = 0.0; _at_up_vec[1] = 0.0; _at_up_vec[2] = -1.0;
     _at_up_vec[3] = 0.0; _at_up_vec[4] = 1.0; _at_up_vec[5] = 0.0;
 
-    alListenerf( AL_GAIN, 0.2f );
+    alListenerf( AL_GAIN, 0.0f );
     alListenerfv( AL_ORIENTATION, _at_up_vec );
     alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
     alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
@@ -170,14 +170,14 @@ void SGSoundMgr::stop() {
         _active = false;
 
         // clear any OpenAL buffers before shutting down
-        buffer_map_iterator buffers_current;
-        while(_buffers.size()){
-            buffers_current = _buffers.begin();
+        buffer_map_iterator buffers_current = _buffers.begin();
+        buffer_map_iterator buffers_end = _buffers.end();
+        for ( ; buffers_current != buffers_end; ++buffers_current ) {
             refUint ref = buffers_current->second;
             ALuint buffer = ref.id;
             alDeleteBuffers(1, &buffer);
-            _buffers.erase( buffers_current );
         }
+        _buffers.clear();
 
         _context = alcGetCurrentContext();
         _device = alcGetContextsDevice(_context);
@@ -435,7 +435,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             // If this sample was read from a file we have all the information
             // needed to read it again. For data buffers provided by the
             // program we don't; so don't delete it's data.
-            if (sample->is_file()) sample->free_data();
+            if ( sample->is_file() ) sample->free_data();
 
             if ( !testForALError("buffer add data") ) {
                 sample->set_buffer(buffer);
@@ -452,7 +452,6 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 void SGSoundMgr::release_buffer(SGSoundSample *sample)
 {
     string sample_name = sample->get_sample_name();
-
     buffer_map_iterator buffer_it = _buffers.find( sample_name );
     if ( buffer_it == _buffers.end() ) {
         // buffer was not found
@@ -463,7 +462,7 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
     buffer_it->second.refctr--;
     if (buffer_it->second.refctr == 0) {
         ALuint buffer = buffer_it->second.id;
-        _buffers.erase( buffer_it );
+        _buffers.erase( sample_name );
         alDeleteBuffers(1, &buffer);
         testForALError("release buffer");
     }
@@ -472,6 +471,8 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
                                           size_t *sz, int *frq )
 {
+    if ( !_working ) return false;
+
     ALenum format;
     ALsizei size;
     ALsizei freq;
@@ -500,7 +501,7 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALenum error =  alGetError();
     if ( error != AL_NO_ERROR ) {
         string msg = "Failed to load wav file: ";
-        msg.append(alGetErrorString(error));
+        msg.append(alGetString(error));
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
         return false;
     }

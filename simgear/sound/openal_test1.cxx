@@ -14,6 +14,10 @@ static unsigned int sleep(unsigned int secs) { return 0; }
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
+#elif defined(OPENALSDK)
+# include <al.h>
+# include <alc.h>
+# include <AL/alut.h> 
 #else
 # include <AL/al.h>
 # include <AL/alc.h>

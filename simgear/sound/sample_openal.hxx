@@ -465,6 +465,7 @@ private:
     bool _is_file;
 
     void update_absolute_position();
+    string random_string();
 };
 
 

@@ -116,13 +116,13 @@ public:
     /**
      * Set the sound manager to a  working condition.
      */
-    inline void activate() { _active = true; }
+    void activate();
 
     /**
      * Test is the sound manager is in an active and working condition.
      * @return true is the sound manager is active
      */
-    inline bool is_active() const { return (_working && _active); }
+    inline bool is_active() const { return _active; }
 
     /**
      * Register a sample group to the sound manager.

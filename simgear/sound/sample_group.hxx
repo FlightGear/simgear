@@ -42,6 +42,7 @@
 #endif
 
 #include <string>
+#include <vector>
 #include <map>
 
 #include <simgear/compiler.h>
@@ -55,7 +56,8 @@
 using std::map;
 using std::string;
 
-typedef map < string, SGSharedPtr<SGSoundSample> > sample_map;
+typedef SGSharedPtr<SGSoundSample> SGSoundSample_ptr;
+typedef map < string, SGSoundSample_ptr > sample_map;
 typedef sample_map::iterator sample_map_iterator;
 typedef sample_map::const_iterator const_sample_map_iterator;
 
@@ -214,6 +216,7 @@ protected:
     bool _active;
 
 private:
+    bool _pause;
     float _volume;
     bool _tied_to_listener;
 
@@ -222,6 +225,7 @@ private:
     SGGeod _position;
 
     sample_map _samples;
+    std::vector<SGSoundSample_ptr> _removed_samples;
 
     bool testForALError(string s);
     bool testForError(void *p, string s);

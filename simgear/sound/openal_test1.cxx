@@ -50,6 +50,8 @@ int main( int argc, char *argv[] ) {
     ALCdevice *dev;
     ALCcontext *context;
 
+    sglog().setLogLevels( SG_ALL, SG_ALERT );
+
     // initialize OpenAL
     if ( (dev = alcOpenDevice( NULL )) != NULL
             && ( context = alcCreateContext( dev, NULL )) != NULL ) {

@@ -67,6 +67,7 @@ SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _refname(""),
     _active(false),
+    _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
@@ -79,6 +80,7 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _smgr(smgr),
     _refname(refname),
     _active(false), 
+    _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
@@ -109,9 +111,27 @@ SGSampleGroup::~SGSampleGroup ()
 
 void SGSampleGroup::update( double dt ) {
 
-    if ( !_active ) return;
+    if ( !_active || _pause ) return;
 
     testForALError("start of update!!\n");
+
+    // Delete any OpenAL buffers that might still be in use.
+    unsigned int size = _removed_samples.size();
+    for (unsigned int i=0; i<size; ) {
+        SGSoundSample *sample = _removed_samples[i];
+        ALint result;
+
+        alGetSourcei( sample->get_source(), AL_SOURCE_STATE, &result );
+        if ( result == AL_STOPPED ) {
+            ALuint buffer = sample->get_buffer();
+            alDeleteBuffers( 1, &buffer );
+            testForALError("buffer remove");
+            _removed_samples.erase( _removed_samples.begin()+i );
+            size--;
+            continue;
+        }
+        i++;
+    }
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
@@ -203,9 +223,8 @@ bool SGSampleGroup::remove( const string &refname ) {
         return false;
     }
 
-    // remove the sources buffer
-    _smgr->release_buffer( sample_it->second );
-    _samples.erase( refname );
+    _removed_samples.push_back( sample_it->second );
+    _samples.erase( sample_it );
 
     return true;
 }
@@ -240,7 +259,7 @@ SGSoundSample *SGSampleGroup::find( const string &refname ) {
 void
 SGSampleGroup::suspend ()
 {
-    _active = false;
+    _pause = true;
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
@@ -267,7 +286,7 @@ SGSampleGroup::resume ()
         }
     }
     testForALError("resume");
-    _active = true;
+    _pause = false;
 }
 
 

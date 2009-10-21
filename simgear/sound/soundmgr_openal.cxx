@@ -154,12 +154,17 @@ void SGSoundMgr::init() {
     if (_free_sources.size() == 0) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
+}
 
-    sample_group_map_iterator sample_grp_current = _sample_groups.begin();
-    sample_group_map_iterator sample_grp_end = _sample_groups.end();
-    for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-        SGSampleGroup *sgrp = sample_grp_current->second;
-        sgrp->activate();
+void SGSoundMgr::activate() {
+    if ( _working ) {
+        _active = true;
+        sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+        sample_group_map_iterator sample_grp_end = _sample_groups.end();
+        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+            SGSampleGroup *sgrp = sample_grp_current->second;
+            sgrp->activate();
+        }
     }
 }
 
@@ -187,7 +192,7 @@ void SGSoundMgr::stop() {
 }
 
 void SGSoundMgr::suspend() {
-    if (_active) {
+    if (_working) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -199,7 +204,7 @@ void SGSoundMgr::suspend() {
 }
 
 void SGSoundMgr::resume() {
-    if (!_active) {
+    if (_working) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -225,7 +230,7 @@ void SGSoundMgr::unbind ()
 
     // delete free sources
     for (unsigned int i=0; i<_free_sources.size(); i++) {
-        ALuint source = _free_sources.at( i );
+        ALuint source = _free_sources[i];
         alDeleteSources( 1 , &source );
     }
 
@@ -264,7 +269,7 @@ bool SGSoundMgr::add( SGSampleGroup *sgrp, const string& refname )
         return false;
     }
 
-    if (_working) sgrp->activate();
+    if (_active) sgrp->activate();
     _sample_groups[refname] = sgrp;
 
     return true;
@@ -280,7 +285,7 @@ bool SGSoundMgr::remove( const string &refname )
         return false;
     }
 
-    _sample_groups.erase( refname );
+    _sample_groups.erase( sample_grp_it );
 
     return true;
 }
@@ -386,8 +391,9 @@ void SGSoundMgr::release_source( unsigned int source )
             alSourceStop( source );
         testForALError("release source");
 
-        _free_sources.push_back(source);
-        _sources_in_use.erase(it, it+1);
+        alSourcei( source, AL_BUFFER, 0 );
+        _free_sources.push_back( source );
+        _sources_in_use.erase( it );
     }
 }
 
@@ -465,8 +471,8 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
     buffer_it->second.refctr--;
     if (buffer_it->second.refctr == 0) {
         ALuint buffer = buffer_it->second.id;
-        _buffers.erase( sample_name );
         alDeleteBuffers(1, &buffer);
+        _buffers.erase( buffer_it );
         testForALError("release buffer");
     }
 }

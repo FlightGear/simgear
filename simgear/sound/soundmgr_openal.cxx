@@ -154,6 +154,7 @@ printf("Initializing OpenAL sound manager\n");
         else break;
     }
 
+printf("%i free sources found\n", _free_sources.size() );
     if (_free_sources.size() == 0) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
     }

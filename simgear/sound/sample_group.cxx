@@ -146,7 +146,6 @@ void SGSampleGroup::update( double dt ) {
                 continue;
 
             // start playing the sample
-            ALboolean looping = sample->get_looping() ? AL_TRUE : AL_FALSE;
             ALuint buffer = sample->get_buffer();
             ALuint source = _smgr->request_source();
             if (alIsSource(source) == AL_TRUE && alIsBuffer(buffer) == AL_TRUE)
@@ -159,9 +158,10 @@ void SGSampleGroup::update( double dt ) {
                 sample->set_source( source );
                 update_sample_config( sample );
 
-                alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
+                ALboolean looping = sample->get_looping() ? AL_TRUE : AL_FALSE;
                 alSourcei( source, AL_LOOPING, looping );
                 alSourcef( source, AL_ROLLOFF_FACTOR, 1.0 );
+                alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                 alSourcePlay( source );
                 testForALError("sample play");
             } else {
@@ -169,6 +169,7 @@ void SGSampleGroup::update( double dt ) {
                    SG_LOG( SG_GENERAL, SG_ALERT, "No such buffer!\n");
                 // sample->no_valid_source();
                 // sadly, no free source available at this time
+printf("No free source found.");
             }
 
         } else if ( sample->is_valid_source() && sample->has_changed() ) {

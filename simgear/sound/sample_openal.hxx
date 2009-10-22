@@ -167,7 +167,7 @@ public:
      * Free the data associated with this audio sample
      */
     void free_data() {
-        delete _data.release();
+        free( _data.release() );
     }
 
     /**

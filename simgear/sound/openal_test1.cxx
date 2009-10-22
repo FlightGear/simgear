@@ -50,6 +50,9 @@ int main( int argc, char *argv[] ) {
     ALCdevice *dev;
     ALCcontext *context;
 
+    alutInit(&argc, argv);
+    sglog().setLogLevels( SG_ALL, SG_ALERT );
+
     // initialize OpenAL
     if ( (dev = alcOpenDevice( NULL )) != NULL
             && ( context = alcCreateContext( dev, NULL )) != NULL ) {
@@ -162,6 +165,7 @@ int main( int argc, char *argv[] ) {
     alSourcePlay( source );
 
     sleep(10);
+    alutExit();
 
     return 0;
 }

@@ -94,6 +94,7 @@ SGSoundMgr::~SGSoundMgr() {
 // initialize the sound manager
 void SGSoundMgr::init() {
 
+printf("Initializing OpenAL sound manager\n");
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     ALCdevice *device = alcOpenDevice(_devname);
@@ -114,6 +115,8 @@ void SGSoundMgr::init() {
         return;
     }
 
+    if (_context != NULL)
+        SG_LOG(SG_GENERAL, SG_ALERT, "context is already assigned");
     _context = context;
     _working = true;
 
@@ -151,6 +154,7 @@ void SGSoundMgr::init() {
         else break;
     }
 
+printf("%i free sources found\n", _free_sources.size() );
     if (_free_sources.size() == 0) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
@@ -171,6 +175,7 @@ void SGSoundMgr::activate() {
 // stop the sound manager
 void SGSoundMgr::stop() {
     if (_working) {
+printf("Stopping Sound Manager\n");
         _working = false;
         _active = false;
 
@@ -193,6 +198,7 @@ void SGSoundMgr::stop() {
 
 void SGSoundMgr::suspend() {
     if (_working) {
+printf("SoundManager suspend\n");
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -205,6 +211,7 @@ void SGSoundMgr::suspend() {
 
 void SGSoundMgr::resume() {
     if (_working) {
+printf("SoundManager resume\n");
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -217,6 +224,7 @@ void SGSoundMgr::resume() {
 
 void SGSoundMgr::bind ()
 {
+printf("SoundManager bind\n");
     _free_sources.clear();
     _free_sources.reserve( MAX_SOURCES );
     _sources_in_use.clear();
@@ -226,6 +234,7 @@ void SGSoundMgr::bind ()
 
 void SGSoundMgr::unbind ()
 {
+printf("SoundManager unbind\n");
     _sample_groups.clear();
 
     // delete free sources

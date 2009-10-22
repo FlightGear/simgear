@@ -241,9 +241,9 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    // Orientation
    //
    SGVec3d dir = SGVec3d::zeros();
-   float inner, outer, outer_gain;
-   inner = outer = 360.0;
-   outer_gain = 0.0;
+   float inner = 360.0;
+   float outer = 360.0;
+   float outer_gain = 0.0;
    prop = node->getChild("orientation");
    if ( prop != NULL ) {
       dir = SGVec3d(-prop->getDoubleValue("x", 0.0),
@@ -261,11 +261,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
    _sample->set_relative_position( offset_pos );
    _sample->set_direction( dir );
-   _sample->set_audio_cone(inner, outer, outer_gain);
+   _sample->set_audio_cone( inner, outer, outer_gain );
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );
-   _sample->set_volume(v);
-   _sample->set_pitch(p);
+   _sample->set_volume( v );
+   _sample->set_pitch( p );
    _sgrp->add( _sample, _name );
 }
 

@@ -182,8 +182,9 @@ void SGSoundSample::set_position( const SGGeod& pos ) {
 
 void SGSoundSample::update_absolute_position() {
     SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
-    _orivec = -toVec3f(orient.rotate(_direction));
-//printf("ori: %f %f %f\n", _orivec[0], _orivec[1], _orivec[2]);
+    _orivec = -toVec3f(orient.rotate(-SGVec3d::e1()));
+printf("ori: %f %f %f\n", _orivec[0], _orivec[1], _orivec[2]);
+printf("vel: %f %f %f\n", _velocity[0], _velocity[1], _velocity[2]);
 
     orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
     _absolute_pos = -SGVec3d::fromGeod(_base_pos); // -orient.rotate(SGVec3d::e1());

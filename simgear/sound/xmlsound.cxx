@@ -171,7 +171,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
 
    }
 
-   float reference_dist = node->getDoubleValue("reference-dist", 50.0);
+   float reference_dist = node->getDoubleValue("reference-dist", 500.0);
    float max_dist = node->getDoubleValue("max-dist", 3000.0);
  
    //
@@ -243,7 +243,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    SGVec3d dir = SGVec3d::zeros();
    float inner = 360.0;
    float outer = 360.0;
-   float outer_gain = 0.0;;
+   float outer_gain = 0.0;
    prop = node->getChild("orientation");
    if ( prop != NULL ) {
       dir = SGVec3d(-prop->getDoubleValue("x", 0.0),

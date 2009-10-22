@@ -175,8 +175,8 @@ void SGSampleGroup::update( double dt ) {
             if ( !sample->is_playing() ) {
                 // a request to stop playing the sound has been filed.
 
-                sample->no_valid_source();
                 sample->stop();
+                sample->no_valid_source();
                 _smgr->release_source( sample->get_source() );
             } else  {
                 update_sample_config( sample );
@@ -191,9 +191,10 @@ void SGSampleGroup::update( double dt ) {
             alGetSourcei( source, AL_SOURCE_STATE, &result );
             if ( result == AL_STOPPED ) {
                 // sample is stoped because it wasn't looping
-                sample->no_valid_source();
                 sample->stop();
+                sample->no_valid_source();
                 _smgr->release_source( source );
+                _smgr->release_buffer( sample );
             }
         }
         testForALError("update");
@@ -223,7 +224,8 @@ bool SGSampleGroup::remove( const string &refname ) {
         return false;
     }
 
-    _removed_samples.push_back( sample_it->second );
+    if ( sample_it->second->is_valid_buffer() )
+        _removed_samples.push_back( sample_it->second );
     _samples.erase( sample_it );
 
     return true;

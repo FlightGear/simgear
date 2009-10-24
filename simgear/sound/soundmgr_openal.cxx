@@ -94,7 +94,6 @@ SGSoundMgr::~SGSoundMgr() {
 // initialize the sound manager
 void SGSoundMgr::init() {
 
-printf("Initializing OpenAL sound manager\n");
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
     ALCdevice *device = alcOpenDevice(_devname);
@@ -154,7 +153,6 @@ printf("Initializing OpenAL sound manager\n");
         else break;
     }
 
-printf("%i free sources found\n", _free_sources.size() );
     if (_free_sources.size() == 0) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
@@ -175,7 +173,6 @@ void SGSoundMgr::activate() {
 // stop the sound manager
 void SGSoundMgr::stop() {
     if (_working) {
-printf("Stopping Sound Manager\n");
         _working = false;
         _active = false;
 
@@ -198,7 +195,6 @@ printf("Stopping Sound Manager\n");
 
 void SGSoundMgr::suspend() {
     if (_working) {
-printf("SoundManager suspend\n");
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -211,7 +207,6 @@ printf("SoundManager suspend\n");
 
 void SGSoundMgr::resume() {
     if (_working) {
-printf("SoundManager resume\n");
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -224,7 +219,6 @@ printf("SoundManager resume\n");
 
 void SGSoundMgr::bind ()
 {
-printf("SoundManager bind\n");
     _free_sources.clear();
     _free_sources.reserve( MAX_SOURCES );
     _sources_in_use.clear();
@@ -234,7 +228,6 @@ printf("SoundManager bind\n");
 
 void SGSoundMgr::unbind ()
 {
-printf("SoundManager unbind\n");
     _sample_groups.clear();
 
     // delete free sources
@@ -259,9 +252,11 @@ void SGSoundMgr::update_late( double dt ) {
 
         if (_changed) {
             alListenerf( AL_GAIN, _volume );
+#if 0
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             alListenerfv( AL_POSITION, toVec3f(_position).data() );
             alListenerfv( AL_VELOCITY, toVec3f(_velocity).data() );
+#endif
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;
@@ -430,10 +425,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             void *data;
 
             load(sample_name, &data, &format, &size, &freq);
-            std::auto_ptr<unsigned char> ptr;
-            ptr.reset((unsigned char *)data);
-
-            sample->set_data( ptr );
+            sample->set_data( &data );
             sample->set_frequency( freq );
             sample->set_format( format );
             sample->set_size( size );

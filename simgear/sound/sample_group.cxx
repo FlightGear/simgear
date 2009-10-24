@@ -169,7 +169,6 @@ void SGSampleGroup::update( double dt ) {
                    SG_LOG( SG_GENERAL, SG_ALERT, "No such buffer!\n");
                 // sample->no_valid_source();
                 // sadly, no free source available at this time
-printf("No free source found.");
             }
 
         } else if ( sample->is_valid_source() && sample->has_changed() ) {
@@ -393,6 +392,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     if ( sample->is_valid_source() ) {
         unsigned int source = sample->get_source();
 
+#if 0
         if ( _tied_to_listener && _smgr->has_changed() ) {
             alSourcefv( source, AL_POSITION, _smgr->get_position().data() );
             alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
@@ -402,6 +402,11 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
             alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
             alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
         }
+#else
+        alSourcefv( source, AL_POSITION, SGVec3f::zeros().data() );
+        alSourcefv( source, AL_DIRECTION, SGVec3f::zeros().data() );
+        alSourcefv( source, AL_VELOCITY, SGVec3f::zeros().data() );
+#endif
         testForALError("position and orientation");
 
         alSourcef( source, AL_PITCH, sample->get_pitch() );
@@ -409,9 +414,11 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         testForALError("pitch and gain");
 
         if ( sample->has_static_data_changed() ) {
+#if 0
             alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
             alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
             alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
+#endif
             testForALError("audio cone");
 
             alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );

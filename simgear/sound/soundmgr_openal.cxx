@@ -377,6 +377,8 @@ unsigned int SGSoundMgr::request_source()
        _free_sources.pop_back();
        _sources_in_use.push_back(source);
     }
+    else
+       SG_LOG( SG_GENERAL, SG_INFO, "No more free sources available\n");
 
     return source;
 }
@@ -453,8 +455,9 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
             }
         }
     }
-    else
+    else {
         buffer = sample->get_buffer();
+}
 
     return buffer;
 }

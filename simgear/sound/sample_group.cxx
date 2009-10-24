@@ -202,7 +202,7 @@ void SGSampleGroup::update( double dt ) {
 }
 
 // add a sound effect, return true if successful
-bool SGSampleGroup::add( SGSoundSample *sound, const string& refname ) {
+bool SGSampleGroup::add( SGSharedPtr<SGSoundSample> sound, const string& refname ) {
 
     sample_map_iterator sample_it = _samples.find( refname );
     if ( sample_it != _samples.end() ) {

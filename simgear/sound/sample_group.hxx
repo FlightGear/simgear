@@ -56,8 +56,7 @@
 using std::map;
 using std::string;
 
-typedef SGSharedPtr<SGSoundSample> SGSoundSample_ptr;
-typedef map < string, SGSoundSample_ptr > sample_map;
+typedef map < string, SGSharedPtr<SGSoundSample> > sample_map;
 typedef sample_map::iterator sample_map_iterator;
 typedef sample_map::const_iterator const_sample_map_iterator;
 
@@ -106,7 +105,7 @@ public:
      * @param refname Name of this audio sample for reference purposes
      * @return return true if successful
      */
-    bool add( SGSoundSample *sound, const string& refname );
+    bool add( SGSharedPtr<SGSoundSample> sound, const string& refname );
 
     /**
      * Remove an audio sample from this group.
@@ -225,7 +224,7 @@ private:
     SGGeod _position;
 
     sample_map _samples;
-    std::vector<SGSoundSample_ptr> _removed_samples;
+    std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;
 
     bool testForALError(string s);
     bool testForError(void *p, string s);

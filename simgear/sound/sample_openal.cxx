@@ -84,6 +84,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod()),
+    _refname(file),
+    _data(NULL),
     _format(AL_FORMAT_MONO8),
     _size(0),
     _freq(0),
@@ -116,7 +118,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( std::auto_ptr<unsigned char>& data,
+SGSoundSample::SGSoundSample( const unsigned char** data,
                               int len, int freq, int format ) :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
@@ -126,7 +128,6 @@ SGSoundSample::SGSoundSample( std::auto_ptr<unsigned char>& data,
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod()),
     _refname(random_string()),
-    _data(data.release()),
     _format(format),
     _size(len),
     _freq(freq),
@@ -149,11 +150,49 @@ SGSoundSample::SGSoundSample( std::auto_ptr<unsigned char>& data,
     _is_file(false)
 {
     SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
+    _data = (unsigned char*)*data; *data = NULL;
+}
+
+// constructor
+SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
+    _absolute_pos(SGVec3d::zeros()),
+    _relative_pos(SGVec3d::zeros()),
+    _direction(SGVec3d::zeros()),
+    _velocity(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros()),
+    _orivec(SGVec3f::zeros()),
+    _base_pos(SGGeod()),
+    _refname(random_string()),
+    _format(format),
+    _size(len),
+    _freq(freq),
+    _valid_buffer(false),
+    _buffer(SGSoundMgr::NO_BUFFER),
+    _valid_source(false),
+    _source(SGSoundMgr::NO_SOURCE),
+    _inner_angle(360.0),
+    _outer_angle(360.0),
+    _outer_gain(0.0),
+    _pitch(1.0),
+    _volume(1.0),
+    _master_volume(1.0),
+    _reference_dist(500.0),
+    _max_dist(3000.0),
+    _loop(AL_FALSE),
+    _playing(false),
+    _changed(true),
+    _static_changed(true),
+    _is_file(false)
+{
+    SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
+    _data = (unsigned char*)*data; *data = NULL;
 }
 
 
 // destructor
 SGSoundSample::~SGSoundSample() {
+    if (_data) free( _data );
+    _data = NULL;
 }
 
 void SGSoundSample::set_orientation( const SGQuatd& ori ) {

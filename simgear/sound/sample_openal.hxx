@@ -35,7 +35,6 @@
 #endif
 
 #include <string>
-#include <memory>
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
@@ -70,12 +69,14 @@ public:
      * Constructor.
      * @param data Pointer to a memory buffer containing this audio sample data
        The application may free the data by calling free_data(), otherwise it
-       will be resident untill the class is destroyed.
+       will be resident untill the class is destroyed. This pointer will be
+       set to NULL after calling this function.
      * @param len Byte length of array
      * @param freq Frequency of the provided data (bytes per second)
      * @param format OpenAL format id of the data
      */
-    SGSoundSample( std::auto_ptr<unsigned char>& data, int len, int freq,
+    SGSoundSample( void** data, int len, int freq, int format=AL_FORMAT_MONO8 );
+    SGSoundSample( const unsigned char** data, int len, int freq,
                    int format = AL_FORMAT_MONO8 );
 
     /**
@@ -150,24 +151,28 @@ public:
     inline bool is_playing() { return _playing; }
 
     /**
-     * sSt the data associated with this audio sample
+     * Set the data associated with this audio sample
      * @param data Pointer to a memory block containg this audio sample data.
+       This pointer will be set to NULL after calling this function.
      */
-    inline void set_data( std::auto_ptr<unsigned char>& data ) {
-        _data = data;
+    inline void set_data( const unsigned char **data ) {
+        _data = (unsigned char*)*data; *data = NULL;
+    }
+    inline void set_data( void **data ) {
+        _data = (unsigned char*)*data; *data = NULL;
     }
 
     /**
      * Return the data associated with this audio sample.
      * @return A pointer to this sound data of this audio sample.
      */
-    inline void* get_data() const { return _data.get(); }
+    inline void* get_data() const { return _data; }
 
     /**
      * Free the data associated with this audio sample
      */
     void free_data() {
-        free( _data.release() );
+        if ( _data ) free( _data ); _data = NULL;
     }
 
     /**
@@ -435,7 +440,7 @@ private:
     SGGeod _base_pos;		// base position
 
     std::string _refname;	// name or file path
-    std::auto_ptr<unsigned char> _data;
+    unsigned char* _data;
 
     // configuration values
     int _format;

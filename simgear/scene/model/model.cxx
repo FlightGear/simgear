@@ -11,6 +11,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/SharedStateManager>
 
+#include <simgear/math/SGMath.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 
 #include <simgear/structure/exception.hxx>

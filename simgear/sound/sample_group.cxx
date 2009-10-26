@@ -359,29 +359,15 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     if ( sample->is_valid_source() ) {
         unsigned int source = sample->get_source();
 
-#if 1
         if ( _tied_to_listener && _smgr->has_changed() ) {
             alSourcefv( source, AL_POSITION, _smgr->get_position().data() );
             alSourcefv( source, AL_VELOCITY, _smgr->get_velocity().data() );
-#if 0
             alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
-#endif
         } else {
-float *pos = sample->get_position();
-if (isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2])) printf("NaN detected in source position\n");
             alSourcefv( source, AL_POSITION, sample->get_position() );
-float *vel = sample->get_velocity();
-if (isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2])) printf("NaN detected in source velocity\n");
             alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
-#if 0
             alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
-#endif
         }
-#else
-        alSourcefv( source, AL_POSITION, SGVec3f::zeros().data() );
-        alSourcefv( source, AL_DIRECTION, SGVec3f::zeros().data() );
-        alSourcefv( source, AL_VELOCITY, SGVec3f::zeros().data() );
-#endif
         testForALError("position and orientation");
 
         alSourcef( source, AL_PITCH, sample->get_pitch() );
@@ -389,11 +375,9 @@ if (isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2])) printf("NaN detected in sou
         testForALError("pitch and gain");
 
         if ( sample->has_static_data_changed() ) {
-#if 0
             alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
             alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
             alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
-#endif
             testForALError("audio cone");
 
             alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );

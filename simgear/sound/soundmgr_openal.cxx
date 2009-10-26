@@ -252,15 +252,8 @@ void SGSoundMgr::update_late( double dt ) {
 
         if (_changed) {
             alListenerf( AL_GAIN, _volume );
-#if 0
             alListenerfv( AL_ORIENTATION, _at_up_vec );
-#endif
-double *pos = _position.data();
-if (isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2])) printf("NaN detected in listener position\n");
             alListenerfv( AL_POSITION, toVec3f(_position).data() );
-
-double *vel = _velocity.data();
-if (isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2])) printf("NaN detected in listener velocity\n");
             alListenerfv( AL_VELOCITY, toVec3f(_velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");

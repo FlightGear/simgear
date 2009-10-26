@@ -101,9 +101,6 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
 
    } else {
       _mode = SGXmlSound::ONCE;
-
-      if ( strcmp(mode_str, "") )
-         SG_LOG(SG_GENERAL,SG_INFO, "Unknown sound mode for '" << _name << "', default to 'once'");
    }
 
    _property = root->getNode(node->getStringValue("property", ""), true);

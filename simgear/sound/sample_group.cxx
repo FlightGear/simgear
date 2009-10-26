@@ -26,40 +26,6 @@
 
 #include <simgear/compiler.h>
 
-#if defined (__APPLE__)
-#  ifdef __GNUC__
-#    if ( __GNUC__ >= 3 ) && ( __GNUC_MINOR__ >= 3 )
-//  #        include <math.h>
-inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
-#    else
-    // any C++ header file undefines isinf and isnan
-    // so this should be included before <iostream>
-    // the functions are STILL in libm (libSystem on mac os x)
-extern "C" int isnan (double);
-extern "C" int isinf (double);
-#    endif
-#  else
-//    inline int (isinf)(double r) { return isinf(r); }
-//    inline int (isnan)(double r) { return isnan(r); }
-#  endif
-#endif
-
-#if defined (__FreeBSD__)
-#  if __FreeBSD_version < 500000
-     extern "C" {
-       inline int isnan(double r) { return !(r <= 0 || r >= 0); }
-     }
-#  endif
-#endif
-
-#if defined (__CYGWIN__)
-#  include <ieeefp.h>
-#endif
-
-#if defined(__MINGW32__)
-#  define isnan(x) _isnan(x)
-#endif
-
 #include "soundmgr_openal.hxx"
 #include "sample_group.hxx"
 
@@ -195,6 +161,7 @@ void SGSampleGroup::update( double dt ) {
                 sample->no_valid_source();
                 _smgr->release_source( source );
                 _smgr->release_buffer( sample );
+                remove( sample->get_sample_name() );
             }
         }
         testForALError("update");
@@ -392,15 +359,23 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     if ( sample->is_valid_source() ) {
         unsigned int source = sample->get_source();
 
-#if 0
+#if 1
         if ( _tied_to_listener && _smgr->has_changed() ) {
             alSourcefv( source, AL_POSITION, _smgr->get_position().data() );
-            alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
             alSourcefv( source, AL_VELOCITY, _smgr->get_velocity().data() );
+#if 0
+            alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
+#endif
         } else {
+float *pos = sample->get_position();
+if (isnan(pos[0]) || isnan(pos[1]) || isnan(pos[2])) printf("NaN detected in source position\n");
             alSourcefv( source, AL_POSITION, sample->get_position() );
-            alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
+float *vel = sample->get_velocity();
+if (isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2])) printf("NaN detected in source velocity\n");
             alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
+#if 0
+            alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
+#endif
         }
 #else
         alSourcefv( source, AL_POSITION, SGVec3f::zeros().data() );

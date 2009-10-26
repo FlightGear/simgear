@@ -159,7 +159,7 @@ public:
      * @param pos OpenAL listener position
      */
     void set_position( const SGVec3d& pos ) {
-        _position = -pos;
+        _position = pos;
         _changed = true;
     }
 

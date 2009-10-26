@@ -41,8 +41,8 @@
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }
 static double _snd_abs(double v)   { return (v >= 0) ? v : -v; }
 static double _snd_sqrt(double v)  { return sqrt(fabs(v)); }
-static double _snd_log10(double v) { return log10(fabs(v)); }
-static double _snd_log(double v)   { return log(fabs(v)); }
+static double _snd_log10(double v) { return log10(fabs(v)+1e-9); }
+static double _snd_log(double v)   { return log(fabs(v)+1e-9); }
 // static double _snd_sqr(double v)   { return v*v; }
 // static double _snd_pow3(double v)  { return v*v*v; }
 
@@ -243,9 +243,9 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    float outer_gain = 0.0;
    prop = node->getChild("orientation");
    if ( prop != NULL ) {
-      dir = SGVec3d(-prop->getDoubleValue("x", 0.0),
-                    -prop->getDoubleValue("y", 0.0),
-                    -prop->getDoubleValue("z", 0.0));
+      dir = SGVec3d(prop->getDoubleValue("y", 0.0),
+                    prop->getDoubleValue("z", 0.0),
+                    prop->getDoubleValue("x", 0.0));
       inner = prop->getDoubleValue("inner-angle", 360.0);
       outer = prop->getDoubleValue("outer-angle", 360.0);
       outer_gain = prop->getDoubleValue("outer-gain", 0.0);

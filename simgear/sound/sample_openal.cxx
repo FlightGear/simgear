@@ -49,7 +49,7 @@ SGSoundSample::SGSoundSample() :
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
-    _base_pos(SGGeod()),
+    _base_pos(SGGeod::fromDeg(0,0)),
     _refname(random_string()),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
@@ -83,7 +83,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
-    _base_pos(SGGeod()),
+    _base_pos(SGGeod::fromDeg(0,0)),
     _refname(file),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
@@ -126,7 +126,7 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
-    _base_pos(SGGeod()),
+    _base_pos(SGGeod::fromDeg(0,0)),
     _refname(random_string()),
     _format(format),
     _size(len),
@@ -161,7 +161,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
-    _base_pos(SGGeod()),
+    _base_pos(SGGeod::fromDeg(0,0)),
     _refname(random_string()),
     _format(format),
     _size(len),
@@ -220,11 +220,26 @@ void SGSoundSample::set_position( const SGGeod& pos ) {
 }
 
 void SGSoundSample::update_absolute_position() {
-    SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
-    _orivec = -toVec3f(orient.rotate(-SGVec3d::e1()));
+    //  SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
+    //  _orivec = -toVec3f(orient.rotate(-SGVec3d::e1()));
 
-    orient = SGQuatd::fromRealImag(0, _relative_pos) * _orientation;
-    _absolute_pos = -SGVec3d::fromGeod(_base_pos); // -orient.rotate(SGVec3d::e1());
+    // The rotation rotating from the earth centerd frame to
+    // the horizontal local frame
+    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
+
+    // Compute the eyepoints orientation and position
+    // wrt the earth centered frame - that is global coorinates
+    SGQuatd ec2body = hlOr*_orientation;
+
+    // This is rotates the x-forward, y-right, z-down coordinate system where
+    // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
+    SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+
+    // The cartesian position of the basic view coordinate
+    SGVec3d position = SGVec3d::fromGeod(_base_pos);
+
+    _absolute_pos = position + (ec2body*q).backTransform(_relative_pos);
+    _orivec = toVec3f( (ec2body*q).backTransform(_direction) );
 }
 
 string SGSoundSample::random_string() {

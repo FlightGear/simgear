@@ -131,9 +131,35 @@
 //
 
 #ifdef __APPLE__
+#  ifdef __GNUC__
+#    if ( __GNUC__ >= 3 ) && ( __GNUC_MINOR__ >= 3 )
 inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
-#else
+#    else
+    // any C++ header file undefines isinf and isnan
+    // so this should be included before <iostream>
+    // the functions are STILL in libm (libSystem on mac os x)
+extern "C" int isnan (double);
+extern "C" int isinf (double);
+#    endif
+#  else
+inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
+#  endif
+#endif
 
+#if defined (__FreeBSD__)
+#  if __FreeBSD_version < 500000
+     extern "C" {
+       inline int isnan(double r) { return !(r <= 0 || r >= 0); }
+     }
+#  endif
+#endif
+
+#if defined (__CYGWIN__)
+#  include <ieeefp.h>		// isnan
+#endif
+
+#if defined(__MINGW32__)
+#  define isnan(x) _isnan(x)
 #endif
 
 

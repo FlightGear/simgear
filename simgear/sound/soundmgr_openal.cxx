@@ -45,6 +45,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/math/SGMath.hxx>
 
+extern bool isNaN(float *v);
 
 #define MAX_SOURCES	128
 
@@ -251,6 +252,9 @@ void SGSoundMgr::update_late( double dt ) {
         }
 
         if (_changed) {
+if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
+if (isNaN(toVec3f(_position).data())) printf("NaN in listener position\n");
+if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             alListenerfv( AL_POSITION, toVec3f(_position).data() );

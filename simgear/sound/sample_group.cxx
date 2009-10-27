@@ -29,6 +29,10 @@
 #include "soundmgr_openal.hxx"
 #include "sample_group.hxx"
 
+bool isNaN(float *v) {
+   return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));
+}
+
 SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _refname(""),
@@ -359,15 +363,26 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     if ( sample->is_valid_source() ) {
         unsigned int source = sample->get_source();
 
-        if ( _tied_to_listener && _smgr->has_changed() ) {
-            alSourcefv( source, AL_POSITION, _smgr->get_position().data() );
-            alSourcefv( source, AL_VELOCITY, _smgr->get_velocity().data() );
-            alSourcefv( source, AL_DIRECTION, _smgr->get_direction().data() );
+        float *position, *orientation, *velocity;
+        if ( _tied_to_listener ) {
+            position = _smgr->get_position().data();
+            orientation = _smgr->get_velocity().data();
+            velocity = _smgr->get_direction().data();
         } else {
-            alSourcefv( source, AL_POSITION, sample->get_position() );
-            alSourcefv( source, AL_VELOCITY, sample->get_velocity() );
-            alSourcefv( source, AL_DIRECTION, sample->get_orientation() );
+            sample->update_absolute_position();
+            position = sample->get_position();
+            orientation = sample->get_velocity();
+            velocity = sample->get_orientation();
         }
+        if (dist(_smgr->get_position(), sample->get_position_vec()) > 50000)
+            printf("source and listener distance greater than 50km!\n");
+        if (isNaN(position)) printf("NaN in source position\n");
+        if (isNaN(orientation)) printf("NaN in source orientation\n");
+        if (isNaN(velocity)) printf("NaN in source velocity\n");
+
+        alSourcefv( source, AL_POSITION, position );
+        alSourcefv( source, AL_VELOCITY, velocity );
+        alSourcefv( source, AL_DIRECTION, orientation );
         testForALError("position and orientation");
 
         alSourcef( source, AL_PITCH, sample->get_pitch() );

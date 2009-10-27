@@ -195,51 +195,24 @@ SGSoundSample::~SGSoundSample() {
     _data = NULL;
 }
 
-void SGSoundSample::set_orientation( const SGQuatd& ori ) {
-    _orientation = ori;
-    update_absolute_position();
-    _changed = true;
-}
-
-void SGSoundSample::set_direction( const SGVec3d& dir ) {
-    _direction = dir;
-    update_absolute_position();
-    _changed = true;
-}
-
-void SGSoundSample::set_relative_position( const SGVec3f& pos ) {
-    _relative_pos = toVec3d(pos);
-    update_absolute_position();
-    _changed = true;
-}
-
-void SGSoundSample::set_position( const SGGeod& pos ) {
-    _base_pos = pos;
-    update_absolute_position();
-    _changed = true;
-}
-
 void SGSoundSample::update_absolute_position() {
-    //  SGQuatd orient = SGQuatd::fromLonLat(_base_pos) * _orientation;
-    //  _orivec = -toVec3f(orient.rotate(-SGVec3d::e1()));
-
     // The rotation rotating from the earth centerd frame to
     // the horizontal local frame
     SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
 
-    // Compute the eyepoints orientation and position
+    // Compute the sounds orientation and position
     // wrt the earth centered frame - that is global coorinates
-    SGQuatd ec2body = hlOr*_orientation;
+    SGQuatd sc2body = _orientation*hlOr;
 
     // This is rotates the x-forward, y-right, z-down coordinate system where
     // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
     SGQuatd q(-0.5, -0.5, 0.5, 0.5);
 
-    // The cartesian position of the basic view coordinate
+    // The cartesian position of the base sound coordinate
     SGVec3d position = SGVec3d::fromGeod(_base_pos);
 
-    _absolute_pos = position + (ec2body*q).backTransform(_relative_pos);
-    _orivec = toVec3f( (ec2body*q).backTransform(_direction) );
+    _absolute_pos = position + (sc2body*q).backTransform(_relative_pos);
+    _orivec = toVec3f( (sc2body*q).backTransform(_direction) );
 }
 
 string SGSoundSample::random_string() {
@@ -252,3 +225,4 @@ string SGSoundSample::random_string() {
 
       return rstr;
 }
+

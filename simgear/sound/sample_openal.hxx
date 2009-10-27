@@ -303,13 +303,17 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param pos Relative position of this sound
      */
-    void set_relative_position( const SGVec3f& pos );
+    inline void set_relative_position( const SGVec3f& pos ) {
+        _relative_pos = toVec3d(pos); _changed = true;
+    }
 
     /**
      * Set the base position of this sound in Geodetic coordinates.
      * @param pos Geodetic position
      */
-    void set_position( const SGGeod& pos );
+    inline void set_position( const SGGeod& pos ) {
+        _base_pos = pos; _changed = true;
+    }
 
     /**
      * Get the absolute position of this sound.
@@ -317,19 +321,24 @@ public:
      * @return Absolute position
      */
     float *get_position() const { return toVec3f(_absolute_pos).data(); }
+    SGVec3f get_position_vec() const { return toVec3f(_absolute_pos); }
 
     /**
      * Set the orientation of this sound.
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori );
+    inline void set_orientation( const SGQuatd& ori ) {
+        _orientation = ori; _changed = true;
+    }
 
     /**
      * Set direction of this sound relative to the orientation.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @param dir Sound emission direction
      */
-    void set_direction( const SGVec3d& dir );
+    inline void set_direction( const SGVec3d& dir ) {
+        _direction = dir; _changed = true;
+    }
 
     /**
      * Define the audio cone parameters for directional audio.
@@ -426,6 +435,8 @@ public:
      */
     inline std::string get_sample_name() const { return _refname; }
 
+    void update_absolute_position();
+
 private:
 
     // Position of the source sound.
@@ -472,7 +483,6 @@ private:
     bool _static_changed;
     bool _is_file;
 
-    void update_absolute_position();
     string random_string();
 };
 

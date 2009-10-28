@@ -112,9 +112,6 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
         samplepath.append( file );
     }
     _refname = samplepath.str();
-
-     SG_LOG( SG_GENERAL, SG_DEBUG, "From file sounds sample = "
-            << samplepath.str() );
 }
 
 // constructor
@@ -191,8 +188,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
 
 // destructor
 SGSoundSample::~SGSoundSample() {
-    if (_data) free( _data );
-    _data = NULL;
+    if (_data) free(_data);
 }
 
 void SGSoundSample::update_absolute_position() {
@@ -218,7 +214,7 @@ void SGSoundSample::update_absolute_position() {
 string SGSoundSample::random_string() {
       static const char *r = "0123456789abcdefghijklmnopqrstuvwxyz"
                              "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      string rstr;
+      string rstr = "System generated name: ";
       for (int i=0; i<10; i++) {
           rstr.push_back( r[rand() % strlen(r)] );
       }

@@ -89,9 +89,17 @@ void SGSampleGroup::update( double dt ) {
     unsigned int size = _removed_samples.size();
     for (unsigned int i=0; i<size; ) {
         SGSoundSample *sample = _removed_samples[i];
-        ALint result;
+        ALint result = AL_STOPPED;
 
-        alGetSourcei( sample->get_source(), AL_SOURCE_STATE, &result );
+        if ( sample->is_valid_source() ) {
+            if ( sample->is_looping() ) {
+                sample->no_valid_source();
+                _smgr->release_source( sample->get_source() );
+            }
+            else
+                alGetSourcei( sample->get_source(), AL_SOURCE_STATE, &result );
+        }
+
         if ( result == AL_STOPPED ) {
             ALuint buffer = sample->get_buffer();
             alDeleteBuffers( 1, &buffer );
@@ -128,7 +136,7 @@ void SGSampleGroup::update( double dt ) {
                 sample->set_source( source );
                 update_sample_config( sample );
 
-                ALboolean looping = sample->get_looping() ? AL_TRUE : AL_FALSE;
+                ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
                 alSourcei( source, AL_LOOPING, looping );
                 alSourcef( source, AL_ROLLOFF_FACTOR, 1.0 );
                 alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
@@ -366,14 +374,15 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         float *position, *orientation, *velocity;
         if ( _tied_to_listener ) {
             position = _smgr->get_position().data();
-            orientation = _smgr->get_velocity().data();
-            velocity = _smgr->get_direction().data();
+            orientation = _smgr->get_direction().data();
+            velocity = _smgr->get_velocity().data();
         } else {
             sample->update_absolute_position();
             position = sample->get_position();
-            orientation = sample->get_velocity();
-            velocity = sample->get_orientation();
+            orientation = sample->get_orientation();
+            velocity = sample->get_velocity();
         }
+
         if (dist(_smgr->get_position(), sample->get_position_vec()) > 50000)
             printf("source and listener distance greater than 50km!\n");
         if (isNaN(position)) printf("NaN in source position\n");

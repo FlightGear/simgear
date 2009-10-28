@@ -123,7 +123,7 @@ public:
      * Check if this audio sample is set to be continuous looping.
      * @return Return true if this audio sample is set to looping.
      */
-    inline bool get_looping() { return _loop; }
+    inline bool is_looping() { return _loop; }
 
     /**
      * Schedule this audio sample to stop playing.

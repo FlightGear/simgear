@@ -66,6 +66,7 @@ SGSoundMgr::SGSoundMgr() :
     _position(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
+    _orient_offs(SGQuatd::zeros()),
     _devname(NULL)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
@@ -242,7 +243,7 @@ void SGSoundMgr::unbind ()
 }
 
 // run the audio scheduler
-void SGSoundMgr::update_late( double dt ) {
+void SGSoundMgr::update( double dt ) {
     if (_active) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
@@ -346,12 +347,13 @@ void SGSoundMgr::set_volume( float v )
  * is undefined. If the two vectors are linearly dependent,
  * behavior is undefined.
  */
-void SGSoundMgr::set_orientation( SGQuatd ori )
+void SGSoundMgr::set_orientation( const SGQuatd& ori, const SGQuatd& offs )
 {
     _orientation = ori;
+    _orient_offs = offs;
 
-    SGVec3d sgv_up = ori.rotate(SGVec3d::e2());
-    SGVec3d sgv_at = ori.rotate(SGVec3d::e3());
+    SGVec3d sgv_up = _orient_offs.rotate(SGVec3d::e2());
+    SGVec3d sgv_at = _orient_offs.rotate(SGVec3d::e3());
     _at_up_vec[0] = sgv_at[0];
     _at_up_vec[1] = sgv_at[1];
     _at_up_vec[2] = sgv_at[2];

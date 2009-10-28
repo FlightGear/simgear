@@ -98,8 +98,7 @@ public:
     void init();
     void bind();
     void unbind();
-    void update(double dt) {};
-    void update_late(double dt);
+    void update(double dt);
     
     void suspend();
     void resume();
@@ -175,9 +174,8 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param vel Velocity vector of the OpenAL listener
      */
-    void set_velocity( SGVec3d& dir ) {
-        _velocity = dir;
-        _changed = true;
+    void set_velocity( SGVec3d& vel ) {
+        _velocity = vel; _changed = true;
     }
 
     /**
@@ -191,13 +189,14 @@ public:
      * Set the orientation of the sound manager
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( SGQuatd ori );
+    void set_orientation( const SGQuatd& ori, const SGQuatd& offs );
 
     /**
      * Get the orientation of the sound manager
      * @return Quaternation containing the orientation information
      */
     inline const SGQuatd& get_orientation() { return _orientation; }
+    inline const SGQuatd& get_orientation_offset() { return _orient_offs; }
 
     /**
      * Get the direction vector of the sound manager
@@ -290,6 +289,7 @@ private:
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
     SGQuatd _orientation;
+    SGQuatd _orient_offs;
     ALfloat _at_up_vec[6];
 
     sample_group_map _sample_groups;

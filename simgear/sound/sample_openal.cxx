@@ -198,7 +198,7 @@ void SGSoundSample::update_absolute_position() {
 
     // Compute the sounds orientation and position
     // wrt the earth centered frame - that is global coorinates
-    SGQuatd sc2body = _orientation*hlOr;
+    SGQuatd sc2body = hlOr*_orientation;
 
     // This is rotates the x-forward, y-right, z-down coordinate system where
     // simulation runs into the OpenGL camera system with x-right, y-up, z-back.

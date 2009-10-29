@@ -207,8 +207,10 @@ void SGSoundSample::update_absolute_position() {
     // The cartesian position of the base sound coordinate
     SGVec3d position = SGVec3d::fromGeod(_base_pos);
 
-    _absolute_pos = position + (sc2body*q).backTransform(_relative_pos);
-    _orivec = toVec3f( (sc2body*q).backTransform(_direction) );
+    _absolute_pos = position; // + (sc2body*q).backTransform(_relative_pos);
+    if ( !(_direction[0] == 0 && _direction[1] == 0 && _direction[2] == 0) ) {
+        _orivec = toVec3f((sc2body*q).backTransform(toVec3d(_direction)));
+    }
 }
 
 string SGSoundSample::random_string() {

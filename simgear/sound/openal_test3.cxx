@@ -34,21 +34,22 @@ int main( int argc, char *argv[] ) {
     smgr->update(1.0);
     printf("playing sample\n");
     sleep(3);
-    sgr->stop("sound1");
+    sample1->stop();
     smgr->update(3.0);
     sleep(1);
 
-    printf("source at lat,lon = (10,-10), listener at (0.999,-0.999)\n");
+    printf("source at lat,lon = (10,-10), listener at (9.99,-9.99)\n");
     sample1->set_position( SGGeod::fromDeg(10,-10) );
     smgr->set_position( SGVec3d::fromGeod(SGGeod::fromDeg(9.99,-9.99)) );
     sample1->play_looped();
     smgr->update(1.0);
     printf("playing sample\n");
     sleep(3);
-    sgr->stop("sound1");
+    sample1->stop();
     smgr->update(3.0);
     sleep(1);
 
+    sgr->remove("sound1");
     smgr->unbind();
     sleep(2);
     delete smgr;

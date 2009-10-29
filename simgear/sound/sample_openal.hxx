@@ -320,8 +320,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @return Absolute position
      */
-    float *get_position() const { return toVec3f(_absolute_pos).data(); }
-    SGVec3f get_position_vec() const { return toVec3f(_absolute_pos); }
+    SGVec3d& get_position() { return _absolute_pos; }
 
     /**
      * Set the orientation of this sound.
@@ -336,7 +335,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @param dir Sound emission direction
      */
-    inline void set_direction( const SGVec3d& dir ) {
+    inline void set_direction( const SGVec3f& dir ) {
         _direction = dir; _changed = true;
     }
 
@@ -359,7 +358,8 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return Orientaton vector
      */
-    float *get_orientation() { return _orivec.data(); }
+    SGVec3f& get_orientation() { return _orivec; }
+    SGVec3f& get_direction() { return _direction; }
 
     /**
      * Get the inner angle of the audio cone.
@@ -384,7 +384,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @param Velocity vector
      */
-    inline void set_velocity( const SGVec3d& vel ) {
+    inline void set_velocity( const SGVec3f& vel ) {
         _velocity = vel; _changed = true;
     }
 
@@ -393,7 +393,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return Velocity vector
      */
-    float *get_velocity() { return toVec3f(_velocity).data(); }
+    SGVec3f& get_velocity() { return _velocity; }
 
 
     /**
@@ -442,8 +442,8 @@ private:
     // Position of the source sound.
     SGVec3d _absolute_pos;      // absolute position
     SGVec3d _relative_pos;      // position relative to the base position
-    SGVec3d _direction;         // orientation offset
-    SGVec3d _velocity;          // Velocity of the source sound.
+    SGVec3f _direction;         // orientation offset
+    SGVec3f _velocity;          // Velocity of the source sound.
 
     // The position and orientation of this sound
     SGQuatd _orientation;       // base orientation

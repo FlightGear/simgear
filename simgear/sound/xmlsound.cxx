@@ -237,18 +237,18 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
    // Orientation
    //
-   SGVec3d dir = SGVec3d::zeros();
+   SGVec3f dir = SGVec3f::zeros();
    float inner = 360.0;
    float outer = 360.0;
    float outer_gain = 0.0;
    prop = node->getChild("orientation");
    if ( prop != NULL ) {
-      dir = SGVec3d(prop->getDoubleValue("y", 0.0),
-                    prop->getDoubleValue("z", 0.0),
-                    prop->getDoubleValue("x", 0.0));
-      inner = prop->getDoubleValue("inner-angle", 360.0);
-      outer = prop->getDoubleValue("outer-angle", 360.0);
-      outer_gain = prop->getDoubleValue("outer-gain", 0.0);
+      dir = SGVec3f(prop->getFloatValue("y", 0.0),
+                    prop->getFloatValue("z", 0.0),
+                    prop->getFloatValue("x", 0.0));
+      inner = prop->getFloatValue("inner-angle", 360.0);
+      outer = prop->getFloatValue("outer-angle", 360.0);
+      outer_gain = prop->getFloatValue("outer-gain", 0.0);
    }
 
    //

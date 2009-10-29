@@ -167,14 +167,14 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return OpenAL listener position
      */
-    SGVec3f get_position() { return toVec3f(_position); }
+    SGVec3d& get_position() { return _position; }
 
     /**
      * Set the velocity vector of the sound manager
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param vel Velocity vector of the OpenAL listener
      */
-    void set_velocity( SGVec3d& vel ) {
+    void set_velocity( SGVec3f& vel ) {
         _velocity = vel; _changed = true;
     }
 
@@ -183,7 +183,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @return Velocity vector of the OpenAL listener
      */
-    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
+    inline SGVec3f& get_velocity() { return _velocity; }
 
     /**
      * Set the orientation of the sound manager
@@ -284,7 +284,7 @@ private:
     SGVec3d _position;
 
     // Velocity of the listener.
-    SGVec3d _velocity;
+    SGVec3f _velocity;
 
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector

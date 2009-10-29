@@ -156,7 +156,7 @@ void SGSampleGroup::update( double dt ) {
                 sample->stop();
                 sample->no_valid_source();
                 _smgr->release_source( sample->get_source() );
-            } else  {
+            } else if ( _smgr->has_changed() ) {
                 update_sample_config( sample );
             }
 
@@ -308,7 +308,7 @@ bool SGSampleGroup::stop( const string& refname ) {
 }
 
 // set source velocity of all managed sounds
-void SGSampleGroup::set_velocity( const SGVec3d &vel ) {
+void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
     if ( isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2]) )
     {
         SG_LOG( SG_GENERAL, SG_ALERT, "NAN's found in SampleGroup velocity");
@@ -368,47 +368,46 @@ void SGSampleGroup::set_volume( float vol )
 }
 
 void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
-    if ( sample->is_valid_source() ) {
-        unsigned int source = sample->get_source();
+    SGVec3f orientation, velocity;
+    SGVec3d position;
 
-        float *position, *orientation, *velocity;
-        if ( _tied_to_listener ) {
-            position = _smgr->get_position().data();
-            orientation = _smgr->get_direction().data();
-            velocity = _smgr->get_velocity().data();
-        } else {
-            sample->update_absolute_position();
-            position = sample->get_position();
-            orientation = sample->get_orientation();
-            velocity = sample->get_velocity();
-        }
+    if ( _tied_to_listener ) {
+        orientation = _smgr->get_direction();
+        position = _smgr->get_position();
+        velocity = _smgr->get_velocity();
+    } else {
+        sample->update_absolute_position();
+        orientation = sample->get_orientation();
+        position = sample->get_position();
+        velocity = sample->get_velocity();
+    }
 
-        if (dist(_smgr->get_position(), sample->get_position_vec()) > 50000)
-            printf("source and listener distance greater than 50km!\n");
-        if (isNaN(position)) printf("NaN in source position\n");
-        if (isNaN(orientation)) printf("NaN in source orientation\n");
-        if (isNaN(velocity)) printf("NaN in source velocity\n");
+    if (dist(position, _smgr->get_position()) > 10000)
+        printf("source and listener distance greater than 20km!\n");
+    if (isNaN(position)) printf("NaN in source position\n");
+    if (isNaN(orientation)) printf("NaN in source orientation\n");
+    if (isNaN(velocity)) printf("NaN in source velocity\n");
 
-        alSourcefv( source, AL_POSITION, position );
-        alSourcefv( source, AL_VELOCITY, velocity );
-        alSourcefv( source, AL_DIRECTION, orientation );
-        testForALError("position and orientation");
+    unsigned int source = sample->get_source();
+    alSourcefv( source, AL_POSITION, toVec3f(position).data() );
+    alSourcefv( source, AL_VELOCITY, velocity.data() );
+    alSourcefv( source, AL_DIRECTION, orientation.data() );
+    testForALError("position and orientation");
 
-        alSourcef( source, AL_PITCH, sample->get_pitch() );
-        alSourcef( source, AL_GAIN, sample->get_volume() );
-        testForALError("pitch and gain");
+    alSourcef( source, AL_PITCH, sample->get_pitch() );
+    alSourcef( source, AL_GAIN, sample->get_volume() );
+    testForALError("pitch and gain");
 
-        if ( sample->has_static_data_changed() ) {
-            alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
-            alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
-            alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
-            testForALError("audio cone");
+    if ( sample->has_static_data_changed() ) {
+        alSourcef( source, AL_CONE_INNER_ANGLE, sample->get_innerangle() );
+        alSourcef( source, AL_CONE_OUTER_ANGLE, sample->get_outerangle() );
+        alSourcef( source, AL_CONE_OUTER_GAIN, sample->get_outergain() );
+        testForALError("audio cone");
 
-            alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );
-            alSourcef( source, AL_REFERENCE_DISTANCE,
-                               sample->get_reference_dist() );
-            testForALError("distance rolloff");
-        }
+        alSourcef( source, AL_MAX_DISTANCE, sample->get_max_dist() );
+        alSourcef( source, AL_REFERENCE_DISTANCE,
+                           sample->get_reference_dist() );
+        testForALError("distance rolloff");
     }
 }
 

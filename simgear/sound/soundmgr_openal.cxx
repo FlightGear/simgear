@@ -255,11 +255,11 @@ void SGSoundMgr::update( double dt ) {
         if (_changed) {
 if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
 if (isNaN(toVec3f(_position).data())) printf("NaN in listener position\n");
-if (isNaN(toVec3f(_velocity).data())) printf("NaN in listener velocity\n");
+if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             alListenerfv( AL_POSITION, toVec3f(_position).data() );
-            alListenerfv( AL_VELOCITY, toVec3f(_velocity).data() );
+            alListenerfv( AL_VELOCITY, _velocity.data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;
@@ -352,8 +352,8 @@ void SGSoundMgr::set_orientation( const SGQuatd& ori, const SGQuatd& offs )
     _orientation = ori;
     _orient_offs = offs;
 
-    SGVec3d sgv_up = _orient_offs.rotate(SGVec3d::e2());
-    SGVec3d sgv_at = _orient_offs.rotate(SGVec3d::e3());
+    SGVec3d sgv_up = offs.rotate(SGVec3d::e2());
+    SGVec3d sgv_at = offs.rotate(SGVec3d::e3());
     _at_up_vec[0] = sgv_at[0];
     _at_up_vec[1] = sgv_at[1];
     _at_up_vec[2] = sgv_at[2];

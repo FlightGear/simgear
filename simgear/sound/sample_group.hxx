@@ -189,7 +189,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param vel Velocity vector 
      */
-    void set_velocity( const SGVec3d& vel );
+    void set_velocity( const SGVec3f& vel );
 
     /**
      * Set the position of this sample group.
@@ -219,7 +219,7 @@ private:
     float _volume;
     bool _tied_to_listener;
 
-    SGVec3d _velocity;
+    SGVec3f _velocity;
     SGQuatd _orientation;
     SGGeod _position;
 

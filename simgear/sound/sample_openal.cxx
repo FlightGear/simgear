@@ -198,7 +198,7 @@ void SGSoundSample::update_absolute_position() {
 
     // Compute the sounds orientation and position
     // wrt the earth centered frame - that is global coorinates
-    SGQuatd sc2body = _orientation*hlOr;
+    SGQuatd sc2body = hlOr*_orientation;
 
     // This is rotates the x-forward, y-right, z-down coordinate system where
     // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
@@ -207,8 +207,10 @@ void SGSoundSample::update_absolute_position() {
     // The cartesian position of the base sound coordinate
     SGVec3d position = SGVec3d::fromGeod(_base_pos);
 
-    _absolute_pos = position + (sc2body*q).backTransform(_relative_pos);
-    _orivec = toVec3f( (sc2body*q).backTransform(_direction) );
+    _absolute_pos = position; // + (sc2body*q).backTransform(_relative_pos);
+    if ( !(_direction[0] == 0 && _direction[1] == 0 && _direction[2] == 0) ) {
+        _orivec = toVec3f((sc2body*q).backTransform(toVec3d(_direction)));
+    }
 }
 
 string SGSoundSample::random_string() {

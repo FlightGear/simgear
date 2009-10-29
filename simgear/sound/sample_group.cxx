@@ -384,9 +384,9 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
 
     if (dist(position, _smgr->get_position()) > 10000)
         printf("source and listener distance greater than 20km!\n");
-    if (isNaN(position)) printf("NaN in source position\n");
-    if (isNaN(orientation)) printf("NaN in source orientation\n");
-    if (isNaN(velocity)) printf("NaN in source velocity\n");
+    if (isNaN(toVec3f(position).data())) printf("NaN in source position\n");
+    if (isNaN(orientation.data())) printf("NaN in source orientation\n");
+    if (isNaN(velocity.data())) printf("NaN in source velocity\n");
 
     unsigned int source = sample->get_source();
     alSourcefv( source, AL_POSITION, toVec3f(position).data() );

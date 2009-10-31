@@ -327,13 +327,13 @@ void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
 }
 
 // set the source position of all managed sounds
-void SGSampleGroup::set_position( const SGGeod& pos ) {
+void SGSampleGroup::set_position_geod( const SGGeod& pos ) {
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
-        sample->set_position( pos );
+        sample->set_position_geod( pos );
     }
     _position = pos;
 }
@@ -376,13 +376,13 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         position = _smgr->get_position();
         velocity = _smgr->get_velocity();
     } else {
-        sample->update_absolute_position();
+        sample->update_pos_and_orientation();
         orientation = sample->get_orientation();
         position = sample->get_position();
         velocity = sample->get_velocity();
     }
 
-    if (dist(position, _smgr->get_position()) > 10000)
+    if (length(position -_smgr->get_position()) > 20000)
         printf("source and listener distance greater than 20km!\n");
     if (isNaN(toVec3f(position).data())) printf("NaN in source position\n");
     if (isNaN(orientation.data())) printf("NaN in source orientation\n");

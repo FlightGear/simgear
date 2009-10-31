@@ -311,7 +311,7 @@ public:
      * Set the base position of this sound in Geodetic coordinates.
      * @param pos Geodetic position
      */
-    inline void set_position( const SGGeod& pos ) {
+    inline void set_position_geod( const SGGeod& pos ) {
         _base_pos = pos; _changed = true;
     }
 
@@ -381,7 +381,7 @@ public:
 
     /**
      * Set the velocity vector (in meters per second) of this sound.
-     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * This is in the local frame coordinate system; x=north, y=east, z=down
      * @param Velocity vector
      */
     inline void set_velocity( const SGVec3f& vel ) {
@@ -435,7 +435,7 @@ public:
      */
     inline std::string get_sample_name() const { return _refname; }
 
-    void update_absolute_position();
+    void update_pos_and_orientation();
 
 private:
 

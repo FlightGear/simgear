@@ -132,14 +132,14 @@
 
 #ifdef __APPLE__
 #  ifdef __GNUC__
-#    if ( __GNUC__ >= 3 ) && ( __GNUC_MINOR__ >= 3 )
+#    if ( __GNUC__ > 3 ) || ( __GNUC__ == 3 && __GNUC_MINOR__ >= 3 )
 inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #    else
     // any C++ header file undefines isinf and isnan
     // so this should be included before <iostream>
     // the functions are STILL in libm (libSystem on mac os x)
-extern "C" int isnan (double);
-extern "C" int isinf (double);
+extern "C" int (isnan)(double);
+extern "C" int (isinf)(double);
 #    endif
 #  else
 inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }

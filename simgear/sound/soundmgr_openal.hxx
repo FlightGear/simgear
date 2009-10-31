@@ -153,13 +153,15 @@ public:
     SGSampleGroup *find( const string& refname, bool create = false );
 
     /**
-     * Set the position of the sound manager.
-     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * Set the Geodetic position of the sound manager.
      * @param pos OpenAL listener position
      */
-    void set_position( const SGVec3d& pos ) {
-        _position = pos;
-        _changed = true;
+    void set_position_geod( const SGGeod& pos ) {
+        _position_geod = pos; _changed = true;
+    }
+
+    void set_position_offset( const SGVec3d& pos ) {
+        _position_offs = pos; _changed = true;
     }
 
     /**
@@ -167,14 +169,14 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return OpenAL listener position
      */
-    SGVec3d& get_position() { return _position; }
+    SGVec3d& get_position() { return _absolute_pos; }
 
     /**
-     * Set the velocity vector of the sound manager
-     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
-     * @param vel Velocity vector of the OpenAL listener
+     * Set the velocity vector (in meters per second) of the sound manager
+     * This is the horizontal local frame; x=north, y=east, z=down
+     * @param Velocity vector
      */
-    void set_velocity( SGVec3f& vel ) {
+    void set_velocity( const SGVec3f& vel ) {
         _velocity = vel; _changed = true;
     }
 
@@ -189,7 +191,9 @@ public:
      * Set the orientation of the sound manager
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori, const SGQuatd& offs );
+    void set_orientation( const SGQuatd& ori, const SGQuatd& offs ) {
+        _orientation = ori; _orient_offs = offs; _changed = true;
+    }
 
     /**
      * Get the orientation of the sound manager
@@ -281,7 +285,9 @@ private:
     ALCcontext *_context;
 
     // Position of the listener.
-    SGVec3d _position;
+    SGGeod _position_geod;
+    SGVec3d _position_offs;
+    SGVec3d _absolute_pos;
 
     // Velocity of the listener.
     SGVec3f _velocity;
@@ -305,6 +311,7 @@ private:
     bool testForALUTError(string s);
     bool testForError(void *p, string s);
 
+    void update_pos_and_orientation();
     void update_sample_config( SGSampleGroup *sound );
 };
 

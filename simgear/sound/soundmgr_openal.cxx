@@ -63,7 +63,9 @@ SGSoundMgr::SGSoundMgr() :
     _volume(0.0),
     _device(NULL),
     _context(NULL),
-    _position(SGVec3d::zeros()),
+    _position_geod(SGGeod::fromDeg(0,0)),
+    _position_offs(SGVec3d::zeros()),
+    _absolute_pos(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _orient_offs(SGQuatd::zeros()),
@@ -254,11 +256,12 @@ void SGSoundMgr::update( double dt ) {
 
         if (_changed) {
 if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
-if (isNaN(toVec3f(_position).data())) printf("NaN in listener position\n");
+if (isNaN(toVec3f(_absolute_pos).data())) printf("NaN in listener position\n");
 if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
+            update_pos_and_orientation();
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
-            alListenerfv( AL_POSITION, toVec3f(_position).data() );
+            alListenerfv( AL_POSITION, toVec3f(_absolute_pos).data() );
             alListenerfv( AL_VELOCITY, _velocity.data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
@@ -333,33 +336,6 @@ void SGSoundMgr::set_volume( float v )
     _volume = v;
     if (_volume > 1.0) _volume = 1.0;
     if (_volume < 0.0) _volume = 0.0;
-    _changed = true;
-}
-
-/**
- * set the orientation of the listener (in opengl coordinates)
- *
- * Description: ORIENTATION is a pair of 3-tuples representing the
- * 'at' direction vector and 'up' direction of the Object in
- * Cartesian space. AL expects two vectors that are orthogonal to
- * each other. These vectors are not expected to be normalized. If
- * one or more vectors have zero length, implementation behavior
- * is undefined. If the two vectors are linearly dependent,
- * behavior is undefined.
- */
-void SGSoundMgr::set_orientation( const SGQuatd& ori, const SGQuatd& offs )
-{
-    _orientation = ori;
-    _orient_offs = offs;
-
-    SGVec3d sgv_up = offs.rotate(SGVec3d::e2());
-    SGVec3d sgv_at = offs.rotate(SGVec3d::e3());
-    _at_up_vec[0] = sgv_at[0];
-    _at_up_vec[1] = sgv_at[1];
-    _at_up_vec[2] = sgv_at[2];
-    _at_up_vec[3] = sgv_up[0];
-    _at_up_vec[4] = sgv_up[1];
-    _at_up_vec[5] = sgv_up[2];
     _changed = true;
 }
 
@@ -483,6 +459,45 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
         _buffers.erase( buffer_it );
         testForALError("release buffer");
     }
+}
+
+void SGSoundMgr::update_pos_and_orientation() {
+    // The rotation rotating from the earth centerd frame to
+    // the horizontal local frame
+    SGQuatd hlOr = SGQuatd::fromLonLat( _position_geod );
+
+    // Compute the listeners orientation and position
+    // wrt the earth centered frame - that is global coorinates
+    SGQuatd lc2body = hlOr*_orientation;
+
+    // cartesian position of the listener
+    SGVec3d position = SGVec3d::fromGeod( _position_geod );
+
+    // This is rotates the x-forward, y-right, z-down coordinate system where
+    // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
+    SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+
+    _absolute_pos = position + (lc2body*q).backTransform( _position_offs );
+
+    /**
+     * Description: ORIENTATION is a pair of 3-tuples representing the
+     * 'at' direction vector and 'up' direction of the Object in
+     * Cartesian space. AL expects two vectors that are orthogonal to
+     * each other. These vectors are not expected to be normalized. If
+     * one or more vectors have zero length, implementation behavior
+     * is undefined. If the two vectors are linearly dependent,
+     * behavior is undefined.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     */
+    SGQuatd lViewOrientation = lc2body*_orient_offs*q;
+    SGVec3d sgv_up = lViewOrientation.rotate(SGVec3d::e2());
+    SGVec3d sgv_at = lViewOrientation.rotate(SGVec3d::e3());
+    _at_up_vec[0] = sgv_at[0];
+    _at_up_vec[1] = sgv_at[1];
+    _at_up_vec[2] = sgv_at[2];
+    _at_up_vec[3] = sgv_up[0];
+    _at_up_vec[4] = sgv_up[1];
+    _at_up_vec[5] = sgv_up[2];
 }
 
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,

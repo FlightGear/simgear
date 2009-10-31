@@ -186,7 +186,7 @@ public:
 
     /**
      * Set the velocity vector of this sample group.
-     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * This is in the local frame coordinate system; x=north, y=east, z=down
      * @param vel Velocity vector 
      */
     void set_velocity( const SGVec3f& vel );
@@ -196,7 +196,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param pos Base position
      */
-    void set_position( const SGGeod& pos );
+    void set_position_geod( const SGGeod& pos );
 
     /**
      * Set the orientation of this sample group.

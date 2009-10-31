@@ -191,7 +191,7 @@ SGSoundSample::~SGSoundSample() {
     if (_data) free(_data);
 }
 
-void SGSoundSample::update_absolute_position() {
+void SGSoundSample::update_pos_and_orientation() {
     // The rotation rotating from the earth centerd frame to
     // the horizontal local frame
     SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
@@ -208,12 +208,10 @@ void SGSoundSample::update_absolute_position() {
     SGVec3d position = SGVec3d::fromGeod(_base_pos);
 
     _absolute_pos = position;
-    if ( !(_relative_pos[0] == 0 && _relative_pos[1] == 0 &&
-           _relative_pos[2] == 0) )
-    {
+    if ( _relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
         _absolute_pos += (sc2body*q).backTransform(_relative_pos);
     }
-    if ( !(_direction[0] == 0 && _direction[1] == 0 && _direction[2] == 0) ) {
+    if ( _direction[0] || _direction[1] || _direction[2] ) {
         _orivec = toVec3f((sc2body*q).backTransform(toVec3d(_direction)));
     }
 }

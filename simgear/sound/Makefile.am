@@ -22,7 +22,7 @@ check_PROGRAMS = openal_test1 openal_test2 openal_test3
 
 openal_test1_SOURCES = openal_test1.cxx
 openal_test2_SOURCES = openal_test2.cxx
-openal_test3SOURCES = openal_test3.cxx
+openal_test3_SOURCES = openal_test3.cxx
 
 openal_test1_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \

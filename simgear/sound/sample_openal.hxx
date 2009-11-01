@@ -336,7 +336,7 @@ public:
      * @param dir Sound emission direction
      */
     inline void set_direction( const SGVec3f& dir ) {
-        _direction = dir; _changed = true;
+        _direction = toVec3d(dir); _changed = true;
     }
 
     /**
@@ -359,7 +359,6 @@ public:
      * @return Orientaton vector
      */
     SGVec3f& get_orientation() { return _orivec; }
-    SGVec3f& get_direction() { return _direction; }
 
     /**
      * Get the inner angle of the audio cone.
@@ -442,7 +441,7 @@ private:
     // Position of the source sound.
     SGVec3d _absolute_pos;      // absolute position
     SGVec3d _relative_pos;      // position relative to the base position
-    SGVec3f _direction;         // orientation offset
+    SGVec3d _direction;         // orientation offset
     SGVec3f _velocity;          // Velocity of the source sound.
 
     // The position and orientation of this sound

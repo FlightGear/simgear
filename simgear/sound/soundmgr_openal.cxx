@@ -477,7 +477,12 @@ void SGSoundMgr::update_pos_and_orientation() {
     // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
     SGQuatd q(-0.5, -0.5, 0.5, 0.5);
 
-    _absolute_pos = position + (lc2body*q).backTransform( _position_offs );
+    _absolute_pos = position;
+#if 0
+     if (_position_offs[0] || _position_offs[1] || _position_offs[2] ) {
+         _absolute_pos += (lc2body*q).backTransform( _position_offs );
+     }
+#endif
 
     /**
      * Description: ORIENTATION is a pair of 3-tuples representing the
@@ -489,8 +494,8 @@ void SGSoundMgr::update_pos_and_orientation() {
      * behavior is undefined.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      */
-    SGQuatd lViewOrientation = lc2body*_orient_offs*q;
-    SGVec3d sgv_up = lViewOrientation.rotate(SGVec3d::e2());
+    SGQuatd lViewOrientation = hlOr*_orient_offs*q;
+    SGVec3d sgv_up = -lViewOrientation.rotate(SGVec3d::e2());
     SGVec3d sgv_at = lViewOrientation.rotate(SGVec3d::e3());
     _at_up_vec[0] = sgv_at[0];
     _at_up_vec[1] = sgv_at[1];

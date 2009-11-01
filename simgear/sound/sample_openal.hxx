@@ -230,7 +230,10 @@ public:
      * Should be between 0.0 and 2.0 for maximum compatibility.
      * @param p Pitch
      */
-    inline void set_pitch( float p ) { _pitch = p; _changed = true; }
+    inline void set_pitch( float p ) {
+        if (p > 2.0) p = 2.0; else if (p < 0.01) p = 0.01;
+        _pitch = p; _changed = true;
+    }
 
     /**
      * Get the current pitch value of this audio sample.
@@ -245,6 +248,7 @@ public:
      * @param v Volume
      */
     inline void set_master_volume( float v ) {
+        if (v > 1.0) v = 1.0; else if (v < 0.0) v = 0.0;
         _master_volume = v; _changed = true;
     }
 
@@ -254,7 +258,10 @@ public:
      * volume.
      * @param v Volume
      */
-    inline void set_volume( float v ) { _volume = v; _changed = true; }
+    inline void set_volume( float v ) {
+        if (v > 1.0) v = 1.0; else if (v < 0.0) v = 0.0;
+        _volume = v; _changed = true;
+    }
 
     /**
      * Get the final volume value of this audio sample.

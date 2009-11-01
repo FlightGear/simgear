@@ -46,7 +46,7 @@ SGSoundSample::SGSoundSample() :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
-    _velocity(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod::fromDeg(0,0)),
@@ -80,7 +80,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
-    _velocity(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod::fromDeg(0,0)),
@@ -120,7 +120,7 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
-    _velocity(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod::fromDeg(0,0)),
@@ -155,7 +155,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
-    _velocity(SGVec3d::zeros()),
+    _velocity(SGVec3f::zeros()),
     _orientation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGGeod::fromDeg(0,0)),
@@ -204,15 +204,17 @@ void SGSoundSample::update_pos_and_orientation() {
     // simulation runs into the OpenGL camera system with x-right, y-up, z-back.
     SGQuatd q(-0.5, -0.5, 0.5, 0.5);
 
-    // The cartesian position of the base sound coordinate
+    // The cartesian position of the sounds base location
     SGVec3d position = SGVec3d::fromGeod(_base_pos);
 
     _absolute_pos = position;
+#if 0
     if ( _relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
         _absolute_pos += (sc2body*q).backTransform(_relative_pos);
     }
+#endif
     if ( _direction[0] || _direction[1] || _direction[2] ) {
-        _orivec = toVec3f((sc2body*q).backTransform(toVec3d(_direction)));
+        _orivec = toVec3f( (sc2body*q).backTransform(_direction) );
     }
 }
 

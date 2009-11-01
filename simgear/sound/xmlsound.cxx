@@ -229,9 +229,9 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    SGVec3f offset_pos = SGVec3f::zeros();
    SGPropertyNode_ptr prop = node->getChild("position");
    if ( prop != NULL ) {
-       offset_pos[0] = prop->getDoubleValue("x", 0.0);
-       offset_pos[1] = -prop->getDoubleValue("y", 0.0);
-       offset_pos[2] = prop->getDoubleValue("z", 0.0);
+       offset_pos[0] = prop->getDoubleValue("y", 0.0);
+       offset_pos[1] = prop->getDoubleValue("z", 0.0);
+       offset_pos[2] = prop->getDoubleValue("x", 0.0);
    }
 
    //

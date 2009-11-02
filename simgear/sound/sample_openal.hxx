@@ -323,14 +323,6 @@ public:
     }
 
     /**
-     * Set the base position offset in Cartesian coordinates
-     * @param offs offset in Cartesian coordinates
-     */
-    inline void set_position_offset( const SGVec3d& offs ) {
-       _base_offs = offs; _changed = true;
-    }
-
-    /**
      * Get the absolute position of this sound.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @return Absolute position
@@ -472,7 +464,6 @@ private:
     SGQuatd _rotation;		// rotation vector for relative offsets
     SGVec3f _orivec;		// orientation vector for OpenAL
     SGVec3d _base_pos;		// base position
-    SGVec3d _base_offs;		// base offset position
 
     std::string _refname;	// name or file path
     unsigned char* _data;

@@ -226,9 +226,6 @@ private:
 
     SGVec3f _velocity;
     SGQuatd _orientation;
-    SGVec3d _position;
-    SGVec3d _pos_offs;
-
     SGGeod _position_geod;
 
     sample_map _samples;

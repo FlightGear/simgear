@@ -196,13 +196,17 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @param pos Base position
      */
-    void set_position_geod( const SGGeod& pos );
+    void set_position_geod( const SGGeod& pos ) {
+        _position_geod = pos; _changed = true;
+    }
 
     /**
      * Set the orientation of this sample group.
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori );
+    void set_orientation( const SGQuatd& ori ) {
+        _orientation = ori; _changed = true;
+    }
 
     /**
      * Tie this sample group to the listener position, orientation and velocity
@@ -215,13 +219,17 @@ protected:
     bool _active;
 
 private:
+    bool _changed;
     bool _pause;
     float _volume;
     bool _tied_to_listener;
 
     SGVec3f _velocity;
     SGQuatd _orientation;
-    SGGeod _position;
+    SGVec3d _position;
+    SGVec3d _pos_offs;
+
+    SGGeod _position_geod;
 
     sample_map _samples;
     std::vector< SGSharedPtr<SGSoundSample> > _removed_samples;
@@ -229,6 +237,7 @@ private:
     bool testForALError(string s);
     bool testForError(void *p, string s);
 
+    void update_pos_and_orientation();
     void update_sample_config( SGSoundSample *sound );
 };
 

@@ -37,11 +37,14 @@ SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _refname(""),
     _active(false),
+    _changed(false),
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _position(SGGeod())
+    _position(SGVec3d::zeros()),
+    _pos_offs(SGVec3d::zeros()),
+    _position_geod(SGGeod())
 {
     _samples.clear();
 }
@@ -50,11 +53,14 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _smgr(smgr),
     _refname(refname),
     _active(false), 
+    _changed(false),
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _position(SGGeod())
+    _position(SGVec3d::zeros()),
+    _pos_offs(SGVec3d::zeros()),
+    _position_geod(SGGeod())
 {
     _smgr->add(this, refname);
     _samples.clear();
@@ -109,6 +115,12 @@ void SGSampleGroup::update( double dt ) {
             continue;
         }
         i++;
+    }
+
+    // Update the position and orientation information for all samples.
+    if ( _changed ) {
+        update_pos_and_orientation();
+        _changed = false;
     }
 
     sample_map_iterator sample_current = _samples.begin();
@@ -327,29 +339,42 @@ void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
 }
 
 // set the source position of all managed sounds
-void SGSampleGroup::set_position_geod( const SGGeod& pos ) {
+void SGSampleGroup::update_pos_and_orientation() {
+
+    SGVec3d position = SGVec3d::fromGeod( _position_geod );
+    SGVec3d pos_offs = SGVec3d::fromGeod( _smgr->get_position_geod() );
+
+    if (_position != position || _pos_offs != pos_offs) {
+        _position = position;
+        _pos_offs = pos_offs;
+
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
+            sample->set_position( _position );
+            sample->set_position_offset( _pos_offs );
+        }
+    }
+
+    // The rotation rotating from the earth centerd frame to
+    // the horizontal local frame
+    SGQuatd hlOr = SGQuatd::fromLonLat(_position_geod);
+
+    // Rotate the x-forward, y-right, z-down coordinate system
+    // into the OpenGL camera system with x-right, y-up, z-back.
+    SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+
+    // Compute the sounds orientation and position
+    // wrt the earth centered frame - that is global coorinates
+    SGQuatd sc2body = hlOr*_orientation*q;
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
-        sample->set_position_geod( pos );
-    }
-    _position = pos;
-}
-
-
-// set the source orientation of all managed sounds
-void SGSampleGroup::set_orientation( const SGQuatd& ori ) {
-
-    if (_orientation != ori) {
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
-            sample->set_orientation( ori );
-        }
-        _orientation = ori;
+        sample->set_orientation( _orientation );
+        sample->set_rotation( sc2body );
     }
 }
 
@@ -382,11 +407,13 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         velocity = sample->get_velocity();
     }
 
-    if (length(position -_smgr->get_position()) > 20000)
+#if 0
+    if (length(position) > 20000)
         printf("source and listener distance greater than 20km!\n");
     if (isNaN(toVec3f(position).data())) printf("NaN in source position\n");
     if (isNaN(orientation.data())) printf("NaN in source orientation\n");
     if (isNaN(velocity.data())) printf("NaN in source velocity\n");
+#endif
 
     unsigned int source = sample->get_source();
     alSourcefv( source, AL_POSITION, toVec3f(position).data() );

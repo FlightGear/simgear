@@ -160,16 +160,13 @@ public:
         _position_geod = pos; _changed = true;
     }
 
-    void set_position_offset( const SGVec3d& pos ) {
-        _position_offs = pos; _changed = true;
-    }
-
     /**
      * Get the position of the sound manager.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return OpenAL listener position
      */
     SGVec3d& get_position() { return _absolute_pos; }
+    SGGeod& get_position_geod() { return _position_geod; }
 
     /**
      * Set the velocity vector (in meters per second) of the sound manager
@@ -191,8 +188,8 @@ public:
      * Set the orientation of the sound manager
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori, const SGQuatd& offs ) {
-        _orientation = ori; _orient_offs = offs; _changed = true;
+    void set_orientation( const SGQuatd& ori ) {
+        _orientation = ori; _changed = true;
     }
 
     /**
@@ -200,7 +197,6 @@ public:
      * @return Quaternation containing the orientation information
      */
     inline const SGQuatd& get_orientation() { return _orientation; }
-    inline const SGQuatd& get_orientation_offset() { return _orient_offs; }
 
     /**
      * Get the direction vector of the sound manager
@@ -286,7 +282,6 @@ private:
 
     // Position of the listener.
     SGGeod _position_geod;
-    SGVec3d _position_offs;
     SGVec3d _absolute_pos;
 
     // Velocity of the listener.
@@ -295,7 +290,6 @@ private:
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
     SGQuatd _orientation;
-    SGQuatd _orient_offs;
     ALfloat _at_up_vec[6];
 
     sample_group_map _sample_groups;

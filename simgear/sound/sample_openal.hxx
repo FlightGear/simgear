@@ -315,11 +315,19 @@ public:
     }
 
     /**
-     * Set the base position of this sound in Geodetic coordinates.
-     * @param pos Geodetic position
+     * Set the base position in Cartesian coordinates
+     * @param pos position in Cartesian coordinates
      */
-    inline void set_position_geod( const SGGeod& pos ) {
-        _base_pos = pos; _changed = true;
+    inline void set_position( const SGVec3d& pos ) {
+       _base_pos = pos; _changed = true;
+    }
+
+    /**
+     * Set the base position offset in Cartesian coordinates
+     * @param offs offset in Cartesian coordinates
+     */
+    inline void set_position_offset( const SGVec3d& offs ) {
+       _base_offs = offs; _changed = true;
     }
 
     /**
@@ -335,6 +343,14 @@ public:
      */
     inline void set_orientation( const SGQuatd& ori ) {
         _orientation = ori; _changed = true;
+    }
+
+    /**
+     * Set the rotation quatgernion of this sound.
+     * @param rotation Quaternion containing the rotation information
+     */
+    inline void set_rotation( const SGQuatd& rotation ) {
+        _rotation = rotation; _changed = true;
     }
 
     /**
@@ -453,8 +469,10 @@ private:
 
     // The position and orientation of this sound
     SGQuatd _orientation;       // base orientation
+    SGQuatd _rotation;		// rotation vector for relative offsets
     SGVec3f _orivec;		// orientation vector for OpenAL
-    SGGeod _base_pos;		// base position
+    SGVec3d _base_pos;		// base position
+    SGVec3d _base_offs;		// base offset position
 
     std::string _refname;	// name or file path
     unsigned char* _data;

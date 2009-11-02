@@ -51,7 +51,6 @@ SGSoundSample::SGSoundSample() :
     _rotation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGVec3d::zeros()),
-    _base_offs(SGVec3d::zeros()),
     _refname(random_string()),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
@@ -87,7 +86,6 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _rotation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGVec3d::zeros()),
-    _base_offs(SGVec3d::zeros()),
     _refname(file),
     _data(NULL),
     _format(AL_FORMAT_MONO8),
@@ -129,7 +127,6 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _rotation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGVec3d::zeros()),
-    _base_offs(SGVec3d::zeros()),
     _refname(random_string()),
     _format(format),
     _size(len),
@@ -166,7 +163,6 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _rotation(SGQuatd::zeros()),
     _orivec(SGVec3f::zeros()),
     _base_pos(SGVec3d::zeros()),
-    _base_offs(SGVec3d::zeros()),
     _refname(random_string()),
     _format(format),
     _size(len),
@@ -201,7 +197,7 @@ SGSoundSample::~SGSoundSample() {
 
 void SGSoundSample::update_pos_and_orientation() {
 
-    _absolute_pos = _base_pos - _base_offs;
+    _absolute_pos = _base_pos;
     if ( _relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
         _absolute_pos += _rotation.backTransform(_relative_pos);
     }

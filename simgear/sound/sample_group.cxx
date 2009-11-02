@@ -42,8 +42,6 @@ SGSampleGroup::SGSampleGroup () :
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _position(SGVec3d::zeros()),
-    _pos_offs(SGVec3d::zeros()),
     _position_geod(SGGeod())
 {
     _samples.clear();
@@ -58,8 +56,6 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _position(SGVec3d::zeros()),
-    _pos_offs(SGVec3d::zeros()),
     _position_geod(SGGeod())
 {
     _smgr->add(this, refname);
@@ -344,19 +340,6 @@ void SGSampleGroup::update_pos_and_orientation() {
     SGVec3d position = SGVec3d::fromGeod( _position_geod );
     SGVec3d pos_offs = SGVec3d::fromGeod( _smgr->get_position_geod() );
 
-    if (_position != position || _pos_offs != pos_offs) {
-        _position = position;
-        _pos_offs = pos_offs;
-
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
-            sample->set_position( _position );
-            sample->set_position_offset( _pos_offs );
-        }
-    }
-
     // The rotation rotating from the earth centerd frame to
     // the horizontal local frame
     SGQuatd hlOr = SGQuatd::fromLonLat(_position_geod);
@@ -373,6 +356,7 @@ void SGSampleGroup::update_pos_and_orientation() {
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
+        sample->set_position( position - pos_offs );
         sample->set_orientation( _orientation );
         sample->set_rotation( sc2body );
     }

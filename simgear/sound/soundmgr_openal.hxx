@@ -157,7 +157,7 @@ public:
      * @param pos OpenAL listener position
      */
     void set_position_geod( const SGGeod& pos ) {
-        _position_geod = pos; _changed = true;
+        _absolute_pos = SGVec3d::fromGeod( pos ); _changed = true;
     }
 
     /**
@@ -166,7 +166,6 @@ public:
      * @return OpenAL listener position
      */
     SGVec3d& get_position() { return _absolute_pos; }
-    SGGeod& get_position_geod() { return _position_geod; }
 
     /**
      * Set the velocity vector (in meters per second) of the sound manager
@@ -281,7 +280,6 @@ private:
     ALCcontext *_context;
 
     // Position of the listener.
-    SGGeod _position_geod;
     SGVec3d _absolute_pos;
 
     // Velocity of the listener.

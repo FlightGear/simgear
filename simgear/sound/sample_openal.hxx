@@ -338,14 +338,6 @@ public:
     }
 
     /**
-     * Set the rotation quatgernion of this sound.
-     * @param rotation Quaternion containing the rotation information
-     */
-    inline void set_rotation( const SGQuatd& rotation ) {
-        _rotation = rotation; _changed = true;
-    }
-
-    /**
      * Set direction of this sound relative to the orientation.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @param dir Sound emission direction
@@ -461,7 +453,6 @@ private:
 
     // The position and orientation of this sound
     SGQuatd _orientation;       // base orientation
-    SGQuatd _rotation;		// rotation vector for relative offsets
     SGVec3f _orivec;		// orientation vector for OpenAL
     SGVec3d _base_pos;		// base position
 

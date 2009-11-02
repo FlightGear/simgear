@@ -63,7 +63,6 @@ SGSoundMgr::SGSoundMgr() :
     _volume(0.0),
     _device(NULL),
     _context(NULL),
-    _position_geod(SGGeod::fromDeg(0,0)),
     _absolute_pos(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
@@ -462,9 +461,6 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
 }
 
 void SGSoundMgr::update_pos_and_orientation() {
-    // cartesian position of the listener
-    _absolute_pos = SGVec3d::fromGeod( _position_geod );
-
     /**
      * Description: ORIENTATION is a pair of 3-tuples representing the
      * 'at' direction vector and 'up' direction of the Object in

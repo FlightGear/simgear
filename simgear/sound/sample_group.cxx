@@ -41,8 +41,8 @@ SGSampleGroup::SGSampleGroup () :
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _position_geod(SGGeod())
+    _base_pos(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros())
 {
     _samples.clear();
 }
@@ -55,8 +55,8 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _position_geod(SGGeod())
+    _base_pos(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros())
 {
     _smgr->add(this, refname);
     _samples.clear();
@@ -334,34 +334,6 @@ void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
     }
 }
 
-// set the source position of all managed sounds
-void SGSampleGroup::update_pos_and_orientation() {
-
-    SGVec3d position = SGVec3d::fromGeod( _position_geod );
-    SGVec3d pos_offs = SGVec3d::fromGeod( _smgr->get_position_geod() );
-
-    // The rotation rotating from the earth centerd frame to
-    // the horizontal local frame
-    SGQuatd hlOr = SGQuatd::fromLonLat(_position_geod);
-
-    // Rotate the x-forward, y-right, z-down coordinate system
-    // into the OpenGL camera system with x-right, y-up, z-back.
-    SGQuatd q(-0.5, -0.5, 0.5, 0.5);
-
-    // Compute the sounds orientation and position
-    // wrt the earth centered frame - that is global coorinates
-    SGQuatd sc2body = hlOr*_orientation*q;
-
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        sample->set_position( position - pos_offs );
-        sample->set_orientation( _orientation );
-        sample->set_rotation( sc2body );
-    }
-}
-
 void SGSampleGroup::set_volume( float vol )
 {
     _volume = vol;
@@ -376,13 +348,27 @@ void SGSampleGroup::set_volume( float vol )
     }
 }
 
+// set the source position and orientation of all managed sounds
+void SGSampleGroup::update_pos_and_orientation() {
+ 
+    SGVec3d position = _base_pos - _smgr->get_position();
+
+    sample_map_iterator sample_current = _samples.begin();
+    sample_map_iterator sample_end = _samples.end();
+    for ( ; sample_current != sample_end; ++sample_current ) {
+        SGSoundSample *sample = sample_current->second;
+        sample->set_position( position );
+        sample->set_orientation( _orientation );
+    }
+}
+
 void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     SGVec3f orientation, velocity;
     SGVec3d position;
 
     if ( _tied_to_listener ) {
         orientation = _smgr->get_direction();
-        position = _smgr->get_position();
+        position = SGVec3d::zeros();
         velocity = _smgr->get_velocity();
     } else {
         sample->update_pos_and_orientation();

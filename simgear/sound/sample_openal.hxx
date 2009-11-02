@@ -315,11 +315,11 @@ public:
     }
 
     /**
-     * Set the base position of this sound in Geodetic coordinates.
-     * @param pos Geodetic position
+     * Set the base position in Cartesian coordinates
+     * @param pos position in Cartesian coordinates
      */
-    inline void set_position_geod( const SGGeod& pos ) {
-        _base_pos = pos; _changed = true;
+    inline void set_position( const SGVec3d& pos ) {
+       _base_pos = pos; _changed = true;
     }
 
     /**
@@ -454,7 +454,7 @@ private:
     // The position and orientation of this sound
     SGQuatd _orientation;       // base orientation
     SGVec3f _orivec;		// orientation vector for OpenAL
-    SGGeod _base_pos;		// base position
+    SGVec3d _base_pos;		// base position
 
     std::string _refname;	// name or file path
     unsigned char* _data;

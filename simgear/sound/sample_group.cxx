@@ -37,11 +37,12 @@ SGSampleGroup::SGSampleGroup () :
     _smgr(NULL),
     _refname(""),
     _active(false),
+    _changed(false),
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _position(SGGeod())
+    _base_pos(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros())
 {
     _samples.clear();
 }
@@ -50,11 +51,12 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _smgr(smgr),
     _refname(refname),
     _active(false), 
+    _changed(false),
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _position(SGGeod())
+    _base_pos(SGVec3d::zeros()),
+    _orientation(SGQuatd::zeros())
 {
     _smgr->add(this, refname);
     _samples.clear();
@@ -109,6 +111,12 @@ void SGSampleGroup::update( double dt ) {
             continue;
         }
         i++;
+    }
+
+    // Update the position and orientation information for all samples.
+    if ( _changed ) {
+        update_pos_and_orientation();
+        _changed = false;
     }
 
     sample_map_iterator sample_current = _samples.begin();
@@ -326,33 +334,6 @@ void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
     }
 }
 
-// set the source position of all managed sounds
-void SGSampleGroup::set_position_geod( const SGGeod& pos ) {
-
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-        sample->set_position_geod( pos );
-    }
-    _position = pos;
-}
-
-
-// set the source orientation of all managed sounds
-void SGSampleGroup::set_orientation( const SGQuatd& ori ) {
-
-    if (_orientation != ori) {
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
-            sample->set_orientation( ori );
-        }
-        _orientation = ori;
-    }
-}
-
 void SGSampleGroup::set_volume( float vol )
 {
     _volume = vol;
@@ -367,13 +348,27 @@ void SGSampleGroup::set_volume( float vol )
     }
 }
 
+// set the source position and orientation of all managed sounds
+void SGSampleGroup::update_pos_and_orientation() {
+ 
+    SGVec3d position = _base_pos - _smgr->get_position();
+
+    sample_map_iterator sample_current = _samples.begin();
+    sample_map_iterator sample_end = _samples.end();
+    for ( ; sample_current != sample_end; ++sample_current ) {
+        SGSoundSample *sample = sample_current->second;
+        sample->set_position( position );
+        sample->set_orientation( _orientation );
+    }
+}
+
 void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
     SGVec3f orientation, velocity;
     SGVec3d position;
 
     if ( _tied_to_listener ) {
         orientation = _smgr->get_direction();
-        position = _smgr->get_position();
+        position = SGVec3d::zeros();
         velocity = _smgr->get_velocity();
     } else {
         sample->update_pos_and_orientation();
@@ -382,11 +377,13 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
         velocity = sample->get_velocity();
     }
 
-    if (length(position -_smgr->get_position()) > 20000)
+#if 0
+    if (length(position) > 20000)
         printf("source and listener distance greater than 20km!\n");
     if (isNaN(toVec3f(position).data())) printf("NaN in source position\n");
     if (isNaN(orientation.data())) printf("NaN in source orientation\n");
     if (isNaN(velocity.data())) printf("NaN in source velocity\n");
+#endif
 
     unsigned int source = sample->get_source();
     alSourcefv( source, AL_POSITION, toVec3f(position).data() );

@@ -157,11 +157,7 @@ public:
      * @param pos OpenAL listener position
      */
     void set_position_geod( const SGGeod& pos ) {
-        _position_geod = pos; _changed = true;
-    }
-
-    void set_position_offset( const SGVec3d& pos ) {
-        _position_offs = pos; _changed = true;
+        _absolute_pos = SGVec3d::fromGeod( pos ); _changed = true;
     }
 
     /**
@@ -191,8 +187,8 @@ public:
      * Set the orientation of the sound manager
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori, const SGQuatd& offs ) {
-        _orientation = ori; _orient_offs = offs; _changed = true;
+    void set_orientation( const SGQuatd& ori ) {
+        _orientation = ori; _changed = true;
     }
 
     /**
@@ -200,7 +196,6 @@ public:
      * @return Quaternation containing the orientation information
      */
     inline const SGQuatd& get_orientation() { return _orientation; }
-    inline const SGQuatd& get_orientation_offset() { return _orient_offs; }
 
     /**
      * Get the direction vector of the sound manager
@@ -285,8 +280,6 @@ private:
     ALCcontext *_context;
 
     // Position of the listener.
-    SGGeod _position_geod;
-    SGVec3d _position_offs;
     SGVec3d _absolute_pos;
 
     // Velocity of the listener.
@@ -295,7 +288,6 @@ private:
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
     SGQuatd _orientation;
-    SGQuatd _orient_offs;
     ALfloat _at_up_vec[6];
 
     sample_group_map _sample_groups;

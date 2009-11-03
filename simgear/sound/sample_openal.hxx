@@ -285,7 +285,7 @@ public:
      * Set the frequency (in Herz) of this audio sample.
      * @param freq Frequency
      */
-    inline void set_frequency( int freq ) { _freq = freq; _changed = true; }
+    inline void set_frequency( int freq ) { _freq = freq; }
 
     /**
      * Returns the frequency (in Herz) of this audio sample.
@@ -343,20 +343,18 @@ public:
      * @param dir Sound emission direction
      */
     inline void set_direction( const SGVec3f& dir ) {
-        _direction = toVec3d(dir); _changed = true;
+        _direction = toVec3d(dir); _static_changed = true;
     }
 
     /**
      * Define the audio cone parameters for directional audio.
-     * Note: setting it to 1 degree will result in 0.5 degrees to both sides.
+     * Note: setting it to 2 degree will result in 1 degree to both sides.
      * @param inner Inner cone angle (0 - 360 degrees)
      * @param outer Outer cone angle (0 - 360 degrees)
      * @param gain Remaining gain at the edge of the outer cone (0.0 - 1.0)
      */
     void set_audio_cone( float inner, float outer, float gain ) {
-        _inner_angle = inner;
-        _outer_angle = outer;
-        _outer_gain = gain;
+        _inner_angle = inner; _outer_angle = outer; _outer_gain = gain;
         _static_changed = true;
     }
 

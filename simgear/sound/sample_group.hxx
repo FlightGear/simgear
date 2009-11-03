@@ -197,6 +197,7 @@ public:
      * @param pos Base position
      */
     void set_position_geod( const SGGeod& pos ) {
+        _position_geod = pos;
         _base_pos = SGVec3d::fromGeod( pos ); _changed = true;
     }
 
@@ -226,6 +227,7 @@ private:
 
     SGVec3f _velocity;
     SGVec3d _base_pos;
+    SGGeod _position_geod;
     SGQuatd _orientation;
 
     sample_map _samples;

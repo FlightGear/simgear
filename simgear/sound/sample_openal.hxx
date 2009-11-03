@@ -337,6 +337,10 @@ public:
         _orientation = ori; _changed = true;
     }
 
+    inline void set_rotation( const SGQuatd& ori ) {
+        _rotation = ori; _changed = true;
+    }
+
     /**
      * Set direction of this sound relative to the orientation.
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
@@ -453,6 +457,8 @@ private:
     SGQuatd _orientation;       // base orientation
     SGVec3f _orivec;		// orientation vector for OpenAL
     SGVec3d _base_pos;		// base position
+
+    SGQuatd _rotation;
 
     std::string _refname;	// name or file path
     unsigned char* _data;

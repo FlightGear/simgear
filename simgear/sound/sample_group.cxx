@@ -114,7 +114,7 @@ void SGSampleGroup::update( double dt ) {
     }
 
     // Update the position and orientation information for all samples.
-    if ( _changed ) {
+    if ( _changed || _smgr->has_changed() ) {
         update_pos_and_orientation();
         _changed = false;
     }
@@ -352,6 +352,7 @@ void SGSampleGroup::set_volume( float vol )
 void SGSampleGroup::update_pos_and_orientation() {
  
     SGVec3d position = _base_pos - _smgr->get_position();
+     SGQuatd hlOr = SGQuatd::fromLonLat(_position_geod) * _orientation;
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
@@ -359,6 +360,7 @@ void SGSampleGroup::update_pos_and_orientation() {
         SGSoundSample *sample = sample_current->second;
         sample->set_position( position );
         sample->set_orientation( _orientation );
+        sample->set_rotation( hlOr );
     }
 }
 

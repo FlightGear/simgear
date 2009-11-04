@@ -755,8 +755,8 @@ void SGEnviro::drawLightning(void) {
 				ay = sin(course) * dist;
 				SGSharedPtr<SGSoundSample> snd = sampleGroup->find("thunder");
 				if( snd ) {
-					SGVec3f pos = SGVec3f(ax, ay, -sgEnviro.last_alt);
-					snd->set_relative_position(pos);
+					SGVec3d pos = SGVec3d(ax, ay, -sgEnviro.last_alt);
+					snd->set_position(pos);
 					snd->play_once();
 				}
 			}

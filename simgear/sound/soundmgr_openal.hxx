@@ -156,8 +156,8 @@ public:
      * Set the Geodetic position of the sound manager.
      * @param pos OpenAL listener position
      */
-    void set_position_geod( const SGGeod& pos ) {
-        _absolute_pos = SGVec3d::fromGeod( pos ); _changed = true;
+    void set_position( const SGVec3d& pos ) {
+        _absolute_pos = pos; _changed = true;
     }
 
     /**

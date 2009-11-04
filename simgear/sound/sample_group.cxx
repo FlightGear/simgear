@@ -114,7 +114,7 @@ void SGSampleGroup::update( double dt ) {
     }
 
     // Update the position and orientation information for all samples.
-    if ( _changed ) {
+    if ( _changed || _smgr->has_changed() ) {
         update_pos_and_orientation();
         _changed = false;
     }

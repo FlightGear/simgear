@@ -152,7 +152,12 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
 
     SGGeod geodZeroViewPos = SGGeod::fromGeodM(st.pos_geod, 0);
     zero_elev = toVec3f( SGVec3d::fromGeod(geodZeroViewPos) );
-    view_up = toVec3f( st.ori.backTransform(SGVec3d::e2()) );
+
+    // calculate the scenery up vector
+    SGQuatd hlOr = SGQuatd::fromLonLat(st.pos_geod);
+    view_up = toVec3f(hlOr.backTransform(-SGVec3d::e3()));
+
+    // viewer location
     lon = st.pos_geod.getLongitudeRad();
     lat = st.pos_geod.getLatitudeRad();
     alt = st.pos_geod.getElevationM();

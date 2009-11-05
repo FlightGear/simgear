@@ -45,6 +45,7 @@
 #include <osg/Switch>
 
 #include <simgear/ephemeris/ephemeris.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include <simgear/scene/sky/cloud.hxx>
 #include <simgear/scene/sky/dome.hxx>
@@ -56,8 +57,9 @@ using std::vector;
 
 
 typedef struct {
-	SGVec3f view_pos, zero_elev, view_up;
-	double lon, lat, alt, spin;
+        SGGeod pos;
+        SGQuatd ori;
+        double spin;
 	double gst;
 	double sun_dist;
 	double moon_dist;

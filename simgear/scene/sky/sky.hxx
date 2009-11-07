@@ -57,7 +57,8 @@ using std::vector;
 
 
 typedef struct {
-        SGGeod pos;
+        SGVec3d pos;
+        SGGeod pos_geod;
         SGQuatd ori;
         double spin;
 	double gst;

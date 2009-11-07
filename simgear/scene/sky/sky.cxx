@@ -147,22 +147,25 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     double angle = st.gst * 15;	// degrees
     double angleRad = SGMiscd::deg2rad(angle);
 
-    SGVec3f view_pos, zero_elev, view_up;
+    SGVec3f zero_elev, view_up;
     double lon, lat, alt;
 
-    view_pos = toVec3f( SGVec3d::fromGeod(st.pos) );
-    SGGeod geodZeroViewPos = SGGeod::fromGeodM(st.pos, 0);
+    SGGeod geodZeroViewPos = SGGeod::fromGeodM(st.pos_geod, 0);
     zero_elev = toVec3f( SGVec3d::fromGeod(geodZeroViewPos) );
 
-    view_up = toVec3f( st.ori.backTransform(SGVec3d::e2()) );
-    lon = st.pos.getLongitudeRad();
-    lat = st.pos.getLatitudeRad();
-    alt = st.pos.getElevationM();
+    // calculate the scenery up vector
+    SGQuatd hlOr = SGQuatd::fromLonLat(st.pos_geod);
+    view_up = toVec3f(hlOr.backTransform(-SGVec3d::e3()));
+
+    // viewer location
+    lon = st.pos_geod.getLongitudeRad();
+    lat = st.pos_geod.getLatitudeRad();
+    alt = st.pos_geod.getElevationM();
 
     dome->reposition( zero_elev, alt, lon, lat, st.spin );
 
     osg::Matrix m = osg::Matrix::rotate(angleRad, osg::Vec3(0, 0, -1));
-    m.postMultTranslate(toOsg(view_pos));
+    m.postMultTranslate(toOsg(st.pos));
     _ephTransform->setMatrix(m);
 
     double sun_ra = eph.getSunRightAscension();

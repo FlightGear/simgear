@@ -18,6 +18,7 @@ include_HEADERS = \
 	PrimitiveUtils.hxx \
 	QuadTreeBuilder.hxx \
 	RenderConstants.hxx \
+	SplicingVisitor.hxx \
 	StateAttributeFactory.hxx \
 	VectorArrayAdapter.hxx
 
@@ -30,6 +31,7 @@ libsgutil_a_SOURCES = \
 	SGTextureStateAttributeVisitor.cxx \
 	NodeAndDrawableVisitor.cxx \
 	PrimitiveUtils.cxx \
+	SplicingVisitor.cxx \
 	StateAttributeFactory.cxx \
 	QuadTreeBuilder.cxx
 

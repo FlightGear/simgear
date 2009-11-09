@@ -100,10 +100,11 @@ public:
    * @param child A pointer to the location of the current event as defined
    * in the configuration file.
    * @param sgrp A pointer to a pre-initialized sample group class.
+   * @param avionics A pointer to the pre-initialized avionics sample group.
    * @param path The path where the audio files remain.
    */
   virtual void init (SGPropertyNode *, SGPropertyNode *, SGSampleGroup *,
-                     const string &);
+                     SGSampleGroup *, const string &);
 
   /**
    * Check whether an event has happened and if action has to be taken.

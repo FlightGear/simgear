@@ -82,7 +82,8 @@ SGXmlSound::~SGXmlSound()
 
 void
 SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
-                 SGSampleGroup *sgrp, const string &path)
+                 SGSampleGroup *sgrp, SGSampleGroup *avionics,
+                 const string &path)
 {
 
    //
@@ -102,6 +103,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    } else {
       _mode = SGXmlSound::ONCE;
    }
+
+   bool is_avionics = false;
+   const char *type_str = node->getStringValue("type", "fx");
+   if ( !strcmp(type_str, "avionics") )
+      is_avionics = true;
 
    _property = root->getNode(node->getStringValue("property", ""), true);
    SGPropertyNode *condition = node->getChild("condition");
@@ -254,7 +260,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
    // Initialize the sample
    //
-   _sgrp = sgrp;
+   if (is_avionics) {
+      _sgrp = avionics;
+   } else {
+      _sgrp = sgrp;
+   }
    _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
    _sample->set_relative_position( offset_pos );
    _sample->set_direction( dir );

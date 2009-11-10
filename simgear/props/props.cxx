@@ -872,8 +872,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
 }
 
 SGPropertyNode *
-SGPropertyNode::SGPropertyNode::getChild (const string& name, int index,
-                                          bool create)
+SGPropertyNode::getChild (const string& name, int index, bool create)
 {
   SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index,
                                           create);

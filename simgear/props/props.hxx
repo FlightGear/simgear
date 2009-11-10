@@ -161,6 +161,7 @@ DEFINTERNALPROP(long, LONG);
 DEFINTERNALPROP(float, FLOAT);
 DEFINTERNALPROP(double, DOUBLE);
 DEFINTERNALPROP(const char *, STRING);
+DEFINTERNALPROP(const char[], STRING);
 #undef DEFINTERNALPROP
 
 template<>
@@ -805,6 +806,11 @@ public:
   const char * getName () const { return _name.c_str(); }
 
   /**
+   * Get the node's simple name as a string.
+   */
+  const std::string& getNameString () const { return _name; }
+
+  /**
    * Get the node's pretty display name, with subscript when needed.
    */
     std::string getDisplayName (bool simplify = false) const;
@@ -875,17 +881,10 @@ public:
   /**
    * Get a child node by name and index.
    */
-  SGPropertyNode * getChild (const char * name, int index = 0,
-			     bool create = false);
-
-  /**
-   * Get a child node by name and index.
-   */
+  SGPropertyNode * getChild (const char* name, int index = 0,
+                             bool create = false);
   SGPropertyNode * getChild (const std::string& name, int index = 0,
-			     bool create = false)
-  { return getChild(name.c_str(), index, create); }
-
-
+                             bool create = false);
   /**
    * Get a const child node by name and index.
    */
@@ -1223,6 +1222,12 @@ public:
   bool setValue(const T& val,
                 typename boost::disable_if_c<simgear::props::PropertyTraits<T>::Internal>
                 ::type* dummy = 0);
+
+  template<int N>
+  bool setValue(const char (&val)[N])
+  {
+    return setValue(&val[0]);
+  }
   
   /**
    * Print the value of the property to a stream.
@@ -1604,8 +1609,9 @@ protected:
   /**
    * Protected constructor for making new nodes on demand.
    */
-  SGPropertyNode (const char * name, int index, SGPropertyNode * parent);
-
+  SGPropertyNode (const std::string& name, int index, SGPropertyNode * parent);
+  template<typename Itr>
+  SGPropertyNode (Itr begin, Itr end, int index, SGPropertyNode * parent);
 
 private:
 
@@ -1743,7 +1749,16 @@ private:
     unsigned int _data_length;
     bucket ** _data;
   };
-
+  // Pass name as a pair of iterators
+  template<typename Itr>
+  SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);
+  // very internal method
+  template<typename Itr>
+  SGPropertyNode* getExistingChild (Itr begin, Itr end, int index, bool create);
+  // very internal path parsing function
+  template<typename SplitItr>
+  friend SGPropertyNode* find_node_aux(SGPropertyNode * current, SplitItr& itr,
+                                       bool create, int last_index);
 };
 
 // Convenience functions for use in templates

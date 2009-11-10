@@ -59,6 +59,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
+#include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
@@ -762,4 +763,49 @@ osgDB::RegisterDotOsgWrapperProxy effectProxy
     &Effect_writeLocalData
     );
 }
+
+// Property expressions for technique predicates
+class PropertyExpression : public SGExpression<bool>
+{
+public:
+    PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode) {}
+    
+    void eval(bool& value, const expression::Binding*) const
+    {
+        value = _pnode->getValue<bool>();
+    }
+protected:
+    SGPropertyNode_ptr _pnode;
+};
+
+class EffectPropertyListener : public SGPropertyChangeListener
+{
+public:
+    EffectPropertyListener(Technique* tniq) : _tniq(tniq) {}
+    
+    void valueChanged(SGPropertyNode* node)
+    {
+        _tniq->refreshValidity();
+    }
+protected:
+    osg::ref_ptr<Technique> _tniq;
+};
+
+Expression* propertyExpressionParser(const SGPropertyNode* exp,
+                                     expression::Parser* parser)
+{
+    SGPropertyNode_ptr pnode = getPropertyRoot()->getNode(exp->getStringValue(),
+                                                          true);
+    PropertyExpression* pexp = new PropertyExpression(pnode);
+    TechniquePredParser* predParser
+        = dynamic_cast<TechniquePredParser*>(parser);
+    if (predParser)
+        pnode->addChangeListener(new EffectPropertyListener(predParser
+                                                            ->getTechnique()));
+    return pexp;
+}
+
+expression::ExpParserRegistrar propertyRegistrar("property",
+                                                 propertyExpressionParser);
+
 }

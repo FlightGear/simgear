@@ -19,6 +19,8 @@
 #endif
 
 #include <osgDB/ReadFile>
+#include <osgDB/Input>
+#include <osgDB/ParameterOutput>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/OSGVersion.hxx>
@@ -70,3 +72,19 @@ void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp)
                          _readerWriterOptions.get());
 }
 
+bool SGPagedLOD_writeLocalData(const Object& obj, osgDB::Output& fw)
+{
+    return true;
+}
+
+namespace
+{
+osgDB::RegisterDotOsgWrapperProxy sgPagedLODProxy
+(
+    new SGPagedLOD,
+    "simgear::SGPagedLOD",
+    "Object Node LOD PagedLOD SGPagedLOD Group",
+    0,
+    &SGPagedLOD_writeLocalData
+    );
+}

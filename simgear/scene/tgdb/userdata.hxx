@@ -44,4 +44,12 @@ void sgUserDataInit(SGPropertyNode *p);
  */
 osg::Node* sgGetRandomModel(SGMatModel *obj);
 
+namespace simgear
+{
+/**
+ * Get the property root for the simulation
+ */
+SGPropertyNode* getPropertyRoot();
+}
+
 #endif // _SG_USERDATA_HXX

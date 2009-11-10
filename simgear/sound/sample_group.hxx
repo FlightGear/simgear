@@ -189,7 +189,9 @@ public:
      * This is in the local frame coordinate system; x=north, y=east, z=down
      * @param vel Velocity vector 
      */
-    void set_velocity( const SGVec3f& vel );
+    void set_velocity( const SGVec3d& vel ) {
+       _velocity = vel; _changed = true;
+    }
 
     /**
      * Set the position of this sample group.
@@ -197,8 +199,7 @@ public:
      * @param pos Base position
      */
     void set_position_geod( const SGGeod& pos ) {
-        _position_geod = pos;
-        _base_pos = SGVec3d::fromGeod( pos ); _changed = true;
+        _base_pos = pos; _changed = true;
     }
 
     /**
@@ -225,9 +226,8 @@ private:
     float _volume;
     bool _tied_to_listener;
 
-    SGVec3f _velocity;
-    SGVec3d _base_pos;
-    SGGeod _position_geod;
+    SGVec3d _velocity;
+    SGGeod _base_pos;
     SGQuatd _orientation;
 
     sample_map _samples;

@@ -64,3 +64,10 @@ osg::Node* sgGetRandomModel(SGMatModel *obj) {
    return obj->get_random_model( root_props );
  }
 
+namespace simgear
+{
+SGPropertyNode* getPropertyRoot()
+{
+    return root_props;
+}
+}

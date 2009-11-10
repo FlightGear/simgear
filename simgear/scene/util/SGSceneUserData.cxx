@@ -23,6 +23,10 @@
 #  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/ParameterOutput>
+
 #include "SGSceneUserData.hxx"
 
 SGSceneUserData*
@@ -85,4 +89,39 @@ SGSceneUserData::addPickCallback(SGPickCallback* pickCallback)
   if (!pickCallback)
     return;
   _pickCallbacks.push_back(pickCallback);
+}
+
+bool SGSceneUserData_writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+{
+    const SGSceneUserData& data = static_cast<const SGSceneUserData&>(obj);
+
+    unsigned numPickCallbacks = data.getNumPickCallbacks();
+    if (numPickCallbacks > 0)
+        fw.indent() << "num_pickCallbacks " << numPickCallbacks << "\n";
+    if (data.getBVHNode())
+        fw.indent() << "hasBVH true\n";
+    const SGSceneUserData::Velocity* vel = data.getVelocity();
+    if (vel) {
+        fw.indent() << "velocity {\n";
+        fw.moveIn();
+        fw.indent() << "linear " << vel->linear << "\n";
+        fw.indent() << "angular " << vel->angular << "\n";
+        fw.indent() << "referenceTime " << vel->referenceTime << "\n";
+        fw.indent() << "id " << static_cast<unsigned>(vel->id) << "\n";
+        fw.moveOut();
+        fw.indent() << "}\n";
+    }
+    return true;
+}
+
+namespace
+{
+osgDB::RegisterDotOsgWrapperProxy SGSceneUserDataProxy
+(
+    new SGSceneUserData,
+    "simgear::SGSceneUserData",
+    "Object simgear::SGSceneUserData",
+    0,
+    &SGSceneUserData_writeLocalData
+    );
 }

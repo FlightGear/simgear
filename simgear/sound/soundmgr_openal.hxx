@@ -153,7 +153,7 @@ public:
     SGSampleGroup *find( const string& refname, bool create = false );
 
     /**
-     * Set the Geodetic position of the sound manager.
+     * Set the Cartesian position of the sound manager.
      * @param pos OpenAL listener position
      */
     void set_position( const SGVec3d& pos ) {

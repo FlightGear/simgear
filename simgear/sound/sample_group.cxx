@@ -41,7 +41,6 @@ SGSampleGroup::SGSampleGroup () :
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _base_pos(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros())
 {
     _samples.clear();
@@ -55,7 +54,6 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _pause(false),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
-    _base_pos(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros())
 {
     _smgr->add(this, refname);
@@ -315,25 +313,6 @@ bool SGSampleGroup::stop( const string& refname ) {
     return true;
 }
 
-// set source velocity of all managed sounds
-void SGSampleGroup::set_velocity( const SGVec3f &vel ) {
-    if ( isnan(vel[0]) || isnan(vel[1]) || isnan(vel[2]) )
-    {
-        SG_LOG( SG_GENERAL, SG_ALERT, "NAN's found in SampleGroup velocity");
-        return;
-    }
-
-    if (_velocity != vel) {
-        sample_map_iterator sample_current = _samples.begin();
-        sample_map_iterator sample_end = _samples.end();
-        for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
-            sample->set_velocity( vel );
-        }
-        _velocity = vel;
-    }
-}
-
 void SGSampleGroup::set_volume( float vol )
 {
     _volume = vol;
@@ -351,16 +330,26 @@ void SGSampleGroup::set_volume( float vol )
 // set the source position and orientation of all managed sounds
 void SGSampleGroup::update_pos_and_orientation() {
  
-    SGVec3d position = _base_pos - _smgr->get_position();
-     SGQuatd hlOr = SGQuatd::fromLonLat(_position_geod) * _orientation;
+    static const SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+
+    SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
+
+    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
+    SGQuatd ec2gl = hlOr*_orientation*q;
+
+    SGVec3f velocity = SGVec3f::zeros();
+    if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
+       velocity = toVec3f( (hlOr*q).backTransform(_velocity) );
+    }
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
         sample->set_position( position );
+        sample->set_velocity( velocity );
         sample->set_orientation( _orientation );
-        sample->set_rotation( hlOr );
+        sample->set_rotation( ec2gl );
     }
 }
 

@@ -199,11 +199,11 @@ void SGSoundSample::update_pos_and_orientation() {
 
     _absolute_pos = _base_pos;
     if ( _relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
-        _absolute_pos += _rotation.backTransform(_relative_pos);
+        _absolute_pos += _rotation.backTransform( _relative_pos );
     }
 
     if ( _direction[0] || _direction[1] || _direction[2] ) {
-        _orivec = toVec3f(_rotation.rotate(_direction) );
+        _orivec = toVec3f( _rotation.rotate(_direction) );
     }
     else
         _orivec = SGVec3f::zeros();

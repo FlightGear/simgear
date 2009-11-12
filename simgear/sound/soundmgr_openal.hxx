@@ -157,7 +157,11 @@ public:
      * @param pos OpenAL listener position
      */
     void set_position( const SGVec3d& pos ) {
-        _absolute_pos = pos; _changed = true;
+        _base_pos = pos; _changed = true;
+    }
+
+    void set_position_offset( const SGVec3d& pos ) {
+        _offset_pos = pos; _changed = true;
     }
 
     /**
@@ -281,6 +285,8 @@ private:
 
     // Position of the listener.
     SGVec3d _absolute_pos;
+    SGVec3d _offset_pos;
+    SGVec3d _base_pos;
 
     // Velocity of the listener.
     SGVec3f _velocity;

@@ -318,38 +318,28 @@ void SGSampleGroup::set_volume( float vol )
     _volume = vol;
     if (_volume < 0.0) _volume = 0.0;
     if (_volume > 1.0) _volume = 1.0;
+}
+
+// set the source position and orientation of all managed sounds
+void SGSampleGroup::update_pos_and_orientation() {
+ 
+    SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
+    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos) * _orientation;
+
+    SGVec3f velocity = SGVec3f::zeros();
+    if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
+       velocity = toVec3f( hlOr.backTransform(_velocity*SG_FEET_TO_METER) );
+    }
 
     sample_map_iterator sample_current = _samples.begin();
     sample_map_iterator sample_end = _samples.end();
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
         sample->set_master_volume( _volume );
-    }
-}
-
-// set the source position and orientation of all managed sounds
-void SGSampleGroup::update_pos_and_orientation() {
- 
-    static const SGQuatd q(-0.5, -0.5, 0.5, 0.5);
-
-    SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
-
-    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
-    SGQuatd ec2gl = hlOr*_orientation*q;
-
-    SGVec3f velocity = SGVec3f::zeros();
-    if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
-       velocity = toVec3f( (hlOr*q).backTransform(_velocity) );
-    }
-
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
+        sample->set_orientation( _orientation );
+        sample->set_rotation( hlOr );
         sample->set_position( position );
         sample->set_velocity( velocity );
-        sample->set_orientation( _orientation );
-        sample->set_rotation( ec2gl );
     }
 }
 

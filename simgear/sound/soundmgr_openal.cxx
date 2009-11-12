@@ -64,6 +64,8 @@ SGSoundMgr::SGSoundMgr() :
     _device(NULL),
     _context(NULL),
     _absolute_pos(SGVec3d::zeros()),
+    _offset_pos(SGVec3d::zeros()),
+    _base_pos(SGVec3d::zeros()),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _devname(NULL)
@@ -244,6 +246,10 @@ void SGSoundMgr::unbind ()
 // run the audio scheduler
 void SGSoundMgr::update( double dt ) {
     if (_active) {
+        if (_changed) {
+            update_pos_and_orientation();
+        }
+
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -469,6 +475,7 @@ void SGSoundMgr::update_pos_and_orientation() {
      * one or more vectors have zero length, implementation behavior
      * is undefined. If the two vectors are linearly dependent,
      * behavior is undefined.
+     *
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      */
     SGVec3d sgv_at = _orientation.backTransform(-SGVec3d::e3());
@@ -479,6 +486,11 @@ void SGSoundMgr::update_pos_and_orientation() {
     _at_up_vec[3] = sgv_up[0];
     _at_up_vec[4] = sgv_up[1];
     _at_up_vec[5] = sgv_up[2];
+
+    // static const SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+    // SGQuatd hlOr = SGQuatd::fromLonLat(SGGeod::fromCart(_base_pos));
+    // SGQuatd ec2body = hlOr*_orientation;
+    _absolute_pos = _base_pos; // + ec2body.backTransform( _offset_pos );
 }
 
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,

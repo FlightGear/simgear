@@ -16,12 +16,15 @@
 
 #include <sstream>
 #include <iomanip>
+#include <iterator>
 #include <stdio.h>
 #include <string.h>
 
 #include <boost/algorithm/string/find_iterator.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/bind.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/range.hpp>
 
 #include <simgear/math/SGMath.hxx>
@@ -2379,6 +2382,146 @@ std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
     }
     return stream;
 }
+
+namespace
+{
+bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
+{
+    props::Type ltype = lhs.getType();
+    props::Type rtype = rhs.getType();
+    if (ltype != rtype)
+        return false;
+    switch (ltype) {
+    case props::NONE:
+        return true;
+    case props::ALIAS:
+        return false;           // XXX Should we look in aliases?
+    case props::BOOL:
+        return lhs.getValue<bool>() == rhs.getValue<bool>();
+    case props::INT:
+        return lhs.getValue<int>() == rhs.getValue<int>();
+    case props::LONG:
+        return lhs.getValue<long>() == rhs.getValue<long>();
+    case props::FLOAT:
+        return lhs.getValue<float>() == rhs.getValue<float>();
+    case props::DOUBLE:
+        return lhs.getValue<double>() == rhs.getValue<double>();
+    case props::STRING:
+    case props::UNSPECIFIED:
+        return !strcmp(lhs.getStringValue(), rhs.getStringValue());
+    case props::VEC3D:
+        return lhs.getValue<SGVec3d>() == rhs.getValue<SGVec3d>();
+    case props::VEC4D:
+        return lhs.getValue<SGVec4d>() == rhs.getValue<SGVec4d>();
+    default:
+        return false;
+    }
+}
+}
+}
+
+bool SGPropertyNode::compare(const SGPropertyNode& lhs,
+                             const SGPropertyNode& rhs)
+{
+    if (&lhs == &rhs)
+        return true;
+    int lhsChildren = lhs.nChildren();
+    int rhsChildren = rhs.nChildren();
+    if (lhsChildren != rhsChildren)
+        return false;
+    if (lhsChildren == 0)
+        return compareNodeValue(lhs, rhs);
+    for (size_t i = 0; i < lhs._children.size(); ++i) {
+        const SGPropertyNode* lchild = lhs._children[i];
+        const SGPropertyNode* rchild = rhs._children[i];
+        // I'm guessing that the nodes will usually be in the same
+        // order.
+        if (lchild->getIndex() != rchild->getIndex()
+            || lchild->getNameString() != rchild->getNameString()) {
+            rchild = 0;
+            for (PropertyList::const_iterator itr = rhs._children.begin(),
+                     end = rhs._children.end();
+                 itr != end;
+                ++itr)
+                if (lchild->getIndex() == (*itr)->getIndex()
+                    && lchild->getNameString() == (*itr)->getNameString()) {
+                    rchild = *itr;
+                    break;
+                }
+            if (!rchild)
+                return false;
+        }
+        if (!compare(*lchild, *rchild))
+            return false;
+    }
+    return true;
+}
+
+struct PropertyPlaceLess {
+    typedef bool result_type;
+    bool operator()(SGPropertyNode_ptr lhs, SGPropertyNode_ptr rhs) const
+    {
+        int comp = lhs->getNameString().compare(rhs->getNameString());
+        if (comp == 0)
+            return lhs->getIndex() < rhs->getIndex();
+        else
+            return comp < 0;
+    }
+};
+
+size_t hash_value(const SGPropertyNode& node)
+{
+    using namespace boost;
+
+    if (node.nChildren() == 0) {
+        switch (node.getType()) {
+        case props::NONE:
+            return 0;
+
+        case props::BOOL:
+            return hash_value(node.getValue<bool>());
+        case props::INT:
+            return hash_value(node.getValue<int>());
+        case props::LONG:
+            return hash_value(node.getValue<long>());
+        case props::FLOAT:
+            return hash_value(node.getValue<float>());
+        case props::DOUBLE:
+            return hash_value(node.getValue<double>());
+        case props::STRING:
+        case props::UNSPECIFIED:
+        {
+            const char *val = node.getStringValue();
+            return hash_range(val, val + strlen(val));
+        }
+        case props::VEC3D:
+        {
+            const SGVec3d val = node.getValue<SGVec3d>();
+            return hash_range(&val[0], &val[3]);
+        }
+        case props::VEC4D:
+        {
+            const SGVec4d val = node.getValue<SGVec4d>();
+            return hash_range(&val[0], &val[4]);
+        }
+        case props::ALIAS:      // XXX Should we look in aliases?
+        default:
+            return 0;
+        }
+    } else {
+        size_t seed = 0;
+        PropertyList children(node._children.begin(), node._children.end());
+        sort(children.begin(), children.end(), PropertyPlaceLess());
+        for (PropertyList::const_iterator itr  = children.begin(),
+                 end = children.end();
+             itr != end;
+             ++itr) {
+            hash_combine(seed, (*itr)->_name);
+            hash_combine(seed, (*itr)->_index);
+            hash_combine(seed, hash_value(**itr));
+        }
+        return seed;
+    }
 }
 
 // end of props.cxx

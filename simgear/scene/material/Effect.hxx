@@ -20,10 +20,13 @@
 #include <vector>
 #include <string>
 
+#include <boost/unordered_map.hpp>
+
 #include <osg/Object>
 #include <osgDB/ReaderWriter>
 
 #include <simgear/props/props.hxx>
+#include <simgear/scene/util/UpdateOnceCallback.hxx>
 
 namespace osg
 {
@@ -40,6 +43,32 @@ class CullVisitor;
 namespace simgear
 {
 class Technique;
+class Effect;
+
+/**
+ * Object to be initialized at some point after an effect -- and its
+ * containing effect geode -- are hooked into the scene graph. Some
+ * things, like manipulations of the global property tree, are are
+ * only safe in the update process.
+ */
+
+class InitializeWhenAdded
+{
+public:
+    InitializeWhenAdded() : _initialized(false) {};
+    virtual ~InitializeWhenAdded() {};
+    void initOnAdd(Effect* effect, SGPropertyNode* propRoot)
+    {
+        if (!_initialized) {
+            initOnAddImpl(effect, propRoot);
+            _initialized = true;
+        }
+    }
+    bool getInitialized() const { return _initialized; }
+private:
+    virtual void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot) = 0;
+    bool _initialized;
+};
 
 class Effect : public osg::Object
 {
@@ -56,14 +85,64 @@ public:
     Technique* chooseTechnique(osg::RenderInfo* renderInfo);
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* state = 0) const;
-    /*
+    /**
      * Build the techniques from the effect properties.
      */
     bool realizeTechniques(const osgDB::ReaderWriter::Options* options = 0);
-    
+    /**
+     * Updaters that should be derefed when the effect is
+     * deleted. Updaters arrange to be run by listening on properties
+     * or something.
+     */
+    struct Updater : public virtual SGReferenced
+    {
+        virtual ~Updater() {}
+    };
+    void addUpdater(Updater* data) { _extraData.push_back(data); }
+    // Callback that is added to the effect geode to initialize the
+    // effect.
+    friend struct InitializeCallback;
+    struct InitializeCallback : public UpdateOnceCallback
+    {
+        void doUpdate(osg::Node* node, osg::NodeVisitor* nv);
+    };
 protected:
+    std::vector<SGSharedPtr<Updater> > _extraData;
     ~Effect();
+    // Support for a cache of effects that inherit from this one, so
+    // Effect objects with the same parameters and techniques can be
+    // shared.
+    struct Key
+    {
+        Key(SGPropertyNode* unmerged_, const osgDB::FilePathList& paths_)
+            : unmerged(unmerged_), paths(paths_)
+        {
+        }
+        const SGPropertyNode_ptr unmerged;
+        const osgDB::FilePathList paths;
+        struct EqualTo
+        {
+            bool operator()(const Key& lhs, const Key& rhs) const;
+        };
+    };
+    typedef boost::unordered_map<Key, osg::ref_ptr<Effect>, boost::hash<Key>,
+                                 Key::EqualTo> Cache;
+    Cache* getCache()
+    {
+        if (!_cache)
+            _cache = new Cache;
+        return _cache;
+    }
+    Cache* _cache;
+    friend size_t hash_value(const Key& key);
+    friend Effect* makeEffect(SGPropertyNode* prop, bool realizeTechniques,
+                              const osgDB::ReaderWriter::Options* options);
+    bool _isRealized;
 };
+// Automatic support for boost hash function
+size_t hash_value(const Effect::Key&);
+
+
 Effect* makeEffect(const std::string& name,
                    bool realizeTechniques,
                    const osgDB::ReaderWriter::Options* options = 0);
@@ -71,5 +150,18 @@ Effect* makeEffect(const std::string& name,
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
                    const osgDB::ReaderWriter::Options* options = 0);
+
+bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
+                                const osg::StateSet* ss);
+
+namespace effect
+{
+/**
+ * The function that implements effect property tree inheritance.
+ */
+void mergePropertyTrees(SGPropertyNode* resultNode,
+                        const SGPropertyNode* left,
+                        const SGPropertyNode* right);
+}
 }
 #endif

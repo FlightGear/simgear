@@ -31,7 +31,7 @@ public:
                 const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     META_Node(simgear,EffectGeode);
     Effect* getEffect() const { return _effect.get(); }
-    void setEffect(Effect* effect) { _effect = effect; }
+    void setEffect(Effect* effect);
     virtual void resizeGLObjectBuffers(unsigned int maxSize);
     virtual void releaseGLObjects(osg::State* = 0) const;
     typedef DrawableList::iterator DrawablesIterator;

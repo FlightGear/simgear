@@ -32,12 +32,14 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
+#include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
 namespace simgear
 {
 using namespace std;
 using namespace osg;
+using namespace effect;
 
 typedef vector<const SGPropertyNode*> RawPropVector;
 typedef map<const string, ref_ptr<Effect> > EffectMap;
@@ -71,6 +73,8 @@ struct PropPredicate
     const SGPropertyNode* node;
 };
 
+namespace effect
+{
 void mergePropertyTrees(SGPropertyNode* resultNode,
                         const SGPropertyNode* left, const SGPropertyNode* right)
 {
@@ -106,6 +110,7 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
             = resultNode->getChild((*itr)->getName(), (*itr)->getIndex(), true);
         copyProperties(*itr, newChild);
     }
+}
 }
 
 Effect* makeEffect(const string& name,
@@ -160,23 +165,32 @@ Effect* makeEffect(SGPropertyNode* prop,
             }
         }
     }
-    Effect* effect = new Effect;
+    Effect* effect = 0;
     // Merge with the parent effect, if any
-    const SGPropertyNode* inheritProp = prop->getChild("inherits-from");
+    SGPropertyNode_ptr inheritProp = prop->getChild("inherits-from");
     Effect* parent = 0;
     if (inheritProp) {
-        parent = makeEffect(inheritProp->getStringValue(), realizeTechniques,
-                            options);
-        if(parent)
-        {
-            effect->root = new SGPropertyNode;
-            mergePropertyTrees(effect->root, prop, parent->root);
-            effect->root->removeChild("inherits-from");
+        //prop->removeChild("inherits-from");
+        parent = makeEffect(inheritProp->getStringValue(), false, options);
+        if (parent) {
+            Effect::Cache* cache = parent->getCache();
+            Effect::Key key(prop, options->getDatabasePathList());
+            Effect::Cache::iterator itr = cache->find(key);
+            if (itr != cache->end()) {
+                effect = itr->second.get();
+            } else {
+                effect = new Effect;
+                effect->root = new SGPropertyNode;
+                mergePropertyTrees(effect->root, prop, parent->root);
+                cache->insert(make_pair(key, effect));
+            }
         } else {
-            effect->root = prop;
-            effect->root->removeChild("inherits-from");
+            SG_LOG(SG_INPUT, SG_WARN, "can't find base effect " <<
+                   inheritProp->getStringValue());
         }
-    } else {
+    }
+    if (!effect) {
+        effect = new Effect;
         effect->root = prop;
     }
     effect->parametersProp = effect->root->getChild("parameters");

@@ -1599,6 +1599,16 @@ public:
    */
   void clearValue ();
 
+  /**
+   * Compare two property trees. The property trees are equal if: 1)
+   * They have no children, and have the same type and the values are
+   * equal, or 2) have the same number of children, and the
+   * corresponding children in each tree are equal. "corresponding"
+   * means have the same name and index.
+   *
+   * Attributes, removed children, and aliases aren't considered.
+   */
+  static bool compare (const SGPropertyNode& lhs, const SGPropertyNode& rhs);
 
 protected:
 
@@ -1615,7 +1625,7 @@ protected:
 
 private:
 
-				// Get the raw value
+  // Get the raw value
   bool get_bool () const;
   int get_int () const;
   long get_long () const;
@@ -1623,7 +1633,7 @@ private:
   double get_double () const;
   const char * get_string () const;
 
-				// Set the raw value
+  // Set the raw value
   bool set_bool (bool value);
   bool set_int (int value);
   bool set_long (long value);
@@ -1672,7 +1682,7 @@ private:
   bool _tied;
   int _attr;
 
-				// The right kind of pointer...
+  // The right kind of pointer...
   union {
     SGPropertyNode * alias;
     SGRaw* val;
@@ -1691,8 +1701,8 @@ private:
 
 
   /**
-    * Register/unregister node that links to this node in its path cache.
-    */
+   * Register/unregister node that links to this node in its path cache.
+   */
   void add_linked_node (hash_table * node) { _linkedNodes.push_back(node); }
   bool remove_linked_node (hash_table * node);
 
@@ -1759,6 +1769,8 @@ private:
   template<typename SplitItr>
   friend SGPropertyNode* find_node_aux(SGPropertyNode * current, SplitItr& itr,
                                        bool create, int last_index);
+  // For boost
+  friend size_t hash_value(const SGPropertyNode& node);
 };
 
 // Convenience functions for use in templates
@@ -1927,12 +1939,68 @@ inline bool SGPropertyNode::setValue(const T& val,
 }
 
 /**
- * Utility function for creation of a child property node
+ * Utility function for creation of a child property node.
  */
 inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name,
                                  int index = 0)
 {
     return parent->getChild(name, index, true);
+}
+
+/**
+ * Utility function for creation of a child property node using a
+ * relative path.
+ */
+namespace simgear
+{
+template<typename StringType>
+inline SGPropertyNode* makeNode(SGPropertyNode* parent, const StringType& name)
+{
+    return parent->getNode(name, true);
+}
+}
+
+// For boost::hash
+size_t hash_value(const SGPropertyNode& node);
+
+// Helper comparison and hash functions for common cases
+
+namespace simgear
+{
+namespace props
+{
+struct Compare
+{
+    bool operator()(const SGPropertyNode* lhs, const SGPropertyNode* rhs) const
+    {
+        return SGPropertyNode::compare(*lhs, *rhs);
+    }
+    bool operator()(SGPropertyNode_ptr lhs, const SGPropertyNode* rhs) const
+    {
+        return SGPropertyNode::compare(*lhs, *rhs);
+    }
+    bool operator()(const SGPropertyNode* lhs, SGPropertyNode_ptr rhs) const
+    {
+        return SGPropertyNode::compare(*lhs, *rhs);
+    }
+    bool operator()(SGPropertyNode_ptr lhs, SGPropertyNode_ptr rhs) const
+    {
+        return SGPropertyNode::compare(*lhs, *rhs);
+    }
+};
+
+struct Hash
+{
+    size_t operator()(const SGPropertyNode* node) const
+    {
+        return hash_value(*node);
+    }
+    size_t operator()(SGPropertyNode_ptr node) const
+    {
+        return hash_value(*node);
+    }
+};
+}
 }
 #endif // __PROPS_HXX
 

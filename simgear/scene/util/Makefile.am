@@ -14,11 +14,14 @@ include_HEADERS = \
 	SGStateAttributeVisitor.hxx \
 	SGTextureStateAttributeVisitor.hxx \
 	SGUpdateVisitor.hxx \
+	CopyOp.hxx \
 	NodeAndDrawableVisitor.hxx \
 	PrimitiveUtils.hxx \
 	QuadTreeBuilder.hxx \
 	RenderConstants.hxx \
+	SplicingVisitor.hxx \
 	StateAttributeFactory.hxx \
+	UpdateOnceCallback.hxx \
 	VectorArrayAdapter.hxx
 
 
@@ -28,9 +31,12 @@ libsgutil_a_SOURCES = \
 	SGSceneUserData.cxx \
 	SGStateAttributeVisitor.cxx \
 	SGTextureStateAttributeVisitor.cxx \
+	CopyOp.cxx \
 	NodeAndDrawableVisitor.cxx \
 	PrimitiveUtils.cxx \
+	SplicingVisitor.cxx \
 	StateAttributeFactory.cxx \
-	QuadTreeBuilder.cxx
+	QuadTreeBuilder.cxx \
+	UpdateOnceCallback.cxx
 
 INCLUDES = -I$(top_srcdir)

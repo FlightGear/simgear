@@ -20,6 +20,13 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+//yuck
+#include <cstring>
+
+#include <boost/bind.hpp>
+
+#include <osg/Geode>
 #include <osg/MatrixTransform>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
@@ -43,7 +50,9 @@
 #include "model.hxx"
 #include "SGText.hxx"
 
+using namespace std;
 using namespace simgear;
+using namespace osg;
 
 static osg::Node *
 sgLoad3DModel_internal(const std::string& path,
@@ -104,6 +113,71 @@ public:
 private:
     SGSharedPtr<SGCondition> mCondition;
 };
+
+
+// Little helper class that holds an extra reference to a
+// loaded 3d model.
+// Since we clone all structural nodes from our 3d models,
+// the database pager will only see one single reference to
+// top node of the model and expire it relatively fast.
+// We attach that extra reference to every model cloned from
+// a base model in the pager. When that cloned model is deleted
+// this extra reference is deleted too. So if there are no
+// cloned models left the model will expire.
+namespace {
+class SGDatabaseReference : public osg::Observer
+{
+public:
+    SGDatabaseReference(osg::Referenced* referenced) :
+        mReferenced(referenced)
+    { }
+    virtual void objectDeleted(void*)
+    {
+        mReferenced = 0;
+    }
+private:
+    osg::ref_ptr<osg::Referenced> mReferenced;
+};
+
+void makeEffectAnimations(PropertyList& animation_nodes,
+                          PropertyList& effect_nodes)
+{
+    for (PropertyList::iterator itr = animation_nodes.begin();
+         itr != animation_nodes.end();
+         ++itr) {
+        SGPropertyNode* animProp = itr->ptr();
+        SGPropertyNode* typeProp = animProp->getChild("type");
+        if (!typeProp || strcmp(typeProp->getStringValue(), "shader"))
+            continue;
+        SGPropertyNode* shaderProp = animProp->getChild("shader");
+        if (!shaderProp || strcmp(shaderProp->getStringValue(), "chrome"))
+            continue;
+        *itr = 0;
+        SGPropertyNode* textureProp = animProp->getChild("texture");
+        if (!textureProp)
+            continue;
+        SGPropertyNode_ptr effectProp = new SGPropertyNode();
+        makeChild(effectProp.ptr(), "inherits-from")
+            ->setValue("Effects/chrome");
+        SGPropertyNode* paramsProp = makeChild(effectProp.get(), "parameters");
+        makeChild(paramsProp, "chrome-texture")
+            ->setValue(textureProp->getStringValue());
+        PropertyList objectNameNodes = animProp->getChildren("object-name");
+        for (PropertyList::iterator objItr = objectNameNodes.begin(),
+                 end = objectNameNodes.end();
+             objItr != end;
+            ++objItr)
+            effectProp->addChild("object-name")
+                ->setStringValue((*objItr)->getStringValue());
+        effect_nodes.push_back(effectProp);
+    }
+    animation_nodes.erase(remove_if(animation_nodes.begin(),
+                                    animation_nodes.end(),
+                                    !boost::bind(&SGPropertyNode_ptr::valid,
+                                                 _1)),
+                          animation_nodes.end());
+}
+}
 
 static osg::Node *
 sgLoad3DModel_internal(const string &path,
@@ -167,6 +241,9 @@ sgLoad3DModel_internal(const string &path,
         SGPropertyNode *mp = props->getNode("multiplay");
         if (mp && prop_root && prop_root->getParent())
             copyProperties(mp, prop_root);
+    } else {
+        SG_LOG(SG_INPUT, SG_DEBUG, "model without wrapper: "
+               << modelpath.str());
     }
 
     osg::ref_ptr<SGReaderWriterXMLOptions> options
@@ -181,10 +258,31 @@ sgLoad3DModel_internal(const string &path,
             texturepath = texturepath.dir();
 
         options->setDatabasePath(texturepath.str());
-        model = osgDB::readNodeFile(modelpath.str(), options.get());
-        if (model == 0)
+        osgDB::ReaderWriter::ReadResult modelResult
+            = osgDB::Registry::instance()->readNode(modelpath.str(),
+                                                    options.get());
+        if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model",
                                   sg_location(modelpath.str()));
+        model = copyModel(modelResult.getNode());
+        // Add an extra reference to the model stored in the database.
+        // That is to avoid expiring the object from the cache even if
+        // it is still in use. Note that the object cache will think
+        // that a model is unused if the reference count is 1. If we
+        // clone all structural nodes here we need that extra
+        // reference to the original object
+        SGDatabaseReference* databaseReference;
+        databaseReference = new SGDatabaseReference(modelResult.getNode());
+        model->addObserver(databaseReference);
+
+        // Update liveries
+        TextureUpdateVisitor liveryUpdate(options->getDatabasePathList());
+        model->accept(liveryUpdate);
+
+        // Copy the userdata fields, still sharing the boundingvolumes,
+        // but introducing new data for velocities.
+        UserDataCopyVisitor userDataCopyVisitor;
+        model->accept(userDataCopyVisitor);
     }
     model->setName(modelpath.str());
 
@@ -224,7 +322,8 @@ sgLoad3DModel_internal(const string &path,
         SGPath submodelpath;
         osg::ref_ptr<osg::Node> submodel;
         string submodelFileName = sub_props->getStringValue("path");
-        if ( submodelFileName.size() > 2 && submodelFileName.substr( 0, 2 ) == "./" ) {
+        if (submodelFileName.size() > 2
+            && !submodelFileName.compare(0, 2, "./" )) {
             submodelpath = modelpath.dir();
             submodelpath.append( submodelFileName.substr( 2 ) );
         } else {
@@ -242,7 +341,7 @@ sgLoad3DModel_internal(const string &path,
             throw;
         }
 
-        osg::ref_ptr<osg::Node> submodel_final=submodel.get();
+        osg::ref_ptr<osg::Node> submodel_final = submodel;
         SGPropertyNode *offs = sub_props->getNode("offsets", false);
         if (offs) {
             osg::Matrix res_matrix;
@@ -264,7 +363,7 @@ sgLoad3DModel_internal(const string &path,
                                offs->getDoubleValue("z-m", 0));
             align->setMatrix(res_matrix*tmat);
             align->addChild(submodel.get());
-            submodel_final=align.get();
+            submodel_final = align;
         }
         submodel_final->setName(sub_props->getStringValue("name", ""));
 
@@ -313,9 +412,15 @@ sgLoad3DModel_internal(const string &path,
                         prop_root,
                         options.get()));
     }
-
-    std::vector<SGPropertyNode_ptr> animation_nodes;
-    animation_nodes = props->getChildren("animation");
+    PropertyList effect_nodes = props->getChildren("effect");
+    PropertyList animation_nodes = props->getChildren("animation");
+    // Some material animations (eventually all) are actually effects.
+    makeEffectAnimations(animation_nodes, effect_nodes);
+    {
+        ref_ptr<Node> modelWithEffects
+            = instantiateEffects(group.get(), effect_nodes, options.get());
+        group = static_cast<Group*>(modelWithEffects.get());
+    }
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,

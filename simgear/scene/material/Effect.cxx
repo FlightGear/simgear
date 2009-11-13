@@ -78,11 +78,13 @@ using namespace osgUtil;
 using namespace effect;
 
 Effect::Effect()
+    : _cache(0), _isRealized(false)
 {
 }
 
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
-    : root(rhs.root), parametersProp(rhs.parametersProp)
+    : root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
+      _isRealized(rhs._isRealized)
 {
     typedef vector<ref_ptr<Technique> > TechniqueList;
     for (TechniqueList::const_iterator itr = rhs.techniques.begin(),
@@ -132,6 +134,7 @@ void Effect::releaseGLObjects(osg::State* state) const
 
 Effect::~Effect()
 {
+    delete _cache;
 }
 
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
@@ -867,11 +870,14 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
 // passes.
 bool Effect::realizeTechniques(const osgDB::ReaderWriter::Options* options)
 {
+    if (_isRealized)
+        return true;
     PropertyList tniqList = root->getChildren("technique");
     for (PropertyList::iterator itr = tniqList.begin(), e = tniqList.end();
          itr != e;
          ++itr)
         buildTechnique(this, *itr, options);
+    _isRealized = true;
     return true;
 }
 
@@ -893,6 +899,23 @@ void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
         if (adder)
             adder->initOnAdd(effect, root);
     }
+}
+
+bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,
+                                      const Effect::Key& rhs) const
+{
+    if (lhs.paths.size() != rhs.paths.size()
+        || !equal(lhs.paths.begin(), lhs.paths.end(), rhs.paths.begin()))
+        return false;
+    return props::Compare()(lhs.unmerged, rhs.unmerged);
+}
+
+size_t hash_value(const Effect::Key& key)
+{
+    size_t seed = 0;
+    boost::hash_combine(seed, *key.unmerged);
+    boost::hash_range(seed, key.paths.begin(), key.paths.end());
+    return seed;
 }
 
 bool Effect_writeLocalData(const Object& obj, osgDB::Output& fw)

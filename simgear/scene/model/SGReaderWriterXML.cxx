@@ -20,6 +20,12 @@
 #  include <simgear_config.h>
 #endif
 
+#include <algorithm>
+//yuck
+#include <cstring>
+
+#include <boost/bind.hpp>
+
 #include <osg/Geode>
 #include <osg/MatrixTransform>
 #include <osgDB/WriteFile>
@@ -132,6 +138,45 @@ public:
 private:
     osg::ref_ptr<osg::Referenced> mReferenced;
 };
+
+void makeEffectAnimations(PropertyList& animation_nodes,
+                          PropertyList& effect_nodes)
+{
+    for (PropertyList::iterator itr = animation_nodes.begin();
+         itr != animation_nodes.end();
+         ++itr) {
+        SGPropertyNode* animProp = itr->ptr();
+        SGPropertyNode* typeProp = animProp->getChild("type");
+        if (!typeProp || strcmp(typeProp->getStringValue(), "shader"))
+            continue;
+        SGPropertyNode* shaderProp = animProp->getChild("shader");
+        if (!shaderProp || strcmp(shaderProp->getStringValue(), "chrome"))
+            continue;
+        *itr = 0;
+        SGPropertyNode* textureProp = animProp->getChild("texture");
+        if (!textureProp)
+            continue;
+        SGPropertyNode_ptr effectProp = new SGPropertyNode();
+        makeChild(effectProp.ptr(), "inherits-from")
+            ->setValue("Effects/chrome");
+        SGPropertyNode* paramsProp = makeChild(effectProp.get(), "parameters");
+        makeChild(paramsProp, "chrome-texture")
+            ->setValue(textureProp->getStringValue());
+        PropertyList objectNameNodes = animProp->getChildren("object-name");
+        for (PropertyList::iterator objItr = objectNameNodes.begin(),
+                 end = objectNameNodes.end();
+             objItr != end;
+            ++objItr)
+            effectProp->addChild("object-name")
+                ->setStringValue((*objItr)->getStringValue());
+        effect_nodes.push_back(effectProp);
+    }
+    animation_nodes.erase(remove_if(animation_nodes.begin(),
+                                    animation_nodes.end(),
+                                    !boost::bind(&SGPropertyNode_ptr::valid,
+                                                 _1)),
+                          animation_nodes.end());
+}
 }
 
 static osg::Node *
@@ -368,13 +413,14 @@ sgLoad3DModel_internal(const string &path,
                         options.get()));
     }
     PropertyList effect_nodes = props->getChildren("effect");
+    PropertyList animation_nodes = props->getChildren("animation");
+    // Some material animations (eventually all) are actually effects.
+    makeEffectAnimations(animation_nodes, effect_nodes);
     {
         ref_ptr<Node> modelWithEffects
             = instantiateEffects(group.get(), effect_nodes, options.get());
         group = static_cast<Group*>(modelWithEffects.get());
     }
-    std::vector<SGPropertyNode_ptr> animation_nodes;
-    animation_nodes = props->getChildren("animation");
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,

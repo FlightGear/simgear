@@ -644,6 +644,15 @@
 			Name="Lib_sgprops"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\props\AtomicChangeListener.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\AtomicChangeListener.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\ExtendedPropertyAdapter.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\props\condition.cxx">
 			</File>
 			<File
@@ -1248,6 +1257,12 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\UpdateOnceCallback.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\UpdateOnceCallback.hxx">
 			</File>
 		</Filter>
 		<Filter

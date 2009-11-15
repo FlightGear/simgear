@@ -213,7 +213,7 @@ public:
         : _options(options)
     {
     }
-    virtual void apply(osg::Node& node);
+    virtual void apply(osg::Group& node);
     virtual void apply(osg::Geode& geode);
     EffectMap& getEffectMap() { return _effectMap; }
     const EffectMap& getEffectMap() const { return _effectMap; }
@@ -228,7 +228,7 @@ protected:
     osg::ref_ptr<const osgDB::ReaderWriter::Options> _options;
 };
 
-void MakeEffectVisitor::apply(osg::Node& node)
+void MakeEffectVisitor::apply(osg::Group& node)
 {
     SGPropertyNode_ptr savedEffectRoot;
     const string& nodeName = node.getName();

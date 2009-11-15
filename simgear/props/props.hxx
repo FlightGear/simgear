@@ -1927,12 +1927,25 @@ inline bool SGPropertyNode::setValue(const T& val,
 }
 
 /**
- * Utility function for creation of a child property node
+ * Utility function for creation of a child property node.
  */
 inline SGPropertyNode* makeChild(SGPropertyNode* parent, const char* name,
                                  int index = 0)
 {
     return parent->getChild(name, index, true);
+}
+
+/**
+ * Utility function for creation of a child property node using a
+ * relative path.
+ */
+namespace simgear
+{
+template<typename StringType>
+inline SGPropertyNode* makeNode(SGPropertyNode* parent, const StringType& name)
+{
+    return parent->getNode(name, true);
+}
 }
 #endif // __PROPS_HXX
 

@@ -170,7 +170,7 @@ Effect* makeEffect(SGPropertyNode* prop,
     const SGPropertyNode* inheritProp = prop->getChild("inherits-from");
     Effect* parent = 0;
     if (inheritProp) {
-        parent = makeEffect(inheritProp->getStringValue(), realizeTechniques,
+        parent = makeEffect(inheritProp->getStringValue(), false,
                             options);
         if(parent)
         {

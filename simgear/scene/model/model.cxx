@@ -241,6 +241,10 @@ void MakeEffectVisitor::apply(osg::Group& node)
         }
     }
     SplicingVisitor::apply(node);
+    // If a new node was created, copy the user data too.
+    ref_ptr<SGSceneUserData> userData = SGSceneUserData::getSceneUserData(&node);
+    if (userData.valid() && _childStack.back().back().get() != &node)
+        _childStack.back().back()->setUserData(new SGSceneUserData(*userData));
     if (restoreEffect)
         _currentEffectParent = savedEffectRoot;
 }
@@ -265,6 +269,9 @@ void MakeEffectVisitor::apply(osg::Geode& geode)
     } else {
         eg = new EffectGeode;
         eg->setEffect(effect);
+        ref_ptr<SGSceneUserData> userData = SGSceneUserData::getSceneUserData(&geode);
+        if (userData.valid())
+            eg->setUserData(new SGSceneUserData(*userData));
         for (int i = 0; i < geode.getNumDrawables(); ++i)
             eg->addDrawable(geode.getDrawable(i));
     }

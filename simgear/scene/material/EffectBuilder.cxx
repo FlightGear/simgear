@@ -56,5 +56,14 @@ BuilderException::BuilderException(const std::string& message,
 
 BuilderException::~BuilderException() throw()
 {
+
 }
+
+bool isAttributeActive(Effect* effect, const SGPropertyNode* prop)
+{
+    const SGPropertyNode* activeProp
+        = getEffectPropertyChild(effect, prop, "active");
+    return !activeProp || activeProp->getValue<bool>();
+}
+
 }

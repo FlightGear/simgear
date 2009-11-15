@@ -31,7 +31,6 @@
 #include <utility>
 
 #include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -134,27 +133,6 @@ Effect::~Effect()
 {
 }
 
-class PassAttributeBuilder : public Referenced
-{
-public:
-    virtual void buildAttribute(Effect* effect, Pass* pass,
-                                const SGPropertyNode* prop,
-                                const osgDB::ReaderWriter::Options* options)
-    = 0;
-};
-
-typedef map<const string, ref_ptr<PassAttributeBuilder> > PassAttrMap;
-PassAttrMap passAttrMap;
-
-template<typename T>
-struct InstallAttributeBuilder
-{
-    InstallAttributeBuilder(const string& name)
-    {
-        passAttrMap.insert(make_pair(name, new T));
-    }
-};
-
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                const osgDB::ReaderWriter::Options* options)
 {
@@ -162,9 +140,10 @@ void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
     tniq->passes.push_back(pass);
     for (int i = 0; i < prop->nChildren(); ++i) {
         const SGPropertyNode* attrProp = prop->getChild(i);
-        PassAttrMap::iterator itr = passAttrMap.find(attrProp->getName());
-        if (itr != passAttrMap.end())
-            itr->second->buildAttribute(effect, pass, attrProp, options);
+        PassAttributeBuilder* builder
+            = PassAttributeBuilder::find(attrProp->getNameString());
+        if (builder)
+            builder->buildAttribute(effect, pass, attrProp, options);
         else
             SG_LOG(SG_INPUT, SG_ALERT,
                    "skipping unknown pass attribute " << attrProp->getName());
@@ -195,19 +174,6 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
         result[3] = alphaProp ? alphaProp->getValue<float>() : 1.0f;
         return result;
     }
-}
-
-// The description of an attribute may exist in a pass' XML, but a
-// derived effect might want to disable the attribute altogether. So,
-// some attributes have an "active" property; if it exists and is
-// false, the OSG attribute is not built at all. This is different
-// from any OSG mode settings that might be around.
-
-bool isAttributeActive(Effect* effect, const SGPropertyNode* prop)
-{
-    const SGPropertyNode* activeProp
-        = getEffectPropertyChild(effect, prop, "active");
-    return !activeProp || activeProp->getValue<bool>();
 }
 
 struct LightingBuilder : public PassAttributeBuilder
@@ -565,89 +531,6 @@ struct AlphaTestBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
-
-EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
-{
-    {"add", TexEnv::ADD},
-    {"blend", TexEnv::BLEND},
-    {"decal", TexEnv::DECAL},
-    {"modulate", TexEnv::MODULATE},
-    {"replace", TexEnv::REPLACE}
-};
-EffectPropertyMap<TexEnv::Mode> texEnvModes(texEnvModesInit);
-
-TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
-{
-    const SGPropertyNode* modeProp = getEffectPropertyChild(effect, prop,
-                                                            "mode");
-    const SGPropertyNode* colorProp = getEffectPropertyChild(effect, prop,
-                                                             "color");
-    if (!modeProp)
-        return 0;
-    TexEnv::Mode mode = TexEnv::MODULATE;
-    findAttr(texEnvModes, modeProp, mode);
-    if (mode == TexEnv::MODULATE) {
-        return StateAttributeFactory::instance()->getStandardTexEnv();
-    }
-    TexEnv* env = new TexEnv(mode);
-    if (colorProp)
-        env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
-    return env;
- }
-
-
-struct TextureUnitBuilder : PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const osgDB::ReaderWriter::Options* options);
-};
-
-void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
-                                        const SGPropertyNode* prop,
-                                        const osgDB::ReaderWriter::Options* options)
-{
-    if (!isAttributeActive(effect, prop))
-        return;
-    // Decode the texture unit
-    int unit = 0;
-    const SGPropertyNode* pUnit = prop->getChild("unit");
-    if (pUnit) {
-        unit = pUnit->getValue<int>();
-    } else {
-        const SGPropertyNode* pName = prop->getChild("name");
-        if (pName)
-            try {
-                unit = boost::lexical_cast<int>(pName->getStringValue());
-            } catch (boost::bad_lexical_cast& lex) {
-                SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
-                       << lex.what());
-            }
-    }
-    const SGPropertyNode* pType = getEffectPropertyChild(effect, prop, "type");
-    string type;
-    if (!pType)
-        type = "2d";
-    else
-        type = pType->getStringValue();
-    Texture* texture = 0;
-    try {
-        texture = TextureBuilder::buildFromType(effect, type, prop,
-                                                options);
-    }
-    catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, "No image file for texture, using white ");
-        texture = StateAttributeFactory::instance()->getWhiteTexture();
-    }
-    pass->setTextureAttributeAndModes(unit, texture);
-    const SGPropertyNode* envProp = prop->getChild("environment");
-    if (envProp) {
-        TexEnv* env = buildTexEnv(effect, envProp);
-        if (env)
-            pass->setTextureAttributeAndModes(unit, env);
-    }
-}
-
-
 
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 

@@ -20,12 +20,17 @@
 
 #include "TextureBuilder.hxx"
 
+#include "Pass.hxx"
+
+#include <osg/TexEnv>
+#include <osg/TexEnvCombine>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
 #include <osgDB/FileUtils>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -55,6 +60,84 @@ osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
 typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
                      Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
                      string> TexTuple;
+
+EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
+{
+    {"add", TexEnv::ADD},
+    {"blend", TexEnv::BLEND},
+    {"decal", TexEnv::DECAL},
+    {"modulate", TexEnv::MODULATE},
+    {"replace", TexEnv::REPLACE}
+};
+EffectPropertyMap<TexEnv::Mode> texEnvModes(texEnvModesInit);
+
+TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
+{
+    const SGPropertyNode* modeProp = getEffectPropertyChild(effect, prop,
+                                                            "mode");
+    const SGPropertyNode* colorProp = getEffectPropertyChild(effect, prop,
+                                                             "color");
+    if (!modeProp)
+        return 0;
+    TexEnv::Mode mode = TexEnv::MODULATE;
+    findAttr(texEnvModes, modeProp, mode);
+    if (mode == TexEnv::MODULATE) {
+        return StateAttributeFactory::instance()->getStandardTexEnv();
+    }
+    TexEnv* env = new TexEnv(mode);
+    if (colorProp)
+        env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
+    return env;
+ }
+
+
+void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
+                                        const SGPropertyNode* prop,
+                                        const osgDB::ReaderWriter::Options* options)
+{
+    if (!isAttributeActive(effect, prop))
+        return;
+    // Decode the texture unit
+    int unit = 0;
+    const SGPropertyNode* pUnit = prop->getChild("unit");
+    if (pUnit) {
+        unit = pUnit->getValue<int>();
+    } else {
+        const SGPropertyNode* pName = prop->getChild("name");
+        if (pName)
+            try {
+                unit = boost::lexical_cast<int>(pName->getStringValue());
+            } catch (boost::bad_lexical_cast& lex) {
+                SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
+                       << lex.what());
+            }
+    }
+    const SGPropertyNode* pType = getEffectPropertyChild(effect, prop, "type");
+    string type;
+    if (!pType)
+        type = "2d";
+    else
+        type = pType->getStringValue();
+    Texture* texture = 0;
+    try {
+        texture = TextureBuilder::buildFromType(effect, type, prop,
+                                                options);
+    }
+    catch (BuilderException& e) {
+        SG_LOG(SG_INPUT, SG_ALERT, "No image file for texture, using white ");
+        texture = StateAttributeFactory::instance()->getWhiteTexture();
+    }
+    pass->setTextureAttributeAndModes(unit, texture);
+    const SGPropertyNode* envProp = prop->getChild("environment");
+    if (envProp) {
+        TexEnv* env = buildTexEnv(effect, envProp);
+        if (env)
+            pass->setTextureAttributeAndModes(unit, env);
+    }
+}
+
+// InstallAttributeBuilder call is in Effect.cxx to force this file to
+// be linked in.
 
 namespace
 {

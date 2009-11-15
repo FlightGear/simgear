@@ -40,6 +40,7 @@
 namespace simgear
 {
 class Effect;
+class Pass;
 
 /**
  * Builder that returns an object, probably an OSG object.
@@ -212,5 +213,49 @@ public:
     BuilderException(const std::string& message, const std::string& = "");
     virtual ~BuilderException() throw();
 };
+
+class PassAttributeBuilder : public SGReferenced
+{
+protected:
+    typedef std::map<const std::string, SGSharedPtr<PassAttributeBuilder> >
+    PassAttrMap;
+
+    struct PassAttrMapSingleton : public simgear::Singleton<PassAttrMapSingleton>
+    {
+        PassAttrMap passAttrMap;
+    };
+public:
+    virtual void buildAttribute(Effect* effect, Pass* pass,
+                                const SGPropertyNode* prop,
+                                const osgDB::ReaderWriter::Options* options)
+    = 0;
+    static PassAttributeBuilder* find(const std::string& str)
+    {
+        PassAttrMap::iterator itr
+            = PassAttrMapSingleton::instance()->passAttrMap.find(str);
+        if (itr == PassAttrMapSingleton::instance()->passAttrMap.end())
+            return 0;
+        else
+            return itr->second.ptr();
+    }
+    template<typename T> friend class InstallAttributeBuilder;
+};
+
+template<typename T>
+struct InstallAttributeBuilder
+{
+    InstallAttributeBuilder(const string& name)
+    {
+        PassAttributeBuilder::PassAttrMapSingleton::instance()
+            ->passAttrMap.insert(make_pair(name, new T));
+    }
+};
+
+// The description of an attribute may exist in a pass' XML, but a
+// derived effect might want to disable the attribute altogether. So,
+// some attributes have an "active" property; if it exists and is
+// false, the OSG attribute is not built at all. This is different
+// from any OSG mode settings that might be around.
+bool isAttributeActive(Effect* effect, const SGPropertyNode* prop);
 }
 #endif

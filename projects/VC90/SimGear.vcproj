@@ -1786,6 +1786,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SplicingVisitor.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SplicingVisitor.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.cxx"
 				>
 			</File>

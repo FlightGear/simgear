@@ -20,6 +20,8 @@
 #include <vector>
 #include <string>
 
+#include <boost/unordered_map.hpp>
+
 #include <osg/Object>
 #include <osgDB/ReaderWriter>
 
@@ -104,11 +106,43 @@ public:
     {
         void doUpdate(osg::Node* node, osg::NodeVisitor* nv);
     };
-    
 protected:
     std::vector<SGSharedPtr<Updater> > _extraData;
     ~Effect();
+    // Support for a cache of effects that inherit from this one, so
+    // Effect objects with the same parameters and techniques can be
+    // shared.
+    struct Key
+    {
+        Key(SGPropertyNode* unmerged_, const osgDB::FilePathList& paths_)
+            : unmerged(unmerged_), paths(paths_)
+        {
+        }
+        const SGPropertyNode_ptr unmerged;
+        const osgDB::FilePathList paths;
+        struct EqualTo
+        {
+            bool operator()(const Key& lhs, const Key& rhs) const;
+        };
+    };
+    typedef boost::unordered_map<Key, osg::ref_ptr<Effect>, boost::hash<Key>,
+                                 Key::EqualTo> Cache;
+    Cache* getCache()
+    {
+        if (!_cache)
+            _cache = new Cache;
+        return _cache;
+    }
+    Cache* _cache;
+    friend size_t hash_value(const Key& key);
+    friend Effect* makeEffect(SGPropertyNode* prop, bool realizeTechniques,
+                              const osgDB::ReaderWriter::Options* options);
+    bool _isRealized;
 };
+// Automatic support for boost hash function
+size_t hash_value(const Effect::Key&);
+
+
 Effect* makeEffect(const std::string& name,
                    bool realizeTechniques,
                    const osgDB::ReaderWriter::Options* options = 0);

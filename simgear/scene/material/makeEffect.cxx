@@ -39,6 +39,7 @@ namespace simgear
 {
 using namespace std;
 using namespace osg;
+using namespace effect;
 
 typedef vector<const SGPropertyNode*> RawPropVector;
 typedef map<const string, ref_ptr<Effect> > EffectMap;
@@ -72,6 +73,8 @@ struct PropPredicate
     const SGPropertyNode* node;
 };
 
+namespace effect
+{
 void mergePropertyTrees(SGPropertyNode* resultNode,
                         const SGPropertyNode* left, const SGPropertyNode* right)
 {
@@ -107,6 +110,7 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
             = resultNode->getChild((*itr)->getName(), (*itr)->getIndex(), true);
         copyProperties(*itr, newChild);
     }
+}
 }
 
 Effect* makeEffect(const string& name,

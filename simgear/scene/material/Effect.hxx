@@ -74,5 +74,15 @@ Effect* makeEffect(SGPropertyNode* prop,
 
 bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
                                 const osg::StateSet* ss);
+
+namespace effect
+{
+/**
+ * The function that implements effect property tree inheritance.
+ */
+void mergePropertyTrees(SGPropertyNode* resultNode,
+                        const SGPropertyNode* left,
+                        const SGPropertyNode* right);
+}
 }
 #endif

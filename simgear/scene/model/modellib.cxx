@@ -19,6 +19,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <boost/algorithm/string.hpp>
+
 #include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
@@ -26,6 +28,7 @@
 #include <simgear/constants.h>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
 
 #include "SGPagedLOD.hxx"
@@ -59,6 +62,21 @@ SGModelLib::~SGModelLib()
 {
 }
 
+namespace
+{
+osg::Node* loadFile(const string& path, osgDB::ReaderWriter::Options* options)
+{
+    using namespace osg;
+    using namespace osgDB;
+    ref_ptr<Node> model = readRefNodeFile(path, options);
+    if (!model)
+        return 0;
+    if (boost::iends_with(path, ".ac"))
+        model = instantiateEffects(model.get(), options);
+     return model.release();
+}
+}
+
 osg::Node*
 SGModelLib::loadModel(const string &path,
                        SGPropertyNode *prop_root,
@@ -67,7 +85,7 @@ SGModelLib::loadModel(const string &path,
     osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
     opt->setPropRoot(prop_root);
     opt->setModelData(data);
-    osg::Node *n = readNodeFile(path, opt.get());
+    osg::Node *n = loadFile(path, opt.get());
     if (n && n->getName().empty())
         n->setName("Direct loaded model \"" + path + "\"");
     return n;
@@ -82,7 +100,7 @@ SGModelLib::loadModel(const string &path,
     osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
     opt->setPropRoot(prop_root);
     opt->setLoadPanel(pf);
-    return readNodeFile(path, opt.get());
+    return loadFile(path, opt.get());
 }
 
 osg::Node*

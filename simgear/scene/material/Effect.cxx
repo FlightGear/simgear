@@ -30,7 +30,6 @@
 #include <map>
 #include <utility>
 
-#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -85,10 +84,12 @@ Effect::Effect()
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
     : root(rhs.root), parametersProp(rhs.parametersProp)
 {
-    using namespace boost;
-    transform(rhs.techniques.begin(), rhs.techniques.end(),
-              back_inserter(techniques),
-              bind(simgear::clone_ref<Technique>, _1, copyop));
+    typedef vector<ref_ptr<Technique> > TechniqueList;
+    for (TechniqueList::const_iterator itr = rhs.techniques.begin(),
+             end = rhs.techniques.end();
+         itr != end;
+         ++itr)
+        techniques.push_back(static_cast<Technique*>(copyop(itr->get())));
 }
 
 // Assume that the last technique is always valid.
@@ -196,6 +197,19 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
     }
 }
 
+// The description of an attribute may exist in a pass' XML, but a
+// derived effect might want to disable the attribute altogether. So,
+// some attributes have an "active" property; if it exists and is
+// false, the OSG attribute is not built at all. This is different
+// from any OSG mode settings that might be around.
+
+bool isAttributeActive(Effect* effect, const SGPropertyNode* prop)
+{
+    const SGPropertyNode* activeProp
+        = getEffectPropertyChild(effect, prop, "active");
+    return !activeProp || activeProp->getValue<bool>();
+}
+
 struct LightingBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
@@ -265,6 +279,15 @@ struct CullFaceBuilder : PassAttributeBuilder
 
 InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
 
+EffectNameValue<StateSet::RenderingHint> renderingHintInit[] =
+{
+    { "default", StateSet::DEFAULT_BIN },
+    { "opaque", StateSet::OPAQUE_BIN },
+    { "transparent", StateSet::TRANSPARENT_BIN }
+};
+
+EffectPropertyMap<StateSet::RenderingHint> renderingHints(renderingHintInit);
+
 struct HintBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
@@ -273,11 +296,9 @@ struct HintBuilder : public PassAttributeBuilder
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        string propVal = realProp->getStringValue();
-        if (propVal == "opaque")
-            pass->setRenderingHint(StateSet::OPAQUE_BIN);
-        else if (propVal == "transparent")
-            pass->setRenderingHint(StateSet::TRANSPARENT_BIN);
+        StateSet::RenderingHint renderingHint = StateSet::DEFAULT_BIN;
+        findAttr(renderingHints, realProp, renderingHint);
+        pass->setRenderingHint(renderingHint);
     }    
 };
 
@@ -288,6 +309,8 @@ struct RenderBinBuilder : public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* binProp = prop->getChild("bin-number");
         binProp = getEffectPropertyNode(effect, binProp);
         const SGPropertyNode* nameProp = prop->getChild("bin-name");
@@ -329,6 +352,8 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
                                      const osgDB::ReaderWriter::Options* options)
 {
+    if (!isAttributeActive(effect, prop))
+        return;
     Material* mat = new Material;
     const SGPropertyNode* color = 0;
     if ((color = getEffectPropertyChild(effect, prop, "ambient")))
@@ -397,6 +422,8 @@ struct BlendBuilder : public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         // XXX Compatibility with early <blend> syntax; should go away
         // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
@@ -417,8 +444,8 @@ struct BlendBuilder : public PassAttributeBuilder
             pass->setMode(GL_BLEND, StateAttribute::OFF);
             return;
         }
-        const SGPropertyNode* psource = getEffectPropertyChild(effect, prop,
-                                                              "source");
+        const SGPropertyNode* psource
+            = getEffectPropertyChild(effect, prop, "source");
         const SGPropertyNode* pdestination
             = getEffectPropertyChild(effect, prop, "destination");
         const SGPropertyNode* psourceRGB
@@ -493,6 +520,8 @@ struct AlphaTestBuilder : public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         // XXX Compatibility with early <alpha-test> syntax; should go away
         // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
@@ -577,7 +606,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
                                         const osgDB::ReaderWriter::Options* options)
 {
-
+    if (!isAttributeActive(effect, prop))
+        return;
     // Decode the texture unit
     int unit = 0;
     const SGPropertyNode* pUnit = prop->getChild("unit");
@@ -593,7 +623,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                        << lex.what());
             }
     }
-    const SGPropertyNode* pType = prop->getChild("type");
+    const SGPropertyNode* pType = getEffectPropertyChild(effect, prop, "type");
     string type;
     if (!pType)
         type = "2d";
@@ -650,6 +680,8 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const osgDB::ReaderWriter::Options*
                                           options)
 {
+    if (!isAttributeActive(effect, prop))
+        return;
     PropertyList pVertShaders = prop->getChildren("vertex-shader");
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
     string programKey;
@@ -724,6 +756,8 @@ struct UniformBuilder :public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
         const SGPropertyNode* valProp
@@ -818,6 +852,8 @@ struct PolygonModeBuilder : public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* frontProp
             = getEffectPropertyChild(effect, prop, "front");
         const SGPropertyNode* backProp
@@ -876,8 +912,9 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
 }
 
 // Specifically for .ac files...
-bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
+bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
 {
+    SGPropertyNode* paramRoot = makeChild(effectRoot, "parameters");
     SGPropertyNode* matNode = paramRoot->getChild("material", 0, true);
     Vec4f ambVal, difVal, specVal, emisVal;
     float shininess = 0.0f;
@@ -888,13 +925,16 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
         specVal = mat->getSpecular(Material::FRONT_AND_BACK);
         emisVal = mat->getEmission(Material::FRONT_AND_BACK);
         shininess = mat->getShininess(Material::FRONT_AND_BACK);
+        makeChild(matNode, "active")->setValue(true);
+        makeChild(matNode, "ambient")->setValue(toVec4d(toSG(ambVal)));
+        makeChild(matNode, "diffuse")->setValue(toVec4d(toSG(difVal)));
+        makeChild(matNode, "specular")->setValue(toVec4d(toSG(specVal)));
+        makeChild(matNode, "emissive")->setValue(toVec4d(toSG(emisVal)));
+        makeChild(matNode, "shininess")->setValue(shininess);
+        matNode->getChild("color-mode", 0, true)->setStringValue("diffuse");
+    } else {
+        makeChild(matNode, "active")->setValue(false);
     }
-    matNode->getChild("ambient", 0, true)->setValue(toVec4d(toSG(ambVal)));
-    matNode->getChild("diffuse", 0, true)->setValue(toVec4d(toSG(difVal)));
-    matNode->getChild("specular", 0, true)->setValue(toVec4d(toSG(specVal)));
-    matNode->getChild("emissive", 0, true)->setValue(toVec4d(toSG(emisVal)));
-    matNode->getChild("shininess", 0, true)->setValue(shininess);
-    matNode->getChild("color-mode", 0, true)->setStringValue("diffuse");
     const ShadeModel* sm = getStateAttribute<ShadeModel>(ss);
     string shadeModelString("smooth");
     if (sm) {
@@ -902,8 +942,7 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
         if (smMode == ShadeModel::FLAT)
             shadeModelString = "flat";
     }
-    paramRoot->getChild("shade-model", 0, true)
-        ->setStringValue(shadeModelString);
+    makeChild(paramRoot, "shade-model")->setStringValue(shadeModelString);
     string cullFaceString("off");
     const CullFace* cullFace = getStateAttribute<CullFace>(ss);
     if (cullFace) {
@@ -921,15 +960,18 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
             break;
         }
     }
-    paramRoot->getChild("cull-face", 0, true)->setStringValue(cullFaceString);
+    makeChild(paramRoot, "cull-face")->setStringValue(cullFaceString);
     const BlendFunc* blendFunc = getStateAttribute<BlendFunc>(ss);
+    SGPropertyNode* blendNode = makeChild(paramRoot, "blend");
     if (blendFunc) {
         string sourceMode = findName(blendFuncModes, blendFunc->getSource());
         string destMode = findName(blendFuncModes, blendFunc->getDestination());
-        SGPropertyNode* blendNode = paramRoot->getChild("blend", 0, true);
-        blendNode->getChild("source", 0, true)->setStringValue(sourceMode);
-        blendNode->getChild("destination", 0, true)->setStringValue(destMode);
-        blendNode->getChild("mode", 0, true)->setValue(true);
+        makeChild(blendNode, "active")->setValue(true);
+        makeChild(blendNode, "source")->setStringValue(sourceMode);
+        makeChild(blendNode, "destination")->setStringValue(destMode);
+        makeChild(blendNode, "mode")->setValue(true);
+    } else {
+        makeChild(blendNode, "active")->setValue(false);
     }
     makeTextureParameters(paramRoot, ss);
     return true;

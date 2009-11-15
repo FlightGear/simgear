@@ -881,9 +881,7 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
     SGPropertyNode* matNode = paramRoot->getChild("material", 0, true);
     Vec4f ambVal, difVal, specVal, emisVal;
     float shininess = 0.0f;
-    const Material* mat
-        = static_cast<const Material*>(ss->getAttribute(StateAttribute
-                                                        ::MATERIAL));
+    const Material* mat = getStateAttribute<Material>(ss);
     if (mat) {
         ambVal = mat->getAmbient(Material::FRONT_AND_BACK);
         difVal = mat->getDiffuse(Material::FRONT_AND_BACK);
@@ -897,9 +895,7 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
     matNode->getChild("emissive", 0, true)->setValue(toVec4d(toSG(emisVal)));
     matNode->getChild("shininess", 0, true)->setValue(shininess);
     matNode->getChild("color-mode", 0, true)->setStringValue("diffuse");
-    const ShadeModel* sm
-        = static_cast<const ShadeModel*>(ss->getAttribute(StateAttribute
-                                                          ::SHADEMODEL));
+    const ShadeModel* sm = getStateAttribute<ShadeModel>(ss);
     string shadeModelString("smooth");
     if (sm) {
         ShadeModel::Mode smMode = sm->getMode();
@@ -909,9 +905,7 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
     paramRoot->getChild("shade-model", 0, true)
         ->setStringValue(shadeModelString);
     string cullFaceString("off");
-    const CullFace* cullFace
-        = static_cast<const CullFace*>(ss->getAttribute(StateAttribute
-                                                        ::CULLFACE));
+    const CullFace* cullFace = getStateAttribute<CullFace>(ss);
     if (cullFace) {
         switch (cullFace->getMode()) {
         case CullFace::FRONT:

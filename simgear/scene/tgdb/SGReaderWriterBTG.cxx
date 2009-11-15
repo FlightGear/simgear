@@ -76,7 +76,7 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
 
 
 typedef ModelRegistryCallback<DefaultProcessPolicy, NoCachePolicy,
-                              NoOptimizePolicy, NoCopyPolicy,
+                              NoOptimizePolicy,
                               NoSubstitutePolicy, BuildGroupBVHPolicy>
 BTGCallback;
 

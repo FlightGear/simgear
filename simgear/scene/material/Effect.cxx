@@ -73,6 +73,8 @@ using namespace std;
 using namespace osg;
 using namespace osgUtil;
 
+using namespace effect;
+
 Effect::Effect()
 {
 }
@@ -305,7 +307,7 @@ struct MaterialBuilder : public PassAttributeBuilder
                         const osgDB::ReaderWriter::Options* options);
 };
 
-EffectNameValue<Material::ColorMode> colorModes[] =
+EffectNameValue<Material::ColorMode> colorModeInit[] =
 {
     { "ambient", Material::AMBIENT },
     { "ambient-and-diffuse", Material::AMBIENT_AND_DIFFUSE },
@@ -314,6 +316,7 @@ EffectNameValue<Material::ColorMode> colorModes[] =
     { "specular", Material::SPECULAR },
     { "off", Material::OFF }
 };
+EffectPropertyMap<Material::ColorMode> colorModes(colorModeInit);
 
 void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
@@ -394,7 +397,7 @@ struct AlphaTestBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 
-EffectNameValue<TexEnv::Mode> texEnvModes[] =
+EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
 {
     {"add", TexEnv::ADD},
     {"blend", TexEnv::BLEND},
@@ -402,6 +405,7 @@ EffectNameValue<TexEnv::Mode> texEnvModes[] =
     {"modulate", TexEnv::MODULATE},
     {"replace", TexEnv::REPLACE}
 };
+EffectPropertyMap<TexEnv::Mode> texEnvModes(texEnvModesInit);
 
 TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
 {
@@ -564,7 +568,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
 
 InstallAttributeBuilder<ShaderProgramBuilder> installShaderProgram("program");
 
-EffectNameValue<Uniform::Type> uniformTypes[] =
+EffectNameValue<Uniform::Type> uniformTypesInit[] =
 {
     {"float", Uniform::FLOAT},
     {"float-vec3", Uniform::FLOAT_VEC3},
@@ -573,6 +577,7 @@ EffectNameValue<Uniform::Type> uniformTypes[] =
     {"sampler-2d", Uniform::SAMPLER_2D},
     {"sampler-3d", Uniform::SAMPLER_3D}
 };
+EffectPropertyMap<Uniform::Type> uniformTypes(uniformTypesInit);
 
 struct UniformBuilder :public PassAttributeBuilder
 {
@@ -660,12 +665,13 @@ struct NameBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<NameBuilder> installName("name");
 
-EffectNameValue<PolygonMode::Mode> polygonModeModes[] =
+EffectNameValue<PolygonMode::Mode> polygonModeModesInit[] =
 {
     {"fill", PolygonMode::FILL},
     {"line", PolygonMode::LINE},
     {"point", PolygonMode::POINT}
 };
+EffectPropertyMap<PolygonMode::Mode> polygonModeModes(polygonModeModesInit);
 
 struct PolygonModeBuilder : public PassAttributeBuilder
 {

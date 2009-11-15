@@ -208,7 +208,6 @@ ModelRegistry::readImage(const string& fileName,
     ScopedLock<ReentrantMutex> lock(readerMutex);
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
-    // XXX Workaround for OSG plugin bug
     {
         if (iter != imageCallbackMap.end() && iter->second.valid())
             return iter->second->readImage(fileName, opt);
@@ -357,8 +356,6 @@ ModelRegistry::readNode(const string& fileName,
 {
     ScopedLock<ReentrantMutex> lock(readerMutex);
 
-    // XXX Workaround for OSG plugin bug.
-//    Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));

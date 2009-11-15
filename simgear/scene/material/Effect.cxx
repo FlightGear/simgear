@@ -922,6 +922,17 @@ bool makeParametersFromStateSet(SGPropertyNode* paramRoot, const StateSet* ss)
         }
     }
     paramRoot->getChild("cull-face", 0, true)->setStringValue(cullFaceString);
+    const BlendFunc* blendFunc = getStateAttribute<BlendFunc>(ss);
+    if (blendFunc) {
+        string sourceMode = findName(blendFuncModes, blendFunc->getSource());
+        string destMode = findName(blendFuncModes, blendFunc->getDestination());
+        SGPropertyNode* blendNode = paramRoot->getChild("blend", 0, true);
+        blendNode->getChild("source", 0, true)->setStringValue(sourceMode);
+        blendNode->getChild("destination", 0, true)->setStringValue(destMode);
+        blendNode->getChild("mode", 0, true)->setValue(true);
+    }
+    makeTextureParameters(paramRoot, ss);
+    return true;
 }
 
 // Walk the techniques property tree, building techniques and

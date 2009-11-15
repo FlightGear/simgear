@@ -31,8 +31,8 @@
 
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
-
 #include <simgear/math/SGMath.hxx>
+#include <simgear/structure/OSGUtils.hxx>
 
 #include "Noise.hxx"
 
@@ -281,6 +281,28 @@ Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
 namespace
 {
 TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
+}
+
+bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
+{
+    const Texture* tex = getStateAttribute<Texture>(0, ss);
+    const Texture2D* texture = dynamic_cast<const Texture2D*>(tex);
+    if (!tex)
+        return false;
+    const Image* image = texture->getImage();
+    string imageName;
+    if (image)
+        imageName = image->getFileName();
+    string wrapS = findName(wrapModes, texture->getWrap(Texture::WRAP_S));
+    string wrapT = findName(wrapModes, texture->getWrap(Texture::WRAP_T));
+    string wrapR = findName(wrapModes, texture->getWrap(Texture::WRAP_R));
+    SGPropertyNode* texUnit = makeChild(paramRoot, "texture-unit");
+    makeChild(texUnit, "unit")->setValue(0);
+    makeChild(texUnit, "image")->setStringValue(imageName);
+    makeChild(texUnit, "wrap-s")->setStringValue(wrapS);
+    makeChild(texUnit, "wrap-t")->setStringValue(wrapT);
+    makeChild(texUnit, "wrap-r")->setStringValue(wrapR);
+    return true;
 }
 
 }

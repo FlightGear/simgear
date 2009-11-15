@@ -71,5 +71,8 @@ Effect* makeEffect(const std::string& name,
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
                    const osgDB::ReaderWriter::Options* options = 0);
+
+bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
+                                const osg::StateSet* ss);
 }
 #endif

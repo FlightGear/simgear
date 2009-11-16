@@ -22,7 +22,13 @@
 
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/material/Pass.hxx>
+#include <simgear/scene/material/Technique.hxx>
 #include <simgear/scene/model/model.hxx>
+
+using namespace std;
 
 namespace {
 /**
@@ -209,7 +215,25 @@ public:
 
   virtual void apply(osg::Geode& node)
   {
-    maybeGetMaterialValues(node.getStateSet());
+    using namespace simgear;
+    EffectGeode* eg = dynamic_cast<EffectGeode*>(&node);
+    if (eg) {
+      const Effect* effect = eg->getEffect();
+      if (effect)
+        for (vector<osg::ref_ptr<Technique> >::const_iterator itr
+               = effect->techniques.begin(), end = effect->techniques.end();
+             itr != end;
+             ++itr) {
+          const Technique* tniq = itr->get();
+          for (vector<osg::ref_ptr<Pass> >::const_iterator pitr
+                 = tniq->passes.begin(), pend = tniq->passes.end();
+               pitr != pend;
+               ++pitr)
+            maybeGetMaterialValues(pitr->get());
+        }
+    } else {
+      maybeGetMaterialValues(node.getStateSet());
+    }
     int numDrawables = node.getNumDrawables();
     for (int i = 0; i < numDrawables; i++) {
       osg::Geometry* geom = dynamic_cast<osg::Geometry*>(node.getDrawable(i));
@@ -230,18 +254,20 @@ public:
     }
   }
   
-  void maybeGetMaterialValues(osg::StateSet* stateSet)
+  void maybeGetMaterialValues(const osg::StateSet* stateSet)
   {
     if (!stateSet)
       return;
-    osg::Material* nodeMat
-      = dynamic_cast<osg::Material*>(stateSet->getAttribute(osg::StateAttribute::MATERIAL));
+    const osg::Material* nodeMat
+      = dynamic_cast<const osg::Material*>(stateSet
+                                           ->getAttribute(osg::StateAttribute
+                                                          ::MATERIAL));
     if (!nodeMat)
       return;
     material = nodeMat;
   }
 
-  osg::ref_ptr<osg::Material> material;
+  osg::ref_ptr<const osg::Material> material;
   osg::Vec4 ambientDiffuse;
 };
 

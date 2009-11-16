@@ -337,8 +337,8 @@ public:
         _orientation = ori; _changed = true;
     }
 
-    inline void set_rotation( const SGQuatd& hlOr ) {
-        _rotation = hlOr; _changed = true;
+    inline void set_rotation( const SGQuatd& ec2body ) {
+        _rotation = ec2body; _changed = true;
     }
 
     /**

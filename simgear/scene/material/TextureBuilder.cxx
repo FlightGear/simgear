@@ -297,6 +297,25 @@ namespace
 TextureBuilder::Registrar installWhite("white", new WhiteTextureBuilder);
 }
 
+class TransparentTextureBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const osgDB::ReaderWriter::Options* options);
+};
+
+Texture* TransparentTextureBuilder::build(Effect* effect, const SGPropertyNode*,
+                                    const osgDB::ReaderWriter::Options* options)
+{
+    return StateAttributeFactory::instance()->getTransparentTexture();
+}
+
+namespace
+{
+TextureBuilder::Registrar installTransparent("transparent",
+                                             new TransparentTextureBuilder);
+}
+
 osg::Image* make3DNoiseImage(int texSize)
 {
     osg::Image* image = new osg::Image;
@@ -435,7 +454,7 @@ TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp)
     if ((p = getEffectPropertyChild(effect, envProp, "combine-alpha"))) {
         TexEnvCombine::CombineParam calpha = TexEnvCombine::MODULATE;
         findAttr(combineParams, p, calpha);
-        result->setCombine_RGB(calpha);
+        result->setCombine_Alpha(calpha);
     }
     if ((p = getEffectPropertyChild(effect, envProp, "source0-rgb"))) {
         TexEnvCombine::SourceParam source = TexEnvCombine::TEXTURE;
@@ -577,8 +596,8 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     const Texture2D* texture = dynamic_cast<const Texture2D*>(tex);
     makeChild(texUnit, "unit")->setValue(0);
     if (!tex) {
+        // The default shader-based technique ignores active
         makeChild(texUnit, "active")->setValue(false);
-        makeChild(texUnit, "type")->setValue("white");
         return false;
     }
     const Image* image = texture->getImage();

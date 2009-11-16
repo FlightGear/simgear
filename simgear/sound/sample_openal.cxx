@@ -197,12 +197,9 @@ SGSoundSample::~SGSoundSample() {
 
 void SGSoundSample::update_pos_and_orientation() {
 
-    _absolute_pos = _base_pos;
-#if 0
-    if ( _relative_pos[0] || _relative_pos[1] || _relative_pos[2] ) {
-        _absolute_pos += _rotation.backTransform( _relative_pos );
-    }
-#endif
+    	// position is in basic view, no need to rotate
+    	// (proper alignment is set in xmlsound)
+    _absolute_pos = _base_pos + _relative_pos;
 
     _orivec = SGVec3f::zeros();
     if ( _direction[0] || _direction[1] || _direction[2] ) {

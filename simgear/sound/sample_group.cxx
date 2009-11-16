@@ -324,11 +324,11 @@ void SGSampleGroup::set_volume( float vol )
 void SGSampleGroup::update_pos_and_orientation() {
  
     SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
-    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos) * _orientation;
+    SGQuatd ec2body= SGQuatd::fromLonLat(_base_pos) * _orientation;
 
     SGVec3f velocity = SGVec3f::zeros();
     if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
-       velocity = toVec3f( hlOr.backTransform(_velocity*SG_FEET_TO_METER) );
+       velocity = toVec3f( ec2body.backTransform(_velocity*SG_FEET_TO_METER) );
     }
 
     sample_map_iterator sample_current = _samples.begin();
@@ -337,7 +337,7 @@ void SGSampleGroup::update_pos_and_orientation() {
         SGSoundSample *sample = sample_current->second;
         sample->set_master_volume( _volume );
         sample->set_orientation( _orientation );
-        sample->set_rotation( hlOr );
+        sample->set_rotation( ec2body );
         sample->set_position( position );
         sample->set_velocity( velocity );
     }

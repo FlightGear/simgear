@@ -144,7 +144,7 @@ void SGSampleGroup::update( double dt ) {
 
                 ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
                 alSourcei( source, AL_LOOPING, looping );
-                alSourcef( source, AL_ROLLOFF_FACTOR, 1.0 );
+                alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
                 alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                 alSourcePlay( source );
                 testForALError("sample play");

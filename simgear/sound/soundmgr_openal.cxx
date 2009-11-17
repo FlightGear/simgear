@@ -133,11 +133,13 @@ void SGSoundMgr::init() {
     alDopplerFactor(1.0);
     alDopplerVelocity(340.3);   // speed of sound in meters per second.
 
+#if 0
     if ( alIsExtensionPresent((const ALchar*)"EXT_exponent_distance") ) {
         alDistanceModel(AL_EXPONENT_DISTANCE);
     } else {
         alDistanceModel(AL_INVERSE_DISTANCE);
     }
+#endif
 
     testForALError("listener initialization");
 
@@ -263,7 +265,6 @@ if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
 if (isNaN(toVec3f(_absolute_pos).data())) printf("NaN in listener position\n");
 if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
 #endif
-            update_pos_and_orientation();
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             // alListenerfv( AL_POSITION, toVec3f(_absolute_pos).data() );

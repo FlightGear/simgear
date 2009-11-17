@@ -133,13 +133,9 @@ void SGSoundMgr::init() {
     alDopplerFactor(1.0);
     alDopplerVelocity(340.3);   // speed of sound in meters per second.
 
-#if 0
-    if ( alIsExtensionPresent((const ALchar*)"EXT_exponent_distance") ) {
-        alDistanceModel(AL_EXPONENT_DISTANCE);
-    } else {
-        alDistanceModel(AL_INVERSE_DISTANCE);
-    }
-#endif
+    // gain = AL_REFERENCE_DISTANCE / (AL_REFERENCE_DISTANCE +
+    //        AL_ROLLOFF_FACTOR * (distance - AL_REFERENCE_DISTANCE));
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
     testForALError("listener initialization");
 

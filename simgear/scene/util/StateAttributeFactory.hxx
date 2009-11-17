@@ -57,6 +57,11 @@ public:
     osg::Texture2D* getWhiteTexture() { return _whiteTexture.get(); }
     // White color
     osg::Vec4Array* getWhiteColor() {return _white.get(); }
+    // A white, completely transparent texture
+    osg::Texture2D* getTransparentTexture()
+    {
+        return _transparentTexture.get();
+    }
     // cull front and back facing polygons
     osg::CullFace* getCullFaceFront() { return _cullFaceFront.get(); }
     osg::CullFace* getCullFaceBack() { return _cullFaceBack.get(); }
@@ -70,6 +75,7 @@ protected:
     osg::ref_ptr<osg::BlendFunc> _standardBlendFunc;
     osg::ref_ptr<osg::TexEnv> _standardTexEnv;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
+    osg::ref_ptr<osg::Texture2D> _transparentTexture;
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;

@@ -16,7 +16,7 @@ MultiChangeListener::MultiChangeListener()
 {
 }
 
-void MultiChangeListener::valueChanged()
+void MultiChangeListener::valueChanged(SGPropertyNode* node)
 {
     valueChangedImplementation();
 }

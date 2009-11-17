@@ -15,7 +15,7 @@
 namespace simgear
 {
 // Performs an action when one of several nodes changes
-class MultiChangeListener : private SGPropertyChangeListener
+class MultiChangeListener : public SGPropertyChangeListener
 {
 public:
     MultiChangeListener();
@@ -25,9 +25,8 @@ public:
         for (Pitr itr = propsBegin, end = propsEnd; itr != end; ++itr)
             (*itr)->addChangeListener(this);
     }
-    void valueChanged();
-    using SGPropertyChangeListener::unregister_property;
 private:
+    void valueChanged(SGPropertyNode* node);
     virtual void valueChangedImplementation();
 
 };

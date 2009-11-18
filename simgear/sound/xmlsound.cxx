@@ -174,9 +174,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
 
    }
 
-   float reference_dist = node->getDoubleValue("reference-dist", 500.0);
-   float max_dist = node->getDoubleValue("max-dist", 3000.0);
- 
+   // rule of thumb: make reference distance a 100th of the maximum distance.
+   float reference_dist = node->getDoubleValue("reference-dist", 60.0);
+   float max_dist = node->getDoubleValue("max-dist", 6000.0);
+
    //
    // set pitch properties
    //

@@ -324,11 +324,12 @@ void SGSampleGroup::set_volume( float vol )
 void SGSampleGroup::update_pos_and_orientation() {
  
     SGVec3d position = SGVec3d::fromGeod(_base_pos) - _smgr->get_position();
-    SGQuatd ec2body= SGQuatd::fromLonLat(_base_pos) * _orientation;
+    SGQuatd hlOr = SGQuatd::fromLonLat(_base_pos);
+    SGQuatd ec2body = hlOr*_orientation;
 
     SGVec3f velocity = SGVec3f::zeros();
     if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
-       velocity = toVec3f( ec2body.backTransform(_velocity*SG_FEET_TO_METER) );
+       velocity = toVec3f( hlOr.backTransform(_velocity*SG_FEET_TO_METER) );
     }
 
     sample_map_iterator sample_current = _samples.begin();

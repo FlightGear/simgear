@@ -323,6 +323,7 @@ SGSampleGroup *SGSoundMgr::find( const string &refname, bool create ) {
         // sample group was not found.
         if (create) {
             SGSampleGroup* sgrp = new SGSampleGroup(this, refname);
+            add( sgrp, refname );
             return sgrp;
         }
         else 

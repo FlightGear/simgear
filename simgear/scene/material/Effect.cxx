@@ -761,6 +761,41 @@ struct PolygonModeBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
+
+struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_TWO_SIDE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramTwoSideBuilder>
+installTwoSide("vertex-program-two-side");
+
+struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_POINT_SIZE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramPointSizeBuilder>
+installPointSize("vertex-program-point-size");
+
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const osgDB::ReaderWriter::Options* options)
 {

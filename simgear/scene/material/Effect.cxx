@@ -942,13 +942,17 @@ bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,
     if (lhs.paths.size() != rhs.paths.size()
         || !equal(lhs.paths.begin(), lhs.paths.end(), rhs.paths.begin()))
         return false;
-    return props::Compare()(lhs.unmerged, rhs.unmerged);
+    if (lhs.unmerged.valid() && rhs.unmerged.valid())
+        return props::Compare()(lhs.unmerged, rhs.unmerged);
+    else
+        return lhs.unmerged == rhs.unmerged;
 }
 
 size_t hash_value(const Effect::Key& key)
 {
     size_t seed = 0;
-    boost::hash_combine(seed, *key.unmerged);
+    if (key.unmerged.valid())
+        boost::hash_combine(seed, *key.unmerged);
     boost::hash_range(seed, key.paths.begin(), key.paths.end());
     return seed;
 }

@@ -114,12 +114,19 @@ protected:
     // shared.
     struct Key
     {
+        Key() {}
         Key(SGPropertyNode* unmerged_, const osgDB::FilePathList& paths_)
             : unmerged(unmerged_), paths(paths_)
         {
         }
-        const SGPropertyNode_ptr unmerged;
-        const osgDB::FilePathList paths;
+        Key& operator=(const Key& rhs)
+        {
+            unmerged = rhs.unmerged;
+            paths = rhs.paths;
+            return *this;
+        }
+        SGPropertyNode_ptr unmerged;
+        osgDB::FilePathList paths;
         struct EqualTo
         {
             bool operator()(const Key& lhs, const Key& rhs) const;

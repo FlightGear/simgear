@@ -13,6 +13,7 @@
 #include <string>
 
 #include <osg/GLExtensions>
+#include <osg/GL2Extensions>
 #include <osg/Math>
 #include <osgUtil/CullVisitor>
 
@@ -274,6 +275,38 @@ Expression* extensionSupportedParser(const SGPropertyNode* exp,
 expression::ExpParserRegistrar
 extensionSupportedRegistrar("extension-supported", extensionSupportedParser);
 
+class GLShaderLanguageExpression : public GeneralNaryExpression<float, int>
+{
+public:
+    void eval(float& value, const expression::Binding* b) const
+    {
+        value = 0.0f;
+        int contextId = getOperand(0)->getValue(b);
+        GL2Extensions* extensions
+            = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
+        if (!extensions)
+            return;
+        if (!extensions->isGlslSupported())
+            return;
+        value = extensions->getLanguageVersion();
+    }
+};
+
+Expression* shaderLanguageParser(const SGPropertyNode* exp,
+                                 expression::Parser* parser)
+{
+    GLShaderLanguageExpression* slexp = new GLShaderLanguageExpression;
+    int location = parser->getBindingLayout().addBinding("__contextId",
+                                                         expression::INT);
+    VariableExpression<int>* contextExp = new VariableExpression<int>(location);
+    slexp->addOperand(contextExp);
+    return slexp;
+}
+
+expression::ExpParserRegistrar shaderLanguageRegistrar("shader-language",
+                                                       glVersionParser);
+
+    
 void Technique::setGLExtensionsPred(float glVersion,
                                     const std::vector<std::string>& extensions)
 {

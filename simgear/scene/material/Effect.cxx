@@ -761,6 +761,41 @@ struct PolygonModeBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
+
+struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_TWO_SIDE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramTwoSideBuilder>
+installTwoSide("vertex-program-two-side");
+
+struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_POINT_SIZE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramPointSizeBuilder>
+installPointSize("vertex-program-point-size");
+
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const osgDB::ReaderWriter::Options* options)
 {
@@ -907,13 +942,17 @@ bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,
     if (lhs.paths.size() != rhs.paths.size()
         || !equal(lhs.paths.begin(), lhs.paths.end(), rhs.paths.begin()))
         return false;
-    return props::Compare()(lhs.unmerged, rhs.unmerged);
+    if (lhs.unmerged.valid() && rhs.unmerged.valid())
+        return props::Compare()(lhs.unmerged, rhs.unmerged);
+    else
+        return lhs.unmerged == rhs.unmerged;
 }
 
 size_t hash_value(const Effect::Key& key)
 {
     size_t seed = 0;
-    boost::hash_combine(seed, *key.unmerged);
+    if (key.unmerged.valid())
+        boost::hash_combine(seed, *key.unmerged);
     boost::hash_range(seed, key.paths.begin(), key.paths.end());
     return seed;
 }

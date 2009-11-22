@@ -26,18 +26,11 @@
 
 #include <boost/tuple/tuple_comparison.hpp>
 
-#include <osg/AlphaFunc>
-#include <osg/Billboard>
-#include <osg/BlendFunc>
 #include <osg/Geode>
 #include <osg/Geometry>
-#include <osg/Material>
 #include <osg/Math>
 #include <osg/MatrixTransform>
 #include <osg/Matrix>
-#include <osg/StateSet>
-#include <osg/Texture2D>
-#include <osg/TexEnv>
 
 #include <osgDB/ReadFile>
 #include <osgDB/FileUtils>
@@ -45,6 +38,9 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/scene/util/QuadTreeBuilder.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
@@ -167,14 +163,17 @@ Geometry* createTreeGeometry(float width, float height, int varieties)
     (*rotation)[1] = PI_2;
     quadGeom->setFogCoordArray(rotation);
     quadGeom->setFogCoordBinding(Geometry::BIND_PER_PRIMITIVE_SET);
+    // The primitive sets render the same geometry, but the second
+    // will rotated 90 degrees by the vertex shader, which uses the
+    // fog coordinate as a rotation.
     for (int i = 0; i < 2; ++i)
         quadGeom->addPrimitiveSet(new DrawArrays(PrimitiveSet::QUADS));
     return quadGeom;
 }
 
-Geode* createTreeGeode(float width, float height, int varieties)
+EffectGeode* createTreeGeode(float width, float height, int varieties)
 {
-    Geode* result = new Geode;
+    EffectGeode* result = new EffectGeode;
     result->addDrawable(createTreeGeometry(width, height, varieties));
     return result;
 }
@@ -204,67 +203,31 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
     }
 }
 
- static char vertexShaderSource[] = 
-    "varying float fogFactor;\n"
-    "\n"
-    "void main(void)\n"
-    "{\n"
-    "  float numVarieties = gl_Normal.z;\n"
-    "  float texFract = floor(fract(gl_MultiTexCoord0.x) * numVarieties) / numVarieties;\n"
-    "  texFract += floor(gl_MultiTexCoord0.x) / numVarieties;\n"
-    "  float sr = sin(gl_FogCoord);\n"
-    "  float cr = cos(gl_FogCoord);\n"
-    "  gl_TexCoord[0] = vec4(texFract, gl_MultiTexCoord0.y, 0.0, 0.0);\n"
-    // scaling
-    "  vec3 position = gl_Vertex.xyz * gl_Normal.xxy;\n"
-    // Rotation of the generic quad to specific one for the tree.
-    "  position.xy = vec2(dot(position.xy, vec2(cr, sr)), dot(position.xy, vec2(-sr, cr)));\n"
-    "  position = position + gl_Color.xyz;\n"
-    "  gl_Position   = gl_ModelViewProjectionMatrix * vec4(position,1.0);\n"
-    "  vec3 ecPosition = vec3(gl_ModelViewMatrix * vec4(position, 1.0));\n"
-    "  float n = dot(normalize(gl_LightSource[0].position.xyz), normalize(-ecPosition));\n"
-    "  vec3 diffuse = gl_FrontMaterial.diffuse.rgb * max(0.1, n);\n"
-    "  vec4 ambientColor = gl_FrontLightModelProduct.sceneColor + gl_LightSource[0].ambient * gl_FrontMaterial.ambient;\n"
-    "  gl_FrontColor = ambientColor + gl_LightSource[0].diffuse * vec4(diffuse, 1.0);\n"
-    "  gl_BackColor = gl_FrontColor;\n"
-    "  float fogCoord = abs(ecPosition.z);\n"
-    "  fogFactor = exp( -gl_Fog.density * gl_Fog.density * fogCoord * fogCoord);\n"
-    "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
-    "}\n";
+typedef std::map<std::string, osg::ref_ptr<Effect> > EffectMap;
 
-static char fragmentShaderSource[] = 
-    "uniform sampler2D baseTexture; \n"
-    "varying float fogFactor;\n"
-    "\n"
-    "void main(void) \n"
-    "{ \n"
-    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
-    "  vec4 finalColor = base * gl_Color;\n"
-    "  gl_FragColor = mix(gl_Fog.color, finalColor, fogFactor );\n"
-    "}\n";
-
-typedef std::map<std::string, osg::ref_ptr<StateSet> > StateSetMap;
-
-static StateSetMap treeTextureMap;
+static EffectMap treeEffectMap;
 
 // Helper classes for creating the quad tree
 namespace
 {
 struct MakeTreesLeaf
 {
-    MakeTreesLeaf(float range, int varieties, float width, float height) :
+    MakeTreesLeaf(float range, int varieties, float width, float height,
+        Effect* effect) :
         _range(range),  _varieties(varieties),
-        _width(width), _height(height) {}
+        _width(width), _height(height), _effect(effect) {}
 
     MakeTreesLeaf(const MakeTreesLeaf& rhs) :
         _range(rhs._range),
-        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height)
+        _varieties(rhs._varieties), _width(rhs._width), _height(rhs._height),
+        _effect(rhs._effect)
     {}
 
     LOD* operator() () const
     {
         LOD* result = new LOD;
-        Geode* geode = createTreeGeode(_width, _height, _varieties);
+        EffectGeode* geode = createTreeGeode(_width, _height, _varieties);
+        geode->setEffect(_effect.get());
         result->addChild(geode, 0, _range);
         return result;
     }
@@ -272,6 +235,7 @@ struct MakeTreesLeaf
     int _varieties;
     float _width;
     float _height;
+    ref_ptr<Effect> _effect;
 };
 
 struct AddTreesLeafObject
@@ -317,51 +281,19 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
     // Set up some shared structures.
     ref_ptr<Group> group;
 
-    osg::StateSet* stateset = 0;
-    StateSetMap::iterator iter = treeTextureMap.find(forest.texture);
-    if (iter == treeTextureMap.end()) {
-        osg::Texture2D *tex = new osg::Texture2D;
-        tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
-        tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
-        tex->setImage(osgDB::readImageFile(forest.texture));
-
-        static ref_ptr<AlphaFunc> alphaFunc;
-        static ref_ptr<Program> program;
-        static ref_ptr<Uniform> baseTextureSampler;
-        static ref_ptr<Material> material;
-    
-        stateset = new osg::StateSet;
-        stateset->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
-        stateset->setRenderBinDetails(RANDOM_OBJECTS_BIN, "DepthSortedBin");
-        if (!program.valid()) {
-            alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(AlphaFunc::GEQUAL,0.33f);
-            program  = new Program;
-            baseTextureSampler = new osg::Uniform("baseTexture", 0);
-            Shader* vertex_shader = new Shader(Shader::VERTEX,
-                                               vertexShaderSource);
-            program->addShader(vertex_shader);
-            Shader* fragment_shader = new Shader(Shader::FRAGMENT,
-                                                 fragmentShaderSource);
-            program->addShader(fragment_shader);
-            material = new Material;
-            // Don´t track vertex color
-            material->setColorMode(Material::OFF);
-            material->setAmbient(Material::FRONT_AND_BACK,
-                                 Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-            material->setDiffuse(Material::FRONT_AND_BACK,
-                                 Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        }
-        stateset->setAttributeAndModes(alphaFunc.get());
-        stateset->setAttribute(program.get());
-        stateset->addUniform(baseTextureSampler.get());
-        stateset->setMode(GL_VERTEX_PROGRAM_TWO_SIDE, StateAttribute::ON);
-        stateset->setAttribute(material.get());
-
-        treeTextureMap.insert(StateSetMap::value_type(forest.texture,
-                                                      stateset));
+    Effect* effect = 0;
+    EffectMap::iterator iter = treeEffectMap.find(forest.texture);
+    if (iter == treeEffectMap.end()) {
+        SGPropertyNode_ptr effectProp = new SGPropertyNode;
+        makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");
+        SGPropertyNode* params = makeChild(effectProp, "parameters");
+        // emphasize n = 0
+        params->getChild("texture", 0, true)->getChild("image", 0, true)
+            ->setStringValue(forest.texture);
+        effect = makeEffect(effectProp, true);
+        treeEffectMap.insert(EffectMap::value_type(forest.texture, effect));
     } else {
-        stateset = iter->second.get();
+        effect = iter->second.get();
     }
     // Now, create a quadtree for the forest.
     {
@@ -369,7 +301,7 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
             quadtree(GetTreeCoord(), AddTreesLeafObject(),
                      SG_TREE_QUAD_TREE_DEPTH,
                      MakeTreesLeaf(forest.range, forest.texture_varieties,
-                                   forest.width, forest.height));
+                                   forest.width, forest.height, effect));
         // Transform tree positions from the "geocentric" positions we
         // get from the scenery polys into the local Z-up coordinate
         // system.
@@ -384,7 +316,6 @@ osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
     MatrixTransform* mt = new MatrixTransform(transform);
     for (size_t i = 0; i < group->getNumChildren(); ++i)
         mt->addChild(group->getChild(i));
-    mt->setStateSet(stateset);
     return mt;
 }
 

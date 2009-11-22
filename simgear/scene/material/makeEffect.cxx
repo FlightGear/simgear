@@ -174,7 +174,13 @@ Effect* makeEffect(SGPropertyNode* prop,
         parent = makeEffect(inheritProp->getStringValue(), false, options);
         if (parent) {
             Effect::Cache* cache = parent->getCache();
-            Effect::Key key(prop, options->getDatabasePathList());
+            Effect::Key key;
+            if (options) {
+                key = Effect::Key(prop, options->getDatabasePathList());
+            } else {
+                osgDB::FilePathList dummy;
+                key = Effect::Key(prop, dummy);
+            }
             Effect::Cache::iterator itr = cache->find(key);
             if (itr != cache->end()) {
                 effect = itr->second.get();

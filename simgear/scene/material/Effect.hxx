@@ -19,8 +19,9 @@
 
 #include <vector>
 #include <string>
+#include <boost/tr1/unordered_map.hpp>
 
-#include <boost/unordered_map.hpp>
+#include <boost/functional/hash.hpp>
 
 #include <osg/Object>
 #include <osgDB/ReaderWriter>
@@ -132,8 +133,8 @@ protected:
             bool operator()(const Key& lhs, const Key& rhs) const;
         };
     };
-    typedef boost::unordered_map<Key, osg::ref_ptr<Effect>, boost::hash<Key>,
-                                 Key::EqualTo> Cache;
+    typedef std::tr1::unordered_map<Key, osg::ref_ptr<Effect>,
+                                    boost::hash<Key>, Key::EqualTo> Cache;
     Cache* getCache()
     {
         if (!_cache)

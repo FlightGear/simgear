@@ -66,6 +66,7 @@ SGSoundMgr::SGSoundMgr() :
     _absolute_pos(SGVec3d::zeros()),
     _offset_pos(SGVec3d::zeros()),
     _base_pos(SGVec3d::zeros()),
+    _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
     _devname(NULL)
@@ -264,7 +265,13 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             // alListenerfv( AL_POSITION, toVec3f(_absolute_pos).data() );
-            alListenerfv( AL_VELOCITY, _velocity.data() );
+
+            SGQuatd hlOr = SGQuatd::fromLonLat( _geod_pos );
+            SGVec3d velocity = SGVec3d::zeros();
+            if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
+                velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
+            }
+            alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;

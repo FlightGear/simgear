@@ -361,7 +361,8 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
 
 #if 0
     if (length(position) > 20000)
-        printf("source and listener distance greater than 20km!\n");
+        printf("%s source and listener distance greater than 20km!\n",
+               _refname.c_str());
     if (isNaN(toVec3f(position).data())) printf("NaN in source position\n");
     if (isNaN(orientation.data())) printf("NaN in source orientation\n");
     if (isNaN(velocity.data())) printf("NaN in source velocity\n");

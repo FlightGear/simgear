@@ -69,7 +69,8 @@ SGSoundMgr::SGSoundMgr() :
     _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _devname(NULL)
+    _devname(NULL), 
+    _bad_doppler(false)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     if (_alut_init == 0) {
@@ -153,6 +154,11 @@ void SGSoundMgr::init() {
             _free_sources.push_back( source );
         }
         else break;
+    }
+
+    const char *renderer = (char *)alGetString(AL_RENDERER);
+    if (  strcmp(renderer, "OpenAL Sample Implementation") ) {
+       _bad_doppler = true;
     }
 
     if (_free_sources.size() == 0) {

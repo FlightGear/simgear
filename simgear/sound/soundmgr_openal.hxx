@@ -261,6 +261,14 @@ public:
     inline bool has_changed() { return _changed; }
 
     /**
+     * Some implementations seem to need the velocity miltyplied by a
+     * factor of 100 to make them distinct. I've not found if this is
+     * a problem in the implementation or in out code. Until then
+     * this function is used to detect the problematic implementations.
+     */
+    inline bool bad_doppler_effect() { return _bad_doppler; }
+
+    /**
      * Load a sample file and return it's configuration and data.
      * @param samplepath Path to the file to load
      * @param data Pointer to a variable that points to the allocated data
@@ -304,6 +312,7 @@ private:
     vector<ALuint> _sources_in_use;
 
     char *_devname;
+    bool _bad_doppler;
 
     bool testForALError(string s);
     bool testForALCError(string s);

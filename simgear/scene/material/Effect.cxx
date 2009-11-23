@@ -38,6 +38,7 @@
 #include <osg/AlphaFunc>
 #include <osg/BlendFunc>
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Drawable>
 #include <osg/Material>
 #include <osg/Math>
@@ -795,6 +796,52 @@ struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<VertexProgramPointSizeBuilder>
 installPointSize("vertex-program-point-size");
+
+EffectNameValue<Depth::Function> depthFunctionInit[] =
+{
+    {"never", Depth::NEVER},
+    {"less", Depth::LESS},
+    {"equal", Depth::EQUAL},
+    {"lequal", Depth::LEQUAL},
+    {"greater", Depth::GREATER},
+    {"notequal", Depth::NOTEQUAL},
+    {"gequal", Depth::GEQUAL},
+    {"always", Depth::ALWAYS}
+};
+EffectPropertyMap<Depth::Function> depthFunction(depthFunctionInit);
+
+struct DepthBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        if (!isAttributeActive(effect, prop))
+            return;
+        ref_ptr<Depth> depth = new Depth;
+        const SGPropertyNode* pfunc
+            = getEffectPropertyChild(effect, prop, "function");
+        if (pfunc) {
+            Depth::Function func = Depth::LESS;
+            findAttr(depthFunction, pfunc, func);
+            depth->setFunction(func);
+        }
+        const SGPropertyNode* pnear
+            = getEffectPropertyChild(effect, prop, "near");
+        if (pnear)
+            depth->setZNear(pnear->getValue<double>());
+        const SGPropertyNode* pfar
+            = getEffectPropertyChild(effect, prop, "far");
+        if (pfar)
+            depth->setZFar(pnear->getValue<double>());
+        const SGPropertyNode* pmask
+            = getEffectPropertyChild(effect, prop, "write-mask");
+        if (pmask)
+            depth->setWriteMask(pmask->getValue<bool>());
+        pass->setAttribute(depth.get());
+    }
+};
+
+InstallAttributeBuilder<DepthBuilder> installDepth("depth");
 
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const osgDB::ReaderWriter::Options* options)

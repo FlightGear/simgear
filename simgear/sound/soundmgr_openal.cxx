@@ -277,6 +277,11 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
             if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
             }
+
+            if ( _bad_doppler ) {
+                velocity *= 100.0f;
+            }
+
             alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");

@@ -66,9 +66,11 @@ SGSoundMgr::SGSoundMgr() :
     _absolute_pos(SGVec3d::zeros()),
     _offset_pos(SGVec3d::zeros()),
     _base_pos(SGVec3d::zeros()),
+    _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _devname(NULL)
+    _devname(NULL), 
+    _bad_doppler(false)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     if (_alut_init == 0) {
@@ -152,6 +154,11 @@ void SGSoundMgr::init() {
             _free_sources.push_back( source );
         }
         else break;
+    }
+
+    const char *renderer = (char *)alGetString(AL_RENDERER);
+    if (  strcmp(renderer, "OpenAL Sample Implementation") ) {
+       _bad_doppler = true;
     }
 
     if (_free_sources.size() == 0) {
@@ -264,7 +271,18 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
             alListenerf( AL_GAIN, _volume );
             alListenerfv( AL_ORIENTATION, _at_up_vec );
             // alListenerfv( AL_POSITION, toVec3f(_absolute_pos).data() );
-            alListenerfv( AL_VELOCITY, _velocity.data() );
+
+            SGQuatd hlOr = SGQuatd::fromLonLat( _geod_pos );
+            SGVec3d velocity = SGVec3d::zeros();
+            if ( _velocity[0] || _velocity[1] || _velocity[2] ) {
+                velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
+            }
+
+            if ( _bad_doppler ) {
+                velocity *= 100.0f;
+            }
+
+            alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
             // alDopplerVelocity(340.3);	// TODO: altitude dependent
             testForALError("update");
             _changed = false;

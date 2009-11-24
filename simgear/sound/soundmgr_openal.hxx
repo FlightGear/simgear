@@ -156,8 +156,8 @@ public:
      * Set the Cartesian position of the sound manager.
      * @param pos OpenAL listener position
      */
-    void set_position( const SGVec3d& pos ) {
-        _base_pos = pos; _changed = true;
+    void set_position( const SGVec3d& pos, const SGGeod& pos_geod ) {
+        _base_pos = pos; _geod_pos = pos_geod; _changed = true;
     }
 
     void set_position_offset( const SGVec3d& pos ) {
@@ -176,7 +176,7 @@ public:
      * This is the horizontal local frame; x=north, y=east, z=down
      * @param Velocity vector
      */
-    void set_velocity( const SGVec3f& vel ) {
+    void set_velocity( const SGVec3d& vel ) {
         _velocity = vel; _changed = true;
     }
 
@@ -185,7 +185,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @return Velocity vector of the OpenAL listener
      */
-    inline SGVec3f& get_velocity() { return _velocity; }
+    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
 
     /**
      * Set the orientation of the sound manager
@@ -261,6 +261,14 @@ public:
     inline bool has_changed() { return _changed; }
 
     /**
+     * Some implementations seem to need the velocity miltyplied by a
+     * factor of 100 to make them distinct. I've not found if this is
+     * a problem in the implementation or in out code. Until then
+     * this function is used to detect the problematic implementations.
+     */
+    inline bool bad_doppler_effect() { return _bad_doppler; }
+
+    /**
      * Load a sample file and return it's configuration and data.
      * @param samplepath Path to the file to load
      * @param data Pointer to a variable that points to the allocated data
@@ -287,9 +295,10 @@ private:
     SGVec3d _absolute_pos;
     SGVec3d _offset_pos;
     SGVec3d _base_pos;
+    SGGeod _geod_pos;
 
     // Velocity of the listener.
-    SGVec3f _velocity;
+    SGVec3d _velocity;
 
     // Orientation of the listener. 
     // first 3 elements are "at" vector, second 3 are "up" vector
@@ -303,6 +312,7 @@ private:
     vector<ALuint> _sources_in_use;
 
     char *_devname;
+    bool _bad_doppler;
 
     bool testForALError(string s);
     bool testForALCError(string s);

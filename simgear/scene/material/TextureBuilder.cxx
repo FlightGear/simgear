@@ -181,24 +181,27 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
                       const string& texType)
 {
     Texture::FilterMode minFilter = Texture::LINEAR_MIPMAP_LINEAR;
-    findAttr(filterModes, getEffectPropertyChild(effect, props, "filter"),
-             minFilter);
+    const SGPropertyNode* ep = 0;
+    if ((ep = getEffectPropertyChild(effect, props, "filter")))
+        findAttr(filterModes, ep, minFilter);
     Texture::FilterMode magFilter = Texture::LINEAR;
-    findAttr(filterModes, getEffectPropertyChild(effect, props,
-                                                 "mag-filter"),
-             magFilter);
+    if ((ep = getEffectPropertyChild(effect, props, "mag-filter")))
+        findAttr(filterModes, ep, magFilter);
     const SGPropertyNode* pWrapS
         = getEffectPropertyChild(effect, props, "wrap-s");
     Texture::WrapMode sWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapS, sWrap);
+    if (pWrapS)
+        findAttr(wrapModes, pWrapS, sWrap);
     const SGPropertyNode* pWrapT
         = getEffectPropertyChild(effect, props, "wrap-t");
     Texture::WrapMode tWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapT, tWrap);
+    if (pWrapT)
+        findAttr(wrapModes, pWrapT, tWrap);
     const SGPropertyNode* pWrapR
         = getEffectPropertyChild(effect, props, "wrap-r");
     Texture::WrapMode rWrap = Texture::CLAMP;
-    findAttr(wrapModes, pWrapR, rWrap);
+    if (pWrapR)
+        findAttr(wrapModes, pWrapR, rWrap);
     const SGPropertyNode* pImage
         = getEffectPropertyChild(effect, props, "image");
     string imageName;
@@ -432,10 +435,10 @@ EffectPropertyMap<TexEnvCombine::SourceParam> sourceParams(sourceParamInit);
 
 EffectNameValue<TexEnvCombine::OperandParam> opParamInit[] =
 {
-    {"src_color", TexEnvCombine::SRC_COLOR},
-    {"one_minus_src_color", TexEnvCombine::ONE_MINUS_SRC_COLOR},
-    {"src_alpha", TexEnvCombine::SRC_ALPHA},
-    {"one_minus_src_alpha", TexEnvCombine::ONE_MINUS_SRC_ALPHA}
+    {"src-color", TexEnvCombine::SRC_COLOR},
+    {"one-minus-src-color", TexEnvCombine::ONE_MINUS_SRC_COLOR},
+    {"src-alpha", TexEnvCombine::SRC_ALPHA},
+    {"one-minus-src-alpha", TexEnvCombine::ONE_MINUS_SRC_ALPHA}
 };
 
 EffectPropertyMap<TexEnvCombine::OperandParam> operandParams(opParamInit);
@@ -567,23 +570,18 @@ TexGen* buildTexGen(Effect* effect, const SGPropertyNode* tgenProp)
     TexGen* result = new TexGen;
     const SGPropertyNode* p = 0;
     TexGen::Mode mode = TexGen::OBJECT_LINEAR;
-    if (findAttr(tgenModes, getEffectPropertyChild(effect, tgenProp, "mode"),
-                 mode))
-        result->setMode(mode);
+    findAttr(tgenModes, getEffectPropertyChild(effect, tgenProp, "mode"), mode);
+    result->setMode(mode);
     const SGPropertyNode* planesNode = tgenProp->getChild("planes");
     if (planesNode) {
         for (int i = 0; i < planesNode->nChildren(); ++i) {
             const SGPropertyNode* planeNode = planesNode->getChild(i);
             TexGen::Coord coord;
-            if (!findAttr(tgenCoords, planeNode->getName(), coord)) {
-                SG_LOG(SG_INPUT, SG_ALERT, "Unknown TexGen plane "
-                       << planeNode->getName());
-            } else {
-                const SGPropertyNode* realNode
-                    = getEffectPropertyNode(effect, planeNode);
-                SGVec4d plane = realNode->getValue<SGVec4d>();
-                result->setPlane(coord, toOsg(plane));
-            }
+            findAttr(tgenCoords, planeNode->getName(), coord);
+            const SGPropertyNode* realNode
+                = getEffectPropertyNode(effect, planeNode);
+            SGVec4d plane = realNode->getValue<SGVec4d>();
+            result->setPlane(coord, toOsg(plane));
         }
     }
     return result;
@@ -611,10 +609,16 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
     }
     makeChild(texUnit, "active")->setValue(true);
     makeChild(texUnit, "type")->setValue("2d");
+    string filter = findName(filterModes,
+                             texture->getFilter(Texture::MIN_FILTER));
+    string magFilter = findName(filterModes,
+                             texture->getFilter(Texture::MAG_FILTER));
     string wrapS = findName(wrapModes, texture->getWrap(Texture::WRAP_S));
     string wrapT = findName(wrapModes, texture->getWrap(Texture::WRAP_T));
     string wrapR = findName(wrapModes, texture->getWrap(Texture::WRAP_R));
     makeChild(texUnit, "image")->setStringValue(imageName);
+    makeChild(texUnit, "filter")->setStringValue(filter);
+    makeChild(texUnit, "mag-filter")->setStringValue(magFilter);
     makeChild(texUnit, "wrap-s")->setStringValue(wrapS);
     makeChild(texUnit, "wrap-t")->setStringValue(wrapT);
     makeChild(texUnit, "wrap-r")->setStringValue(wrapR);

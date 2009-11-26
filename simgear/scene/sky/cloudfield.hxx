@@ -137,9 +137,6 @@ public:
         void applyCoverage(void);
         void applyVisRange(void);
         
-        typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
-        static StateSetMap cloudTextureMap;
-
         static osg::Fog* getFog()
         {
                 return CloudFog::instance()->fog.get();

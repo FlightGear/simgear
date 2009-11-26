@@ -51,6 +51,8 @@ string getGlobalProperty(const SGPropertyNode* prop)
     return useProp->getStringValue();
 }
 
+namespace effect
+{
 BuilderException::BuilderException()
 {
 }
@@ -69,6 +71,7 @@ BuilderException::BuilderException(const std::string& message,
 BuilderException::~BuilderException() throw()
 {
 
+}
 }
 
 bool isAttributeActive(Effect* effect, const SGPropertyNode* prop)

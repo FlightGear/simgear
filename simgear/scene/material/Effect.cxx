@@ -30,8 +30,11 @@
 #include <iterator>
 #include <map>
 #include <utility>
+#include <boost/tr1/unordered_map.hpp>
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -539,10 +542,50 @@ InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 
-typedef map<string, ref_ptr<Program> > ProgramMap;
+// Shader key, used both for shaders with relative and absolute names
+typedef pair<string, Shader::Type> ShaderKey;
+
+struct ProgramKey
+{
+    typedef pair<string, int> AttribKey;
+    osgDB::FilePathList paths;
+    vector<ShaderKey> shaders;
+    vector<AttribKey> attributes;
+    struct EqualTo
+    {
+        bool operator()(const ProgramKey& lhs, const ProgramKey& rhs) const
+        {
+            return (lhs.paths.size() == rhs.paths.size()
+                    && equal(lhs.paths.begin(), lhs.paths.end(),
+                             rhs.paths.begin())
+                    && lhs.shaders.size() == rhs.shaders.size()
+                    && equal (lhs.shaders.begin(), lhs.shaders.end(),
+                              rhs.shaders.begin())
+                    && lhs.attributes.size() == rhs.attributes.size()
+                    && equal(lhs.attributes.begin(), lhs.attributes.end(),
+                             rhs.attributes.begin()));
+        }
+    };
+};
+
+size_t hash_value(const ProgramKey& key)
+{
+    size_t seed = 0;
+    boost::hash_range(seed, key.paths.begin(), key.paths.end());
+    boost::hash_range(seed, key.shaders.begin(), key.shaders.end());
+    boost::hash_range(seed, key.attributes.begin(), key.attributes.end());
+    return seed;
+}
+
+// XXX Should these be protected by a mutex? Probably
+
+typedef tr1::unordered_map<ProgramKey, ref_ptr<Program>,
+                           boost::hash<ProgramKey>, ProgramKey::EqualTo>
+ProgramMap;
 ProgramMap programMap;
 
-typedef map<string, ref_ptr<Shader> > ShaderMap;
+typedef tr1::unordered_map<ShaderKey, ref_ptr<Shader>, boost::hash<ShaderKey> >
+ShaderMap;
 ShaderMap shaderMap;
 
 void reload_shaders()
@@ -550,7 +593,7 @@ void reload_shaders()
     for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
     {
 	Shader *shader = sitr->second.get();
-        string fileName = osgDB::findDataFile(sitr->first);
+        string fileName = osgDB::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
 	    shader->loadShaderSourceFromFile(fileName);
         }
@@ -568,34 +611,47 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const osgDB::ReaderWriter::Options*
                                           options)
 {
+    using namespace boost;
     if (!isAttributeActive(effect, prop))
         return;
     PropertyList pVertShaders = prop->getChildren("vertex-shader");
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
-    string programKey;
+    PropertyList pAttributes = prop->getChildren("attribute");
+    ProgramKey prgKey;
     for (PropertyList::iterator itr = pVertShaders.begin(),
              e = pVertShaders.end();
          itr != e;
          ++itr)
-    {
-        programKey += (*itr)->getStringValue();
-        programKey += ";";
-    }
+        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
+                                           Shader::VERTEX));
     for (PropertyList::iterator itr = pFragShaders.begin(),
              e = pFragShaders.end();
          itr != e;
          ++itr)
-    {
-        programKey += (*itr)->getStringValue();
-        programKey += ";";
+        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
+                                           Shader::FRAGMENT));
+    for (PropertyList::iterator itr = pAttributes.begin(),
+             e = pAttributes.end();
+         itr != e;
+         ++itr) {
+        const SGPropertyNode* pName = getEffectPropertyChild(effect, *itr,
+                                                             "name");
+        const SGPropertyNode* pIndex = getEffectPropertyChild(effect, *itr,
+                                                              "index");
+        if (!pName || ! pIndex)
+            throw BuilderException("malformed attribute property");
+        prgKey.attributes
+            .push_back(ProgramKey::AttribKey(pName->getStringValue(),
+                                             pIndex->getValue<int>()));
     }
+    if (options)
+        prgKey.paths = options->getDatabasePathList();
     Program* program = 0;
-    ProgramMap::iterator pitr = programMap.find(programKey);
+    ProgramMap::iterator pitr = programMap.find(prgKey);
     if (pitr != programMap.end()) {
         program = pitr->second.get();
     } else {
         program = new Program;
-        program->setName(programKey);
         // Add vertex shaders, then fragment shaders
         PropertyList& pvec = pVertShaders;
         Shader::Type stype = Shader::VERTEX;
@@ -604,24 +660,29 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                  nameItr != e;
                  ++nameItr) {
                 string shaderName = (*nameItr)->getStringValue();
-                ShaderMap::iterator sitr = shaderMap.find(shaderName);
+                string fileName = osgDB::findDataFile(shaderName, options);
+                if (fileName.empty())
+                    throw BuilderException(string("couldn't find shader ") +
+                                           shaderName);
+                ShaderKey skey(fileName, stype);
+                ShaderMap::iterator sitr = shaderMap.find(skey);
                 if (sitr != shaderMap.end()) {
                     program->addShader(sitr->second.get());
                 } else {
-                    string fileName = osgDB::findDataFile(shaderName, options);
-                    if (!fileName.empty()) {
-                        ref_ptr<Shader> shader = new Shader(stype);
-                        if (shader->loadShaderSourceFromFile(fileName)) {
-                            program->addShader(shader.get());
-                            shaderMap.insert(make_pair(shaderName, shader));
-                        }
+                    ref_ptr<Shader> shader = new Shader(stype);
+                    if (shader->loadShaderSourceFromFile(fileName)) {
+                        program->addShader(shader.get());
+                        shaderMap.insert(ShaderMap::value_type(skey, shader));
                     }
                 }
             }
             pvec = pFragShaders;
             stype = Shader::FRAGMENT;
         }
-        programMap.insert(make_pair(programKey, program));
+        BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
+            program->addBindAttribLocation(key.first, key.second);
+        }
+       programMap.insert(ProgramMap::value_type(prgKey, program));
     }
     pass->setAttributeAndModes(program);
 }

@@ -154,10 +154,18 @@ EffectPropertyMap<T>::EffectPropertyMap(const EffectNameValue<T> (&attrs)[N])
         _map.insert(typename BMap::value_type(attrs[i].first, attrs[i].second));
 }
 
+class BuilderException : public sg_exception
+{
+public:
+    BuilderException();
+    BuilderException(const char* message, const char* origin = 0);
+    BuilderException(const std::string& message, const std::string& = "");
+    virtual ~BuilderException() throw();
+};
 }
 
 template<typename T>
-bool findAttr(const effect::EffectPropertyMap<T>& pMap,
+void findAttr(const effect::EffectPropertyMap<T>& pMap,
               const char* name,
               T& result)
 {
@@ -165,32 +173,32 @@ bool findAttr(const effect::EffectPropertyMap<T>& pMap,
     typename EffectPropertyMap<T>::BMap::iterator itr
         = pMap._map.get<from>().find(name);
     if (itr == pMap._map.end()) {
-        return false;
+        throw effect::BuilderException(string("findAttr: could not find attribute ")
+                               + string(name));
     } else {
         result = itr->second;
-        return true;
     }
 }
 
 template<typename T>
-inline bool findAttr(const effect::EffectPropertyMap<T>& pMap,
+inline void findAttr(const effect::EffectPropertyMap<T>& pMap,
                      const std::string& name,
                      T& result)
 {
-    return findAttr(pMap, name.c_str(), result);
+    findAttr(pMap, name.c_str(), result);
 }
 
 template<typename T>
-bool findAttr(const effect::EffectPropertyMap<T>& pMap,
+void findAttr(const effect::EffectPropertyMap<T>& pMap,
               const SGPropertyNode* prop,
               T& result)
 {
     if (!prop)
-        return false;
+        throw effect::BuilderException("findAttr: empty property");
     const char* name = prop->getStringValue();
     if (!name)
-        return false;
-    return findAttr(pMap, name, result);
+        throw effect::BuilderException("findAttr: no name for lookup");
+    findAttr(pMap, name, result);
 }
 
 template<typename T>
@@ -233,15 +241,6 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
  * mentioned node name.
  */
 std::string getGlobalProperty(const SGPropertyNode* prop);
-
-class BuilderException : public sg_exception
-{
-public:
-    BuilderException();
-    BuilderException(const char* message, const char* origin = 0);
-    BuilderException(const std::string& message, const std::string& = "");
-    virtual ~BuilderException() throw();
-};
 
 class PassAttributeBuilder : public SGReferenced
 {

@@ -71,7 +71,6 @@ float SGCloudField::fieldSize = 50000.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 sgVec3 SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
-SGCloudField::StateSetMap SGCloudField::cloudTextureMap;
 
 // reposition the cloud layer at the specified origin and orientation
 bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,

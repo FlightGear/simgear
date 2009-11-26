@@ -121,7 +121,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
     }
 }
 
-void CloudShaderGeometry::addSprite(SGVec3f& p, int tx, int ty,
+void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
                                     float w, float h,
                                     float s, float cull, float cloud_height)
 {

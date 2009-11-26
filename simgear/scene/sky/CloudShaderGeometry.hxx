@@ -69,7 +69,8 @@ class CloudShaderGeometry : public osg::Drawable
         META_Object(flightgear, CloudShaderGeometry);
         
         struct CloudSprite {
-            CloudSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float ch) :
+            CloudSprite(const SGVec3f& p, int tx, int ty, float w, float h,
+                        float s, float ch) :
                     position(p), texture_index_x(tx), texture_index_y(ty), width(w), height(h), shade(s), cloud_height(ch)
                     { }
         
@@ -106,7 +107,8 @@ class CloudShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-    void addSprite(SGVec3f& p, int tx, int ty, float w, float h, float s, float cull, float cloud_height);
+    void addSprite(const SGVec3f& p, int tx, int ty, float w, float h,
+                   float s, float cull, float cloud_height);
                 
         osg::ref_ptr<osg::Drawable> _geometry;
 

@@ -156,8 +156,10 @@ void SGSoundMgr::init() {
         else break;
     }
 
+    const char *vendor = (char *)alGetString(AL_VENDOR);
     const char *renderer = (char *)alGetString(AL_RENDERER);
-    if (  strcmp(renderer, "OpenAL Sample Implementation") ) {
+    if (  strcmp(vendor, "OpenAL Community") || strcmp(renderer, "Software")
+          || strcmp(renderer, "OpenAL Sample Implementation") ) {
        _bad_doppler = true;
     }
 

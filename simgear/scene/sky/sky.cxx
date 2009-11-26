@@ -147,15 +147,30 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     double angle = st.gst * 15;	// degrees
     double angleRad = SGMiscd::deg2rad(angle);
 
-    dome->reposition( st.zero_elev, st.alt, st.lon, st.lat, st.spin );
+    SGVec3f zero_elev, view_up;
+    double lon, lat, alt;
+
+    SGGeod geodZeroViewPos = SGGeod::fromGeodM(st.pos_geod, 0);
+    zero_elev = toVec3f( SGVec3d::fromGeod(geodZeroViewPos) );
+
+    // calculate the scenery up vector
+    SGQuatd hlOr = SGQuatd::fromLonLat(st.pos_geod);
+    view_up = toVec3f(hlOr.backTransform(-SGVec3d::e3()));
+
+    // viewer location
+    lon = st.pos_geod.getLongitudeRad();
+    lat = st.pos_geod.getLatitudeRad();
+    alt = st.pos_geod.getElevationM();
+
+    dome->reposition( zero_elev, alt, lon, lat, st.spin );
 
     osg::Matrix m = osg::Matrix::rotate(angleRad, osg::Vec3(0, 0, -1));
-    m.postMultTranslate(toOsg(st.view_pos));
+    m.postMultTranslate(toOsg(st.pos));
     _ephTransform->setMatrix(m);
 
     double sun_ra = eph.getSunRightAscension();
     double sun_dec = eph.getSunDeclination();
-    oursun->reposition( sun_ra, sun_dec, st.sun_dist, st.lat, st.alt, st.sun_angle );
+    oursun->reposition( sun_ra, sun_dec, st.sun_dist, lat, alt, st.sun_angle );
 
     double moon_ra = eph.getMoonRightAscension();
     double moon_dec = eph.getMoonDeclination();
@@ -163,8 +178,7 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
 
     for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
         if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
-            cloud_layers[i]->reposition( st.zero_elev, st.view_up,
-                                         st.lon, st.lat, st.alt, dt );
+            cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt, dt);
         } else
           cloud_layers[i]->getNode()->setAllChildrenOff();
     }

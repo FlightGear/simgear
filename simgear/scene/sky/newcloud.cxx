@@ -213,8 +213,6 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             z = height * cos(elev) * 0.5f;
         }
         
-        SGVec3f *pos = new SGVec3f(x, y, z); 
-
         // Determine the height and width as scaling factors on the minimum size (used to create the quad).
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
@@ -241,7 +239,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
         int index_y = (int) floor((z / height + 0.5f) * num_textures_y);
         if (index_y == num_textures_y) { index_y--; }
         
-        sg->addSprite(*pos, 
+        sg->addSprite(SGVec3f(x, y, z), 
                     index_x, 
                     index_y, 
                     sprite_width, 

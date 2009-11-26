@@ -602,6 +602,13 @@ writeProperties (const string &file, const SGPropertyNode * start_node,
   }
 }
 
+// Another variation, useful when called from gdb
+void
+writeProperties (const char* file, const SGPropertyNode * start_node)
+{
+    writeProperties(string(file), start_node, true);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////

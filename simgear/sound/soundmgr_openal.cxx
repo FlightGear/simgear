@@ -562,6 +562,32 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     return true;
 }
 
+vector<const char*> SGSoundMgr::get_available_devices()
+{
+    vector<const char*> devices;
+    const ALCchar *s;
+
+    if (alcIsExtensionPresent(NULL, "ALC_enumerate_all_EXT") == AL_TRUE) {
+        s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+    } else {
+        s = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+    }
+
+    if (s) {
+        ALCchar *nptr, *ptr = (ALCchar *)s;
+
+        nptr = ptr;
+        while (*(nptr += strlen(ptr)+1) != 0)
+        {
+            devices.push_back(ptr);
+            ptr = nptr;
+        }
+        devices.push_back(ptr);
+    }
+
+    return devices;
+}
+
 
 bool SGSoundMgr::testForError(void *p, string s)
 {

@@ -95,7 +95,7 @@ public:
     SGSoundMgr();
     ~SGSoundMgr();
 
-    void init();
+    void init(const char *devname = NULL);
     void bind();
     void unbind();
     void update(double dt);
@@ -311,7 +311,6 @@ private:
     vector<ALuint> _free_sources;
     vector<ALuint> _sources_in_use;
 
-    char *_devname;
     bool _bad_doppler;
 
     bool testForALError(string s);

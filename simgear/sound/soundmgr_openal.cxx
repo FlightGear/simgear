@@ -102,7 +102,7 @@ void SGSoundMgr::init(const char *devname) {
 
     ALCdevice *device = alcOpenDevice(devname);
     if ( testForError(device, "Audio device not available, trying default") ) {
-        ALCdevice *device = alcOpenDevice(NULL);
+        device = alcOpenDevice(NULL);
         if (testForError(device, "Default Audio device not available.") ) {
            return;
         }

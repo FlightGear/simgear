@@ -39,6 +39,7 @@ SGSampleGroup::SGSampleGroup () :
     _active(false),
     _changed(false),
     _pause(false),
+    _volume(1.0),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros())
@@ -52,6 +53,7 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
     _active(false), 
     _changed(false),
     _pause(false),
+    _volume(1.0),
     _tied_to_listener(false),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros())

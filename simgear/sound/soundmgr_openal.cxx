@@ -69,7 +69,6 @@ SGSoundMgr::SGSoundMgr() :
     _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _devname(NULL), 
     _bad_doppler(false)
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
@@ -97,13 +96,16 @@ SGSoundMgr::~SGSoundMgr() {
 }
 
 // initialize the sound manager
-void SGSoundMgr::init() {
+void SGSoundMgr::init(const char *devname) {
 
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
-    ALCdevice *device = alcOpenDevice(_devname);
-    if ( testForError(device, "No default audio device available.") ) {
-        return;
+    ALCdevice *device = alcOpenDevice(devname);
+    if ( testForError(device, "Audio device not available, trying default") ) {
+        ALCdevice *device = alcOpenDevice(NULL);
+        if (testForError(device, "Default Audio device not available.") ) {
+           return;
+        }
     }
 
     ALCcontext *context = alcCreateContext(device, NULL);

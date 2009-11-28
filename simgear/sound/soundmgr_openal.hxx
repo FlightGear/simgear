@@ -59,6 +59,10 @@
 # include <AL/alut.h>
 #endif
 
+#ifndef ALC_ALL_DEVICES_SPECIFIER
+# define ALC_ALL_DEVICES_SPECIFIER	0x1013
+#endif
+
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/math/SGMathFwd.hxx>
@@ -279,6 +283,11 @@ public:
      */
     bool load(string &samplepath, void **data, int *format,
                                          size_t *size, int *freq );
+
+    /**
+     * Get a list of available playback devices.
+     */
+    vector<const char*> get_available_devices();
 
 private:
     static int _alut_init;

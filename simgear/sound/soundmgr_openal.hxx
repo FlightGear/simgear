@@ -59,6 +59,10 @@
 # include <AL/alut.h>
 #endif
 
+#ifndef ALC_ALL_DEVICES_SPECIFIER
+# define ALC_ALL_DEVICES_SPECIFIER	0x1013
+#endif
+
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
 #include <simgear/math/SGMathFwd.hxx>
@@ -95,7 +99,7 @@ public:
     SGSoundMgr();
     ~SGSoundMgr();
 
-    void init();
+    void init(const char *devname = NULL);
     void bind();
     void unbind();
     void update(double dt);
@@ -280,6 +284,11 @@ public:
     bool load(string &samplepath, void **data, int *format,
                                          size_t *size, int *freq );
 
+    /**
+     * Get a list of available playback devices.
+     */
+    vector<const char*> get_available_devices();
+
 private:
     static int _alut_init;
 
@@ -311,7 +320,6 @@ private:
     vector<ALuint> _free_sources;
     vector<ALuint> _sources_in_use;
 
-    char *_devname;
     bool _bad_doppler;
 
     bool testForALError(string s);

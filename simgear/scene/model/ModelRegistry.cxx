@@ -62,9 +62,6 @@ using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
-using OpenThreads::ReentrantMutex;
-using OpenThreads::ScopedLock;
-
 // Little helper class that holds an extra reference to a
 // loaded 3d model.
 // Since we clone all structural nodes from our 3d models,
@@ -205,7 +202,6 @@ ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
                          const ReaderWriter::Options* opt)
 {
-    ScopedLock<ReentrantMutex> lock(readerMutex);
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
     {
@@ -354,8 +350,6 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
-    ScopedLock<ReentrantMutex> lock(readerMutex);
-
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));

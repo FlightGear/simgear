@@ -200,10 +200,18 @@ void SGSoundMgr::stop() {
         }
         _buffers.clear();
 
+        sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+        sample_group_map_iterator sample_grp_end = _sample_groups.end();
+        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+            SGSampleGroup *sgrp = sample_grp_current->second;
+            sgrp->stop();
+        }
+
         _context = alcGetCurrentContext();
         _device = alcGetContextsDevice(_context);
         alcDestroyContext(_context);
         alcCloseDevice(_device);
+        _context = NULL;
     }
 }
 
@@ -213,7 +221,7 @@ void SGSoundMgr::suspend() {
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
             SGSampleGroup *sgrp = sample_grp_current->second;
-            sgrp->suspend();
+            sgrp->stop();
         }
         _active = false;
     }

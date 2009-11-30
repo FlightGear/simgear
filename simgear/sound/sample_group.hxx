@@ -129,6 +129,11 @@ public:
     SGSoundSample *find( const string& refname );
 
     /**
+     * Stop all playing samples and set the source id to invalid.
+     */
+    void stop();
+
+    /**
      * Request to stop playing all audio samples until further notice.
      */
     void suspend();

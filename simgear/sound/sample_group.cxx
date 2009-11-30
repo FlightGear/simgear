@@ -261,6 +261,29 @@ SGSampleGroup::suspend ()
     testForALError("suspend");
 }
 
+void
+SGSampleGroup::stop ()
+{
+    _pause = true;
+    sample_map_iterator sample_current = _samples.begin();
+    sample_map_iterator sample_end = _samples.end();
+    for ( ; sample_current != sample_end; ++sample_current ) {
+        SGSoundSample *sample = sample_current->second;
+
+        if ( sample->is_valid_source() ) {
+            if ( sample->is_playing() ) {
+                alSourcePause( sample->get_source() );
+            }
+            _smgr->release_source( sample->get_source() );
+            sample->no_valid_source();
+
+            _smgr->release_buffer( sample );
+            sample->no_valid_buffer();
+        }
+    }
+    testForALError("suspend");
+}
+
 // resume playing all associated samples
 void
 SGSampleGroup::resume ()

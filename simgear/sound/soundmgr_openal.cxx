@@ -186,27 +186,36 @@ void SGSoundMgr::activate() {
 
 // stop the sound manager
 void SGSoundMgr::stop() {
+
+    // first stop all sample groups
+    sample_group_map_iterator sample_grp_current = _sample_groups.begin();
+    sample_group_map_iterator sample_grp_end = _sample_groups.end();
+    for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
+        SGSampleGroup *sgrp = sample_grp_current->second;
+        sgrp->stop();
+    }
+
+    // clear all OpenAL sources
+    for (unsigned int i=0; i<_free_sources.size(); i++) {
+        ALuint source = _free_sources[i];
+        alDeleteSources( 1 , &source );
+    }
+    _free_sources.clear();
+
+    // clear any OpenAL buffers before shutting down
+    buffer_map_iterator buffers_current = _buffers.begin();
+    buffer_map_iterator buffers_end = _buffers.end();
+    for ( ; buffers_current != buffers_end; ++buffers_current ) {
+        refUint ref = buffers_current->second;
+        ALuint buffer = ref.id;
+        alDeleteBuffers(1, &buffer);
+        _buffers.erase( buffers_current );
+    }
+    _buffers.clear();
+
     if (_working) {
         _working = false;
         _active = false;
-
-        // clear any OpenAL buffers before shutting down
-        buffer_map_iterator buffers_current = _buffers.begin();
-        buffer_map_iterator buffers_end = _buffers.end();
-        for ( ; buffers_current != buffers_end; ++buffers_current ) {
-            refUint ref = buffers_current->second;
-            ALuint buffer = ref.id;
-            alDeleteBuffers(1, &buffer);
-        }
-        _buffers.clear();
-
-        sample_group_map_iterator sample_grp_current = _sample_groups.begin();
-        sample_group_map_iterator sample_grp_end = _sample_groups.end();
-        for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
-            SGSampleGroup *sgrp = sample_grp_current->second;
-            sgrp->stop();
-        }
-
         _context = alcGetCurrentContext();
         _device = alcGetContextsDevice(_context);
         alcDestroyContext(_context);

@@ -271,17 +271,21 @@ SGSampleGroup::stop ()
         SGSoundSample *sample = sample_current->second;
 
         if ( sample->is_valid_source() ) {
+            ALint source = sample->get_source();
             if ( sample->is_playing() ) {
-                alSourcePause( sample->get_source() );
+                alSourceStop( source );
+                alSourcei( source, AL_BUFFER, 0 );
             }
-            _smgr->release_source( sample->get_source() );
+            _smgr->release_source( source );
             sample->no_valid_source();
+        }
 
+        if (sample->is_valid_buffer() ) {
             _smgr->release_buffer( sample );
             sample->no_valid_buffer();
         }
     }
-    testForALError("suspend");
+    testForALError("stop");
 }
 
 // resume playing all associated samples

@@ -244,23 +244,6 @@ SGSoundSample *SGSampleGroup::find( const string &refname ) {
 }
 
 
-// stop playing all associated samples
-void
-SGSampleGroup::suspend ()
-{
-    _pause = true;
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-
-        if ( sample->is_valid_source() && sample->is_playing() ) {
-            alSourcePause( sample->get_source() );
-        }
-    }
-    testForALError("suspend");
-}
-
 void
 SGSampleGroup::stop ()
 {
@@ -271,34 +254,59 @@ SGSampleGroup::stop ()
         SGSoundSample *sample = sample_current->second;
 
         if ( sample->is_valid_source() ) {
+            ALint source = sample->get_source();
             if ( sample->is_playing() ) {
-                alSourcePause( sample->get_source() );
+                alSourceStop( source );
+                alSourcei( source, AL_BUFFER, 0 );
             }
-            _smgr->release_source( sample->get_source() );
+            _smgr->release_source( source );
             sample->no_valid_source();
+        }
 
+        if (sample->is_valid_buffer() ) {
             _smgr->release_buffer( sample );
             sample->no_valid_buffer();
         }
     }
-    testForALError("suspend");
+    testForALError("stop");
+}
+
+// stop playing all associated samples
+void
+SGSampleGroup::suspend ()
+{
+    if (_pause == false) {
+        _pause = true;
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
+
+            if ( sample->is_valid_source() && sample->is_playing() ) {
+                alSourcePause( sample->get_source() );
+            }
+        }
+        testForALError("suspend");
+    }
 }
 
 // resume playing all associated samples
 void
 SGSampleGroup::resume ()
 {
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
+    if (_pause == true) {
+        sample_map_iterator sample_current = _samples.begin();
+        sample_map_iterator sample_end = _samples.end();
+        for ( ; sample_current != sample_end; ++sample_current ) {
+            SGSoundSample *sample = sample_current->second;
 
-        if ( sample->is_valid_source() && sample->is_playing() ) {
-            alSourcePlay( sample->get_source() );
+            if ( sample->is_valid_source() && sample->is_playing() ) {
+                alSourcePlay( sample->get_source() );
+            }
         }
+        testForALError("resume");
+        _pause = false;
     }
-    testForALError("resume");
-    _pause = false;
 }
 
 
@@ -340,9 +348,12 @@ bool SGSampleGroup::stop( const string& refname ) {
 
 void SGSampleGroup::set_volume( float vol )
 {
-    _volume = vol;
-    if (_volume < 0.0) _volume = 0.0;
-    if (_volume > 1.0) _volume = 1.0;
+    if (vol > _volume*1.01 || vol < _volume*0.99) {
+        _volume = vol;
+        if (_volume < 0.0) _volume = 0.0;
+        if (_volume > 1.0) _volume = 1.0;
+        _changed = true;
+    }
 }
 
 // set the source position and orientation of all managed sounds

@@ -274,6 +274,8 @@ void SGSoundMgr::unbind ()
 // run the audio scheduler
 void SGSoundMgr::update( double dt ) {
     if (_active) {
+        alcSuspendContext(_context);
+
         if (_changed) {
             update_pos_and_orientation();
         }
@@ -310,6 +312,8 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
             testForALError("update");
             _changed = false;
         }
+
+        alcProcessContext(_context);
     }
 }
 

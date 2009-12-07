@@ -19,8 +19,6 @@
 #ifndef _SG_MODELREGISTRY_HXX
 #define _SG_MODELREGISTRY_HXX 1
 
-#include <OpenThreads/ReentrantMutex>
-
 #include <osg/ref_ptr>
 #include <osg/Node>
 #include <osgDB/FileUtils>
@@ -225,9 +223,6 @@ protected:
     CallbackMap imageCallbackMap;
     CallbackMap nodeCallbackMap;
     osg::ref_ptr<DefaultCallback> _defaultCallback;
-    // Protect against simultaneous calls from main thread (MP models)
-    // and pager thread.
-    OpenThreads::ReentrantMutex readerMutex;
 };
 
 // Callback that only loads the file without any caching or

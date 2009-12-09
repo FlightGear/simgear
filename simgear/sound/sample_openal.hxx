@@ -172,7 +172,7 @@ public:
      * Free the data associated with this audio sample
      */
     void free_data() {
-        if ( _data ) free( _data ); _data = NULL;
+        if ( _data != NULL ) free( _data ); _data = NULL;
     }
 
     /**

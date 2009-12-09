@@ -209,7 +209,6 @@ void SGSoundMgr::stop() {
         refUint ref = buffers_current->second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
-        _buffers.erase( buffers_current );
     }
     _buffers.clear();
 

@@ -437,7 +437,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
         string sample_name = sample->get_sample_name();
-        void *sample_data == NULL;
+        void *sample_data = NULL;
 
         // see if the sample name is already cached
         buffer_map_iterator buffer_it = _buffers.find( sample_name );

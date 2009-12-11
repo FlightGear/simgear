@@ -192,7 +192,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
 
 // destructor
 SGSoundSample::~SGSoundSample() {
-    if (_data) free(_data);
+    if ( _data != NULL ) free(_data);
 }
 
 void SGSoundSample::update_pos_and_orientation() {

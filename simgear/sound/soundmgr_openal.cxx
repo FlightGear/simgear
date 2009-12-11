@@ -209,7 +209,6 @@ void SGSoundMgr::stop() {
         refUint ref = buffers_current->second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
-        _buffers.erase( buffers_current );
     }
     _buffers.clear();
 
@@ -438,6 +437,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
         string sample_name = sample->get_sample_name();
+        void *sample_data = NULL;
 
         // see if the sample name is already cached
         buffer_map_iterator buffer_it = _buffers.find( sample_name );
@@ -450,32 +450,31 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 
         // sample name was not found in the buffer cache.
         if ( sample->is_file() ) {
-            size_t size;
             int freq, format;
-            void *data;
+            size_t size;
+            bool res;
 
-            load(sample_name, &data, &format, &size, &freq);
-            sample->set_data( &data );
+            res = load(sample_name, &sample_data, &format, &size, &freq);
+            if (res == false) return buffer;
+
             sample->set_frequency( freq );
             sample->set_format( format );
             sample->set_size( size );
         }
+        else
+            sample_data = sample->get_data();
 
         // create an OpenAL buffer handle
         alGenBuffers(1, &buffer);
         if ( !testForALError("generate buffer") ) {
             // Copy data to the internal OpenAL buffer
 
-            const ALvoid *data = sample->get_data();
             ALenum format = sample->get_format();
             ALsizei size = sample->get_size();
             ALsizei freq = sample->get_frequency();
-            alBufferData( buffer, format, data, size, freq );
+            alBufferData( buffer, format, sample_data, size, freq );
 
-            // If this sample was read from a file we have all the information
-            // needed to read it again. For data buffers provided by the
-            // program we don't; so don't delete it's data.
-            if ( sample->is_file() ) sample->free_data();
+            if ( sample->is_file() ) free(sample_data);
 
             if ( !testForALError("buffer add data") ) {
                 sample->set_buffer(buffer);

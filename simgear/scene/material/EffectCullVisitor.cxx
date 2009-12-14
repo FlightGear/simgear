@@ -56,8 +56,10 @@ void EffectCullVisitor::apply(osg::Geode& node)
     }
     Effect* effect = eg->getEffect();
     Technique* technique = 0;
-    if (!(effect && (technique = effect->chooseTechnique(&getRenderInfo())))) {
+    if (!effect) {
         CullVisitor::apply(node);
+        return;
+    } else if (!(technique = effect->chooseTechnique(&getRenderInfo()))) {
         return;
     }
     // push the node's state.

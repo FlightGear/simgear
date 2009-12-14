@@ -158,8 +158,8 @@ void SGSoundMgr::init(const char *devname) {
         else break;
     }
 
-    string vendor = alGetString(AL_VENDOR);
-    string renderer = alGetString(AL_RENDERER);
+    string vendor = (const char *)alGetString(AL_VENDOR);
+    string renderer = (const char *)alGetString(AL_RENDERER);
     if ( vendor != "OpenAL Community" ||
          (renderer != "Software" && renderer != "OpenAL Sample Implementation")
        )

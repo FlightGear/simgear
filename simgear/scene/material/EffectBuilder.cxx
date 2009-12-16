@@ -2,6 +2,7 @@
 #  include <simgear_config.h>
 #endif
 
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 
 #include <simgear/math/SGMath.hxx>

@@ -45,6 +45,7 @@ namespace simgear
 {
 class Technique;
 class Effect;
+class SGReaderWriterXMLOptions;
 
 /**
  * Object to be initialized at some point after an effect -- and its
@@ -89,7 +90,7 @@ public:
     /**
      * Build the techniques from the effect properties.
      */
-    bool realizeTechniques(const osgDB::ReaderWriter::Options* options = 0);
+    bool realizeTechniques(const SGReaderWriterXMLOptions* options = 0);
     /**
      * Updaters that should be derefed when the effect is
      * deleted. Updaters arrange to be run by listening on properties
@@ -144,7 +145,7 @@ protected:
     Cache* _cache;
     friend size_t hash_value(const Key& key);
     friend Effect* makeEffect(SGPropertyNode* prop, bool realizeTechniques,
-                              const osgDB::ReaderWriter::Options* options);
+                              const SGReaderWriterXMLOptions* options);
     bool _isRealized;
 };
 // Automatic support for boost hash function
@@ -153,11 +154,11 @@ size_t hash_value(const Effect::Key&);
 
 Effect* makeEffect(const std::string& name,
                    bool realizeTechniques,
-                   const osgDB::ReaderWriter::Options* options = 0);
+                   const SGReaderWriterXMLOptions* options = 0);
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const osgDB::ReaderWriter::Options* options = 0);
+                   const SGReaderWriterXMLOptions* options = 0);
 
 bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
                                 const osg::StateSet* ss);

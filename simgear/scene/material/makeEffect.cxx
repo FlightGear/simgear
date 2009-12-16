@@ -31,6 +31,7 @@
 #include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SplicingVisitor.hxx>
@@ -116,7 +117,7 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
 
 Effect* makeEffect(const string& name,
                    bool realizeTechniques,
-                   const osgDB::ReaderWriter::Options* options)
+                   const SGReaderWriterXMLOptions* options)
 {
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
@@ -159,7 +160,7 @@ Effect* makeEffect(const string& name,
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const osgDB::ReaderWriter::Options* options)
+                   const SGReaderWriterXMLOptions* options)
 {
     // Give default names to techniques and passes
     vector<SGPropertyNode_ptr> techniques = prop->getChildren("technique");

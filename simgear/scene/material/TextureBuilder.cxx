@@ -35,6 +35,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/math/SGMath.hxx>
@@ -56,7 +57,7 @@ TexGen* buildTexGen(Effect* Effect, const SGPropertyNode* tgenProp);
 // Hack to force inclusion of TextureBuilder.cxx in library
 osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
                                             const SGPropertyNode*props,
-                                            const osgDB::ReaderWriter::Options*
+                                            const SGReaderWriterXMLOptions*
                                             options)
 {
     return EffectBuilder<Texture>::buildFromType(effect, type, props, options);
@@ -98,7 +99,7 @@ TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
 
 void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                         const SGPropertyNode* prop,
-                                        const osgDB::ReaderWriter::Options* options)
+                                        const SGReaderWriterXMLOptions* options)
 {
     if (!isAttributeActive(effect, prop))
         return;
@@ -177,7 +178,7 @@ EffectPropertyMap<Texture::WrapMode> wrapModes(wrapModesInit);
 
 
 TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
-                      const osgDB::ReaderWriter::Options* options,
+                      const SGReaderWriterXMLOptions* options,
                       const string& texType)
 {
     Texture::FilterMode minFilter = Texture::LINEAR_MIPMAP_LINEAR;
@@ -213,7 +214,7 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
 }
 
 void setAttrs(const TexTuple& attrs, Texture* tex,
-              const osgDB::ReaderWriter::Options* options)
+              const SGReaderWriterXMLOptions* options)
 {
     const string& imageName = attrs.get<0>();
     if (imageName.empty()) {
@@ -253,7 +254,7 @@ class TexBuilder : public TextureBuilder
 public:
     TexBuilder(const string& texType) : _type(texType) {}
     Texture* build(Effect* effect, const SGPropertyNode*,
-                   const osgDB::ReaderWriter::Options* options);
+                   const SGReaderWriterXMLOptions* options);
 protected:
     typedef map<TexTuple, ref_ptr<T> > TexMap;
     TexMap texMap;
@@ -262,7 +263,7 @@ protected:
 
 template<typename T>
 Texture* TexBuilder<T>::build(Effect* effect, const SGPropertyNode* props,
-                              const osgDB::ReaderWriter::Options* options)
+                              const SGReaderWriterXMLOptions* options)
 {
     TexTuple attrs = makeTexTuple(effect, props, options, _type);
     typename TexMap::iterator itr = texMap.find(attrs);
@@ -286,11 +287,11 @@ class WhiteTextureBuilder : public TextureBuilder
 {
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
-                   const osgDB::ReaderWriter::Options* options);
+                   const SGReaderWriterXMLOptions* options);
 };
 
 Texture* WhiteTextureBuilder::build(Effect* effect, const SGPropertyNode*,
-                                    const osgDB::ReaderWriter::Options* options)
+                                    const SGReaderWriterXMLOptions* options)
 {
     return StateAttributeFactory::instance()->getWhiteTexture();
 }
@@ -304,11 +305,11 @@ class TransparentTextureBuilder : public TextureBuilder
 {
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
-                   const osgDB::ReaderWriter::Options* options);
+                   const SGReaderWriterXMLOptions* options);
 };
 
 Texture* TransparentTextureBuilder::build(Effect* effect, const SGPropertyNode*,
-                                    const osgDB::ReaderWriter::Options* options)
+                                    const SGReaderWriterXMLOptions* options)
 {
     return StateAttributeFactory::instance()->getTransparentTexture();
 }
@@ -368,14 +369,14 @@ class NoiseBuilder : public TextureBuilder
 {
 public:
     Texture* build(Effect* effect, const SGPropertyNode*,
-                   const osgDB::ReaderWriter::Options* options);
+                   const SGReaderWriterXMLOptions* options);
 protected:
     typedef map<int, ref_ptr<Texture3D> > NoiseMap;
     NoiseMap _noises;
 };
 
 Texture* NoiseBuilder::build(Effect* effect, const SGPropertyNode* props,
-                             const osgDB::ReaderWriter::Options* options)
+                             const SGReaderWriterXMLOptions* options)
 {
     int texSize = 64;
     const SGPropertyNode* sizeProp = getEffectPropertyChild(effect, props,

@@ -1027,17 +1027,22 @@ SGPropertyNode::getDisplayName (bool simplify) const
 }
 
 
-const char *
+string
 SGPropertyNode::getPath (bool simplify) const
 {
-  // Calculate the complete path only once.
-  if (_parent != 0 && _path.empty()) {
-    _path = _parent->getPath(simplify);
-    _path += '/';
-    _path += getDisplayName(simplify);
+  typedef std::vector<SGConstPropertyNode_ptr> PList;
+  PList pathList;
+  for (const SGPropertyNode* node = this; node->_parent; node = node->_parent)
+    pathList.push_back(node);
+  string result;
+  for (PList::reverse_iterator itr = pathList.rbegin(),
+         rend = pathList.rend();
+       itr != rend;
+       ++itr) {
+    result += '/';
+    result += (*itr)->getDisplayName(simplify);
   }
-
-  return _path.c_str();
+  return result;
 }
 
 props::Type

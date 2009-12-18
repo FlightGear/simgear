@@ -994,7 +994,7 @@ public:
   /**
    * Get the path to this node from the root.
    */
-  const char * getPath (bool simplify = false) const;
+  std::string getPath (bool simplify = false) const;
 
 
   /**
@@ -1675,7 +1675,6 @@ private:
   simgear::PropertyList _children;
   simgear::PropertyList _removedChildren;
   std::vector<hash_table *> _linkedNodes;
-  mutable std::string _path;
   mutable std::string _buffer;
   hash_table * _path_cache;
   simgear::props::Type _type;

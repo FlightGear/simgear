@@ -187,16 +187,17 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
 				// Get the index.
     attval = atts.getValue("n");
     int index = 0;
+    string strName(name);
     if (attval != 0) {
       index = atoi(attval);
-      st.counters[name] = SG_MAX2(st.counters[name], index+1);
+      st.counters[strName] = SG_MAX2(st.counters[strName], index+1);
     } else {
-      index = st.counters[name];
-      st.counters[name]++;
+      index = st.counters[strName];
+      st.counters[strName]++;
     }
 
 				// Got the index, so grab the node.
-    SGPropertyNode * node = st.node->getChild(name, index, true);
+    SGPropertyNode * node = st.node->getChild(strName, index, true);
     if (!node->getAttribute(SGPropertyNode::WRITE)) {
       SG_LOG(SG_INPUT, SG_ALERT, "Not overwriting write-protected property "
           << node->getPath(true));
@@ -601,6 +602,13 @@ writeProperties (const string &file, const SGPropertyNode * start_node,
   }
 }
 
+// Another variation, useful when called from gdb
+void
+writeProperties (const char* file, const SGPropertyNode * start_node)
+{
+    writeProperties(string(file), start_node, true);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -678,7 +686,7 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out)
   int nChildren = in->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * in_child = in->getChild(i);
-    SGPropertyNode * out_child = out->getChild(in_child->getName(),
+    SGPropertyNode * out_child = out->getChild(in_child->getNameString(),
 					       in_child->getIndex(),
 					       true);
     if (!copyProperties(in_child, out_child))

@@ -44,6 +44,7 @@
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/PathOptions.hxx>
+#include <simgear/props/props.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
@@ -60,75 +61,14 @@
 using namespace simgear;
 using namespace osg;
 
-typedef std::map<std::string, osg::ref_ptr<osg::StateSet> > StateSetMap;
+namespace
+{
+typedef std::map<std::string, osg::ref_ptr<Effect> > EffectMap;
+EffectMap effectMap;
+}
 
-StateSetMap cloudTextureMap;
 double SGNewCloud::sprite_density = 1.0;
 
-static char vertexShaderSource[] = 
-    "#version 120\n"
-    "\n"
-    "varying float fogFactor;\n"
-    "attribute vec3 usrAttr1;\n"
-    "attribute vec3 usrAttr2;\n"
-    "float textureIndexX = usrAttr1.r;\n"
-    "float textureIndexY = usrAttr1.g;\n"
-    "float wScale = usrAttr1.b;\n"
-    "float hScale = usrAttr2.r;\n"
-    "float shade = usrAttr2.g;\n"
-    "float cloud_height = usrAttr2.b;\n"
-    "void main(void)\n"
-    "{\n"
-    "  gl_TexCoord[0] = gl_MultiTexCoord0 + vec4(textureIndexX, textureIndexY, 0.0, 0.0);\n"
-    "  vec4 ep = gl_ModelViewMatrixInverse * vec4(0.0,0.0,0.0,1.0);\n"
-    "  vec4 l  = gl_ModelViewMatrixInverse * vec4(0.0,0.0,1.0,1.0);\n"
-    "  vec3 u = normalize(ep.xyz - l.xyz);\n"
-// Find a rotation matrix that rotates 1,0,0 into u. u, r and w are
-// the columns of that matrix.
-    "  vec3 absu = abs(u);\n"
-    "  vec3 r = normalize(vec3(-u.y, u.x, 0));\n"
-    "  vec3 w = cross(u, r);\n"
-// Do the matrix multiplication by [ u r w pos]. Assume no
-// scaling in the homogeneous component of pos.
-    "  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
-    "  gl_Position.xyz = gl_Vertex.x * u;\n"
-    "  gl_Position.xyz += gl_Vertex.y * r * wScale;\n"
-    "  gl_Position.xyz += gl_Vertex.z * w * hScale;\n"
-    "  gl_Position.xyz += gl_Color.xyz;\n"
-// Determine a lighting normal based on the vertex position from the
-// center of the cloud, so that sprite on the opposite side of the cloud to the sun are darker.
-    "  float n = dot(normalize(- gl_LightSource[0].position.xyz), normalize(mat3x3(gl_ModelViewMatrix) * (- gl_Position.xyz)));\n"
-// Determine the position - used for fog and shading calculations        
-    "  vec3 ecPosition = vec3(gl_ModelViewMatrix * gl_Position);\n"
-    "  float fogCoord = abs(ecPosition.z);\n"
-    "  float fract = smoothstep(0.0, cloud_height, gl_Position.z + cloud_height);\n"
-// Final position of the sprite
-    "  gl_Position = gl_ModelViewProjectionMatrix * gl_Position;\n"
-// Determine the shading of the sprite based on its vertical position and position relative to the sun.
-    "  n = min(smoothstep(-0.5, 0.0, n), fract);\n"
-// Determine the shading based on a mixture from the backlight to the front
-    "  vec4 backlight = gl_LightSource[0].diffuse * shade;\n"
-    "  gl_FrontColor = mix(backlight, gl_LightSource[0].diffuse, n);\n"
-    "  gl_FrontColor += gl_FrontLightModelProduct.sceneColor;\n"
-// As we get within 100m of the sprite, it is faded out. Equally at large distances it also fades out.
-    "  gl_FrontColor.a = min(smoothstep(10.0, 100.0, fogCoord), 1 - smoothstep(15000.0, 20000.0, fogCoord));\n"
-    "  gl_BackColor = gl_FrontColor;\n"
-// Fog doesn't affect clouds as much as other objects.        
-    "  fogFactor = exp( -gl_Fog.density * fogCoord * 0.5);\n"
-    "  fogFactor = clamp(fogFactor, 0.0, 1.0);\n"
-    "}\n";
-
-static char fragmentShaderSource[] = 
-    "uniform sampler2D baseTexture; \n"
-    "varying float fogFactor;\n"
-    "\n"
-    "void main(void)\n"
-    "{\n"
-    "  vec4 base = texture2D( baseTexture, gl_TexCoord[0].st);\n"
-    "  vec4 finalColor = base * gl_Color;\n"
-    "  gl_FragColor.rgb = mix(gl_Fog.color.rgb, finalColor.rgb, fogFactor );\n"
-    "  gl_FragColor.a = mix(0.0, finalColor.a, fogFactor);\n"
-    "}\n";
 
 SGNewCloud::SGNewCloud(string type,
                        const SGPath &tex_path, 
@@ -160,75 +100,24 @@ SGNewCloud::SGNewCloud(string type,
         texture(tex),
         name(type)
 {
-    // Create a new StateSet for the texture, if required.
-    StateSetMap::iterator iter = SGCloudField::cloudTextureMap.find(texture);
-
-    if (iter == SGCloudField::cloudTextureMap.end()) {
-        stateSet = new osg::StateSet;
-                
-        osg::ref_ptr<osgDB::ReaderWriter::Options> options = makeOptionsFromPath(tex_path);
-                
-        osg::Texture2D *tex = new osg::Texture2D;
-        tex->setWrap( osg::Texture2D::WRAP_S, osg::Texture2D::CLAMP );
-        tex->setWrap( osg::Texture2D::WRAP_T, osg::Texture2D::CLAMP );
-        tex->setImage(osgDB::readImageFile(texture, options.get()));
-                
-        StateAttributeFactory* attribFactory = StateAttributeFactory::instance();
-        
-        stateSet->setMode(GL_LIGHTING,  osg::StateAttribute::ON);
-        stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
-        
-        // Fog handling
-        stateSet->setAttributeAndModes(attribFactory->getSmoothShadeModel());
-        stateSet->setAttributeAndModes(attribFactory->getStandardBlendFunc());
-
-        stateSet->setTextureAttributeAndModes(0, tex, osg::StateAttribute::ON );
-        stateSet->setRenderBinDetails(osg::StateSet::TRANSPARENT_BIN, "DepthSortedBin");
-        // Turn off z buffer writes. Standard hack for
-        // semi-transparent geometry to avoid sorting / flickering
-        // artifacts.
-        stateSet->setAttributeAndModes(attribFactory->getDepthWritesDisabled());
-        static ref_ptr<AlphaFunc> alphaFunc;
-        static ref_ptr<Program> program;
-        static ref_ptr<Uniform> baseTextureSampler;
-        static ref_ptr<Material> material;
-                  
-        // Generate the shader etc, if we don't already have one.
-        if (!program.valid()) {
-            alphaFunc = new AlphaFunc;
-            alphaFunc->setFunction(AlphaFunc::GREATER,0.01f);
-            program  = new Program;
-            baseTextureSampler = new osg::Uniform("baseTexture", 0);
-            Shader* vertex_shader = new Shader(Shader::VERTEX, vertexShaderSource);
-            program->addShader(vertex_shader);
-            program->addBindAttribLocation("usrAttr1", CloudShaderGeometry::USR_ATTR_1);
-            program->addBindAttribLocation("usrAttr2", CloudShaderGeometry::USR_ATTR_2);
-            Shader* fragment_shader = new Shader(Shader::FRAGMENT, fragmentShaderSource);
-            program->addShader(fragment_shader);
-            material = new Material;
-            // Don´t track vertex color
-            material->setColorMode(Material::OFF);
-            
-            // We don't actually use the material information either - see shader.
-            material->setAmbient(Material::FRONT_AND_BACK,
-                                 Vec4(0.5f, 0.5f, 0.5f, 1.0f));
-            material->setDiffuse(Material::FRONT_AND_BACK,
-                                 Vec4(0.5f, 0.5f, 0.5f, 1.0f));
-        }
-                  
-        stateSet->setAttributeAndModes(alphaFunc.get());
-        stateSet->setAttribute(program.get());
-        stateSet->addUniform(baseTextureSampler.get());
-        stateSet->setMode(GL_VERTEX_PROGRAM_TWO_SIDE, StateAttribute::ON);
-        stateSet->setAttribute(material.get());
-                
-        // Add the newly created texture to the map for use later.
-        SGCloudField::cloudTextureMap.insert(StateSetMap::value_type(texture,  stateSet));
+    // Create a new Effect for the texture, if required.
+    EffectMap::iterator iter = effectMap.find(texture);
+    if (iter == effectMap.end()) {
+        SGPropertyNode_ptr pcloudEffect = new SGPropertyNode;
+        makeChild(pcloudEffect, "inherits-from")->setValue("Effects/cloud");
+        setValue(makeChild(makeChild(makeChild(pcloudEffect, "parameters"),
+                                     "texture"),
+                           "image"),
+                 texture);
+        osg::ref_ptr<osgDB::ReaderWriter::Options> options
+            = makeOptionsFromPath(tex_path);
+        if ((effect = makeEffect(pcloudEffect, true, options)))
+            effectMap.insert(EffectMap::value_type(texture, effect));
     } else {
-        stateSet = iter->second.get();
+        effect = iter->second.get();
     }
-    
-    quad = createOrthQuad(min_sprite_width, min_sprite_height, num_textures_x, num_textures_y);
+    quad = createOrthQuad(min_sprite_width, min_sprite_height,
+                          num_textures_x, num_textures_y);
 }
 
 SGNewCloud::~SGNewCloud() {
@@ -285,9 +174,9 @@ static float Rnd(float n) {
 }
 #endif
 
-osg::ref_ptr<Geode> SGNewCloud::genCloud() {
+osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     
-    osg::ref_ptr<osg::Geode> geode = new Geode;
+    osg::ref_ptr<EffectGeode> geode = new EffectGeode;
         
     CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
     
@@ -325,9 +214,7 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
             z = height * cos(elev) * 0.5f;
         }
         
-        SGVec3f *pos = new SGVec3f(x, y, z); 
-
-        // Determine the height and width as scaling factors on the minimum size (used to create the quad).
+        // Determine the height and width as scaling factors on the minimum size (used to create the quad)
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
 
@@ -353,7 +240,7 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
         int index_y = (int) floor((z / height + 0.5f) * num_textures_y);
         if (index_y == num_textures_y) { index_y--; }
         
-        sg->addSprite(*pos, 
+        sg->addSprite(SGVec3f(x, y, z), 
                     index_x, 
                     index_y, 
                     sprite_width, 
@@ -366,7 +253,7 @@ osg::ref_ptr<Geode> SGNewCloud::genCloud() {
     sg->setGeometry(quad);
     geode->addDrawable(sg);
     geode->setName("3D cloud");
-    geode->setStateSet(stateSet.get());
+    geode->setEffect(effect.get());
     
     return geode;
 }

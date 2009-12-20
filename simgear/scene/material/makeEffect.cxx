@@ -4,6 +4,7 @@
 #endif
 
 #include "Effect.hxx"
+#include "EffectBuilder.hxx"
 #include "Technique.hxx"
 #include "Pass.hxx"
 
@@ -32,12 +33,14 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
+#include <simgear/scene/util/SplicingVisitor.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
 namespace simgear
 {
 using namespace std;
 using namespace osg;
+using namespace effect;
 
 typedef vector<const SGPropertyNode*> RawPropVector;
 typedef map<const string, ref_ptr<Effect> > EffectMap;
@@ -71,6 +74,8 @@ struct PropPredicate
     const SGPropertyNode* node;
 };
 
+namespace effect
+{
 void mergePropertyTrees(SGPropertyNode* resultNode,
                         const SGPropertyNode* left, const SGPropertyNode* right)
 {
@@ -107,29 +112,48 @@ void mergePropertyTrees(SGPropertyNode* resultNode,
         copyProperties(*itr, newChild);
     }
 }
+}
 
 Effect* makeEffect(const string& name,
                    bool realizeTechniques,
                    const osgDB::ReaderWriter::Options* options)
 {
-    OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
-    EffectMap::iterator itr = effectMap.find(name);
-    if (itr != effectMap.end())
-        return itr->second.get();
+    {
+        OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
+        EffectMap::iterator itr = effectMap.find(name);
+        if (itr != effectMap.end())
+            return itr->second.get();
+    }
     string effectFileName(name);
     effectFileName += ".eff";
     string absFileName
         = osgDB::findDataFile(effectFileName, options);
     if (absFileName.empty()) {
-        SG_LOG(SG_INPUT, SG_WARN, "can't find \"" << effectFileName << "\"");
+        SG_LOG(SG_INPUT, SG_ALERT, "can't find \"" << effectFileName << "\"");
         return 0;
     }
     SGPropertyNode_ptr effectProps = new SGPropertyNode();
-    readProperties(absFileName, effectProps.ptr(), 0, true);
-    Effect* result = makeEffect(effectProps.ptr(), realizeTechniques, options);
-    if (result)
-        effectMap.insert(make_pair(name, result));
-    return result;
+    try {
+        readProperties(absFileName, effectProps.ptr(), 0, true);
+    }
+    catch (sg_io_exception& e) {
+        SG_LOG(SG_INPUT, SG_ALERT, "error reading \"" << absFileName << "\": "
+               << e.getFormattedMessage());
+        return 0;
+    }
+    ref_ptr<Effect> result = makeEffect(effectProps.ptr(), realizeTechniques,
+                                        options);
+    if (result.valid()) {
+        OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
+        pair<EffectMap::iterator, bool> irslt
+            = effectMap.insert(make_pair(name, result));
+        if (!irslt.second) {
+            // Another thread beat us to it!. Discard our newly
+            // constructed Effect and use the one in the cache.
+            result = irslt.first->second;
+        }
+    }
+    return result.release();
 }
 
 
@@ -160,29 +184,64 @@ Effect* makeEffect(SGPropertyNode* prop,
             }
         }
     }
-    Effect* effect = new Effect;
+    ref_ptr<Effect> effect;
     // Merge with the parent effect, if any
-    const SGPropertyNode* inheritProp = prop->getChild("inherits-from");
+    SGPropertyNode_ptr inheritProp = prop->getChild("inherits-from");
     Effect* parent = 0;
     if (inheritProp) {
-        parent = makeEffect(inheritProp->getStringValue(), realizeTechniques,
-                            options);
-        if(parent)
-        {
-            effect->root = new SGPropertyNode;
-            mergePropertyTrees(effect->root, prop, parent->root);
-            effect->root->removeChild("inherits-from");
+        //prop->removeChild("inherits-from");
+        parent = makeEffect(inheritProp->getStringValue(), false, options);
+        if (parent) {
+            Effect::Key key;
+            key.unmerged = prop;
+            if (options) {
+                key.paths = options->getDatabasePathList();
+            }
+            Effect::Cache* cache = 0;
+            Effect::Cache::iterator itr;
+            {
+                OpenThreads::ScopedLock<OpenThreads::ReentrantMutex>
+                    lock(effectMutex);
+                cache = parent->getCache();
+                itr = cache->find(key);
+                if (itr != cache->end()) 
+                    effect = itr->second.get();
+            }
+            if (!effect.valid()) {
+                effect = new Effect;
+                effect->root = new SGPropertyNode;
+                mergePropertyTrees(effect->root, prop, parent->root);
+                effect->parametersProp = effect->root->getChild("parameters");
+                OpenThreads::ScopedLock<OpenThreads::ReentrantMutex>
+                    lock(effectMutex);
+                pair<Effect::Cache::iterator, bool> irslt
+                    = cache->insert(make_pair(key, effect));
+                if (!irslt.second)
+                    effect = irslt.first->second;
+            }
         } else {
-            effect->root = prop;
-            effect->root->removeChild("inherits-from");
+            SG_LOG(SG_INPUT, SG_ALERT, "can't find base effect " <<
+                   inheritProp->getStringValue());
+            return 0;
         }
     } else {
+        effect = new Effect;
         effect->root = prop;
+        effect->parametersProp = effect->root->getChild("parameters");
     }
-    effect->parametersProp = effect->root->getChild("parameters");
-    if (realizeTechniques)
-        effect->realizeTechniques(options);
-    return effect;
+    if (realizeTechniques) {
+        try {
+            OpenThreads::ScopedLock<OpenThreads::ReentrantMutex>
+                lock(effectMutex);
+            effect->realizeTechniques(options);
+        }
+        catch (BuilderException& e) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Error building technique: "
+                   << e.getFormattedMessage());
+            return 0;
+        }
+    }
+    return effect.release();
 }
 
 }

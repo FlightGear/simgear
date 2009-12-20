@@ -20,6 +20,7 @@
 
 #include "Effect.hxx"
 #include "EffectBuilder.hxx"
+#include "EffectGeode.hxx"
 #include "Technique.hxx"
 #include "Pass.hxx"
 #include "TextureBuilder.hxx"
@@ -29,16 +30,21 @@
 #include <iterator>
 #include <map>
 #include <utility>
+#include <boost/tr1/unordered_map.hpp>
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
+#include <osg/AlphaFunc>
+#include <osg/BlendFunc>
 #include <osg/CullFace>
+#include <osg/Depth>
 #include <osg/Drawable>
 #include <osg/Material>
+#include <osg/Math>
 #include <osg/PolygonMode>
 #include <osg/Program>
 #include <osg/Referenced>
@@ -59,6 +65,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
+#include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
@@ -72,17 +79,23 @@ using namespace std;
 using namespace osg;
 using namespace osgUtil;
 
+using namespace effect;
+
 Effect::Effect()
+    : _cache(0), _isRealized(false)
 {
 }
 
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
-    : root(rhs.root), parametersProp(rhs.parametersProp)
+    : root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
+      _isRealized(rhs._isRealized)
 {
-    using namespace boost;
-    transform(rhs.techniques.begin(), rhs.techniques.end(),
-              back_inserter(techniques),
-              bind(simgear::clone_ref<Technique>, _1, copyop));
+    typedef vector<ref_ptr<Technique> > TechniqueList;
+    for (TechniqueList::const_iterator itr = rhs.techniques.begin(),
+             end = rhs.techniques.end();
+         itr != end;
+         ++itr)
+        techniques.push_back(static_cast<Technique*>(copyop(itr->get())));
 }
 
 // Assume that the last technique is always valid.
@@ -125,28 +138,8 @@ void Effect::releaseGLObjects(osg::State* state) const
 
 Effect::~Effect()
 {
+    delete _cache;
 }
-
-class PassAttributeBuilder : public Referenced
-{
-public:
-    virtual void buildAttribute(Effect* effect, Pass* pass,
-                                const SGPropertyNode* prop,
-                                const osgDB::ReaderWriter::Options* options)
-    = 0;
-};
-
-typedef map<const string, ref_ptr<PassAttributeBuilder> > PassAttrMap;
-PassAttrMap passAttrMap;
-
-template<typename T>
-struct InstallAttributeBuilder
-{
-    InstallAttributeBuilder(const string& name)
-    {
-        passAttrMap.insert(make_pair(name, new T));
-    }
-};
 
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
                const osgDB::ReaderWriter::Options* options)
@@ -155,9 +148,10 @@ void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
     tniq->passes.push_back(pass);
     for (int i = 0; i < prop->nChildren(); ++i) {
         const SGPropertyNode* attrProp = prop->getChild(i);
-        PassAttrMap::iterator itr = passAttrMap.find(attrProp->getName());
-        if (itr != passAttrMap.end())
-            itr->second->buildAttribute(effect, pass, attrProp, options);
+        PassAttributeBuilder* builder
+            = PassAttributeBuilder::find(attrProp->getNameString());
+        if (builder)
+            builder->buildAttribute(effect, pass, attrProp, options);
         else
             SG_LOG(SG_INPUT, SG_ALERT,
                    "skipping unknown pass attribute " << attrProp->getName());
@@ -237,8 +231,10 @@ struct CullFaceBuilder : PassAttributeBuilder
                         const osgDB::ReaderWriter::Options* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
-        if (!realProp)
+        if (!realProp) {
+            pass->setMode(GL_CULL_FACE, StateAttribute::OFF);
             return;
+        }
         StateAttributeFactory *attrFact = StateAttributeFactory::instance();
         string propVal = realProp->getStringValue();
         if (propVal == "front")
@@ -247,6 +243,8 @@ struct CullFaceBuilder : PassAttributeBuilder
             pass->setAttributeAndModes(attrFact->getCullFaceBack());
         else if (propVal == "front-back")
             pass->setAttributeAndModes(new CullFace(CullFace::FRONT_AND_BACK));
+        else if (propVal == "off")
+            pass->setMode(GL_CULL_FACE, StateAttribute::OFF);
         else
             SG_LOG(SG_INPUT, SG_ALERT,
                    "invalid cull face property " << propVal);            
@@ -254,6 +252,15 @@ struct CullFaceBuilder : PassAttributeBuilder
 };
 
 InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
+
+EffectNameValue<StateSet::RenderingHint> renderingHintInit[] =
+{
+    { "default", StateSet::DEFAULT_BIN },
+    { "opaque", StateSet::OPAQUE_BIN },
+    { "transparent", StateSet::TRANSPARENT_BIN }
+};
+
+EffectPropertyMap<StateSet::RenderingHint> renderingHints(renderingHintInit);
 
 struct HintBuilder : public PassAttributeBuilder
 {
@@ -263,11 +270,9 @@ struct HintBuilder : public PassAttributeBuilder
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        string propVal = realProp->getStringValue();
-        if (propVal == "opaque")
-            pass->setRenderingHint(StateSet::OPAQUE_BIN);
-        else if (propVal == "transparent")
-            pass->setRenderingHint(StateSet::TRANSPARENT_BIN);
+        StateSet::RenderingHint renderingHint = StateSet::DEFAULT_BIN;
+        findAttr(renderingHints, realProp, renderingHint);
+        pass->setRenderingHint(renderingHint);
     }    
 };
 
@@ -278,6 +283,8 @@ struct RenderBinBuilder : public PassAttributeBuilder
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* binProp = prop->getChild("bin-number");
         binProp = getEffectPropertyNode(effect, binProp);
         const SGPropertyNode* nameProp = prop->getChild("bin-name");
@@ -304,7 +311,7 @@ struct MaterialBuilder : public PassAttributeBuilder
                         const osgDB::ReaderWriter::Options* options);
 };
 
-EffectNameValue<Material::ColorMode> colorModes[] =
+EffectNameValue<Material::ColorMode> colorModeInit[] =
 {
     { "ambient", Material::AMBIENT },
     { "ambient-and-diffuse", Material::AMBIENT_AND_DIFFUSE },
@@ -313,11 +320,14 @@ EffectNameValue<Material::ColorMode> colorModes[] =
     { "specular", Material::SPECULAR },
     { "off", Material::OFF }
 };
+EffectPropertyMap<Material::ColorMode> colorModes(colorModeInit);
 
 void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
                                      const osgDB::ReaderWriter::Options* options)
 {
+    if (!isAttributeActive(effect, prop))
+        return;
     Material* mat = new Material;
     const SGPropertyNode* color = 0;
     if ((color = getEffectPropertyChild(effect, prop, "ambient")))
@@ -361,125 +371,221 @@ void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
 
 InstallAttributeBuilder<MaterialBuilder> installMaterial("material");
 
+EffectNameValue<BlendFunc::BlendFuncMode> blendFuncModesInit[] =
+{
+    {"dst-alpha", BlendFunc::DST_ALPHA},
+    {"dst-color", BlendFunc::DST_COLOR},
+    {"one", BlendFunc::ONE},
+    {"one-minus-dst-alpha", BlendFunc::ONE_MINUS_DST_ALPHA},
+    {"one-minus-dst-color", BlendFunc::ONE_MINUS_DST_COLOR},
+    {"one-minus-src-alpha", BlendFunc::ONE_MINUS_SRC_ALPHA},
+    {"one-minus-src-color", BlendFunc::ONE_MINUS_SRC_COLOR},
+    {"src-alpha", BlendFunc::SRC_ALPHA},
+    {"src-alpha-saturate", BlendFunc::SRC_ALPHA_SATURATE},
+    {"src-color", BlendFunc::SRC_COLOR},
+    {"constant-color", BlendFunc::CONSTANT_COLOR},
+    {"one-minus-constant-color", BlendFunc::ONE_MINUS_CONSTANT_COLOR},
+    {"constant-alpha", BlendFunc::CONSTANT_ALPHA},
+    {"one-minus-constant-alpha", BlendFunc::ONE_MINUS_CONSTANT_ALPHA},
+    {"zero", BlendFunc::ZERO}
+};
+EffectPropertyMap<BlendFunc::BlendFuncMode> blendFuncModes(blendFuncModesInit);
+
 struct BlendBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
+        // XXX Compatibility with early <blend> syntax; should go away
+        // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        pass->setMode(GL_BLEND, (realProp->getBoolValue()
-                                 ? StateAttribute::ON
-                                 : StateAttribute::OFF));
+        if (realProp->nChildren() == 0) {
+            pass->setMode(GL_BLEND, (realProp->getBoolValue()
+                                     ? StateAttribute::ON
+                                     : StateAttribute::OFF));
+            return;
+        }
+
+        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
+                                                             "mode");
+        // XXX When dynamic parameters are supported, this code should
+        // create the blend function even if the mode is off.
+        if (pmode && !pmode->getValue<bool>()) {
+            pass->setMode(GL_BLEND, StateAttribute::OFF);
+            return;
+        }
+        const SGPropertyNode* psource
+            = getEffectPropertyChild(effect, prop, "source");
+        const SGPropertyNode* pdestination
+            = getEffectPropertyChild(effect, prop, "destination");
+        const SGPropertyNode* psourceRGB
+            = getEffectPropertyChild(effect, prop, "source-rgb");
+        const SGPropertyNode* psourceAlpha
+            = getEffectPropertyChild(effect, prop, "source-alpha");
+        const SGPropertyNode* pdestRGB
+            = getEffectPropertyChild(effect, prop, "destination-rgb");
+        const SGPropertyNode* pdestAlpha
+            = getEffectPropertyChild(effect, prop, "destination-alpha");
+        BlendFunc::BlendFuncMode sourceMode = BlendFunc::ONE;
+        BlendFunc::BlendFuncMode destMode = BlendFunc::ZERO;
+        if (psource)
+            findAttr(blendFuncModes, psource, sourceMode);
+        if (pdestination)
+            findAttr(blendFuncModes, pdestination, destMode);
+        if (psource && pdestination
+            && !(psourceRGB || psourceAlpha || pdestRGB || pdestAlpha)
+            && sourceMode == BlendFunc::SRC_ALPHA
+            && destMode == BlendFunc::ONE_MINUS_SRC_ALPHA) {
+            pass->setAttributeAndModes(StateAttributeFactory::instance()
+                                       ->getStandardBlendFunc());
+            return;
+        }
+        BlendFunc* blendFunc = new BlendFunc;
+        if (psource)
+            blendFunc->setSource(sourceMode);
+        if (pdestination)
+            blendFunc->setDestination(destMode);
+        if (psourceRGB) {
+            BlendFunc::BlendFuncMode sourceRGBMode;
+            findAttr(blendFuncModes, psourceRGB, sourceRGBMode);
+            blendFunc->setSourceRGB(sourceRGBMode);
+        }
+        if (pdestRGB) {
+            BlendFunc::BlendFuncMode destRGBMode;
+            findAttr(blendFuncModes, pdestRGB, destRGBMode);
+            blendFunc->setDestinationRGB(destRGBMode);
+        }
+        if (psourceAlpha) {
+            BlendFunc::BlendFuncMode sourceAlphaMode;
+            findAttr(blendFuncModes, psourceAlpha, sourceAlphaMode);
+            blendFunc->setSourceAlpha(sourceAlphaMode);
+        }
+        if (pdestAlpha) {
+            BlendFunc::BlendFuncMode destAlphaMode;
+            findAttr(blendFuncModes, pdestAlpha, destAlphaMode);
+            blendFunc->setDestinationAlpha(destAlphaMode);
+        }
+        pass->setAttributeAndModes(blendFunc);
     }
 };
 
 InstallAttributeBuilder<BlendBuilder> installBlend("blend");
+
+EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
+{
+    {"never", AlphaFunc::NEVER},
+    {"less", AlphaFunc::LESS},
+    {"equal", AlphaFunc::EQUAL},
+    {"lequal", AlphaFunc::LEQUAL},
+    {"greater", AlphaFunc::GREATER},
+    {"notequal", AlphaFunc::NOTEQUAL},
+    {"gequal", AlphaFunc::GEQUAL},
+    {"always", AlphaFunc::ALWAYS}
+};
+EffectPropertyMap<AlphaFunc::ComparisonFunction>
+alphaComparison(alphaComparisonInit);
 
 struct AlphaTestBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
+        // XXX Compatibility with early <alpha-test> syntax; should go away
+        // before a release
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
             return;
-        pass->setMode(GL_ALPHA_TEST, (realProp->getBoolValue()
-                                      ? StateAttribute::ON
-                                      : StateAttribute::OFF));
+        if (realProp->nChildren() == 0) {
+            pass->setMode(GL_ALPHA_TEST, (realProp->getBoolValue()
+                                     ? StateAttribute::ON
+                                     : StateAttribute::OFF));
+            return;
+        }
+
+        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
+                                                             "mode");
+        // XXX When dynamic parameters are supported, this code should
+        // create the blend function even if the mode is off.
+        if (pmode && !pmode->getValue<bool>()) {
+            pass->setMode(GL_ALPHA_TEST, StateAttribute::OFF);
+            return;
+        }
+        const SGPropertyNode* pComp = getEffectPropertyChild(effect, prop,
+                                                             "comparison");
+        const SGPropertyNode* pRef = getEffectPropertyChild(effect, prop,
+                                                             "reference");
+        AlphaFunc::ComparisonFunction func = AlphaFunc::ALWAYS;
+        float refValue = 1.0f;
+        if (pComp)
+            findAttr(alphaComparison, pComp, func);
+        if (pRef)
+            refValue = pRef->getValue<float>();
+        if (func == AlphaFunc::GREATER && osg::equivalent(refValue, 1.0f)) {
+            pass->setAttributeAndModes(StateAttributeFactory::instance()
+                                       ->getStandardAlphaFunc());
+        } else {
+            AlphaFunc* alphaFunc = new AlphaFunc;
+            alphaFunc->setFunction(func);
+            alphaFunc->setReferenceValue(refValue);
+            pass->setAttributeAndModes(alphaFunc);
+        }
     }
 };
 
 InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 
-EffectNameValue<TexEnv::Mode> texEnvModes[] =
-{
-    {"add", TexEnv::ADD},
-    {"blend", TexEnv::BLEND},
-    {"decal", TexEnv::DECAL},
-    {"modulate", TexEnv::MODULATE},
-    {"replace", TexEnv::REPLACE}
-};
-
-TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
-{
-    const SGPropertyNode* modeProp = getEffectPropertyChild(effect, prop,
-                                                            "mode");
-    const SGPropertyNode* colorProp = getEffectPropertyChild(effect, prop,
-                                                             "color");
-    if (!modeProp)
-        return 0;
-    TexEnv::Mode mode = TexEnv::MODULATE;
-    findAttr(texEnvModes, modeProp, mode);
-    if (mode == TexEnv::MODULATE) {
-        return StateAttributeFactory::instance()->getStandardTexEnv();
-    }
-    TexEnv* env = new TexEnv(mode);
-    if (colorProp)
-        env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
-    return env;
- }
-
-
-struct TextureUnitBuilder : PassAttributeBuilder
-{
-    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const osgDB::ReaderWriter::Options* options);
-};
-
-void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
-                                        const SGPropertyNode* prop,
-                                        const osgDB::ReaderWriter::Options* options)
-{
-
-    // Decode the texture unit
-    int unit = 0;
-    const SGPropertyNode* pUnit = prop->getChild("unit");
-    if (pUnit) {
-        unit = pUnit->getValue<int>();
-    } else {
-        const SGPropertyNode* pName = prop->getChild("name");
-        if (pName)
-            try {
-                unit = boost::lexical_cast<int>(pName->getStringValue());
-            } catch (boost::bad_lexical_cast& lex) {
-                SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
-                       << lex.what());
-            }
-    }
-    const SGPropertyNode* pType = prop->getChild("type");
-    string type;
-    if (!pType)
-        type = "2d";
-    else
-        type = pType->getStringValue();
-    Texture* texture = 0;
-    try {
-        texture = TextureBuilder::buildFromType(effect, type, prop,
-                                                options);
-    }
-    catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, "No image file for texture, using white ");
-        texture = StateAttributeFactory::instance()->getWhiteTexture();
-    }
-    pass->setTextureAttributeAndModes(unit, texture);
-    const SGPropertyNode* envProp = prop->getChild("environment");
-    if (envProp) {
-        TexEnv* env = buildTexEnv(effect, envProp);
-        if (env)
-            pass->setTextureAttributeAndModes(unit, env);
-    }
-}
-
-
-
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 
-typedef map<string, ref_ptr<Program> > ProgramMap;
+// Shader key, used both for shaders with relative and absolute names
+typedef pair<string, Shader::Type> ShaderKey;
+
+struct ProgramKey
+{
+    typedef pair<string, int> AttribKey;
+    osgDB::FilePathList paths;
+    vector<ShaderKey> shaders;
+    vector<AttribKey> attributes;
+    struct EqualTo
+    {
+        bool operator()(const ProgramKey& lhs, const ProgramKey& rhs) const
+        {
+            return (lhs.paths.size() == rhs.paths.size()
+                    && equal(lhs.paths.begin(), lhs.paths.end(),
+                             rhs.paths.begin())
+                    && lhs.shaders.size() == rhs.shaders.size()
+                    && equal (lhs.shaders.begin(), lhs.shaders.end(),
+                              rhs.shaders.begin())
+                    && lhs.attributes.size() == rhs.attributes.size()
+                    && equal(lhs.attributes.begin(), lhs.attributes.end(),
+                             rhs.attributes.begin()));
+        }
+    };
+};
+
+size_t hash_value(const ProgramKey& key)
+{
+    size_t seed = 0;
+    boost::hash_range(seed, key.paths.begin(), key.paths.end());
+    boost::hash_range(seed, key.shaders.begin(), key.shaders.end());
+    boost::hash_range(seed, key.attributes.begin(), key.attributes.end());
+    return seed;
+}
+
+// XXX Should these be protected by a mutex? Probably
+
+typedef tr1::unordered_map<ProgramKey, ref_ptr<Program>,
+                           boost::hash<ProgramKey>, ProgramKey::EqualTo>
+ProgramMap;
 ProgramMap programMap;
 
-typedef map<string, ref_ptr<Shader> > ShaderMap;
+typedef tr1::unordered_map<ShaderKey, ref_ptr<Shader>, boost::hash<ShaderKey> >
+ShaderMap;
 ShaderMap shaderMap;
 
 void reload_shaders()
@@ -487,7 +593,7 @@ void reload_shaders()
     for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
     {
 	Shader *shader = sitr->second.get();
-        string fileName = osgDB::findDataFile(sitr->first);
+        string fileName = osgDB::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
 	    shader->loadShaderSourceFromFile(fileName);
         }
@@ -505,32 +611,47 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const osgDB::ReaderWriter::Options*
                                           options)
 {
+    using namespace boost;
+    if (!isAttributeActive(effect, prop))
+        return;
     PropertyList pVertShaders = prop->getChildren("vertex-shader");
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
-    string programKey;
+    PropertyList pAttributes = prop->getChildren("attribute");
+    ProgramKey prgKey;
     for (PropertyList::iterator itr = pVertShaders.begin(),
              e = pVertShaders.end();
          itr != e;
          ++itr)
-    {
-        programKey += (*itr)->getStringValue();
-        programKey += ";";
-    }
+        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
+                                           Shader::VERTEX));
     for (PropertyList::iterator itr = pFragShaders.begin(),
              e = pFragShaders.end();
          itr != e;
          ++itr)
-    {
-        programKey += (*itr)->getStringValue();
-        programKey += ";";
+        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
+                                           Shader::FRAGMENT));
+    for (PropertyList::iterator itr = pAttributes.begin(),
+             e = pAttributes.end();
+         itr != e;
+         ++itr) {
+        const SGPropertyNode* pName = getEffectPropertyChild(effect, *itr,
+                                                             "name");
+        const SGPropertyNode* pIndex = getEffectPropertyChild(effect, *itr,
+                                                              "index");
+        if (!pName || ! pIndex)
+            throw BuilderException("malformed attribute property");
+        prgKey.attributes
+            .push_back(ProgramKey::AttribKey(pName->getStringValue(),
+                                             pIndex->getValue<int>()));
     }
+    if (options)
+        prgKey.paths = options->getDatabasePathList();
     Program* program = 0;
-    ProgramMap::iterator pitr = programMap.find(programKey);
+    ProgramMap::iterator pitr = programMap.find(prgKey);
     if (pitr != programMap.end()) {
         program = pitr->second.get();
     } else {
         program = new Program;
-        program->setName(programKey);
         // Add vertex shaders, then fragment shaders
         PropertyList& pvec = pVertShaders;
         Shader::Type stype = Shader::VERTEX;
@@ -539,31 +660,36 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                  nameItr != e;
                  ++nameItr) {
                 string shaderName = (*nameItr)->getStringValue();
-                ShaderMap::iterator sitr = shaderMap.find(shaderName);
+                string fileName = osgDB::findDataFile(shaderName, options);
+                if (fileName.empty())
+                    throw BuilderException(string("couldn't find shader ") +
+                                           shaderName);
+                ShaderKey skey(fileName, stype);
+                ShaderMap::iterator sitr = shaderMap.find(skey);
                 if (sitr != shaderMap.end()) {
                     program->addShader(sitr->second.get());
                 } else {
-                    string fileName = osgDB::findDataFile(shaderName, options);
-                    if (!fileName.empty()) {
-                        ref_ptr<Shader> shader = new Shader(stype);
-                        if (shader->loadShaderSourceFromFile(fileName)) {
-                            program->addShader(shader.get());
-                            shaderMap.insert(make_pair(shaderName, shader));
-                        }
+                    ref_ptr<Shader> shader = new Shader(stype);
+                    if (shader->loadShaderSourceFromFile(fileName)) {
+                        program->addShader(shader.get());
+                        shaderMap.insert(ShaderMap::value_type(skey, shader));
                     }
                 }
             }
             pvec = pFragShaders;
             stype = Shader::FRAGMENT;
         }
-        programMap.insert(make_pair(programKey, program));
+        BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
+            program->addBindAttribLocation(key.first, key.second);
+        }
+       programMap.insert(ProgramMap::value_type(prgKey, program));
     }
     pass->setAttributeAndModes(program);
 }
 
 InstallAttributeBuilder<ShaderProgramBuilder> installShaderProgram("program");
 
-EffectNameValue<Uniform::Type> uniformTypes[] =
+EffectNameValue<Uniform::Type> uniformTypesInit[] =
 {
     {"float", Uniform::FLOAT},
     {"float-vec3", Uniform::FLOAT_VEC3},
@@ -572,12 +698,15 @@ EffectNameValue<Uniform::Type> uniformTypes[] =
     {"sampler-2d", Uniform::SAMPLER_2D},
     {"sampler-3d", Uniform::SAMPLER_3D}
 };
+EffectPropertyMap<Uniform::Type> uniformTypes(uniformTypesInit);
 
 struct UniformBuilder :public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
         const SGPropertyNode* valProp
@@ -659,18 +788,21 @@ struct NameBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<NameBuilder> installName("name");
 
-EffectNameValue<PolygonMode::Mode> polygonModeModes[] =
+EffectNameValue<PolygonMode::Mode> polygonModeModesInit[] =
 {
     {"fill", PolygonMode::FILL},
     {"line", PolygonMode::LINE},
     {"point", PolygonMode::POINT}
 };
+EffectPropertyMap<PolygonMode::Mode> polygonModeModes(polygonModeModesInit);
 
 struct PolygonModeBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const osgDB::ReaderWriter::Options* options)
     {
+        if (!isAttributeActive(effect, prop))
+            return;
         const SGPropertyNode* frontProp
             = getEffectPropertyChild(effect, prop, "front");
         const SGPropertyNode* backProp
@@ -691,6 +823,87 @@ struct PolygonModeBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
+
+struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_TWO_SIDE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramTwoSideBuilder>
+installTwoSide("vertex-program-two-side");
+
+struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+        pass->setMode(GL_VERTEX_PROGRAM_POINT_SIZE,
+                      (realProp->getValue<bool>()
+                       ? StateAttribute::ON : StateAttribute::OFF));
+    }
+};
+
+InstallAttributeBuilder<VertexProgramPointSizeBuilder>
+installPointSize("vertex-program-point-size");
+
+EffectNameValue<Depth::Function> depthFunctionInit[] =
+{
+    {"never", Depth::NEVER},
+    {"less", Depth::LESS},
+    {"equal", Depth::EQUAL},
+    {"lequal", Depth::LEQUAL},
+    {"greater", Depth::GREATER},
+    {"notequal", Depth::NOTEQUAL},
+    {"gequal", Depth::GEQUAL},
+    {"always", Depth::ALWAYS}
+};
+EffectPropertyMap<Depth::Function> depthFunction(depthFunctionInit);
+
+struct DepthBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        if (!isAttributeActive(effect, prop))
+            return;
+        ref_ptr<Depth> depth = new Depth;
+        const SGPropertyNode* pfunc
+            = getEffectPropertyChild(effect, prop, "function");
+        if (pfunc) {
+            Depth::Function func = Depth::LESS;
+            findAttr(depthFunction, pfunc, func);
+            depth->setFunction(func);
+        }
+        const SGPropertyNode* pnear
+            = getEffectPropertyChild(effect, prop, "near");
+        if (pnear)
+            depth->setZNear(pnear->getValue<double>());
+        const SGPropertyNode* pfar
+            = getEffectPropertyChild(effect, prop, "far");
+        if (pfar)
+            depth->setZFar(pnear->getValue<double>());
+        const SGPropertyNode* pmask
+            = getEffectPropertyChild(effect, prop, "write-mask");
+        if (pmask)
+            depth->setWriteMask(pmask->getValue<bool>());
+        pass->setAttribute(depth.get());
+    }
+};
+
+InstallAttributeBuilder<DepthBuilder> installDepth("depth");
+
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
                     const osgDB::ReaderWriter::Options* options)
 {
@@ -728,16 +941,128 @@ void buildTechnique(Effect* effect, const SGPropertyNode* prop,
     }
 }
 
+// Specifically for .ac files...
+bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
+{
+    SGPropertyNode* paramRoot = makeChild(effectRoot, "parameters");
+    SGPropertyNode* matNode = paramRoot->getChild("material", 0, true);
+    Vec4f ambVal, difVal, specVal, emisVal;
+    float shininess = 0.0f;
+    const Material* mat = getStateAttribute<Material>(ss);
+    if (mat) {
+        ambVal = mat->getAmbient(Material::FRONT_AND_BACK);
+        difVal = mat->getDiffuse(Material::FRONT_AND_BACK);
+        specVal = mat->getSpecular(Material::FRONT_AND_BACK);
+        emisVal = mat->getEmission(Material::FRONT_AND_BACK);
+        shininess = mat->getShininess(Material::FRONT_AND_BACK);
+        makeChild(matNode, "active")->setValue(true);
+        makeChild(matNode, "ambient")->setValue(toVec4d(toSG(ambVal)));
+        makeChild(matNode, "diffuse")->setValue(toVec4d(toSG(difVal)));
+        makeChild(matNode, "specular")->setValue(toVec4d(toSG(specVal)));
+        makeChild(matNode, "emissive")->setValue(toVec4d(toSG(emisVal)));
+        makeChild(matNode, "shininess")->setValue(shininess);
+        matNode->getChild("color-mode", 0, true)->setStringValue("diffuse");
+    } else {
+        makeChild(matNode, "active")->setValue(false);
+    }
+    const ShadeModel* sm = getStateAttribute<ShadeModel>(ss);
+    string shadeModelString("smooth");
+    if (sm) {
+        ShadeModel::Mode smMode = sm->getMode();
+        if (smMode == ShadeModel::FLAT)
+            shadeModelString = "flat";
+    }
+    makeChild(paramRoot, "shade-model")->setStringValue(shadeModelString);
+    string cullFaceString("off");
+    const CullFace* cullFace = getStateAttribute<CullFace>(ss);
+    if (cullFace) {
+        switch (cullFace->getMode()) {
+        case CullFace::FRONT:
+            cullFaceString = "front";
+            break;
+        case CullFace::BACK:
+            cullFaceString = "back";
+            break;
+        case CullFace::FRONT_AND_BACK:
+            cullFaceString = "front-back";
+            break;
+        default:
+            break;
+        }
+    }
+    makeChild(paramRoot, "cull-face")->setStringValue(cullFaceString);
+    const BlendFunc* blendFunc = getStateAttribute<BlendFunc>(ss);
+    SGPropertyNode* blendNode = makeChild(paramRoot, "blend");
+    if (blendFunc) {
+        string sourceMode = findName(blendFuncModes, blendFunc->getSource());
+        string destMode = findName(blendFuncModes, blendFunc->getDestination());
+        makeChild(blendNode, "active")->setValue(true);
+        makeChild(blendNode, "source")->setStringValue(sourceMode);
+        makeChild(blendNode, "destination")->setStringValue(destMode);
+        makeChild(blendNode, "mode")->setValue(true);
+    } else {
+        makeChild(blendNode, "active")->setValue(false);
+    }
+    string renderingHint = findName(renderingHints, ss->getRenderingHint());
+    makeChild(paramRoot, "rendering-hint")->setStringValue(renderingHint);
+    makeTextureParameters(paramRoot, ss);
+    return true;
+}
+
 // Walk the techniques property tree, building techniques and
 // passes.
 bool Effect::realizeTechniques(const osgDB::ReaderWriter::Options* options)
 {
+    if (_isRealized)
+        return true;
     PropertyList tniqList = root->getChildren("technique");
     for (PropertyList::iterator itr = tniqList.begin(), e = tniqList.end();
          itr != e;
          ++itr)
         buildTechnique(this, *itr, options);
+    _isRealized = true;
     return true;
+}
+
+void Effect::InitializeCallback::doUpdate(osg::Node* node, osg::NodeVisitor* nv)
+{
+    EffectGeode* eg = dynamic_cast<EffectGeode*>(node);
+    if (!eg)
+        return;
+    Effect* effect = eg->getEffect();
+    if (!effect)
+        return;
+    SGPropertyNode* root = getPropertyRoot();
+    for (vector<SGSharedPtr<Updater> >::iterator itr = effect->_extraData.begin(),
+             end = effect->_extraData.end();
+         itr != end;
+         ++itr) {
+        InitializeWhenAdded* adder
+            = dynamic_cast<InitializeWhenAdded*>(itr->ptr());
+        if (adder)
+            adder->initOnAdd(effect, root);
+    }
+}
+
+bool Effect::Key::EqualTo::operator()(const Effect::Key& lhs,
+                                      const Effect::Key& rhs) const
+{
+    if (lhs.paths.size() != rhs.paths.size()
+        || !equal(lhs.paths.begin(), lhs.paths.end(), rhs.paths.begin()))
+        return false;
+    if (lhs.unmerged.valid() && rhs.unmerged.valid())
+        return props::Compare()(lhs.unmerged, rhs.unmerged);
+    else
+        return lhs.unmerged == rhs.unmerged;
+}
+
+size_t hash_value(const Effect::Key& key)
+{
+    size_t seed = 0;
+    if (key.unmerged.valid())
+        boost::hash_combine(seed, *key.unmerged);
+    boost::hash_range(seed, key.paths.begin(), key.paths.end());
+    return seed;
 }
 
 bool Effect_writeLocalData(const Object& obj, osgDB::Output& fw)
@@ -762,4 +1087,49 @@ osgDB::RegisterDotOsgWrapperProxy effectProxy
     &Effect_writeLocalData
     );
 }
+
+// Property expressions for technique predicates
+class PropertyExpression : public SGExpression<bool>
+{
+public:
+    PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode) {}
+    
+    void eval(bool& value, const expression::Binding*) const
+    {
+        value = _pnode->getValue<bool>();
+    }
+protected:
+    SGPropertyNode_ptr _pnode;
+};
+
+class EffectPropertyListener : public SGPropertyChangeListener
+{
+public:
+    EffectPropertyListener(Technique* tniq) : _tniq(tniq) {}
+    
+    void valueChanged(SGPropertyNode* node)
+    {
+        _tniq->refreshValidity();
+    }
+protected:
+    osg::ref_ptr<Technique> _tniq;
+};
+
+Expression* propertyExpressionParser(const SGPropertyNode* exp,
+                                     expression::Parser* parser)
+{
+    SGPropertyNode_ptr pnode = getPropertyRoot()->getNode(exp->getStringValue(),
+                                                          true);
+    PropertyExpression* pexp = new PropertyExpression(pnode);
+    TechniquePredParser* predParser
+        = dynamic_cast<TechniquePredParser*>(parser);
+    if (predParser)
+        pnode->addChangeListener(new EffectPropertyListener(predParser
+                                                            ->getTechnique()));
+    return pexp;
+}
+
+expression::ExpParserRegistrar propertyRegistrar("property",
+                                                 propertyExpressionParser);
+
 }

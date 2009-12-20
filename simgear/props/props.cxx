@@ -16,8 +16,16 @@
 
 #include <sstream>
 #include <iomanip>
+#include <iterator>
 #include <stdio.h>
 #include <string.h>
+
+#include <boost/algorithm/string/find_iterator.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/bind.hpp>
+#include <boost/functional/hash.hpp>
+#include <boost/range.hpp>
 
 #include <simgear/math/SGMath.hxx>
 
@@ -79,48 +87,35 @@ public:
 ////////////////////////////////////////////////////////////////////////
 
 /**
- * A component in a path.
- */
-struct PathComponent
-{
-  string name;
-  int index;
-};
-
-/**
  * Parse the name for a path component.
  *
  * Name: [_a-zA-Z][-._a-zA-Z0-9]*
  */
-static inline const string
-parse_name (const string &path, int &i)
+
+template<typename Range>
+inline Range
+parse_name (const Range &path)
 {
-  string name = "";
-  int max = path.size();
+  typename Range::iterator i = path.begin();
+  typename Range::iterator max = path.end();
 
-  if (path[i] == '.') {
+  if (*i == '.') {
     i++;
-    if (i < max && path[i] == '.') {
+    if (i != path.end() && *i == '.') {
       i++;
-      name = "..";
-    } else {
-      name = ".";
     }
-    if (i < max && path[i] != '/')
-      throw string("illegal character after " + name);
-  }
-
-  else if (isalpha(path[i]) || path[i] == '_') {
-    name += path[i];
+    if (i != max && *i != '/')
+      throw string("illegal character after . or ..");
+  } else if (isalpha(*i) || *i == '_') {
     i++;
 
 				// The rules inside a name are a little
 				// less restrictive.
-    while (i < max) {
-      if (isalpha(path[i]) || isdigit(path[i]) || path[i] == '_' ||
-	  path[i] == '-' || path[i] == '.') {
-	name += path[i];
-      } else if (path[i] == '[' || path[i] == '/') {
+    while (i != max) {
+      if (isalpha(*i) || isdigit(*i) || *i == '_' ||
+	  *i == '-' || *i == '.') {
+	// name += path[i];
+      } else if (*i == '[' || *i == '/') {
 	break;
       } else {
 	throw string("name may contain only ._- and alphanumeric characters");
@@ -130,89 +125,23 @@ parse_name (const string &path, int &i)
   }
 
   else {
-    if (name.size() == 0)
+    if (path.begin() == i)
       throw string("name must begin with alpha or '_'");
   }
-
-  return name;
+  return Range(path.begin(), i);
 }
 
-
-/**
- * Parse the optional integer index for a path component.
- *
- * Index: "[" [0-9]+ "]"
- */
-static inline int
-parse_index (const string &path, int &i)
+// Validate the name of a single node
+inline bool validateName(const string& name)
 {
-  int index = 0;
-
-  if (path[i] != '[')
-    return 0;
-  else
-    i++;
-
-  for (int max = path.size(); i < max; i++) {
-    if (isdigit(path[i])) {
-      index = (index * 10) + (path[i] - '0');
-    } else if (path[i] == ']') {
-      i++;
-      return index;
-    } else {
-      break;
-    }
-  }
-
-  throw string("unterminated index (looking for ']')");
+  using namespace boost;
+  if (name.empty())
+    return false;
+  if (!isalpha(name[0]) && name[0] != '_')
+    return false;
+  return all(make_iterator_range(name.begin(), name.end()),
+             is_alnum() || is_any_of("_-."));
 }
-
-
-/**
- * Parse a single path component.
- *
- * Component: Name Index?
- */
-static inline PathComponent
-parse_component (const string &path, int &i)
-{
-  PathComponent component;
-  component.name = parse_name(path, i);
-  if (component.name[0] != '.')
-    component.index = parse_index(path, i);
-  else
-    component.index = -1;
-  return component;
-}
-
-
-/**
- * Parse a path into its components.
- */
-static void
-parse_path (const string &path, vector<PathComponent> &components)
-{
-  int pos = 0;
-  int max = path.size();
-
-				// Check for initial '/'
-  if (path[pos] == '/') {
-    PathComponent root;
-    root.name = "";
-    root.index = -1;
-    components.push_back(root);
-    pos++;
-    while (pos < max && path[pos] == '/')
-      pos++;
-  }
-
-  while (pos < max) {
-    components.push_back(parse_component(path, pos));
-    while (pos < max && path[pos] == '/')
-      pos++;
-  }
-}
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -242,16 +171,18 @@ compare_strings (const char * s1, const char * s2)
 /**
  * Locate a child node by name and index.
  */
+template<typename Itr>
 static int
-find_child (const char * name, int index, const PropertyList& nodes)
+find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 {
   int nNodes = nodes.size();
+  boost::iterator_range<Itr> name(begin, end);
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
 
     // searching for a mathing index is a lot less time consuming than
     // comparing two strings so do that first.
-    if (node->getIndex() == index && compare_strings(node->getName(), name))
+    if (node->getIndex() == index && boost::equals(node->getName(), name))
       return i;
   }
   return -1;
@@ -277,55 +208,137 @@ find_last_child (const char * name, const PropertyList& nodes)
   return index;
 }
 
-
-/**
- * Locate another node, given a relative path.
- */
-static SGPropertyNode *
-find_node (SGPropertyNode * current,
-	   const vector<PathComponent> &components,
-	   int position,
-	   bool create)
+template<typename Itr>
+inline SGPropertyNode*
+SGPropertyNode::getExistingChild (Itr begin, Itr end, int index, bool create)
 {
-				// Run off the end of the list
+  int pos = find_child(begin, end, index, _children);
+  if (pos >= 0) {
+    return _children[pos];
+  } else if (create) {
+    SGPropertyNode_ptr node;
+    pos = find_child(begin, end, index, _removedChildren);
+    if (pos >= 0) {
+      PropertyList::iterator it = _removedChildren.begin();
+      it += pos;
+      node = _removedChildren[pos];
+      _removedChildren.erase(it);
+      node->setAttribute(REMOVED, false);
+      _children.push_back(node);
+      fireChildAdded(node);
+      return node;      
+    }
+  }
+  return 0;
+}
+    
+template<typename Itr>
+SGPropertyNode *
+SGPropertyNode::getChildImpl (Itr begin, Itr end, int index, bool create)
+{
+    SGPropertyNode* node = getExistingChild(begin, end, index, create);
+
+    if (node) {
+      return node;
+    } else if (create) {
+      node = new SGPropertyNode(begin, end, index, this);
+      _children.push_back(node);
+      fireChildAdded(node);
+      return node;
+    } else {
+      return 0;
+    }
+}
+
+template<typename SplitItr>
+SGPropertyNode*
+find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
+              int last_index)
+{
+  typedef typename SplitItr::value_type Range;
+  // Run off the end of the list
   if (current == 0) {
     return 0;
   }
 
-				// Success! This is the one we want.
-  else if (position >= (int)components.size()) {
-    return (current->getAttribute(SGPropertyNode::REMOVED) ? 0 : current);
-  }
-
-				// Empty component means root.
-  else if (components[position].name == "") {
-    return find_node(current->getRootNode(), components, position + 1, create);
-  }
-
-				// . means current directory
-  else if (components[position].name == ".") {
-    return find_node(current, components, position + 1, create);
-  }
-
-				// .. means parent directory
-  else if (components[position].name == "..") {
+  // Success! This is the one we want.
+  if (itr.eof())
+    return current;
+  Range token = *itr;
+  // Empty name at this point is empty, not root.
+  if (token.empty())
+    return find_node_aux(current, ++itr, create, last_index);
+  Range name = parse_name(token);
+  if (equals(name, "."))
+    return find_node_aux(current, ++itr, create, last_index);
+  if (equals(name, "..")) {
     SGPropertyNode * parent = current->getParent();
     if (parent == 0)
       throw string("attempt to move past root with '..'");
-    else
-      return find_node(parent, components, position + 1, create);
+    return find_node_aux(parent, ++itr, create, last_index);
+  }
+  int index = -1;
+  if (last_index >= 0) {
+    // If we are at the last token and last_index is valid, use
+    // last_index as the index value
+    bool lastTok = true;
+    while (!(++itr).eof()) {
+      if (!itr->empty()) {
+        lastTok = false;
+        break;
+      }
+    }
+    if (lastTok)
+      index = last_index;
+  } else {
+    ++itr;
   }
 
-				// Otherwise, a child name
-  else {
-    SGPropertyNode * child =
-      current->getChild(components[position].name.c_str(),
-			components[position].index,
-			create);
-    return find_node(child, components, position + 1, create);
+  if (index < 0) {
+    index = 0;
+    if (name.end() != token.end()) {
+      if (*name.end() == '[') {
+        typename Range::iterator i = name.end() + 1, end = token.end();
+        for (;i != end; ++i) {
+          if (isdigit(*i)) {
+            index = (index * 10) + (*i - '0');
+          } else {
+            break;
+          }
+        }
+        if (i == token.end() || *i != ']')
+          throw string("unterminated index (looking for ']')");
+      } else {
+        throw string("illegal characters in token: ")
+          + string(name.begin(), name.end());
+      }
+    }
   }
+  return find_node_aux(current->getChildImpl(name.begin(), name.end(),
+                                             index, create), itr, create,
+                       last_index);
 }
 
+// Internal function for parsing property paths. last_index provides
+// and index value for the last node name token, if supplied.
+template<typename Range>
+SGPropertyNode*
+find_node (SGPropertyNode * current,
+           const Range& path,
+	   bool create,
+           int last_index = -1)
+{
+  using namespace boost;
+  typedef split_iterator<typename range_result_iterator<Range>::type>
+    PathSplitIterator;
+  
+  PathSplitIterator itr
+    = make_split_iterator(path, first_finder("/", is_equal()));
+  if (*path.begin() == '/')
+    return find_node_aux(current->getRootNode(), itr, create, last_index);
+   else
+     return find_node_aux(current, itr, create, last_index);
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -695,10 +708,12 @@ SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
 /**
  * Convenience constructor.
  */
-SGPropertyNode::SGPropertyNode (const char * name,
+template<typename Itr>
+SGPropertyNode::SGPropertyNode (Itr begin, Itr end,
 				int index,
 				SGPropertyNode * parent)
   : _index(index),
+    _name(begin, end),
     _parent(parent),
     _path_cache(0),
     _type(props::NONE),
@@ -706,14 +721,29 @@ SGPropertyNode::SGPropertyNode (const char * name,
     _attr(READ|WRITE),
     _listeners(0)
 {
-  int i = 0;
   _local_val.string_val = 0;
   _value.val = 0;
-  _name = parse_name(name, i);
-  if (i != int(strlen(name)) || name[0] == '.')
-    throw string("plain name expected instead of '") + name + '\'';
+  if (!validateName(_name))
+    throw string("plain name expected instead of '") + _name + '\'';
 }
 
+SGPropertyNode::SGPropertyNode (const string& name,
+				int index,
+				SGPropertyNode * parent)
+  : _index(index),
+    _name(name),
+    _parent(parent),
+    _path_cache(0),
+    _type(props::NONE),
+    _tied(false),
+    _attr(READ|WRITE),
+    _listeners(0)
+{
+  _local_val.string_val = 0;
+  _value.val = 0;
+  if (!validateName(name))
+    throw string("plain name expected instead of '") + _name + '\'';
+}
 
 /**
  * Destructor.
@@ -801,7 +831,7 @@ SGPropertyNode::addChild (const char * name)
   int pos = find_last_child(name, _children)+1;
 
   SGPropertyNode_ptr node;
-  node = new SGPropertyNode(name, pos, this);
+  node = new SGPropertyNode(name, name + strlen(name), pos, this);
   _children.push_back(node);
   fireChildAdded(node);
   return node;
@@ -837,32 +867,29 @@ SGPropertyNode::getChild (int position) const
 /**
  * Get a non-const child by name and index, creating if necessary.
  */
+
 SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index, bool create)
 {
-  int pos = find_child(name, index, _children);
-  if (pos >= 0) {
-    return _children[pos];
-  } else if (create) {
-    SGPropertyNode_ptr node;
-    pos = find_child(name, index, _removedChildren);
-    if (pos >= 0) {
-      PropertyList::iterator it = _removedChildren.begin();
-      it += pos;
-      node = _removedChildren[pos];
-      _removedChildren.erase(it);
-      node->setAttribute(REMOVED, false);
-    } else {
-      node = new SGPropertyNode(name, index, this);
-    }
-    _children.push_back(node);
-    fireChildAdded(node);
-    return node;
-  } else {
-    return 0;
-  }
+  return getChildImpl(name, name + strlen(name), index, create);
 }
 
+SGPropertyNode *
+SGPropertyNode::getChild (const string& name, int index, bool create)
+{
+  SGPropertyNode* node = getExistingChild(name.begin(), name.end(), index,
+                                          create);
+  if (node) {
+      return node;
+    } else if (create) {
+      node = new SGPropertyNode(name, index, this);
+      _children.push_back(node);
+      fireChildAdded(node);
+      return node;
+    } else {
+      return 0;
+    }
+}
 
 /**
  * Get a const child by name and index.
@@ -870,7 +897,7 @@ SGPropertyNode::getChild (const char * name, int index, bool create)
 const SGPropertyNode *
 SGPropertyNode::getChild (const char * name, int index) const
 {
-  int pos = find_child(name, index, _children);
+  int pos = find_child(name, name + strlen(name), index, _children);
   if (pos >= 0)
     return _children[pos];
   else
@@ -945,7 +972,7 @@ SGPropertyNode_ptr
 SGPropertyNode::removeChild (const char * name, int index, bool keep)
 {
   SGPropertyNode_ptr ret;
-  int pos = find_child(name, index, _children);
+  int pos = find_child(name, name + strlen(name), index, _children);
   if (pos >= 0)
     ret = removeChild(pos, keep);
   return ret;
@@ -1710,14 +1737,16 @@ SGPropertyNode::getRootNode () const
 SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, bool create)
 {
+  using namespace boost;
   if (_path_cache == 0)
     _path_cache = new hash_table;
 
   SGPropertyNode * result = _path_cache->get(relative_path);
   if (result == 0) {
-    vector<PathComponent> components;
-    parse_path(relative_path, components);
-    result = find_node(this, components, 0, create);
+    result = find_node(this,
+                       make_iterator_range(relative_path, relative_path
+                                           + strlen(relative_path)),
+                       create);
     if (result != 0)
       _path_cache->put(relative_path, result);
   }
@@ -1728,11 +1757,10 @@ SGPropertyNode::getNode (const char * relative_path, bool create)
 SGPropertyNode *
 SGPropertyNode::getNode (const char * relative_path, int index, bool create)
 {
-  vector<PathComponent> components;
-  parse_path(relative_path, components);
-  if (components.size() > 0)
-    components.back().index = index;
-  return find_node(this, components, 0, create);
+  using namespace boost;
+  return find_node(this, make_iterator_range(relative_path, relative_path
+                                             + strlen(relative_path)),
+                   create, index);
 }
 
 const SGPropertyNode *
@@ -2354,6 +2382,146 @@ std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result)
     }
     return stream;
 }
+
+namespace
+{
+bool compareNodeValue(const SGPropertyNode& lhs, const SGPropertyNode& rhs)
+{
+    props::Type ltype = lhs.getType();
+    props::Type rtype = rhs.getType();
+    if (ltype != rtype)
+        return false;
+    switch (ltype) {
+    case props::NONE:
+        return true;
+    case props::ALIAS:
+        return false;           // XXX Should we look in aliases?
+    case props::BOOL:
+        return lhs.getValue<bool>() == rhs.getValue<bool>();
+    case props::INT:
+        return lhs.getValue<int>() == rhs.getValue<int>();
+    case props::LONG:
+        return lhs.getValue<long>() == rhs.getValue<long>();
+    case props::FLOAT:
+        return lhs.getValue<float>() == rhs.getValue<float>();
+    case props::DOUBLE:
+        return lhs.getValue<double>() == rhs.getValue<double>();
+    case props::STRING:
+    case props::UNSPECIFIED:
+        return !strcmp(lhs.getStringValue(), rhs.getStringValue());
+    case props::VEC3D:
+        return lhs.getValue<SGVec3d>() == rhs.getValue<SGVec3d>();
+    case props::VEC4D:
+        return lhs.getValue<SGVec4d>() == rhs.getValue<SGVec4d>();
+    default:
+        return false;
+    }
+}
+}
+}
+
+bool SGPropertyNode::compare(const SGPropertyNode& lhs,
+                             const SGPropertyNode& rhs)
+{
+    if (&lhs == &rhs)
+        return true;
+    int lhsChildren = lhs.nChildren();
+    int rhsChildren = rhs.nChildren();
+    if (lhsChildren != rhsChildren)
+        return false;
+    if (lhsChildren == 0)
+        return compareNodeValue(lhs, rhs);
+    for (size_t i = 0; i < lhs._children.size(); ++i) {
+        const SGPropertyNode* lchild = lhs._children[i];
+        const SGPropertyNode* rchild = rhs._children[i];
+        // I'm guessing that the nodes will usually be in the same
+        // order.
+        if (lchild->getIndex() != rchild->getIndex()
+            || lchild->getNameString() != rchild->getNameString()) {
+            rchild = 0;
+            for (PropertyList::const_iterator itr = rhs._children.begin(),
+                     end = rhs._children.end();
+                 itr != end;
+                ++itr)
+                if (lchild->getIndex() == (*itr)->getIndex()
+                    && lchild->getNameString() == (*itr)->getNameString()) {
+                    rchild = *itr;
+                    break;
+                }
+            if (!rchild)
+                return false;
+        }
+        if (!compare(*lchild, *rchild))
+            return false;
+    }
+    return true;
+}
+
+struct PropertyPlaceLess {
+    typedef bool result_type;
+    bool operator()(SGPropertyNode_ptr lhs, SGPropertyNode_ptr rhs) const
+    {
+        int comp = lhs->getNameString().compare(rhs->getNameString());
+        if (comp == 0)
+            return lhs->getIndex() < rhs->getIndex();
+        else
+            return comp < 0;
+    }
+};
+
+size_t hash_value(const SGPropertyNode& node)
+{
+    using namespace boost;
+
+    if (node.nChildren() == 0) {
+        switch (node.getType()) {
+        case props::NONE:
+            return 0;
+
+        case props::BOOL:
+            return hash_value(node.getValue<bool>());
+        case props::INT:
+            return hash_value(node.getValue<int>());
+        case props::LONG:
+            return hash_value(node.getValue<long>());
+        case props::FLOAT:
+            return hash_value(node.getValue<float>());
+        case props::DOUBLE:
+            return hash_value(node.getValue<double>());
+        case props::STRING:
+        case props::UNSPECIFIED:
+        {
+            const char *val = node.getStringValue();
+            return hash_range(val, val + strlen(val));
+        }
+        case props::VEC3D:
+        {
+            const SGVec3d val = node.getValue<SGVec3d>();
+            return hash_range(&val[0], &val[3]);
+        }
+        case props::VEC4D:
+        {
+            const SGVec4d val = node.getValue<SGVec4d>();
+            return hash_range(&val[0], &val[4]);
+        }
+        case props::ALIAS:      // XXX Should we look in aliases?
+        default:
+            return 0;
+        }
+    } else {
+        size_t seed = 0;
+        PropertyList children(node._children.begin(), node._children.end());
+        sort(children.begin(), children.end(), PropertyPlaceLess());
+        for (PropertyList::const_iterator itr  = children.begin(),
+                 end = children.end();
+             itr != end;
+             ++itr) {
+            hash_combine(seed, (*itr)->_name);
+            hash_combine(seed, (*itr)->_index);
+            hash_combine(seed, hash_value(**itr));
+        }
+        return seed;
+    }
 }
 
 // end of props.cxx

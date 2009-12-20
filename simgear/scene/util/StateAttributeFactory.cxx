@@ -64,6 +64,17 @@ StateAttributeFactory::StateAttributeFactory()
     _whiteTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
     _whiteTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
     _whiteTexture->setDataVariance(osg::Object::STATIC);
+    // And now the transparent texture
+    dummyImage = new osg::Image;
+    dummyImage->allocateImage(1, 1, 1, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE);
+    imageBytes = dummyImage->data(0, 0);
+    imageBytes[0] = 255;
+    imageBytes[1] = 0;
+    _transparentTexture = new osg::Texture2D;
+    _transparentTexture->setImage(dummyImage);
+    _transparentTexture->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+    _transparentTexture->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
+    _transparentTexture->setDataVariance(osg::Object::STATIC);
     _white = new Vec4Array(1);
     (*_white)[0].set(1.0f, 1.0f, 1.0f, 1.0f);
     _white->setDataVariance(Object::STATIC);

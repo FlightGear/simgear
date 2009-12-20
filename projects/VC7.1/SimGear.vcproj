@@ -644,6 +644,15 @@
 			Name="Lib_sgprops"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\props\AtomicChangeListener.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\AtomicChangeListener.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\ExtendedPropertyAdapter.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\props\condition.cxx">
 			</File>
 			<File
@@ -1172,6 +1181,12 @@
 			Name="Lib_sgutil"
 			Filter="">
 			<File
+				RelativePath="..\..\simgear\scene\util\CopyOp.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\CopyOp.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx">
 			</File>
 			<File
@@ -1232,10 +1247,22 @@
 				RelativePath="..\..\simgear\scene\util\SGUpdateVisitor.hxx">
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\SplicingVisitor.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SplicingVisitor.hxx">
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.cxx">
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\StateAttributeFactory.hxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\UpdateOnceCallback.cxx">
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\UpdateOnceCallback.hxx">
 			</File>
 		</Filter>
 		<Filter

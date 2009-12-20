@@ -62,9 +62,6 @@ using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
-using OpenThreads::ReentrantMutex;
-using OpenThreads::ScopedLock;
-
 // Little helper class that holds an extra reference to a
 // loaded 3d model.
 // Since we clone all structural nodes from our 3d models,
@@ -128,125 +125,6 @@ protected:
     }
 };
 
-// Change the StateSets of a model to hold different textures based on
-// a livery path.
-
-class TextureUpdateVisitor : public NodeAndDrawableVisitor {
-public:
-    TextureUpdateVisitor(const FilePathList& pathList) :
-        NodeAndDrawableVisitor(NodeVisitor::TRAVERSE_ALL_CHILDREN),
-        _pathList(pathList)
-    {
-    }
-    
-    virtual void apply(Node& node)
-    {
-        StateSet* stateSet = cloneStateSet(node.getStateSet());
-        if (stateSet)
-            node.setStateSet(stateSet);
-        traverse(node);
-    }
-
-    virtual void apply(Drawable& drawable)
-    {
-        StateSet* stateSet = cloneStateSet(drawable.getStateSet());
-        if (stateSet)
-            drawable.setStateSet(stateSet);
-    }
-    // Copied from Mathias' earlier SGTextureUpdateVisitor
-protected:
-    Texture2D* textureReplace(int unit, const StateAttribute* attr)
-    {
-        const Texture2D* texture = dynamic_cast<const Texture2D*>(attr);
-
-        if (!texture)
-            return 0;
-    
-        const Image* image = texture->getImage();
-        const string* fullFilePath = 0;
-        if (image) {
-            // The currently loaded file name
-            fullFilePath = &image->getFileName();
-
-        } else {
-            fullFilePath = &texture->getName();
-        }
-        // The short name
-        string fileName = getSimpleFileName(*fullFilePath);
-        if (fileName.empty())
-            return 0;
-        // The name that should be found with the current database path
-        string fullLiveryFile = findFileInPath(fileName, _pathList);
-        // If it is empty or they are identical then there is nothing to do
-        if (fullLiveryFile.empty() || fullLiveryFile == *fullFilePath)
-            return 0;
-        Image* newImage = readImageFile(fullLiveryFile);
-        if (!newImage)
-            return 0;
-        CopyOp copyOp(CopyOp::DEEP_COPY_ALL & ~CopyOp::DEEP_COPY_IMAGES);
-        Texture2D* newTexture = static_cast<Texture2D*>(copyOp(texture));
-        if (!newTexture) {
-            return 0;
-        } else {
-            newTexture->setImage(newImage);
-            return newTexture;
-        }
-    }
-    
-    StateSet* cloneStateSet(const StateSet* stateSet)
-    {
-        typedef pair<int, Texture2D*> Tex2D;
-        vector<Tex2D> newTextures;
-        StateSet* result = 0;
-
-        if (!stateSet)
-            return 0;
-        int numUnits = stateSet->getTextureAttributeList().size();
-        if (numUnits > 0) {
-            for (int i = 0; i < numUnits; ++i) {
-                const StateAttribute* attr
-                    = stateSet->getTextureAttribute(i, StateAttribute::TEXTURE);
-                Texture2D* newTexture = textureReplace(i, attr);
-                if (newTexture)
-                    newTextures.push_back(Tex2D(i, newTexture));
-            }
-            if (!newTextures.empty()) {
-                result = static_cast<StateSet*>(stateSet->clone(CopyOp()));
-                for (vector<Tex2D>::iterator i = newTextures.begin();
-                     i != newTextures.end();
-                     ++i) {
-                    result->setTextureAttribute(i->first, i->second);
-                }
-            }
-        }
-        return result;
-    }
-private:
-    FilePathList _pathList;
-};
-
-// Create new userdata structs in a copied model.
-// The BVH trees are shared with the original model, but the velocity fields
-// should usually be distinct fields for distinct models.
-class UserDataCopyVisitor : public osg::NodeVisitor {
-public:
-    UserDataCopyVisitor() :
-        osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
-                         osg::NodeVisitor::TRAVERSE_ALL_CHILDREN)
-    {
-    }
-    virtual void apply(osg::Node& node)
-    {
-        osg::ref_ptr<SGSceneUserData> userData;
-        userData = SGSceneUserData::getSceneUserData(&node);
-        if (userData.valid()) {
-            SGSceneUserData* newUserData  = new SGSceneUserData(*userData);
-            newUserData->setVelocity(0);
-            node.setUserData(newUserData);
-        }
-        node.traverse(*this);
-    }
-};
 
 class SGTexCompressionVisitor : public SGTextureStateAttributeVisitor {
 public:
@@ -324,10 +202,8 @@ ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
                          const ReaderWriter::Options* opt)
 {
-    ScopedLock<ReentrantMutex> lock(readerMutex);
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
-    // XXX Workaround for OSG plugin bug
     {
         if (iter != imageCallbackMap.end() && iter->second.valid())
             return iter->second->readImage(fileName, opt);
@@ -416,41 +292,6 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
     return node;
 }
 
-osg::Node* DefaultCopyPolicy::copy(osg::Node* model, const string& fileName,
-                                   const osgDB::ReaderWriter::Options* opt)
-{
-    // Add an extra reference to the model stored in the database.
-    // That is to avoid expiring the object from the cache even if it is still
-    // in use. Note that the object cache will think that a model is unused
-    // if the reference count is 1. If we clone all structural nodes here
-    // we need that extra reference to the original object
-    SGDatabaseReference* databaseReference;
-    databaseReference = new SGDatabaseReference(model);
-    CopyOp::CopyFlags flags = CopyOp::DEEP_COPY_ALL;
-    flags &= ~CopyOp::DEEP_COPY_TEXTURES;
-    flags &= ~CopyOp::DEEP_COPY_IMAGES;
-    flags &= ~CopyOp::DEEP_COPY_STATESETS;
-    flags &= ~CopyOp::DEEP_COPY_STATEATTRIBUTES;
-    flags &= ~CopyOp::DEEP_COPY_ARRAYS;
-    flags &= ~CopyOp::DEEP_COPY_PRIMITIVES;
-    // This will safe display lists ...
-    flags &= ~CopyOp::DEEP_COPY_DRAWABLES;
-    flags &= ~CopyOp::DEEP_COPY_SHAPES;
-    osg::Node* res = CopyOp(flags)(model);
-    res->addObserver(databaseReference);
-
-    // Update liveries
-    TextureUpdateVisitor liveryUpdate(opt->getDatabasePathList());
-    res->accept(liveryUpdate);
-
-    // Copy the userdata fields, still sharing the boundingvolumes,
-    // but introducing new data for velocities.
-    UserDataCopyVisitor userDataCopyVisitor;
-    res->accept(userDataCopyVisitor);
-
-    return res;
-}
-
 string OSGSubstitutePolicy::substitute(const string& name,
                                        const ReaderWriter::Options* opt)
 {
@@ -509,10 +350,6 @@ ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
                         const ReaderWriter::Options* opt)
 {
-    ScopedLock<ReentrantMutex> lock(readerMutex);
-
-    // XXX Workaround for OSG plugin bug.
-//    Registry* registry = Registry::instance();
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
         = nodeCallbackMap.find(getFileExtension(fileName));
@@ -599,7 +436,7 @@ struct ACProcessPolicy {
 };
 
 typedef ModelRegistryCallback<ACProcessPolicy, DefaultCachePolicy,
-                              ACOptimizePolicy, DefaultCopyPolicy,
+                              ACOptimizePolicy,
                               OSGSubstitutePolicy, BuildLeafBVHPolicy>
 ACCallback;
 

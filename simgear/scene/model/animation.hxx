@@ -174,7 +174,6 @@ public:
   SGDistScaleAnimation(const SGPropertyNode* configNode,
                        SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
-private:
   class Transform;
 };
 
@@ -188,7 +187,7 @@ public:
   SGFlashAnimation(const SGPropertyNode* configNode,
                    SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
-private:
+public:
   class Transform;
 };
 
@@ -202,7 +201,6 @@ public:
   SGBillboardAnimation(const SGPropertyNode* configNode,
                        SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
-private:
   class Transform;
 };
 

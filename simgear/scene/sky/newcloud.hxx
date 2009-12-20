@@ -31,6 +31,9 @@
 
 #include "bbcache.hxx"
 
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
+
 using std::string;
 using std::vector;
 
@@ -59,7 +62,7 @@ public:
         ~SGNewCloud();
 
         // Generate a Cloud
-        osg::ref_ptr<osg::Geode> genCloud ();
+        osg::ref_ptr<simgear::EffectGeode> genCloud ();
 
         static double getDensity(void)
         {
@@ -90,7 +93,7 @@ private:
         const string texture;
         const string name;
         osg::Geometry* quad;
-        osg::ref_ptr<osg::StateSet> stateSet;
+        osg::ref_ptr<simgear::Effect> effect;
         static double sprite_density;
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);

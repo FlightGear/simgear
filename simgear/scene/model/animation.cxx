@@ -30,6 +30,10 @@
 #include <osg/Texture2D>
 #include <osg/Transform>
 #include <osgDB/ReadFile>
+#include <osgDB/Registry>
+#include <osgDB/Input>
+#include <osgDB/ParameterOutput>
+
 
 #include <simgear/math/interpolater.hxx>
 #include <simgear/props/condition.hxx>
@@ -971,6 +975,15 @@ osg::StateSet* getNormalizeStateSet()
 
 class SGDistScaleAnimation::Transform : public osg::Transform {
 public:
+  Transform() : _min_v(0.0), _max_v(0.0), _factor(0.0), _offset(0.0) {}
+  Transform(const Transform& rhs,
+            const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
+    : osg::Transform(rhs, copyOp), _table(rhs._table), _center(rhs._center),
+      _min_v(rhs._min_v), _max_v(rhs._max_v), _factor(rhs._factor),
+      _offset(rhs._offset)
+  {
+  }
+  META_Node(simgear, SGDistScaleAnimation::Transform);
   Transform(const SGPropertyNode* configNode)
   {
     setName(configNode->getStringValue("name", "dist scale animation"));
@@ -1018,6 +1031,16 @@ public:
     return true;
   }
 
+  static bool writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+  {
+    const Transform& trans = static_cast<const Transform&>(obj);
+    fw.indent() << "center " << trans._center << "\n";
+    fw.indent() << "min_v " << trans._min_v << "\n";
+    fw.indent() << "max_v " << trans._max_v << "\n";
+    fw.indent() << "factor " << trans._factor << "\n";
+    fw.indent() << "offset " << trans._offset << "\n";
+    return true;
+  }
 private:
   double computeScaleFactor(osg::NodeVisitor* nv) const
   {
@@ -1061,6 +1084,17 @@ SGDistScaleAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
+namespace
+{
+  osgDB::RegisterDotOsgWrapperProxy distScaleAnimationTransformProxy
+  (
+   new SGDistScaleAnimation::Transform,
+   "SGDistScaleAnimation::Transform",
+   "Object Node Transform SGDistScaleAnimation::Transform Group",
+   0,
+   &SGDistScaleAnimation::Transform::writeLocalData
+   );
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of flash animation
@@ -1068,6 +1102,19 @@ SGDistScaleAnimation::createAnimationGroup(osg::Group& parent)
 
 class SGFlashAnimation::Transform : public osg::Transform {
 public:
+  Transform() : _power(0.0), _factor(0.0), _offset(0.0), _min_v(0.0),
+                _max_v(0.0), _two_sides(false)
+  {}
+
+  Transform(const Transform& rhs,
+            const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
+    : osg::Transform(rhs, copyOp), _center(rhs._center), _axis(rhs._axis),
+      _power(rhs._power), _factor(rhs._factor), _offset(rhs._offset),
+      _min_v(rhs._min_v), _max_v(rhs._max_v), _two_sides(rhs._two_sides)
+  {
+  }
+  META_Node(simgear, SGFlashAnimation::Transform);
+
   Transform(const SGPropertyNode* configNode)
   {
     setReferenceFrame(RELATIVE_RF);
@@ -1124,6 +1171,21 @@ public:
     return true;
   }
 
+  static bool writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+  {
+    const Transform& trans = static_cast<const Transform&>(obj);
+    fw.indent() << "center " << trans._center[0] << " "
+                << trans._center[1] << " " << trans._center[2] << " " << "\n";
+    fw.indent() << "axis " << trans._axis[0] << " "
+                << trans._axis[1] << " " << trans._axis[2] << " " << "\n";
+    fw.indent() << "power " << trans._power << " \n";
+    fw.indent() << "min_v " << trans._min_v << "\n";
+    fw.indent() << "max_v " << trans._max_v << "\n";
+    fw.indent() << "factor " << trans._factor << "\n";
+    fw.indent() << "offset " << trans._offset << "\n";
+    fw.indent() << "twosides " << (trans._two_sides ? "true" : "false") << "\n";
+    return true;
+  }
 private:
   double computeScaleFactor(osg::NodeVisitor* nv) const
   {
@@ -1178,13 +1240,29 @@ SGFlashAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
+namespace
+{
+  osgDB::RegisterDotOsgWrapperProxy flashAnimationTransformProxy
+  (
+   new SGFlashAnimation::Transform,
+   "SGFlashAnimation::Transform",
+   "Object Node Transform SGFlashAnimation::Transform Group",
+   0,
+   &SGFlashAnimation::Transform::writeLocalData
+   );
+}
 
 ////////////////////////////////////////////////////////////////////////
-// Implementation of flash animation
+// Implementation of billboard animation
 ////////////////////////////////////////////////////////////////////////
 
 class SGBillboardAnimation::Transform : public osg::Transform {
 public:
+  Transform() : _spherical(true) {}
+  Transform(const Transform& rhs,
+            const osg::CopyOp& copyOp = osg::CopyOp::SHALLOW_COPY)
+    : osg::Transform(rhs, copyOp), _spherical(rhs._spherical) {}
+  META_Node(simgear, SGBillboardAnimation::Transform);
   Transform(const SGPropertyNode* configNode) :
     _spherical(configNode->getBoolValue("spherical", true))
   {
@@ -1221,7 +1299,13 @@ public:
     // Hmm, don't yet know how to get that back ...
     return false;
   }
+  static bool writeLocalData(const osg::Object& obj, osgDB::Output& fw)
+  {
+    const Transform& trans = static_cast<const Transform&>(obj);
 
+    fw.indent() << (trans._spherical ? "true" : "false") << "\n";
+    return true;
+  }
 private:
   bool _spherical;
 };
@@ -1241,6 +1325,17 @@ SGBillboardAnimation::createAnimationGroup(osg::Group& parent)
   return transform;
 }
 
+namespace
+{
+  osgDB::RegisterDotOsgWrapperProxy billboardAnimationTransformProxy
+  (
+   new SGBillboardAnimation::Transform,
+   "SGBillboardAnimation::Transform",
+   "Object Node Transform SGBillboardAnimation::Transform Group",
+   0,
+   &SGBillboardAnimation::Transform::writeLocalData
+   );
+}
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of a range animation

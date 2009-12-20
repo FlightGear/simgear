@@ -6,7 +6,6 @@
 #include "Technique.hxx"
 #include "Pass.hxx"
 
-#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include <iterator>
@@ -14,6 +13,7 @@
 #include <string>
 
 #include <osg/GLExtensions>
+#include <osg/GL2Extensions>
 #include <osg/Math>
 #include <osgUtil/CullVisitor>
 
@@ -59,16 +59,15 @@ Technique::Technique(bool alwaysValid)
 
 Technique::Technique(const Technique& rhs, const osg::CopyOp& copyop) :
     _contextMap(rhs._contextMap), _alwaysValid(rhs._alwaysValid),
-    _shadowingStateSet(rhs._shadowingStateSet),
+    _shadowingStateSet(copyop(rhs._shadowingStateSet)),
     _validExpression(rhs._validExpression),
     _contextIdLocation(rhs._contextIdLocation)
 {
-    using namespace std;
-    using namespace boost;
-    transform(rhs.passes.begin(), rhs.passes.end(),
-              back_inserter(passes),
-              bind(simgear::clone_ref<Pass>, _1, copyop));
-
+    for (std::vector<ref_ptr<Pass> >::const_iterator itr = rhs.passes.begin(),
+             end = rhs.passes.end();
+         itr != end;
+         ++itr)
+        passes.push_back(static_cast<Pass*>(copyop(itr->get())));
 }
 
 Technique::~Technique()
@@ -276,6 +275,38 @@ Expression* extensionSupportedParser(const SGPropertyNode* exp,
 expression::ExpParserRegistrar
 extensionSupportedRegistrar("extension-supported", extensionSupportedParser);
 
+class GLShaderLanguageExpression : public GeneralNaryExpression<float, int>
+{
+public:
+    void eval(float& value, const expression::Binding* b) const
+    {
+        value = 0.0f;
+        int contextId = getOperand(0)->getValue(b);
+        GL2Extensions* extensions
+            = GL2Extensions::Get(static_cast<unsigned>(contextId), true);
+        if (!extensions)
+            return;
+        if (!extensions->isGlslSupported())
+            return;
+        value = extensions->getLanguageVersion();
+    }
+};
+
+Expression* shaderLanguageParser(const SGPropertyNode* exp,
+                                 expression::Parser* parser)
+{
+    GLShaderLanguageExpression* slexp = new GLShaderLanguageExpression;
+    int location = parser->getBindingLayout().addBinding("__contextId",
+                                                         expression::INT);
+    VariableExpression<int>* contextExp = new VariableExpression<int>(location);
+    slexp->addOperand(contextExp);
+    return slexp;
+}
+
+expression::ExpParserRegistrar shaderLanguageRegistrar("shader-language",
+                                                       glVersionParser);
+
+    
 void Technique::setGLExtensionsPred(float glVersion,
                                     const std::vector<std::string>& extensions)
 {

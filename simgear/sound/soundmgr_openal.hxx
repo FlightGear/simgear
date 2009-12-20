@@ -4,8 +4,10 @@
 // <david_j_findlay@yahoo.com.au> 2001
 //
 // C++-ified by Curtis Olson, started March 2001.
+// Modified for the new SoundSystem by Erik Hofman, October 2009
 //
 // Copyright (C) 2001  Curtis L. Olson - http://www.flightgear.org/~curt
+// Copyright (C) 2009 Erik Hofman <erik@ehofman.com>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -18,8 +20,8 @@
 // General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id$
 
@@ -37,210 +39,296 @@
 # error This library requires C++
 #endif
 
-#include <simgear/compiler.h>
-
 #include <string>
+#include <vector>
 #include <map>
 
-#if defined( __APPLE__ )
+#if defined(__APPLE__)
+# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
+# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
+# include <OpenAL/alut.h>
+#elif defined(OPENALSDK)
+# include <al.h>
+# include <alc.h>
+# include <AL/alut.h> 
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
+# include <AL/alut.h>
 #endif
 
+#ifndef ALC_ALL_DEVICES_SPECIFIER
+# define ALC_ALL_DEVICES_SPECIFIER	0x1013
+#endif
+
+#include <simgear/compiler.h>
+#include <simgear/structure/subsystem_mgr.hxx>
+#include <simgear/math/SGMathFwd.hxx>
+
+#include "sample_group.hxx"
 #include "sample_openal.hxx"
 
-using std::map;
 using std::string;
 
+struct refUint {
+    unsigned int refctr;
+    ALuint id;
 
-typedef map < string, SGSharedPtr<SGSoundSample> > sample_map;
-typedef sample_map::iterator sample_map_iterator;
-typedef sample_map::const_iterator const_sample_map_iterator;
+    refUint() { refctr = 0; id = (ALuint)-1; };
+    refUint(ALuint i) { refctr = 1; id = i; };
+    ~refUint() {};
+};
 
+typedef std::map < string, refUint > buffer_map;
+typedef buffer_map::iterator buffer_map_iterator;
+typedef buffer_map::const_iterator  const_buffer_map_iterator;
+
+typedef std::map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+typedef sample_group_map::iterator sample_group_map_iterator;
+typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
 /**
- * Manage a collection of SGSoundSample instances
+ * Manage a collection of SGSampleGroup instances
  */
-class SGSoundMgr
+class SGSoundMgr : public SGSubsystem
 {
-
-    ALCdevice *dev;
-    ALCcontext *context;
-
-    // Position of the listener.
-    ALfloat listener_pos[3];
-
-    // Velocity of the listener.
-    ALfloat listener_vel[3];
-
-    // Orientation of the listener. (first 3 elements are "at", second
-    // 3 are "up")
-    ALfloat listener_ori[6];
-
-    sample_map samples;
-
-    bool working;
-    double safety;
-
 public:
 
     SGSoundMgr();
     ~SGSoundMgr();
 
-
-    /**
-     * (re) initialize the sound manager.
-     */
-    void init();
-
-
-    /**
-     * Bind properties for the sound manager.
-     */
+    void init(const char *devname = NULL);
     void bind();
-
-
-    /**
-     * Unbind properties for the sound manager.
-     */
     void unbind();
-
-
-    /**
-     * Run the audio scheduler.
-     */
     void update(double dt);
-
-
-    /**
-     * Pause all sounds.
-     */
-    void pause();
-
-
-    /**
-     * Resume all sounds.
-     */
+    
+    void suspend();
     void resume();
+    void stop();
 
-
-    /**
-     * is audio working?
-     */
-    inline bool is_working() const { return working; }
+    inline void reinit() { stop(); init(); }
 
     /**
-     * reinitialize the sound manager
+     * Test is the sound manager is in a working condition.
+     * @return true is the sound manager is working
      */
-    inline void reinit() { init(); }
+    inline bool is_working() const { return _working; }
 
     /**
-     * add a sound effect, return true if successful
+     * Set the sound manager to a  working condition.
      */
-    bool add( SGSoundSample *sound, const string& refname);
+    void activate();
+
+    /**
+     * Test is the sound manager is in an active and working condition.
+     * @return true is the sound manager is active
+     */
+    inline bool is_active() const { return _active; }
+
+    /**
+     * Register a sample group to the sound manager.
+     * @para sgrp Pointer to a sample group to add
+     * @param refname Reference name of the sample group
+     * @return true if successful, false otherwise
+     */
+    bool add( SGSampleGroup *sgrp, const string& refname );
 
     /** 
-     * remove a sound effect, return true if successful
+     * Remove a sample group from the sound manager.
+     * @param refname Reference name of the sample group to remove
+     * @return true if successful, false otherwise
      */
     bool remove( const string& refname );
 
     /**
-     * return true of the specified sound exists in the sound manager system
+     * Test if a specified sample group is registered at the sound manager
+     * @param refname Reference name of the sample group test for
+     * @return true if the specified sample group exists
      */
     bool exists( const string& refname );
 
     /**
-     * return a pointer to the SGSoundSample if the specified sound
-     * exists in the sound manager system, otherwise return NULL
+     * Find a specified sample group in the sound manager
+     * @param refname Reference name of the sample group to find
+     * @return A pointer to the SGSampleGroup
      */
-    SGSoundSample *find( const string& refname );
+    SGSampleGroup *find( const string& refname, bool create = false );
 
     /**
-     * tell the scheduler to play the indexed sample in a continuous
-     * loop
+     * Set the Cartesian position of the sound manager.
+     * @param pos OpenAL listener position
      */
-    bool play_looped( const string& refname );
+    void set_position( const SGVec3d& pos, const SGGeod& pos_geod ) {
+        _base_pos = pos; _geod_pos = pos_geod; _changed = true;
+    }
 
-    /**
-     * tell the scheduler to play the indexed sample once
-     */
-    bool play_once( const string& refname );
-
-    /**
-     * return true of the specified sound is currently being played
-     */
-    bool is_playing( const string& refname );
-
-    /**
-     * immediate stop playing the sound
-     */
-    bool stop( const string& refname );
-
-    /**
-     * set overall volume for the application.
-     * @param vol 1.0 is default, must be greater than 0
-     */
-    inline void set_volume( const ALfloat vol ) {
-        if ( vol > 0.0 ) {
-            alListenerf( AL_GAIN, vol );
-        }
+    void set_position_offset( const SGVec3d& pos ) {
+        _offset_pos = pos; _changed = true;
     }
 
     /**
-     * set the position of the listener (in opengl coordinates)
+     * Get the position of the sound manager.
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
+     * @return OpenAL listener position
      */
-    inline void set_listener_pos( ALfloat *pos ) {
-        listener_pos[0] = pos[0];
-        listener_pos[1] = pos[1];
-        listener_pos[2] = pos[2];
-        alListenerfv( AL_POSITION, listener_pos );
+    SGVec3d& get_position() { return _absolute_pos; }
+
+    /**
+     * Set the velocity vector (in meters per second) of the sound manager
+     * This is the horizontal local frame; x=north, y=east, z=down
+     * @param Velocity vector
+     */
+    void set_velocity( const SGVec3d& vel ) {
+        _velocity = vel; _changed = true;
     }
 
     /**
-     * set the velocity of the listener (in opengl coordinates)
+     * Get the velocity vector of the sound manager
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @return Velocity vector of the OpenAL listener
      */
-    inline void set_listener_vel( ALfloat *vel ) {
-        listener_vel[0] = vel[0];
-        listener_vel[1] = vel[1];
-        listener_vel[2] = vel[2];
-#ifdef USE_OPEN_AL_DOPPLER
-        alListenerfv( AL_VELOCITY, listener_vel );
-#endif
+    inline SGVec3f get_velocity() { return toVec3f(_velocity); }
+
+    /**
+     * Set the orientation of the sound manager
+     * @param ori Quaternation containing the orientation information
+     */
+    void set_orientation( const SGQuatd& ori ) {
+        _orientation = ori; _changed = true;
     }
 
     /**
-     * set the orientation of the listener (in opengl coordinates)
-     *
-     * Description: ORIENTATION is a pair of 3-tuples representing the
-     * 'at' direction vector and 'up' direction of the Object in
-     * Cartesian space. AL expects two vectors that are orthogonal to
-     * each other. These vectors are not expected to be normalized. If
-     * one or more vectors have zero length, implementation behavior
-     * is undefined. If the two vectors are linearly dependent,
-     * behavior is undefined.
+     * Get the orientation of the sound manager
+     * @return Quaternation containing the orientation information
      */
-    inline void set_listener_orientation( ALfloat *ori ) {
-        listener_ori[0] = ori[0];
-        listener_ori[1] = ori[1];
-        listener_ori[2] = ori[2];
-        listener_ori[3] = ori[3];
-        listener_ori[4] = ori[4];
-        listener_ori[5] = ori[5];
-        alListenerfv( AL_ORIENTATION, listener_ori );
+    inline const SGQuatd& get_orientation() { return _orientation; }
+
+    /**
+     * Get the direction vector of the sound manager
+     * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
+     * @return Look-at direction of the OpenAL listener
+     */
+    SGVec3f get_direction() {
+        return SGVec3f(_at_up_vec[0], _at_up_vec[1], _at_up_vec[2]);
     }
 
-    /**
-     * set the positions of all managed sound sources 
-     */
-    void set_source_pos_all( ALfloat *pos );
+    enum {
+        NO_SOURCE = (unsigned int)-1,
+        NO_BUFFER = (unsigned int)-1
+    };
 
     /**
-     * set the velocities of all managed sound sources 
+     * Set the master volume.
+     * @param vol Volume (must be between 0.0 and 1.0)
      */
-    void set_source_vel_all( ALfloat *pos );
+    void set_volume( float vol );
+
+    /**
+     * Get the master volume.
+     * @return Volume (must be between 0.0 and 1.0)
+     */
+    inline float get_volume() { return _volume; }
+
+    /**
+     * Get a free OpenAL source-id
+     * @return NO_SOURCE if no source is available
+     */
+    unsigned int request_source();
+
+    /**
+     * Free an OpenAL source-id for future use
+     * @param source OpenAL source-id to free
+     */
+    void release_source( unsigned int source );
+
+    /**
+     * Get a free OpenAL buffer-id
+     * The buffer-id will be asigned to the sample by calling this function.
+     * @param sample Pointer to an audio sample to assign the buffer-id to
+     * @return NO_BUFFER if loading of the buffer failed.
+     */
+    unsigned int request_buffer(SGSoundSample *sample);
+
+    /**
+     * Free an OpenAL buffer-id for this sample
+     * @param sample Pointer to an audio sample for which to free the buffer
+     */
+    void release_buffer( SGSoundSample *sample );
+
+    /**
+     * Test if the position of the sound manager has changed.
+     * The value will be set to false upon the next call to update_late()
+     * @return true if the position has changed
+     */
+    inline bool has_changed() { return _changed; }
+
+    /**
+     * Some implementations seem to need the velocity miltyplied by a
+     * factor of 100 to make them distinct. I've not found if this is
+     * a problem in the implementation or in out code. Until then
+     * this function is used to detect the problematic implementations.
+     */
+    inline bool bad_doppler_effect() { return _bad_doppler; }
+
+    /**
+     * Load a sample file and return it's configuration and data.
+     * @param samplepath Path to the file to load
+     * @param data Pointer to a variable that points to the allocated data
+     * @param format Pointer to a vairable that gets the OpenAL format
+     * @param size Pointer to a vairable that gets the sample size in bytes
+     * @param freq Pointer to a vairable that gets the sample frequency in Herz
+     * @return true if succesful, false on error
+     */
+    bool load(string &samplepath, void **data, int *format,
+                                         size_t *size, int *freq );
+
+    /**
+     * Get a list of available playback devices.
+     */
+    vector<const char*> get_available_devices();
+
+private:
+    static int _alut_init;
+
+    bool _working;
+    bool _active;
+    bool _changed;
+    float _volume;
+
+    ALCdevice *_device;
+    ALCcontext *_context;
+
+    // Position of the listener.
+    SGVec3d _absolute_pos;
+    SGVec3d _offset_pos;
+    SGVec3d _base_pos;
+    SGGeod _geod_pos;
+
+    // Velocity of the listener.
+    SGVec3d _velocity;
+
+    // Orientation of the listener. 
+    // first 3 elements are "at" vector, second 3 are "up" vector
+    SGQuatd _orientation;
+    ALfloat _at_up_vec[6];
+
+    sample_group_map _sample_groups;
+    buffer_map _buffers;
+
+    vector<ALuint> _free_sources;
+    vector<ALuint> _sources_in_use;
+
+    bool _bad_doppler;
+
+    bool testForALError(string s);
+    bool testForALCError(string s);
+    bool testForALUTError(string s);
+    bool testForError(void *p, string s);
+
+    void update_pos_and_orientation();
+    void update_sample_config( SGSampleGroup *sound );
 };
 
 

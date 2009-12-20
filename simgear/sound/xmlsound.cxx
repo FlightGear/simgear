@@ -41,8 +41,8 @@
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }
 static double _snd_abs(double v)   { return (v >= 0) ? v : -v; }
 static double _snd_sqrt(double v)  { return sqrt(fabs(v)); }
-static double _snd_log10(double v) { return log10(fabs(v)); }
-static double _snd_log(double v)   { return log(fabs(v)); }
+static double _snd_log10(double v) { return log10(fabs(v)+1e-9); }
+static double _snd_log(double v)   { return log(fabs(v)+1e-9); }
 // static double _snd_sqr(double v)   { return v*v; }
 // static double _snd_pow3(double v)  { return v*v*v; }
 
@@ -50,14 +50,11 @@ static const struct {
 	const char *name;
 	double (*fn)(double);
 } __sound_fn[] = {
-//	{"lin", _snd_lin},
 	{"inv", _snd_inv},
 	{"abs", _snd_abs},
 	{"sqrt", _snd_sqrt},
 	{"log", _snd_log10},
 	{"ln", _snd_log},
-//	{"sqr", _snd_sqr},
-//	{"pow3", _snd_pow3},
 	{"", NULL}
 };
 
@@ -84,7 +81,8 @@ SGXmlSound::~SGXmlSound()
 }
 
 void
-SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
+SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
+                 SGSampleGroup *sgrp, SGSampleGroup *avionics,
                  const string &path)
 {
 
@@ -92,10 +90,6 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    // set global sound properties
    //
 
-   if (sndmgr->is_working() == false) {
-       return;
-   }
-   
    _name = node->getStringValue("name", "");
    SG_LOG(SG_GENERAL, SG_DEBUG, "Loading sound information for: " << _name );
 
@@ -108,10 +102,12 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
 
    } else {
       _mode = SGXmlSound::ONCE;
-
-      if ( strcmp(mode_str, "") )
-         SG_LOG(SG_GENERAL,SG_INFO, "Unknown sound mode for '" << _name << "', default to 'once'");
    }
+
+   bool is_avionics = false;
+   const char *type_str = node->getStringValue("type", "fx");
+   if ( !strcmp(type_str, "avionics") )
+      is_avionics = true;
 
    _property = root->getNode(node->getStringValue("property", ""), true);
    SGPropertyNode *condition = node->getChild("condition");
@@ -178,9 +174,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
 
    }
 
-   float reference_dist = node->getDoubleValue("reference-dist", 500.0);
-   float max_dist = node->getDoubleValue("max-dist", 3000.0);
- 
+   // rule of thumb: make reference distance a 100th of the maximum distance.
+   float reference_dist = node->getDoubleValue("reference-dist", 60.0);
+   float max_dist = node->getDoubleValue("max-dist", 6000.0);
+
    //
    // set pitch properties
    //
@@ -236,58 +233,48 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node, SGSoundMgr *sndmgr,
    //
    // Relative position
    //
-   sgVec3 offset_pos;
-   sgSetVec3( offset_pos, 0.0, 0.0, 0.0 );
-   SGPropertyNode_ptr pos = node->getChild("position");
-   if ( pos != NULL ) {
-       offset_pos[0] = pos->getDoubleValue("x", 0.0);
-       offset_pos[1] = -pos->getDoubleValue("y", 0.0);
-       offset_pos[2] = pos->getDoubleValue("z", 0.0);
+   SGVec3f offset_pos = SGVec3f::zeros();
+   SGPropertyNode_ptr prop = node->getChild("position");
+   if ( prop != NULL ) {
+       offset_pos[0] = -prop->getDoubleValue("x", 0.0);
+       offset_pos[1] = -prop->getDoubleValue("y", 0.0);
+       offset_pos[2] = -prop->getDoubleValue("z", 0.0);
    }
 
    //
    // Orientation
    //
-   sgVec3 dir;
-   float inner, outer, outer_gain;
-   sgSetVec3( dir, 0.0, 0.0, 0.0 );
-   inner = outer = 360.0;
-   outer_gain = 0.0;
-   pos = node->getChild("orientation");
-   if ( pos != NULL ) {
-      dir[0] = pos->getDoubleValue("x", 0.0);
-      dir[1] = -pos->getDoubleValue("y", 0.0);
-      dir[2] = pos->getDoubleValue("z", 0.0);
-      inner = pos->getDoubleValue("inner-angle", 360.0);
-      outer = pos->getDoubleValue("outer-angle", 360.0);
-      outer_gain = pos->getDoubleValue("outer-gain", 0.0);
+   SGVec3f dir = SGVec3f::zeros();
+   float inner = 360.0;
+   float outer = 360.0;
+   float outer_gain = 0.0;
+   prop = node->getChild("orientation");
+   if ( prop != NULL ) {
+      dir = SGVec3f(-prop->getFloatValue("x", 0.0),
+                    -prop->getFloatValue("y", 0.0),
+                    -prop->getFloatValue("z", 0.0));
+      inner = prop->getFloatValue("inner-angle", 360.0);
+      outer = prop->getFloatValue("outer-angle", 360.0);
+      outer_gain = prop->getFloatValue("outer-gain", 0.0);
    }
-   
+
    //
    // Initialize the sample
    //
-   _mgr = sndmgr;
-   if ( (_sample = _mgr->find(_name)) == NULL ) {
-       // FIXME: Does it make sense to overwrite a previous entry's
-       // configuration just because a new entry has the same name?
-       // Note that we can't match on identical "path" because we the
-       // new entry could be at a different location with different
-       // configuration so we need a new sample which creates a new
-       // "alSource".  The semantics of what is going on here seems
-       // confused and needs to be thought through more carefully.
-        _sample = new SGSoundSample( path.c_str(),
-                                    node->getStringValue("path", ""),
-                                    false );
-
-       _mgr->add( _sample, _name );
+   if (is_avionics) {
+      _sgrp = avionics;
+   } else {
+      _sgrp = sgrp;
    }
-
-   _sample->set_offset_pos( offset_pos );
-   _sample->set_orientation(dir, inner, outer, outer_gain);
-   _sample->set_volume(v);
+   _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
+   _sample->set_relative_position( offset_pos );
+   _sample->set_direction( dir );
+   _sample->set_audio_cone( inner, outer, outer_gain );
    _sample->set_reference_dist( reference_dist );
    _sample->set_max_dist( max_dist );
-   _sample->set_pitch(p);
+   _sample->set_volume( v );
+   _sample->set_pitch( p );
+   _sgrp->add( _sample, _name );
 }
 
 void
@@ -316,7 +303,8 @@ SGXmlSound::update (double dt)
         )
        )
    {
-       if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME)) {
+       if ((_mode != SGXmlSound::IN_TRANSIT) || (_stopping > MAX_TRANSIT_TIME))
+       {
            if (_sample->is_playing()) {
                SG_LOG(SG_GENERAL, SG_DEBUG, "Stopping audio after " << _dt_play
                       << " sec: " << _name );

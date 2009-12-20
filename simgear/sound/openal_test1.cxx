@@ -14,6 +14,10 @@ static unsigned int sleep(unsigned int secs) { return 0; }
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
 # include <OpenAL/alut.h>
+#elif defined(OPENALSDK)
+# include <al.h>
+# include <alc.h>
+# include <AL/alut.h> 
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
@@ -45,6 +49,9 @@ int main( int argc, char *argv[] ) {
     // initialize OpenAL
     ALCdevice *dev;
     ALCcontext *context;
+
+    alutInit(&argc, argv);
+    sglog().setLogLevels( SG_ALL, SG_ALERT );
 
     // initialize OpenAL
     if ( (dev = alcOpenDevice( NULL )) != NULL
@@ -158,6 +165,7 @@ int main( int argc, char *argv[] ) {
     alSourcePlay( source );
 
     sleep(10);
+    alutExit();
 
     return 0;
 }

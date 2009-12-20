@@ -38,8 +38,8 @@
 #include <simgear/compiler.h>
 #include <simgear/props/condition.hxx>
 
+#include "sample_group.hxx"
 #include "sample_openal.hxx"
-#include "soundmgr_openal.hxx"
 
 static const double MAX_TRANSIT_TIME = 0.1;	// 100 ms.
 
@@ -99,11 +99,12 @@ public:
    * @param root The root node of the programs property tree.
    * @param child A pointer to the location of the current event as defined
    * in the configuration file.
-   * @param sndmgr A pointer to a pre-initialized sound manager class.
+   * @param sgrp A pointer to a pre-initialized sample group class.
+   * @param avionics A pointer to the pre-initialized avionics sample group.
    * @param path The path where the audio files remain.
    */
-  virtual void init (SGPropertyNode *, SGPropertyNode *, SGSoundMgr *,
-                     const string &);
+  virtual void init (SGPropertyNode *, SGPropertyNode *, SGSampleGroup *,
+                     SGSampleGroup *, const string &);
 
   /**
    * Check whether an event has happened and if action has to be taken.
@@ -135,7 +136,7 @@ protected:
 
 private:
 
-  SGSoundMgr * _mgr;
+  SGSampleGroup * _sgrp;
   SGSharedPtr<SGSoundSample> _sample;
 
   SGSharedPtr<SGCondition> _condition;

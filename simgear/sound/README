@@ -1,0 +1,40 @@
+
+All code in this directory uses the OpenAL coordinate system for maximum
+useablity. The OpenAL coordinate system is equal to that of OpenGL with the
+main difference that objects behind the viewer can still be heard:
+ - positive x is to the right
+ - positive y is upwards
+ - positive z is towards the back of the viewer/listener
+
+see: http://www.falloutsoftware.com/tutorials/gl/cartesian.gif
+
+All positions are in cartesian space with a unit length of one meter.
+
+Velocities are three tuples indicating speed and direction in the same space
+as positions do (so they are not in the models local space).
+
+
+There is one SoundMgr that handles multiple SoundGroup classes.
+Each SoundGroup class handles multiple SoundSample classes.
+
+A SoundSample class defines the properties of each individual sound like 
+pitch, volume, position, orientation, sound cone paramters, etc. This 
+class can be created all over the code but *has* to be assigned to a 
+SampelGroup before you can hear it. Current sample groups are "atc", 
+"avionics" and "fx" for the master airplane effects. The position of a 
+SoundSample is relative to (0,0,0) of the model and hence relative to 
+the base position of the SampleGroup.
+
+A SampleGroup class has to be assigned to the SoundManager to be heard 
+and holds data of a group of samples (maybe 'sample cloud' might be a 
+good description). This class has to be created for each individual 
+model that can produce one or more sounds. The SampleGroup class can be 
+altered by modifying it's volume, position and orientation. 
+Repositioning this class also means repositioning all it's associated 
+samples. Altering it's orientation also means repositioning the absolute 
+(real world) position (and orientation) of the associated sound samples.
+
+The SoundMaganer can be repositioned which basically means moving the 
+listener around. It's also possible to alter the listener orientation en 
+velocity with this class, together with the master volume.
+

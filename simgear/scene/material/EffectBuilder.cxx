@@ -42,13 +42,29 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
         return getEffectPropertyNode(effect, child);
 }
 
-string getGlobalProperty(const SGPropertyNode* prop)
+string getGlobalProperty(const SGPropertyNode* prop,
+                         const SGReaderWriterXMLOptions* options)
 {
     if (!prop)
         return string();
     const SGPropertyNode* useProp = prop->getChild("use");
     if (!useProp)
         return string();
+    string propName = useProp->getStringValue();
+    SGPropertyNode_ptr propRoot;
+    if (propName[0] == '/') {
+        return propName;
+    } else if ((propRoot = options->getPropRoot())) {
+        string result = propRoot->getPath();
+        result.append("/");
+        result.append(propName);
+        return result;
+    } else {
+        throw effect::
+            BuilderException("No property root to use with relative name "
+                             + propName);
+    }
+        
     return useProp->getStringValue();
 }
 

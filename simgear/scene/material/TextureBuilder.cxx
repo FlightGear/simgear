@@ -51,7 +51,8 @@ using namespace osg;
 using namespace effect;
 
 TexEnvCombine* buildTexEnvCombine(Effect* effect,
-                                  const SGPropertyNode* envProp);
+                                  const SGPropertyNode* envProp,
+                                  const SGReaderWriterXMLOptions* options);
 TexGen* buildTexGen(Effect* Effect, const SGPropertyNode* tgenProp);
 
 // Hack to force inclusion of TextureBuilder.cxx in library
@@ -142,7 +143,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     }
     const SGPropertyNode* combineProp = prop->getChild("texenv-combine");
     TexEnvCombine* combiner = 0;
-    if (combineProp && ((combiner = buildTexEnvCombine(effect, combineProp))))
+    if (combineProp && ((combiner = buildTexEnvCombine(effect, combineProp,
+                                                       options))))
         pass->setTextureAttributeAndModes(unit, combiner);
     const SGPropertyNode* tgenProp = prop->getChild("texgen");
     TexGen* tgen = 0;
@@ -444,7 +446,8 @@ EffectNameValue<TexEnvCombine::OperandParam> opParamInit[] =
 
 EffectPropertyMap<TexEnvCombine::OperandParam> operandParams(opParamInit);
 
-TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp)
+TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp,
+                                  const SGReaderWriterXMLOptions* options)
 {
     if (!isAttributeActive(effect, envProp))
         return 0;
@@ -539,7 +542,8 @@ TexEnvCombine* buildTexEnvCombine(Effect* effect, const SGPropertyNode* envProp)
     const SGPropertyNode* colorNode = envProp->getChild("constant-color");
     if (colorNode)
         initFromParameters(effect, colorNode, result,
-                           &TexEnvCombine::setConstantColor, colorFields);
+                           &TexEnvCombine::setConstantColor, colorFields,
+                           options);
     return result;
 }
 

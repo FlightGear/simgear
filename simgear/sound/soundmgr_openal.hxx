@@ -289,6 +289,12 @@ public:
      */
     vector<const char*> get_available_devices();
 
+    /**
+     * Get the current OpenAL vendor or rendering backend.
+     */
+    const string& get_vendor() { return _vendor; }
+    const string& get_renderer() { return _renderer; }
+
 private:
     static int _alut_init;
 
@@ -321,6 +327,8 @@ private:
     vector<ALuint> _sources_in_use;
 
     bool _bad_doppler;
+    string _renderer;
+    string _vendor;
 
     bool testForALError(string s);
     bool testForALCError(string s);

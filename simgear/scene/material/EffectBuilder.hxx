@@ -329,55 +329,108 @@ bool isAttributeActive(Effect* effect, const SGPropertyNode* prop);
 namespace effect
 {
 /**
- * Bridge between types stored in properties and what OSG wants.
+ * Bridge between types stored in properties and what OSG or the
+ * effects code want.
  */
-template<typename T> struct OSGBridge;
+template<typename T> struct Bridge;
+
+/**
+ * Default just passes on the same type.
+ *
+ */
+template<typename T>
+struct Bridge
+{
+    typedef T sg_type;
+    static T get(const T& val) { return val; }
+};
 
 template<typename T>
-struct OSGBridge<const T> : public OSGBridge<T>
+struct Bridge<const T> : public Bridge<T>
+{
+};
+
+// Save some typing...
+template<typename InType, typename OutType>
+struct BridgeOSGVec
+{
+    typedef InType sg_type;
+    static OutType get(const InType& val) { return toOsg(val); }
+};
+template<>
+struct Bridge<osg::Vec3f> : public BridgeOSGVec<SGVec3d, osg::Vec3f>
 {
 };
 
 template<>
-struct OSGBridge<osg::Vec3f>
+struct Bridge<osg::Vec3d> : public BridgeOSGVec<SGVec3d, osg::Vec3d>
 {
-    typedef SGVec3d sg_type;
-    static osg::Vec3f getOsgType(const SGVec3d& val) { return toOsg(val); }
 };
 
 template<>
-struct OSGBridge<osg::Vec3d>
+struct Bridge<osg::Vec4f> : public BridgeOSGVec<SGVec4d, osg::Vec4f>
 {
-    typedef SGVec3d sg_type;
-    static osg::Vec3d getOsgType(const SGVec3d& val) { return toOsg(val); }
 };
 
 template<>
-struct OSGBridge<osg::Vec4f>
+struct Bridge<osg::Vec4d> : public BridgeOSGVec<SGVec4d, osg::Vec4d>
 {
-    typedef SGVec4d sg_type;
-    static osg::Vec4f getOsgType(const SGVec4d& val) { return toOsg(val); }
 };
 
-template<>
-struct OSGBridge<osg::Vec4d>
+/**
+ * Functor for calling a function on an osg::Referenced object and a
+ * value (e.g., an SGVec4d from a property) which will be converted to
+ * the equivalent OSG type.
+ *
+ * General version, function takes obj, val
+ */
+template<typename Obj, typename OSGParam, typename Func>
+struct OSGFunctor : public Bridge<OSGParam>
 {
-    typedef SGVec4d sg_type;
-    static osg::Vec4d getOsgType(const SGVec4d& val) { return toOsg(val); }
-};
-
-template<typename Obj, typename OSGParam>
-struct OSGFunctor : public OSGBridge<OSGParam>
-{
-    OSGFunctor(Obj* obj, void (Obj::*func)(const OSGParam&))
+    OSGFunctor(Obj* obj, const Func& func)
         : _obj(obj), _func(func) {}
-    void operator()(const typename OSGBridge<OSGParam>::sg_type& val) const
+    void operator()(const typename Bridge<OSGParam>::sg_type& val) const
     {
-        ((_obj.get())->*_func)(this->getOsgType(val));
+        _func(_obj, this->get(val));
     }
     osg::ref_ptr<Obj>_obj;
-    void (Obj::*_func)(const OSGParam&);
+    const Func _func;
 };
+
+/**
+ * Version which uses a pointer to member function instead.
+ */
+template<typename Obj, typename OSGParam>
+struct OSGFunctor<Obj, OSGParam, void (Obj::* const)(const OSGParam&)>
+    : public Bridge<OSGParam>
+{
+    typedef void (Obj::*const MemFunc)(const OSGParam&);
+    OSGFunctor(Obj* obj, MemFunc func)
+        : _obj(obj), _func(func) {}
+    void operator()(const typename Bridge<OSGParam>::sg_type& val) const
+    {
+        (_obj->*_func)(this->get(val));
+    }
+    osg::ref_ptr<Obj>_obj;
+    MemFunc _func;
+};
+
+/**
+ * Typical convenience constructors
+ */
+template<typename Obj, typename OSGParam, typename Func>
+OSGFunctor<Obj, OSGParam, Func> make_OSGFunctor(Obj* obj, const Func& func)
+{
+    return OSGFunctor<Obj, OSGParam, Func>(obj, func);
+}
+
+template<typename Obj, typename OSGParam>
+OSGFunctor<Obj, OSGParam, void (Obj::*const)(const OSGParam&)>
+make_OSGFunctor(Obj* obj, void (Obj::*const func)(const OSGParam&))
+{
+    return OSGFunctor<Obj, OSGParam,
+        void (Obj::* const)(const OSGParam&)>(obj, func);
+}
 
 template<typename ObjType, typename OSGParamType>
 class ScalarChangeListener
@@ -459,6 +512,15 @@ private:
     Func _func;
 };
 
+template<typename T, typename Func, typename Itr>
+Effect::Updater*
+new_EEPropListener(const Func& func, const std::string* propName,
+                   const Itr& namesBegin, const Itr& namesEnd)
+{
+    return new EffectExtendedPropListener<T, Func>
+        (func, 0, namesBegin, namesEnd);
+}
+
 /**
  * Initialize the value and the possible updating of an effect
  * attribute. If the value is specified directly, set it. Otherwise,
@@ -516,24 +578,23 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    void (ObjType::*setter)(const OSGParamType&),
                    NameItrType nameItr, const SGReaderWriterXMLOptions* options)
 {
-    typedef typename OSGBridge<OSGParamType>::sg_type sg_type;
+    typedef typename Bridge<OSGParamType>::sg_type sg_type;
     const int numComponents = props::NumComponents<sg_type>::num_components;
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
     if (valProp->nChildren() == 0) { // Has <use>?
-        (obj->*setter)(OSGBridge<OSGParamType>
-                     ::getOsgType(valProp->getValue<sg_type>()));
+        (obj->*setter)(Bridge<OSGParamType>
+                     ::get(valProp->getValue<sg_type>()));
     } else {
         std::vector<std::string> paramNames
             = getVectorProperties(valProp, options,numComponents, nameItr);
         if (paramNames.empty())
             throw BuilderException();
         std::vector<std::string>::const_iterator pitr = paramNames.begin();
-        typedef OSGFunctor<ObjType, OSGParamType> Functor;
         Effect::Updater* listener
-            =  new EffectExtendedPropListener<sg_type, Functor>
-            (Functor(obj, setter), 0, pitr, pitr + numComponents);
+            =  new_EEPropListener<sg_type>(make_OSGFunctor(obj, setter), 0,
+                                           pitr, pitr + numComponents);
         effect->addUpdater(listener);
     }
 }

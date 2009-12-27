@@ -69,7 +69,9 @@ SGSoundMgr::SGSoundMgr() :
     _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _bad_doppler(false)
+    _bad_doppler(false),
+    _renderer("unknown"),
+    _vendor("unknown")
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     if (_alut_init == 0) {
@@ -158,10 +160,10 @@ void SGSoundMgr::init(const char *devname) {
         else break;
     }
 
-    string vendor = (const char *)alGetString(AL_VENDOR);
-    string renderer = (const char *)alGetString(AL_RENDERER);
-    if ( vendor != "OpenAL Community" ||
-         (renderer != "Software" && renderer != "OpenAL Sample Implementation")
+    _vendor = (const char *)alGetString(AL_VENDOR);
+    _renderer = (const char *)alGetString(AL_RENDERER);
+    if ( _vendor != "OpenAL Community" ||
+        (_renderer != "Software" && _renderer != "OpenAL Sample Implementation")
        )
     {
        _bad_doppler = true;
@@ -220,6 +222,9 @@ void SGSoundMgr::stop() {
         alcDestroyContext(_context);
         alcCloseDevice(_device);
         _context = NULL;
+
+        _renderer = "unknown";
+        _vendor = "unknown";
     }
 }
 

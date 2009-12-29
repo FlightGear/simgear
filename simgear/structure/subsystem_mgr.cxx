@@ -148,8 +148,9 @@ SGSubsystemGroup::bind ()
 void
 SGSubsystemGroup::unbind ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
-        _members[i]->subsystem->unbind();
+    // reverse order to prevent order dependency problems
+    for (unsigned int i = _members.size(); i > 0; i--)
+       _members[i-1]->subsystem->unbind();
 }
 
 void

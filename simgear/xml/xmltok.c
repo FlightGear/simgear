@@ -1365,6 +1365,10 @@ int getEncodingIndex(const char *name)
   for (i = 0; i < sizeof(encodingNames)/sizeof(encodingNames[0]); i++)
     if (streqci(name, encodingNames[i]))
       return i;
+      
+  if (streqci(name, "ASCII"))
+    return US_ASCII_ENC;
+    
   return UNKNOWN_ENC;
 }
 

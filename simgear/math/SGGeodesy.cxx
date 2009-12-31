@@ -540,7 +540,7 @@ SGGeodesy::courseRad(const SGGeoc& from, const SGGeoc& to)
 }
 
 double
-SGGeodesy::distanceM(const SGGeoc& from, const SGGeoc& to)
+SGGeodesy::distanceRad(const SGGeoc& from, const SGGeoc& to)
 {
   // d = 2*asin(sqrt((sin((lat1-lat2)/2))^2 +
   //            cos(lat1)*cos(lat2)*(sin((lon1-lon2)/2))^2))
@@ -550,5 +550,12 @@ SGGeodesy::distanceM(const SGGeoc& from, const SGGeoc& to)
   double tmp2 = sin(0.5*(from.getLongitudeRad() - to.getLongitudeRad()));
   double square = tmp1*tmp1 + cosLatFrom*cosLatTo*tmp2*tmp2;
   double s = SGMiscd::min(sqrt(SGMiscd::max(square, 0)), 1);
-  return 2 * asin(s) * SG_RAD_TO_NM * SG_NM_TO_METER;
+  return 2 * asin(s);
+}
+
+
+double
+SGGeodesy::distanceM(const SGGeoc& from, const SGGeoc& to)
+{
+  return distanceRad(from, to) * SG_RAD_TO_NM * SG_NM_TO_METER;
 }

@@ -110,10 +110,11 @@ SGSubsystemGroup::SGSubsystemGroup ()
 
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
+    // reverse order to prevent order dependency problems
+    for (unsigned int i = _members.size(); i > 0; i--)
     {
-        _members[i]->printTimingStatistics();
-        delete _members[i];
+        _members[i-1]->printTimingStatistics();
+        delete _members[i-1];
     }
 }
 
@@ -382,7 +383,8 @@ SGSubsystemMgr::bind ()
 void
 SGSubsystemMgr::unbind ()
 {
-    for (int i = 0; i < MAX_GROUPS; i++)
+    // reverse order to prevent order dependency problems
+    for (int i = MAX_GROUPS-1; i >= 0; i--)
         _groups[i].unbind();
 }
 

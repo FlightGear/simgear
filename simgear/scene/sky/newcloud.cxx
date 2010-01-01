@@ -69,7 +69,6 @@ EffectMap effectMap;
 
 double SGNewCloud::sprite_density = 1.0;
 
-
 SGNewCloud::SGNewCloud(string type,
                        const SGPath &tex_path, 
                        string tex,
@@ -222,7 +221,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             z = height * cos(elev) * 0.5f; 
         }
         
-        // Determine the height and width as scaling factors on the minimum size (used to create the quad)
+        // Determine the height and width as scaling factors on the minimum size (used to create the quad).
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
         

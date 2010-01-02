@@ -86,6 +86,9 @@ public:
   /// Set the geodetic elevation from the argument given in feet
   void setElevationFt(double elevation);
 
+  // Compare two geodetic positions for equality
+  bool operator == ( const SGGeod & other ) const;
+
 #ifndef NO_OPENSCENEGRAPH_INTERFACE
   // Create a local coordinate frame in the earth-centered frame of
   // reference. X points north, Z points down.
@@ -348,6 +351,15 @@ void
 SGGeod::setElevationFt(double elevation)
 {
   _elevation = elevation*SG_FEET_TO_METER;
+}
+
+inline
+bool
+SGGeod::operator == ( const SGGeod & other ) const
+{
+  return _lon == other._lon &&
+         _lat == other._lat &&
+         _elevation == other._elevation;
 }
 
 /// Output to an ostream

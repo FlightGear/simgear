@@ -79,6 +79,8 @@ public:
   static double courseDeg(const SGGeoc& from, const SGGeoc& to);
   static double distanceM(const SGGeoc& from, const SGGeoc& to);
 
+  // Compare two geocentric positions for equality
+  bool operator == ( const SGGeoc & other ) const;
 private:
   /// This one is private since construction is not unique if you do
   /// not know the units of the arguments, use the factory methods for
@@ -321,6 +323,15 @@ double
 SGGeoc::distanceM(const SGGeoc& from, const SGGeoc& to)
 {
   return SGGeodesy::distanceM(from, to);
+}
+
+inline
+bool
+SGGeoc::operator == ( const SGGeoc & other ) const
+{
+  return _lon == other._lon &&
+         _lat == other._lat &&
+         _radius == other._radius;
 }
 
 /// Output to an ostream

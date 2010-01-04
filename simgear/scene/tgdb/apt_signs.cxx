@@ -106,6 +106,10 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     osg::Group* object = new osg::Group;
     object->setName(content);
 
+    SGMaterial *material = 0;
+    Effect *lighted_state = 0;
+    Effect *unlighted_state = 0;
+
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
         string name;
@@ -215,31 +219,32 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
             }
         }
 
+        if (newmat.size()) {
+            SGMaterial *m = matlib->find(newmat);
+            if (!m) {
+                // log error, but keep using previous material to at least show something
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
+            } else {
+                material = m;
+                // set material states (lighted & unlighted)
+                lighted_state = material->get_effect();
+                newmat.append(".unlighted");
 
-        if (newmat.size() == 0 )
-          continue;
-
-        SGMaterial *material = matlib->find(newmat);
-        if (!material) {
-            SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
-            continue;
+                m = matlib->find(newmat);
+                if (m) {
+                    unlighted_state = m->get_effect();
+                } else {
+                    SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << newmat << '\'');
+                    unlighted_state = lighted_state;
+                }
+            }
+            newmat.clear();
         }
 
-
-        // set material states (lighted & unlighted)
-        Effect *lighted_state = material->get_effect();
-        Effect *unlighted_state;
-        string u = newmat + ".unlighted";
-
-        SGMaterial *m = matlib->find(u);
-        if (m) {
-            unlighted_state = m->get_effect();
-        } else {
-            SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "ignoring unknown material `" << u << '\'');
-            unlighted_state = lighted_state;
-        }
-        newmat = "";
-
+        // This can only happen if the default material is missing.
+        // Error has been already logged in the block above.
+        if (!material) continue;
+ 
         SGMaterialGlyph *glyph = material->get_glyph(name);
         if (!glyph) {
             SG_LOG( SG_TERRAIN, SG_ALERT, SIGN "unsupported glyph `" << *s << '\'');

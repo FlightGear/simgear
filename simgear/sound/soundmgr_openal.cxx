@@ -573,7 +573,18 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALenum error =  alGetError();
     if ( error != AL_NO_ERROR ) {
         string msg = "Failed to load wav file: ";
-        msg.append(alGetString(error));
+        const ALchar *errorString = alGetString(error);
+        if (errorString) {
+            msg.append(errorString);
+        } else {
+            // alGetString returns NULL when an unexpected or OS specific error
+            // occurs: e.g. -43 on Mac when file is not found.
+            // In this case, alGetString() sets 'Invalid Enum' error, so
+            // showing with the original error number is helpful.
+            stringstream ss;
+            ss << alGetString(alGetError()) << "(" << error << ")";
+            msg.append(ss.str());
+        }
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
         return false;
     }

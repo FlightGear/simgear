@@ -552,12 +552,14 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALfloat freqf;
+    testForALError("load file");
+    testForALCError("load file");
     data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
     freq = (ALsizei)freqf;
     int error = alutGetError();
     if (data == NULL || error != ALUT_ERROR_NO_ERROR) {
         string msg = "Failed to load wav file: ";
-        msg.append(alutGetErrorString(error));
+         msg.append(alutGetErrorString(error));
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
         return false;
     }

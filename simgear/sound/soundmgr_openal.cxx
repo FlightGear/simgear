@@ -69,7 +69,9 @@ SGSoundMgr::SGSoundMgr() :
     _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _orientation(SGQuatd::zeros()),
-    _bad_doppler(false)
+    _bad_doppler(false),
+    _renderer("unknown"),
+    _vendor("unknown")
 {
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     if (_alut_init == 0) {
@@ -158,10 +160,10 @@ void SGSoundMgr::init(const char *devname) {
         else break;
     }
 
-    string vendor = (const char *)alGetString(AL_VENDOR);
-    string renderer = (const char *)alGetString(AL_RENDERER);
-    if ( vendor != "OpenAL Community" ||
-         (renderer != "Software" && renderer != "OpenAL Sample Implementation")
+    _vendor = (const char *)alGetString(AL_VENDOR);
+    _renderer = (const char *)alGetString(AL_RENDERER);
+    if ( _vendor != "OpenAL Community" ||
+        (_renderer != "Software" && _renderer != "OpenAL Sample Implementation")
        )
     {
        _bad_doppler = true;
@@ -220,6 +222,9 @@ void SGSoundMgr::stop() {
         alcDestroyContext(_context);
         alcCloseDevice(_device);
         _context = NULL;
+
+        _renderer = "unknown";
+        _vendor = "unknown";
     }
 }
 
@@ -549,8 +554,8 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALfloat freqf;
     data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
     freq = (ALsizei)freqf;
-    if (data == NULL) {
-        int error = alutGetError();
+    int error = alutGetError();
+    if (data == NULL || error != ALUT_ERROR_NO_ERROR) {
         string msg = "Failed to load wav file: ";
         msg.append(alutGetErrorString(error));
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
@@ -568,7 +573,18 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALenum error =  alGetError();
     if ( error != AL_NO_ERROR ) {
         string msg = "Failed to load wav file: ";
-        msg.append(alGetString(error));
+        const ALchar *errorString = alGetString(error);
+        if (errorString) {
+            msg.append(errorString);
+        } else {
+            // alGetString returns NULL when an unexpected or OS specific error
+            // occurs: e.g. -43 on Mac when file is not found.
+            // In this case, alGetString() sets 'Invalid Enum' error, so
+            // showing with the original error number is helpful.
+            stringstream ss;
+            ss << alGetString(alGetError()) << "(" << error << ")";
+            msg.append(ss.str());
+        }
         throw sg_io_exception(msg.c_str(), sg_location(samplepath));
         return false;
     }

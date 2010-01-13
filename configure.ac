@@ -144,6 +144,15 @@ AC_ARG_WITH(osg_framework, [ --with-osg-framework=PREFIX      Specify the prefix
 
 if test "x$with_osg_framework" != "x"; then
     echo "osg framework prefix is $with_osg_framework"
+    CPPFLAGS = "$CPPFLAGS -F$with-osg-framework"
+    export DYLD_FRAMEWORK_PATH="$DYLD_FRAMEWORK_PATH:$with_osg_framework"
+fi
+
+dnl specifying OpenAL.framework (for user provided OpenAL.framework / ALUT)
+AC_ARG_WITH(openal_framework, [ --with-openal-framework=PREFIX    Speicfy the prefix path to OpenAL.framework ])
+
+if test "x$with_openal_framework" != "x"; then
+    echo "OpenAL framework prefix is $with_openal_framework"
 fi
 
 dnl Determine an extra directories to add to include/lib search paths
@@ -305,9 +314,18 @@ case "${host}" in
 
     LIBS="$LIBS -framework IOKit -framework OpenAL"
     openal_LIBS="$LIBS"
-    # not sure how to test if OpenAL exists on MacOS (does it come by default?)
     OPENAL_OK="yes"
-    ALUT_OK="yes"
+    ALUT_OK="no"
+
+    if test "x$with_openal_lib" != "x"; then
+        echo "libopenal is not supported on Mac OS platform."
+        openal_LIBS=""
+    fi
+    OPENAL_OK="yes"
+    # Looking for alut.h, if found assume that it is a part of
+    # the OpenAL package.
+    AC_CHECK_HEADERS([OpenAL/alut.h],[ALUT_OK="yes"])
+
 
     dnl Thank you Christian Bauer from SheepSaver
     dnl Modified by Tatsuhiro Nishioka for accepting a given framework path
@@ -337,6 +355,12 @@ case "${host}" in
     )
     AS_VAR_POPDEF([ac_Framework])dnl
     ])
+
+    dnl Check for OpenAL.framework when --with-openal-framework is specified
+    dnl Of cource OpenAL.framework needs to have alut.h 
+    if test "x$with_openal_framework" != "x"; then
+      AC_CHECK_FRAMEWORK(OpenAL, [#include <OpenAL/alut.h>], $with_openal_framework)
+    fi
 
     ;;
 

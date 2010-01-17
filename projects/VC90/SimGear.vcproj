@@ -1003,7 +1003,6 @@
 				RelativePath="..\..\simgear\props\ExtendedPropertyAdapter.hxx"
 				>
 			</File>
-
 			<File
 				RelativePath="..\..\simgear\props\props.cxx"
 				>
@@ -1157,6 +1156,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\SGText.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\SGText.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\SGTranslateTransform.cxx"
 				>
 			</File>
@@ -1168,18 +1175,18 @@
 				RelativePath="..\..\simgear\scene\model\shadanim.cxx"
 				>
 			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\SGText.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\SGText.hxx"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgsound"
 			>
+			<File
+				RelativePath="..\..\simgear\sound\sample_group.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\sound\sample_group.hxx"
+				>
+			</File>
 			<File
 				RelativePath="..\..\simgear\sound\sample_openal.cxx"
 				>

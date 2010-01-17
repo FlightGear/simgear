@@ -19,6 +19,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <algorithm>
 #include <vector>
 #include <string>

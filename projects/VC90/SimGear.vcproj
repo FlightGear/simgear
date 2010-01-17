@@ -1959,7 +1959,7 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath="..\..\simgear\simgear_config.h-msvc71"
+			RelativePath="..\..\simgear\simgear_config.h-msvc90"
 			>
 			<FileConfiguration
 				Name="Release|Win32"

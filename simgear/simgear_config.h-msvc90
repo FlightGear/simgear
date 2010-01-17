@@ -1,4 +1,4 @@
-/* simgear_config.h.  Generated for MSCV++ 7.1 */
+/* simgear_config.h.  Generated for MSCV++ 9.0 */
 
 /* Define if the X Window System is missing or not being used.  */
 #define X_DISPLAY_MISSING 1

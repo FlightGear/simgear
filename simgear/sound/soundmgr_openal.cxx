@@ -110,7 +110,9 @@ void SGSoundMgr::init(const char *devname) {
         }
     }
 
+    _device = device;
     ALCcontext *context = alcCreateContext(device, NULL);
+    testForALCError("context creation.");
     if ( testForError(context, "Unable to create a valid context.") ) {
         alcCloseDevice (device);
         return;
@@ -162,7 +164,7 @@ void SGSoundMgr::init(const char *devname) {
 
     _vendor = (const char *)alGetString(AL_VENDOR);
     _renderer = (const char *)alGetString(AL_RENDERER);
-    if ( _vendor != "OpenAL Community" ||
+    if ( (_vendor != "OpenAL Community" && _vendor != "Apple Computer Inc.") ||
         (_renderer != "Software" && _renderer != "OpenAL Sample Implementation")
        )
     {
@@ -552,8 +554,6 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALfloat freqf;
-    testForALError("load file");
-    testForALCError("load file");
     data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
     freq = (ALsizei)freqf;
     int error = alutGetError();

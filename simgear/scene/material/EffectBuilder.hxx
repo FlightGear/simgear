@@ -266,7 +266,7 @@ public:
         else
             return itr->second.ptr();
     }
-    template<typename T> friend class InstallAttributeBuilder;
+    template<typename T> friend struct InstallAttributeBuilder;
 };
 
 template<typename T>

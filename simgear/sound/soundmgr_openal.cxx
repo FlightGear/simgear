@@ -554,6 +554,9 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 
 #if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALfloat freqf;
+    // ignore previous errors to prevent the system from halting on silly errors
+    alGetError();
+    alcGetError(_device);
     data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
     freq = (ALsizei)freqf;
     int error = alutGetError();

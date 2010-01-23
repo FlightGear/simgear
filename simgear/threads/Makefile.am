@@ -1,5 +1,6 @@
 includedir = @includedir@/threads
 
+if HAVE_THREADS
 lib_LIBRARIES = libsgthreads.a
 
 include_HEADERS = \
@@ -11,3 +12,6 @@ libsgthreads_a_SOURCES = \
 	SGThread.cxx
 
 INCLUDES = -I$(top_srcdir)
+else
+include_HEADERS = SGQueue.hxx
+endif

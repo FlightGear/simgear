@@ -32,7 +32,7 @@
 # error This library requires C++
 #endif
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 #  include <windows.h>
 #endif
 
@@ -49,7 +49,7 @@ using std::string;
  */
 class SGSerialPort
 {
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef  _WIN32
     typedef HANDLE fd_type;
 #else
     typedef int fd_type;

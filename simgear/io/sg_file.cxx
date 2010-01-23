@@ -25,7 +25,7 @@
 
 #include <string>
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#ifdef _WIN32
 #  include <io.h>
 #endif
 
@@ -55,7 +55,7 @@ bool SGFile::open( const SGProtocolDir d ) {
     set_dir( d );
 
     if ( get_dir() == SG_IO_OUT ) {
-#if defined(_MSC_VER) || defined(__MINGW32__)
+#ifdef _WIN32
         int mode = 00666;
 #else
         mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;

@@ -20,10 +20,6 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 // $Id$
-#ifdef __CYGWIN__
-#include <ieeefp.h>
-#endif
-
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>

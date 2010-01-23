@@ -1,9 +1,8 @@
 #include <stdio.h>
 
-#ifdef __MINGW32__
-// This is broken, but allows the file to compile without a POSIX
-// environment.
-static unsigned int sleep(unsigned int secs) { return 0; }
+#ifdef _WIN32
+#include <windows.h>
+#define sleep(x) Sleep(x*1000)
 #else
 #include <unistd.h>	// sleep()
 #endif

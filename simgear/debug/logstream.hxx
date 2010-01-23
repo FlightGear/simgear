@@ -27,7 +27,7 @@
 
 #include <simgear/compiler.h>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  include <windows.h>
 #endif
 
@@ -123,7 +123,7 @@ public:
      */
     void set_sb( std::streambuf* sb );
 
-#ifdef _MSC_VER
+#ifdef _WIN32
     static void has_no_console() { has_console = false; }
 #endif
 
@@ -142,7 +142,7 @@ private:
     static std::streambuf* sbuf;
 
     static bool logging_enabled;
-#ifdef _MSC_VER
+#ifdef _WIN32
     static bool has_console;
 #endif
     static sgDebugClass logClass;
@@ -176,7 +176,7 @@ logbuf::would_log( sgDebugClass c, sgDebugPriority p ) const
 inline logbuf::int_type
 logbuf::overflow( int c )
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
     if ( logging_enabled ) {
         if ( !has_console ) {
             AllocConsole();

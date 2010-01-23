@@ -18,10 +18,6 @@
 #ifndef SGVec2_H
 #define SGVec2_H
 
-#if defined ( __CYGWIN__ )
-#include <ieeefp.h>
-#endif
-
 #ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Vec2f>
 #include <osg/Vec2d>

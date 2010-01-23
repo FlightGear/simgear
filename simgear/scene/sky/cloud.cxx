@@ -75,10 +75,6 @@ using namespace osg;
 // #  endif
 // #endif
 
-#if defined (__CYGWIN__)
-#include <ieeefp.h>
-#endif
-
 static osg::ref_ptr<osg::StateSet> layer_states[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static osg::ref_ptr<osg::StateSet> layer_states2[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static osg::ref_ptr<osg::TextureCubeMap> cubeMap;

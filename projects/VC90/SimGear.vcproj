@@ -1959,6 +1959,10 @@
 			</File>
 		</Filter>
 		<File
+			RelativePath="..\..\simgear\compiler.h"
+			>
+		</File>
+		<File
 			RelativePath="..\..\simgear\simgear_config.h-msvc90"
 			>
 			<FileConfiguration

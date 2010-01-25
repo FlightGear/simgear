@@ -27,7 +27,7 @@
 logstream *logstream::global_logstream = 0;
 
 bool            logbuf::logging_enabled = true;
-#ifdef _MSC_VER
+#ifdef _WIN32
    bool         logbuf::has_console = true;
 #endif
 sgDebugClass    logbuf::logClass        = SG_NONE;

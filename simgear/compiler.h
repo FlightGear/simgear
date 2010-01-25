@@ -63,6 +63,9 @@
 #  if _MSC_VER >= 1200  // msvc++ 6.0 or greater
 #    define isnan _isnan
 #    define snprintf _snprintf
+#    if _MSC_VER < 1500
+#      define vsnprintf _vsnprintf
+#    endif
 #    define copysign _copysign
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
@@ -156,10 +159,6 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 
 #if defined (__CYGWIN__)
 #  include <ieeefp.h>		// isnan
-#endif
-
-#if defined(__MINGW32__)
-#  define isnan(x) _isnan(x)
 #endif
 
 

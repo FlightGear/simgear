@@ -59,7 +59,7 @@
 #include "timestamp.hxx"
 
 void SGTimeStamp::stamp() {
-#if defined( WIN32 ) && !defined(__CYGWIN__)
+#ifdef _WIN32
     unsigned int t;
     t = timeGetTime();
     _sec = t / 1000;

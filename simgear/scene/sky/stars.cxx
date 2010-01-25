@@ -27,10 +27,6 @@
 #  include <simgear_config.h>
 #endif
 
-#ifdef __CYGWIN__
-#include <ieeefp.h>
-#endif
-
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/debug/logstream.hxx>

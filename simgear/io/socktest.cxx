@@ -4,7 +4,12 @@
 
 #include <simgear/compiler.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#define sleep(x) Sleep(x*1000)
+#else
 #include <unistd.h>
+#endif
 #include <iostream>
 
 #include "sg_socket.hxx"
@@ -44,10 +49,6 @@ int main() {
 	if ( s.readline( buf, 256 ) > 0 ) {
 	    cout << "result = " << buf;
 	}
-#ifdef __MINGW32__
-	Sleep(100);
-#else
 	sleep(1);
-#endif
     }
 }

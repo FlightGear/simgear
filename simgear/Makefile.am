@@ -1,9 +1,3 @@
-if HAVE_THREADS
-SGTHREAD_DIR = threads
-else
-SGTHREAD_DIR = 
-endif
-
 # METAR_DIRS =
 METAR_DIRS = environment
 
@@ -31,7 +25,7 @@ SUBDIRS = \
 	screen \
 	serial \
 	sound \
-	$(SGTHREAD_DIR) \
+	threads \
 	timing
 
 DIST_SUBDIRS = $(SUBDIRS) compatibility

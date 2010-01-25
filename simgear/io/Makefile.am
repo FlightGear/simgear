@@ -71,7 +71,7 @@ socktest_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
-        $(socktest_PLIB_LIBS) -lz
+        $(socktest_PLIB_LIBS) -lz \
 	$(network_LIBS) \
 	$(base_LIBS) 
 

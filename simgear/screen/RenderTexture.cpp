@@ -39,9 +39,6 @@
 * Implementation of class RenderTexture.  A multi-format render to 
 * texture wrapper.
 */
-#ifdef _MSC_VER
-#pragma warning(disable:4786)
-#endif
 
 /*
  * Changelog:
@@ -339,11 +336,7 @@ void PrintExtensionError( const char* strMsg, ... )
     char strBuffer[512];
     va_list args;
     va_start(args, strMsg);
-#if defined _WIN32 && !defined __CYGWIN__
-    _vsnprintf( strBuffer, 512, strMsg, args );
-#else
     vsnprintf( strBuffer, 512, strMsg, args );
-#endif
     va_end(args);
     
     SG_LOG(SG_GL, SG_ALERT, strMsg);
@@ -1055,11 +1048,7 @@ bool RenderTexture::Reset(const char *strMode, ...)
     va_list args;
     char strBuffer[256];
     va_start(args,strMode);
-#if defined _WIN32 && !defined __CYGWIN__
-    _vsnprintf( strBuffer, 256, strMode, args );
-#else
     vsnprintf( strBuffer, 256, strMode, args );
-#endif
     va_end(args);
 
     _ParseModeString(strBuffer, _pixelFormatAttribs, _pbufferAttribs);

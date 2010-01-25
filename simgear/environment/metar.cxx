@@ -159,7 +159,7 @@ void SGMetar::useCurrentDate()
 {
 	struct tm now;
 	time_t now_sec = time(0);
-#if defined( _MSC_VER ) || defined ( __MINGW32__ )
+#ifdef _WIN32
 	now = *gmtime(&now_sec);
 #else
 	gmtime_r(&now_sec, &now);

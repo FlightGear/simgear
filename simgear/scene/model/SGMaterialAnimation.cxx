@@ -29,6 +29,7 @@
 #include <simgear/scene/model/model.hxx>
 
 using namespace std;
+using namespace simgear;
 
 namespace {
 /**
@@ -485,6 +486,8 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
     mat->setDataVariance(osg::Object::DYNAMIC);
     unsigned defaultColorModeMask = 0;
     mat->setUpdateCallback(0); // Just to make sure.
+    // XXX This should probably go away, as ac3d models always have a
+    // DIFFUSE color mode.
     switch (mat->getColorMode()) {
     case osg::Material::OFF:
       defaultColorModeMask = 0;
@@ -575,4 +578,33 @@ SGMaterialAnimation::install(osg::Node& node)
 	= static_cast<osg::Material*>(defaultsVisitor.material->clone(osg::CopyOp::SHALLOW_COPY));
     }
     defaultAmbientDiffuse = defaultsVisitor.ambientDiffuse;
+}
+
+const char* colorNames[] =
+{
+    "ambient",
+    "diffuse",
+    "specular",
+    "emission"
+};
+
+// Build an effect which mimics the material color mode in a
+// shader. The OpenGL material values will be overridden by the
+// material animation's material.
+//
+// This is a hack to get the effect to respect the values set in the
+// material, set up by the animation, which overrides the values in
+// the effect's material attributes. Things will be different when
+// material animations are implemented purely by manipulating effects.
+
+SGPropertyNode_ptr
+SGMaterialAnimation::makeEffectProperties(const SGPropertyNode* animProp)
+{
+    SGPropertyNode_ptr eRoot = new SGPropertyNode;
+    SGPropertyNode* inherit = makeNode(eRoot, "inherits-from");
+    if (animProp->hasChild("diffuse") || animProp->hasChild("transparency"))
+        inherit->setStringValue("Effects/material-off");
+    else
+        inherit->setStringValue("Effects/material-diffuse");
+    return eRoot;
 }

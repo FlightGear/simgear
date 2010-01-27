@@ -26,6 +26,7 @@ public:
                       const osgDB::ReaderWriter::Options* options);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
+  static SGPropertyNode_ptr makeEffectProperties(const SGPropertyNode* animProp);
 private:
   osg::ref_ptr<osg::Material> defaultMaterial;
   osg::Vec4 defaultAmbientDiffuse;

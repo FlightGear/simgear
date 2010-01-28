@@ -2002,6 +2002,10 @@
 				/>
 			</FileConfiguration>
 		</File>
+		<File
+			RelativePath="..\..\simgear\version.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

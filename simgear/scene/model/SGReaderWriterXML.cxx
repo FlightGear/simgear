@@ -49,6 +49,7 @@
 #include "particles.hxx"
 #include "model.hxx"
 #include "SGText.hxx"
+#include "SGMaterialAnimation.hxx"
 
 using namespace std;
 using namespace simgear;
@@ -145,31 +146,42 @@ void makeEffectAnimations(PropertyList& animation_nodes,
     for (PropertyList::iterator itr = animation_nodes.begin();
          itr != animation_nodes.end();
          ++itr) {
+        SGPropertyNode_ptr effectProp;
         SGPropertyNode* animProp = itr->ptr();
         SGPropertyNode* typeProp = animProp->getChild("type");
-        if (!typeProp || strcmp(typeProp->getStringValue(), "shader"))
+        if (!typeProp)
             continue;
-        SGPropertyNode* shaderProp = animProp->getChild("shader");
-        if (!shaderProp || strcmp(shaderProp->getStringValue(), "chrome"))
-            continue;
-        *itr = 0;
-        SGPropertyNode* textureProp = animProp->getChild("texture");
-        if (!textureProp)
-            continue;
-        SGPropertyNode_ptr effectProp = new SGPropertyNode();
-        makeChild(effectProp.ptr(), "inherits-from")
-            ->setValue("Effects/chrome");
-        SGPropertyNode* paramsProp = makeChild(effectProp.get(), "parameters");
-        makeChild(paramsProp, "chrome-texture")
-            ->setValue(textureProp->getStringValue());
-        PropertyList objectNameNodes = animProp->getChildren("object-name");
-        for (PropertyList::iterator objItr = objectNameNodes.begin(),
-                 end = objectNameNodes.end();
-             objItr != end;
-            ++objItr)
-            effectProp->addChild("object-name")
-                ->setStringValue((*objItr)->getStringValue());
-        effect_nodes.push_back(effectProp);
+        const char* typeString = typeProp->getStringValue();
+        if (!strcmp(typeString, "material")) {
+            effectProp
+                = SGMaterialAnimation::makeEffectProperties(animProp);
+        } else if (!strcmp(typeString, "shader")) {
+            
+            SGPropertyNode* shaderProp = animProp->getChild("shader");
+            if (!shaderProp || strcmp(shaderProp->getStringValue(), "chrome"))
+                continue;
+            *itr = 0;           // effect replaces animation
+            SGPropertyNode* textureProp = animProp->getChild("texture");
+            if (!textureProp)
+                continue;
+            effectProp = new SGPropertyNode();
+            makeChild(effectProp.ptr(), "inherits-from")
+                ->setValue("Effects/chrome");
+            SGPropertyNode* paramsProp = makeChild(effectProp.get(), "parameters");
+            makeChild(paramsProp, "chrome-texture")
+                ->setValue(textureProp->getStringValue());
+        }
+        if (effectProp.valid()) {
+            PropertyList objectNameNodes = animProp->getChildren("object-name");
+            for (PropertyList::iterator objItr = objectNameNodes.begin(),
+                     end = objectNameNodes.end();
+                 objItr != end;
+                 ++objItr)
+                effectProp->addChild("object-name")
+                    ->setStringValue((*objItr)->getStringValue());
+            effect_nodes.push_back(effectProp);
+
+        }
     }
     animation_nodes.erase(remove_if(animation_nodes.begin(),
                                     animation_nodes.end(),

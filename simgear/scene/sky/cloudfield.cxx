@@ -63,10 +63,6 @@ using std::vector;
 using namespace simgear;
 
 
-#if defined (__CYGWIN__)
-#include <ieeefp.h>
-#endif
-
 float SGCloudField::fieldSize = 50000.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;

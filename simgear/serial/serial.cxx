@@ -26,7 +26,7 @@
 #include <iostream>
 #include <cerrno>
 
-#if !defined( WIN32 ) || defined( __CYGWIN__) || defined( __CYGWIN32__ )
+#ifndef _WIN32
 #  include <termios.h>
 #  include <sys/types.h>
 #  include <sys/stat.h>
@@ -60,7 +60,7 @@ SGSerialPort::~SGSerialPort() {
 
 bool SGSerialPort::open_port(const string& device) {
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     fd = CreateFile( device.c_str(),
         GENERIC_READ | GENERIC_WRITE,
@@ -147,7 +147,7 @@ bool SGSerialPort::open_port(const string& device) {
 
 
 bool SGSerialPort::close_port() {
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
     CloseHandle( fd );
 #else
     close(fd);
@@ -161,7 +161,7 @@ bool SGSerialPort::close_port() {
 
 bool SGSerialPort::set_baud(int baud) {
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     DCB dcb;
     if ( GetCommState( fd, &dcb ) ) {
@@ -274,7 +274,7 @@ string SGSerialPort::read_port() {
     char buffer[max_count+1];
     string result;
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     DWORD count;
     if ( ReadFile( fd, buffer, max_count, &count, 0 ) ) {
@@ -326,7 +326,7 @@ string SGSerialPort::read_port() {
 
 int SGSerialPort::read_port(char *buf, int len) {
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     DWORD count;
     if ( ReadFile( fd, buf, len, &count, 0 ) ) {
@@ -383,7 +383,7 @@ int SGSerialPort::read_port(char *buf, int len) {
 
 int SGSerialPort::write_port(const string& value) {
 
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     LPCVOID lpBuffer = value.data();
     DWORD nNumberOfBytesToWrite = value.length();
@@ -457,7 +457,7 @@ int SGSerialPort::write_port(const string& value) {
 
 
 int SGSerialPort::write_port(const char* buf, int len) {
-#if defined( WIN32 ) && !defined( __CYGWIN__) && !defined( __CYGWIN32__ )
+#ifdef _WIN32
 
     LPCVOID lpBuffer = buf;
     DWORD nNumberOfBytesToWrite = len;

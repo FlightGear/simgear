@@ -34,6 +34,7 @@ AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
+AC_PROG_CXXCPP
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -301,7 +302,7 @@ case "${host}" in
     dnl CygWin under Windoze.
     INCLUDES="$INCLUDES -I/usr/local/include/"
     LIBS="$LIBS -L/usr/local/lib"
-    AC_SEARCH_LIBS(alGenBuffers, [ openal32 openal ] )
+    AC_SEARCH_LIBS(alGenBuffers, [ openal32 openal 'openal -ldsound -lwinmm' ] )
     AC_SEARCH_LIBS(alutInit, [ openal32 ALut alut ] )
     LIBS="$LIBS -lwinmm -ldsound -ldxguid -lole32"
     openal_LIBS="$LIBS"

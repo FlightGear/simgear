@@ -20,10 +20,6 @@ void printOpDEBUG(int ip, int op);
 void printStackDEBUG(naContext ctx);
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef _MSC_VER
-#define vsnprintf _vsnprintf
-#endif
-
 struct Globals* globals = 0;
 
 static naRef bindFunction(naContext ctx, struct Frame* f, naRef code);

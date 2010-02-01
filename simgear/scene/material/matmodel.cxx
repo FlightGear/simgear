@@ -139,8 +139,9 @@ SGMatModel::get_random_model( SGPropertyNode *prop_root )
 {
   load_models( prop_root ); // comment this out if preloading models
   int nModels = _models.size();
-  int index = int(sg_random() * nModels);
-  if (index >= nModels)
+  // int index = int(sg_random() * nModels);
+  static int index = -1;
+  if (++index >= nModels)
     index = 0;
   return _models[index].get();
 }

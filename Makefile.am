@@ -7,9 +7,7 @@ EXTRA_DIST = \
 	README.plib \
 	README.OpenAL \
 	README.OSG \
-	projects \
-	SimGear.dsp \
-	SimGear.dsw
+	projects
 
 SUBDIRS	= simgear
 

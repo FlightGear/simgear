@@ -15,7 +15,7 @@ libsgprops_a_SOURCES = \
 	props_io.cxx \
 	AtomicChangeListener.cxx
 
-noinst_PROGRAMS = props_test
+check_PROGRAMS = props_test
 
 props_test_SOURCES = props_test.cxx
 props_test_LDADD = \

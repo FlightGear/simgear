@@ -496,6 +496,7 @@ case "${host}" in
         dnl This is needed when osg dynamic libs are specified 
         dnl instead of OSG frameworks on Mac OS X
         dnl
+        AC_CHECK_LIB(OpenThreads,OpenThreadsGetVersion)
         LDFLAGS="$LDFLAGS -L$with_osg"
     fi
     ;;

@@ -437,10 +437,17 @@ esac
 AM_CONDITIONAL(HAVE_FRAMEWORK_PLIB, test "x$ac_cv_framework_PLIB" != "x")
 
 AC_CHECK_HEADER(plib/ul.h)
-if test "x$ac_cv_header_plib_ul_h" != "xyes"; then
+
+AC_CHECK_LIB(plibul,ulInit)
+if test "x$ac_cv_header_plib_ul_h" != "xyes" \
+  -o "x$ac_cv_lib_plibul_ulInit" != "xyes" ; then
     echo
     echo "You *must* have the plib library installed on your system to build"
     echo "SimGear!"
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "Please see README.plib for more details."
     echo
@@ -507,15 +514,22 @@ case "${host}" in
     fi
     ;;
 esac
+
 AM_CONDITIONAL(HAVE_FRAMEWORK_OSG, test "x$ac_cv_framework_osg" != "x")
 
 AC_CHECK_HEADER(osg/Version)
+
 if test "x$ac_cv_header_osg_Version" != "xyes" -o "x$ac_cv_lib_OpenThreads_OpenThreadsGetVersion" != "xyes"; then
   if test "x$ac_cv_framework_osg" != "xyes"; then
     echo
-    echo "Warning: The OpenThreads library was not found on this system."
-    echo "         Mybe you forgot to sepcify --with-osg?"
-    echo "Without the OpenSceneGraph library FlightGear will not work."
+    echo "You *must* have the OpenThreads library installed on your system"
+    echo "to build this version of SimGear!"
+    echo "   Maybe you need to specify --with-osg=DIR."
+    echo "   Maybe you need to specify some LDFLAGS to help the linker."
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "Please see README.OSG for more details."
     echo
@@ -529,6 +543,10 @@ if test "x$ac_cv_header_boost_version_hpp" != "xyes"; then
     echo
     echo "You *must* have the Boost library installed on your system"
     echo "to build this version of SimGear!"
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "configure aborted."
     exit

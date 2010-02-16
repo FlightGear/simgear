@@ -30,6 +30,6 @@ libsgmaterial_a_SOURCES = \
 	mat.cxx \
 	matlib.cxx \
 	matmodel.cxx \
-	Noise.cxx
+	Noise.cxx Noise.hxx
 
 INCLUDES = -I$(top_srcdir)

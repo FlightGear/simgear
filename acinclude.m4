@@ -113,14 +113,14 @@ for subexdir in $subexdirs ; do
 dnl On 64-bit machines, if lib64/ exists and is not identical to lib/
 dnl then it should be listed here, listed ahead of lib/.
             mylibdir64="${exdir}/lib64${subexdir}"
-            mylibdir="${exdir}/lib${subexdir}"
+            mylibdir32="${exdir}/lib${subexdir}"
 
             if test "x86_64" = $(uname -m) \
-              -a ! ${mylibdir64} -ef ${mylibdir} ; then
+              -a ! ${mylibdir64} -ef ${mylibdir32} ; then
                 wi_EXTRA_LDIR($mylibdir64)
             fi
 
-            wi_EXTRA_LDIR($mylibdir)
+            wi_EXTRA_LDIR($mylibdir32)
 
             progdir="${exdir}/bin${subexdir}"
             wi_EXTRA_PDIR($progdir)

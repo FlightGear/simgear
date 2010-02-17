@@ -27,6 +27,7 @@ include_HEADERS = \
 
 libsgmodel_a_SOURCES = \
 	animation.cxx \
+	BoundingVolumeBuildVisitor.hxx \
 	particles.cxx \
 	model.cxx \
 	modellib.cxx \

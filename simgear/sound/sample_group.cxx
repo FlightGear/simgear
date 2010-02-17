@@ -275,7 +275,7 @@ SGSampleGroup::stop ()
 void
 SGSampleGroup::suspend ()
 {
-    if (_pause == false) {
+    if (_active && _pause == false) {
         _pause = true;
         sample_map_iterator sample_current = _samples.begin();
         sample_map_iterator sample_end = _samples.end();
@@ -294,7 +294,7 @@ SGSampleGroup::suspend ()
 void
 SGSampleGroup::resume ()
 {
-    if (_pause == true) {
+    if (_active && _pause == true) {
         sample_map_iterator sample_current = _samples.begin();
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {

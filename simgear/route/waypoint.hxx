@@ -131,6 +131,12 @@ public:
     inline const SGGeod& get_target() const { return pos; }
 
     /**
+     *
+     */
+    inline void setTargetAltFt(double elev)
+    { pos.setElevationFt(elev); }
+
+    /**
      * This value is not calculated by this class.  It is simply a
      * placeholder for the user to stash a distance value.  This is useful
      * when you stack waypoints together into a route.  You can calculate the

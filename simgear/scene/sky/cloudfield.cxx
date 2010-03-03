@@ -132,7 +132,8 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         field_transform->setMatrix( LAT*LON*T );
     }
     
-    field_root->getStateSet()->setRenderBinDetails(asl, "DepthSortedBin");
+    // Render the clouds in order from farthest away layer to nearest one.
+    field_root->getStateSet()->setRenderBinDetails(CLOUDS_BIN, "DepthSortedBin");
 
     return true;
 }

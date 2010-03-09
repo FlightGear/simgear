@@ -51,6 +51,7 @@
 #include <osg/RenderInfo>
 #include <osg/ShadeModel>
 #include <osg/StateSet>
+#include <osg/Stencil>
 #include <osg/TexEnv>
 #include <osg/Texture1D>
 #include <osg/Texture2D>
@@ -252,6 +253,24 @@ struct CullFaceBuilder : PassAttributeBuilder
 };
 
 InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
+
+struct ColorMaskBuilder : PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+        if (!realProp)
+            return;
+
+        ColorMask *mask = new ColorMask;
+        Vec4 m = getColor(realProp);
+        mask->setMask(m.r(), m.g(), m.b(), m.a());
+        pass->setAttributeAndModes(mask);
+    }    
+};
+
+InstallAttributeBuilder<ColorMaskBuilder> installColorMask("color-mask");
 
 EffectNameValue<StateSet::RenderingHint> renderingHintInit[] =
 {
@@ -474,6 +493,99 @@ struct BlendBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<BlendBuilder> installBlend("blend");
+
+
+EffectNameValue<Stencil::Function> stencilFunctionInit[] =
+{
+    {"never", Stencil::NEVER },
+    {"less", Stencil::LESS},
+    {"equal", Stencil::EQUAL},
+    {"less-or-equal", Stencil::LEQUAL},
+    {"greater", Stencil::GREATER},
+    {"not-equal", Stencil::NOTEQUAL},
+    {"greater-or-equal", Stencil::GEQUAL},
+    {"always", Stencil::ALWAYS}
+};
+
+EffectPropertyMap<Stencil::Function> stencilFunction(stencilFunctionInit);
+
+EffectNameValue<Stencil::Operation> stencilOperationInit[] =
+{
+    {"keep", Stencil::KEEP},
+    {"zero", Stencil::ZERO},
+    {"replace", Stencil::REPLACE},
+    {"increase", Stencil::INCR},
+    {"decrease", Stencil::DECR},
+    {"invert", Stencil::INVERT},
+    {"increase-wrap", Stencil::INCR_WRAP},
+    {"decrease-wrap", Stencil::DECR_WRAP}
+};
+
+EffectPropertyMap<Stencil::Operation> stencilOperation(stencilOperationInit);
+
+struct StencilBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const osgDB::ReaderWriter::Options* options)
+    {
+        if (!isAttributeActive(effect, prop))
+            return;
+
+        const SGPropertyNode* pmode = getEffectPropertyChild(effect, prop,
+                                                             "mode");
+        if (pmode && !pmode->getValue<bool>()) {
+            pass->setMode(GL_STENCIL, StateAttribute::OFF);
+            return;
+        }
+        const SGPropertyNode* pfunction
+            = getEffectPropertyChild(effect, prop, "function");
+        const SGPropertyNode* pvalue
+            = getEffectPropertyChild(effect, prop, "value");
+        const SGPropertyNode* pmask
+            = getEffectPropertyChild(effect, prop, "mask");
+        const SGPropertyNode* psfail
+            = getEffectPropertyChild(effect, prop, "stencil-fail");
+        const SGPropertyNode* pzfail
+            = getEffectPropertyChild(effect, prop, "z-fail");
+        const SGPropertyNode* ppass
+            = getEffectPropertyChild(effect, prop, "pass");
+
+        Stencil::Function func = Stencil::ALWAYS;  // Always pass
+        int ref = 0;
+        unsigned int mask = ~0u;  // All bits on
+        Stencil::Operation sfailop = Stencil::KEEP;  // Keep the old values as default
+        Stencil::Operation zfailop = Stencil::KEEP;
+        Stencil::Operation passop = Stencil::KEEP;
+
+        ref_ptr<Stencil> stencilFunc = new Stencil;
+
+        if (pfunction)
+            findAttr(stencilFunction, pfunction, func);
+        if (pvalue)
+            ref = pvalue->getIntValue();
+        if (pmask) 
+            mask = pmask->getIntValue();
+
+        if (psfail)
+            findAttr(stencilOperation, psfail, sfailop);
+        if (pzfail)
+            findAttr(stencilOperation, pzfail, zfailop);
+        if (ppass)
+            findAttr(stencilOperation, ppass, passop);
+
+        // Set the stencil operation
+        stencilFunc->setFunction(func, ref, mask);
+
+        // Set the operation, s-fail, s-pass/z-fail, s-pass/z-pass
+        stencilFunc->setOperation(sfailop, zfailop, passop);
+
+        // Add the operation to pass
+        pass->setAttributeAndModes(stencilFunc.get());
+    }
+};
+
+InstallAttributeBuilder<StencilBuilder> installStencil("stencil");
+
 
 EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
 {

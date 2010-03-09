@@ -160,6 +160,10 @@ void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
     }
 }
 
+// Default names for vector property components
+const char* vec3Names[] = {"x", "y", "z"};
+const char* vec4Names[] = {"x", "y", "z", "w"};
+
 osg::Vec4f getColor(const SGPropertyNode* prop)
 {
     if (prop->nChildren() == 0) {
@@ -808,8 +812,11 @@ EffectNameValue<Uniform::Type> uniformTypesInit[] =
     {"float-vec3", Uniform::FLOAT_VEC3},
     {"float-vec4", Uniform::FLOAT_VEC4},
     {"sampler-1d", Uniform::SAMPLER_1D},
+    {"sampler-1d-shadow", Uniform::SAMPLER_1D_SHADOW},
     {"sampler-2d", Uniform::SAMPLER_2D},
-    {"sampler-3d", Uniform::SAMPLER_3D}
+    {"sampler-2d-shadow", Uniform::SAMPLER_2D_SHADOW},
+    {"sampler-3d", Uniform::SAMPLER_3D},
+    {"sampler-cube", Uniform::SAMPLER_CUBE}
 };
 EffectPropertyMap<Uniform::Type> uniformTypes(uniformTypesInit);
 
@@ -862,18 +869,29 @@ struct UniformBuilder :public PassAttributeBuilder
         uniform->setType(uniformType);
         switch (uniformType) {
         case Uniform::FLOAT:
-            uniform->set(valProp->getValue<float>());
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(float)>(&Uniform::set),
+                               options);
             break;
         case Uniform::FLOAT_VEC3:
-            uniform->set(toOsg(valProp->getValue<SGVec3d>()));
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(const Vec3&)>(&Uniform::set),
+                               vec3Names, options);
             break;
         case Uniform::FLOAT_VEC4:
-            uniform->set(toOsg(valProp->getValue<SGVec4d>()));
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
+                               vec4Names, options);
             break;
         case Uniform::SAMPLER_1D:
         case Uniform::SAMPLER_2D:
         case Uniform::SAMPLER_3D:
-            uniform->set(valProp->getValue<int>());
+        case Uniform::SAMPLER_1D_SHADOW:
+        case Uniform::SAMPLER_2D_SHADOW:
+        case Uniform::SAMPLER_CUBE:
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(int)>(&Uniform::set),
+                               options);
             break;
         default: // avoid compiler warning
             break;

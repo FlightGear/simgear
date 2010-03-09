@@ -156,6 +156,21 @@ EffectPropertyMap<T>::EffectPropertyMap(const EffectNameValue<T> (&attrs)[N])
         _map.insert(typename BMap::value_type(attrs[i].first, attrs[i].second));
 }
 
+// A one-way map that can be initialized using an array
+template<typename T>
+struct SimplePropertyMap
+{
+    typedef std::map<string, T> map_type;
+    map_type _map;
+    template<int N>
+    SimplePropertyMap(const EffectNameValue<T> (&attrs)[N])
+    {
+        for (int i = 0; i < N; ++i)
+        _map.insert(typename map_type::value_type(attrs[i].first,
+                                                  attrs[i].second));
+    }
+};
+
 class BuilderException : public sg_exception
 {
 public:
@@ -202,6 +217,42 @@ void findAttr(const effect::EffectPropertyMap<T>& pMap,
         throw effect::BuilderException("findAttr: no name for lookup");
     findAttr(pMap, name, result);
 }
+
+// Versions that don't throw an error
+
+template<typename T>
+const T* findAttr(const effect::EffectPropertyMap<T>& pMap,
+                  const char* name)
+{
+    using namespace effect;
+    typename EffectPropertyMap<T>::BMap::iterator itr
+        = pMap._map.get<from>().find(name);
+    if (itr == pMap._map.end())
+        return 0;
+    else 
+        return &itr->second;
+}
+
+template<typename T>
+const T* findAttr(const effect::SimplePropertyMap<T>& pMap,
+                  const char* name)
+{
+    using namespace effect;
+    typename SimplePropertyMap<T>::map_type::const_iterator itr
+        = pMap._map.find(name);
+    if (itr == pMap._map.end())
+        return 0;
+    else 
+        return &itr->second;
+}
+
+template<typename T, template<class> class Map>
+const T* findAttr(const Map<T>& pMap,
+                     const std::string& name)
+{
+    return findAttr(pMap, name.c_str());
+}
+
 
 template<typename T>
 std::string findName(const effect::EffectPropertyMap<T>& pMap, T value)
@@ -384,7 +435,7 @@ struct Bridge<osg::Vec4d> : public BridgeOSGVec<SGVec4d, osg::Vec4d>
  *
  * General version, function takes obj, val
  */
-template<typename Obj, typename OSGParam, typename Func>
+template<typename OSGParam, typename Obj, typename Func>
 struct OSGFunctor : public Bridge<OSGParam>
 {
     OSGFunctor(Obj* obj, const Func& func)
@@ -400,8 +451,8 @@ struct OSGFunctor : public Bridge<OSGParam>
 /**
  * Version which uses a pointer to member function instead.
  */
-template<typename Obj, typename OSGParam>
-struct OSGFunctor<Obj, OSGParam, void (Obj::* const)(const OSGParam&)>
+template<typename OSGParam, typename Obj>
+struct OSGFunctor<OSGParam, Obj, void (Obj::* const)(const OSGParam&)>
     : public Bridge<OSGParam>
 {
     typedef void (Obj::*const MemFunc)(const OSGParam&);
@@ -418,28 +469,27 @@ struct OSGFunctor<Obj, OSGParam, void (Obj::* const)(const OSGParam&)>
 /**
  * Typical convenience constructors
  */
-template<typename Obj, typename OSGParam, typename Func>
-OSGFunctor<Obj, OSGParam, Func> make_OSGFunctor(Obj* obj, const Func& func)
+template<typename OSGParam, typename Obj, typename Func>
+OSGFunctor<OSGParam, Obj, Func> make_OSGFunctor(Obj* obj, const Func& func)
 {
-    return OSGFunctor<Obj, OSGParam, Func>(obj, func);
+    return OSGFunctor<OSGParam, Obj, Func>(obj, func);
 }
 
-template<typename Obj, typename OSGParam>
-OSGFunctor<Obj, OSGParam, void (Obj::*const)(const OSGParam&)>
+template<typename OSGParam, typename Obj>
+OSGFunctor<OSGParam, Obj, void (Obj::*const)(const OSGParam&)>
 make_OSGFunctor(Obj* obj, void (Obj::*const func)(const OSGParam&))
 {
-    return OSGFunctor<Obj, OSGParam,
+    return OSGFunctor<OSGParam, Obj,
         void (Obj::* const)(const OSGParam&)>(obj, func);
 }
 
-template<typename ObjType, typename OSGParamType>
+template<typename OSGParamType, typename ObjType, typename F>
 class ScalarChangeListener
     : public SGPropertyChangeListener, public InitializeWhenAdded,
       public Effect::Updater
 {
 public:
-    typedef void (ObjType::*setter_type)(const OSGParamType);
-    ScalarChangeListener(ObjType* obj, setter_type setter,
+    ScalarChangeListener(ObjType* obj, const F& setter,
                          const std::string& propName)
         : _obj(obj), _setter(setter)
     {
@@ -452,7 +502,7 @@ public:
     }
     void valueChanged(SGPropertyNode* node)
     {
-        _obj->*setter(node->getValue<OSGParamType>());
+        _setter(_obj.get(), node->getValue<OSGParamType>());
     }
     void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
     {
@@ -464,7 +514,7 @@ public:
     }
 private:
     osg::ref_ptr<ObjType> _obj;
-    setter_type _setter;
+    F _setter;
     std::string* _propName;
 };
 
@@ -533,24 +583,33 @@ new_EEPropListener(const Func& func, const std::string* propName,
  * For relative property names, the property root found in options is
  * used.
  */
-template<typename ObjType, typename OSGParamType>
+template<typename OSGParamType, typename ObjType, typename F>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
-                   void (ObjType::*setter)(const OSGParamType),
-                   const SGReaderWriterXMLOptions* options)
+                   const F& setter, const SGReaderWriterXMLOptions* options)
 {
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
     if (valProp->nChildren() == 0) {
-        obj->*setter(valProp->getValue<OSGParamType>());
+        setter(obj, valProp->getValue<OSGParamType>());
     } else {
         std::string propName = getGlobalProperty(prop, options);
-        ScalarChangeListener<ObjType, OSGParamType>* listener
-            = new ScalarChangeListener<ObjType, OSGParamType>(obj, setter,
-                                                              propName);
+        ScalarChangeListener<OSGParamType, ObjType, F>* listener
+            = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
+                                                                 propName);
         effect->addUpdater(listener);
     }
+}
+
+template<typename OSGParamType, typename ObjType, typename SetterReturn>
+inline void
+initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
+                   SetterReturn (ObjType::*setter)(const OSGParamType),
+                   const SGReaderWriterXMLOptions* options)
+{
+    initFromParameters<OSGParamType>(effect, prop, obj,
+                                     boost::bind(setter, _1, _2), options);
 }
 
 /*
@@ -572,10 +631,11 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
  * For relative property names, the property root found in options is
  * used.
  */
-template<typename ObjType, typename OSGParamType, typename NameItrType>
+template<typename OSGParamType, typename ObjType, typename NameItrType,
+         typename F>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
-                   void (ObjType::*setter)(const OSGParamType&),
+                   const F& setter,
                    NameItrType nameItr, const SGReaderWriterXMLOptions* options)
 {
     typedef typename Bridge<OSGParamType>::sg_type sg_type;
@@ -584,8 +644,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     if (!valProp)
         return;
     if (valProp->nChildren() == 0) { // Has <use>?
-        (obj->*setter)(Bridge<OSGParamType>
-                     ::get(valProp->getValue<sg_type>()));
+        setter(obj, Bridge<OSGParamType>::get(valProp->getValue<sg_type>()));
     } else {
         std::vector<std::string> paramNames
             = getVectorProperties(valProp, options,numComponents, nameItr);
@@ -593,12 +652,24 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
             throw BuilderException();
         std::vector<std::string>::const_iterator pitr = paramNames.begin();
         Effect::Updater* listener
-            =  new_EEPropListener<sg_type>(make_OSGFunctor(obj, setter), 0,
-                                           pitr, pitr + numComponents);
+            =  new_EEPropListener<sg_type>(make_OSGFunctor<OSGParamType>
+                                           (obj, setter),
+                                           0, pitr, pitr + numComponents);
         effect->addUpdater(listener);
     }
 }
 
+template<typename OSGParamType, typename ObjType, typename NameItrType,
+         typename SetterReturn>
+inline void
+initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
+                   SetterReturn (ObjType::*setter)(const OSGParamType&),
+                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
+{
+    initFromParameters<OSGParamType>(effect, prop, obj,
+                                     boost::bind(setter, _1, _2), nameItr,
+                                     options);
+}
 extern const char* colorFields[];
 }
 }

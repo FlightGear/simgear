@@ -49,6 +49,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -68,17 +69,28 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 
 SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
-                                             const osgDB::ReaderWriter::Options* o ) :
-  effect(e), texture_path(t), effect_realized(l), options(o)
+                                             const SGReaderWriterXMLOptions* o)
+    : effect(e), texture_path(t), effect_realized(l), options(o)
 {
 }
 
-SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
+SGMaterial::SGMaterial( const SGReaderWriterXMLOptions* options,
                         const SGPropertyNode *props )
 {
     init();
     read_properties( options, props );
     buildEffectProperties(options);
+}
+
+SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
+                        const SGPropertyNode *props )
+{
+    osg::ref_ptr<const SGReaderWriterXMLOptions> sgOptions;
+    if (options)
+        sgOptions = new SGReaderWriterXMLOptions(*options);
+    init();
+    read_properties( sgOptions.get(), props );
+    buildEffectProperties(sgOptions.get());
 }
 
 SGMaterial::~SGMaterial (void)
@@ -91,7 +103,7 @@ SGMaterial::~SGMaterial (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties(const osgDB::ReaderWriter::Options* options,
+SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
                             const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
@@ -245,10 +257,12 @@ Effect* SGMaterial::get_effect(int n)
     return _status[i].effect.get();
 }
 
-void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
-                                       options)
+void SGMaterial::buildEffectProperties(const SGReaderWriterXMLOptions* options)
 {
     using namespace osg;
+    ref_ptr<SGReaderWriterXMLOptions> xmlOptions;
+    if (options)
+        xmlOptions = new SGReaderWriterXMLOptions(*options);
     ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
@@ -279,7 +293,7 @@ void SGMaterial::buildEffectProperties(const osgDB::ReaderWriter::Options*
             ->setStringValue(wrapu ? "repeat" : "clamp");
         makeChild(texProp, "wrap-t")
             ->setStringValue(wrapv ? "repeat" : "clamp");
-        matState.effect = makeEffect(effectProp, false, options);
+        matState.effect = makeEffect(effectProp, false, xmlOptions.get());
         matState.effect->setUserData(user.get());
     }
 }

@@ -56,10 +56,10 @@ class EffectBuilder : public SGReferenced
 public:
     virtual ~EffectBuilder() {}
     virtual T* build(Effect* effect, const SGPropertyNode*,
-                     const osgDB::ReaderWriter::Options* options) = 0;
+                     const SGReaderWriterXMLOptions* options) = 0;
     static T* buildFromType(Effect* effect, const std::string& type,
                             const SGPropertyNode*props,
-                            const osgDB::ReaderWriter::Options* options)
+                            const SGReaderWriterXMLOptions* options)
     {
         BuilderMap& builderMap = getMap();
         typename BuilderMap::iterator iter = builderMap.find(type);
@@ -255,7 +255,7 @@ protected:
 public:
     virtual void buildAttribute(Effect* effect, Pass* pass,
                                 const SGPropertyNode* prop,
-                                const osgDB::ReaderWriter::Options* options)
+                                const SGReaderWriterXMLOptions* options)
     = 0;
     static PassAttributeBuilder* find(const std::string& str)
     {

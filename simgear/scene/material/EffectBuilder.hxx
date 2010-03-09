@@ -46,6 +46,7 @@ namespace simgear
 {
 class Effect;
 class Pass;
+class SGReaderWriterXMLOptions;
 
 /**
  * Builder that returns an object, probably an OSG object.
@@ -240,7 +241,8 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
  * @return empty if prop doesn't contain a <use> clause; otherwise the
  * mentioned node name.
  */
-std::string getGlobalProperty(const SGPropertyNode* prop);
+std::string getGlobalProperty(const SGPropertyNode* prop,
+                              const SGReaderWriterXMLOptions *);
 
 class PassAttributeBuilder : public SGReferenced
 {
@@ -426,7 +428,8 @@ private:
 template<typename ObjType, typename OSGParamType>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
-                   void (ObjType::*setter)(const OSGParamType))
+                   void (ObjType::*setter)(const OSGParamType),
+                   const SGReaderWriterXMLOptions* options)
 {
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
@@ -434,7 +437,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     if (valProp->nChildren() == 0) {
         obj->*setter(valProp->getValue<OSGParamType>());
     } else {
-        std::string propName = getGlobalProperty(prop);
+        std::string propName = getGlobalProperty(prop, options);
         ScalarChangeListener<ObjType, OSGParamType>* listener
             = new ScalarChangeListener<ObjType, OSGParamType>(obj, setter,
                                                               propName);
@@ -446,7 +449,7 @@ template<typename ObjType, typename OSGParamType, typename NameItrType>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    void (ObjType::*setter)(const OSGParamType&),
-                   NameItrType nameItr)
+                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
 {
     typedef typename OSGBridge<OSGParamType>::sg_type sg_type;
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
@@ -456,7 +459,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
         (obj->*setter)(OSGBridge<OSGParamType>
                      ::getOsgType(valProp->getValue<sg_type>()));
     } else {
-        string listenPropName = getGlobalProperty(valProp);
+        string listenPropName = getGlobalProperty(valProp, options);
         if (listenPropName.empty())
             return;
         typedef OSGFunctor<ObjType, OSGParamType> Functor;

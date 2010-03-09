@@ -18,7 +18,7 @@
 #ifndef SGREADERWRITERXMLOPTIONS_HXX
 #define SGREADERWRITERXMLOPTIONS_HXX 1
 
-#include <osgDB/ReaderWriter>
+#include <osgDB/Registry>
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/props/props.hxx>
 

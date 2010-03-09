@@ -23,6 +23,11 @@
 #include <simgear/props/props.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
 
+namespace simgear
+{
+class SGReaderWriterXMLOptions;
+}
+
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
                 const osgDB::ReaderWriter::Options* options = 0,
@@ -97,7 +102,7 @@ public:
 osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
                    PropertyList& effectProps,
-                   const osgDB::ReaderWriter::Options* options);
+                   const SGReaderWriterXMLOptions* options);
 
 /**
  * Transform an OSG subgraph by substituting the Effects and
@@ -110,7 +115,7 @@ instantiateEffects(osg::Node* model,
 
 inline osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
-                   const osgDB::ReaderWriter::Options* options)
+                   const SGReaderWriterXMLOptions* options)
 {
     PropertyList effectProps;
     return instantiateEffects(model, effectProps, options);

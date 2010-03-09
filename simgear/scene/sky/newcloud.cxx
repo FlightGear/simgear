@@ -46,6 +46,7 @@
 #include <simgear/misc/PathOptions.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 
@@ -108,9 +109,11 @@ SGNewCloud::SGNewCloud(string type,
                                      "texture"),
                            "image"),
                  texture);
-        osg::ref_ptr<osgDB::ReaderWriter::Options> options
+        ref_ptr<osgDB::ReaderWriter::Options> options
             = makeOptionsFromPath(tex_path);
-        if ((effect = makeEffect(pcloudEffect, true, options)))
+        ref_ptr<SGReaderWriterXMLOptions> sgOptions
+            = new SGReaderWriterXMLOptions(*options.get());
+        if ((effect = makeEffect(pcloudEffect, true, sgOptions.get())))
             effectMap.insert(EffectMap::value_type(texture, effect));
     } else {
         effect = iter->second.get();

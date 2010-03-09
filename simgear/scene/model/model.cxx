@@ -33,6 +33,7 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 
+#include "SGReaderWriterXMLOptions.hxx"
 #include "model.hxx"
 
 using std::vector;
@@ -209,7 +210,7 @@ class MakeEffectVisitor : public SplicingVisitor
 public:
     typedef std::map<string, SGPropertyNode_ptr> EffectMap;
     using SplicingVisitor::apply;
-    MakeEffectVisitor(const osgDB::ReaderWriter::Options* options = 0)
+    MakeEffectVisitor(const SGReaderWriterXMLOptions* options = 0)
         : _options(options)
     {
     }
@@ -225,7 +226,7 @@ public:
 protected:
     EffectMap _effectMap;
     SGPropertyNode_ptr _currentEffectParent;
-    osg::ref_ptr<const osgDB::ReaderWriter::Options> _options;
+    osg::ref_ptr<const SGReaderWriterXMLOptions> _options;
 };
 
 void MakeEffectVisitor::apply(osg::Group& node)
@@ -302,7 +303,7 @@ protected:
 
 ref_ptr<Node> instantiateEffects(osg::Node* modelGroup,
                                  PropertyList& effectProps,
-                                 const osgDB::ReaderWriter::Options* options)
+                                 const SGReaderWriterXMLOptions* options)
 {
     SGPropertyNode_ptr defaultEffectPropRoot;
     MakeEffectVisitor visitor(options);

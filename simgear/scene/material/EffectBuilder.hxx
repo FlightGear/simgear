@@ -33,6 +33,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/AtomicChangeListener.hxx>
 #include <simgear/props/props.hxx>
+#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/Singleton.hxx>
@@ -244,6 +245,43 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
 std::string getGlobalProperty(const SGPropertyNode* prop,
                               const SGReaderWriterXMLOptions *);
 
+template<typename NameItr>
+std::vector<std::string>
+getVectorProperties(const SGPropertyNode* prop,
+                    const SGReaderWriterXMLOptions *options, size_t vecSize,
+                    NameItr defaultNames)
+{
+    using namespace std;
+    vector<string> result;
+    if (!prop)
+        return result;
+    PropertyList useProps = prop->getChildren("use");
+    if (useProps.size() == 1) {
+        string parentName = useProps[0]->getStringValue();
+        if (parentName.size() == 0 || parentName[0] != '/')
+            parentName = options->getPropRoot()->getPath() + "/" + parentName;
+        if (parentName[parentName.size() - 1] != '/')
+            parentName.append("/");
+        NameItr itr = defaultNames;
+        for (int i = 0; i < vecSize; ++i, ++itr)
+            result.push_back(parentName + *itr);
+    } else if (useProps.size() == vecSize) {
+        string parentName = useProps[0]->getStringValue();
+        parentName += "/";
+        for (PropertyList::const_iterator itr = useProps.begin(),
+                 end = useProps.end();
+             itr != end;
+             ++itr) {
+            string childName = (*itr)->getStringValue();
+            if (childName.size() == 0 || childName[0] != '/')
+                result.push_back(parentName + childName);
+            else
+                result.push_back(childName);
+        }
+    }
+    return result;
+}
+
 class PassAttributeBuilder : public SGReferenced
 {
 protected:
@@ -384,11 +422,12 @@ class EffectExtendedPropListener : public InitializeWhenAdded,
 public:
     template<typename Itr>
     EffectExtendedPropListener(const Func& func,
-                               const std::string& propName, Itr childNamesBegin,
+                               const std::string* propName, Itr childNamesBegin,
                                Itr childNamesEnd)
-        : _func(func)
+        : _propName(0), _func(func)
     {
-        _propName = new std::string(propName);
+        if (propName)
+            _propName = new std::string(*propName);
         _childNames = new std::vector<std::string>(childNamesBegin,
                                                    childNamesEnd);
     }
@@ -399,7 +438,11 @@ public:
     }
     void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
     {
-        SGPropertyNode* parent = propRoot->getNode(*_propName, true);
+        SGPropertyNode* parent = 0;
+        if (_propName)
+            parent = propRoot->getNode(*_propName, true);
+        else
+            parent = propRoot;
         _propListener
             = new ExtendedPropListener<T, Func>(parent, _childNames->begin(),
                                                 _childNames->end(),
@@ -424,6 +467,9 @@ private:
  * own <use> tag referring to a property in the global property tree;
  * install a change listener that will set the attribute when the
  * property changes.
+ *
+ * For relative property names, the property root found in options is
+ * used.
  */
 template<typename ObjType, typename OSGParamType>
 void
@@ -445,6 +491,25 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     }
 }
 
+/*
+ * Initialize vector parameters from individual properties.
+ * The parameter may be updated at runtime.
+ *
+ * If the value is specified directly, set it. Otherwise, use the
+ * <use> tag to look at the parameters. Again, if there is a value
+ * there set it directly. Otherwise, the parameter contains one or several
+ * <use> tags. If there is one tag, it is a property that is the root
+ * for the values needed to update the parameter; nameIter holds the
+ * names of the properties relative to the root. If there are several
+ * <use> tags, they each hold the name of the property holding the
+ * value for the corresponding vector member.
+ *
+ * Install a change listener that will set the attribute when the
+ * property changes.
+ *
+ * For relative property names, the property root found in options is
+ * used.
+ */
 template<typename ObjType, typename OSGParamType, typename NameItrType>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
@@ -452,21 +517,23 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    NameItrType nameItr, const SGReaderWriterXMLOptions* options)
 {
     typedef typename OSGBridge<OSGParamType>::sg_type sg_type;
+    const int numComponents = props::NumComponents<sg_type>::num_components;
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
-    if (valProp->nChildren() == 0) {
+    if (valProp->nChildren() == 0) { // Has <use>?
         (obj->*setter)(OSGBridge<OSGParamType>
                      ::getOsgType(valProp->getValue<sg_type>()));
     } else {
-        string listenPropName = getGlobalProperty(valProp, options);
-        if (listenPropName.empty())
-            return;
+        std::vector<std::string> paramNames
+            = getVectorProperties(valProp, options,numComponents, nameItr);
+        if (paramNames.empty())
+            throw BuilderException();
+        std::vector<std::string>::const_iterator pitr = paramNames.begin();
         typedef OSGFunctor<ObjType, OSGParamType> Functor;
         Effect::Updater* listener
             =  new EffectExtendedPropListener<sg_type, Functor>
-            (Functor(obj, setter), listenPropName, nameItr,
-             nameItr + props::NumComponents<sg_type>::num_components);
+            (Functor(obj, setter), 0, pitr, pitr + numComponents);
         effect->addUpdater(listener);
     }
 }

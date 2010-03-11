@@ -829,8 +829,7 @@ struct UniformBuilder :public PassAttributeBuilder
             return;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
-        const SGPropertyNode* valProp
-            = getEffectPropertyChild(effect, prop, "value");
+        const SGPropertyNode* valProp = prop->getChild("value");
         string name;
         Uniform::Type uniformType = Uniform::FLOAT;
         if (nameProp) {

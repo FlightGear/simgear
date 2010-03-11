@@ -594,7 +594,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     if (valProp->nChildren() == 0) {
         setter(obj, valProp->getValue<OSGParamType>());
     } else {
-        std::string propName = getGlobalProperty(prop, options);
+        std::string propName = getGlobalProperty(valProp, options);
         ScalarChangeListener<OSGParamType, ObjType, F>* listener
             = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
                                                                  propName);

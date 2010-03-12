@@ -344,13 +344,20 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
     vl->push_back(osg::Vec3(0, hpos,               dist + sign_height));
     vl->push_back(osg::Vec3(0, hpos - total_width, dist + sign_height));
 
+    osg::Vec2Array* tl = new osg::Vec2Array;
+    for (int i = 0; i < 4; ++i)
+        tl->push_back(osg::Vec2(0.0, 0.0));
     osg::Vec3Array* nl = new osg::Vec3Array;
     nl->push_back(osg::Vec3(0, 1, 0));
-
+    osg::Vec4Array* cl = new osg::Vec4Array;
+    cl->push_back(osg::Vec4(0.0, 0.0, 0.0, 1.0));
     osg::Geometry* geometry = new osg::Geometry;
     geometry->setVertexArray(vl);
     geometry->setNormalArray(nl);
     geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
+    geometry->setTexCoordArray(0, tl);
+    geometry->setColorArray(cl);
+    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
     EffectGeode* geode = new EffectGeode;
     geode->addDrawable(geometry);

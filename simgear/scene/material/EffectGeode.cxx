@@ -23,6 +23,7 @@
 #include "Technique.hxx"
 
 #include <osgUtil/CullVisitor>
+#include <osgUtil/TangentSpaceGenerator>
 
 #include <osgDB/Registry>
 #include <osgDB/Input>
@@ -64,6 +65,31 @@ void EffectGeode::releaseGLObjects(osg::State* state) const
     if (_effect.valid())
         _effect->releaseGLObjects(state);
     Geode::releaseGLObjects(state);
+}
+
+// Generates tangent space vectors or other data from geom, as defined by effect
+void EffectGeode::runGenerators(osg::Geometry *geometry)
+{
+      if(geometry && _effect.valid()) {
+        // Generate tangent vectors for the geometry
+        osg::ref_ptr<osgUtil::TangentSpaceGenerator> tsg = new osgUtil::TangentSpaceGenerator;
+
+        // Generating only tangent vector should be enough
+        // since the binormal is a cross product of normal and tangent
+        // This saves a bit of memory & memory bandwidth!
+        int n = _effect->getGenerator(Effect::TANGENT);
+        tsg->generate(geometry, 0);  // 0 is normal_unit, but I have no idea what that is!
+        if (n != -1 && !geometry->getVertexAttribArray(n))
+            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getTangentArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+
+        n = _effect->getGenerator(Effect::BINORMAL);
+        if (n != -1 && !geometry->getVertexAttribArray(n))
+            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getBinormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+
+        n = _effect->getGenerator(Effect::NORMAL);
+        if (n != -1 && !geometry->getVertexAttribArray(n))
+            geometry->setVertexAttribData(n, osg::Geometry::ArrayData(tsg->getNormalArray(), osg::Geometry::BIND_PER_VERTEX,GL_FALSE));
+    }
 }
 
 bool EffectGeode_writeLocalData(const Object& obj, osgDB::Output& fw)

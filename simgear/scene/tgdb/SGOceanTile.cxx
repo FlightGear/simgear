@@ -310,6 +310,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
     geode->setName("Ocean tile");
     geode->setEffect(effect);
     geode->addDrawable(geometry);
+    geode->runGenerators(geometry);
 
     osg::MatrixTransform* transform = new osg::MatrixTransform;
     transform->setName("Ocean");

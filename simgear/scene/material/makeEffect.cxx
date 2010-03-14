@@ -205,8 +205,10 @@ Effect* makeEffect(SGPropertyNode* prop,
                     lock(effectMutex);
                 cache = parent->getCache();
                 itr = cache->find(key);
-                if (itr != cache->end()) 
+                if (itr != cache->end()) {
                     effect = itr->second.get();
+                    effect->generator = parent->generator;  // Copy the generators
+                }
             }
             if (!effect.valid()) {
                 effect = new Effect;
@@ -219,6 +221,7 @@ Effect* makeEffect(SGPropertyNode* prop,
                     = cache->insert(make_pair(key, effect));
                 if (!irslt.second)
                     effect = irslt.first->second;
+                effect->generator = parent->generator;  // Copy the generators
             }
         } else {
             SG_LOG(SG_INPUT, SG_ALERT, "can't find base effect " <<
@@ -229,6 +232,21 @@ Effect* makeEffect(SGPropertyNode* prop,
         effect = new Effect;
         effect->root = prop;
         effect->parametersProp = effect->root->getChild("parameters");
+    }
+    const SGPropertyNode *generateProp = prop->getChild("generate");
+    if(generateProp)
+    {
+        effect->generator.clear();
+
+        // Effect needs some generated properties, like tangent vectors
+        const SGPropertyNode *parameter = generateProp->getChild("normal");
+        if(parameter) effect->setGenerator(Effect::NORMAL, parameter->getIntValue());
+
+        parameter = generateProp->getChild("tangent");
+        if(parameter) effect->setGenerator(Effect::TANGENT, parameter->getIntValue());
+
+        parameter = generateProp->getChild("binormal");
+        if(parameter) effect->setGenerator(Effect::BINORMAL, parameter->getIntValue());
     }
     if (realizeTechniques) {
         try {

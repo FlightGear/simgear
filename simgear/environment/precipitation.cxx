@@ -28,6 +28,7 @@
 #include "visual_enviro.hxx"
 
 #include <simgear/constants.h>
+#include <osg/ClipNode>
 
 /**
  * @brief SGPrecipitation constructor
@@ -35,7 +36,7 @@
  * Build a new OSG object from osgParticle.
  */
 SGPrecipitation::SGPrecipitation() :
-    _freeze(false), _snow_intensity(0.0), _rain_intensity(0.0)
+    _freeze(false), _snow_intensity(0.0), _rain_intensity(0.0), _clip_distance(5.0)
 {
     _precipitationEffect = new osgParticle::PrecipitationEffect;
 }
@@ -54,7 +55,20 @@ osg::Group* SGPrecipitation::build(void)
     _precipitationEffect->snow(0);	
     _precipitationEffect->rain(0);	
 
-    group->addChild(_precipitationEffect.get());
+    if (_clip_distance!=0.0)
+    {    
+        osg::ref_ptr<osg::ClipNode> clipNode = new osg::ClipNode;
+        clipNode->addClipPlane( new osg::ClipPlane( 0 ) );
+        clipNode->getClipPlane(0)->setClipPlane( 0.0, 0.0, -1.0, -_clip_distance );
+        clipNode->setReferenceFrame(osg::ClipNode::ABSOLUTE_RF);
+        clipNode->addChild(_precipitationEffect.get());
+
+        group->addChild(clipNode.get());
+    }
+    else
+    {
+        group->addChild(_precipitationEffect.get());
+    }
 
     return group;
 }

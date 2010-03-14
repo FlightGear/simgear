@@ -33,6 +33,9 @@
 #endif
 
 
+// forward decls
+class SGGeod;
+
 /**
  * Magnetic variation wrapper class.
  *
@@ -77,6 +80,11 @@ public:
      * @param jd julian date
      */
     void update( double lon, double lat, double alt_m, double jd );
+
+    /**
+     * overloaded variant taking an SGGeod to specify position
+     */
+    void update( const SGGeod& geod, double jd );
 
     /** @return the current magnetic variation in radians. */
     double get_magvar() const { return magvar; }

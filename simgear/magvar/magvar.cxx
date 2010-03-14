@@ -24,6 +24,7 @@
 #include <math.h>
 
 #include <simgear/magvar/magvar.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include "coremag.hxx"
 #include "magvar.hxx"
@@ -45,6 +46,12 @@ void SGMagVar::update( double lon, double lat, double alt_m, double jd ) {
     // cout << "alt_m = " << alt_m << endl;
     magvar = calc_magvar( lat, lon, alt_m / 1000.0, (long)jd, field );
     magdip = atan(field[5]/sqrt(field[3]*field[3]+field[4]*field[4]));
+}
+
+void SGMagVar::update( const SGGeod& geod, double jd ) {
+
+  update(geod.getLongitudeDeg(), geod.getLatitudeDeg(),
+    geod.getElevationM(), jd);
 }
 
 

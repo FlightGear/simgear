@@ -49,10 +49,8 @@ public:
 protected:
   class CullCallback;
   class ClipRenderBin;
-
+  struct ClipBinRegistrar;
   std::vector<osg::ref_ptr<osg::ClipPlane> > mClipPlanes;
-
-  static osgUtil::RegisterRenderBinProxy clipBinProxy;
 };
 
 #endif

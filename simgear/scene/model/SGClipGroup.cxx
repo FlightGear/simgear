@@ -70,8 +70,18 @@ public:
   osg::ref_ptr<osg::RefMatrix> mModelView;
 };
 
-osgUtil::RegisterRenderBinProxy
-SGClipGroup::clipBinProxy("ClipRenderBin", new SGClipGroup::ClipRenderBin);
+struct SGClipGroup::ClipBinRegistrar
+{
+    ClipBinRegistrar()
+    {
+        osgUtil::RenderBin
+            ::addRenderBinPrototype("ClipRenderBin",
+                                    new SGClipGroup::ClipRenderBin);
+    }
+    static ClipBinRegistrar registrar;
+};
+
+SGClipGroup::ClipBinRegistrar SGClipGroup::ClipBinRegistrar::registrar;
 
 class SGClipGroup::CullCallback : public osg::NodeCallback {
 public:

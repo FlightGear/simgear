@@ -94,7 +94,7 @@ public:
 
 template<typename Range>
 inline Range
-parse_name (const Range &path)
+parse_name (const SGPropertyNode *node, const Range &path)
 {
   typename Range::iterator i = path.begin();
   typename Range::iterator max = path.end();
@@ -118,15 +118,24 @@ parse_name (const Range &path)
       } else if (*i == '[' || *i == '/') {
 	break;
       } else {
-	throw string("name may contain only ._- and alphanumeric characters");
+        string err = "'";
+        err.push_back(*i);
+        err.append("' found in propertyname after '"+node->getNameString()+"'");
+        err.append("\nname may contain only ._- and alphanumeric characters");
+	throw err;
       }
       i++;
     }
   }
 
   else {
-    if (path.begin() == i)
-      throw string("name must begin with alpha or '_'");
+    if (path.begin() == i) {
+      string err = "'";
+      err.push_back(*i);
+      err.append("' found in propertyname after '"+node->getNameString()+"'");
+      err.append("\nname must begin with alpha or '_'");
+      throw err;
+    }
   }
   return Range(path.begin(), i);
 }
@@ -268,7 +277,7 @@ find_node_aux(SGPropertyNode * current, SplitItr& itr, bool create,
   // Empty name at this point is empty, not root.
   if (token.empty())
     return find_node_aux(current, ++itr, create, last_index);
-  Range name = parse_name(token);
+  Range name = parse_name(current, token);
   if (equals(name, "."))
     return find_node_aux(current, ++itr, create, last_index);
   if (equals(name, "..")) {

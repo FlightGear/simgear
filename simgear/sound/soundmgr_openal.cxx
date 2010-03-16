@@ -164,8 +164,9 @@ void SGSoundMgr::init(const char *devname) {
 
     _vendor = (const char *)alGetString(AL_VENDOR);
     _renderer = (const char *)alGetString(AL_RENDERER);
-    if ( (_vendor != "OpenAL Community" && _vendor != "Apple Computer Inc.") ||
-        (_renderer != "Software" && _renderer != "OpenAL Sample Implementation")
+    if ( (_vendor != "Adalin" && _vendor != "Apple Computer Inc.") &&
+          (_vendor != "OpenAL Community" || (_renderer != "Software" &&
+                        _renderer != "OpenAL Sample Implementation"))
        )
     {
        _bad_doppler = true;

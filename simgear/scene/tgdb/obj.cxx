@@ -382,6 +382,7 @@ struct SGTileGeometryBin {
       if (mat)
         eg->setEffect(mat->get_effect());
       eg->addDrawable(geometry);
+      eg->runGenerators(geometry);  // Generate extra data needed by effect
       if (group)
         group->addChild(eg);
     }

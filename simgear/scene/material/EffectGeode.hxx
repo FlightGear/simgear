@@ -37,6 +37,7 @@ public:
     typedef DrawableList::iterator DrawablesIterator;
     DrawablesIterator drawablesBegin() { return _drawables.begin(); }
     DrawablesIterator drawablesEnd() { return _drawables.end(); }
+    void runGenerators(osg::Geometry *geometry);
 private:
     osg::ref_ptr<Effect> _effect;
 };

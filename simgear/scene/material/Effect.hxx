@@ -80,6 +80,18 @@ public:
     Effect(const Effect& rhs,
            const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     osg::StateSet* getDefaultStateSet();
+
+    // Define what needs to be generated for this effect
+    enum Generator
+    {
+        NORMAL,
+        TANGENT,
+        BINORMAL
+    };
+    void setGenerator(Generator what, int where) { generator[what] = where; }
+    int getGenerator(Generator what) const;  // Returns -1 if generator should not be used
+    std::map<Generator, int> generator;  // What is generated into which attribute location
+
     std::vector<osg::ref_ptr<Technique> > techniques;
     SGPropertyNode_ptr root;
     // Pointer to the parameters node, if it exists

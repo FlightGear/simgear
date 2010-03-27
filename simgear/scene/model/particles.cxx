@@ -80,6 +80,7 @@ osg::ref_ptr<osg::Group> Particles::commonRoot;
 osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
 osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;;
 osg::Vec3 Particles::_wind;
+bool Particles::_frozen = false;
 
 Particles::Particles() : 
     useGravity(false),
@@ -510,6 +511,8 @@ osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
 void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
 {
     //SG_LOG(SG_GENERAL, SG_ALERT, "callback!\n");
+    this->particleSys->setFrozen(_frozen);
+
     using namespace osg;
     if (shooterValue)
         shooter->setInitialSpeedRange(shooterValue->getValue(),

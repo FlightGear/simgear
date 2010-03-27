@@ -75,7 +75,7 @@ public:
     }
 
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-    
+
     static const osg::Vec3 &getGravityVector()
     {
         return gravity;
@@ -249,6 +249,8 @@ public:
         return psu.get();
     }
 
+    static void setFrozen(bool e) { _frozen = e; }
+
     /**
      *  Set and get the wind vector for particles in the
      * atmosphere. This vector is in the Z-up Y-north frame, and the
@@ -279,6 +281,7 @@ protected:
     
     bool useGravity;
     bool useWind;
+    static bool _frozen;
     static osg::ref_ptr<osgParticle::ParticleSystemUpdater> psu;
     static osg::ref_ptr<osg::Group> commonRoot;
     static osg::ref_ptr<osg::Geode> commonGeode;

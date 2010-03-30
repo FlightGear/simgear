@@ -71,8 +71,12 @@ osg::Node* loadFile(const string& path, osgDB::ReaderWriter::Options* options)
     ref_ptr<Node> model = readRefNodeFile(path, options);
     if (!model)
         return 0;
-    if (boost::iends_with(path, ".ac"))
-        model = instantiateEffects(model.get(), options);
+    if (boost::iends_with(path, ".ac")) {
+        ref_ptr<SGReaderWriterXMLOptions> sgOptions;
+        if (options)
+            sgOptions = new SGReaderWriterXMLOptions(*options);
+        model = instantiateEffects(model.get(), sgOptions.get());
+    }
      return model.release();
 }
 }

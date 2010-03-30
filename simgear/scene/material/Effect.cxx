@@ -98,6 +98,8 @@ Effect::Effect(const Effect& rhs, const CopyOp& copyop)
          itr != end;
          ++itr)
         techniques.push_back(static_cast<Technique*>(copyop(itr->get())));
+
+    generator = rhs.generator;
 }
 
 // Assume that the last technique is always valid.
@@ -108,6 +110,13 @@ StateSet* Effect::getDefaultStateSet()
         return 0;
     Pass* pass = tniq->passes.front().get();
     return pass;
+}
+
+int Effect::getGenerator(Effect::Generator what) const
+{
+    std::map<Generator,int>::const_iterator it = generator.find(what);
+    if(it == generator.end()) return -1;
+    else return it->second;
 }
 
 // There should always be a valid technique in an effect.

@@ -29,6 +29,7 @@
 #include <osg/Texture2D>
 #include <osg/Texture3D>
 #include <osg/TextureRectangle>
+#include <osg/TextureCubeMap>
 #include <osgDB/FileUtils>
 
 #include <boost/lexical_cast.hpp>
@@ -403,6 +404,114 @@ namespace
 {
 TextureBuilder::Registrar installNoise("noise", new NoiseBuilder);
 }
+
+
+// Image names for all sides
+typedef boost::tuple<string, string, string, string, string, string> CubeMapTuple;
+
+CubeMapTuple makeCubeMapTuple(Effect* effect, const SGPropertyNode* props)
+{
+    const SGPropertyNode* ep = 0;
+
+    string positive_x;
+    if ((ep = getEffectPropertyChild(effect, props, "positive-x")))
+        positive_x = ep->getStringValue();
+    string negative_x;
+    if ((ep = getEffectPropertyChild(effect, props, "negative-x")))
+        negative_x = ep->getStringValue();
+    string positive_y;
+    if ((ep = getEffectPropertyChild(effect, props, "positive-y")))
+        positive_y = ep->getStringValue();
+    string negative_y;
+    if ((ep = getEffectPropertyChild(effect, props, "negative-y")))
+        negative_y = ep->getStringValue();
+    string positive_z;
+    if ((ep = getEffectPropertyChild(effect, props, "positive-z")))
+        positive_z = ep->getStringValue();
+    string negative_z;
+    if ((ep = getEffectPropertyChild(effect, props, "negative-z")))
+        negative_z = ep->getStringValue();
+    return CubeMapTuple(positive_x, negative_x, positive_y, negative_y, positive_z, negative_z);
+}
+
+
+class CubeMapBuilder : public TextureBuilder
+{
+public:
+    Texture* build(Effect* effect, const SGPropertyNode*,
+                   const SGReaderWriterXMLOptions* options);
+protected:
+    typedef map<CubeMapTuple, ref_ptr<TextureCubeMap> > CubeMap;
+    CubeMap _cubemaps;
+};
+
+Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
+                             const SGReaderWriterXMLOptions* options)
+{
+    // First check that there is a <images> tag
+    const SGPropertyNode* texturesProp = getEffectPropertyChild(effect, props, "images");
+    if (!texturesProp) {
+        throw BuilderException("no <images> for cube map");
+        return NULL; // This is redundant
+    }
+
+    CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
+
+    CubeMap::iterator itr = _cubemaps.find(_tuple);
+    if (itr != _cubemaps.end())
+        return itr->second.get();
+
+    TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
+
+    // TODO: Read these from effect file? Maybe these are sane for all cuebmaps?
+    cubeTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
+    cubeTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture::LINEAR);
+    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+
+    osgDB::ReaderWriter::ReadResult result =
+                osgDB::Registry::instance()->readImage(_tuple.get<0>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
+    }
+    result = osgDB::Registry::instance()->readImage(_tuple.get<1>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
+    }
+    result = osgDB::Registry::instance()->readImage(_tuple.get<2>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
+    }
+    result = osgDB::Registry::instance()->readImage(_tuple.get<3>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
+    }
+    result = osgDB::Registry::instance()->readImage(_tuple.get<4>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
+    }
+    result = osgDB::Registry::instance()->readImage(_tuple.get<5>(), options);
+    if(result.success()) {
+        osg::Image* image = result.getImage();
+        cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
+    }
+
+    _cubemaps[_tuple] = cubeTexture;
+
+    return cubeTexture;
+}
+
+namespace {
+TextureBuilder::Registrar installCubeMap("cubemap", new CubeMapBuilder);
+}
+
+
 
 EffectNameValue<TexEnvCombine::CombineParam> combineParamInit[] =
 {

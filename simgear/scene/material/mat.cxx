@@ -334,6 +334,10 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterXMLOptions* options)
             makeChild(texProp, "wrap-t")
                 ->setStringValue(wrapv ? "repeat" : "clamp");
         }
+        makeChild(effectParamProp, "xsize")->setDoubleValue(xsize);
+        makeChild(effectParamProp, "ysize")->setDoubleValue(ysize);
+        makeChild(effectParamProp, "light-coverage")->setDoubleValue(light_coverage);
+
         matState.effect = makeEffect(effectProp, false, xmlOptions.get());
         matState.effect->setUserData(user.get());
     }

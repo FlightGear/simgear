@@ -336,6 +336,7 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterXMLOptions* options)
         }
         makeChild(effectParamProp, "xsize")->setDoubleValue(xsize);
         makeChild(effectParamProp, "ysize")->setDoubleValue(ysize);
+        makeChild(effectParamProp, "scale")->setValue(SGVec3d(xsize,ysize,0.0));
         makeChild(effectParamProp, "light-coverage")->setDoubleValue(light_coverage);
 
         matState.effect = makeEffect(effectProp, false, xmlOptions.get());

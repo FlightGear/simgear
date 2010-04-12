@@ -68,10 +68,22 @@ using namespace simgear;
 // Constructors and destructor.
 ////////////////////////////////////////////////////////////////////////
 
+SGMaterial::_internal_state::_internal_state(Effect *e, bool l,
+                                             const SGReaderWriterXMLOptions* o)
+    : effect(e), effect_realized(l), options(o)
+{
+}
+
 SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
                                              const SGReaderWriterXMLOptions* o)
-    : effect(e), texture_path(t), effect_realized(l), options(o)
+    : effect(e), effect_realized(l), options(o)
 {
+    texture_paths.push_back(std::make_pair(t,0));
+}
+
+void SGMaterial::_internal_state::add_texture(const std::string &t, int i)
+{
+    texture_paths.push_back(std::make_pair(t,i));
 }
 
 SGMaterial::SGMaterial( const SGReaderWriterXMLOptions* options,
@@ -129,7 +141,34 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
     }
   }
 
-  if (textures.size() == 0) {
+  vector<SGPropertyNode_ptr> texturesets = props->getChildren("texture-set");
+  for (unsigned int i = 0; i < texturesets.size(); i++)
+  {
+    _internal_state st( NULL, false, options );
+    vector<SGPropertyNode_ptr> textures = texturesets[i]->getChildren("texture");
+    for (unsigned int j = 0; j < textures.size(); j++)
+    {
+      string tname = textures[j]->getStringValue();
+      if (tname.empty()) {
+          tname = "unknown.rgb";
+      }
+      SGPath tpath("Textures.high");
+      tpath.append(tname);
+      string fullTexPath = osgDB::findDataFile(tpath.str(), options);
+      if (fullTexPath.empty()) {
+        tpath = SGPath("Textures");
+        tpath.append(tname);
+        fullTexPath = osgDB::findDataFile(tpath.str(), options);
+      }
+      st.add_texture(fullTexPath, textures[j]->getIndex());
+    }
+
+    if (!st.texture_paths.empty() ) {
+      _status.push_back( st );
+    }
+  }
+
+  if (textures.size() == 0 && texturesets.size() == 0) {
     SGPath tpath("Textures");
     tpath.append("Terrain");
     tpath.append("unknown.rgb");
@@ -285,14 +324,21 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterXMLOptions* options)
         SGPropertyNode_ptr effectProp = new SGPropertyNode();
         copyProperties(propRoot, effectProp);
         SGPropertyNode* effectParamProp = effectProp->getChild("parameters", 0);
-        SGPropertyNode* texProp = makeChild(effectParamProp, "texture");
-        makeChild(texProp, "image")->setStringValue(matState.texture_path);
-        makeChild(texProp, "filter")
-            ->setStringValue(mipmap ? "linear-mipmap-linear" : "nearest");
-        makeChild(texProp, "wrap-s")
-            ->setStringValue(wrapu ? "repeat" : "clamp");
-        makeChild(texProp, "wrap-t")
-            ->setStringValue(wrapv ? "repeat" : "clamp");
+        for (unsigned int i = 0; i < matState.texture_paths.size(); i++) {
+            SGPropertyNode* texProp = makeChild(effectParamProp, "texture", matState.texture_paths[i].second);
+            makeChild(texProp, "image")->setStringValue(matState.texture_paths[i].first);
+            makeChild(texProp, "filter")
+                ->setStringValue(mipmap ? "linear-mipmap-linear" : "nearest");
+            makeChild(texProp, "wrap-s")
+                ->setStringValue(wrapu ? "repeat" : "clamp");
+            makeChild(texProp, "wrap-t")
+                ->setStringValue(wrapv ? "repeat" : "clamp");
+        }
+        makeChild(effectParamProp, "xsize")->setDoubleValue(xsize);
+        makeChild(effectParamProp, "ysize")->setDoubleValue(ysize);
+        makeChild(effectParamProp, "scale")->setValue(SGVec3d(xsize,ysize,0.0));
+        makeChild(effectParamProp, "light-coverage")->setDoubleValue(light_coverage);
+
         matState.effect = makeEffect(effectProp, false, xmlOptions.get());
         matState.effect->setUserData(user.get());
     }

@@ -1279,14 +1279,15 @@ osgDB::RegisterDotOsgWrapperProxy effectProxy
 }
 
 // Property expressions for technique predicates
-class PropertyExpression : public SGExpression<bool>
+template<typename T>
+class PropertyExpression : public SGExpression<T>
 {
 public:
     PropertyExpression(SGPropertyNode* pnode) : _pnode(pnode) {}
     
-    void eval(bool& value, const expression::Binding*) const
+    void eval(T& value, const expression::Binding*) const
     {
-        value = _pnode->getValue<bool>();
+        value = _pnode->getValue<T>();
     }
 protected:
     SGPropertyNode_ptr _pnode;
@@ -1305,12 +1306,13 @@ protected:
     osg::ref_ptr<Technique> _tniq;
 };
 
+template<typename T>
 Expression* propertyExpressionParser(const SGPropertyNode* exp,
                                      expression::Parser* parser)
 {
     SGPropertyNode_ptr pnode = getPropertyRoot()->getNode(exp->getStringValue(),
                                                           true);
-    PropertyExpression* pexp = new PropertyExpression(pnode);
+    PropertyExpression<T>* pexp = new PropertyExpression<T>(pnode);
     TechniquePredParser* predParser
         = dynamic_cast<TechniquePredParser*>(parser);
     if (predParser)
@@ -1320,6 +1322,9 @@ Expression* propertyExpressionParser(const SGPropertyNode* exp,
 }
 
 expression::ExpParserRegistrar propertyRegistrar("property",
-                                                 propertyExpressionParser);
+                                                 propertyExpressionParser<bool>);
+
+expression::ExpParserRegistrar propvalueRegistrar("float-property",
+                                                 propertyExpressionParser<float>);
 
 }

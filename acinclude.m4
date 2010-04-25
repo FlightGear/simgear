@@ -6,19 +6,25 @@ dnl
 AC_DEFUN([wi_EXTRA_IDIR], [
 incdir="$1"
 if test -r $incdir ; then
-	case "$CPPFLAGS" in
-		*-I${incdir}*)
-			# echo "   + already had $incdir" 1>&6
-			;;
-		*)
-			if test "$CPPFLAGS" = "" ; then
-				CPPFLAGS="-I$incdir"
-			else
-				CPPFLAGS="$CPPFLAGS -I$incdir"
-			fi
-			echo "   + found $incdir" 1>&6
-			;;
-	esac
+    already=""
+    for CPPflag in $CPPFLAGS ; do
+	if test  "_$CPPflag" = "_-I${incdir}" ; then 
+            already=yes
+            break
+        fi
+    done
+    if test -n "$already" ; then
+        echo "   + already had -I$incdir" 1>&AS_MESSAGE_LOG_FD
+    else
+        if test "$CPPFLAGS" = "" ; then
+                CPPFLAGS="-I$incdir"
+        else
+                CPPFLAGS="$CPPFLAGS -I$incdir"
+        fi
+        echo "   + added -I$incdir" 1>&AS_MESSAGE_LOG_FD
+    fi
+else 
+    echo "   + IDIR is not accessible: '$myincdir'" 1>&AS_MESSAGE_LOG_FD
 fi
 ])
 dnl
@@ -28,19 +34,25 @@ dnl
 AC_DEFUN([wi_EXTRA_LDIR], [
 mylibdir="$1"
 if test -r $mylibdir ; then
-	case "$LDFLAGS" in
-		*-L${mylibdir}*)
-			# echo "   + already had $mylibdir" 1>&6
-			;;
-		*)
-			if test "$LDFLAGS" = "" ; then
-				LDFLAGS="-L$mylibdir"
-			else
-				LDFLAGS="$LDFLAGS -L$mylibdir"
-			fi
-			echo "   + found $mylibdir" 1>&6
-			;;
-	esac
+    already=""
+    for LDflag in $LDFLAGS ; do
+	if test  "_$LDflag" = "_-L${mylibdir}" ; then 
+            already=yes
+            break
+        fi
+    done
+    if test -n "$already" ; then
+        echo "   + already had -L$mylibdir" 1>&AS_MESSAGE_LOG_FD
+    else
+        if test "$LDFLAGS" = "" ; then
+                LDFLAGS="-L$mylibdir"
+        else
+                LDFLAGS="$LDFLAGS -L$mylibdir"
+        fi
+        echo "   + added -L$mylibdir" 1>&AS_MESSAGE_LOG_FD
+    fi
+else 
+    echo "   + LDIR is not accessible: '$mylibdir'" 1>&AS_MESSAGE_LOG_FD
 fi
 ])
 dnl
@@ -50,12 +62,9 @@ dnl
 AC_DEFUN([wi_EXTRA_PDIR], [
 progdir="$1"
 if test -r $progdir ; then
-	case "$PATH" in
-		*:${progdir}*)
-			# echo "   + already had $progdir" 1>&6
-			;;
-		*${progdir}:*)
-			# echo "   + already had $progdir" 1>&6
+	case ":$PATH:" in
+		*:${progdir}:*)
+			echo "   + already had $progdir in \$PATH" 1>&AS_MESSAGE_LOG_FD
 			;;
 		*)
 			if test "$PATH" = "" ; then
@@ -63,9 +72,11 @@ if test -r $progdir ; then
 			else
 				PATH="$PATH:$progdir"
 			fi
-			echo "   + found $progdir" 1>&6
+			echo "   + appended $progdir to \$PATH" 1>&AS_MESSAGE_LOG_FD
 			;;
 	esac
+else 
+       echo "   + PDIR is not accessible: '$progdir'" 1>&AS_MESSAGE_LOG_FD
 fi
 ])
 dnl
@@ -89,23 +100,32 @@ if test "$subexdirs" = "" ; then
 	subexdirs="-"
 fi
 for subexdir in $subexdirs ; do
-if test "$subexdir" = "-" ; then
-	subexdir=""
-else
-	subexdir="/$subexdir"
-fi
-for exdir in $exdirs ; do
-	if test "$exdir" != "/usr" || test "$subexdir" != ""; then
-		incdir="${exdir}/include${subexdir}"
-		wi_EXTRA_IDIR($incdir)
+    if test "$subexdir" = "-" ; then
+            subexdir=""
+    else
+            subexdir="/$subexdir"
+    fi
+    for exdir in $exdirs ; do
+        if test "$exdir" != "/usr" || test "$subexdir" != ""; then
+            incdir="${exdir}/include${subexdir}"
+            wi_EXTRA_IDIR($incdir)
 
-		mylibdir="${exdir}/lib${subexdir}"
-		wi_EXTRA_LDIR($mylibdir)
+dnl On 64-bit machines, if lib64/ exists and is not identical to lib/
+dnl then it should be listed here, listed ahead of lib/.
+            mylibdir64="${exdir}/lib64${subexdir}"
+            mylibdir32="${exdir}/lib${subexdir}"
 
-		progdir="${exdir}/bin${subexdir}"
-		wi_EXTRA_PDIR($progdir)
-	fi
-done
+            if test "x86_64" = $(uname -m) \
+              -a ! ${mylibdir64} -ef ${mylibdir32} ; then
+                wi_EXTRA_LDIR($mylibdir64)
+            fi
+
+            wi_EXTRA_LDIR($mylibdir32)
+
+            progdir="${exdir}/bin${subexdir}"
+            wi_EXTRA_PDIR($progdir)
+        fi
+    done
 done
 ])
 dnl

@@ -437,10 +437,17 @@ esac
 AM_CONDITIONAL(HAVE_FRAMEWORK_PLIB, test "x$ac_cv_framework_PLIB" != "x")
 
 AC_CHECK_HEADER(plib/ul.h)
-if test "x$ac_cv_header_plib_ul_h" != "xyes"; then
+
+AC_CHECK_LIB(plibul,ulInit)
+if test "x$ac_cv_header_plib_ul_h" != "xyes" \
+  -o "x$ac_cv_lib_plibul_ulInit" != "xyes" ; then
     echo
     echo "You *must* have the plib library installed on your system to build"
     echo "SimGear!"
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "Please see README.plib for more details."
     echo
@@ -475,18 +482,18 @@ LIBS="$saved_LIBS"
 case "${host}" in
 *-apple-darwin*)
     if test "x$with_osg_framework" != "x"; then
-        AC_CHECK_FRAMEWORK(osgViewer, [#include <osgViewer/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgGA, [#include <osgGA/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgText, [#include <osgText/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgFX, [#include <osgFX/AnisotropicLighting>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgUtil, [#include <osgUtil/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgDB, [#include <osgDB/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgSim, [#include <osgSim/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osgParticle, [#include <osgParticle/Version>], $with_osg_framework)
-        AC_CHECK_FRAMEWORK(osg, [#include <osg/Version>], $with_osg_framework)
-        osg_FRAMEWORKS="$FRAMEWORKS"
-        FRAMEWORKS=""
-        AC_SUBST(osg_FRAMEWORKS)
+#       AC_CHECK_FRAMEWORK(osgViewer, [#include <osgViewer/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgGA, [#include <osgGA/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgText, [#include <osgText/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgFX, [#include <osgFX/AnisotropicLighting>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgUtil, [#include <osgUtil/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgDB, [#include <osgDB/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgSim, [#include <osgSim/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osgParticle, [#include <osgParticle/Version>], $with_osg_framework)
+#       AC_CHECK_FRAMEWORK(osg, [#include <osg/Version>], $with_osg_framework)
+#       osg_FRAMEWORKS="$FRAMEWORKS"
+#       FRAMEWORKS=""
+#       AC_SUBST(osg_FRAMEWORKS)
         AC_CHECK_FRAMEWORK(OpenThreads, [#include <OpenThreads/Version>], $with_osg_framework)
         openthreads_FRAMEWORK="$FRAMEWORKS"
         FRAMEWORKS=""
@@ -496,18 +503,33 @@ case "${host}" in
         dnl This is needed when osg dynamic libs are specified 
         dnl instead of OSG frameworks on Mac OS X
         dnl
-        LDFLAGS="$LDFLAGS -L$with_osg"
+        AC_CHECK_LIB(OpenThreads,OpenThreadsGetVersion)
+    fi
+    ;;
+*)
+    if test "x$enable_osgdebug" = "xyes"; then
+        AC_CHECK_LIB(OpenThreadsd,OpenThreadsGetVersion)
+    else
+        AC_CHECK_LIB(OpenThreads,OpenThreadsGetVersion)
     fi
     ;;
 esac
+
 AM_CONDITIONAL(HAVE_FRAMEWORK_OSG, test "x$ac_cv_framework_osg" != "x")
 
 AC_CHECK_HEADER(osg/Version)
-if test "x$ac_cv_header_osg_Version" != "xyes"; then
+
+if test "x$ac_cv_header_osg_Version" != "xyes" -o "x$ac_cv_lib_OpenThreads_OpenThreadsGetVersion" != "xyes"; then
   if test "x$ac_cv_framework_osg" != "xyes"; then
     echo
-    echo "You *must* have the OpenSceneGraph support library installed on your system"
+    echo "You *must* have the OpenThreads library installed on your system"
     echo "to build this version of SimGear!"
+    echo "   Maybe you need to specify --with-osg=DIR."
+    echo "   Maybe you need to specify some LDFLAGS to help the linker."
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "Please see README.OSG for more details."
     echo
@@ -521,6 +543,10 @@ if test "x$ac_cv_header_boost_version_hpp" != "xyes"; then
     echo
     echo "You *must* have the Boost library installed on your system"
     echo "to build this version of SimGear!"
+    echo
+    echo "     LIBS: '$LIBS'"
+    echo "  LDFLAGS: '$LDFLAGS'"
+    echo " CPPFLAGS: '$CPPFLAGS'"
     echo
     echo "configure aborted."
     exit

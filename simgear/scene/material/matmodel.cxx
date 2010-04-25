@@ -135,15 +135,11 @@ SGMatModel::load_models( SGPropertyNode *prop_root )
 }
 
 osg::Node*
-SGMatModel::get_random_model( SGPropertyNode *prop_root )
+SGMatModel::get_random_model( SGPropertyNode *prop_root, mt seed )
 {
   load_models( prop_root ); // comment this out if preloading models
   int nModels = _models.size();
-  // int index = int(sg_random() * nModels);
-  static int index = -1;
-  if (++index >= nModels)
-    index = 0;
-  return _models[index].get();
+  return _models[mt_rand(&seed) * nModels].get();
 }
 
 double

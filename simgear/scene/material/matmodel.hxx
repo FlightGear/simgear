@@ -82,7 +82,7 @@ public:
      *
      * @return A randomly select model from the variants.
      */
-    osg::Node *get_random_model( SGPropertyNode *prop_root );
+    osg::Node *get_random_model( SGPropertyNode *prop_root, mt seed );
 
 
     /**

@@ -39,6 +39,7 @@ private:
 
     float _snow_intensity;
     float _rain_intensity;
+    float _clip_distance;
 	
     int _wind_dir;
     osg::Vec3 _wind_vec;

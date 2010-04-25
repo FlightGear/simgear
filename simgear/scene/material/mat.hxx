@@ -272,10 +272,13 @@ protected:
 protected:
 
   struct _internal_state {
+      _internal_state(simgear::Effect *e, bool l,
+                      const simgear::SGReaderWriterXMLOptions *o);
       _internal_state(simgear::Effect *e, const std::string &t, bool l,
                       const simgear::SGReaderWriterXMLOptions *o);
+      void add_texture(const std::string &t, int i);
       osg::ref_ptr<simgear::Effect> effect;
-      std::string texture_path;
+      std::vector<std::pair<std::string,int> > texture_paths;
       bool effect_realized;
       osg::ref_ptr<const simgear::SGReaderWriterXMLOptions> options;
   };

@@ -732,6 +732,28 @@ struct ShaderProgramBuilder : PassAttributeBuilder
                         const SGReaderWriterXMLOptions* options);
 };
 
+
+EffectNameValue<GLint> geometryInputTypeInit[] =
+{
+    {"points", GL_POINTS},
+    {"lines", GL_LINES},
+    {"lines-adjacency", GL_LINES_ADJACENCY_EXT},
+    {"triangles", GL_TRIANGLES},
+    {"triangles-adjacency", GL_TRIANGLES_ADJACENCY_EXT},
+};
+EffectPropertyMap<GLint>
+geometryInputType(geometryInputTypeInit);
+
+
+EffectNameValue<GLint> geometryOutputTypeInit[] =
+{
+    {"points", GL_POINTS},
+    {"line-strip", GL_LINE_STRIP},
+    {"triangle-strip", GL_TRIANGLE_STRIP}
+};
+EffectPropertyMap<GLint>
+geometryOutputType(geometryOutputTypeInit);
+
 void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const SGPropertyNode* prop,
                                           const SGReaderWriterXMLOptions*
@@ -741,6 +763,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     if (!isAttributeActive(effect, prop))
         return;
     PropertyList pVertShaders = prop->getChildren("vertex-shader");
+    PropertyList pGeomShaders = prop->getChildren("geometry-shader");
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
     PropertyList pAttributes = prop->getChildren("attribute");
     ProgramKey prgKey;
@@ -750,6 +773,12 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
          ++itr)
         prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
                                            Shader::VERTEX));
+    for (PropertyList::iterator itr = pGeomShaders.begin(),
+             e = pGeomShaders.end();
+         itr != e;
+         ++itr)
+        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
+                                           Shader::GEOMETRY));
     for (PropertyList::iterator itr = pFragShaders.begin(),
              e = pFragShaders.end();
          itr != e;
@@ -781,7 +810,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
         // Add vertex shaders, then fragment shaders
         PropertyList& pvec = pVertShaders;
         Shader::Type stype = Shader::VERTEX;
-        for (int i = 0; i < 2; ++i) {
+        for (int i = 0; i < 3; ++i) {
             for (PropertyList::iterator nameItr = pvec.begin(), e = pvec.end();
                  nameItr != e;
                  ++nameItr) {
@@ -802,13 +831,35 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                     }
                 }
             }
-            pvec = pFragShaders;
-            stype = Shader::FRAGMENT;
+            if (i == 0) {
+                pvec = pGeomShaders;
+                stype = Shader::GEOMETRY;
+            } else {
+                pvec = pFragShaders;
+                stype = Shader::FRAGMENT;
+            }
         }
         BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
             program->addBindAttribLocation(key.first, key.second);
         }
-       programMap.insert(ProgramMap::value_type(prgKey, program));
+        const SGPropertyNode* pGeometryVerticesOut = getEffectPropertyChild(effect, prop, "geometry-vertices-out");
+	if ( pGeometryVerticesOut ) {
+	    program->setParameter( GL_GEOMETRY_VERTICES_OUT_EXT, pGeometryVerticesOut->getIntValue() );
+	}
+        const SGPropertyNode* pGeometryInputType = getEffectPropertyChild(effect, prop, "geometry-input-type");
+	if ( pGeometryInputType ) {
+	    GLint type;
+	    findAttr( geometryInputType, pGeometryInputType->getStringValue(), type );
+	    program->setParameter( GL_GEOMETRY_INPUT_TYPE_EXT, type );
+	}
+        const SGPropertyNode* pGeometryOutputType = getEffectPropertyChild(effect, prop, "geometry-output-type");
+	if ( pGeometryOutputType ) {
+	    GLint type;
+	    findAttr( geometryOutputType, pGeometryOutputType->getStringValue(), type );
+	    program->setParameter( GL_GEOMETRY_OUTPUT_TYPE_EXT, type );
+	}
+
+        programMap.insert(ProgramMap::value_type(prgKey, program));
     }
     pass->setAttributeAndModes(program);
 }

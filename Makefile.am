@@ -2,7 +2,6 @@ EXTRA_DIST = \
 	acinclude.m4 \
 	autogen.sh \
 	DoxygenMain.cxx \
-	README.MSVC \
 	README.zlib \
 	README.plib \
 	README.OpenAL \

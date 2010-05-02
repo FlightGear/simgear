@@ -148,9 +148,9 @@ private:
         osg::Geometry* geometry = new osg::Geometry;
         
         osg::Vec3Array* vertices = new osg::Vec3Array;
-        vertices->push_back(triangle.getVertex(0).osg());
-        vertices->push_back(triangle.getVertex(1).osg());
-        vertices->push_back(triangle.getVertex(2).osg());
+        vertices->push_back(toOsg(triangle.getVertex(0)));
+        vertices->push_back(toOsg(triangle.getVertex(1)));
+        vertices->push_back(toOsg(triangle.getVertex(2)));
         
         osg::Vec4Array* colors = new osg::Vec4Array;
         colors->push_back(color);
@@ -172,7 +172,7 @@ private:
             return;
         SGSphered sphere = node.getBoundingSphere();
         osg::Sphere* shape = new osg::Sphere;
-        shape->setCenter(SGVec3f(sphere.getCenter()).osg());
+        shape->setCenter(toOsg(sphere.getCenter()));
         shape->setRadius(sphere.getRadius());
         addShape(shape, osg::Vec4(0.5f, 0.5f, 0.5f, 0.1f));
     }
@@ -184,8 +184,8 @@ private:
         BVHBoundingBoxVisitor bbv;
         node.accept(bbv, data);
         osg::Box* shape = new osg::Box;
-        shape->setCenter(bbv.getBox().getCenter().osg());
-        shape->setHalfLengths((0.5*bbv.getBox().getSize()).osg());
+        shape->setCenter(toOsg(bbv.getBox().getCenter()));
+        shape->setHalfLengths(toOsg((0.5*bbv.getBox().getSize())));
         addShape(shape, osg::Vec4(0.5f, 0, 0, 0.1f));
     }
     

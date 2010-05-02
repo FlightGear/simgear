@@ -30,7 +30,7 @@
 #endif
 
 #if defined( __APPLE__ )
-# include <OpenAL/alut.h>
+# include <ALUT/alut.h>
 #else
 # include <AL/alut.h>
 #endif
@@ -45,9 +45,16 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/math/SGMath.hxx>
 
+using std::string;
+
 extern bool isNaN(float *v);
 
 #define MAX_SOURCES	128
+
+
+#ifndef ALC_ALL_DEVICES_SPECIFIER
+# define ALC_ALL_DEVICES_SPECIFIER	0x1013
+#endif
 
 //
 // Sound Manager
@@ -81,6 +88,8 @@ SGSoundMgr::SGSoundMgr() :
         }
     }
     _alut_init++;
+#else
+  #error ALUT 1.1 required, ALUT 1.0 is no longer supported, please upgrade
 #endif
 }
 

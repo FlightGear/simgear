@@ -52,8 +52,8 @@ Group* SplicingVisitor::pushResultNode(Group* node, Group* newNode,
             result->addChild(itr->get());
     }
     _childStack.back().push_back(result);
-    recordNewNode(node, result);
-    return result;
+    recordNewNode(node, result.get());
+    return result.get();
 }
 
 Node* SplicingVisitor::pushResultNode(Node* node, Node* newNode)

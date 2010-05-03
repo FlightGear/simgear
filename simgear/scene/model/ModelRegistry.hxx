@@ -98,7 +98,7 @@ public:
             _bvhPolicy.buildBVH(fileName, optimizedNode.get());
             _cachePolicy.addToCache(fileName, optimizedNode.get());
         }
-        return ReaderWriter::ReadResult(optimizedNode);
+        return ReaderWriter::ReadResult(optimizedNode.get());
     }
 protected:
     static osgDB::ReaderWriter::ReadResult

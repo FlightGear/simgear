@@ -333,7 +333,7 @@ TileEntry::loadTileByFileName(const string& fileName,
     if (found_tile_base) {
         // load tile if found ...
         opt->setCalcLights(true);
-        obj_load( object_base.str(), new_tile, true, opt);
+        obj_load( object_base.str(), new_tile, true, opt.get());
 
     } else {
         // ... or generate an ocean tile on the fly
@@ -354,7 +354,7 @@ TileEntry::loadTileByFileName(const string& fileName,
             SGPath custom_path = obj->path;
             custom_path.append( obj->name );
             opt->setCalcLights(true);
-            obj_load( custom_path.str(), new_tile, false, opt);
+            obj_load( custom_path.str(), new_tile, false, opt.get());
 
         } else if (obj->type == OBJECT_SHARED || obj->type == OBJECT_STATIC) {
             // object loading is deferred to main render thread,

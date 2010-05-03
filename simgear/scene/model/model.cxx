@@ -264,7 +264,7 @@ void MakeEffectVisitor::apply(osg::Geode& geode)
     makeParametersFromStateSet(ssRoot, ss);
     SGPropertyNode_ptr effectRoot = new SGPropertyNode;
     effect::mergePropertyTrees(effectRoot, ssRoot, _currentEffectParent);
-    Effect* effect = makeEffect(effectRoot, true, _options);
+    Effect* effect = makeEffect(effectRoot, true, _options.get());
     EffectGeode* eg = dynamic_cast<EffectGeode*>(&geode);
     if (eg) {
         eg->setEffect(effect);

@@ -202,7 +202,7 @@ typedef void (APIENTRY * glClientActiveTextureProc)(GLenum texture);
 #define GL_RGB_SCALE_ARB					0x8573
 #define GL_ADD_SIGNED_ARB					0x8574
 #define GL_INTERPOLATE_ARB					0x8575
-#define GL_SUBTRACT_ARB                       0x84E7
+#define GL_SUBTRACT_ARB						0x84E7
 #define GL_CONSTANT_ARB						0x8576
 #define GL_PRIMARY_COLOR_ARB					0x8577
 #define GL_PREVIOUS_ARB						0x8578
@@ -765,6 +765,62 @@ typedef void (APIENTRY * glGetVertexAttribfvProc) (GLuint index, GLenum pname, G
 typedef void (APIENTRY * glGetVertexAttribivProc) (GLuint index, GLenum pname, GLint *params);
 typedef void (APIENTRY * glGetVertexAttribPointervProc) (GLuint index, GLenum pname, GLvoid* *pointer);
 typedef GLboolean (APIENTRY * glIsProgramProc) (GLuint program);
+
+/*
+ * EXT_framebuffer_objects
+ */
+#ifndef GL_EXT_framebuffer_object
+#define GL_EXT_framebuffer_object 1
+#define GL_NONE_EXT						0
+#define GL_FRAMEBUFFER_EXT					0x8D40
+#define GL_RENDERBUFFER_EXT					0x8D41
+#define GL_RGBA4_EXT						0x8056
+#define GL_RGB5_A1_EXT						0x8057
+#define GL_RGB565_EXT						0x8D62
+#define GL_DEPTH_COMPONENT16_EXT				0x81A5
+#define GL_RENDERBUFFER_WIDTH_EXT				0x8D42
+#define GL_RENDERBUFFER_HEIGHT_EXT				0x8D43
+#define GL_RENDERBUFFER_INTERNAL_FORMAT_EXT			0x8D44
+#define GL_RENDERBUFFER_RED_SIZE_EXT				0x8D50
+#define GL_RENDERBUFFER_GREEN_SIZE_EXT				0x8D51
+#define GL_RENDERBUFFER_BLUE_SIZE_EXT				0x8D52
+#define GL_RENDERBUFFER_ALPHA_SIZE_EXT				0x8D53
+#define GL_RENDERBUFFER_DEPTH_SIZE_EXT				0x8D54
+#define GL_RENDERBUFFER_STENCIL_SIZE_EXT			0x8D55
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT		0x8CD0
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT		0x8CD1
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT		0x8CD2
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT	0x8CD3
+#define GL_COLOR_ATTACHMENT0_EXT				0x8CE0
+#define GL_DEPTH_ATTACHMENT_EXT					0x8D00
+#define GL_STENCIL_ATTACHMENT_EXT				0x8D20
+#define GL_FRAMEBUFFER_COMPLETE_EXT				0x8CD5
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT		0x8CD6
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT	0x8CD7
+#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT		0x8CD9
+#define GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT			0x8CDA
+#define GL_FRAMEBUFFER_UNSUPPORTED_EXT				0x8CDD
+#define GL_FRAMEBUFFER_BINDING_EXT				0x8CA6
+#define GL_RENDERBUFFER_BINDING_EXT				0x8CA7
+#define GL_MAX_RENDERBUFFER_SIZE_EXT				0x84E8
+#define GL_INVALID_FRAMEBUFFER_OPERATION_EXT			0x0506
+#endif
+
+typedef GLboolean (APIENTRY * glIsRenderbufferProc) (GLuint renderbuffer);
+typedef void (APIENTRY * glBindRenderbufferProc) (GLenum target, GLuint renderbuffer);
+typedef void (APIENTRY * glDeleteRenderbuffersProc) (GLsizei n, const GLuint* renderbuffers);
+typedef void (APIENTRY * glGenRenderbuffersProc) (GLsizei n, GLuint* renderbuffers);
+typedef void (APIENTRY * glRenderbufferStorageProc) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRY * glGetRenderbufferParameterivProc) (GLenum target, GLenum pname, GLint* params);
+typedef GLboolean (APIENTRY * glIsFramebufferProc) (GLuint framebuffer);
+typedef void (APIENTRY * glBindFramebufferProc) (GLenum target, GLuint framebuffer);
+typedef void (APIENTRY * glDeleteFramebuffersProc) (GLsizei n, const GLuint* framebuffers);
+typedef void (APIENTRY * glGenFramebuffersProc) (GLsizei n, GLuint* framebuffers);
+typedef GLenum (APIENTRY * glCheckFramebufferStatusProc) (GLenum target);
+typedef void (APIENTRY * glFramebufferRenderbufferProc) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRY * glFramebufferTexture2DProc) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRY * glGetFramebufferAttachmentParameterivProc) (GLenum target, GLenum attachment, GLenum pname, GLint* params);
+typedef void (APIENTRY * glGenerateMipmapProc) (GLenum target);
 
 /*
  * ARB_shader_objects

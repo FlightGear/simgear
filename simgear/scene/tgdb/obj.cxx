@@ -611,7 +611,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
              i < tileGeometryBin.randomModels.getNumModels(); i++) {
           SGMatModelBin::MatModel obj
             = tileGeometryBin.randomModels.getMatModel(i);
-          osg::Node* node = sgGetRandomModel(obj.model);
+          osg::Node* node = sgGetRandomModel(obj.model, seed);
         
           // Create a matrix to place the object in the correct
           // location, and then apply the rotation matrix created

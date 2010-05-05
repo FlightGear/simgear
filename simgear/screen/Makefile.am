@@ -41,7 +41,8 @@ TestRenderTexture_SOURCES = TestRenderTexture.cpp
 TestRenderTexture_LDADD = \
 	libsgscreen.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
-	$(opengl_LIBS)
+	$(opengl_LIBS) \
+	-ldl
 endif
 
 INCLUDES = -I$(top_srcdir) -I$(top_builddir) -DGLX_GLXEXT_PROTOTYPES

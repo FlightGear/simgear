@@ -194,7 +194,7 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     point->setDistanceAttenuation(attenuation);
     attenuationPass->setAttributeAndModes(point);
     Pass *spritePass = clone(basicPass, CopyOp::SHALLOW_COPY);
-    spritePass->setTextureAttributeAndModes(0, pointSprite,
+    spritePass->setTextureAttributeAndModes(0, pointSprite.get(),
                                             osg::StateAttribute::ON);
     Texture2D* texture = gen_standard_light_sprite();
     spritePass->setTextureAttribute(0, texture);

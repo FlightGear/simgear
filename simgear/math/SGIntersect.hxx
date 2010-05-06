@@ -38,25 +38,11 @@ intersects(const SGBox<T1>& box, const SGSphere<T2>& sphere)
 {
   if (sphere.empty())
     return false;
-  // Is more or less trivially included in the next tests
-  // if (box.empty())
-  //   return false;
-
-  if (sphere.getCenter().x() < box.getMin().x() - sphere.getRadius())
-    return false;
-  if (sphere.getCenter().y() < box.getMin().y() - sphere.getRadius())
-    return false;
-  if (sphere.getCenter().z() < box.getMin().z() - sphere.getRadius())
+  if (box.empty())
     return false;
 
-  if (box.getMax().x() + sphere.getRadius() < sphere.getCenter().x())
-    return false;
-  if (box.getMax().y() + sphere.getRadius() < sphere.getCenter().y())
-    return false;
-  if (box.getMax().z() + sphere.getRadius() < sphere.getCenter().z())
-    return false;
-
-  return true;
+  SGVec3<T1> closest = box.getClosestPoint(sphere.getCenter());
+  return distSqr(closest, SGVec3<T1>(sphere.getCenter())) <= sphere.getRadius2();
 }
 // make it symmetric
 template<typename T1, typename T2>

@@ -71,6 +71,14 @@ public:
                      (pt[2] > center[2]) ? _min[2] : _max[2]);
   }
 
+  // return the closest point to pt still in the box
+  template<typename S>
+  SGVec3<T> getClosestPoint(const SGVec3<S>& pt) const
+  {
+    return SGVec3<T>((pt[0] < _min[0]) ? _min[0] : ((_max[0] < pt[0]) ? _max[0] : T(pt[0])),
+                     (pt[1] < _min[1]) ? _min[1] : ((_max[1] < pt[1]) ? _max[1] : T(pt[1])),
+                     (pt[2] < _min[2]) ? _min[2] : ((_max[2] < pt[2]) ? _max[2] : T(pt[2])));
+  }
 
   // Only works for floating point types
   SGVec3<T> getCenter() const

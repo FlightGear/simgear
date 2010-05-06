@@ -89,7 +89,7 @@ SGSoundMgr::SGSoundMgr() :
     }
     _alut_init++;
 #else
-  #error ALUT 1.1 required, ALUT 1.0 is no longer supported, please upgrade
+  //#error ALUT 1.1 required, ALUT 1.0 is no longer supported, please upgrade
 #endif
 }
 

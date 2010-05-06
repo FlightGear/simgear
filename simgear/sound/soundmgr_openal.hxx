@@ -35,32 +35,19 @@
 #ifndef _SG_SOUNDMGR_OPENAL_HXX
 #define _SG_SOUNDMGR_OPENAL_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <string>
 #include <vector>
 #include <map>
 
 #if defined(__APPLE__)
-# define AL_ILLEGAL_ENUM AL_INVALID_ENUM
-# define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
-# include <OpenAL/alut.h>
 #elif defined(OPENALSDK)
 # include <al.h>
 # include <alc.h>
-# include <AL/alut.h> 
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
-# include <AL/alut.h>
-#endif
-
-#ifndef ALC_ALL_DEVICES_SPECIFIER
-# define ALC_ALL_DEVICES_SPECIFIER	0x1013
 #endif
 
 #include <simgear/compiler.h>
@@ -68,9 +55,6 @@
 #include <simgear/math/SGMathFwd.hxx>
 
 #include "sample_group.hxx"
-#include "sample_openal.hxx"
-
-using std::string;
 
 struct refUint {
     unsigned int refctr;
@@ -81,11 +65,11 @@ struct refUint {
     ~refUint() {};
 };
 
-typedef std::map < string, refUint > buffer_map;
+typedef std::map < std::string, refUint > buffer_map;
 typedef buffer_map::iterator buffer_map_iterator;
 typedef buffer_map::const_iterator  const_buffer_map_iterator;
 
-typedef std::map < string, SGSharedPtr<SGSampleGroup> > sample_group_map;
+typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
 typedef sample_group_map::iterator sample_group_map_iterator;
 typedef sample_group_map::const_iterator const_sample_group_map_iterator;
 
@@ -133,21 +117,21 @@ public:
      * @param refname Reference name of the sample group
      * @return true if successful, false otherwise
      */
-    bool add( SGSampleGroup *sgrp, const string& refname );
+    bool add( SGSampleGroup *sgrp, const std::string& refname );
 
     /** 
      * Remove a sample group from the sound manager.
      * @param refname Reference name of the sample group to remove
      * @return true if successful, false otherwise
      */
-    bool remove( const string& refname );
+    bool remove( const std::string& refname );
 
     /**
      * Test if a specified sample group is registered at the sound manager
      * @param refname Reference name of the sample group test for
      * @return true if the specified sample group exists
      */
-    bool exists( const string& refname );
+    bool exists( const std::string& refname );
 
     /**
      * Find a specified sample group in the sound manager
@@ -287,13 +271,13 @@ public:
     /**
      * Get a list of available playback devices.
      */
-    vector<const char*> get_available_devices();
+    std::vector<const char*> get_available_devices();
 
     /**
      * Get the current OpenAL vendor or rendering backend.
      */
-    const string& get_vendor() { return _vendor; }
-    const string& get_renderer() { return _renderer; }
+    const std::string& get_vendor() { return _vendor; }
+    const std::string& get_renderer() { return _renderer; }
 
 private:
     static int _alut_init;
@@ -323,17 +307,17 @@ private:
     sample_group_map _sample_groups;
     buffer_map _buffers;
 
-    vector<ALuint> _free_sources;
-    vector<ALuint> _sources_in_use;
+    std::vector<ALuint> _free_sources;
+    std::vector<ALuint> _sources_in_use;
 
     bool _bad_doppler;
-    string _renderer;
-    string _vendor;
+    std::string _renderer;
+    std::string _vendor;
 
-    bool testForALError(string s);
-    bool testForALCError(string s);
-    bool testForALUTError(string s);
-    bool testForError(void *p, string s);
+    bool testForALError(std::string s);
+    bool testForALCError(std::string s);
+    bool testForALUTError(std::string s);
+    bool testForError(void *p, std::string s);
 
     void update_pos_and_orientation();
     void update_sample_config( SGSampleGroup *sound );

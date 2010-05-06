@@ -26,6 +26,7 @@
 #define _SG_USERDATA_HXX
 
 #include <simgear/compiler.h>
+#include <simgear/math/sg_random.h>
 
 #include <osg/Node>
 
@@ -42,7 +43,7 @@ void sgUserDataInit(SGPropertyNode *p);
 /**
  * Get a random model.
  */
-osg::Node* sgGetRandomModel(SGMatModel *obj);
+osg::Node* sgGetRandomModel(SGMatModel *obj, mt seed);
 
 namespace simgear
 {

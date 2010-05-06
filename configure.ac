@@ -149,11 +149,11 @@ if test "x$with_osg_framework" != "x"; then
     export DYLD_FRAMEWORK_PATH="$DYLD_FRAMEWORK_PATH:$with_osg_framework"
 fi
 
-dnl specifying OpenAL.framework (for user provided OpenAL.framework / ALUT)
-AC_ARG_WITH(openal_framework, [ --with-openal-framework=PREFIX    Speicfy the prefix path to OpenAL.framework ])
+dnl specifying ALUT.framework (for user provided ALUT.framework)
+AC_ARG_WITH(alut_framework, [ --with-alut-framework=PREFIX    Specify the prefix path to ALUT.framework ])
 
-if test "x$with_openal_framework" != "x"; then
-    echo "OpenAL framework prefix is $with_openal_framework"
+if test "x$with_alut_framework" != "x"; then
+    echo "ALUT framework prefix is $with_alut_framework"
 fi
 
 dnl Determine an extra directories to add to include/lib search paths
@@ -313,24 +313,21 @@ case "${host}" in
 *-apple-darwin*)
     dnl Mac OS X
 
-    LIBS="$LIBS -framework IOKit -framework OpenAL"
+    LIBS="$LIBS -framework IOKit -framework OpenAL -framework ALUT"
     openal_LIBS="$LIBS"
-    OPENAL_OK="yes"
-    ALUT_OK="no"
 
     if test "x$with_openal_lib" != "x"; then
         echo "libopenal is not supported on Mac OS platform."
         openal_LIBS=""
     fi
-    OPENAL_OK="yes"
-    # Looking for alut.h, if found assume that it is a part of
-    # the OpenAL package.
-    AC_CHECK_HEADERS([OpenAL/alut.h],[ALUT_OK="yes"])
 
+    AC_CHECK_HEADERS([OpenAL/al.h],[OPENAL_OK="yes"])
+    # Looking for alut.h
+    AC_CHECK_HEADERS([ALUT/alut.h],[ALUT_OK="yes"])
 
     dnl Thank you Christian Bauer from SheepSaver
     dnl Modified by Tatsuhiro Nishioka for accepting a given framework path
-    dnl AC_CHECK_FRAMEWORK($1=NAME, $2=INCLUDES, $3=FRAMEWORK_PATH) ; $3 is optional
+    dnl AC_CHECK_FRAMEWORK($1=NAME, $2=INCLUDES, $3=FRAMEWORK_PATH, $4=ACTION_IF_TRUE) ; $3 is optional
     AC_DEFUN([AC_CHECK_FRAMEWORK], [
     AS_VAR_PUSHDEF([ac_Framework], [ac_cv_framework_$1])dnl
     AC_CACHE_CHECK([whether compiler supports framework $1],
@@ -342,6 +339,7 @@ case "${host}" in
         elif test "`echo $FRAMEWORKS | grep -- -F$3`" = ""; then
             FRAMEWORKS="$FRAMEWORKS -F$3"
             CXXFLAGS="$CXXFLAGS -F$3"
+            CPPFLAGS="$CPPFLAGS -F$3"
             CCFLAGS="$CCFLAGS -F$3"
             dnl This is needed for AC_TRY_LINK when a framework path is specified
             export DYLD_FRAMEWORK_PATH="${DYLD_FRAMEWORK_PATH}:$3"
@@ -354,13 +352,14 @@ case "${host}" in
     AS_IF([test AS_VAR_GET(ac_Framework) = yes],
         [AC_DEFINE(AS_TR_CPP(HAVE_FRAMEWORK_$1), 1, [Define if framework $1 is available.])]
     )
+    AS_IF([test AS_VAR_GET(ac_Framework) = yes], $4)
+    
     AS_VAR_POPDEF([ac_Framework])dnl
     ])
 
-    dnl Check for OpenAL.framework when --with-openal-framework is specified
-    dnl Of cource OpenAL.framework needs to have alut.h 
-    if test "x$with_openal_framework" != "x"; then
-      AC_CHECK_FRAMEWORK(OpenAL, [#include <OpenAL/alut.h>], $with_openal_framework)
+    dnl Check for ALUT.framework when --with-alut-framework is specified
+    if test "x$with_alut_framework" != "x"; then
+      AC_CHECK_FRAMEWORK(ALUT, [#include <ALUT/alut.h>], $with_alut_framework, [ALUT_OK="yes"])
     fi
 
     ;;

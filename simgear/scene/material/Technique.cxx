@@ -59,7 +59,7 @@ Technique::Technique(bool alwaysValid)
 
 Technique::Technique(const Technique& rhs, const osg::CopyOp& copyop) :
     _contextMap(rhs._contextMap), _alwaysValid(rhs._alwaysValid),
-    _shadowingStateSet(copyop(rhs._shadowingStateSet)),
+    _shadowingStateSet(copyop(rhs._shadowingStateSet.get())),
     _validExpression(rhs._validExpression),
     _contextIdLocation(rhs._contextIdLocation)
 {

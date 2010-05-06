@@ -138,7 +138,7 @@ void
 SGModelPlacement::setReferenceTime(const double& referenceTime)
 {
   SGSceneUserData* userData;
-  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform.get());
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
   vel->referenceTime = referenceTime;
 }
@@ -147,7 +147,7 @@ void
 SGModelPlacement::setBodyLinearVelocity(const SGVec3d& linear)
 {
   SGSceneUserData* userData;
-  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform.get());
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
   vel->linear = SGVec3d(-linear[0], linear[1], -linear[2]);
 }
@@ -156,7 +156,7 @@ void
 SGModelPlacement::setBodyAngularVelocity(const SGVec3d& angular)
 {
   SGSceneUserData* userData;
-  userData = SGSceneUserData::getOrCreateSceneUserData(_transform);
+  userData = SGSceneUserData::getOrCreateSceneUserData(_transform.get());
   SGSceneUserData::Velocity* vel = userData->getOrCreateVelocity();
   vel->angular = SGVec3d(-angular[0], angular[1], -angular[2]);
 }

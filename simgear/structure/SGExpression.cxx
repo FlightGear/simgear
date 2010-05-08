@@ -854,7 +854,7 @@ Expression* logicopParser(const SGPropertyNode* exp, Parser* parser)
     parser->readChildren(exp, children);
     vector<Expression*>::iterator notBool =
         find_if(children.begin(), children.end(),
-                bind(&Expression::getType, _1) != BOOL);
+                boost::bind(&Expression::getType, _1) != BOOL);
     if (notBool != children.end())
         throw("non boolean operand to logical expression");
     Logicop *expr = new Logicop;
@@ -870,7 +870,7 @@ int BindingLayout::addBinding(const string& name, Type type)
     //XXX error checkint
     vector<VariableBinding>::iterator itr
         = find_if(bindings.begin(), bindings.end(),
-                  bind(&VariableBinding::name, _1) == name);
+                  boost::bind(&VariableBinding::name, _1) == name);
     if (itr != bindings.end())
         return itr->location;
     int result = bindings.size();
@@ -885,7 +885,7 @@ bool BindingLayout::findBinding(const std::string& name,
     using namespace boost;
     vector<VariableBinding>::const_iterator itr
         = find_if(bindings.begin(), bindings.end(),
-                  bind(&VariableBinding::name, _1) == name);
+                  boost::bind(&VariableBinding::name, _1) == name);
     if (itr != bindings.end()) {
         result = *itr;
         return true;

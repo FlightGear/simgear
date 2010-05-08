@@ -1,0 +1,596 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{22540CD3-D3CA-4C86-A773-80AEEE3ACDED}</ProjectGuid>
+    <RootNamespace>SimGear</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\simgear\bucket\newbucket.cxx" />
+    <ClCompile Include="..\..\simgear\debug\logstream.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\celestialBody.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\ephemeris.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\jupiter.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\mars.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\mercury.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\moonpos.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\neptune.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\saturn.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\star.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\stardata.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\uranus.cxx" />
+    <ClCompile Include="..\..\simgear\ephemeris\venus.cxx" />
+    <ClCompile Include="..\..\simgear\io\iochannel.cxx" />
+    <ClCompile Include="..\..\simgear\io\lowlevel.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_binobj.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_file.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_serial.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_socket.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_socket_udp.cxx" />
+    <ClCompile Include="..\..\simgear\magvar\coremag.cxx" />
+    <ClCompile Include="..\..\simgear\magvar\magvar.cxx" />
+    <ClCompile Include="..\..\simgear\math\interpolater.cxx" />
+    <ClCompile Include="..\..\simgear\math\leastsqs.cxx" />
+    <ClCompile Include="..\..\simgear\math\sg_random.c" />
+    <ClCompile Include="..\..\simgear\math\SGGeod.cxx" />
+    <ClCompile Include="..\..\simgear\math\SGGeodesy.cxx" />
+    <ClCompile Include="..\..\simgear\math\vector.cxx" />
+    <ClCompile Include="..\..\simgear\misc\interpolator.cxx" />
+    <ClCompile Include="..\..\simgear\misc\PathOptions.cxx" />
+    <ClCompile Include="..\..\simgear\misc\sg_path.cxx" />
+    <ClCompile Include="..\..\simgear\misc\sgstream.cxx" />
+    <ClCompile Include="..\..\simgear\misc\strutils.cxx" />
+    <ClCompile Include="..\..\simgear\misc\tabbed_values.cxx" />
+    <ClCompile Include="..\..\simgear\misc\texcoord.cxx" />
+    <ClCompile Include="..\..\simgear\misc\zfstream.cxx" />
+    <ClCompile Include="..\..\simgear\route\route.cxx" />
+    <ClCompile Include="..\..\simgear\route\waypoint.cxx" />
+    <ClCompile Include="..\..\simgear\screen\extensions.cxx" />
+    <ClCompile Include="..\..\simgear\screen\GLBitmaps.cxx" />
+    <ClCompile Include="..\..\simgear\screen\jpgfactory.cxx" />
+    <ClCompile Include="..\..\simgear\screen\RenderTexture.cpp" />
+    <ClCompile Include="..\..\simgear\screen\screen-dump.cxx" />
+    <ClCompile Include="..\..\simgear\screen\shader.cpp" />
+    <ClCompile Include="..\..\simgear\screen\tr.cxx" />
+    <ClCompile Include="..\..\simgear\serial\serial.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\bbcache.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\cloud.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\cloudfield.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\CloudShaderGeometry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\dome.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\moon.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\newcloud.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\oursun.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\sky.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\sphere.cxx" />
+    <ClCompile Include="..\..\simgear\scene\sky\stars.cxx" />
+    <ClCompile Include="..\..\simgear\timing\geocoord.cxx" />
+    <ClCompile Include="..\..\simgear\timing\lowleveltime.cxx" />
+    <ClCompile Include="..\..\simgear\timing\sg_time.cxx" />
+    <ClCompile Include="..\..\simgear\timing\timestamp.cxx" />
+    <ClCompile Include="..\..\simgear\timing\timezone.cxx" />
+    <ClCompile Include="..\..\simgear\xml\easyxml.cxx" />
+    <ClCompile Include="..\..\simgear\xml\hashtable.c" />
+    <ClCompile Include="..\..\simgear\xml\xmlparse.c" />
+    <ClCompile Include="..\..\simgear\xml\xmlrole.c" />
+    <ClCompile Include="..\..\simgear\xml\xmltok.c" />
+    <ClCompile Include="..\..\simgear\props\AtomicChangeListener.cxx" />
+    <ClCompile Include="..\..\simgear\props\condition.cxx" />
+    <ClCompile Include="..\..\simgear\props\props.cxx" />
+    <ClCompile Include="..\..\simgear\props\props_io.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\animation.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\CheckSceneryVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\model.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\modellib.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\ModelRegistry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\particles.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\persparam.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\placement.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGClipGroup.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGInteractionAnimation.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGMaterialAnimation.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGOffsetTransform.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGPagedLOD.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGReaderWriterXML.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGRotateTransform.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGScaleTransform.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGText.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\SGTranslateTransform.cxx" />
+    <ClCompile Include="..\..\simgear\scene\model\shadanim.cxx" />
+    <ClCompile Include="..\..\simgear\sound\sample_group.cxx" />
+    <ClCompile Include="..\..\simgear\sound\sample_openal.cxx" />
+    <ClCompile Include="..\..\simgear\sound\soundmgr_openal.cxx" />
+    <ClCompile Include="..\..\simgear\sound\xmlsound.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\Effect.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\EffectBuilder.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\EffectCullVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\EffectGeode.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\GLPredicate.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\makeEffect.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\mat.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\matlib.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\matmodel.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\Noise.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\Pass.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\Technique.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\TextureBuilder.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\apt_signs.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\GroundLightManager.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\obj.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\pt_lights.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\ReaderWriterSTG.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGOceanTile.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGReaderWriterBTG.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\ShaderGeometry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\TileCache.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\TileEntry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\TreeBin.cxx" />
+    <ClCompile Include="..\..\simgear\scene\tgdb\userdata.cxx" />
+    <ClCompile Include="..\..\simgear\structure\commands.cxx" />
+    <ClCompile Include="..\..\simgear\structure\event_mgr.cxx" />
+    <ClCompile Include="..\..\simgear\structure\exception.cxx">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\SGBinding.cxx" />
+    <ClCompile Include="..\..\simgear\structure\SGExpression.cxx" />
+    <ClCompile Include="..\..\simgear\structure\SGSmplhist.cxx" />
+    <ClCompile Include="..\..\simgear\structure\SGSmplstat.cxx" />
+    <ClCompile Include="..\..\simgear\structure\subsystem_mgr.cxx" />
+    <ClCompile Include="..\..\simgear\nasal\bitslib.c" />
+    <ClCompile Include="..\..\simgear\nasal\code.c" />
+    <ClCompile Include="..\..\simgear\nasal\codegen.c" />
+    <ClCompile Include="..\..\simgear\nasal\gc.c" />
+    <ClCompile Include="..\..\simgear\nasal\hash.c" />
+    <ClCompile Include="..\..\simgear\nasal\iolib.c" />
+    <ClCompile Include="..\..\simgear\nasal\lex.c" />
+    <ClCompile Include="..\..\simgear\nasal\lib.c" />
+    <ClCompile Include="..\..\simgear\nasal\mathlib.c" />
+    <ClCompile Include="..\..\simgear\nasal\misc.c" />
+    <ClCompile Include="..\..\simgear\nasal\parse.c" />
+    <ClCompile Include="..\..\simgear\nasal\string.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MinSpace</Optimization>
+      <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
+      <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Release|x64'">OnlyExplicitInline</InlineFunctionExpansion>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\thread-win32.c" />
+    <ClCompile Include="..\..\simgear\nasal\threadlib.c" />
+    <ClCompile Include="..\..\simgear\nasal\utf8lib.c" />
+    <ClCompile Include="..\..\simgear\nasal\vector.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\environment\metar.cxx" />
+    <ClCompile Include="..\..\simgear\environment\precipitation.cxx" />
+    <ClCompile Include="..\..\simgear\environment\visual_enviro.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\CopyOp.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\PrimitiveUtils.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\QuadTreeBuilder.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SGEnlargeBoundingBox.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SGSceneFeatures.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SGSceneUserData.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SGStateAttributeVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\SplicingVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\StateAttributeFactory.cxx" />
+    <ClCompile Include="..\..\simgear\scene\util\UpdateOnceCallback.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHGroup.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHLineGeometry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHMotionTransform.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHNode.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticBinary.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticGeometry.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticLeaf.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticNode.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticTriangle.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHSubTreeCollector.cxx" />
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHTransform.cxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\simgear\bucket\newbucket.hxx" />
+    <ClInclude Include="..\..\simgear\debug\debug_types.h" />
+    <ClInclude Include="..\..\simgear\debug\logstream.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\celestialBody.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\ephemeris.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\jupiter.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\mars.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\mercury.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\moonpos.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\neptune.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\pluto.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\saturn.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\star.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\stardata.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\uranus.hxx" />
+    <ClInclude Include="..\..\simgear\ephemeris\venus.hxx" />
+    <ClInclude Include="..\..\simgear\io\iochannel.hxx" />
+    <ClInclude Include="..\..\simgear\io\lowlevel.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_binobj.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_file.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_serial.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_socket.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_socket_udp.hxx" />
+    <ClInclude Include="..\..\simgear\magvar\coremag.hxx" />
+    <ClInclude Include="..\..\simgear\magvar\magvar.hxx" />
+    <ClInclude Include="..\..\simgear\math\beziercurve.hxx" />
+    <ClInclude Include="..\..\simgear\math\interpolater.hxx" />
+    <ClInclude Include="..\..\simgear\math\leastsqs.hxx" />
+    <ClInclude Include="..\..\simgear\math\linintp2.h" />
+    <ClInclude Include="..\..\simgear\math\localconsts.hxx" />
+    <ClInclude Include="..\..\simgear\math\point3d.hxx" />
+    <ClInclude Include="..\..\simgear\math\polar3d.hxx" />
+    <ClInclude Include="..\..\simgear\math\sg_geodesy.hxx" />
+    <ClInclude Include="..\..\simgear\math\sg_random.h" />
+    <ClInclude Include="..\..\simgear\math\sg_types.hxx" />
+    <ClInclude Include="..\..\simgear\math\SGGeodesy.hxx" />
+    <ClInclude Include="..\..\simgear\math\sphrintp.h" />
+    <ClInclude Include="..\..\simgear\math\vector.hxx" />
+    <ClInclude Include="..\..\simgear\misc\interpolator.hxx" />
+    <ClInclude Include="..\..\simgear\misc\PathOptions.hxx" />
+    <ClInclude Include="..\..\simgear\misc\sg_path.hxx" />
+    <ClInclude Include="..\..\simgear\misc\sgstream.hxx" />
+    <ClInclude Include="..\..\simgear\misc\stopwatch.hxx" />
+    <ClInclude Include="..\..\simgear\misc\strutils.hxx" />
+    <ClInclude Include="..\..\simgear\misc\tabbed_values.hxx" />
+    <ClInclude Include="..\..\simgear\misc\texcoord.hxx" />
+    <ClInclude Include="..\..\simgear\misc\zfstream.hxx" />
+    <ClInclude Include="..\..\simgear\route\route.hxx" />
+    <ClInclude Include="..\..\simgear\route\waypoint.hxx" />
+    <ClInclude Include="..\..\simgear\screen\colors.hxx" />
+    <ClInclude Include="..\..\simgear\screen\extensions.hxx" />
+    <ClInclude Include="..\..\simgear\screen\GLBitmaps.h" />
+    <ClInclude Include="..\..\simgear\screen\jpgfactory.hxx" />
+    <ClInclude Include="..\..\simgear\screen\RenderTexture.h" />
+    <ClInclude Include="..\..\simgear\screen\screen-dump.hxx" />
+    <ClInclude Include="..\..\simgear\screen\shader.h" />
+    <ClInclude Include="..\..\simgear\screen\tr.h" />
+    <ClInclude Include="..\..\simgear\screen\win32-printer.h" />
+    <ClInclude Include="..\..\simgear\serial\serial.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\bbcache.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\cloud.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\cloudfield.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\CloudShaderGeometry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\dome.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\moon.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\newcloud.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\oursun.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\sky.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\sphere.hxx" />
+    <ClInclude Include="..\..\simgear\scene\sky\stars.hxx" />
+    <ClInclude Include="..\..\simgear\timing\geocoord.h" />
+    <ClInclude Include="..\..\simgear\timing\lowleveltime.h" />
+    <ClInclude Include="..\..\simgear\timing\sg_time.hxx" />
+    <ClInclude Include="..\..\simgear\timing\timestamp.hxx" />
+    <ClInclude Include="..\..\simgear\timing\timezone.h" />
+    <ClInclude Include="..\..\simgear\xml\asciitab.h" />
+    <ClInclude Include="..\..\simgear\xml\easyxml.hxx" />
+    <ClInclude Include="..\..\simgear\xml\hashtable.h" />
+    <ClInclude Include="..\..\simgear\xml\iasciitab.h" />
+    <ClInclude Include="..\..\simgear\xml\latin1tab.h" />
+    <ClInclude Include="..\..\simgear\xml\nametab.h" />
+    <ClInclude Include="..\..\simgear\xml\utf8tab.h" />
+    <ClInclude Include="..\..\simgear\xml\xmldef.h" />
+    <ClInclude Include="..\..\simgear\xml\xmlparse.h" />
+    <ClInclude Include="..\..\simgear\xml\xmlrole.h" />
+    <ClInclude Include="..\..\simgear\xml\xmltok.h" />
+    <ClInclude Include="..\..\simgear\xml\xmltok_impl.h" />
+    <ClInclude Include="..\..\simgear\props\AtomicChangeListener.hxx" />
+    <ClInclude Include="..\..\simgear\props\condition.hxx" />
+    <ClInclude Include="..\..\simgear\props\ExtendedPropertyAdapter.hxx" />
+    <ClInclude Include="..\..\simgear\props\props.hxx" />
+    <ClInclude Include="..\..\simgear\props\props_io.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\animation.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\CheckSceneryVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\model.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\modellib.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\ModelRegistry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\particles.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\persparam.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\placement.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGClipGroup.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGInteractionAnimation.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGMaterialAnimation.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGOffsetTransform.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGPagedLOD.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGReaderWriterXML.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGReaderWriterXMLOptions.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGRotateTransform.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGScaleTransform.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGText.hxx" />
+    <ClInclude Include="..\..\simgear\scene\model\SGTranslateTransform.hxx" />
+    <ClInclude Include="..\..\simgear\sound\sample_group.hxx" />
+    <ClInclude Include="..\..\simgear\sound\sample_openal.hxx" />
+    <ClInclude Include="..\..\simgear\sound\soundmgr_openal.hxx" />
+    <ClInclude Include="..\..\simgear\sound\xmlsound.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\Effect.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\EffectBuilder.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\EffectCullVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\EffectGeode.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\GLPredicate.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\mat.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\matlib.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\matmodel.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\Noise.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\Pass.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\Technique.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\TextureBuilder.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\apt_signs.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\GroundLightManager.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\obj.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\pt_lights.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGModelBin.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGOceanTile.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGReaderWriterBTG.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGReaderWriterBTGOptions.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGVasiDrawable.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\ShaderGeometry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\TileCache.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\TileEntry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\TreeBin.hxx" />
+    <ClInclude Include="..\..\simgear\scene\tgdb\userdata.hxx" />
+    <ClInclude Include="..\..\simgear\threads\SGGuard.hxx" />
+    <ClInclude Include="..\..\simgear\threads\SGQueue.hxx" />
+    <ClInclude Include="..\..\simgear\structure\callback.hxx" />
+    <ClInclude Include="..\..\simgear\structure\commands.hxx" />
+    <ClInclude Include="..\..\simgear\structure\event_mgr.hxx" />
+    <ClInclude Include="..\..\simgear\structure\exception.hxx" />
+    <ClInclude Include="..\..\simgear\structure\OSGVersion.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGBinding.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGExpression.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGReferenced.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGSharedPtr.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGSmplhist.hxx" />
+    <ClInclude Include="..\..\simgear\structure\SGSmplstat.hxx" />
+    <ClInclude Include="..\..\simgear\structure\subsystem_mgr.hxx" />
+    <ClInclude Include="..\..\simgear\nasal\code.h" />
+    <ClInclude Include="..\..\simgear\nasal\data.h" />
+    <ClInclude Include="..\..\simgear\nasal\iolib.h" />
+    <ClInclude Include="..\..\simgear\nasal\nasal.h" />
+    <ClInclude Include="..\..\simgear\nasal\parse.h" />
+    <ClInclude Include="..\..\simgear\environment\metar.hxx" />
+    <ClInclude Include="..\..\simgear\environment\precipitation.hxx" />
+    <ClInclude Include="..\..\simgear\environment\visual_enviro.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\CopyOp.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\NodeAndDrawableVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\PrimitiveUtils.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\QuadTreeBuilder.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\RenderConstants.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGDebugDrawCallback.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGEnlargeBoundingBox.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGNodeMasks.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGSceneFeatures.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGSceneUserData.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGStateAttributeVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SGUpdateVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\SplicingVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\StateAttributeFactory.hxx" />
+    <ClInclude Include="..\..\simgear\scene\util\UpdateOnceCallback.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHBoundingBoxVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHDebugCollectVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHGroup.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHLineGeometry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHMotionTransform.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHNode.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticBinary.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticData.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticGeometry.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticGeometryBuilder.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticLeaf.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticNode.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticTriangle.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHSubTreeCollector.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHTransform.hxx" />
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHVisitor.hxx" />
+    <ClInclude Include="..\..\simgear\compiler.h" />
+    <ClInclude Include="..\..\simgear\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\simgear\math\linintp2.inl" />
+    <CustomBuild Include="..\..\simgear\simgear_config.h-msvc90">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Generation of simgear_config.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">copy %(FullPath) %(RootDir)%(Directory)\%(Filename).h
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\simgear\simgear_config.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Generation of simgear_config.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">copy %(FullPath) %(RootDir)%(Directory)\%(Filename).h
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\..\simgear\simgear_config.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Generation of simgear_config.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">copy %(FullPath) %(RootDir)%(Directory)\%(Filename).h
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\simgear\simgear_config.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Generation of simgear_config.h</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">copy %(FullPath) %(RootDir)%(Directory)\%(Filename).h
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\simgear\simgear_config.h;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

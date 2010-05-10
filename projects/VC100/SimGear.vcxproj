@@ -107,6 +107,7 @@
     <Lib>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
+    <ProjectReference />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -114,7 +115,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -136,7 +137,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -161,7 +162,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>

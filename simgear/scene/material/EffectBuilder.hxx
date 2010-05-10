@@ -121,13 +121,20 @@ struct EffectNameValue
 template<typename FromType,typename ToType>
 struct bidirectional_map
 {
+#if _MSC_VER >= 1600
+    struct value_type {
+        FromType first;
+        ToType second;
+        value_type(FromType f, ToType s) : first(f),second(s){}
+    };
+#else
     typedef std::pair<FromType,ToType> value_type;
+#endif
 
     /* A bidirectional map can be simulated as a multi_index_container
      * of pairs of (FromType,ToType) with two unique indices, one
      * for each member of the pair.
      */
-
     typedef multi_index_container<
         value_type,
         indexed_by<

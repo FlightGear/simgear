@@ -81,6 +81,22 @@ Vec3Test(void)
 
 template<typename T>
 bool
+isSameRotation(const SGQuat<T>& q1, const SGQuat<T>& q2)
+{
+  const SGVec3<T> e1(1, 0, 0);
+  const SGVec3<T> e2(0, 1, 0);
+  const SGVec3<T> e3(0, 0, 1);
+  if (!equivalent(q1.transform(e1), q2.transform(e1)))
+    return false;
+  if (!equivalent(q1.transform(e2), q2.transform(e2)))
+    return false;
+  if (!equivalent(q1.transform(e3), q2.transform(e3)))
+    return false;
+  return true;
+}
+
+template<typename T>
+bool
 QuatTest(void)
 {
   const SGVec3<T> e1(1, 0, 0);
@@ -94,7 +110,7 @@ QuatTest(void)
   v2 = SGVec3<T>(1, -2, -3);
   if (!equivalent(q1.transform(v1), v2))
     return false;
-  
+
   // Check a rotation around the x axis
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e1);
   v2 = SGVec3<T>(1, 3, -2);
@@ -106,7 +122,7 @@ QuatTest(void)
   v2 = SGVec3<T>(-1, 2, -3);
   if (!equivalent(q1.transform(v1), v2))
     return false;
-  
+
   // Check a rotation around the y axis
   q1 = SGQuat<T>::fromAngleAxis(0.5*SGMisc<T>::pi(), e2);
   v2 = SGVec3<T>(-3, 2, 1);
@@ -153,15 +169,32 @@ QuatTest(void)
   SGVec3<T> angleAxis;
   q1.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
-  if (!equivalent(q1, q4))
+  if (!isSameRotation(q1, q4))
     return false;
   q2.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
-  if (!equivalent(q2, q4))
+  if (!isSameRotation(q2, q4))
     return false;
   q3.getAngleAxis(angleAxis);
   q4 = SGQuat<T>::fromAngleAxis(angleAxis);
-  if (!equivalent(q3, q4))
+  if (!isSameRotation(q3, q4))
+    return false;
+
+  /// Test angle axis forward and back transform
+  q1 = SGQuat<T>::fromAngleAxis(0.2*SGMisc<T>::pi(), e1);
+  q2 = SGQuat<T>::fromAngleAxis(1.7*SGMisc<T>::pi(), e2);
+  q3 = q1*q2;
+  SGVec3<T> positiveAngleAxis = q1.getPositiveRealImag();
+  q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
+  if (!isSameRotation(q1, q4))
+    return false;
+  positiveAngleAxis = q2.getPositiveRealImag();
+  q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
+  if (!isSameRotation(q2, q4))
+    return false;
+  positiveAngleAxis = q3.getPositiveRealImag();
+  q4 = SGQuat<T>::fromPositiveRealImag(positiveAngleAxis);
+  if (!isSameRotation(q3, q4))
     return false;
 
   return true;
@@ -204,7 +237,7 @@ MatrixTest(void)
     return false;
   if (!equivalent(m3*m0, SGMatrix<T>::unit()))
     return false;
-  
+
   return true;
 }
 
@@ -241,105 +274,6 @@ GeodesyTest(void)
   return true;
 }
 
-
-bool
-sgInterfaceTest(void)
-{
-  SGVec3f v3f = SGVec3f::e2();
-  SGVec4f v4f = SGVec4f::e2();
-  SGQuatf qf = SGQuatf::fromEulerRad(1.2, 1.3, -0.4);
-  SGMatrixf mf;
-  mf.postMultTranslate(v3f);
-  mf.postMultRotate(qf);
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGVec3f tv3f;
-  sgVec3 sv3f;
-  sgCopyVec3(sv3f, v3f.sg());
-  sgCopyVec3(tv3f.sg(), sv3f);
-  if (tv3f != v3f)
-    return false;
-  
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGVec4f tv4f;
-  sgVec4 sv4f;
-  sgCopyVec4(sv4f, v4f.sg());
-  sgCopyVec4(tv4f.sg(), sv4f);
-  if (tv4f != v4f)
-    return false;
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGQuatf tqf;
-  sgQuat sqf;
-  sgCopyQuat(sqf, qf.sg());
-  sgCopyQuat(tqf.sg(), sqf);
-  if (tqf != qf)
-    return false;
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGMatrixf tmf;
-  sgMat4 smf;
-  sgCopyMat4(smf, mf.sg());
-  sgCopyMat4(tmf.sg(), smf);
-  if (tmf != mf)
-    return false;
-
-  return true;
-}
-
-bool
-sgdInterfaceTest(void)
-{
-  SGVec3d v3d = SGVec3d::e2();
-  SGVec4d v4d = SGVec4d::e2();
-  SGQuatd qd = SGQuatd::fromEulerRad(1.2, 1.3, -0.4);
-  SGMatrixd md;
-  md.postMultTranslate(v3d);
-  md.postMultRotate(qd);
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGVec3d tv3d;
-  sgdVec3 sv3d;
-  sgdCopyVec3(sv3d, v3d.sg());
-  sgdCopyVec3(tv3d.sg(), sv3d);
-  if (tv3d != v3d)
-    return false;
-  
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGVec4d tv4d;
-  sgdVec4 sv4d;
-  sgdCopyVec4(sv4d, v4d.sg());
-  sgdCopyVec4(tv4d.sg(), sv4d);
-  if (tv4d != v4d)
-    return false;
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGQuatd tqd;
-  sgdQuat sqd;
-  sgdCopyQuat(sqd, qd.sg());
-  sgdCopyQuat(tqd.sg(), sqd);
-  if (tqd != qd)
-    return false;
-
-  // Copy to and from plibs types check if result is equal,
-  // test for exact equality
-  SGMatrixd tmd;
-  sgdMat4 smd;
-  sgdCopyMat4(smd, md.sg());
-  sgdCopyMat4(tmd.sg(), smd);
-  if (tmd != md)
-    return false;
-
-  return true;
-}
-
 int
 main(void)
 {
@@ -365,12 +299,6 @@ main(void)
   if (!GeodesyTest())
     return EXIT_FAILURE;
 
-  // Check interaction with sg*/sgd*
-  if (!sgInterfaceTest())
-    return EXIT_FAILURE;
-  if (!sgdInterfaceTest())
-    return EXIT_FAILURE;
-  
   std::cout << "Successfully passed all tests!" << std::endl;
   return EXIT_SUCCESS;
 }

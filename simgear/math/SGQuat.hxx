@@ -150,6 +150,17 @@ public:
     return fromRealImag(cos(angle2), T(sin(angle2)/nAxis)*axis);
   }
 
+  /// Create a normalized quaternion just from the imaginary part.
+  /// The imaginary part should point into that axis direction that results in
+  /// a quaternion with a positive real part.
+  /// This is the smallest numerically stable representation of an orientation
+  /// in space. See getPositiveRealImag()
+  static SGQuat fromPositiveRealImag(const SGVec3<T>& imag)
+  {
+    T r = sqrt(SGMisc<T>::max(T(0), T(1) - dot(imag, imag)));
+    return fromRealImag(r, imag);
+  }
+
   /// Return a quaternion that rotates the from vector onto the to vector.
   static SGQuat fromRotateTo(const SGVec3<T>& from, const SGVec3<T>& to)
   {
@@ -324,6 +335,19 @@ public:
     T angle;
     getAngleAxis(angle, axis);
     axis *= angle;
+  }
+
+  /// Get the imaginary part of the quaternion.
+  /// The imaginary part should point into that axis direction that results in
+  /// a quaternion with a positive real part.
+  /// This is the smallest numerically stable representation of an orientation
+  /// in space. See fromPositiveRealImag()
+  SGVec3<T> getPositiveRealImag() const
+  {
+    if (real(*this) < T(0))
+      return (T(-1)/norm(*this))*imag(*this);
+    else
+      return (T(1)/norm(*this))*imag(*this);
   }
 
   /// Access by index, the index is unchecked

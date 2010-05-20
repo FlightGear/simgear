@@ -19,13 +19,119 @@
 #include "condition.hxx"
 
 #include <simgear/math/SGMath.hxx>
+#include <simgear/structure/SGExpression.hxx>
 
 using std::istream;
 using std::ostream;
-
-
-
 
+/**
+ * Condition for a single property.
+ *
+ * This condition is true only if the property returns a boolean
+ * true value.
+ */
+class SGPropertyCondition : public SGCondition
+{
+public:
+  SGPropertyCondition ( SGPropertyNode *prop_root,
+                        const char * propname  );
+  virtual ~SGPropertyCondition ();
+  virtual bool test () const { return _node->getBoolValue(); }
+private:
+  SGConstPropertyNode_ptr _node;
+};
+
+
+/**
+ * Condition for a 'not' operator.
+ *
+ * This condition is true only if the child condition is false.
+ */
+class SGNotCondition : public SGCondition
+{
+public:
+  SGNotCondition (SGCondition * condition);
+  virtual ~SGNotCondition ();
+  virtual bool test () const;
+private:
+  SGSharedPtr<SGCondition> _condition;
+};
+
+
+/**
+ * Condition for an 'and' group.
+ *
+ * This condition is true only if all of the conditions
+ * in the group are true.
+ */
+class SGAndCondition : public SGCondition
+{
+public:
+  SGAndCondition ();
+  virtual ~SGAndCondition ();
+  virtual bool test () const;
+				// transfer pointer ownership
+  virtual void addCondition (SGCondition * condition);
+private:
+  std::vector<SGSharedPtr<SGCondition> > _conditions;
+};
+
+
+/**
+ * Condition for an 'or' group.
+ *
+ * This condition is true if at least one of the conditions in the
+ * group is true.
+ */
+class SGOrCondition : public SGCondition
+{
+public:
+  SGOrCondition ();
+  virtual ~SGOrCondition ();
+  virtual bool test () const;
+				// transfer pointer ownership
+  virtual void addCondition (SGCondition * condition);
+private:
+  std::vector<SGSharedPtr<SGCondition> > _conditions;
+};
+
+
+/**
+ * Abstract base class for property comparison conditions.
+ */
+class SGComparisonCondition : public SGCondition
+{
+public:
+  enum Type {
+    LESS_THAN,
+    GREATER_THAN,
+    EQUALS
+  };
+  SGComparisonCondition (Type type, bool reverse = false);
+  virtual ~SGComparisonCondition ();
+  virtual bool test () const;
+  virtual void setLeftProperty( SGPropertyNode *prop_root,
+                                const char * propname );
+  virtual void setRightProperty( SGPropertyNode *prop_root,
+                                 const char * propname );
+  // will make a local copy
+  virtual void setLeftValue (const SGPropertyNode * value);
+  virtual void setRightValue (const SGPropertyNode * value);
+  
+  void setLeftDExpression(SGExpressiond* dexp);
+  void setRightDExpression(SGExpressiond* dexp);
+  
+private:
+  Type _type;
+  bool _reverse;
+  SGPropertyNode_ptr _left_property;
+  SGPropertyNode_ptr _right_property;
+  
+  SGSharedPtr<SGExpressiond> _left_dexp;
+  SGSharedPtr<SGExpressiond> _right_dexp;
+};
+
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGCondition.
 ////////////////////////////////////////////////////////////////////////
@@ -226,10 +332,7 @@ doComparison (const SGPropertyNode * left, const SGPropertyNode *right)
 
 SGComparisonCondition::SGComparisonCondition (Type type, bool reverse)
   : _type(type),
-    _reverse(reverse),
-    _left_property(0),
-    _right_property(0),
-    _right_value(0)
+    _reverse(reverse)
 {
 }
 
@@ -241,14 +344,19 @@ bool
 SGComparisonCondition::test () const
 {
 				// Always fail if incompletely specified
-  if (_left_property == 0 ||
-      (_right_property == 0 && _right_value == 0))
+  if (!_left_property || !_right_property)
     return false;
 
-				// Get LESS_THAN, EQUALS, or GREATER_THAN
-  int cmp =
-    doComparison(_left_property,
-		 (_right_property != 0 ? _right_property : _right_value));
+  // Get LESS_THAN, EQUALS, or GREATER_THAN
+  if (_left_dexp) {
+    _left_property->setDoubleValue(_left_dexp->getValue(NULL));
+  }
+  
+  if (_right_dexp) {
+    _right_property->setDoubleValue(_right_dexp->getValue(NULL));
+  }
+        
+  int cmp = doComparison(_left_property, _right_property);
   if (!_reverse)
     return (cmp == _type);
   else
@@ -266,19 +374,35 @@ void
 SGComparisonCondition::setRightProperty( SGPropertyNode *prop_root,
                                          const char * propname )
 {
-  _right_value = 0;
   _right_property = prop_root->getNode(propname, true);
 }
 
 void
-SGComparisonCondition::setRightValue (const SGPropertyNode *node)
+SGComparisonCondition::setLeftValue (const SGPropertyNode *node)
 {
-  _right_property = 0;
-  _right_value = new SGPropertyNode(*node);
+  _left_property = new SGPropertyNode(*node);
 }
 
 
-
+void
+SGComparisonCondition::setRightValue (const SGPropertyNode *node)
+{
+  _right_property = new SGPropertyNode(*node);
+}
+
+void
+SGComparisonCondition::setLeftDExpression(SGExpressiond* dexp)
+{
+  _left_property = new SGPropertyNode();
+  _left_dexp = dexp;
+}
+
+void
+SGComparisonCondition::setRightDExpression(SGExpressiond* dexp)
+{
+  _right_property = new SGPropertyNode();
+  _right_dexp = dexp;
+}
 ////////////////////////////////////////////////////////////////////////
 // Read a condition and use it if necessary.
 ////////////////////////////////////////////////////////////////////////
@@ -343,14 +467,36 @@ readComparison( SGPropertyNode *prop_root,
 		bool reverse)
 {
   SGComparisonCondition * condition = new SGComparisonCondition(type, reverse);
-  condition->setLeftProperty(prop_root, node->getStringValue("property[0]"));
-  if (node->hasValue("property[1]"))
-    condition->setRightProperty(prop_root, node->getStringValue("property[1]"));
-  else if (node->hasValue("value"))
-    condition->setRightValue(node->getChild("value", 0));
-  else
-    throw sg_exception("condition: comparison without property[1] or value");
-
+  if (node->nChildren() != 2) {
+    throw sg_exception("condition: comparison without two children");
+  }
+  
+  const SGPropertyNode* left = node->getChild(0), 
+    *right = node->getChild(1);
+  string leftName(left->getName());
+  if (leftName == "property") {
+    condition->setLeftProperty(prop_root, left->getStringValue());
+  } else if (leftName == "value") {
+    condition->setLeftValue(left);
+  } else if (leftName == "expression") {
+    SGExpressiond* exp = SGReadDoubleExpression(prop_root, left->getChild(0));
+    condition->setLeftDExpression(exp);
+  } else {
+    throw sg_exception("Unknown condition comparison left child:" + leftName);
+  }
+    
+  string rightName(right->getName());
+  if (rightName == "property") {
+    condition->setRightProperty(prop_root, right->getStringValue());
+  } else if (rightName == "value") {
+    condition->setRightValue(right);
+  } else if (rightName == "expression") {
+    SGExpressiond* exp = SGReadDoubleExpression(prop_root, right->getChild(0));
+    condition->setRightDExpression(exp);
+  } else {
+    throw sg_exception("Unknown condition comparison right child:" + rightName);
+  }
+  
   return condition;
 }
 

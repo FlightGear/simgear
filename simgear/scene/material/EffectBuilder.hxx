@@ -314,7 +314,7 @@ getVectorProperties(const SGPropertyNode* prop,
         if (parentName[parentName.size() - 1] != '/')
             parentName.append("/");
         NameItr itr = defaultNames;
-        for (int i = 0; i < vecSize; ++i, ++itr)
+        for (size_t i = 0; i < vecSize; ++i, ++itr)
             result.push_back(parentName + *itr);
     } else if (useProps.size() == vecSize) {
         string parentName = useProps[0]->getStringValue();

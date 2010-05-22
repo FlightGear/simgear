@@ -39,6 +39,7 @@
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGBinding.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
@@ -2139,6 +2140,136 @@ private:
   double _repeatTime;
 };
 
+class VncVisitor : public osg::NodeVisitor {
+ public:
+  VncVisitor(double x, double y, int mask) :
+    osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+    _texX(x), _texY(y), _mask(mask), _done(false)
+  {
+    SG_LOG(SG_INPUT, SG_DEBUG, "VncVisitor constructor "
+      << x << "," << y << " mask " << mask);
+  }
+
+  virtual void apply(osg::Node &node)
+  {
+    // Some nodes have state sets attached
+    touchStateSet(node.getStateSet());
+    if (!_done)
+      traverse(node);
+    if (_done) return;
+    // See whether we are a geode worth exploring
+    osg::Geode *g = dynamic_cast<osg::Geode*>(&node);
+    if (!g) return;
+    // Go find all its drawables
+    int i = g->getNumDrawables();
+    while (--i >= 0) {
+      osg::Drawable *d = g->getDrawable(i);
+      if (d) touchDrawable(*d);
+    }
+    // Out of optimism, do the same for EffectGeode
+    simgear::EffectGeode *eg = dynamic_cast<simgear::EffectGeode*>(&node);
+    if (!eg) return;
+    for (simgear::EffectGeode::DrawablesIterator di = eg->drawablesBegin();
+         di != eg->drawablesEnd(); di++) {
+      touchDrawable(**di);
+    }
+    // Now see whether the EffectGeode has an Effect
+    simgear::Effect *e = eg->getEffect();
+    if (e) {
+      touchStateSet(e->getDefaultStateSet());
+    }
+  }
+
+  inline void touchDrawable(osg::Drawable &d)
+  {
+    osg::StateSet *ss = d.getStateSet();
+    touchStateSet(ss);
+  }
+
+  void touchStateSet(osg::StateSet *ss)
+  {
+    if (!ss) return;
+    osg::StateAttribute *sa = ss->getTextureAttribute(0,
+      osg::StateAttribute::TEXTURE);
+    if (!sa) return;
+    osg::Texture *t = sa->asTexture();
+    if (!t) return;
+    osg::Image *img = t->getImage(0);
+    if (!img) return;
+    if (!_done) {
+      int pixX = _texX * img->s();
+      int pixY = _texY * img->t();
+      _done = img->sendPointerEvent(pixX, pixY, _mask);
+      SG_LOG(SG_INPUT, SG_DEBUG, "VncVisitor image said " << _done
+        << " to coord " << pixX << "," << pixY);
+    }
+  }
+
+  inline bool wasSuccessful()
+  {
+    return _done;
+  }
+
+ private:
+  double _texX, _texY;
+  int _mask;
+  bool _done;
+};
+
+
+class SGPickAnimation::VncCallback : public SGPickCallback {
+public:
+  VncCallback(const SGPropertyNode* configNode,
+               SGPropertyNode* modelRoot,
+               osg::Group *node)
+      : _node(node)
+  {
+    SG_LOG(SG_INPUT, SG_DEBUG, "Configuring VNC callback");
+    const char *cornernames[3] = {"top-left", "top-right", "bottom-left"};
+    SGVec3d *cornercoords[3] = {&_topLeft, &_toRight, &_toDown};
+    for (int c =0; c < 3; c++) {
+      const SGPropertyNode* cornerNode = configNode->getChild(cornernames[c]);
+      *cornercoords[c] = SGVec3d(
+        cornerNode->getDoubleValue("x"),
+        cornerNode->getDoubleValue("y"),
+        cornerNode->getDoubleValue("z"));
+    }
+    _toRight -= _topLeft;
+    _toDown -= _topLeft;
+    _squaredRight = dot(_toRight, _toRight);
+    _squaredDown = dot(_toDown, _toDown);
+  }
+
+  virtual bool buttonPressed(int button, const Info& info)
+  {
+    SGVec3d loc(info.local);
+    SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
+    loc -= _topLeft;
+    _x = dot(loc, _toRight) / _squaredRight;
+    _y = dot(loc, _toDown) / _squaredDown;
+    if (_x<0) _x = 0; else if (_x > 1) _x = 1;
+    if (_y<0) _y = 0; else if (_y > 1) _y = 1;
+    VncVisitor vv(_x, _y, 1 << button);
+    _node->accept(vv);
+    return vv.wasSuccessful();
+
+  }
+  virtual void buttonReleased(void)
+  {
+    SG_LOG(SG_INPUT, SG_DEBUG, "VNC release");
+    VncVisitor vv(_x, _y, 0);
+    _node->accept(vv);
+  }
+  virtual void update(double dt)
+  {
+  }
+private:
+  double _x, _y;
+  osg::ref_ptr<osg::Group> _node;
+  SGVec3d _topLeft, _toRight, _toDown;
+  double _squaredRight, _squaredDown;
+};
+
 SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
                                  SGPropertyNode* modelRoot) :
   SGAnimation(configNode, modelRoot)
@@ -2162,10 +2293,17 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
   highlightGroup->addChild(commonGroup);
   SGSceneUserData* ud;
   ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
+
+  // add actions that become macro and command invocations
   std::vector<SGPropertyNode_ptr> actions;
   actions = getConfig()->getChildren("action");
   for (unsigned int i = 0; i < actions.size(); ++i)
     ud->addPickCallback(new PickCallback(actions[i], getModelRoot()));
+  // Look for the VNC sessions that want raw mouse input
+  actions = getConfig()->getChildren("vncaction");
+  for (unsigned int i = 0; i < actions.size(); ++i)
+    ud->addPickCallback(new VncCallback(actions[i], getModelRoot(),
+      &parent));
 
   // prepare a state set that paints the edges of this object yellow
   osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();

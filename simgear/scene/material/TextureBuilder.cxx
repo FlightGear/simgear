@@ -96,7 +96,7 @@ TexEnv* buildTexEnv(Effect* effect, const SGPropertyNode* prop)
     if (colorProp)
         env->setColor(toOsg(colorProp->getValue<SGVec4d>()));
     return env;
- }
+}
 
 
 void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
@@ -132,7 +132,9 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                                 options);
     }
     catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, "No image file for texture, using white ");
+        SG_LOG(SG_INPUT, SG_ALERT, "No image file, "
+            << "maybe the reader did not set the filename attribute, "
+            << "using white on " << pass->getName());
         texture = StateAttributeFactory::instance()->getWhiteTexture();
     }
     pass->setTextureAttributeAndModes(unit, texture);
@@ -682,7 +684,6 @@ TexGen* buildTexGen(Effect* effect, const SGPropertyNode* tgenProp)
     if (!isAttributeActive(effect, tgenProp))
         return 0;
     TexGen* result = new TexGen;
-    const SGPropertyNode* p = 0;
     TexGen::Mode mode = TexGen::OBJECT_LINEAR;
     findAttr(tgenModes, getEffectPropertyChild(effect, tgenProp, "mode"), mode);
     result->setMode(mode);

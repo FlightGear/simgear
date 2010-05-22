@@ -342,6 +342,7 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class PickCallback;
+  class VncCallback;
 };
 
 #endif // _SG_ANIMATION_HXX

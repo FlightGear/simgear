@@ -332,6 +332,38 @@ SGReadIExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
         return output;
     }
 
+    if (name == "table") {
+        SGInterpTable* tab = new SGInterpTable(expression);
+        if (!tab) {
+            SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression: malformed table");
+            return 0;
+        }
+        
+        // find input expression - i.e a child not named 'entry'
+        const SGPropertyNode* inputNode = NULL;
+        for (int i=0; (i<expression->nChildren()) && !inputNode; ++i) {
+            if (strcmp(expression->getChild(i)->getName(), "entry") == 0) {
+                continue;
+            }
+            
+            inputNode = expression->getChild(i);
+        }
+        
+        if (!inputNode) {
+            SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression: no input found");
+            return 0;
+        }
+        
+        SGSharedPtr<SGExpression<T> > inputExpression;
+        inputExpression = SGReadIExpression<T>(inputRoot, inputNode);
+        if (!inputExpression) {
+            SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
+            return 0;
+        }
+        
+        return new SGInterpTableExpression<T>(inputExpression, tab);
+    }
+    
     return 0;
 }
 
@@ -585,9 +617,7 @@ SGReadFExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
         }
         return new SGTanhExpression<T>(inputExpression);
     }
-
-// if (name == "table") {
-// }
+    
 // if (name == "step") {
 // }
 // if (name == "condition") {

@@ -41,6 +41,18 @@ private:
   SGConstPropertyNode_ptr _node;
 };
 
+/**
+ * Condition with constant value
+ *
+ */
+class SGConstantCondition : public SGCondition
+{
+public:
+  SGConstantCondition (bool v) : _value(v) { ; }
+  virtual bool test () const { return _value; }
+private:
+  bool _value;
+};
 
 /**
  * Condition for a 'not' operator.
@@ -529,6 +541,10 @@ readCondition( SGPropertyNode *prop_root, const SGPropertyNode *node )
                           false);
   else if (name == "not-equals")
     return readComparison(prop_root, node, SGComparisonCondition::EQUALS, true);
+  else if (name == "false") 
+    return new SGConstantCondition(false);
+  else if (name == "true")
+    return new SGConstantCondition(true);
   else
     return 0;
 }

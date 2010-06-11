@@ -509,15 +509,16 @@ SGGeodesy::advanceRadM(const SGGeoc& geoc, double course, double distance,
     result.setLongitudeRad(geoc.getLongitudeRad());
   } else {
     double tmp = SGMiscd::clip(sin(course) * sinDistance / cosLat, -1, 1);
-    double lon = SGMiscd::normalizeAngle(geoc.getLongitudeRad() - asin( tmp ));
-    result.setLongitudeRad(lon);
+    double lon = SGMiscd::normalizeAngle(-geoc.getLongitudeRad() - asin( tmp ));
+    result.setLongitudeRad(-lon);
   }
 }
 
 double
 SGGeodesy::courseRad(const SGGeoc& from, const SGGeoc& to)
 {
-  double diffLon = to.getLongitudeRad() - from.getLongitudeRad();
+  //double diffLon = to.getLongitudeRad() - from.getLongitudeRad();
+  double diffLon = from.getLongitudeRad() - to.getLongitudeRad();
 
   double sinLatFrom = sin(from.getLatitudeRad());
   double cosLatFrom = cos(from.getLatitudeRad());

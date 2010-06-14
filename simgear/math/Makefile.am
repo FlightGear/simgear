@@ -4,11 +4,21 @@ check_PROGRAMS  = SGMathTest SGGeometryTest
 TESTS           = $(check_PROGRAMS)
 
 SGMathTest_SOURCES = SGMathTest.cxx
-SGMathTest_LDADD = libsgmath.a -lsgstructure $(base_LIBS)
 
+SGMathTest_LDADD = \
+	libsgmath.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/structure/libsgstructure.a \
+	$(base_LIBS)
+	
 SGGeometryTest_SOURCES = SGGeometryTest.cxx
-SGGeometryTest_LDADD = libsgmath.a -lsgstructure $(base_LIBS)
 
+SGGeometryTest_LDADD = \
+	libsgmath.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/structure/libsgstructure.a \
+	$(base_LIBS)
+	
 lib_LIBRARIES = libsgmath.a
 
 include_HEADERS = \

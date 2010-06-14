@@ -22,6 +22,8 @@
 #include <cmath>
 
 #include <simgear/structure/exception.hxx>
+#include <simgear/debug/logstream.hxx>
+
 #include "SGMath.hxx"
 
 // These are hard numbers from the WGS84 standard.  DON'T MODIFY
@@ -559,4 +561,77 @@ double
 SGGeodesy::distanceM(const SGGeoc& from, const SGGeoc& to)
 {
   return distanceRad(from, to) * SG_RAD_TO_NM * SG_NM_TO_METER;
+}
+
+bool 
+SGGeodesy::radialIntersection(const SGGeoc& a, double r1, 
+    const SGGeoc& b, double r2, SGGeoc& result)
+{
+  // implementation of
+  // http://williams.best.vwh.net/avform.htm#Intersection
+
+  double crs13 = r1 * SG_DEGREES_TO_RADIANS;
+  double crs23 = r2 * SG_DEGREES_TO_RADIANS;
+  double dst12 = SGGeodesy::distanceRad(a, b);
+
+  //IF sin(lon2-lon1)<0
+  // crs12=acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
+  // crs21=2.*pi-acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
+  // ELSE
+  // crs12=2.*pi-acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
+  // crs21=acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
+  // ENDIF
+  double crs12 = SGGeodesy::courseRad(a, b),
+         crs21 = SGGeodesy::courseRad(b, a);
+
+  double sinLat1 = sin(a.getLatitudeRad());
+  double cosLat1 = cos(a.getLatitudeRad());
+  double sinDst12 = sin(dst12);
+  double cosDst12 = cos(dst12);
+  
+  double ang1 = SGMiscd::normalizeAngle2(crs13-crs12);
+  double ang2 = SGMiscd::normalizeAngle2(crs21-crs23);
+   
+  if ((sin(ang1) == 0.0) && (sin(ang2) == 0.0)) {
+    SG_LOG(SG_GENERAL, SG_WARN, "SGGeodesy::radialIntersection: infinity of intersections");
+    return false;
+  }
+
+  if ((sin(ang1)*sin(ang2))<0.0) {
+    SG_LOG(SG_GENERAL, SG_WARN, "SGGeodesy::radialIntersection: intersection ambiguous");
+    return false;
+  }
+
+  ang1 = fabs(ang1);
+  ang2 = fabs(ang2);
+
+  //ang3=acos(-cos(ang1)*cos(ang2)+sin(ang1)*sin(ang2)*cos(dst12)) 
+  //dst13=atan2(sin(dst12)*sin(ang1)*sin(ang2),cos(ang2)+cos(ang1)*cos(ang3))
+  //lat3=asin(sin(lat1)*cos(dst13)+cos(lat1)*sin(dst13)*cos(crs13))
+  //lon3=mod(lon1-dlon+pi,2*pi)-pi
+
+  double ang3 = acos(-cos(ang1) * cos(ang2) + sin(ang1) * sin(ang2) * cosDst12);
+  double dst13 = atan2(sinDst12 * sin(ang1) * sin(ang2), cos(ang2) + cos(ang1)*cos(ang3));
+  double lat3 = asin(sinLat1 * cos(dst13) + cosLat1 * sin(dst13) * cos(crs13));
+  //dlon=atan2(sin(crs13)*sin(dst13)*cos(lat1),cos(dst13)-sin(lat1)*sin(lat3))
+  double dlon = atan2(sin(crs13)*sin(dst13)*cosLat1, cos(dst13)- (sinLat1 * sin(lat3)));
+  double lon3 = SGMiscd::normalizeAngle(-a.getLongitudeRad()-dlon);
+
+  result = SGGeoc::fromRadM(-lon3, lat3, a.getRadiusM());
+  return true;
+}
+    
+bool
+SGGeodesy::radialIntersection(const SGGeod& a, double aRadial, 
+    const SGGeod& b, double bRadial, SGGeod& result)
+{
+  SGGeoc r;
+  bool ok = radialIntersection(SGGeoc::fromGeod(a), aRadial, 
+    SGGeoc::fromGeod(b), bRadial, r);
+  if (!ok) {
+    return false;
+  }
+  
+  result = SGGeod::fromGeoc(r);
+  return true;
 }

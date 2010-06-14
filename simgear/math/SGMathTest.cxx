@@ -271,6 +271,29 @@ GeodesyTest(void)
   if (!equivalent(cart0, cart1))
     return false;
 
+  // test course / advance routines
+  // uses examples from Williams aviation formulary
+  SGGeoc lax = SGGeoc::fromRadM(-2.066470, 0.592539, 10.0);
+  SGGeoc jfk = SGGeoc::fromRadM(-1.287762, 0.709186, 10.0);
+  
+  double distNm = SGGeodesy::distanceRad(lax, jfk) * SG_RAD_TO_NM;
+  std::cout << "distance is " << distNm << std::endl;
+  if (0.5 < fabs(distNm - 2144)) // 2144 nm
+	return false;
+	
+  double crsDeg = SGGeodesy::courseRad(lax, jfk) * SG_RADIANS_TO_DEGREES;
+  std::cout << "course is " << crsDeg << std::endl;
+  if (0.5 < fabs(crsDeg - 66)) // 66 degrees
+	return false;
+	
+  SGGeoc adv;
+  SGGeodesy::advanceRadM(lax, crsDeg * SG_DEGREES_TO_RADIANS, 100 * SG_NM_TO_METER, adv);
+  std::cout << "lon:" << adv.getLongitudeRad() << ", lat:" << adv.getLatitudeRad() << std::endl;
+
+  if (0.01 < fabs(adv.getLongitudeRad() - (-2.034206)) ||
+	  0.01 < fabs(adv.getLatitudeRad() - 0.604180))
+	return false;
+
   return true;
 }
 

@@ -63,6 +63,16 @@ public:
   static double courseRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceRad(const SGGeoc& from, const SGGeoc& to);
   static double distanceM(const SGGeoc& from, const SGGeoc& to);
+  
+  /**
+   * compute the intersection of two (true) radials (in degrees), or return false
+   * if no intersection culd be computed.
+   */
+  static bool radialIntersection(const SGGeoc& a, double aRadial, 
+    const SGGeoc& b, double bRadial, SGGeoc& result);
+    
+  static bool radialIntersection(const SGGeod& a, double aRadial, 
+    const SGGeod& b, double bRadial, SGGeod& result);
 };
 
 #endif

@@ -18,7 +18,7 @@ libsgsound_a_SOURCES = \
 	soundmgr_openal.cxx \
 	xmlsound.cxx 
 
-check_PROGRAMS = openal_test1 openal_test2 openal_test3
+noinst_PROGRAMS = openal_test1 openal_test2 openal_test3
 
 openal_test1_SOURCES = openal_test1.cxx
 openal_test2_SOURCES = openal_test2.cxx

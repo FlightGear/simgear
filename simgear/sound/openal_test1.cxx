@@ -12,7 +12,7 @@
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
-# include <OpenAL/alut.h>
+# include <ALUT/alut.h>
 #elif defined(OPENALSDK)
 # include <al.h>
 # include <alc.h>

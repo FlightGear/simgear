@@ -489,7 +489,7 @@ case "${host}" in
 #       AC_CHECK_FRAMEWORK(osgDB, [#include <osgDB/Version>], $with_osg_framework)
 #       AC_CHECK_FRAMEWORK(osgSim, [#include <osgSim/Version>], $with_osg_framework)
 #       AC_CHECK_FRAMEWORK(osgParticle, [#include <osgParticle/Version>], $with_osg_framework)
-#       AC_CHECK_FRAMEWORK(osg, [#include <osg/Version>], $with_osg_framework)
+        AC_CHECK_FRAMEWORK(osg, [#include <osg/Version>], $with_osg_framework)
 #       osg_FRAMEWORKS="$FRAMEWORKS"
 #       FRAMEWORKS=""
 #       AC_SUBST(osg_FRAMEWORKS)

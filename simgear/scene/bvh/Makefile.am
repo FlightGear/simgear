@@ -4,7 +4,11 @@ check_PROGRAMS  = bvhtest
 TESTS           = $(check_PROGRAMS)
 
 bvhtest_SOURCES = bvhtest.cxx
-bvhtest_LDADD = libsgbvh.a -lsgstructure -lsgmath $(base_LIBS)
+bvhtest_LDADD = libsgbvh.a \
+	$(top_builddir)/simgear/structure/libsgstructure.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(base_LIBS)
+
 
 lib_LIBRARIES = libsgbvh.a
 

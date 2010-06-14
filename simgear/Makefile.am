@@ -24,8 +24,8 @@ SUBDIRS = \
 	scene \
 	screen \
 	serial \
-	sound \
 	threads \
-	timing
+	timing \
+	sound 
 
 DIST_SUBDIRS = $(SUBDIRS) compatibility

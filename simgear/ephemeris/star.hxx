@@ -43,47 +43,47 @@ public:
     Star ();
     ~Star();
     void updatePosition(double mjd);
-    double getM();
-    double getw();
-    double getxs();
-    double getys();
-    double getye();
-    double getze();
-    double getDistance();
+    double getM() const;
+    double getw() const;
+    double getxs() const;
+    double getys() const;
+    double getye() const;
+    double getze() const;
+    double getDistance() const;
 };
 
 
-inline double Star::getM()
+inline double Star::getM() const
 {
   return M;
 }
 
-inline double Star::getw()
+inline double Star::getw() const
 {
   return w;
 }
 
-inline double Star::getxs()
+inline double Star::getxs() const
 {
   return xs;
 }
 
-inline double Star::getys()
+inline double Star::getys() const
 {
   return ys;
 }
 
-inline double Star::getye()
+inline double Star::getye() const
 {
    return ye;
 }
 
-inline double Star::getze()
+inline double Star::getze() const
 {
    return ze;
 }
 
-inline double Star::getDistance()
+inline double Star::getDistance() const
 {
   return distance;
 }

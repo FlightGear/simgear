@@ -81,8 +81,8 @@ public:
   double getRightAscension();
   double getDeclination();
   double getMagnitude();
-  double getLon();
-  double getLat(); 
+  double getLon() const;
+  double getLat() const; 
   void updatePosition(double mjd, Star *ourSun);
 };
 
@@ -90,12 +90,12 @@ inline double CelestialBody::getRightAscension() { return rightAscension; }
 inline double CelestialBody::getDeclination() { return declination; }
 inline double CelestialBody::getMagnitude() { return magnitude; }
 
-inline double CelestialBody::getLon()
+inline double CelestialBody::getLon() const
 {
   return lonEcl;
 }
 
-inline double CelestialBody::getLat()
+inline double CelestialBody::getLat() const
 {
   return latEcl;
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2009  Tim Moore timoore@redhat.com
+// Copyright (C) 2008 - 2010  Tim Moore timoore33@gmail.com
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -868,6 +868,8 @@ InstallAttributeBuilder<ShaderProgramBuilder> installShaderProgram("program");
 
 EffectNameValue<Uniform::Type> uniformTypesInit[] =
 {
+    {"bool", Uniform::BOOL},
+    {"int", Uniform::INT},
     {"float", Uniform::FLOAT},
     {"float-vec3", Uniform::FLOAT_VEC3},
     {"float-vec4", Uniform::FLOAT_VEC4},
@@ -906,6 +908,12 @@ struct UniformBuilder :public PassAttributeBuilder
         if (!typeProp) {
             props::Type propType = valProp->getType();
             switch (propType) {
+            case props::BOOL:
+                uniformType = Uniform::BOOL;
+                break;
+            case props::INT:
+                uniformType = Uniform::INT;
+                break;
             case props::FLOAT:
             case props::DOUBLE:
                 break;          // default float type;
@@ -1181,6 +1189,9 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
         }
     }
     makeChild(paramRoot, "cull-face")->setStringValue(cullFaceString);
+    // Macintosh ATI workaround
+    bool vertexTwoSide = cullFaceString == "off";
+    makeChild(paramRoot, "vertex-program-two-side")->setValue(vertexTwoSide);
     const BlendFunc* blendFunc = getStateAttribute<BlendFunc>(ss);
     SGPropertyNode* blendNode = makeChild(paramRoot, "blend");
     if (blendFunc) {

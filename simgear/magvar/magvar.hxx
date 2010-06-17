@@ -103,5 +103,9 @@ public:
  */
 double sgGetMagVar( double lon, double lat, double alt_m, double jd );
 
+/**
+ * overload version of the above to take a SGGeod
+ */
+double sgGetMagVar( const SGGeod& pos, double jd );
 
 #endif // _MAGVAR_HXX

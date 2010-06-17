@@ -50,7 +50,7 @@ void SGMagVar::update( double lon, double lat, double alt_m, double jd ) {
 
 void SGMagVar::update( const SGGeod& geod, double jd ) {
 
-  update(geod.getLongitudeDeg(), geod.getLatitudeDeg(),
+  update(geod.getLongitudeRad(), geod.getLatitudeRad(),
     geod.getElevationM(), jd);
 }
 
@@ -62,3 +62,10 @@ double sgGetMagVar( double lon, double lat, double alt_m, double jd ) {
     double field[6];
     return calc_magvar( lat, lon, alt_m / 1000.0, (long)jd, field );
 }
+
+double sgGetMagVar( const SGGeod& pos, double jd )
+{
+  return sgGetMagVar(pos.getLongitudeRad(), pos.getLatitudeRad(), 
+    pos.getElevationM(), jd);
+}
+

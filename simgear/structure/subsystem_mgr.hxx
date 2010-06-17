@@ -317,6 +317,10 @@ public:
 
     void collectDebugTiming(bool collect);
 
+    /**
+     * 
+     */
+    void set_fixed_update_time(double fixed_dt);
 private:
 
     class Member {
@@ -345,6 +349,9 @@ private:
     Member * get_member (const string &name, bool create = false);
 
     vector<Member *> _members;
+    
+    double _fixedUpdateTime;
+    double _updateTimeRemainder;
 };
 
 
@@ -376,6 +383,7 @@ public:
     enum GroupType {
         INIT = 0,
         GENERAL,
+        FDM,  ///< flight model, autopilot, instruments that run coupled
         MAX_GROUPS
     };
 

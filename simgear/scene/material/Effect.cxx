@@ -671,6 +671,11 @@ InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 // Shader key, used both for shaders with relative and absolute names
 typedef pair<string, Shader::Type> ShaderKey;
 
+inline ShaderKey makeShaderKey(SGPropertyNode_ptr& ptr, Shader::Type shaderType)
+{
+    return ShaderKey(ptr->getStringValue(), shaderType);
+}
+
 struct ProgramKey
 {
     typedef pair<string, int> AttribKey;
@@ -709,6 +714,7 @@ typedef tr1::unordered_map<ProgramKey, ref_ptr<Program>,
                            boost::hash<ProgramKey>, ProgramKey::EqualTo>
 ProgramMap;
 ProgramMap programMap;
+ProgramMap resolvedProgramMap;  // map with resolved shader file names
 
 typedef tr1::unordered_map<ShaderKey, ref_ptr<Shader>, boost::hash<ShaderKey> >
 ShaderMap;
@@ -767,24 +773,13 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     PropertyList pFragShaders = prop->getChildren("fragment-shader");
     PropertyList pAttributes = prop->getChildren("attribute");
     ProgramKey prgKey;
-    for (PropertyList::iterator itr = pVertShaders.begin(),
-             e = pVertShaders.end();
-         itr != e;
-         ++itr)
-        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
-                                           Shader::VERTEX));
-    for (PropertyList::iterator itr = pGeomShaders.begin(),
-             e = pGeomShaders.end();
-         itr != e;
-         ++itr)
-        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
-                                           Shader::GEOMETRY));
-    for (PropertyList::iterator itr = pFragShaders.begin(),
-             e = pFragShaders.end();
-         itr != e;
-         ++itr)
-        prgKey.shaders.push_back(ShaderKey((*itr)->getStringValue(),
-                                           Shader::FRAGMENT));
+    std::back_insert_iterator<vector<ShaderKey> > inserter(prgKey.shaders);
+    transform(pVertShaders.begin(), pVertShaders.end(), inserter,
+              bind(makeShaderKey, _1, Shader::VERTEX));
+    transform(pGeomShaders.begin(), pGeomShaders.end(), inserter,
+              bind(makeShaderKey, _1, Shader::GEOMETRY));
+    transform(pFragShaders.begin(), pFragShaders.end(), inserter,
+              bind(makeShaderKey, _1, Shader::FRAGMENT));
     for (PropertyList::iterator itr = pAttributes.begin(),
              e = pAttributes.end();
          itr != e;
@@ -805,62 +800,74 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     ProgramMap::iterator pitr = programMap.find(prgKey);
     if (pitr != programMap.end()) {
         program = pitr->second.get();
-    } else {
-        program = new Program;
-        // Add vertex shaders, then fragment shaders
-        PropertyList& pvec = pVertShaders;
-        Shader::Type stype = Shader::VERTEX;
-        for (int i = 0; i < 3; ++i) {
-            for (PropertyList::iterator nameItr = pvec.begin(), e = pvec.end();
-                 nameItr != e;
-                 ++nameItr) {
-                string shaderName = (*nameItr)->getStringValue();
-                string fileName = osgDB::findDataFile(shaderName, options);
-                if (fileName.empty())
-                    throw BuilderException(string("couldn't find shader ") +
-                                           shaderName);
-                ShaderKey skey(fileName, stype);
-                ShaderMap::iterator sitr = shaderMap.find(skey);
-                if (sitr != shaderMap.end()) {
-                    program->addShader(sitr->second.get());
-                } else {
-                    ref_ptr<Shader> shader = new Shader(stype);
-                    if (shader->loadShaderSourceFromFile(fileName)) {
-                        program->addShader(shader.get());
-                        shaderMap.insert(ShaderMap::value_type(skey, shader));
-                    }
-                }
-            }
-            if (i == 0) {
-                pvec = pGeomShaders;
-                stype = Shader::GEOMETRY;
-            } else {
-                pvec = pFragShaders;
-                stype = Shader::FRAGMENT;
-            }
-        }
-        BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
-            program->addBindAttribLocation(key.first, key.second);
-        }
-        const SGPropertyNode* pGeometryVerticesOut = getEffectPropertyChild(effect, prop, "geometry-vertices-out");
-	if ( pGeometryVerticesOut ) {
-	    program->setParameter( GL_GEOMETRY_VERTICES_OUT_EXT, pGeometryVerticesOut->getIntValue() );
-	}
-        const SGPropertyNode* pGeometryInputType = getEffectPropertyChild(effect, prop, "geometry-input-type");
-	if ( pGeometryInputType ) {
-	    GLint type;
-	    findAttr( geometryInputType, pGeometryInputType->getStringValue(), type );
-	    program->setParameter( GL_GEOMETRY_INPUT_TYPE_EXT, type );
-	}
-        const SGPropertyNode* pGeometryOutputType = getEffectPropertyChild(effect, prop, "geometry-output-type");
-	if ( pGeometryOutputType ) {
-	    GLint type;
-	    findAttr( geometryOutputType, pGeometryOutputType->getStringValue(), type );
-	    program->setParameter( GL_GEOMETRY_OUTPUT_TYPE_EXT, type );
-	}
-
-        programMap.insert(ProgramMap::value_type(prgKey, program));
+        pass->setAttributeAndModes(program);
+        return;
     }
+    // The program wasn't in the map using the load path passed in with
+    // the options, but it might have already been loaded using a
+    // different load path i.e., its shaders were found in the fg data
+    // directory. So, resolve the shaders' file names and look in the
+    // resolvedProgramMap for a program using those shaders.
+    ProgramKey resolvedKey;
+    resolvedKey.attributes = prgKey.attributes;
+    BOOST_FOREACH(const ShaderKey& shaderKey, prgKey.shaders)
+    {
+        const string& shaderName = shaderKey.first;
+        Shader::Type stype = shaderKey.second;
+        string fileName = osgDB::findDataFile(shaderName, options);
+        if (fileName.empty())
+            throw BuilderException(string("couldn't find shader ") +
+                                   shaderName);
+        resolvedKey.shaders.push_back(ShaderKey(fileName, stype));
+    }
+    ProgramMap::iterator resitr = resolvedProgramMap.find(resolvedKey);
+    if (resitr != resolvedProgramMap.end()) {
+        program = resitr->second.get();
+        programMap.insert(ProgramMap::value_type(prgKey, program));
+        pass->setAttributeAndModes(program);
+        return;
+    }
+    program = new Program;
+    BOOST_FOREACH(const ShaderKey& skey, resolvedKey.shaders)
+    {
+        const string& fileName = skey.first;
+        Shader::Type stype = skey.second;
+        ShaderMap::iterator sitr = shaderMap.find(skey);
+        if (sitr != shaderMap.end()) {
+            program->addShader(sitr->second.get());
+        } else {
+            ref_ptr<Shader> shader = new Shader(stype);
+            if (shader->loadShaderSourceFromFile(fileName)) {
+                program->addShader(shader.get());
+                shaderMap.insert(ShaderMap::value_type(skey, shader));
+            }
+        }
+    }
+    BOOST_FOREACH(const ProgramKey::AttribKey& key, prgKey.attributes) {
+        program->addBindAttribLocation(key.first, key.second);
+    }
+    const SGPropertyNode* pGeometryVerticesOut
+        = getEffectPropertyChild(effect, prop, "geometry-vertices-out");
+    if (pGeometryVerticesOut)
+        program->setParameter(GL_GEOMETRY_VERTICES_OUT_EXT,
+                              pGeometryVerticesOut->getIntValue());
+    const SGPropertyNode* pGeometryInputType
+        = getEffectPropertyChild(effect, prop, "geometry-input-type");
+    if (pGeometryInputType) {
+        GLint type;
+        findAttr(geometryInputType, pGeometryInputType->getStringValue(), type);
+        program->setParameter(GL_GEOMETRY_INPUT_TYPE_EXT, type);
+    }
+    const SGPropertyNode* pGeometryOutputType
+        = getEffectPropertyChild(effect, prop, "geometry-output-type");
+    if (pGeometryOutputType) {
+        GLint type;
+        findAttr(geometryOutputType, pGeometryOutputType->getStringValue(),
+                 type);
+        program->setParameter(GL_GEOMETRY_OUTPUT_TYPE_EXT, type);
+    }
+    programMap.insert(ProgramMap::value_type(prgKey, program));
+    resolvedProgramMap.insert(ProgramMap::value_type(resolvedKey, program));
     pass->setAttributeAndModes(program);
 }
 

@@ -162,6 +162,14 @@ if test "x$with_rti13" != "x" ; then
     EXTRA_DIRS="${EXTRA_DIRS} $with_rti13"
 fi
 
+# specify the rti13 location
+AC_ARG_WITH(rti1516, [  --with-rti1516=PREFIX     Specify the prefix path to a HLA1516 rti])
+
+if test "x$with_rti1516" != "x" ; then
+    echo "rti1516 prefix is $with_rti1516"
+    EXTRA_DIRS="${EXTRA_DIRS} $with_rti1516"
+fi
+
 dnl Determine an extra directories to add to include/lib search paths
 case "${host}" in
 *-apple-darwin* | *-*-cygwin* | *-*-mingw32*)

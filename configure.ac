@@ -102,7 +102,7 @@ else
     includedir="${includedir}/simgear"
     echo "includedir changed to" $includedir "libdir is" $libdir
 fi
-         
+
 dnl set logging; default value of with_logging=yes
 AC_ARG_WITH(logging, [  --with-logging          Include logging output (default)])
 if test "x$with_logging" = "xno" ; then
@@ -154,6 +154,14 @@ if test "x$with_alut_framework" != "x"; then
     echo "ALUT framework prefix is $with_alut_framework"
 fi
 
+# specify the rti13 location
+AC_ARG_WITH(rti13, [  --with-rti13=PREFIX       Specify the prefix path to a HLA13 rti])
+
+if test "x$with_rti13" != "x" ; then
+    echo "rti13 prefix is $with_rti13"
+    EXTRA_DIRS="${EXTRA_DIRS} $with_rti13"
+fi
+
 dnl Determine an extra directories to add to include/lib search paths
 case "${host}" in
 *-apple-darwin* | *-*-cygwin* | *-*-mingw32*)
@@ -174,7 +182,7 @@ esac
 wi_EXTRA_DIRS(no, ${EXTRA_DIRS})
 
 
-dnl Using AM_CONDITIONAL is a step out of the protected little 
+dnl Using AM_CONDITIONAL is a step out of the protected little
 dnl automake fold so it is potentially dangerous.  But, we are
 dnl beginning to run into cases where the standard checks are not
 dnl enough.  AM_CONDITIONALS are then referenced to conditionally
@@ -265,7 +273,7 @@ case "${host}" in
     AC_SEARCH_LIBS(SmcOpenConnection, SM)
     AC_SEARCH_LIBS(XtMalloc, Xt)
     AC_SEARCH_LIBS(XmuLookupStandardColormap, Xmu)
-    
+
     AC_SEARCH_LIBS(glNewList, [ GL GLcore MesaGL ])
     if test "x$ac_cv_search_glNewList" = "x-lGLcore"; then
 	dnl if GLcore found, then also check for GL
@@ -348,7 +356,7 @@ case "${host}" in
         [AC_DEFINE(AS_TR_CPP(HAVE_FRAMEWORK_$1), 1, [Define if framework $1 is available.])]
     )
     AS_IF([test AS_VAR_GET(ac_Framework) = yes], $4)
-    
+
     AS_VAR_POPDEF([ac_Framework])dnl
     ])
 
@@ -438,7 +446,7 @@ case "${host}" in
         AC_SUBST(openthreads_FRAMEWORK)
     else
         dnl
-        dnl This is needed when osg dynamic libs are specified 
+        dnl This is needed when osg dynamic libs are specified
         dnl instead of OSG frameworks on Mac OS X
         dnl
         AC_CHECK_LIB(OpenThreads,OpenThreadsGetVersion)
@@ -489,6 +497,17 @@ if test "x$ac_cv_header_boost_version_hpp" != "xyes"; then
     echo "configure aborted."
     exit
 fi
+
+dnl Check for a HLA13 rti.
+dnl This is really tricky because of the ancient iostream stuff in RTI13
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS -DRTI_USES_STD_FSTREAM"
+AC_CHECK_HEADER(RTI.hh)
+CPPFLAGS="${saved_CPPFLAGS}"
+
+dnl Up to now only RTI13
+AM_CONDITIONAL(ENABLE_HLA, test "x$ac_cv_header_RTI_hh" = "xyes")
+AM_CONDITIONAL(ENABLE_HLA13, test "x$ac_cv_header_RTI_hh" = "xyes")
 
 AC_LANG_POP
 
@@ -548,6 +567,7 @@ AC_CONFIG_FILES([ \
 	simgear/bucket/Makefile \
 	simgear/debug/Makefile \
 	simgear/ephemeris/Makefile \
+	simgear/hla/Makefile \
 	simgear/io/Makefile \
 	simgear/magvar/Makefile \
 	simgear/math/Makefile \

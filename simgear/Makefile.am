@@ -1,3 +1,9 @@
+if ENABLE_HLA
+HLA_DIR = hla
+else
+HLA_DIR =
+endif
+
 EXTRA_DIST = simgear_config.h.vc5 simgear_config.h-msvc71 version.h.in
 
 include_HEADERS = \
@@ -24,6 +30,7 @@ SUBDIRS_ALWAYS = \
 	structure \
 	bucket \
 	ephemeris \
+	$(HLA_DIR) \
 	io \
 	magvar \
 	math \

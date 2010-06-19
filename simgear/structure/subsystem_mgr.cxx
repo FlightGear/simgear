@@ -104,7 +104,9 @@ void SGSubsystem::stamp(const string& name)
 // Implementation of SGSubsystemGroup.
 ////////////////////////////////////////////////////////////////////////
 
-SGSubsystemGroup::SGSubsystemGroup ()
+SGSubsystemGroup::SGSubsystemGroup () :
+  _fixedUpdateTime(-1.0),
+  _updateTimeRemainder(0.0)
 {
 }
 
@@ -157,18 +159,31 @@ SGSubsystemGroup::unbind ()
 void
 SGSubsystemGroup::update (double delta_time_sec)
 {
-    for (unsigned int i = 0; i < _members.size(); i++)
-    {
-         SGTimeStamp timeStamp = SGTimeStamp::now();
-         _members[i]->update(delta_time_sec); // indirect call
-         timeStamp = timeStamp - SGTimeStamp::now();
-         double b = timeStamp.toUSecs();
-         _members[i]->updateExecutionTime(b);
-         double threshold = _members[i]->getTimeWarningThreshold();
-         if (( b > threshold ) && (b > 10000)) {
-             _members[i]->printTimingInformation(b);
-         }
+    int loopCount = 1;
+    // if dt == 0.0, we are paused, so we need to run one iteration
+    // of our members; if we have a fixed update time, we compute a
+    // loop count, and locally adjust dt
+    if ((delta_time_sec > 0.0) && (_fixedUpdateTime > 0.0)) {
+      double localDelta = delta_time_sec + _updateTimeRemainder;
+      loopCount = SGMiscd::roundToInt(localDelta / _fixedUpdateTime);
+      _updateTimeRemainder = delta_time_sec - (loopCount * _fixedUpdateTime);
+      delta_time_sec = _fixedUpdateTime;
     }
+
+    while (loopCount-- > 0) {
+      for (unsigned int i = 0; i < _members.size(); i++)
+      {
+           SGTimeStamp timeStamp = SGTimeStamp::now();
+           _members[i]->update(delta_time_sec); // indirect call
+           timeStamp = timeStamp - SGTimeStamp::now();
+           double b = timeStamp.toUSecs();
+           _members[i]->updateExecutionTime(b);
+           double threshold = _members[i]->getTimeWarningThreshold();
+           if (( b > threshold ) && (b > 10000)) {
+               _members[i]->printTimingInformation(b);
+           }
+      }
+    } // of multiple update loop
 }
 
 void 
@@ -231,6 +246,12 @@ SGSubsystemGroup::remove_subsystem (const string &name)
             return;
         }
     }
+}
+
+void
+SGSubsystemGroup::set_fixed_update_time(double dt)
+{
+  _fixedUpdateTime = dt;
 }
 
 void

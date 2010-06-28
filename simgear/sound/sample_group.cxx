@@ -103,6 +103,7 @@ void SGSampleGroup::update( double dt ) {
         }
 
         if ( result == AL_STOPPED ) {
+            sample->stop();
             ALuint buffer = sample->get_buffer();
             alDeleteBuffers( 1, &buffer );
             testForALError("buffer remove");
@@ -157,17 +158,6 @@ void SGSampleGroup::update( double dt ) {
                 // sadly, no free source available at this time
             }
 
-        } else if ( sample->is_valid_source() && sample->has_changed() ) {
-            if ( !sample->is_playing() ) {
-                // a request to stop playing the sound has been filed.
-
-                sample->stop();
-                sample->no_valid_source();
-                _smgr->release_source( sample->get_source() );
-            } else if ( _smgr->has_changed() ) {
-                update_sample_config( sample );
-            }
-
         } else if ( sample->is_valid_source() ) {
             // check if the sound has stopped by itself
 
@@ -183,6 +173,18 @@ void SGSampleGroup::update( double dt ) {
                 _smgr->release_buffer( sample );
                 remove( sample->get_sample_name() );
             }
+            else
+            if ( sample->has_changed() ) {
+                if ( !sample->is_playing() ) {
+                    // a request to stop playing the sound has been filed.
+                    sample->stop();
+                    sample->no_valid_source();
+                    _smgr->release_source( sample->get_source() );
+                } else if ( _smgr->has_changed() ) {
+                    update_sample_config( sample );
+                }
+            }
+
         }
         testForALError("update");
     }
@@ -258,6 +260,7 @@ SGSampleGroup::stop ()
             if ( sample->is_playing() ) {
                 alSourceStop( source );
                 alSourcei( source, AL_BUFFER, 0 );
+                sample->stop();
             }
             _smgr->release_source( source );
             sample->no_valid_source();

@@ -95,19 +95,16 @@ SGModelLib::~SGModelLib()
 
 namespace
 {
-osg::Node* loadFile(const string& path, osgDB::ReaderWriter::Options* options)
+osg::Node* loadFile(const string& path, SGReaderWriterXMLOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
+    if (boost::iends_with(path, ".ac"))
+        options->setInstantiateEffects(true);
     ref_ptr<Node> model = readRefNodeFile(path, options);
     if (!model)
         return 0;
-    if (boost::iends_with(path, ".ac")) {
-        ref_ptr<SGReaderWriterXMLOptions> sgOptions;
-        if (options)
-            sgOptions = new SGReaderWriterXMLOptions(*options);
-        model = instantiateEffects(model.get(), sgOptions.get());
-    }
+    else
      return model.release();
 }
 }
@@ -130,8 +127,7 @@ SGModelLib::loadModel(const string &path,
 }
 
 osg::Node*
-SGModelLib::loadPagedModel(const string &path,
-                           SGPropertyNode *prop_root,
+SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
                            SGModelData *data)
 {
     SGPagedLOD *plod = new SGPagedLOD;
@@ -139,11 +135,14 @@ SGModelLib::loadPagedModel(const string &path,
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
+    osg::ref_ptr<SGReaderWriterXMLOptions> opt
+        = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()
+                                         ->getOptions()));
     opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
-    
+    if (boost::iends_with(path, ".ac"))
+        opt->setInstantiateEffects(true);
     plod->setReaderWriterOptions(opt.get());
     return plod;
 }

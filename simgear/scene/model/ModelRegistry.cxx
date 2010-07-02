@@ -55,6 +55,8 @@
 #include <simgear/props/condition.hxx>
 
 #include "BoundingVolumeBuildVisitor.hxx"
+#include "model.hxx"
+#include "SGReaderWriterXMLOptions.hxx"
 
 using namespace std;
 using namespace osg;
@@ -384,7 +386,7 @@ public:
 
 static SGReadCallbackInstaller readCallbackInstaller;
 
-// we get optimal geometry from the loader.
+// we get optimal geometry from the loader (Hah!).
 struct ACOptimizePolicy : public OptimizeModelPolicy {
     ACOptimizePolicy(const string& extension)  :
         OptimizeModelPolicy(extension)
@@ -408,6 +410,10 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
                 && group->getNumChildren() == 1)
                 optimized = static_cast<Node*>(group->getChild(0));
         }
+        const SGReaderWriterXMLOptions* sgopt
+            = dynamic_cast<const SGReaderWriterXMLOptions*>(opt);
+        if (sgopt && sgopt->getInstantiateEffects())
+            optimized = instantiateEffects(optimized.get(), sgopt);
         return optimized.release();
     }
 };

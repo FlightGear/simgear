@@ -34,30 +34,38 @@ public:
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
 
     SGReaderWriterXMLOptions():
-            osgDB::ReaderWriter::Options(),
-            _prop_root(0),
-            _load_panel(0),
-            _model_data(0) {}
+        osgDB::ReaderWriter::Options(),
+        _prop_root(0),
+        _load_panel(0),
+        _model_data(0),
+        _instantiateEffects(false)
+    {}
 
     SGReaderWriterXMLOptions(const std::string& str):
-            osgDB::ReaderWriter::Options(str),
-            _prop_root(0),
-            _load_panel(0),
-            _model_data(0) {}
+        osgDB::ReaderWriter::Options(str),
+        _prop_root(0),
+        _load_panel(0),
+        _model_data(0),
+        _instantiateEffects(false)        
+    {}
 
     SGReaderWriterXMLOptions(const SGReaderWriterXMLOptions& options,
                              const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
-            osgDB::ReaderWriter::Options(options, copyop),
-            _prop_root(options._prop_root),
-            _load_panel(options._load_panel),
-            _model_data(options._model_data) {}
+        osgDB::ReaderWriter::Options(options, copyop),
+        _prop_root(options._prop_root),
+        _load_panel(options._load_panel),
+        _model_data(options._model_data),
+        _instantiateEffects(options._instantiateEffects)
+    {}
 
     SGReaderWriterXMLOptions(const osgDB::ReaderWriter::Options& options,
                              const osg::CopyOp& copyop=osg::CopyOp::SHALLOW_COPY):
-            osgDB::ReaderWriter::Options(options, copyop),
-            _prop_root(0),
-            _load_panel(0),
-            _model_data(0) {}
+        osgDB::ReaderWriter::Options(options, copyop),
+        _prop_root(0),
+        _load_panel(0),
+        _model_data(0),
+        _instantiateEffects(false)
+    {}
 
     SGPropertyNode *getPropRoot() const {
         return _prop_root;
@@ -67,6 +75,10 @@ public:
     }
     SGModelData *getModelData() const {
         return _model_data.get();
+    }
+    bool getInstantiateEffects() const
+    {
+        return _instantiateEffects;
     }
 
     void setPropRoot(SGPropertyNode *p) {
@@ -78,13 +90,19 @@ public:
     void setModelData(SGModelData *d) {
         _model_data=d;
     }
-
+    void setInstantiateEffects(bool doit)
+    {
+        _instantiateEffects = doit;
+    }
+    
+    
 protected:
     virtual ~SGReaderWriterXMLOptions() {}
 
     SGPropertyNode_ptr _prop_root;
     osg::Node *(*_load_panel)(SGPropertyNode *);
     osg::ref_ptr<SGModelData> _model_data;
+    bool _instantiateEffects;
 };
 
 }

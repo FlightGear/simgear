@@ -384,6 +384,8 @@ public:
         INIT = 0,
         GENERAL,
         FDM,  ///< flight model, autopilot, instruments that run coupled
+        POST_FDM,   ///< certain subsystems depend on FDM data
+        DISPLAY,    ///< view, camera, rendering updates
         MAX_GROUPS
     };
 

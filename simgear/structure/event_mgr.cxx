@@ -1,8 +1,9 @@
 #include "event_mgr.hxx"
 
 #include <simgear/math/SGMath.hxx>
+#include <simgear/debug/logstream.hxx>
 
-void SGEventMgr::add(SGCallback* cb,
+void SGEventMgr::add(const std::string& name, SGCallback* cb,
                      double interval, double delay,
                      bool repeat, bool simtime)
 {
@@ -16,7 +17,8 @@ void SGEventMgr::add(SGCallback* cb,
     t->mgr = this;
     t->repeat = repeat;
     t->simtime = simtime;
-
+    t->name = name;
+    
     SGTimerQueue* q = simtime ? &_simQueue : &_rtQueue;
 
     q->insert(t, delay);
@@ -41,6 +43,21 @@ void SGEventMgr::update(double delta_time_sec)
     
     double rt = _rtProp ? _rtProp->getDoubleValue() : 0;
     _rtQueue.update(rt);
+}
+
+void SGEventMgr::removeTask(const std::string& name)
+{
+  SGTimer* t = _simQueue.findByName(name);
+  if (t) {
+    _simQueue.remove(t);
+  } else if ((t = _rtQueue.findByName(name))) {
+    _rtQueue.remove(t);
+  } else {
+    SG_LOG(SG_GENERAL, SG_WARN, "removeTask: no task found with name:" << name);
+    return;
+  }
+  
+  delete t;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -165,3 +182,15 @@ void SGTimerQueue::growArray()
     delete[] _table;
     _table = newTable;
 }
+
+SGTimer* SGTimerQueue::findByName(const std::string& name) const
+{
+  for (int i=0; i < _numEntries; ++i) {
+    if (_table[i].timer->name == name) {
+      return _table[i].timer;
+    }
+  }
+  
+  return NULL;
+}
+

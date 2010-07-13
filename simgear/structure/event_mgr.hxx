@@ -9,6 +9,7 @@
 class SGEventMgr;
 
 struct SGTimer {
+    std::string name;
     double interval;
     SGCallback* callback;
     SGEventMgr* mgr;
@@ -33,6 +34,7 @@ public:
     SGTimer* nextTimer() { return _numEntries ? _table[0].timer : 0; }
     double   nextTime()  { return -_table[0].pri; }
 
+    SGTimer* findByName(const std::string& name) const;
 private:
     // The "priority" is stored as a negative time.  This allows the
     // implemenetation to treat the "top" of the heap as the largest
@@ -77,43 +79,45 @@ public:
      * ex: addTask("foo", &Function ... )
      */
     template<typename FUNC>
-    inline void addTask(const char* name, const FUNC& f,
+    inline void addTask(const std::string& name, const FUNC& f,
                         double interval, double delay=0, bool sim=false)
-    { add(make_callback(f), interval, delay, true, sim); }
+    { add(name, make_callback(f), interval, delay, true, sim); }
 
     /**
      * Add a single function callback event as a one-shot event.
      * ex: addEvent("foo", &Function ... )
      */
     template<typename FUNC>
-    inline void addEvent(const char* name, const FUNC& f,
+    inline void addEvent(const std::string& name, const FUNC& f,
                          double delay, bool sim=false)
-    { add(make_callback(f), 0, delay, false, sim); }
+    { add(name, make_callback(f), 0, delay, false, sim); }
 
     /**
      * Add a object/method pair as a repeating task.
      * ex: addTask("foo", &object, &ClassName::Method, ...)
      */
     template<class OBJ, typename METHOD>
-    inline void addTask(const char* name,
+    inline void addTask(const std::string& name,
                         const OBJ& o, METHOD m,
                         double interval, double delay=0, bool sim=false)
-    { add(make_callback(o,m), interval, delay, true, sim); }
+    { add(name, make_callback(o,m), interval, delay, true, sim); }
 
     /**
      * Add a object/method pair as a repeating task.
      * ex: addEvent("foo", &object, &ClassName::Method, ...)
      */
     template<class OBJ, typename METHOD>
-    inline void addEvent(const char* name,
+    inline void addEvent(const std::string& name,
                          const OBJ& o, METHOD m,
                          double delay, bool sim=false)
-    { add(make_callback(o,m), 0, delay, false, sim); }
+    { add(name, make_callback(o,m), 0, delay, false, sim); }
 
+
+    void removeTask(const std::string& name);
 private:
     friend struct SGTimer;
 
-    void add(SGCallback* cb,
+    void add(const std::string& name, SGCallback* cb,
              double interval, double delay,
              bool repeat, bool simtime);
 

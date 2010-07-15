@@ -628,6 +628,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\misc\sg_dir.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\sg_dir.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\misc\sgstream.cxx"
 				>
 			</File>

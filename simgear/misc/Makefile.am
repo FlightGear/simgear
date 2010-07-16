@@ -12,7 +12,8 @@ include_HEADERS = \
 	zfstream.hxx \
 	interpolator.hxx \
 	stdint.hxx \
-	PathOptions.hxx
+	PathOptions.hxx \
+	sg_dir.hxx
 
 libsgmisc_a_SOURCES = \
 	sg_path.cxx \
@@ -22,7 +23,8 @@ libsgmisc_a_SOURCES = \
 	texcoord.cxx \
 	zfstream.cxx \
 	interpolator.cxx \
-	PathOptions.cxx
+	PathOptions.cxx \
+	sg_dir.cxx
 
 #noinst_PROGRAMS = tabbed_value_test swap_test
 

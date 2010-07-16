@@ -31,6 +31,7 @@
 
 #include <simgear/debug/logstream.hxx>
 
+#include <cstring>
 #include <iostream>
 
 namespace simgear

@@ -274,7 +274,7 @@ void MakeEffectVisitor::apply(osg::Geode& geode)
         ref_ptr<SGSceneUserData> userData = SGSceneUserData::getSceneUserData(&geode);
         if (userData.valid())
             eg->setUserData(new SGSceneUserData(*userData));
-        for (int i = 0; i < geode.getNumDrawables(); ++i) {
+        for (unsigned i = 0; i < geode.getNumDrawables(); ++i) {
             osg::Drawable *drawable = geode.getDrawable(i);
             eg->addDrawable(drawable);
 

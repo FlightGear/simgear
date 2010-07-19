@@ -67,6 +67,7 @@
 #      define vsnprintf _vsnprintf
 #    endif
 #    define copysign _copysign
+#    define strcasecmp stricmp
 
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float

@@ -29,6 +29,8 @@
 #  include <dirent.h>
 #endif
 
+#include <sys/stat.h>
+
 #include <simgear/debug/logstream.hxx>
 
 #include <cstring>
@@ -110,8 +112,26 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.')) {
       continue;
     }
-        
-    if (entry->d_type == DT_DIR) {
+    
+    int type = entry->d_type;
+    if (type == DT_LNK) {
+      // find symlink target type using stat()
+      struct stat s;
+      if (stat(file(entry->d_name).c_str(), &s)) {
+        continue; // stat() failed
+      }
+      
+      if (S_ISDIR(s.st_mode)) {
+        type = DT_DIR;
+      } else if (S_ISREG(s.st_mode)) {
+        type = DT_REG;
+      } else {
+        // symlink to block/fifo/char file, ignore
+        continue;
+      }
+    } // of symlink look-through
+    
+    if (type == DT_DIR) {
       if (!(types & TYPE_DIR)) {
         continue;
       }
@@ -121,7 +141,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
           continue;
         }
       }
-    } else if (entry->d_type == DT_REG) {
+    } else if (type == DT_REG) {
       if (!(types & TYPE_FILE)) {
         continue;
       }

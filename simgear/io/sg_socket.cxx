@@ -28,6 +28,8 @@
 #include <simgear/compiler.h>
 
 #include <iostream>
+#include <cstring>
+#include <cstdlib> // for atoi
 
 #include <simgear/debug/logstream.hxx>
 

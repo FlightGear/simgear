@@ -27,21 +27,13 @@
 #ifndef _SG_SOCKET_HXX
 #define _SG_SOCKET_HXX
 
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 
 #include <string>
 
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
-
-#include <plib/netSocket.h>
-
-using std::string;
+#include <simgear/io/raw_socket.hxx>
 
 #define SG_MAX_SOCKET_QUEUE 32
 
@@ -52,14 +44,14 @@ using std::string;
 class SGSocket : public SGIOChannel {
 public:
 private:
-    string hostname;
-    string port_str;
+    std::string hostname;
+    std::string port_str;
 
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
     int save_len;
 
-    netSocket sock;
-    netSocket* client;
+    simgear::Socket sock;
+    simgear::Socket* client;
     unsigned short port;
     bool is_tcp;
     bool is_server;
@@ -126,7 +118,7 @@ public:
      * @param port port number if we care to choose one.
      * @param style specify "udp" or "tcp"
      */
-    SGSocket( const string& host, const string& port, const string& style );
+    SGSocket( const std::string& host, const std::string& port, const std::string& style );
 
     /** Destructor */
     ~SGSocket();
@@ -161,10 +153,10 @@ public:
     inline void set_timeout(int i) { timeout = i; }
 
     /** @return the remote host name */
-    inline string get_hostname() const { return hostname; }
+    inline std::string get_hostname() const { return hostname; }
 
     /** @return the port number (in string form) */
-    inline string get_port_str() const { return port_str; }
+    inline std::string get_port_str() const { return port_str; }
 };
 
 

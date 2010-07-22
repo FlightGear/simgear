@@ -28,20 +28,13 @@
 #define _SG_SOCKET_UDP_HXX
 
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
-#include <plib/netSocket.h>
-
 #include <simgear/compiler.h>
 
 #include <string>
 
 #include <simgear/math/sg_types.hxx>
 #include <simgear/io/iochannel.hxx>
-
-using std::string;
+#include <simgear/io/raw_socket.hxx>
 
 /**
  * A UDP socket I/O class based on SGIOChannel and plib/net.
@@ -50,10 +43,10 @@ class SGSocketUDP : public SGIOChannel {
 
 private:
 
-    netSocket sock;
+    simgear::Socket sock;
 
-    string hostname;
-    string port_str;
+    std::string hostname;
+    std::string port_str;
 
     char save_buf[ 2 * SG_IO_MAX_MSG_SIZE ];
     int save_len;
@@ -128,10 +121,10 @@ public:
     bool setBlocking( bool value );
 
     /** @return the remote host name */
-    inline string get_hostname() const { return hostname; }
+    inline std::string get_hostname() const { return hostname; }
 
     /** @return the port number (in string form) */
-    inline string get_port_str() const { return port_str; }
+    inline std::string get_port_str() const { return port_str; }
 };
 
 

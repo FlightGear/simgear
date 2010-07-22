@@ -26,10 +26,6 @@
 
 #include <simgear/compiler.h>
 
-#if defined( sgi )
-#include <strings.h>
-#endif
-
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_socket_udp.hxx"

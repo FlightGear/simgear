@@ -10,7 +10,7 @@ include_HEADERS = \
 	sg_serial.hxx \
 	sg_socket.hxx \
 	sg_socket_udp.hxx \
-	raw_socket.hxx \
+	raw_socket.hxx 
 
 libsgio_a_SOURCES = \
 	iochannel.cxx \

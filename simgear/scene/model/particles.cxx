@@ -62,11 +62,13 @@ void GlobalParticleCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     osg::Matrix om(toOsg(q));
     osg::Vec3 v(0,0,9.81);
     gravity = om.preMult(v);
+    // NOTE: THIS WIND COMPUTATION DOESN'T SEEM TO AFFECT PARTICLES
     const osg::Vec3& zUpWind = Particles::getWindVector();
-    osg::Vec3 w(zUpWind.y(), zUpWind.x(), - zUpWind.z());
+    osg::Vec3 w(zUpWind.y(), zUpWind.x(), -zUpWind.z());
     wind = om.preMult(w);
 
-    //SG_LOG(SG_GENERAL, SG_ALERT, "wind vector:"<<w[0]<<","<<w[1]<<","<<w[2]<<"\n");
+    // SG_LOG(SG_GENERAL, SG_ALERT,
+    //        "wind vector:" << w[0] << "," <<w[1] << "," << w[2]);
 }
 
 

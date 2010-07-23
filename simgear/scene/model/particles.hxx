@@ -257,6 +257,13 @@ public:
      * magnitude is the velocity in meters per second.
      */
     static void setWindVector(const osg::Vec3& wind) { _wind = wind; }
+    static void setWindFrom(const double from_deg, const double speed_kt) {
+	double map_rad = -from_deg * SG_DEGREES_TO_RADIANS;
+	double speed_mps = speed_kt * SG_KT_TO_MPS;
+	_wind[0] = cos(map_rad) * speed_mps;
+	_wind[1] = sin(map_rad) * speed_mps;
+	_wind[2] = 0.0;
+    }
     static const osg::Vec3& getWindVector() { return _wind; }
 protected:
     float shooterExtraRange;

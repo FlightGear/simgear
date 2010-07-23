@@ -47,6 +47,12 @@ public:
   SGVec3<T> getNormalizedDirection() const
   { return normalize(getDirection()); }
 
+  SGVec3<T> getClosestPointTo(const SGVec3<T>& point)
+  {
+      SGVec3<T> u(getNormalizedDirection()),
+          v(point - _origin);
+      return (dot(u, v) * u) + _origin; 
+  }
 private:
   SGVec3<T> _origin;
   SGVec3<T> _direction;

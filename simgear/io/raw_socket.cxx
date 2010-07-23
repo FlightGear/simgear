@@ -331,7 +331,7 @@ bool Socket::isNonBlockingError ()
   if ( wsa_errno != 0 )
   {
     WSASetLastError(0);
-    ulSetError(UL_WARNING,"WSAGetLastError() => %d",wsa_errno);
+	SG_LOG(SG_IO, SG_WARN, "isNonBlockingError: WSAGetLastError():" << wsa_errno);
     switch (wsa_errno) {
     case WSAEWOULDBLOCK: // always == NET_EAGAIN?
     case WSAEALREADY:
@@ -474,8 +474,7 @@ int Socket::initSockets()
 	WSADATA wsaData;
 
 	if ( WSAStartup(version_wanted, &wsaData) != 0 ) {
-		ulSetError(UL_WARNING,"Couldn't initialize Winsock 1.1");
-		return(-1);
+		throw sg_exception("WinSock initialization failed");
 	}
 #endif
 

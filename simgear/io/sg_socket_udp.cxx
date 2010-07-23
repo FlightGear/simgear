@@ -30,6 +30,8 @@
 
 #include "sg_socket_udp.hxx"
 
+#include <cstring>
+#include <cstdlib> // for atoi
 
 SGSocketUDP::SGSocketUDP( const string& host, const string& port ) :
     hostname(host),

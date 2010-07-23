@@ -80,6 +80,12 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     }
     
     if (fData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+	  if (types & NO_DOT_OR_DOTDOT) {
+		if (!strcmp(fData.cFileName,".") || !strcmp(fData.cFileName,"..")) {
+		  continue;
+		}
+	  }
+
       if (!(types & TYPE_DIR)) {
         continue;
       }
@@ -162,6 +168,27 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   closedir(dp);
 #endif
   return result;
+}
+
+bool Dir::exists() const
+{
+#ifdef _WIN32
+  struct _stat buf ;
+
+  if (_stat (_path.c_str(), &buf ) < 0) {
+    return false;
+  }
+  
+  return ((S_IFDIR & buf.st_mode ) !=0);
+#else
+  struct stat buf ;
+
+  if (stat(_path.c_str(), &buf ) < 0) {
+    return false ;
+  }
+  
+  return ((S_ISDIR(buf.st_mode )) != 0);
+#endif
 }
 
 SGPath Dir::file(const std::string& name) const

@@ -28,7 +28,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <sys/stat.h>
 #ifdef _WIN32
 #  include <direct.h>
 #endif
@@ -49,9 +48,7 @@ static const char sgSearchPathSep = ':';
 #endif
 
 
-// If Unix, replace all ":" with "/".  If MacOS, replace all "/" with
-// ":" it should go without saying that neither of these characters
-// should be used in file or directory names.  In windoze, allow the
+// If Unix, replace all ":" with "/".  In windoze, allow the
 // second character to be a ":" for things like c:\foo\bar
 
 void
@@ -172,13 +169,25 @@ string SGPath::extension() const {
     }
 }
 
-bool SGPath::exists() const {
-    FILE* fp = fopen( path.c_str(), "r");
-    if (fp == 0) {
-	return false;
-    }
-    fclose(fp);
-    return true;
+bool SGPath::exists() const
+{
+#ifdef _WIN32
+  struct _stat buf;
+
+  if (_stat(path.c_str(), &buf) < 0) {
+    return false;
+  }
+  
+  return true;
+#else
+  struct stat buf ;
+
+  if (stat(path.c_str(), &buf) < 0) {
+    return false ;
+  }
+  
+  return true;
+#endif
 }
 
 #ifdef _WIN32

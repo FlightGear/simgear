@@ -27,11 +27,9 @@
 
 #include <simgear/compiler.h>
 
-#if defined( sgi )
-#include <strings.h>
-#endif
-
 #include <iostream>
+#include <cstring>
+#include <cstdlib> // for atoi
 
 #include <simgear/debug/logstream.hxx>
 
@@ -52,8 +50,8 @@ SGSocket::SGSocket( const string& host, const string& port_,
 {
     if (!init)
     {
-	netInit(NULL, NULL);	// plib-1.4.2 compatible
-	init = true;
+      simgear::Socket::initSockets();
+      init = true;
     }
 
     if ( style == "tcp" )
@@ -326,7 +324,7 @@ SGSocket::readline( char *buf, int length )
 int
 SGSocket::write( const char *buf, const int length )
 {
-    netSocket* s = client == 0 ? &sock : client;
+    simgear::Socket* s = client == 0 ? &sock : client;
     if (s->getHandle() == -1)
     {
 	return 0;
@@ -384,24 +382,24 @@ SGSocket::nonblock()
 int
 SGSocket::poll()
 {
-    netSocket* readers[2];
+    simgear::Socket* readers[2];
 
     readers[0] = client != 0 ? client : &sock;
     readers[1] = 0;
 
-    netSocket* writers[1];
+    simgear::Socket* writers[1];
     writers[0] = 0;
 
-    int result = netSocket::select( readers, writers, timeout );
+    int result = simgear::Socket::select( readers, writers, timeout );
 
     if (result > 0 && is_server && client == 0)
     {
 	// Accept a new client connection
-	netAddress addr;
+	simgear::IPAddress addr;
 	int new_fd = sock.accept( &addr );
 	SG_LOG( SG_IO, SG_INFO, "Accepted connection from "
 		<< addr.getHost() << ":" << addr.getPort() );
-	client = new netSocket();
+	client = new simgear::Socket();
 	client->setHandle( new_fd );
 	return 0;
     }

@@ -26,14 +26,12 @@
 
 #include <simgear/compiler.h>
 
-#if defined( sgi )
-#include <strings.h>
-#endif
-
 #include <simgear/debug/logstream.hxx>
 
 #include "sg_socket_udp.hxx"
 
+#include <cstring>
+#include <cstdlib> // for atoi
 
 SGSocketUDP::SGSocketUDP( const string& host, const string& port ) :
     hostname(host),

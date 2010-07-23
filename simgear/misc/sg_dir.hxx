@@ -52,6 +52,11 @@ namespace simgear
     PathList children(int types = 0, const std::string& nameGlob = "") const;
     
     SGPath file(const std::string& name) const;
+    
+    /**
+     * Check that the directory at the path exists (and is a directory!)
+     */
+    bool exists() const;
   private:
     mutable SGPath _path;
   };

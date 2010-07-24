@@ -119,25 +119,13 @@ PathList Dir::children(int types, const std::string& nameFilter) const
       continue;
     }
     
-    int type = entry->d_type;
-    if (type == DT_LNK) {
-      // find symlink target type using stat()
-      struct stat s;
-      if (stat(file(entry->d_name).c_str(), &s)) {
-        continue; // stat() failed
-      }
-      
-      if (S_ISDIR(s.st_mode)) {
-        type = DT_DIR;
-      } else if (S_ISREG(s.st_mode)) {
-        type = DT_REG;
-      } else {
-        // symlink to block/fifo/char file, ignore
-        continue;
-      }
-    } // of symlink look-through
+    struct stat s;
+    if (stat(file(entry->d_name).c_str(), &s)) {
+      continue; // stat() failed
+    }
     
-    if (type == DT_DIR) {
+    if (S_ISDIR(s.st_mode)) {
+      // directory handling
       if (!(types & TYPE_DIR)) {
         continue;
       }
@@ -147,14 +135,16 @@ PathList Dir::children(int types, const std::string& nameFilter) const
           continue;
         }
       }
-    } else if (type == DT_REG) {
+    } else if (S_ISREG(s.st_mode)) {
+      // regular file handling
       if (!(types & TYPE_FILE)) {
         continue;
       }
     } else {
-      continue; // ignore char/block devices, fifos, etc
+      // block device /fifo/char file, ignore
+      continue;
     }
-    
+
     if (!nameFilter.empty()) {
       if (strstr(entry->d_name, nameFilter.c_str()) == NULL) {
         continue;

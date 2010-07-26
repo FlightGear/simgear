@@ -28,8 +28,6 @@
 #define _SG_BINOBJ_HXX
 
 
-#include <plib/sg.h>
-
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/math/sg_types.hxx>

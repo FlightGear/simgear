@@ -23,6 +23,7 @@
 #include <algorithm>
 //yuck
 #include <cstring>
+#include <cassert>
 
 #include <boost/bind.hpp>
 

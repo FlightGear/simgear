@@ -23,7 +23,6 @@
 #ifndef _NEWCLOUD_HXX
 #define _NEWCLOUD_HXX
 
-#include <plib/sg.h>
 #include <simgear/compiler.h>
 #include <string>
 #include <vector>

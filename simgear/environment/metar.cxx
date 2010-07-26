@@ -30,6 +30,7 @@
 
 #include <string>
 #include <time.h>
+#include <cstring>
 
 #include <simgear/io/sg_socket.hxx>
 #include <simgear/debug/logstream.hxx>

@@ -24,8 +24,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <plib/sg.h>
-
 #include "route.hxx"
 
 

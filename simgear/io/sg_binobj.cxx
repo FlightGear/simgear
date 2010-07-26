@@ -31,6 +31,8 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <cstring>
+#include <cstdlib> // for system()
 
 #include <vector>
 #include <string>
@@ -693,9 +695,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteUShort( fp, 1 );		                // nelements
 
     sgWriteUInt( fp, sizeof(double) * 3 + sizeof(float) ); // nbytes
-    sgdVec3 center;
-    sgdSetVec3( center, gbs_center.x(), gbs_center.y(), gbs_center.z() );
-    sgWritedVec3( fp, center );
+    sgWritedVec3( fp, gbs_center );
     sgWriteFloat( fp, gbs_radius );
 
     // dump vertex list
@@ -704,8 +704,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteUShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, wgs84_nodes.size() * sizeof(float) * 3 ); // nbytes
     for ( i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-        SGVec3f p = toVec3f(wgs84_nodes[i] - gbs_center);
-	sgWriteVec3( fp, p.data() );
+        sgWriteVec3( fp, toVec3f(wgs84_nodes[i] - gbs_center));
     }
 
     // dump vertex color list
@@ -714,7 +713,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteUShort( fp, 1 );		                 // nelements
     sgWriteUInt( fp, colors.size() * sizeof(float) * 4 ); // nbytes
     for ( i = 0; i < (int)colors.size(); ++i ) {
-	sgWriteVec4( fp, colors[i].data() );
+      sgWriteVec4( fp, colors[i]);
     }
 
     // dump vertex normal list
@@ -737,7 +736,7 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     sgWriteUShort( fp, 1 );		                // nelements
     sgWriteUInt( fp, texcoords.size() * sizeof(float) * 2 ); // nbytes
     for ( i = 0; i < (int)texcoords.size(); ++i ) {
-	sgWriteVec2( fp, texcoords[i].data() );
+      sgWriteVec2( fp, texcoords[i]);
     }
 
     // dump point groups if they exist

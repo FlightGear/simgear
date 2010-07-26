@@ -18,6 +18,7 @@
 #include "BVHSubTreeCollector.hxx"
 
 #include <simgear/math/SGGeometry.hxx>
+#include <cassert>
 
 #include "BVHNode.hxx"
 #include "BVHGroup.hxx"

@@ -26,7 +26,8 @@
 #  include <simgear_config.h>
 #endif
 
-#include <stdlib.h>	// rand()
+#include <cstdlib>	// rand()
+#include <cstring>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>

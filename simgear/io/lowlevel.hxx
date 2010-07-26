@@ -30,10 +30,10 @@
 #include <stdio.h>
 #include <zlib.h>
 
-#include <plib/sg.h>
-
 #include <simgear/compiler.h>
 #include <simgear/misc/stdint.hxx>
+
+#include <simgear/math/SGMath.hxx>
 
 // Note that output is written in little endian form (and converted as
 // necessary for big endian machines)
@@ -75,39 +75,39 @@ void sgWriteBytes ( gzFile fd, const unsigned int n, const void *var ) ;
 void sgReadString ( gzFile fd, char **var ) ;
 void sgWriteString ( gzFile fd, const char *var ) ;
 
-inline void sgReadVec2  ( gzFile fd, sgVec2 var ) {
-    sgReadFloat  ( fd, 2, var ) ;
+inline void sgReadVec2  ( gzFile fd, SGVec2f& var ) {
+    sgReadFloat  ( fd, 2, var.data() ) ;
 }
-inline void sgWriteVec2 ( gzFile fd, const sgVec2 var ) {
-    sgWriteFloat ( fd, 2, var ) ;
-}
-
-inline void sgReadVec3  ( gzFile fd, sgVec3 var ) {
-    sgReadFloat  ( fd, 3, var ) ;
-}
-inline void sgWriteVec3 ( gzFile fd, const sgVec3 var ) {
-    sgWriteFloat ( fd, 3, var ) ;
+inline void sgWriteVec2 ( gzFile fd, const SGVec2f& var ) {
+    sgWriteFloat ( fd, 2, var.data() ) ;
 }
 
-inline void sgReaddVec3  ( gzFile fd, sgdVec3 var ) {
-    sgReadDouble  ( fd, 3, var ) ;
+inline void sgReadVec3  ( gzFile fd, SGVec3f& var ) {
+    sgReadFloat  ( fd, 3, var.data() ) ;
 }
-inline void sgWritedVec3 ( gzFile fd, const sgdVec3 var ) {
-    sgWriteDouble ( fd, 3, var ) ;
-}
-
-inline void sgReadVec4  ( gzFile fd, sgVec4 var ) {
-    sgReadFloat  ( fd, 4, var ) ;
-}
-inline void sgWriteVec4 ( gzFile fd, const sgVec4 var ) {
-    sgWriteFloat ( fd, 4, var ) ;
+inline void sgWriteVec3 ( gzFile fd, const SGVec3f& var ) {
+    sgWriteFloat ( fd, 3, var.data() ) ;
 }
 
-inline void sgReadMat4  ( gzFile fd, sgMat4 var ) {
-    sgReadFloat  ( fd, 16, (float *)var ) ;
+inline void sgReaddVec3  ( gzFile fd, SGVec3d& var ) {
+    sgReadDouble  ( fd, 3, var.data() ) ;
 }
-inline void sgWriteMat4 ( gzFile fd, const sgMat4 var ) {
-    sgWriteFloat ( fd, 16, (float *)var ) ;
+inline void sgWritedVec3 ( gzFile fd, const SGVec3d& var ) {
+    sgWriteDouble ( fd, 3, var.data() ) ;
+}
+
+inline void sgReadVec4  ( gzFile fd, SGVec4f& var ) {
+    sgReadFloat  ( fd, 4, var.data() ) ;
+}
+inline void sgWriteVec4 ( gzFile fd, const SGVec4f& var ) {
+    sgWriteFloat ( fd, 4, var.data() ) ;
+}
+
+inline void sgReadMat4  ( gzFile fd, SGMatrixf& var ) {
+    sgReadFloat  ( fd, 16, (float *)var.data() ) ;
+}
+inline void sgWriteMat4 ( gzFile fd, const SGMatrixf& var ) {
+    sgWriteFloat ( fd, 16, (float *)var.data() ) ;
 }
 
 void sgClearReadError();

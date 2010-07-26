@@ -15,6 +15,10 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include "BVHMotionTransform.hxx"
 
 #include "BVHVisitor.hxx"
@@ -103,13 +107,13 @@ BVHMotionTransform::updateAmplificationFactors()
     // But anyway, almost all transforms in a scenegraph will
     // have them equal to 1 ...
     double r = norm(_toWorldReference.xformVec(SGVec3d(1, 0, 0)));
-    r = std::max(r, norm(_toWorldReference.xformVec(SGVec3d(0, 1, 0))));
-    r = std::max(r, norm(_toWorldReference.xformVec(SGVec3d(0, 0, 1))));
+	r = SGMiscd::max(r, norm(_toWorldReference.xformVec(SGVec3d(0, 1, 0))));
+    r = SGMiscd::max(r, norm(_toWorldReference.xformVec(SGVec3d(0, 0, 1))));
     _toWorldAmplification = r;
     
     r = norm(_toLocalReference.xformVec(SGVec3d(1, 0, 0)));
-    r = std::max(r, norm(_toLocalReference.xformVec(SGVec3d(0, 1, 0))));
-    r = std::max(r, norm(_toLocalReference.xformVec(SGVec3d(0, 0, 1))));
+    r = SGMiscd::max(r, norm(_toLocalReference.xformVec(SGVec3d(0, 1, 0))));
+    r = SGMiscd::max(r, norm(_toLocalReference.xformVec(SGVec3d(0, 0, 1))));
     _toLocalAmplification = r;
 }
 

@@ -23,7 +23,6 @@
 #ifndef _CLOUDFIELD_HXX
 #define _CLOUDFIELD_HXX
 
-#include <plib/sg.h>
 #include <simgear/compiler.h>
 #include <vector>
 
@@ -59,7 +58,7 @@ private:
 	class Cloud  {
 	public:
 		SGNewCloud	*aCloud;
-		sgVec3		pos;
+		SGVec3f		pos;
 		bool		visible;
 	};
 
@@ -70,7 +69,7 @@ private:
         static const int QUADTREE_SIZE = 32;
 
 	// this is a relative position only, with that we can move all clouds at once
-	sgVec3 relative_position;
+	SGVec3f relative_position;
         //	double lon, lat;
 
         osg::ref_ptr<osg::Group> field_root;
@@ -83,7 +82,6 @@ private:
 
 	double deltax, deltay, alt;
         double last_course;
-        sgSphere field_sphere;
 	float last_coverage;
         float coverage;
         SGGeoc cld_pos;
@@ -121,7 +119,7 @@ public:
 	// visibility distance for clouds in meters
 	static float CloudVis;
 
-	static sgVec3 view_vec, view_X, view_Y;
+	static SGVec3f view_vec, view_X, view_Y;
 
         static float view_distance;
         static double timer_dt;

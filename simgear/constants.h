@@ -34,15 +34,20 @@
 #include <cmath>
 
 
-#include <plib/sg.h>
-
-
 // Make sure PI is defined in its various forms
 
-// SG_PI and SGD_PI (float and double) come from plib/sg.h
+#ifdef M_PI
+#define SGD_PI      M_PI
+#define SG_PI      M_PI
+#else
+#define SG_PI  3.1415926535f
+#define SGD_PI  3.1415926535
+#endif
+
+
 
 /** 2 * PI */
-#define SGD_2PI      6.28318530717958647692
+#define SGD_2PI      SGD_PI * 2.0
 
 /** PI / 2 */
 #ifdef M_PI_2
@@ -53,6 +58,13 @@
 
 /** PI / 4 */
 #define SGD_PI_4     0.78539816339744830961
+
+
+#define SGD_DEGREES_TO_RADIANS  (SGD_PI/180.0)
+#define SGD_RADIANS_TO_DEGREES  (180.0/SGD_PI)
+
+#define SG_DEGREES_TO_RADIANS SGD_DEGREES_TO_RADIANS
+#define SG_RADIANS_TO_DEGREES SGD_RADIANS_TO_DEGREES
 
 /** \def SG_E "e" */
 #ifdef M_E

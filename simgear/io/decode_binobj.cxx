@@ -6,6 +6,7 @@
 
 #include <unistd.h>
 #include <iostream>
+#include <cstdlib>
 
 #include "sg_binobj.hxx"
 

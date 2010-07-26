@@ -22,14 +22,11 @@
 #ifndef _VISUAL_ENVIRO_HXX
 #define _VISUAL_ENVIRO_HXX
 
-#include <plib/sg.h>
-
 #include <simgear/compiler.h>
 #include <string>
 #include <vector>
 
-using std::vector;
-using std::string;
+#include <simgear/math/SGMath.hxx>
 
 class SGLightning;
 class SGSampleGroup;
@@ -62,7 +59,7 @@ public:
 	int cloudId;
 };
 
-typedef vector<SGWxRadarEcho> list_of_SGWxRadarEcho;
+typedef std::vector<SGWxRadarEcho> list_of_SGWxRadarEcho;
 
 /**
  * Visual environment helper class.
@@ -81,8 +78,8 @@ private:
 	double last_cloud_turbulence, cloud_turbulence;
 	bool lightning_enable_state;
 	double elapsed_time, dt;
-	sgVec4	fog_color;
-	sgMat4 transform;
+	SGVec4f	fog_color;
+	SGMatrixf transform;
 	double last_lon, last_lat, last_alt;
 	SGSampleGroup	*sampleGroup;
 	bool		snd_active, snd_playing;
@@ -93,8 +90,8 @@ private:
 
 	/** a list of all the radar echo. */
 	list_of_SGWxRadarEcho radarEcho;
-	static sgVec3 min_light;
-	static SGfloat streak_bright_nearmost_layer,
+	static SGVec3f min_light;
+	static float streak_bright_nearmost_layer,
 				   streak_bright_farmost_layer,
 				   streak_period_max,
 				   streak_period_change_per_kt,
@@ -103,7 +100,7 @@ private:
 				   streak_length_change_per_kt,
 				   streak_length_max;
 	static int streak_count_min, streak_count_max;
-	static SGfloat cone_base_radius,
+	static float cone_base_radius,
 				   cone_height;
 
 public:
@@ -121,7 +118,7 @@ public:
     /**
      * Forward a few states used for renderings.
      */
-	void startOfFrame( sgVec3 p, sgVec3 up, double lon, double lat, double alt, double delta_time);
+	void startOfFrame( SGVec3f p, SGVec3f up, double lon, double lat, double alt, double delta_time);
 
 	void endOfFrame(void);
 
@@ -158,7 +155,7 @@ public:
      * Forward the fog color used by the rain rendering.
      * @param adj_fog_color color of the fog
      */
-	void setLight(sgVec4 adj_fog_color);
+	void setLight(SGVec4f adj_fog_color);
 
 	// this can be queried to add some turbulence for example
 	bool is_view_in_cloud(void) const;
@@ -250,7 +247,7 @@ public:
 
 	list_of_SGWxRadarEcho *get_radar_echo(void);
 
-	sgMat4 *get_transform(void) { return &transform; }
+	SGMatrixf *get_transform(void) { return &transform; }
 };
 
 extern SGEnviro sgEnviro;

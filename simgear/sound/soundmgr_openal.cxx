@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cstring>
 
 #include "soundmgr_openal.hxx"
 

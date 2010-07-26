@@ -69,6 +69,9 @@
 #    define copysign _copysign
 #    define strcasecmp stricmp
 
+#    undef min
+#    undef max
+
 #    pragma warning(disable: 4786) // identifier was truncated to '255' characters
 #    pragma warning(disable: 4244) // conversion from double to float
 #    pragma warning(disable: 4305) //

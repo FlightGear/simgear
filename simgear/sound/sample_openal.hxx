@@ -35,13 +35,13 @@
 #endif
 
 #include <string>
+#include <cstdlib>
 
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
-
 
 /**
  * manages everything we need to know for an individual audio sample

@@ -26,6 +26,7 @@
 #include <simgear/debug/logstream.hxx>
 
 #include <iostream>
+#include <cstdlib>
 
 #include <osg/Node>
 #include <osg/Geometry>

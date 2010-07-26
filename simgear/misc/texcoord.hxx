@@ -36,6 +36,9 @@
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/math/sg_types.hxx>
 
+#include <simgear/math/SGMathFwd.hxx>
+#include <simgear/math/SGGeod.hxx>
+#include <simgear/math/SGVec2.hxx>
 
 /**
  * Traverse the specified fan/strip/list of vertices and attempt to
@@ -46,10 +49,10 @@
  * @param scale (default = 1.0) scaling factor
  * @return list of texture coordinates
  */
-point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
+std::vector<SGVec2f> sgCalcTexCoords( const SGBucket& b, const std::vector<SGGeod>& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 
-point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
+std::vector<SGVec2f> sgCalcTexCoords( double centerLat, const std::vector<SGGeod>& geod_nodes,
 			    const int_list& fan, double scale = 1.0 );
 
 

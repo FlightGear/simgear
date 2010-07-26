@@ -38,28 +38,18 @@
 #include <string>
 #include <vector>
 
-class Point3D;
-
-using std::vector;
-using std::string;
-
 /** STL vector list of ints */
-typedef vector < int > int_list;
+typedef std::vector < int > int_list;
 typedef int_list::iterator int_list_iterator;
 typedef int_list::const_iterator const_int_list_iterator;
 
 /** STL vector list of doubles */
-typedef vector < double > double_list;
+typedef std::vector < double > double_list;
 typedef double_list::iterator double_list_iterator;
 typedef double_list::const_iterator const_double_list_iterator;
 
-/** STL vector list of Point3D */
-typedef vector < Point3D > point_list;
-typedef point_list::iterator point_list_iterator;
-typedef point_list::const_iterator const_point_list_iterator;
-
 /** STL vector list of strings */
-typedef vector < string > string_list;
+typedef std::vector < std::string > string_list;
 typedef string_list::iterator string_list_iterator;
 typedef string_list::const_iterator const_string_list_iterator;
 

@@ -45,7 +45,7 @@
 
 
 /** STL Structure used to store object information */
-typedef vector < int_list > group_list;
+typedef std::vector < int_list > group_list;
 typedef group_list::iterator group_list_iterator;
 typedef group_list::const_iterator const_group_list_iterator;
 
@@ -126,9 +126,7 @@ public:
 
     inline unsigned short get_version() const { return version; }
 
-    inline Point3D get_gbs_center() const { return Point3D::fromSGVec3(gbs_center); }
-    inline void set_gbs_center( const Point3D& p ) { gbs_center = p.toSGVec3d(); }
-    inline const SGVec3d& get_gbs_center2() const { return gbs_center; }
+    inline const SGVec3d& get_gbs_center() const { return gbs_center; }
     inline void set_gbs_center( const SGVec3d& p ) { gbs_center = p; }
 
     inline float get_gbs_radius() const { return gbs_radius; }
@@ -138,40 +136,16 @@ public:
     { return wgs84_nodes; }
     inline void set_wgs84_nodes( const std::vector<SGVec3d>& n )
     { wgs84_nodes = n; }
-    inline void set_wgs84_nodes( const point_list& n )
-    {
-      wgs84_nodes.resize(n.size());
-      for (unsigned i = 0; i < wgs84_nodes.size(); ++i)
-        wgs84_nodes[i] = n[i].toSGVec3d();
-    }
 
     inline const std::vector<SGVec4f>& get_colors() const { return colors; }
     inline void set_colors( const std::vector<SGVec4f>& c ) { colors = c; }
-    inline void set_colors( const point_list& c )
-    {
-      colors.resize(c.size());
-      for (unsigned i = 0; i < colors.size(); ++i)
-        colors[i] = SGVec4f(c[i].toSGVec3f(), 1);
-    }
-
+    
     inline const std::vector<SGVec3f>& get_normals() const { return normals; }
     inline void set_normals( const std::vector<SGVec3f>& n ) { normals = n; }
-    inline void set_normals( const point_list& n )
-    {
-      normals.resize(n.size());
-      for (unsigned i = 0; i < normals.size(); ++i)
-        normals[i] = n[i].toSGVec3f();
-    }
-
+    
     inline const std::vector<SGVec2f>& get_texcoords() const { return texcoords; }
     inline void set_texcoords( const std::vector<SGVec2f>& t ) { texcoords = t; }
-    inline void set_texcoords( const point_list& t )
-    {
-      texcoords.resize(t.size());
-      for (unsigned i = 0; i < texcoords.size(); ++i)
-        texcoords[i] = t[i].toSGVec2f();
-    }
-
+    
     inline const group_list& get_pts_v() const { return pts_v; }
     inline void set_pts_v( const group_list& g ) { pts_v = g; }
     inline const group_list& get_pts_n() const { return pts_n; }
@@ -248,27 +222,5 @@ public:
     bool write_ascii( const string& base, const string& name,
 		      const SGBucket& b );
 };
-
-
-/**
- * \relates SGBinObject
- * Calculate the center of a list of points, by taking the halfway
- * point between the min and max points.
- * @param wgs84_nodes list of points in wgs84 coordinates
- * @return center point
- */
-Point3D sgCalcCenter( point_list& wgs84_nodes );
-
-
-/**
- * \relates SGBinObject
- * Calculate the bounding sphere of a set of nodes.
- * Center is the center of the tile and zero elevation.
- * @param center center of our bounding radius
- * @param wgs84_nodes list of points in wgs84 coordinates
- * @return radius
- */
-double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes );
-
 
 #endif // _SG_BINOBJ_HXX

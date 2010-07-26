@@ -65,7 +65,7 @@ SGMatModel::SGMatModel (const SGPropertyNode * node, double range_m)
   }
 
 				// Note all the model paths
-  vector <SGPropertyNode_ptr> path_nodes = node->getChildren("path");
+  std::vector <SGPropertyNode_ptr> path_nodes = node->getChildren("path");
   for (unsigned int i = 0; i < path_nodes.size(); i++)
     _paths.push_back(path_nodes[i]->getStringValue());
 
@@ -182,7 +182,7 @@ SGMatModelGroup::SGMatModelGroup (SGPropertyNode * node)
   : _range_m(node->getDoubleValue("range-m", 2000))
 {
 				// Load the object subnodes
-  vector<SGPropertyNode_ptr> object_nodes =
+  std::vector<SGPropertyNode_ptr> object_nodes =
     ((SGPropertyNode *)node)->getChildren("object");
   for (unsigned int i = 0; i < object_nodes.size(); i++) {
     const SGPropertyNode * object_node = object_nodes[i];

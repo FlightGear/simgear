@@ -563,7 +563,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
   if (!tile.read_bin(path))
     return false;
 
-  SGVec3d center = tile.get_gbs_center2();
+  SGVec3d center = tile.get_gbs_center();
   SGGeod geodPos = SGGeod::fromCart(center);
   SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
 

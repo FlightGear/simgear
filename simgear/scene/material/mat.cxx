@@ -119,7 +119,7 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
                             const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
-  vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
+  std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
   for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
@@ -141,11 +141,11 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
     }
   }
 
-  vector<SGPropertyNode_ptr> texturesets = props->getChildren("texture-set");
+  std::vector<SGPropertyNode_ptr> texturesets = props->getChildren("texture-set");
   for (unsigned int i = 0; i < texturesets.size(); i++)
   {
     _internal_state st( NULL, false, options );
-    vector<SGPropertyNode_ptr> textures = texturesets[i]->getChildren("texture");
+    std::vector<SGPropertyNode_ptr> textures = texturesets[i]->getChildren("texture");
     for (unsigned int j = 0; j < textures.size(); j++)
     {
       string tname = textures[j]->getStringValue();
@@ -229,13 +229,13 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
   if (props->hasChild("effect"))
       effect = props->getStringValue("effect");
   
-  vector<SGPropertyNode_ptr> object_group_nodes =
+  std::vector<SGPropertyNode_ptr> object_group_nodes =
     ((SGPropertyNode *)props)->getChildren("object-group");
   for (unsigned int i = 0; i < object_group_nodes.size(); i++)
     object_groups.push_back(new SGMatModelGroup(object_group_nodes[i]));
 
   // read glyph table for taxi-/runway-signs
-  vector<SGPropertyNode_ptr> glyph_nodes = props->getChildren("glyph");
+  std::vector<SGPropertyNode_ptr> glyph_nodes = props->getChildren("glyph");
   for (unsigned int i = 0; i < glyph_nodes.size(); i++) {
     const char *name = glyph_nodes[i]->getStringValue("name");
     if (name)

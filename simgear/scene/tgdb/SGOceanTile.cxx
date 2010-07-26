@@ -81,7 +81,7 @@ public:
     SGVec3f normals[latPoints][lonPoints];
     SGVec3d rel[latPoints][lonPoints];
 
-    point_list geod_nodes;
+    std::vector<SGGeod> geod_nodes;
 
     osg::Vec3Array* vl;
     osg::Vec3Array* nl;
@@ -122,27 +122,31 @@ void OceanMesh::calcMesh(const SGVec3d& cartCenter, const SGQuatd& orient,
     }
     
     // Calculate texture coordinates
-    point_list geod_nodes(latPoints * lonPoints);
-    VectorArrayAdapter<point_list> geodNodesArray(geod_nodes, lonPoints);
+    typedef std::vector<SGGeod> GeodVector;
+    
+    GeodVector geod_nodes(latPoints * lonPoints);
+    VectorArrayAdapter<GeodVector> geodNodesArray(geod_nodes, lonPoints);
     int_list rectangle(latPoints * lonPoints);
     VectorArrayAdapter<int_list> rectArray(rectangle, lonPoints);
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; i++) {
-            geodNodesArray(j, i) = Point3D(geod[j][i].getLongitudeDeg(),
-                                           geod[j][i].getLatitudeDeg(),
-                                           geod[j][i].getElevationM());
+            geodNodesArray(j, i) = geod[j][i];
             rectArray(j, i) = j * 5 + i;
         }
     }
-    point_list texs = sgCalcTexCoords( clat, geod_nodes, rectangle, 
+    
+    typedef std::vector<SGVec2f> Vec2Array;
+    Vec2Array texs = sgCalcTexCoords( clat, geod_nodes, rectangle, 
                                        1000.0 / tex_width );
-    VectorArrayAdapter<point_list> texsArray(texs, lonPoints);
+                                
+                                       
+    VectorArrayAdapter<Vec2Array> texsArray(texs, lonPoints);
   
     for (int j = 0; j < latPoints; j++) {
         for (int i = 0; i < lonPoints; ++i) {
             vlArray(j, i) = toOsg(rel[j][i]);
             nlArray(j, i) = toOsg(normals[j][i]);
-            tlArray(j, i) = toOsg(texsArray(j, i).toSGVec2f());
+            tlArray(j, i) = toOsg(texsArray(j, i));
         }
     }
 

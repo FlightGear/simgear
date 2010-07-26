@@ -13,3 +13,5 @@ missing
 aclocal.m4
 INSTALL
 SimGear.spec
+*.o
+lib*.a

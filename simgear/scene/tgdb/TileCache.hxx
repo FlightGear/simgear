@@ -27,7 +27,6 @@
 #include <map>
 
 #include <simgear/bucket/newbucket.hxx>
-#include <simgear/math/point3d.hxx>
 #include <simgear/scene/tgdb/TileEntry.hxx>
 
 using std::map;

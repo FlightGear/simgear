@@ -26,8 +26,6 @@
 
 #include <plib/sg.h>
 
-#include <simgear/math/vector.hxx>
-
 #include "route.hxx"
 
 

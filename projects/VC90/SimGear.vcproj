@@ -560,14 +560,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\point3d.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\polar3d.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\sg_geodesy.hxx"
 				>
 			</File>
@@ -597,14 +589,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\math\sphrintp.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\vector.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\vector.hxx"
 				>
 			</File>
 		</Filter>

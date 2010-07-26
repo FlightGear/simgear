@@ -225,7 +225,8 @@ private:
     // from winds, and to simulate the clouds being tied to ground
     // position, not view position
     // double xoff, yoff;
-    double last_lon, last_lat, last_course;
+    SGGeod last_pos;
+    double last_course;
 
     osg::Vec2 base;
 

@@ -35,7 +35,6 @@
 #include <string>
 
 #include <simgear/bucket/newbucket.hxx>
-#include <simgear/math/point3d.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include <osg/ref_ptr>
@@ -46,9 +45,6 @@
 #if defined( sgi )
 #include <strings.h>
 #endif
-
-using std::string;
-using std::vector;
 
 namespace simgear {
 
@@ -63,10 +59,6 @@ public:
     // this tile's official location in the world
     SGBucket tile_bucket;
     std::string tileFileName;
-
-    typedef vector < Point3D > point_list;
-    typedef point_list::iterator point_list_iterator;
-    typedef point_list::const_iterator const_point_list_iterator;
 
 private:
 

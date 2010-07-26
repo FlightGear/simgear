@@ -149,7 +149,6 @@ enter this in the official comments in case I forget again. :-)
 
 #include "texcoord.hxx"
 
-#include <simgear/math/point3d.hxx>
 // using std::cout;
 // using std::endl;
 
@@ -160,28 +159,28 @@ enter this in the official comments in case I forget again. :-)
 
 
 // return the basic unshifted/unmoded texture coordinate for a lat/lon
-static inline Point3D basic_tex_coord( const Point3D& p, 
+static inline SGVec2f basic_tex_coord( const SGGeod& p, 
                                        double degree_width,
                                        double degree_height,
                                        double scale )
 {
-    return Point3D( p.x() * ( degree_width * scale / 
+    return SGVec2f( p.getLongitudeDeg() * ( degree_width * scale / 
 			      FG_STANDARD_TEXTURE_DIMENSION ),
-		    p.y() * ( degree_height * scale /
-			      FG_STANDARD_TEXTURE_DIMENSION ),
-		    0.0 );
+		    p.getLatitudeDeg() * ( degree_height * scale /
+			      FG_STANDARD_TEXTURE_DIMENSION )
+		    );
 }
 
 
 // traverse the specified fan/strip/list of vertices and attempt to
 // calculate "none stretching" texture coordinates
-point_list sgCalcTexCoords( const SGBucket& b, const point_list& geod_nodes,
+std::vector<SGVec2f> sgCalcTexCoords( const SGBucket& b, const std::vector<SGGeod>& geod_nodes,
 			    const int_list& fan, double scale )
 {
     return sgCalcTexCoords(b.get_center_lat(), geod_nodes, fan, scale);
 }
 
-point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
+std::vector<SGVec2f> sgCalcTexCoords( double centerLat, const std::vector<SGGeod>& geod_nodes,
 			    const int_list& fan, double scale )
 {
     // cout << "calculating texture coordinates for a specific fan of size = "
@@ -214,16 +213,16 @@ point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
     // cout << "degree_height = " << degree_height << endl;
 
     // find min/max of fan
-    Point3D tmin, tmax, p, t;
+    SGVec2f tmin, tmax;
     bool first = true;
 
     int i;
 
     for ( i = 0; i < (int)fan.size(); ++i ) {
-	p = geod_nodes[ fan[i] ];
+      SGGeod p = geod_nodes[ fan[i] ];
 	// cout << "point p = " << p << endl;
 
-	t = basic_tex_coord( p, degree_width, degree_height, scale );
+	SGVec2f t = basic_tex_coord( p, degree_width, degree_height, scale );
 	// cout << "basic_tex_coord = " << t << endl;
 
 	if ( first ) {
@@ -231,16 +230,16 @@ point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
 	    first = false;
 	} else {
 	    if ( t.x() < tmin.x() ) {
-		tmin.setx( t.x() );
+		tmin.x() = t.x();
 	    }
 	    if ( t.y() < tmin.y() ) {
-		tmin.sety( t.y() );
+		tmin.y() = t.y();
 	    }
 	    if ( t.x() > tmax.x() ) {
-		tmax.setx( t.x() );
+		tmax.x() = t.x();
 	    }
 	    if ( t.y() > tmax.y() ) {
-		tmax.sety( t.y() );
+		tmax.y() = t.y();
 	    }
 	}
     }
@@ -256,30 +255,31 @@ point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
 	// but is the best we can do.
 	// cout << "SHIFTING" << endl;
 	if ( tmin.x() < 0 ) {
-	    tmin.setx( (double)( (int)tmin.x() - 1 ) );
+	    tmin.x() = (double)( (int)tmin.x() - 1 ) ;
 	} else {
-	    tmin.setx( (int)tmin.x() );
+	    tmin.x() = (int)tmin.x();
 	}
+  
 	if ( tmin.y() < 0 ) {
-	    tmin.sety( (double)( (int)tmin.y() - 1 ) );
+	    tmin.y() = (double)( (int)tmin.y() - 1 );
 	} else {
-	    tmin.sety( (int)tmin.y() );
+	    tmin.y() = (int)tmin.y();
 	}
 	// cout << "found tmin = " << tmin << endl;
     } else {
 	if ( tmin.x() < 0 ) {
-	    tmin.setx( ( (int)(tmin.x() / HALF_MAX_TEX_COORD) - 1 )
-		       * HALF_MAX_TEX_COORD );
+	    tmin.x() =  ( (int)(tmin.x() / HALF_MAX_TEX_COORD) - 1 )
+		       * HALF_MAX_TEX_COORD ;
 	} else {
-	    tmin.setx( ( (int)(tmin.x() / HALF_MAX_TEX_COORD) )
-		       * HALF_MAX_TEX_COORD );
+	    tmin.x() =  ( (int)(tmin.x() / HALF_MAX_TEX_COORD) )
+		       * HALF_MAX_TEX_COORD ;
 	}
 	if ( tmin.y() < 0 ) {
-	    tmin.sety( ( (int)(tmin.y() / HALF_MAX_TEX_COORD) - 1 )
-		       * HALF_MAX_TEX_COORD );
+	    tmin.y() =  ( (int)(tmin.y() / HALF_MAX_TEX_COORD) - 1 )
+		       * HALF_MAX_TEX_COORD ;
 	} else {
-	    tmin.sety( ( (int)(tmin.y() / HALF_MAX_TEX_COORD) )
-		       * HALF_MAX_TEX_COORD );
+	    tmin.y() =  ( (int)(tmin.y() / HALF_MAX_TEX_COORD) )
+		       * HALF_MAX_TEX_COORD ;
 	}
 #if 0
 	// structure is small enough ... we can mod it so we can
@@ -319,12 +319,12 @@ point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
     }
 
     // generate tex_list
-    Point3D adjusted_t;
-    point_list tex;
+    SGVec2f adjusted_t;
+    std::vector<SGVec2f> tex;
     tex.clear();
     for ( i = 0; i < (int)fan.size(); ++i ) {
-	p = geod_nodes[ fan[i] ];
-	t = basic_tex_coord( p, degree_width, degree_height, scale );
+	SGGeod p = geod_nodes[ fan[i] ];
+	SGVec2f t = basic_tex_coord( p, degree_width, degree_height, scale );
 	// cout << "second t = " << t << endl;
 
 	adjusted_t = t - tmin;
@@ -342,12 +342,12 @@ point_list sgCalcTexCoords( double centerLat, const point_list& geod_nodes,
 	}
 #endif
 	if ( adjusted_t.x() < SG_EPSILON ) {
-	    adjusted_t.setx( 0.0 );
+	    adjusted_t.x() = 0.0;
 	}
 	if ( adjusted_t.y() < SG_EPSILON ) {
-	    adjusted_t.sety( 0.0 );
+	    adjusted_t.y() = 0.0;
 	}
-	adjusted_t.setz( 0.0 );
+
 	// cout << "adjusted_t = " << adjusted_t << endl;
 	
 	tex.push_back( adjusted_t );

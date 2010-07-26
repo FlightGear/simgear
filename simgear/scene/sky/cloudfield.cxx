@@ -34,7 +34,6 @@
 #include <plib/sg.h>
 #include <simgear/math/sg_random.h>
 #include <simgear/math/sg_geodesy.hxx>
-#include <simgear/math/polar3d.hxx>
 
 #include <algorithm>
 #include <vector>

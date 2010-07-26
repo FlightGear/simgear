@@ -28,8 +28,6 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/math/sg_geodesy.hxx>
-#include <simgear/math/point3d.hxx>
-#include <simgear/math/polar3d.hxx>
 #include <simgear/sound/sample_group.hxx>
 #include <simgear/scene/sky/cloudfield.hxx>
 #include <simgear/scene/sky/newcloud.hxx>
@@ -42,7 +40,7 @@ using std::vector;
 
 
 typedef struct {
-	Point3D		pt;
+	SGVec3d		pt;
 	int			depth;
 	int			prev;
 } lt_tree_seg;
@@ -146,7 +144,7 @@ public:
 	~SGLightning();
 	void lt_Render(void);
 	void lt_build(void);
-	void lt_build_tree_branch(int tree_nr, Point3D &start, float energy, int nbseg, float segsize);
+	void lt_build_tree_branch(int tree_nr, SGVec3d &start, float energy, int nbseg, float segsize);
 
 	// contains all the segments of the lightning
 	lt_tree_seg lt_tree[MAX_LT_TREE_SEG];
@@ -381,7 +379,7 @@ void SGEnviro::callback_cloud(float heading, float alt, float radius, int family
 	if(lightning_enable_state && min_time_before_lt <= 0.0 && (family == SGNewCloud::CLFamilly_cb) &&
 		dist < 15000.0 * 15000.0 && sg_random() > 0.9f) {
 		double lat, lon;
-		Point3D orig, dest;
+		SGVec3d orig, dest;
 		orig.setlat(last_lat * SG_DEGREES_TO_RADIANS );
 		orig.setlon(last_lon * SG_DEGREES_TO_RADIANS );
 		orig.setelev(0.0);
@@ -560,169 +558,21 @@ SGLightning::~SGLightning() {
 }
 
 // lightning rendering code
-void SGLightning::lt_build_tree_branch(int tree_nr, Point3D &start, float energy, int nbseg, float segsize) {
+void SGLightning::lt_build_tree_branch(int tree_nr, SGVec3d &start, float energy, int nbseg, float segsize) {
   // OSGFIXME
   return;
-
-	sgVec3 dir, newdir;
-	int nseg = 0;
-	Point3D pt = start;
-	if( nbseg == 50 )
-		sgSetVec3( dir, 0.0, -1.0, 0.0 );
-	else {
-		sgSetVec3( dir, sg_random() - 0.5f, sg_random() - 0.5f, sg_random() - 0.5f);
-		sgNormaliseVec3(dir);
-	}
-	if( nb_tree >= MAX_LT_TREE_SEG )
-		return;
-
-	lt_tree[nb_tree].depth = tree_nr;
-	nseg = 0;
-	lt_tree[nb_tree].pt = pt;
-	lt_tree[nb_tree].prev = -1;
-	nb_tree ++;
-
-	// TODO:check agl
-	while(nseg < nbseg && pt.y() > 0.0) {
-        int prev = nb_tree - 1;
-        nseg++;
-		// add a branch
-        if( energy * sg_random() > 0.8f )
-			lt_build_tree_branch(tree_nr + 1, pt, energy * 0.9f, nbseg == 50 ? 10 : static_cast<int>(nbseg * 0.4f), segsize * 0.7f);
-
-		if( nb_tree >= MAX_LT_TREE_SEG )
-			return;
-		sgSetVec3(newdir, (sg_random() - 0.5f), (sg_random() - 0.5f) - (nbseg == 50 ? 0.5f : 0.0), (sg_random() - 0.5f));
-		sgNormaliseVec3(newdir);
-		sgAddVec3( dir, newdir);
-		sgNormaliseVec3(dir);
-		sgVec3 scaleDir;
-		sgScaleVec3( scaleDir, dir, segsize * energy * 0.5f );
-		pt[PX] += scaleDir[0];
-		pt[PY] += scaleDir[1];
-		pt[PZ] += scaleDir[2];
-
-		lt_tree[nb_tree].depth = tree_nr;
-		lt_tree[nb_tree].pt = pt;
-		lt_tree[nb_tree].prev = prev;
-		nb_tree ++;
-	}
 }
 
 void SGLightning::lt_build(void) {
   // OSGFIXME
   return;
-    Point3D top;
-    nb_tree = 0;
-    top[PX] = 0 ;
-    top[PY] = alt;
-    top[PZ] = 0;
-    lt_build_tree_branch(0, top, 1.0, 50, top[PY] / 8.0);
-	if( ! sgEnviro.sampleGroup )
-		return;
-	Point3D start( sgEnviro.last_lon*SG_DEGREES_TO_RADIANS, sgEnviro.last_lat*SG_DEGREES_TO_RADIANS, 0.0 );
-	Point3D dest( lon*SG_DEGREES_TO_RADIANS, lat*SG_DEGREES_TO_RADIANS, 0.0 );
-	double course = 0.0, dist = 0.0;
-	calc_gc_course_dist( dest, start, &course, &dist );
-	if( dist < 10000.0 && ! sgEnviro.snd_playing && (dist < sgEnviro.snd_dist || ! sgEnviro.snd_active) ) {
-		sgEnviro.snd_timer = 0.0;
-		sgEnviro.snd_wait  = dist / 340;
-		sgEnviro.snd_dist  = dist;
-		sgEnviro.snd_pos_lat = lat;
-		sgEnviro.snd_pos_lon = lon;
-		sgEnviro.snd_active = true;
-		sgEnviro.snd_playing = false;
-	}
+
 }
 
 
 void SGLightning::lt_Render(void) {
   // OSGFIXME
   return;
-	float flash = 0.5;
-	if( fmod(sgEnviro.elapsed_time*100.0, 100.0) > 50.0 )
-		flash = sg_random() * 0.75f + 0.25f;
-    float h = lt_tree[0].pt[PY];
-	sgVec4 col={0.62f, 0.83f, 1.0f, 1.0f};
-	sgVec4 c;
-
-#define DRAW_SEG() \
-			{glColorMaterial(GL_FRONT, GL_EMISSION);  \
-			glDisable(GL_LINE_SMOOTH); glBegin(GL_LINES); \
-				glColor4fv(c); \
-                glVertex3f(lt_tree[n].pt[PX], lt_tree[n].pt[PZ], lt_tree[n].pt[PY]); \
-                glVertex3f(lt_tree[lt_tree[n].prev].pt[PX], lt_tree[lt_tree[n].prev].pt[PZ], lt_tree[lt_tree[n].prev].pt[PY]); \
-			glEnd(); glEnable(GL_LINE_SMOOTH);}
-
-	glDepthMask( GL_FALSE );
-	glEnable(GL_BLEND);
-	glBlendFunc( GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glDisable(GL_LIGHTING);
-	glDisable( GL_FOG );
-	glPushMatrix();
-	sgMat4 modelview, tmp;
-    // OSGFIXME
-//     ssgGetModelviewMatrix( modelview );
-	sgCopyMat4( tmp, sgEnviro.transform );
-    sgPostMultMat4( tmp, modelview );
-    // OSGFIXME
-//     ssgLoadModelviewMatrix( tmp );
-
-    Point3D start( sgEnviro.last_lon*SG_DEGREES_TO_RADIANS, sgEnviro.last_lat*SG_DEGREES_TO_RADIANS, 0.0 );
-    Point3D dest( lon*SG_DEGREES_TO_RADIANS, lat*SG_DEGREES_TO_RADIANS, 0.0 );
-    double course = 0.0, dist = 0.0;
-    calc_gc_course_dist( dest, start, &course, &dist );
-    double ax = 0.0, ay = 0.0;
-    ax = cos(course) * dist;
-    ay = sin(course) * dist;
-
-	glTranslatef( ax, ay, -sgEnviro.last_alt );
-
-	sgEnviro.radarEcho.push_back( SGWxRadarEcho ( course, 0.0, 0.0, dist, age, true, 0 ) );
-
-	for( int n = 0 ; n < nb_tree ; n++ ) {
-        if( lt_tree[n].prev < 0 )
-			continue;
-
-        float t1 = sgLerp(0.5, 1.0, lt_tree[n].pt[PY] / h);
-		t1 *= flash;
-		if( lt_tree[n].depth >= 2 ) {
-            glLineWidth(3);
-			sgScaleVec4(c, col, t1 * 0.6f);
-			DRAW_SEG();
-		} else {
-			if( lt_tree[n].depth == 0 ) {
-                glLineWidth(12);
-				sgScaleVec4(c, col, t1 * 0.5f);
-				DRAW_SEG();
-
-                glLineWidth(6);
-				sgScaleVec4(c, col, t1);
-				DRAW_SEG();
-			} else {
-                glLineWidth(6);
-				sgScaleVec4(c, col, t1 * 0.7f);
-				DRAW_SEG();
-			}
-
-            if( lt_tree[n].depth == 0 ) 
-                glLineWidth(3);
-			else
-                glLineWidth(2);
-
-            sgSetVec4(c, t1, t1, t1, t1);
-			DRAW_SEG();
-		}
-
-	}
-    glLineWidth(1);
-	glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ) ;
-	glPopMatrix();
-	glDepthMask( GL_TRUE );	
-	glEnable( GL_FOG );
-	glEnable(GL_LIGHTING);
 }
 
 void SGEnviro::addLightning(double lon, double lat, double alt) {
@@ -737,53 +587,6 @@ void SGEnviro::addLightning(double lon, double lat, double alt) {
 void SGEnviro::drawLightning(void) {
   // OSGFIXME
   return;
-	list_of_lightning::iterator iLightning;
-	// play 'thunder' for lightning
-	if( snd_active ) {
-		if( !snd_playing ) {
-			// wait until sound has reached us
-			snd_timer += dt;
-			if( snd_timer >= snd_wait ) {
-				snd_playing = true;
-				// compute relative position of lightning
-				Point3D start( sgEnviro.last_lon*SG_DEGREES_TO_RADIANS, sgEnviro.last_lat*SG_DEGREES_TO_RADIANS, 0.0 );
-				Point3D dest( snd_pos_lon*SG_DEGREES_TO_RADIANS, snd_pos_lat*SG_DEGREES_TO_RADIANS, 0.0 );
-				double course = 0.0, dist = 0.0;
-				calc_gc_course_dist( dest, start, &course, &dist );
-				double ax = 0.0, ay = 0.0;
-				ax = cos(course) * dist;
-				ay = sin(course) * dist;
-				SGSharedPtr<SGSoundSample> snd = sampleGroup->find("thunder");
-				if( snd ) {
-					SGVec3d pos = SGVec3d(ax, ay, -sgEnviro.last_alt);
-					snd->set_position(pos);
-					snd->play_once();
-				}
-			}
-		} else {
-			if( !sampleGroup->is_playing("thunder") ) {
-				snd_active = false;
-				snd_playing = false;
-			}
-		}
-
-	}
-	if( ! lightning_enable_state )
-		return;
-
-	for( iLightning = lightnings.begin() ; iLightning != lightnings.end() ; iLightning++ ) {
-		if( dt )
-			if( sg_random() > 0.95f )
-				(*iLightning)->lt_build();
-		(*iLightning)->lt_Render();
-		(*iLightning)->age -= dt;
-		if( (*iLightning)->age < 0.0 ) {
-			delete (*iLightning);
-			lightnings.erase( iLightning );
-			break;
-		}
-	}
-
 }
 
 

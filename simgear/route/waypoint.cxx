@@ -24,7 +24,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/math/polar3d.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 
 #include "waypoint.hxx"

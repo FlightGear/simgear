@@ -24,12 +24,9 @@ lib_LIBRARIES = libsgmath.a
 include_HEADERS = \
 	interpolater.hxx \
 	leastsqs.hxx \
-	point3d.hxx \
-	polar3d.hxx \
 	sg_geodesy.hxx \
 	sg_random.h \
 	sg_types.hxx \
-	vector.hxx \
 	Math.hxx \
 	SGBox.hxx \
 	SGCMath.hxx \
@@ -59,7 +56,6 @@ libsgmath_a_SOURCES = \
 	interpolater.cxx \
 	leastsqs.cxx \
 	sg_random.c \
-	vector.cxx \
 	SGGeod.cxx \
 	SGGeodesy.cxx
 

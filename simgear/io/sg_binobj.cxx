@@ -38,6 +38,7 @@
 
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/math/SGGeometry.hxx>
 
 #include "lowlevel.hxx"
 #include "sg_binobj.hxx"
@@ -114,51 +115,6 @@ public:
 	}
     }
 };
-
-
-// calculate the center of a list of points, by taking the halfway
-// point between the min and max points.
-Point3D sgCalcCenter( point_list& wgs84_nodes ) {
-    Point3D p, min, max;
-
-    if ( wgs84_nodes.size() ) {
-	min = max = wgs84_nodes[0];
-    } else {
-	min = max = Point3D( 0 );
-    }
-
-    for ( int i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-	p = wgs84_nodes[i];
-
-	if ( p.x() < min.x() ) { min.setx( p.x() ); }
-	if ( p.y() < min.y() ) { min.sety( p.y() ); }
-	if ( p.z() < min.z() ) { min.setz( p.z() ); }
-
-	if ( p.x() > max.x() ) { max.setx( p.x() ); }
-	if ( p.y() > max.y() ) { max.sety( p.y() ); }
-	if ( p.z() > max.z() ) { max.setz( p.z() ); }
-    }
-
-    return ( min + max ) / 2.0;
-}
-
-// calculate the bounding sphere.  Center is the center of the
-// tile and zero elevation
-double sgCalcBoundingRadius( Point3D center, point_list& wgs84_nodes ) {
-    double dist_squared;
-    double radius_squared = 0;
-    
-    for ( int i = 0; i < (int)wgs84_nodes.size(); ++i ) {
-        dist_squared = center.distance3Dsquared( wgs84_nodes[i] );
-	if ( dist_squared > radius_squared ) {
-            radius_squared = dist_squared;
-        }
-    }
-
-    return sqrt(radius_squared);
-}
-
-
 
 // read object properties
 static void read_object( gzFile fp,
@@ -1128,19 +1084,16 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 	    }
 	    // cout << "group = " << start << " to " << end - 1 << endl;
 
-	    // make a list of points for the group
-	    point_list group_nodes;
-	    group_nodes.clear();
-	    SGVec3d bs_center;
-	    double bs_radius = 0;
-	    for ( i = start; i < end; ++i ) {
-		for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
-                    group_nodes.push_back( Point3D::fromSGVec3(wgs84_nodes[ tris_v[i][j] ]) );
-		    bs_center = sgCalcCenter( group_nodes ).toSGVec3d();
-		    bs_radius = sgCalcBoundingRadius( Point3D::fromSGVec3(bs_center), group_nodes );
-		}
-	    }
-
+      SGSphered d;
+      for ( i = start; i < end; ++i ) {
+        for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
+          d.expandBy(wgs84_nodes[ tris_v[i][j] ]);
+        }
+      }
+      
+      SGVec3d bs_center = d.getCenter();
+      double bs_radius = d.getRadius();
+	    
 	    // write group headers
 	    fprintf(fp, "\n");
 	    fprintf(fp, "# usemtl %s\n", material.c_str());
@@ -1179,18 +1132,16 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
 		}
 	    // cout << "group = " << start << " to " << end - 1 << endl;
 
-	    // make a list of points for the group
-	    point_list group_nodes;
-	    group_nodes.clear();
-	    SGVec3d bs_center;
-	    double bs_radius = 0;
-	    for ( i = start; i < end; ++i ) {
-		for ( j = 0; j < (int)strips_v[i].size(); ++j ) {
-                    group_nodes.push_back( Point3D::fromSGVec3(wgs84_nodes[ strips_v[i][j] ]) );
-		    bs_center = sgCalcCenter( group_nodes ).toSGVec3d();
-		    bs_radius = sgCalcBoundingRadius( Point3D::fromSGVec3(bs_center), group_nodes );
-		}
-	    }
+
+      SGSphered d;
+      for ( i = start; i < end; ++i ) {
+        for ( j = 0; j < (int)tris_v[i].size(); ++j ) {
+          d.expandBy(wgs84_nodes[ tris_v[i][j] ]);
+        }
+      }
+      
+      SGVec3d bs_center = d.getCenter();
+      double bs_radius = d.getRadius();
 
 	    // write group headers
 	    fprintf(fp, "\n");

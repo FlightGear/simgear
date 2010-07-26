@@ -54,7 +54,6 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
-#include <simgear/math/polar3d.hxx>
 
 #include "newcloud.hxx"
 #include "cloudfield.hxx"
@@ -144,9 +143,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_coverage(SG_CLOUD_CLEAR),
     scale(4000.0),
     speed(0.0),
-    direction(0.0),
-    last_lon(0.0),
-    last_lat(0.0)
+    direction(0.0)
 {
     // XXX
     // Render bottoms before the rest of transparent objects (rendered
@@ -498,7 +495,6 @@ SGCloudLayer::rebuild()
     }
 
     scale = 4000.0;
-    last_lon = last_lat = -999.0f;
 
     setTextureOffset(base);
     // build the cloud layer
@@ -675,20 +671,17 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         
 
     // now calculate update texture coordinates
-    if ( last_lon < -900 ) {
-        last_lon = lon;
-        last_lat = lat;
+    SGGeod pos = SGGeod::fromRad(lon, lat);
+    if ( last_pos == SGGeod() ) {
+        last_pos = pos;
     }
 
     double sp_dist = speed*dt;
-
-    if ( lon != last_lon || lat != last_lat || sp_dist != 0 ) {
-        Point3D start( last_lon, last_lat, 0.0 );
-        Point3D dest( lon, lat, 0.0 );
-        double course = 0.0, dist = 0.0;
-
-        calc_gc_course_dist( dest, start, &course, &dist );
-        // cout << "course = " << course << ", dist = " << dist << endl;
+    
+    
+    if ( lon != last_pos.getLongitudeRad() || lat != last_pos.getLatitudeRad() || sp_dist != 0 ) {
+        double course = SGGeodesy::courseDeg(last_pos, pos) * SG_DEGREES_TO_RADIANS, 
+            dist = SGGeodesy::distanceM(last_pos, pos);
 
         // if start and dest are too close together,
         // calc_gc_course_dist() can return a course of "nan".  If
@@ -753,8 +746,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         // cout << "base = " << base[0] << "," << base[1] << endl;
 
         setTextureOffset(base);
-        last_lon = lon;
-        last_lat = lat;
+        last_pos = pos;
     }
 
     layer3D->reposition( p, up, lon, lat, dt, layer_asl);

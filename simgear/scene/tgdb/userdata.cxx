@@ -28,7 +28,6 @@
 #include <osgDB/Registry>
 
 #include <simgear/sg_inlines.h>
-#include <simgear/math/point3d.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/material/mat.hxx>

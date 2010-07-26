@@ -1,7 +1,6 @@
 #ifndef _SG_GEODESY_HXX
 #define _SG_GEODESY_HXX
 
-#include <simgear/math/point3d.hxx>
 #include "SGMath.hxx"
 
 // Compatibility header.
@@ -53,21 +52,6 @@ inline void sgCartToGeod(const double* xyz, double* lat, double* lon, double* al
 }
 
 /**
- * Convert a cartesian point to a geodetic lat/lon/altitude.
- * Alternate form using Point3D objects.
- *
- * @param cartesian point
- * @return geodetic point
- */
-inline Point3D sgCartToGeod(const Point3D& p)
-{
-  SGGeod geod;
-  SGGeodesy::SGCartToGeod(SGVec3<double>(p.x(), p.y(), p.z()), geod);
-  return Point3D::fromSGGeod(geod);
-}
-
-
-/**
  * Convert a geodetic lat/lon/altitude to a cartesian point.
  *
  * @param lat (in) Latitude, in radians
@@ -82,20 +66,6 @@ inline void sgGeodToCart(double lat, double lon, double alt, double* xyz)
   xyz[0] = cart(0);
   xyz[1] = cart(1);
   xyz[2] = cart(2);
-}
-
-/**
- * Convert a geodetic lat/lon/altitude to a cartesian point.
- * Alternate form using Point3D objects.
- *
- * @param geodetic point
- * @return cartesian point
- */
-inline Point3D sgGeodToCart(const Point3D& geod)
-{
-  SGVec3<double> cart;
-  SGGeodesy::SGGeodToCart(SGGeod::fromRadM(geod.lon(), geod.lat(), geod.elev()), cart);
-  return Point3D::fromSGVec3(cart);
 }
 
 /**

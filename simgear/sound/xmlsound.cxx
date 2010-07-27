@@ -93,11 +93,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    _name = node->getStringValue("name", "");
    SG_LOG(SG_GENERAL, SG_DEBUG, "Loading sound information for: " << _name );
 
-   const char *mode_str = node->getStringValue("mode", "");
-   if ( !strcmp(mode_str, "looped") ) {
+   string mode_str = node->getStringValue("mode", "");
+   if ( mode_str == "looped" ) {
        _mode = SGXmlSound::LOOPED;
 
-   } else if ( !strcmp(mode_str, "in-transit") ) {
+   } else if ( mode_str == "in-transit" ) {
        _mode = SGXmlSound::IN_TRANSIT;
 
    } else {
@@ -105,8 +105,8 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    }
 
    bool is_avionics = false;
-   const char *type_str = node->getStringValue("type", "fx");
-   if ( !strcmp(type_str, "avionics") )
+   string type_str = node->getStringValue("type", "fx");
+   if ( type_str == "avionics" )
       is_avionics = true;
 
    string propval = node->getStringValue("property", "");
@@ -132,13 +132,14 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
       _snd_prop volume = {NULL, NULL, NULL, 1.0, 0.0, 0.0, 0.0, false};
 
-      if (strcmp(kids[i]->getStringValue("property"), ""))
-         volume.prop = root->getNode(kids[i]->getStringValue("property", ""), true);
+      propval = kids[i]->getStringValue("property", "");
+      if ( propval != "" )
+         volume.prop = root->getNode(propval, true);
 
-      const char *intern_str = kids[i]->getStringValue("internal", "");
-      if (!strcmp(intern_str, "dt_play"))
+      string intern_str = kids[i]->getStringValue("internal", "");
+      if (intern_str == "dt_play")
          volume.intern = &_dt_play;
-      else if (!strcmp(intern_str, "dt_stop"))
+      else if (intern_str == "dt_stop")
          volume.intern = &_dt_stop;
 
       if ((volume.factor = kids[i]->getDoubleValue("factor", 1.0)) != 0.0)
@@ -147,11 +148,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
             volume.subtract = true;
          }
 
-      const char *type_str = kids[i]->getStringValue("type", "");
-      if ( strcmp(type_str, "") ) {
+      string type_str = kids[i]->getStringValue("type", "");
+      if ( type_str != "" ) {
 
          for (int j=0; __sound_fn[j].fn; j++)
-           if ( !strcmp(type_str, __sound_fn[j].name) ) {
+           if ( type_str == __sound_fn[j].name ) {
                volume.fn = __sound_fn[j].fn;
                break;
             }
@@ -189,13 +190,14 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    for (i = 0; (i < kids.size()) && (i < SGXmlSound::MAXPROP); i++) {
       _snd_prop pitch = {NULL, NULL, NULL, 1.0, 1.0, 0.0, 0.0, false};
 
-      if (strcmp(kids[i]->getStringValue("property", ""), ""))
-         pitch.prop = root->getNode(kids[i]->getStringValue("property", ""), true);
+      propval = kids[i]->getStringValue("property", "");
+      if (propval != "")
+         pitch.prop = root->getNode(propval, true);
 
-      const char *intern_str = kids[i]->getStringValue("internal", "");
-      if (!strcmp(intern_str, "dt_play"))
+      string intern_str = kids[i]->getStringValue("internal", "");
+      if (intern_str == "dt_play")
          pitch.intern = &_dt_play;
-      else if (!strcmp(intern_str, "dt_stop"))
+      else if (intern_str == "dt_stop")
          pitch.intern = &_dt_stop;
 
       if ((pitch.factor = kids[i]->getDoubleValue("factor", 1.0)) != 0.0)
@@ -204,11 +206,11 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
             pitch.subtract = true;
          }
 
-      const char *type_str = kids[i]->getStringValue("type", "");
-      if ( strcmp(type_str, "") ) {
+      string type_str = kids[i]->getStringValue("type", "");
+      if ( type_str != "" ) {
 
          for (int j=0; __sound_fn[j].fn; j++) 
-            if ( !strcmp(type_str, __sound_fn[j].name) ) {
+            if ( type_str == __sound_fn[j].name ) {
                pitch.fn = __sound_fn[j].fn;
                break;
             }

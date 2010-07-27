@@ -109,7 +109,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    if ( !strcmp(type_str, "avionics") )
       is_avionics = true;
 
-   _property = root->getNode(node->getStringValue("property", ""), true);
+   string propval = node->getStringValue("property", "");
+   if (propval != "")
+      _property = root->getNode(propval, true);
+
    SGPropertyNode *condition = node->getChild("condition");
    if (condition != NULL)
       _condition = sgReadCondition(root, condition);

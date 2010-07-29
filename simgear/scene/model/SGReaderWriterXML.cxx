@@ -202,21 +202,21 @@ sgLoad3DModel_internal(const string &path,
     SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
     osg::ref_ptr<SGModelData> data;
-
+    SGPath modelpath;
+        
     if (xmlOptions) {
         prop_root = xmlOptions->getPropRoot();
         load_panel = xmlOptions->getLoadPanel();
         data = xmlOptions->getModelData();
     }
+    
+    
+    modelpath = SGModelLib::findDataFile(path);
+    
     if (!prop_root) {
         prop_root = new SGPropertyNode;
     }
 
-    osgDB::FilePathList filePathList;
-    filePathList = osgDB::Registry::instance()->getDataFilePathList();
-    filePathList.push_front(std::string());
-
-    SGPath modelpath = osgDB::findFileInPath(path, filePathList);
     if (modelpath.str().empty()) {
         SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path << "\"");
         return 0;
@@ -262,7 +262,7 @@ sgLoad3DModel_internal(const string &path,
     = new SGReaderWriterXMLOptions(*options_);
     options->setPropRoot(prop_root);
     options->setLoadPanel(load_panel);
-
+    
     // Assume that textures are in
     // the same location as the XML file.
     if (!model) {
@@ -345,6 +345,7 @@ sgLoad3DModel_internal(const string &path,
         options = new SGReaderWriterXMLOptions(*options_);
         options->setPropRoot(prop_root);
         options->setLoadPanel(load_panel);
+        
         try {
             submodel = sgLoad3DModel_internal(submodelpath.str(), options.get(),
                                               sub_props->getNode("overlay"));

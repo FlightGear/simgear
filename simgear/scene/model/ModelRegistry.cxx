@@ -207,7 +207,7 @@ ModelRegistry::readImage(const string& fileName,
     {
         if (iter != imageCallbackMap.end() && iter->second.valid())
             return iter->second->readImage(fileName, opt);
-        string absFileName = findDataFile(fileName, opt);
+        string absFileName = SGModelLib::findDataFile(fileName, opt);
         if (!fileExists(absFileName)) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot find image file \""
                    << fileName << "\"");
@@ -297,7 +297,7 @@ string OSGSubstitutePolicy::substitute(const string& name,
 {
     string fileSansExtension = getNameLessExtension(name);
     string osgFileName = fileSansExtension + ".osg";
-    string absFileName = findDataFile(osgFileName, opt);
+    string absFileName = SGModelLib::findDataFile(osgFileName, opt);
     return absFileName;
 }
 

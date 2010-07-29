@@ -128,7 +128,7 @@ Effect* makeEffect(const string& name,
     string effectFileName(name);
     effectFileName += ".eff";
     string absFileName
-        = osgDB::findDataFile(effectFileName, options);
+        = SGModelLib::findDataFile(effectFileName, options);
     if (absFileName.empty()) {
         SG_LOG(SG_INPUT, SG_ALERT, "can't find \"" << effectFileName << "\"");
         return 0;

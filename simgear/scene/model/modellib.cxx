@@ -45,13 +45,44 @@ using namespace simgear;
 osgDB::RegisterReaderWriterProxy<SGReaderWriterXML> g_readerWriter_XML_Proxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_xmlCallbackProxy("xml");
 
-
+SGPropertyNode_ptr SGModelLib::static_propRoot;
+SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
+SGModelLib::resolve_func SGModelLib::static_resolver = NULL;
+
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGModelLib.
 ////////////////////////////////////////////////////////////////////////
 void SGModelLib::init(const string &root_dir)
 {
     osgDB::Registry::instance()->getDataFilePathList().push_front(root_dir);
+}
+
+void SGModelLib::setPropRoot(SGPropertyNode* root)
+{
+  static_propRoot = root;
+}
+    
+void SGModelLib::setPanelFunc(panel_func pf)
+{
+  static_panelFunc = pf;
+}
+
+void SGModelLib::setResolveFunc(resolve_func rf)
+{
+  static_resolver = rf;
+}
+
+std::string SGModelLib::findDataFile(const std::string& file, 
+  const osgDB::ReaderWriter::Options* opts)
+{
+  if (static_resolver) {
+    SGPath p = static_resolver(file);
+    if (p.exists()) {
+      return p.str();
+    }
+  }
+  
+  return osgDB::findDataFile(file, opts);
 }
 
 SGModelLib::SGModelLib()
@@ -87,24 +118,15 @@ SGModelLib::loadModel(const string &path,
                        SGModelData *data)
 {
     osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
-    opt->setPropRoot(prop_root);
+    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
+    opt->setLoadPanel(static_panelFunc);
+    
     osg::Node *n = loadFile(path, opt.get());
     if (n && n->getName().empty())
         n->setName("Direct loaded model \"" + path + "\"");
     return n;
 
-}
-
-osg::Node*
-SGModelLib::loadModel(const string &path,
-                                SGPropertyNode *prop_root,
-                                panel_func pf)
-{
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
-    opt->setPropRoot(prop_root);
-    opt->setLoadPanel(pf);
-    return loadFile(path, opt.get());
 }
 
 osg::Node*
@@ -118,8 +140,10 @@ SGModelLib::loadPagedModel(const string &path,
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 
     osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
-    opt->setPropRoot(prop_root);
+    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
+    opt->setLoadPanel(static_panelFunc);
+    
     plod->setReaderWriterOptions(opt.get());
     return plod;
 }

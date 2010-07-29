@@ -27,11 +27,10 @@
 #include <string>
 
 #include <osg/Node>
+#include <osgDB/ReaderWriter>
 
 #include <simgear/props/props.hxx>
-
-using std::map;
-using std::string;
+#include <simgear/misc/sg_path.hxx>
 
 namespace simgear {
 
@@ -45,19 +44,21 @@ class SGModelLib
 public:
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
 
-    static void init(const string &root_dir);
+    typedef SGPath (*resolve_func)(const std::string& path);
+
+    static void init(const std::string &root_dir);
+
+    static void setPropRoot(SGPropertyNode* root);
+    
+    static void setPanelFunc(panel_func pf);
+    
+    static void setResolveFunc(resolve_func rf);
 
     // Load a 3D model (any format)
     // data->modelLoaded() will be called after the model is loaded
-    static osg::Node* loadModel(const string &path,
-                                SGPropertyNode *prop_root,
+    static osg::Node* loadModel(const std::string &path,
+                                SGPropertyNode *prop_root = NULL,
                                 SGModelData *data=0);
-
-    // Load a 3D model (any format)
-    // with a panel_func to load a panel
-    static osg::Node* loadModel(const string &path,
-                                SGPropertyNode *prop_root,
-                                panel_func pf);
 
     // Load a 3D model (any format) through the DatabasePager.
     // Most models should be loaded using this function!
@@ -65,13 +66,19 @@ public:
     // data->modelLoaded() will be called after the model is loaded and
     // connected to the scene graph. See AIModelData on how to use this.
     // NOTE: AIModelData uses observer_ptr to avoid circular references.
-    static osg::Node* loadPagedModel(const string &path,
-                                     SGPropertyNode *prop_root,
+    static osg::Node* loadPagedModel(const std::string &path,
+                                     SGPropertyNode *prop_root = NULL,
                                      SGModelData *data=0);
 
+    static std::string findDataFile(const std::string& file, const osgDB::ReaderWriter::Options* opts = NULL); 
 protected:
     SGModelLib();
     ~SGModelLib ();
+    
+private:
+  static SGPropertyNode_ptr static_propRoot;
+  static panel_func static_panelFunc;
+  static resolve_func static_resolver;
 };
 
 
@@ -83,7 +90,7 @@ protected:
 class SGModelData : public osg::Referenced {
 public:
     virtual ~SGModelData() {}
-    virtual void modelLoaded(const string& path, SGPropertyNode *prop,
+    virtual void modelLoaded(const std::string& path, SGPropertyNode *prop,
                              osg::Node* branch) = 0;
 };
 

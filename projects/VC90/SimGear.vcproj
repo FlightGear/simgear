@@ -884,14 +884,6 @@
 			Name="Lib_sgtiming"
 			>
 			<File
-				RelativePath="..\..\simgear\timing\geocoord.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\timing\geocoord.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\timing\lowleveltime.cxx"
 				>
 			</File>

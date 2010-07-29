@@ -88,9 +88,8 @@ void SGTime::init( double lon_rad, double lat_rad,
         SG_LOG( SG_EVENT, SG_INFO, "Reading timezone info from: "
                 << zone.str() );
         tzContainer = new SGTimeZoneContainer( zone.c_str() );
-
-        SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat_rad, SGD_RADIANS_TO_DEGREES * lon_rad );
-        SGGeoCoord* nearestTz = tzContainer->getNearest(location);
+        SGGeod location(SGGeod::fromRad(lon_rad, lat_rad));
+        SGTimeZone* nearestTz = tzContainer->getNearest(location);
 
         SGPath name( root );
         name.append( nearestTz->getDescription() );
@@ -283,9 +282,8 @@ void SGTime::updateLocal( double lon_rad, double lat_rad, const string& root ) {
     }
     time_t currGMT;
     time_t aircraftLocalTime;
-    SGGeoCoord location( SGD_RADIANS_TO_DEGREES * lat_rad,
-                         SGD_RADIANS_TO_DEGREES * lon_rad );
-    SGGeoCoord* nearestTz = tzContainer->getNearest(location);
+    SGGeod location(SGGeod::fromRad(lon_rad, lat_rad));
+    SGTimeZone* nearestTz = tzContainer->getNearest(location);
     SGPath zone( root );
     zone.append ( nearestTz->getDescription() );
     zonename = zone.str();

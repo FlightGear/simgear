@@ -34,17 +34,18 @@
 
 #include "timezone.h"
 
-SGTimeZone::SGTimeZone(float la, float lo, char* cc, char* desc) :
-    SGGeoCoord(la, lo)
+SGTimeZone::SGTimeZone(const SGGeod& geod, char* cc, char* desc) :
+    centerpoint(SGVec3d::fromGeod(geod))
 { 
     countryCode = cc;
     descriptor = desc;
 }
 
 /* Build a timezone object from a textline in zone.tab */
-SGTimeZone::SGTimeZone(const char *infoString) :
-    SGGeoCoord()
+SGTimeZone::SGTimeZone(const char *infoString)
 {
+    double lat = 0.0, lon = 0.0;
+    
     int i = 0;
     while (infoString[i] != '\t')
         i++;
@@ -110,13 +111,14 @@ SGTimeZone::SGTimeZone(const char *infoString) :
     strncpy(buffer, (&infoString[start]), size);
     buffer[size] = 0;
     descriptor = buffer;
+    
+    centerpoint = SGVec3d::fromGeod(SGGeod::fromDeg(lon, lat));
 }
 
 /* the copy constructor */
 SGTimeZone::SGTimeZone(const SGTimeZone& other)
 {
-    lat = other.getLat();
-    lon = other.getLon();
+    centerpoint = other.centerpoint;
     countryCode = other.countryCode;
     descriptor = other.descriptor;
 }
@@ -131,33 +133,56 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     if (!(infile)) {
         string e = "Unable to open time zone file '";
         throw sg_exception(e + filename + '\'');
-
-    } else { 
-        errno = 0;
+    }
     
-        while (1) {
-            fgets(buffer, 256, infile);
-            if (feof(infile)) {
-                break;
-            }
-            for (char *p = buffer; *p; p++) {
-                if (*p == '#') {
-                    *p = 0;
-                    break;
-                }    
-            }
-            if (buffer[0]) {
-                data.push_back(new SGTimeZone(buffer));
-            }
+    errno = 0;
+
+    while (1) {
+        fgets(buffer, 256, infile);
+        if (feof(infile)) {
+            break;
         }
-        if ( errno ) {
-            perror( "SGTimeZoneContainer()" );
-            errno = 0;
+        for (char *p = buffer; *p; p++) {
+            if (*p == '#') {
+                *p = 0;
+                break;
+            }    
+        }
+        if (buffer[0]) {
+            zones.push_back(new SGTimeZone(buffer));
         }
     }
+    if ( errno ) {
+        perror( "SGTimeZoneContainer()" );
+        errno = 0;
+    }
+    
     fclose(infile);
 }
 
 SGTimeZoneContainer::~SGTimeZoneContainer()
 {
+  TZVec::iterator it = zones.begin();
+  for (; it != zones.end(); ++it) {
+    delete *it;
+  }
 }
+
+SGTimeZone* SGTimeZoneContainer::getNearest(const SGGeod& ref) const
+{
+  SGVec3d refCart(SGVec3d::fromGeod(ref));
+  SGTimeZone* match = NULL;
+  double minDist2 = HUGE_VAL;
+  
+  TZVec::const_iterator it = zones.begin();
+  for (; it != zones.end(); ++it) {
+    double d2 = distSqr((*it)->cartCenterpoint(), refCart);
+    if (d2 < minDist2) {
+      match = *it;
+      minDist2 = d2;
+    }
+  }
+
+  return match;
+}
+

@@ -27,46 +27,38 @@
 #ifndef _TIMEZONE_H_
 #define _TIMEZONE_H_
 
-#include <stdio.h>
 #include <string>
+#include <vector>
 
-#include <simgear/timing/geocoord.h>
+#include <simgear/math/SGMath.hxx>
+#include <simgear/math/SGGeod.hxx>
 
 /**
- * SGTimeZone is derived from geocoord, and stores the timezone centerpoint,
+ * SGTimeZone stores the timezone centerpoint,
  * as well as the countrycode and the timezone descriptor. The latter is 
  * used in order to get the local time. 
  *
  */
 
-class SGTimeZone : public SGGeoCoord
+class SGTimeZone
 {
 
 private:
 
+  SGVec3d centerpoint; // centre of timezone, in cartesian coordinates
   std::string countryCode;
   std::string descriptor;
 
 public:
 
     /**
-     * Default constructor.
-     */
-    SGTimeZone() : SGGeoCoord()
-    {
-        countryCode.erase(); 
-        descriptor.erase();
-    };
-
-    /**
      * Build a timezone object with a specifed latitude, longitude, country
      * code, and descriptor
-     * @param la latitude
-     * @param lo longitude
+     * @param pt centerpoint
      * @param cc country code
      * @param desc descriptor
      */
-    SGTimeZone(float la, float lo, char* cc, char* desc);
+    SGTimeZone(const SGGeod& pt, char* cc, char* desc);
 
     /**
      * Build a timezone object from a textline in zone.tab
@@ -79,29 +71,34 @@ public:
      * @param other the source object
      */
     SGTimeZone(const SGTimeZone &other);
-
-    /**
-     * Virutal destructor 
-     */
-    virtual ~SGTimeZone() { };
   
     /**
      * Return the descriptor string
      * @return descriptor string (char array)
      */
-    virtual const char * getDescription() { return descriptor.c_str(); };
+    const char * getDescription() { return descriptor.c_str(); };
+    
+    const SGVec3d& cartCenterpoint() const
+    {
+      return centerpoint;
+    }
 };
 
 /**
- * SGTimeZoneContainer is derived from SGGeoCoordContainer, and has some 
- * added functionality.
+ * SGTimeZoneContainer 
  */
 
-class SGTimeZoneContainer : public SGGeoCoordContainer
+class SGTimeZoneContainer
 {
- public:
+public:
   SGTimeZoneContainer(const char *filename);
-  virtual ~SGTimeZoneContainer();
+  ~SGTimeZoneContainer();
+  
+  SGTimeZone* getNearest(const SGGeod& ref) const;
+  
+private:
+  typedef std::vector<SGTimeZone*> TZVec;
+  TZVec zones;
 };
 
 

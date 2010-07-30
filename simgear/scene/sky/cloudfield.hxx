@@ -44,7 +44,7 @@ namespace osg
 
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/structure/Singleton.hxx>
-#include <Simgear/math/SGMath.hxx>
+#include <simgear/math/SGMath.hxx>
 
 using std::vector;
 

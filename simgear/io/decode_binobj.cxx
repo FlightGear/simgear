@@ -63,7 +63,7 @@ int main( int argc, char **argv ) {
     cout << "# geometry groups" << endl;
     cout << endl;
 
-    string material;
+    std::string material;
     int_list vertex_index;
     int_list normal_index;
     int_list tex_index;

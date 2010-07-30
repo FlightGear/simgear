@@ -196,7 +196,7 @@ public:
      * @param file input file name
      * @return result of read
      */
-    bool read_bin( const string& file );
+    bool read_bin( const std::string& file );
 
     /** 
      * Write out the structures to a binary file.  We assume that the
@@ -207,7 +207,7 @@ public:
      * @param b bucket for object location
      * @return result of write
      */
-    bool write_bin( const string& base, const string& name, const SGBucket& b );
+    bool write_bin( const std::string& base, const std::string& name, const SGBucket& b );
 
     /**
      * Write out the structures to an ASCII file.  We assume that the
@@ -218,7 +218,7 @@ public:
      * @param b bucket for object location
      * @return result of write
      */
-    bool write_ascii( const string& base, const string& name,
+    bool write_ascii( const std::string& base, const std::string& name,
 		      const SGBucket& b );
 };
 

@@ -89,7 +89,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_43_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -115,7 +115,7 @@
     </Midl>
     <ClCompile>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_43_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -137,7 +137,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_43_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -162,7 +162,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_42_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..;..\..\simgear;..\..\..;..\..\..\install\msvc100-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_43_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_CONFIG_H;_DEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -170,7 +170,7 @@
       <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <ResourceCompile>
@@ -198,6 +198,7 @@
     <ClCompile Include="..\..\simgear\ephemeris\venus.cxx" />
     <ClCompile Include="..\..\simgear\io\iochannel.cxx" />
     <ClCompile Include="..\..\simgear\io\lowlevel.cxx" />
+    <ClCompile Include="..\..\simgear\io\raw_socket.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_binobj.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_file.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_serial.cxx" />
@@ -210,9 +211,9 @@
     <ClCompile Include="..\..\simgear\math\sg_random.c" />
     <ClCompile Include="..\..\simgear\math\SGGeod.cxx" />
     <ClCompile Include="..\..\simgear\math\SGGeodesy.cxx" />
-    <ClCompile Include="..\..\simgear\math\vector.cxx" />
     <ClCompile Include="..\..\simgear\misc\interpolator.cxx" />
     <ClCompile Include="..\..\simgear\misc\PathOptions.cxx" />
+    <ClCompile Include="..\..\simgear\misc\sg_dir.cxx" />
     <ClCompile Include="..\..\simgear\misc\sg_path.cxx" />
     <ClCompile Include="..\..\simgear\misc\sgstream.cxx" />
     <ClCompile Include="..\..\simgear\misc\strutils.cxx" />
@@ -240,7 +241,6 @@
     <ClCompile Include="..\..\simgear\scene\sky\sky.cxx" />
     <ClCompile Include="..\..\simgear\scene\sky\sphere.cxx" />
     <ClCompile Include="..\..\simgear\scene\sky\stars.cxx" />
-    <ClCompile Include="..\..\simgear\timing\geocoord.cxx" />
     <ClCompile Include="..\..\simgear\timing\lowleveltime.cxx" />
     <ClCompile Include="..\..\simgear\timing\sg_time.cxx" />
     <ClCompile Include="..\..\simgear\timing\timestamp.cxx" />
@@ -389,6 +389,7 @@
     <ClInclude Include="..\..\simgear\ephemeris\venus.hxx" />
     <ClInclude Include="..\..\simgear\io\iochannel.hxx" />
     <ClInclude Include="..\..\simgear\io\lowlevel.hxx" />
+    <ClInclude Include="..\..\simgear\io\raw_socket.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_binobj.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_file.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_serial.hxx" />
@@ -408,9 +409,9 @@
     <ClInclude Include="..\..\simgear\math\sg_types.hxx" />
     <ClInclude Include="..\..\simgear\math\SGGeodesy.hxx" />
     <ClInclude Include="..\..\simgear\math\sphrintp.h" />
-    <ClInclude Include="..\..\simgear\math\vector.hxx" />
     <ClInclude Include="..\..\simgear\misc\interpolator.hxx" />
     <ClInclude Include="..\..\simgear\misc\PathOptions.hxx" />
+    <ClInclude Include="..\..\simgear\misc\sg_dir.hxx" />
     <ClInclude Include="..\..\simgear\misc\sg_path.hxx" />
     <ClInclude Include="..\..\simgear\misc\sgstream.hxx" />
     <ClInclude Include="..\..\simgear\misc\stopwatch.hxx" />
@@ -441,7 +442,6 @@
     <ClInclude Include="..\..\simgear\scene\sky\sky.hxx" />
     <ClInclude Include="..\..\simgear\scene\sky\sphere.hxx" />
     <ClInclude Include="..\..\simgear\scene\sky\stars.hxx" />
-    <ClInclude Include="..\..\simgear\timing\geocoord.h" />
     <ClInclude Include="..\..\simgear\timing\lowleveltime.h" />
     <ClInclude Include="..\..\simgear\timing\sg_time.hxx" />
     <ClInclude Include="..\..\simgear\timing\timestamp.hxx" />

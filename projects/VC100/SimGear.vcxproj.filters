@@ -159,9 +159,6 @@
     <ClCompile Include="..\..\simgear\math\SGGeodesy.cxx">
       <Filter>Lib_sgmath</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\simgear\math\vector.cxx">
-      <Filter>Lib_sgmath</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\simgear\misc\interpolator.cxx">
       <Filter>Lib_sgmisc</Filter>
     </ClCompile>
@@ -248,9 +245,6 @@
     </ClCompile>
     <ClCompile Include="..\..\simgear\scene\sky\stars.cxx">
       <Filter>Lib_sgsky</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\simgear\timing\geocoord.cxx">
-      <Filter>Lib_sgtiming</Filter>
     </ClCompile>
     <ClCompile Include="..\..\simgear\timing\lowleveltime.cxx">
       <Filter>Lib_sgtiming</Filter>
@@ -591,6 +585,12 @@
     <ClCompile Include="..\..\simgear\scene\bvh\BVHTransform.cxx">
       <Filter>Lib_sgbvh</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\io\raw_socket.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\sg_dir.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -704,9 +704,6 @@
     <ClInclude Include="..\..\simgear\math\sphrintp.h">
       <Filter>Lib_sgmath</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\simgear\math\vector.hxx">
-      <Filter>Lib_sgmath</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\simgear\misc\interpolator.hxx">
       <Filter>Lib_sgmisc</Filter>
     </ClInclude>
@@ -802,9 +799,6 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\scene\sky\stars.hxx">
       <Filter>Lib_sgsky</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\simgear\timing\geocoord.h">
-      <Filter>Lib_sgtiming</Filter>
     </ClInclude>
     <ClInclude Include="..\..\simgear\timing\lowleveltime.h">
       <Filter>Lib_sgtiming</Filter>
@@ -1183,6 +1177,12 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\compiler.h" />
     <ClInclude Include="..\..\simgear\version.h" />
+    <ClInclude Include="..\..\simgear\io\raw_socket.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\sg_dir.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\simgear\math\linintp2.inl">

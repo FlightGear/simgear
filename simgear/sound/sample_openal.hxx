@@ -42,7 +42,6 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
 
-// #include <plib/sg.h>
 
 /**
  * manages everything we need to know for an individual audio sample
@@ -115,7 +114,7 @@ public:
      * at the next call op SoundGroup::update()
      * @param _loop Define whether this sound should be played in a loop.
      */
-    void play( bool loop ) {
+    void play( bool loop = false ) {
         _playing = true; _loop = loop; _changed = true;
     }
 
@@ -128,7 +127,7 @@ public:
     /**
      * Schedule this audio sample to stop playing.
      */
-    void stop() {
+    virtual void stop() {
         _playing = false; _changed = true;
     }
 
@@ -158,7 +157,7 @@ public:
     inline void set_data( const unsigned char **data ) {
         _data = (unsigned char*)*data; *data = NULL;
     }
-    inline void set_data( void **data ) {
+    inline void set_data( const void **data ) {
         _data = (unsigned char*)*data; *data = NULL;
     }
 
@@ -179,7 +178,7 @@ public:
      * Set the source id of this source
      * @param sid OpenAL source-id
      */
-    void set_source(unsigned int sid) {
+    virtual inline void set_source(unsigned int sid) {
         _source = sid; _valid_source = true; _changed = true;
     }
 
@@ -187,24 +186,24 @@ public:
      * Get the OpenAL source id of this source
      * @return OpenAL source-id
      */
-    inline unsigned int get_source() { return _source; }
+    virtual inline unsigned int get_source() { return _source; }
 
     /**
      * Test if the source-id of this audio sample may be passed to OpenAL.
      * @return true if the source-id is valid
      */
-    inline bool is_valid_source() const { return _valid_source; }
+    virtual inline bool is_valid_source() const { return _valid_source; }
 
     /**
      * Set the source-id of this audio sample to invalid.
      */
-    inline void no_valid_source() { _valid_source = false; }
+    virtual inline void no_valid_source() { _valid_source = false; }
 
     /**
      * Set the OpenAL buffer-id of this source
      * @param bid OpenAL buffer-id
      */
-    void set_buffer(unsigned int bid) {
+    inline void set_buffer(unsigned int bid) {
         _buffer = bid; _valid_buffer = true; _changed = true;
     } 
 
@@ -442,6 +441,8 @@ public:
      * @return Sample name
      */
     inline std::string get_sample_name() const { return _refname; }
+
+    inline virtual bool is_queue() const { return false; }
 
     void update_pos_and_orientation();
 

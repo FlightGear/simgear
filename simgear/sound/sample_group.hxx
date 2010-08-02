@@ -52,6 +52,7 @@
 #include <simgear/structure/exception.hxx>
 
 #include "sample_openal.hxx"
+#include "sample_queue.hxx"
 
 using std::map;
 using std::string;

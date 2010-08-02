@@ -104,9 +104,11 @@ void SGSampleGroup::update( double dt ) {
 
         if ( result == AL_STOPPED ) {
             sample->stop();
-            ALuint buffer = sample->get_buffer();
-            alDeleteBuffers( 1, &buffer );
-            testForALError("buffer remove");
+            if ( !sample->is_queue() ) {
+                ALuint buffer = sample->get_buffer();
+                alDeleteBuffers( 1, &buffer );
+                testForALError("buffer remove");
+            }
             _removed_samples.erase( _removed_samples.begin()+i );
             size--;
             continue;
@@ -129,33 +131,46 @@ void SGSampleGroup::update( double dt ) {
             //
             // a request to start playing a sound has been filed.
             //
-            if ( _smgr->request_buffer(sample) == SGSoundMgr::NO_BUFFER )
-                continue;
-
-            // start playing the sample
-            ALuint buffer = sample->get_buffer();
             ALuint source = _smgr->request_source();
-            if (alIsSource(source) == AL_TRUE && alIsBuffer(buffer) == AL_TRUE)
+            if (alIsSource(source) == AL_TRUE )
             {
-                sample->set_source( source );
-                
-                alSourcei( source, AL_BUFFER, buffer );
-                testForALError("assign buffer to source");
+                if ( sample->is_queue() )
+                {
+                    sample->set_source( source );
+                    update_sample_config( sample );
 
-                sample->set_source( source );
-                update_sample_config( sample );
+                    alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
+                    alSourcei( source, AL_LOOPING, AL_FALSE);
+                    alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
+                    alSourcePlay( source );
+                    testForALError("sample play");
+                }
+                else
+                {
+                    if (_smgr->request_buffer(sample) == SGSoundMgr::NO_BUFFER)
+                        continue;
 
-                ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
-                alSourcei( source, AL_LOOPING, looping );
-                alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
-                alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
-                alSourcePlay( source );
-                testForALError("sample play");
-            } else {
-                if (alIsBuffer(buffer) == AL_FALSE) 
-                   SG_LOG( SG_GENERAL, SG_ALERT, "No such buffer!\n");
-                // sample->no_valid_source();
-                // sadly, no free source available at this time
+                    // start playing the sample
+                    ALuint buffer = sample->get_buffer();
+                    if ( alIsBuffer(buffer) == AL_TRUE )
+                    {
+                        ALboolean looping;
+
+                        alSourcei( source, AL_BUFFER, buffer );
+                        testForALError("assign buffer to source");
+
+                        sample->set_source( source );
+                        update_sample_config( sample );
+
+                        looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
+                        alSourcei( source, AL_LOOPING, looping );
+                        alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
+                        alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
+                        alSourcePlay( source );
+                        testForALError("sample play");
+                    } else
+                        SG_LOG( SG_GENERAL, SG_ALERT, "No such buffer!\n");
+                }
             }
 
         } else if ( sample->is_valid_source() ) {
@@ -215,6 +230,7 @@ bool SGSampleGroup::remove( const string &refname ) {
 
     if ( sample_it->second->is_valid_buffer() )
         _removed_samples.push_back( sample_it->second );
+
     _samples.erase( sample_it );
 
     return true;
@@ -265,7 +281,7 @@ SGSampleGroup::stop ()
             sample->no_valid_source();
         }
 
-        if (sample->is_valid_buffer() ) {
+        if ( sample->is_valid_buffer() ) {
             _smgr->release_buffer( sample );
             sample->no_valid_buffer();
         }

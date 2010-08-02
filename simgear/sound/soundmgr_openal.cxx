@@ -508,20 +508,23 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 
 void SGSoundMgr::release_buffer(SGSoundSample *sample)
 {
-    string sample_name = sample->get_sample_name();
-    buffer_map_iterator buffer_it = _buffers.find( sample_name );
-    if ( buffer_it == _buffers.end() ) {
-        // buffer was not found
-        return;
-    }
+    if ( !sample->is_queue() )
+    {
+        string sample_name = sample->get_sample_name();
+        buffer_map_iterator buffer_it = _buffers.find( sample_name );
+        if ( buffer_it == _buffers.end() ) {
+            // buffer was not found
+            return;
+        }
 
-    sample->no_valid_buffer();
-    buffer_it->second.refctr--;
-    if (buffer_it->second.refctr == 0) {
-        ALuint buffer = buffer_it->second.id;
-        alDeleteBuffers(1, &buffer);
-        _buffers.erase( buffer_it );
-        testForALError("release buffer");
+        sample->no_valid_buffer();
+        buffer_it->second.refctr--;
+        if (buffer_it->second.refctr == 0) {
+            ALuint buffer = buffer_it->second.id;
+            alDeleteBuffers(1, &buffer);
+            _buffers.erase( buffer_it );
+            testForALError("release buffer");
+        }
     }
 }
 

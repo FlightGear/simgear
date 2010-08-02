@@ -22,13 +22,11 @@
  *
  */
 
-#include <string.h>
 
 #include "extensions.hxx"
-#include <simgear/debug/logstream.hxx>
-#if !defined(WIN32)
-#  include <dlfcn.h>
-#endif
+
+#include <cstring>
+#include <osg/GL> // for glGetString
 
 bool SGSearchExtensionsString(const char *extString, const char *extName) {
     // Returns GL_TRUE if the *extName string appears in the *extString string,
@@ -65,89 +63,3 @@ bool SGIsOpenGLExtensionSupported(const char *extName) {
 
     return SGSearchExtensionsString((const char *)glGetString(GL_EXTENSIONS),extName);
 }
-
-#ifdef __APPLE__
-
-#include <CoreFoundation/CoreFoundation.h>
-
-void* macosxGetGLProcAddress(const char *func) {
-
-  /* We may want to cache the bundleRef at some point */
-  static CFBundleRef bundle = 0;
-
-  if (!bundle) {
-
-    CFURLRef bundleURL = CFURLCreateWithFileSystemPath (kCFAllocatorDefault,
-							CFSTR("/System/Library/Frameworks/OpenGL.framework"), kCFURLPOSIXPathStyle, true);
-
-    bundle = CFBundleCreate (kCFAllocatorDefault, bundleURL);
-    CFRelease (bundleURL);
-  }
-
-  if (!bundle)
-    return 0;
-
-  CFStringRef functionName = CFStringCreateWithCString
-    (kCFAllocatorDefault, func, kCFStringEncodingASCII);
-  
-  void *function;
-  
-  function = CFBundleGetFunctionPointerForName (bundle, functionName);
-
-  CFRelease (functionName);
-
-  return function;
-}
-
-#elif !defined( WIN32 )
-
-void *SGGetGLProcAddress(const char *func) {
-    static void *libHandle = NULL;
-    static void *(*glXGetProcAddressPtr)(const GLubyte*) = 0;
-    void *fptr = NULL;
-
-    /*
-     * Clear the error buffer
-     */
-    dlerror();
-
-    /*
-     * Since libGL must be linked to the binary we run on, this is the
-     * right handle. That 'current binary' handle also avoids conflicts which
-     * arise from linking with a different libGL at link time an than later
-     * use the standard libGL at runtime ...
-     */
-    if (libHandle == NULL) {
-        libHandle = dlopen(NULL, RTLD_LAZY);
-
-        if (!libHandle) {
-            const char *error = dlerror();
-            if (error) {
-                SG_LOG(SG_GENERAL, SG_INFO, error);
-                return 0;
-            }
-        }
-
-        void* symbol = dlsym(libHandle, "glXGetProcAddress");
-        if (!symbol)
-            symbol = dlsym(libHandle, "glXGetProcAddressARB");
-        glXGetProcAddressPtr = (void *(*)(const GLubyte*)) symbol;
-    }
-
-    // First try the glx api function for that
-    if (glXGetProcAddressPtr) {
-        fptr = glXGetProcAddressPtr((const GLubyte*)func);
-
-    } else if (libHandle != NULL) {
-        fptr = dlsym(libHandle, func);
-
-        const char *error = dlerror();
-        if (error)
-            SG_LOG(SG_GENERAL, SG_INFO, error);
-    }
-
-    return fptr;
-}
-
-#endif
-

@@ -708,27 +708,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\screen\GLBitmaps.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\GLBitmaps.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\screen\jpgfactory.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\screen\jpgfactory.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\RenderTexture.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\RenderTexture.h"
 				>
 			</File>
 			<File
@@ -740,23 +724,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\screen\shader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\shader.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\screen\tr.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\screen\tr.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\screen\win32-printer.h"
 				>
 			</File>
 		</Filter>
@@ -775,14 +747,6 @@
 		<Filter
 			Name="Lib_sgsky"
 			>
-			<File
-				RelativePath="..\..\simgear\scene\sky\bbcache.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\sky\bbcache.hxx"
-				>
-			</File>
 			<File
 				RelativePath="..\..\simgear\scene\sky\cloud.cxx"
 				>

@@ -1,0 +1,1195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Lib_sgbucket">
+      <UniqueIdentifier>{0b6674a3-ad7d-455d-967f-04b956516de0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgdebug">
+      <UniqueIdentifier>{136cdf2a-e802-4e25-b825-3336dd61ae27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgephem">
+      <UniqueIdentifier>{fc32847c-a10f-4d60-9108-30df40a84990}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgio">
+      <UniqueIdentifier>{0f9ad905-7b39-4d51-9f90-1fd0082423cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgmagvar">
+      <UniqueIdentifier>{73f0ff46-3e87-49cc-b5c0-2edd5efe5b83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgmath">
+      <UniqueIdentifier>{3cecd6d2-b597-4dca-bc8b-57b539287af3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgmisc">
+      <UniqueIdentifier>{aacdb16b-c8a3-4646-b793-855b2c80cf19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgroute">
+      <UniqueIdentifier>{0a842a82-6392-4015-8ed1-8ea774530f17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgscreen">
+      <UniqueIdentifier>{436d099e-96b2-47e5-89f4-da454a191ff0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgserial">
+      <UniqueIdentifier>{91ac4edc-5b34-4fb7-b3d6-37638b7b0e1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgsky">
+      <UniqueIdentifier>{83f27589-140a-422d-aaa6-d02fabe5b22e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgtiming">
+      <UniqueIdentifier>{b343bb0d-e83d-434d-8f15-c1a2a34f3b32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgxml">
+      <UniqueIdentifier>{52bfaa4c-c644-4dc3-9db0-aea7d1430506}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgprops">
+      <UniqueIdentifier>{58041ba8-0ae0-493a-8f1d-da9f804f4083}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgmodel">
+      <UniqueIdentifier>{b793624f-3169-4de2-a20d-13003928be7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgsound">
+      <UniqueIdentifier>{b5df8235-7d21-4e12-b7d8-85d70887f2e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgmaterial">
+      <UniqueIdentifier>{d68626e0-6a72-47df-91c1-5b22569704e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgtgdb">
+      <UniqueIdentifier>{1463b6c3-448a-4e7f-9f84-4d9a67ea704c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgthread">
+      <UniqueIdentifier>{59dd967f-ee71-47c4-a272-eeccf7f53441}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgstructure">
+      <UniqueIdentifier>{5ac00357-be4d-4a23-8eb9-6d96bdc8f14d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgnasal">
+      <UniqueIdentifier>{7521d815-e7fa-4fa0-be12-32c652c4c575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgenvironment">
+      <UniqueIdentifier>{41e7ee72-84f2-49e6-be2d-5071288986a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgutil">
+      <UniqueIdentifier>{e143ab31-fc79-4774-999a-2d6a84c259b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lib_sgbvh">
+      <UniqueIdentifier>{82a8e0b8-c560-4d01-a6ea-259c40335019}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\simgear\bucket\newbucket.cxx">
+      <Filter>Lib_sgbucket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\debug\logstream.cxx">
+      <Filter>Lib_sgdebug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\celestialBody.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\ephemeris.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\jupiter.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\mars.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\mercury.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\moonpos.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\neptune.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\saturn.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\star.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\stardata.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\uranus.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\ephemeris\venus.cxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\iochannel.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\lowlevel.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_binobj.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_file.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_serial.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_socket.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_socket_udp.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\magvar\coremag.cxx">
+      <Filter>Lib_sgmagvar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\magvar\magvar.cxx">
+      <Filter>Lib_sgmagvar</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\math\interpolater.cxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\math\leastsqs.cxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\math\sg_random.c">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\math\SGGeod.cxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\math\SGGeodesy.cxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\interpolator.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\PathOptions.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\sg_path.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\sgstream.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\strutils.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\tabbed_values.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\texcoord.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\zfstream.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\route\route.cxx">
+      <Filter>Lib_sgroute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\route\waypoint.cxx">
+      <Filter>Lib_sgroute</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\extensions.cxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\GLBitmaps.cxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\jpgfactory.cxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\RenderTexture.cpp">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\screen-dump.cxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\shader.cpp">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\screen\tr.cxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\serial\serial.cxx">
+      <Filter>Lib_sgserial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\bbcache.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\cloud.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\cloudfield.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\CloudShaderGeometry.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\dome.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\moon.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\newcloud.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\oursun.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\sky.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\sphere.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\sky\stars.cxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\timing\lowleveltime.cxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\timing\sg_time.cxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\timing\timestamp.cxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\timing\timezone.cxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\xml\easyxml.cxx">
+      <Filter>Lib_sgxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\xml\hashtable.c">
+      <Filter>Lib_sgxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\xml\xmlparse.c">
+      <Filter>Lib_sgxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\xml\xmlrole.c">
+      <Filter>Lib_sgxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\xml\xmltok.c">
+      <Filter>Lib_sgxml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\props\AtomicChangeListener.cxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\props\condition.cxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\props\props.cxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\props\props_io.cxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\animation.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\CheckSceneryVisitor.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\model.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\modellib.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\ModelRegistry.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\particles.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\persparam.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\placement.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGClipGroup.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGInteractionAnimation.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGMaterialAnimation.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGOffsetTransform.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGPagedLOD.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGReaderWriterXML.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGRotateTransform.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGScaleTransform.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGText.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\SGTranslateTransform.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\shadanim.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\sound\sample_group.cxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\sound\sample_openal.cxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\sound\soundmgr_openal.cxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\sound\xmlsound.cxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\Effect.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\EffectBuilder.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\EffectCullVisitor.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\EffectGeode.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\GLPredicate.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\makeEffect.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\mat.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\matlib.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\matmodel.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\Noise.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\Pass.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\Technique.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\TextureBuilder.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\apt_signs.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\GroundLightManager.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\obj.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\pt_lights.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\ReaderWriterSTG.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGOceanTile.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGReaderWriterBTG.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\ShaderGeometry.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\TileCache.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\TileEntry.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\TreeBin.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\tgdb\userdata.cxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\commands.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\event_mgr.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\exception.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\SGBinding.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\SGExpression.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\SGSmplhist.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\SGSmplstat.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\structure\subsystem_mgr.cxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\bitslib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\code.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\codegen.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\gc.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\hash.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\iolib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\lex.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\lib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\mathlib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\misc.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\parse.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\string.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\thread-win32.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\threadlib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\utf8lib.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\nasal\vector.c">
+      <Filter>Lib_sgnasal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\environment\metar.cxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\environment\precipitation.cxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\environment\visual_enviro.cxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\CopyOp.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\NodeAndDrawableVisitor.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\PrimitiveUtils.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\QuadTreeBuilder.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SGEnlargeBoundingBox.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SGSceneFeatures.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SGSceneUserData.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SGStateAttributeVisitor.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\SplicingVisitor.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\StateAttributeFactory.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\util\UpdateOnceCallback.cxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHGroup.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHLineGeometry.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHMotionTransform.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHNode.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticBinary.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticGeometry.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticLeaf.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticNode.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHStaticTriangle.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHSubTreeCollector.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\bvh\BVHTransform.cxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\raw_socket.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\sg_dir.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
+      <Filter>Lib_sgbucket</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\debug\debug_types.h">
+      <Filter>Lib_sgdebug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\debug\logstream.hxx">
+      <Filter>Lib_sgdebug</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\celestialBody.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\ephemeris.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\jupiter.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\mars.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\mercury.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\moonpos.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\neptune.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\pluto.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\saturn.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\star.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\stardata.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\uranus.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\ephemeris\venus.hxx">
+      <Filter>Lib_sgephem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\iochannel.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\lowlevel.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_binobj.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_file.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_serial.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_socket.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_socket_udp.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\magvar\coremag.hxx">
+      <Filter>Lib_sgmagvar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\magvar\magvar.hxx">
+      <Filter>Lib_sgmagvar</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\beziercurve.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\interpolater.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\leastsqs.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\linintp2.h">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\localconsts.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\point3d.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\polar3d.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\sg_geodesy.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\sg_random.h">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\sg_types.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\SGGeodesy.hxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\sphrintp.h">
+      <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\interpolator.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\PathOptions.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\sg_path.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\sgstream.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\stopwatch.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\strutils.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\tabbed_values.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\texcoord.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\zfstream.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\route\route.hxx">
+      <Filter>Lib_sgroute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\route\waypoint.hxx">
+      <Filter>Lib_sgroute</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\colors.hxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\extensions.hxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\GLBitmaps.h">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\jpgfactory.hxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\RenderTexture.h">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\screen-dump.hxx">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\shader.h">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\tr.h">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\screen\win32-printer.h">
+      <Filter>Lib_sgscreen</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\serial\serial.hxx">
+      <Filter>Lib_sgserial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\bbcache.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\cloud.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\cloudfield.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\CloudShaderGeometry.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\dome.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\moon.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\newcloud.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\oursun.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\sky.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\sphere.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\sky\stars.hxx">
+      <Filter>Lib_sgsky</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\timing\lowleveltime.h">
+      <Filter>Lib_sgtiming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\timing\sg_time.hxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\timing\timestamp.hxx">
+      <Filter>Lib_sgtiming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\timing\timezone.h">
+      <Filter>Lib_sgtiming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\asciitab.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\easyxml.hxx">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\hashtable.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\iasciitab.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\latin1tab.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\nametab.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\utf8tab.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\xmldef.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\xmlparse.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\xmlrole.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\xmltok.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\xml\xmltok_impl.h">
+      <Filter>Lib_sgxml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\AtomicChangeListener.hxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\condition.hxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\ExtendedPropertyAdapter.hxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\props.hxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\props_io.hxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\animation.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\CheckSceneryVisitor.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\model.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\modellib.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\ModelRegistry.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\particles.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\persparam.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\placement.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGClipGroup.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGInteractionAnimation.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGMaterialAnimation.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGOffsetTransform.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGPagedLOD.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGReaderWriterXML.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGReaderWriterXMLOptions.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGRotateTransform.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGScaleTransform.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGText.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\SGTranslateTransform.hxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\sound\sample_group.hxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\sound\sample_openal.hxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\sound\soundmgr_openal.hxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\sound\xmlsound.hxx">
+      <Filter>Lib_sgsound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\Effect.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\EffectBuilder.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\EffectCullVisitor.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\EffectGeode.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\GLPredicate.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\mat.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\matlib.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\matmodel.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\Noise.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\Pass.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\Technique.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\TextureBuilder.hxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\apt_signs.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\GroundLightManager.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\obj.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\pt_lights.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGModelBin.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGOceanTile.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGReaderWriterBTG.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGReaderWriterBTGOptions.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\SGVasiDrawable.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\ShaderGeometry.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\TileCache.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\TileEntry.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\TreeBin.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\tgdb\userdata.hxx">
+      <Filter>Lib_sgtgdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\threads\SGGuard.hxx">
+      <Filter>Lib_sgthread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\threads\SGQueue.hxx">
+      <Filter>Lib_sgthread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\callback.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\commands.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\event_mgr.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\exception.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\OSGVersion.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGBinding.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGExpression.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGReferenced.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGSharedPtr.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGSmplhist.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\SGSmplstat.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\structure\subsystem_mgr.hxx">
+      <Filter>Lib_sgstructure</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\nasal\code.h">
+      <Filter>Lib_sgnasal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\nasal\data.h">
+      <Filter>Lib_sgnasal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\nasal\iolib.h">
+      <Filter>Lib_sgnasal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\nasal\nasal.h">
+      <Filter>Lib_sgnasal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\nasal\parse.h">
+      <Filter>Lib_sgnasal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\environment\metar.hxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\environment\precipitation.hxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\environment\visual_enviro.hxx">
+      <Filter>Lib_sgenvironment</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\CopyOp.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\NodeAndDrawableVisitor.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\PrimitiveUtils.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\QuadTreeBuilder.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\RenderConstants.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGDebugDrawCallback.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGEnlargeBoundingBox.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGNodeMasks.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGSceneFeatures.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGSceneUserData.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGStateAttributeVisitor.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGTextureStateAttributeVisitor.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SGUpdateVisitor.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\SplicingVisitor.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\StateAttributeFactory.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\util\UpdateOnceCallback.hxx">
+      <Filter>Lib_sgutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHBoundingBoxVisitor.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHDebugCollectVisitor.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHGroup.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHLineGeometry.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHLineSegmentVisitor.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHMotionTransform.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHNode.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticBinary.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticData.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticGeometry.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticGeometryBuilder.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticLeaf.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticNode.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHStaticTriangle.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHSubTreeCollector.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHTransform.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\bvh\BVHVisitor.hxx">
+      <Filter>Lib_sgbvh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\compiler.h" />
+    <ClInclude Include="..\..\simgear\version.h" />
+    <ClInclude Include="..\..\simgear\io\raw_socket.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\sg_dir.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\simgear\math\linintp2.inl">
+      <Filter>Lib_sgmath</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\simgear\simgear_config.h-msvc90" />
+  </ItemGroup>
+</Project>

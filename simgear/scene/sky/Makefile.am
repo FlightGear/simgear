@@ -10,7 +10,6 @@ include_HEADERS = \
 	sky.hxx \
 	sphere.hxx \
 	stars.hxx \
-	bbcache.hxx \
 	cloudfield.hxx \
 	newcloud.hxx \
 	CloudShaderGeometry.hxx
@@ -23,7 +22,6 @@ libsgsky_a_SOURCES = \
 	sky.cxx \
 	sphere.cxx \
 	stars.cxx \
-	bbcache.cxx \
 	cloudfield.cxx \
 	newcloud.cxx \
 	CloudShaderGeometry.cxx

@@ -54,6 +54,7 @@
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/screen/extensions.hxx>
 
 #include "newcloud.hxx"
 #include "cloudfield.hxx"

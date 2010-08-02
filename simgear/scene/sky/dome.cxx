@@ -24,6 +24,7 @@
 #endif
 
 #include <math.h>
+#include <iterator>
 
 #include <simgear/compiler.h>
 

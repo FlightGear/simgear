@@ -775,11 +775,11 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     ProgramKey prgKey;
     std::back_insert_iterator<vector<ShaderKey> > inserter(prgKey.shaders);
     transform(pVertShaders.begin(), pVertShaders.end(), inserter,
-              bind(makeShaderKey, _1, Shader::VERTEX));
+              boost::bind(makeShaderKey, _1, Shader::VERTEX));
     transform(pGeomShaders.begin(), pGeomShaders.end(), inserter,
-              bind(makeShaderKey, _1, Shader::GEOMETRY));
+              boost::bind(makeShaderKey, _1, Shader::GEOMETRY));
     transform(pFragShaders.begin(), pFragShaders.end(), inserter,
-              bind(makeShaderKey, _1, Shader::FRAGMENT));
+              boost::bind(makeShaderKey, _1, Shader::FRAGMENT));
     for (PropertyList::iterator itr = pAttributes.begin(),
              e = pAttributes.end();
          itr != e;

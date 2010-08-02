@@ -29,8 +29,6 @@
 #include <vector>
 #include <osg/Fog>
 
-#include "bbcache.hxx"
-
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 

@@ -144,6 +144,7 @@ private:
     float _master_volume;
     float _reference_dist;
     float _max_dist;
+    bool _loop;
 
     bool _playing;
     bool _changed;

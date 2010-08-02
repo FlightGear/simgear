@@ -134,13 +134,14 @@ void SGSampleGroup::update( double dt ) {
             ALuint source = _smgr->request_source();
             if (alIsSource(source) == AL_TRUE )
             {
+                ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
                 if ( sample->is_queue() )
                 {
                     sample->set_source( source );
                     update_sample_config( sample );
 
                     alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
-                    alSourcei( source, AL_LOOPING, AL_FALSE);
+                    alSourcei( source, AL_LOOPING, looping );
                     alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
                     alSourcePlay( source );
                     testForALError("sample play");
@@ -154,15 +155,12 @@ void SGSampleGroup::update( double dt ) {
                     ALuint buffer = sample->get_buffer();
                     if ( alIsBuffer(buffer) == AL_TRUE )
                     {
-                        ALboolean looping;
-
                         alSourcei( source, AL_BUFFER, buffer );
                         testForALError("assign buffer to source");
 
                         sample->set_source( source );
                         update_sample_config( sample );
 
-                        looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
                         alSourcei( source, AL_LOOPING, looping );
                         alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
                         alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );

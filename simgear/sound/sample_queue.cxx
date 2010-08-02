@@ -64,6 +64,7 @@ SGSampleQueue::SGSampleQueue( int freq, int format ) :
     _master_volume(1.0),
     _reference_dist(500.0),
     _max_dist(3000.0),
+    _loop(false),
     _playing(false),
     _changed(true)
 {

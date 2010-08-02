@@ -478,7 +478,7 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
 	// Using 6 separate images
 	if(texturesProp) {
 
-		SG_LOG(SG_INPUT, SG_ALERT, "try 6 images ");
+		SG_LOG(SG_INPUT, SG_DEBUG, "try 6 images ");
 
 		CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
 
@@ -535,7 +535,7 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
 
 	// Using 1 cross image
 	else if(crossProp) {
-		SG_LOG(SG_INPUT, SG_ALERT, "try cross map ");
+		SG_LOG(SG_INPUT, SG_DEBUG, "try cross map ");
 
 		std::string texname = crossProp->getStringValue();
 

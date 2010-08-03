@@ -192,19 +192,10 @@
     <ClCompile Include="..\..\simgear\screen\extensions.cxx">
       <Filter>Lib_sgscreen</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\simgear\screen\GLBitmaps.cxx">
-      <Filter>Lib_sgscreen</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\simgear\screen\jpgfactory.cxx">
       <Filter>Lib_sgscreen</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\simgear\screen\RenderTexture.cpp">
-      <Filter>Lib_sgscreen</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\simgear\screen\screen-dump.cxx">
-      <Filter>Lib_sgscreen</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\simgear\screen\shader.cpp">
       <Filter>Lib_sgscreen</Filter>
     </ClCompile>
     <ClCompile Include="..\..\simgear\screen\tr.cxx">
@@ -212,9 +203,6 @@
     </ClCompile>
     <ClCompile Include="..\..\simgear\serial\serial.cxx">
       <Filter>Lib_sgserial</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\simgear\scene\sky\bbcache.cxx">
-      <Filter>Lib_sgsky</Filter>
     </ClCompile>
     <ClCompile Include="..\..\simgear\scene\sky\cloud.cxx">
       <Filter>Lib_sgsky</Filter>
@@ -743,19 +731,10 @@
     <ClInclude Include="..\..\simgear\screen\extensions.hxx">
       <Filter>Lib_sgscreen</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\simgear\screen\GLBitmaps.h">
-      <Filter>Lib_sgscreen</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\simgear\screen\jpgfactory.hxx">
       <Filter>Lib_sgscreen</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\simgear\screen\RenderTexture.h">
-      <Filter>Lib_sgscreen</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\simgear\screen\screen-dump.hxx">
-      <Filter>Lib_sgscreen</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\simgear\screen\shader.h">
       <Filter>Lib_sgscreen</Filter>
     </ClInclude>
     <ClInclude Include="..\..\simgear\screen\tr.h">
@@ -766,9 +745,6 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\serial\serial.hxx">
       <Filter>Lib_sgserial</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\simgear\scene\sky\bbcache.hxx">
-      <Filter>Lib_sgsky</Filter>
     </ClInclude>
     <ClInclude Include="..\..\simgear\scene\sky\cloud.hxx">
       <Filter>Lib_sgsky</Filter>

@@ -30,7 +30,7 @@ tcp_server_SOURCES = tcp_server.cxx
 
 tcp_server_LDADD = \
 	libsgio.a \
-	$(top_builddir)/simgear/structure/libsgstructure.a \	
+	$(top_builddir)/simgear/structure/libsgstructure.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/bucket/libsgbucket.a \
 	$(top_builddir)/simgear/misc/libsgmisc.a \

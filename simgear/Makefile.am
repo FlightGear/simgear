@@ -4,8 +4,8 @@ include_HEADERS = \
 	compiler.h constants.h sg_inlines.h version.h
 
 if WANT_HEADLESS
-METAR_DIRS =
 SG_EXTRA_DIRS =
+METAR_DIRS = 
 else
 SG_EXTRA_DIRS = scene sound screen
 METAR_DIRS = environment
@@ -35,6 +35,6 @@ SUBDIRS = \
 	$(SG_EXTRA_DIRS) \
 	$(SGTHREAD_DIR) \
 	serial \
-	timing \
+	timing
 
 DIST_SUBDIRS = $(SUBDIRS) compatibility

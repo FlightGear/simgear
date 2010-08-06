@@ -570,43 +570,43 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
 				// Choose correct image
 				switch(n) {
 				case 0:  // Front
-					copySubImage(image, width, 0, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, subimg);
+					copySubImage(image, width, 0, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, subimg.get());
 					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 					break;
 				case 1:  // Left
-					copySubImage(image, 0, height, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, subimg);
+					copySubImage(image, 0, height, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, subimg.get());
 					cubeTexture->setWrap(osg::Texture2D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 					break;
 				case 2:  // Top
-					copySubImage(image, width, height, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, subimg);
+					copySubImage(image, width, height, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, subimg.get());
 					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 					break;
 				case 3:  // Right
-					copySubImage(image, width*2, height, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_X, subimg);
+					copySubImage(image, width*2, height, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::POSITIVE_X, subimg.get());
 					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 					break;
 				case 4:  // Back
-					copySubImage(image, width, height*2, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, subimg);
+					copySubImage(image, width, height*2, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, subimg.get());
 					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 					break;
 				case 5:  // Bottom
-					copySubImage(image, width, height*3, width, height, subimg, 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, subimg);
+					copySubImage(image, width, height*3, width, height, subimg.get(), 0, 0);
+					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, subimg.get());
 					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
 					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);

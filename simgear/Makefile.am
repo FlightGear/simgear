@@ -1,10 +1,21 @@
-# METAR_DIRS =
-METAR_DIRS = environment
-
 EXTRA_DIST = simgear_config.h.vc5 simgear_config.h-msvc71 version.h.in
 
 include_HEADERS = \
 	compiler.h constants.h sg_inlines.h version.h
+
+if WANT_HEADLESS
+METAR_DIRS =
+SG_EXTRA_DIRS =
+else
+SG_EXTRA_DIRS = scene sound screen
+METAR_DIRS = environment
+endif
+
+if HAVE_THREADS
+SGTHREAD_DIR = threads
+else
+SGTHREAD_DIR = 
+endif
 
 SUBDIRS = \
 	$(compatibility_DIR) \
@@ -21,11 +32,9 @@ SUBDIRS = \
 	nasal \
 	props \
 	route \
-	scene \
-	screen \
+	$(SG_EXTRA_DIRS) \
+	$(SGTHREAD_DIR) \
 	serial \
-	threads \
 	timing \
-	sound 
 
 DIST_SUBDIRS = $(SUBDIRS) compatibility

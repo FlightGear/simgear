@@ -329,7 +329,7 @@ void sgBucketDiff( const SGBucket& b1, const SGBucket& b2, int *dx, int *dy );
 inline std::ostream&
 operator<< ( std::ostream& out, const SGBucket& b )
 {
-    return out << b.lon << ":" << b.x << ", " << b.lat << ":" << b.y;
+    return out << b.lon << ":" << (int)b.x << ", " << b.lat << ":" << (int)b.y;
 }
 
 

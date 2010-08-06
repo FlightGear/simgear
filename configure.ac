@@ -24,6 +24,14 @@ AC_ARG_WITH(cxx,
   esac
 ])
 
+AC_ARG_ENABLE(headless,
+        AS_HELP_STRING([--enable-headless],[Enable only packages for headless build]))
+
+AC_MSG_CHECKING([for headless mode])
+AC_MSG_RESULT([$enable_headless])
+
+AM_CONDITIONAL(WANT_HEADLESS,[test "x$enable_headless" = "xyes"])
+
 AC_MSG_CHECKING([CXX])
 AC_MSG_RESULT([$CXX])
 AC_MSG_CHECKING([CC])
@@ -379,7 +387,7 @@ case "${host}" in
 
 esac
 
-if test "$OPENAL_OK" == "no"; then
+if test "$OPENAL_OK" == "no" -a "x$enable_headless" != "xyes"; then
     echo
     echo "You *must* have the openal library installed on your system to build"
     echo "SimGear!"
@@ -390,7 +398,7 @@ if test "$OPENAL_OK" == "no"; then
     exit
 fi
 
-if test "$ALUT_OK" == "no"; then
+if test "$ALUT_OK" == "no" -a "x$enable_headless" != "xyes"; then
     echo
     echo "You *must* have the alut library installed on your system to build"
     echo "SimGear!"

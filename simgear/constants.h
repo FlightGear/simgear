@@ -36,18 +36,20 @@
 
 // Make sure PI is defined in its various forms
 
+#ifndef SGD_PI // remove me once FlightGear no longer uses PLIB
+
 #ifdef M_PI
-#define SGD_PI      M_PI
-#define SG_PI      M_PI
+const double SGD_PI = M_PI;
+const float SG_PI = M_PI;
 #else
-#define SG_PI  3.1415926535f
-#define SGD_PI  3.1415926535
+const float SG_PI = 3.1415926535f;
+const double SGD_PI = 3.1415926535;
 #endif
 
-
+#endif // of PLIB-SG guard
 
 /** 2 * PI */
-#define SGD_2PI      SGD_PI * 2.0
+const double SGD_2PI = SGD_PI * 2.0;
 
 /** PI / 2 */
 #ifdef M_PI_2
@@ -57,14 +59,17 @@
 #endif
 
 /** PI / 4 */
-#define SGD_PI_4     0.78539816339744830961
+const double SGD_PI_4 = 0.78539816339744830961;
 
+#ifndef SGD_DEGREES_TO_RADIANS // // remove me once FlightGear no longer uses PLIB
 
-#define SGD_DEGREES_TO_RADIANS  (SGD_PI/180.0)
-#define SGD_RADIANS_TO_DEGREES  (180.0/SGD_PI)
+const double SGD_DEGREES_TO_RADIANS = SGD_PI / 180.0;
+const double SGD_RADIANS_TO_DEGREES = 180.0 / SGD_PI;
 
-#define SG_DEGREES_TO_RADIANS SGD_DEGREES_TO_RADIANS
-#define SG_RADIANS_TO_DEGREES SGD_RADIANS_TO_DEGREES
+const float SG_DEGREES_TO_RADIANS = SG_PI / 180.0f;
+const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
+
+#endif // of PLIB-SG guard
 
 /** \def SG_E "e" */
 #ifdef M_E

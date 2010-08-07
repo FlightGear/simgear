@@ -127,20 +127,6 @@ else
 fi
 AM_CONDITIONAL(ENABLE_JPEG_SERVER, test "x$with_jpeg_factory" = "xyes")
 
-# specify the plib location
-AC_ARG_WITH(plib, [  --with-plib=PREFIX      Specify the prefix path to plib])
-
-if test "x$with_plib" != "x" ; then
-    echo "plib prefix is $with_plib"
-    EXTRA_DIRS="${EXTRA_DIRS} $with_plib"
-fi
-
-AC_ARG_WITH(plib_framework, [ --with-plib-framework=PREFIX      Specify the prefix path to PLIB.framework ])
-
-if test "x$with_plib_framework" != "x"; then
-    echo "plib framework prefix is $with_plib_framework"
-fi
-
 # specify the osg location
 AC_ARG_WITH(osg, [  --with-osg=PREFIX       Specify the prefix path to osg])
 
@@ -296,9 +282,6 @@ case "${host}" in
 
 esac
 
-AC_SEARCH_LIBS(glutGetModifiers, [ glut glut32 freeglut ], have_glut=yes, have_glut=no)
-AM_CONDITIONAL(HAVE_GLUT, test "x$have_glut" = "xyes")
-
 opengl_LIBS="$LIBS"
 LIBS="$base_LIBS"
 
@@ -428,62 +411,6 @@ AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
 
 CXXCPP="g++ -E"
 AC_LANG_PUSH(C++)
-
-dnl Check for "plib" without which we cannot go on
-case ${host} in 
-*-apple-darwin*)
-    # Check PLIB framework availability when with-plib-framework is specified 
-    if test "x$with_plib_framework" != "x"; then
-        AC_CHECK_FRAMEWORK(PLIB, [#include <plib/ul.h>], $with_plib_framework)
-        plib_FRAMEWORK="$FRAMEWORKS"
-        FRAMEWORKS=""
-        AC_SUBST(plib_FRAMEWORK)
-    fi
-    ;;
-esac
-AM_CONDITIONAL(HAVE_FRAMEWORK_PLIB, test "x$ac_cv_framework_PLIB" != "x")
-
-AC_CHECK_HEADER(plib/ul.h)
-
-AC_CHECK_LIB(plibul,ulInit)
-if test "x$ac_cv_header_plib_ul_h" != "xyes" \
-  -o "x$ac_cv_lib_plibul_ulInit" != "xyes" ; then
-    echo
-    echo "You *must* have the plib library installed on your system to build"
-    echo "SimGear!"
-    echo
-    echo "     LIBS: '$LIBS'"
-    echo "  LDFLAGS: '$LDFLAGS'"
-    echo " CPPFLAGS: '$CPPFLAGS'"
-    echo
-    echo "Please see README.plib for more details."
-    echo
-    echo "configure aborted."
-    exit
-fi
-
-AC_MSG_CHECKING([for plib 1.8.5 or newer])
-AC_TRY_RUN([
-#include <plib/ul.h>
-
-#define MIN_PLIB_VERSION 185
-
-int main() {
-    if ( PLIB_VERSION < MIN_PLIB_VERSION ) {
-	 return -1;
-    }
-
-    return 0;
-}
-
-],
-  AC_MSG_RESULT(yes),
-  [AC_MSG_RESULT(wrong version);
-   AC_MSG_ERROR([Install plib 1.8.5 or later first...])],
-  AC_MSG_RESULT(yes)
-)
-
-LIBS="$saved_LIBS"
 
 # OpenSceneGraph
 case "${host}" in

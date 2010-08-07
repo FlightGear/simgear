@@ -17,8 +17,7 @@ else
 SGTHREAD_DIR = 
 endif
 
-SUBDIRS = \
-	$(compatibility_DIR) \
+SUBDIRS_ALWAYS = \
 	xml \
 	debug \
 	misc \
@@ -28,13 +27,17 @@ SUBDIRS = \
 	io \
 	magvar \
 	math \
-	$(METAR_DIRS) \
 	nasal \
 	props \
 	route \
-	$(SG_EXTRA_DIRS) \
-	$(SGTHREAD_DIR) \
 	serial \
 	timing
 
-DIST_SUBDIRS = $(SUBDIRS) compatibility
+SUBDIRS = $(SUBDIRS_ALWAYS) \
+	$(compatibility_DIR) \
+	$(METAR_DIRS) \
+	$(SG_EXTRA_DIRS) \
+	$(SGTHREAD_DIR)
+
+DIST_SUBDIRS = $(SUBDIRS_ALWAYS) compatibility scene sound screen environment threads
+

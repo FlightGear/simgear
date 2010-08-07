@@ -10,10 +10,6 @@ EXTRA_DIST = \
 
 SUBDIRS	= simgear
 
-dist-hook:
-	(cd $(top_srcdir); $(HOME)/Projects/FlightGear/admin/am2dsp.pl)
-	rm -rf `find $(distdir)/projects -name CVS`
-
 #
 # Rule to build RPM distribution package
 #

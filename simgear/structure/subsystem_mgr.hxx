@@ -344,6 +344,7 @@ private:
         double min_step_sec;
         double elapsed_sec;
         bool collectTimeStats;
+        int exceptionCount;
     };
 
     Member * get_member (const string &name, bool create = false);

@@ -8,7 +8,7 @@
 #include <simgear/math/SGMath.hxx>
 
 
-
+const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystem
 ////////////////////////////////////////////////////////////////////////
@@ -308,7 +308,8 @@ SGSubsystemGroup::Member::Member ()
       subsystem(0),
       min_step_sec(0),
       elapsed_sec(0),
-      collectTimeStats(false)
+      collectTimeStats(false),
+      exceptionCount(0)
 {
 }
 
@@ -326,11 +327,26 @@ void
 SGSubsystemGroup::Member::update (double delta_time_sec)
 {
     elapsed_sec += delta_time_sec;
-    if (elapsed_sec >= min_step_sec) {
-        if (!subsystem->is_suspended()) {
-            subsystem->update(elapsed_sec);
-            elapsed_sec = 0;
-        }
+    if (elapsed_sec < min_step_sec) {
+        return;
+    }
+    
+    if (subsystem->is_suspended()) {
+        return;
+    }
+    
+    try {
+      subsystem->update(elapsed_sec);
+      elapsed_sec = 0;
+    } catch (sg_exception& e) {
+      SG_LOG(SG_GENERAL, SG_ALERT, "caught exception processing subsystem:" << name
+        << "\nmessage:" << e.getMessage());
+      
+      if (++exceptionCount > SG_MAX_SUBSYSTEM_EXCEPTIONS) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "(exceptionCount=" << exceptionCount <<
+          ", suspending)");
+        subsystem->suspend();
+      }
     }
 }
 

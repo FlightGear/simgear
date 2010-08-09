@@ -207,8 +207,8 @@ void SGPath::validate() const
     _exists = false;
   } else {
     _exists = true;
-    _isFile = ((S_IFREG & buf.st_mode ) !=0)
-    _isDir = ((S_IFDIR & buf.st_mode ) !=0)
+    _isFile = ((S_IFREG & buf.st_mode ) !=0);
+    _isDir = ((S_IFDIR & buf.st_mode ) !=0);
   }
 
 #else

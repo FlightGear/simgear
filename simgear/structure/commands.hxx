@@ -19,12 +19,8 @@
 
 #include <OpenThreads/Mutex>
 
+#include <simgear/math/sg_types.hxx>
 #include <simgear/props/props.hxx>
-
-using std::string;
-using std::map;
-using std::vector;
-
 
 /**
  * Manage commands.
@@ -65,7 +61,7 @@ public:
    * a bool result.  The argument is always a const pointer to
    * an SGPropertyNode (which may contain multiple values).
    */
-  virtual void addCommand (const string &name, command_t command);
+  virtual void addCommand (const std::string &name, command_t command);
 
 
   /**
@@ -75,7 +71,7 @@ public:
    * @return A pointer to the command, or 0 if there is no registered
    * command with the name specified.
    */
-  virtual command_t getCommand (const string &name) const;
+  virtual command_t getCommand (const std::string &name) const;
 
 
   /**
@@ -84,7 +80,7 @@ public:
    * @return A (possibly empty) vector of the names of all registered
    * commands.
    */
-  virtual vector<string> getCommandNames () const;
+  virtual string_list getCommandNames () const;
 
 
   /**
@@ -97,7 +93,7 @@ public:
    * @return true if the command is present and executes successfully,
    * false otherwise.
    */
-  virtual bool execute (const string &name, const SGPropertyNode * arg) const;
+  virtual bool execute (const std::string &name, const SGPropertyNode * arg) const;
 
 protected:
   /**
@@ -108,7 +104,7 @@ protected:
 
 private:
 
-  typedef map<string,command_t> command_map;
+  typedef std::map<std::string,command_t> command_map;
   command_map _commands;
 
   static OpenThreads::Mutex _instanceMutex;

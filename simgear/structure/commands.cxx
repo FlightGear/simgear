@@ -17,7 +17,8 @@
 #include "commands.hxx"
 
 #include <simgear/math/SGMath.hxx>
-
+#include <simgear/structure/exception.hxx>
+#include <simgear/debug/logstream.hxx>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -53,22 +54,22 @@ SGCommandMgr::instance()
 }
 
 void
-SGCommandMgr::addCommand (const string &name, command_t command)
+SGCommandMgr::addCommand (const std::string &name, command_t command)
 {
   _commands[name] = command;
 }
 
 SGCommandMgr::command_t
-SGCommandMgr::getCommand (const string &name) const
+SGCommandMgr::getCommand (const std::string &name) const
 {
   const command_map::const_iterator it = _commands.find(name);
   return (it != _commands.end() ? it->second : 0);
 }
 
-vector<string>
+string_list
 SGCommandMgr::getCommandNames () const
 {
-  vector<string> names;
+  string_list names;
   command_map::const_iterator it = _commands.begin();
   command_map::const_iterator last = _commands.end();
   while (it != last) {
@@ -79,13 +80,20 @@ SGCommandMgr::getCommandNames () const
 }
 
 bool
-SGCommandMgr::execute (const string &name, const SGPropertyNode * arg) const
+SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) const
 {
   command_t command = getCommand(name);
   if (command == 0)
     return false;
-  else
+  
+  
+  try {
     return (*command)(arg);
+  } catch (sg_exception& e) {
+    SG_LOG(SG_GENERAL, SG_ALERT, "command '" << name << "' failed with exception\n"
+      << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+    return false;
+  }
 }
 
 // end of commands.cxx

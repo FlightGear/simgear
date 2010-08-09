@@ -58,7 +58,7 @@ public:
    *
    * @return The string name of the command for this binding.
    */
-  const string &getCommandName () const { return _command_name; }
+  const std::string &getCommandName () const { return _command_name; }
 
 
   /**

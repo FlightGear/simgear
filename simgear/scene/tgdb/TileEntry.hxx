@@ -150,7 +150,7 @@ public:
 
 class ModelLoadHelper {
 public:
-    virtual osg::Node *loadTileModel(const string& modelPath, bool cacheModel)=0;
+    virtual osg::Node *loadTileModel(const std::string& modelPath, bool cacheModel)=0;
 
 };
 

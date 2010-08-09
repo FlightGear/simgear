@@ -33,6 +33,8 @@
 #endif
 #include "sg_path.hxx"
 
+using std::string;
+
 
 /**
  * define directory path separators
@@ -70,18 +72,38 @@ SGPath::fix()
 
 // default constructor
 SGPath::SGPath()
-    : path("")
+    : path(""),
+    _cached(false)
 {
 }
 
 
 // create a path based on "path"
 SGPath::SGPath( const std::string& p )
-    : path(p)
+    : path(p),
+    _cached(false)
 {
     fix();
 }
 
+SGPath::SGPath(const SGPath& p) :
+  path(p.path),
+  _cached(p._cached),
+  _exists(p._exists),
+  _isDir(p._isDir),
+  _isFile(p._isFile)
+{
+}
+    
+SGPath& SGPath::operator=(const SGPath& p)
+{
+  path = p.path;
+  _cached = p._cached;
+  _exists = p._exists;
+  _isDir = p._isDir;
+  _isFile = p._isFile;
+  return *this;
+}
 
 // destructor
 SGPath::~SGPath() {
@@ -92,6 +114,7 @@ SGPath::~SGPath() {
 void SGPath::set( const string& p ) {
     path = p;
     fix();
+    _cached = false;
 }
 
 
@@ -106,6 +129,7 @@ void SGPath::append( const string& p ) {
 	path += p;
     }
     fix();
+    _cached = false;
 }
 
 //add a new path component to the existing path string
@@ -123,6 +147,7 @@ void SGPath::concat( const string& p ) {
 	path += p;
     }
     fix();
+    _cached = false;
 }
 
 
@@ -169,25 +194,54 @@ string SGPath::extension() const {
     }
 }
 
-bool SGPath::exists() const
+void SGPath::validate() const
 {
-#ifdef _WIN32
-  struct _stat buf;
-
-  if (_stat(path.c_str(), &buf) < 0) {
-    return false;
+  if (_cached) {
+    return;
   }
   
-  return true;
+#ifdef _WIN32
+  struct _stat buf ;
+
+  if (_stat (path.c_str(), &buf ) < 0) {
+    _exists = false;
+  } else {
+    _exists = true;
+    _isFile = ((S_IFREG & buf.st_mode ) !=0)
+    _isDir = ((S_IFDIR & buf.st_mode ) !=0)
+  }
+
 #else
   struct stat buf ;
 
-  if (stat(path.c_str(), &buf) < 0) {
-    return false ;
+  if (stat(path.c_str(), &buf ) < 0) {
+    _exists = false;
+  } else {
+    _exists = true;
+    _isFile = ((S_ISREG(buf.st_mode )) != 0);
+    _isDir = ((S_ISDIR(buf.st_mode )) != 0);
   }
   
-  return true;
 #endif
+  _cached = true;
+}
+
+bool SGPath::exists() const
+{
+  validate();
+  return _exists;
+}
+
+bool SGPath::isDir() const
+{
+  validate();
+  return _exists && _isDir;
+}
+
+bool SGPath::isFile() const
+{
+  validate();
+  return _exists && _isFile;
 }
 
 #ifdef _WIN32

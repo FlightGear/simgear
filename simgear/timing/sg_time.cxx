@@ -59,6 +59,7 @@
 #define DEGHR(x)        ((x)/15.)
 #define RADHR(x)        DEGHR(x*SGD_RADIANS_TO_DEGREES)
 
+using std::string;
 
 static const double MJD0    = 2415020.0;
 static const double J2000   = 2451545.0 - MJD0;

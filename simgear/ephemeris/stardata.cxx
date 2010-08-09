@@ -34,6 +34,8 @@
   using std::getline;
 #endif
 
+using std::string;
+
 // Constructor
 SGStarData::SGStarData( const SGPath& path )
 {

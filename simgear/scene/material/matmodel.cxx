@@ -28,7 +28,7 @@
 #include <simgear/compiler.h>
 
 #include <map>
-using std::map;
+
 
 #include <osg/AlphaFunc>
 #include <osg/Group>
@@ -46,8 +46,8 @@ using std::map;
 #include "matmodel.hxx"
 
 using namespace simgear;
-
-
+using std::string;
+using std::map;
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGMatModel.
 ////////////////////////////////////////////////////////////////////////

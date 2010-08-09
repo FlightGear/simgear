@@ -39,7 +39,7 @@
 
 #include <simgear/math/SGMath.hxx>
 
-
+using std::string;
 using namespace simgear;
 
 osgDB::RegisterReaderWriterProxy<SGReaderWriterXML> g_readerWriter_XML_Proxy;

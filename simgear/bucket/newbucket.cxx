@@ -139,7 +139,7 @@ void SGBucket::set_bucket(const SGGeod& geod)
 }
 
 // Build the path name for this bucket
-string SGBucket::gen_base_path() const {
+std::string SGBucket::gen_base_path() const {
     // long int index;
     int top_lon, top_lat, main_lon, main_lat;
     char hem, pole;

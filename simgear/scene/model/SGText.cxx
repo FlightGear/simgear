@@ -30,6 +30,8 @@
 #include <osgText/Text>
 #include <osgText/Font>
 
+using std::string;
+
 class SGText::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback( osgText::Text * aText, SGConstPropertyNode_ptr aProperty, double aScale, double aOffset, double aTruncate, double aNumeric, const char * aFormat ) :

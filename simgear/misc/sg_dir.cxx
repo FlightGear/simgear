@@ -29,8 +29,6 @@
 #  include <dirent.h>
 #endif
 
-#include <sys/stat.h>
-
 #include <simgear/debug/logstream.hxx>
 
 #include <cstring>
@@ -119,12 +117,12 @@ PathList Dir::children(int types, const std::string& nameFilter) const
       continue;
     }
     
-    struct stat s;
-    if (stat(file(entry->d_name).c_str(), &s)) {
+    SGPath f = file(entry->d_name);
+    if (!f.exists()) {
       continue; // stat() failed
     }
     
-    if (S_ISDIR(s.st_mode)) {
+    if (f.isDir()) {
       // directory handling
       if (!(types & TYPE_DIR)) {
         continue;
@@ -135,7 +133,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
           continue;
         }
       }
-    } else if (S_ISREG(s.st_mode)) {
+    } else if (f.isFile()) {
       // regular file handling
       if (!(types & TYPE_FILE)) {
         continue;
@@ -162,23 +160,7 @@ PathList Dir::children(int types, const std::string& nameFilter) const
 
 bool Dir::exists() const
 {
-#ifdef _WIN32
-  struct _stat buf ;
-
-  if (_stat (_path.c_str(), &buf ) < 0) {
-    return false;
-  }
-  
-  return ((S_IFDIR & buf.st_mode ) !=0);
-#else
-  struct stat buf ;
-
-  if (stat(_path.c_str(), &buf ) < 0) {
-    return false ;
-  }
-  
-  return ((S_ISDIR(buf.st_mode )) != 0);
-#endif
+  return _path.isDir();
 }
 
 SGPath Dir::file(const std::string& name) const

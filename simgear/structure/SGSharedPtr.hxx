@@ -88,7 +88,7 @@ public:
   { return T::count(_ptr); }
 
   bool valid(void) const
-  { return _ptr != NULL; }
+  { return _ptr != (T*)0; }
 
   void clear()
   { put(); }

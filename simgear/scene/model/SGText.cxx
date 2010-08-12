@@ -34,7 +34,7 @@ using std::string;
 
 class SGText::UpdateCallback : public osg::NodeCallback {
 public:
-  UpdateCallback( osgText::Text * aText, SGConstPropertyNode_ptr aProperty, double aScale, double aOffset, double aTruncate, double aNumeric, const char * aFormat ) :
+  UpdateCallback( osgText::Text * aText, SGConstPropertyNode_ptr aProperty, double aScale, double aOffset, bool aTruncate, bool aNumeric, const char * aFormat ) :
     text( aText ),
     property( aProperty ),
     scale( aScale ),

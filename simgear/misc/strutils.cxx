@@ -183,5 +183,23 @@ namespace simgear {
 	    return do_strip( s, BOTHSTRIP );
 	}
 
+	string 
+	rpad( const string & s, string::size_type length, char c )
+	{
+	    string::size_type l = s.length();
+	    if( l >= length ) return s;
+	    string reply = s;
+	    return reply.append( length-l, c );
+	}
+
+	string 
+	lpad( const string & s, size_t length, char c )
+	{
+	    string::size_type l = s.length();
+	    if( l >= length ) return s;
+	    string reply = s;
+	    return reply.insert( 0, length-l, c );
+	}
+
     } // end namespace strutils
 } // end namespace simgear

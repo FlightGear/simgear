@@ -64,6 +64,24 @@ namespace simgear {
 	std::string rstrip( const std::string& s );
 	std::string strip( const std::string& s );
 
+        /**
+         * Right-padding of a string to a given length
+         * @param s String to pad
+         * @param length The total length of the resulting string
+         * @param c The character to pad with
+         * @return The padded string
+         */
+        std::string rpad( const std::string & s, size_t length, char c );
+
+        /**
+         * Left-padding of a string to a given length
+         * @param s String to pad
+         * @param length The total length of the resulting string
+         * @param c The character to pad with
+         * @return The padded string
+         */
+        std::string lpad( const std::string & s, size_t length, char c );
+
 	/**
 	 * Split a string into a words using 'sep' as the delimiter string.
 	 * Produces a result similar to the perl and python functions of the

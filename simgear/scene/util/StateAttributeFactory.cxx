@@ -39,7 +39,7 @@ StateAttributeFactory::StateAttributeFactory()
 {
     _standardAlphaFunc = new AlphaFunc;
     _standardAlphaFunc->setFunction(osg::AlphaFunc::GREATER);
-    _standardAlphaFunc->setReferenceValue(0.01);
+    _standardAlphaFunc->setReferenceValue(0.01f);
     _standardAlphaFunc->setDataVariance(Object::STATIC);
     _smooth = new ShadeModel;
     _smooth->setMode(ShadeModel::SMOOTH);

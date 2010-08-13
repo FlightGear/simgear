@@ -889,11 +889,27 @@ EffectNameValue<Uniform::Type> uniformTypesInit[] =
 };
 EffectPropertyMap<Uniform::Type> uniformTypes(uniformTypesInit);
 
+// Optimization hack for common uniforms.
+// XXX protect these with a mutex?
+
+ref_ptr<Uniform> texture0;
+ref_ptr<Uniform> colorMode[3];
+
 struct UniformBuilder :public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                         const SGReaderWriterXMLOptions* options)
     {
+        if (!texture0.valid()) {
+            texture0 = new Uniform(Uniform::SAMPLER_2D, "texture");
+            texture0->set(0);
+            texture0->setDataVariance(Object::STATIC);
+            for (int i = 0; i < 3; ++i) {
+                colorMode[i] = new Uniform(Uniform::INT, "colorMode");
+                colorMode[i]->set(i);
+                colorMode[i]->setDataVariance(Object::STATIC);
+            }
+        }
         if (!isAttributeActive(effect, prop))
             return;
         const SGPropertyNode* nameProp = prop->getChild("name");
@@ -957,6 +973,7 @@ struct UniformBuilder :public PassAttributeBuilder
                                static_cast<bool (Uniform::*)(const Vec4&)>(&Uniform::set),
                                vec4Names, options);
             break;
+        case Uniform::INT:
         case Uniform::SAMPLER_1D:
         case Uniform::SAMPLER_2D:
         case Uniform::SAMPLER_3D:
@@ -969,6 +986,19 @@ struct UniformBuilder :public PassAttributeBuilder
             break;
         default: // avoid compiler warning
             break;
+        }
+        // optimize common uniforms
+        if (uniformType == Uniform::SAMPLER_2D || uniformType == Uniform::INT)
+        {
+            int val;
+            uniform->get(val);
+            if (uniformType == Uniform::SAMPLER_2D && val == 0
+                && name == "texture") {
+                uniform = texture0;
+            } else if (uniformType == Uniform::INT && val >= 0 && val < 3
+                       && name == "colorMode") {
+                uniform = colorMode[val];
+            }
         }
         pass->addUniform(uniform.get());
     }

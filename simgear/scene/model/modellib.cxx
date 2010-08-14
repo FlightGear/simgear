@@ -112,12 +112,16 @@ osg::Node* loadFile(const string& path, SGReaderWriterXMLOptions* options)
 osg::Node*
 SGModelLib::loadModel(const string &path,
                        SGPropertyNode *prop_root,
-                       SGModelData *data)
+                       SGModelData *data,
+                       bool load2DPanels)
 {
     osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
     opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
-    opt->setLoadPanel(static_panelFunc);
+    
+    if (load2DPanels) {
+       opt->setLoadPanel(static_panelFunc);
+    }
     
     osg::Node *n = loadFile(path, opt.get());
     if (n && n->getName().empty())

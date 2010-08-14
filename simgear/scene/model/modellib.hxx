@@ -58,7 +58,7 @@ public:
     // data->modelLoaded() will be called after the model is loaded
     static osg::Node* loadModel(const std::string &path,
                                 SGPropertyNode *prop_root = NULL,
-                                SGModelData *data=0);
+                                SGModelData *data=0, bool load2DPanels=false);
 
     // Load a 3D model (any format) through the DatabasePager.
     // Most models should be loaded using this function!

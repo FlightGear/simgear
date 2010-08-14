@@ -92,6 +92,11 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
 
     // cout << "diff = " << diff << "  span = " << span << endl;
 
+    /* Calculate the greatest integral longitude less than
+     * or equal to the given longitude (floor(dlon)),
+     * but attribute coordinates near the east border
+     * to the next tile.
+     */
     if ( (dlon >= 0) || (fabs(diff) < SG_EPSILON) ) {
 	lon = (int)dlon;
     } else {
@@ -100,22 +105,48 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
 
     // find subdivision or super lon if needed
     if ( span < SG_EPSILON ) {
+        /* sg_bucket_span() never returns 0.0
+         * or anything near it, so this really
+         * should not occur at any time.
+         */
 	// polar cap
 	lon = 0;
 	x = 0;
     } else if ( span <= 1.0 ) {
+        /* We have more than one tile per degree of
+         * longitude, so we need an x offset.
+         */
 	x = (int)((dlon - lon) / span);
     } else {
-	if ( dlon >= 0 ) {
-	    lon = (int)( (int)(lon / span) * span);
-	} else {
-	    // cout << " lon = " << lon 
-	    //  << "  tmp = " << (int)((lon-1) / span) << endl;
-	    lon = (int)( (int)((lon + 1) / span) * span - span);
-	    if ( lon < -180 ) {
-		lon = -180;
-	    }
-	}
+        /* We have one or more degrees per tile,
+         * so we need to find the base longitude
+         * of that tile.
+         *
+         * First we calculate the integral base longitude
+         * (e.g. -85.5 => -86) and then find the greatest
+         * multiple of span that is less than or equal to
+         * that longitude.
+         *
+         * That way, the Greenwich Meridian is always
+         * a tile border.
+         *
+         * This gets us into trouble with the polar caps,
+         * which have width 360 and thus either span
+         * the range from 0 to 360 or from -360 to 0
+         * degrees, depending on whether lon is positive
+         * or negative!
+         *
+         * We also get into trouble with the 8 degree tiles
+         * north of 88N and south of 88S, because the west-
+         * and east-most tiles in that range will cover 184W
+         * to 176W and 176E to 184E respectively, with their
+         * center at 180E/W!
+         */
+        lon=(int)floor(floor((lon+SG_EPSILON)/span)*span);
+        /* Correct the polar cap issue */
+        if ( lon < -180 ) {
+            lon = -180;
+        }
 	x = 0;
     }
 
@@ -124,11 +155,15 @@ void SGBucket::set_bucket( double dlon, double dlat ) {
     //
     diff = dlat - (double)(int)dlat;
 
+    /* Again, a modified floor() function (see longitude) */
     if ( (dlat >= 0) || (fabs(diff) < SG_EPSILON) ) {
 	lat = (int)dlat;
     } else {
 	lat = (int)dlat - 1;
     }
+    /* Latitude base and offset are easier, as
+     * tiles always are 1/8 degree of latitude wide.
+     */
     y = (int)((dlat - lat) * 8);
 }
 
@@ -189,6 +224,17 @@ std::string SGBucket::gen_base_path() const {
 
 // return width of the tile in degrees
 double SGBucket::get_width() const {
+    if (lon==-180 && (lat==-89 || lat==88) ) {
+        /* Normally the tile at 180W in 88N and 89S
+         * would cover 184W to 176W and the next
+         * on the east side starts at 176W.
+         * To correct, make this a special tile
+         * from 180W to 176W with 4 degrees width
+         * instead of the normal 8 degrees at
+         * that latitude.
+         */
+         return 4.0;
+    }
     return sg_bucket_span( get_center_lat() );
 }
 
@@ -213,7 +259,7 @@ double SGBucket::get_width_m() const {
     double local_perimeter = local_radius * SGD_2PI;
     double degree_width = local_perimeter / 360.0;
 
-    return sg_bucket_span( get_center_lat() ) * degree_width;
+    return get_width() * degree_width;
 }
 
 

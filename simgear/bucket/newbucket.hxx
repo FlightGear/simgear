@@ -24,6 +24,11 @@
 
 /** \file newbucket.hxx
  * A class and associated utiltity functions to manage world scenery tiling.
+ *
+ * Tile borders are aligned along circles of latitude and longitude.
+ * All tiles are 1/8 degree of latitude high and their width in degrees
+ * longitude depends on their latitude, adjusted in such a way that
+ * all tiles cover about the same amount of area of the earth surface.
  */
 
 #ifndef _NEWBUCKET_HXX
@@ -211,9 +216,9 @@ public:
 	double span = sg_bucket_span( lat + y / 8.0 + SG_HALF_BUCKET_SPAN );
 
 	if ( span >= 1.0 ) {
-	    return lon + span / 2.0;
+	    return lon + get_width() / 2.0;
 	} else {
-	    return lon + x * span + span / 2.0;
+	    return lon + x * span + get_width() / 2.0;
 	}
     }
 

@@ -331,3 +331,21 @@ string_list sgPathSplit( const string &search_path ) {
 
     return result;
 }
+
+bool SGPath::isAbsolute() const
+{
+  if (path.empty()) {
+    return false;
+  }
+  
+#ifdef _WIN32
+  // detect '[A-Za-z]:/'
+  if (path.size() > 2) {
+    if (isalpha(path[0]) && (path[1] == ':') && (path[2] == sgDirPathSep)) {
+      return true;
+    }
+  }
+#endif
+  
+  return (path[0] == sgDirPathSep);
+}

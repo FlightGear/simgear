@@ -147,6 +147,17 @@ public:
 
     bool isFile() const;
     bool isDir() const;
+    
+    /**
+     * Opposite sense to isAbsolute
+     */
+    bool isRelative() const { return !isAbsolute(); }
+    
+    /**
+     * Is this an absolute path?
+     * I.e starts with a directory seperator, or a single character + colon
+     */
+    bool isAbsolute() const;
 private:
 
     void fix();

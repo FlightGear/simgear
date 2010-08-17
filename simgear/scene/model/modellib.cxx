@@ -73,8 +73,20 @@ void SGModelLib::setResolveFunc(resolve_func rf)
 }
 
 std::string SGModelLib::findDataFile(const std::string& file, 
-  const osgDB::ReaderWriter::Options* opts)
+  const osgDB::ReaderWriter::Options* opts,
+  SGPath currentPath)
 {
+  // if we have a valid current path, first attempt to resolve relative
+  // to that path
+  if (currentPath.exists()) {
+    SGPath p = currentPath;
+    p.append(file);
+    if (p.exists()) {
+      return p.str();
+    }
+  }
+  
+  // next try the resolve function if one has been defined
   if (static_resolver) {
     SGPath p = static_resolver(file);
     if (p.exists()) {
@@ -82,6 +94,7 @@ std::string SGModelLib::findDataFile(const std::string& file,
     }
   }
   
+  // finally hand on to standard OSG behaviour
   return osgDB::findDataFile(file, opts);
 }
 

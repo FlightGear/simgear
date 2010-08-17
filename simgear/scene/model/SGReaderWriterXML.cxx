@@ -57,7 +57,7 @@ using namespace simgear;
 using namespace osg;
 
 static osg::Node *
-sgLoad3DModel_internal(const std::string& path,
+sgLoad3DModel_internal(const SGPath& path,
                        const osgDB::ReaderWriter::Options* options,
                        SGPropertyNode *overlay = 0);
 
@@ -82,9 +82,15 @@ SGReaderWriterXML::readNode(const std::string& fileName,
 {
     osg::Node *result=0;
     try {
-        result=sgLoad3DModel_internal(fileName, options);
-    } catch (const sg_throwable &t) {
-        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load model: " << t.getFormattedMessage());
+        SGPath p = SGModelLib::findDataFile(fileName);
+        if (!p.exists()) {
+          return ReadResult::FILE_NOT_FOUND;
+        }
+        
+        result=sgLoad3DModel_internal(p, options);
+    } catch (const sg_exception &t) {
+        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load model: " << t.getFormattedMessage()
+          << "\n\tfrom:" << fileName);
         result=new osg::Node;
     }
     if (result)
@@ -193,36 +199,34 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 }
 
 static osg::Node *
-sgLoad3DModel_internal(const string &path,
+sgLoad3DModel_internal(const SGPath& path,
                        const osgDB::ReaderWriter::Options* options_,
                        SGPropertyNode *overlay)
 {
+    if (!path.exists()) {
+      SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path.str() << "\"");
+      return NULL;
+    }
+    
     const SGReaderWriterXMLOptions* xmlOptions;
     xmlOptions = dynamic_cast<const SGReaderWriterXMLOptions*>(options_);
 
     SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
     osg::ref_ptr<SGModelData> data;
-    SGPath modelpath;
-        
+    SGPath modelpath(path);
+    SGPath texturepath(path);
+    SGPath modelDir(modelpath.dir());
+    
     if (xmlOptions) {
         prop_root = xmlOptions->getPropRoot();
         load_panel = xmlOptions->getLoadPanel();
         data = xmlOptions->getModelData();
     }
     
-    
-    modelpath = SGModelLib::findDataFile(path);
-    
     if (!prop_root) {
         prop_root = new SGPropertyNode;
     }
-
-    if (modelpath.str().empty()) {
-        SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path << "\"");
-        return 0;
-    }
-    SGPath texturepath = modelpath;
 
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
@@ -232,7 +236,7 @@ sgLoad3DModel_internal(const string &path,
     if (modelpath.extension() == "xml") {
        try {
             readProperties(modelpath.str(), props);
-        } catch (const sg_throwable &t) {
+        } catch (const sg_exception &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load xml: "
                    << t.getFormattedMessage());
             throw;
@@ -241,11 +245,9 @@ sgLoad3DModel_internal(const string &path,
             copyProperties(overlay, props);
 
         if (props->hasValue("/path")) {
-            modelpath = modelpath.dir();
-            modelpath.append(props->getStringValue("/path"));
+            modelpath = SGModelLib::findDataFile(props->getStringValue("/path"), NULL, modelDir);
             if (props->hasValue("/texture-path")) {
-                texturepath = texturepath.dir();
-                texturepath.append(props->getStringValue("/texture-path"));
+                texturepath = SGModelLib::findDataFile(props->getStringValue("/texture-path"), NULL, modelDir);
             }
         } else {
             model = new osg::Node;
@@ -255,8 +257,7 @@ sgLoad3DModel_internal(const string &path,
         if (mp && prop_root && prop_root->getParent())
             copyProperties(mp, prop_root);
     } else {
-        SG_LOG(SG_INPUT, SG_DEBUG, "model without wrapper: "
-               << modelpath.str());
+        // model without wrapper
     }
 
     osg::ref_ptr<SGReaderWriterXMLOptions> options
@@ -275,8 +276,8 @@ sgLoad3DModel_internal(const string &path,
             = osgDB::Registry::instance()->readNode(modelpath.str(),
                                                     options.get());
         if (!modelResult.validNode())
-            throw sg_io_exception("Failed to load 3D model",
-                                  sg_location(modelpath.str()));
+            throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
+                                  modelpath.str());
         model = copyModel(modelResult.getNode());
         // Add an extra reference to the model stored in the database.
         // That is to avoid expiring the object from the cache even if
@@ -334,25 +335,21 @@ sgLoad3DModel_internal(const string &path,
 
         SGPath submodelpath;
         osg::ref_ptr<osg::Node> submodel;
-        string submodelFileName = sub_props->getStringValue("path");
-        if (submodelFileName.size() > 2
-            && !submodelFileName.compare(0, 2, "./" )) {
-            submodelpath = modelpath.dir();
-            submodelpath.append( submodelFileName.substr( 2 ) );
-        } else {
-            submodelpath = submodelFileName;
-        }
+        
+        SGPath submodelPath = SGModelLib::findDataFile(sub_props->getStringValue("path"), 
+          NULL, modelDir);
+
         osg::ref_ptr<SGReaderWriterXMLOptions> options;
         options = new SGReaderWriterXMLOptions(*options_);
         options->setPropRoot(prop_root);
         options->setLoadPanel(load_panel);
         
         try {
-            submodel = sgLoad3DModel_internal(submodelpath.str(), options.get(),
+            submodel = sgLoad3DModel_internal(submodelPath, options.get(),
                                               sub_props->getNode("overlay"));
-        } catch (const sg_throwable &t) {
-            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage());
-            throw;
+        } catch (const sg_exception &t) {
+            SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage()
+              << "\n\tfrom:" << t.getOrigin());
         }
 
         osg::ref_ptr<osg::Node> submodel_final = submodel;

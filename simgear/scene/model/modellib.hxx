@@ -70,7 +70,9 @@ public:
                                      SGPropertyNode *prop_root = NULL,
                                      SGModelData *data=0);
 
-    static std::string findDataFile(const std::string& file, const osgDB::ReaderWriter::Options* opts = NULL); 
+    static std::string findDataFile(const std::string& file, 
+      const osgDB::ReaderWriter::Options* opts = NULL,
+      SGPath currentDir = SGPath()); 
 protected:
     SGModelLib();
     ~SGModelLib ();

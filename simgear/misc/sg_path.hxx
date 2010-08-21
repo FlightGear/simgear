@@ -131,7 +131,7 @@ public:
      * Get the path string
      * @return path in "C" string (ptr to char array) form.
      */
-    const char* c_str() { return path.c_str(); }
+    const char* c_str() const { return path.c_str(); }
 
     /**
      * Determine if file exists by attempting to fopen it.

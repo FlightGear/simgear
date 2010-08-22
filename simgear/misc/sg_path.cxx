@@ -86,6 +86,15 @@ SGPath::SGPath( const std::string& p )
     fix();
 }
 
+// create a path based on "path" and a "subpath"
+SGPath::SGPath( const SGPath& p, const std::string& r )
+    : path(p.path),
+    _cached(false)
+{
+    append(r);
+    fix();
+}
+
 SGPath::SGPath(const SGPath& p) :
   path(p.path),
   _cached(p._cached),

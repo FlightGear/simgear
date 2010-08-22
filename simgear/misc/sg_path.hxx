@@ -58,6 +58,7 @@ public:
     /** Default constructor */
     SGPath();
 
+    /** Copy contructor */
     SGPath(const SGPath& p);
     
     SGPath& operator=(const SGPath& p);
@@ -67,6 +68,13 @@ public:
      * @param p initial path
      */
     SGPath( const std::string& p );
+
+    /**
+     * Construct a path based on the starting path provided and a relative subpath
+     * @param p initial path
+     * @param r relative subpath
+     */
+    SGPath( const SGPath& p, const std::string& r );
 
     /** Destructor */
     ~SGPath();

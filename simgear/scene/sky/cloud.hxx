@@ -63,6 +63,13 @@ public:
 	SG_MAX_CLOUD_COVERAGES
     };
 
+    static const std::string SG_CLOUD_OVERCAST_STRING; // "overcast"
+    static const std::string SG_CLOUD_BROKEN_STRING; // "broken"
+    static const std::string SG_CLOUD_SCATTERED_STRING; // "scattered"
+    static const std::string SG_CLOUD_FEW_STRING; // "few"
+    static const std::string SG_CLOUD_CIRRUS_STRING; // "cirrus"
+    static const std::string SG_CLOUD_CLEAR_STRING; // "clear"
+
     /**
      * Constructor
      * @param tex_path the path to the set of cloud textures
@@ -122,6 +129,18 @@ public:
      * @param coverage the coverage type
      */
     void setCoverage (Coverage coverage);
+
+    /** get coverage as string */
+    const string & getCoverageString() const;
+
+    /** get coverage as string */
+    static const string & getCoverageString( Coverage coverage );
+
+    /** get coverage type from string */
+    static Coverage getCoverageType( const std::string & coverage );
+
+    /** set coverage as string */
+    void setCoverageString( const string & coverage );
 
     /**
      * set the cloud movement direction

@@ -83,6 +83,13 @@ static bool bump_mapping = false;
 
 bool SGCloudLayer::enable_bump_mapping = false;
 
+const std::string SGCloudLayer::SG_CLOUD_OVERCAST_STRING = "overcast";
+const std::string SGCloudLayer::SG_CLOUD_BROKEN_STRING = "broken";
+const std::string SGCloudLayer::SG_CLOUD_SCATTERED_STRING = "scattered";
+const std::string SGCloudLayer::SG_CLOUD_FEW_STRING = "few";
+const std::string SGCloudLayer::SG_CLOUD_CIRRUS_STRING = "cirrus";
+const std::string SGCloudLayer::SG_CLOUD_CLEAR_STRING = "clear";
+
 // make an StateSet for a cloud layer given the named texture
 static osg::StateSet*
 SGMakeState(const SGPath &path, const char* colorTexture,
@@ -291,6 +298,56 @@ SGCloudLayer::setCoverage (Coverage coverage)
         layer3D->setCoverage(coverage_norm);
         layer3D->applyCoverage();
     }
+}
+
+const std::string &
+SGCloudLayer::getCoverageString( Coverage coverage )
+{
+	switch( coverage ) {
+		case SG_CLOUD_OVERCAST:
+			return SG_CLOUD_OVERCAST_STRING;
+		case SG_CLOUD_BROKEN:
+			return SG_CLOUD_BROKEN_STRING;
+		case SG_CLOUD_SCATTERED:
+			return SG_CLOUD_SCATTERED_STRING;
+		case SG_CLOUD_FEW:
+			return SG_CLOUD_FEW_STRING;
+		case SG_CLOUD_CIRRUS:
+			return SG_CLOUD_CIRRUS_STRING;
+		case SG_CLOUD_CLEAR:
+		default:
+			return SG_CLOUD_CLEAR_STRING;
+	}
+}
+
+SGCloudLayer::Coverage 
+SGCloudLayer::getCoverageType( const std::string & coverage )
+{
+	if( SG_CLOUD_OVERCAST_STRING == coverage ) {
+		return SG_CLOUD_OVERCAST;
+	} else if( SG_CLOUD_BROKEN_STRING == coverage ) {
+		return SG_CLOUD_BROKEN;
+	} else if( SG_CLOUD_SCATTERED_STRING == coverage ) {
+		return SG_CLOUD_SCATTERED;
+	} else if( SG_CLOUD_FEW_STRING == coverage ) {
+		return SG_CLOUD_FEW;
+	} else if( SG_CLOUD_CIRRUS_STRING == coverage ) {
+		return SG_CLOUD_CIRRUS;
+	} else {
+		return SG_CLOUD_CLEAR;
+	}
+}
+
+const std::string &
+SGCloudLayer::getCoverageString() const
+{
+	return getCoverageString(layer_coverage);
+}
+
+void
+SGCloudLayer::setCoverageString( const std::string & coverage )
+{
+	setCoverage( getCoverageType(coverage) );
 }
 
 void

@@ -671,6 +671,14 @@
 				RelativePath="..\..\simgear\misc\zfstream.hxx"
 				>
 			</File>
+			<File
+				RelativePath="..\..\simgear\misc\ResourceManager.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\ResourceManager.hxx"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgroute"

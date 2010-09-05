@@ -13,7 +13,8 @@ include_HEADERS = \
 	interpolator.hxx \
 	stdint.hxx \
 	PathOptions.hxx \
-	sg_dir.hxx
+	sg_dir.hxx \
+	ResourceManager.hxx 
 
 libsgmisc_a_SOURCES = \
 	sg_path.cxx \
@@ -24,7 +25,8 @@ libsgmisc_a_SOURCES = \
 	zfstream.cxx \
 	interpolator.cxx \
 	PathOptions.cxx \
-	sg_dir.cxx
+	sg_dir.cxx \
+	ResourceManager.cxx 
 
 #noinst_PROGRAMS = tabbed_value_test swap_test
 

@@ -33,6 +33,7 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/math/SGMath.hxx>
+#include <simgear/misc/ResourceManager.hxx>
 
 #include "soundmgr_openal.hxx"
 #include "sample_openal.hxx"
@@ -110,11 +111,8 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _static_changed(true),
     _is_file(true)
 {
-    SGPath samplepath( path );
-    if ( strlen(file) ) {
-        samplepath.append( file );
-    }
-    _refname = samplepath.str();
+    SGPath p = simgear::ResourceManager::instance()->findPath(file);
+    _refname = p.str();
 }
 
 // constructor

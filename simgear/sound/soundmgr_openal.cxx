@@ -470,11 +470,15 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
         if ( sample->is_file() ) {
             int freq, format;
             size_t size;
-            bool res;
 
-            res = load(sample_name, &sample_data, &format, &size, &freq);
-            if (res == false) return buffer;
-
+            try {
+              bool res = load(sample_name, &sample_data, &format, &size, &freq);
+              if (res == false) return buffer;
+            } catch (sg_exception& e) {
+              SG_LOG(SG_GENERAL, SG_ALERT, "failed to load sound buffer:" << e.getFormattedMessage());
+              return NO_BUFFER;
+            }
+            
             sample->set_frequency( freq );
             sample->set_format( format );
             sample->set_size( size );

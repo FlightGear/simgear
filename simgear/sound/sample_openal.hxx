@@ -43,6 +43,8 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
 
+class SGPath;
+
 /**
  * manages everything we need to know for an individual audio sample
  */
@@ -88,6 +90,8 @@ public:
      * @return Return true if this audio sample is to be constructed from a file.
      */
     inline bool is_file() const { return _is_file; }
+
+    SGPath file_path() const;
 
     /**
      * Test if this audio sample configuration has changed since the last call.

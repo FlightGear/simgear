@@ -220,3 +220,13 @@ string SGSoundSample::random_string() {
       return rstr;
 }
 
+SGPath SGSoundSample::file_path() const
+{
+  if (!_is_file) {
+    return SGPath();
+  }
+  
+  return SGPath(_refname);
+}
+
+

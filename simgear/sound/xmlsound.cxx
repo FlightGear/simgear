@@ -32,7 +32,8 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/math/SGMath.hxx>
-
+#include <simgear/structure/exception.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 #include "xmlsound.hxx"
 
@@ -272,6 +273,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
       _sgrp = sgrp;
    }
    _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
+   if (!_sample->file_path().exists()) {
+      throw sg_io_exception("XML sound: couldn't find file: " + _sample->file_path().str());
+   }
+   
    _sample->set_relative_position( offset_pos );
    _sample->set_direction( dir );
    _sample->set_audio_cone( inner, outer, outer_gain );

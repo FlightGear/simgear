@@ -26,7 +26,9 @@ int main( int argc, char *argv[] ) {
     smgr->set_position( SGVec3d::fromGeod(pos), pos );
     smgr->activate();
 
-    SGSoundSample *sample1 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGPath srcDir(SRC_DIR);
+
+    SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);
     sample1->set_volume(1.0);
     sample1->set_pitch(1.0);
     sample1->play_looped();
@@ -35,7 +37,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample1\n");
     sleep(1);
 
-    SGSoundSample *sample2 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGSoundSample *sample2 = new SGSoundSample("jet.wav", srcDir);
     sample2->set_volume(0.5);
     sample2->set_pitch(0.4);
     sample2->play_looped();
@@ -44,7 +46,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample2\n");
     sleep(1);
 
-    SGSoundSample *sample3 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGSoundSample *sample3 = new SGSoundSample("jet.wav", srcDir);
     sample3->set_volume(0.5);
     sample3->set_pitch(0.8);
     sample3->play_looped();
@@ -53,7 +55,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample3\n");
     sleep(1);
 
-    SGSoundSample *sample4 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGSoundSample *sample4 = new SGSoundSample("jet.wav", srcDir);
     sample4->set_volume(0.5);
     sample4->set_pitch(1.2);
     sample4->play_looped();
@@ -62,7 +64,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample4\n");
     sleep(1);
 
-    SGSoundSample *sample5 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGSoundSample *sample5 = new SGSoundSample("jet.wav", srcDir);
     sample5->set_volume(0.5);
     sample5->set_pitch(1.6);
     sample5->play_looped();
@@ -71,7 +73,7 @@ int main( int argc, char *argv[] ) {
     printf("playing sample5\n");
     sleep(1);
 
-    SGSoundSample *sample6 = new SGSoundSample("jet.wav", SRC_DIR);
+    SGSoundSample *sample6 = new SGSoundSample("jet.wav", srcDir);
     sample6->set_volume(0.5);
     sample6->set_pitch(2.0);
     sample6->play_looped();

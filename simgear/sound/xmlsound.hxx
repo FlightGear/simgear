@@ -104,7 +104,7 @@ public:
    * @param path The path where the audio files remain.
    */
   virtual void init (SGPropertyNode *, SGPropertyNode *, SGSampleGroup *,
-                     SGSampleGroup *, const string &);
+                     SGSampleGroup *, const SGPath& currentDir);
 
   /**
    * Check whether an event has happened and if action has to be taken.

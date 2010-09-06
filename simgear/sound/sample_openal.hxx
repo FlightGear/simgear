@@ -60,11 +60,10 @@ public:
 
     /**
      * Constructor
-     * @param path Path name to sound
      * @param file File name of sound
        Buffer data is freed by the sample group
      */
-    SGSoundSample( const char *path, const char *file );
+    SGSoundSample(const char *file, const SGPath& currentDir);
 
     /**
      * Constructor.

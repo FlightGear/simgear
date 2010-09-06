@@ -79,7 +79,7 @@ SGSoundSample::SGSoundSample() :
 }
 
 // constructor
-SGSoundSample::SGSoundSample( const char *path, const char *file ) :
+SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
     _absolute_pos(SGVec3d::zeros()),
     _relative_pos(SGVec3d::zeros()),
     _direction(SGVec3d::zeros()),
@@ -111,7 +111,7 @@ SGSoundSample::SGSoundSample( const char *path, const char *file ) :
     _static_changed(true),
     _is_file(true)
 {
-    SGPath p = simgear::ResourceManager::instance()->findPath(file);
+    SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
     _refname = p.str();
 }
 

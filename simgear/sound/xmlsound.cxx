@@ -84,7 +84,7 @@ SGXmlSound::~SGXmlSound()
 void
 SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
                  SGSampleGroup *sgrp, SGSampleGroup *avionics,
-                 const string &path)
+                 const SGPath& currentDir)
 {
 
    //
@@ -272,7 +272,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    } else {
       _sgrp = sgrp;
    }
-   _sample = new SGSoundSample( path.c_str(), node->getStringValue("path", ""));
+   _sample = new SGSoundSample(node->getStringValue("path", ""), currentDir);
    if (!_sample->file_path().exists()) {
       throw sg_io_exception("XML sound: couldn't find file: " + _sample->file_path().str());
    }

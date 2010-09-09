@@ -166,6 +166,11 @@ public:
      * I.e starts with a directory seperator, or a single character + colon
      */
     bool isAbsolute() const;
+    
+    /**
+     * check for default constructed path
+     */
+    bool isNull() const;
 private:
 
     void fix();

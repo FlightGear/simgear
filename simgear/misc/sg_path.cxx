@@ -358,3 +358,8 @@ bool SGPath::isAbsolute() const
   
   return (path[0] == sgDirPathSep);
 }
+
+bool SGPath::isNull() const
+{
+  return path.empty() || (path == "");
+}

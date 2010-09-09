@@ -30,6 +30,7 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/misc/ResourceManager.hxx>
 
 #include "SGPagedLOD.hxx"
 #include "SGReaderWriterXML.hxx"
@@ -47,7 +48,6 @@ ModelRegistryCallbackProxy<LoadOnlyCallback> g_xmlCallbackProxy("xml");
 
 SGPropertyNode_ptr SGModelLib::static_propRoot;
 SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
-SGModelLib::resolve_func SGModelLib::static_resolver = NULL;
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGModelLib.
@@ -67,33 +67,15 @@ void SGModelLib::setPanelFunc(panel_func pf)
   static_panelFunc = pf;
 }
 
-void SGModelLib::setResolveFunc(resolve_func rf)
-{
-  static_resolver = rf;
-}
-
 std::string SGModelLib::findDataFile(const std::string& file, 
   const osgDB::ReaderWriter::Options* opts,
   SGPath currentPath)
 {
-  // if we have a valid current path, first attempt to resolve relative
-  // to that path
-  if (currentPath.exists()) {
-    SGPath p = currentPath;
-    p.append(file);
-    if (p.exists()) {
-      return p.str();
-    }
+  SGPath p = ResourceManager::instance()->findPath(file, currentPath);
+  if (p.exists()) {
+    return p.str();
   }
-  
-  // next try the resolve function if one has been defined
-  if (static_resolver) {
-    SGPath p = static_resolver(file);
-    if (p.exists()) {
-      return p.str();
-    }
-  }
-  
+      
   // finally hand on to standard OSG behaviour
   return osgDB::findDataFile(file, opts);
 }

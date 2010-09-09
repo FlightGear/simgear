@@ -25,8 +25,10 @@ int main( int argc, char *argv[] ) {
     smgr->set_volume(0.9);
     smgr->activate();
 
+    SGPath srcDir(SRC_DIR);
+
     printf("default position and orientation\n");
-    SGSoundSample *sample1 = new SGSoundSample( SRC_DIR, "jet.wav" );
+    SGSoundSample *sample1 = new SGSoundSample("jet.wav", srcDir);
     sample1->set_volume(1.0);
     sample1->set_pitch(1.0);
     sample1->play_looped();

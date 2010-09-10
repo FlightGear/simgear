@@ -11,7 +11,6 @@
 
 #include "soundmgr_openal.hxx"
 
-SGGeod pos = SGGeod::fromDeg(0,0);
 
 int main( int argc, char *argv[] ) {
     SGSampleGroup *sgr;
@@ -23,7 +22,6 @@ int main( int argc, char *argv[] ) {
     smgr->init();
     sgr = smgr->find("default", true);
     smgr->set_volume(0.9);
-    smgr->set_position( SGVec3d::fromGeod(pos), pos );
     smgr->activate();
 
     SGPath srcDir(SRC_DIR);

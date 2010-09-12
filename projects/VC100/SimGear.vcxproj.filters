@@ -183,6 +183,9 @@
     <ClCompile Include="..\..\simgear\misc\zfstream.cxx">
       <Filter>Lib_sgmisc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\ResourceManager.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\simgear\route\route.cxx">
       <Filter>Lib_sgroute</Filter>
     </ClCompile>
@@ -717,6 +720,9 @@
       <Filter>Lib_sgmisc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\simgear\misc\zfstream.hxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\ResourceManager.hxx">
       <Filter>Lib_sgmisc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\simgear\route\route.hxx">

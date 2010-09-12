@@ -221,7 +221,6 @@
     <ClCompile Include="..\..\simgear\misc\texcoord.cxx" />
     <ClCompile Include="..\..\simgear\misc\zfstream.cxx" />
     <ClCompile Include="..\..\simgear\misc\ResourceManager.cxx" />
-    <ClCompile Include="..\..\simgear\misc\ResourceManager.hxx" />
     <ClCompile Include="..\..\simgear\route\route.cxx" />
     <ClCompile Include="..\..\simgear\route\waypoint.cxx" />
     <ClCompile Include="..\..\simgear\screen\extensions.cxx" />
@@ -417,6 +416,7 @@
     <ClInclude Include="..\..\simgear\misc\tabbed_values.hxx" />
     <ClInclude Include="..\..\simgear\misc\texcoord.hxx" />
     <ClInclude Include="..\..\simgear\misc\zfstream.hxx" />
+    <ClInclude Include="..\..\simgear\misc\ResourceManager.hxx" />
     <ClInclude Include="..\..\simgear\route\route.hxx" />
     <ClInclude Include="..\..\simgear\route\waypoint.hxx" />
     <ClInclude Include="..\..\simgear\screen\colors.hxx" />

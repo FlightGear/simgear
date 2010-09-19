@@ -756,7 +756,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
 
         if (dist > 0.0) {
-            ax = cos(course) * dist;
+            ax = -cos(course) * dist;
             ay = sin(course) * dist;
         }
 
@@ -768,6 +768,7 @@ bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
 
         double xoff = (ax + bx) / (2 * scale);
         double yoff = (ay + by) / (2 * scale);
+
 
 //        const float layer_scale = layer_span / scale;
 

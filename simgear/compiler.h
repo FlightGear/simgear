@@ -154,6 +154,7 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #endif
 
 #if defined (__FreeBSD__)
+#include <sys/param.h>
 #  if __FreeBSD_version < 500000
      extern "C" {
        inline int isnan(double r) { return !(r <= 0 || r >= 0); }

@@ -466,11 +466,13 @@ bool SGMetar::scanVisibility()
 	int modifier = SGMetarVisibility::EQUALS;
 // \d{4}(N|NE|E|SE|S|SW|W|NW)?
 	if (scanNumber(&m, &i, 4)) {
-		if (*m == 'E')
+		if( strncmp( m, "NDV",3 ) == 0 ) {
+			m+=3; // tolerate NDV (no directional validation)
+		} else if (*m == 'E') {
 			m++, dir = 90;
-		else if (*m == 'W')
+		} else if (*m == 'W') {
 			m++, dir = 270;
-		else if (*m == 'N') {
+		} else if (*m == 'N') {
 			m++;
 			if (*m == 'E')
 				m++, dir = 45;
@@ -486,7 +488,7 @@ bool SGMetar::scanVisibility()
 				m++, dir = 225;
 			else
 				dir = 180;
-		}
+                }
 		if (i == 0)
 			i = 50, modifier = SGMetarVisibility::LESS_THAN;
 		else if (i == 9999)

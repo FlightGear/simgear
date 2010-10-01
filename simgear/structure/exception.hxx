@@ -133,6 +133,9 @@ public:
   sg_io_exception (const char* message, const sg_location &location,
 		   const char* origin = 0);
   sg_io_exception (const std::string &message, const std::string &origin = "");
+  sg_io_exception (const std::string &message, const sg_location &location, 
+    const std::string &origin = "");
+  
   virtual ~sg_io_exception () throw ();
   virtual const std::string getFormattedMessage () const;
   virtual const sg_location &getLocation () const;

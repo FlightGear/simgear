@@ -260,6 +260,14 @@ sg_io_exception::sg_io_exception (const string& message, const string& origin)
 {
 }
 
+sg_io_exception::sg_io_exception (const string& message,
+				  const sg_location &location,
+				  const string& origin)
+  : sg_exception(message, origin),
+    _location(location)
+{
+}
+
 sg_io_exception::~sg_io_exception () throw ()
 {
 }

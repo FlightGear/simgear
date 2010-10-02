@@ -350,6 +350,7 @@ sgLoad3DModel_internal(const SGPath& path,
         } catch (const sg_exception &t) {
             SG_LOG(SG_INPUT, SG_ALERT, "Failed to load submodel: " << t.getFormattedMessage()
               << "\n\tfrom:" << t.getOrigin());
+            continue;
         }
 
         osg::ref_ptr<osg::Node> submodel_final = submodel;

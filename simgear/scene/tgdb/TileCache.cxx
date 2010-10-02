@@ -98,6 +98,11 @@ long TileCache::get_oldest_tile() {
     for ( ; current != end; ++current ) {
         long index = current->first;
         TileEntry *e = current->second;
+        if (e->get_cache_lock())
+        {
+            // tile locked to cache => must not be dropped
+        }
+        else
         if ( e->is_loaded() ) {
             timestamp = e->get_timestamp();
             if ( timestamp < min_time ) {
@@ -125,8 +130,27 @@ void TileCache::clear_inner_ring_flags() {
 
     for ( ; current != end; ++current ) {
         TileEntry *e = current->second;
-        if ( e->is_loaded() ) {
+        //if ( e->is_loaded() ) {
             e->set_inner_ring( false );
+        //}
+    }
+}
+
+// Clear all locked flags for all tiles in the cache.
+// (Tiles belonging to the current position are locked to
+//  the cache to prevent them from being dropped).
+void TileCache::clear_cache_lock_flags()
+{
+    tile_map_iterator current = tile_cache.begin();
+    tile_map_iterator end = tile_cache.end();
+
+    for ( ; current != end; ++current ) {
+        TileEntry *e = current->second;
+        if (e->get_cache_lock())
+        {
+            // update timestamps for tiles belonging to most recent position
+            e->set_timestamp( current_time );
+            e->set_cache_lock( false );
         }
     }
 }

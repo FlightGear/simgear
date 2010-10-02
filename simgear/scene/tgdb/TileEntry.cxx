@@ -64,6 +64,7 @@ osgDB::RegisterReaderWriterProxy<ReaderWriterSTG> g_readerWriterSTGProxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
 }
 
+#ifdef USE_CULLCALLBACK_TS
 namespace
 {
 // Update the timestamp on a tile whenever it is in view.
@@ -91,24 +92,33 @@ void TileCullCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
         _timeStamp = nv->getFrameStamp()->getReferenceTime();
     traverse(node, nv);
 }
+#endif
 
 double TileEntry::get_timestamp() const
 {
+#ifdef USE_CULLCALLBACK_TS
     if (_node.valid()) {
         return (dynamic_cast<TileCullCallback*>(_node->getCullCallback()))
             ->getTimeStamp();
     } else
         return DBL_MAX;
+#else
+    return timestamp;
+#endif
 }
 
 void TileEntry::set_timestamp(double time_ms)
 {
+#ifdef USE_CULLCALLBACK_TS
     if (_node.valid()) {
         TileCullCallback* cb
             = dynamic_cast<TileCullCallback*>(_node->getCullCallback());
         if (cb)
             cb->setTimeStamp(time_ms);
     }
+#else
+    timestamp = time_ms;
+#endif
 }
 
 // Constructor
@@ -117,8 +127,14 @@ TileEntry::TileEntry ( const SGBucket& b )
       tileFileName(b.gen_index_str()),
       _node( new osg::LOD ),
       is_inner_ring(false)
+      ,is_cache_locked(false)
+#ifndef USE_CULLCALLBACK_TS
+      ,timestamp(0.0)
+#endif
 {
+#ifdef USE_CULLCALLBACK_TS
     _node->setCullCallback(new TileCullCallback);
+#endif
     tileFileName += ".stg";
     _node->setName(tileFileName);
     // Give a default LOD range so that traversals that traverse

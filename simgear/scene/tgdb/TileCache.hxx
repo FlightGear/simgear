@@ -80,6 +80,11 @@ public:
     // the external tile scheduler can flag the inner ring correctly.
     void clear_inner_ring_flags();
 
+    // Clear all locked flags for all tiles in the cache.
+    // (Tiles belonging to the current position are locked to
+    //  the cache to prevent them from being dropped).
+    void clear_cache_lock_flags();
+
     // Clear a cache entry, note that the cache only holds pointers
     // and this does not free the object which is pointed to.
     void clear_entry( long cache_entry );

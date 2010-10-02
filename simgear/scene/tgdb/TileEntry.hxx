@@ -81,6 +81,8 @@ private:
      * inner ring.  (For instance vasi color updating)
      */
     bool is_inner_ring;
+    bool is_cache_locked;
+    double timestamp;
 
     static ModelLoadHelper *_modelLoader;
 
@@ -139,6 +141,8 @@ public:
 
     inline bool get_inner_ring() const { return is_inner_ring; }
     inline void set_inner_ring( bool val ) { is_inner_ring = val; }
+    inline void set_cache_lock( bool val ) { is_cache_locked = val; }
+    inline bool get_cache_lock() const { return is_cache_locked; }
 
     // Get the ref_ptr to the DatabaseRequest object, in order to pass
     // this to the pager.

@@ -387,6 +387,9 @@ SGSubsystemMgr::SGSubsystemMgr ()
 
 SGSubsystemMgr::~SGSubsystemMgr ()
 {
+  // ensure get_subsystem returns NULL from now onwards,
+  // before the SGSubsystemGroup destructors are run
+  _subsystem_map.clear();
 }
 
 void
@@ -475,6 +478,29 @@ SGSubsystemMgr::add (const char * name, SGSubsystem * subsystem,
     _subsystem_map[name] = subsystem;
 }
 
+SGSubsystem* 
+SGSubsystemMgr::remove(const char* name)
+{
+  SubsystemDict::iterator s =_subsystem_map.find(name);
+  if (s == _subsystem_map.end()) {
+    return NULL;
+  }
+  
+  SGSubsystem* sub = s->second;
+  _subsystem_map.erase(s);
+  
+// tedious part - we don't know which group the subsystem belongs too
+  for (int i = 0; i < MAX_GROUPS; i++) {
+    if (_groups[i].get_subsystem(name) == sub) {
+      _groups[i].remove_subsystem(name);
+      break;
+    }
+  } // of groups iteration
+  
+  return sub;
+}
+
+
 SGSubsystemGroup *
 SGSubsystemMgr::get_group (GroupType group)
 {
@@ -482,9 +508,9 @@ SGSubsystemMgr::get_group (GroupType group)
 }
 
 SGSubsystem *
-SGSubsystemMgr::get_subsystem (const string &name)
+SGSubsystemMgr::get_subsystem (const string &name) const
 {
-    map<string,SGSubsystem *>::iterator s =_subsystem_map.find(name);
+    SubsystemDict::const_iterator s =_subsystem_map.find(name);
 
     if (s == _subsystem_map.end())
         return 0;

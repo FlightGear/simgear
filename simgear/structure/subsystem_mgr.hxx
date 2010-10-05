@@ -29,10 +29,6 @@
 #include <map>
 #include <vector>
 
-using std::map;
-using std::vector;
-using std::string;
-
 #include <simgear/props/props.hxx>
 #include <simgear/timing/timestamp.hxx>
 #include "SGSmplstat.hxx"
@@ -41,19 +37,19 @@ using std::string;
 class TimingInfo
 {
 private:
-    string eventName;
+    std::string eventName;
     SGTimeStamp time;
 
 public: 
-    TimingInfo(const string& name, const SGTimeStamp &t) :
+    TimingInfo(const std::string& name, const SGTimeStamp &t) :
         eventName(name), time(t)
     { }
-    const string& getName() const { return eventName; }
+    const std::string& getName() const { return eventName; }
     const SGTimeStamp& getTime() const { return time; }
 };
 
-typedef vector<TimingInfo> eventTimeVec;
-typedef vector<TimingInfo>::iterator eventTimeVecIterator;
+typedef std::vector<TimingInfo> eventTimeVec;
+typedef std::vector<TimingInfo>::iterator eventTimeVecIterator;
 
 
 
@@ -273,7 +269,7 @@ public:
    * Place time stamps at strategic points in the execution of subsystems 
    * update() member functions. Predominantly for debugging purposes.
    */
-  void stamp(const string& name);
+  void stamp(const std::string& name);
   
 
 
@@ -308,12 +304,12 @@ public:
     virtual void resume ();
     virtual bool is_suspended () const;
 
-    virtual void set_subsystem (const string &name,
+    virtual void set_subsystem (const std::string &name,
                                 SGSubsystem * subsystem,
                                 double min_step_sec = 0);
-    virtual SGSubsystem * get_subsystem (const string &name);
-    virtual void remove_subsystem (const string &name);
-    virtual bool has_subsystem (const string &name) const;
+    virtual SGSubsystem * get_subsystem (const std::string &name);
+    virtual void remove_subsystem (const std::string &name);
+    virtual bool has_subsystem (const std::string &name) const;
 
     void collectDebugTiming(bool collect);
 
@@ -339,7 +335,7 @@ private:
         void collectDebugTiming (bool collect) { collectTimeStats = collect; };
 
         SampleStatistic timeStat;
-        string name;
+        std::string name;
         SGSubsystem * subsystem;
         double min_step_sec;
         double elapsed_sec;
@@ -347,9 +343,9 @@ private:
         int exceptionCount;
     };
 
-    Member * get_member (const string &name, bool create = false);
+    Member * get_member (const std::string &name, bool create = false);
 
-    vector<Member *> _members;
+    std::vector<Member *> _members;
     
     double _fixedUpdateTime;
     double _updateTimeRemainder;
@@ -408,16 +404,24 @@ public:
                       GroupType group = GENERAL, 
                       double min_time_sec = 0);
 
+    /**
+     * remove a subsystem, and return a pointer to it.
+     * returns NULL if the subsystem was not found.
+     */
+    virtual SGSubsystem* remove(const char* name);
+
     virtual SGSubsystemGroup * get_group (GroupType group);
 
-    virtual SGSubsystem * get_subsystem(const string &name);
+    virtual SGSubsystem * get_subsystem(const std::string &name) const;
 
    void collectDebugTiming(bool collect);
 
 private:
 
     SGSubsystemGroup _groups[MAX_GROUPS];
-    map<string,SGSubsystem *> _subsystem_map;
+    
+    typedef std::map<std::string, SGSubsystem*> SubsystemDict;
+    SubsystemDict _subsystem_map;
 
 };
 

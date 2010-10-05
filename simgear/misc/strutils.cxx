@@ -131,10 +131,9 @@ namespace simgear {
 	static string
 	do_strip( const string& s, int striptype )
 	{
-	    //     if (s.empty())
-	    //      return s;
-
 	    string::size_type len = s.length();
+	    if( len == 0 ) // empty string is trivial
+		return s;
 	    string::size_type i = 0;
 	    if (striptype != RIGHTSTRIP)
 	    {

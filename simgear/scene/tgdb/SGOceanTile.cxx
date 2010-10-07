@@ -281,7 +281,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib)
     // Calculate center point
     SGVec3d cartCenter = SGVec3d::fromGeod(b.get_center());
     SGGeod geodPos = SGGeod::fromCart(cartCenter);
-    SGQuatd hlOr = SGQuatd::fromLonLat(geodPos);
+    SGQuatd hlOr = SGQuatd::fromLonLat(geodPos)*SGQuatd::fromEulerDeg(0, 0, 180);
 
     double clon = b.get_center_lon();
     double clat = b.get_center_lat();

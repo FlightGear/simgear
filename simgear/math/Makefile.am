@@ -10,7 +10,7 @@ SGMathTest_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/structure/libsgstructure.a \
 	$(base_LIBS)
-	
+
 SGGeometryTest_SOURCES = SGGeometryTest.cxx
 
 SGGeometryTest_LDADD = \
@@ -18,7 +18,7 @@ SGGeometryTest_LDADD = \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/structure/libsgstructure.a \
 	$(base_LIBS)
-	
+
 lib_LIBRARIES = libsgmath.a
 
 include_HEADERS = \
@@ -50,13 +50,15 @@ include_HEADERS = \
 	SGVec2.hxx \
 	SGVec3.hxx \
 	SGVec4.hxx \
-	beziercurve.hxx
+	beziercurve.hxx \
+	project.hxx
 
 libsgmath_a_SOURCES = \
 	interpolater.cxx \
 	leastsqs.cxx \
 	sg_random.c \
 	SGGeod.cxx \
-	SGGeodesy.cxx
+	SGGeodesy.cxx \
+	project.cxx
 
 INCLUDES = -I$(top_srcdir)

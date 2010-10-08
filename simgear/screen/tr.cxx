@@ -144,7 +144,7 @@
 #include <windows.h>
 #endif
 
-#include <osg/GLU>
+#include <simgear/math/project.hxx>
 
 #include "tr.h"
 
@@ -541,7 +541,6 @@ int trEndTile(TRcontext *tr)
       return 1;
 }
 
-
 /*
  * Replacement for glRastePos3f() which avoids the problem with invalid
  * raster pos.
@@ -566,7 +565,8 @@ void trRasterPos3f(TRcontext *tr, GLfloat x, GLfloat y, GLfloat z)
       viewport[3] = tr->CurrentTileHeight;
 
       /* Project object coord to window coordinate */
-      if (gluProject(x, y, z, modelview, proj, viewport, &winX, &winY, &winZ)){
+      if (simgear::project(x, y, z, modelview, proj, viewport,
+                           &winX, &winY, &winZ)){
 
          /* set raster pos to window coord (0,0) */
          glMatrixMode(GL_MODELVIEW);

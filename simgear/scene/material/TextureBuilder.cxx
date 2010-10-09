@@ -465,166 +465,166 @@ void copySubImage(const osg::Image* srcImage, int src_s, int src_t, int width, i
 
 
 Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
-							   const SGReaderWriterXMLOptions* options)
+                               const SGReaderWriterXMLOptions* options)
 {
-	// First check that there is a <images> tag
-	const SGPropertyNode* texturesProp = getEffectPropertyChild(effect, props, "images");
-	const SGPropertyNode* crossProp = getEffectPropertyChild(effect, props, "image");
-	if (!texturesProp && !crossProp) {
-		throw BuilderException("no images defined for cube map");
-		return NULL; // This is redundant
-	}
+    // First check that there is a <images> tag
+    const SGPropertyNode* texturesProp = getEffectPropertyChild(effect, props, "images");
+    const SGPropertyNode* crossProp = getEffectPropertyChild(effect, props, "image");
+    if (!texturesProp && !crossProp) {
+        throw BuilderException("no images defined for cube map");
+        return NULL; // This is redundant
+    }
 
-	// Using 6 separate images
-	if(texturesProp) {
+    // Using 6 separate images
+    if(texturesProp) {
 
-		SG_LOG(SG_INPUT, SG_DEBUG, "try 6 images ");
+        SG_LOG(SG_INPUT, SG_DEBUG, "try 6 images ");
 
-		CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
+        CubeMapTuple _tuple = makeCubeMapTuple(effect, texturesProp);
 
-		CubeMap::iterator itr = _cubemaps.find(_tuple);
-		if (itr != _cubemaps.end())
-			return itr->second.get();
+        CubeMap::iterator itr = _cubemaps.find(_tuple);
+        if (itr != _cubemaps.end())
+            return itr->second.get();
 
-		TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
+        TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
 
-		// TODO: Read these from effect file? Maybe these are sane for all cuebmaps?
-		cubeTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
-		cubeTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture::LINEAR);
-		cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-		cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-		cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+        // TODO: Read these from effect file? Maybe these are sane for all cuebmaps?
+        cubeTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture::LINEAR_MIPMAP_LINEAR);
+        cubeTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture::LINEAR);
+        cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+        cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+        cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 
-		osgDB::ReaderWriter::ReadResult result =
-			osgDB::Registry::instance()->readImage(_tuple.get<0>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
-		}
-		result = osgDB::Registry::instance()->readImage(_tuple.get<1>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
-		}
-		result = osgDB::Registry::instance()->readImage(_tuple.get<2>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
-		}
-		result = osgDB::Registry::instance()->readImage(_tuple.get<3>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
-		}
-		result = osgDB::Registry::instance()->readImage(_tuple.get<4>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
-		}
-		result = osgDB::Registry::instance()->readImage(_tuple.get<5>(), options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
-		}
+        osgDB::ReaderWriter::ReadResult result =
+            osgDB::Registry::instance()->readImage(_tuple.get<0>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
+        }
+        result = osgDB::Registry::instance()->readImage(_tuple.get<1>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
+        }
+        result = osgDB::Registry::instance()->readImage(_tuple.get<2>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
+        }
+        result = osgDB::Registry::instance()->readImage(_tuple.get<3>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
+        }
+        result = osgDB::Registry::instance()->readImage(_tuple.get<4>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
+        }
+        result = osgDB::Registry::instance()->readImage(_tuple.get<5>(), options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
+        }
 
-		_cubemaps[_tuple] = cubeTexture;
+        _cubemaps[_tuple] = cubeTexture;
 
-		return cubeTexture;
-	}
+        return cubeTexture;
+    }
 
 
-	// Using 1 cross image
-	else if(crossProp) {
-		SG_LOG(SG_INPUT, SG_DEBUG, "try cross map ");
+    // Using 1 cross image
+    else if(crossProp) {
+        SG_LOG(SG_INPUT, SG_DEBUG, "try cross map ");
 
-		std::string texname = crossProp->getStringValue();
+        std::string texname = crossProp->getStringValue();
 
-		// Try to find existing cube map
-		CrossCubeMap::iterator itr = _crossmaps.find(texname);
-		if (itr != _crossmaps.end())
-			return itr->second.get();
+        // Try to find existing cube map
+        CrossCubeMap::iterator itr = _crossmaps.find(texname);
+        if (itr != _crossmaps.end())
+            return itr->second.get();
 
-		osgDB::ReaderWriter::ReadResult result =
-			osgDB::Registry::instance()->readImage(texname, options);
-		if(result.success()) {
-			osg::Image* image = result.getImage();
-			image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones
+        osgDB::ReaderWriter::ReadResult result =
+            osgDB::Registry::instance()->readImage(texname, options);
+        if(result.success()) {
+            osg::Image* image = result.getImage();
+            image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones
 
-			//cubeTexture->setResizeNonPowerOfTwoHint(false);
+            //cubeTexture->setResizeNonPowerOfTwoHint(false);
 
-			// Size of a single image, 4 rows and 3 columns
-			int width = image->s() / 3;
-			int height = image->t() / 4;
-			int depth = image->r();
+            // Size of a single image, 4 rows and 3 columns
+            int width = image->s() / 3;
+            int height = image->t() / 4;
+            int depth = image->r();
 
-			TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
+            TextureCubeMap* cubeTexture = new osg::TextureCubeMap;
 
-			// Copy the 6 sub-images and push them
-			for(int n=0; n<6; n++) {
+            // Copy the 6 sub-images and push them
+            for(int n=0; n<6; n++) {
 
-				SG_LOG(SG_INPUT, SG_DEBUG, "Copying the " << n << "th sub-images and pushing it" );
+                SG_LOG(SG_INPUT, SG_DEBUG, "Copying the " << n << "th sub-images and pushing it" );
 
-				osg::ref_ptr<osg::Image> subimg = new osg::Image();
-				subimg->allocateImage(width, height, depth, image->getPixelFormat(), image->getDataType());  // Copy attributes
+                osg::ref_ptr<osg::Image> subimg = new osg::Image();
+                subimg->allocateImage(width, height, depth, image->getPixelFormat(), image->getDataType());  // Copy attributes
 
-				// Choose correct image
-				switch(n) {
-				case 0:  // Front
-					copySubImage(image, width, 0, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, subimg.get());
-					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				case 1:  // Left
-					copySubImage(image, 0, height, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, subimg.get());
-					cubeTexture->setWrap(osg::Texture2D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				case 2:  // Top
-					copySubImage(image, width, height, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, subimg.get());
-					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				case 3:  // Right
-					copySubImage(image, width*2, height, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::POSITIVE_X, subimg.get());
-					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				case 4:  // Back
-					copySubImage(image, width, height*2, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, subimg.get());
-					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				case 5:  // Bottom
-					copySubImage(image, width, height*3, width, height, subimg.get(), 0, 0);
-					cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, subimg.get());
-					cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
-					cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
-					break;
-				};
+                // Choose correct image
+                switch(n) {
+                case 0:  // Front
+                    copySubImage(image, width, 0, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, subimg.get());
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                case 1:  // Left
+                    copySubImage(image, 0, height, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, subimg.get());
+                    cubeTexture->setWrap(osg::Texture2D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                case 2:  // Top
+                    copySubImage(image, width, height, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, subimg.get());
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                case 3:  // Right
+                    copySubImage(image, width*2, height, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::POSITIVE_X, subimg.get());
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                case 4:  // Back
+                    copySubImage(image, width, height*2, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, subimg.get());
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                case 5:  // Bottom
+                    copySubImage(image, width, height*3, width, height, subimg.get(), 0, 0);
+                    cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, subimg.get());
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+                    cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
+                    break;
+                };
 
-			}
+            }
 
-			_crossmaps[texname] = cubeTexture;
+            _crossmaps[texname] = cubeTexture;
 
-			return cubeTexture;
+            return cubeTexture;
 
-		} else {
-			throw BuilderException("Could not load cube cross");
-		}
-	}
+        } else {
+            throw BuilderException("Could not load cube cross");
+        }
+    }
 
-	return NULL;
+    return NULL;
 }
 
 namespace {

@@ -456,6 +456,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\io\raw_socket.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\raw_socket.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\io\sg_binobj.cxx"
 				>
 			</File>
@@ -493,14 +501,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\io\sg_socket_udp.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\io\raw_socket.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\io\raw_socket.hxx"
 				>
 			</File>
 		</Filter>
@@ -560,6 +560,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\math\project.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\math\project.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\math\sg_geodesy.hxx"
 				>
 			</File>
@@ -612,11 +620,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\misc\sg_path.cxx"
+				RelativePath="..\..\simgear\misc\ResourceManager.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\misc\sg_path.hxx"
+				RelativePath="..\..\simgear\misc\ResourceManager.hxx"
 				>
 			</File>
 			<File
@@ -625,6 +633,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\sg_dir.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\sg_path.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\sg_path.hxx"
 				>
 			</File>
 			<File
@@ -669,14 +685,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\zfstream.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\ResourceManager.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\ResourceManager.hxx"
 				>
 			</File>
 		</Filter>

@@ -582,6 +582,9 @@
     <ClCompile Include="..\..\simgear\misc\sg_dir.cxx">
       <Filter>Lib_sgmisc</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\math\project.cxx">
+      <Filter>Lib_sgmath</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1164,6 +1167,9 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\misc\sg_dir.hxx">
       <Filter>Lib_sgmisc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\math\project.hxx">
+      <Filter>Lib_sgmath</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

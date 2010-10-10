@@ -1262,6 +1262,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\material\mipmap.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\material\mipmap.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\material\Noise.cxx"
 				>
 			</File>

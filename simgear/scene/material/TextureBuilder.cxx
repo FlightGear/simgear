@@ -19,6 +19,7 @@
 #endif
 
 #include "TextureBuilder.hxx"
+#include "mipmap.hxx"
 
 #include "Pass.hxx"
 
@@ -67,7 +68,7 @@ osg::Texture* TextureBuilder::buildFromType(Effect* effect, const string& type,
 
 typedef boost::tuple<string, Texture::FilterMode, Texture::FilterMode,
                      Texture::WrapMode, Texture::WrapMode, Texture::WrapMode,
-                     string> TexTuple;
+                     string, MipMapTuple> TexTuple;
 
 EffectNameValue<TexEnv::Mode> texEnvModesInit[] =
 {
@@ -134,7 +135,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     catch (BuilderException& ) {
         SG_LOG(SG_INPUT, SG_ALERT, "No image file, "
             << "maybe the reader did not set the filename attribute, "
-            << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
+            << "using white on " << pass->getName());
         texture = StateAttributeFactory::instance()->getWhiteTexture();
     }
     pass->setTextureAttributeAndModes(unit, texture);
@@ -181,7 +182,6 @@ EffectNameValue<Texture::WrapMode> wrapModesInit[] =
 };
 EffectPropertyMap<Texture::WrapMode> wrapModes(wrapModesInit);
 
-
 TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
                       const SGReaderWriterXMLOptions* options,
                       const string& texType)
@@ -214,8 +214,15 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
     if (pImage)
         imageName = pImage->getStringValue();
     string absFileName = osgDB::findDataFile(imageName, options);
+
+    const SGPropertyNode* pMipmapControl
+        = getEffectPropertyChild(effect, props, "mipmap-control");
+    MipMapTuple mipmapFunctions( AUTOMATIC, AUTOMATIC, AUTOMATIC, AUTOMATIC ); 
+    if ( pMipmapControl )
+        mipmapFunctions = makeMipMapTuple(effect, pMipmapControl, options);
+
     return TexTuple(absFileName, minFilter, magFilter, sWrap, tWrap, rWrap,
-                    texType);
+                    texType, mipmapFunctions);
 }
 
 void setAttrs(const TexTuple& attrs, Texture* tex,
@@ -228,7 +235,8 @@ void setAttrs(const TexTuple& attrs, Texture* tex,
         osgDB::ReaderWriter::ReadResult result
             = osgDB::Registry::instance()->readImage(imageName, options);
         if (result.success()) {
-            osg::Image* image = result.getImage();
+            osg::ref_ptr<osg::Image> image = result.getImage();
+            image = computeMipmap( image, attrs.get<7>() );
             tex->setImage(GL_FRONT_AND_BACK, image);
             int s = image->s();
             int t = image->t();

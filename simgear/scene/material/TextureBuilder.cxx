@@ -134,7 +134,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
     catch (BuilderException& ) {
         SG_LOG(SG_INPUT, SG_ALERT, "No image file, "
             << "maybe the reader did not set the filename attribute, "
-            << "using white on " << pass->getName());
+            << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
         texture = StateAttributeFactory::instance()->getWhiteTexture();
     }
     pass->setTextureAttributeAndModes(unit, texture);

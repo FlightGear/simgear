@@ -212,30 +212,35 @@ osg::Vec4::value_type computeComponent( int c, osg::Vec4 colors[2][2][2], bool c
     return 0;
 }
 
-osg::Vec4 computeColor( osg::Vec4 colors[2][2][2], bool colorValid[2][2][2], MipMapTuple attrs )
+osg::Vec4 computeColor( osg::Vec4 colors[2][2][2], bool colorValid[2][2][2], MipMapTuple attrs, GLenum pixelFormat )
 {
     osg::Vec4 result;
+    unsigned int nbComponents = osg::Image::computeNumComponents( pixelFormat );
     result[0] = computeComponent( 0, colors, colorValid, attrs.get<0>() );
-    result[1] = computeComponent( 1, colors, colorValid, attrs.get<1>() );
-    result[2] = computeComponent( 2, colors, colorValid, attrs.get<2>() );
-    result[3] = computeComponent( 3, colors, colorValid, attrs.get<3>() );
+    if ( nbComponents >= 2 )
+        result[1] = computeComponent( 1, colors, colorValid, attrs.get<1>() );
+    if ( nbComponents >= 3 )
+        result[2] = computeComponent( 2, colors, colorValid, attrs.get<2>() );
+    if ( nbComponents == 4 )
+        result[3] = computeComponent( 3, colors, colorValid, attrs.get<3>() );
     return result;
 }
 
 osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
 {
     bool computeMipmap = false;
+    unsigned int nbComponents = osg::Image::computeNumComponents( image->getPixelFormat() );
     if ( attrs.get<0>() != AUTOMATIC &&
-        attrs.get<1>() != AUTOMATIC &&
-        attrs.get<2>() != AUTOMATIC &&
-        attrs.get<3>() != AUTOMATIC )
+        ( attrs.get<1>() != AUTOMATIC || nbComponents < 2 ) &&
+        ( attrs.get<2>() != AUTOMATIC || nbComponents < 3 ) &&
+        ( attrs.get<3>() != AUTOMATIC || nbComponents < 4 ) )
     {
         computeMipmap = true;
     }
     else if ( attrs.get<0>() != AUTOMATIC ||
-        attrs.get<1>() != AUTOMATIC ||
-        attrs.get<2>() != AUTOMATIC ||
-        attrs.get<3>() != AUTOMATIC )
+        ( attrs.get<1>() != AUTOMATIC && nbComponents >= 2 ) ||
+        ( attrs.get<2>() != AUTOMATIC && nbComponents >= 3 ) ||
+        ( attrs.get<3>() != AUTOMATIC && nbComponents == 4 ) )
     {
         throw BuilderException("invalid mipmap control function combination");
     }
@@ -335,7 +340,7 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
                         }
 
                         unsigned char *ptr = imageData( dest, image->getPixelFormat(), image->getDataType(), ns, nt, image->getPacking(), i/2, j/2, k/2 );
-                        osg::Vec4 color = computeColor( colors, colorValid, attrs );
+                        osg::Vec4 color = computeColor( colors, colorValid, attrs, image->getPixelFormat() );
                         setColor( ptr, image->getPixelFormat(), image->getDataType(), color );
                     }
                 }

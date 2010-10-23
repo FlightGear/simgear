@@ -10,7 +10,10 @@ include_HEADERS = \
 	sg_serial.hxx \
 	sg_socket.hxx \
 	sg_socket_udp.hxx \
-	raw_socket.hxx 
+	raw_socket.hxx  \
+	sg_netBuffer.hxx \
+	sg_netChannel.hxx \
+	sg_netChat.hxx
 
 libsgio_a_SOURCES = \
 	iochannel.cxx \
@@ -20,7 +23,10 @@ libsgio_a_SOURCES = \
 	sg_serial.cxx \
 	sg_socket.cxx \
 	sg_socket_udp.cxx \
-	raw_socket.cxx
+	raw_socket.cxx \
+	sg_netBuffer.cxx \
+	sg_netChannel.cxx \
+	sg_netChat.cxx
 
 INCLUDES = -I$(top_srcdir)
 

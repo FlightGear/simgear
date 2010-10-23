@@ -503,6 +503,12 @@
 				RelativePath="..\..\simgear\io\sg_socket_udp.hxx"
 				>
 			</File>
+			<File RelativePath="..\..\simgear\io\sg_netChannel.hxx"></File>
+			<File RelativePath="..\..\simgear\io\sg_netChannel.cxx"></File>
+			<File RelativePath="..\..\simgear\io\sg_netChat.hxx"></File>
+			<File RelativePath="..\..\simgear\io\sg_netChat.cxx"></File>
+			<File RelativePath="..\..\simgear\io\sg_netBuffer.cxx"></File>
+			<File RelativePath="..\..\simgear\io\sg_netBuffer.hxx"></File>
 		</Filter>
 		<Filter
 			Name="Lib_sgmagvar"

@@ -594,6 +594,9 @@
     <ClCompile Include="..\..\simgear\io\sg_netChat.cxx">
       <Filter>Lib_sgio</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\material\mipmap.cxx">
+      <Filter>Lib_sgmaterial</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1188,6 +1191,9 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\io\sg_netChat.hxx">
       <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\material\mipmap.hxx">
+      <Filter>Lib_sgmaterial</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

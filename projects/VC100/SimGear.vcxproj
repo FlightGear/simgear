@@ -227,6 +227,7 @@
     <ClCompile Include="..\..\simgear\misc\ResourceManager.cxx" />
     <ClCompile Include="..\..\simgear\route\route.cxx" />
     <ClCompile Include="..\..\simgear\route\waypoint.cxx" />
+    <ClCompile Include="..\..\simgear\scene\material\mipmap.cxx" />
     <ClCompile Include="..\..\simgear\screen\extensions.cxx" />
     <ClCompile Include="..\..\simgear\screen\jpgfactory.cxx" />
     <ClCompile Include="..\..\simgear\screen\screen-dump.cxx" />
@@ -427,6 +428,7 @@
     <ClInclude Include="..\..\simgear\misc\ResourceManager.hxx" />
     <ClInclude Include="..\..\simgear\route\route.hxx" />
     <ClInclude Include="..\..\simgear\route\waypoint.hxx" />
+    <ClInclude Include="..\..\simgear\scene\material\mipmap.hxx" />
     <ClInclude Include="..\..\simgear\screen\colors.hxx" />
     <ClInclude Include="..\..\simgear\screen\extensions.hxx" />
     <ClInclude Include="..\..\simgear\screen\jpgfactory.hxx" />

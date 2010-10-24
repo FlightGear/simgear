@@ -585,6 +585,15 @@
     <ClCompile Include="..\..\simgear\math\project.cxx">
       <Filter>Lib_sgmath</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_netBuffer.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_netChannel.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\simgear\io\sg_netChat.cxx">
+      <Filter>Lib_sgio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1170,6 +1179,15 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\math\project.hxx">
       <Filter>Lib_sgmath</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_netBuffer.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_netChannel.hxx">
+      <Filter>Lib_sgio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\io\sg_netChat.hxx">
+      <Filter>Lib_sgio</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

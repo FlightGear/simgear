@@ -201,6 +201,9 @@
     <ClCompile Include="..\..\simgear\io\raw_socket.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_binobj.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_file.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_netBuffer.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_netChannel.cxx" />
+    <ClCompile Include="..\..\simgear\io\sg_netChat.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_serial.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_socket.cxx" />
     <ClCompile Include="..\..\simgear\io\sg_socket_udp.cxx" />
@@ -390,6 +393,9 @@
     <ClInclude Include="..\..\simgear\io\raw_socket.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_binobj.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_file.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_netBuffer.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_netChannel.hxx" />
+    <ClInclude Include="..\..\simgear\io\sg_netChat.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_serial.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_socket.hxx" />
     <ClInclude Include="..\..\simgear\io\sg_socket_udp.hxx" />

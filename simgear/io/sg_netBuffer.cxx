@@ -25,6 +25,9 @@
 
 #include "sg_netBuffer.hxx"
 
+#include <cassert>
+#include <cstring>
+
 #include <simgear/debug/logstream.hxx>
 
 namespace simgear {

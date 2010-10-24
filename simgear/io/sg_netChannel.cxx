@@ -32,6 +32,8 @@
 #include "sg_netChannel.hxx"
 
 #include <memory>
+#include <cassert>
+#include <cstring>
 
 #include <simgear/debug/logstream.hxx>
 

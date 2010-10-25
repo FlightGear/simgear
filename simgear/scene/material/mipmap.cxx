@@ -22,6 +22,7 @@
 #include "EffectBuilder.hxx"
 
 #include <limits>
+#include <iomanip>
 
 #include <osg/Image>
 #include <osg/Vec4>
@@ -226,6 +227,42 @@ osg::Vec4 computeColor( osg::Vec4 colors[2][2][2], bool colorValid[2][2][2], Mip
     return result;
 }
 
+void dumpMipmap( std::string n, int s, int t, int r, int c, unsigned char *d, const osg::Image::MipmapDataType &o )
+{
+    std::ofstream ofs( (n + ".dump").c_str() );
+    for ( int i = 0; i < o.size()+1; ++i )
+    {
+        ofs << s << " " << t << " " << r << std::endl;
+        unsigned int offset = 0;
+        if ( i > 0 )
+            offset = o[i-1];
+        unsigned char *p = &d[offset];
+        for ( int l = 0; l < r; ++l )
+        {
+            for ( int k = 0; k < t; ++k )
+            {
+                for ( int j = 0; j < s; ++j )
+                {
+                    ofs << "(";
+                    for ( int m = 0; m < c; ++m )
+                    {
+                        if ( m != 0 )
+                            ofs << " ";
+                        ofs << std::setw(3) << (unsigned int)*p++;
+                    }
+                    ofs << ")";
+                }
+                ofs << std::endl;
+            }
+            ofs << std::endl;
+        }
+        ofs << std::endl;
+        s >>= 1; if ( s == 0 ) s = 1;
+        t >>= 1; if ( t == 0 ) t = 1;
+        r >>= 1; if ( r == 0 ) r = 1;
+    }
+}
+
 osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
 {
     bool computeMipmap = false;
@@ -349,6 +386,7 @@ osg::Image* computeMipmap( osg::Image* image, MipMapTuple attrs )
             t = nt;
             r = nr;
         }
+        //dumpMipmap( image->getFileName(), image->s(), image->t(), image->r(), osg::Image::computeNumComponents(image->getPixelFormat()), data, mipmapOffsets );
         mipmaps->setImage( image->s(), image->t(), image->r(), 
             image->getInternalTextureFormat(), image->getPixelFormat(),
             image->getDataType(), data, osg::Image::USE_NEW_DELETE, image->getPacking() );

@@ -15,7 +15,8 @@ include_HEADERS = \
 	TextureBuilder.hxx \
 	mat.hxx \
 	matlib.hxx \
-	matmodel.hxx
+	matmodel.hxx \
+	mipmap.hxx
 
 libsgmaterial_a_SOURCES = \
 	Effect.cxx \
@@ -30,6 +31,7 @@ libsgmaterial_a_SOURCES = \
 	mat.cxx \
 	matlib.cxx \
 	matmodel.cxx \
+	mipmap.cxx \
 	Noise.cxx Noise.hxx
 
 INCLUDES = -I$(top_srcdir)

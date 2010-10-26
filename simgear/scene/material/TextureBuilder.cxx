@@ -236,8 +236,8 @@ void setAttrs(const TexTuple& attrs, Texture* tex,
             = osgDB::Registry::instance()->readImage(imageName, options);
         if (result.success()) {
             osg::ref_ptr<osg::Image> image = result.getImage();
-            image = computeMipmap( image, attrs.get<7>() );
-            tex->setImage(GL_FRONT_AND_BACK, image);
+            image = computeMipmap( image.get(), attrs.get<7>() );
+            tex->setImage(GL_FRONT_AND_BACK, image.get());
             int s = image->s();
             int t = image->t();
             if (s <= t && 32 <= s) {

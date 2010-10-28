@@ -296,7 +296,7 @@ SGSocket::readline( char *buf, int length )
     int i;
     for ( i = 0; i < save_len && save_buf[i] != '\n'; ++i )
 	;
-    if ( save_buf[i] == '\n' ) {
+    if (( i < save_len ) && ( save_buf[i] == '\n' )) {
 	result = i + 1;
     } else {
 	// no end of line yet
@@ -305,9 +305,16 @@ SGSocket::readline( char *buf, int length )
 
     // we found an end of line
 
+    // check buffer size
+    int copy_length = result;
+    if (copy_length >= length) {
+	SG_LOG( SG_IO, SG_ALERT, 
+	        "Alert: readline() has line exceeding the buffer size." );
+	copy_length = length-1;
+    }
     // copy to external buffer
-    strncpy( buf, save_buf, result );
-    buf[result] = '\0';
+    strncpy( buf, save_buf, copy_length );
+    buf[copy_length] = '\0';
 
     // shift save buffer
     //memmove( save_buf+, save_buf+, ? );

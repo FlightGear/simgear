@@ -212,7 +212,10 @@ void SGPath::validate() const
 #ifdef _WIN32
   struct _stat buf ;
 
-  if (_stat (path.c_str(), &buf ) < 0) {
+  bool remove_trailing = false;
+  if ( path.length() > 1 && path[path.length()-1] == '/' )
+      remove_trailing=true;
+  if (_stat (path.substr(0,remove_trailing?path.length()-1:path.length()).c_str(), &buf ) < 0) {
     _exists = false;
   } else {
     _exists = true;

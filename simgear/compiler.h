@@ -109,6 +109,7 @@
 
 
 #if defined (__sun)
+#  define SG_UNIX
 #  include <strings.h>
 #  include <memory.h>
 #  if defined ( __cplusplus )
@@ -138,6 +139,8 @@
 //
 
 #ifdef __APPLE__
+#  define SG_MAC
+#  define SG_UNIX
 #  ifdef __GNUC__
 #    if ( __GNUC__ > 3 ) || ( __GNUC__ == 3 && __GNUC_MINOR__ >= 3 )
 inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
@@ -154,6 +157,7 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #endif
 
 #if defined (__FreeBSD__)
+#  define SG_UNIX
 #include <sys/param.h>
 #  if __FreeBSD_version < 500000
      extern "C" {
@@ -163,9 +167,19 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #endif
 
 #if defined (__CYGWIN__)
+#  define SG_WINDOWS
+#  define SG_UNIX
 #  include <ieeefp.h>		// isnan
 #endif
 
+// includes both MSVC and mingw compilers
+#if defined(_WIN32) || defined(__WIN32__)
+#  define SG_WINDOWS
+#endif
+
+#if defined(__linux__) || defined(_AIX) || defined ( sgi )
+#  define SG_UNIX
+#endif
 
 //
 // No user modifiable definitions beyond here.

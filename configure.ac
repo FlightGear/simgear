@@ -92,6 +92,10 @@ AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(compatibility_DIR)
 
+# Show all compiler warnings by default
+CXXFLAGS="$CXXFLAGS -Wall"
+CFLAGS="$CFLAGS -Wall"
+
 if echo $includedir | egrep "simgear$" > /dev/null; then
     echo "includedir is" $includedir "libdir is" $libdir
 else
@@ -135,7 +139,7 @@ if test "x$with_osg" != "x" ; then
     EXTRA_DIRS="${EXTRA_DIRS} $with_osg"
 fi
 
-AC_ARG_WITH(osg_framework, [ --with-osg-framework=PREFIX      Specify the prefix path to OSG.framework ])
+AC_ARG_WITH(osg_framework, [  --with-osg-framework=PREFIX     Specify the prefix path to OSG.framework ])
 
 if test "x$with_osg_framework" != "x"; then
     echo "osg framework prefix is $with_osg_framework"
@@ -144,7 +148,7 @@ if test "x$with_osg_framework" != "x"; then
 fi
 
 dnl specifying ALUT.framework (for user provided ALUT.framework)
-AC_ARG_WITH(alut_framework, [ --with-alut-framework=PREFIX    Specify the prefix path to ALUT.framework ])
+AC_ARG_WITH(alut_framework, [  --with-alut-framework=PREFIX    Specify the prefix path to ALUT.framework ])
 
 if test "x$with_alut_framework" != "x"; then
     echo "ALUT framework prefix is $with_alut_framework"

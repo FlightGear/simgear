@@ -13,6 +13,7 @@ include_HEADERS = \
 	persparam.hxx \
 	placement.hxx \
 	CheckSceneryVisitor.hxx \
+	ConditionNode.hxx \
 	SGClipGroup.hxx \
 	SGInteractionAnimation.hxx \
 	SGMaterialAnimation.hxx \
@@ -36,6 +37,7 @@ libsgmodel_a_SOURCES = \
 	placement.cxx \
 	shadanim.cxx \
 	CheckSceneryVisitor.cxx \
+	ConditionNode.cxx \
 	SGClipGroup.cxx \
 	SGInteractionAnimation.cxx \
 	SGMaterialAnimation.cxx \

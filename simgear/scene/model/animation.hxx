@@ -232,8 +232,6 @@ public:
   SGSelectAnimation(const SGPropertyNode* configNode,
                     SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
-private:
-  class UpdateCallback;
 };
 
 

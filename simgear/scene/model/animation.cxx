@@ -53,6 +53,8 @@
 #include "SGScaleTransform.hxx"
 #include "SGInteractionAnimation.hxx"
 
+#include "ConditionNode.hxx"
+
 using OpenThreads::Mutex;
 using OpenThreads::ReentrantMutex;
 using OpenThreads::ScopedLock;
@@ -1445,25 +1447,6 @@ SGRangeAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of a select animation
 ////////////////////////////////////////////////////////////////////////
 
-class SGSelectAnimation::UpdateCallback : public osg::NodeCallback {
-public:
-  UpdateCallback(const SGCondition* condition) :
-    _condition(condition)
-  {}
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    osg::Switch* sw = static_cast<osg::Switch*>(node);
-    if (_condition->test())
-      sw->setAllChildrenOn();
-    else
-      sw->setAllChildrenOff();
-    traverse(node, nv);
-  }
-
-private:
-  SGSharedPtr<SGCondition const> _condition;
-};
-
 SGSelectAnimation::SGSelectAnimation(const SGPropertyNode* configNode,
                                      SGPropertyNode* modelRoot) :
   SGAnimation(configNode, modelRoot)
@@ -1479,12 +1462,13 @@ SGSelectAnimation::createAnimationGroup(osg::Group& parent)
   // when the animation installer returns
   if (!condition)
     return new osg::Group;
-
-  osg::Switch* sw = new osg::Switch;
-  sw->setName("select animation node");
-  sw->setUpdateCallback(new UpdateCallback(condition));
-  parent.addChild(sw);
-  return sw;
+  simgear::ConditionNode* cn = new simgear::ConditionNode;
+  cn->setName("select animation node");
+  cn->setCondition(condition.ptr());
+  osg::Group* grp = new osg::Group;
+  cn->addChild(grp);
+  parent.addChild(cn);
+  return grp;
 }
 
 

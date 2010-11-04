@@ -597,6 +597,9 @@
     <ClCompile Include="..\..\simgear\scene\material\mipmap.cxx">
       <Filter>Lib_sgmaterial</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\scene\model\ConditionNode.cxx">
+      <Filter>Lib_sgmodel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1194,6 +1197,9 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\scene\material\mipmap.hxx">
       <Filter>Lib_sgmaterial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\scene\model\ConditionNode.hxx">
+      <Filter>Lib_sgmodel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

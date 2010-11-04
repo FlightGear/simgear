@@ -383,6 +383,9 @@ void SGSubsystemGroup::Member::updateExecutionTime(double time)
 
 SGSubsystemMgr::SGSubsystemMgr ()
 {
+  for (int i = 0; i < MAX_GROUPS; i++) {
+    _groups[i] = new SGSubsystemGroup;
+  }
 }
 
 SGSubsystemMgr::~SGSubsystemMgr ()
@@ -390,34 +393,38 @@ SGSubsystemMgr::~SGSubsystemMgr ()
   // ensure get_subsystem returns NULL from now onwards,
   // before the SGSubsystemGroup destructors are run
   _subsystem_map.clear();
+  
+  for (int i = 0; i < MAX_GROUPS; i++) {
+    delete _groups[i];
+  }
 }
 
 void
 SGSubsystemMgr::init ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-            _groups[i].init();
+            _groups[i]->init();
 }
 
 void
 SGSubsystemMgr::postinit ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-            _groups[i].postinit();
+            _groups[i]->postinit();
 }
 
 void
 SGSubsystemMgr::reinit ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-            _groups[i].reinit();
+            _groups[i]->reinit();
 }
 
 void
 SGSubsystemMgr::bind ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-        _groups[i].bind();
+        _groups[i]->bind();
 }
 
 void
@@ -425,14 +432,14 @@ SGSubsystemMgr::unbind ()
 {
     // reverse order to prevent order dependency problems
     for (int i = MAX_GROUPS-1; i >= 0; i--)
-        _groups[i].unbind();
+        _groups[i]->unbind();
 }
 
 void
 SGSubsystemMgr::update (double delta_time_sec)
 {
     for (int i = 0; i < MAX_GROUPS; i++) {
-        _groups[i].update(delta_time_sec);
+        _groups[i]->update(delta_time_sec);
     }
 }
 
@@ -440,7 +447,7 @@ void
 SGSubsystemMgr::collectDebugTiming(bool collect)
 {
     for (int i = 0; i < MAX_GROUPS; i++) {
-        _groups[i].collectDebugTiming(collect);
+        _groups[i]->collectDebugTiming(collect);
     }
 }
 
@@ -448,14 +455,14 @@ void
 SGSubsystemMgr::suspend ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-        _groups[i].suspend();
+        _groups[i]->suspend();
 }
 
 void
 SGSubsystemMgr::resume ()
 {
     for (int i = 0; i < MAX_GROUPS; i++)
-        _groups[i].resume();
+        _groups[i]->resume();
 }
 
 bool
@@ -491,8 +498,8 @@ SGSubsystemMgr::remove(const char* name)
   
 // tedious part - we don't know which group the subsystem belongs too
   for (int i = 0; i < MAX_GROUPS; i++) {
-    if (_groups[i].get_subsystem(name) == sub) {
-      _groups[i].remove_subsystem(name);
+    if (_groups[i]->get_subsystem(name) == sub) {
+      _groups[i]->remove_subsystem(name);
       break;
     }
   } // of groups iteration
@@ -504,7 +511,7 @@ SGSubsystemMgr::remove(const char* name)
 SGSubsystemGroup *
 SGSubsystemMgr::get_group (GroupType group)
 {
-    return &(_groups[group]);
+    return _groups[group];
 }
 
 SGSubsystem *

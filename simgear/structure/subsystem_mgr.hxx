@@ -418,7 +418,7 @@ public:
 
 private:
 
-    SGSubsystemGroup _groups[MAX_GROUPS];
+    SGSubsystemGroup* _groups[MAX_GROUPS];
     
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;

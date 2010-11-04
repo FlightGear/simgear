@@ -27,6 +27,7 @@
 #include <simgear/scene/material/Pass.hxx>
 #include <simgear/scene/material/Technique.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/model/ConditionNode.hxx>
 
 using namespace std;
 using namespace simgear;
@@ -340,9 +341,7 @@ public:
 class UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const osgDB::FilePathList& texturePathList,
-                 const SGCondition* condition,
                  const SGPropertyNode* configNode, SGPropertyNode* modelRoot) :
-    _condition(condition),
     _materialProps(configNode, modelRoot),
     _texturePathList(texturePathList),
     _prevState(false)
@@ -360,7 +359,7 @@ public:
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     osg::StateSet* stateSet = node->getStateSet();
-    if ((!_condition || _condition->test()) && stateSet) {
+    if (stateSet) {
       if (_textureProp) {
         std::string textureName = _textureProp->getStringValue();
         if (_textureName != textureName) {
@@ -400,7 +399,6 @@ public:
     traverse(node, nv);
   }
 private:
-  SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGPropertyNode> _textureProp;
   SGSharedPtr<const SGPropertyNode> _thresholdProp;
   std::string _textureName;
@@ -557,13 +555,23 @@ SGMaterialAnimation::createAnimationGroup(osg::Group& parent)
       || getConfig()->hasChild("threshold-prop") || getCondition()) {
     stateSet->setDataVariance(osg::Object::DYNAMIC);
     group->setUpdateCallback(new UpdateCallback(texturePathList,
-                                                getCondition(),
                                                 getConfig(), inputRoot));
   } else {
     stateSet->setDataVariance(osg::Object::STATIC);
   }
-  parent.addChild(group);
-  return group;
+  if (getCondition()) {
+    ConditionNode* cn = new ConditionNode;
+    cn->setCondition(getCondition());
+    osg::Group* modelGroup = new osg::Group;
+    group->addChild(modelGroup);
+    cn->addChild(group);
+    cn->addChild(modelGroup);
+    parent.addChild(cn);
+    return modelGroup;
+  } else {
+    parent.addChild(group);
+    return group;
+  }
 }
 
 void

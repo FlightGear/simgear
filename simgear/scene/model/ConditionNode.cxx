@@ -17,6 +17,8 @@
 
 #include "ConditionNode.hxx"
 
+#include <simgear/math/SGMath.hxx>
+
 namespace simgear
 {
 using namespace osg;

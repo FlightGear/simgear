@@ -1026,6 +1026,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\model\ConditionNode.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\model\ConditionNode.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\model\model.cxx"
 				>
 			</File>

@@ -190,11 +190,12 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 	const int buflen = 512;
 	char buf[2 * buflen];
 
-	string host = proxy.empty() ? "weather.noaa.gov" : proxy;
+	string metar_server = "weather.noaa.gov";
+	string host = proxy.empty() ? metar_server : proxy;
 	string path = "/pub/data/observations/metar/stations/";
 
 	path += string(id) + ".TXT";
-	_url = "http://weather.noaa.gov" + path;
+	_url = "http://" + metar_server + path;
 
 	SGSocket *sock = new SGSocket(host, port.empty() ? "80" : port, "tcp");
 	sock->set_timeout(10000);
@@ -205,10 +206,11 @@ char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
 
 	string get = "GET ";
 	if (!proxy.empty())
-		get += "http://weather.noaa.gov";
+		get += "http://" + metar_server;
 
 	sprintf(buf, "%ld", time);
 	get += path + " HTTP/1.0\015\012X-Time: " + buf + "\015\012";
+	get += "Host: " + metar_server + "\015\012";
 
 	if (!auth.empty())
 		get += "Proxy-Authorization: " + auth + "\015\012";

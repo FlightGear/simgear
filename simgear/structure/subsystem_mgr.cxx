@@ -39,6 +39,11 @@ SGSubsystem::reinit ()
 }
 
 void
+SGSubsystem::shutdown ()
+{
+}
+
+void
 SGSubsystem::bind ()
 {
 }
@@ -139,6 +144,14 @@ SGSubsystemGroup::reinit ()
 {
     for (unsigned int i = 0; i < _members.size(); i++)
         _members[i]->subsystem->reinit();
+}
+
+void
+SGSubsystemGroup::shutdown ()
+{
+    // reverse order to prevent order dependency problems
+    for (unsigned int i = _members.size(); i > 0; i--)
+        _members[i-1]->subsystem->shutdown();
 }
 
 void
@@ -419,6 +432,15 @@ SGSubsystemMgr::reinit ()
     for (int i = 0; i < MAX_GROUPS; i++)
             _groups[i]->reinit();
 }
+
+void
+SGSubsystemMgr::shutdown ()
+{
+    // reverse order to prevent order dependency problems
+    for (int i = MAX_GROUPS-1; i >= 0; i--)
+        _groups[i]->shutdown();
+}
+
 
 void
 SGSubsystemMgr::bind ()

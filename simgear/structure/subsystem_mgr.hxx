@@ -170,6 +170,16 @@ public:
 
 
   /**
+   * Shutdown the subsystem.
+   *
+   * <p>Release any state associated with subsystem. Shutdown happens in
+   * the reverse order to init(), so this is the correct place to do
+   * shutdown that depends on other subsystems.
+   * </p>
+   */
+  virtual void shutdown ();
+   
+  /**
    * Acquire the subsystem's property bindings.
    *
    * <p>This method should bind all properties that the subsystem
@@ -297,6 +307,7 @@ public:
     virtual void init ();
     virtual void postinit ();
     virtual void reinit ();
+    virtual void shutdown ();
     virtual void bind ();
     virtual void unbind ();
     virtual void update (double delta_time_sec);
@@ -392,6 +403,7 @@ public:
     virtual void init ();
     virtual void postinit ();
     virtual void reinit ();
+    virtual void shutdown ();
     virtual void bind ();
     virtual void unbind ();
     virtual void update (double delta_time_sec);

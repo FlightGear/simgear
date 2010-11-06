@@ -46,7 +46,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_39_0"
+				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_44_0"
 				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -117,7 +117,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0"
+				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_44_0"
 				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -187,7 +187,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_39_0"
+				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_44_0"
 				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -258,7 +258,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_39_0"
+				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_44_0"
 				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

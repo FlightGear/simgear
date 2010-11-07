@@ -2068,6 +2068,8 @@ SGPropertyNode::addChangeListener (SGPropertyChangeListener * listener,
 void
 SGPropertyNode::removeChangeListener (SGPropertyChangeListener * listener)
 {
+  if (_listeners == 0)
+    return;
   vector<SGPropertyChangeListener*>::iterator it =
     find(_listeners->begin(), _listeners->end(), listener);
   if (it != _listeners->end()) {

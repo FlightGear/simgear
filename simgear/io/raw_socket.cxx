@@ -200,7 +200,7 @@ bool Socket::open ( bool stream )
   if ( stream ) {
     int opt_boolean = 1;
     setsockopt( handle, SOL_SOCKET, SO_REUSEADDR,
-                &opt_boolean, sizeof(opt_boolean) );
+                (char *)&opt_boolean, sizeof(opt_boolean) );
   }
 
   return (handle != -1);

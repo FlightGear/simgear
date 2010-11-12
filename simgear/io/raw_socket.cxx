@@ -190,6 +190,19 @@ bool Socket::open ( bool stream )
 {
   close () ;
   handle = ::socket ( AF_INET, (stream? SOCK_STREAM: SOCK_DGRAM), 0 ) ;
+
+  // Jan 26, 2010: Patch to avoid the problem of the socket resource not
+  // yet being available if the program is restarted quickly after being
+  // killed.
+  //
+  // Reference: http://www.unixguide.net/network/socketfaq/4.5.shtml
+  //
+  if ( stream ) {
+    int opt_boolean = 1;
+    setsockopt( handle, SOL_SOCKET, SO_REUSEADDR,
+                &opt_boolean, sizeof(opt_boolean) );
+  }
+
   return (handle != -1);
 }
 

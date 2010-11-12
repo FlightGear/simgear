@@ -199,8 +199,13 @@ bool Socket::open ( bool stream )
   //
   if ( stream ) {
     int opt_boolean = 1;
-    setsockopt( handle, SOL_SOCKET, SO_REUSEADDR,
-                (char *)&opt_boolean, sizeof(opt_boolean) );
+#if defined(_WIN32) || defined(__CYGWIN__)
+    setsockopt( handle, SOL_SOCKET, SO_REUSEADDR, (char *)&opt_boolean,
+		sizeof(opt_boolean) );
+#else
+    setsockopt( handle, SOL_SOCKET, SO_REUSEADDR, &opt_boolean,
+		sizeof(opt_boolean) );
+#endif
   }
 
   return (handle != -1);

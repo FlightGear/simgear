@@ -1,8 +1,0 @@
-.deps
-Makefile
-Makefile.in
-decode_binobj
-lowtest
-socktest
-tcp_client
-tcp_server

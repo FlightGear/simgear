@@ -106,6 +106,8 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     return result;
   }
   
+  int filterLen = nameFilter.size();
+  
   while (true) {
     struct dirent* entry = readdir(dp);
     if (!entry) {
@@ -144,7 +146,13 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     }
 
     if (!nameFilter.empty()) {
-      if (strstr(entry->d_name, nameFilter.c_str()) == NULL) {
+      int nameLen = strlen(entry->d_name);
+      if (nameLen < filterLen) {
+        continue; // name is shorter than the filter
+      }
+    
+      char* nameSuffix = entry->d_name + (nameLen - filterLen);
+      if (strcmp(nameSuffix, nameFilter.c_str())) {
         continue;
       }
     }

@@ -1658,15 +1658,6 @@ private:
    */
   void trace_write () const;
 
-
-  /**
-   * Remove this node from all nodes that link to it in their path cache.
-   */
-  void remove_from_path_caches();
-
-
-  class hash_table;
-
   int _index;
   std::string _name;
   /// To avoid cyclic reference counting loops this shall not be a reference
@@ -1674,9 +1665,7 @@ private:
   SGPropertyNode * _parent;
   simgear::PropertyList _children;
   simgear::PropertyList _removedChildren;
-  std::vector<hash_table *> _linkedNodes;
   mutable std::string _buffer;
-  hash_table * _path_cache;
   simgear::props::Type _type;
   bool _tied;
   int _attr;
@@ -1698,66 +1687,7 @@ private:
 
   std::vector<SGPropertyChangeListener *> * _listeners;
 
-
-  /**
-   * Register/unregister node that links to this node in its path cache.
-   */
-  void add_linked_node (hash_table * node) { _linkedNodes.push_back(node); }
-  bool remove_linked_node (hash_table * node);
-
-
 
-  /**
-   * A very simple hash table.
-   */
-  class hash_table {
-  public:
-
-    /**
-     * An entry in a bucket in a hash table.
-     */
-    class entry {
-    public:
-      entry ();
-      ~entry ();
-      const char * get_key () { return _key.c_str(); }
-      void set_key (const char * key);
-      SGPropertyNode * get_value () { return _value; }
-      void set_value (SGPropertyNode * value);
-    private:
-      std::string _key;
-      SGSharedPtr<SGPropertyNode> _value;
-    };
-
-
-    /**
-     * A bucket in a hash table.
-     */
-    class bucket {
-    public:
-      bucket ();
-      ~bucket ();
-      entry * get_entry (const char * key, bool create = false);
-      bool erase (SGPropertyNode * node);
-      void clear (hash_table * owner);
-    private:
-      int _length;
-      entry ** _entries;
-    };
-
-    friend class bucket;
-
-    hash_table ();
-    ~hash_table ();
-    SGPropertyNode * get (const char * key);
-    void put (const char * key, SGPropertyNode * value);
-    bool erase (SGPropertyNode * node);
-
-  private:
-    unsigned int hashcode (const char * key);
-    unsigned int _data_length;
-    bucket ** _data;
-  };
   // Pass name as a pair of iterators
   template<typename Itr>
   SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);

@@ -279,7 +279,7 @@ struct ColorMaskBuilder : PassAttributeBuilder
 
         ColorMask *mask = new ColorMask;
         Vec4 m = getColor(realProp);
-        mask->setMask(m.r(), m.g(), m.b(), m.a());
+        mask->setMask(m.r() > 0.0, m.g() > 0.0, m.b() > 0.0, m.a() > 0.0);
         pass->setAttributeAndModes(mask);
     }    
 };

@@ -209,6 +209,7 @@ osg::Vec4::value_type computeComponent( int c, osg::Vec4 colors[2][2][2], bool c
     case PRODUCT: return computeProduct( c, colors, colorValid );
     case MIN: return computeMin( c, colors, colorValid );
     case MAX: return computeMax( c, colors, colorValid );
+    default: break;
     }
     return 0;
 }
@@ -230,7 +231,7 @@ osg::Vec4 computeColor( osg::Vec4 colors[2][2][2], bool colorValid[2][2][2], Mip
 void dumpMipmap( std::string n, int s, int t, int r, int c, unsigned char *d, const osg::Image::MipmapDataType &o )
 {
     std::ofstream ofs( (n + ".dump").c_str() );
-    for ( int i = 0; i < o.size()+1; ++i )
+    for ( osg::Image::MipmapDataType::size_type i = 0; i < o.size()+1; ++i )
     {
         ofs << s << " " << t << " " << r << std::endl;
         unsigned int offset = 0;

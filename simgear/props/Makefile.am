@@ -7,13 +7,15 @@ include_HEADERS = \
 	props.hxx \
 	props_io.hxx \
 	AtomicChangeListener.hxx \
-	ExtendedPropertyAdapter.hxx
+	ExtendedPropertyAdapter.hxx \
+	propertyObject.hxx
 
 libsgprops_a_SOURCES = \
 	condition.cxx \
 	props.cxx \
 	props_io.cxx \
-	AtomicChangeListener.cxx
+	AtomicChangeListener.cxx \
+	propertyObject.cxx
 
 check_PROGRAMS = props_test
 

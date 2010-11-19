@@ -29,10 +29,11 @@
 
 using namespace simgear;
 
-CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range)
+CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range,
+                                         osg::FrameStamp* framestamp)
 :osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
                   osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
-_position(position), _range(range), _loaded(true), _dbp(dbp)
+_position(position), _range(range), _loaded(true), _dbp(dbp), _framestamp(framestamp)
 {
     _viewMatrices.push_back(osg::Matrix::identity());
 }
@@ -53,7 +54,7 @@ void CheckSceneryVisitor::apply(osg::PagedLOD& node)
                 // if the DatabasePager would load LODs while the splashscreen
                 // is there, we could just wait for the models to be loaded
                 // by only setting setLoaded(false) here
-                sgplod->forceLoad(_dbp);
+                sgplod->forceLoad(_dbp,_framestamp);
                 setLoaded(false);
             }
         }

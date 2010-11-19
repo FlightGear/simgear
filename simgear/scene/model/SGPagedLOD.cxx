@@ -60,14 +60,14 @@ bool SGPagedLOD::addChild(osg::Node *child)
     return true;
 }
 
-void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp)
+void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp, osg::FrameStamp* framestamp)
 {
     //SG_LOG(SG_GENERAL, SG_ALERT, "SGPagedLOD::forceLoad(" <<
     //getFileName(getNumChildren()) << ")");
     unsigned childNum = getNumChildren();
     setTimeStamp(childNum, 0);
     double priority=1.0;
-    dbp->requestNodeFile(getFileName(childNum),this,priority,0,
+    dbp->requestNodeFile(getFileName(childNum),this,priority,framestamp,
                          getDatabaseRequest(childNum),
                          _readerWriterOptions.get());
 }

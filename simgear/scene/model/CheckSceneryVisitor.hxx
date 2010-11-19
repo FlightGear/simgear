@@ -38,7 +38,7 @@ class SGPagedLOD;
 class CheckSceneryVisitor : public osg::NodeVisitor
 {
 public:
-    CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range);
+    CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range, osg::FrameStamp* framestamp);
 
     virtual void apply(osg::Node& node);
     virtual void apply(osg::PagedLOD& node);
@@ -59,6 +59,7 @@ private:
     double _range;
     bool _loaded;
     osgDB::DatabasePager* _dbp;
+    osg::FrameStamp* _framestamp;
 
     osg::fast_back_stack<osg::Matrix> _viewMatrices;
 };

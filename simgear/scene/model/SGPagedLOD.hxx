@@ -43,7 +43,7 @@ public:
     META_Node(simgear, SGPagedLOD);
 
     // virtual void traverse(osg::NodeVisitor& nv);
-    virtual void forceLoad(osgDB::DatabasePager* dbp);
+    virtual void forceLoad(osgDB::DatabasePager* dbp, osg::FrameStamp* framestamp);
 
     // reimplemented to notify the loading through ModelData
     bool addChild(osg::Node *child);

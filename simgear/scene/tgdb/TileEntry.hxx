@@ -74,15 +74,16 @@ private:
                           const osgDB::ReaderWriter::Options* options);
 
     /**
-     * this value is used by the tile scheduler/loader to mark which
-     * tiles are in the primary ring (i.e. the current tile or the
-     * surrounding eight.)  Other routines then can use this as an
-     * optimization and not do some operation to tiles outside of this
-     * inner ring.  (For instance vasi color updating)
+     * This value is used by the tile scheduler/loader to load tiles
+     * in a useful sequence. The priority is set to reflect the tiles
+     * distance from the center, so all tiles are loaded in an innermost
+     * to outermost sequence.
      */
-    bool is_inner_ring;
-    bool is_cache_locked;
-    double timestamp;
+    float _priority;
+    /** Flag indicating if tile belongs to current view. */ 
+    bool _current_view;
+    /** Time when tile expires. */ 
+    double _time_expired;
 
     static ModelLoadHelper *_modelLoader;
 
@@ -136,13 +137,19 @@ public:
      */
     osg::LOD *getNode() const { return _node.get(); }
 
-    double get_timestamp() const;
-    void set_timestamp( double time_ms );
+    inline double get_time_expired() const { return _time_expired; }
+    inline void update_time_expired( double time_expired ) { if (_time_expired<time_expired) _time_expired = time_expired; }
 
-    inline bool get_inner_ring() const { return is_inner_ring; }
-    inline void set_inner_ring( bool val ) { is_inner_ring = val; }
-    inline void set_cache_lock( bool val ) { is_cache_locked = val; }
-    inline bool get_cache_lock() const { return is_cache_locked; }
+    inline void set_priority(float priority) { _priority=priority; }
+    inline float get_priority() const { return _priority; }
+    inline void set_current_view(bool current_view) { _current_view = current_view; }
+    inline bool is_current_view() const { return _current_view; }
+
+    /**
+     * Return true if the tile entry is still needed, otherwise return false
+     * indicating that the tile is no longer in active use.
+     */
+    inline bool is_expired(double current_time) const { return (_current_view) ? false : (current_time > _time_expired); }
 
     // Get the ref_ptr to the DatabaseRequest object, in order to pass
     // this to the pager.

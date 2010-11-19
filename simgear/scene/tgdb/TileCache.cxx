@@ -1,4 +1,4 @@
-// newcache.cxx -- routines to handle scenery tile caching
+// TileCache.cxx -- routines to handle scenery tile caching
 //
 // Written by Curtis Olson, started December 2000.
 //
@@ -51,10 +51,9 @@ void TileCache::entry_free( long cache_index ) {
     SG_LOG( SG_TERRAIN, SG_DEBUG, "FREEING CACHE ENTRY = " << cache_index );
     TileEntry *tile = tile_cache[cache_index];
     tile->removeFromSceneGraph();
+    tile_cache.erase( cache_index );
 
     delete tile;
-
-    tile_cache.erase( cache_index );
 }
 
 
@@ -84,13 +83,12 @@ bool TileCache::exists( const SGBucket& b ) const {
 }
 
 
-// Return the index of the oldest tile in the cache, return -1 if
+// Return the index of a tile to be dropped from the cache, return -1 if
 // nothing available to be removed.
-long TileCache::get_oldest_tile() {
-    // we need to free the furthest entry
+long TileCache::get_drop_tile() {
     long min_index = -1;
-    double timestamp = 0.0;
     double min_time = DBL_MAX;
+    float priority = FLT_MAX;
 
     tile_map_iterator current = tile_cache.begin();
     tile_map_iterator end = tile_cache.end();
@@ -98,20 +96,27 @@ long TileCache::get_oldest_tile() {
     for ( ; current != end; ++current ) {
         long index = current->first;
         TileEntry *e = current->second;
-        if (e->get_cache_lock())
+        if (( !e->is_current_view() )&&
+            ( e->is_expired(current_time) ))
         {
-            // tile locked to cache => must not be dropped
-        }
-        else
-        if ( e->is_loaded() ) {
-            timestamp = e->get_timestamp();
-            if ( timestamp < min_time ) {
-                min_time = timestamp;
+            if (e->is_expired(current_time - 1.0)&&
+                !e->is_loaded())
+            {
+                /* Immediately drop "empty" tiles which are no longer used/requested, and were last requested > 1 second ago...
+                 * Allow a 1 second timeout since an empty tiles may just be loaded...
+                 */
+                SG_LOG( SG_TERRAIN, SG_DEBUG, "    dropping an unused and empty tile");
+                break;
+            }
+            if (( e->get_time_expired() < min_time )||
+                (( e->get_time_expired() == min_time)&&
+                 ( priority > e->get_priority())))
+            {
+                // drop oldest tile with lowest priority
+                min_time = e->get_time_expired();
+                priority = e->get_priority();
                 min_index = index;
             }
-        } else {
-            SG_LOG( SG_TERRAIN, SG_DEBUG, "loaded = " << e->is_loaded()
-                    << " time stamp = " << e->get_timestamp() );
         }
     }
 
@@ -122,35 +127,19 @@ long TileCache::get_oldest_tile() {
 }
 
 
-// Clear the inner ring flag for all tiles in the cache so that the
-// external tile scheduler can flag the inner ring correctly.
-void TileCache::clear_inner_ring_flags() {
-    tile_map_iterator current = tile_cache.begin();
-    tile_map_iterator end = tile_cache.end();
-
-    for ( ; current != end; ++current ) {
-        TileEntry *e = current->second;
-        //if ( e->is_loaded() ) {
-            e->set_inner_ring( false );
-        //}
-    }
-}
-
-// Clear all locked flags for all tiles in the cache.
-// (Tiles belonging to the current position are locked to
-//  the cache to prevent them from being dropped).
-void TileCache::clear_cache_lock_flags()
+// Clear all flags indicating tiles belonging to the current view
+void TileCache::clear_current_view()
 {
     tile_map_iterator current = tile_cache.begin();
     tile_map_iterator end = tile_cache.end();
 
     for ( ; current != end; ++current ) {
         TileEntry *e = current->second;
-        if (e->get_cache_lock())
+        if (e->is_current_view())
         {
-            // update timestamps for tiles belonging to most recent position
-            e->set_timestamp( current_time );
-            e->set_cache_lock( false );
+            // update expiry time for tiles belonging to most recent position
+            e->update_time_expired( current_time );
+            e->set_current_view( false );
         }
     }
 }
@@ -190,8 +179,31 @@ bool TileCache::insert_tile( TileEntry *e ) {
     // register tile in the cache
     long tile_index = e->get_tile_bucket().gen_index();
     tile_cache[tile_index] = e;
-    e->set_timestamp(current_time);
+    e->update_time_expired(current_time);
 
     return true;
 }
 
+// update tile's priority and expiry time according to current request
+void TileCache::request_tile(TileEntry* t,float priority,bool current_view,double request_time)
+{
+    if ((!current_view)&&(request_time<=0.0))
+        return;
+
+    // update priority when hire - or old has expired
+    if ((t->is_expired(current_time))||
+         (priority > t->get_priority()))
+    {
+        t->set_priority( priority );
+    }
+
+    if (current_view)
+    {
+        t->update_time_expired( current_time );
+        t->set_current_view( true );
+    }
+    else
+    {
+        t->update_time_expired( current_time+request_time );
+    }
+}

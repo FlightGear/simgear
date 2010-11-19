@@ -1,4 +1,4 @@
-// newcache.hxx -- routines to handle scenery tile caching
+// TileCache.hxx -- routines to handle scenery tile caching
 //
 // Written by Curtis Olson, started December 2000.
 //
@@ -49,10 +49,10 @@ private:
     // pointers to allow an external linear traversal of cache entries
     tile_map_iterator current;
 
+    double current_time;
+
     // Free a tile cache entry
     void entry_free( long cache_index );
-
-    double current_time;
 
 public:
     tile_map_iterator begin() { return tile_cache.begin(); }
@@ -72,18 +72,12 @@ public:
     // Check if the specified "bucket" exists in the cache
     bool exists( const SGBucket& b ) const;
 
-    // Return the index of the oldest tile in the cache, return -1 if
+    // Return the index of a tile to be dropped from the cache, return -1 if
     // nothing available to be removed.
-    long get_oldest_tile();
-
-    // Clear the inner ring flag for all tiles in the cache so that
-    // the external tile scheduler can flag the inner ring correctly.
-    void clear_inner_ring_flags();
-
-    // Clear all locked flags for all tiles in the cache.
-    // (Tiles belonging to the current position are locked to
-    //  the cache to prevent them from being dropped).
-    void clear_cache_lock_flags();
+    long get_drop_tile();
+    
+    // Clear all flags indicating tiles belonging to the current view
+    void clear_current_view();
 
     // Clear a cache entry, note that the cache only holds pointers
     // and this does not free the object which is pointed to.
@@ -131,6 +125,9 @@ public:
 
     void set_current_time(double val) { current_time = val; }
     double get_current_time() const { return current_time; }
+
+    // update tile's priority and expiry time according to current request
+    void request_tile(TileEntry* t,float priority,bool current_view,double requesttime);
 };
 
 }

@@ -64,77 +64,16 @@ osgDB::RegisterReaderWriterProxy<ReaderWriterSTG> g_readerWriterSTGProxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
 }
 
-#ifdef USE_CULLCALLBACK_TS
-namespace
-{
-// Update the timestamp on a tile whenever it is in view.
-
-class TileCullCallback : public osg::NodeCallback
-{
-public:
-    TileCullCallback() : _timeStamp(0) {}
-    TileCullCallback(const TileCullCallback& tc, const osg::CopyOp& copyOp) :
-        NodeCallback(tc, copyOp), _timeStamp(tc._timeStamp)
-    {
-    }
-
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-    double getTimeStamp() const { return _timeStamp; }
-    void setTimeStamp(double timeStamp) { _timeStamp = timeStamp; }
-protected:
-    double _timeStamp;
-};
-}
-
-void TileCullCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
-{
-    if (nv->getFrameStamp())
-        _timeStamp = nv->getFrameStamp()->getReferenceTime();
-    traverse(node, nv);
-}
-#endif
-
-double TileEntry::get_timestamp() const
-{
-#ifdef USE_CULLCALLBACK_TS
-    if (_node.valid()) {
-        return (dynamic_cast<TileCullCallback*>(_node->getCullCallback()))
-            ->getTimeStamp();
-    } else
-        return DBL_MAX;
-#else
-    return timestamp;
-#endif
-}
-
-void TileEntry::set_timestamp(double time_ms)
-{
-#ifdef USE_CULLCALLBACK_TS
-    if (_node.valid()) {
-        TileCullCallback* cb
-            = dynamic_cast<TileCullCallback*>(_node->getCullCallback());
-        if (cb)
-            cb->setTimeStamp(time_ms);
-    }
-#else
-    timestamp = time_ms;
-#endif
-}
 
 // Constructor
 TileEntry::TileEntry ( const SGBucket& b )
     : tile_bucket( b ),
       tileFileName(b.gen_index_str()),
       _node( new osg::LOD ),
-      is_inner_ring(false)
-      ,is_cache_locked(false)
-#ifndef USE_CULLCALLBACK_TS
-      ,timestamp(0.0)
-#endif
+      _priority(-FLT_MAX),
+      _current_view(false),
+      _time_expired(-1.0)
 {
-#ifdef USE_CULLCALLBACK_TS
-    _node->setCullCallback(new TileCullCallback);
-#endif
     tileFileName += ".stg";
     _node->setName(tileFileName);
     // Give a default LOD range so that traversals that traverse
@@ -462,4 +401,3 @@ TileEntry::removeFromSceneGraph()
         }
     }
 }
-

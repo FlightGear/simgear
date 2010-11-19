@@ -46,7 +46,7 @@ using namespace simgear;
 osgDB::RegisterReaderWriterProxy<SGReaderWriterXML> g_readerWriter_XML_Proxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_xmlCallbackProxy("xml");
 
-SGPropertyNode_ptr SGModelLib::static_propRoot;
+SGPropertyNode_ptr SGModelLib::static_propRoot;
 SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
 
 ////////////////////////////////////////////////////////////////////////

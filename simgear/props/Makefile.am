@@ -17,7 +17,8 @@ libsgprops_a_SOURCES = \
 	AtomicChangeListener.cxx \
 	propertyObject.cxx
 
-check_PROGRAMS = props_test
+check_PROGRAMS = props_test propertyObject_test
+TESTS           = propertyObject_test
 
 props_test_SOURCES = props_test.cxx
 props_test_LDADD = \
@@ -26,6 +27,15 @@ props_test_LDADD = \
 	$(top_builddir)/simgear/misc/libsgmisc.a \
 	$(top_builddir)/simgear/debug/libsgdebug.a \
 	$(top_builddir)/simgear/structure/libsgstructure.a
+
+propertyObject_test_SOURCES = propertyObject_test.cxx
+propertyObject_test_LDADD = \
+	libsgprops.a \
+	$(top_builddir)/simgear/xml/libsgxml.a \
+	$(top_builddir)/simgear/misc/libsgmisc.a \
+	$(top_builddir)/simgear/debug/libsgdebug.a \
+	$(top_builddir)/simgear/structure/libsgstructure.a
+
 
 if HAVE_FRAMEWORK_OSG
 props_test_LDFLAGS = $(openthreads_FRAMEWORK)

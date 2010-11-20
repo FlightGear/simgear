@@ -29,6 +29,8 @@ class PropertyObjectBase
 public:
   static void setDefaultRoot(SGPropertyNode* aRoot);
   
+  PropertyObjectBase(const PropertyObjectBase& aOther);
+    
   PropertyObjectBase(const char* aChild);
   
   PropertyObjectBase(SGPropertyNode* aNode, const char* aChild = NULL);
@@ -61,6 +63,12 @@ public:
   
   }
   
+// copy-constructor
+  PropertyObject(const PropertyObject<T>& aOther) :
+    PropertyObjectBase(aOther)
+  {
+  }
+
 // create() form creates the property immediately
   static PropertyObject<T> create(const char* aPath, T aValue)
   {
@@ -86,7 +94,7 @@ public:
 // conversion operators
   operator T () const
   {
-    SGPropertyNode* n = node(false);
+    SGPropertyNode* n = node();
     if (!n) {
       throw sg_exception("read of undefined property:", _path);
     }
@@ -96,7 +104,7 @@ public:
 
   T operator=(const T& aValue)
   {
-    SGPropertyNode* n = node(true);
+    SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
       return aValue;
     }
@@ -105,6 +113,10 @@ public:
     return aValue;
   }
 
+  SGPropertyNode* node() const
+  {
+    return PropertyObjectBase::node(false);
+  }
 }; // of template PropertyObject
 
 
@@ -130,7 +142,7 @@ public:
   
   operator std::string () const
   {
-    SGPropertyNode* n = node(false);
+    SGPropertyNode* n = node();
     if (!n) {
       throw sg_exception("read of undefined property:", _path);
     }
@@ -140,7 +152,7 @@ public:
   
   const char* operator=(const char* aValue)
   {
-    SGPropertyNode* n = node(true);
+    SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
       return aValue;
     }
@@ -151,7 +163,7 @@ public:
   
   std::string operator=(const std::string& aValue)
   {
-    SGPropertyNode* n = node(true);
+    SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
       return aValue;
     }
@@ -160,6 +172,22 @@ public:
     return aValue;
   }
   
+  bool operator==(const char* value) const
+  {
+    std::string s(*this);
+    return (s == value);    
+  }
+
+  bool operator==(const std::string& value) const
+  {
+    std::string s(*this);
+    return (s == value);    
+  }
+
+  SGPropertyNode* node() const
+  {
+    return PropertyObjectBase::node(false);
+  }
 private:
 };
 

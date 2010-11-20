@@ -31,6 +31,14 @@ void PropertyObjectBase::setDefaultRoot(SGPropertyNode* aRoot)
   static_defaultRoot = aRoot;
 }
 
+PropertyObjectBase::PropertyObjectBase(const PropertyObjectBase& aOther) :
+  _base(aOther._base),
+  _path(aOther._path),
+  _prop(aOther._prop)
+{
+
+}
+
 PropertyObjectBase::PropertyObjectBase(const char* aChild) :
   _base(NULL),
   _path(aChild),
@@ -62,30 +70,3 @@ SGPropertyNode* PropertyObjectBase::node(bool aCreate) const
 
 } // of namespace simgear
 
-void test()
-{
-  SGPropObjDouble foo("/bar/foo");
-
-  SGPropertyNode* zoob;
-
-  SGPropObjDouble foo2 = SGPropObjDouble::create(zoob, "foo2", 42.0);
-  
-  foo = 1123.0;
-  foo2 =  43;
-  
-  std::string s("lalala");
-  
-  foo = "lalal";
-  
-  
-  SGPropObjString sp(zoob);
-  sp = "fooo";
-  s =  sp;
-  
-
-  SGPropObjBool bp("/some nice big path");
-  bp = false;
-  
-  bp = 456;
-  int i5 = bp;
-}

@@ -603,6 +603,9 @@
     <ClCompile Include="..\..\simgear\props\propertyObject.cxx">
       <Filter>Lib_sgprops</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\misc\sg_sleep.cxx">
+      <Filter>Lib_sgmisc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1206,6 +1209,9 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\props\propertyObject.hxx">
       <Filter>Lib_sgprops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\misc\sg_sleep.hxx">
+      <Filter>Lib_sgmisc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

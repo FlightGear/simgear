@@ -220,6 +220,7 @@
     <ClCompile Include="..\..\simgear\misc\sg_dir.cxx" />
     <ClCompile Include="..\..\simgear\misc\sg_path.cxx" />
     <ClCompile Include="..\..\simgear\misc\sgstream.cxx" />
+    <ClCompile Include="..\..\simgear\misc\sg_sleep.cxx" />
     <ClCompile Include="..\..\simgear\misc\strutils.cxx" />
     <ClCompile Include="..\..\simgear\misc\tabbed_values.cxx" />
     <ClCompile Include="..\..\simgear\misc\texcoord.cxx" />
@@ -422,6 +423,7 @@
     <ClInclude Include="..\..\simgear\misc\sg_dir.hxx" />
     <ClInclude Include="..\..\simgear\misc\sg_path.hxx" />
     <ClInclude Include="..\..\simgear\misc\sgstream.hxx" />
+    <ClInclude Include="..\..\simgear\misc\sg_sleep.hxx" />
     <ClInclude Include="..\..\simgear\misc\stopwatch.hxx" />
     <ClInclude Include="..\..\simgear\misc\strutils.hxx" />
     <ClInclude Include="..\..\simgear\misc\tabbed_values.hxx" />

@@ -7,11 +7,14 @@
 
 #include "propertyObject.hxx"
 
+#include <simgear/structure/exception.hxx>
+
 using std::cout;
 using std::cerr;
 using std::endl;
 
 using namespace simgear;
+
 
 SGPropertyNode* testRoot = NULL;
 
@@ -39,6 +42,23 @@ bool testBasic()
   assert(fff == aFoo); // comparion with float value
 
   return true;
+}
+
+void testRelative()
+{
+  SGPropertyNode* n = testRoot->getNode("a");
+  assert(n);
+
+  PropertyObject<int> a1(n, "bar");
+  assert(a1 == 1234);
+
+  PropertyObject<int> a5(n, "some/child/path");
+  a5 = 4321;
+  assert(n->getIntValue("some/child/path") == 4321);
+
+  SGPropertyNode* m = testRoot->getNode("a/alice");
+  PropertyObject<std::string> a4(m);
+  assert(a4 == "aaaa");
 }
 
 void testString()
@@ -145,6 +165,7 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;		
 	}
 
+  testRelative();
   testReadMissing();
   testString();
   testAssignment();

@@ -19,7 +19,6 @@
 #define SG_PROPERTY_OBJECT
 
 #include <simgear/props/props.hxx>
-#include <simgear/structure/exception.hxx>
 
 namespace simgear
 {
@@ -37,9 +36,20 @@ public:
   
   SGPropertyNode* node(bool aCreate) const;
 
+  /**
+   * Resolve the property node, or throw an exception if it could not
+   * be resolved.
+   */
+  SGPropertyNode* getOrThrow() const;
 protected:
-  SGPropertyNode* _base;
-  const char* _path;
+  mutable const char* _path;
+
+  /**
+   * Important - if _path is NULL, this is the actual prop.
+   * If path is non-NULL, this is the parent which path should be resolved
+   * against (or NULL, if _path is absolute). Use node() instead of accessing
+   * this directly, and the above is handled automatically. 
+   */
   mutable SGPropertyNode* _prop;
 };
 
@@ -94,12 +104,7 @@ public:
 // conversion operators
   operator T () const
   {
-    SGPropertyNode* n = node();
-    if (!n) {
-      throw sg_exception("read of undefined property:", _path);
-    }
-    
-    return n->getValue<T>();
+    return getOrThrow()->getValue<T>();
   }
 
   T operator=(const T& aValue)
@@ -142,12 +147,7 @@ public:
   
   operator std::string () const
   {
-    SGPropertyNode* n = node();
-    if (!n) {
-      throw sg_exception("read of undefined property:", _path);
-    }
-    
-    return n->getStringValue();
+    return getOrThrow()->getStringValue();
   }
   
   const char* operator=(const char* aValue)
@@ -193,9 +193,11 @@ private:
 
 } // of namespace simgear
 
+/*
 typedef simgear::PropertyObject<double> SGPropObjDouble;
 typedef simgear::PropertyObject<bool> SGPropObjBool;
 typedef simgear::PropertyObject<std::string> SGPropObjString;
 typedef simgear::PropertyObject<long> SGPropObjInt;
+*/
 
 #endif

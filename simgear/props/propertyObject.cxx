@@ -21,6 +21,8 @@
 
 #include "propertyObject.hxx"
 
+#include <simgear/structure/exception.hxx>
+
 namespace simgear
 {
 
@@ -32,7 +34,6 @@ void PropertyObjectBase::setDefaultRoot(SGPropertyNode* aRoot)
 }
 
 PropertyObjectBase::PropertyObjectBase(const PropertyObjectBase& aOther) :
-  _base(aOther._base),
   _path(aOther._path),
   _prop(aOther._prop)
 {
@@ -40,32 +41,55 @@ PropertyObjectBase::PropertyObjectBase(const PropertyObjectBase& aOther) :
 }
 
 PropertyObjectBase::PropertyObjectBase(const char* aChild) :
-  _base(NULL),
   _path(aChild),
   _prop(NULL)
 {
 }
   
 PropertyObjectBase::PropertyObjectBase(SGPropertyNode* aNode, const char* aChild) :
-  _base(aNode),
   _path(aChild),
-  _prop(NULL)
+  _prop(aNode)
 {
 
 }
   
 SGPropertyNode* PropertyObjectBase::node(bool aCreate) const
 {
-  if (_prop) {
+  if (_path == NULL) { // already resolved
     return _prop;
   }
   
-  _prop = _base ? _base : static_defaultRoot;
-  if (_path) {
-    _prop = _prop->getNode(_path, aCreate);
-  }
+  SGPropertyNode* r = _prop ? _prop : static_defaultRoot;
+  _prop = r->getNode(_path, aCreate);
   
+  if (_prop) {
+    // resolve worked, we will cache from now on, so clear _path
+    _path = NULL;
+  }
+
   return _prop;
+}
+
+SGPropertyNode* PropertyObjectBase::getOrThrow() const
+{
+  SGPropertyNode* n = node(false);
+  if (!n) {
+    std::string path;
+    if (_prop) {
+      path = _prop->getPath();
+      if (_path) {
+        path += '/';      
+      }
+    }
+
+    if (_path) {
+      path += _path;
+    }
+
+    throw sg_exception("Unknown property:" + path);
+  }
+
+  return n;
 }
 
 } // of namespace simgear

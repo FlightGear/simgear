@@ -1005,6 +1005,14 @@
 				RelativePath="..\..\simgear\props\props_io.hxx"
 				>
 			</File>
+			<File
+				RelativePath="..\..\simgear\props\propertyObject.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\propertyObject.hxx"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgmodel"

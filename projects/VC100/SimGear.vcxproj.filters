@@ -600,6 +600,9 @@
     <ClCompile Include="..\..\simgear\scene\model\ConditionNode.cxx">
       <Filter>Lib_sgmodel</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\simgear\props\propertyObject.cxx">
+      <Filter>Lib_sgprops</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\simgear\bucket\newbucket.hxx">
@@ -1200,6 +1203,9 @@
     </ClInclude>
     <ClInclude Include="..\..\simgear\scene\model\ConditionNode.hxx">
       <Filter>Lib_sgmodel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\simgear\props\propertyObject.hxx">
+      <Filter>Lib_sgprops</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

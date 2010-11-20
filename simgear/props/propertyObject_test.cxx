@@ -149,6 +149,27 @@ void testReadMissing()
   }
 }
 
+void testCreate()
+{
+  PropertyObject<bool> a = PropertyObject<bool>::create("a/lemon", true);
+  assert(a == true);
+  assert(testRoot->getBoolValue("a/lemon") == true);
+  
+
+  PropertyObject<int> b(PropertyObject<int>::create("a/pear", 3142));
+  assert(b == 3142);
+  
+  PropertyObject<std::string> c(PropertyObject<std::string>::create("a/lime", "fofofo"));
+  assert(c == "fofofo");
+
+// check overloads for string version
+  SGPropertyNode* n = testRoot->getNode("b", true);
+  PropertyObject<std::string> d(PropertyObject<std::string>::create(n, "grape", "xyz"));
+  assert(!strcmp(testRoot->getStringValue("b/grape"), "xyz"));
+  
+  
+}
+
 int main(int argc, char* argv[])
 {
 	testRoot = new SGPropertyNode();
@@ -170,6 +191,7 @@ int main(int argc, char* argv[])
   testString();
   testAssignment();
   testSTLContainer();
+  testCreate();
 
   return EXIT_SUCCESS;
 }

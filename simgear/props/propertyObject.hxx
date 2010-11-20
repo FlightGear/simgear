@@ -143,7 +143,34 @@ public:
   
   }
   
+// copy-constructor
+  PropertyObject(const PropertyObject<std::string>& aOther) :
+    PropertyObjectBase(aOther)
+  {
+  }
 
+// create form
+  static PropertyObject<std::string> create(const char* aPath, const std::string& aValue)
+  {
+    PropertyObject<std::string> p(aPath);
+    p = aValue;
+    return p;
+  }
+  
+  static PropertyObject<std::string> create(SGPropertyNode* aNode, const std::string& aValue)
+  {
+    PropertyObject<std::string> p(aNode);
+    p = aValue;
+    return p;
+  }
+
+  static PropertyObject<std::string> create(SGPropertyNode* aNode, const char* aChild, const std::string& aValue)
+  {
+    PropertyObject<std::string> p(aNode, aChild);
+    p = aValue;
+    return p;
+  }
+  
   
   operator std::string () const
   {

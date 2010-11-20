@@ -795,6 +795,25 @@ public:
 };
 
 template<typename T>
+class SGDifferenceExpression : public SGNaryExpression<T> {
+public:
+  SGDifferenceExpression()
+  { }
+  SGDifferenceExpression(SGExpression<T>* expr0, SGExpression<T>* expr1)
+    : SGNaryExpression<T>(expr0, expr1)
+  { }
+  virtual void eval(T& value, const simgear::expression::Binding* b) const
+  {
+    value = T(0);
+    unsigned sz = SGNaryExpression<T>::getNumOperands();
+    for (unsigned i = 0; i < sz; ++i)
+      value -= getOperand(i)->getValue(b);
+  }
+  using SGNaryExpression<T>::getValue;
+  using SGNaryExpression<T>::getOperand;
+};
+
+template<typename T>
 class SGProductExpression : public SGNaryExpression<T> {
 public:
   SGProductExpression()

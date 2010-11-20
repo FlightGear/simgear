@@ -293,6 +293,21 @@ SGReadIExpression(SGPropertyNode *inputRoot, const SGPropertyNode *expression)
         }
         return output;
     }
+
+    if (name == "difference" || name == "dif" ) {
+        if (expression->nChildren() < 1) {
+            SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
+            return 0;
+        }
+        SGDifferenceExpression<T>* output = new SGDifferenceExpression<T>;
+        if (!SGReadNaryOperands(output, inputRoot, expression)) {
+            delete output;
+            SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");
+            return 0;
+        }
+        return output;
+    }
+
     if (name == "prod" || name == "product") {
         if (expression->nChildren() < 1) {
             SG_LOG(SG_IO, SG_ALERT, "Cannot read \"" << name << "\" expression.");

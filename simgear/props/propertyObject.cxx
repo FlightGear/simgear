@@ -21,6 +21,8 @@
 
 #include "propertyObject.hxx"
 
+#include <simgear/math/SGMath.hxx>
+
 #include <simgear/structure/exception.hxx>
 
 namespace simgear

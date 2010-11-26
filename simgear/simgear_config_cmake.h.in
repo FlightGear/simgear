@@ -1,0 +1,23 @@
+
+#cmakedefine HAVE_SYS_TIME_H
+
+#cmakedefine HAVE_SYS_TIMEB_H
+
+#cmakedefine HAVE_UNISTD_H
+
+
+#cmakedefine HAVE_GETTIMEOFDAY
+#cmakedefine HAVE_GETLOCALTIME
+#cmakedefine HAVE_FTIME
+
+// does time.h define daylight?
+#cmakedefine HAVE_DAYLIGHT
+
+#cmakedefine HAVE_RINT
+#cmakedefine HAVE_TIMEGM
+
+// set if building headless (no OSG or OpenGL libs)
+#cmakedefine NO_OPENSCENEGRAPH_INTERFACE
+
+// needed to stop windows.h defining MIN and MAX macros
+#cmakedefine NOMINMAX

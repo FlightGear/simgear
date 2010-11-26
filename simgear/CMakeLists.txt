@@ -1,0 +1,46 @@
+
+include_directories(${PROJECT_SOURCE_DIR})
+
+foreach( mylibfolder 
+        bucket
+        debug
+        ephemeris
+        io
+        magvar
+        math
+        misc
+        nasal
+        props
+        route
+        serial
+        structure
+        threads
+        timing
+        xml
+    )
+
+    add_subdirectory(${mylibfolder})
+
+endforeach( mylibfolder )
+
+if (${SIMGEAR_HEADLESS})
+    add_subdirectory(environment)
+    add_subdirectory(screen)
+    add_subdirectory(scene)
+    add_subdirectory(sound)
+endif()
+
+
+
+set(HEADERS compiler.h constants.h sg_inlines.h version.h)
+install (FILES ${HEADERS}  DESTINATION include/simgear/)
+
+if(SIMGEAR_SHARED)
+    message(STATUS "building shared library")
+    get_property(allSources DIRECTORY PROPERTY ALL_SOURCES)
+    add_library(SimGear SHARED ${allSources})
+    set_property(TARGET SimGear PROPERTY FRAMEWORK)
+
+    target_link_libraries(SimGear ${ZLIB_LIBRARY} ${OPENSCENEGRAPH_LIBRARIES})
+endif(SIMGEAR_SHARED)
+    

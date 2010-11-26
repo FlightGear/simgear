@@ -23,6 +23,10 @@
 // $Id$
 
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <string.h>		// for memcpy()
 
 #include "lowlevel.hxx" 

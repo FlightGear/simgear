@@ -12,7 +12,7 @@ option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" O
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
 
 # check required dependencies
-find_package(boost REQUIRED)
+find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 

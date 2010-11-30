@@ -1,4 +1,3 @@
-
 include (SimGearComponent)
 
 
@@ -32,6 +31,7 @@ set(HEADERS
     project.hxx
     sg_geodesy.hxx
     sg_types.hxx
+	sg_random.h
     )
 
 set(SOURCES 
@@ -40,6 +40,7 @@ set(SOURCES
     interpolater.cxx
     leastsqs.cxx
     project.cxx
+	sg_random.c
     )
 
 simgear_component(math math "${SOURCES}" "${HEADERS}")

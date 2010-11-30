@@ -1,8 +1,15 @@
 cmake_minimum_required (VERSION 2.6)
 include (CheckFunctionExists)
 include (CheckCSourceCompiles)
+include (CPack)
 
 project(SimGear)
+
+set(SIMGEAR_VERSION "2.2.0")
+
+#packaging
+SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
+SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
 
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")

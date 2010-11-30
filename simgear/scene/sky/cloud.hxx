@@ -108,6 +108,16 @@ public:
      */
     void setThickness_m (float thickness_m);
 
+    /** get the layer visibility */
+    float getVisibility_m() const;
+    /**
+     * set the layer visibility 
+     * @param visibility_m the layer minimum visibility in meters.
+     */
+    void setVisibility_m(float visibility_m);
+
+
+
     /**
      * get the transition/boundary layer depth in meters.  This
      * allows gradual entry/exit from the cloud layer via adjusting
@@ -235,6 +245,7 @@ private:
     float layer_asl;
     float layer_thickness;
     float layer_transition;
+    float layer_visibility;
     Coverage layer_coverage;
     float scale;
     float speed;

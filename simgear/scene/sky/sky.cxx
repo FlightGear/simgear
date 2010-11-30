@@ -31,6 +31,7 @@
 
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/sg_inlines.h>
 
 #include <osg/StateSet>
 #include <osg/Depth>
@@ -359,10 +360,8 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	}
 #endif
 
-        // never let visibility drop below 25 meters
-        if ( effvis <= 25.0 ) {
-            effvis = 25.0;
-        }
+        // never let visibility drop below the layer's configured visibility
+       effvis = SG_MAX2<float>(cloud_layers[i]->getVisibility_m(), effvis );
 
     } // for
 

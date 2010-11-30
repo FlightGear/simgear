@@ -208,6 +208,8 @@ public:
 	inline const vector<SGMetarCloud>& getClouds()	const	{ return _clouds; }
 	inline const map<string, SGMetarRunway>& getRunways()	const	{ return _runways; }
 	inline const vector<string>& getWeather()		const	{ return _weather; }
+	inline const map<string,vector<string> >& getPhenomena() const { return _phenomena; }
+	inline int getIntensity() const { return _intensity; }
 
 protected:
 	string	_url;
@@ -242,6 +244,8 @@ protected:
 	vector<SGMetarCloud>		_clouds;
 	map<string, SGMetarRunway>	_runways;
 	vector<string>			_weather;
+	map<string,vector<string> > _phenomena;
+	int _intensity;
 
 	bool	scanPreambleDate();
 	bool	scanPreambleTime();

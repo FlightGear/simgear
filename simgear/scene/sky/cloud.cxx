@@ -148,6 +148,7 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_asl(0.0),
     layer_thickness(0.0),
     layer_transition(0.0),
+    layer_visibility(25.0),
     layer_coverage(SG_CLOUD_CLEAR),
     scale(4000.0),
     speed(0.0),
@@ -258,6 +259,18 @@ void
 SGCloudLayer::setThickness_m (float thickness_m)
 {
     layer_thickness = thickness_m;
+}
+
+float
+SGCloudLayer::getVisibility_m() const
+{
+    return layer_visibility;
+}
+
+void
+SGCloudLayer::setVisibility_m (float visibility_m)
+{
+    layer_visibility = visibility_m;
 }
 
 float

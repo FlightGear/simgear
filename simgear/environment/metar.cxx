@@ -85,7 +85,8 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
 	_rain(false),
 	_hail(false),
 	_snow(false),
-	_cavok(false)
+	_cavok(false),
+	_intensity(0)
 {
 	if (m.length() == 4 && isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3])) {
 		for (int i = 0; i < 4; i++)
@@ -680,32 +681,35 @@ bool SGMetar::scanWeather()
 	}
 
 	string pre, post;
-	int intensity = 0;
 	if (*m == '-')
-		m++, pre = "light ", intensity = 1;
+		m++, pre = "light ", _intensity = 1;
 	else if (*m == '+')
-		m++, pre = "heavy ", intensity = 3;
+		m++, pre = "heavy ", _intensity = 3;
 	else if (!strncmp(m, "VC", 2))
 		m += 2, post = "in the vicinity ";
 	else
-		pre = "moderate ", intensity = 2;
+		pre = "moderate ", _intensity = 2;
 
+	vector<string> descriptions;
 	int i;
 	for (i = 0; i < 3; i++) {
 		if (!(a = scanToken(&m, description)))
 			break;
+		descriptions.push_back(a->id);
 		weather += string(a->text) + " ";
 	}
+
 	for (i = 0; i < 3; i++) {
 		if (!(a = scanToken(&m, phenomenon)))
 			break;
+		_phenomena[a->id] = descriptions;
 		weather += string(a->text) + " ";
 		if (!strcmp(a->id, "RA"))
-			_rain = intensity;
+			_rain = _intensity;
 		else if (!strcmp(a->id, "HA"))
-			_hail = intensity;
+			_hail = _intensity;
 		else if (!strcmp(a->id, "SN"))
-			_snow = intensity;
+			_snow = _intensity;
 	}
 	if (!weather.length())
 		return false;
@@ -743,7 +747,7 @@ static const struct Token cloud_types[] = {
 	{ 0, 0 }
 };
 
-
+#include <iostream>
 // (FEW|SCT|BKN|OVC|SKC|CLR|CAVOK|VV)([0-9]{3}|///)?[:cloud_type:]?
 bool SGMetar::scanSkyCondition()
 {

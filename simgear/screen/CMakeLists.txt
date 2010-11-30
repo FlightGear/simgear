@@ -15,8 +15,8 @@ set(SOURCES
     )
 
 if(${JPEG_FACTORY})
-    set(HEADERS "${HEADERS} jpgfactory.hxx")
-    set(SOURCES "${SOURCES} jpgfactory.cxx")
+    list(APPEND HEADERS jpgfactory.hxx)
+    list(APPEND SOURCES jpgfactory.cxx)
 endif()
 
 

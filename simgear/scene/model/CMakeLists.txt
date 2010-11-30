@@ -42,6 +42,7 @@ set(SOURCES
     particles.cxx
     persparam.cxx
     placement.cxx    
+    shadanim.cxx
     )
 
 add_library(sgmodel STATIC ${SOURCES} ${HEADERS} )

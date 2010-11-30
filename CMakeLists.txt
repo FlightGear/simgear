@@ -76,10 +76,13 @@ endif(WIN32)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
 
+include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_BINARY_DIR}/simgear)
+
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
     ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} 
     ${ALUT_INCLUDE_DIR} ${OPENAL_INCLUDE_DIR} )
-include_directories(${PROJECT_BINARY_DIR}/simgear)
+
 
 add_definitions(-DHAVE_CONFIG_H)
 

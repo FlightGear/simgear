@@ -85,8 +85,7 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
 	_rain(false),
 	_hail(false),
 	_snow(false),
-	_cavok(false),
-	_intensity(0)
+	_cavok(false)
 {
 	if (m.length() == 4 && isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3])) {
 		for (int i = 0; i < 4; i++)
@@ -618,8 +617,8 @@ bool SGMetar::scanRwyVisRange()
 
 static const struct Token special[] = {
 	{ "NSW",  "no significant weather" },
-	{ "VCSH", "showers in the vicinity" },
-	{ "VCTS", "thunderstorm in the vicinity" },
+/*	{ "VCSH", "showers in the vicinity" },
+	{ "VCTS", "thunderstorm in the vicinity" }, */
 	{ 0, 0 }
 };
 
@@ -672,6 +671,7 @@ bool SGMetar::scanWeather()
 	char *m = _m;
 	string weather;
 	const struct Token *a;
+
 	if ((a = scanToken(&m, special))) {
 		if (!scanBoundary(&m))
 			return false;
@@ -681,35 +681,35 @@ bool SGMetar::scanWeather()
 	}
 
 	string pre, post;
+    struct Weather w;
 	if (*m == '-')
-		m++, pre = "light ", _intensity = 1;
+		m++, pre = "light ", w.intensity = LIGHT;
 	else if (*m == '+')
-		m++, pre = "heavy ", _intensity = 3;
+		m++, pre = "heavy ", w.intensity = HEAVY;
 	else if (!strncmp(m, "VC", 2))
-		m += 2, post = "in the vicinity ";
+        m += 2, post = "in the vicinity ", w.vincinity=true;
 	else
-		pre = "moderate ", _intensity = 2;
+		pre = "moderate ", w.intensity = MODERATE;
 
-	vector<string> descriptions;
 	int i;
 	for (i = 0; i < 3; i++) {
 		if (!(a = scanToken(&m, description)))
 			break;
-		descriptions.push_back(a->id);
+		w.descriptions.push_back(a->id);
 		weather += string(a->text) + " ";
 	}
 
 	for (i = 0; i < 3; i++) {
 		if (!(a = scanToken(&m, phenomenon)))
 			break;
-		_phenomena[a->id] = descriptions;
+        w.phenomena.push_back(a->id);
 		weather += string(a->text) + " ";
 		if (!strcmp(a->id, "RA"))
-			_rain = _intensity;
+			_rain = w.intensity;
 		else if (!strcmp(a->id, "HA"))
-			_hail = _intensity;
+			_hail = w.intensity;
 		else if (!strcmp(a->id, "SN"))
-			_snow = _intensity;
+			_snow = w.intensity;
 	}
 	if (!weather.length())
 		return false;
@@ -719,6 +719,8 @@ bool SGMetar::scanWeather()
 	weather = pre + weather + post;
 	weather.erase(weather.length() - 1);
 	_weather.push_back(weather);
+    if( w.phenomena.size() > 0 )
+        _weather2.push_back( w );
 	_grpcount++;
 	return true;
 }
@@ -772,7 +774,7 @@ bool SGMetar::scanSkyCondition()
 			return false;
 
 		if (i == 3) {
-			cl._coverage = 0;
+            cl._coverage = SGMetarCloud::COVERAGE_CLEAR;
 			_clouds.push_back(cl);
 		} else {
 			_cavok = true;
@@ -784,13 +786,13 @@ bool SGMetar::scanSkyCondition()
 	if (!strncmp(m, "VV", i = 2))				// vertical visibility
 		;
 	else if (!strncmp(m, "FEW", i = 3))
-		cl._coverage = 1;
+        cl._coverage = SGMetarCloud::COVERAGE_FEW;
 	else if (!strncmp(m, "SCT", i = 3))
-		cl._coverage = 2;
+        cl._coverage = SGMetarCloud::COVERAGE_SCATTERED;
 	else if (!strncmp(m, "BKN", i = 3))
-		cl._coverage = 3;
+        cl._coverage = SGMetarCloud::COVERAGE_BROKEN;
 	else if (!strncmp(m, "OVC", i = 3))
-		cl._coverage = 4;
+        cl._coverage = SGMetarCloud::COVERAGE_OVERCAST;
 	else
 		return false;
 	m += i;
@@ -803,7 +805,7 @@ bool SGMetar::scanSkyCondition()
 	} else if (!scanNumber(&m, &i, 3))
 		i = -1;
 
-	if (cl._coverage == -1) {
+    if (cl._coverage == SGMetarCloud::COVERAGE_NIL) {
 		if (!scanBoundary(&m))
 			return false;
 		if (i == -1)			// 'VV///'
@@ -1203,7 +1205,7 @@ const struct Token *SGMetar::scanToken(char **str, const struct Token *list)
 }
 
 
-void SGMetarCloud::set(double alt, int cov)
+void SGMetarCloud::set(double alt, Coverage cov)
 {
 	_altitude = alt;
 	if (cov != -1)

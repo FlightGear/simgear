@@ -35,13 +35,19 @@ install (FILES ${HEADERS}  DESTINATION include/simgear/)
 
 if(SIMGEAR_SHARED)
     message(STATUS "building shared library")
-    get_property(allSources DIRECTORY PROPERTY ALL_SOURCES)
-	get_property(publicHeaders DIRECTORY PROPERTY PUBLIC_HEADERS)
+    get_property(allSources GLOBAL PROPERTY ALL_SOURCES)
+	get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
 
     add_library(SimGear SHARED ${allSources})
     set_property(TARGET SimGear PROPERTY FRAMEWORK 1)
-	set_property(TARGET SimGear PROPERTY PUBLIC_HEADERS ${publicHeaders})
+	message(STATUS "public header: ${publicHeaders}")
+	set_property(TARGET SimGear PROPERTY PUBLIC_HEADER "${publicHeaders}")
 	
-    target_link_libraries(SimGear ${ZLIB_LIBRARY} ${OPENSCENEGRAPH_LIBRARIES})
+    target_link_libraries(SimGear ${ZLIB_LIBRARY} 
+			${OPENSCENEGRAPH_LIBRARIES} 
+			${OPENAL_LIBRARY} ${ALUT_LIBRARY}
+			${OPENGL_LIBRARY})
+			
+	install()
 endif(SIMGEAR_SHARED)
     

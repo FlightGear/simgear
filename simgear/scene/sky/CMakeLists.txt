@@ -1,3 +1,5 @@
+include (SimGearComponent)
+
 set(HEADERS 
     CloudShaderGeometry.hxx
     cloud.hxx
@@ -24,8 +26,4 @@ set(SOURCES
     stars.cxx
     )
 
-add_library(sgsky STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgsky ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/sky)
-
+simgear_component(sky scene/sky "${SOURCES}" "${HEADERS}")

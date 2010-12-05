@@ -1,3 +1,5 @@
+include (SimGearComponent)
+
 set(HEADERS 
     GroundLightManager.hxx
     ReaderWriterSTG.hxx
@@ -37,8 +39,4 @@ set(SOURCES
     userdata.cxx
     )
 
-add_library(sgtgdb STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgtgdb ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/tgdb)
-
+simgear_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")

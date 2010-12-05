@@ -1,3 +1,5 @@
+include (SimGearComponent)
+
 set(HEADERS 
     CopyOp.hxx
     NodeAndDrawableVisitor.hxx
@@ -34,8 +36,4 @@ set(SOURCES
     UpdateOnceCallback.cxx
     )
 
-add_library(sgutil STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgutil ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/util)
-
+simgear_component(util scene/util "${SOURCES}" "${HEADERS}")

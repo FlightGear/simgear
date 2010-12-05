@@ -1,3 +1,5 @@
+include (SimGearComponent)
+
 set(HEADERS 
     BVHBoundingBoxVisitor.hxx
     BVHDebugCollectVisitor.hxx
@@ -34,8 +36,4 @@ set(SOURCES
     BVHTransform.cxx    
     )
 
-add_library(sgbvh STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgbvh ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/bvh)
-
+simgear_component(bvh scene/bvh "${SOURCES}" "${HEADERS}")

@@ -31,8 +31,5 @@ set(SOURCES
     mipmap.cxx
     )
 
-add_library(sgmaterial STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgmaterial ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/material)
+simgear_component(material scene/material "${SOURCES}" "${HEADERS}")
 

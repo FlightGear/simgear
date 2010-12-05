@@ -1,3 +1,5 @@
+include (SimGearComponent)
+
 set(HEADERS 
     BoundingVolumeBuildVisitor.hxx
     CheckSceneryVisitor.hxx
@@ -45,8 +47,4 @@ set(SOURCES
     shadanim.cxx
     )
 
-add_library(sgmodel STATIC ${SOURCES} ${HEADERS} )
-
-install (TARGETS sgmodel ARCHIVE DESTINATION lib)
-install (FILES ${HEADERS}  DESTINATION include/simgear/scene/model)
-
+simgear_component(model scene/model "${SOURCES}" "${HEADERS}")

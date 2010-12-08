@@ -14,7 +14,7 @@ set(SOURCES
 	tr.cxx
     )
 
-if(${JPEG_FACTORY})
+if(JPEG_FACTORY)
     list(APPEND HEADERS jpgfactory.hxx)
     list(APPEND SOURCES jpgfactory.cxx)
 endif()

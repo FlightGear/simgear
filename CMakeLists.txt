@@ -33,7 +33,7 @@ else()
     find_package(OpenSceneGraph 2.8.2 REQUIRED osgText osgSim osgDB osgParticle osgUtil)
 endif()
 
-if(${JPEG_FACTORY})
+if(JPEG_FACTORY)
     message(STATUS "JPEG-factory enabled")
     find_package(JPEG REQUIRED)
     include_directories(${JPEG_INCLUDE_DIR})
@@ -68,13 +68,15 @@ if(WIN32)
         # foreach(warning 4244 4251 4267 4275 4290 4786 4305 4996)
         #     SET(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
         # endforeach(warning)
+        
+        set(MSVC_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS")
     endif(MSVC)
 
     set(NOMINMAX 1)
 endif(WIN32)    
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_BINARY_DIR}/simgear)

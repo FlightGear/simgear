@@ -18,7 +18,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
-// $Id$
 
 #ifdef HAVE_CONFIG_H
 #  include <simgear_config.h>
@@ -152,7 +151,9 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
     layer_coverage(SG_CLOUD_CLEAR),
     scale(4000.0),
     speed(0.0),
-    direction(0.0)
+    direction(0.0),
+    last_course(0.0),
+    max_alpha(1.0)
 {
     // XXX
     // Render bottoms before the rest of transparent objects (rendered

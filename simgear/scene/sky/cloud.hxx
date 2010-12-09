@@ -184,8 +184,18 @@ public:
      */
     inline void setAlpha( float alpha ) {
         if ( alpha < 0.0 ) { alpha = 0.0; }
-        if ( alpha > 1.0 ) { alpha = 1.0; }
+        if ( alpha > max_alpha ) { alpha = max_alpha; }
         cloud_alpha = alpha;
+    }
+
+    inline void setMaxAlpha( float alpha ) {
+        if ( alpha < 0.0 ) { alpha = 0.0; }
+        if ( alpha > 1.0 ) { alpha = 1.0; }
+        max_alpha = alpha;
+    }
+
+    inline float getMaxAlpha() const {
+        return max_alpha;
     }
 
     /** build the cloud object */
@@ -257,6 +267,7 @@ private:
     // double xoff, yoff;
     SGGeod last_pos;
     double last_course;
+    double max_alpha;
 
     osg::Vec2 base;
 

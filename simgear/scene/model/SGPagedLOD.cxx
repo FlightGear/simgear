@@ -21,6 +21,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Input>
 #include <osgDB/ParameterOutput>
+#include <osgDB/DatabasePager>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/OSGVersion.hxx>

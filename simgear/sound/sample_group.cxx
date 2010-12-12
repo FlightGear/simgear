@@ -273,7 +273,6 @@ SGSampleGroup::stop ()
             ALint source = sample->get_source();
             if ( sample->is_playing() ) {
                 alSourceStop( source );
-                alSourcei( source, AL_BUFFER, 0 );
             }
             _smgr->release_source( source );
             sample->no_valid_source();

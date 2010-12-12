@@ -37,7 +37,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <cstring>
 
 #include "soundmgr_openal.hxx"
 
@@ -52,10 +51,6 @@ extern bool isNaN(float *v);
 
 #define MAX_SOURCES	128
 
-
-#ifndef ALC_ALL_DEVICES_SPECIFIER
-# define ALC_ALL_DEVICES_SPECIFIER	0x1013
-#endif
 
 //
 // Sound Manager
@@ -112,74 +107,32 @@ void SGSoundMgr::init(const char *devname) {
 
     SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
 
-    ALCdevice *device = alcOpenDevice(devname);
-    if ( testForError(device, "Audio device not available, trying default") ) {
-        device = alcOpenDevice(NULL);
-        if (testForError(device, "Default Audio device not available.") ) {
+    _config = aaxDriverOpenByName(devname, AAX_MODE_WRITE_STEREO);
+    if ( testForError(C-nfig, "Audio device not available, trying default") ) {
+        _config = aaxDriverOpenDefault(AAX_MODE_WRITE_STEREO);
+        if (testForError(_config, "Default Audio device not available.") ) {
            return;
         }
     }
 
-    _device = device;
-    ALCcontext *context = alcCreateContext(device, NULL);
-    testForALCError("context creation.");
-    if ( testForError(context, "Unable to create a valid context.") ) {
-        alcCloseDevice (device);
-        return;
-    }
+    aaxMixerInit(_config);
+    
+    aaxSensorSetGain(_config, 0.0);
+    aaxSensorSetIdentityMatrix(_config);
 
-    if ( !alcMakeContextCurrent(context) ) {
-        testForALCError("context initialization");
-        alcDestroyContext (context);
-        alcCloseDevice (device);
-        return;
-    }
-
-    if (_context != NULL)
-        SG_LOG(SG_GENERAL, SG_ALERT, "context is already assigned");
-    _context = context;
-    _working = true;
-
-    _at_up_vec[0] = 0.0; _at_up_vec[1] = 0.0; _at_up_vec[2] = -1.0;
-    _at_up_vec[3] = 0.0; _at_up_vec[4] = 1.0; _at_up_vec[5] = 0.0;
-
-    alListenerf( AL_GAIN, 0.0f );
-    alListenerfv( AL_ORIENTATION, _at_up_vec );
-    alListenerfv( AL_POSITION, SGVec3f::zeros().data() );
-    alListenerfv( AL_VELOCITY, SGVec3f::zeros().data() );
-
-    alDopplerFactor(1.0);
-    alDopplerVelocity(340.3);   // speed of sound in meters per second.
-
-    // gain = AL_REFERENCE_DISTANCE / (AL_REFERENCE_DISTANCE +
-    //        AL_ROLLOFF_FACTOR * (distance - AL_REFERENCE_DISTANCE));
-    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-
-    testForALError("listener initialization");
+    aaxScenerySetDopplerFactor(_config, 340.3);
+    aaxScenerySetDistanceModel(_config, AAX_AL_INVERSE_DISTANCE_CLAMPED);
 
     // get a free source one at a time
     // if an error is returned no more (hardware) sources are available
     for (unsigned int i=0; i<MAX_SOURCES; i++) {
-        ALuint source;
-        ALenum error;
+        aaxEmitter source;
 
-        alGetError();
-        alGenSources(1, &source);
-        error = alGetError();
-        if ( error == AL_NO_ERROR ) {
+        source = aaxEmitterCreate();
+        if ( source ) {
             _free_sources.push_back( source );
         }
         else break;
-    }
-
-    _vendor = (const char *)alGetString(AL_VENDOR);
-    _renderer = (const char *)alGetString(AL_RENDERER);
-
-    if (_vendor == "Creative Labs Inc.") {
-       _bad_doppler = true;
-
-    } else if (_vendor == "OpenAL Community" && _renderer == "OpenAL Soft") {
-       _bad_doppler = true;
     }
 
     if (_free_sources.size() == 0) {
@@ -212,8 +165,8 @@ void SGSoundMgr::stop() {
 
     // clear all OpenAL sources
     for (unsigned int i=0; i<_free_sources.size(); i++) {
-        ALuint source = _free_sources[i];
-        alDeleteSources( 1 , &source );
+        aaxEmitter source = _free_sources[i];
+        aaxEmitterDestroy(source);
     }
     _free_sources.clear();
 
@@ -222,19 +175,17 @@ void SGSoundMgr::stop() {
     buffer_map_iterator buffers_end = _buffers.end();
     for ( ; buffers_current != buffers_end; ++buffers_current ) {
         refUint ref = buffers_current->second;
-        ALuint buffer = ref.id;
-        alDeleteBuffers(1, &buffer);
+        aaxBuffer buffer = ref.id;
+        aaxBufferDestroy(buffer);
     }
     _buffers.clear();
 
     if (_working) {
         _working = false;
         _active = false;
-        _context = alcGetCurrentContext();
-        _device = alcGetContextsDevice(_context);
-        alcDestroyContext(_context);
-        alcCloseDevice(_device);
-        _context = NULL;
+
+        aaxDriverClose(_config);
+        aaxDriverFree(_config);
 
         _renderer = "unknown";
         _vendor = "unknown";
@@ -280,8 +231,8 @@ void SGSoundMgr::unbind ()
 
     // delete free sources
     for (unsigned int i=0; i<_free_sources.size(); i++) {
-        ALuint source = _free_sources[i];
-        alDeleteSources( 1 , &source );
+        aaxEmitter source = _free_sources[i];
+        aaxEmitterDestroy(source);
     }
 
     _free_sources.clear();
@@ -291,8 +242,6 @@ void SGSoundMgr::unbind ()
 // run the audio scheduler
 void SGSoundMgr::update( double dt ) {
     if (_active) {
-        alcSuspendContext(_context);
-
         if (_changed) {
             update_pos_and_orientation();
         }
@@ -310,9 +259,10 @@ if (isNaN(_at_up_vec)) printf("NaN in listener orientation\n");
 if (isNaN(toVec3f(_absolute_pos).data())) printf("NaN in listener position\n");
 if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
 #endif
-            alListenerf( AL_GAIN, _volume );
-            alListenerfv( AL_ORIENTATION, _at_up_vec );
-            // alListenerfv( AL_POSITION, toVec3f(_absolute_pos).data() );
+
+            SGMatrix m = SGMatrix(_orientation);
+            aaxSensorSetMatrix(m.data());
+            aaxSensorSetGain(_config, _volume);
 
             SGQuatd hlOr = SGQuatd::fromLonLat( _geod_pos );
             SGVec3d velocity = SGVec3d::zeros();
@@ -320,17 +270,12 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
                 velocity = hlOr.backTransform(_velocity*SG_FEET_TO_METER);
             }
 
-            if ( _bad_doppler ) {
-                velocity *= 100.0f;
-            }
+            aaxSensorSetVelocity(toVec3f(velocity).data());
 
-            alListenerfv( AL_VELOCITY, toVec3f(velocity).data() );
-            // alDopplerVelocity(340.3);	// TODO: altitude dependent
-            testForALError("update");
+            // TODO: altitude dependent
+            // aaxScenerySetDopplerFactor(_config, 340.3);
             _changed = false;
         }
-
-        alcProcessContext(_context);
     }
 }
 
@@ -437,13 +382,12 @@ void SGSoundMgr::release_source( unsigned int source )
     if ( it != _sources_in_use.end() ) {
         ALint result;
 
-        alGetSourcei( source, AL_SOURCE_STATE, &result );
-        if ( result == AL_PLAYING ) {
-            alSourceStop( source );
+        result = aaxEmitterGetStatus(source);
+        if ( result == AAX_STATUS_PLAYING ) {
+            aaxMixerDeregisterEmitter(_config, source);
+            aaxEmitterDestroy(source);
         }
 
-        alSourcei( source, AL_BUFFER, 0 );	// detach the associated buffer
-        testForALError("release_source");
         _free_sources.push_back( source );
         _sources_in_use.erase( it );
     }
@@ -471,68 +415,54 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
         if ( sample->is_file() ) {
             int freq, format;
             size_t size;
+            bool res;
 
-            try {
-              bool res = load(sample_name, &sample_data, &format, &size, &freq);
-              if (res == false) return NO_BUFFER;
-            } catch (sg_exception& e) {
-              SG_LOG(SG_GENERAL, SG_ALERT,
-                     "failed to load sound buffer:" << e.getFormattedMessage());
-              return NO_BUFFER;
-            }
-            
+            res = load(sample_name, &sample_data, &format, &size, &freq);
+            if (res == false) return buffer;
+
             sample->set_frequency( freq );
             sample->set_format( format );
             sample->set_size( size );
-
-        } else {
+        }
+        else
             sample_data = sample->get_data();
-        }
 
-        // create an OpenAL buffer handle
-        alGenBuffers(1, &buffer);
-        if ( !testForALError("generate buffer") ) {
-            // Copy data to the internal OpenAL buffer
-
-            ALenum format = sample->get_format();
-            ALsizei size = sample->get_size();
-            ALsizei freq = sample->get_frequency();
-            alBufferData( buffer, format, sample_data, size, freq );
-
-            if ( !testForALError("buffer add data") ) {
-                sample->set_buffer(buffer);
-                _buffers[sample_name] = refUint(buffer);
-            }
-        }
+        // create a buffer handle
+        unsigned long size = sample->get_size();
+        unsigned int freq = sample->get_frequency();
+        enum aaxFormat fmt = sample->get_format();
+        buffer = aaxBufferCreate(_config, sample_data, size, fmt, tracks);
+        aaxBufferSetFrequency(buffer, frequency);
 
         if ( sample->is_file() ) free(sample_data);
+        if ( !testForALError("buffer add data") ) {
+            sample->set_buffer(buffer);
+            _buffers[sample_name] = refUint(buffer);
+        }
     }
     else {
         buffer = sample->get_buffer();
-    }
+}
 
     return buffer;
 }
 
 void SGSoundMgr::release_buffer(SGSoundSample *sample)
 {
-    if ( !sample->is_queue() )
-    {
-        string sample_name = sample->get_sample_name();
-        buffer_map_iterator buffer_it = _buffers.find( sample_name );
-        if ( buffer_it == _buffers.end() ) {
-            // buffer was not found
-            return;
-        }
+    string sample_name = sample->get_sample_name();
+    buffer_map_iterator buffer_it = _buffers.find( sample_name );
+    if ( buffer_it == _buffers.end() ) {
+        // buffer was not found
+        return;
+    }
 
-        sample->no_valid_buffer();
-        buffer_it->second.refctr--;
-        if (buffer_it->second.refctr == 0) {
-            ALuint buffer = buffer_it->second.id;
-            alDeleteBuffers(1, &buffer);
-            _buffers.erase( buffer_it );
-            testForALError("release buffer");
-        }
+    sample->no_valid_buffer();
+    buffer_it->second.refctr--;
+    if (buffer_it->second.refctr == 0) {
+        aaxBuffer buffer = buffer_it->second.id;
+        aaxBufferDestory(buffer);
+        _buffers.erase( buffer_it );
+        testForALError("release buffer");
     }
 }
 
@@ -557,7 +487,10 @@ void SGSoundMgr::update_pos_and_orientation() {
     _at_up_vec[4] = sgv_up[1];
     _at_up_vec[5] = sgv_up[2];
 
-    _absolute_pos = _base_pos;
+    // static const SGQuatd q(-0.5, -0.5, 0.5, 0.5);
+    // SGQuatd hlOr = SGQuatd::fromLonLat(SGGeod::fromCart(_base_pos));
+    // SGQuatd ec2body = hlOr*_orientation;
+    _absolute_pos = _base_pos; // + ec2body.backTransform( _offset_pos );
 }
 
 bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
@@ -624,26 +557,27 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 vector<const char*> SGSoundMgr::get_available_devices()
 {
     vector<const char*> devices;
-    const ALCchar *s;
+    unsigned int x, max;
+    char *s;
 
-    if (alcIsExtensionPresent(NULL, "ALC_enumerate_all_EXT") == AL_TRUE) {
-        s = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-    } else {
-        s = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-    }
+    max = aaxDriverGetCount();
+    for (x=0; x<max; x++)
+    {
+        aaxConfig cfg = aaxDriverGetByNumber(x);
+        if (cfg) {
+            unsigned int y, max_device;
+            const char *d;
 
-    if (s) {
-        ALCchar *nptr, *ptr = (ALCchar *)s;
-
-        nptr = ptr;
-        while (*(nptr += strlen(ptr)+1) != 0)
-        {
-            devices.push_back(ptr);
-            ptr = nptr;
+            d = aaxDriverGetName(cfg);
+            max_device = aaxDriverGetDeviceCount(cfg);
+            for (y=0; y<max_device; y++) {
+                const char *r = aaxDriverGetDeviceNameByPos(cfg, y);
+                printf("   '%s on %s'\n", d, r);
+                devices.push_back(s);
+            }
+            aaxDriverFree(cfg);
         }
-        devices.push_back(ptr);
     }
-
     return devices;
 }
 
@@ -657,30 +591,6 @@ bool SGSoundMgr::testForError(void *p, string s)
    return false;
 }
 
-
-bool SGSoundMgr::testForALError(string s)
-{
-    ALenum error = alGetError();
-    if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_GENERAL, SG_ALERT, "AL Error (sound manager): "
-                                      << alGetString(error) << " at " << s);
-       return true;
-    }
-    return false;
-}
-
-bool SGSoundMgr::testForALCError(string s)
-{
-    ALCenum error;
-    error = alcGetError(_device);
-    if (error != ALC_NO_ERROR) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "ALC Error (sound manager): "
-                                       << alcGetString(_device, error) << " at "
-                                       << s);
-        return true;
-    }
-    return false;
-}
 
 bool SGSoundMgr::testForALUTError(string s)
 {

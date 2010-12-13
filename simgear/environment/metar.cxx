@@ -1212,6 +1212,22 @@ void SGMetarCloud::set(double alt, Coverage cov)
 		_coverage = cov;
 }
 
+SGMetarCloud::Coverage SGMetarCloud::getCoverage( const std::string & coverage ) 
+{
+	if( coverage == "clear" ) return COVERAGE_CLEAR;
+	if( coverage == "few" ) return COVERAGE_FEW;
+	if( coverage == "scattered" ) return COVERAGE_SCATTERED;
+	if( coverage == "broken" ) return COVERAGE_BROKEN;
+	if( coverage == "overcast" ) return COVERAGE_OVERCAST;
+	return COVERAGE_NIL;
+}
+
+const char * SGMetarCloud::COVERAGE_NIL_STRING = "nil";
+const char * SGMetarCloud::COVERAGE_CLEAR_STRING = "clear";
+const char * SGMetarCloud::COVERAGE_FEW_STRING = "few";
+const char * SGMetarCloud::COVERAGE_SCATTERED_STRING = "scattered";
+const char * SGMetarCloud::COVERAGE_BROKEN_STRING = "broken";
+const char * SGMetarCloud::COVERAGE_OVERCAST_STRING = "overcast";
 
 void SGMetarVisibility::set(double dist, int dir, int mod, int tend)
 {

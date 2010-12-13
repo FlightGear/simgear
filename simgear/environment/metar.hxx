@@ -130,27 +130,35 @@ protected:
 class SGMetarCloud {
 	friend class SGMetar;
 public:
-    enum Coverage {
-        COVERAGE_NIL = -1,
-        COVERAGE_CLEAR = 0,
-        COVERAGE_FEW = 1,
-        COVERAGE_SCATTERED = 2,
-        COVERAGE_BROKEN = 3,
-        COVERAGE_OVERCAST = 4
-    };
+	enum Coverage {
+		COVERAGE_NIL = -1,
+		COVERAGE_CLEAR = 0,
+		COVERAGE_FEW = 1,
+		COVERAGE_SCATTERED = 2,
+		COVERAGE_BROKEN = 3,
+		COVERAGE_OVERCAST = 4
+	};
+
+	static const char * COVERAGE_NIL_STRING;
+	static const char * COVERAGE_CLEAR_STRING;
+	static const char * COVERAGE_FEW_STRING;
+	static const char * COVERAGE_SCATTERED_STRING;
+	static const char * COVERAGE_BROKEN_STRING;
+	static const char * COVERAGE_OVERCAST_STRING;
 
 	SGMetarCloud() : _coverage(COVERAGE_NIL), _altitude(NaN), _type(0), _type_long(0) {}
 
 	void set(double alt, Coverage cov = COVERAGE_NIL );
 
 	inline Coverage getCoverage() const { return _coverage; }
+	static Coverage getCoverage( const std::string & coverage );
 	inline double getAltitude_m() const { return _altitude; }
 	inline double getAltitude_ft() const { return _altitude == NaN ? NaN : _altitude * SG_METER_TO_FEET; }
 	inline const char *getTypeString() const { return _type; }
 	inline const char *getTypeLongString() const { return _type_long; }
 
 protected:
-	Coverage _coverage;          // quarters: 0 -> clear ... 4 -> overcast
+	Coverage _coverage;     // quarters: 0 -> clear ... 4 -> overcast
 	double _altitude;       // 1000 m
 	const char *_type;      // CU
 	const char *_type_long; // cumulus
@@ -170,20 +178,20 @@ public:
 		RTD
 	};
 
-    enum Intensity {
-        NIL = 0,
-        LIGHT = 1,
-        MODERATE = 2,
-        HEAVY = 3
-    };
+	enum Intensity {
+		NIL = 0,
+		LIGHT = 1,
+		MODERATE = 2,
+		HEAVY = 3
+	};
 
-    struct Weather {
-        Weather() { intensity = NIL; vincinity = false; }
-        Intensity intensity;
-        bool      vincinity;
-        vector<string> descriptions;
-        vector<string> phenomena;
-    };
+	struct Weather {
+		Weather() { intensity = NIL; vincinity = false; }
+		Intensity intensity;
+		bool      vincinity;
+		vector<string> descriptions;
+		vector<string> phenomena;
+	};
 
 	inline const char *getData()		const { return _data; }
 	inline const char *getUnusedData()	const { return _m; }
@@ -232,7 +240,7 @@ public:
 	inline const vector<SGMetarCloud>& getClouds()	const	{ return _clouds; }
 	inline const map<string, SGMetarRunway>& getRunways()	const	{ return _runways; }
 	inline const vector<string>& getWeather()		const	{ return _weather; }
-    inline const vector<struct Weather> getWeather2()      const   { return _weather2; }
+	inline const vector<struct Weather> getWeather2()	const   { return _weather2; }
 
 protected:
 	string	_url;
@@ -259,7 +267,7 @@ protected:
 	int	_hail;
 	int	_snow;
 	bool	_cavok;
-    vector<struct Weather> _weather2;
+	vector<struct Weather> _weather2;
 
 	SGMetarVisibility		_min_visibility;
 	SGMetarVisibility		_max_visibility;

@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
 include (CheckFunctionExists)
-include (CheckCSourceCompiles)
 include (CPack)
 
 project(SimGear)
@@ -49,14 +48,6 @@ check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
 
-# check for daylight in time.h
-CHECK_C_SOURCE_COMPILES (
-    "#include <time.h>
-    int main() {
-       return daylight;
-    }"
-    HAVE_DAYLIGHT)
-
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS -Wall)
 endif(CMAKE_COMPILER_IS_GNUCXX)
@@ -71,8 +62,6 @@ if(WIN32)
         
         set(MSVC_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS")
     endif(MSVC)
-
-    set(NOMINMAX 1)
 endif(WIN32)    
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")

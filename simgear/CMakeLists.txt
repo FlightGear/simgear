@@ -1,4 +1,6 @@
 
+file(WRITE ${PROJECT_BINARY_DIR}/simgear/version.h "#define SIMGEAR_VERSION ${SIMGEAR_VERSION}")
+
 foreach( mylibfolder 
         bucket
         debug
@@ -30,7 +32,7 @@ endif()
 
 
 
-set(HEADERS compiler.h constants.h sg_inlines.h version.h)
+set(HEADERS compiler.h constants.h sg_inlines.h ${PROJECT_BINARY_DIR}/simgear/version.h)
 install (FILES ${HEADERS}  DESTINATION include/simgear/)
 
 if(SIMGEAR_SHARED)

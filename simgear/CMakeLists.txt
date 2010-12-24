@@ -5,6 +5,7 @@ foreach( mylibfolder
         bucket
         debug
         ephemeris
+        hla
         io
         magvar
         math

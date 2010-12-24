@@ -57,6 +57,9 @@ check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
+# See if we have any rti library variant installed
+find_package(RTI)
+
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)

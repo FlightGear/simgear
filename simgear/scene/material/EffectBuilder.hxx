@@ -23,6 +23,7 @@
 #include <string>
 #include <cstring>
 
+#include <osg/Object>
 #include <osgDB/Registry>
 
 #include <boost/bind.hpp>
@@ -579,6 +580,19 @@ new_EEPropListener(const Func& func, const std::string* propName,
 }
 
 /**
+ * Set DYNAMIC data variance on an osg::Object.
+ */
+
+inline void setDynamicVariance(void* obj)
+{
+}
+
+inline void setDynamicVariance(osg::Object* obj)
+{
+    obj->setDataVariance(osg::Object::DYNAMIC);
+}
+
+/**
  * Initialize the value and the possible updating of an effect
  * attribute. If the value is specified directly, set it. Otherwise,
  * use the <use> tag to look at the parameters. Again, if there is a
@@ -598,6 +612,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
+    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) {
         setter(obj, valProp->getValue<OSGParamType>());
     } else {
@@ -650,6 +665,7 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
+    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) { // Has <use>?
         setter(obj, Bridge<OSGParamType>::get(valProp->getValue<sg_type>()));
     } else {

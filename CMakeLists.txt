@@ -17,8 +17,18 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
+option(MSVC_3RDPARTY_DIR "Location where the third-party dependencies are extracted" NOT_FOUND)
 
-# check required dependencies
+if (MSVC_3RDPARTY_DIR)
+  message(STATUS "3rdparty files located in ${MSVC_3RDPARTY_DIR}")
+  set (CMAKE_LIBRARY_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/lib)
+  set (CMAKE_INCLUDE_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/include)
+  set (BOOST_ROOT ${MSVC_3RDPARTY_DIR}/boost_1_44_0)
+  set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_DIR}/3rdParty/include)
+  set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_DIR}/3rdParty/lib) 
+  set (OSGDIR ${MSVC_3RDPARTY_DIR}/install/msvc90/OpenScenegraph)
+endif (MSVC_3RDPARTY_DIR)
+
 find_package(Boost REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
@@ -42,6 +52,7 @@ endif()
 find_path (HAVE_SYS_TIME_H sys/time.h )
 find_path (HAVE_SYS_TIMEB_H sys/timeb.h )
 find_path (HAVE_UNISTD_H unistd.h )
+find_path (HAVE_WINDOWS_H windows.h)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)
@@ -50,7 +61,8 @@ check_function_exists(rint HAVE_RINT)
 
 # isnan might not be real symbol, so can't check using function_exists
 check_cxx_source_compiles(
-    "#include <cmath> void f() { isnan(0.0);} "
+    "#include <cmath> 
+    void f() { isnan(0.0);} "
     HAVE_ISNAN)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -65,7 +77,7 @@ if(WIN32)
         #     SET(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
         # endforeach(warning)
         
-        set(MSVC_FLAGS "-DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS")
+        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS")
     endif(MSVC)
     
     # assumed on Windows
@@ -94,4 +106,15 @@ configure_file (
   
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 add_subdirectory(simgear)
+
+#-----------------------------------------------------------------------------
+### uninstall target
+#-----------------------------------------------------------------------------
+CONFIGURE_FILE(
+  "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/cmake_uninstall.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+  IMMEDIATE @ONLY)
+ADD_CUSTOM_TARGET(uninstall
+  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
 

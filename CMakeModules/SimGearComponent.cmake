@@ -1,7 +1,7 @@
 
 macro(simgear_component name includePath sources headers)
 
-    if (${SIMGEAR_SHARED})
+    if (SIMGEAR_SHARED)
         foreach(s ${sources})
             set_property(GLOBAL
                 APPEND PROPERTY ALL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/${s}")

@@ -21,6 +21,9 @@
 
 #include "ConditionNode.hxx"
 
+#include <osgDB/Registry>
+#include <osgDB/Output>
+
 #include <simgear/math/SGMath.hxx>
 
 namespace simgear
@@ -57,4 +60,25 @@ void ConditionNode::traverse(NodeVisitor& nv)
     }
 }
 
+namespace
+{
+bool ConditionNode_writeLocalData(const Object& obj, osgDB::Output& fw)
+{
+    const ConditionNode& cn = static_cast<const ConditionNode&>(obj);
+    // Can't really print out conditions
+    fw.indent() << "expression ";
+    if (cn.getCondition())
+        fw << "yes\n";
+    else
+        fw << "no\n";
+    return true;
+}
+
+osgDB::RegisterDotOsgWrapperProxy g_ConditionNodeProxy(
+    new ConditionNode,
+    "simgear::ConditionNode",
+    "Object Node simgear::ConditionNode Group",
+    0,
+    &ConditionNode_writeLocalData);
+}
 }

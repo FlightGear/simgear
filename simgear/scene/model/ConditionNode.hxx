@@ -35,7 +35,7 @@ public:
               const osg::CopyOp& op = osg::CopyOp::SHALLOW_COPY);
     META_Node(simgear,ConditionNode);
     ~ConditionNode();
-    const SGCondition* getCondition() { return _condition.ptr(); }
+    const SGCondition* getCondition() const { return _condition.ptr(); }
     void setCondition(const SGCondition* condition) { _condition = condition; }
 
     virtual void traverse(osg::NodeVisitor& nv);

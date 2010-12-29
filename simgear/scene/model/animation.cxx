@@ -22,6 +22,7 @@
 #include <osg/Geometry>
 #include <osg/LOD>
 #include <osg/Math>
+#include <osg/Object>
 #include <osg/PolygonMode>
 #include <osg/PolygonOffset>
 #include <osg/StateSet>
@@ -29,6 +30,7 @@
 #include <osg/TexMat>
 #include <osg/Texture2D>
 #include <osg/Transform>
+#include <osg/Uniform>
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 #include <osgDB/Input>
@@ -43,6 +45,7 @@
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
+#include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include "animation.hxx"
 #include "model.hxx"
@@ -59,6 +62,7 @@ using OpenThreads::Mutex;
 using OpenThreads::ReentrantMutex;
 using OpenThreads::ScopedLock;
 
+using namespace simgear;
 
 ////////////////////////////////////////////////////////////////////////
 // Static utility functions.
@@ -2260,6 +2264,12 @@ SGPickAnimation::SGPickAnimation(const SGPropertyNode* configNode,
 {
 }
 
+namespace
+{
+Mutex colorModeUniformMutex;
+osg::ref_ptr<osg::Uniform> colorModeUniform;
+}
+
 osg::Group*
 SGPickAnimation::createAnimationGroup(osg::Group& parent)
 {
@@ -2290,28 +2300,52 @@ SGPickAnimation::createAnimationGroup(osg::Group& parent)
       &parent));
 
   // prepare a state set that paints the edges of this object yellow
+  // The material and texture attributes are set with
+  // OVERRIDE|PROTECTED in case there is a material animation on a
+  // higher node in the scene graph, which would have its material
+  // attribute set with OVERRIDE.
   osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
-  stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::OFF | osg::StateAttribute::OVERRIDE);
-
+  osg::Texture2D* white = StateAttributeFactory::instance()->getWhiteTexture();
+  stateSet->setTextureAttributeAndModes(0, white,
+                                        (osg::StateAttribute::ON
+                                         | osg::StateAttribute::OVERRIDE
+                                         | osg::StateAttribute::PROTECTED));
   osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
   polygonOffset->setFactor(-1);
   polygonOffset->setUnits(-1);
   stateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
-  stateSet->setMode(GL_POLYGON_OFFSET_LINE, osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-
+  stateSet->setMode(GL_POLYGON_OFFSET_LINE,
+                    osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
   osg::PolygonMode* polygonMode = new osg::PolygonMode;
   polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
                        osg::PolygonMode::LINE);
   stateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
-  
   osg::Material* material = new osg::Material;
   material->setColorMode(osg::Material::OFF);
-  material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
-  material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
+  material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 1));
+  // XXX Alpha < 1.0 in the diffuse material value is a signal to the
+  // default shader to take the alpha value from the material value
+  // and not the glColor. In many cases the pick animation geometry is
+  // transparent, so the outline would not be visible without this hack.
+  material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, .95));
   material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
   material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
-  stateSet->setAttribute(material, osg::StateAttribute::OVERRIDE);
-
+  stateSet->setAttribute(
+      material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
+  // The default shader has a colorMode uniform that mimics the
+  // behavior of Material color mode.
+  osg::Uniform* cmUniform = 0;
+  {
+      ScopedLock<Mutex> lock(colorModeUniformMutex);
+      if (!colorModeUniform.valid()) {
+          colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
+          colorModeUniform->set(0); // MODE_OFF
+          colorModeUniform->setDataVariance(osg::Object::STATIC);
+      }
+      cmUniform = colorModeUniform.get();
+  }
+  stateSet->addUniform(cmUniform,
+                       osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
   // Only add normal geometry if configured
   if (getConfig()->getBoolValue("visible", true))
     parent.addChild(normalGroup.get());

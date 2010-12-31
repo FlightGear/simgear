@@ -767,6 +767,7 @@ bool SGMetar::scanSkyCondition()
 
 	if (!strncmp(m, "CLR", i = 3)				// clear
 			|| !strncmp(m, "SKC", i = 3)		// sky clear
+			|| !strncmp(m, "NCD", i = 3)		// nil cloud detected
 			|| !strncmp(m, "NSC", i = 3)		// no significant clouds
 			|| !strncmp(m, "CAVOK", i = 5))	{	// ceiling and visibility OK (implies 9999)
 		m += i;

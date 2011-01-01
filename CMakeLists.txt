@@ -21,12 +21,12 @@ option(MSVC_3RDPARTY_DIR "Location where the third-party dependencies are extrac
 
 if (MSVC_3RDPARTY_DIR)
   message(STATUS "3rdparty files located in ${MSVC_3RDPARTY_DIR}")
-  set (CMAKE_LIBRARY_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/lib)
-  set (CMAKE_INCLUDE_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/include)
+  set (CMAKE_LIBRARY_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/lib ${MSVC_3RDPARTY_DIR}/install/msvc90/OpenScenegraph/lib )
+  set (CMAKE_INCLUDE_PATH ${MSVC_3RDPARTY_DIR}/3rdParty/include ${MSVC_3RDPARTY_DIR}/install/msvc90/OpenScenegraph/include)
   set (BOOST_ROOT ${MSVC_3RDPARTY_DIR}/boost_1_44_0)
   set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_DIR}/3rdParty/include)
+  set (ALUT_INCLUDE_DIR ${MSVC_3RDPARTY_DIR}/3rdParty/include)
   set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_DIR}/3rdParty/lib) 
-  set (OSGDIR ${MSVC_3RDPARTY_DIR}/install/msvc90/OpenScenegraph)
 endif (MSVC_3RDPARTY_DIR)
 
 find_package(Boost REQUIRED)

@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 include (CheckFunctionExists)
+include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
 include (CPack)
 
@@ -49,10 +50,10 @@ if(JPEG_FACTORY)
     include_directories(${JPEG_INCLUDE_DIR})
 endif()
 
-find_path (HAVE_SYS_TIME_H sys/time.h )
-find_path (HAVE_SYS_TIMEB_H sys/timeb.h )
-find_path (HAVE_UNISTD_H unistd.h )
-find_path (HAVE_WINDOWS_H windows.h)
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
+check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(windows.h HAVE_WINDOWS_H)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)

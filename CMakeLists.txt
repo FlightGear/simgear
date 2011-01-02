@@ -17,7 +17,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
-option(MSVC_3RDPARTY_DIR "Location where the third-party dependencies are extracted" NOT_FOUND)
+set(MSVC_3RDPARTY_DIR NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
 if (MSVC_3RDPARTY_DIR)
   message(STATUS "3rdparty files located in ${MSVC_3RDPARTY_DIR}")

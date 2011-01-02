@@ -60,6 +60,11 @@ check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
 
+SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually d on windows")
+SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_RELWITHDEBINFO_POSTFIX "rd" CACHE STRING "add a postfix, usually empty on windows")
+SET(CMAKE_MINSIZEREL_POSTFIX "s" CACHE STRING "add a postfix, usually empty on windows")
+
 # isnan might not be real symbol, so can't check using function_exists
 check_cxx_source_compiles(
     "#include <cmath> 

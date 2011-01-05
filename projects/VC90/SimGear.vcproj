@@ -47,7 +47,7 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_44_0"
-				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;BOOST_MULTI_INDEX_DISABLE_SERIALIZATION;BOOST_BIMAP_DISABLE_SERIALIZATION"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -118,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_44_0"
-				PreprocessorDefinitions="HAVE_CONFIG_H,NDEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="HAVE_CONFIG_H;NDEBUG;WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;BOOST_MULTI_INDEX_DISABLE_SERIALIZATION;BOOST_BIMAP_DISABLE_SERIALIZATION"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -188,7 +188,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90\OpenSceneGraph\include;..\..\..\3rdparty\include;..\..\..\boost_1_44_0"
-				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;BOOST_MULTI_INDEX_DISABLE_SERIALIZATION;BOOST_BIMAP_DISABLE_SERIALIZATION"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="true"
@@ -259,7 +259,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..;..\..\simgear;..\..\..;..\..\..\install\msvc90-64\OpenSceneGraph\include;..\..\..\3rdparty.x64\include;..\..\..\boost_1_44_0"
-				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS"
+				PreprocessorDefinitions="HAVE_CONFIG_H,_DEBUG,WIN32;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;BOOST_MULTI_INDEX_DISABLE_SERIALIZATION;BOOST_BIMAP_DISABLE_SERIALIZATION"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				RuntimeTypeInfo="true"
@@ -480,6 +480,30 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\io\sg_netBuffer.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\sg_netBuffer.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\sg_netChannel.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\sg_netChannel.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\sg_netChat.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\sg_netChat.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\io\sg_serial.cxx"
 				>
 			</File>
@@ -503,12 +527,6 @@
 				RelativePath="..\..\simgear\io\sg_socket_udp.hxx"
 				>
 			</File>
-			<File RelativePath="..\..\simgear\io\sg_netChannel.hxx"></File>
-			<File RelativePath="..\..\simgear\io\sg_netChannel.cxx"></File>
-			<File RelativePath="..\..\simgear\io\sg_netChat.hxx"></File>
-			<File RelativePath="..\..\simgear\io\sg_netChat.cxx"></File>
-			<File RelativePath="..\..\simgear\io\sg_netBuffer.cxx"></File>
-			<File RelativePath="..\..\simgear\io\sg_netBuffer.hxx"></File>
 		</Filter>
 		<Filter
 			Name="Lib_sgmagvar"
@@ -642,19 +660,19 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\misc\sg_path.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\sg_path.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\sg_sleep.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\misc\sg_sleep.hxx"
 				>
 			</File>
 			<File
@@ -990,6 +1008,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\props\propertyObject.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\propertyObject.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\props\props.cxx"
 				>
 			</File>
@@ -1003,14 +1029,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\props\props_io.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\props\propertyObject.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\props\propertyObject.hxx"
 				>
 			</File>
 		</Filter>

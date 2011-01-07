@@ -206,6 +206,10 @@ SGExpressiond*
 read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax)
 {
+  const SGPropertyNode * expression = configNode->getNode( "expression" );
+  if( expression != NULL )
+    return SGReadDoubleExpression( modelRoot, expression->getChild(0) );
+
   SGExpression<double>* value = 0;
 
   std::string inputPropertyName = configNode->getStringValue("property", "");

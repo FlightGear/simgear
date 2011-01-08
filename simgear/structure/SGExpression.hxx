@@ -122,6 +122,9 @@ public:
   T getValue(const simgear::expression::Binding* binding = 0) const
   { T value; eval(value, binding); return value; }
 
+  double getDoubleValue(const simgear::expression::Binding* binding = 0) const
+  { T value; eval(value, binding); return value; }
+
   virtual bool isConst() const { return false; }
   virtual SGExpression* simplify();
   virtual simgear::expression::Type getType() const
@@ -319,7 +322,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = acos(SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
+  { value = acos((double)SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -332,7 +335,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = asin(SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
+  { value = asin((double)SGMisc<T>::clip(getOperand()->getValue(b), -1, 1)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -345,7 +348,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = atan(getOperand()->getValue(b)); }
+  { value = atan(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -358,7 +361,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = ceil(getOperand()->getValue(b)); }
+  { value = ceil(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -371,7 +374,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = cos(getOperand()->getValue(b)); }
+  { value = cos(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -384,7 +387,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = cosh(getOperand()->getValue(b)); }
+  { value = cosh(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -397,7 +400,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = exp(getOperand()->getValue(b)); }
+  { value = exp(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -410,7 +413,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = floor(getOperand()->getValue(b)); }
+  { value = floor(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -423,7 +426,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = log(getOperand()->getValue(b)); }
+  { value = log(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -436,7 +439,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = log10(getOperand()->getValue(b)); }
+  { value = log10(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -449,7 +452,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = sin(getOperand()->getValue(b)); }
+  { value = sin(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -462,7 +465,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = sinh(getOperand()->getValue(b)); }
+  { value = sinh(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -488,7 +491,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = sqrt(getOperand()->getValue(b)); }
+  { value = sqrt(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -501,7 +504,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = tan(getOperand()->getValue(b)); }
+  { value = tan(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -514,7 +517,7 @@ public:
   { }
 
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = tanh(getOperand()->getValue(b)); }
+  { value = tanh(getOperand()->getDoubleValue(b)); }
 
   using SGUnaryExpression<T>::getOperand;
 };
@@ -731,7 +734,7 @@ public:
     : SGBinaryExpression<T>(expr0, expr1)
   { }
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = atan2(getOperand(0)->getValue(b), getOperand(1)->getValue(b)); }
+  { value = atan2(getOperand(0)->getDoubleValue(b), getOperand(1)->getDoubleValue(b)); }
   using SGBinaryExpression<T>::getOperand;
 };
 
@@ -771,7 +774,7 @@ public:
     : SGBinaryExpression<T>(expr0, expr1)
   { }
   virtual void eval(T& value, const simgear::expression::Binding* b) const
-  { value = pow(getOperand(0)->getValue(b), getOperand(1)->getValue(b)); }
+  { value = pow(getOperand(0)->getDoubleValue(b), getOperand(1)->getDoubleValue(b)); }
   using SGBinaryExpression<T>::getOperand;
 };
 

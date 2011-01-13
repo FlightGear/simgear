@@ -43,7 +43,7 @@ else()
     find_package(OpenGL REQUIRED)
     find_package(OpenAL REQUIRED)
     find_package(ALUT REQUIRED)
-    find_package(OpenSceneGraph 2.8.2 REQUIRED osgText osgSim osgDB osgParticle osgUtil)
+    find_package(OpenSceneGraph 2.8.1 REQUIRED osgText osgSim osgDB osgParticle osgUtil)
 endif()
 
 if(JPEG_FACTORY)

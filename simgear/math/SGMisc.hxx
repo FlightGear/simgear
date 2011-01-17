@@ -65,7 +65,7 @@ public:
       return min;
     T normalized = value - range*floor((value - min)/range);
     // two security checks that can only happen due to roundoff
-    if (value <= min)
+    if (normalized <= min)
       return min;
     if (max <= normalized)
       return min;

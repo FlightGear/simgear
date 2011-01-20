@@ -16,6 +16,8 @@
 
 #include <simgear/math/SGMath.hxx>
 
+#include <simgear/structure/exception.hxx>
+
 SGBinding::SGBinding()
   : _command(0),
     _arg(new SGPropertyNode),
@@ -62,9 +64,17 @@ SGBinding::fire () const
       _command = SGCommandMgr::instance()->getCommand(_command_name);
     if (_command == 0) {
       SG_LOG(SG_INPUT, SG_WARN, "No command attached to binding");
-    } else if (!(*_command)(_arg)) {
-      SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
-             << _command_name);
+    } else
+    {
+        try {
+            if (!(*_command)(_arg)) {
+                  SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
+                         << _command_name);
+            }
+        } catch (sg_exception& e) {
+          SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
+            << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+        }
     }
   }
 }

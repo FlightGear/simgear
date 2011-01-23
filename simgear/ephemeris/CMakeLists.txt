@@ -32,4 +32,4 @@ set(SOURCES
     venus.cxx
     )
 
-simgear_component(ephemeris ephemeris "${SOURCES}" "${HEADERS}")
+simgear_component(ephem ephemeris "${SOURCES}" "${HEADERS}")

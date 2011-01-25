@@ -807,9 +807,9 @@ public:
   { }
   virtual void eval(T& value, const simgear::expression::Binding* b) const
   {
-    value = T(0);
+    value = getOperand(0)->getValue(b);
     unsigned sz = SGNaryExpression<T>::getNumOperands();
-    for (unsigned i = 0; i < sz; ++i)
+    for (unsigned i = 1; i < sz; ++i)
       value -= getOperand(i)->getValue(b);
   }
   using SGNaryExpression<T>::getValue;

@@ -546,7 +546,7 @@ void SGShadowVolume::SceneryObject::computeShadows(void) {
    		sgSetVec4( rotation[3], 0, 0, 0, 1);
 
 		ShadowCaster_list::iterator iShadowCaster;
-		for(iShadowCaster = parts.begin() ; iShadowCaster != parts.end() ; iShadowCaster ++ ) {
+		for(iShadowCaster = parts.begin() ; iShadowCaster != parts.end() ; ++iShadowCaster ) {
 			(*iShadowCaster)->computeShadows(rotation, rotation_translation, occluder_type);
 		}
 }
@@ -720,7 +720,7 @@ SGShadowVolume::SceneryObject::SceneryObject(ssgBranch *_scenery_object, Occlude
 SGShadowVolume::SceneryObject::~SceneryObject()
 {
 	ShadowCaster_list::iterator iParts;
-	for(iParts = parts.begin() ; iParts != parts.end(); iParts++ ) {
+	for(iParts = parts.begin() ; iParts != parts.end(); ++iParts ) {
 		delete *iParts;
 	}
 	parts.clear();
@@ -864,7 +864,7 @@ SGShadowVolume::SGShadowVolume( ssgBranch *root ) :
 
 SGShadowVolume::~SGShadowVolume() {
 	SceneryObject_map::iterator iSceneryObject;
-	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); iSceneryObject++ ) {
+	for(iSceneryObject = sceneryObjects.begin() ; iSceneryObject != sceneryObjects.end(); ++iSceneryObject ) {
 		delete iSceneryObject->second;
 	}
 	sceneryObjects.clear();

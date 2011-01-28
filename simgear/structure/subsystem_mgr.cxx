@@ -84,7 +84,7 @@ SGSubsystem::printTimingInformation ()
    SGTimeStamp startTime;
    for ( eventTimeVecIterator i = timingInfo.begin();
           i != timingInfo.end();
-          i++) {
+          ++i) {
        if (i == timingInfo.begin()) {
            startTime = i->getTime();
        } else {

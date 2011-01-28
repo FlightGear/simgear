@@ -2090,7 +2090,7 @@ public:
   virtual bool buttonPressed(int button, const Info&)
   {
     bool found = false;
-    for( std::vector<int>::iterator it = _buttons.begin(); it != _buttons.end(); it++ ) {
+    for( std::vector<int>::iterator it = _buttons.begin(); it != _buttons.end(); ++it ) {
       if( *it == button ) {
         found = true;
         break;

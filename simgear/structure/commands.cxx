@@ -74,7 +74,7 @@ SGCommandMgr::getCommandNames () const
   command_map::const_iterator last = _commands.end();
   while (it != last) {
     names.push_back(it->first);
-    it++;
+    ++it;
   }
   return names;
 }

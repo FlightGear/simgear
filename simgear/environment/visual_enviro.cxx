@@ -192,7 +192,7 @@ SGEnviro::~SGEnviro(void) {
   // OSGFIXME
   return;
 	list_of_lightning::iterator iLightning;
-	for( iLightning = lightnings.begin() ; iLightning != lightnings.end() ; iLightning++ ) {
+	for( iLightning = lightnings.begin() ; iLightning != lightnings.end() ; ++iLightning ) {
 		delete (*iLightning);
 	}
 	lightnings.clear();

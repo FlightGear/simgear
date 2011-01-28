@@ -20,7 +20,7 @@ option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" O
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
 set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
-if (MSVC_3RDPARTY_ROOT)
+if (MSVC AND MSVC_3RDPARTY_ROOT)
   message(STATUS "3rdparty files located in ${MSVC_3RDPARTY_ROOT}")
   set( OSG_MSVC "msvc" )
   if (${MSVC_VERSION} EQUAL 1600)
@@ -41,7 +41,7 @@ if (MSVC_3RDPARTY_ROOT)
   set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
   set (ALUT_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
   set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib) 
-endif (MSVC_3RDPARTY_ROOT)
+endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DISABLE_SERIALIZATION")

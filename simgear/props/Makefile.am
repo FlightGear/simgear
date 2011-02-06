@@ -8,7 +8,8 @@ include_HEADERS = \
 	props_io.hxx \
 	AtomicChangeListener.hxx \
 	ExtendedPropertyAdapter.hxx \
-	propertyObject.hxx
+	propertyObject.hxx \
+	tiedpropertylist.hxx
 
 libsgprops_a_SOURCES = \
 	condition.cxx \

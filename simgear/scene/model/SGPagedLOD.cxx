@@ -68,9 +68,30 @@ void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp, osg::FrameStamp* framestam
     unsigned childNum = getNumChildren();
     setTimeStamp(childNum, 0);
     double priority=1.0;
+#if SG_OSG_MIN_VERSION_REQUIRED(2,9,11)
+    // osgDB::DatabasePager::requestNodeFile changed with OSG 2.9.11 
+
+    #ifdef __GNUC__
+        #warning !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #warning !! Your version of OpenSceneGraph is currently unsupported.
+        #warning !! Use latest stable OSG (2.8.3) or a OSG developer release up to 2.9.10.
+        #warning !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #else
+        // Alas! Why is MSVC different (again)? :)
+        #pragma WARNING( Your version of OpenSceneGraph is currently unsupported. )
+        #pragma WARNING( Use latest stable OSG (2.8.3) or a OSG developer release up to 2.9.10. )
+    #endif
+
+    //TODO We need to adapt to OSG 2.9.11 (and future releases). This doesn't work yet...
     dbp->requestNodeFile(getFileName(childNum),this,priority,framestamp,
                          getDatabaseRequest(childNum),
                          _readerWriterOptions.get());
+#else
+    // OSG revisions up to 2.9.10 
+    dbp->requestNodeFile(getFileName(childNum),this,priority,framestamp,
+                         getDatabaseRequest(childNum),
+                         _readerWriterOptions.get());
+#endif
 }
 
 bool SGPagedLOD_writeLocalData(const Object& obj, osgDB::Output& fw)

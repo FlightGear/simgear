@@ -1016,6 +1016,9 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\props\tiedpropertylist.hxx"
+				>
+			<File
 				RelativePath="..\..\simgear\props\props.cxx"
 				>
 			</File>

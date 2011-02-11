@@ -25,7 +25,7 @@
 
 #include <errno.h>
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #  include <netinet/in.h>
 #endif
 
@@ -38,7 +38,7 @@ namespace simgear
 class IPAddress
 {
   /* DANGER!!!  This MUST match 'struct sockaddr_in' exactly! */
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
   __uint8_t      sin_len;
   __uint8_t      sin_family;
   in_port_t      sin_port;

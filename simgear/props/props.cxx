@@ -1615,8 +1615,12 @@ bool SGPropertyNode::tie (const SGRawValue<const char *> &rawValue,
     _tied = true;
     _value.val = rawValue.clone();
 
-    if (useDefault)
+    if (useDefault) {
+        int save_attributes = getAttributes();
+        setAttribute( WRITE, true );
         setStringValue(old_val.c_str());
+        setAttributes( save_attributes );
+    }
 
     return true;
 }

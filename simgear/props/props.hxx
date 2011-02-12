@@ -1786,8 +1786,12 @@ bool SGPropertyNode::tie(const SGRawValue<T> &rawValue, bool useDefault)
         _type = EXTENDED;
     _tied = true;
     _value.val = rawValue.clone();
-    if (useDefault)
+    if (useDefault) {
+        int save_attributes = getAttributes();
+        setAttribute( WRITE, true );
         setValue(old_val);
+        setAttributes( save_attributes );
+    }
     return true;
 }
 

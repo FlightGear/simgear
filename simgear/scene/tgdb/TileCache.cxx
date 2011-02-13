@@ -66,9 +66,7 @@ void TileCache::init( void ) {
     SG_LOG( SG_TERRAIN, SG_INFO, "  current cache size = "
             << tile_cache.size() );
 
-#if 0 // don't clear the cache
     clear_cache();
-#endif
 
     SG_LOG( SG_TERRAIN, SG_INFO, "  done with init()"  );
 }

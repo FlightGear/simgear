@@ -54,7 +54,7 @@ void CheckSceneryVisitor::apply(osg::PagedLOD& node)
                 // if the DatabasePager would load LODs while the splashscreen
                 // is there, we could just wait for the models to be loaded
                 // by only setting setLoaded(false) here
-                sgplod->forceLoad(_dbp,_framestamp);
+                sgplod->forceLoad(_dbp,_framestamp, getNodePath());
                 setLoaded(false);
             }
         }

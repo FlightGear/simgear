@@ -21,6 +21,7 @@
 #include <simgear/scene/tgdb/obj.hxx>
 class SGReaderWriterBTGOptions : public osgDB::ReaderWriter::Options {
 public:
+    META_Object(simgear,SGReaderWriterBTGOptions);
     SGReaderWriterBTGOptions(const std::string& str = std::string()) :
         osgDB::ReaderWriter::Options(str),
         _matlib(0), _calcLights(true),

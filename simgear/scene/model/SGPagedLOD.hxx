@@ -18,10 +18,13 @@
 #define SGPAGEDLOD_HXX 1
 
 #include <simgear/structure/OSGVersion.hxx>
+
+#define SG_PAGEDLOD_HAS_OPTIONS \
+    (SG_OSG_VERSION >= 29005 \
+     || (SG_OSG_VERSION < 29000 && SG_OSG_VERSION >= 28003))
+
 #include <osg/PagedLOD>
-#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
-#include <osgDB/Options>
-#endif
+#include <osgDB/Registry>
 #include <osgDB/ReaderWriter>
 #include <simgear/props/props.hxx>
 
@@ -43,26 +46,35 @@ public:
     META_Node(simgear, SGPagedLOD);
 
     // virtual void traverse(osg::NodeVisitor& nv);
-    virtual void forceLoad(osgDB::DatabasePager* dbp, osg::FrameStamp* framestamp);
+    virtual void forceLoad(osgDB::DatabasePager* dbp,
+                           osg::FrameStamp* framestamp,
+                           osg::NodePath& path);
 
     // reimplemented to notify the loading through ModelData
     bool addChild(osg::Node *child);
 
     void setReaderWriterOptions(osgDB::ReaderWriter::Options *options) {
-        _readerWriterOptions = options;
         options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
-#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
+#if SG_PAGEDLOD_HAS_OPTIONS
         setDatabaseOptions(options);
+#else
+        _readerWriterOptions = options;
 #endif
     }
 
     osgDB::ReaderWriter::Options* getReaderWriterOptions() {
+#if SG_PAGEDLOD_HAS_OPTIONS
+        return static_cast<osgDB::ReaderWriter::Options*>(getDatabaseOptions());
+#else
         return _readerWriterOptions.get();
+#endif
     }
 
 protected:
     virtual ~SGPagedLOD();
+#if SG_PAGEDLOD_HAS_OPTIONS
     osg::ref_ptr<osgDB::ReaderWriter::Options> _readerWriterOptions;
+#endif
 };
 }
 #endif

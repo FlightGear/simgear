@@ -20,8 +20,7 @@
 #include <simgear/structure/OSGVersion.hxx>
 
 #define SG_PAGEDLOD_HAS_OPTIONS \
-    (SG_OSG_VERSION >= 29005 \
-     || (SG_OSG_VERSION < 29000 && SG_OSG_VERSION >= 28003))
+    (SG_OSG_VERSION >= 29005)
 
 #include <osg/PagedLOD>
 #include <osgDB/Registry>

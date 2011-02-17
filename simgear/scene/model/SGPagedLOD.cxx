@@ -46,8 +46,10 @@ SGPagedLOD::~SGPagedLOD()
 }
 
 SGPagedLOD::SGPagedLOD(const SGPagedLOD& plod,const CopyOp& copyop)
-        : osg::PagedLOD(plod, copyop),
-        _readerWriterOptions(plod._readerWriterOptions)
+        : osg::PagedLOD(plod, copyop)
+#if !SG_PAGEDLOD_HAS_OPTIONS
+        ,  _readerWriterOptions(plod._readerWriterOptions)
+#endif
 {
 }
 
@@ -84,7 +86,7 @@ void SGPagedLOD::forceLoad(osgDB::DatabasePager *dbp, FrameStamp* framestamp,
     dbp->requestNodeFile(getFileName(childNum), NodePathProxy(path),
                          priority, framestamp,
                          getDatabaseRequest(childNum),
-                         _readerWriterOptions.get());
+                         getReaderWriterOptions());
 }
 
 bool SGPagedLOD_writeLocalData(const Object& obj, osgDB::Output& fw)

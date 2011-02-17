@@ -71,7 +71,7 @@ public:
 
 protected:
     virtual ~SGPagedLOD();
-#if SG_PAGEDLOD_HAS_OPTIONS
+#if !SG_PAGEDLOD_HAS_OPTIONS
     osg::ref_ptr<osgDB::ReaderWriter::Options> _readerWriterOptions;
 #endif
 };

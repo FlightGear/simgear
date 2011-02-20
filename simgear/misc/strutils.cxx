@@ -200,5 +200,18 @@ namespace simgear {
 	    return reply.insert( 0, length-l, c );
 	}
 
+	bool
+	starts_with( const string & s, const string & substr )
+	{	
+		return s.find( substr ) == 0;
+	}
+
+	bool
+	ends_with( const string & s, const string & substr )
+	{	
+		size_t n = s.rfind( substr );
+		return (n != string::npos) && (n == s.length() - substr.length());
+	}
+
     } // end namespace strutils
 } // end namespace simgear

@@ -97,6 +97,24 @@ namespace simgear {
 	split( const std::string& s,
 	       const char* sep = 0,
 	       int maxsplit = 0 );
+
+	/**
+	 * Test if a string starts with a string 
+	 *
+	 * @param s The string to be tested
+	 * @param substr The string to test
+	 * @return True, if s starts with substr, False otherwise
+	 */
+	bool starts_with( const std::string & s, const std::string & substr );
+
+	/**
+	 * Test if a string ends with a string 
+	 *
+	 * @param s The string to be tested
+	 * @param substr The string to test
+	 * @return True, if s ends with substr, False otherwise
+	 */
+	bool ends_with( const std::string & s, const std::string & substr );
   
   } // end namespace strutils
 } // end namespace simgear

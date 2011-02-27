@@ -29,8 +29,8 @@
 #include <map>
 #include <vector>
 
-#include <simgear/props/props.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
 #include "SGSmplstat.hxx"
 
 

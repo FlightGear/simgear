@@ -32,6 +32,7 @@ class SGReaderWriterXMLOptions : public osgDB::ReaderWriter::Options
 {
 public:
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
+    META_Object(simgear, SGReaderWriterXMLOptions);
 
     SGReaderWriterXMLOptions():
         osgDB::ReaderWriter::Options(),

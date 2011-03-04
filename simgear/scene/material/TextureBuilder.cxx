@@ -132,8 +132,8 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
         texture = TextureBuilder::buildFromType(effect, type, prop,
                                                 options);
     }
-    catch (BuilderException& ) {
-        SG_LOG(SG_INPUT, SG_ALERT, "No image file, "
+    catch (BuilderException& e) {
+        SG_LOG(SG_INPUT, SG_ALERT, e.getFormattedMessage() << ", "
             << "maybe the reader did not set the filename attribute, "
             << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
         texture = StateAttributeFactory::instance()->getWhiteTexture();
@@ -213,7 +213,7 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
     string imageName;
     if (pImage)
         imageName = pImage->getStringValue();
-    string absFileName = osgDB::findDataFile(imageName, options);
+    string absFileName = SGModelLib::findDataFile(imageName, options);
 
     const SGPropertyNode* pMipmapControl
         = getEffectPropertyChild(effect, props, "mipmap-control");

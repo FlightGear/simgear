@@ -128,11 +128,11 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
     }
     SGPath tpath("Textures.high");
     tpath.append(tname);
-    string fullTexPath = osgDB::findDataFile(tpath.str(), options);
+    string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
     if (fullTexPath.empty()) {
       tpath = SGPath("Textures");
       tpath.append(tname);
-      fullTexPath = osgDB::findDataFile(tpath.str(), options);
+      fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
     }
 
     if (!fullTexPath.empty() ) {
@@ -154,11 +154,11 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
       }
       SGPath tpath("Textures.high");
       tpath.append(tname);
-      string fullTexPath = osgDB::findDataFile(tpath.str(), options);
+      string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
       if (fullTexPath.empty()) {
         tpath = SGPath("Textures");
         tpath.append(tname);
-        fullTexPath = osgDB::findDataFile(tpath.str(), options);
+        fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
       }
       st.add_texture(fullTexPath, textures[j]->getIndex());
     }
@@ -193,7 +193,7 @@ SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
   const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
   if (treeTexNode) {
     string treeTexPath = props->getStringValue("tree-texture");
-    tree_texture = osgDB::findDataFile(treeTexPath, options);
+    tree_texture = SGModelLib::findDataFile(treeTexPath, options);
   }
 
   // surface values for use with ground reactions

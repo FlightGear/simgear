@@ -725,7 +725,7 @@ void reload_shaders()
     for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
     {
 	Shader *shader = sitr->second.get();
-        string fileName = osgDB::findDataFile(sitr->first.first);
+        string fileName = SGModelLib::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
 	    shader->loadShaderSourceFromFile(fileName);
         }
@@ -814,7 +814,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     {
         const string& shaderName = shaderKey.first;
         Shader::Type stype = shaderKey.second;
-        string fileName = osgDB::findDataFile(shaderName, options);
+        string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
             throw BuilderException(string("couldn't find shader ") +
                                    shaderName);

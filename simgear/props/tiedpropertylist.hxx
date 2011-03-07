@@ -21,6 +21,7 @@
 #ifndef __TIEDPROPERTYLIST_HXX
 #define  __TIEDPROPERTYLIST_HXX
 #include <simgear/props/props.hxx>
+#include <assert.h>
 using simgear::PropertyList;
 
 namespace simgear {
@@ -34,6 +35,16 @@ class TiedPropertyList : PropertyList {
 public:
     TiedPropertyList() {}
     TiedPropertyList( SGPropertyNode_ptr root ) : _root(root) {}
+    virtual ~TiedPropertyList()
+    { 
+        _root = 0;
+        if (size()>0)
+        {
+            SG_LOG(SG_GENERAL, SG_ALERT, "Detected properties with dangling ties. Use 'Untie' before removing a TiedPropertyList.");
+            // running debug mode: go, fix it!
+            assert(size() == 0);
+        }
+    }
 
     void setRoot( SGPropertyNode_ptr root ) { _root = root; }
     SGPropertyNode_ptr getRoot() const { return _root; }

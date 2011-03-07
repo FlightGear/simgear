@@ -253,10 +253,9 @@ void SGCloudField::applyCoverage(void) {
         last_coverage = coverage;
 }
 
-void SGCloudField::addCloud( SGVec3f& pos, SGNewCloud *cloud) {
+void SGCloudField::addCloud( SGVec3f& pos, osg::ref_ptr<EffectGeode> geode) {
         defined3D = true;
-        osg::ref_ptr<osg::Geode> geode = cloud->genCloud();
-        
+
         // Determine which quadtree to put it in.
         int x = (int) floor((pos.x() + fieldSize/2.0) * QUADTREE_SIZE / fieldSize);
         if (x >= QUADTREE_SIZE) x = (QUADTREE_SIZE - 1);

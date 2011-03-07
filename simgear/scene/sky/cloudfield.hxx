@@ -49,6 +49,11 @@ using std::vector;
 
 class SGNewCloud;
 
+namespace simgear
+{
+    class EffectGeode;
+}
+
 /**
  * A layer of 3D clouds.
  */
@@ -99,7 +104,7 @@ public:
 	void clear(void);
 
 	// add one cloud, data is not copied, ownership given
-	void addCloud( SGVec3f& pos, SGNewCloud *cloud);
+	void addCloud( SGVec3f& pos, osg::ref_ptr<simgear::EffectGeode> cloud);
 
         /**
         * reposition the cloud layer at the specified origin and

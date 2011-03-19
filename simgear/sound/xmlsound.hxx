@@ -149,12 +149,12 @@ private:
   double _dt_play;
   double _dt_stop;
   double _delay;        // time after which the sound should be started (default: 0)
-  double _stopping;	// time after the sound should have stopped.
-			// This is useful for lost packets in in-transit mode.
+  double _stopping;     // time after the sound should have stopped.
+                        // This is useful for lost packets in in-transit mode.
+  bool _initialized;
 
   std::vector<_snd_prop> _volume;
   std::vector<_snd_prop> _pitch;
-
 };
 
 #endif // _SG_SOUND_HXX

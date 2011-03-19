@@ -68,7 +68,8 @@ SGXmlSound::SGXmlSound()
     _dt_play(0.0),
     _dt_stop(0.0),
     _delay(0.0),
-    _stopping(0.0)
+    _stopping(0.0),
+    _initialized(false)
 {
 }
 
@@ -297,6 +298,13 @@ SGXmlSound::update (double dt)
    //
    if (_property)
        curr_value = _property->getDoubleValue();
+
+   if (!_initialized)
+   {
+       // update initial value before detecting changes
+       _prev_value  = curr_value;
+       _initialized = true;
+   }
 
    // If a condition is defined, test whether it is FALSE,
    // else

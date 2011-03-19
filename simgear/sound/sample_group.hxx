@@ -85,7 +85,7 @@ public:
     /**
      * Destructor
      */
-    ~SGSampleGroup ();
+    virtual ~SGSampleGroup ();
 
     /**
      * Set the status of this sample group to active.

@@ -22,7 +22,7 @@ namespace simgear
 class EffectElement
 {
 protected:
-    ~EffectElement() {}
+    virtual ~EffectElement() {}
 };
 }
 #endif

@@ -22,7 +22,6 @@
 #define  __TIEDPROPERTYLIST_HXX
 #include <simgear/props/props.hxx>
 #include <assert.h>
-using simgear::PropertyList;
 
 namespace simgear {
 
@@ -31,7 +30,7 @@ namespace simgear {
  * This helper class keeps track of tied properties and unties
  * each tied property when this class gets destructed.
 */
-class TiedPropertyList : PropertyList {
+class TiedPropertyList : simgear::PropertyList {
 public:
     TiedPropertyList() {}
     TiedPropertyList( SGPropertyNode_ptr root ) : _root(root) {}

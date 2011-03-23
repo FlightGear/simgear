@@ -1,3 +1,22 @@
+// Written by David Megginson, started 2000-12
+//
+// Copyright (C) 2000  David Megginson, david@megginson.com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of the
+// License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+//
+// $Id$
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/timing/timestamp.hxx>
@@ -117,10 +136,11 @@ SGSubsystemGroup::SGSubsystemGroup () :
 
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
+    printTimingStatistics();
+
     // reverse order to prevent order dependency problems
     for (unsigned int i = _members.size(); i > 0; i--)
     {
-        _members[i-1]->printTimingStatistics();
         delete _members[i-1];
     }
 }
@@ -188,7 +208,7 @@ SGSubsystemGroup::update (double delta_time_sec)
       {
            SGTimeStamp timeStamp = SGTimeStamp::now();
            _members[i]->update(delta_time_sec); // indirect call
-           timeStamp = timeStamp - SGTimeStamp::now();
+           timeStamp = SGTimeStamp::now() - timeStamp;
            double b = timeStamp.toUSecs();
            _members[i]->updateExecutionTime(b);
            double threshold = _members[i]->getTimeWarningThreshold();
@@ -205,6 +225,16 @@ SGSubsystemGroup::collectDebugTiming(bool collect)
     for (unsigned int i = 0; i < _members.size(); i++)
     {
         _members[i]->collectDebugTiming(collect);
+    }
+}
+
+void 
+SGSubsystemGroup::printTimingStatistics(double minMaxTime,double minJitter)
+{
+    for (unsigned int i = _members.size(); i > 0; i--)
+    {
+        _members[i-1]->printTimingStatistics(minMaxTime, minJitter);
+        _members[i-1]->timeStat.reset();
     }
 }
 
@@ -267,8 +297,13 @@ SGSubsystemGroup::set_fixed_update_time(double dt)
   _fixedUpdateTime = dt;
 }
 
+/**
+ * Print timing statistics.
+ * Only show data if jitter exceeds minJitter or
+ * maximum time exceeds minMaxTime. 
+ */
 void
-SGSubsystemGroup::Member::printTimingStatistics ()
+SGSubsystemGroup::Member::printTimingStatistics(double minMaxTime,double minJitter)
 {
     if (collectTimeStats) {
         double minTime = timeStat.min()   / 1000;
@@ -276,13 +311,17 @@ SGSubsystemGroup::Member::printTimingStatistics ()
         double meanTime = timeStat.mean() / 1000;
         double stddev   = timeStat.stdDev()   / 1000;
 
-        char buffer[256];
-        snprintf(buffer, 256, "Timing summary for %20s.\n"
-                              "-  mean time: %04.2f ms.\n"
-                              "-  min time : %04.2f ms.\n"
-                              "-  max time : %04.2f ms.\n"
-                              "- stddev    : %04.2f ms.\n", name.c_str(), meanTime, minTime, maxTime, stddev);
-        SG_LOG(SG_GENERAL, SG_ALERT, buffer);
+        if ((maxTime - minTime >= minJitter)||
+            (maxTime >= minMaxTime))
+        {
+            char buffer[256];
+            snprintf(buffer, 256, "Timing summary for %20s.\n"
+                                  "-  mean time: %04.2f ms.\n"
+                                  "-  min time : %04.2f ms.\n"
+                                  "-  max time : %04.2f ms.\n"
+                                  "-  stddev   : %04.2f ms.\n", name.c_str(), meanTime, minTime, maxTime, stddev);
+            SG_LOG(SG_GENERAL, SG_ALERT, buffer);
+        }
     }
 }
 
@@ -368,7 +407,7 @@ void
 SGSubsystemGroup::Member::printTimingInformation(double time)
 {
      if (collectTimeStats) {
-         SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert : " << time << " " << name);
+         SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert, subsystem \"" << name << "\": " << time/1000.0 << "ms");
          subsystem->printTimingInformation();
      }
 }
@@ -547,4 +586,12 @@ SGSubsystemMgr::get_subsystem (const string &name) const
         return s->second;
 }
 
-// end of fgfs.cxx
+void
+SGSubsystemMgr::printTimingStatistics(double minMaxTime,double minJitter)
+{
+    for (int i = 0; i < MAX_GROUPS; i++) {
+        _groups[i]->printTimingStatistics(minMaxTime, minJitter);
+    } // of groups iteration
+}
+
+// end of subsystem_mgr.cxx

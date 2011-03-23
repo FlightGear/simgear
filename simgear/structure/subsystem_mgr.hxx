@@ -323,6 +323,7 @@ public:
     virtual bool has_subsystem (const std::string &name) const;
 
     void collectDebugTiming(bool collect);
+    void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
 
     /**
      * 
@@ -339,8 +340,8 @@ private:
         virtual ~Member ();
 
         virtual void update (double delta_time_sec);
-	void printTimingInformation(double time);
-        void printTimingStatistics();
+        void printTimingInformation(double time);
+        void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
         void updateExecutionTime(double time);
         double getTimeWarningThreshold();
         void collectDebugTiming (bool collect) { collectTimeStats = collect; };
@@ -427,6 +428,7 @@ public:
     virtual SGSubsystem * get_subsystem(const std::string &name) const;
 
    void collectDebugTiming(bool collect);
+   void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
 
 private:
 

@@ -52,16 +52,13 @@ SGModelLib::panel_func SGModelLib::static_panelFunc = NULL;
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGModelLib.
 ////////////////////////////////////////////////////////////////////////
-void SGModelLib::init(const string &root_dir)
+void SGModelLib::init(const string &root_dir, SGPropertyNode* root)
 {
     osgDB::Registry::instance()->getDataFilePathList().push_front(root_dir);
+    static_propRoot = root;
+    SGPagedLOD::setRenderingCache(root->getBoolValue("/sim/rendering/cache",true));
 }
 
-void SGModelLib::setPropRoot(SGPropertyNode* root)
-{
-  static_propRoot = root;
-}
-    
 void SGModelLib::setPanelFunc(panel_func pf)
 {
   static_panelFunc = pf;

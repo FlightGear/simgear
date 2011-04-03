@@ -44,10 +44,8 @@ class SGModelLib
 public:
     typedef osg::Node *(*panel_func)(SGPropertyNode *);
 
-    static void init(const std::string &root_dir);
+    static void init(const std::string &root_dir, SGPropertyNode* root);
 
-    static void setPropRoot(SGPropertyNode* root);
-    
     static void setPanelFunc(panel_func pf);
     
     // Load a 3D model (any format)

@@ -52,14 +52,7 @@ public:
     // reimplemented to notify the loading through ModelData
     bool addChild(osg::Node *child);
 
-    void setReaderWriterOptions(osgDB::ReaderWriter::Options *options) {
-        options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
-#if SG_PAGEDLOD_HAS_OPTIONS
-        setDatabaseOptions(options);
-#else
-        _readerWriterOptions = options;
-#endif
-    }
+    void setReaderWriterOptions(osgDB::ReaderWriter::Options *options);
 
     osgDB::ReaderWriter::Options* getReaderWriterOptions() {
 #if SG_PAGEDLOD_HAS_OPTIONS
@@ -69,11 +62,14 @@ public:
 #endif
     }
 
+    static void setRenderingCache(bool cache) {_cache = cache;}
 protected:
     virtual ~SGPagedLOD();
 #if !SG_PAGEDLOD_HAS_OPTIONS
     osg::ref_ptr<osgDB::ReaderWriter::Options> _readerWriterOptions;
 #endif
+private:
+    static bool _cache;
 };
 }
 #endif

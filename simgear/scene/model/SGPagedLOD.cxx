@@ -35,6 +35,8 @@
 using namespace osg;
 using namespace simgear;
 
+bool SGPagedLOD::_cache = true;
+
 SGPagedLOD::SGPagedLOD()
         : PagedLOD()
 {
@@ -51,6 +53,20 @@ SGPagedLOD::SGPagedLOD(const SGPagedLOD& plod,const CopyOp& copyop)
         ,  _readerWriterOptions(plod._readerWriterOptions)
 #endif
 {
+}
+
+void
+SGPagedLOD::setReaderWriterOptions(osgDB::ReaderWriter::Options *options)
+{
+    if (_cache)
+        options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_ALL);
+    else
+        options->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
+#if SG_PAGEDLOD_HAS_OPTIONS
+    setDatabaseOptions(options);
+#else
+    _readerWriterOptions = options;
+#endif
 }
 
 bool SGPagedLOD::addChild(osg::Node *child)

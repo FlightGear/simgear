@@ -8,14 +8,15 @@
 
 class SGEventMgr;
 
-struct SGTimer {
+class SGTimer {
+public:
+    ~SGTimer();
+    void run();
+    
     std::string name;
     double interval;
     SGCallback* callback;
-    SGEventMgr* mgr;
     bool repeat;
-    bool simtime;
-    void run();
 };
 
 class SGTimerQueue {
@@ -37,7 +38,7 @@ public:
     SGTimer* findByName(const std::string& name) const;
 private:
     // The "priority" is stored as a negative time.  This allows the
-    // implemenetation to treat the "top" of the heap as the largest
+    // implementation to treat the "top" of the heap as the largest
     // value and avoids developer mindbugs. ;)
     struct HeapEntry { double pri; SGTimer* timer; };
 

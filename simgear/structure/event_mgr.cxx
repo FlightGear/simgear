@@ -14,9 +14,7 @@ void SGEventMgr::add(const std::string& name, SGCallback* cb,
     SGTimer* t = new SGTimer;
     t->interval = interval;
     t->callback = cb;
-    t->mgr = this;
     t->repeat = repeat;
-    t->simtime = simtime;
     t->name = name;
     
     SGTimerQueue* q = simtime ? &_simQueue : &_rtQueue;
@@ -24,17 +22,15 @@ void SGEventMgr::add(const std::string& name, SGCallback* cb,
     q->insert(t, delay);
 }
 
+SGTimer::~SGTimer()
+{
+    delete callback;
+    callback = NULL;
+}
+
 void SGTimer::run()
 {
     (*callback)();
-
-    if(repeat) {
-        SGTimerQueue* q = simtime ? &mgr->_simQueue : &mgr->_rtQueue;
-        q->insert(this, interval);
-    } else {
-        delete callback;
-        delete this;
-    }
 }
 
 void SGEventMgr::update(double delta_time_sec)
@@ -99,6 +95,11 @@ void SGTimerQueue::update(double deltaSecs)
     while(_numEntries && nextTime() <= _now) {
         SGTimer* t = remove();
         t->run();
+        if(t->repeat) {
+            insert(t, t->interval);
+        } else {
+            delete t;
+        }
     }
 }
 
@@ -193,4 +194,3 @@ SGTimer* SGTimerQueue::findByName(const std::string& name) const
   
   return NULL;
 }
-

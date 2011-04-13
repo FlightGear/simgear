@@ -196,7 +196,8 @@ bool Socket::open ( bool stream )
   // killed.
   //
   // Reference: http://www.unixguide.net/network/socketfaq/4.5.shtml
-  //
+  // --
+  // Also required for joining multicast domains
   if ( stream ) {
     int opt_boolean = 1;
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -256,9 +257,28 @@ void Socket::setBroadcast ( bool broadcast )
 
 int Socket::bind ( const char* host, int port )
 {
+  int result;
   assert ( handle != -1 ) ;
   IPAddress addr ( host, port ) ;
-  return ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress));
+  if( (result = ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress))) < 0 ) {
+    SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
+    return result;
+  }
+
+  // 224.0.0.0 - 239.255.255.255 are multicast   
+  // Usage of 239.x.x.x is recommended for local scope
+  // Reference: http://tools.ietf.org/html/rfc5771
+  if( ntohl(addr.getIP()) >= 0xe0000000 && ntohl(addr.getIP()) <= 0xefffffff ) {
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = addr.getIP();
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    if( (result=::setsockopt(getHandle(), IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq))) != 0 ) {
+      SG_LOG(SG_IO, SG_ALERT, "setsockopt(IP_ADD_MEMBERSHIP) failed. Errno " << errno << " (" << strerror(errno) << ")");
+      return result;
+    }
+  }
+
+  return 0;
 }
 
 

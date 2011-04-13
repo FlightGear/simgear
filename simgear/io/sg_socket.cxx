@@ -84,7 +84,7 @@ SGSocket::make_server_socket()
 	return false;
     }
 
-    if (sock.bind( "", port ) < 0)
+    if (sock.bind( hostname.c_str(), port ) < 0)
     {
 	SG_LOG( SG_IO, SG_ALERT,
 		"Error: bind() failed in make_server_socket()" );

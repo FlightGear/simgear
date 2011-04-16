@@ -37,10 +37,13 @@
 #include <osg/Material>
 #include <osg/ShadeModel>
 #include <osg/PrimitiveSet>
+#include <osg/CullFace>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/Math.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
+#include <simgear/scene/material/Effect.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 
 #include "dome.hxx"
 
@@ -59,12 +62,26 @@ struct DomeParam
 } domeParams[] = {{.5, .8660},  // 60deg from horizon
                   {.8660, .5},  // 30deg from horizon
                   // Original dome horizon vertices
-                  {0.9701, 0.2425}, {0.9960, 0.0885},
-                  {1.0, 0.0}, {0.9922, -0.1240}};
+                  {0.9701, 0.2425},
+                  {0.9960, 0.0885},
+                  {1.0, 0.0},
+                  {0.9922, -0.1240}};
 
-const int numRings = sizeof(domeParams) / sizeof(domeParams[0]);
-const int numBands = 12;
-const int halfBands = numBands/2;
+const int numRings = 64; //sizeof(domeParams) / sizeof(domeParams[0]);
+const int numBands = 64; // 12
+const int halfBands = numBands / 2;
+
+// Make dome a bit over half sphere
+const float domeAngle = 120.0;
+
+const float bandDelta = 360.0 / numBands;
+const float ringDelta = domeAngle / (numRings+1);
+
+// Which band is at horizon
+const int halfRings = numRings * (90.0 / domeAngle);
+const int upperRings = numRings * (60.0 / domeAngle); // top half
+const int middleRings = numRings * (15.0 / domeAngle);
+
 }
 
 static const float upper_radius = 0.9701; // (.6, 0.15)
@@ -117,24 +134,24 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
     std::back_insert_iterator<DrawElementsUShort> pusher
         = std::back_inserter(elements);
     GridIndex grid(*dome_vl, numBands, 1);
-    for (int i = 0; i < bands; i += 2) {
-        *pusher = 0;  *pusher = grid(0, i);  *pusher = grid(0, i + 1);  
+    for (int i = 0; i < bands; i++) {
+        *pusher = 0;  *pusher = grid(0, i+1);  *pusher = grid(0, i);
         // down a band
         for (int j = 0; j < rings - 1; ++j) {
-            *pusher = grid(j, i);  *pusher = grid(j, i + 1);
-            *pusher = grid(j + 1, i + 1);
-            *pusher = grid(j, i);  *pusher =  grid(j + 1, i + 1);
+            *pusher = grid(j, i);  *pusher = grid(j, (i + 1)%bands);
+            *pusher = grid(j + 1, (i + 1)%bands);
+            *pusher = grid(j, i);  *pusher =  grid(j + 1, (i + 1)%bands);
             *pusher =  grid(j + 1, i);
         }
         // and up the next one
-        for (int j = rings - 1; j > 0; --j) {
+/*        for (int j = rings - 1; j > 0; --j) {
             *pusher = grid(j, i + 1);  *pusher = grid(j - 1, i + 1);
             *pusher = grid(j, (i + 2) % bands);
             *pusher = grid(j, (i + 2) % bands); *pusher = grid(j - 1, i + 1);
             *pusher = grid(j - 1, (i + 2) % bands);
         }
         *pusher = grid(0, i + 1);  *pusher = 0;
-        *pusher = grid(0, (i + 2) % bands);
+        *pusher = grid(0, (i + 2) % bands);*/
     }
 }
 
@@ -142,7 +159,14 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
 osg::Node*
 SGSkyDome::build( double hscale, double vscale ) {
 
-    osg::Geode* geode = new osg::Geode;
+    EffectGeode* geode = new EffectGeode;
+//    Geode* geode = new Geode;
+    geode->setName("Skydome");
+    geode->setCullingActive(false); // Prevent skydome from being culled away
+
+    Effect *effect = makeEffect("Effects/skydome", true);
+    if(effect)
+      geode->setEffect(effect);
 
     // set up the state
     osg::StateSet* stateSet = geode->getOrCreateStateSet();
@@ -154,9 +178,12 @@ SGSkyDome::build( double hscale, double vscale ) {
     stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     stateSet->setMode(GL_FOG, osg::StateAttribute::OFF);
     stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
-    stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::OFF);
+    stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
     stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
     stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
+
+    stateSet->setAttribute(new osg::CullFace(osg::CullFace::BACK));
+
     osg::Material* material = new osg::Material;
     stateSet->setAttribute(material);
 
@@ -168,13 +195,13 @@ SGSkyDome::build( double hscale, double vscale ) {
     simgear::VectorArrayAdapter<Vec3Array> vertices(*dome_vl, numBands, 1);
 
     for ( int i = 0; i < numBands; ++i ) {
-        double theta = (i * 30) * SGD_DEGREES_TO_RADIANS;
+        double theta = (i * bandDelta) * SGD_DEGREES_TO_RADIANS;
         double sTheta = hscale*sin(theta);
         double cTheta = hscale*cos(theta);
         for (int j = 0; j < numRings; ++j) {
-            vertices(j, i).set(cTheta * domeParams[j].radius,
-                               sTheta * domeParams[j].radius,
-                               domeParams[j].elev * vscale);
+            vertices(j, i).set(cTheta * sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS), //domeParams[j].radius,
+                               sTheta * sin((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS),// domeParams[j].radius,
+                               vscale * cos((j+1)*ringDelta*SGD_DEGREES_TO_RADIANS)); //domeParams[j].elev * vscale);
         }
     }
 
@@ -233,8 +260,8 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
         static const SGVec3f middleConstant(1.0 / 40.0, 1.0 / 80.0, 0.0);
         outer_param = sunAngleFactor * outerConstant;
         middle_param = sunAngleFactor * middleConstant;
-	outer_diff = (1.0 / 6.0) * outer_param;
-	middle_diff = (1.0 / 6.0) * middle_param;
+	outer_diff = (1.0 / numRings) * outer_param;
+	middle_diff = (1.0 / numRings) * middle_param;
     } else {
         outer_param = SGVec3f(0, 0, 0);
 	middle_param = SGVec3f(0, 0, 0);
@@ -259,41 +286,75 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     const float upperVisFactor = 1.0 - vis_factor * (0.7 + 0.3 * cvf/45000);
     const float middleVisFactor = 1.0 - vis_factor * (0.1 + 0.85 * cvf/45000);
 
+    // Dome top is always sky_color
     (*dome_cl)[0] = toOsg(sky_color);
     simgear::VectorArrayAdapter<Vec3Array> colors(*dome_cl, numBands, 1);
     const double saif = sun_angle/SG_PI;
     static const SGVec3f blueShift(0.8, 1.0, 1.2);
     const SGVec3f skyFogDelta = sky_color - fog_color;
     const SGVec3f sunSkyDelta = sun_color - sky_color;
+
     // For now the colors of the upper two rings are linearly
     // interpolated between the zenith color and the first horizon
-    // ring color.
-    
+    // ring color. Means angles from top to 30 degrees
+
     for (int i = 0; i < halfBands+1; i++) {
         SGVec3f diff = mult(skyFogDelta, blueShift);
-        diff *= (0.8 + saif - ((halfBands-i)/10));
-        colors(2, i) = toOsg(sky_color - upperVisFactor * diff);
-        colors(3, i) = toOsg(sky_color - middleVisFactor * diff + middle_amt);
-        colors(4, i) = toOsg(fog_color + outer_amt);
-        colors(0, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .3942);
-        colors(1, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .7885);
+        diff *= (0.8 + saif - ((halfBands-i)/(float)(numBands-2)));
+
+        // Color the ~60 deg ring
+        colors(upperRings, i) = toOsg(sky_color - upperVisFactor * diff);
+
+        int j=0;
+        // Color top half by linear interpolation (90...60 degrees)
+        for (; j < upperRings; j++)
+            colors(j, i) = simgear::math::lerp(toOsg(sky_color), colors(upperRings, i), j / (float)upperRings);
+
+        j++; // Skip the 60 deg ring
+        // From 60 to ~85 degrees
+        for (int l = 0; j < upperRings + middleRings + 1; j++, l++)
+            colors(j, i) = simgear::math::lerp(colors(upperRings, i),
+                       toOsg(sky_color - middleVisFactor * diff + middle_amt), l / (float)middleRings);
+
+        // 85 to 90 degrees
+        for (int l = 0; j < halfRings; j++, l++)
+            colors(j, i) = simgear::math::lerp(colors(upperRings + middleRings, i), toOsg(fog_color + outer_amt),
+                        l / (float)(halfRings - upperRings - middleRings));
+
+        // Original colors
+        //colors(2, i) = toOsg(sky_color - upperVisFactor * diff);
+        //colors(3, i) = toOsg(sky_color - middleVisFactor * diff + middle_amt);
+        //colors(4, i) = toOsg(fog_color + outer_amt);
+        //colors(0, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .3942);
+        //colors(1, i) = simgear::math::lerp(toOsg(sky_color), colors(2, i), .7885);
+
         for (int j = 0; j < numRings - 1; ++j)
             clampColor(colors(j, i));
+
         outer_amt -= outer_diff;
         middle_amt -= middle_diff;
     }
 
+    // Other side of dome is mirror of the other
     for (int i = halfBands+1; i < numBands; ++i)
-        for (int j = 0; j < 5; ++j)
+        for (int j = 0; j < numRings-1; ++j)
             colors(j, i) = colors(j, numBands - i);
 
+    // Fade colors to black when going to space
+    // Center of dome is blackest and then fade decreases towards horizon
     fade_to_black(&(*dome_cl)[0], asl * center_elev, 1);
-    for (int i = 0; i < numRings - 1; ++i)
-        fade_to_black(&colors(i, 0), (asl+0.05f) * domeParams[i].elev,
+    for (int i = 0; i < numRings - 1; ++i) {
+        float fadeValue = (asl+0.05f) * cos(i*ringDelta*SGD_DEGREES_TO_RADIANS);
+        if(fadeValue < 0.0) fadeValue = 0.0; // Prevent brightening up if dome is over 90 degrees
+        fade_to_black(&colors(i, 0), fadeValue, //domeParams[i].elev,
                       numBands);
+    }
 
-    for ( int i = 0; i < numBands; i++ )
-        colors(numRings - 1, i) = toOsg(fog_color);
+    // All rings below horizon are fog color
+    for ( int i = halfRings; i < numRings; i++)
+        for ( int j = 0; j < numBands; j++ )
+            colors(i, j) = toOsg(fog_color);
+
     dome_cl->dirty();
     return true;
 }

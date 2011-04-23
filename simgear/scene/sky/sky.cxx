@@ -178,10 +178,12 @@ bool SGSky::reposition( const SGSkyState &st, const SGEphemeris& eph, double dt 
     moon->reposition( moon_ra, moon_dec, st.moon_dist );
 
     for ( unsigned i = 0; i < cloud_layers.size(); ++i ) {
-        if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ) {
+        if ( cloud_layers[i]->getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR ||
+               cloud_layers[i]->get_layer3D()->isDefined3D() ) {
             cloud_layers[i]->reposition( zero_elev, view_up, lon, lat, alt, dt);
-        } else
+        } else {
           cloud_layers[i]->getNode()->setAllChildrenOff();
+    }
     }
 
     return true;
@@ -272,7 +274,7 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	}
 
         if ( cloud_layers[i]->getCoverage() == SGCloudLayer::SG_CLOUD_CLEAR ||
-             cloud_layers[i]->get_layer3D()->defined3D) {
+             cloud_layers[i]->get_layer3D()->isDefined3D()) {
             // do nothing, clear layers aren't drawn, don't affect
             // visibility andn dont' need to be faded in or out.
         } else if ( (cloud_layers[i]->getCoverage() == 

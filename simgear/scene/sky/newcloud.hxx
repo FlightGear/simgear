@@ -40,21 +40,7 @@ using std::vector;
 class SGNewCloud {
 
 public:
-        SGNewCloud(string type,
-                   const SGPath &tex_path, 
-                    string tex,
-                    double min_w,
-                    double max_w,
-                    double min_h,
-                    double max_h,
-                    double min_sprite_w,
-                    double max_sprite_w,
-                    double min_sprite_h,
-                    double max_sprite_h,
-                    double b,
-                    int n,
-                    int nt_x,
-                    int nt_y);
+        SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def);
 
         ~SGNewCloud();
 
@@ -87,8 +73,7 @@ private:
         int num_sprites;
         int num_textures_x;
         int num_textures_y;
-        const string texture;
-        const string name;
+        string texture;
         osg::Geometry* quad;
         osg::ref_ptr<simgear::Effect> effect;
         static double sprite_density;

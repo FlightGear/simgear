@@ -69,36 +69,22 @@ EffectMap effectMap;
 
 double SGNewCloud::sprite_density = 1.0;
 
-SGNewCloud::SGNewCloud(string type,
-                       const SGPath &tex_path, 
-                       string tex,
-                       double min_w,
-                       double max_w,
-                       double min_h,
-                       double max_h,
-                       double min_sprite_w,
-                       double max_sprite_w,
-                       double min_sprite_h,
-                       double max_sprite_h,
-                       double b,
-                       int n,
-                       int nt_x,
-                       int nt_y) :
-        min_width(min_w),
-        max_width(max_w),
-        min_height(min_h),
-        max_height(max_h),
-        min_sprite_width(min_sprite_w),
-        max_sprite_width(max_sprite_w),
-        min_sprite_height(min_sprite_h),
-        max_sprite_height(max_sprite_h),
-        bottom_shade(b),
-        num_sprites(n),
-        num_textures_x(nt_x),
-        num_textures_y(nt_y),
-        texture(tex),
-        name(type)
+SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def)
 {
+    min_width = cld_def->getDoubleValue("min-cloud-width-m", 500.0);
+    max_width = cld_def->getDoubleValue("max-cloud-width-m", 1000.0);
+    min_height = cld_def->getDoubleValue("min-cloud-height-m", min_width);
+    max_height = cld_def->getDoubleValue("max-cloud-height-m", max_width);
+    min_sprite_width = cld_def->getDoubleValue("min-sprite-width-m", 200.0);
+    max_sprite_width = cld_def->getDoubleValue("max-sprite-width-m", min_sprite_width);
+    min_sprite_height = cld_def->getDoubleValue("min-sprite-height-m", min_sprite_width);
+    max_sprite_height = cld_def->getDoubleValue("max-sprite-height-m", max_sprite_width);
+    num_sprites = cld_def->getIntValue("num-sprites", 20);
+    num_textures_x = cld_def->getIntValue("num-textures-x", 4);
+    num_textures_y = cld_def->getIntValue("num-textures-y", 4);
+    bottom_shade = cld_def->getDoubleValue("bottom-shade", 1.0);
+    texture = cld_def->getStringValue("texture", "cl_cumulus.png");
+
     // Create a new Effect for the texture, if required.
     EffectMap::iterator iter = effectMap.find(texture);
     if (iter == effectMap.end()) {
@@ -109,7 +95,7 @@ SGNewCloud::SGNewCloud(string type,
                            "image"),
                  texture);
         ref_ptr<osgDB::ReaderWriter::Options> options
-            = makeOptionsFromPath(tex_path);
+            = makeOptionsFromPath(texture_root);
         ref_ptr<SGReaderWriterXMLOptions> sgOptions
             = new SGReaderWriterXMLOptions(*options.get());
         if ((effect = makeEffect(pcloudEffect, true, sgOptions.get())))

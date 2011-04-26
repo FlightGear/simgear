@@ -116,7 +116,7 @@ public:
 
     void removeTask(const std::string& name);
 private:
-    friend struct SGTimer;
+    friend class SGTimer;
 
     void add(const std::string& name, SGCallback* cb,
              double interval, double delay,

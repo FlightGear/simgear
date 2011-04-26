@@ -73,8 +73,8 @@ private:
         float Rnd(float);
         
   // Radius of the LoD nodes for the dynamic quadtrees.
-  static const float RADIUS_LEVEL_1 = 20000.0f;
-  static const float RADIUS_LEVEL_2 = 5000.0f;
+  static float RADIUS_LEVEL_1;
+  static float RADIUS_LEVEL_2;
 
 	// this is a relative position only, with that we can move all clouds at once
 	SGVec3f relative_position;

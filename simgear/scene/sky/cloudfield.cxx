@@ -68,6 +68,8 @@ float SGCloudField::fieldSize = 50000.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 bool SGCloudField::wrap = true;
+float SGCloudField::RADIUS_LEVEL_1 = 20000.0f;
+float SGCloudField::RADIUS_LEVEL_2 = 5000.0f;
 
 SGVec3f SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 

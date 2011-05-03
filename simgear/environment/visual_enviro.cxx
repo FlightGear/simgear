@@ -187,7 +187,7 @@ SGEnviro::SGEnviro() :
 }
 
 SGEnviro::~SGEnviro(void) {
-	if (sampleGroup) delete sampleGroup;
+  // if (sampleGroup) delete sampleGroup;
 
   // OSGFIXME
   return;

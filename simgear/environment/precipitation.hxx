@@ -36,6 +36,7 @@ class SGPrecipitation : public osg::Referenced
 {
 private:
     bool _freeze;
+    bool _enabled;
 
     float _snow_intensity;
     float _rain_intensity;
@@ -56,6 +57,9 @@ public:
     void setFreezing(bool);
     void setRainIntensity(float);
     void setSnowIntensity(float);
+
+    void setEnabled( bool );
+    bool getEnabled() const;
 };
 
 #endif

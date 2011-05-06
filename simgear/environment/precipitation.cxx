@@ -25,7 +25,7 @@
  */
 
 #include "precipitation.hxx"
-#include "visual_enviro.hxx"
+//#include "visual_enviro.hxx"
 
 #include <simgear/constants.h>
 #include <osg/ClipNode>
@@ -36,11 +36,20 @@
  * Build a new OSG object from osgParticle.
  */
 SGPrecipitation::SGPrecipitation() :
-    _freeze(false), _snow_intensity(0.0), _rain_intensity(0.0), _clip_distance(5.0)
+    _freeze(false), _enabled(true), _snow_intensity(0.0), _rain_intensity(0.0), _clip_distance(5.0)
 {
     _precipitationEffect = new osgParticle::PrecipitationEffect;
 }
 
+void SGPrecipitation::setEnabled( bool value )
+{
+    _enabled = value;
+}
+
+bool SGPrecipitation::getEnabled() const
+{
+    return _enabled;
+}
 
 /**
  * @brief Build and add the object "precipitationEffect"
@@ -161,8 +170,7 @@ bool SGPrecipitation::update(void)
             this->_snow_intensity = this->_rain_intensity;
     }
 
-    bool enabled = sgEnviro.get_precipitation_enable_state();
-    if (enabled && this->_snow_intensity > 0) {
+    if (_enabled && this->_snow_intensity > 0) {
         _precipitationEffect->setWind(_wind_vec);
         _precipitationEffect->setParticleSpeed( -0.75f - 0.25f*_snow_intensity);
 		
@@ -174,7 +182,7 @@ bool SGPrecipitation::update(void)
         _precipitationEffect->setFarTransition(100.0f - 60.0f*sqrtf(_snow_intensity));
 		
         _precipitationEffect->setParticleColor(osg::Vec4(0.85, 0.85, 0.85, 1.0) - osg::Vec4(0.1, 0.1, 0.1, 1.0) * _snow_intensity);
-    } else if (enabled && this->_rain_intensity > 0) {
+    } else if (_enabled && this->_rain_intensity > 0) {
         _precipitationEffect->setWind(_wind_vec);
         _precipitationEffect->setParticleSpeed( -2.0f + -5.0f*_rain_intensity);
 		

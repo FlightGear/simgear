@@ -596,7 +596,7 @@ bool SGMetar::scanRwyVisRange()
 	r._max_visibility._distance = to;
 
 	if (*m == '/')					// this is not in the spec!
-		*m++;
+		m++;
 	if (*m == 'D')
 		m++, r._min_visibility._tendency = SGMetarVisibility::DECREASING;
 	else if (*m == 'N')

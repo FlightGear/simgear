@@ -1745,14 +1745,6 @@
 				RelativePath="..\..\simgear\environment\precipitation.hxx"
 				>
 			</File>
-			<File
-				RelativePath="..\..\simgear\environment\visual_enviro.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\environment\visual_enviro.hxx"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgutil"

@@ -87,8 +87,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     
     // Always update the altitude transform, as this allows
     // the clouds to rise and fall smoothly depending on environment updates.
-    osg::Vec3f alt = orient * osg::Vec3f(0.0f, 0.0f, (float) asl);
-    altitude_transform->setPosition(alt);
+    altitude_transform->setPosition(osg::Vec3f(0.0f, 0.0f, (float) asl));
     
     // Similarly, always determine the effects of the wind
     osg::Vec3f wind = osg::Vec3f(-cos((direction + 180)* SGD_DEGREES_TO_RADIANS) * speed * dt,
@@ -102,7 +101,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
     if (!wrap) {
         // If we're not wrapping the cloudfield, then we make no effort to reposition
         return false;
-        }
+    }
         
     if ((old_pos - osg_pos).length() > fieldSize*2) {
         // Big movement - reposition centered to current location.
@@ -139,8 +138,8 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
                         osg::ref_ptr<osg::PositionAttitudeTransform> pat =(osg::PositionAttitudeTransform*) lodnode2->getChild(k);
                         pat->setPosition(pat->getPosition() + shift);
                     }
-        }
-        }
+                }
+            }
         }
     }
     

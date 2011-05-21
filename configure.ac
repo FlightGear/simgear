@@ -1,15 +1,17 @@
-dnl Process this file with autoget.sh to produce a working configure
+dnl Process this file with autogen.sh to produce a working configure
 dnl script.
 
-AC_INIT
+AC_INIT(SimGear, m4_esyscmd([cat ./version | tr -d '\n']), [http://www.flightgear.org])
+
+dnl Ensure touching the version causes autoconf to re-run
+AC_SUBST([CONFIGURE_DEPENDENCIES], ['$(top_srcdir)/version'])
+
 AC_CONFIG_SRCDIR([simgear/bucket/newbucket.cxx])
 
 dnl Require at least automake 2.52
 AC_PREREQ(2.52)
 
 dnl Initialize the automake stuff
-AM_INIT_AUTOMAKE(SimGear, 2.3.0)
-
 dnl Specify KAI C++ compiler and flags.
 dnl Borrowed with slight modification from blitz distribution.
 AC_ARG_WITH(cxx,
@@ -23,6 +25,9 @@ AC_ARG_WITH(cxx,
     ;;
   esac
 ])
+dnl set the $host variable based on local machine/os
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([dist-bzip2])
 
 AC_ARG_ENABLE(headless,
         AS_HELP_STRING([--enable-headless],[Enable only packages for headless build]))

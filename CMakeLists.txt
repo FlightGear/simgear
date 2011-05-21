@@ -6,7 +6,9 @@ include (CPack)
 
 project(SimGear)
 
-set(SIMGEAR_VERSION "2.3.0")
+# read 'version' file into a variable (stripping any newlines or spaces)
+file(READ version versionFile)
+string(STRIP ${versionFile} SIMGEAR_VERSION)
 
 #packaging
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")

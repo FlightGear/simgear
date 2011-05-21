@@ -6,7 +6,7 @@ include (CPack)
 
 project(SimGear)
 
-set(SIMGEAR_VERSION "2.2.0")
+set(SIMGEAR_VERSION "2.3.0")
 
 #packaging
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")

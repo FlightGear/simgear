@@ -665,24 +665,14 @@ public:
 private:
   T apply_mods(T property) const
   {
-    T modprop;
-    if (_step > 0) {
-      T scrollval = 0;
-      if(_scroll > 0) {
-        // calculate scroll amount (for odometer like movement)
-        T remainder  =  _step - fmod(fabs(property), _step);
-        if (remainder < _scroll) {
-          scrollval = (_scroll - remainder) / _scroll * _step;
-        }
-      }
-      // apply stepping of input value
-      if(property > 0)
-        modprop = ((floor(property/_step) * _step) + scrollval);
-      else
-        modprop = ((ceil(property/_step) * _step) + scrollval);
-    } else {
-      modprop = property;
-    }
+    // apply stepping of input value
+    T modprop = floor(property/_step)*_step;
+
+    // calculate scroll amount (for odometer like movement)
+    T remainder = property < 0 ? -fmod(property,_step) : (_step - fmod(property,_step));
+    if( remainder > 0.0 && remainder < _scroll )
+      modprop += (_scroll - remainder) / _scroll * _step;
+
     return modprop;
   }
 

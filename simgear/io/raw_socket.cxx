@@ -260,15 +260,31 @@ int Socket::bind ( const char* host, int port )
   int result;
   assert ( handle != -1 ) ;
   IPAddress addr ( host, port ) ;
+
+#if !defined(WINSOCK)
   if( (result = ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress))) < 0 ) {
     SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
     return result;
   }
+#endif
 
   // 224.0.0.0 - 239.255.255.255 are multicast   
   // Usage of 239.x.x.x is recommended for local scope
   // Reference: http://tools.ietf.org/html/rfc5771
   if( ntohl(addr.getIP()) >= 0xe0000000 && ntohl(addr.getIP()) <= 0xefffffff ) {
+
+#if defined(WINSOCK)
+    struct sockaddr_in a;
+    a.sin_addr.S_un.S_addr = INADDR_ANY;
+    a.sin_family = AF_INET;
+    a.sin_port = htons(port);
+      
+    if( (result = ::bind(handle,(const sockaddr*)&a,sizeof(a))) < 0 ) {
+      SG_LOG(SG_IO, SG_ALERT, "bind(any:" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
+      return result;
+    }
+#endif
+
     struct ip_mreq mreq;
     mreq.imr_multiaddr.s_addr = addr.getIP();
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);

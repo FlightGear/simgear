@@ -21,7 +21,7 @@
 #ifndef SGAtomic_HXX
 #define SGAtomic_HXX
 
-#if defined(__GNUC__) && (4 <= __GNUC__) && (1 <= __GNUC_MINOR__) \
+#if defined(__GNUC__) && ((4 < __GNUC__)||(4 == __GNUC__ && 1 <= __GNUC_MINOR__)) \
   && (defined(__i386__) || defined(__x86_64__))
 // No need to include something. Is a Compiler API ...
 # define SGATOMIC_USE_GCC4_BUILTINS

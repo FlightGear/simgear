@@ -665,12 +665,14 @@ public:
 private:
   T apply_mods(T property) const
   {
+    if( _step <= SGLimits<T>::min() ) return property;
+
     // apply stepping of input value
     T modprop = floor(property/_step)*_step;
 
     // calculate scroll amount (for odometer like movement)
-    T remainder = property < 0 ? -fmod(property,_step) : (_step - fmod(property,_step));
-    if( remainder > 0.0 && remainder < _scroll )
+    T remainder = property <= SGLimits<T>::min() ? -fmod(property,_step) : (_step - fmod(property,_step));
+    if( remainder > SGLimits<T>::min() && remainder < _scroll )
       modprop += (_scroll - remainder) / _scroll * _step;
 
     return modprop;

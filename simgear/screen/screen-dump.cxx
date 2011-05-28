@@ -75,11 +75,10 @@ bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 }
 
 
-// dump the screen buffer to a png file
+// dump the screen buffer to a png file, returns true on success
 bool sg_glDumpWindow(const char *filename, int win_width, int win_height) {
   osg::ref_ptr<osg::Image> img(new osg::Image);
   img->readPixels(0,0, win_width, win_height, GL_RGB, GL_UNSIGNED_BYTE);
-  osgDB::writeImageFile(*img, filename);
-  return true;
+  return osgDB::writeImageFile(*img, filename);
 }
 

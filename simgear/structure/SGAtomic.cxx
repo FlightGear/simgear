@@ -22,12 +22,12 @@
 
 #if defined(SGATOMIC_USE_GCC4_BUILTINS) && defined (__i386__)
 
-// Usually the apropriate functions are inlined by gcc.
-// But if gcc is called with something aequivalent to -march=i386,
+// Usually the appropriate functions are inlined by gcc.
+// But if gcc is called with something equivalent to -march=i386,
 // it will not assume that there is a lock instruction and instead
 // calls this pair of functions. We will provide them here in this case.
 // Note that this assembler code will not work on a i386 chip anymore.
-// But I hardly believe that we can assume to run at least on a i486 ...
+// But I firmly believe that we can assume to run at least on a i486 ...
 
 extern "C" {
 

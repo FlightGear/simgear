@@ -94,12 +94,11 @@ void SGTimerQueue::update(double deltaSecs)
     _now += deltaSecs;
     while(_numEntries && nextTime() <= _now) {
         SGTimer* t = remove();
-        t->run();
-        if(t->repeat) {
+        if(t->repeat)
             insert(t, t->interval);
-        } else {
+        t->run();
+        if (!t->repeat)
             delete t;
-        }
     }
 }
 

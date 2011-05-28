@@ -44,7 +44,7 @@
  * level of accuracy).
  *
  * The SGTimeStamp is useful for tracking the elapsed time of various
- * events in your program. You can also use it to keep constistant
+ * events in your program. You can also use it to keep consistent
  * motion across varying frame rates.
  *
  * Note SGTimestamp does not deliver the time of day. The content of this

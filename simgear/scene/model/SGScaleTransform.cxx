@@ -35,6 +35,11 @@ SGScaleTransform::SGScaleTransform() :
   _boundScale(1)
 {
   setReferenceFrame(RELATIVE_RF);
+  // see osg::Transform doc: If the transformation matrix scales the subgraph
+  // then the normals of the underlying geometry will need to be renormalized
+  // to be unit vectors once more.
+  osg::StateSet* stateset = getOrCreateStateSet();
+  stateset->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
 }
 
 SGScaleTransform::SGScaleTransform(const SGScaleTransform& scale,

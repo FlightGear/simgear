@@ -55,6 +55,7 @@ static const float center_elev = 1.0;
 
 namespace
 {
+/* unused ?
 struct DomeParam
 {
     float radius;
@@ -66,6 +67,7 @@ struct DomeParam
                   {0.9960, 0.0885},
                   {1.0, 0.0},
                   {0.9922, -0.1240}};
+*/
 
 const int numRings = 64; //sizeof(domeParams) / sizeof(domeParams[0]);
 const int numBands = 64; // 12

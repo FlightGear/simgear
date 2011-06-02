@@ -49,10 +49,11 @@
 
 // On 32 bit systems where the pointer is half the width of the
 // double, we store a special magic number in the structure to make
-// the double a NaN.  This must appear in the top bits of the double,
+// the double a qNaN.  This must appear in the top bits of the double,
 // which is why the structure layout is endianness-dependent.
+// qNaN (quiet NaNs) use range 0x7ff80000-0x7fffffff
 
-#define NASAL_REFTAG 0x7ff56789 // == 2,146,789,257 decimal
+#define NASAL_REFTAG 0x7fff6789 // == 2,147,444,617 decimal
 #define IS_REF(r) ((r).ref.reftag == NASAL_REFTAG)
 #define PTR(r) ((r).ref.ptr)
 

@@ -96,8 +96,11 @@ bool EffectGeode_writeLocalData(const Object& obj, osgDB::Output& fw)
 {
     const EffectGeode& eg = static_cast<const EffectGeode&>(obj);
 
-    fw.indent() << "effect\n";
-    fw.writeObject(*eg.getEffect());
+    if (eg.getEffect()) {
+        fw.indent() << "effect\n";
+        fw.writeObject(*eg.getEffect());
+    }
+
     return true;
 }
 

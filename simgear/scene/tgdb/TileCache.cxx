@@ -47,12 +47,11 @@ TileCache::~TileCache( void ) {
 
 
 // Free a tile cache entry
-void TileCache::entry_free( long cache_index ) {
-    SG_LOG( SG_TERRAIN, SG_DEBUG, "FREEING CACHE ENTRY = " << cache_index );
-    TileEntry *tile = tile_cache[cache_index];
+void TileCache::entry_free( long tile_index ) {
+    SG_LOG( SG_TERRAIN, SG_DEBUG, "FREEING CACHE ENTRY = " << tile_index );
+    TileEntry *tile = tile_cache[tile_index];
     tile->removeFromSceneGraph();
-    tile_cache.erase( cache_index );
-
+    tile_cache.erase( tile_index );
     delete tile;
 }
 
@@ -144,8 +143,8 @@ void TileCache::clear_current_view()
 
 // Clear a cache entry, note that the cache only holds pointers
 // and this does not free the object which is pointed to.
-void TileCache::clear_entry( long cache_index ) {
-    tile_cache.erase( cache_index );
+void TileCache::clear_entry( long tile_index ) {
+    tile_cache.erase( tile_index );
 }
 
 
@@ -180,6 +179,26 @@ bool TileCache::insert_tile( TileEntry *e ) {
     e->update_time_expired(current_time);
 
     return true;
+}
+
+/**
+ * Reloads a tile when it's already in memory.
+ */
+void TileCache::refresh_tile(long tile_index)
+{
+    const_tile_map_iterator it = tile_cache.find( tile_index );
+    if ( it == tile_cache.end() )
+        return;
+
+    SG_LOG( SG_TERRAIN, SG_DEBUG, "REFRESHING CACHE ENTRY = " << tile_index );
+
+    TileEntry* e = NULL;
+    if (!it->second->is_expired(current_time))
+        e = new TileEntry(it->second);
+
+    entry_free(tile_index);
+    if (e)
+        tile_cache[tile_index] = e;
 }
 
 // update tile's priority and expiry time according to current request

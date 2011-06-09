@@ -82,6 +82,20 @@ TileEntry::TileEntry ( const SGBucket& b )
     _node->setRange(0, 0.0, 10000.0);
 }
 
+TileEntry::TileEntry( const TileEntry& t )
+: tile_bucket( t.tile_bucket ),
+  tileFileName(t.tileFileName),
+  _node( new osg::LOD ),
+  _priority(t._priority),
+  _current_view(t._current_view),
+  _time_expired(t._time_expired)
+{
+    _node->setName(tileFileName);
+    // Give a default LOD range so that traversals that traverse
+    // active children (like the groundcache lookup) will work before
+    // tile manager has had a chance to update this node.
+    _node->setRange(0, 0.0, 10000.0);
+}
 
 // Destructor
 TileEntry::~TileEntry ()

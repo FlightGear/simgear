@@ -91,6 +91,7 @@ public:
 
     // Constructor
     TileEntry( const SGBucket& b );
+    TileEntry( const TileEntry& t );
 
     // Destructor
     ~TileEntry();

@@ -286,6 +286,14 @@ public:
     /**
      * 
      */
+    virtual void clear() {
+    OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
+    this->queue.clear();
+    }
+    
+    /**
+     * 
+     */
     virtual bool empty() {
     OpenThreads::ScopedLock<OpenThreads::Mutex> g(mutex);
     return this->queue.empty();

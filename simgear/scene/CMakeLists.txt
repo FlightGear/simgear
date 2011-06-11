@@ -9,6 +9,7 @@ foreach( mylibfolder
         sky
         tgdb
         util
+        tsync
     )
 
     add_subdirectory(${mylibfolder})

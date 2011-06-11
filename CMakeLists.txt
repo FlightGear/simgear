@@ -20,6 +20,8 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
+option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" OFF)
+
 set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
 if (MSVC AND MSVC_3RDPARTY_ROOT)
@@ -66,6 +68,16 @@ if(JPEG_FACTORY)
     find_package(JPEG REQUIRED)
     include_directories(${JPEG_INCLUDE_DIR})
 endif()
+
+if(ENABLE_LIBSVN)
+	find_package(SvnClient)
+	
+	if(LIBSVN_FOUND)
+		message(STATUS "libsvn found, enabling in SimGear")
+		set(HAVE_SVN_CLIENT_H 1)
+		set(HAVE_LIBSVN_CLIENT_1 1)
+	endif(LIBSVN_FOUND)
+endif(ENABLE_LIBSVN)
 
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)

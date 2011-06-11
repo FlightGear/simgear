@@ -192,13 +192,8 @@ void TileCache::refresh_tile(long tile_index)
 
     SG_LOG( SG_TERRAIN, SG_DEBUG, "REFRESHING CACHE ENTRY = " << tile_index );
 
-    TileEntry* e = NULL;
-    if (!it->second->is_expired(current_time))
-        e = new TileEntry(it->second);
-
-    entry_free(tile_index);
-    if (e)
-        tile_cache[tile_index] = e;
+    if (it->second)
+        it->second->refresh();
 }
 
 // update tile's priority and expiry time according to current request
@@ -207,7 +202,7 @@ void TileCache::request_tile(TileEntry* t,float priority,bool current_view,doubl
     if ((!current_view)&&(request_time<=0.0))
         return;
 
-    // update priority when hire - or old has expired
+    // update priority when higher - or old request has expired
     if ((t->is_expired(current_time))||
          (priority > t->get_priority()))
     {

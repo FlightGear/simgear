@@ -131,8 +131,12 @@ public:
      * graph for this tile.
      */
     void removeFromSceneGraph();
+    
+    /**
+     * Refresh a tile, reload the node from disk.
+     */
+    void refresh();
 
-	
     /**
      * return the scenegraph node for the terrain
      */

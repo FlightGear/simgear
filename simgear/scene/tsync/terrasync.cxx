@@ -627,6 +627,7 @@ void SGTerraSync::bind()
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalled_node = _terraRoot->getNode("stalled", true);
     _stalled_node->setBoolValue(_svnThread->_stalled);
+    _stalled_node->setAttribute(SGPropertyNode::PRESERVE,true);
 }
 
 void SGTerraSync::unbind()

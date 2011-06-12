@@ -227,6 +227,9 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     attval = atts.getValue("userarchive");
     if (checkFlag(attval, false))
       mode |= SGPropertyNode::USERARCHIVE;
+    attval = atts.getValue("preserve");
+    if (checkFlag(attval, false))
+      mode |= SGPropertyNode::PRESERVE;
 
 				// Check for an alias.
     attval = atts.getValue("alias");
@@ -691,8 +694,12 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
   int nChildren = in->nChildren();
   for (int i = 0; i < nChildren; i++) {
     const SGPropertyNode * in_child = in->getChild(i);
-    if (!in_child->hasValue() ||
-        (in_child->getAttributes() & attr_mask) == attr_value)
+    int mask = attr_mask;
+    /* attributes have no meaning for nodes without values - except
+     * the PRESERVE flag. So ignore them. */
+    if (!in_child->hasValue())
+        mask &= SGPropertyNode::PRESERVE;
+    if ((in_child->getAttributes() & mask) == (attr_value & mask))
     {
       SGPropertyNode * out_child = out->getChild(in_child->getNameString(),
                              in_child->getIndex(),
@@ -704,9 +711,13 @@ copyProperties (const SGPropertyNode *in, SGPropertyNode *out,
                                     true);
       }
       else
-      if (out_child->hasValue() &&
-          (out_child->getAttributes() & attr_mask) != attr_value)
-          out_child = NULL;
+      {
+          mask = attr_mask;
+          if (!out_child->hasValue())
+              mask &= SGPropertyNode::PRESERVE;
+          if ((out_child->getAttributes() & mask) != (attr_value & mask))
+              out_child = NULL;
+      }
       if (out_child &&
           (!copyProperties(in_child, out_child, attr_value, attr_mask)))
           retval = false;

@@ -619,7 +619,11 @@ void SGTerraSync::bind()
     _tiedProperties.Tie( _terraRoot->getNode("update-count", true), (int*) &_svnThread->_success_count );
     _tiedProperties.Tie( _terraRoot->getNode("error-count", true), (int*) &_svnThread->_fail_count );
     _tiedProperties.Tie( _terraRoot->getNode("tile-count", true), (int*) &_svnThread->_updated_tile_count );
-
+    _terraRoot->getNode("busy", true)->setAttribute(SGPropertyNode::WRITE,false);
+    _terraRoot->getNode("active", true)->setAttribute(SGPropertyNode::WRITE,false);
+    _terraRoot->getNode("update-count", true)->setAttribute(SGPropertyNode::WRITE,false);
+    _terraRoot->getNode("error-count", true)->setAttribute(SGPropertyNode::WRITE,false);
+    _terraRoot->getNode("tile-count", true)->setAttribute(SGPropertyNode::WRITE,false);
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalled_node = _terraRoot->getNode("stalled", true);
     _stalled_node->setBoolValue(_svnThread->_stalled);

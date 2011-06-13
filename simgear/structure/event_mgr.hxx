@@ -17,6 +17,7 @@ public:
     double interval;
     SGCallback* callback;
     bool repeat;
+    bool running;
 };
 
 class SGTimerQueue {

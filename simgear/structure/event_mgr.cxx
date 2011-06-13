@@ -16,6 +16,7 @@ void SGEventMgr::add(const std::string& name, SGCallback* cb,
     t->callback = cb;
     t->repeat = repeat;
     t->name = name;
+    t->running = false;
     
     SGTimerQueue* q = simtime ? &_simQueue : &_rtQueue;
 
@@ -52,8 +53,13 @@ void SGEventMgr::removeTask(const std::string& name)
     SG_LOG(SG_GENERAL, SG_WARN, "removeTask: no task found with name:" << name);
     return;
   }
-  
-  delete t;
+  if (t->running) {
+    // mark as not repeating so that the SGTimerQueue::update()
+    // will clean it up
+    t->repeat = false;
+  } else {
+    delete t;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -96,7 +102,11 @@ void SGTimerQueue::update(double deltaSecs)
         SGTimer* t = remove();
         if(t->repeat)
             insert(t, t->interval);
+        // warning: this is not thread safe
+        // but the entire timer queue isn't either
+        t->running = true;
         t->run();
+        t->running = false;
         if (!t->repeat)
             delete t;
     }

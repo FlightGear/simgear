@@ -762,6 +762,8 @@ public:
     TRACE_WRITE = 32,
     USERARCHIVE = 64,
     PRESERVE = 128
+    // beware: if you add another attribute here,
+    // also update value of "LAST_USED_ATTRIBUTE".
   };
 
 

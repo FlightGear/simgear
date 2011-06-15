@@ -155,3 +155,8 @@
 #define GLUT_H <GL/glut.h>
 
 #define NOMINMAX 1
+
+#ifndef _M_X64
+#define HAVE_SVN_CLIENT_H 1
+#define HAVE_LIBSVN_CLIENT_1 1
+#endif // _M_AMD64

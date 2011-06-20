@@ -147,7 +147,7 @@ public:
 
 private:
    virtual void run();
-   bool syncTree(const char* dir);
+   bool syncTree(const char* dir, bool& isNewDirectory);
    bool syncTreeExternal(const char* dir);
 
 #ifdef HAVE_SVN_CLIENT_H
@@ -237,8 +237,18 @@ bool SGTerraSync::SvnThread::start()
         _stalled = true;
         return false;
     }
-    
+
     SGPath path(_local_dir);
+    if (!path.exists())
+    {
+        SG_LOG(SG_TERRAIN,SG_ALERT,
+               "Cannot start scenery download. Directory '" << _local_dir <<
+               "' does not exist. Set correct directory path or create directory folder.");
+        _fail_count++;
+        _stalled = true;
+        return false;
+    }
+
     path.append("version");
     if (path.exists())
     {
@@ -308,18 +318,22 @@ bool SGTerraSync::SvnThread::start()
 }
 
 // sync one directory tree
-bool SGTerraSync::SvnThread::syncTree(const char* dir)
+bool SGTerraSync::SvnThread::syncTree(const char* dir, bool& isNewDirectory)
 {
     int rc;
     SGPath path( _local_dir );
 
     path.append( dir );
-    rc = path.create_dir( 0755 );
-    if (rc)
+    isNewDirectory = !path.exists();
+    if (isNewDirectory)
     {
-        SG_LOG(SG_TERRAIN,SG_ALERT,
-               "Cannot create directory '" << dir << "', return code = " << rc );
-        return false;
+        rc = path.create_dir( 0755 );
+        if (rc)
+        {
+            SG_LOG(SG_TERRAIN,SG_ALERT,
+                   "Cannot create directory '" << dir << "', return code = " << rc );
+            return false;
+        }
     }
 
 #ifdef HAVE_SVN_CLIENT_H
@@ -350,11 +364,10 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
         "%s/%s", _svn_server.c_str(), dir);
     snprintf( dest_base_dir, 512,
         "%s/%s", _local_dir.c_str(), dir);
-    svn_error_t *err = NULL;
 
     apr_pool_t *subpool = svn_pool_create(_svn_pool);
 
-    err=0;
+    svn_error_t *err = NULL;
 #if (SVN_VER_MINOR >= 5)
     err = svn_client_checkout3(NULL,
             command,
@@ -383,19 +396,26 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
     if (err)
     {
         // Report errors from the checkout attempt
-        SG_LOG(SG_TERRAIN,SG_ALERT,
-                "Failed to synchronize directory '" << dir << "', " <<
-                err->message);
-        svn_error_clear(err);
-        // try to clean up
-        err = svn_client_cleanup(dest_base_dir,
-                _svn_ctx,subpool);
-        if (!err)
+        if (err->apr_err == SVN_ERR_RA_ILLEGAL_URL)
+        {
+            // ignore errors when remote path doesn't exist (no scenery data for ocean areas)
+        }
+        else
         {
             SG_LOG(SG_TERRAIN,SG_ALERT,
-                   "SVN repository cleanup successful for '" << dir << "'.");
+                    "Failed to synchronize directory '" << dir << "', " <<
+                    err->message << " (code " << err->apr_err << ").");
+            svn_error_clear(err);
+            // try to clean up
+            err = svn_client_cleanup(dest_base_dir,
+                    _svn_ctx,subpool);
+            if (!err)
+            {
+                SG_LOG(SG_TERRAIN,SG_ALERT,
+                       "SVN repository cleanup successful for '" << dir << "'.");
+            }
+            ReturnValue = false;
         }
-        ReturnValue = false;
     } else
     {
         SG_LOG(SG_TERRAIN,SG_DEBUG, "Done with scenery directory " << dir);
@@ -448,8 +468,10 @@ void SGTerraSync::SvnThread::run()
         if ((ii == _completedTiles.end())||
             ((ii->second + 60*60*24) < now ))
         {
+            bool isNewDirectory = false;
+
             _busy = true;
-            if (!syncTree(next._dir.c_str()))
+            if (!syncTree(next._dir.c_str(),isNewDirectory))
             {
                 _consecutive_errors++;
                 _fail_count++;
@@ -464,8 +486,13 @@ void SGTerraSync::SvnThread::run()
                 {
                     // updated a tile
                     _updated_tile_count++;
-                    _freshTiles.push_back(next);
-                    _is_dirty = true;
+                    if (isNewDirectory)
+                    {
+                        // for now only report new directories to refresh display
+                        // (i.e. only when ocean needs to be replaced with actual data)
+                        _freshTiles.push_back(next);
+                        _is_dirty = true;
+                    }
                 }
             }
             _busy = false;

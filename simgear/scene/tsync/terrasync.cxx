@@ -56,6 +56,7 @@
 #include "terrasync.hxx"
 #include <simgear/bucket/newbucket.hxx>
 #include <simgear/misc/sg_path.hxx>
+#include <simgear/misc/strutils.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/scene/tgdb/TileCache.hxx>
 #include <simgear/misc/sg_dir.hxx>
@@ -89,8 +90,8 @@ using namespace simgear;
 const char* rsync_cmd = 
         "rsync --verbose --archive --delete --perms --owner --group";
 
-const char* svn_cmd =
-        "svn checkout -q";
+const char* svn_options =
+        "checkout -q";
 
 typedef map<string,time_t> CompletedTiles;
 
@@ -124,11 +125,12 @@ public:
    bool hasNewTiles() { return !_freshTiles.empty();}
    WaitingTile getNewTile() { return _freshTiles.pop_front();}
 
-   void   setSvnServer(string server) { _svn_server = server;}
-   void   setRsyncServer(string server) { _rsync_server = server;}
-   void   setLocalDir(string dir) { _local_dir = dir;}
-   string getLocalDir() { return _local_dir;}
-   void   setUseSvn(bool use_svn) { _use_svn = use_svn;}
+   void   setSvnServer(string server)       { _svn_server   = simgear::strutils::strip(server);}
+   void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
+   void   setRsyncServer(string server)     { _rsync_server = simgear::strutils::strip(server);}
+   void   setLocalDir(string dir)           { _local_dir    = simgear::strutils::strip(dir);}
+   string getLocalDir()                     { return _local_dir;}
+   void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
 
 #ifdef HAVE_SVN_CLIENT_H
    void setUseBuiltin(bool built_in) { _use_built_in = built_in;}
@@ -168,6 +170,7 @@ private:
    SGBlockingDeque <WaitingTile> _freshTiles;
    bool _use_svn;
    string _svn_server;
+   string _svn_command;
    string _rsync_server;
    string _local_dir;
 };
@@ -229,7 +232,7 @@ bool SGTerraSync::SvnThread::start()
     if (_local_dir=="")
     {
         SG_LOG(SG_TERRAIN,SG_ALERT,
-               "Cannot start scenery download. No local cache directory defined.");
+               "Cannot start scenery download. Local cache directory is undefined.");
         _fail_count++;
         _stalled = true;
         return false;
@@ -276,10 +279,29 @@ bool SGTerraSync::SvnThread::start()
     _stalled = false;
     _running = true;
 
+    string status;
+#ifdef HAVE_SVN_CLIENT_H
+    if (_use_svn && _use_built_in)
+        status = "Using built-in SVN support. ";
+    else
+#endif
+    if (_use_svn)
+    {
+        status = "Using external SVN utility '";
+        status += _svn_command;
+        status += "'. ";
+    }
+    else
+    {
+        status = "Using RSYNC. ";
+    }
+
     // not really an alert - but we want to (always) see this message, so user is
     // aware we're downloading scenery (and using bandwidth).
     SG_LOG(SG_TERRAIN,SG_ALERT,
-           "Starting automatic scenery download/synchronization. Directory: '" << _local_dir << "'");
+           "Starting automatic scenery download/synchronization. "
+           << status
+           << "Directory: '" << _local_dir << "'.");
 
     OpenThreads::Thread::start();
     return true;
@@ -390,12 +412,12 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
     if (_use_svn)
     {
         snprintf( command, 512,
-            "%s %s/%s %s/%s", svn_cmd,
+            "\"%s\" %s %s/%s \"%s/%s\"", _svn_command.c_str(), svn_options,
             _svn_server.c_str(), dir,
             _local_dir.c_str(), dir );
     } else {
         snprintf( command, 512,
-            "%s %s/%s/ %s/%s/", rsync_cmd,
+            "%s %s/%s/ \"%s/%s/\"", rsync_cmd,
             _rsync_server.c_str(), dir,
             _local_dir.c_str(), dir );
     }
@@ -584,24 +606,25 @@ void SGTerraSync::init()
 void SGTerraSync::reinit()
 {
     // do not reinit when enabled and we're already up and running
-    if ((_terraRoot->getNode("enabled",true)->getBoolValue())&&
+    if ((_terraRoot->getBoolValue("enabled",false))&&
          (_svnThread->_active && _svnThread->_running))
         return;
 
     _svnThread->stop();
 
-    if (_terraRoot->getNode("enabled",true)->getBoolValue())
+    if (_terraRoot->getBoolValue("enabled",false))
     {
-        _svnThread->setSvnServer(_terraRoot->getNode("svn-server",true)->getStringValue());
-        _svnThread->setRsyncServer(_terraRoot->getNode("rsync-server",true)->getStringValue());
-        _svnThread->setLocalDir(_terraRoot->getNode("scenery-dir",true)->getStringValue());
+        _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
+        _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
+        _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
 
     #ifdef HAVE_SVN_CLIENT_H
-        _svnThread->setUseBuiltin(_terraRoot->getNode("use-built-in-svn",true)->getBoolValue());
+        _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
     #else
         _terraRoot->getNode("use-built-in-svn",true)->setBoolValue(false);
     #endif
-        _svnThread->setUseSvn(_terraRoot->getNode("use-svn",true)->getBoolValue());
+        _svnThread->setUseSvn(_terraRoot->getBoolValue("use-svn",true));
+        _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));
 
         if (_svnThread->start())
             syncAirportsModels();
@@ -624,6 +647,8 @@ void SGTerraSync::bind()
     _terraRoot->getNode("update-count", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("error-count", true)->setAttribute(SGPropertyNode::WRITE,false);
     _terraRoot->getNode("tile-count", true)->setAttribute(SGPropertyNode::WRITE,false);
+    _terraRoot->getNode("use-built-in-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
+    _terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
     _stalled_node = _terraRoot->getNode("stalled", true);
     _stalled_node->setBoolValue(_svnThread->_stalled);

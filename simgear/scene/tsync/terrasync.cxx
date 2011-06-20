@@ -96,6 +96,22 @@ const char* svn_options =
 typedef map<string,time_t> CompletedTiles;
 
 ///////////////////////////////////////////////////////////////////////////////
+// helper functions ///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+string stripPath(string path)
+{
+    // svn doesn't like trailing white-spaces or path separators - strip them!
+    path = simgear::strutils::strip(path);
+    int slen = path.length();
+    while ((slen>0)&&
+            (path[slen-1]=='/')||(path[slen-1]=='\\'))
+    {
+        slen--;
+    }
+    return path.substr(0,slen);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // WaitingTile ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 class  WaitingTile
@@ -125,10 +141,10 @@ public:
    bool hasNewTiles() { return !_freshTiles.empty();}
    WaitingTile getNewTile() { return _freshTiles.pop_front();}
 
-   void   setSvnServer(string server)       { _svn_server   = simgear::strutils::strip(server);}
+   void   setSvnServer(string server)       { _svn_server   = stripPath(server);}
    void   setExtSvnUtility(string svn_util) { _svn_command  = simgear::strutils::strip(svn_util);}
    void   setRsyncServer(string server)     { _rsync_server = simgear::strutils::strip(server);}
-   void   setLocalDir(string dir)           { _local_dir    = simgear::strutils::strip(dir);}
+   void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
    void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
 

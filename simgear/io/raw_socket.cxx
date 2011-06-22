@@ -293,6 +293,12 @@ int Socket::bind ( const char* host, int port )
       return result;
     }
   }
+#if defined(WINSOCK)
+  else if( (result = ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress))) < 0 ) {
+    SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
+    return result;
+  }
+#endif
 
   return 0;
 }

@@ -104,7 +104,7 @@ string stripPath(string path)
     path = simgear::strutils::strip(path);
     int slen = path.length();
     while ((slen>0)&&
-            (path[slen-1]=='/')||(path[slen-1]=='\\'))
+            ((path[slen-1]=='/')||(path[slen-1]=='\\')))
     {
         slen--;
     }

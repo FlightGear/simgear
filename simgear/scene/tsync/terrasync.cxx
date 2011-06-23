@@ -119,6 +119,11 @@ string stripPath(string path)
     return path.substr(0,slen);
 }
 
+bool hasWhitespace(string path)
+{
+    return path.find(' ')!=string::npos;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // WaitingTile ////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -283,8 +288,11 @@ bool SGTerraSync::SvnThread::start()
         _stalled = true;
         return false;
     }
+
+    bool use_int_svn = false;
 #ifdef HAVE_SVN_CLIENT_H
     _use_svn |= _use_built_in;
+    use_int_svn = _use_built_in;
 #endif
 
     if ((_use_svn)&&(_svn_server==""))
@@ -295,7 +303,6 @@ bool SGTerraSync::SvnThread::start()
         _stalled = true;
         return false;
     }
-
     if ((!_use_svn)&&(_rsync_server==""))
     {
         SG_LOG(SG_TERRAIN,SG_ALERT,
@@ -304,6 +311,35 @@ bool SGTerraSync::SvnThread::start()
         _stalled = true;
         return false;
     }
+
+#ifdef SG_WINDOWS
+    if ((_use_svn)&&(!use_int_svn))
+    {
+        // external SVN support is used
+        if (hasWhitespace(_local_dir))
+        {
+            SG_LOG(SG_TERRAIN,SG_ALERT,
+                    "Cannot start scenery download. Directory '" << _local_dir <<
+                    "' contains white-space characters." << endl <<
+                    "This path is unsupported when using external subversion on Windows." << endl <<
+                    "Please select a different target directory without white-space characters.");
+            _fail_count++;
+            _stalled = true;
+            return false;
+        }
+        if (hasWhitespace(_svn_command))
+        {
+            SG_LOG(SG_TERRAIN,SG_ALERT,
+                    "Cannot start scenery download. Path to utility '" << _svn_command <<
+                    "' contains white-space characters." << endl <<
+                    "This path is unsupported when using external subversion on Windows." << endl <<
+                    "Please move utility to a different directory or add the directory to your system 'PATH'.");
+            _fail_count++;
+            _stalled = true;
+            return false;
+        }
+    }
+#endif
 
     _fail_count = 0;
     _updated_tile_count = 0;
@@ -455,10 +491,19 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
     char command[512];
     if (_use_svn)
     {
+#ifdef SG_WINDOWS
+        // no support for white-space paths
+        snprintf( command, 512,
+            "%s %s %s/%s %s/%s", _svn_command.c_str(), svn_options,
+            _svn_server.c_str(), dir,
+            _local_dir.c_str(), dir );
+#else
+        // support white-space paths (use '"')
         snprintf( command, 512,
             "\"%s\" %s %s/%s \"%s/%s\"", _svn_command.c_str(), svn_options,
             _svn_server.c_str(), dir,
             _local_dir.c_str(), dir );
+#endif
     } else {
         snprintf( command, 512,
             "%s %s/%s/ \"%s/%s/\"", rsync_cmd,

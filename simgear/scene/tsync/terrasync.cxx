@@ -93,6 +93,14 @@ const char* rsync_cmd =
 const char* svn_options =
         "checkout -q";
 
+namespace UpdateInterval
+{
+    // interval in seconds to allow an update to repeat after a successful update (=daily)
+    static const double SuccessfulAttempt = 24*60*60;
+    // interval in seconds to allow another update after a failed attempt (10 minutes)
+    static const double FailedAttempt     = 10*60;
+};
+
 typedef map<string,time_t> CompletedTiles;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -482,7 +490,7 @@ void SGTerraSync::SvnThread::run()
             _completedTiles.find( next._dir );
         time_t now = time(0);
         if ((ii == _completedTiles.end())||
-            ((ii->second + 60*60*24) < now ))
+            (ii->second < now ))
         {
             bool isNewDirectory = false;
 
@@ -491,6 +499,7 @@ void SGTerraSync::SvnThread::run()
             {
                 _consecutive_errors++;
                 _fail_count++;
+                _completedTiles[ next._dir ] = now + UpdateInterval::FailedAttempt;
             }
             else
             {
@@ -510,9 +519,9 @@ void SGTerraSync::SvnThread::run()
                         _is_dirty = true;
                     }
                 }
+                _completedTiles[ next._dir ] = now + UpdateInterval::SuccessfulAttempt;
             }
             _busy = false;
-            _completedTiles[ next._dir ] = now;
         }
 
         if (_consecutive_errors >= 5)

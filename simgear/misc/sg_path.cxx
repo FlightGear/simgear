@@ -366,3 +366,20 @@ bool SGPath::isNull() const
 {
   return path.empty() || (path == "");
 }
+
+std::string SGPath::str_native() const
+{
+#ifdef _WIN32
+    std::string s = str();
+    std::string::size_type pos;
+    std::string nativeSeparator;
+    nativeSeparator = sgDirPathSepBad;
+
+    while( (pos=s.find( sgDirPathSep )) != std::string::npos ) {
+        s.replace( pos, 1, nativeSeparator );
+    }
+    return s;
+#else
+    return str();
+#endif
+}

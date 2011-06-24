@@ -312,7 +312,9 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-#ifdef SG_WINDOWS
+#if 0
+// whitespace support should work now
+//#ifdef SG_WINDOWS
     if ((_use_svn)&&(!use_int_svn))
     {
         // external SVN support is used
@@ -492,11 +494,20 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
     if (_use_svn)
     {
 #ifdef SG_WINDOWS
-        // no support for white-space paths
+        SGPath localPath( _local_dir );
+        localPath.append( dir );
+
+        // windows command line parsing is just lovely...
+        // to allow white spaces, the system call needs this:
+        // ""C:\Program Files\something.exe" somearg "some other arg""
+        // Note: whitespace strings quoted by a pair of "" _and_ the 
+        //       entire string needs to be wrapped by "" too.
+        // The svn url needs forward slashes (/) as a path separator while
+        // the local path needs windows-native backslash as a path separator.
         snprintf( command, 512,
-            "%s %s %s/%s %s/%s", _svn_command.c_str(), svn_options,
+            "\"\"%s\" %s %s/%s \"%s\"\"", _svn_command.c_str(), svn_options,
             _svn_server.c_str(), dir,
-            _local_dir.c_str(), dir );
+            localPath.str_native().c_str() );
 #else
         // support white-space paths (use '"')
         snprintf( command, 512,

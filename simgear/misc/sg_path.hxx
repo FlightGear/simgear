@@ -142,6 +142,11 @@ public:
     const char* c_str() const { return path.c_str(); }
 
     /**
+     * Get the path string in OS native form
+     */
+    std::string str_native() const;
+
+    /**
      * Determine if file exists by attempting to fopen it.
      * @return true if file exists, otherwise returns false.
      */

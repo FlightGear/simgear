@@ -273,9 +273,10 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    } else {
       _sgrp = sgrp;
    }
-   _sample = new SGSoundSample(node->getStringValue("path", ""), currentDir);
+   string soundFileStr = node->getStringValue("path", "");
+   _sample = new SGSoundSample(soundFileStr.c_str(), currentDir);
    if (!_sample->file_path().exists()) {
-      throw sg_io_exception("XML sound: couldn't find file: " + _sample->file_path().str());
+      throw sg_io_exception("XML sound: couldn't find file: '" + soundFileStr + "'");
    }
    
    _sample->set_relative_position( offset_pos );

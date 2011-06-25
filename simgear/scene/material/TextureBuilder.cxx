@@ -211,9 +211,17 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
     const SGPropertyNode* pImage
         = getEffectPropertyChild(effect, props, "image");
     string imageName;
+    string absFileName;
     if (pImage)
+    {
         imageName = pImage->getStringValue();
-    string absFileName = SGModelLib::findDataFile(imageName, options);
+        absFileName = SGModelLib::findDataFile(imageName, options);
+        if (absFileName.empty())
+        {
+            SG_LOG(SG_INPUT, SG_ALERT, "Texture file not found: '"
+                   << imageName << "'");
+        }
+    }
 
     const SGPropertyNode* pMipmapControl
         = getEffectPropertyChild(effect, props, "mipmap-control");

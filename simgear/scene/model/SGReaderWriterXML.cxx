@@ -245,9 +245,18 @@ sgLoad3DModel_internal(const SGPath& path,
             copyProperties(overlay, props);
 
         if (props->hasValue("/path")) {
-            modelpath = SGModelLib::findDataFile(props->getStringValue("/path"), NULL, modelDir);
+            string modelPathStr = props->getStringValue("/path");
+            modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
+            if (modelpath.isNull())
+                throw sg_io_exception("Model file not found: '" + modelPathStr + "'",
+                        path.str());
+
             if (props->hasValue("/texture-path")) {
-                texturepath = SGModelLib::findDataFile(props->getStringValue("/texture-path"), NULL, modelDir);
+                string texturePathStr = props->getStringValue("/texture-path");
+                texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
+                if (texturepath.isNull())
+                    throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
+                            path.str());
             }
         } else {
             model = new osg::Node;
@@ -336,8 +345,14 @@ sgLoad3DModel_internal(const SGPath& path,
         SGPath submodelpath;
         osg::ref_ptr<osg::Node> submodel;
         
-        SGPath submodelPath = SGModelLib::findDataFile(sub_props->getStringValue("path"), 
+        string subPathStr = sub_props->getStringValue("path");
+        SGPath submodelPath = SGModelLib::findDataFile(subPathStr, 
           NULL, modelDir);
+
+        if (submodelPath.isNull()) {
+          SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << subPathStr << "\"");
+          continue;
+        }
 
         osg::ref_ptr<SGReaderWriterXMLOptions> options;
         options = new SGReaderWriterXMLOptions(*options_);

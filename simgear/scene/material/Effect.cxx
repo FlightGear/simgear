@@ -724,10 +724,10 @@ void reload_shaders()
 {
     for(ShaderMap::iterator sitr = shaderMap.begin(); sitr != shaderMap.end(); ++sitr)
     {
-	Shader *shader = sitr->second.get();
+        Shader *shader = sitr->second.get();
         string fileName = SGModelLib::findDataFile(sitr->first.first);
         if (!fileName.empty()) {
-	    shader->loadShaderSourceFromFile(fileName);
+            shader->loadShaderSourceFromFile(fileName);
         }
     }
 }

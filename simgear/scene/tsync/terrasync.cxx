@@ -289,10 +289,8 @@ bool SGTerraSync::SvnThread::start()
         return false;
     }
 
-    bool use_int_svn = false;
 #ifdef HAVE_SVN_CLIENT_H
     _use_svn |= _use_built_in;
-    use_int_svn = _use_built_in;
 #endif
 
     if ((_use_svn)&&(_svn_server==""))
@@ -311,37 +309,6 @@ bool SGTerraSync::SvnThread::start()
         _stalled = true;
         return false;
     }
-
-#if 0
-// whitespace support should work now
-//#ifdef SG_WINDOWS
-    if ((_use_svn)&&(!use_int_svn))
-    {
-        // external SVN support is used
-        if (hasWhitespace(_local_dir))
-        {
-            SG_LOG(SG_TERRAIN,SG_ALERT,
-                    "Cannot start scenery download. Directory '" << _local_dir <<
-                    "' contains white-space characters." << endl <<
-                    "This path is unsupported when using external subversion on Windows." << endl <<
-                    "Please select a different target directory without white-space characters.");
-            _fail_count++;
-            _stalled = true;
-            return false;
-        }
-        if (hasWhitespace(_svn_command))
-        {
-            SG_LOG(SG_TERRAIN,SG_ALERT,
-                    "Cannot start scenery download. Path to utility '" << _svn_command <<
-                    "' contains white-space characters." << endl <<
-                    "This path is unsupported when using external subversion on Windows." << endl <<
-                    "Please move utility to a different directory or add the directory to your system 'PATH'.");
-            _fail_count++;
-            _stalled = true;
-            return false;
-        }
-    }
-#endif
 
     _fail_count = 0;
     _updated_tile_count = 0;
@@ -420,20 +387,19 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
         return false;
     }
 
-    char command[512];
-    char dest_base_dir[512];
-    snprintf( command, 512,
-        "%s/%s", _svn_server.c_str(), dir);
-    snprintf( dest_base_dir, 512,
-        "%s/%s", _local_dir.c_str(), dir);
+    ostringstream command;
+    command << _svn_server << "/" << dir;
+
+    ostringstream dest_base_dir;
+    dest_base_dir << _local_dir << "/" << dir;
 
     apr_pool_t *subpool = svn_pool_create(_svn_pool);
 
     svn_error_t *err = NULL;
 #if (SVN_VER_MINOR >= 5)
     err = svn_client_checkout3(NULL,
-            command,
-            dest_base_dir,
+            command.str().c_str(),
+            dest_base_dir.str().c_str(),
             _svn_rev_peg,
             _svn_rev,
             svn_depth_infinity,
@@ -444,8 +410,8 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
 #else
     // version 1.4 API
     err = svn_client_checkout2(NULL,
-            command,
-            dest_base_dir,
+            command.str().c_str(),
+            dest_base_dir.str().c_str(),
             _svn_rev_peg,
             _svn_rev,
             1, // recurse=true - same as svn_depth_infinity for checkout3 above
@@ -469,7 +435,7 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
                     err->message << " (code " << err->apr_err << ").");
             svn_error_clear(err);
             // try to clean up
-            err = svn_client_cleanup(dest_base_dir,
+            err = svn_client_cleanup(dest_base_dir.str().c_str(),
                     _svn_ctx,subpool);
             if (!err)
             {
@@ -489,14 +455,24 @@ bool SGTerraSync::SvnThread::syncTreeInternal(const char* dir)
 
 bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
 {
-    int rc;
-    char command[512];
+    ostringstream buf;
+    SGPath localPath( _local_dir );
+    localPath.append( dir );
+
     if (_use_svn)
     {
-#ifdef SG_WINDOWS
-        SGPath localPath( _local_dir );
-        localPath.append( dir );
+        buf << "\"" << _svn_command << "\" "
+            << svn_options << " "
+            << "\"" << _svn_server << "/" << dir << "\" "
+            << "\"" << localPath.str_native() << "\"";
+    } else {
+        buf << rsync_cmd << " "
+            << "\"" << _rsync_server << "/" << dir << "/\" "
+            << "\"" << localPath.str_native() << "/\"";
+    }
 
+    string command;
+#ifdef SG_WINDOWS
         // windows command line parsing is just lovely...
         // to allow white spaces, the system call needs this:
         // ""C:\Program Files\something.exe" somearg "some other arg""
@@ -504,25 +480,12 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
         //       entire string needs to be wrapped by "" too.
         // The svn url needs forward slashes (/) as a path separator while
         // the local path needs windows-native backslash as a path separator.
-        snprintf( command, 512,
-            "\"\"%s\" %s %s/%s \"%s\"\"", _svn_command.c_str(), svn_options,
-            _svn_server.c_str(), dir,
-            localPath.str_native().c_str() );
+    command = "\"" + buf.str() + "\"";
 #else
-        // support white-space paths (use '"')
-        snprintf( command, 512,
-            "\"%s\" %s %s/%s \"%s/%s\"", _svn_command.c_str(), svn_options,
-            _svn_server.c_str(), dir,
-            _local_dir.c_str(), dir );
+    command = buf.str();
 #endif
-    } else {
-        snprintf( command, 512,
-            "%s %s/%s/ \"%s/%s/\"", rsync_cmd,
-            _rsync_server.c_str(), dir,
-            _local_dir.c_str(), dir );
-    }
     SG_LOG(SG_TERRAIN,SG_DEBUG, "sync command '" << command << "'");
-    rc = system( command );
+    int rc = system( command.c_str() );
     if (rc)
     {
         SG_LOG(SG_TERRAIN,SG_ALERT,
@@ -836,20 +799,16 @@ void SGTerraSync::setTileCache(TileCache* tile_cache)
 
 void SGTerraSync::syncAirportsModels()
 {
-    char synced_other;
-    for ( synced_other = 'K'; synced_other <= 'Z'; synced_other++ )
+    static const char bounds[] = "KZAJ";
+    for( unsigned i = 0; i < sizeof(bounds)/sizeof(bounds[0])/2; i+= 2 ) 
     {
-        char dir[512];
-        snprintf( dir, 512, "Airports/%c", synced_other );
-        WaitingTile w(dir,false);
-        _svnThread->request( w );
-    }
-    for ( synced_other = 'A'; synced_other <= 'J'; synced_other++ )
-    {
-        char dir[512];
-        snprintf( dir, 512, "Airports/%c", synced_other );
-        WaitingTile w(dir,false);
-        _svnThread->request( w );
+        for ( char synced_other = bounds[i]; synced_other <= bounds[i+1]; synced_other++ )
+        {
+            ostringstream dir;
+            dir << "Airports/" << synced_other;
+            WaitingTile w(dir.str(),false);
+            _svnThread->request( w );
+        }
     }
     WaitingTile w("Models",false);
     _svnThread->request( w );
@@ -892,12 +851,11 @@ void SGTerraSync::syncArea( int lat, int lon )
     bool refresh=true;
     for (const char** tree = &terrainobjects[0]; *tree; tree++)
     {
-        char dir[512];
-        snprintf( dir, 512, "%s/%c%03d%c%02d/%c%03d%c%02d",
-            *tree,
-            EW, abs(baselon), NS, abs(baselat),
-            EW, abs(lon), NS, abs(lat) );
-        WaitingTile w(dir,refresh);
+        ostringstream dir;
+        dir << *tree << "/" << setfill('0')
+            << EW << setw(3) << abs(baselon) << NS << setw(2) << abs(baselat) << "/"
+            << EW << setw(3) << abs(lon)     << NS << setw(2) << abs(lat);
+        WaitingTile w(dir.str(),refresh);
         _svnThread->request( w );
         refresh=false;
     }

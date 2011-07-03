@@ -386,14 +386,24 @@ SGAnimation::SGAnimation(const SGPropertyNode* configNode,
 
 SGAnimation::~SGAnimation()
 {
-  if (_found)
-    return;
-
-  SG_LOG(SG_IO, SG_ALERT, "Could not find at least one of the following"
-         " objects for animation:\n");
-  std::list<std::string>::const_iterator i;
-  for (i = _objectNames.begin(); i != _objectNames.end(); ++i)
-    SG_LOG(SG_IO, SG_ALERT, *i << "\n");
+  if (!_found)
+  {
+      std::list<std::string>::const_iterator i;
+      string info;
+      for (i = _objectNames.begin(); i != _objectNames.end(); ++i)
+      {
+          if (!info.empty())
+              info.append(", ");
+          info.append("'");
+          info.append(*i);
+          info.append("'");
+      }
+      if (!info.empty())
+      {
+          SG_LOG(SG_IO, SG_ALERT, "Could not find at least one of the following"
+                  " objects for animation: " << info);
+      }
+  }
 }
 
 bool

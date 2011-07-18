@@ -563,6 +563,11 @@ int SGTerraSync::SvnThread::svnClientSetup(void)
     if (_svn_pool) return EXIT_SUCCESS;
     // No, so initialize svn internals generally
 
+    /* svn_cmdline_init configures the locale. Setup environment to ensure the
+     * default "C" locale remains active, since fgfs isn't locale aware - especially
+     * requires "." as decimal point in strings containing floating point varibales. */
+    setenv("LC_ALL", "C", 1);
+
 #ifdef _MSC_VER
     // there is a segfault when providing an error stream.
     //  Apparently, calling setvbuf with a nul buffer is
@@ -573,12 +578,6 @@ int SGTerraSync::SvnThread::svnClientSetup(void)
     if (svn_cmdline_init("terrasync", stderr) != EXIT_SUCCESS)
         return EXIT_FAILURE;
 #endif
-    /* Oh no! svn_cmdline_init configures the locale - affecting numeric output
-     * formats (i.e. sprintf("%f", ...)). fgfs relies on "C" locale in many places
-     * (including assumptions on required sprintf buffer sizes). Things go horribly
-     * wrong when the locale is changed to anything else but "C". Might be enough to
-     * revert LC_NUMERIC locale - but we'll do a complete revert for now...*/
-    setlocale(LC_ALL,"C");
 
     apr_pool_t *pool;
     apr_pool_create(&pool, NULL);

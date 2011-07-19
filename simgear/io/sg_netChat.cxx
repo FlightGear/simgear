@@ -26,7 +26,8 @@
 #include <simgear/io/sg_netChat.hxx>
 
 #include <cstring> // for strdup
-         
+#include <malloc.h>
+
 namespace  simgear {
 
 void

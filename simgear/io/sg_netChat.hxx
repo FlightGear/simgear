@@ -62,6 +62,7 @@
 #define SG_NET_CHAT_H
 
 #include <memory>
+#include <cstdlib>
 #include <simgear/io/sg_netBuffer.hxx>
 
 namespace simgear

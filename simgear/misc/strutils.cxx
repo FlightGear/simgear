@@ -213,5 +213,41 @@ namespace simgear {
 		return (n != string::npos) && (n == s.length() - substr.length());
 	}
 
+    string simplify(const string& s)
+    {
+        string result; // reserve size of 's'?
+        string::const_iterator it = s.begin(),
+            end = s.end();
+    
+    // advance to first non-space char - simplifes logic in main loop,
+    // since we can always prepend a single space when we see a 
+    // space -> non-space transition
+        for (; (it != end) && isspace(*it); ++it) { /* nothing */ }
+        
+        bool lastWasSpace = false;
+        for (; it != end; ++it) {
+            char c = *it;
+            if (isspace(c)) {
+                lastWasSpace = true;
+                continue;
+            }
+            
+            if (lastWasSpace) {
+                result.push_back(' ');
+            }
+            
+            lastWasSpace = false;
+            result.push_back(c);
+        }
+        
+        return result;
+    }
+    
+    int to_int(const std::string& s)
+    {
+        return atoi(s.c_str());
+    }
+    
     } // end namespace strutils
+    
 } // end namespace simgear

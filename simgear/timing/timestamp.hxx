@@ -195,6 +195,10 @@ public:
     static SGTimeStamp now()
     { SGTimeStamp ts; ts.stamp(); return ts; }
 
+    /**
+     * elapsed time since the stamp was taken, in msec
+     */
+    int elapsedMSec() const;
 private:
     SGTimeStamp(sec_type sec, nsec_type nsec)
     { setTime(sec, nsec); }

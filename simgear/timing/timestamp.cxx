@@ -104,3 +104,10 @@ void SGTimeStamp::stamp() {
 #endif
 }
 
+int SGTimeStamp::elapsedMSec() const
+{
+    SGTimeStamp now;
+    now.stamp();
+    
+    return static_cast<int>((now - *this).toMSecs());
+}

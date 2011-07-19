@@ -14,6 +14,8 @@ set(HEADERS
     sg_serial.hxx
     sg_socket.hxx
     sg_socket_udp.hxx
+    HTTPClient.hxx
+    HTTPRequest.hxx
     )
 
 set(SOURCES 
@@ -28,6 +30,15 @@ set(SOURCES
     sg_serial.cxx
     sg_socket.cxx
     sg_socket_udp.cxx
+    HTTPClient.cxx
+    HTTPRequest.cxx
     )
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
+
+add_executable(test_sock socktest.cxx)
+target_link_libraries(test_sock sgio sgstructure sgdebug)
+
+add_executable(test_http test_HTTP.cxx)
+target_link_libraries(test_http sgio sgstructure sgtiming sgmisc sgdebug)
+

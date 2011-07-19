@@ -40,5 +40,7 @@ add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock sgio sgstructure sgdebug)
 
 add_executable(test_http test_HTTP.cxx)
-target_link_libraries(test_http sgio sgstructure sgtiming sgmisc sgdebug)
+target_link_libraries(test_http 
+    sgio sgstructure sgtiming sgmisc sgdebug
+    ${RT_LIBRARY})
 

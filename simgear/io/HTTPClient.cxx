@@ -11,17 +11,12 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
-#include <simgear/version.h>
+
+#include "version.h"
 
 using std::string;
 using std::stringstream;
 using std::vector;
-
-#include <iostream>
-
-using std::cout;
-using std::cerr;
-using std::endl;
 
 namespace simgear
 {
@@ -75,7 +70,7 @@ public:
             path = "http://" + r->host() + path;
         }
 
-        int requestTime;
+        int requestTime = 0;
         headerData << r->method() << " " << path << " HTTP/1.1 " << client->userAgent() << "\r\n";
         headerData << "Host: " << r->host() << "\r\n";
         headerData << "X-Time: " << requestTime << "\r\n";
@@ -93,7 +88,6 @@ public:
     // TODO - add request body support for PUT, etc operations
 
         push(headerData.str().c_str());
-        cout << "sent request" << endl;
     }
     
     virtual void collectIncomingData(const char* s, int n)
@@ -143,7 +137,6 @@ private:
             
             if (bodyTransferSize > 0) {
                 state = STATE_GETTING_BODY;
-                cout << "getting body:" << bodyTransferSize << endl;
                 setByteCount(bodyTransferSize);
             } else {
                 responseComplete();

@@ -44,3 +44,4 @@ target_link_libraries(test_http
     sgio sgstructure sgtiming sgmisc sgdebug
     ${RT_LIBRARY})
 
+add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)

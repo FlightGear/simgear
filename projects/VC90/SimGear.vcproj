@@ -527,6 +527,10 @@
 				RelativePath="..\..\simgear\io\sg_socket_udp.hxx"
 				>
 			</File>
+			<File RelativePath="..\..\simgear\io\HTTPClient.cxx" ></File>
+			<File RelativePath="..\..\simgear\io\HTTPClient.hxx" ></File>
+			<File RelativePath="..\..\simgear\io\HTTPRequest.cxx" ></File>
+			<File RelativePath="..\..\simgear\io\HTTPRequest.hxx" ></File>
 		</Filter>
 		<Filter
 			Name="Lib_sgmagvar"

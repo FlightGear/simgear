@@ -61,6 +61,8 @@
 #ifndef SG_NET_CHAT_H
 #define SG_NET_CHAT_H
 
+#include <memory>
+#include <cstdlib>
 #include <simgear/io/sg_netBuffer.hxx>
 
 namespace simgear
@@ -69,15 +71,24 @@ namespace simgear
 class NetChat : public NetBufferChannel
 {
   char* terminator;
-  
+  int bytesToCollect;
   virtual void handleBufferRead (NetBuffer& buffer) ;
 
 public:
 
-  NetChat () : terminator (0) {}
+  NetChat () : 
+    terminator (NULL),
+    bytesToCollect(-1) 
+  {}
 
   void setTerminator (const char* t);
   const char* getTerminator (void);
+
+  /**
+   * set byte count to collect - 'foundTerminator' will be called once
+   * this many bytes have been collected
+   */
+  void setByteCount(int bytes);
 
   bool push (const char* s);
   

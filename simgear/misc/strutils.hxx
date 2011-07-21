@@ -116,6 +116,14 @@ namespace simgear {
 	 */
 	bool ends_with( const std::string & s, const std::string & substr );
   
+    /**
+     * Strip all leading/trailing whitespace, and transform all interal
+     * whitespace into a single ' ' character - i.e newlines/carriage returns/
+     * tabs/multiple spaces will be condensed.
+     */
+    std::string simplify(const std::string& s);
+    
+    int to_int(const std::string& s);
   } // end namespace strutils
 } // end namespace simgear
 

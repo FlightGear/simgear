@@ -22,8 +22,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include <plib/sg.h>
-
 #include "SGMath.hxx"
 
 template<typename T>

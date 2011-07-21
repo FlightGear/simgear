@@ -13,7 +13,9 @@ include_HEADERS = \
 	raw_socket.hxx  \
 	sg_netBuffer.hxx \
 	sg_netChannel.hxx \
-	sg_netChat.hxx
+	sg_netChat.hxx \
+	HTTPClient.hxx \
+	HTTPRequest.hxx
 
 libsgio_a_SOURCES = \
 	iochannel.cxx \
@@ -26,7 +28,9 @@ libsgio_a_SOURCES = \
 	raw_socket.cxx \
 	sg_netBuffer.cxx \
 	sg_netChannel.cxx \
-	sg_netChat.cxx
+	sg_netChat.cxx \
+	HTTPClient.cxx \
+	HTTPRequest.cxx
 
 INCLUDES = -I$(top_srcdir)
 

@@ -92,6 +92,31 @@ check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
 
+
+if(HAVE_UNISTD_H)
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
+    check_cxx_source_compiles(
+       "#include <unistd.h>
+        #if !defined(_POSIX_TIMERS) || (0 >= _POSIX_TIMERS)
+            #error clock_gettime is not supported
+        #endif
+
+        int main() { return 0; }
+        "
+        HAVE_CLOCK_GETTIME)    
+endif(HAVE_UNISTD_H)
+
+set(RT_LIBRARY "")
+if(HAVE_CLOCK_GETTIME)
+    check_function_exists(clock_gettime CLOCK_GETTIME_IN_LIBC)
+    if(NOT CLOCK_GETTIME_IN_LIBC)
+        check_library_exists(rt clock_gettime "" HAVE_RT)
+        if(HAVE_RT)
+            set(RT_LIBRARY rt)
+        endif(HAVE_RT)
+        endif(NOT CLOCK_GETTIME_IN_LIBC)
+endif(HAVE_CLOCK_GETTIME)
+
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually d on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "rd" CACHE STRING "add a postfix, usually empty on windows")
@@ -142,6 +167,11 @@ configure_file (
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
   
+# enable CTest / make test target
+
+include (Dart)
+enable_testing()
+  
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 add_subdirectory(simgear)
 
@@ -154,5 +184,6 @@ CONFIGURE_FILE(
   IMMEDIATE @ONLY)
 ADD_CUSTOM_TARGET(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+
 
 

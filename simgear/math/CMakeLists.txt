@@ -45,3 +45,10 @@ set(SOURCES
 
 simgear_component(math math "${SOURCES}" "${HEADERS}")
 
+add_executable(math_test SGMathTest.cxx)
+target_link_libraries(math_test sgmath sgstructure sgdebug)
+add_test(math ${EXECUTABLE_OUTPUT_PATH}/math_test)
+
+add_executable(geometry_test SGGeometryTest.cxx)
+target_link_libraries(geometry_test sgmath sgstructure sgdebug)
+add_test(geometry ${EXECUTABLE_OUTPUT_PATH}/geometry_test)

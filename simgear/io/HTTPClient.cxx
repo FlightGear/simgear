@@ -12,7 +12,13 @@
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
 
+#if defined( HAVE_VERSION_H ) && HAVE_VERSION_H
 #include "version.h"
+#else
+#  if !defined(SIMGEAR_VERSION)
+#    define SIMGEAR_VERSION "development " __DATE__
+#  endif
+#endif
 
 using std::string;
 using std::stringstream;

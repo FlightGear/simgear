@@ -54,6 +54,7 @@
 #include "TreeBin.hxx"
 
 #define SG_TREE_QUAD_TREE_DEPTH 3
+#define SG_TREE_FADE_OUT_LEVELS 10
 
 using namespace osg;
 
@@ -230,9 +231,15 @@ struct MakeTreesLeaf
     LOD* operator() () const
     {
         LOD* result = new LOD;
-        EffectGeode* geode = createTreeGeode(_width, _height, _varieties);
-        geode->setEffect(_effect.get());
-        result->addChild(geode, 0, _range);
+        
+        // Create a series of LOD nodes so trees cover decreases slightly
+        // gradually with distance from _range to 2*_range
+        for (float i = 0.0; i < SG_TREE_FADE_OUT_LEVELS; i++)
+        {        
+            EffectGeode* geode = createTreeGeode(_width, _height, _varieties);
+            geode->setEffect(_effect.get());
+            result->addChild(geode, 0, _range * (1.0 + i / (SG_TREE_FADE_OUT_LEVELS - 1.0)));
+        }
         return result;
     }
     float _range;
@@ -246,7 +253,7 @@ struct AddTreesLeafObject
 {
     void operator() (LOD* lod, const TreeBin::Tree& tree) const
     {
-        Geode* geode = static_cast<Geode*>(lod->getChild(0));
+        Geode* geode = static_cast<Geode*>(lod->getChild(rand() % SG_TREE_FADE_OUT_LEVELS));
         addTreeToLeafGeode(geode, tree.position);
     }
 };
@@ -278,48 +285,55 @@ struct TreeTransformer
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
 
-osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform)
+osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform)
 {
     Matrix transInv = Matrix::inverse(transform);
     static Matrix ident;
     // Set up some shared structures.
     ref_ptr<Group> group;
+    MatrixTransform* mt = new MatrixTransform(transform);
 
-    Effect* effect = 0;
-    EffectMap::iterator iter = treeEffectMap.find(forest.texture);
-    if (iter == treeEffectMap.end()) {
-        SGPropertyNode_ptr effectProp = new SGPropertyNode;
-        makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");
-        SGPropertyNode* params = makeChild(effectProp, "parameters");
-        // emphasize n = 0
-        params->getChild("texture", 0, true)->getChild("image", 0, true)
-            ->setStringValue(forest.texture);
-        effect = makeEffect(effectProp, true);
-        treeEffectMap.insert(EffectMap::value_type(forest.texture, effect));
-    } else {
-        effect = iter->second.get();
-    }
-    // Now, create a quadtree for the forest.
-    {
+    SGTreeBinList::iterator i;
+
+    for (i = forestList.begin(); i != forestList.end(); ++i) {
+        TreeBin* forest = *i;
+      
+        Effect* effect = 0;
+        EffectMap::iterator iter = treeEffectMap.find(forest->texture);
+        if (iter == treeEffectMap.end()) {
+            SGPropertyNode_ptr effectProp = new SGPropertyNode;
+            makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");
+            SGPropertyNode* params = makeChild(effectProp, "parameters");
+            // emphasize n = 0
+            params->getChild("texture", 0, true)->getChild("image", 0, true)
+                ->setStringValue(forest->texture);
+            effect = makeEffect(effectProp, true);
+            treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
+        } else {
+            effect = iter->second.get();
+        }
+        
+        // Now, create a quadtree for the forest.
         ShaderGeometryQuadtree
             quadtree(GetTreeCoord(), AddTreesLeafObject(),
                      SG_TREE_QUAD_TREE_DEPTH,
-                     MakeTreesLeaf(forest.range, forest.texture_varieties,
-                                   forest.width, forest.height, effect));
+                     MakeTreesLeaf(forest->range, forest->texture_varieties,
+                                   forest->width, forest->height, effect));
         // Transform tree positions from the "geocentric" positions we
         // get from the scenery polys into the local Z-up coordinate
         // system.
         std::vector<TreeBin::Tree> rotatedTrees;
-        rotatedTrees.reserve(forest._trees.size());
-        std::transform(forest._trees.begin(), forest._trees.end(),
+        rotatedTrees.reserve(forest->_trees.size());
+        std::transform(forest->_trees.begin(), forest->_trees.end(),
                        std::back_inserter(rotatedTrees),
                        TreeTransformer(transInv));
         quadtree.buildQuadTree(rotatedTrees.begin(), rotatedTrees.end());
         group = quadtree.getRoot();
+
+        for (size_t i = 0; i < group->getNumChildren(); ++i)
+            mt->addChild(group->getChild(i));
     }
-    MatrixTransform* mt = new MatrixTransform(transform);
-    for (size_t i = 0; i < group->getNumChildren(); ++i)
-        mt->addChild(group->getChild(i));
+    
     return mt;
 }
 

@@ -40,6 +40,8 @@
 #include <osg/StateSet>
 #include <osg/Switch>
 
+#include <boost/foreach.hpp>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/io/sg_binobj.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -74,7 +76,7 @@ struct SGTileGeometryBin {
   SGMaterialTriangleMap materialTriangleMap;
   SGLightBin tileLights;
   SGLightBin randomTileLights;
-  TreeBin randomForest;
+  SGTreeBinList randomForest;
   SGDirectionalLightBin runwayLights;
   SGDirectionalLightBin taxiLights;
   SGDirectionalLightListBin vasiLights;
@@ -459,13 +461,33 @@ struct SGTileGeometryBin {
       float wood_coverage = mat->get_wood_coverage();
       if (wood_coverage <= 0)
         continue;
-
-      // Attributes that don't vary by tree
-      randomForest.texture = mat->get_tree_texture();
-      randomForest.range   = mat->get_tree_range();
-      randomForest.width   = mat->get_tree_width();
-      randomForest.height  = mat->get_tree_height();
-      randomForest.texture_varieties = mat->get_tree_varieties();
+              
+      // Attributes that don't vary by tree but do vary by material
+      bool found = false;
+      TreeBin* bin = NULL;
+      
+      BOOST_FOREACH(bin, randomForest)
+      {
+        if ((bin->texture           == mat->get_tree_texture()  ) &&
+            (bin->texture_varieties == mat->get_tree_varieties()) &&
+            (bin->range             == mat->get_tree_range()    ) &&
+            (bin->width             == mat->get_tree_width()    ) &&
+            (bin->height            == mat->get_tree_height()   )   ) {
+            found = true;
+            break;
+        }
+      }
+      
+      if (!found) {
+        bin = new TreeBin();
+        bin->texture = mat->get_tree_texture();
+          SG_LOG(SG_INPUT, SG_DEBUG, "Tree texture " << bin->texture);
+        bin->range   = mat->get_tree_range();
+        bin->width   = mat->get_tree_width();
+        bin->height  = mat->get_tree_height();
+        bin->texture_varieties = mat->get_tree_varieties();
+        randomForest.push_back(bin);
+      }
 
       std::vector<SGVec3f> randomPoints;
       i->second.addRandomTreePoints(wood_coverage,
@@ -473,9 +495,9 @@ struct SGTileGeometryBin {
                                     mat->get_wood_size(),
                                     randomPoints);
       
-      std::vector<SGVec3f>::iterator j;
-      for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
-        randomForest.insert(*j);
+      std::vector<SGVec3f>::iterator k;
+      for (k = randomPoints.begin(); k != randomPoints.end(); ++k) {
+        bin->insert(*k);
       }
     }
   }
@@ -589,7 +611,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   osg::ref_ptr<osg::Group> lightGroup = new SGOffsetTransform(0.94);
   osg::ref_ptr<osg::Group> randomObjects;
-  osg::ref_ptr<osg::Group> randomForest;
+  osg::ref_ptr<osg::Group> forestNode;
   osg::Group* terrainGroup = new osg::Group;
 
   osg::Node* node = tileGeometryBin.getSurfaceGeometry(matlib);
@@ -639,11 +661,10 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     if (use_random_vegetation && matlib) {
       // Now add some random forest.
       tileGeometryBin.computeRandomForest(matlib);
-
-      if (tileGeometryBin.randomForest.getNumTrees() > 0) {
-        randomForest = createForest(tileGeometryBin.randomForest,
-                                    osg::Matrix::identity());
-        randomForest->setName("random trees");
+      
+      if (tileGeometryBin.randomForest.size() > 0) {
+        forestNode = createForest(tileGeometryBin.randomForest, osg::Matrix::identity());
+        forestNode->setName("Random trees");
       }
     } 
   }
@@ -770,14 +791,14 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     transform->addChild(lightLOD);
   }
   
-  if (randomObjects.valid() || randomForest.valid()) {
+  if (randomObjects.valid() || forestNode.valid()) {
   
     // Add a LoD node, so we don't try to display anything when the tile center
     // is more than 20km away.
     osg::LOD* objectLOD = new osg::LOD;
     
     if (randomObjects.valid()) objectLOD->addChild(randomObjects.get(), 0, 20000);
-    if (randomForest.valid())  objectLOD->addChild(randomForest.get(), 0, 20000);
+    if (forestNode.valid())  objectLOD->addChild(forestNode.get(), 0, 20000);
     
     unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
     objectLOD->setNodeMask(nodeMask);

@@ -49,7 +49,7 @@ public:
     float height;
     float width;
     std::string texture;
-
+    
     void insert(const Tree& t)
     { _trees.push_back(t); }
     void insert(const SGVec3f& p, int t, float s)
@@ -62,6 +62,9 @@ public:
     TreeList _trees;
 };
 
-osg::Group* createForest(TreeBin& forest, const osg::Matrix& transform);
+
+typedef std::list<TreeBin*> SGTreeBinList;
+
+osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform);
 }
 #endif

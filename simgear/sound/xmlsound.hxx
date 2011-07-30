@@ -36,7 +36,8 @@
 #include <vector>
 
 #include <simgear/compiler.h>
-#include <simgear/props/condition.hxx>
+
+#include <simgear/props/propsfwd.hxx>
 
 #include "sample_group.hxx"
 #include "sample_openal.hxx"

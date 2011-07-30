@@ -8,6 +8,7 @@ set(HEADERS
     propertyObject.hxx
     props.hxx
     props_io.hxx
+    propsfwd.hxx
     tiedpropertylist.hxx
     )
 

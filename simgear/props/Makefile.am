@@ -6,6 +6,7 @@ include_HEADERS = \
 	condition.hxx \
 	props.hxx \
 	props_io.hxx \
+	propsfwd.hxx \
 	AtomicChangeListener.hxx \
 	ExtendedPropertyAdapter.hxx \
 	propertyObject.hxx \

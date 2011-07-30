@@ -23,7 +23,7 @@ using namespace simgear;
 
 const char* BODY1 = "The quick brown fox jumps over a lazy dog.";
 
-const int body2Size = 8 * 1024;
+const unsigned int body2Size = 8 * 1024;
 char body2[body2Size];
 
 #define COMPARE(a, b) \
@@ -142,16 +142,42 @@ public:
             d << contentStr;
             push(d.str().c_str());
         } else if (path == "/test2") {
-            stringstream d;
-            d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
-            d << "Content-Length:" << body2Size << "\r\n";
-            d << "\r\n"; // final CRLF to terminate the headers
-            push(d.str().c_str());
-            bufferSend(body2, body2Size);
-            cout << "sent body2" << endl;
+            sendBody2();
+        } else if (path == "http://www.google.com/test2") {
+            // proxy test
+            if (requestHeaders["host"] != "www.google.com") {
+                sendErrorResponse(400);
+            }
+            
+            if (requestHeaders["proxy-authorization"] != string()) {
+                sendErrorResponse(401); // shouldn't supply auth
+            }
+            
+            sendBody2();
+        } else if (path == "http://www.google.com/test3") {
+            // proxy test
+            if (requestHeaders["host"] != "www.google.com") {
+                sendErrorResponse(400);
+            }
+
+            if (requestHeaders["proxy-authorization"] != "ABCDEF") {
+                sendErrorResponse(401); // forbidden
+            }
+
+            sendBody2();
         } else {
             sendErrorResponse(404);
         }
+    }
+    
+    void sendBody2()
+    {
+        stringstream d;
+        d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+        d << "Content-Length:" << body2Size << "\r\n";
+        d << "\r\n"; // final CRLF to terminate the headers
+        push(d.str().c_str());
+        bufferSend(body2, body2Size);
     }
     
     void sendErrorResponse(int code)
@@ -227,10 +253,19 @@ int main(int argc, char* argv[])
     HTTP::Client cl;
 
 // test URL parsing
-    TestRequest* tr1 = new TestRequest("http://localhost:2000/test1?foo=bar");
+    TestRequest* tr1 = new TestRequest("http://localhost.woo.zar:2000/test1?foo=bar");
     COMPARE(tr1->scheme(), "http");
-    COMPARE(tr1->host(), "localhost:2000");
+    COMPARE(tr1->hostAndPort(), "localhost.woo.zar:2000");
+    COMPARE(tr1->host(), "localhost.woo.zar");
+    COMPARE(tr1->port(), 2000);
     COMPARE(tr1->path(), "/test1");
+    
+    TestRequest* tr2 = new TestRequest("http://192.168.1.1/test1/dir/thing/file.png");
+    COMPARE(tr2->scheme(), "http");
+    COMPARE(tr2->hostAndPort(), "192.168.1.1");
+    COMPARE(tr2->host(), "192.168.1.1");
+    COMPARE(tr2->port(), 80);
+    COMPARE(tr2->path(), "/test1/dir/thing/file.png");
     
 // basic get request
     {
@@ -245,7 +280,7 @@ int main(int argc, char* argv[])
     }
 
 // larger get request
-    for (int i=0; i<body2Size; ++i) {
+    for (unsigned int i=0; i<body2Size; ++i) {
         body2[i] = (i << 4) | (i >> 2);
     }
     
@@ -267,6 +302,29 @@ int main(int argc, char* argv[])
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 404);
         COMPARE(tr->contentLength(), 0);
+    }
+    
+// test proxy
+    {
+        cl.setProxy("localhost:2000");
+        TestRequest* tr = new TestRequest("http://www.google.com/test2");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForComplete(tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->contentLength(), body2Size);
+        COMPARE(tr->bodyData, string(body2, body2Size));
+    }
+    
+    {
+        cl.setProxy("localhost:2000", "ABCDEF");
+        TestRequest* tr = new TestRequest("http://www.google.com/test3");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForComplete(tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->contentLength(), body2Size);
+        COMPARE(tr->bodyData, string(body2, body2Size));
     }
     
     cout << "all tests passed ok" << endl;

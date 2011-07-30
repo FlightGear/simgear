@@ -18,6 +18,8 @@ class Client
 public:
     Client();
     
+    void update();
+    
     void makeRequest(const Request_ptr& r);
     
     void setUserAgent(const std::string& ua);
@@ -41,7 +43,8 @@ private:
     std::string _proxyAuth;
     
 // connections by host
-    std::map<std::string, Connection*> _connections;
+    typedef std::map<std::string, Connection*> ConnectionDict;
+    ConnectionDict _connections;
 };
 
 } // of namespace HTTP

@@ -19,6 +19,8 @@ namespace simgear
 namespace HTTP
 {
 
+extern const int DEFAULT_HTTP_PORT;
+
 Request::Request(const string& url, const string method) :
     _method(method),
     _url(url)
@@ -29,6 +31,11 @@ Request::Request(const string& url, const string method) :
 Request::~Request()
 {
     
+}
+
+void Request::setUrl(const string& url)
+{
+    _url = url;
 }
 
 string_list Request::requestHeaders() const
@@ -104,6 +111,28 @@ string Request::path() const
 
 string Request::host() const
 {
+    string hp(hostAndPort());
+    int colonPos = hp.find(':');
+    if (colonPos >= 0) {
+        return hp.substr(0, colonPos); // trim off the colon and port
+    } else {
+        return hp; // no port specifier
+    }
+}
+
+unsigned short Request::port() const
+{
+    string hp(hostAndPort());
+    int colonPos = hp.find(':');
+    if (colonPos >= 0) {
+        return (unsigned short) strutils::to_int(hp.substr(colonPos + 1));
+    } else {
+        return DEFAULT_HTTP_PORT;
+    }
+}
+
+string Request::hostAndPort() const
+{
     string u(url());
     int schemeEnd = u.find("://");
     if (schemeEnd < 0) {
@@ -118,14 +147,14 @@ string Request::host() const
     return u.substr(schemeEnd + 3, hostEnd - (schemeEnd + 3));
 }
 
-int Request::contentLength() const
+unsigned int Request::contentLength() const
 {
     HeaderDict::const_iterator it = _responseHeaders.find("content-length");
     if (it == _responseHeaders.end()) {
         return 0;
     }
     
-    return strutils::to_int(it->second);
+    return (unsigned int) strutils::to_int(it->second);
 }
 
 } // of namespace HTTP

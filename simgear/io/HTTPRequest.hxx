@@ -18,6 +18,8 @@ class Request : public SGReferenced
 public:
     virtual ~Request();
     
+    virtual void setUrl(const std::string& url);
+    
     virtual std::string method() const
         { return _method; }
     virtual std::string url() const
@@ -25,7 +27,9 @@ public:
     
     virtual std::string scheme() const;
     virtual std::string path() const;
-    virtual std::string host() const; // host, including port
+    virtual std::string host() const;
+    virtual std::string hostAndPort() const;
+    virtual unsigned short port() const;
     
     virtual string_list requestHeaders() const;
     virtual std::string header(const std::string& name) const;
@@ -36,7 +40,7 @@ public:
     virtual std::string resposeReason() const
         { return _responseReason; }
         
-    virtual int contentLength() const;
+    virtual unsigned int contentLength() const;
 protected:
     friend class Connection;
     

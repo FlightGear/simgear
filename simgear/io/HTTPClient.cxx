@@ -11,6 +11,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/compiler.h>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 #if defined( HAVE_VERSION_H ) && HAVE_VERSION_H
 #include "version.h"
@@ -30,6 +31,7 @@ namespace simgear
 namespace HTTP
 {
 
+extern const int DEFAULT_HTTP_PORT = 80;
 
 class Connection : public NetChat
 {
@@ -41,18 +43,10 @@ public:
         setTerminator("\r\n");
     }
     
-    void connectToHost(const string& host)
+    void connectToHost(const string& host, short port)
     {
         open();
-        
-        int colonPos = host.find(':');
-        if (colonPos > 0) {
-            string h = host.substr(0, colonPos);
-            int port = strutils::to_int(host.substr(colonPos + 1));
-            connect(h.c_str(), port);
-        } else {
-            connect(host.c_str(), 80 /* default port */);
-        }
+        connect(host.c_str(), port);
     }
     
     void queueRequest(const Request_ptr& r)
@@ -73,13 +67,11 @@ public:
         stringstream headerData;
         string path = r->path();
         if (!client->proxyHost().empty()) {
-            path = "http://" + r->host() + path;
+            path = "http://" + r->hostAndPort() + path;
         }
 
-        int requestTime = 0;
         headerData << r->method() << " " << path << " HTTP/1.1 " << client->userAgent() << "\r\n";
-        headerData << "Host: " << r->host() << "\r\n";
-        headerData << "X-Time: " << requestTime << "\r\n";
+        headerData << "Host: " << r->hostAndPort() << "\r\n";
 
         if (!client->proxyAuth().empty()) {
             headerData << "Proxy-Authorization: " << client->proxyAuth() << "\r\n";
@@ -128,12 +120,22 @@ public:
                 Request_ptr next = queuedRequests.front();
                 queuedRequests.pop_front();
                 startRequest(next);
+            } else {
+                idleTime.stamp();
             }
             
             break;
         }
     }
     
+    bool hasIdleTimeout() const
+    {
+        if (state != STATE_IDLE) {
+            return false;
+        }
+        
+        return idleTime.elapsedMSec() > 1000 * 10; // ten seconds
+    }
 private:
     void processHeader()
     {
@@ -193,6 +195,7 @@ private:
     ConnectionState state;
     std::string buffer;
     int bodyTransferSize;
+    SGTimeStamp idleTime;
     
     std::list<Request_ptr> queuedRequests;
 };
@@ -202,16 +205,31 @@ Client::Client()
     setUserAgent("SimGear-" SG_STRINGIZE(SIMGEAR_VERSION));
 }
 
+void Client::update()
+{
+    ConnectionDict::iterator it = _connections.begin();
+    for (; it != _connections.end(); ) {
+        if (it->second->hasIdleTimeout()) {
+        // connection has been idle for a while, clean it up
+            ConnectionDict::iterator del = it++;
+            delete del->second;
+            _connections.erase(del);
+        } else {
+            ++it;
+        }
+    } // of connecion iteration
+}
+
 void Client::makeRequest(const Request_ptr& r)
 {
-    string host = r->host();
+    string host = r->hostAndPort();
     if (!_proxy.empty()) {
         host = _proxy;
     }
     
     if (_connections.find(host) == _connections.end()) {
         Connection* con = new Connection(this);
-        con->connectToHost(host);
+        con->connectToHost(r->host(), r->port());
         _connections[host] = con;
     }
     

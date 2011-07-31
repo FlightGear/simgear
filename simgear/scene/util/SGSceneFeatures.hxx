@@ -46,6 +46,10 @@ public:
 
   void setEnablePointSpriteLights(bool enable)
   { _pointSpriteLights = enable; }
+  bool getEnablePointSpriteLights() const
+  {
+      return _pointSpriteLights;
+  }
   bool getEnablePointSpriteLights(unsigned contextId) const
   {
     if (!_pointSpriteLights)

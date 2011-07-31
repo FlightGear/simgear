@@ -204,21 +204,26 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     Pass *combinedPass = clone(spritePass, CopyOp::SHALLOW_COPY);
     combinedPass->setAttributeAndModes(point);
     Effect* effect = new Effect;
-    std::vector<std::string> combinedExtensions;
-    combinedExtensions.push_back("GL_ARB_point_sprite");
-    combinedExtensions.push_back("GL_ARB_point_parameters");
-    Technique* combinedTniq = new Technique;
-    combinedTniq->passes.push_back(combinedPass);
-    combinedTniq->setGLExtensionsPred(2.0, combinedExtensions);
-    effect->techniques.push_back(combinedTniq);
-    std::vector<std::string> spriteExtensions;
-    spriteExtensions.push_back(combinedExtensions.front());
-    Technique* spriteTniq = new Technique;
-    spriteTniq->passes.push_back(spritePass);
-    spriteTniq->setGLExtensionsPred(2.0, spriteExtensions);
-    effect->techniques.push_back(spriteTniq);
     std::vector<std::string> parameterExtensions;
-    parameterExtensions.push_back(combinedExtensions.back());
+
+    if (SGSceneFeatures::instance()->getEnablePointSpriteLights())
+    {
+        std::vector<std::string> combinedExtensions;
+        combinedExtensions.push_back("GL_ARB_point_sprite");
+        combinedExtensions.push_back("GL_ARB_point_parameters");
+        Technique* combinedTniq = new Technique;
+        combinedTniq->passes.push_back(combinedPass);
+        combinedTniq->setGLExtensionsPred(2.0, combinedExtensions);
+        effect->techniques.push_back(combinedTniq);
+        std::vector<std::string> spriteExtensions;
+        spriteExtensions.push_back(combinedExtensions.front());
+        Technique* spriteTniq = new Technique;
+        spriteTniq->passes.push_back(spritePass);
+        spriteTniq->setGLExtensionsPred(2.0, spriteExtensions);
+        effect->techniques.push_back(spriteTniq);
+        parameterExtensions.push_back(combinedExtensions.back());
+    }
+
     Technique* parameterTniq = new Technique;
     parameterTniq->passes.push_back(attenuationPass);
     parameterTniq->setGLExtensionsPred(1.4, parameterExtensions);

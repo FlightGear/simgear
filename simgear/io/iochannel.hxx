@@ -30,15 +30,6 @@
 
 #include <simgear/compiler.h>
 
-// #include "protocol.hxx"
-
-#include <string>
-#include <vector>
-
-using std::vector;
-using std::string;
-
-
 #define SG_IO_MAX_MSG_SIZE 16384
 
 /**

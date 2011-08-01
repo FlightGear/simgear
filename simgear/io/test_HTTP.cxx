@@ -275,6 +275,7 @@ int main(int argc, char* argv[])
 
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseReason(), string("OK"));
         COMPARE(tr->contentLength(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
     }
@@ -301,6 +302,7 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 404);
+        COMPARE(tr->responseReason(), string("not found"));
         COMPARE(tr->contentLength(), 0);
     }
     

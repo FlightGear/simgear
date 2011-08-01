@@ -26,25 +26,11 @@
 #ifndef _SG_FILE_HXX
 #define _SG_FILE_HXX
 
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 
 #include <string>
 
-#include <sys/types.h>		// for open(), read(), write(), close()
-#include <sys/stat.h>		// for open(), read(), write(), close()
-#include <fcntl.h>		// for open(), read(), write(), close()
-#if !defined( _MSC_VER )
-#  include <unistd.h>		// for open(), read(), write(), close()
-#endif
-
 #include "iochannel.hxx"
-
-using std::string;
 
 
 /**
@@ -52,7 +38,7 @@ using std::string;
  */
 class SGFile : public SGIOChannel {
 
-    string file_name;
+    std::string file_name;
     int fp;
     bool eof_flag;
     // Number of repetitions to play. -1 means loop infinitely.
@@ -70,7 +56,12 @@ public:
      * @param file name of file to open
      * @param repeat On eof restart at the beginning of the file
      */
-    SGFile( const string& file, int repeat_ = 1 );
+    SGFile( const std::string& file, int repeat_ = 1 );
+
+    /**
+     * Create an SGFile from an existing, open file-descriptor
+     */
+    SGFile( int existingFd );
 
     /** Destructor */
     ~SGFile();
@@ -94,7 +85,7 @@ public:
     bool close();
 
     /** @return the name of the file being manipulated. */
-    inline string get_file_name() const { return file_name; }
+    inline std::string get_file_name() const { return file_name; }
 
     /** @return true of eof conditions exists */
     inline bool eof() const { return eof_flag; };

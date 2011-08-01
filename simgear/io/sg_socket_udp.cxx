@@ -33,6 +33,8 @@
 #include <cstring>
 #include <cstdlib> // for atoi
 
+using std::string;
+
 SGSocketUDP::SGSocketUDP( const string& host, const string& port ) :
     hostname(host),
     port_str(port),

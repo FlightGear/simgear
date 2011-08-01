@@ -37,14 +37,14 @@ public:
     virtual int responseCode() const
         { return _responseStatus; }
         
-    virtual std::string resposeReason() const
+    virtual std::string responseReason() const
         { return _responseReason; }
         
     virtual unsigned int contentLength() const;
 protected:
     friend class Connection;
     
-    Request(const std::string& url, const std::string method = "get");
+    Request(const std::string& url, const std::string method = "GET");
 
     virtual void responseStart(const std::string& r);
     virtual void responseHeader(const std::string& key, const std::string& value);

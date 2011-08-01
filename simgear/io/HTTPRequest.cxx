@@ -7,12 +7,6 @@
 using std::string;
 using std::map;
 
-#include <iostream>
-
-using std::cout;
-using std::cerr;
-using std::endl;
-
 namespace simgear
 {
 
@@ -51,8 +45,15 @@ string Request::header(const std::string& name) const
 
 void Request::responseStart(const string& r)
 {
-    const int maxSplit = 2; // HTTP/1.1 nnn status code
+    const int maxSplit = 2; // HTTP/1.1 nnn reason-string
     string_list parts = strutils::split(r, NULL, maxSplit);
+    if (parts.size() != 3) {
+        SG_LOG(SG_IO, SG_WARN, "HTTP::Request: malformed response start:" << r);
+        _responseStatus = 400;
+        _responseReason = "bad HTTP response header";
+        return;
+    }
+    
     _responseStatus = strutils::to_int(parts[1]);
     _responseReason = parts[2];
 }

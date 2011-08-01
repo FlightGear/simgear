@@ -89,7 +89,7 @@ public:
      * @param host name of host if direction is SG_IO_OUT or SG_IO_BI
      * @param port port number if we care to choose one.
      * @param style specify "udp" or "tcp" */
-    SGSocketUDP( const string& host, const string& port );
+    SGSocketUDP( const std::string& host, const std::string& port );
 
     /** Destructor */
     ~SGSocketUDP();

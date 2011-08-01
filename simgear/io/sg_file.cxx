@@ -31,6 +31,14 @@
 
 #include <cstring>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#if !defined(_MSC_VER)
+# include <unistd.h>
+#endif
+
 #include <simgear/misc/stdint.hxx>
 #include <simgear/debug/logstream.hxx>
 
@@ -38,13 +46,20 @@
 
 using std::string;
 
-
 SGFile::SGFile(const string &file, int repeat_)
     : file_name(file), fp(-1), eof_flag(true), repeat(repeat_), iteration(0)
 {
     set_type( sgFileType );
 }
 
+SGFile::SGFile( int existingFd ) :
+    fp(existingFd),
+    eof_flag(false),
+    repeat(1),
+    iteration(0)
+{
+    set_type( sgFileType );
+}
 
 SGFile::~SGFile() {
 }

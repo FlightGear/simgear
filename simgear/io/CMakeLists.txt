@@ -45,3 +45,9 @@ target_link_libraries(test_http
     ${RT_LIBRARY})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
+
+add_executable(httpget httpget.cxx)
+target_link_libraries(httpget 
+    sgio sgstructure sgtiming sgmisc sgdebug
+    ${RT_LIBRARY})
+    

@@ -99,7 +99,7 @@ public:
 private:
     static osg::Vec3 gravity;
     static osg::Vec3 wind;
-    const SGPropertyNode* modelRoot;
+    SGConstPropertyNode_ptr modelRoot;
     static SGConstPropertyNode_ptr enabledNode;
     static bool enabled;
 };

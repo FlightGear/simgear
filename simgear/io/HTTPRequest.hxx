@@ -40,24 +40,38 @@ public:
     virtual std::string responseReason() const
         { return _responseReason; }
         
-    virtual unsigned int contentLength() const;
-protected:
-    friend class Connection;
+    void setResponseLength(unsigned int l);    
+    virtual unsigned int responseLength() const;
     
+    /**
+     * running total of body bytes received so far. Can be used
+     * to generate a completion percentage, if the response length is
+     * known. 
+     */
+    unsigned int responseBytesReceived() const
+        { return _receivedBodyBytes; }
+protected:
     Request(const std::string& url, const std::string method = "GET");
 
     virtual void responseStart(const std::string& r);
     virtual void responseHeader(const std::string& key, const std::string& value);
     virtual void responseHeadersComplete();
     virtual void responseComplete();
-    
+    virtual void failed();
     virtual void gotBodyData(const char* s, int n);
 private:
+    friend class Client;
+    friend class Connection;
+    
+    void processBodyBytes(const char* s, int n);
+    void setFailure(int code, const std::string& reason);
 
     std::string _method;
     std::string _url;
     int _responseStatus;
     std::string _responseReason;
+    unsigned int _responseLength;
+    unsigned int _receivedBodyBytes;
     
     typedef std::map<std::string, std::string> HeaderDict;
     HeaderDict _responseHeaders; 

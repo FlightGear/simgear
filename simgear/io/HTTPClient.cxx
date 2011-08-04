@@ -17,7 +17,7 @@
 #include "version.h"
 #else
 #  if !defined(SIMGEAR_VERSION)
-#    define SIMGEAR_VERSION "development " __DATE__
+#    define SIMGEAR_VERSION "simgear-development"
 #  endif
 #endif
 
@@ -43,10 +43,30 @@ public:
         setTerminator("\r\n");
     }
     
-    void connectToHost(const string& host, short port)
+    bool connectToHost(const string& host, short port)
     {
-        open();
-        connect(host.c_str(), port);
+        if (!open()) {
+            SG_LOG(SG_ALL, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
+            return false;
+        }
+        
+        if (connect(host.c_str(), port) != 0) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // socket-level errors
+    virtual void handleError(int error)
+    {
+        NetChat::handleError(error);
+        if (activeRequest) {
+            activeRequest->setFailure(error, "socket error");
+            activeRequest = NULL;
+        }
+    
+        state = STATE_SOCKET_ERROR;
     }
     
     void queueRequest(const Request_ptr& r)
@@ -63,16 +83,17 @@ public:
         activeRequest = r;
         state = STATE_IDLE;
         bodyTransferSize = 0;
+        chunkedTransfer = false;
         
         stringstream headerData;
         string path = r->path();
         if (!client->proxyHost().empty()) {
-            path = "http://" + r->hostAndPort() + path;
+            path = r->url();
         }
 
-        headerData << r->method() << " " << path << " HTTP/1.1 " << client->userAgent() << "\r\n";
+        headerData << r->method() << " " << path << " HTTP/1.1\r\n";
         headerData << "Host: " << r->hostAndPort() << "\r\n";
-
+        headerData << "User-Agent:" << client->userAgent() << "\r\n";
         if (!client->proxyAuth().empty()) {
             headerData << "Proxy-Authorization: " << client->proxyAuth() << "\r\n";
         }
@@ -90,8 +111,8 @@ public:
     
     virtual void collectIncomingData(const char* s, int n)
     {
-        if (state == STATE_GETTING_BODY) {
-            activeRequest->gotBodyData(s, n);
+        if ((state == STATE_GETTING_BODY) || (state == STATE_GETTING_CHUNKED_BYTES)) {
+            activeRequest->processBodyBytes(s, n);
         } else {
             buffer += string(s, n);
         }
@@ -113,17 +134,23 @@ public:
             
         case STATE_GETTING_BODY:
             responseComplete();
-            state = STATE_IDLE;
+            break;
+        
+        case STATE_GETTING_CHUNKED:
+            processChunkHeader();
+            break;
+            
+        case STATE_GETTING_CHUNKED_BYTES:
             setTerminator("\r\n");
+            state = STATE_GETTING_CHUNKED;
+            break;
             
-            if (!queuedRequests.empty()) {
-                Request_ptr next = queuedRequests.front();
-                queuedRequests.pop_front();
-                startRequest(next);
-            } else {
-                idleTime.stamp();
-            }
-            
+        case STATE_GETTING_TRAILER:
+            processTrailer();
+            buffer.clear();
+            break;
+        
+        default:
             break;
         }
     }
@@ -136,6 +163,11 @@ public:
         
         return idleTime.elapsedMSec() > 1000 * 10; // ten seconds
     }
+    
+    bool hasError() const
+    {
+        return (state == STATE_SOCKET_ERROR);
+    }
 private:
     void processHeader()
     {
@@ -143,12 +175,13 @@ private:
         if (h.empty()) { // blank line terminates headers
             headersComplete();
             
-            if (bodyTransferSize > 0) {
+            if (chunkedTransfer) {
+                state = STATE_GETTING_CHUNKED;
+            } else if (bodyTransferSize > 0) {
                 state = STATE_GETTING_BODY;
                 setByteCount(bodyTransferSize);
             } else {
                 responseComplete();
-                state = STATE_IDLE; // no response body, we're done
             }
             return;
         }
@@ -163,13 +196,71 @@ private:
         string lkey = boost::to_lower_copy(key);
         string value = strutils::strip(buffer.substr(colonPos + 1));
         
-        if (lkey == "content-length" && (bodyTransferSize <= 0)) {
-            bodyTransferSize = strutils::to_int(value);
-        } else if (lkey == "transfer-length") {
-            bodyTransferSize = strutils::to_int(value);
+        // only consider these if getting headers (as opposed to trailers 
+        // of a chunked transfer)
+        if (state == STATE_GETTING_HEADERS) {
+            if (lkey == "content-length") {
+                int sz = strutils::to_int(value);
+                if (bodyTransferSize <= 0) {
+                    bodyTransferSize = sz;
+                }
+                activeRequest->setResponseLength(sz);
+            } else if (lkey == "transfer-length") {
+                bodyTransferSize = strutils::to_int(value);
+            } else if (lkey == "transfer-encoding") {
+                processTransferEncoding(value);
+            }
+        }
+    
+        activeRequest->responseHeader(lkey, value);
+    }
+    
+    void processTransferEncoding(const string& te)
+    {
+        if (te == "chunked") {
+            chunkedTransfer = true;
+        } else {
+            SG_LOG(SG_IO, SG_WARN, "unsupported transfer encoding:" << te);
+            // failure
+        }
+    }
+    
+    void processChunkHeader()
+    {
+        if (buffer.empty()) {
+            // blank line after chunk data
+            return;
         }
         
-        activeRequest->responseHeader(lkey, value);
+        int chunkSize = 0;
+        int semiPos = buffer.find(';');
+        if (semiPos >= 0) {
+            // extensions ignored for the moment
+            chunkSize = strutils::to_int(buffer.substr(0, semiPos), 16);
+        } else {
+            chunkSize = strutils::to_int(buffer, 16);
+        }
+        
+        buffer.clear();
+        if (chunkSize == 0) {  //  trailer start
+            state = STATE_GETTING_TRAILER;
+            return;
+        }
+        
+        state = STATE_GETTING_CHUNKED_BYTES;
+        setByteCount(chunkSize);
+    }
+    
+    void processTrailer()
+    {        
+        if (buffer.empty()) {
+            // end of trailers
+            responseComplete();
+            return;
+        }
+        
+    // process as a normal header
+        processHeader();
     }
     
     void headersComplete()
@@ -182,12 +273,27 @@ private:
         activeRequest->responseComplete();
         client->requestFinished(this);
         activeRequest = NULL;
+        
+        state = STATE_IDLE;
+        setTerminator("\r\n");
+        
+        if (!queuedRequests.empty()) {
+            Request_ptr next = queuedRequests.front();
+            queuedRequests.pop_front();
+            startRequest(next);
+        } else {
+            idleTime.stamp();
+        }
     }
     
     enum ConnectionState {
         STATE_IDLE = 0,
         STATE_GETTING_HEADERS,
-        STATE_GETTING_BODY
+        STATE_GETTING_BODY,
+        STATE_GETTING_CHUNKED,
+        STATE_GETTING_CHUNKED_BYTES,
+        STATE_GETTING_TRAILER,
+        STATE_SOCKET_ERROR
     };
     
     Client* client;
@@ -196,6 +302,7 @@ private:
     std::string buffer;
     int bodyTransferSize;
     SGTimeStamp idleTime;
+    bool chunkedTransfer;
     
     std::list<Request_ptr> queuedRequests;
 };
@@ -207,9 +314,11 @@ Client::Client()
 
 void Client::update()
 {
+    NetChannel::poll();
+    
     ConnectionDict::iterator it = _connections.begin();
     for (; it != _connections.end(); ) {
-        if (it->second->hasIdleTimeout()) {
+        if (it->second->hasIdleTimeout() || it->second->hasError()) {
         // connection has been idle for a while, clean it up
             ConnectionDict::iterator del = it++;
             delete del->second;
@@ -222,18 +331,35 @@ void Client::update()
 
 void Client::makeRequest(const Request_ptr& r)
 {
-    string host = r->hostAndPort();
+    string host = r->host();
+    int port = r->port();
     if (!_proxy.empty()) {
         host = _proxy;
+        port = _proxyPort;
     }
     
-    if (_connections.find(host) == _connections.end()) {
+    stringstream ss;
+    ss << host << "-" << port;
+    string connectionId = ss.str();
+    
+    if (_connections.find(connectionId) == _connections.end()) {
         Connection* con = new Connection(this);
-        con->connectToHost(r->host(), r->port());
-        _connections[host] = con;
+        bool ok = con->connectToHost(host, port);
+        if (!ok) {
+        // since NetChannel connect is non-blocking, this failure
+        // path is unlikely, but still checked for.
+            SG_LOG(SG_IO, SG_WARN, "unable to connect to host:" 
+                << host << " (port:" << port << ")");
+            delete con;
+            
+            r->setFailure(-1, "unable to connect to host");
+            return;
+        }
+        
+        _connections[connectionId] = con;
     }
     
-    _connections[host]->queueRequest(r);
+    _connections[connectionId]->queueRequest(r);
 }
 
 void Client::requestFinished(Connection* con)
@@ -246,9 +372,10 @@ void Client::setUserAgent(const string& ua)
     _userAgent = ua;
 }
 
-void Client::setProxy(const string& proxy, const string& auth)
+void Client::setProxy(const string& proxy, int port, const string& auth)
 {
     _proxy = proxy;
+    _proxyPort = port;
     _proxyAuth = auth;
 }
 

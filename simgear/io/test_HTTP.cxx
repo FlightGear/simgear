@@ -43,6 +43,7 @@ class TestRequest : public HTTP::Request
 {
 public:
     bool complete;
+    bool failed;
     string bodyData;
     
     TestRequest(const std::string& url) : 
@@ -52,6 +53,7 @@ public:
         
     }
     
+    std::map<string, string> headers;
 protected:
     virtual void responseHeadersComplete()
     {
@@ -62,9 +64,19 @@ protected:
         complete = true;
     }  
     
+    virtual void failure()
+    {
+        failed = true;
+    }
+    
     virtual void gotBodyData(const char* s, int n)
     {
         bodyData += string(s, n);
+    }
+    
+    virtual void responseHeader(const string& header, const string& value)
+    {
+        headers[header] =  value;
     }
 };
 
@@ -143,6 +155,21 @@ public:
             push(d.str().c_str());
         } else if (path == "/test2") {
             sendBody2();
+        } else if (path == "/testchunked") {
+            stringstream d;
+            d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Transfer-Encoding:chunked\r\n";
+            d << "\r\n";
+            d << "8\r\n"; // first chunk
+            d << "ABCDEFGH\r\n";
+            d << "6\r\n"; // second chunk
+            d << "ABCDEF\r\n";
+            d << "10\r\n"; // third chunk
+            d << "ABCDSTUVABCDSTUV\r\n";
+            d << "0\r\n"; // start of trailer
+            d << "X-Foobar: wibble\r\n"; // trailer data
+            d << "\r\n";
+            push(d.str().c_str());
         } else if (path == "http://www.google.com/test2") {
             // proxy test
             if (requestHeaders["host"] != "www.google.com") {
@@ -227,7 +254,7 @@ public:
     {
         simgear::IPAddress addr ;
         int handle = accept ( &addr ) ;
-
+        cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
         TestServerChannel* chan = new TestServerChannel();
         chan->setHandle(handle);
     }
@@ -244,6 +271,19 @@ void waitForComplete(TestRequest* tr)
     }
     
     cerr << "timed out" << endl;
+}
+
+void waitForFailed(TestRequest* tr)
+{
+    SGTimeStamp start(SGTimeStamp::now());
+    while (start.elapsedMSec() <  1000) {
+        NetChannel::poll(10);
+        if (tr->failed) {
+            return;
+        }
+    }
+    
+    cerr << "timed out waiting for failure" << endl;
 }
 
 int main(int argc, char* argv[])
@@ -276,7 +316,8 @@ int main(int argc, char* argv[])
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseReason(), string("OK"));
-        COMPARE(tr->contentLength(), strlen(BODY1));
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
     }
 
@@ -291,8 +332,22 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->contentLength(), body2Size);
+        COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
+    }
+    
+    {
+        TestRequest* tr = new TestRequest("http://localhost:2000/testchunked");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+
+        waitForComplete(tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseReason(), string("OK"));
+        COMPARE(tr->responseBytesReceived(), 30);
+        COMPARE(tr->bodyData, "ABCDEFGHABCDEFABCDSTUVABCDSTUV");
+    // check trailers made it too
+        COMPARE(tr->headers["x-foobar"], string("wibble"));
     }
     
 // test 404
@@ -303,29 +358,39 @@ int main(int argc, char* argv[])
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 404);
         COMPARE(tr->responseReason(), string("not found"));
-        COMPARE(tr->contentLength(), 0);
+        COMPARE(tr->responseLength(), 0);
     }
-    
+
+// test connectToHost failure
+/*
+    {
+        TestRequest* tr = new TestRequest("http://not.found/something");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForFailed(tr);
+        COMPARE(tr->responseCode(), -1);
+    }
+    */
 // test proxy
     {
-        cl.setProxy("localhost:2000");
+        cl.setProxy("localhost", 2000);
         TestRequest* tr = new TestRequest("http://www.google.com/test2");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->contentLength(), body2Size);
+        COMPARE(tr->responseLength(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
     
     {
-        cl.setProxy("localhost:2000", "ABCDEF");
+        cl.setProxy("localhost", 2000, "ABCDEF");
         TestRequest* tr = new TestRequest("http://www.google.com/test3");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
         waitForComplete(tr);
         COMPARE(tr->responseCode(), 200);
-        COMPARE(tr->contentLength(), body2Size);
+        COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
     }
     

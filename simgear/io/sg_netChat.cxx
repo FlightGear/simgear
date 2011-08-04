@@ -115,8 +115,8 @@ NetChat::handleBufferRead (NetBuffer& in_buffer)
             collectIncomingData (in_buffer.getData(),in_buffer.getLength());
             in_buffer.remove ();
         }
-      
-      return;
+        
+        continue;
     }
     
     int terminator_len = strlen(terminator);

@@ -10,6 +10,7 @@
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/sg_netChannel.hxx>
+#include <simgear/misc/strutils.hxx>
 
 using namespace simgear;
 using std::cout;
@@ -119,7 +120,16 @@ int main(int argc, char* argv[])
     } // of arguments iteration
 
     if (!proxy.empty()) {
-        cl.setProxy(proxy, proxyAuth);
+        int colonPos = proxy.find(':');
+        string proxyHost = proxy;
+        int proxyPort = 8800;
+        if (colonPos >= 0) {
+            proxyHost = proxy.substr(0, colonPos);
+            proxyPort = strutils::to_int(proxy.substr(colonPos + 1));
+            cout << proxyHost << " " << proxyPort << endl;
+        }
+        
+        cl.setProxy(proxyHost, proxyPort, proxyAuth);
     }
 
     if (!outFile) {

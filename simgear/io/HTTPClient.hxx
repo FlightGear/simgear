@@ -23,7 +23,7 @@ public:
     void makeRequest(const Request_ptr& r);
     
     void setUserAgent(const std::string& ua);
-    void setProxy(const std::string& proxy, const std::string& auth = "");
+    void setProxy(const std::string& proxy, int port, const std::string& auth = "");
     
     const std::string& userAgent() const
         { return _userAgent; }
@@ -40,6 +40,7 @@ private:
     
     std::string _userAgent;
     std::string _proxy;
+    int _proxyPort;
     std::string _proxyAuth;
     
 // connections by host

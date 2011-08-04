@@ -17,7 +17,10 @@ extern const int DEFAULT_HTTP_PORT;
 
 Request::Request(const string& url, const string method) :
     _method(method),
-    _url(url)
+    _url(url),
+    _responseStatus(0),
+    _responseLength(0),
+    _receivedBodyBytes(0)
 {
     
 }
@@ -66,6 +69,12 @@ void Request::responseHeader(const string& key, const string& value)
 void Request::responseHeadersComplete()
 {
     // no op
+}
+
+void Request::processBodyBytes(const char* s, int n)
+{
+    _receivedBodyBytes += n;
+    gotBodyData(s, n);
 }
 
 void Request::gotBodyData(const char* s, int n)
@@ -148,14 +157,32 @@ string Request::hostAndPort() const
     return u.substr(schemeEnd + 3, hostEnd - (schemeEnd + 3));
 }
 
-unsigned int Request::contentLength() const
+void Request::setResponseLength(unsigned int l)
 {
-    HeaderDict::const_iterator it = _responseHeaders.find("content-length");
-    if (it == _responseHeaders.end()) {
-        return 0;
+    _responseLength = l;
+}
+
+unsigned int Request::responseLength() const
+{
+// if the server didn't supply a content length, use the number
+// of bytes we actually received (so far)
+    if ((_responseLength == 0) && (_receivedBodyBytes > 0)) {
+        return _receivedBodyBytes;
     }
     
-    return (unsigned int) strutils::to_int(it->second);
+    return _responseLength;
+}
+
+void Request::setFailure(int code, const std::string& reason)
+{
+    _responseStatus = code;
+    _responseReason = reason;
+    failed();
+}
+
+void Request::failed()
+{
+    // no-op in base class
 }
 
 } // of namespace HTTP

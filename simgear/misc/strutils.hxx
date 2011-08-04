@@ -123,7 +123,10 @@ namespace simgear {
      */
     std::string simplify(const std::string& s);
     
-    int to_int(const std::string& s);
+    /**
+     * convert a string representing a decimal number, to an int
+     */
+    int to_int(const std::string& s, int base = 10);
   } // end namespace strutils
 } // end namespace simgear
 

@@ -22,11 +22,13 @@
 
 #include <ctype.h>
 #include <cstring>
+#include <sstream>
 
 #include "strutils.hxx"
 
 using std::string;
 using std::vector;
+using std::stringstream;
 
 namespace simgear {
     namespace strutils {
@@ -243,9 +245,18 @@ namespace simgear {
         return result;
     }
     
-    int to_int(const std::string& s)
+    int to_int(const std::string& s, int base)
     {
-        return atoi(s.c_str());
+        stringstream ss(s);
+        switch (base) {
+        case 8:      ss >> std::oct; break;
+        case 16:     ss >> std::hex; break;
+        default: break;
+        }
+        
+        int result;
+        ss >> result;
+        return result;
     }
     
     } // end namespace strutils

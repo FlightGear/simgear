@@ -106,7 +106,7 @@ public:
         if (state == STATE_IDLE) {
             state = STATE_HEADERS;
             string_list line = strutils::split(buffer, NULL, 3);
-            if (line.size() < 4) {
+            if (line.size() < 3) {
                 cerr << "malformed request:" << buffer << endl;
                 exit(-1);
             }
@@ -114,7 +114,6 @@ public:
             method = line[0];
             path = line[1];
             httpVersion = line[2];
-            userAgent = line[3];
             requestHeaders.clear();
             buffer.clear();
         } else if (state == STATE_HEADERS) {
@@ -230,7 +229,6 @@ public:
     string method;
     string path;
     string httpVersion;
-    string userAgent;
     std::map<string, string> requestHeaders;
 };
 

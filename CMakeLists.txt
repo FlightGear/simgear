@@ -20,7 +20,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
-option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" OFF)
+option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" ON)
 
 set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
@@ -71,11 +71,13 @@ endif()
 
 if(ENABLE_LIBSVN)
 	find_package(SvnClient)
-	
+
 	if(LIBSVN_FOUND)
 		message(STATUS "libsvn found, enabling in SimGear")
 		set(HAVE_SVN_CLIENT_H 1)
 		set(HAVE_LIBSVN_CLIENT_1 1)
+	else()
+		message(STATUS "Missing libsvn, unable to enable SVN in SimGear")
 	endif(LIBSVN_FOUND)
 endif(ENABLE_LIBSVN)
 

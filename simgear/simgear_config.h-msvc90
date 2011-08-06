@@ -151,6 +151,7 @@
 #define HAVE_MEMORY_H 1
 
 #define HAVE_MEMCPY 1
+#define HAVE_DAYLIGHT 1
 
 #define GLUT_H <GL/glut.h>
 

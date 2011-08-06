@@ -538,7 +538,7 @@ time_t sgTimeGetGMT(int year, int month, int day, int hour, int min, int sec)
     if ( daylight > 0 ) {
 	daylight = 1;
     } else if ( daylight < 0 ) {
-	SG_LOG( SG_EVENT, FG_WARN, 
+	SG_LOG( SG_EVENT, SG_WARN, 
 		"OOOPS, problem in sg_time.cxx, no daylight savings info." );
     }
 

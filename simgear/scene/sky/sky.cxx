@@ -237,6 +237,16 @@ void SGSky::set_3dCloudVisRange(float vis)
     }
 }
 
+bool SGSky::get_3dCloudWrap() const {
+    return SGCloudField::getWrap();
+}
+
+void SGSky::set_3dCloudWrap(bool wrap)
+{
+    SGCloudField::setWrap(wrap);
+}
+
+
 void SGSky::texture_path( const string& path ) {
 	tex_path = SGPath( path );
 }

@@ -130,23 +130,26 @@ public:
         * @param lat specifies a rotation about the new Y axis
         * @param dt the time elapsed since the last call
         * @param asl altitude of the layer
-  * @param speed of cloud layer movement (due to wind)
-  * @param direction of cloud layer movement (due to wind)
+        * @param speed of cloud layer movement (due to wind)
+        * @param direction of cloud layer movement (due to wind)
         */
         bool reposition( const SGVec3f& p, const SGVec3f& up,
                   double lon, double lat, double dt, int asl, float speed, float direction);
 
         osg::Group* getNode() { return field_root.get(); }
 
-	// visibility distance for clouds in meters
-	static float CloudVis;
+        // visibility distance for clouds in meters
+	      static float CloudVis;
 
-	static SGVec3f view_vec, view_X, view_Y;
+	      static SGVec3f view_vec, view_X, view_Y;
 
         static float view_distance;
         static double timer_dt;
-	static float fieldSize;
-	static bool wrap;
+        static float fieldSize;
+	      static bool wrap;
+	
+        static bool getWrap(void) { return wrap; }
+        static void setWrap(bool w) { wrap = w; }
 
         static float getVisRange(void) { return view_distance; }
         static void setVisRange(float d) { view_distance = d; }

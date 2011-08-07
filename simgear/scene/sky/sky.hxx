@@ -440,6 +440,15 @@ public:
      */
     virtual void set_3dCloudVisRange(float vis);
 
+    /** Get 3D cloud wrapping */
+    virtual bool get_3dCloudWrap() const;
+
+    /** Set 3D cloud wrapping
+     * @param wrap whether to wrap 3D clouds
+     */
+    virtual void set_3dCloudWrap(bool wrap);
+
+
 };
 
 

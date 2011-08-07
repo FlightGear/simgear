@@ -147,7 +147,7 @@ public:
         if (path == "/test1") {
             string contentStr(BODY1);
             stringstream d;
-            d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
             d << "Content-Length:" << contentStr.size() << "\r\n";
             d << "\r\n"; // final CRLF to terminate the headers
             d << contentStr;
@@ -156,7 +156,7 @@ public:
             sendBody2();
         } else if (path == "/testchunked") {
             stringstream d;
-            d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
             d << "Transfer-Encoding:chunked\r\n";
             d << "\r\n";
             d << "8\r\n"; // first chunk
@@ -172,47 +172,70 @@ public:
         } else if (path == "http://www.google.com/test2") {
             // proxy test
             if (requestHeaders["host"] != "www.google.com") {
-                sendErrorResponse(400);
+                sendErrorResponse(400, true, "bad destination");
             }
             
             if (requestHeaders["proxy-authorization"] != string()) {
-                sendErrorResponse(401); // shouldn't supply auth
+                sendErrorResponse(401, false, "bad auth"); // shouldn't supply auth
             }
             
             sendBody2();
         } else if (path == "http://www.google.com/test3") {
             // proxy test
             if (requestHeaders["host"] != "www.google.com") {
-                sendErrorResponse(400);
+                sendErrorResponse(400, true, "bad destination");
             }
 
             if (requestHeaders["proxy-authorization"] != "ABCDEF") {
-                sendErrorResponse(401); // forbidden
+                sendErrorResponse(401, false, "bad auth"); // forbidden
             }
 
             sendBody2();
+        } else if (path == "/test_1_0") {
+            string contentStr(BODY1);
+            stringstream d;
+            d << "HTTP/1.0 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+            closeWhenDone();
+        } else if (path == "/test_close") {
+            string contentStr(BODY1);
+            stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Connection: close\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+            closeWhenDone();
         } else {
-            sendErrorResponse(404);
+            sendErrorResponse(404, true, "");
         }
     }
     
     void sendBody2()
     {
         stringstream d;
-        d << "HTTP1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+        d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
         d << "Content-Length:" << body2Size << "\r\n";
         d << "\r\n"; // final CRLF to terminate the headers
         push(d.str().c_str());
         bufferSend(body2, body2Size);
     }
     
-    void sendErrorResponse(int code)
+    void sendErrorResponse(int code, bool close, string content)
     {
         cerr << "sending error " << code << " for " << path << endl;
         stringstream headerData;
-        headerData << "HTTP1.1 " << code << " " << reasonForCode(code) << "\r\n";
+        headerData << "HTTP/1.1 " << code << " " << reasonForCode(code) << "\r\n";
+        headerData << "Content-Length:" << content.size() << "\r\n";
         headerData << "\r\n"; // final CRLF to terminate the headers
         push(headerData.str().c_str());
+        push(content.c_str());
+        
+        if (close) {
+            closeWhenDone();
+        }
     }
     
     string reasonForCode(int code) 
@@ -252,7 +275,7 @@ public:
     {
         simgear::IPAddress addr ;
         int handle = accept ( &addr ) ;
-        cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
+        //cout << "did accept from " << addr.getHost() << ":" << addr.getPort() << endl;
         TestServerChannel* chan = new TestServerChannel();
         chan->setHandle(handle);
     }
@@ -359,6 +382,30 @@ int main(int argc, char* argv[])
         COMPARE(tr->responseLength(), 0);
     }
 
+    cout << "done1" << endl;
+// test HTTP/1.0
+    {
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForComplete(tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->bodyData, string(BODY1));
+    }
+
+    cout << "done2" << endl;
+// test HTTP/1.1 Connection::close
+    {
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_close");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        waitForComplete(tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->bodyData, string(BODY1));
+    }
+    cout << "done3" << endl;
 // test connectToHost failure
 /*
     {

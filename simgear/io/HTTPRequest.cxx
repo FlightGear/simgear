@@ -18,9 +18,11 @@ extern const int DEFAULT_HTTP_PORT;
 Request::Request(const string& url, const string method) :
     _method(method),
     _url(url),
+    _responseVersion(HTTP_VERSION_UNKNOWN),
     _responseStatus(0),
     _responseLength(0),
-    _receivedBodyBytes(0)
+    _receivedBodyBytes(0),
+    _willClose(false)
 {
     
 }
@@ -52,17 +54,21 @@ void Request::responseStart(const string& r)
     string_list parts = strutils::split(r, NULL, maxSplit);
     if (parts.size() != 3) {
         SG_LOG(SG_IO, SG_WARN, "HTTP::Request: malformed response start:" << r);
-        _responseStatus = 400;
-        _responseReason = "bad HTTP response header";
+        setFailure(400, "malformed HTTP response header");
         return;
     }
     
+    _responseVersion = decodeVersion(parts[0]);    
     _responseStatus = strutils::to_int(parts[1]);
     _responseReason = parts[2];
 }
 
 void Request::responseHeader(const string& key, const string& value)
 {
+    if (key == "connection") {
+        _willClose = (value.find("close") >= 0);
+    }
+    
     _responseHeaders[key] = value;
 }
 
@@ -183,6 +189,20 @@ void Request::setFailure(int code, const std::string& reason)
 void Request::failed()
 {
     // no-op in base class
+}
+
+Request::HTTPVersion Request::decodeVersion(const string& v)
+{
+    if (v == "HTTP/1.1") return HTTP_1_1;
+    if (v == "HTTP/1.0") return HTTP_1_0;
+    if (strutils::starts_with(v, "HTTP/0.")) return HTTP_0_x;
+    return HTTP_VERSION_UNKNOWN;
+}
+
+bool Request::closeAfterComplete() const
+{
+// for non HTTP/1.1 connections, assume server closes
+    return _willClose || (_responseVersion != HTTP_1_1);
 }
 
 } // of namespace HTTP

@@ -38,35 +38,42 @@ class Connection : public NetChat
 public:
     Connection(Client* pr) :
         client(pr),
-        state(STATE_IDLE)
+        state(STATE_CLOSED),
+        port(DEFAULT_HTTP_PORT)
     {
         setTerminator("\r\n");
     }
     
-    bool connectToHost(const string& host, short port)
+    void setServer(const string& h, short p)
     {
-        if (!open()) {
-            SG_LOG(SG_ALL, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
-            return false;
-        }
-        
-        if (connect(host.c_str(), port) != 0) {
-            return false;
-        }
-        
-        return true;
+        host = h;
+        port = p;
     }
     
     // socket-level errors
     virtual void handleError(int error)
-    {
+    {        
         NetChat::handleError(error);
         if (activeRequest) {
+            SG_LOG(SG_IO, SG_INFO, "HTTP socket error");
             activeRequest->setFailure(error, "socket error");
             activeRequest = NULL;
         }
     
         state = STATE_SOCKET_ERROR;
+    }
+    
+    virtual void handleClose()
+    {
+        if ((state == STATE_GETTING_BODY) && activeRequest) {
+        // force state here, so responseComplete can avoid closing the 
+        // socket again
+            state =  STATE_CLOSED;
+            responseComplete();
+        }
+        
+        state = STATE_CLOSED;
+        NetChat::handleClose();
     }
     
     void queueRequest(const Request_ptr& r)
@@ -80,9 +87,17 @@ public:
     
     void startRequest(const Request_ptr& r)
     {
+        if (state == STATE_CLOSED) {
+            if (!connectToHost()) {
+                return;
+            }
+            
+            state = STATE_IDLE;
+        }
+        
         activeRequest = r;
         state = STATE_IDLE;
-        bodyTransferSize = 0;
+        bodyTransferSize = -1;
         chunkedTransfer = false;
         
         stringstream headerData;
@@ -106,7 +121,12 @@ public:
 
     // TODO - add request body support for PUT, etc operations
 
-        push(headerData.str().c_str());
+        bool ok = push(headerData.str().c_str());
+        if (!ok) {
+            SG_LOG(SG_IO, SG_WARN, "HTTP writing to socket failed");
+            state = STATE_SOCKET_ERROR;
+            return;
+        }        
     }
     
     virtual void collectIncomingData(const char* s, int n)
@@ -169,6 +189,23 @@ public:
         return (state == STATE_SOCKET_ERROR);
     }
 private:
+    bool connectToHost()
+    {
+        SG_LOG(SG_IO, SG_INFO, "HTTP connecting to " << host << ":" << port);
+        
+        if (!open()) {
+            SG_LOG(SG_ALL, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
+            return false;
+        }
+        
+        if (connect(host.c_str(), port) != 0) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    
     void processHeader()
     {
         string h = strutils::simplify(buffer);
@@ -177,12 +214,11 @@ private:
             
             if (chunkedTransfer) {
                 state = STATE_GETTING_CHUNKED;
-            } else if (bodyTransferSize > 0) {
-                state = STATE_GETTING_BODY;
-                setByteCount(bodyTransferSize);
             } else {
-                responseComplete();
+                setByteCount(bodyTransferSize); // may be -1, that's fine
+                state = STATE_GETTING_BODY;
             }
+            
             return;
         }
         
@@ -272,9 +308,18 @@ private:
     {
         activeRequest->responseComplete();
         client->requestFinished(this);
-        activeRequest = NULL;
         
-        state = STATE_IDLE;
+        bool doClose = activeRequest->closeAfterComplete();
+        activeRequest = NULL;
+        if (state == STATE_GETTING_BODY) {
+            state = STATE_IDLE;
+            if (doClose) {
+            // this will bring us into handleClose() above, which updates
+            // state to STATE_CLOSED
+                close();
+            }
+        }
+        
         setTerminator("\r\n");
         
         if (!queuedRequests.empty()) {
@@ -293,12 +338,15 @@ private:
         STATE_GETTING_CHUNKED,
         STATE_GETTING_CHUNKED_BYTES,
         STATE_GETTING_TRAILER,
-        STATE_SOCKET_ERROR
+        STATE_SOCKET_ERROR,
+        STATE_CLOSED             ///< connection should be closed now
     };
     
     Client* client;
     Request_ptr activeRequest;
     ConnectionState state;
+    string host;
+    short port;
     std::string buffer;
     int bodyTransferSize;
     SGTimeStamp idleTime;
@@ -315,11 +363,13 @@ Client::Client()
 void Client::update()
 {
     NetChannel::poll();
-    
+        
     ConnectionDict::iterator it = _connections.begin();
     for (; it != _connections.end(); ) {
         if (it->second->hasIdleTimeout() || it->second->hasError()) {
         // connection has been idle for a while, clean it up
+        // (or has an error condition, again clean it up)
+            SG_LOG(SG_IO, SG_INFO, "cleaning up " << it->second);
             ConnectionDict::iterator del = it++;
             delete del->second;
             _connections.erase(del);
@@ -344,18 +394,7 @@ void Client::makeRequest(const Request_ptr& r)
     
     if (_connections.find(connectionId) == _connections.end()) {
         Connection* con = new Connection(this);
-        bool ok = con->connectToHost(host, port);
-        if (!ok) {
-        // since NetChannel connect is non-blocking, this failure
-        // path is unlikely, but still checked for.
-            SG_LOG(SG_IO, SG_WARN, "unable to connect to host:" 
-                << host << " (port:" << port << ")");
-            delete con;
-            
-            r->setFailure(-1, "unable to connect to host");
-            return;
-        }
-        
+        con->setServer(host, port);
         _connections[connectionId] = con;
     }
     

@@ -5,12 +5,14 @@
 #include <unistd.h> // for STDOUT_FILENO
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <signal.h>
 
 #include <simgear/io/sg_file.hxx>
 #include <simgear/io/HTTPClient.hxx>
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/sg_netChannel.hxx>
 #include <simgear/misc/strutils.hxx>
+#include <simgear/misc/sg_sleep.hxx>
 
 using namespace simgear;
 using std::cout;
@@ -126,11 +128,12 @@ int main(int argc, char* argv[])
         if (colonPos >= 0) {
             proxyHost = proxy.substr(0, colonPos);
             proxyPort = strutils::to_int(proxy.substr(colonPos + 1));
-            cout << proxyHost << " " << proxyPort << endl;
         }
         
         cl.setProxy(proxyHost, proxyPort, proxyAuth);
     }
+
+    signal(SIGPIPE, SIG_IGN);
 
     if (!outFile) {
         outFile = new SGFile(STDOUT_FILENO);
@@ -150,9 +153,10 @@ int main(int argc, char* argv[])
     cl.makeRequest(req);
     
     while (!req->complete()) {
-        NetChannel::poll(100);
+        cl.update();
+        sleepForMSec(100);
     }
-    
+        
     if (req->responseCode() != 200) {
         cerr << "got response:" << req->responseCode() << endl;
         cerr << "\treason:" << req->responseReason() << endl;

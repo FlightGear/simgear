@@ -37,6 +37,7 @@ private:
     void requestFinished(Connection* con);
     
     friend class Connection;
+    friend class Request;
     
     std::string _userAgent;
     std::string _proxy;

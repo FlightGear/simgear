@@ -50,6 +50,20 @@ public:
      */
     unsigned int responseBytesReceived() const
         { return _receivedBodyBytes; }
+        
+    enum HTTPVersion {
+        HTTP_VERSION_UNKNOWN = 0,
+        HTTP_0_x, // 0.9 or similar
+        HTTP_1_0,
+        HTTP_1_1
+    };
+    
+    HTTPVersion responseVersion() const
+        { return _responseVersion; }
+    
+    static HTTPVersion decodeVersion(const std::string& v);
+    
+    bool closeAfterComplete() const;
 protected:
     Request(const std::string& url, const std::string method = "GET");
 
@@ -68,10 +82,12 @@ private:
 
     std::string _method;
     std::string _url;
+    HTTPVersion _responseVersion;
     int _responseStatus;
     std::string _responseReason;
     unsigned int _responseLength;
     unsigned int _receivedBodyBytes;
+    bool _willClose;
     
     typedef std::map<std::string, std::string> HeaderDict;
     HeaderDict _responseHeaders; 

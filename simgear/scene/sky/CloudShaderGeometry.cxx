@@ -116,7 +116,7 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
                            (GLfloat) t.cloud_height };
         extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
         extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
-        glColor4f(t.position.x(), t.position.y(), t.position.z(), 1.0);
+        glColor4f(t.position.x(), t.position.y(), t.position.z(), zscale);
         _geometry->draw(renderInfo);
     }
 }

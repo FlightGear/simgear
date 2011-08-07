@@ -52,8 +52,8 @@ class CloudShaderGeometry : public osg::Drawable
             setUseDisplayList(false); 
         }
 
-        CloudShaderGeometry(int vx, int vy, float width, float height) :
-            varieties_x(vx), varieties_y(vy)
+        CloudShaderGeometry(int vx, int vy, float width, float height, float zsc) :
+            varieties_x(vx), varieties_y(vy), zscale(zsc)
         { 
             setUseDisplayList(false); 
             float x = width/2.0f;
@@ -107,13 +107,14 @@ class CloudShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-    void addSprite(const SGVec3f& p, int tx, int ty, float w, float h,
-                   float s, float cull, float cloud_height);
+        void addSprite(const SGVec3f& p, int tx, int ty, float w, float h,
+                       float s, float cull, float cloud_height);
                 
         osg::ref_ptr<osg::Drawable> _geometry;
 
         int varieties_x;
         int varieties_y;
+        float zscale;
         
         // Bounding box extents.
         osg::BoundingBox _bbox;

@@ -83,6 +83,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     num_textures_x = cld_def->getIntValue("num-textures-x", 4);
     num_textures_y = cld_def->getIntValue("num-textures-y", 4);
     bottom_shade = cld_def->getDoubleValue("bottom-shade", 1.0);
+    zscale = cld_def->getDoubleValue("z-scale", 1.0);
     texture = cld_def->getStringValue("texture", "cl_cumulus.png");
 
     // Create a new Effect for the texture, if required.
@@ -165,7 +166,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     
     osg::ref_ptr<EffectGeode> geode = new EffectGeode;
         
-    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height);
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height, zscale);
     
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of

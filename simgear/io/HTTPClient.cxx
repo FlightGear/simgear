@@ -25,6 +25,9 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
+//#include <iostream>
+//using namespace std;
+
 namespace simgear
 {
 
@@ -41,7 +44,7 @@ public:
         state(STATE_CLOSED),
         port(DEFAULT_HTTP_PORT)
     {
-        setTerminator("\r\n");
+        
     }
     
     void setServer(const string& h, short p)
@@ -65,15 +68,16 @@ public:
     
     virtual void handleClose()
     {
+        NetChat::handleClose();
+        
         if ((state == STATE_GETTING_BODY) && activeRequest) {
         // force state here, so responseComplete can avoid closing the 
         // socket again
             state =  STATE_CLOSED;
             responseComplete();
+        } else {
+            state = STATE_CLOSED;
         }
-        
-        state = STATE_CLOSED;
-        NetChat::handleClose();
     }
     
     void queueRequest(const Request_ptr& r)
@@ -94,11 +98,12 @@ public:
             
             state = STATE_IDLE;
         }
-        
+                
         activeRequest = r;
         state = STATE_IDLE;
         bodyTransferSize = -1;
         chunkedTransfer = false;
+        setTerminator("\r\n");
         
         stringstream headerData;
         string path = r->path();
@@ -187,6 +192,19 @@ public:
     bool hasError() const
     {
         return (state == STATE_SOCKET_ERROR);
+    }
+    
+    bool shouldStartNext() const
+    {
+        return !activeRequest && !queuedRequests.empty() && 
+            ((state == STATE_CLOSED) || (state == STATE_IDLE));
+    }
+    
+    void startNext()
+    {
+        Request_ptr next = queuedRequests.front();
+        queuedRequests.pop_front();
+        startRequest(next);
     }
 private:
     bool connectToHost()
@@ -308,6 +326,7 @@ private:
     {
         activeRequest->responseComplete();
         client->requestFinished(this);
+        //cout << "response complete: " << activeRequest->url() << endl;
         
         bool doClose = activeRequest->closeAfterComplete();
         activeRequest = NULL;
@@ -322,10 +341,12 @@ private:
         
         setTerminator("\r\n");
         
-        if (!queuedRequests.empty()) {
-            Request_ptr next = queuedRequests.front();
-            queuedRequests.pop_front();
-            startRequest(next);
+    // if we have more requests, and we're idle, can start the next
+    // request immediately. Note we cannot do this if we're in STATE_CLOSED,
+    // since NetChannel::close cleans up state after calling handleClose;
+    // instead we pick up waiting requests in update()
+        if (!queuedRequests.empty() && (state == STATE_IDLE)) {
+            startNext();
         } else {
             idleTime.stamp();
         }
@@ -374,6 +395,10 @@ void Client::update()
             delete del->second;
             _connections.erase(del);
         } else {
+            if (it->second->shouldStartNext()) {
+                it->second->startNext();
+            }
+            
             ++it;
         }
     } // of connecion iteration

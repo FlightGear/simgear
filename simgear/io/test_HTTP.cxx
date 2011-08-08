@@ -12,6 +12,7 @@
 #include <simgear/io/sg_netChat.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
+#include <simgear/misc/sg_sleep.hxx>
 
 using std::cout;
 using std::cerr;
@@ -50,11 +51,31 @@ public:
         HTTP::Request(url),
         complete(false)
     {
-        
     }
     
+    std::map<string, string> sendHeaders;
     std::map<string, string> headers;
 protected:
+    string_list requestHeaders() const
+    {
+        string_list r;
+        std::map<string, string>::const_iterator it;
+        for (it = sendHeaders.begin(); it != sendHeaders.end(); ++it) {
+            r.push_back(it->first);
+        }
+        return r;
+    }
+    
+    string header(const string& name) const
+    {
+        std::map<string, string>::const_iterator it = sendHeaders.find(name);
+        if (it == sendHeaders.end()) {
+            return string();
+        }
+        
+        return it->second;
+    }
+    
     virtual void responseHeadersComplete()
     {
     }
@@ -132,9 +153,8 @@ public:
             }
 
             string key = strutils::simplify(buffer.substr(0, colonPos));
-            string lkey = boost::to_lower_copy(key);
             string value = strutils::strip(buffer.substr(colonPos + 1));
-            requestHeaders[lkey] = value;
+            requestHeaders[key] = value;
             buffer.clear();
         } else if (state == STATE_REQUEST_BODY) {
             
@@ -144,7 +164,19 @@ public:
     void receivedRequestHeaders()
     {
         state = STATE_IDLE;
+        
         if (path == "/test1") {
+            string contentStr(BODY1);
+            stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << contentStr.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+        } else if (path == "/test_headers") {
+            COMPARE(requestHeaders["X-Foo"], string("Bar"));
+            COMPARE(requestHeaders["X-AnotherHeader"], string("A longer value"));
+            
             string contentStr(BODY1);
             stringstream d;
             d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
@@ -171,27 +203,27 @@ public:
             push(d.str().c_str());
         } else if (path == "http://www.google.com/test2") {
             // proxy test
-            if (requestHeaders["host"] != "www.google.com") {
+            if (requestHeaders["Host"] != "www.google.com") {
                 sendErrorResponse(400, true, "bad destination");
             }
             
-            if (requestHeaders["proxy-authorization"] != string()) {
+            if (requestHeaders["Proxy-Authorization"] != string()) {
                 sendErrorResponse(401, false, "bad auth"); // shouldn't supply auth
             }
             
             sendBody2();
         } else if (path == "http://www.google.com/test3") {
             // proxy test
-            if (requestHeaders["host"] != "www.google.com") {
+            if (requestHeaders["Host"] != "www.google.com") {
                 sendErrorResponse(400, true, "bad destination");
             }
 
-            if (requestHeaders["proxy-authorization"] != "ABCDEF") {
+            if (requestHeaders["Proxy-Authorization"] != "ABCDEF") {
                 sendErrorResponse(401, false, "bad auth"); // forbidden
             }
 
             sendBody2();
-        } else if (path == "/test_1_0") {
+        } else if (strutils::starts_with(path, "/test_1_0")) {
             string contentStr(BODY1);
             stringstream d;
             d << "HTTP/1.0 " << 200 << " " << reasonForCode(200) << "\r\n";
@@ -281,27 +313,29 @@ public:
     }
 };
 
-void waitForComplete(TestRequest* tr)
+void waitForComplete(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  1000) {
-        NetChannel::poll(10);
+        cl->update();
         if (tr->complete) {
             return;
         }
+        sleepForMSec(1);
     }
     
     cerr << "timed out" << endl;
 }
 
-void waitForFailed(TestRequest* tr)
+void waitForFailed(HTTP::Client* cl, TestRequest* tr)
 {
     SGTimeStamp start(SGTimeStamp::now());
     while (start.elapsedMSec() <  1000) {
-        NetChannel::poll(10);
+        cl->update();
         if (tr->failed) {
             return;
         }
+        sleepForMSec(1);
     }
     
     cerr << "timed out waiting for failure" << endl;
@@ -334,7 +368,7 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
 
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseReason(), string("OK"));
         COMPARE(tr->responseLength(), strlen(BODY1));
@@ -342,6 +376,21 @@ int main(int argc, char* argv[])
         COMPARE(tr->bodyData, string(BODY1));
     }
 
+    {
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_headers");
+        HTTP::Request_ptr own(tr);
+        tr->sendHeaders["X-Foo"] = "Bar";
+        tr->sendHeaders["X-AnotherHeader"] = "A longer value";
+        cl.makeRequest(tr);
+
+        waitForComplete(&cl, tr);
+        COMPARE(tr->responseCode(), 200);
+        COMPARE(tr->responseReason(), string("OK"));
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
+        COMPARE(tr->bodyData, string(BODY1));
+    }
+    
 // larger get request
     for (unsigned int i=0; i<body2Size; ++i) {
         body2[i] = (i << 4) | (i >> 2);
@@ -351,7 +400,7 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://localhost:2000/test2");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
@@ -362,7 +411,7 @@ int main(int argc, char* argv[])
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
 
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseReason(), string("OK"));
         COMPARE(tr->responseBytesReceived(), 30);
@@ -376,7 +425,7 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://localhost:2000/not-found");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 404);
         COMPARE(tr->responseReason(), string("not found"));
         COMPARE(tr->responseLength(), 0);
@@ -388,7 +437,7 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseLength(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
@@ -400,7 +449,7 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://localhost:2000/test_close");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseLength(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
@@ -422,7 +471,7 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://www.google.com/test2");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseLength(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
@@ -433,10 +482,59 @@ int main(int argc, char* argv[])
         TestRequest* tr = new TestRequest("http://www.google.com/test3");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
-        waitForComplete(tr);
+        waitForComplete(&cl, tr);
         COMPARE(tr->responseCode(), 200);
         COMPARE(tr->responseBytesReceived(), body2Size);
         COMPARE(tr->bodyData, string(body2, body2Size));
+    }
+    
+// pipelining
+    {
+        cl.setProxy("", 80);
+        TestRequest* tr = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        
+        
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own2(tr2);
+        cl.makeRequest(tr2);
+        
+        TestRequest* tr3 = new TestRequest("http://localhost:2000/test1");
+        HTTP::Request_ptr own3(tr3);
+        cl.makeRequest(tr3);
+        
+        waitForComplete(&cl, tr3);
+        VERIFY(tr->complete);
+        VERIFY(tr2->complete);
+        COMPARE(tr->bodyData, string(BODY1));
+        COMPARE(tr2->bodyData, string(BODY1));
+        COMPARE(tr3->bodyData, string(BODY1));
+    }
+    
+// multiple requests with an HTTP 1.0 server
+    {
+        cout << "http 1.0 multiple requests" << endl;
+        
+        cl.setProxy("", 80);
+        TestRequest* tr = new TestRequest("http://localhost:2000/test_1_0/A");
+        HTTP::Request_ptr own(tr);
+        cl.makeRequest(tr);
+        
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/test_1_0/B");
+        HTTP::Request_ptr own2(tr2);
+        cl.makeRequest(tr2);
+        
+        TestRequest* tr3 = new TestRequest("http://localhost:2000/test_1_0/C");
+        HTTP::Request_ptr own3(tr3);
+        cl.makeRequest(tr3);
+        
+        waitForComplete(&cl, tr3);
+        VERIFY(tr->complete);
+        VERIFY(tr2->complete);
+        COMPARE(tr->bodyData, string(BODY1));
+        COMPARE(tr2->bodyData, string(BODY1));
+        COMPARE(tr3->bodyData, string(BODY1));
     }
     
     cout << "all tests passed ok" << endl;

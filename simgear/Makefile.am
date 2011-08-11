@@ -4,7 +4,7 @@ else
 HLA_DIR =
 endif
 
-EXTRA_DIST = simgear_config.h.vc5 simgear_config.h-msvc71 version.h.in
+EXTRA_DIST = simgear_config.h-msvc90 version.h.in
 
 include_HEADERS = \
 	compiler.h constants.h sg_inlines.h version.h

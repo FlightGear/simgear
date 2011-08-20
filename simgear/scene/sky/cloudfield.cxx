@@ -43,7 +43,7 @@ using namespace std;
 
 using std::vector;
 
-#include <simgear/environment/visual_enviro.hxx>
+//#include <simgear/environment/visual_enviro.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include "sky.hxx"

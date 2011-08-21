@@ -115,7 +115,8 @@ PathList Dir::children(int types, const std::string& nameFilter) const
     }
     
     // skip hidden files (names beginning with '.') unless requested
-    if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.')) {
+    if (!(types & INCLUDE_HIDDEN) && (entry->d_name[0] == '.') &&
+         strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
       continue;
     }
     

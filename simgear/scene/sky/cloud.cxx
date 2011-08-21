@@ -675,138 +675,142 @@ bool SGCloudLayer::repaint( const SGVec3f& fog_color ) {
 bool SGCloudLayer::reposition( const SGVec3f& p, const SGVec3f& up, double lon, double lat,
         		       double alt, double dt )
 {
-    // combine p and asl (meters) to get translation offset
-    osg::Vec3 asl_offset(toOsg(up));
-    asl_offset.normalize();
-    if ( alt <= layer_asl ) {
-        asl_offset *= layer_asl;
-    } else {
-        asl_offset *= layer_asl + layer_thickness;
-    }
+  
+    if (getCoverage() != SGCloudLayer::SG_CLOUD_CLEAR)
+    {
+        // combine p and asl (meters) to get translation offset
+        osg::Vec3 asl_offset(toOsg(up));
+        asl_offset.normalize();
+        if ( alt <= layer_asl ) {
+            asl_offset *= layer_asl;
+        } else {
+            asl_offset *= layer_asl + layer_thickness;
+        }
 
-    // cout << "asl_offset = " << asl_offset[0] << "," << asl_offset[1]
-    //      << "," << asl_offset[2] << endl;
-    asl_offset += toOsg(p);
-    // cout << "  asl_offset = " << asl_offset[0] << "," << asl_offset[1]
-    //      << "," << asl_offset[2] << endl;
+        // cout << "asl_offset = " << asl_offset[0] << "," << asl_offset[1]
+        //      << "," << asl_offset[2] << endl;
+        asl_offset += toOsg(p);
+        // cout << "  asl_offset = " << asl_offset[0] << "," << asl_offset[1]
+        //      << "," << asl_offset[2] << endl;
 
-    osg::Matrix T, LON, LAT;
-    // Translate to zero elevation
-    // Point3D zero_elev = current_view.get_cur_zero_elev();
-    T.makeTranslate( asl_offset );
+        osg::Matrix T, LON, LAT;
+        // Translate to zero elevation
+        // Point3D zero_elev = current_view.get_cur_zero_elev();
+        T.makeTranslate( asl_offset );
 
-    // printf("  Translated to %.2f %.2f %.2f\n", 
-    //        zero_elev.x, zero_elev.y, zero_elev.z );
+        // printf("  Translated to %.2f %.2f %.2f\n", 
+        //        zero_elev.x, zero_elev.y, zero_elev.z );
 
-    // Rotate to proper orientation
-    // printf("  lon = %.2f  lat = %.2f\n", 
-    //        lon * SGD_RADIANS_TO_DEGREES,
-    //        lat * SGD_RADIANS_TO_DEGREES);
-    LON.makeRotate(lon, osg::Vec3(0, 0, 1));
+        // Rotate to proper orientation
+        // printf("  lon = %.2f  lat = %.2f\n", 
+        //        lon * SGD_RADIANS_TO_DEGREES,
+        //        lat * SGD_RADIANS_TO_DEGREES);
+        LON.makeRotate(lon, osg::Vec3(0, 0, 1));
 
-    // xglRotatef( 90.0 - f->get_Latitude() * SGD_RADIANS_TO_DEGREES,
-    //             0.0, 1.0, 0.0 );
-    LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
+        // xglRotatef( 90.0 - f->get_Latitude() * SGD_RADIANS_TO_DEGREES,
+        //             0.0, 1.0, 0.0 );
+        LAT.makeRotate(90.0 * SGD_DEGREES_TO_RADIANS - lat, osg::Vec3(0, 1, 0));
 
-    layer_transform->setMatrix( LAT*LON*T );
+        layer_transform->setMatrix( LAT*LON*T );
 
-    // The layers need to be drawn in order because they are
-    // translucent, but OSG transparency sorting doesn't work because
-    // the cloud polys are huge. However, the ordering is simple: the
-    // bottom polys should be drawn from high altitude to low, and the
-    // top polygons from low to high. The altitude can be used
-    // directly to order the polygons!
-    group_bottom->getStateSet()->setRenderBinDetails(-(int)layer_asl,
-                                                     "RenderBin");
-    group_top->getStateSet()->setRenderBinDetails((int)layer_asl,
-                                                  "RenderBin");
-    if ( alt <= layer_asl ) {
-      layer_root->setSingleChildOn(0);
-    } else if ( alt >= layer_asl + layer_thickness ) {
-      layer_root->setSingleChildOn(1);
-    } else {
-      layer_root->setAllChildrenOff();
-    }
+        // The layers need to be drawn in order because they are
+        // translucent, but OSG transparency sorting doesn't work because
+        // the cloud polys are huge. However, the ordering is simple: the
+        // bottom polys should be drawn from high altitude to low, and the
+        // top polygons from low to high. The altitude can be used
+        // directly to order the polygons!
+        group_bottom->getStateSet()->setRenderBinDetails(-(int)layer_asl,
+                                                         "RenderBin");
+        group_top->getStateSet()->setRenderBinDetails((int)layer_asl,
+                                                      "RenderBin");
+        if ( alt <= layer_asl ) {
+          layer_root->setSingleChildOn(0);
+        } else if ( alt >= layer_asl + layer_thickness ) {
+          layer_root->setSingleChildOn(1);
+        } else {
+          layer_root->setAllChildrenOff();
+        }
+            
+
+        // now calculate update texture coordinates
+        SGGeod pos = SGGeod::fromRad(lon, lat);
+        if ( last_pos == SGGeod() ) {
+            last_pos = pos;
+        }
+
+        double sp_dist = speed*dt;
         
+        
+        if ( lon != last_pos.getLongitudeRad() || lat != last_pos.getLatitudeRad() || sp_dist != 0 ) {
+            double course = SGGeodesy::courseDeg(last_pos, pos) * SG_DEGREES_TO_RADIANS, 
+                dist = SGGeodesy::distanceM(last_pos, pos);
 
-    // now calculate update texture coordinates
-    SGGeod pos = SGGeod::fromRad(lon, lat);
-    if ( last_pos == SGGeod() ) {
-        last_pos = pos;
-    }
+            // if start and dest are too close together,
+            // calc_gc_course_dist() can return a course of "nan".  If
+            // this happens, lets just use the last known good course.
+            // This is a hack, and it would probably be better to make
+            // calc_gc_course_dist() more robust.
+            if ( isnan(course) ) {
+                course = last_course;
+            } else {
+                last_course = course;
+            }
 
-    double sp_dist = speed*dt;
-    
-    
-    if ( lon != last_pos.getLongitudeRad() || lat != last_pos.getLatitudeRad() || sp_dist != 0 ) {
-        double course = SGGeodesy::courseDeg(last_pos, pos) * SG_DEGREES_TO_RADIANS, 
-            dist = SGGeodesy::distanceM(last_pos, pos);
+            // calculate cloud movement due to external forces
+            double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
 
-        // if start and dest are too close together,
-        // calc_gc_course_dist() can return a course of "nan".  If
-        // this happens, lets just use the last known good course.
-        // This is a hack, and it would probably be better to make
-        // calc_gc_course_dist() more robust.
-        if ( isnan(course) ) {
-            course = last_course;
-        } else {
-            last_course = course;
-        }
+            if (dist > 0.0) {
+                ax = -cos(course) * dist;
+                ay = sin(course) * dist;
+            }
 
-        // calculate cloud movement due to external forces
-        double ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0;
-
-        if (dist > 0.0) {
-            ax = -cos(course) * dist;
-            ay = sin(course) * dist;
-        }
-
-        if (sp_dist > 0) {
-            bx = cos((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
-            by = sin((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
-        }
+            if (sp_dist > 0) {
+                bx = cos((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
+                by = sin((180.0-direction) * SGD_DEGREES_TO_RADIANS) * sp_dist;
+            }
 
 
-        double xoff = (ax + bx) / (2 * scale);
-        double yoff = (ay + by) / (2 * scale);
+            double xoff = (ax + bx) / (2 * scale);
+            double yoff = (ay + by) / (2 * scale);
 
 
-//        const float layer_scale = layer_span / scale;
+    //        const float layer_scale = layer_span / scale;
 
-        // cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
-        base[0] += xoff;
+            // cout << "xoff = " << xoff << ", yoff = " << yoff << endl;
+            base[0] += xoff;
 
-        // the while loops can lead to *long* pauses if base[0] comes
-        // with a bogus value.
-        // while ( base[0] > 1.0 ) { base[0] -= 1.0; }
-        // while ( base[0] < 0.0 ) { base[0] += 1.0; }
-        if ( base[0] > -10.0 && base[0] < 10.0 ) {
-            base[0] -= (int)base[0];
-        } else {
-            SG_LOG(SG_ASTRO, SG_DEBUG,
-                "Error: base = " << base[0] << "," << base[1] <<
-                " course = " << course << " dist = " << dist );
-            base[0] = 0.0;
-        }
-
-        base[1] += yoff;
-        // the while loops can lead to *long* pauses if base[0] comes
-        // with a bogus value.
-        // while ( base[1] > 1.0 ) { base[1] -= 1.0; }
-        // while ( base[1] < 0.0 ) { base[1] += 1.0; }
-        if ( base[1] > -10.0 && base[1] < 10.0 ) {
-            base[1] -= (int)base[1];
-        } else {
-            SG_LOG(SG_ASTRO, SG_DEBUG,
+            // the while loops can lead to *long* pauses if base[0] comes
+            // with a bogus value.
+            // while ( base[0] > 1.0 ) { base[0] -= 1.0; }
+            // while ( base[0] < 0.0 ) { base[0] += 1.0; }
+            if ( base[0] > -10.0 && base[0] < 10.0 ) {
+                base[0] -= (int)base[0];
+            } else {
+                SG_LOG(SG_ASTRO, SG_DEBUG,
                     "Error: base = " << base[0] << "," << base[1] <<
                     " course = " << course << " dist = " << dist );
-            base[1] = 0.0;
+                base[0] = 0.0;
+            }
+
+            base[1] += yoff;
+            // the while loops can lead to *long* pauses if base[0] comes
+            // with a bogus value.
+            // while ( base[1] > 1.0 ) { base[1] -= 1.0; }
+            // while ( base[1] < 0.0 ) { base[1] += 1.0; }
+            if ( base[1] > -10.0 && base[1] < 10.0 ) {
+                base[1] -= (int)base[1];
+            } else {
+                SG_LOG(SG_ASTRO, SG_DEBUG,
+                        "Error: base = " << base[0] << "," << base[1] <<
+                        " course = " << course << " dist = " << dist );
+                base[1] = 0.0;
+            }
+
+            // cout << "base = " << base[0] << "," << base[1] << endl;
+
+            setTextureOffset(base);
+            last_pos = pos;
         }
-
-        // cout << "base = " << base[0] << "," << base[1] << endl;
-
-        setTextureOffset(base);
-        last_pos = pos;
     }
 
     layer3D->reposition( p, up, lon, lat, dt, layer_asl, speed, direction);

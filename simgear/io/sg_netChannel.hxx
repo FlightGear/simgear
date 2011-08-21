@@ -54,17 +54,24 @@
 #define SG_NET_CHANNEL_H
 
 #include <simgear/io/raw_socket.hxx>
+#include <simgear/structure/SGSharedPtr.hxx>
+
 
 namespace simgear
 {
+
+class HostLookup;
 
 class NetChannel : public Socket
 {
   bool closed, connected, accepting, write_blocked, should_delete ;
   NetChannel* next_channel ;
+  SGSharedPtr<HostLookup> host_lookup ;
+  int port;
   
   friend bool netPoll (unsigned int timeout);
 
+  void doConnect();
 public:
 
   NetChannel () ;

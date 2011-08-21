@@ -37,6 +37,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio> // for snprintf
+#include <iostream>
 
 #if defined(WINSOCK)
 #  include <winsock.h>
@@ -67,13 +68,30 @@ IPAddress::IPAddress ( const char* host, int port )
   set ( host, port ) ;
 }
 
+IPAddress::IPAddress ( struct sockaddr* addr, size_t len )
+{
+    memset(&_raw, 0, sizeof(struct sockaddr_in));
+    if ((addr->sa_family != AF_INET) ||
+        (len != sizeof(struct sockaddr_in))) 
+    {
+        std::cout << "address size mismatch" << std::endl;
+        return;
+    }
+    
+    memcpy(&_raw, addr, len);
+}
+
+void IPAddress::setPort(unsigned int port)
+{
+    _raw.sin_port = htons(port);
+}
 
 void IPAddress::set ( const char* host, int port )
 {
-  memset(this, 0, sizeof(IPAddress));
+  memset(&_raw, 0, sizeof(struct sockaddr_in));
 
-  sin_family = AF_INET ;
-  sin_port = htons (port);
+  _raw.sin_family = AF_INET ;
+  _raw.sin_port = htons (port);
 
   /* Convert a string specifying a host name or one of a few symbolic
   ** names to a numeric IP address.  This usually calls gethostbyname()
@@ -81,28 +99,28 @@ void IPAddress::set ( const char* host, int port )
   */
 
   if (!host || host[0] == '\0') {
-    sin_addr = INADDR_ANY;
+    _raw.sin_addr.s_addr = INADDR_ANY;
     return;
   }
   
   if (strcmp(host, "<broadcast>") == 0) {
-    sin_addr = INADDR_BROADCAST;
+    _raw.sin_addr.s_addr = INADDR_BROADCAST;
     return;
   }
   
-  sin_addr = inet_addr ( host ) ;
-  if (sin_addr != INADDR_NONE) {
+  _raw.sin_addr.s_addr = inet_addr ( host ) ;
+  if (_raw.sin_addr.s_addr != INADDR_NONE) {
     return;
   }
 // finally, try gethostbyname
     struct hostent *hp = gethostbyname ( host ) ;
     if (!hp) {
       SG_LOG(SG_IO, SG_WARN, "gethostbyname failed for " << host);
-      sin_addr = INADDR_ANY ;
+      _raw.sin_addr.s_addr = INADDR_ANY ;
       return;
     }
     
-    memcpy ( (char *) &sin_addr, hp->h_addr, hp->h_length ) ;
+    memcpy ( (char *) &_raw.sin_addr, hp->h_addr, hp->h_length ) ;
 }
 
 
@@ -116,7 +134,7 @@ const char* IPAddress::getHost () const
   const char* buf = inet_ntoa ( sin_addr ) ;
 #else
   static char buf [32];
-	long x = ntohl(sin_addr);
+	long x = ntohl(_raw.sin_addr.s_addr);
 	sprintf(buf, "%d.%d.%d.%d",
 		(int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
 		(int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff );
@@ -126,17 +144,17 @@ const char* IPAddress::getHost () const
 
 unsigned int IPAddress::getIP () const 
 { 
-	return sin_addr; 
+	return _raw.sin_addr.s_addr; 
 }
 
 unsigned int IPAddress::getPort() const
 {
-  return ntohs(sin_port);
+  return ntohs(_raw.sin_port);
 }
 
 unsigned int IPAddress::getFamily () const 
 { 
-	return sin_family; 
+	return _raw.sin_family; 
 }
 
 const char* IPAddress::getLocalHost ()
@@ -163,7 +181,7 @@ const char* IPAddress::getLocalHost ()
 
 bool IPAddress::getBroadcast () const
 {
-  return sin_addr == INADDR_BROADCAST;
+  return (_raw.sin_addr.s_addr == INADDR_BROADCAST);
 }
 
 
@@ -321,8 +339,8 @@ int Socket::accept ( IPAddress* addr )
   }
   else
   {
-    socklen_t addr_len = (socklen_t) sizeof(IPAddress) ;
-    return ::accept(handle,(sockaddr*)addr,&addr_len);
+    socklen_t addr_len = addr->getAddressSize();
+    return ::accept(handle,(sockaddr*)addr->getAddress(),&addr_len);
   }
 }
 
@@ -334,9 +352,18 @@ int Socket::connect ( const char* host, int port )
   if ( addr.getBroadcast() ) {
       setBroadcast( true );
   }
-  return ::connect(handle,(const sockaddr*)&addr,sizeof(IPAddress));
+  return ::connect(handle,(const sockaddr*) addr.getAddress(), addr.getAddressSize());
 }
 
+int Socket::connect ( const IPAddress& addr )
+{
+  assert ( handle != -1 ) ;
+  if ( addr.getBroadcast() ) {
+      setBroadcast( true );
+  }
+  
+  return ::connect(handle,(const sockaddr*) addr.getAddress(), addr.getAddressSize());
+}
 
 int Socket::send (const void * buffer, int size, int flags)
 {

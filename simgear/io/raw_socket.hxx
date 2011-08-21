@@ -37,24 +37,11 @@ namespace simgear
  */
 class IPAddress
 {
-  /* DANGER!!!  This MUST match 'struct sockaddr_in' exactly! */
-#if defined(__APPLE__) || defined(__FreeBSD__)
-  __uint8_t      sin_len;
-  __uint8_t      sin_family;
-  in_port_t      sin_port;
-  in_addr_t      sin_addr;
-  char           sin_zero[8];
-#else
-  short          sin_family     ;
-  unsigned short sin_port       ;
-  unsigned int   sin_addr       ;
-  char           sin_zero [ 8 ] ;
-#endif
-
 public:
   IPAddress () {}
   IPAddress ( const char* host, int port ) ;
-
+  IPAddress ( struct sockaddr* addr, size_t len );
+  
   void set ( const char* host, int port ) ;
   const char* getHost () const ;
   unsigned int getPort() const ;
@@ -63,6 +50,15 @@ public:
   static const char* getLocalHost () ;
 
   bool getBroadcast () const ;
+  
+  void setPort(unsigned int port);
+  const struct sockaddr_in* getAddress() const
+      { return &_raw; }
+      
+  const size_t getAddressSize() const
+      { return sizeof(struct sockaddr_in); }
+private:
+    struct sockaddr_in _raw;
 };
 
 
@@ -89,6 +85,7 @@ public:
   int   listen	    ( int backlog ) ;
   int   accept      ( IPAddress* addr ) ;
   int   connect     ( const char* host, int port ) ;
+  int   connect     ( const IPAddress& addr ) ;
   int   send	    ( const void * buffer, int size, int flags = 0 ) ;
   int   sendto      ( const void * buffer, int size, int flags, const IPAddress* to ) ;
   int   recv	    ( void * buffer, int size, int flags = 0 ) ;

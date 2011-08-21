@@ -17,7 +17,7 @@
 #include "version.h"
 #else
 #  if !defined(SIMGEAR_VERSION)
-#    define SIMGEAR_VERSION "simgear-development"
+#    define SIMGEAR_VERSION development
 #  endif
 #endif
 

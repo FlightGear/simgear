@@ -36,7 +36,6 @@
 #include <cstring>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/io/HostLookup.hxx>
 
 namespace simgear  {
 
@@ -107,11 +106,21 @@ NetChannel::listen ( int backlog )
 }
 
 int
-NetChannel::connect ( const char* host, int p )
+NetChannel::connect ( const char* host, int port )
 {
-  host_lookup = HostLookup::lookup(host);
-  port = p;
-  return 0;
+  int result = Socket::connect ( host, port ) ;
+  if (result == 0) {
+    connected = true ;
+    //this->handleConnect();
+    return 0;
+  } else if (isNonBlockingError ()) {
+    return 0;
+  } else {
+    // some other error condition
+    this->handleError (result);
+    close();
+    return -1;
+  }
 }
 
 int
@@ -202,25 +211,6 @@ NetChannel::handleWriteEvent (void)
   this->handleWrite();
 }
 
-void
-NetChannel::doConnect()
-{    
-    IPAddress addr( host_lookup->address() );
-    addr.setPort(port);
-    int result = Socket::connect ( addr ) ;
-    host_lookup = NULL;
-
-    if (result == 0) {
-        connected = true ;
-    } else if (isNonBlockingError ()) {
-
-    } else {
-    // some other error condition
-        handleError (result);
-        close();
-    }
-}
-
 bool
 NetChannel::poll (unsigned int timeout)
 {
@@ -246,16 +236,6 @@ NetChannel::poll (unsigned int timeout)
     else if ( ! ch -> closed )
     {
       nopen++ ;
-      if (ch->host_lookup) {
-          if (ch->host_lookup->resolved()) {
-              ch->doConnect();
-          } else if (ch->host_lookup->failed()) {
-              ch->handleError (-1);
-              ch->close();
-          }
-          continue;
-      }
-      
       if (ch -> readable()) {
         assert(nreads<MAX_SOCKETS);
         reads[nreads++] = ch ;

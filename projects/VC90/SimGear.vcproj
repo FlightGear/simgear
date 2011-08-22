@@ -463,8 +463,6 @@
 				RelativePath="..\..\simgear\io\raw_socket.hxx"
 				>
 			</File>
-			<File RelativePath="..\..\simgear\io\HostLookup.cxx"></File>
-			<File RelativePath="..\..\simgear\io\HostLookup.hxx"></File>
 			<File
 				RelativePath="..\..\simgear\io\sg_binobj.cxx"
 				>

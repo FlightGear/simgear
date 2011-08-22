@@ -24,7 +24,10 @@
 #define SG_IO_SOCKET_HXX
 
 #include <errno.h>
-#include <netinet/in.h>
+
+#if defined(__APPLE__) || defined(__FreeBSD__)
+#  include <netinet/in.h>
+#endif
 
 namespace simgear
 {

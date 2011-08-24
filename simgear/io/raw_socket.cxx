@@ -329,7 +329,7 @@ int Socket::bind ( const char* host, int port )
     }
   }
 #if defined(WINSOCK)
-  else if( (result = ::bind(handle,addr->getAddr(), addr->getAddrLen())) < 0 ) {
+  else if( (result = ::bind(handle,addr.getAddr(), addr.getAddrLen())) < 0 ) {
     SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
     return result;
   }

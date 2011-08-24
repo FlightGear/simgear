@@ -67,6 +67,30 @@ IPAddress::IPAddress ( const char* host, int port )
   set ( host, port ) ;
 }
 
+IPAddress::IPAddress( const IPAddress& other ) :
+  addr(NULL)
+{
+  if (other.addr) {
+    addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+  }
+}
+
+const IPAddress& IPAddress::operator=(const IPAddress& other)
+{
+  if (addr) {
+    free(addr);
+    addr = NULL;
+  }
+
+  if (other.addr) {
+    addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+  }
+
+  return *this;
+}
+
 void IPAddress::set ( const char* host, int port )
 {
   addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));

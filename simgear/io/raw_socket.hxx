@@ -46,6 +46,9 @@ public:
   IPAddress ( const char* host, int port ) ;
   ~IPAddress();
   
+  IPAddress( const IPAddress& other );
+  const IPAddress& operator=(const IPAddress& other);
+
   void set ( const char* host, int port ) ;
   const char* getHost () const ;
   unsigned int getPort() const ;

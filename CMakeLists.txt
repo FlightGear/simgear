@@ -21,6 +21,7 @@ option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework"
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" ON)
+option(ENABLE_RTI "Set to ON to build SimGear with RTI support" OFF)
 
 set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
@@ -86,8 +87,10 @@ check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
+if(ENABLE_RTI)
 # See if we have any rti library variant installed
 find_package(RTI)
+endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)

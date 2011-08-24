@@ -39,7 +39,8 @@
 #include <errno.h>
 
 #if defined(WINSOCK)
-#  include <winsock.h>
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
 #  include <stdarg.h>
 #else
 #  include <sys/types.h>

@@ -34,6 +34,7 @@
 #include <memory>
 #include <cassert>
 #include <cstring>
+#include <errno.h>
 
 #include <simgear/debug/logstream.hxx>
 

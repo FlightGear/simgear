@@ -25,8 +25,7 @@
 #endif
 
 #include <simgear/compiler.h>
-
-#include "sg_socket.hxx"
+#include "raw_socket.hxx"
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 # define WINSOCK // use winsock convetions, otherwise standard POSIX
@@ -37,9 +36,11 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio> // for snprintf
+#include <errno.h>
 
 #if defined(WINSOCK)
-#  include <winsock.h>
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
 #  include <stdarg.h>
 #else
 #  include <sys/types.h>
@@ -67,44 +68,73 @@ IPAddress::IPAddress ( const char* host, int port )
   set ( host, port ) ;
 }
 
+IPAddress::IPAddress( const IPAddress& other ) :
+  addr(NULL)
+{
+  if (other.addr) {
+    addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+  }
+}
+
+const IPAddress& IPAddress::operator=(const IPAddress& other)
+{
+  if (addr) {
+    free(addr);
+    addr = NULL;
+  }
+
+  if (other.addr) {
+    addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+    memcpy(addr, other.addr, sizeof(struct sockaddr_in));
+  }
+
+  return *this;
+}
 
 void IPAddress::set ( const char* host, int port )
 {
-  memset(this, 0, sizeof(IPAddress));
+  addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+  memset(addr, 0, sizeof(struct sockaddr_in));
 
-  sin_family = AF_INET ;
-  sin_port = htons (port);
+  addr->sin_family = AF_INET ;
+  addr->sin_port = htons (port);
 
   /* Convert a string specifying a host name or one of a few symbolic
-  ** names to a numeric IP address.  This usually calls gethostbyname()
+  ** names to a numeric IP address.  This usually calls getaddrinfo()
   ** to do the work; the names "" and "<broadcast>" are special.
   */
 
   if (!host || host[0] == '\0') {
-    sin_addr = INADDR_ANY;
+    addr->sin_addr.s_addr = INADDR_ANY;
     return;
   }
   
   if (strcmp(host, "<broadcast>") == 0) {
-    sin_addr = INADDR_BROADCAST;
+    addr->sin_addr.s_addr = INADDR_BROADCAST;
     return;
   }
   
-  sin_addr = inet_addr ( host ) ;
-  if (sin_addr != INADDR_NONE) {
-    return;
+  struct addrinfo* result = NULL;
+  int err = getaddrinfo(host, NULL, NULL /* no hints */, &result);
+  if (err) {
+    SG_LOG(SG_IO, SG_WARN, "getaddrinfo failed for '" << host << "' : " << gai_strerror(err));
+  } else if (result->ai_addrlen != getAddrLen()) {
+    SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes");
+  } else {
+    memcpy(addr, result->ai_addr, result->ai_addrlen);
   }
-// finally, try gethostbyname
-    struct hostent *hp = gethostbyname ( host ) ;
-    if (!hp) {
-      SG_LOG(SG_IO, SG_WARN, "gethostbyname failed for " << host);
-      sin_addr = INADDR_ANY ;
-      return;
-    }
-    
-    memcpy ( (char *) &sin_addr, hp->h_addr, hp->h_length ) ;
+  
+  freeaddrinfo(result);
+  addr->sin_port = htons (port); // fix up port after getaddrinfo
 }
 
+IPAddress::~IPAddress()
+{
+  if (addr) {
+    free (addr);
+  }
+}
 
 /* Create a string object representing an IP address.
    This is always a string of the form 'dd.dd.dd.dd' (with variable
@@ -112,31 +142,27 @@ void IPAddress::set ( const char* host, int port )
 
 const char* IPAddress::getHost () const
 {
-#if 0
-  const char* buf = inet_ntoa ( sin_addr ) ;
-#else
   static char buf [32];
-	long x = ntohl(sin_addr);
+	long x = ntohl(addr->sin_addr.s_addr);
 	sprintf(buf, "%d.%d.%d.%d",
 		(int) (x>>24) & 0xff, (int) (x>>16) & 0xff,
 		(int) (x>> 8) & 0xff, (int) (x>> 0) & 0xff );
-#endif
   return buf;
 }
 
 unsigned int IPAddress::getIP () const 
 { 
-	return sin_addr; 
+	return addr->sin_addr.s_addr; 
 }
 
 unsigned int IPAddress::getPort() const
 {
-  return ntohs(sin_port);
+  return ntohs(addr->sin_port);
 }
 
 unsigned int IPAddress::getFamily () const 
 { 
-	return sin_family; 
+	return addr->sin_family; 
 }
 
 const char* IPAddress::getLocalHost ()
@@ -163,9 +189,18 @@ const char* IPAddress::getLocalHost ()
 
 bool IPAddress::getBroadcast () const
 {
-  return sin_addr == INADDR_BROADCAST;
+  return (addr->sin_addr.s_addr == INADDR_BROADCAST);
 }
 
+unsigned int IPAddress::getAddrLen() const
+{
+    return sizeof(struct sockaddr_in);
+}
+
+struct sockaddr* IPAddress::getAddr() const
+{
+    return (struct sockaddr*) addr;
+}
 
 Socket::Socket ()
 {
@@ -262,8 +297,8 @@ int Socket::bind ( const char* host, int port )
   IPAddress addr ( host, port ) ;
 
 #if !defined(WINSOCK)
-  if( (result = ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress))) < 0 ) {
-    SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
+  if( (result = ::bind(handle, addr.getAddr(), addr.getAddrLen() ) ) < 0 ) {
+    SG_LOG(SG_IO, SG_ALERT, "bind(" << addr.getHost() << ":" << addr.getPort() << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
     return result;
   }
 #endif
@@ -294,7 +329,7 @@ int Socket::bind ( const char* host, int port )
     }
   }
 #if defined(WINSOCK)
-  else if( (result = ::bind(handle,(const sockaddr*)&addr,sizeof(IPAddress))) < 0 ) {
+  else if( (result = ::bind(handle,addr.getAddr(), addr.getAddrLen())) < 0 ) {
     SG_LOG(SG_IO, SG_ALERT, "bind(" << host << ":" << port << ") failed. Errno " << errno << " (" << strerror(errno) << ")");
     return result;
   }
@@ -321,20 +356,26 @@ int Socket::accept ( IPAddress* addr )
   }
   else
   {
-    socklen_t addr_len = (socklen_t) sizeof(IPAddress) ;
-    return ::accept(handle,(sockaddr*)addr,&addr_len);
+    socklen_t addr_len = addr->getAddrLen(); ;
+    return ::accept(handle, addr->getAddr(), &addr_len);
   }
 }
 
 
 int Socket::connect ( const char* host, int port )
 {
-  assert ( handle != -1 ) ;
   IPAddress addr ( host, port ) ;
-  if ( addr.getBroadcast() ) {
+  return connect ( &addr );
+}
+
+
+int Socket::connect ( IPAddress* addr )
+{
+  assert ( handle != -1 ) ;
+  if ( addr->getBroadcast() ) {
       setBroadcast( true );
   }
-  return ::connect(handle,(const sockaddr*)&addr,sizeof(IPAddress));
+  return ::connect(handle, addr->getAddr(), addr->getAddrLen() );
 }
 
 
@@ -350,7 +391,7 @@ int Socket::sendto ( const void * buffer, int size,
 {
   assert ( handle != -1 ) ;
   return ::sendto(handle,(const char*)buffer,size,flags,
-                         (const sockaddr*)to,sizeof(IPAddress));
+                         (const sockaddr*) to->getAddr(), to->getAddrLen());
 }
 
 
@@ -365,8 +406,8 @@ int Socket::recvfrom ( void * buffer, int size,
                           int flags, IPAddress* from )
 {
   assert ( handle != -1 ) ;
-  socklen_t fromlen = (socklen_t) sizeof(IPAddress) ;
-  return ::recvfrom(handle,(char*)buffer,size,flags,(sockaddr*)from,&fromlen);
+  socklen_t fromlen = (socklen_t) from->getAddrLen() ;
+  return ::recvfrom(handle,(char*)buffer,size,flags, from->getAddr(),&fromlen);
 }
 
 
@@ -526,8 +567,6 @@ static void netExit ( void )
 
 int Socket::initSockets()
 {
-  assert ( sizeof(sockaddr_in) == sizeof(IPAddress) ) ;
-
 #if defined(WINSOCK)
 	/* Start up the windows networking */
 	WORD version_wanted = MAKEWORD(1,1);

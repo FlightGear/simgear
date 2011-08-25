@@ -100,7 +100,7 @@ public:
         }
                 
         activeRequest = r;
-        state = STATE_IDLE;
+        state = STATE_SENT_REQUEST;
         bodyTransferSize = -1;
         chunkedTransfer = false;
         setTerminator("\r\n");
@@ -146,7 +146,7 @@ public:
     virtual void foundTerminator(void)
     {
         switch (state) {
-        case STATE_IDLE:
+        case STATE_SENT_REQUEST:
             activeRequest->responseStart(buffer);
             state = STATE_GETTING_HEADERS;
             buffer.clear();
@@ -170,6 +170,7 @@ public:
             state = STATE_GETTING_CHUNKED;
             break;
             
+
         case STATE_GETTING_TRAILER:
             processTrailer();
             buffer.clear();
@@ -354,6 +355,7 @@ private:
     
     enum ConnectionState {
         STATE_IDLE = 0,
+        STATE_SENT_REQUEST,
         STATE_GETTING_HEADERS,
         STATE_GETTING_BODY,
         STATE_GETTING_CHUNKED,

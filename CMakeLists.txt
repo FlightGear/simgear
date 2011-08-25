@@ -18,9 +18,10 @@ SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
-option(SIMGEAR_HEADLESS "Set to ON to build SimGear with GUI/graphics support" OFF)
+option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" ON)
+option(ENABLE_RTI "Set to ON to build SimGear with RTI support" OFF)
 
 set(MSVC_3RDPARTY_ROOT NOT_FOUND CACHE PATH "Location where the third-party dependencies are extracted")
 
@@ -53,7 +54,7 @@ set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DI
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
-if (${SIMGEAR_HEADLESS})
+if(SIMGEAR_HEADLESS)
     message(STATUS "headlesss mode")
     set(NO_OPENSCENEGRAPH_INTERFACE 1)
 else()
@@ -61,13 +62,13 @@ else()
     find_package(OpenAL REQUIRED)
     find_package(ALUT REQUIRED)
     find_package(OpenSceneGraph 2.8.1 REQUIRED osgText osgSim osgDB osgParticle osgUtil)
-endif()
+endif(SIMGEAR_HEADLESS)
 
 if(JPEG_FACTORY)
     message(STATUS "JPEG-factory enabled")
     find_package(JPEG REQUIRED)
     include_directories(${JPEG_INCLUDE_DIR})
-endif()
+endif(JPEG_FACTORY)
 
 if(ENABLE_LIBSVN)
 	find_package(SvnClient)
@@ -86,8 +87,10 @@ check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
+if(ENABLE_RTI)
 # See if we have any rti library variant installed
 find_package(RTI)
+endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)

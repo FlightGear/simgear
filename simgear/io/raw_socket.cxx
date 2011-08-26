@@ -115,12 +115,18 @@ void IPAddress::set ( const char* host, int port )
     return;
   }
   
+  struct addrinfo hints;
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_INET;
+  
   struct addrinfo* result = NULL;
   int err = getaddrinfo(host, NULL, NULL /* no hints */, &result);
   if (err) {
     SG_LOG(SG_IO, SG_WARN, "getaddrinfo failed for '" << host << "' : " << gai_strerror(err));
   } else if (result->ai_addrlen != getAddrLen()) {
-    SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes");
+    SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes: got " <<
+        result->ai_addrlen << ", expected " << getAddrLen());
+    SG_LOG(SG_IO, SG_ALERT, "family:" << result->ai_family);
   } else {
     memcpy(addr, result->ai_addr, result->ai_addrlen);
   }

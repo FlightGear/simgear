@@ -119,19 +119,29 @@ void IPAddress::set ( const char* host, int port )
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_INET;
   
-  struct addrinfo* result = NULL;
-  int err = getaddrinfo(host, NULL, NULL /* no hints */, &result);
+  struct addrinfo* result0 = NULL;
+  int err = getaddrinfo(host, NULL, &hints, &result0);
   if (err) {
     SG_LOG(SG_IO, SG_WARN, "getaddrinfo failed for '" << host << "' : " << gai_strerror(err));
-  } else if (result->ai_addrlen != getAddrLen()) {
-    SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes: got " <<
-        result->ai_addrlen << ", expected " << getAddrLen());
-    SG_LOG(SG_IO, SG_ALERT, "family:" << result->ai_family);
   } else {
-    memcpy(addr, result->ai_addr, result->ai_addrlen);
-  }
-  
-  freeaddrinfo(result);
+      struct addrinfo* result;
+      for (result = result0; result != NULL; result = result->ai_next) {
+          if (result->ai_family != AF_INET) { // only accept IP4 for the moment
+              continue;
+          }
+          
+          if (result->ai_addrlen != getAddrLen()) {
+              SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes: got " <<
+                  result->ai_addrlen << ", expected " << getAddrLen());
+              continue;
+          }
+          
+          memcpy(addr, result->ai_addr, result->ai_addrlen);
+          break;
+      } // of getaddrinfo results iteration
+  } // of getaddrinfo succeeded
+
+  freeaddrinfo(result0);
   addr->sin_port = htons (port); // fix up port after getaddrinfo
 }
 

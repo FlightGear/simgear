@@ -118,7 +118,7 @@ public:
      * @param _loop Define whether this sound should be played in a loop.
      */
     void play( bool loop = false ) {
-        _playing = true; _loop = loop; _changed = true;
+        _playing = true; _loop = loop; _changed = true; _static_changed = true;
     }
 
     /**

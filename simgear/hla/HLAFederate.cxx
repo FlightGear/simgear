@@ -108,6 +108,18 @@ HLAFederate::timeAdvanceRequest(const SGTimeStamp& dt)
 }
 
 bool
+HLAFederate::queryFederateTime(SGTimeStamp& timeStamp)
+{
+    return _rtiFederate->queryFederateTime(timeStamp);
+}
+
+bool
+HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
+{
+    return _rtiFederate->queryLookahead(timeStamp);
+}
+
+bool
 HLAFederate::tick()
 {
     return _rtiFederate->tick();

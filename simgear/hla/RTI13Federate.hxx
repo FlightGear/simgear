@@ -60,6 +60,9 @@ public:
     virtual bool timeAdvanceRequestBy(const SGTimeStamp& dt);
     virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime);
 
+    virtual bool queryFederateTime(SGTimeStamp& timeStamp);
+    virtual bool queryLookahead(SGTimeStamp& timeStamp);
+
     /// Process messages
     virtual bool tick();
     virtual bool tick(const double& minimum, const double& maximum);

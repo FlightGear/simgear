@@ -452,6 +452,64 @@ RTI13Federate::timeAdvanceRequest(const SGTimeStamp& fedTime)
 }
 
 bool
+RTI13Federate::queryFederateTime(SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time.");
+        return false;
+    }
+
+    try {
+        _ambassador->queryFederateTime(timeStamp);
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
+}
+
+bool
+RTI13Federate::queryLookahead(SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead.");
+        return false;
+    }
+
+    try {
+        _ambassador->queryLookahead(timeStamp);
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
+}
+
+bool
 RTI13Federate::tick()
 {
     bool result = _ambassador->tick();

@@ -5,7 +5,6 @@ foreach( mylibfolder
         bucket
         debug
         ephemeris
-        hla
         io
         magvar
         math
@@ -24,13 +23,17 @@ foreach( mylibfolder
 
 endforeach( mylibfolder )
 
-if (NOT SIMGEAR_HEADLESS)
+if(NOT SIMGEAR_HEADLESS)
     add_subdirectory(environment)
     add_subdirectory(screen)
     add_subdirectory(scene)
     add_subdirectory(sound)
-endif()
+endif(NOT SIMGEAR_HEADLESS)
 
+
+if(ENABLE_RTI)
+    add_subdirectory(hla)
+endif(ENABLE_RTI)
 
 
 set(HEADERS compiler.h constants.h sg_inlines.h ${PROJECT_BINARY_DIR}/simgear/version.h)

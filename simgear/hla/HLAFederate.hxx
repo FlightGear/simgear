@@ -58,6 +58,9 @@ public:
     bool timeAdvanceRequestBy(const SGTimeStamp& dt);
     bool timeAdvanceRequest(const SGTimeStamp& dt);
 
+    bool queryFederateTime(SGTimeStamp& timeStamp);
+    bool queryLookahead(SGTimeStamp& timeStamp);
+
     /// Process messages
     bool tick();
     bool tick(const double& minimum, const double& maximum);

@@ -381,37 +381,18 @@ public:
     //     }
     //     return false;
     // }
-    // bool queryFederateTime(double& time)
-    // {
-    //     try {
-    //         RTIfedTime fedTime;
-    //         _rtiAmbassador.queryFederateTime(fedTime);
-    //         time = fedTime.getTime();
-    //         return true;
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::SaveInProgress& e) {
-    //     } catch (RTI::RestoreInProgress& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return false;
-    // }
-
-    // bool queryLookahead(double& time)
-    // {
-    //     try {
-    //         RTIfedTime fedTime;
-    //         _rtiAmbassador.queryLookahead(fedTime);
-    //         time = fedTime.getTime();
-    //         return true;
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::SaveInProgress& e) {
-    //     } catch (RTI::RestoreInProgress& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return false;
-    // }
+    void queryFederateTime(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        _rtiAmbassador.queryFederateTime(fedTime);
+        timeStamp = toTimeStamp(fedTime);
+    }
+    void queryLookahead(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        _rtiAmbassador.queryLookahead(fedTime);
+        timeStamp = toTimeStamp(fedTime);
+    }
 
     RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass)
     {

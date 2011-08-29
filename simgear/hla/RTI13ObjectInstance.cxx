@@ -319,21 +319,21 @@ RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
         }
 
     } catch (RTI::ObjectNotKnown& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::AttributeNotDefined& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::AttributeNotOwned& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     }
 
     // That means clear()
@@ -377,23 +377,23 @@ RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const R
         }
 
     } catch (RTI::ObjectNotKnown& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::AttributeNotDefined& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::AttributeNotOwned& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::InvalidFederationTime& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: could not update attribute values object instance: " << e._name << " " << e._reason);
     }
 
     // That means clear()

@@ -37,17 +37,17 @@ set(SOURCES
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 add_executable(test_sock socktest.cxx)
-target_link_libraries(test_sock sgio sgstructure sgdebug)
+target_link_libraries(test_sock sgio sgstructure sgdebug sgthreads)
 
 add_executable(test_http test_HTTP.cxx)
 target_link_libraries(test_http 
-    sgio sgstructure sgtiming sgmisc sgdebug
+    sgio sgstructure sgtiming sgmisc sgdebug sgthreads
     ${RT_LIBRARY})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
 
 add_executable(httpget httpget.cxx)
 target_link_libraries(httpget 
-    sgio sgstructure sgtiming sgmisc sgdebug
+    sgio sgstructure sgtiming sgmisc sgdebug sgthreads
     ${RT_LIBRARY})
     

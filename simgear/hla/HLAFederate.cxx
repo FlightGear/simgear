@@ -114,6 +114,12 @@ HLAFederate::queryFederateTime(SGTimeStamp& timeStamp)
 }
 
 bool
+HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
+{
+    return _rtiFederate->modifyLookahead(timeStamp);
+}
+
+bool
 HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 {
     return _rtiFederate->queryLookahead(timeStamp);

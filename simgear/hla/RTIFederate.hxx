@@ -66,6 +66,7 @@ public:
     virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime) = 0;
 
     virtual bool queryFederateTime(SGTimeStamp& timeStamp) = 0;
+    virtual bool modifyLookahead(const SGTimeStamp& timeStamp) = 0;
     virtual bool queryLookahead(SGTimeStamp& timeStamp) = 0;
 
     /// Process messages

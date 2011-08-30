@@ -59,6 +59,7 @@ public:
     bool timeAdvanceRequest(const SGTimeStamp& dt);
 
     bool queryFederateTime(SGTimeStamp& timeStamp);
+    bool modifyLookahead(const SGTimeStamp& timeStamp);
     bool queryLookahead(SGTimeStamp& timeStamp);
 
     /// Process messages

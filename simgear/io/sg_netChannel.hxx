@@ -54,17 +54,14 @@
 #define SG_NET_CHANNEL_H
 
 #include <simgear/io/raw_socket.hxx>
-#include <string>
 
 namespace simgear
 {
 
 class NetChannel : public Socket
 {
-  bool closed, connected, accepting, write_blocked, should_delete, resolving_host ;
+  bool closed, connected, accepting, write_blocked, should_delete ;
   NetChannel* next_channel ;
-  std::string host;
-  int port;
   
   friend bool netPoll (unsigned int timeout);
 
@@ -99,7 +96,6 @@ public:
   
   void handleReadEvent (void);
   void handleWriteEvent (void);
-  int handleResolve (void);
   
 // These are meant to be overridden.
   virtual void handleClose (void) {

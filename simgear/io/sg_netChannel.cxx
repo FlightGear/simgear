@@ -38,7 +38,6 @@
 
 #include <simgear/debug/logstream.hxx>
 
-
 namespace simgear  {
 
 static NetChannel* channels = 0 ;
@@ -47,7 +46,6 @@ NetChannel::NetChannel ()
 {
   closed = true ;
   connected = false ;
-  resolving_host  = false;
   accepting = false ;
   write_blocked = false ;
   should_delete = false ;
@@ -85,6 +83,7 @@ NetChannel::setHandle (int handle, bool is_connected)
   close () ;
   Socket::setHandle ( handle ) ;
   connected = is_connected ;
+  //if ( connected ) this->handleConnect();
   closed = false ;
 }
 
@@ -108,12 +107,21 @@ NetChannel::listen ( int backlog )
 }
 
 int
-NetChannel::connect ( const char* h, int p )
+NetChannel::connect ( const char* host, int port )
 {
-  host = h;
-  port = p;
-  resolving_host = true;
-  return handleResolve();
+  int result = Socket::connect ( host, port ) ;
+  if (result == 0) {
+    connected = true ;
+    //this->handleConnect();
+    return 0;
+  } else if (isNonBlockingError ()) {
+    return 0;
+  } else {
+    // some other error condition
+    this->handleError (result);
+    close();
+    return -1;
+  }
 }
 
 int
@@ -181,10 +189,12 @@ NetChannel::handleReadEvent (void)
   if (accepting) {
     if (!connected) {
       connected = true ;
+      //this->handleConnect();
     }
     this->handleAccept();
   } else if (!connected) {
     connected = true ;
+    //this->handleConnect();
     this->handleRead();
   } else {
     this->handleRead();
@@ -196,33 +206,10 @@ NetChannel::handleWriteEvent (void)
 {
   if (!connected) {
     connected = true ;
+    //this->handleConnect();
   }
   write_blocked = false ;
   this->handleWrite();
-}
-
-int
-NetChannel::handleResolve()
-{
-    IPAddress addr;
-    if (!IPAddress::lookupNonblocking(host.c_str(), addr)) {
-        return 0; // not looked up yet, wait longer
-    }
-    
-    resolving_host = false;
-    addr.setPort(port);
-    int result = Socket::connect ( &addr ) ;
-    if (result == 0) {
-        connected = true ;
-        return 0;
-    } else if (isNonBlockingError ()) {
-        return 0;
-    } else {
-        // some other error condition
-        handleError (result);
-        close();
-        return -1;
-    }
 }
 
 bool
@@ -249,12 +236,6 @@ NetChannel::poll (unsigned int timeout)
     }
     else if ( ! ch -> closed )
     {
-      if (ch -> resolving_host )
-      {
-          ch -> handleResolve();
-          continue;
-      }
-      
       nopen++ ;
       if (ch -> readable()) {
         assert(nreads<MAX_SOCKETS);

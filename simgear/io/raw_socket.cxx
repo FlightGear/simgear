@@ -57,8 +57,165 @@
 #define socklen_t int
 #endif
 
+#include <map>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
+
+#include <OpenThreads/Thread>
+#include <OpenThreads/Mutex>
+#include <OpenThreads/Condition>
+
+namespace {
+
+class Resolver : public OpenThreads::Thread
+{
+public:
+    static Resolver* instance()
+    {
+        if (!static_instance) {
+            OpenThreads::Thread::Init();
+            
+            static_instance = new Resolver;
+            atexit(&Resolver::cleanup);
+            static_instance->start();
+        }
+        
+        return static_instance;
+    }
+    
+    static void cleanup()
+    {
+        static_instance->cancel();
+    }
+    
+    Resolver()
+    {
+    // take the lock initially, thread will wait upon it once running
+        _lock.lock();
+    }
+    
+    simgear::IPAddress* lookup(const string& host)
+    {
+        simgear::IPAddress* result = NULL;
+        _lock.lock();
+        AddressCache::iterator it = _cache.find(host);
+        if (it == _cache.end()) {
+            _cache[host] = NULL; // mark as needing looked up
+            _wait.signal(); // if the thread was sleeping, poke it
+        } else {
+            result = it->second;
+        }
+        _lock.unlock();
+        return result;
+    }
+    
+    simgear::IPAddress* lookupSync(const string& host)
+    {
+        simgear::IPAddress* result = NULL;
+        _lock.lock();
+        AddressCache::iterator it = _cache.find(host);
+        if (it == _cache.end()) {
+            _lock.unlock();
+            result = new simgear::IPAddress;
+            bool ok = lookupHost(host.c_str(), *result);
+            _lock.lock();
+            if (ok) {
+                _cache[host] = result; // mark as needing looked up
+            } else {
+                delete result;
+                result = NULL;
+            }
+        } else { // found in cache, easy
+            result = it->second;
+        }
+        _lock.unlock();
+        return result;
+    }
+protected:
+    /**
+     * run method waits on a condition (_wait), and when awoken,
+     * finds any unresolved entries in _cache, resolves them, and goes
+     * back to sleep.
+     */
+    virtual void run()
+    {
+        while (true) {
+            _wait.wait(&_lock);
+            AddressCache::iterator it;
+            
+            for (it = _cache.begin(); it != _cache.end(); ++it) {
+                if (it->second == NULL) {
+                    string h = it->first;
+                    
+                    _lock.unlock();
+                    simgear::IPAddress* addr = new simgear::IPAddress;
+                // may take seconds or even minutes!
+                    lookupHost(h.c_str(), *addr);
+                    _lock.lock();
+                
+                // cahce may have changed while we had the lock released -
+                // so iterators may be invalid: restart the traversal
+                    it = _cache.begin();
+                    _cache[h] = addr;
+                } // of found un-resolved entry
+            } // of un-resolved address iteration 
+        } // of thread run loop
+    }
+private:
+    static Resolver* static_instance;
+    
+    /**
+     * The actual synchronous, blocking host lookup function
+     * do *not* call this with any locks (mutexs) held, since depending
+     * on local system configuration / network availability, it
+     * may block for seconds or minutes.
+     */
+    bool lookupHost(const char* host, simgear::IPAddress& addr)
+    {
+      struct addrinfo hints;
+      memset(&hints, 0, sizeof(struct addrinfo));
+      hints.ai_family = AF_INET;
+      bool ok = false;
+      
+      struct addrinfo* result0 = NULL;
+      int err = getaddrinfo(host, NULL, &hints, &result0);
+      if (err) {
+        SG_LOG(SG_IO, SG_WARN, "getaddrinfo failed for '" << host << "' : " << gai_strerror(err));
+        return false;
+      } else {
+          struct addrinfo* result;
+          for (result = result0; result != NULL; result = result->ai_next) {
+              if (result->ai_family != AF_INET) { // only accept IP4 for the moment
+                  continue;
+              }
+
+              if (result->ai_addrlen != addr.getAddrLen()) {
+                  SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes: got " <<
+                      result->ai_addrlen << ", expected " << addr.getAddrLen());
+                  continue;
+              }
+
+              memcpy(addr.getAddr(), result->ai_addr, result->ai_addrlen);
+              ok = true;
+              break;
+          } // of getaddrinfo results iteration
+      } // of getaddrinfo succeeded
+
+      freeaddrinfo(result0);
+      return ok;
+    }
+    
+    OpenThreads::Mutex _lock;
+    OpenThreads::Condition _wait;
+    
+    typedef std::map<string, simgear::IPAddress*> AddressCache;
+    AddressCache _cache;
+};
+
+Resolver* Resolver::static_instance = NULL;
+ 
+} // of anonymous namespace
 
 namespace simgear
 {
@@ -115,33 +272,12 @@ void IPAddress::set ( const char* host, int port )
     return;
   }
   
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_INET;
+// check the cache
+  IPAddress* cached = Resolver::instance()->lookupSync(host);
+  if (cached) {
+      memcpy(addr, cached->getAddr(), cached->getAddrLen());
+  }
   
-  struct addrinfo* result0 = NULL;
-  int err = getaddrinfo(host, NULL, &hints, &result0);
-  if (err) {
-    SG_LOG(SG_IO, SG_WARN, "getaddrinfo failed for '" << host << "' : " << gai_strerror(err));
-  } else {
-      struct addrinfo* result;
-      for (result = result0; result != NULL; result = result->ai_next) {
-          if (result->ai_family != AF_INET) { // only accept IP4 for the moment
-              continue;
-          }
-          
-          if (result->ai_addrlen != getAddrLen()) {
-              SG_LOG(SG_IO, SG_ALERT, "mismatch in socket address sizes: got " <<
-                  result->ai_addrlen << ", expected " << getAddrLen());
-              continue;
-          }
-          
-          memcpy(addr, result->ai_addr, result->ai_addrlen);
-          break;
-      } // of getaddrinfo results iteration
-  } // of getaddrinfo succeeded
-
-  freeaddrinfo(result0);
   addr->sin_port = htons (port); // fix up port after getaddrinfo
 }
 
@@ -150,6 +286,17 @@ IPAddress::~IPAddress()
   if (addr) {
     free (addr);
   }
+}
+
+bool IPAddress::lookupNonblocking(const char* host, IPAddress& addr)
+{    
+    IPAddress* cached = Resolver::instance()->lookup(host);
+    if (!cached) {
+        return false;
+    }
+    
+    addr = *cached;
+    return true;
 }
 
 /* Create a string object representing an IP address.
@@ -174,6 +321,11 @@ unsigned int IPAddress::getIP () const
 unsigned int IPAddress::getPort() const
 {
   return ntohs(addr->sin_port);
+}
+
+void IPAddress::setPort(int port)
+{
+    addr->sin_port = htons(port);
 }
 
 unsigned int IPAddress::getFamily () const 
@@ -215,6 +367,11 @@ unsigned int IPAddress::getAddrLen() const
 
 struct sockaddr* IPAddress::getAddr() const
 {
+    if (addr == NULL) {
+        addr = (struct sockaddr_in*) malloc(sizeof(struct sockaddr_in));
+        memset(addr, 0, sizeof(struct sockaddr_in));
+    }
+    
     return (struct sockaddr*) addr;
 }
 

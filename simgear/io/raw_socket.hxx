@@ -40,11 +40,13 @@ namespace simgear
  */
 class IPAddress
 {
-    struct sockaddr_in* addr;
+    mutable struct sockaddr_in* addr;
 public:
   IPAddress () : addr(0) {}
   IPAddress ( const char* host, int port ) ;
   ~IPAddress();
+  
+  static bool lookupNonblocking(const char* host, IPAddress& addr);
   
   IPAddress( const IPAddress& other );
   const IPAddress& operator=(const IPAddress& other);
@@ -52,6 +54,8 @@ public:
   void set ( const char* host, int port ) ;
   const char* getHost () const ;
   unsigned int getPort() const ;
+  void setPort(int port);
+  
   unsigned int getIP () const ;
   unsigned int getFamily () const ;
   static const char* getLocalHost () ;
@@ -69,7 +73,7 @@ public:
 class Socket
 {
   int handle ;
-
+  
 public:
   
   Socket () ;

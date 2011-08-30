@@ -249,6 +249,43 @@ private:
 };
 
 template<typename T>
+class HLAVec2Data {
+public:
+    HLAVec2Data() :
+        _value(new HLAVec2DataElement<T>(0))
+    { }
+    HLAVec2Data(const SGVec2<T>& value) :
+        _value(new HLAVec2DataElement<T>(0, value))
+    { }
+
+    operator const SGVec2<T>&() const
+    { return _value->getValue(); }
+    HLAVec2Data& operator=(const SGVec2<T>& value)
+    { _value->setValue(value); return *this; }
+
+    const SGVec2<T>& getValue() const
+    { return _value->getValue(); }
+    void setValue(const SGVec2<T>& value)
+    { _value->setValue(value); }
+
+    const HLAVec2DataElement<T>* getDataElement() const
+    { return _value.get(); }
+    HLAVec2DataElement<T>* getDataElement()
+    { return _value.get(); }
+
+    const HLAArrayDataType* getDataType() const
+    { return _value->getDataType(); }
+    void setDataType(const HLAArrayDataType* dataType)
+    { _value->setDataType(dataType); }
+
+private:
+    SGSharedPtr<HLAVec2DataElement<T> > _value;
+};
+
+typedef HLAVec2Data<float> HLAVec2fData;
+typedef HLAVec2Data<double> HLAVec2dData;
+
+template<typename T>
 class HLAVec3DataElement : public HLAAbstractArrayDataElement {
 public:
     HLAVec3DataElement(const HLAArrayDataType* dataType = 0) :
@@ -304,6 +341,43 @@ private:
 };
 
 template<typename T>
+class HLAVec3Data {
+public:
+    HLAVec3Data() :
+        _value(new HLAVec3DataElement<T>(0))
+    { }
+    HLAVec3Data(const SGVec3<T>& value) :
+        _value(new HLAVec3DataElement<T>(0, value))
+    { }
+
+    operator const SGVec3<T>&() const
+    { return _value->getValue(); }
+    HLAVec3Data& operator=(const SGVec3<T>& value)
+    { _value->setValue(value); return *this; }
+
+    const SGVec3<T>& getValue() const
+    { return _value->getValue(); }
+    void setValue(const SGVec3<T>& value)
+    { _value->setValue(value); }
+
+    const HLAVec3DataElement<T>* getDataElement() const
+    { return _value.get(); }
+    HLAVec3DataElement<T>* getDataElement()
+    { return _value.get(); }
+
+    const HLAArrayDataType* getDataType() const
+    { return _value->getDataType(); }
+    void setDataType(const HLAArrayDataType* dataType)
+    { _value->setDataType(dataType); }
+
+private:
+    SGSharedPtr<HLAVec3DataElement<T> > _value;
+};
+
+typedef HLAVec3Data<float> HLAVec3fData;
+typedef HLAVec3Data<double> HLAVec3dData;
+
+template<typename T>
 class HLAVec4DataElement : public HLAAbstractArrayDataElement {
 public:
     HLAVec4DataElement(const HLAArrayDataType* dataType = 0) :
@@ -357,6 +431,43 @@ public:
 private:
     SGVec4<T> _value;
 };
+
+template<typename T>
+class HLAVec4Data {
+public:
+    HLAVec4Data() :
+        _value(new HLAVec4DataElement<T>(0))
+    { }
+    HLAVec4Data(const SGVec4<T>& value) :
+        _value(new HLAVec4DataElement<T>(0, value))
+    { }
+
+    operator const SGVec4<T>&() const
+    { return _value->getValue(); }
+    HLAVec4Data& operator=(const SGVec4<T>& value)
+    { _value->setValue(value); return *this; }
+
+    const SGVec4<T>& getValue() const
+    { return _value->getValue(); }
+    void setValue(const SGVec4<T>& value)
+    { _value->setValue(value); }
+
+    const HLAVec4DataElement<T>* getDataElement() const
+    { return _value.get(); }
+    HLAVec4DataElement<T>* getDataElement()
+    { return _value.get(); }
+
+    const HLAArrayDataType* getDataType() const
+    { return _value->getDataType(); }
+    void setDataType(const HLAArrayDataType* dataType)
+    { _value->setDataType(dataType); }
+
+private:
+    SGSharedPtr<HLAVec4DataElement<T> > _value;
+};
+
+typedef HLAVec4Data<float> HLAVec4fData;
+typedef HLAVec4Data<double> HLAVec4dData;
 
 template<typename T>
 class HLAQuatDataElement : public HLAAbstractArrayDataElement {

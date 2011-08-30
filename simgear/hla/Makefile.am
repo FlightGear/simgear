@@ -29,9 +29,6 @@ libsghla_a_HEADERS = \
 	HLAVariantDataType.hxx
 
 libsghla_a_SOURCES = \
-	RTIObjectClass.cxx \
-	RTIObjectInstance.cxx \
-	RTIFederate.cxx \
 	HLAArrayDataElement.cxx \
 	HLAArrayDataType.cxx \
 	HLABasicDataElement.cxx \
@@ -53,17 +50,23 @@ libsghla_a_SOURCES = \
 
 if ENABLE_HLA13
 
-lib_LIBRARIES += libsghla13.a
+lib_LIBRARIES += libsgrti13.a
 
-libsghla13_adir = @includedir@/hla
+libsgrti13_adir = @includedir@/hla
 
-libsghla13_a_HEADERS = \
-	HLA13Federate.hxx
-
-libsghla13_a_SOURCES = \
+libsgrti13_a_SOURCES = \
 	RTI13ObjectClass.cxx \
 	RTI13ObjectInstance.cxx \
-	RTI13Federate.cxx \
-	HLA13Federate.cxx
+	RTI13Federate.cxx
 
 endif
+
+lib_LIBRARIES += libsgrti.a
+
+libsgrti_adir = @includedir@/hla
+
+libsgrti_a_SOURCES = \
+	RTIObjectClass.cxx \
+	RTIObjectInstance.cxx \
+	RTIFederate.cxx
+

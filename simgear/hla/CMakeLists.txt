@@ -26,9 +26,6 @@ set(HLA_HEADERS
     )
 
 set(HLA_SOURCES
-    RTIObjectClass.cxx
-    RTIObjectInstance.cxx
-    RTIFederate.cxx
     HLAArrayDataElement.cxx
     HLAArrayDataType.cxx
     HLABasicDataElement.cxx
@@ -51,15 +48,18 @@ set(HLA_SOURCES
 simgear_component(hla hla "${HLA_SOURCES}" "${HLA_HEADERS}")
 
 if(RTI_FOUND)
-  set(HLA13_HEADERS
-    HLA13Federate.hxx
-    )
-  set(HLA13_SOURCES
+  set(RTI13_SOURCES
     RTI13ObjectClass.cxx
     RTI13ObjectInstance.cxx
     RTI13Federate.cxx
-    HLA13Federate.cxx
     )
-  simgear_component(hla13 hla "${HLA13_SOURCES}" "${HLA13_HEADERS}")
-  set_property(TARGET sghla13 APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
+  simgear_component(rti13 hla "${RTI13_SOURCES}" "")
+  set_property(TARGET sgrti13 APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
 endif()
+
+set(RTI_SOURCES
+  RTIObjectClass.cxx
+  RTIObjectInstance.cxx
+  RTIFederate.cxx
+  )
+simgear_component(rti hla "${RTI_SOURCES}" "")

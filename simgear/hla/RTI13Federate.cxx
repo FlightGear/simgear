@@ -21,10 +21,13 @@
 
 namespace simgear {
 
-RTI13Federate::RTI13Federate() :
+RTI13Federate::RTI13Federate(const std::list<std::string>& stringList) :
     _tickTimeout(10),
     _ambassador(new RTI13Ambassador)
 {
+    if (stringList.empty()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ignoring non empty connect arguments while connecting to an RTI13 federation!");
+    }
 }
 
 RTI13Federate::~RTI13Federate()

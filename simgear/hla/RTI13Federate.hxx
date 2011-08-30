@@ -34,7 +34,7 @@ class RTI13Ambassador;
 
 class RTI13Federate : public RTIFederate {
 public:
-    RTI13Federate();
+    RTI13Federate(const std::list<std::string>& stringList);
     virtual ~RTI13Federate();
 
     virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel);

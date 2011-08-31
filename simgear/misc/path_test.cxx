@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 
 using std::cout;
 using std::cerr;

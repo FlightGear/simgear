@@ -387,6 +387,8 @@ public:
         _rtiAmbassador.queryFederateTime(fedTime);
         timeStamp = toTimeStamp(fedTime);
     }
+    void modifyLookahead(const SGTimeStamp& timeStamp)
+    { _rtiAmbassador.modifyLookahead(toFedTime(timeStamp)); }
     void queryLookahead(SGTimeStamp& timeStamp)
     {
         RTIfedTime fedTime;

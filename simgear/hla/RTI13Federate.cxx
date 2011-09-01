@@ -21,10 +21,13 @@
 
 namespace simgear {
 
-RTI13Federate::RTI13Federate() :
+RTI13Federate::RTI13Federate(const std::list<std::string>& stringList) :
     _tickTimeout(10),
     _ambassador(new RTI13Ambassador)
 {
+    if (stringList.empty()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ignoring non empty connect arguments while connecting to an RTI13 federation!");
+    }
 }
 
 RTI13Federate::~RTI13Federate()
@@ -475,6 +478,37 @@ RTI13Federate::queryFederateTime(SGTimeStamp& timeStamp)
         return false;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
+}
+
+bool
+RTI13Federate::modifyLookahead(const SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead.");
+        return false;
+    }
+    try {
+        _ambassador->modifyLookahead(timeStamp);
+    } catch (RTI::InvalidLookahead& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
         return false;
     }
     return true;

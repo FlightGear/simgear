@@ -32,6 +32,9 @@ AM_INIT_AUTOMAKE([dist-bzip2])
 AC_ARG_ENABLE(headless,
         AS_HELP_STRING([--enable-headless],[Enable only packages for headless build]))
 
+AC_ARG_ENABLE(osgdebug,
+                AS_HELP_STRING([--enable-osgdebug],[Enable debug OSG libraries]))
+                
 AC_MSG_CHECKING([for headless mode])
 AC_MSG_RESULT([$enable_headless])
 
@@ -437,6 +440,8 @@ AM_CONDITIONAL(EXTGL_NEEDED, test "x$ac_cv_header_windows_h" = "xyes")
 CXXCPP="g++ -E"
 AC_LANG_PUSH(C++)
 
+LIBS="$base_LIBS"
+
 # OpenSceneGraph
 case "${host}" in
 *-apple-darwin*)
@@ -496,6 +501,10 @@ if test "x$ac_cv_header_osg_Version" != "xyes" -o "x$ac_cv_lib_OpenThreads_OpenT
     exit
   fi
 fi
+
+osg_LIBS="$LIBS"
+AC_SUBST(osg_LIBS)
+LIBS="$base_LIBS"
 
 AC_CHECK_HEADER(boost/version.hpp)
 if test "x$ac_cv_header_boost_version_hpp" != "xyes"; then

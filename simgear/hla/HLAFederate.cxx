@@ -17,6 +17,7 @@
 
 #include "HLAFederate.hxx"
 
+#include "RTI13Federate.hxx"
 #include "RTIFederate.hxx"
 #include "RTIInteractionClass.hxx"
 #include "RTIObjectClass.hxx"
@@ -26,8 +27,7 @@
 
 namespace simgear {
 
-HLAFederate::HLAFederate(const SGSharedPtr<RTIFederate>& rtiFederate) :
-    _rtiFederate(rtiFederate)
+HLAFederate::HLAFederate()
 {
 }
 
@@ -35,99 +35,209 @@ HLAFederate::~HLAFederate()
 {
 }
 
-const std::string&
+std::string
 HLAFederate::getFederateType() const
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return std::string();
+    }
     return _rtiFederate->getFederateType();
 }
 
-const std::string&
+std::string
 HLAFederate::getFederationName() const
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return std::string();
+    }
     return _rtiFederate->getFederationName();
+}
+
+bool
+HLAFederate::connect(Version version, const std::list<std::string>& stringList)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Trying to connect to already connected federate!");
+        return false;
+    }
+    switch (version) {
+    case RTI13:
+        _rtiFederate = new RTI13Federate(stringList);
+        break;
+    case RTI1516:
+        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516 not yet(!?) supported.");
+        // _rtiFederate = new RTI1516Federate(stringList);
+        break;
+    case RTI1516E:
+        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
+        // _rtiFederate = new RTI1516eFederate(stringList);
+        break;
+    default:
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Unknown rti version in connect!");
+    }
+    return _rtiFederate.valid();
+}
+
+bool
+HLAFederate::disconnect()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+    _rtiFederate = 0;
+    return true;
 }
 
 bool
 HLAFederate::createFederationExecution(const std::string& federation, const std::string& objectModel)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->createFederationExecution(federation, objectModel);
 }
 
 bool
 HLAFederate::destroyFederationExecution(const std::string& federation)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->destroyFederationExecution(federation);
 }
 
 bool
 HLAFederate::join(const std::string& federateType, const std::string& federation)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->join(federateType, federation);
 }
 
 bool
 HLAFederate::resign()
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->resign();
 }
 
 bool
 HLAFederate::enableTimeConstrained()
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->enableTimeConstrained();
 }
 
 bool
 HLAFederate::disableTimeConstrained()
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->disableTimeConstrained();
 }
 
 bool
 HLAFederate::enableTimeRegulation(const SGTimeStamp& lookahead)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->enableTimeRegulation(lookahead);
 }
 
 bool
 HLAFederate::disableTimeRegulation()
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->disableTimeRegulation();
 }
 
 bool
 HLAFederate::timeAdvanceRequestBy(const SGTimeStamp& dt)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->timeAdvanceRequestBy(dt);
 }
 
 bool
 HLAFederate::timeAdvanceRequest(const SGTimeStamp& dt)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->timeAdvanceRequest(dt);
 }
 
 bool
 HLAFederate::queryFederateTime(SGTimeStamp& timeStamp)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->queryFederateTime(timeStamp);
+}
+
+bool
+HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+    return _rtiFederate->modifyLookahead(timeStamp);
 }
 
 bool
 HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->queryLookahead(timeStamp);
 }
 
 bool
 HLAFederate::tick()
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->tick();
 }
 
 bool
 HLAFederate::tick(const double& minimum, const double& maximum)
 {
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
     return _rtiFederate->tick(minimum, maximum);
 }
 
@@ -136,8 +246,7 @@ HLAFederate::readObjectModelTemplate(const std::string& objectModel,
                                      HLAFederate::ObjectModelFactory& objectModelFactory)
 {
     if (!_rtiFederate.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Could not process HLA XML object model file: "
-               "No rti federate available!");
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
 

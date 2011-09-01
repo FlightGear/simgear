@@ -32,11 +32,22 @@ class RTIFederate;
 
 class HLAFederate : public SGWeakReferenced {
 public:
+    enum Version {
+        RTI13,
+        RTI1516,
+        RTI1516E
+    };
+
+    HLAFederate();
     virtual ~HLAFederate();
 
+    /// connect to an rti
+    bool connect(Version version, const std::list<std::string>& stringList);
+    bool disconnect();
+
     /// Get the name of the joined federate/federation
-    const std::string& getFederateType() const;
-    const std::string& getFederationName() const;
+    std::string getFederateType() const;
+    std::string getFederationName() const;
 
     /// Create a federation execution
     /// Semantically this methods should be static,
@@ -59,6 +70,7 @@ public:
     bool timeAdvanceRequest(const SGTimeStamp& dt);
 
     bool queryFederateTime(SGTimeStamp& timeStamp);
+    bool modifyLookahead(const SGTimeStamp& timeStamp);
     bool queryLookahead(SGTimeStamp& timeStamp);
 
     /// Process messages
@@ -92,9 +104,6 @@ public:
 
     HLAInteractionClass* getInteractionClass(const std::string& name);
     const HLAInteractionClass* getInteractionClass(const std::string& name) const;
-
-protected:
-    HLAFederate(const SGSharedPtr<RTIFederate>& rtiFederate);
 
 private:
     SGSharedPtr<RTIFederate> _rtiFederate;

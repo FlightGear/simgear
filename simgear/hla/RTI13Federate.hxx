@@ -34,7 +34,7 @@ class RTI13Ambassador;
 
 class RTI13Federate : public RTIFederate {
 public:
-    RTI13Federate();
+    RTI13Federate(const std::list<std::string>& stringList);
     virtual ~RTI13Federate();
 
     virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel);
@@ -61,6 +61,7 @@ public:
     virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime);
 
     virtual bool queryFederateTime(SGTimeStamp& timeStamp);
+    virtual bool modifyLookahead(const SGTimeStamp& timeStamp);
     virtual bool queryLookahead(SGTimeStamp& timeStamp);
 
     /// Process messages

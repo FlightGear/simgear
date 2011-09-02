@@ -71,6 +71,7 @@ private:
         double max_sprite_height;
         double bottom_shade;
         double zscale;
+        bool height_map_texture;
         int num_sprites;
         int num_textures_x;
         int num_textures_y;

@@ -72,16 +72,17 @@ double SGNewCloud::sprite_density = 1.0;
 SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def)
 {
     min_width = cld_def->getDoubleValue("min-cloud-width-m", 500.0);
-    max_width = cld_def->getDoubleValue("max-cloud-width-m", 1000.0);
-    min_height = cld_def->getDoubleValue("min-cloud-height-m", min_width);
-    max_height = cld_def->getDoubleValue("max-cloud-height-m", max_width);
+    max_width = cld_def->getDoubleValue("max-cloud-width-m", min_width*2);
+    min_height = cld_def->getDoubleValue("min-cloud-height-m", 400.0);
+    max_height = cld_def->getDoubleValue("max-cloud-height-m", min_height*2);
     min_sprite_width = cld_def->getDoubleValue("min-sprite-width-m", 200.0);
-    max_sprite_width = cld_def->getDoubleValue("max-sprite-width-m", min_sprite_width);
-    min_sprite_height = cld_def->getDoubleValue("min-sprite-height-m", min_sprite_width);
-    max_sprite_height = cld_def->getDoubleValue("max-sprite-height-m", max_sprite_width);
+    max_sprite_width = cld_def->getDoubleValue("max-sprite-width-m", min_sprite_width*1.5);
+    min_sprite_height = cld_def->getDoubleValue("min-sprite-height-m", 150);
+    max_sprite_height = cld_def->getDoubleValue("max-sprite-height-m", min_sprite_height*1.5);
     num_sprites = cld_def->getIntValue("num-sprites", 20);
     num_textures_x = cld_def->getIntValue("num-textures-x", 4);
     num_textures_y = cld_def->getIntValue("num-textures-y", 4);
+    height_map_texture = cld_def->getBoolValue("height-map-texture", false);
     bottom_shade = cld_def->getDoubleValue("bottom-shade", 1.0);
     zscale = cld_def->getDoubleValue("z-scale", 1.0);
     texture = cld_def->getStringValue("texture", "cl_cumulus.png");
@@ -166,7 +167,11 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     
     osg::ref_ptr<EffectGeode> geode = new EffectGeode;
         
-    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, num_textures_y, max_width, max_height, zscale);
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, 
+                                                      num_textures_y, 
+                                                      max_width + max_sprite_width, 
+                                                      max_height + max_sprite_height, 
+                                                      zscale);
     
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of
@@ -186,26 +191,28 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
         // Determine the position of the sprite. Rather than being completely random,
         // we place them on the surface of a distorted sphere. However, we place
         // the first sprite in the center of the sphere (and at maximum size) to
-	// ensure good coverage and reduce the chance of there being "holes" in our
+	      // ensure good coverage and reduce the chance of there being "holes" in the
+	      // middle of our cloud. Also note that (0,0,0) defines the _bottom_ of the
+	      // cloud, not the middle. 
 
         float x, y, z;
 
         if (i == 0) {
             x = 0;
             y = 0;
-            z = 0;
+            z = height * 0.5;
         } else {
             double theta = sg_random() * SGD_2PI;
             double elev  = sg_random() * SGD_PI;
             x = width * cos(theta) * 0.5f * sin(elev);
             y = width * sin(theta) * 0.5f * sin(elev);
-            z = height * cos(elev) * 0.5f;
+            z = height * cos(elev) * 0.5f + height * 0.5f;
         }
         
         // Determine the height and width as scaling factors on the minimum size (used to create the quad).
         float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
         float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
-
+        
         // Sprites are never taller than square.
         if (sprite_height * min_sprite_height > sprite_width * min_sprite_width)
         {
@@ -217,16 +224,30 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
             sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
         }
+        
+        // If the center of the sprite is less than half the sprite heightthe sprite will extend 
+        // below the bottom of the cloud and must be shifted upwards. This is particularly important 
+        // for cumulus clouds which have a very well defined base.
+        if (z < 0.5f * sprite_height * min_sprite_height)
+        {
+            z = 0.5f * sprite_height * min_sprite_height;          
+        }        
 
         // Determine the sprite texture indexes.
         int index_x = (int) floor(sg_random() * num_textures_x);
         if (index_x == num_textures_x) { index_x--; }
-
-        // The y index depends on the positing of the sprite within the cloud.
-        // This allows cloud designers to have particular sprites for the base
-        // and tops of the cloud.
-        int index_y = (int) floor((z / height + 0.5f) * num_textures_y);
+                
+        int index_y = (int) floor(sg_random() * num_textures_y);
+        
+        if (height_map_texture) {
+          // The y index depends on the position of the sprite within the cloud.
+          // This allows cloud designers to have particular sprites for the base
+          // and tops of the cloud.
+          index_y = (int) floor((z / height + 0.5f) * num_textures_y);
+        }
+        
         if (index_y == num_textures_y) { index_y--; }
+        
         
         sg->addSprite(SGVec3f(x, y, z), 
                     index_x, 

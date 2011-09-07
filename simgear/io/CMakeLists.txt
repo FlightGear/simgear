@@ -2,7 +2,7 @@
 
 include (SimGearComponent)
 
-set(HEADERS 
+set(HEADERS
     iochannel.hxx
     lowlevel.hxx
     raw_socket.hxx
@@ -18,7 +18,7 @@ set(HEADERS
     HTTPRequest.hxx
     )
 
-set(SOURCES 
+set(SOURCES
     iochannel.cxx
     lowlevel.cxx
     raw_socket.cxx
@@ -37,19 +37,20 @@ set(SOURCES
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 add_executable(test_sock socktest.cxx)
-target_link_libraries(test_sock sgio sgstructure sgdebug ${OPENTHREADS_LIBRARY})
+target_link_libraries(test_sock sgio sgstructure sgthreads sgdebug
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${RT_LIBRARY})
 
 add_executable(test_http test_HTTP.cxx)
-target_link_libraries(test_http 
-    sgio sgstructure sgtiming sgmisc sgdebug
-    ${RT_LIBRARY}
-    ${OPENTHREADS_LIBRARY})
+target_link_libraries(test_http
+    sgio sgstructure sgthreads sgtiming sgmisc sgdebug
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${RT_LIBRARY})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
 
 add_executable(httpget httpget.cxx)
-target_link_libraries(httpget 
-    sgio sgstructure sgtiming sgmisc sgdebug
-    ${RT_LIBRARY}
-    ${OPENTHREADS_LIBRARY})
-    
+target_link_libraries(httpget
+    sgio sgstructure sgthreads sgtiming sgmisc sgdebug
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${RT_LIBRARY})

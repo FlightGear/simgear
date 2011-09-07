@@ -1487,6 +1487,14 @@
 				RelativePath="..\..\simgear\threads\SGQueue.hxx"
 				>
 			</File>
+			<File
+				RelativePath="..\..\simgear\threads\SGThread.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\threads\SGThread.cxx"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgstructure"

@@ -31,6 +31,7 @@ SUBDIRS_ALWAYS = \
 	bucket \
 	ephemeris \
 	$(HLA_DIR) \
+	$(SGTHREAD_DIR) \
 	io \
 	magvar \
 	math \
@@ -43,8 +44,7 @@ SUBDIRS_ALWAYS = \
 SUBDIRS = $(SUBDIRS_ALWAYS) \
 	$(compatibility_DIR) \
 	$(METAR_DIRS) \
-	$(SG_EXTRA_DIRS) \
-	$(SGTHREAD_DIR)
+	$(SG_EXTRA_DIRS)
 
 DIST_SUBDIRS = $(SUBDIRS_ALWAYS) compatibility scene sound screen environment threads
 

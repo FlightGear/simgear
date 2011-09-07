@@ -164,6 +164,7 @@ if(WIN32)
     set(HAVE_GETLOCALTIME 1)
     
     set( WINSOCK_LIBRARY "ws2_32.lib" )
+    set( RT_LIBRARY "winmm" )
 endif(WIN32)    
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")

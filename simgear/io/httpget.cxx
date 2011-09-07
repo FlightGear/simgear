@@ -133,7 +133,9 @@ int main(int argc, char* argv[])
         cl.setProxy(proxyHost, proxyPort, proxyAuth);
     }
 
+#ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
+#endif
 
     if (!outFile) {
         outFile = new SGFile(fileno(stdout));

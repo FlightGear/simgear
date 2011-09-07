@@ -162,6 +162,8 @@ if(WIN32)
     
     # assumed on Windows
     set(HAVE_GETLOCALTIME 1)
+    
+    set( WINSOCK_LIBRARY "ws2_32.lib" )
 endif(WIN32)    
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")

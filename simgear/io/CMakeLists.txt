@@ -39,12 +39,14 @@ simgear_component(io io "${SOURCES}" "${HEADERS}")
 add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock sgio sgstructure sgthreads sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
+    ${WINSOCK_LIBRARY}
     ${RT_LIBRARY})
 
 add_executable(test_http test_HTTP.cxx)
 target_link_libraries(test_http
     sgio sgstructure sgthreads sgtiming sgmisc sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
+    ${WINSOCK_LIBRARY}
     ${RT_LIBRARY})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
@@ -53,4 +55,5 @@ add_executable(httpget httpget.cxx)
 target_link_libraries(httpget
     sgio sgstructure sgthreads sgtiming sgmisc sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
+    ${WINSOCK_LIBRARY}
     ${RT_LIBRARY})

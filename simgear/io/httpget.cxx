@@ -1,11 +1,11 @@
 
 #include <cstdio>
 #include <cstring>
+#include <signal.h>
 
-#include <unistd.h> // for STDOUT_FILENO
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <signal.h>
+
 
 #include <simgear/io/sg_file.hxx>
 #include <simgear/io/HTTPClient.hxx>
@@ -133,10 +133,12 @@ int main(int argc, char* argv[])
         cl.setProxy(proxyHost, proxyPort, proxyAuth);
     }
 
+#ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
+#endif
 
     if (!outFile) {
-        outFile = new SGFile(STDOUT_FILENO);
+        outFile = new SGFile(fileno(stdout));
     }
 
     if (url.empty()) {

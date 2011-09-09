@@ -17,8 +17,7 @@
 #include <map>
 #include <vector>
 
-#include <OpenThreads/Mutex>
-
+#include <simgear/threads/SGThread.hxx>
 #include <simgear/math/sg_types.hxx>
 #include <simgear/props/props.hxx>
 
@@ -107,7 +106,7 @@ private:
   typedef std::map<std::string,command_t> command_map;
   command_map _commands;
 
-  static OpenThreads::Mutex _instanceMutex;
+  static SGMutex _instanceMutex;
 
 };
 

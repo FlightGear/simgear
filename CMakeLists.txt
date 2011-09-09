@@ -13,6 +13,18 @@ string(STRIP ${versionFile} SIMGEAR_VERSION)
 #packaging
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simulation support libraries for FlightGear and related projects")
+SET(CPACK_PACKAGE_VENDOR "The FlightGear project")
+SET(CPACK_GENERATOR "TBZ2")
+SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
+
+# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
+set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1}) 
+set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
+set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+
+message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VERSION_MINOR} dot ${CPACK_PACKAGE_VERSION_PATCH}")
 
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
@@ -145,11 +157,14 @@ if(WIN32)
         #     SET(WARNING_FLAGS "${WARNING_FLAGS} /wd${warning}")
         # endforeach(warning)
         
-        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS")
+        set(MSVC_FLAGS "-DWIN32 -DNOMINMAX -D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -D__CRT_NONSTDC_NO_WARNINGS /wd4996")
     endif(MSVC)
     
     # assumed on Windows
     set(HAVE_GETLOCALTIME 1)
+    
+    set( WINSOCK_LIBRARY "ws2_32.lib" )
+    set( RT_LIBRARY "winmm" )
 endif(WIN32)    
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")

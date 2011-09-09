@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <OpenThreads/Mutex>
+#include <simgear/threads/SGThread.hxx>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
@@ -21,7 +21,7 @@ class StringTable
 {
     const std::string* insert(const std::string& str);
 private:
-    OpenThreads::Mutex _mutex;
+    SGMutex _mutex;
     StringContainer _strings;
 };
 }

@@ -5,6 +5,9 @@
 #include <cassert>
 #include <cstring>
 
+// working around MSVC weirdness with props.hxx and SGMathFwd
+#include <simgear/math/SGMath.hxx>
+
 #include "propertyObject.hxx"
 
 #include <simgear/structure/exception.hxx>

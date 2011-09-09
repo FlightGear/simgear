@@ -6,6 +6,10 @@
 #include <simgear/compiler.h>
 
 #include <iostream>
+
+// working around MSVC weirdness with props.hxx and SGMathFwd
+#include <simgear/math/SGMath.hxx>
+
 #include "props.hxx"
 #include "props_io.hxx"
 

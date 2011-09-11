@@ -14,7 +14,7 @@ macro(simgear_component name includePath sources headers)
         
     else()
         set(libName "sg${name}")
-        add_library(${libName} STATIC ${sources} )
+        add_library(${libName} STATIC ${sources} ${headers})
 
         install (TARGETS ${libName} ARCHIVE DESTINATION lib${LIB_SUFFIX})
         install (FILES ${headers}  DESTINATION include/simgear/${includePath})

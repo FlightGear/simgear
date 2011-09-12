@@ -229,14 +229,38 @@ void SGCloudField::removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransfo
 
 void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform,
                                   float lon, float lat, float alt, float x, float y) {
+    
+    // Get the base position
+    SGGeod loc = SGGeod::fromDegFt(lon, lat, alt);
+    
+    // Determine any shift by x/y
+    if ((x != 0.0f) || (y != 0.0f)) {
+        double crs;
+        
+        if (y == 0.0f) {
+            crs = (x < 0.0f) ? -90.0 : 90.0;        
+        } else {
+            crs = SG_RADIANS_TO_DEGREES * tan(x/y); 
+        }
+         
+        double dst = sqrt(x*x + y*y);
+        double endcrs;
+        
+        SGGeod base_pos = SGGeod::fromDegFt(lon, lat, 0.0f);            
+        SGGeodesy::direct(base_pos, crs, dst, loc, endcrs);
+        
+        // The direct call provides the position at 0 alt, so adjust as required.
+        loc.setElevationFt(alt);
+    }
+        
     // Work out where this cloud should go in OSG coordinates.
     SGVec3<double> cart;
-    SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(lon, lat, alt), cart);
+    SGGeodesy::SGGeodToCart(loc, cart);
+    osg::Vec3f pos = toOsg(cart);
 
     // Convert to the scenegraph orientation where we just rotate around
     // the y axis 180 degrees.
     osg::Quat orient = toOsg(SGQuatd::fromLonLatDeg(lon, lat) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
-    osg::Vec3f pos = toOsg(cart) + orient * osg::Vec3f(x, y, 0.0f);
 
     if (old_pos == osg::Vec3f(0.0f, 0.0f, 0.0f)) {
         // First se tup.
@@ -246,7 +270,7 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
         field_transform->setPosition(toOsg(fieldcenter));
         field_transform->setAttitude(orient);
         old_pos = toOsg(fieldcenter);
-}
+    }
 
     pos = pos - field_transform->getPosition();
 
@@ -265,14 +289,14 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
             // New cloud is within RADIUS_LEVEL_1 of the center of the LOD node.
             //cout << "Adding cloud to existing LoD level 1 node. Distance:" << (lodnode1->getCenter() - pos).length() << "\n";
             found = true;
-                        }
-                    }
+        }
+    }
 
     if (!found) {
         lodnode1 = new osg::LOD();
         placed_root->addChild(lodnode1.get());
         //cout << "Adding cloud to new LoD node\n";
-                }
+    }
 
     // Now check if there is a second level LOD node at an appropriate distance
     found = false;

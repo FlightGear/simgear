@@ -29,6 +29,13 @@ message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VE
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
 
+# Change the default build type to something fast
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)

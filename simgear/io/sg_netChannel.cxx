@@ -209,6 +209,13 @@ NetChannel::handleResolve()
         return 0; // not looked up yet, wait longer
     }
     
+    if (!addr.isValid()) {
+        SG_LOG(SG_IO, SG_WARN, "Network: host lookup failed:" << host);
+        handleError (0);
+        close();
+        return -1;
+    }
+    
     resolving_host = false;
     addr.setPort(port);
     int result = Socket::connect ( &addr ) ;

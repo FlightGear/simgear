@@ -210,9 +210,8 @@ NetChannel::handleResolve()
     }
     
     if (!addr.isValid()) {
-    // I'm absuing ENETUNREACH, all we do is pass this to strerror
-    // in handleError
-        handleError (ENETUNREACH);
+        SG_LOG(SG_IO, SG_WARN, "Network: host lookup failed:" << host);
+        handleError (0);
         close();
         return -1;
     }

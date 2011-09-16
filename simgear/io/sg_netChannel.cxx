@@ -209,6 +209,14 @@ NetChannel::handleResolve()
         return 0; // not looked up yet, wait longer
     }
     
+    if (!addr.isValid()) {
+    // I'm absuing ENETUNREACH, all we do is pass this to strerror
+    // in handleError
+        handleError (ENETUNREACH);
+        close();
+        return -1;
+    }
+    
     resolving_host = false;
     addr.setPort(port);
     int result = Socket::connect ( &addr ) ;

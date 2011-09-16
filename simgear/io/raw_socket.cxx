@@ -311,6 +311,10 @@ bool IPAddress::lookupNonblocking(const char* host, IPAddress& addr)
 
 const char* IPAddress::getHost () const
 {
+    if (!addr) {
+        return NULL;
+    }
+    
   static char buf [32];
 	long x = ntohl(addr->sin_addr.s_addr);
 	sprintf(buf, "%d.%d.%d.%d",
@@ -321,21 +325,37 @@ const char* IPAddress::getHost () const
 
 unsigned int IPAddress::getIP () const
 {
+    if (!addr) {
+        return 0;
+    }
+    
 	return addr->sin_addr.s_addr;
 }
 
 unsigned int IPAddress::getPort() const
 {
+    if (!addr) {
+        return 0;
+    }
+    
   return ntohs(addr->sin_port);
 }
 
 void IPAddress::setPort(int port)
 {
+    if (!addr) {
+        return;
+    }
+    
     addr->sin_port = htons(port);
 }
 
 unsigned int IPAddress::getFamily () const
 {
+    if (!addr) {
+        return 0;
+    }
+    
 	return addr->sin_family;
 }
 
@@ -363,7 +383,11 @@ const char* IPAddress::getLocalHost ()
 
 bool IPAddress::getBroadcast () const
 {
-  return (addr->sin_addr.s_addr == INADDR_BROADCAST);
+    if (!addr) {
+        return false;
+    }
+    
+    return (addr->sin_addr.s_addr == INADDR_BROADCAST);
 }
 
 unsigned int IPAddress::getAddrLen() const
@@ -379,6 +403,11 @@ struct sockaddr* IPAddress::getAddr() const
     }
 
     return (struct sockaddr*) addr;
+}
+
+bool IPAddress::isValid() const
+{
+    return (addr != NULL);
 }
 
 Socket::Socket ()

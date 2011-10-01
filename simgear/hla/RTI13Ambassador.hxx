@@ -281,8 +281,12 @@ public:
 
     /// Time Management
 
-    void enableTimeRegulation(const SGTimeStamp& federateTime, const SGTimeStamp& lookahead)
-    { _rtiAmbassador.enableTimeRegulation(toFedTime(federateTime), toFedTime(lookahead)); }
+    void enableTimeRegulation(const SGTimeStamp& lookahead)
+    {
+        RTIfedTime federateTime;
+        federateTime.setZero();
+        _rtiAmbassador.enableTimeRegulation(federateTime, toFedTime(lookahead));
+    }
     void disableTimeRegulation()
     { _rtiAmbassador.disableTimeRegulation();}
 
@@ -296,21 +300,26 @@ public:
     void timeAdvanceRequestAvailable(const SGTimeStamp& time)
     { _rtiAmbassador.timeAdvanceRequestAvailable(toFedTime(time)); }
 
-    // bool queryLBTS(double& time)
-    // {
-    //     try {
-    //         RTIfedTime fedTime;
-    //         _rtiAmbassador.queryLBTS(fedTime);
-    //         time = fedTime.getTime();
-    //         return true;
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::SaveInProgress& e) {
-    //     } catch (RTI::RestoreInProgress& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return false;
-    // }
+    bool queryGALT(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        fedTime.setPositiveInfinity();
+        _rtiAmbassador.queryLBTS(fedTime);
+        if (fedTime.isPositiveInfinity())
+            return false;
+        timeStamp = toTimeStamp(fedTime);
+        return true;
+    }
+    bool queryLITS(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        fedTime.setPositiveInfinity();
+        _rtiAmbassador.queryMinNextEventTime(fedTime);
+        if (fedTime.isPositiveInfinity())
+            return false;
+        timeStamp = toTimeStamp(fedTime);
+        return true;
+    }
     void queryFederateTime(SGTimeStamp& timeStamp)
     {
         RTIfedTime fedTime;

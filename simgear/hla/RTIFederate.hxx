@@ -69,6 +69,9 @@ public:
     virtual bool modifyLookahead(const SGTimeStamp& timeStamp) = 0;
     virtual bool queryLookahead(SGTimeStamp& timeStamp) = 0;
 
+    virtual bool queryGALT(SGTimeStamp& timeStamp) = 0;
+    virtual bool queryLITS(SGTimeStamp& timeStamp) = 0;
+
     /// Process messages
     virtual bool tick() = 0;
     virtual bool tick(const double& minimum, const double& maximum) = 0;

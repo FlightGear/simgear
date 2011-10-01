@@ -879,7 +879,7 @@ RTI13Federate::enableTimeRegulation(const SGTimeStamp& lookahead)
     }
 
     try {
-        _ambassador->enableTimeRegulation(SGTimeStamp(), lookahead);
+        _ambassador->enableTimeRegulation(lookahead);
     } catch (RTI::TimeRegulationAlreadyEnabled& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
         return false;
@@ -1106,6 +1106,64 @@ RTI13Federate::queryLookahead(SGTimeStamp& timeStamp)
         return false;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query lookahead: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
+}
+
+bool
+RTI13Federate::queryGALT(SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT.");
+        return false;
+    }
+
+    try {
+        return _ambassador->queryGALT(timeStamp);
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query GALT: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
+}
+
+bool
+RTI13Federate::queryLITS(SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS.");
+        return false;
+    }
+
+    try {
+        return _ambassador->queryLITS(timeStamp);
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query LITS: " << e._name << " " << e._reason);
         return false;
     }
     return true;

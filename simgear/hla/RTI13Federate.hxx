@@ -37,11 +37,13 @@ public:
     RTI13Federate(const std::list<std::string>& stringList);
     virtual ~RTI13Federate();
 
-    virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel);
-    virtual bool destroyFederationExecution(const std::string& federation);
+    /// Create a federation execution
+    /// Semantically this methods should be static,
+    virtual FederationManagementResult createFederationExecution(const std::string& federation, const std::string& objectModel);
+    virtual FederationManagementResult destroyFederationExecution(const std::string& federation);
 
     /// Join with federateName the federation execution federation
-    virtual bool join(const std::string& federateType, const std::string& federation);
+    virtual FederationManagementResult join(const std::string& federateType, const std::string& federation);
     virtual bool resign();
 
     /// Synchronization Point handling

@@ -32,21 +32,19 @@ public:
     RTIFederate();
     virtual ~RTIFederate();
 
-    /// Get the name of the joined federate/federation
-    const std::string& getFederateType() const
-    { return _federateType; }
-    const std::string& getFederationName() const
-    { return _federationName; }
-
     /// Create a federation execution
     /// Semantically this methods should be static,
-    /// but the nonstatic case could reuse the connection to the server
-    /// FIXME: cannot determine from the return value if we created the execution
-    virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel) = 0;
-    virtual bool destroyFederationExecution(const std::string& federation) = 0;
+    enum FederationManagementResult {
+        FederationManagementSuccess,
+        FederationManagementFail,
+        FederationManagementFatal
+    };
+
+    virtual FederationManagementResult createFederationExecution(const std::string& federation, const std::string& objectModel) = 0;
+    virtual FederationManagementResult destroyFederationExecution(const std::string& federation) = 0;
 
     /// Join with federateName the federation execution federation
-    virtual bool join(const std::string& federateType, const std::string& federation) = 0;
+    virtual FederationManagementResult join(const std::string& federateType, const std::string& federation) = 0;
     virtual bool resign() = 0;
 
     /// Synchronization Point handling
@@ -81,21 +79,9 @@ public:
 
     virtual RTIObjectInstance* getObjectInstance(const std::string& name) = 0;
 
-protected:
-    void setFederateType(const std::string& federateType)
-    { _federateType = federateType; }
-    void setFederationName(const std::string& federationName)
-    { _federationName = federationName; }
-
 private:
     RTIFederate(const RTIFederate&);
     RTIFederate& operator=(const RTIFederate&);
-
-    /// The federates name
-    std::string _federateType;
-
-    /// The federation execution name
-    std::string _federationName;
 };
 
 }

@@ -597,83 +597,81 @@ RTI13Federate::~RTI13Federate()
     delete _federateAmbassador;
 }
 
-bool
+RTI13Federate::FederationManagementResult
 RTI13Federate::createFederationExecution(const std::string& federationName, const std::string& objectModel)
 {
     try {
         _ambassador->createFederationExecution(federationName, objectModel);
-        return true;
+        return FederationManagementSuccess;
     } catch (RTI::FederationExecutionAlreadyExists& e) {
-        return true;
+        return FederationManagementFail;
     } catch (RTI::CouldNotOpenFED& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::ErrorReadingFED& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::ConcurrentAccessAttempted& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     }
 }
 
-bool
+RTI13Federate::FederationManagementResult
 RTI13Federate::destroyFederationExecution(const std::string& federation)
 {
     try {
         _ambassador->destroyFederationExecution(federation);
-        return true;
+        return FederationManagementSuccess;
     } catch (RTI::FederatesCurrentlyJoined& e) {
-        return true;
+        return FederationManagementFail;
     } catch (RTI::FederationExecutionDoesNotExist& e) {
-        return true;
+        return FederationManagementFail;
     } catch (RTI::ConcurrentAccessAttempted& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not destroy federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not destroy federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     }
 }
 
-bool
+RTI13Federate::FederationManagementResult
 RTI13Federate::join(const std::string& federateType, const std::string& federationName)
 {
     try {
         _federateHandle = _ambassador->joinFederationExecution(federateType, federationName, _federateAmbassador);
         SG_LOG(SG_NETWORK, SG_INFO, "RTI: Joined federation \""
                << federationName << "\" as \"" << federateType << "\"");
-        setFederateType(federateType);
-        setFederationName(federationName);
         _joined = true;
-        return true;
+        return FederationManagementSuccess;
     } catch (RTI::FederateAlreadyExecutionMember& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::FederationExecutionDoesNotExist& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFail;
     } catch (RTI::CouldNotOpenFED& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::ErrorReadingFED& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::ConcurrentAccessAttempted& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::SaveInProgress& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::RestoreInProgress& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not join federation execution: " << e._name << " " << e._reason);
-        return false;
+        return FederationManagementFatal;
     }
 }
 

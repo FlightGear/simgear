@@ -151,7 +151,7 @@ class HLAPropertyDataElement : public HLADataElement {
 public:
     HLAPropertyDataElement(HLAPropertyReference* propertyReference);
     HLAPropertyDataElement(const simgear::HLADataType* dataType, HLAPropertyReference* propertyReference);
-    ~HLAPropertyDataElement();
+    virtual ~HLAPropertyDataElement();
 
     virtual bool encode(HLAEncodeStream& stream) const;
     virtual bool decode(HLADecodeStream& stream);

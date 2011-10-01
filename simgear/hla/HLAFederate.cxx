@@ -35,24 +35,106 @@ HLAFederate::~HLAFederate()
 {
 }
 
-std::string
-HLAFederate::getFederateType() const
+HLAFederate::Version
+HLAFederate::getVersion() const
 {
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return std::string();
-    }
-    return _rtiFederate->getFederateType();
+    return _version;
 }
 
-std::string
-HLAFederate::getFederationName() const
+bool
+HLAFederate::setVersion(HLAFederate::Version version)
 {
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return std::string();
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
     }
-    return _rtiFederate->getFederationName();
+    _version = version;
+    return true;
+}
+
+const std::list<std::string>&
+HLAFederate::getConnectArguments() const
+{
+    return _connectArguments;
+}
+
+bool
+HLAFederate::setConnectArguments(const std::list<std::string>& connectArguments)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
+    }
+    _connectArguments = connectArguments;
+    return true;
+}
+
+const std::string&
+HLAFederate::getFederationExecutionName() const
+{
+    return _federationExecutionName;
+}
+
+bool
+HLAFederate::setFederationExecutionName(const std::string& federationExecutionName)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
+    }
+    _federationExecutionName = federationExecutionName;
+    return true;
+}
+
+const std::string&
+HLAFederate::getFederationObjectModel() const
+{
+    return _federationObjectModel;
+}
+
+bool
+HLAFederate::setFederationObjectModel(const std::string& federationObjectModel)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
+    }
+    _federationObjectModel = federationObjectModel;
+    return true;
+}
+
+const std::string&
+HLAFederate::getFederateType() const
+{
+    return _federateType;
+}
+
+bool
+HLAFederate::setFederateType(const std::string& federateType)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
+    }
+    _federateType = federateType;
+    return true;
+}
+
+const std::string&
+HLAFederate::getFederateName() const
+{
+    return _federateName;
+}
+
+bool
+HLAFederate::setFederateName(const std::string& federateName)
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Ignoring HLAFederate parameter setting on already connected federate!");
+        return false;
+    }
+    _federateName = federateName;
+    return true;
 }
 
 bool
@@ -65,6 +147,8 @@ HLAFederate::connect(Version version, const std::list<std::string>& stringList)
     switch (version) {
     case RTI13:
         _rtiFederate = new RTI13Federate(stringList);
+        _version = version;
+        _connectArguments = stringList;
         break;
     case RTI1516:
         SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516 not yet(!?) supported.");
@@ -73,6 +157,31 @@ HLAFederate::connect(Version version, const std::list<std::string>& stringList)
     case RTI1516E:
         SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
         // _rtiFederate = new RTI1516eFederate(stringList);
+        break;
+    default:
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Unknown rti version in connect!");
+    }
+    return _rtiFederate.valid();
+}
+
+bool
+HLAFederate::connect()
+{
+    if (_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Trying to connect to already connected federate!");
+        return false;
+    }
+    switch (_version) {
+    case RTI13:
+        _rtiFederate = new RTI13Federate(_connectArguments);
+        break;
+    case RTI1516:
+        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516 not yet(!?) supported.");
+        // _rtiFederate = new RTI1516Federate(_connectArguments);
+        break;
+    case RTI1516E:
+        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
+        // _rtiFederate = new RTI1516eFederate(_connectArguments);
         break;
     default:
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Unknown rti version in connect!");
@@ -98,7 +207,15 @@ HLAFederate::createFederationExecution(const std::string& federation, const std:
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->createFederationExecution(federation, objectModel);
+
+    RTIFederate::FederationManagementResult createResult;
+    createResult = _rtiFederate->createFederationExecution(federation, objectModel);
+    if (createResult == RTIFederate::FederationManagementFatal)
+        return false;
+
+    _federationExecutionName = federation;
+    _federationObjectModel = objectModel;
+    return true;
 }
 
 bool
@@ -108,7 +225,45 @@ HLAFederate::destroyFederationExecution(const std::string& federation)
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->destroyFederationExecution(federation);
+
+    RTIFederate::FederationManagementResult destroyResult;
+    destroyResult = _rtiFederate->destroyFederationExecution(federation);
+    if (destroyResult == RTIFederate::FederationManagementFatal)
+        return false;
+
+    return true;
+}
+
+bool
+HLAFederate::createFederationExecution()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    RTIFederate::FederationManagementResult createResult;
+    createResult = _rtiFederate->createFederationExecution(_federationExecutionName, _federationObjectModel);
+    if (createResult != RTIFederate::FederationManagementSuccess)
+        return false;
+
+    return true;
+}
+
+bool
+HLAFederate::destroyFederationExecution()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    RTIFederate::FederationManagementResult destroyResult;
+    destroyResult = _rtiFederate->destroyFederationExecution(_federationExecutionName);
+    if (destroyResult != RTIFederate::FederationManagementSuccess)
+        return false;
+
+    return true;
 }
 
 bool
@@ -118,7 +273,29 @@ HLAFederate::join(const std::string& federateType, const std::string& federation
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->join(federateType, federation);
+
+    RTIFederate::FederationManagementResult joinResult;
+    joinResult = _rtiFederate->join(federateType, federation);
+    if (joinResult == RTIFederate::FederationManagementFatal)
+        return false;
+
+    return true;
+}
+
+bool
+HLAFederate::join()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    RTIFederate::FederationManagementResult joinResult;
+    joinResult = _rtiFederate->join(_federateType, _federationExecutionName);
+    if (joinResult != RTIFederate::FederationManagementSuccess)
+        return false;
+
+    return true;
 }
 
 bool
@@ -129,6 +306,61 @@ HLAFederate::resign()
         return false;
     }
     return _rtiFederate->resign();
+}
+
+bool
+HLAFederate::createJoinFederationExecution()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    for (;;) {
+        // Try to join.
+        RTIFederate::FederationManagementResult joinResult;
+        joinResult = _rtiFederate->join(_federateType, _federationExecutionName);
+        switch (joinResult) {
+        case RTIFederate::FederationManagementSuccess:
+            // Fast return on success
+            return true;
+        case RTIFederate::FederationManagementFatal:
+            // Abort on fatal errors
+            return false;
+        default:
+            break;
+        };
+
+        // If not already joinable, try to create the requested federation
+        RTIFederate::FederationManagementResult createResult;
+        createResult = _rtiFederate->createFederationExecution(_federationExecutionName, _federationObjectModel);
+        switch (createResult) {
+        case RTIFederate::FederationManagementFatal:
+            // Abort on fatal errors
+            return false;
+        default:
+            // Try again to join
+            break;
+        }
+    }
+}
+
+bool
+HLAFederate::resignDestroyFederationExecution()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+    
+    // Resign ourselves
+    bool success = _rtiFederate->resign();
+
+    // and try to destroy, non fatal if still some federates joined
+    if (_rtiFederate->destroyFederationExecution(_federationExecutionName) == RTIFederate::FederationManagementFatal)
+        success = false;
+
+    return success;
 }
 
 bool

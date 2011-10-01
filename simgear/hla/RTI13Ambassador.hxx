@@ -15,8 +15,8 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifndef RTIAmbassador_hxx
-#define RTIAmbassador_hxx
+#ifndef RTI13Ambassador_hxx
+#define RTI13Ambassador_hxx
 
 #include <cstdlib>
 #include <list>
@@ -45,58 +45,20 @@
 
 namespace simgear {
 
-class RTI13Ambassador : public SGWeakReferenced {
+class RTI13Federate;
+
+class RTI13Ambassador : public SGReferenced {
 public:
-    RTI13Ambassador() :
-        _federateAmbassador(*this),
-        _timeRegulationEnabled(false),
-        _timeConstrainedEnabled(false),
-        _timeAdvancePending(false)
+    ~RTI13Ambassador()
     { }
-    virtual ~RTI13Ambassador()
-    { }
-
-    // processes the queues that filled up during the past
-    void processQueues()
-    {
-        while (!_queueCallbackList.empty()) {
-            (*_queueCallbackList.front())();
-            _queueCallbackList.pop_front();
-        }
-
-        while (!_objectInstancePendingCallbackList.empty()) {
-            (*_objectInstancePendingCallbackList.begin())->flushPendingRequests();
-            _objectInstancePendingCallbackList.erase(_objectInstancePendingCallbackList.begin());
-        }
-    }
-
-    bool getTimeRegulationEnabled() const
-    { return _timeRegulationEnabled; }
-    bool getTimeConstrainedEnabled() const
-    { return _timeConstrainedEnabled; }
-    bool getTimeAdvancePending() const
-    { return _timeAdvancePending; }
-    const SGTimeStamp& getCurrentLogicalTime() const
-    { return _federateTime; }
-
-    bool getFederationSynchronizationPointAnnounced(const std::string& label)
-    { return _pendingSyncLabels.find(label) != _pendingSyncLabels.end(); }
-    bool getFederationSynchronized(const std::string& label)
-    {
-        std::set<std::string>::iterator i = _syncronizedSyncLabels.find(label);
-        if (i == _syncronizedSyncLabels.end())
-            return false;
-        _syncronizedSyncLabels.erase(i);
-        return true;
-    }
 
     void createFederationExecution(const std::string& name, const std::string& objectModel)
     { _rtiAmbassador.createFederationExecution(name.c_str(), objectModel.c_str()); }
     void destroyFederationExecution(const std::string& name)
     { _rtiAmbassador.destroyFederationExecution(name.c_str()); }
 
-    RTI::FederateHandle joinFederationExecution(const std::string& federate, const std::string& federation)
-    { return _rtiAmbassador.joinFederationExecution(federate.c_str(), federation.c_str(), &_federateAmbassador); }
+    RTI::FederateHandle joinFederationExecution(const std::string& federate, const std::string& federation, RTI::FederateAmbassador* federateAmbassador)
+    { return _rtiAmbassador.joinFederationExecution(federate.c_str(), federation.c_str(), federateAmbassador); }
     void resignFederationExecution()
     { _rtiAmbassador.resignFederationExecution(RTI::DELETE_OBJECTS_AND_RELEASE_ATTRIBUTES); }
 
@@ -114,13 +76,8 @@ public:
     void unsubscribeObjectClass(const RTI::ObjectClassHandle& handle)
     { _rtiAmbassador.unsubscribeObjectClass(handle); }
 
-    RTI13ObjectInstance* registerObjectInstance(const RTI13ObjectClass* objectClass, HLAObjectInstance* hlaObjectInstance)
-    {
-        RTI::ObjectHandle objectHandle = _rtiAmbassador.registerObjectInstance(objectClass->getHandle());
-        RTI13ObjectInstance* objectInstance = new RTI13ObjectInstance(objectHandle, hlaObjectInstance, objectClass, this, true);
-        _objectInstanceMap[objectHandle] = objectInstance;
-        return objectInstance;
-    }
+    RTI::ObjectHandle registerObjectInstance(const RTI::ObjectClassHandle& handle)
+    { return _rtiAmbassador.registerObjectInstance(handle); }
     void updateAttributeValues(const RTI::ObjectHandle& objectHandle, const RTI::AttributeHandleValuePairSet& attributeValues,
                                const SGTimeStamp& timeStamp, const RTIData& tag)
     { _rtiAmbassador.updateAttributeValues(objectHandle, attributeValues, toFedTime(timeStamp), tag.data()); }
@@ -133,38 +90,11 @@ public:
     // { _rtiAmbassador.sendInteraction(interactionClassHandle, parameters, tag.data()); }
 
     void deleteObjectInstance(const RTI::ObjectHandle& objectHandle, const SGTimeStamp& timeStamp, const RTIData& tag)
-    {
-        RTI::EventRetractionHandle h = _rtiAmbassador.deleteObjectInstance(objectHandle, toFedTime(timeStamp), tag.data());
-        ObjectInstanceMap::iterator i = _objectInstanceMap.find(objectHandle);
-        if (i == _objectInstanceMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: ObjectInstance not found.");
-            return;
-        }
-        _objectInstancePendingCallbackList.erase(i->second);
-        _objectInstanceMap.erase(i);
-    }
+    { RTI::EventRetractionHandle h = _rtiAmbassador.deleteObjectInstance(objectHandle, toFedTime(timeStamp), tag.data()); }
     void deleteObjectInstance(const RTI::ObjectHandle& objectHandle, const RTIData& tag)
-    {
-        _rtiAmbassador.deleteObjectInstance(objectHandle, tag.data());
-        ObjectInstanceMap::iterator i = _objectInstanceMap.find(objectHandle);
-        if (i == _objectInstanceMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: ObjectInstance not found.");
-            return;
-        }
-        _objectInstancePendingCallbackList.erase(i->second);
-        _objectInstanceMap.erase(i);
-    }
+    { _rtiAmbassador.deleteObjectInstance(objectHandle, tag.data()); }
     void localDeleteObjectInstance(const RTI::ObjectHandle& objectHandle)
-    {
-        _rtiAmbassador.localDeleteObjectInstance(objectHandle);
-        ObjectInstanceMap::iterator i = _objectInstanceMap.find(objectHandle);
-        if (i == _objectInstanceMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: ObjectInstance not found.");
-            return;
-        }
-        _objectInstancePendingCallbackList.erase(i->second);
-        _objectInstanceMap.erase(i);
-    }
+    { _rtiAmbassador.localDeleteObjectInstance(objectHandle); }
 
     void requestObjectAttributeValueUpdate(const RTI::ObjectHandle& handle, const RTI::AttributeHandleSet& attributeHandleSet)
     { _rtiAmbassador.requestObjectAttributeValueUpdate(handle, attributeHandleSet); }
@@ -351,36 +281,45 @@ public:
 
     /// Time Management
 
-    void enableTimeRegulation(const SGTimeStamp& federateTime, const SGTimeStamp& lookahead)
-    { _rtiAmbassador.enableTimeRegulation(toFedTime(federateTime), toFedTime(lookahead)); }
+    void enableTimeRegulation(const SGTimeStamp& lookahead)
+    {
+        RTIfedTime federateTime;
+        federateTime.setZero();
+        _rtiAmbassador.enableTimeRegulation(federateTime, toFedTime(lookahead));
+    }
     void disableTimeRegulation()
-    { _rtiAmbassador.disableTimeRegulation(); _timeRegulationEnabled = false; }
+    { _rtiAmbassador.disableTimeRegulation();}
 
     void enableTimeConstrained()
     { _rtiAmbassador.enableTimeConstrained(); }
     void disableTimeConstrained()
-    { _rtiAmbassador.disableTimeConstrained(); _timeConstrainedEnabled = false; }
+    { _rtiAmbassador.disableTimeConstrained(); }
 
     void timeAdvanceRequest(const SGTimeStamp& time)
-    { _rtiAmbassador.timeAdvanceRequest(toFedTime(time)); _timeAdvancePending = true; }
+    { _rtiAmbassador.timeAdvanceRequest(toFedTime(time)); }
     void timeAdvanceRequestAvailable(const SGTimeStamp& time)
-    { _rtiAmbassador.timeAdvanceRequestAvailable(toFedTime(time)); _timeAdvancePending = true; }
+    { _rtiAmbassador.timeAdvanceRequestAvailable(toFedTime(time)); }
 
-    // bool queryLBTS(double& time)
-    // {
-    //     try {
-    //         RTIfedTime fedTime;
-    //         _rtiAmbassador.queryLBTS(fedTime);
-    //         time = fedTime.getTime();
-    //         return true;
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::SaveInProgress& e) {
-    //     } catch (RTI::RestoreInProgress& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return false;
-    // }
+    bool queryGALT(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        fedTime.setPositiveInfinity();
+        _rtiAmbassador.queryLBTS(fedTime);
+        if (fedTime.isPositiveInfinity())
+            return false;
+        timeStamp = toTimeStamp(fedTime);
+        return true;
+    }
+    bool queryLITS(SGTimeStamp& timeStamp)
+    {
+        RTIfedTime fedTime;
+        fedTime.setPositiveInfinity();
+        _rtiAmbassador.queryMinNextEventTime(fedTime);
+        if (fedTime.isPositiveInfinity())
+            return false;
+        timeStamp = toTimeStamp(fedTime);
+        return true;
+    }
     void queryFederateTime(SGTimeStamp& timeStamp)
     {
         RTIfedTime fedTime;
@@ -396,19 +335,6 @@ public:
         timeStamp = toTimeStamp(fedTime);
     }
 
-    RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass)
-    {
-        RTI::ObjectClassHandle objectClassHandle;
-        objectClassHandle = getObjectClassHandle(name);
-        if (_objectClassMap.find(objectClassHandle) != _objectClassMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create object class, object class already exists!");
-            return 0;
-        }
-        RTI13ObjectClass* rtiObjectClass;
-        rtiObjectClass = new RTI13ObjectClass(hlaObjectClass, objectClassHandle, this);
-        _objectClassMap[objectClassHandle] = rtiObjectClass;
-        return rtiObjectClass;
-    }
     RTI::ObjectClassHandle getObjectClassHandle(const std::string& name)
     { return _rtiAmbassador.getObjectClassHandle(name.c_str()); }
     std::string getObjectClassName(const RTI::ObjectClassHandle& handle)
@@ -469,17 +395,6 @@ public:
     //     return parameterName;
     // }
 
-    RTI13ObjectInstance* getObjectInstance(const std::string& name)
-    {
-        RTI::ObjectHandle objectHandle;
-        objectHandle = getObjectInstanceHandle(name);
-        ObjectInstanceMap::iterator i = _objectInstanceMap.find(objectHandle);
-        if (i == _objectInstanceMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: ObjectInstance not found.");
-            return 0;
-        }
-        return i->second;
-    }
     RTI::ObjectHandle getObjectInstanceHandle(const std::string& name)
     { return _rtiAmbassador.getObjectInstanceHandle(name.c_str()); }
     std::string getObjectInstanceName(const RTI::ObjectHandle& objectHandle)
@@ -535,498 +450,6 @@ public:
     bool tick(double minimum, double maximum)
     { return _rtiAmbassador.tick(minimum, maximum); }
 
-    void addObjectInstanceForCallback(RTIObjectInstance* objectIntance)
-    { _objectInstancePendingCallbackList.insert(objectIntance); }
-
-private:
-    /// Generic callback to execute some notification on objects in a way that they are not prone to
-    /// ConcurrentAccess exceptions.
-    class QueueCallback : public SGReferenced {
-    public:
-        virtual ~QueueCallback() {}
-        virtual void operator()() = 0;
-    };
-
-    class RemoveObjectCallback : public QueueCallback {
-    public:
-        RemoveObjectCallback(SGSharedPtr<RTIObjectInstance> objectInstance, const RTIData& tag) :
-            _objectInstance(objectInstance),
-            _tag(tag)
-        { }
-        virtual void operator()()
-        {
-            _objectInstance->removeInstance(_tag);
-        }
-    private:
-        SGSharedPtr<RTIObjectInstance> _objectInstance;
-        RTIData _tag;
-    };
-
-    /// Just the interface class doing the callbacks into the parent class
-    struct FederateAmbassador : public RTI::FederateAmbassador {
-        FederateAmbassador(RTI13Ambassador& rtiAmbassador) :
-            _rtiAmbassador(rtiAmbassador)
-        {
-        }
-        virtual ~FederateAmbassador()
-        throw (RTI::FederateInternalError)
-        {
-        }
-
-        /// RTI federate ambassador callback functions.
-        virtual void synchronizationPointRegistrationSucceeded(const char* label)
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void synchronizationPointRegistrationFailed(const char* label)
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void announceSynchronizationPoint(const char* label, const char* tag)
-            throw (RTI::FederateInternalError)
-        {
-            _rtiAmbassador._pendingSyncLabels.insert(toStdString(label));
-        }
-
-        virtual void federationSynchronized(const char* label)
-            throw (RTI::FederateInternalError)
-        {
-            std::string s = toStdString(label);
-            _rtiAmbassador._pendingSyncLabels.erase(s);
-            _rtiAmbassador._syncronizedSyncLabels.insert(s);
-        }
-
-        virtual void initiateFederateSave(const char* label)
-            throw (RTI::UnableToPerformSave,
-                   RTI::FederateInternalError)
-        {
-        }
-
-        virtual void federationSaved()
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void federationNotSaved()
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void requestFederationRestoreSucceeded(const char* label)
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void requestFederationRestoreFailed(const char* label, const char* reason)
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void federationRestoreBegun()
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void initiateFederateRestore(const char* label, RTI::FederateHandle federateHandle)
-            throw (RTI::SpecifiedSaveLabelDoesNotExist,
-                   RTI::CouldNotRestore,
-                   RTI::FederateInternalError)
-        {
-        }
-
-        virtual void federationRestored()
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        virtual void federationNotRestored()
-            throw (RTI::FederateInternalError)
-        {
-        }
-
-        // Declaration Management
-        virtual void startRegistrationForObjectClass(RTI::ObjectClassHandle objectClassHandle)
-            throw (RTI::ObjectClassNotPublished,
-                   RTI::FederateInternalError)
-        {
-            ObjectClassMap::iterator i = _rtiAmbassador._objectClassMap.find(objectClassHandle);
-            if (i == _rtiAmbassador._objectClassMap.end())
-                return;
-            if (!i->second.valid())
-                return;
-            i->second->startRegistration();
-        }
-
-        virtual void stopRegistrationForObjectClass(RTI::ObjectClassHandle objectClassHandle)
-            throw (RTI::ObjectClassNotPublished,
-                   RTI::FederateInternalError)
-        {
-            ObjectClassMap::iterator i = _rtiAmbassador._objectClassMap.find(objectClassHandle);
-            if (i == _rtiAmbassador._objectClassMap.end())
-                return;
-            if (!i->second.valid())
-                return;
-            i->second->stopRegistration();
-        }
-
-        virtual void turnInteractionsOn(RTI::InteractionClassHandle interactionClassHandle)
-            throw (RTI::InteractionClassNotPublished,
-                   RTI::FederateInternalError)
-        {
-        }
-
-        virtual void turnInteractionsOff(RTI::InteractionClassHandle interactionClassHandle)
-            throw (RTI::InteractionClassNotPublished,
-                   RTI::FederateInternalError)
-        {
-        }
-
-
-        // Object Management
-        virtual void discoverObjectInstance(RTI::ObjectHandle objectHandle, RTI::ObjectClassHandle objectClassHandle, const char* tag)
-            throw (RTI::CouldNotDiscover,
-                   RTI::ObjectClassNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectClassMap::iterator i = _rtiAmbassador._objectClassMap.find(objectClassHandle);
-            if (i == _rtiAmbassador._objectClassMap.end())
-                throw RTI::ObjectClassNotKnown("Federate: discoverObjectInstance()!");
-            if (!i->second.valid())
-                return;
-            SGSharedPtr<RTI13ObjectInstance> objectInstance = new RTI13ObjectInstance(objectHandle, 0, i->second, &_rtiAmbassador, false);
-            _rtiAmbassador._objectInstanceMap[objectHandle] = objectInstance;
-            _rtiAmbassador._objectInstancePendingCallbackList.insert(objectInstance);
-            i->second->discoverInstance(objectInstance.get(), tagToData(tag));
-        }
-
-        virtual void reflectAttributeValues(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleValuePairSet& attributeValuePairSet,
-                                            const RTI::FedTime& fedTime, const char* tag, RTI::EventRetractionHandle eventRetractionHandle)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateOwnsAttributes,
-                   RTI::InvalidFederationTime,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Reflect attributes for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->reflectAttributeValues(attributeValuePairSet, toTimeStamp(fedTime), tagToData(tag));
-        }
-
-        virtual void reflectAttributeValues(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleValuePairSet& attributeValuePairSet,
-                                            const char* tag)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateOwnsAttributes,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Reflect attributes for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->reflectAttributeValues(attributeValuePairSet, tagToData(tag));
-        }
-
-        virtual void receiveInteraction(RTI::InteractionClassHandle interactionClassHandle, const RTI::ParameterHandleValuePairSet& parameters,
-                                        const RTI::FedTime& fedTime, const char* tag, RTI::EventRetractionHandle eventRetractionHandle)
-            throw (RTI::InteractionClassNotKnown,
-                   RTI::InteractionParameterNotKnown,
-                   RTI::InvalidFederationTime,
-                   RTI::FederateInternalError)
-        {
-        }
-
-        virtual void receiveInteraction(RTI::InteractionClassHandle interactionClassHandle,
-                                        const RTI::ParameterHandleValuePairSet& parameters, const char* tag)
-            throw (RTI::InteractionClassNotKnown,
-                   RTI::InteractionParameterNotKnown,
-                   RTI::FederateInternalError)
-        {
-        }
-
-        virtual void removeObjectInstance(RTI::ObjectHandle objectHandle, const RTI::FedTime& fedTime,
-                                          const char* tag, RTI::EventRetractionHandle eventRetractionHandle)
-            throw (RTI::ObjectNotKnown,
-                   RTI::InvalidFederationTime,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Federate: removeObjectInstance()!");
-            if (i->second.valid())
-                _rtiAmbassador._queueCallbackList.push_back(new RemoveObjectCallback(i->second, tagToData(tag)));
-            _rtiAmbassador._objectInstancePendingCallbackList.erase(i->second);
-            _rtiAmbassador._objectInstanceMap.erase(i);
-        }
-
-        virtual void removeObjectInstance(RTI::ObjectHandle objectHandle, const char* tag)
-            throw (RTI::ObjectNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Federate: removeObjectInstance()!");
-            if (i->second.valid())
-                _rtiAmbassador._queueCallbackList.push_back(new RemoveObjectCallback(i->second, tagToData(tag)));
-            _rtiAmbassador._objectInstancePendingCallbackList.erase(i->second);
-            _rtiAmbassador._objectInstanceMap.erase(i);
-        }
-
-        virtual void attributesInScope(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Attributes in scope for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributesInScope(attributes);
-        }
-
-        virtual void attributesOutOfScope(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Attributes in scope for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributesOutOfScope(attributes);
-        }
-
-        virtual void provideAttributeValueUpdate(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeNotOwned,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Reflect attributes for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->provideAttributeValueUpdate(attributes);
-        }
-
-        virtual void turnUpdatesOnForObjectInstance(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotOwned,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Turn on attributes for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->turnUpdatesOnForObjectInstance(attributes);
-        }
-
-        virtual void turnUpdatesOffForObjectInstance(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotOwned,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("Turn off attributes for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->turnUpdatesOffForObjectInstance(attributes);
-        }
-
-        // Ownership Management
-        virtual void requestAttributeOwnershipAssumption(RTI::ObjectHandle objectHandle,
-                                                         const RTI::AttributeHandleSet& attributes, const char* tag)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeAlreadyOwned,
-                   RTI::AttributeNotPublished,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("requestAttributeOwnershipAssumption for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->requestAttributeOwnershipAssumption(attributes, tagToData(tag));
-        }
-
-        virtual void attributeOwnershipDivestitureNotification(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeNotOwned,
-                   RTI::AttributeDivestitureWasNotRequested,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("attributeOwnershipDivestitureNotification for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributeOwnershipDivestitureNotification(attributes);
-        }
-
-        virtual void attributeOwnershipAcquisitionNotification(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeAcquisitionWasNotRequested,
-                   RTI::AttributeAlreadyOwned,
-                   RTI::AttributeNotPublished,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("attributeOwnershipAcquisitionNotification for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributeOwnershipAcquisitionNotification(attributes);
-        }
-
-        virtual void attributeOwnershipUnavailable(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeAlreadyOwned,
-                   RTI::AttributeAcquisitionWasNotRequested,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("attributeOwnershipUnavailable for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributeOwnershipUnavailable(attributes);
-        }
-
-        virtual void requestAttributeOwnershipRelease(RTI::ObjectHandle objectHandle,
-                                                      const RTI::AttributeHandleSet& attributes, const char* tag)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeNotOwned,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("requestAttributeOwnershipRelease for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->requestAttributeOwnershipRelease(attributes, tagToData(tag));
-        }
-
-        virtual void confirmAttributeOwnershipAcquisitionCancellation(RTI::ObjectHandle objectHandle, const RTI::AttributeHandleSet& attributes)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::AttributeAlreadyOwned,
-                   RTI::AttributeAcquisitionWasNotCanceled,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("confirmAttributeOwnershipAcquisitionCancellation for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->confirmAttributeOwnershipAcquisitionCancellation(attributes);
-        }
-
-        virtual void informAttributeOwnership(RTI::ObjectHandle objectHandle, RTI::AttributeHandle attributeHandle,
-                                              RTI::FederateHandle federateHandle)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("informAttributeOwnership for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->informAttributeOwnership(attributeHandle, federateHandle);
-        }
-
-        virtual void attributeIsNotOwned(RTI::ObjectHandle objectHandle, RTI::AttributeHandle attributeHandle)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("attributeIsNotOwned for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributeIsNotOwned(attributeHandle);
-        }
-
-        virtual void attributeOwnedByRTI(RTI::ObjectHandle objectHandle, RTI::AttributeHandle attributeHandle)
-            throw (RTI::ObjectNotKnown,
-                   RTI::AttributeNotKnown,
-                   RTI::FederateInternalError)
-        {
-            ObjectInstanceMap::iterator i = _rtiAmbassador._objectInstanceMap.find(objectHandle);
-            if (i == _rtiAmbassador._objectInstanceMap.end())
-                throw RTI::ObjectNotKnown("attributeOwnedByRTI for unknown object!");
-            if (!i->second.valid())
-                return;
-            i->second->attributeOwnedByRTI(attributeHandle);
-        }
-
-        // Time Management
-        virtual void timeRegulationEnabled(const RTI::FedTime& fedTime)
-            throw (RTI::InvalidFederationTime,
-                   RTI::EnableTimeRegulationWasNotPending,
-                   RTI::FederateInternalError)
-        {
-            _rtiAmbassador._timeRegulationEnabled = true;
-            _rtiAmbassador._federateTime = toTimeStamp(fedTime);
-            SG_LOG(SG_NETWORK, SG_INFO, "RTI: timeRegulationEnabled: " << _rtiAmbassador._federateTime);
-        }
-
-        virtual void timeConstrainedEnabled(const RTI::FedTime& fedTime)
-            throw (RTI::InvalidFederationTime,
-                   RTI::EnableTimeConstrainedWasNotPending,
-                   RTI::FederateInternalError)
-        {
-            _rtiAmbassador._timeConstrainedEnabled = true;
-            _rtiAmbassador._federateTime = toTimeStamp(fedTime);
-            SG_LOG(SG_NETWORK, SG_INFO, "RTI: timeConstrainedEnabled: " << _rtiAmbassador._federateTime);
-        }
-
-        virtual void timeAdvanceGrant(const RTI::FedTime& fedTime)
-            throw (RTI::InvalidFederationTime,
-                   RTI::TimeAdvanceWasNotInProgress,
-                   RTI::FederateInternalError)
-        {
-            _rtiAmbassador._federateTime = toTimeStamp(fedTime);
-            _rtiAmbassador._timeAdvancePending = false;
-            SG_LOG(SG_NETWORK, SG_INFO, "RTI: timeAdvanceGrant: " << _rtiAmbassador._federateTime);
-        }
-
-        virtual void requestRetraction(RTI::EventRetractionHandle eventRetractionHandle)
-            throw (RTI::EventNotKnown,
-                   RTI::FederateInternalError)
-        {
-            // No retraction concept yet
-        }
-
-    private:
-        const RTIData& tagToData(const char* tag)
-        {
-            if (tag)
-                _cachedTag.setData(tag, std::strlen(tag) + 1);
-            else
-                _cachedTag.setData("", 1);
-            return _cachedTag;
-        }
-        RTIData _cachedTag;
-
-        RTI13Ambassador& _rtiAmbassador;
-    };
 
     static SGTimeStamp toTimeStamp(const RTI::FedTime& fedTime)
     {
@@ -1052,45 +475,9 @@ private:
         return s;
     }
 
-    static std::string toStdString(const char* n)
-    {
-        if (!n)
-            return std::string();
-        return std::string(n);
-    }
-
     // The connection class
     RTI::RTIambassador _rtiAmbassador;
-
-    // The class with all the callbacks.
-    FederateAmbassador _federateAmbassador;
-
-    // All the sync labels we got an announcement for
-    std::set<std::string> _pendingSyncLabels;
-    std::set<std::string> _syncronizedSyncLabels;
-
-    // All that calls back into user code is just queued.
-    // That is to make sure we do not call recursively into the RTI
-    typedef std::list<SGSharedPtr<QueueCallback> > QueueCallbackList;
-    QueueCallbackList _queueCallbackList;
-    // All object instances that need to be called due to some event are noted here
-    // That is to make sure we do not call recursively into the RTI
-    typedef std::set<SGSharedPtr<RTIObjectInstance> > ObjectInstanceSet;
-    ObjectInstanceSet _objectInstancePendingCallbackList;
-
-    // Top level information for dispatching federate object attribute updates
-    typedef std::map<RTI::ObjectHandle, SGSharedPtr<RTI13ObjectInstance> > ObjectInstanceMap;
-    // Map of all available objects
-    ObjectInstanceMap _objectInstanceMap;
-
-    // Top level information for dispatching creation of federate objects
-    typedef std::map<RTI::ObjectClassHandle, SGSharedPtr<RTI13ObjectClass> > ObjectClassMap;
-    ObjectClassMap _objectClassMap;
-
-    bool _timeRegulationEnabled;
-    bool _timeConstrainedEnabled;
-    bool _timeAdvancePending;
-    SGTimeStamp _federateTime;
+    SGWeakPtr<RTI13Federate> _federate;
 };
 
 } // namespace simgear

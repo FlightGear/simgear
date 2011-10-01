@@ -25,6 +25,10 @@ class RTIInteractionClass;
 class HLAInteractionClass : public SGWeakReferenced {
 public:
     virtual ~HLAInteractionClass() {}
+
+private:
+    HLAInteractionClass(const HLAInteractionClass&);
+    HLAInteractionClass& operator=(const HLAInteractionClass&);
 };
 
 } // namespace simgear

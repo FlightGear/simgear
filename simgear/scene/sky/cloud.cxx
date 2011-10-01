@@ -78,9 +78,6 @@ static osg::ref_ptr<osg::StateSet> layer_states[SGCloudLayer::SG_MAX_CLOUD_COVER
 static osg::ref_ptr<osg::StateSet> layer_states2[SGCloudLayer::SG_MAX_CLOUD_COVERAGES];
 static osg::ref_ptr<osg::TextureCubeMap> cubeMap;
 static bool state_initialized = false;
-static bool bump_mapping = false;
-
-bool SGCloudLayer::enable_bump_mapping = false;
 
 const std::string SGCloudLayer::SG_CLOUD_OVERCAST_STRING = "overcast";
 const std::string SGCloudLayer::SG_CLOUD_BROKEN_STRING = "broken";
@@ -380,18 +377,6 @@ SGCloudLayer::rebuild()
         state_initialized = true;
 
         SG_LOG(SG_ASTRO, SG_INFO, "initializing cloud layers");
-
-        osg::Texture::Extensions* extensions;
-        extensions = osg::Texture::getExtensions(0, true);
-        // OSGFIXME
-        bump_mapping = extensions->isMultiTexturingSupported() &&
-          (2 <= extensions->numTextureUnits()) &&
-          SGIsOpenGLExtensionSupported("GL_ARB_texture_env_combine") &&
-          SGIsOpenGLExtensionSupported("GL_ARB_texture_env_dot3");
-
-        osg::TextureCubeMap::Extensions* extensions2;
-        extensions2 = osg::TextureCubeMap::getExtensions(0, true);
-        bump_mapping = bump_mapping && extensions2->isCubeMapSupported();
 
         // This bump mapping code was inspired by the tutorial available at 
         // http://www.paulsprojects.net/tutorials/simplebump/simplebump.html

@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -37,11 +37,13 @@ public:
     RTI13Federate(const std::list<std::string>& stringList);
     virtual ~RTI13Federate();
 
-    virtual bool createFederationExecution(const std::string& federation, const std::string& objectModel);
-    virtual bool destroyFederationExecution(const std::string& federation);
+    /// Create a federation execution
+    /// Semantically this methods should be static,
+    virtual FederationManagementResult createFederationExecution(const std::string& federation, const std::string& objectModel);
+    virtual FederationManagementResult destroyFederationExecution(const std::string& federation);
 
     /// Join with federateName the federation execution federation
-    virtual bool join(const std::string& federateType, const std::string& federation);
+    virtual FederationManagementResult join(const std::string& federateType, const std::string& federation);
     virtual bool resign();
 
     /// Synchronization Point handling
@@ -64,6 +66,9 @@ public:
     virtual bool modifyLookahead(const SGTimeStamp& timeStamp);
     virtual bool queryLookahead(SGTimeStamp& timeStamp);
 
+    virtual bool queryGALT(SGTimeStamp& timeStamp);
+    virtual bool queryLITS(SGTimeStamp& timeStamp);
+
     /// Process messages
     virtual bool tick();
     virtual bool tick(const double& minimum, const double& maximum);
@@ -71,6 +76,7 @@ public:
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
 
     virtual RTI13ObjectInstance* getObjectInstance(const std::string& name);
+    void insertObjectInstance(RTI13ObjectInstance* objectInstance);
 
 private:
     RTI13Federate(const RTI13Federate&);
@@ -78,6 +84,7 @@ private:
 
     /// The federate handle
     RTI::FederateHandle _federateHandle;
+    bool _joined;
 
     /// The timeout for the single callback tick function in
     /// syncronous operations that need to wait for a callback
@@ -85,6 +92,10 @@ private:
 
     /// RTI connection
     SGSharedPtr<RTI13Ambassador> _ambassador;
+
+    /// Callbacks from the rti are handled here.
+    struct FederateAmbassador;
+    FederateAmbassador* _federateAmbassador;
 };
 
 }

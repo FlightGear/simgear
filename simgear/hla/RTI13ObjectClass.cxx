@@ -37,12 +37,11 @@ RTI13ObjectClass::~RTI13ObjectClass()
 std::string
 RTI13ObjectClass::getName() const
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return std::string();
     }
-    return ambassador->getObjectClassName(_handle);
+    return _ambassador->getObjectClassName(_handle);
 }
 
 unsigned
@@ -54,14 +53,13 @@ RTI13ObjectClass::getNumAttributes() const
 unsigned
 RTI13ObjectClass::getAttributeIndex(const std::string& name) const
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return ~0u;
     }
 
     try {
-        RTI::AttributeHandle attributeHandle = ambassador->getAttributeHandle(name, _handle);
+        RTI::AttributeHandle attributeHandle = _ambassador->getAttributeHandle(name, _handle);
 
         AttributeHandleIndexMap::const_iterator i = _attributeHandleIndexMap.find(attributeHandle);
         if (i !=  _attributeHandleIndexMap.end())
@@ -93,14 +91,13 @@ RTI13ObjectClass::getAttributeIndex(const std::string& name) const
 unsigned
 RTI13ObjectClass::getOrCreateAttributeIndex(const std::string& name)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return ~0u;
     }
 
     try {
-        RTI::AttributeHandle attributeHandle = ambassador->getAttributeHandle(name, _handle);
+        RTI::AttributeHandle attributeHandle = _ambassador->getAttributeHandle(name, _handle);
 
         AttributeHandleIndexMap::const_iterator i = _attributeHandleIndexMap.find(attributeHandle);
         if (i !=  _attributeHandleIndexMap.end())
@@ -169,8 +166,7 @@ RTI13ObjectClass::getOrCreateAttributeIndex(const std::string& name)
 bool
 RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
@@ -185,7 +181,7 @@ RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
             attributeHandleSet->add(_attributeHandleVector[*i]);
         }
 
-        ambassador->publishObjectClass(_handle, *attributeHandleSet);
+        _ambassador->publishObjectClass(_handle, *attributeHandleSet);
 
         for (unsigned i = 0; i < getNumAttributes(); ++i) {
             _attributeDataVector[i]._published = true;
@@ -225,14 +221,13 @@ RTI13ObjectClass::publish(const std::set<unsigned>& indexSet)
 bool
 RTI13ObjectClass::unpublish()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
 
     try {
-        ambassador->unpublishObjectClass(_handle);
+        _ambassador->unpublishObjectClass(_handle);
 
         for (unsigned i = 0; i < getNumAttributes(); ++i) {
             _attributeDataVector[i]._published = false;
@@ -272,8 +267,7 @@ RTI13ObjectClass::unpublish()
 bool
 RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return false;
     }
@@ -289,7 +283,7 @@ RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
             attributeHandleSet->add(_attributeHandleVector[*i]);
         }
 
-        ambassador->subscribeObjectClassAttributes(_handle, *attributeHandleSet, active);
+        _ambassador->subscribeObjectClassAttributes(_handle, *attributeHandleSet, active);
 
         for (unsigned i = 0; i < getNumAttributes(); ++i) {
             _attributeDataVector[i]._subscribed = true;
@@ -326,14 +320,13 @@ RTI13ObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
 bool
 RTI13ObjectClass::unsubscribe()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return 0;
     }
 
     try {
-        ambassador->unsubscribeObjectClass(_handle);
+        _ambassador->unsubscribeObjectClass(_handle);
 
         for (unsigned i = 0; i < getNumAttributes(); ++i) {
             _attributeDataVector[i]._subscribed = false;
@@ -370,14 +363,22 @@ RTI13ObjectClass::unsubscribe()
 RTIObjectInstance*
 RTI13ObjectClass::registerObjectInstance(HLAObjectInstance* hlaObjectInstance)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return 0;
     }
 
+    SGSharedPtr<RTI13Federate> federate = _ambassador->_federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Federate is zero.");
+        return 0;
+    }
+
     try {
-        return ambassador->registerObjectInstance(this, hlaObjectInstance);
+        RTI::ObjectHandle objectHandle = _ambassador->registerObjectInstance(getHandle());
+        RTI13ObjectInstance* objectInstance = new RTI13ObjectInstance(objectHandle, hlaObjectInstance, this, _ambassador.get(), true);
+        federate->insertObjectInstance(objectInstance);
+        return objectInstance;
     } catch (RTI::ObjectClassNotDefined& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not register object instance: " << e._name << " " << e._reason);
         return 0;

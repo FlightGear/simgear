@@ -32,33 +32,55 @@ class RTIFederate;
 
 class HLAFederate : public SGWeakReferenced {
 public:
+    HLAFederate();
+    virtual ~HLAFederate();
+
     enum Version {
         RTI13,
         RTI1516,
         RTI1516E
     };
 
-    HLAFederate();
-    virtual ~HLAFederate();
+    Version getVersion() const;
+    bool setVersion(HLAFederate::Version version);
+
+    const std::list<std::string>& getConnectArguments() const;
+    bool setConnectArguments(const std::list<std::string>& connectArguments);
+
+    const std::string& getFederationExecutionName() const;
+    bool setFederationExecutionName(const std::string& federationExecutionName);
+
+    const std::string& getFederationObjectModel() const;
+    bool setFederationObjectModel(const std::string& federationObjectModel);
+
+    const std::string& getFederateType() const;
+    bool setFederateType(const std::string& federateType);
+
+    const std::string& getFederateName() const;
+    bool setFederateName(const std::string& federateName);
 
     /// connect to an rti
     bool connect(Version version, const std::list<std::string>& stringList);
+    bool connect();
     bool disconnect();
-
-    /// Get the name of the joined federate/federation
-    std::string getFederateType() const;
-    std::string getFederationName() const;
 
     /// Create a federation execution
     /// Semantically this methods should be static,
     /// but the nonstatic case could reuse the connection to the server
-    /// FIXME: cannot determine from the return value if we created the execution
     bool createFederationExecution(const std::string& federation, const std::string& objectModel);
     bool destroyFederationExecution(const std::string& federation);
+    bool createFederationExecution();
+    bool destroyFederationExecution();
 
     /// Join with federateType the federation execution
     bool join(const std::string& federateType, const std::string& federation);
+    bool join();
     bool resign();
+    
+    /// Try to create and join the federation execution.
+    bool createJoinFederationExecution();
+    bool resignDestroyFederationExecution();
+
 
     bool enableTimeConstrained();
     bool disableTimeConstrained();
@@ -107,6 +129,14 @@ public:
 
 private:
     SGSharedPtr<RTIFederate> _rtiFederate;
+
+    Version _version;
+    std::list<std::string> _connectArguments;
+
+    std::string _federationExecutionName;
+    std::string _federationObjectModel;
+    std::string _federateType;
+    std::string _federateName;
 
     typedef std::map<std::string, SGSharedPtr<HLAObjectClass> > ObjectClassMap;
     ObjectClassMap _objectClassMap;

@@ -61,8 +61,6 @@ public:
 
     virtual std::string getName() const;
 
-    virtual void addToRequestQueue();
-
     virtual void deleteObjectInstance(const RTIData& tag);
     virtual void deleteObjectInstance(const SGTimeStamp& timeStamp, const RTIData& tag);
     virtual void localDeleteObjectInstance();
@@ -95,7 +93,7 @@ public:
 private:
     RTI::ObjectHandle _handle;
     SGSharedPtr<const RTI13ObjectClass> _objectClass;
-    SGWeakPtr<RTI13Ambassador> _ambassador;
+    SGSharedPtr<RTI13Ambassador> _ambassador;
 
     // cached storage for updates
     std::auto_ptr<RTI::AttributeHandleValuePairSet> _attributeValuePairSet;

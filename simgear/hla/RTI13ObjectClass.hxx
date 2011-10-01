@@ -73,7 +73,7 @@ public:
 
 private:
     RTI::ObjectClassHandle _handle;
-    SGWeakPtr<RTI13Ambassador> _ambassador;
+    SGSharedPtr<RTI13Ambassador> _ambassador;
 
     typedef std::map<RTI::AttributeHandle, unsigned> AttributeHandleIndexMap;
     AttributeHandleIndexMap _attributeHandleIndexMap;

@@ -50,9 +50,6 @@ public:
     unsigned getAttributeIndex(const std::string& name) const;
     std::string getAttributeName(unsigned index) const;
 
-    // FIXME: factor out an ambassador base
-    virtual void addToRequestQueue() = 0;
-
     virtual void deleteObjectInstance(const RTIData& tag) = 0;
     virtual void deleteObjectInstance(const SGTimeStamp& timeStamp, const RTIData& tag) = 0;
     virtual void localDeleteObjectInstance() = 0;
@@ -213,7 +210,6 @@ public:
         if (request) {
             if (!_pendingAttributeUpdateRequest) {
                 _pendingAttributeUpdateRequest = true;
-                addToRequestQueue();
             }
         }
     }

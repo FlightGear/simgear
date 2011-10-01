@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -71,6 +71,7 @@ public:
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
 
     virtual RTI13ObjectInstance* getObjectInstance(const std::string& name);
+    void insertObjectInstance(RTI13ObjectInstance* objectInstance);
 
 private:
     RTI13Federate(const RTI13Federate&);
@@ -78,6 +79,7 @@ private:
 
     /// The federate handle
     RTI::FederateHandle _federateHandle;
+    bool _joined;
 
     /// The timeout for the single callback tick function in
     /// syncronous operations that need to wait for a callback
@@ -85,6 +87,10 @@ private:
 
     /// RTI connection
     SGSharedPtr<RTI13Ambassador> _ambassador;
+
+    /// Callbacks from the rti are handled here.
+    struct FederateAmbassador;
+    FederateAmbassador* _federateAmbassador;
 };
 
 }

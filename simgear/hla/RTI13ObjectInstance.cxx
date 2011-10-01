@@ -50,14 +50,13 @@ RTI13ObjectInstance::get13ObjectClass() const
 std::string
 RTI13ObjectInstance::getName() const
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return std::string();
     }
 
     try {
-        return ambassador->getObjectInstanceName(_handle);
+        return _ambassador->getObjectInstanceName(_handle);
     } catch (RTI::ObjectNotKnown& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object name: " << e._name << " " << e._reason);
         return std::string();
@@ -77,28 +76,21 @@ RTI13ObjectInstance::getName() const
 }
 
 void
-RTI13ObjectInstance::addToRequestQueue()
+RTI13ObjectInstance::deleteObjectInstance(const RTIData& tag)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
 
-    ambassador->addObjectInstanceForCallback(this);
-}
-
-void
-RTI13ObjectInstance::deleteObjectInstance(const RTIData& tag)
-{
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
+    SGSharedPtr<RTI13Federate> federate = _ambassador->_federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Federate is zero.");
         return;
     }
 
     try {
-        ambassador->deleteObjectInstance(_handle, tag);
+        _ambassador->deleteObjectInstance(_handle, tag);
     } catch (RTI::ObjectNotKnown& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
     } catch (RTI::DeletePrivilegeNotHeld& e) {
@@ -119,14 +111,19 @@ RTI13ObjectInstance::deleteObjectInstance(const RTIData& tag)
 void
 RTI13ObjectInstance::deleteObjectInstance(const SGTimeStamp& timeStamp, const RTIData& tag)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
 
+    SGSharedPtr<RTI13Federate> federate = _ambassador->_federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Federate is zero.");
+        return;
+    }
+
     try {
-        ambassador->deleteObjectInstance(_handle, timeStamp, tag);
+        _ambassador->deleteObjectInstance(_handle, timeStamp, tag);
     } catch (RTI::ObjectNotKnown& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
     } catch (RTI::DeletePrivilegeNotHeld& e) {
@@ -149,14 +146,19 @@ RTI13ObjectInstance::deleteObjectInstance(const SGTimeStamp& timeStamp, const RT
 void
 RTI13ObjectInstance::localDeleteObjectInstance()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
 
+    SGSharedPtr<RTI13Federate> federate = _ambassador->_federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Federate is zero.");
+        return;
+    }
+
     try {
-        ambassador->localDeleteObjectInstance(_handle);
+        _ambassador->localDeleteObjectInstance(_handle);
     } catch (RTI::ObjectNotKnown& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not delete object instance: " << e._name << " " << e._reason);
     } catch (RTI::FederateOwnsAttributes& e) {
@@ -221,8 +223,7 @@ RTI13ObjectInstance::reflectAttributeValues(const RTI::AttributeHandleValuePairS
 void
 RTI13ObjectInstance::requestObjectAttributeValueUpdate()
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
@@ -238,7 +239,7 @@ RTI13ObjectInstance::requestObjectAttributeValueUpdate()
         if (!attributeHandleSet->size())
             return;
 
-        ambassador->requestObjectAttributeValueUpdate(_handle, *attributeHandleSet);
+        _ambassador->requestObjectAttributeValueUpdate(_handle, *attributeHandleSet);
 
         for (unsigned i = 0; i < numAttributes; ++i)
             setRequestAttributeUpdate(i, false);
@@ -285,8 +286,7 @@ RTI13ObjectInstance::provideAttributeValueUpdate(const RTI::AttributeHandleSet& 
 void
 RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
@@ -312,7 +312,7 @@ RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
         if (!_attributeValuePairSet->size())
             return;
 
-        ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, tag);
+        _ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, tag);
 
         for (unsigned i = 0; i < numAttributes; ++i) {
             setAttributeUpdated(i);
@@ -343,8 +343,7 @@ RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
 void
 RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag)
 {
-    SGSharedPtr<RTI13Ambassador> ambassador = _ambassador.lock();
-    if (!ambassador.valid()) {
+    if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
@@ -370,7 +369,7 @@ RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const R
         if (!_attributeValuePairSet->size())
             return;
 
-        ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, timeStamp, tag);
+        _ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, timeStamp, tag);
 
         for (unsigned i = 0; i < numAttributes; ++i) {
             setAttributeUpdated(i);

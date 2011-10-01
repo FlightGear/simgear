@@ -95,6 +95,9 @@ protected:
     virtual HLAObjectInstance* createObjectInstance(RTIObjectInstance* rtiObjectInstance);
 
 private:
+    HLAObjectClass(const HLAObjectClass&);
+    HLAObjectClass& operator=(const HLAObjectClass&);
+
     // The internal entry points from the RTILObjectClass callback functions
     void discoverInstance(RTIObjectInstance* objectInstance, const RTIData& tag);
     void removeInstance(HLAObjectInstance& objectInstance, const RTIData& tag);

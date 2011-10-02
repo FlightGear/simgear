@@ -579,7 +579,6 @@ private:
 
 RTI13Federate::RTI13Federate(const std::list<std::string>& stringList) :
     _joined(false),
-    _tickTimeout(10),
     _ambassador(new RTI13Ambassador),
     _federateAmbassador(new FederateAmbassador)
 {
@@ -728,13 +727,9 @@ RTI13Federate::registerFederationSynchronizationPoint(const std::string& label, 
 }
 
 bool
-RTI13Federate::waitForFederationSynchronizationPointAnnounced(const std::string& label)
+RTI13Federate::getFederationSynchronizationPointAnnounced(const std::string& label)
 {
-    while (!_federateAmbassador->getFederationSynchronizationPointAnnounced(label)) {
-        _ambassador->tick(_tickTimeout, 0);
-        _federateAmbassador->processQueues();
-    }
-    return true;
+    return _federateAmbassador->getFederationSynchronizationPointAnnounced(label);
 }
 
 bool
@@ -766,13 +761,9 @@ RTI13Federate::synchronizationPointAchieved(const std::string& label)
 }
 
 bool
-RTI13Federate::waitForFederationSynchronized(const std::string& label)
+RTI13Federate::getFederationSynchronized(const std::string& label)
 {
-    while (!_federateAmbassador->getFederationSynchronized(label)) {
-        _ambassador->tick(_tickTimeout, 0);
-        _federateAmbassador->processQueues();
-    }
-    return true;
+    return _federateAmbassador->getFederationSynchronized(label);
 }
 
 bool
@@ -816,11 +807,6 @@ RTI13Federate::enableTimeConstrained()
         return false;
     }
 
-    while (!_federateAmbassador->_timeConstrainedEnabled) {
-        _ambassador->tick(_tickTimeout, 0);
-        _federateAmbassador->processQueues();
-    }
-
     return true;
 }
 
@@ -861,6 +847,12 @@ RTI13Federate::disableTimeConstrained()
     }
 
     return true;
+}
+
+bool
+RTI13Federate::getTimeConstrainedEnabled()
+{
+    return _federateAmbassador->_timeConstrainedEnabled;
 }
 
 bool
@@ -910,11 +902,6 @@ RTI13Federate::enableTimeRegulation(const SGTimeStamp& lookahead)
         return false;
     }
 
-    while (!_federateAmbassador->_timeRegulationEnabled) {
-        _ambassador->tick(_tickTimeout, 0);
-        _federateAmbassador->processQueues();
-    }
-
     return true;
 }
 
@@ -958,19 +945,44 @@ RTI13Federate::disableTimeRegulation()
 }
 
 bool
-RTI13Federate::timeAdvanceRequestBy(const SGTimeStamp& dt)
+RTI13Federate::modifyLookahead(const SGTimeStamp& timeStamp)
 {
     if (!_ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation at unconnected federate.");
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead.");
         return false;
     }
-
-    SGTimeStamp fedTime = _federateAmbassador->_federateTime + dt;
-    return timeAdvanceRequest(fedTime);
+    try {
+        _ambassador->modifyLookahead(timeStamp);
+    } catch (RTI::InvalidLookahead& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
+        return false;
+    }
+    return true;
 }
 
 bool
-RTI13Federate::timeAdvanceRequest(const SGTimeStamp& fedTime)
+RTI13Federate::getTimeRegulationEnabled()
+{
+    return _federateAmbassador->_timeRegulationEnabled;
+}
+
+bool
+RTI13Federate::timeAdvanceRequest(const SGTimeStamp& timeStamp)
 {
     if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation at unconnected federate.");
@@ -978,7 +990,7 @@ RTI13Federate::timeAdvanceRequest(const SGTimeStamp& fedTime)
     }
 
     try {
-        _ambassador->timeAdvanceRequest(fedTime);
+        _ambassador->timeAdvanceRequest(timeStamp);
         _federateAmbassador->_timeAdvancePending = true;
     } catch (RTI::InvalidFederationTime& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
@@ -1012,12 +1024,59 @@ RTI13Federate::timeAdvanceRequest(const SGTimeStamp& fedTime)
         return false;
     }
 
-    while (_federateAmbassador->_timeAdvancePending) {
-        _ambassador->tick(_tickTimeout, 0);
-        _federateAmbassador->processQueues();
+    return true;
+}
+
+bool
+RTI13Federate::timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation at unconnected federate.");
+        return false;
+    }
+
+    try {
+        _ambassador->timeAdvanceRequestAvailable(timeStamp);
+        _federateAmbassador->_timeAdvancePending = true;
+    } catch (RTI::InvalidFederationTime& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederationTimeAlreadyPassed& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::EnableTimeRegulationPending& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::EnableTimeConstrainedPending& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        return false;
     }
 
     return true;
+}
+
+bool
+RTI13Federate::getTimeAdvancePending()
+{
+    return _federateAmbassador->_timeAdvancePending;
 }
 
 bool
@@ -1044,37 +1103,6 @@ RTI13Federate::queryFederateTime(SGTimeStamp& timeStamp)
         return false;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query federate time: " << e._name << " " << e._reason);
-        return false;
-    }
-    return true;
-}
-
-bool
-RTI13Federate::modifyLookahead(const SGTimeStamp& timeStamp)
-{
-    if (!_ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead.");
-        return false;
-    }
-    try {
-        _ambassador->modifyLookahead(timeStamp);
-    } catch (RTI::InvalidLookahead& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
-        return false;
-    } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
-        return false;
-    } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
-        return false;
-    } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
-        return false;
-    } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
-        return false;
-    } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not modify lookahead: " << e._name << " " << e._reason);
         return false;
     }
     return true;
@@ -1168,7 +1196,7 @@ RTI13Federate::queryLITS(SGTimeStamp& timeStamp)
 }
 
 bool
-RTI13Federate::tick()
+RTI13Federate::processMessage()
 {
     bool result = _ambassador->tick();
     _federateAmbassador->processQueues();
@@ -1176,10 +1204,17 @@ RTI13Federate::tick()
 }
 
 bool
-RTI13Federate::tick(const double& minimum, const double& maximum)
+RTI13Federate::processMessages(const double& minimum, const double& maximum)
 {
-    bool result = _ambassador->tick(minimum, maximum);
+    bool result = _ambassador->tick(minimum, 0);
     _federateAmbassador->processQueues();
+    if (!result)
+        return false;
+    SGTimeStamp timeStamp = SGTimeStamp::now() + SGTimeStamp::fromSec(maximum);
+    do {
+        result = _ambassador->tick(0, 0);
+        _federateAmbassador->processQueues();
+    } while (result && SGTimeStamp::now() <= timeStamp);
     return result;
 }
 

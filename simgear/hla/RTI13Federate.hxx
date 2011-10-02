@@ -48,30 +48,32 @@ public:
 
     /// Synchronization Point handling
     virtual bool registerFederationSynchronizationPoint(const std::string& label, const RTIData& tag);
-    virtual bool waitForFederationSynchronizationPointAnnounced(const std::string& label);
+    virtual bool getFederationSynchronizationPointAnnounced(const std::string& label);
     virtual bool synchronizationPointAchieved(const std::string& label);
-    virtual bool waitForFederationSynchronized(const std::string& label);
+    virtual bool getFederationSynchronized(const std::string& label);
 
     /// Time management
     virtual bool enableTimeConstrained();
     virtual bool disableTimeConstrained();
+    virtual bool getTimeConstrainedEnabled();
 
     virtual bool enableTimeRegulation(const SGTimeStamp& lookahead);
     virtual bool disableTimeRegulation();
+    virtual bool modifyLookahead(const SGTimeStamp& timeStamp);
+    virtual bool getTimeRegulationEnabled();
 
-    virtual bool timeAdvanceRequestBy(const SGTimeStamp& dt);
-    virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime);
+    virtual bool timeAdvanceRequest(const SGTimeStamp& timeStamp);
+    virtual bool timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp);
+    virtual bool getTimeAdvancePending();
 
     virtual bool queryFederateTime(SGTimeStamp& timeStamp);
-    virtual bool modifyLookahead(const SGTimeStamp& timeStamp);
     virtual bool queryLookahead(SGTimeStamp& timeStamp);
-
     virtual bool queryGALT(SGTimeStamp& timeStamp);
     virtual bool queryLITS(SGTimeStamp& timeStamp);
 
     /// Process messages
-    virtual bool tick();
-    virtual bool tick(const double& minimum, const double& maximum);
+    virtual bool processMessage();
+    virtual bool processMessages(const double& minimum, const double& maximum);
 
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
 
@@ -85,10 +87,6 @@ private:
     /// The federate handle
     RTI::FederateHandle _federateHandle;
     bool _joined;
-
-    /// The timeout for the single callback tick function in
-    /// syncronous operations that need to wait for a callback
-    double _tickTimeout;
 
     /// RTI connection
     SGSharedPtr<RTI13Ambassador> _ambassador;

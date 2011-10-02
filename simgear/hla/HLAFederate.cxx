@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,7 +27,8 @@
 
 namespace simgear {
 
-HLAFederate::HLAFederate()
+HLAFederate::HLAFederate() :
+    _version(RTI13)
 {
 }
 
@@ -370,7 +371,17 @@ HLAFederate::enableTimeConstrained()
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->enableTimeConstrained();
+
+    if (!_rtiFederate->enableTimeConstrained()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not enable time constrained!");
+        return false;
+    }
+
+    while (!_rtiFederate->getTimeConstrainedEnabled()) {
+        _rtiFederate->processMessage();
+    }
+
+    return true;
 }
 
 bool
@@ -390,7 +401,17 @@ HLAFederate::enableTimeRegulation(const SGTimeStamp& lookahead)
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->enableTimeRegulation(lookahead);
+
+    if (!_rtiFederate->enableTimeRegulation(lookahead)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not enable time regulation!");
+        return false;
+    }
+
+    while (!_rtiFederate->getTimeRegulationEnabled()) {
+        _rtiFederate->processMessage();
+    }
+
+    return true;
 }
 
 bool
@@ -404,23 +425,73 @@ HLAFederate::disableTimeRegulation()
 }
 
 bool
-HLAFederate::timeAdvanceRequestBy(const SGTimeStamp& dt)
+HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->timeAdvanceRequestBy(dt);
+    return _rtiFederate->modifyLookahead(timeStamp);
 }
 
 bool
-HLAFederate::timeAdvanceRequest(const SGTimeStamp& dt)
+HLAFederate::timeAdvanceBy(const SGTimeStamp& timeIncrement)
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->timeAdvanceRequest(dt);
+
+    SGTimeStamp timeStamp;
+    if (!_rtiFederate->queryFederateTime(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not query federate time!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequest(timeStamp + timeIncrement)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
+}
+
+bool
+HLAFederate::timeAdvance(const SGTimeStamp& timeStamp)
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequest(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
+}
+
+bool
+HLAFederate::timeAdvanceAvailable()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    SGTimeStamp timeStamp;
+    if (!_rtiFederate->queryGALT(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not query GALT!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequestAvailable(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
 }
 
 bool
@@ -434,16 +505,6 @@ HLAFederate::queryFederateTime(SGTimeStamp& timeStamp)
 }
 
 bool
-HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
-{
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return false;
-    }
-    return _rtiFederate->modifyLookahead(timeStamp);
-}
-
-bool
 HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 {
     if (!_rtiFederate.valid()) {
@@ -454,13 +515,41 @@ HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 }
 
 bool
-HLAFederate::tick()
+HLAFederate::processMessage()
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->tick();
+    return _rtiFederate->processMessage();
+}
+
+bool
+HLAFederate::processMessage(const SGTimeStamp& timeout)
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+    return _rtiFederate->processMessages(timeout.toSecs(), 0);
+}
+
+bool
+HLAFederate::processMessages()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    while (_rtiFederate->getTimeAdvancePending()) {
+        _rtiFederate->processMessage();
+    }
+
+    // Now flush just what is left
+    while (!_rtiFederate->processMessages(0, 0));
+
+    return true;
 }
 
 bool
@@ -470,7 +559,7 @@ HLAFederate::tick(const double& minimum, const double& maximum)
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->tick(minimum, maximum);
+    return _rtiFederate->processMessages(minimum, maximum);
 }
 
 bool

@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -82,21 +82,42 @@ public:
     bool resignDestroyFederationExecution();
 
 
+    /// Time management
+
     bool enableTimeConstrained();
     bool disableTimeConstrained();
 
     bool enableTimeRegulation(const SGTimeStamp& lookahead);
     bool disableTimeRegulation();
+    bool modifyLookahead(const SGTimeStamp& lookahead);
 
-    bool timeAdvanceRequestBy(const SGTimeStamp& dt);
-    bool timeAdvanceRequest(const SGTimeStamp& dt);
+    /// Advance the logical time by the given time increment.
+    /// Depending on the time constrained mode, this might
+    /// block until the time advance is granted.
+    bool timeAdvanceBy(const SGTimeStamp& timeIncrement);
+    /// Advance the logical time to the given time.
+    /// Depending on the time constrained mode, this might
+    /// block until the time advance is granted.
+    bool timeAdvance(const SGTimeStamp& timeStamp);
+    /// Advance the logical time as far as time advances are available.
+    /// This call should not block and advance the logical time
+    /// as far as currently possible.
+    bool timeAdvanceAvailable();
 
     bool queryFederateTime(SGTimeStamp& timeStamp);
-    bool modifyLookahead(const SGTimeStamp& timeStamp);
     bool queryLookahead(SGTimeStamp& timeStamp);
 
-    /// Process messages
-    bool tick();
+    /// Process one messsage
+    bool processMessage();
+    /// Process one message but do not wait longer than the relative timeout.
+    bool processMessage(const SGTimeStamp& timeout);
+    /// Process messages until the federate can proceed with the
+    /// next simulation step. That is flush all pending messages and
+    /// depending on the time constrained mode process messages until
+    /// a pending time advance is granted.
+    bool processMessages();
+
+    /// Legacy tick call
     bool tick(const double& minimum, const double& maximum);
 
     class ObjectModelFactory {
@@ -128,13 +149,21 @@ public:
     const HLAInteractionClass* getInteractionClass(const std::string& name) const;
 
 private:
+    HLAFederate(const HLAFederate&);
+    HLAFederate& operator=(const HLAFederate&);
+
+    /// The underlying interface to the rti implementation
     SGSharedPtr<RTIFederate> _rtiFederate;
 
+    /// Parameters required to connect to an rti
     Version _version;
     std::list<std::string> _connectArguments;
 
+    /// Parameters for the federation execution
     std::string _federationExecutionName;
     std::string _federationObjectModel;
+
+    /// Parameters for the federate
     std::string _federateType;
     std::string _federateName;
 

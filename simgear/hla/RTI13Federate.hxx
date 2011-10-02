@@ -45,6 +45,7 @@ public:
     /// Join with federateName the federation execution federation
     virtual FederationManagementResult join(const std::string& federateType, const std::string& federation);
     virtual bool resign();
+    virtual bool getJoined() const;
 
     /// Synchronization Point handling
     virtual bool registerFederationSynchronizationPoint(const std::string& label, const RTIData& tag);

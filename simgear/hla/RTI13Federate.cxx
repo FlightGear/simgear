@@ -702,6 +702,12 @@ RTI13Federate::resign()
 }
 
 bool
+RTI13Federate::getJoined() const
+{
+    return _joined;
+}
+
+bool
 RTI13Federate::registerFederationSynchronizationPoint(const std::string& label, const RTIData& tag)
 {
     try {

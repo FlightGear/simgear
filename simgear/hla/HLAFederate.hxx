@@ -41,21 +41,31 @@ public:
         RTI1516E
     };
 
+    /// The rti version backend to connect
     Version getVersion() const;
     bool setVersion(HLAFederate::Version version);
 
+    /// The rti backends connect arguments, depends on the version
     const std::list<std::string>& getConnectArguments() const;
     bool setConnectArguments(const std::list<std::string>& connectArguments);
 
+    /// If true try to create on join and try to destroy on resign
+    bool getCreateFederationExecution() const;
+    bool setCreateFederationExecution(bool createFederationExecution);
+
+    /// The federation execution name to use on create, join and destroy
     const std::string& getFederationExecutionName() const;
     bool setFederationExecutionName(const std::string& federationExecutionName);
 
+    /// The federation object model name to use on create and possibly join
     const std::string& getFederationObjectModel() const;
     bool setFederationObjectModel(const std::string& federationObjectModel);
 
+    /// The federate type used on join
     const std::string& getFederateType() const;
     bool setFederateType(const std::string& federateType);
 
+    /// The federate name possibly used on join
     const std::string& getFederateName() const;
     bool setFederateName(const std::string& federateName);
 
@@ -84,11 +94,43 @@ public:
 
     /// Time management
 
+    /// If set to true, time constrained mode is entered on init
+    bool getTimeConstrained() const;
+    bool setTimeConstrained(bool timeConstrained);
+
+    /// If set to true, time advance is constrained by the local system clock
+    bool getTimeConstrainedByLocalClock() const;
+    bool setTimeConstrainedByLocalClock(bool timeConstrainedByLocalClock);
+
+    /// If set to true, time regulation mode is entered on init
+    bool getTimeRegulating() const;
+    bool setTimeRegulating(bool timeRegulating);
+
+    /// If set to a non zero value, this federate leads the federations
+    /// locical time advance by this amount of time.
+    const SGTimeStamp& getLeadTime() const;
+    bool setLeadTime(const SGTimeStamp& leadTime);
+
+    /// The time increment for use in the default update method.
+    const SGTimeStamp& getTimeIncrement() const;
+    bool setTimeIncrement(const SGTimeStamp& timeIncrement);
+
+    /// Actually enable time constrained mode.
+    /// This method blocks until time constrained mode is enabled.
     bool enableTimeConstrained();
+    /// Actually disable time constrained mode.
     bool disableTimeConstrained();
 
+    /// Actually enable time constrained by local clock mode.
+    bool enableTimeConstrainedByLocalClock();
+
+    /// Actually enable time regulation mode.
+    /// This method blocks until time regulation mode is enabled.
     bool enableTimeRegulation(const SGTimeStamp& lookahead);
+    bool enableTimeRegulation();
+    /// Actually disable time regulation mode.
     bool disableTimeRegulation();
+    /// Actually modify the lookahead time.
     bool modifyLookahead(const SGTimeStamp& lookahead);
 
     /// Advance the logical time by the given time increment.
@@ -104,7 +146,9 @@ public:
     /// as far as currently possible.
     bool timeAdvanceAvailable();
 
+    /// Get the current federates time
     bool queryFederateTime(SGTimeStamp& timeStamp);
+    /// Get the current federates lookahead
     bool queryLookahead(SGTimeStamp& timeStamp);
 
     /// Process one messsage
@@ -148,6 +192,21 @@ public:
     HLAInteractionClass* getInteractionClass(const std::string& name);
     const HLAInteractionClass* getInteractionClass(const std::string& name) const;
 
+    /// Tells the main exec loop to continue or not.
+    void setDone(bool done);
+    bool getDone() const;
+
+    virtual bool readObjectModel();
+
+    virtual bool subscribe();
+    virtual bool publish();
+
+    virtual bool init();
+    virtual bool update();
+    virtual bool shutdown();
+
+    virtual bool exec();
+
 private:
     HLAFederate(const HLAFederate&);
     HLAFederate& operator=(const HLAFederate&);
@@ -162,10 +221,29 @@ private:
     /// Parameters for the federation execution
     std::string _federationExecutionName;
     std::string _federationObjectModel;
+    bool _createFederationExecution;
 
     /// Parameters for the federate
     std::string _federateType;
     std::string _federateName;
+
+    /// Time management related parameters
+    /// If true, the federate is expected to enter time constrained mode
+    bool _timeConstrained;
+    /// If true, the federate is expected to enter time regulating mode
+    bool _timeRegulating;
+    /// The amount of time this federate leads the others.
+    SGTimeStamp _leadTime;
+    /// The regular time increment we do on calling update()
+    SGTimeStamp _timeIncrement;
+    /// The reference system time at initialization time.
+    /// Is used to implement being time constrained on the
+    /// local system time.
+    bool _timeConstrainedByLocalClock;
+    SGTimeStamp _localClockOffset;
+
+    /// If true the exec method returns.
+    bool _done;
 
     typedef std::map<std::string, SGSharedPtr<HLAObjectClass> > ObjectClassMap;
     ObjectClassMap _objectClassMap;

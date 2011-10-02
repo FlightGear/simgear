@@ -729,7 +729,7 @@ HLAFederate::processMessages()
     }
     
     // Now flush just what is left
-    while (!_rtiFederate->processMessages(0, 0));
+    while (_rtiFederate->processMessages(0, 0));
 
     return true;
 }

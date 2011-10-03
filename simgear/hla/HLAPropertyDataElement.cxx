@@ -198,17 +198,6 @@ protected:
     const SGPropertyNode& _propertyNode;
 };
 
-HLAPropertyDataElement::HLAPropertyDataElement(HLAPropertyReference* propertyReference) :
-    _propertyReference(propertyReference)
-{
-}
-
-HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType, HLAPropertyReference* propertyReference) :
-    _dataType(dataType),
-    _propertyReference(propertyReference)
-{
-}
-
 HLAPropertyDataElement::HLAPropertyDataElement()
 {
 }
@@ -222,6 +211,11 @@ HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType, SGPr
     _dataType(dataType)
 {
     setPropertyNode(propertyNode);
+}
+
+HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType) :
+    _dataType(dataType)
+{
 }
 
 HLAPropertyDataElement::~HLAPropertyDataElement()
@@ -284,24 +278,19 @@ HLAPropertyDataElement::setDataType(const HLADataType* dataType)
 void
 HLAPropertyDataElement::setPropertyNode(SGPropertyNode* propertyNode)
 {
-    _propertyReference = new HLAPropertyReference;
-    _propertyReference->setRootNode(propertyNode);
+    _propertyNode = propertyNode;
 }
 
 SGPropertyNode*
 HLAPropertyDataElement::getPropertyNode()
 {
-    if (!_propertyReference.valid())
-        return 0;
-    return _propertyReference->getPropertyNode();
+    return _propertyNode.get();
 }
 
 const SGPropertyNode*
 HLAPropertyDataElement::getPropertyNode() const
 {
-    if (!_propertyReference.valid())
-        return 0;
-    return _propertyReference->getPropertyNode();
+    return _propertyNode.get();
 }
 
 } // namespace simgear

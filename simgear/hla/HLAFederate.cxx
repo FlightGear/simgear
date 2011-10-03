@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,7 +27,13 @@
 
 namespace simgear {
 
-HLAFederate::HLAFederate()
+HLAFederate::HLAFederate() :
+    _version(RTI13),
+    _createFederationExecution(true),
+    _timeConstrained(false),
+    _timeRegulating(false),
+    _timeConstrainedByLocalClock(false),
+    _done(false)
 {
 }
 
@@ -66,6 +72,19 @@ HLAFederate::setConnectArguments(const std::list<std::string>& connectArguments)
         return false;
     }
     _connectArguments = connectArguments;
+    return true;
+}
+
+bool
+HLAFederate::getCreateFederationExecution() const
+{
+    return _createFederationExecution;
+}
+
+bool
+HLAFederate::setCreateFederationExecution(bool createFederationExecution)
+{
+    _createFederationExecution = createFederationExecution;
     return true;
 }
 
@@ -364,13 +383,145 @@ HLAFederate::resignDestroyFederationExecution()
 }
 
 bool
+HLAFederate::getTimeConstrained() const
+{
+    return _timeConstrained;
+}
+
+bool
+HLAFederate::setTimeConstrained(bool timeConstrained)
+{
+    _timeConstrained = timeConstrained;
+
+    if (_rtiFederate.valid() && _rtiFederate->getJoined()) {
+        if (_timeConstrained && !_rtiFederate->getTimeConstrainedEnabled()) {
+            if (!enableTimeConstrained())
+                return false;
+        } else if (!_timeConstrained && _rtiFederate->getTimeConstrainedEnabled()) {
+            if (!disableTimeConstrained())
+                return false;
+        }
+
+    }
+
+    return true;
+}
+
+bool
+HLAFederate::getTimeConstrainedByLocalClock() const
+{
+    return _timeConstrainedByLocalClock;
+}
+
+bool
+HLAFederate::setTimeConstrainedByLocalClock(bool timeConstrainedByLocalClock)
+{
+    _timeConstrainedByLocalClock = timeConstrainedByLocalClock;
+
+    if (_rtiFederate.valid() && _rtiFederate->getJoined()) {
+        if (_timeConstrainedByLocalClock) {
+            if (!enableTimeConstrainedByLocalClock())
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+HLAFederate::getTimeRegulating() const
+{
+    return _timeRegulating;
+}
+
+bool
+HLAFederate::setTimeRegulating(bool timeRegulating)
+{
+    _timeRegulating = timeRegulating;
+
+    if (_rtiFederate.valid() && _rtiFederate->getJoined()) {
+        if (_timeRegulating && !_rtiFederate->getTimeRegulationEnabled()) {
+            if (!enableTimeRegulation())
+                return false;
+        } else if (!_timeRegulating && _rtiFederate->getTimeRegulationEnabled()) {
+            if (!disableTimeRegulation())
+                return false;
+        }
+
+    }
+    return true;
+}
+
+bool
+HLAFederate::setLeadTime(const SGTimeStamp& leadTime)
+{
+    if (leadTime < SGTimeStamp::fromSec(0)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Ignoring negative lead time!");
+        return false;
+    }
+
+    _leadTime = leadTime;
+
+    if (_rtiFederate.valid() && _rtiFederate->getJoined()) {
+        if (!modifyLookahead(_leadTime + SGTimeStamp::fromSec(_timeIncrement.toSecs()*0.9))) {
+            SG_LOG(SG_NETWORK, SG_WARN, "Cannot modify lookahead!");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+const SGTimeStamp&
+HLAFederate::getLeadTime() const
+{
+    return _leadTime;
+}
+
+bool
+HLAFederate::setTimeIncrement(const SGTimeStamp& timeIncrement)
+{
+    if (timeIncrement < SGTimeStamp::fromSec(0)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Ignoring negative time increment!");
+        return false;
+    }
+
+    _timeIncrement = timeIncrement;
+
+    if (_rtiFederate.valid() && _rtiFederate->getJoined()) {
+        if (!modifyLookahead(_leadTime + SGTimeStamp::fromSec(_timeIncrement.toSecs()*0.9))) {
+            SG_LOG(SG_NETWORK, SG_WARN, "Cannot modify lookahead!");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+const SGTimeStamp&
+HLAFederate::getTimeIncrement() const
+{
+    return _timeIncrement;
+}
+
+bool
 HLAFederate::enableTimeConstrained()
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->enableTimeConstrained();
+
+    if (!_rtiFederate->enableTimeConstrained()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not enable time constrained!");
+        return false;
+    }
+
+    while (!_rtiFederate->getTimeConstrainedEnabled()) {
+        _rtiFederate->processMessage();
+    }
+
+    return true;
 }
 
 bool
@@ -384,13 +535,50 @@ HLAFederate::disableTimeConstrained()
 }
 
 bool
+HLAFederate::enableTimeConstrainedByLocalClock()
+{
+    // Compute the time offset from the system time to the simulation time
+    SGTimeStamp federateTime;
+    if (!queryFederateTime(federateTime)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Cannot get federate time!");
+        return false;
+    }
+    _localClockOffset = SGTimeStamp::now() - federateTime;
+    return true;
+}
+
+bool
 HLAFederate::enableTimeRegulation(const SGTimeStamp& lookahead)
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->enableTimeRegulation(lookahead);
+
+    if (!_rtiFederate->enableTimeRegulation(lookahead)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not enable time regulation!");
+        return false;
+    }
+
+    while (!_rtiFederate->getTimeRegulationEnabled()) {
+        _rtiFederate->processMessage();
+    }
+
+    return true;
+}
+
+bool
+HLAFederate::enableTimeRegulation()
+{
+    if (!enableTimeRegulation(SGTimeStamp::fromSec(0))) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Cannot enable time regulation!");
+        return false;
+    }
+    if (!modifyLookahead(_leadTime + SGTimeStamp::fromSec(_timeIncrement.toSecs()*0.9))) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Cannot modify lookahead!");
+        return false;
+    }
+    return true;
 }
 
 bool
@@ -404,23 +592,73 @@ HLAFederate::disableTimeRegulation()
 }
 
 bool
-HLAFederate::timeAdvanceRequestBy(const SGTimeStamp& dt)
+HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->timeAdvanceRequestBy(dt);
+    return _rtiFederate->modifyLookahead(timeStamp);
 }
 
 bool
-HLAFederate::timeAdvanceRequest(const SGTimeStamp& dt)
+HLAFederate::timeAdvanceBy(const SGTimeStamp& timeIncrement)
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->timeAdvanceRequest(dt);
+
+    SGTimeStamp timeStamp;
+    if (!_rtiFederate->queryFederateTime(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not query federate time!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequest(timeStamp + timeIncrement)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
+}
+
+bool
+HLAFederate::timeAdvance(const SGTimeStamp& timeStamp)
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequest(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
+}
+
+bool
+HLAFederate::timeAdvanceAvailable()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    SGTimeStamp timeStamp;
+    if (!_rtiFederate->queryGALT(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not query GALT!");
+        return false;
+    }
+
+    if (!_rtiFederate->timeAdvanceRequestAvailable(timeStamp)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+        return false;
+    }
+
+    return processMessages();
 }
 
 bool
@@ -434,16 +672,6 @@ HLAFederate::queryFederateTime(SGTimeStamp& timeStamp)
 }
 
 bool
-HLAFederate::modifyLookahead(const SGTimeStamp& timeStamp)
-{
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return false;
-    }
-    return _rtiFederate->modifyLookahead(timeStamp);
-}
-
-bool
 HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 {
     if (!_rtiFederate.valid()) {
@@ -454,13 +682,56 @@ HLAFederate::queryLookahead(SGTimeStamp& timeStamp)
 }
 
 bool
-HLAFederate::tick()
+HLAFederate::processMessage()
 {
     if (!_rtiFederate.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->tick();
+    return _rtiFederate->processMessage();
+}
+
+bool
+HLAFederate::processMessage(const SGTimeStamp& timeout)
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+    return _rtiFederate->processMessages(timeout.toSecs(), 0);
+}
+
+bool
+HLAFederate::processMessages()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    while (_rtiFederate->getTimeAdvancePending()) {
+        _rtiFederate->processMessage();
+    }
+
+    if (_timeConstrainedByLocalClock) {
+        SGTimeStamp federateTime;
+        if (!_rtiFederate->queryFederateTime(federateTime)) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Error querying federate time!");
+            return false;
+        }
+        SGTimeStamp systemTime = federateTime + _localClockOffset;
+        for (;;) {
+            double rest = (systemTime - SGTimeStamp::now()).toSecs();
+            if (rest < 0)
+                break;
+            _rtiFederate->processMessages(rest, rest);
+        }
+    }
+    
+    // Now flush just what is left
+    while (_rtiFederate->processMessages(0, 0));
+
+    return true;
 }
 
 bool
@@ -470,7 +741,7 @@ HLAFederate::tick(const double& minimum, const double& maximum)
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->tick(minimum, maximum);
+    return _rtiFederate->processMessages(minimum, maximum);
 }
 
 bool
@@ -594,6 +865,148 @@ HLAFederate::getInteractionClass(const std::string& name) const
     if (i == _interactionClassMap.end())
         return 0;
     return i->second.get();
+}
+
+void
+HLAFederate::setDone(bool done)
+{
+    _done = done;
+}
+
+bool
+HLAFederate::getDone() const
+{
+    return _done;
+}
+
+bool
+HLAFederate::readObjectModel()
+{
+    /// Currently empty, but is called at the right time so that
+    /// the object model is present when it is needed
+    return true;
+}
+
+bool
+HLAFederate::subscribe()
+{
+    /// Currently empty, but is called at the right time
+    return true;
+}
+
+bool
+HLAFederate::publish()
+{
+    /// Currently empty, but is called at the right time
+    return true;
+}
+
+bool
+HLAFederate::init()
+{
+    // We need to talk to the rti
+    if (!connect())
+        return false;
+    // Join ...
+    if (_createFederationExecution) {
+        if (!createJoinFederationExecution())
+            return false;
+    } else {
+        if (!join())
+            return false;
+    }
+    // Read the xml file containing the object model
+    if (!readObjectModel()) {
+        shutdown();
+        return false;
+    }
+    // start being time constrained if required
+    if (_timeConstrained) {
+        if (!enableTimeConstrained()) {
+            shutdown();
+            return false;
+        }
+    }
+    // Now that we are potentially time constrained, we can subscribe.
+    // This is to make sure we do not get any time stamped message
+    // converted to a non time stamped message by the rti.
+    if (!subscribe()) {
+        shutdown();
+        return false;
+    }
+    // Before we publish anything start getting regulating if required
+    if (_timeRegulating) {
+        if (!enableTimeRegulation()) {
+            shutdown();
+            return false;
+        }
+    }
+    // Note that starting from here, we need to be careful with things
+    // requireing unbounded time. The rest of the federation might wait
+    // for us to finish!
+    
+    // Compute the time offset from the system time to the simulation time
+    if (_timeConstrainedByLocalClock) {
+        if (!enableTimeConstrainedByLocalClock()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "Cannot enable time constrained by local clock!");
+            shutdown();
+            return false;
+        }
+    }
+    
+    // Publish what we want to write
+    if (!publish()) {
+        shutdown();
+        return false;
+    }
+    
+    return true;
+}
+
+bool
+HLAFederate::update()
+{
+    return timeAdvanceBy(_timeIncrement);
+}
+
+bool
+HLAFederate::shutdown()
+{
+    // On shutdown, just try all in order.
+    // If something goes wrong, continue and try to get out here as good as possible.
+    bool ret = true;
+    
+    if (_createFederationExecution) {
+        if (!resignDestroyFederationExecution())
+            ret = false;
+    } else {
+        if (!resign())
+            ret = false;
+    }
+    
+    if (!disconnect())
+        ret = false;
+    
+    return ret;
+}
+
+bool
+HLAFederate::exec()
+{
+    if (!init())
+        return false;
+    
+    while (!getDone()) {
+        if (!update()) {
+            shutdown();
+            return false;
+        }
+    }
+    
+    if (!shutdown())
+        return false;
+    
+    return true;
 }
 
 } // namespace simgear

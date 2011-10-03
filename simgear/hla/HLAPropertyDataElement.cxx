@@ -23,70 +23,70 @@ namespace simgear {
 
 class HLAPropertyDataElement::DecodeVisitor : public HLADataTypeDecodeVisitor {
 public:
-    DecodeVisitor(HLADecodeStream& stream, HLAPropertyReference& propertyReference) :
+    DecodeVisitor(HLADecodeStream& stream, SGPropertyNode& propertyNode) :
         HLADataTypeDecodeVisitor(stream),
-        _propertyReference(propertyReference)
+        _propertyNode(propertyNode)
     { }
 
     virtual void apply(const HLAInt8DataType& dataType)
     {
         int8_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAUInt8DataType& dataType)
     {
         uint8_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAInt16DataType& dataType)
     {
         int16_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAUInt16DataType& dataType)
     {
         uint16_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAInt32DataType& dataType)
     {
         int32_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAUInt32DataType& dataType)
     {
         uint32_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setIntValue(value);
+        _propertyNode.setIntValue(value);
     }
     virtual void apply(const HLAInt64DataType& dataType)
     {
         int64_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setLongValue(value);
+        _propertyNode.setLongValue(value);
     }
     virtual void apply(const HLAUInt64DataType& dataType)
     {
         uint64_t value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setLongValue(value);
+        _propertyNode.setLongValue(value);
     }
     virtual void apply(const HLAFloat32DataType& dataType)
     {
         float value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setFloatValue(value);
+        _propertyNode.setFloatValue(value);
     }
     virtual void apply(const HLAFloat64DataType& dataType)
     {
         double value = 0;
         dataType.decode(_stream, value);
-        _propertyReference.setDoubleValue(value);
+        _propertyNode.setDoubleValue(value);
     }
 
     virtual void apply(const HLAFixedArrayDataType& dataType)
@@ -99,7 +99,7 @@ public:
             dataType.getElementDataType()->accept(visitor);
             value.push_back(visitor.getValue());
         }
-        _propertyReference.setStringValue(value);
+        _propertyNode.setStringValue(value);
     }
     virtual void apply(const HLAVariableArrayDataType& dataType)
     {
@@ -113,65 +113,65 @@ public:
             dataType.getElementDataType()->accept(visitor);
             value.push_back(visitor.getValue());
         }
-        _propertyReference.setStringValue(value);
+        _propertyNode.setStringValue(value);
     }
 
 protected:
-    HLAPropertyReference& _propertyReference;
+    SGPropertyNode& _propertyNode;
 };
 
 class HLAPropertyDataElement::EncodeVisitor : public HLADataTypeEncodeVisitor {
 public:
-    EncodeVisitor(HLAEncodeStream& stream, const HLAPropertyReference& propertyReference) :
+    EncodeVisitor(HLAEncodeStream& stream, const SGPropertyNode& propertyNode) :
         HLADataTypeEncodeVisitor(stream),
-        _propertyReference(propertyReference)
+        _propertyNode(propertyNode)
     { }
 
     virtual void apply(const HLAInt8DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAUInt8DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAInt16DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAUInt16DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAInt32DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAUInt32DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getIntValue());
+        dataType.encode(_stream, _propertyNode.getIntValue());
     }
     virtual void apply(const HLAInt64DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getLongValue());
+        dataType.encode(_stream, _propertyNode.getLongValue());
     }
     virtual void apply(const HLAUInt64DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getLongValue());
+        dataType.encode(_stream, _propertyNode.getLongValue());
     }
     virtual void apply(const HLAFloat32DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getFloatValue());
+        dataType.encode(_stream, _propertyNode.getFloatValue());
     }
     virtual void apply(const HLAFloat64DataType& dataType)
     {
-        dataType.encode(_stream, _propertyReference.getDoubleValue());
+        dataType.encode(_stream, _propertyNode.getDoubleValue());
     }
 
     virtual void apply(const HLAFixedArrayDataType& dataType)
     {
         unsigned numElements = dataType.getNumElements();
-        std::string value = _propertyReference.getStringValue();
+        std::string value = _propertyNode.getStringValue();
         for (unsigned i = 0; i < numElements; ++i) {
             if (i < value.size()) {
                 HLATemplateEncodeVisitor<char> visitor(_stream, value[i]);
@@ -185,7 +185,7 @@ public:
 
     virtual void apply(const HLAVariableArrayDataType& dataType)
     {
-        std::string value = _propertyReference.getStringValue();
+        std::string value = _propertyNode.getStringValue();
         HLATemplateEncodeVisitor<std::string::size_type> numElementsVisitor(_stream, value.size());
         dataType.getSizeDataType()->accept(numElementsVisitor);
         for (unsigned i = 0; i < value.size(); ++i) {
@@ -195,7 +195,7 @@ public:
     }
 
 protected:
-    const HLAPropertyReference& _propertyReference;
+    const SGPropertyNode& _propertyNode;
 };
 
 HLAPropertyDataElement::HLAPropertyDataElement(HLAPropertyReference* propertyReference) :
@@ -203,10 +203,25 @@ HLAPropertyDataElement::HLAPropertyDataElement(HLAPropertyReference* propertyRef
 {
 }
 
-HLAPropertyDataElement::HLAPropertyDataElement(const simgear::HLADataType* dataType, HLAPropertyReference* propertyReference) :
+HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType, HLAPropertyReference* propertyReference) :
     _dataType(dataType),
     _propertyReference(propertyReference)
 {
+}
+
+HLAPropertyDataElement::HLAPropertyDataElement()
+{
+}
+
+HLAPropertyDataElement::HLAPropertyDataElement(SGPropertyNode* propertyNode)
+{
+    setPropertyNode(propertyNode);
+}
+
+HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType, SGPropertyNode* propertyNode) :
+    _dataType(dataType)
+{
+    setPropertyNode(propertyNode);
 }
 
 HLAPropertyDataElement::~HLAPropertyDataElement()
@@ -218,8 +233,8 @@ HLAPropertyDataElement::encode(HLAEncodeStream& stream) const
 {
     if (!_dataType.valid())
         return false;
-    if (_propertyReference.valid()) {
-        EncodeVisitor visitor(stream, *_propertyReference);
+    if (const SGPropertyNode* propertyNode = getPropertyNode()) {
+        EncodeVisitor visitor(stream, *propertyNode);
         _dataType->accept(visitor);
     } else {
         HLADataTypeEncodeVisitor visitor(stream);
@@ -233,8 +248,8 @@ HLAPropertyDataElement::decode(HLADecodeStream& stream)
 {
     if (!_dataType.valid())
         return false;
-    if (_propertyReference.valid()) {
-        DecodeVisitor visitor(stream, *_propertyReference);
+    if (SGPropertyNode* propertyNode = getPropertyNode()) {
+        DecodeVisitor visitor(stream, *propertyNode);
         _dataType->accept(visitor);
     } else {
         HLADataTypeDecodeVisitor visitor(stream);
@@ -264,6 +279,29 @@ HLAPropertyDataElement::setDataType(const HLADataType* dataType)
         }
     }
     return false;
+}
+
+void
+HLAPropertyDataElement::setPropertyNode(SGPropertyNode* propertyNode)
+{
+    _propertyReference = new HLAPropertyReference;
+    _propertyReference->setRootNode(propertyNode);
+}
+
+SGPropertyNode*
+HLAPropertyDataElement::getPropertyNode()
+{
+    if (!_propertyReference.valid())
+        return 0;
+    return _propertyReference->getPropertyNode();
+}
+
+const SGPropertyNode*
+HLAPropertyDataElement::getPropertyNode() const
+{
+    if (!_propertyReference.valid())
+        return 0;
+    return _propertyReference->getPropertyNode();
 }
 
 } // namespace simgear

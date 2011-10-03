@@ -32,71 +32,6 @@ public:
         _relativePath(relativePath)
     { }
 
-    void setIntValue(int value)
-    {
-        if (!_propertyNode.valid())
-            return;
-        _propertyNode->setIntValue(value);
-    }
-    int getIntValue() const
-    {
-        if (!_propertyNode.valid())
-            return 0;
-        return _propertyNode->getIntValue();
-    }
-
-    void setLongValue(long value)
-    {
-        if (!_propertyNode.valid())
-            return;
-        _propertyNode->setLongValue(value);
-    }
-    long getLongValue() const
-    {
-        if (!_propertyNode.valid())
-            return 0;
-        return _propertyNode->getLongValue();
-    }
-
-    void setFloatValue(float value)
-    {
-        if (!_propertyNode.valid())
-            return;
-        _propertyNode->setFloatValue(value);
-    }
-    float getFloatValue() const
-    {
-        if (!_propertyNode.valid())
-            return 0;
-        return _propertyNode->getFloatValue();
-    }
-
-    void setDoubleValue(double value)
-    {
-        if (!_propertyNode.valid())
-            return;
-        _propertyNode->setDoubleValue(value);
-    }
-    double getDoubleValue() const
-    {
-        if (!_propertyNode.valid())
-            return 0;
-        return _propertyNode->getDoubleValue();
-    }
-
-    void setStringValue(const std::string& value)
-    {
-        if (!_propertyNode.valid())
-            return;
-        _propertyNode->setStringValue(value);
-    }
-    std::string getStringValue() const
-    {
-        if (!_propertyNode.valid())
-            return std::string();
-        return _propertyNode->getStringValue();
-    }
-
     SGPropertyNode* getPropertyNode()
     { return _propertyNode.get(); }
 
@@ -150,7 +85,10 @@ private:
 class HLAPropertyDataElement : public HLADataElement {
 public:
     HLAPropertyDataElement(HLAPropertyReference* propertyReference);
-    HLAPropertyDataElement(const simgear::HLADataType* dataType, HLAPropertyReference* propertyReference);
+    HLAPropertyDataElement(const HLADataType* dataType, HLAPropertyReference* propertyReference);
+    HLAPropertyDataElement();
+    HLAPropertyDataElement(SGPropertyNode* propertyNode);
+    HLAPropertyDataElement(const HLADataType* dataType, SGPropertyNode* propertyNode);
     virtual ~HLAPropertyDataElement();
 
     virtual bool encode(HLAEncodeStream& stream) const;
@@ -159,6 +97,10 @@ public:
     virtual const HLADataType* getDataType() const;
     virtual bool setDataType(const HLADataType* dataType);
 
+    void setPropertyNode(SGPropertyNode* propertyNode);
+    SGPropertyNode* getPropertyNode();
+    const SGPropertyNode* getPropertyNode() const;
+    
 private:
     class DecodeVisitor;
     class EncodeVisitor;

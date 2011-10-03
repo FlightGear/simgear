@@ -613,6 +613,10 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     }
 #endif
 
+    if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
+        throw sg_io_exception("Warning: STEREO files are not supported for 3D audio effects: " + samplepath);
+    }
+
     *dbuf = (void *)data;
     *fmt = (int)format;
     *sz = (size_t)size;

@@ -60,7 +60,7 @@ target_link_libraries(httpget
 
 add_executable(decode_binobj decode_binobj.cxx)
 target_link_libraries(decode_binobj
-    sgbucket sgio sgstructure sgthreads sgtiming sgmisc sgdebug
+    sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
     ${WINSOCK_LIBRARY}
     ${ZLIB_LIBRARY}

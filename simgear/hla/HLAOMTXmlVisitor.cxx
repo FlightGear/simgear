@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -438,6 +438,15 @@ HLAOMTXmlVisitor::getArrayDataType(const std::string& dataTypeName, HLAOMTXmlVis
         return 0;
     }
     arrayDataType->setElementDataType(elementDataType.get());
+
+    // Check if this should be a string data type
+    if (elementDataType->toBasicDataType()) {
+        if (dataTypeName == "HLAopaqueData") {
+            arrayDataType->setIsOpaque(true);
+        } else if (dataTypeName.find("String") != std::string::npos || dataTypeName.find("string") != std::string::npos) {
+            arrayDataType->setIsString(true);
+        }
+    }
 
     return arrayDataType;
 }

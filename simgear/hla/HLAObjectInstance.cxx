@@ -410,26 +410,6 @@ HLAObjectInstance::setAttributes(const HLAAttributePathElementMap& attributePath
 }
 
 void
-HLAObjectInstance::requestAttributeUpdate(unsigned index)
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to request attribute update for inactive object!");
-        return;
-    }
-    _rtiObjectInstance->setRequestAttributeUpdate(index, true);
-}
-
-void
-HLAObjectInstance::requestAttributeUpdate()
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to request attribute update for inactive object!");
-        return;
-    }
-    _rtiObjectInstance->setRequestAttributeUpdate(true);
-}
-
-void
 HLAObjectInstance::registerInstance()
 {
     if (_rtiObjectInstance.valid()) {
@@ -468,16 +448,6 @@ HLAObjectInstance::deleteInstance(const RTIData& tag)
 }
 
 void
-HLAObjectInstance::localDeleteInstance()
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to delete inactive object!");
-        return;
-    }
-   _rtiObjectInstance->localDeleteObjectInstance();
-}
-
-void
 HLAObjectInstance::updateAttributeValues(const RTIData& tag)
 {
     if (!_rtiObjectInstance.valid()) {
@@ -499,16 +469,6 @@ HLAObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const RTI
     if (_attributeCallback.valid())
         _attributeCallback->updateAttributeValues(*this, tag);
     _rtiObjectInstance->updateAttributeValues(timeStamp, tag);
-}
-
-void
-HLAObjectInstance::reflectQueuedAttributeValues(const SGTimeStamp& timeStamp)
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
-        return;
-    }
-    _rtiObjectInstance->reflectQueuedAttributeValues(timeStamp);
 }
 
 void

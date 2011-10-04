@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -42,10 +42,19 @@ public:
     const SGPropertyNode* getPropertyNode() const;
     
 private:
-    class DecodeVisitor;
-    class EncodeVisitor;
+    HLADataElement*
+    createDataElement(const SGSharedPtr<const HLADataType>& dataType, const SGSharedPtr<SGPropertyNode>& propertyNode);
+    
+    class ScalarDecodeVisitor;
+    class ScalarEncodeVisitor;
+    class ScalarDataElement;
+    class StringDecodeVisitor;
+    class StringEncodeVisitor;
+    class StringDataElement;
+    class DataElementFactoryVisitor;
 
     SGSharedPtr<const HLADataType> _dataType;
+    SGSharedPtr<HLADataElement> _dataElement;
     SGSharedPtr<SGPropertyNode> _propertyNode;
 };
 

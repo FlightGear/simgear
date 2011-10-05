@@ -299,6 +299,8 @@ public:
     { _rtiAmbassador.timeAdvanceRequest(toFedTime(time)); }
     void timeAdvanceRequestAvailable(const SGTimeStamp& time)
     { _rtiAmbassador.timeAdvanceRequestAvailable(toFedTime(time)); }
+    void flushQueueRequest(const SGTimeStamp& time)
+    { _rtiAmbassador.flushQueueRequest(toFedTime(time)); }
 
     bool queryGALT(SGTimeStamp& timeStamp)
     {

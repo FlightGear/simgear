@@ -66,6 +66,7 @@ public:
 
     virtual bool timeAdvanceRequest(const SGTimeStamp& fedTime) = 0;
     virtual bool timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp) = 0;
+    virtual bool flushQueueRequest(const SGTimeStamp& timeStamp) = 0;
     virtual bool getTimeAdvancePending() = 0;
 
     virtual bool queryFederateTime(SGTimeStamp& timeStamp) = 0;

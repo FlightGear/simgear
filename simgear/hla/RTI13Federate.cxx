@@ -788,28 +788,28 @@ RTI13Federate::enableTimeConstrained()
     try {
         _ambassador->enableTimeConstrained();
     } catch (RTI::TimeConstrainedAlreadyEnabled& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeConstrainedPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time constrained: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -833,22 +833,22 @@ RTI13Federate::disableTimeConstrained()
         _ambassador->disableTimeConstrained();
         _federateAmbassador->_timeConstrainedEnabled = false;
     } catch (RTI::TimeConstrainedWasNotEnabled& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time constrained: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -877,34 +877,34 @@ RTI13Federate::enableTimeRegulation(const SGTimeStamp& lookahead)
     try {
         _ambassador->enableTimeRegulation(lookahead);
     } catch (RTI::TimeRegulationAlreadyEnabled& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeRegulationPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::InvalidFederationTime& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::InvalidLookahead& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not enable time regulation: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -928,22 +928,22 @@ RTI13Federate::disableTimeRegulation()
         _ambassador->disableTimeRegulation();
         _federateAmbassador->_timeRegulationEnabled = false;
     } catch (RTI::TimeRegulationWasNotEnabled& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -991,7 +991,7 @@ bool
 RTI13Federate::timeAdvanceRequest(const SGTimeStamp& timeStamp)
 {
     if (!_ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation at unconnected federate.");
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time at unconnected federate.");
         return false;
     }
 
@@ -999,34 +999,34 @@ RTI13Federate::timeAdvanceRequest(const SGTimeStamp& timeStamp)
         _ambassador->timeAdvanceRequest(timeStamp);
         _federateAmbassador->_timeAdvancePending = true;
     } catch (RTI::InvalidFederationTime& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederationTimeAlreadyPassed& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeRegulationPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeConstrainedPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -1037,7 +1037,7 @@ bool
 RTI13Federate::timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp)
 {
     if (!_ambassador.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not disable time regulation at unconnected federate.");
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time at unconnected federate.");
         return false;
     }
 
@@ -1045,34 +1045,80 @@ RTI13Federate::timeAdvanceRequestAvailable(const SGTimeStamp& timeStamp)
         _ambassador->timeAdvanceRequestAvailable(timeStamp);
         _federateAmbassador->_timeAdvancePending = true;
     } catch (RTI::InvalidFederationTime& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederationTimeAlreadyPassed& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeRegulationPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::EnableTimeConstrainedPending& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::SaveInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RestoreInProgress& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
         return false;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not resign federation execution: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not advance time: " << e._name << " " << e._reason);
+        return false;
+    }
+
+    return true;
+}
+
+bool
+RTI13Federate::flushQueueRequest(const SGTimeStamp& timeStamp)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue at unconnected federate.");
+        return false;
+    }
+
+    try {
+        _ambassador->flushQueueRequest(timeStamp);
+        _federateAmbassador->_timeAdvancePending = true;
+    } catch (RTI::InvalidFederationTime& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederationTimeAlreadyPassed& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::TimeAdvanceAlreadyInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::EnableTimeRegulationPending& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::EnableTimeConstrainedPending& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not flush queue: " << e._name << " " << e._reason);
         return false;
     }
 
@@ -1261,21 +1307,21 @@ RTI13Federate::getObjectInstance(const std::string& objectInstanceName)
         objectHandle = _ambassador->getObjectInstanceHandle(objectInstanceName);
         FederateAmbassador::ObjectInstanceMap::iterator i = _federateAmbassador->_objectInstanceMap.find(objectHandle);
         if (i == _federateAmbassador->_objectInstanceMap.end()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: ObjectInstance not found.");
+            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object instance: ObjectInstance not found.");
             return 0;
         }
         return i->second;
     } catch (RTI::ObjectNotKnown& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object instance: " << e._name << " " << e._reason);
         return 0;
     } catch (RTI::FederateNotExecutionMember& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object instance: " << e._name << " " << e._reason);
         return 0;
     } catch (RTI::ConcurrentAccessAttempted& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object instance: " << e._name << " " << e._reason);
         return 0;
     } catch (RTI::RTIinternalError& e) {
-        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: " << e._name << " " << e._reason);
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object instance: " << e._name << " " << e._reason);
         return 0;
     }
 }

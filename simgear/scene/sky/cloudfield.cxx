@@ -231,7 +231,7 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
                                   float lon, float lat, float alt, float x, float y) {
     
     // Get the base position
-    SGGeod loc = SGGeod::fromDegFt(lon, lat, alt);
+    SGGeod loc = SGGeod::fromDegFt(lon, lat, 0.0);
     
     // Determine any shift by x/y
     if ((x != 0.0f) || (y != 0.0f)) {
@@ -248,24 +248,24 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
         
         SGGeod base_pos = SGGeod::fromDegFt(lon, lat, 0.0f);            
         SGGeodesy::direct(base_pos, crs, dst, loc, endcrs);
-        
-        // The direct call provides the position at 0 alt, so adjust as required.
-        loc.setElevationFt(alt);
     }
+    
+    // The direct call provides the position at 0 alt, so adjust as required.  
+    loc.setElevationFt(alt);
         
     // Work out where this cloud should go in OSG coordinates.
     SGVec3<double> cart;
     SGGeodesy::SGGeodToCart(loc, cart);
     osg::Vec3f pos = toOsg(cart);
 
-    // Convert to the scenegraph orientation where we just rotate around
-    // the y axis 180 degrees.
-    osg::Quat orient = toOsg(SGQuatd::fromLonLatDeg(lon, lat) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
 
     if (old_pos == osg::Vec3f(0.0f, 0.0f, 0.0f)) {
-        // First se tup.
+        // First setup.
         SGVec3<double> fieldcenter;
-        SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(lon, lat, 0.0f), fieldcenter);
+        SGGeodesy::SGGeodToCart(SGGeod::fromDegFt(loc.getLongitudeDeg(), loc.getLatitudeDeg(), 0.0f), fieldcenter);
+        // Convert to the scenegraph orientation where we just rotate around
+        // the y axis 180 degrees.
+        osg::Quat orient = toOsg(SGQuatd::fromLonLatDeg(loc.getLongitudeDeg(), loc.getLatitudeDeg()) * SGQuatd::fromRealImag(0, SGVec3d(0, 1, 0)));
 
         field_transform->setPosition(toOsg(fieldcenter));
         field_transform->setAttitude(orient);
@@ -274,7 +274,8 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
 
     pos = pos - field_transform->getPosition();
 
-    pos = orient.inverse() * pos;
+    //pos = orient.inverse() * pos;    
+    pos = field_transform->getAttitude().inverse() * pos;
 
     // We have a two level dynamic quad tree which the cloud will be added
     // to. If there are no appropriate nodes in the quad tree, they are

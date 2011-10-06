@@ -60,6 +60,8 @@
 
 using namespace simgear;
 using namespace osg;
+using namespace std;
+
 
 namespace
 {
@@ -67,24 +69,36 @@ typedef std::map<std::string, osg::ref_ptr<Effect> > EffectMap;
 EffectMap effectMap;
 }
 
-double SGNewCloud::sprite_density = 1.0;
+float SGNewCloud::sprite_density = 1.0;
 
 SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def)
 {
-    min_width = cld_def->getDoubleValue("min-cloud-width-m", 500.0);
-    max_width = cld_def->getDoubleValue("max-cloud-width-m", min_width*2);
-    min_height = cld_def->getDoubleValue("min-cloud-height-m", 400.0);
-    max_height = cld_def->getDoubleValue("max-cloud-height-m", min_height*2);
-    min_sprite_width = cld_def->getDoubleValue("min-sprite-width-m", 200.0);
-    max_sprite_width = cld_def->getDoubleValue("max-sprite-width-m", min_sprite_width*1.5);
-    min_sprite_height = cld_def->getDoubleValue("min-sprite-height-m", 150);
-    max_sprite_height = cld_def->getDoubleValue("max-sprite-height-m", min_sprite_height*1.5);
+    min_width = cld_def->getFloatValue("min-cloud-width-m", 500.0);
+    max_width = cld_def->getFloatValue("max-cloud-width-m", min_width*2);
+    min_height = cld_def->getFloatValue("min-cloud-height-m", 400.0);
+    max_height = cld_def->getFloatValue("max-cloud-height-m", min_height*2);
+    min_sprite_width = cld_def->getFloatValue("min-sprite-width-m", 200.0);
+    max_sprite_width = cld_def->getFloatValue("max-sprite-width-m", min_sprite_width*1.5);
+    min_sprite_height = cld_def->getFloatValue("min-sprite-height-m", 150);
+    max_sprite_height = cld_def->getFloatValue("max-sprite-height-m", min_sprite_height*1.5);
     num_sprites = cld_def->getIntValue("num-sprites", 20);
     num_textures_x = cld_def->getIntValue("num-textures-x", 4);
     num_textures_y = cld_def->getIntValue("num-textures-y", 4);
     height_map_texture = cld_def->getBoolValue("height-map-texture", false);
-    bottom_shade = cld_def->getDoubleValue("bottom-shade", 1.0);
-    zscale = cld_def->getDoubleValue("z-scale", 1.0);
+    
+    min_bottom_lighting_factor = cld_def->getFloatValue("min-bottom-lighting-factor", 1.0);
+    max_bottom_lighting_factor = cld_def->getFloatValue("max-bottom-lighting-factor", min(min_bottom_lighting_factor  + 0.1, 1.0));
+    
+    min_middle_lighting_factor = cld_def->getFloatValue("min-middle-lighting-factor", 1.0);
+    max_middle_lighting_factor = cld_def->getFloatValue("max-middle-lighting-factor", min(min_middle_lighting_factor  + 0.1, 1.0));
+
+    min_top_lighting_factor = cld_def->getFloatValue("min-top-lighting-factor", 1.0);
+    max_top_lighting_factor = cld_def->getFloatValue("max-top-lighting-factor", min(min_top_lighting_factor  + 0.1, 1.0));
+
+    min_shade_lighting_factor = cld_def->getFloatValue("min-shade-lighting-factor", 0.5);
+    max_shade_lighting_factor = cld_def->getFloatValue("max-shade-lighting-factor", min(min_shade_lighting_factor  + 0.1, 1.0));
+    
+    zscale = cld_def->getFloatValue("z-scale", 1.0);
     texture = cld_def->getStringValue("texture", "cl_cumulus.png");
 
     // Create a new Effect for the texture, if required.
@@ -167,24 +181,40 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     
     osg::ref_ptr<EffectGeode> geode = new EffectGeode;
         
-    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, 
-                                                      num_textures_y, 
-                                                      max_width + max_sprite_width, 
-                                                      max_height + max_sprite_height, 
-                                                      zscale);
-    
     // Determine how big this specific cloud instance is. Note that we subtract
     // the sprite size because the width/height is used to define the limits of
     // the center of the sprites, not their edges.
     float width = min_width + sg_random() * (max_width - min_width) - min_sprite_width;
     float height = min_height + sg_random() * (max_height - min_height) - min_sprite_height;
     
+    if (width  < 0.0) { width  = 0.0; }
+    if (height < 0.0) { height = 0.0; }
+    
+    // Determine appropriate shading factors
+    float top_factor = min_top_lighting_factor + sg_random() * (max_top_lighting_factor - min_top_lighting_factor);
+    float middle_factor = min_middle_lighting_factor + sg_random() * (max_middle_lighting_factor - min_middle_lighting_factor);
+    float bottom_factor = min_bottom_lighting_factor + sg_random() * (max_bottom_lighting_factor - min_bottom_lighting_factor);
+    float shade_factor = min_shade_lighting_factor + sg_random() * (max_shade_lighting_factor - min_shade_lighting_factor);
+    
+    //printf("Cloud: %2f, %2f, %2f, %2f\n", top_factor, middle_factor, bottom_factor, shade_factor); 
+    
+    CloudShaderGeometry* sg = new CloudShaderGeometry(num_textures_x, 
+                                                      num_textures_y, 
+                                                      max_width + max_sprite_width, 
+                                                      max_height + max_sprite_height, 
+                                                      top_factor,
+                                                      middle_factor,
+                                                      bottom_factor,
+                                                      shade_factor,
+                                                      height,
+                                                      zscale);
+        
     // Determine the cull distance. This is used to remove sprites that are too close together.
     // The value is squared as we use vector calculations.
     float cull_distance_squared = min_sprite_height * min_sprite_height * 0.1f;
     
     // The number of sprites we actually use is a function of the (user-controlled) density
-    int n_sprites = num_sprites * sprite_density * (0.5 + sg_random());
+    int n_sprites = num_sprites * sprite_density * (0.5f + sg_random());
     
     for (int i = 0; i < n_sprites; i++)
     {
@@ -202,8 +232,8 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             y = 0;
             z = height * 0.5;
         } else {
-            double theta = sg_random() * SGD_2PI;
-            double elev  = sg_random() * SGD_PI;
+            float theta = sg_random() * SGD_2PI;
+            float elev  = sg_random() * SGD_PI;
             x = width * cos(theta) * 0.5f * sin(elev);
             y = width * sin(theta) * 0.5f * sin(elev);
             z = height * cos(elev) * 0.5f + height * 0.5f;
@@ -235,7 +265,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
 
         // Determine the sprite texture indexes.
         int index_x = (int) floor(sg_random() * num_textures_x);
-        if (index_x == num_textures_x) { index_x--; }
+        if (index_x >= num_textures_x) { index_x = num_textures_x - 1; }
                 
         int index_y = (int) floor(sg_random() * num_textures_y);
         
@@ -243,20 +273,17 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
           // The y index depends on the position of the sprite within the cloud.
           // This allows cloud designers to have particular sprites for the base
           // and tops of the cloud.
-          index_y = (int) floor((z / height + 0.5f) * num_textures_y);
+          index_y = (int) floor((z / height) * num_textures_y);
         }
         
-        if (index_y == num_textures_y) { index_y--; }
-        
+        if (index_y >= num_textures_y) { index_y = num_textures_y - 1; }
         
         sg->addSprite(SGVec3f(x, y, z), 
-                    index_x, 
-                    index_y, 
-                    sprite_width, 
-                    sprite_height, 
-                    bottom_shade, 
-                    cull_distance_squared, 
-                    height * 0.5f);
+                      index_x, 
+                      index_y, 
+                      sprite_width, 
+                      sprite_height, 
+                      cull_distance_squared);
     }
     
     sg->setGeometry(quad);

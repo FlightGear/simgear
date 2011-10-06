@@ -110,20 +110,24 @@ void CloudShaderGeometry::drawImplementation(RenderInfo& renderInfo) const
         const CloudSprite& t = _cloudsprites[itr->idx];
         GLfloat ua1[3] = { (GLfloat) t.texture_index_x/varieties_x,
                            (GLfloat) t.texture_index_y/varieties_y,
-			   (GLfloat) t.width };
+                           (GLfloat) t.width };
         GLfloat ua2[3] = { (GLfloat) t.height,
-		           (GLfloat) t.shade,
-                           (GLfloat) t.cloud_height };
+		                       (GLfloat) shade_factor,
+                           (GLfloat) cloud_height };
+        GLfloat ua3[3] = { (GLfloat) bottom_factor,
+                           (GLfloat) middle_factor,
+                           (GLfloat) top_factor };
+                           
         extensions->glVertexAttrib3fv(USR_ATTR_1, ua1 );
         extensions->glVertexAttrib3fv(USR_ATTR_2, ua2 );
+        extensions->glVertexAttrib3fv(USR_ATTR_3, ua3 );
         glColor4f(t.position.x(), t.position.y(), t.position.z(), zscale);
         _geometry->draw(renderInfo);
     }
 }
 
 void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
-                                    float w, float h,
-                                    float s, float cull, float cloud_height)
+                                    float w, float h, float cull)
 {
     // Only add the sprite if it is further than the cull distance to all other sprites
     // except for the center sprite.	
@@ -137,8 +141,8 @@ void CloudShaderGeometry::addSprite(const SGVec3f& p, int tx, int ty,
             return;
         }
     }
-
-    _cloudsprites.push_back(CloudSprite(p, tx, ty, w, h, s, cloud_height));
+    
+    _cloudsprites.push_back(CloudSprite(p, tx, ty, w, h));
 }
 
 bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
@@ -166,13 +170,13 @@ bool CloudShaderGeometry_readLocalData(Object& obj, Input& fr)
         while (!fr.eof() && fr[0].getNoNestedBrackets() > entry) {
             SGVec3f v;
             int tx, ty;
-            float w, h, s, ch;
+            float w, h;
             if (fr[0].getFloat(v.x()) && fr[1].getFloat(v.y())
                 && fr[2].getFloat(v.z()) && fr[3].getInt(tx) && fr[4].getInt(ty) &&  
-                fr[5].getFloat(w) && fr[6].getFloat(h)&& fr[7].getFloat(s) && fr[8].getFloat(ch)) {
+                fr[5].getFloat(w) && fr[6].getFloat(h)) {
                     fr += 5;
                     //SGVec3f* v = new SGVec3f(v.x(), v.y(), v.z());
-                    geom._cloudsprites.push_back(CloudShaderGeometry::CloudSprite(v, tx, ty, w, h,s,ch));
+                    geom._cloudsprites.push_back(CloudShaderGeometry::CloudSprite(v, tx, ty, w, h));
             } else {
                 ++fr;
             }
@@ -197,8 +201,7 @@ bool CloudShaderGeometry_writeLocalData(const Object& obj, Output& fw)
              fw.indent() << itr->position.x() << " " << itr->position.y() << " " 
                      << itr->position.z() << " " << itr->texture_index_x << " "
                      << itr->texture_index_y << " "  << itr->width << " " 
-                     << itr->height << " " << itr->shade 
-                     << itr->cloud_height << " "<< std::endl;
+                     << itr->height << " " << std::endl;
     }
     fw.moveOut();
     fw.indent() << "}" << std::endl;

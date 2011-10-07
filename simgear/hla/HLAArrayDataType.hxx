@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -42,8 +42,18 @@ public:
     const HLADataType* getElementDataType() const
     { return _elementDataType.get(); }
 
+    void setIsOpaque(bool isOpaque);
+    bool getIsOpaque() const
+    { return _isOpaque; }
+
+    void setIsString(bool isString);
+    bool getIsString() const
+    { return _isString; }
+
 private:
     SGSharedPtr<const HLADataType> _elementDataType;
+    bool _isOpaque;
+    bool _isString;
 };
 
 class HLAFixedArrayDataType : public HLAArrayDataType {

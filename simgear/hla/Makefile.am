@@ -35,6 +35,7 @@ libsghla_a_SOURCES = \
 	HLABasicDataType.cxx \
 	HLADataElement.cxx \
 	HLADataType.cxx \
+	HLADataTypeVisitor.cxx \
 	HLAEnumeratedDataElement.cxx \
 	HLAEnumeratedDataType.cxx \
 	HLAFederate.cxx \

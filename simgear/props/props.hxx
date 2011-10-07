@@ -1938,6 +1938,36 @@ struct Hash
 };
 }
 }
+
+/** Convenience class for change listener callbacks without
+ * creating a derived class implementing a "valueChanged" method.
+ * Also removes listener on destruction automatically.
+ */
+template<class T>
+class SGPropertyChangeCallback
+    : public SGPropertyChangeListener
+{
+public:
+    SGPropertyChangeCallback(T* obj, void (T::*method)(SGPropertyNode*),
+                             SGPropertyNode_ptr property,bool initial=false)
+        : _obj(obj), _callback(method), _property(property)
+    {
+        _property->addChangeListener(this,initial);
+    }
+    virtual ~SGPropertyChangeCallback()
+    {
+        _property->removeChangeListener(this);
+    }
+    void valueChanged (SGPropertyNode * node)
+    {
+        (_obj->*_callback)(node);
+    }
+private:
+    T* _obj;
+    void (T::*_callback)(SGPropertyNode*);
+    SGPropertyNode_ptr _property;
+};
+
 #endif // __PROPS_HXX
 
 // end of props.hxx

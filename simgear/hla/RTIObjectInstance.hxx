@@ -133,6 +133,8 @@ public:
             } else {
                 _attributeData[i].setUpdateEnabled(false);
                 _attributeData[i].setOwned(false);
+                if (getAttributeSubscribed(i))
+                    _attributeData[i].setRequestUpdate(true);
             }
         }
         _attributeData.resize(numAttributes);
@@ -140,9 +142,13 @@ public:
             if (getAttributePublished(i)) {
                 _attributeData[i].setUpdateEnabled(true);
                 _attributeData[i].setOwned(owned);
+                if (!owned && getAttributeSubscribed(i))
+                    _attributeData[i].setRequestUpdate(true);
             } else {
                 _attributeData[i].setUpdateEnabled(false);
                 _attributeData[i].setOwned(false);
+                if (getAttributeSubscribed(i))
+                    _attributeData[i].setRequestUpdate(true);
             }
         }
     }

@@ -177,47 +177,56 @@ RTI13ObjectInstance::localDeleteObjectInstance()
 }
 
 void
-RTI13ObjectInstance::reflectAttributeValues(const RTI::AttributeHandleValuePairSet& attributeValuePairSet, const RTIData& tag)
+RTI13ObjectInstance::reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList, const RTIData& tag)
 {
     // Retrieve an empty update struct from the memory pool
-    UpdateList updateList;
-    getUpdateFromPool(updateList);
-
-    RTI::ULong numAttribs = attributeValuePairSet.size();
-    for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        unsigned index = getAttributeIndex(attributeValuePairSet.getHandle(i));
+    RTIIndexDataPairList indexDataPairList;
+    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
+         i != attributeHandleDataPairList.end(); ++i) {
+        unsigned index = getAttributeIndex(i->first);
         // Get a RTIData from the data pool
-        getDataFromPool(index, updateList.back()._indexDataPairList);
-        RTI::ULong length = attributeValuePairSet.getValueLength(i);
-        updateList.back()._indexDataPairList.back().second.resize(length);
-        attributeValuePairSet.getValue(i, updateList.back()._indexDataPairList.back().second.data(), length);
-        updateList.back()._tag = tag;
+        getDataFromPool(indexDataPairList);
+        indexDataPairList.back().first = index;
+        indexDataPairList.back().second.swap(i->second);
     }
 
-    RTIObjectInstance::reflectAttributeValues(updateList.front()._indexDataPairList, tag);
+    RTIObjectInstance::reflectAttributeValues(indexDataPairList, tag);
+
+    RTIIndexDataPairList::iterator j = indexDataPairList.begin();
+    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
+         i != attributeHandleDataPairList.end(); ++i, ++j) {
+        i->second.swap(j->second);
+    }
+
     // Return the update data back to the pool
-    putUpdateToPool(updateList);
+    putDataToPool(indexDataPairList);
 }
 
 void
-RTI13ObjectInstance::reflectAttributeValues(const RTI::AttributeHandleValuePairSet& attributeValuePairSet, const SGTimeStamp& timeStamp, const RTIData& tag)
+RTI13ObjectInstance::reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                            const SGTimeStamp& timeStamp, const RTIData& tag)
 {
     // Retrieve an empty update struct from the memory pool
-    UpdateList updateList;
-    getUpdateFromPool(updateList);
-
-    RTI::ULong numAttribs = attributeValuePairSet.size();
-    for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        unsigned index = getAttributeIndex(attributeValuePairSet.getHandle(i));
+    RTIIndexDataPairList indexDataPairList;
+    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
+         i != attributeHandleDataPairList.end(); ++i) {
+        unsigned index = getAttributeIndex(i->first);
         // Get a RTIData from the data pool
-        getDataFromPool(index, updateList.back()._indexDataPairList);
-        RTI::ULong length = attributeValuePairSet.getValueLength(i);
-        updateList.back()._indexDataPairList.back().second.resize(length);
-        attributeValuePairSet.getValue(i, updateList.back()._indexDataPairList.back().second.data(), length);
-        updateList.back()._tag = tag;
+        getDataFromPool(indexDataPairList);
+        indexDataPairList.back().first = index;
+        indexDataPairList.back().second.swap(i->second);
     }
 
-    scheduleUpdates(timeStamp, updateList);
+    RTIObjectInstance::reflectAttributeValues(indexDataPairList, timeStamp, tag);
+
+    RTIIndexDataPairList::iterator j = indexDataPairList.begin();
+    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
+         i != attributeHandleDataPairList.end(); ++i, ++j) {
+        i->second.swap(j->second);
+    }
+
+    // Return the update data back to the pool
+    putDataToPool(indexDataPairList);
 }
 
 void
@@ -273,12 +282,12 @@ RTI13ObjectInstance::requestObjectAttributeValueUpdate()
 }
 
 void
-RTI13ObjectInstance::provideAttributeValueUpdate(const RTI::AttributeHandleSet& attributes)
+RTI13ObjectInstance::provideAttributeValueUpdate(const std::vector<RTI::AttributeHandle>& attributeHandleSet)
 {
     // Called from the ambassador. Just marks some instance attributes dirty so that they are sent with the next update
-    RTI::ULong numAttribs = attributes.size();
+    size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        unsigned index = getAttributeIndex(attributes.getHandle(i));
+        unsigned index = getAttributeIndex(attributeHandleSet[i]);
         setAttributeForceUpdate(index);
     }
 }
@@ -400,72 +409,72 @@ RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const R
 }
 
 void
-RTI13ObjectInstance::attributesInScope(const RTI::AttributeHandleSet& attributeHandleSet)
+RTI13ObjectInstance::attributesInScope(const std::vector<RTI::AttributeHandle>& attributeHandleSet)
 {
-    RTI::ULong numAttribs = attributeHandleSet.size();
+    size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        RTI::AttributeHandle attributeHandle = attributeHandleSet.getHandle(i);
+        RTI::AttributeHandle attributeHandle = attributeHandleSet[i];
         setAttributeInScope(getAttributeIndex(attributeHandle), true);
     }
 }
 
 void
-RTI13ObjectInstance::attributesOutOfScope(const RTI::AttributeHandleSet& attributeHandleSet)
+RTI13ObjectInstance::attributesOutOfScope(const std::vector<RTI::AttributeHandle>& attributeHandleSet)
 {
-    RTI::ULong numAttribs = attributeHandleSet.size();
+    size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        RTI::AttributeHandle attributeHandle = attributeHandleSet.getHandle(i);
+        RTI::AttributeHandle attributeHandle = attributeHandleSet[i];
         setAttributeInScope(getAttributeIndex(attributeHandle), false);
     }
 }
 
 void
-RTI13ObjectInstance::turnUpdatesOnForObjectInstance(const RTI::AttributeHandleSet& attributeHandleSet)
+RTI13ObjectInstance::turnUpdatesOnForObjectInstance(const std::vector<RTI::AttributeHandle>& attributeHandleSet)
 {
-    RTI::ULong numAttribs = attributeHandleSet.size();
+    size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        RTI::AttributeHandle attributeHandle = attributeHandleSet.getHandle(i);
+        RTI::AttributeHandle attributeHandle = attributeHandleSet[i];
         setAttributeUpdateEnabled(getAttributeIndex(attributeHandle), true);
     }
 }
 
 void
-RTI13ObjectInstance::turnUpdatesOffForObjectInstance(const RTI::AttributeHandleSet& attributeHandleSet)
+RTI13ObjectInstance::turnUpdatesOffForObjectInstance(const std::vector<RTI::AttributeHandle>& attributeHandleSet)
 {
-    RTI::ULong numAttribs = attributeHandleSet.size();
+    size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
-        RTI::AttributeHandle attributeHandle = attributeHandleSet.getHandle(i);
+        RTI::AttributeHandle attributeHandle = attributeHandleSet[i];
         setAttributeUpdateEnabled(getAttributeIndex(attributeHandle), false);
     }
 }
 
 void
-RTI13ObjectInstance::requestAttributeOwnershipAssumption(const RTI::AttributeHandleSet& attributes, const RTIData& tag)
+RTI13ObjectInstance::requestAttributeOwnershipAssumption(const std::vector<RTI::AttributeHandle>& attributes, const RTIData& tag)
 {
 }
 
 void
-RTI13ObjectInstance::attributeOwnershipDivestitureNotification(const RTI::AttributeHandleSet& attributes)
+RTI13ObjectInstance::attributeOwnershipDivestitureNotification(const std::vector<RTI::AttributeHandle>& attributes)
 {
 }
 
 void
-RTI13ObjectInstance::attributeOwnershipAcquisitionNotification(const RTI::AttributeHandleSet& attributes)
+RTI13ObjectInstance::attributeOwnershipAcquisitionNotification(const std::vector<RTI::AttributeHandle>& attributes)
 {
 }
 
 void
-RTI13ObjectInstance::attributeOwnershipUnavailable(const RTI::AttributeHandleSet& attributes)
+RTI13ObjectInstance::attributeOwnershipUnavailable(const std::vector<RTI::AttributeHandle>& attributes)
 {
 }
 
 void
-RTI13ObjectInstance::requestAttributeOwnershipRelease(const RTI::AttributeHandleSet& attributes, const RTIData& tag)
+RTI13ObjectInstance::requestAttributeOwnershipRelease(const std::vector<RTI::AttributeHandle>& attributes, const RTIData& tag)
 {
 }
 
 void
-RTI13ObjectInstance::confirmAttributeOwnershipAcquisitionCancellation(const RTI::AttributeHandleSet& attributes)
+RTI13ObjectInstance::confirmAttributeOwnershipAcquisitionCancellation(const std::vector<RTI::AttributeHandle>& attributes)
 {
 }
 

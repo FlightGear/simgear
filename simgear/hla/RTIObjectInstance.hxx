@@ -60,20 +60,6 @@ public:
     virtual void updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag) = 0;
 
     void removeInstance(const RTIData& tag);
-    // Call this if you want to roll up the queued timestamed updates
-    // and reflect that into the attached data elements.
-    void reflectQueuedAttributeValues(const SGTimeStamp& timeStamp)
-    {
-        // replay all updates up to the given timestamp
-        UpdateListMap::iterator last = _updateListMap.upper_bound(timeStamp);
-        for (UpdateListMap::iterator i = _updateListMap.begin(); i != last; ++i) {
-            for (UpdateList::iterator j = i->second.begin(); j != i->second.end(); ++j) {
-                // FIXME have a variant that takes the timestamp?
-                reflectAttributeValues(j->_indexDataPairList, j->_tag);
-            }
-            putUpdateToPool(i->second);
-        }
-    }
     void reflectAttributeValues(const RTIIndexDataPairList& dataPairList, const RTIData& tag);
     void reflectAttributeValues(const RTIIndexDataPairList& dataPairList, const SGTimeStamp& timeStamp, const RTIData& tag);
     void reflectAttributeValue(unsigned i, const RTIData& data)
@@ -241,80 +227,25 @@ protected:
     // Is true if we should emit a requestattr
     bool _pendingAttributeUpdateRequest;
 
-    // Contains a full update as it came in from the RTI
-    struct Update {
-        RTIIndexDataPairList _indexDataPairList;
-        RTIData _tag;
-    };
-    // A bunch of updates for the same timestamp
-    typedef std::list<Update> UpdateList;
-    // The timestamp sorted list of updates
-    typedef std::map<SGTimeStamp, UpdateList> UpdateListMap;
-
-    // The timestamped updates sorted by timestamp
-    UpdateListMap _updateListMap;
-
-    // The pool of unused updates so that we do not need to malloc/free each time
-    UpdateList _updateList;
-
-    void getUpdateFromPool(UpdateList& updateList)
-    {
-        if (_updateList.empty())
-            updateList.push_back(Update());
-        else
-            updateList.splice(updateList.end(), _updateList, _updateList.begin());
-    }
-    void putUpdateToPool(UpdateList& updateList)
-    {
-        for (UpdateList::iterator i = updateList.begin(); i != updateList.end(); ++i)
-            putDataToPool(i->_indexDataPairList);
-        _updateList.splice(_updateList.end(), updateList);
-    }
-
-    // Appends the updates in the list to the given timestamps updates
-    void scheduleUpdates(const SGTimeStamp& timeStamp, UpdateList& updateList)
-    {
-        UpdateListMap::iterator i = _updateListMap.find(timeStamp);
-        if (i == _updateListMap.end())
-            i = _updateListMap.insert(UpdateListMap::value_type(timeStamp, UpdateList())).first;
-        i->second.splice(i->second.end(), updateList);
-    }
+    // Pool of update list entries
+    RTIIndexDataPairList _indexDataPairList;
 
     // This adds raw storage for attribute index i to the end of the dataPairList.
-    void getDataFromPool(unsigned i, RTIIndexDataPairList& dataPairList)
+    void getDataFromPool(RTIIndexDataPairList& dataPairList)
     {
-        if (_attributeData.size() <= i) {
-            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Invalid object attribute index!");
-            return;
-        }
-
         // Nothing left in the pool - so allocate something
-        if (_attributeData[i]._indexDataPairList.empty()) {
+        if (_indexDataPairList.empty()) {
             dataPairList.push_back(RTIIndexDataPairList::value_type());
-            dataPairList.back().first = i;
             return;
         }
 
         // Take one from the pool
-        dataPairList.splice(dataPairList.end(),
-                            _attributeData[i]._indexDataPairList,
-                            _attributeData[i]._indexDataPairList.begin());
+        dataPairList.splice(dataPairList.end(), _indexDataPairList, _indexDataPairList.begin());
     }
 
     void putDataToPool(RTIIndexDataPairList& dataPairList)
     {
-        while (!dataPairList.empty()) {
-            // Put back into the pool
-            unsigned i = dataPairList.front().first;
-            if (_attributeData.size() <= i) {
-                // should not happen!!!
-                SG_LOG(SG_NETWORK, SG_WARN, "RTI: Invalid object attribute index!");
-                dataPairList.pop_front();
-            } else {
-                _attributeData[i]._indexDataPairList.splice(_attributeData[i]._indexDataPairList.begin(),
-                                                            dataPairList, dataPairList.begin());
-            }
-        }
+        _indexDataPairList.splice(_indexDataPairList.begin(), dataPairList);
     }
 
     struct AttributeData {

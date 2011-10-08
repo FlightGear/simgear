@@ -115,6 +115,13 @@ public:
         ensureCapacity(capacity);
     }
 
+    void swap(RTIData& data)
+    {
+        std::swap(_data, data._data);
+        std::swap(_size, data._size);
+        std::swap(_capacity, data._capacity);
+    }
+
     void setData(char* data, unsigned size)
     {
         if (_capacity)

@@ -123,7 +123,7 @@ check_include_file(windows.h HAVE_WINDOWS_H)
 
 if(ENABLE_RTI)
 # See if we have any rti library variant installed
-find_package(RTI)
+    find_package(RTI)
 endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)

@@ -39,6 +39,7 @@ RTIObjectClass::discoverInstance(RTIObjectInstance* objectInstance, const RTIDat
         return;
     }
     hlaObjectClass->discoverInstance(objectInstance, tag);
+    objectInstance->requestObjectAttributeValueUpdate();
 }
 
 void

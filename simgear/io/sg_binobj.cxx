@@ -261,13 +261,13 @@ void write_indices(gzFile fp, unsigned char indexMask,
     for (unsigned int i=0; i < count; ++i) {
         write_indice(fp, static_cast<T>(vertices[i]));
         
-        if (!normals.empty()) {
+        if (indexMask & SG_IDX_NORMALS) {
             write_indice(fp, static_cast<T>(normals[i]));
         }
-        if (!colors.empty()) {
+        if (indexMask & SG_IDX_COLORS) {
             write_indice(fp, static_cast<T>(colors[i]));
         }
-        if (!texCoords.empty()) {
+        if (indexMask & SG_IDX_TEXCOORDS) {
             write_indice(fp, static_cast<T>(texCoords[i]));
         }
     }
@@ -667,6 +667,8 @@ void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
     
     unsigned int start = 0, end = 1;
     string m;
+    int_list emptyList;
+    
     while (start < materials.size()) {
         m = materials[start];
     // find range of objects with identical material, write out as a single object
@@ -692,10 +694,15 @@ void SGBinObject::write_objects(gzFile fp, int type, const group_list& verts,
 //        cout << "material:" << m << ", count =" << count << endl;
     // elements
         for (unsigned int i=start; i < end; ++i) {
+            const int_list& va(verts[i]);
+            const int_list& na((idx_mask & SG_IDX_NORMALS) ? normals[i] : emptyList);
+            const int_list& ca((idx_mask & SG_IDX_COLORS) ? colors[i] : emptyList);
+            const int_list& tca((idx_mask & SG_IDX_TEXCOORDS) ? texCoords[i] : emptyList);
+            
             if (version == 7) {
-                write_indices<uint16_t>(fp, idx_mask, verts[i], normals[i], colors[i], texCoords[i]);
+                write_indices<uint16_t>(fp, idx_mask, va, na, ca, tca);
             } else {
-                write_indices<uint32_t>(fp, idx_mask, verts[i], normals[i], colors[i], texCoords[i]);
+                write_indices<uint32_t>(fp, idx_mask, va, na, ca, tca);
             }
         }
     

@@ -42,6 +42,8 @@ namespace simgear
   class Dir
   {
   public:
+    Dir();
+      
     static Dir current();
     
     /**

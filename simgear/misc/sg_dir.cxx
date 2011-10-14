@@ -44,6 +44,10 @@ using std::string;
 namespace simgear
 {
 
+Dir::Dir()
+{
+}
+
 Dir::Dir(const SGPath& path) :
   _path(path)
 {

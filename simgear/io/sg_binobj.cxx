@@ -752,7 +752,9 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     cout << "tex coords = " << texcoords.size() << endl;
 
     version = 10;
-    if (wgs84_nodes.size() < 0xffff) {
+    if ((wgs84_nodes.size() < 0xffff) &&
+        (normals.size() < 0xffff) &&
+        (texcoords.size() < 0xffff)) {
         version = 7; // use smaller indices if possible
     }
 

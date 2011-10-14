@@ -65,4 +65,14 @@ target_link_libraries(decode_binobj
     ${WINSOCK_LIBRARY}
     ${ZLIB_LIBRARY}
     ${RT_LIBRARY})
-        
+
+add_executable(test_binobj test_binobj.cxx)
+target_link_libraries(test_binobj
+    sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${WINSOCK_LIBRARY}
+    ${ZLIB_LIBRARY}
+    ${RT_LIBRARY}) 
+    
+add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
+       

@@ -9,6 +9,10 @@
 #include <cstdlib>
 #include <cstdio>
 
+#ifdef _MSC_VER
+#   define  random  rand
+#endif
+
 #include <simgear/misc/sg_dir.hxx>
 
 #include "sg_binobj.hxx"

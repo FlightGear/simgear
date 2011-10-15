@@ -11,6 +11,7 @@
 #cmakedefine HAVE_TIMEGM
 #cmakedefine HAVE_ISNAN
 #cmakedefine HAVE_WINDOWS_H
+#cmakedefine HAVE_MKDTEMP
 
 #cmakedefine HAVE_SVN_CLIENT_H
 #cmakedefine HAVE_LIBSVN_CLIENT_1

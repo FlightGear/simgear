@@ -18,6 +18,9 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include <simgear/misc/sg_dir.hxx>
 
@@ -74,6 +77,22 @@ Dir Dir::current()
 
 Dir Dir::tempDir(const std::string& templ)
 {
+#ifdef HAVE_MKDTEMP
+    char buf[1024];
+    char* tempPath = ::getenv("TMPDIR");
+    if (!tempPath) {
+        tempPath = "/tmp/";
+    }
+    // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
+    // says exactly six, so that's what I'm going with
+    ::snprintf(buf, 1024, "%s%s-XXXXXX", tempPath, templ.c_str());
+    if (!mkdtemp(buf)) {
+        SG_LOG(SG_IO, SG_WARN, "mkdtemp failed:" << strerror(errno));
+        return Dir();
+    }
+    
+    return Dir(SGPath(buf));
+#else
     SGPath p(tempnam(0, templ.c_str()));
     Dir t(p);
     if (!t.create(0700)) {
@@ -81,6 +100,7 @@ Dir Dir::tempDir(const std::string& templ)
     }
     
     return t;
+#endif
 }
 
 PathList Dir::children(int types, const std::string& nameFilter) const

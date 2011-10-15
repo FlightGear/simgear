@@ -130,7 +130,7 @@ check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
-
+check_function_exists(mkdtemp HAVE_MKDTEMP)
 
 if(HAVE_UNISTD_H)
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})

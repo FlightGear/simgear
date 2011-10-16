@@ -1248,7 +1248,7 @@ namespace simgear
     ConvertExpression() {}
     ConvertExpression(::SGExpression<OpType>* expr0)
     {
-      addOperand(expr0);
+      this->addOperand(expr0);
     }
     virtual void eval(T& value, const simgear::expression::Binding* b) const
     {

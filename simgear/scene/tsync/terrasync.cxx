@@ -86,6 +86,7 @@
 #endif
 
 using namespace simgear;
+using namespace std;
 
 const char* rsync_cmd = 
         "rsync --verbose --archive --delete --perms --owner --group";

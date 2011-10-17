@@ -54,7 +54,7 @@ protected:
     void syncAirportsModels();
     void syncArea(int lat, int lon);
     void syncAreas(int lat, int lon, int lat_dir, int lon_dir);
-    void refreshScenery(SGPath path,const string& relativeDir);
+    void refreshScenery(SGPath path,const std::string& relativeDir);
 
     class SvnThread;
 

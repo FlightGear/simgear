@@ -127,6 +127,14 @@ namespace simgear {
      * convert a string representing a decimal number, to an int
      */
     int to_int(const std::string& s, int base = 10);
+    
+    /**
+     * Like strcmp(), but for dotted versions strings NN.NN.NN
+     * any number of terms are support.
+     * @return 0 if versions match, -ve number if v1 is lower, +ve if v1
+     * is greater
+     */
+    int compare_versions(const std::string& v1, const std::string& v2);
   } // end namespace strutils
 } // end namespace simgear
 

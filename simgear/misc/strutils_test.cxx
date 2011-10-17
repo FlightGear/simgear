@@ -53,6 +53,16 @@ int main (int ac, char ** av)
     COMPARE(to_int("0000000"), 0);
     COMPARE(to_int("-10000"), -10000);
     
+    VERIFY(compare_versions("1.0.12", "1.1") < 0);
+    VERIFY(compare_versions("1.1", "1.0.12") > 0);
+    VERIFY(compare_versions("10.6.7", "10.6.7") == 0);
+    VERIFY(compare_versions("2.0", "2.0.99") < 0);
+    VERIFY(compare_versions("99", "99") == 0);
+    VERIFY(compare_versions("99", "98") > 0);
+    
+// since we compare numerically, leasing zeros shouldn't matter
+    VERIFY(compare_versions("0.06.7", "0.6.07") == 0);
+    
     cout << "all tests passed successfully!" << endl;
     return 0;
 }

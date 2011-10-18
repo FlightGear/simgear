@@ -123,14 +123,14 @@ check_include_file(windows.h HAVE_WINDOWS_H)
 
 if(ENABLE_RTI)
 # See if we have any rti library variant installed
-find_package(RTI)
+    find_package(RTI)
 endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
-
+check_function_exists(mkdtemp HAVE_MKDTEMP)
 
 if(HAVE_UNISTD_H)
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})

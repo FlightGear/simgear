@@ -253,7 +253,7 @@ struct AddTreesLeafObject
 {
     void operator() (LOD* lod, const TreeBin::Tree& tree) const
     {
-        Geode* geode = static_cast<Geode*>(lod->getChild(rand() % SG_TREE_FADE_OUT_LEVELS));
+        Geode* geode = static_cast<Geode*>(lod->getChild(int(tree.position.x() * 10.0f) % lod->getNumChildren()));
         addTreeToLeafGeode(geode, tree.position);
     }
 };

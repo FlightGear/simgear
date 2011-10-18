@@ -32,6 +32,7 @@
 
 #include <simgear/compiler.h>
 #include <string>
+#include <ctime>
 
 #include <simgear/math/sg_types.hxx>
 
@@ -48,10 +49,6 @@
  */
 
 class SGPath {
-
-private:
-
-    std::string path;
 
 public:
 
@@ -86,6 +83,15 @@ public:
     void set( const std::string& p );
     SGPath& operator= ( const char* p ) { this->set(p); return *this; }
 
+    bool operator==(const SGPath& other) const;
+    bool operator!=(const SGPath& other) const;
+    
+    /**
+     * Set if file information (exists, type, mod-time) is cached or
+     * retrieved each time it is queried. Caching is enabled by default
+     */
+    void set_cached(bool cached);
+    
     /**
      * Append another piece to the existing path.  Inserts a path
      * separator between the existing component and the new component.
@@ -124,11 +130,32 @@ public:
     std::string base() const;
 
     /**
+     * Get the base part of the filename (everything before the first '.')
+     * @return the base filename
+     */
+    std::string file_base() const;
+
+    /**
      * Get the extension part of the path (everything after the final ".")
      * @return the extension string
      */
     std::string extension() const;
-
+    
+    /**
+     * Get the extension part of the path (everything after the final ".")
+     * converted to lowercase
+     * @return the extension string
+     */
+    std::string lower_extension() const;
+    
+    /**
+     * Get the complete extension part of the path (everything after the first ".")
+     * this might look like 'tar.gz' or 'txt.Z', or might be identical to 'extension' above
+     * the extension is converted to lowercase.
+     * @return the extension string
+     */
+    std::string complete_lower_extension() const;
+    
     /**
      * Get the path string
      * @return path string
@@ -176,16 +203,30 @@ public:
      * check for default constructed path
      */
     bool isNull() const;
+    
+    /**
+     * delete the file, if possible
+     */
+    bool remove();
+    
+    /**
+     * modification time of the file
+     */
+    time_t modTime() const;
 private:
 
     void fix();
 
     void validate() const;
 
-    mutable bool _cached;
-    mutable bool _exists;
-    mutable bool _isDir;
-    mutable bool _isFile;
+    std::string path;
+    
+    mutable bool _cached : 1;
+    bool _cacheEnabled : 1; ///< cacheing can be disbled if required
+    mutable bool _exists : 1;
+    mutable bool _isDir : 1;
+    mutable bool _isFile : 1;
+    mutable time_t _modTime;
 };
 
 

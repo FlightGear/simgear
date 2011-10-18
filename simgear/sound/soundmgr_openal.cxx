@@ -47,6 +47,7 @@
 #include <simgear/math/SGMath.hxx>
 
 using std::string;
+using std::vector;
 
 extern bool isNaN(float *v);
 

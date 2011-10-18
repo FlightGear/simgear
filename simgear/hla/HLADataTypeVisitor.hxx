@@ -24,7 +24,7 @@
 #include <simgear/math/SGMath.hxx>
 #include "HLAArrayDataType.hxx"
 #include "HLABasicDataType.hxx"
-#include "HLADataTypeVisitor.hxx"
+#include "HLADataElement.hxx"
 #include "HLAEnumeratedDataType.hxx"
 #include "HLAFixedRecordDataType.hxx"
 #include "HLAVariantDataType.hxx"
@@ -628,6 +628,43 @@ inline void HLADataTypeEncodeVisitor::apply(const HLAVariableArrayDataType& data
     HLATemplateEncodeVisitor<unsigned> numElementsVisitor(_stream, 0);
     dataType.getSizeDataType()->accept(numElementsVisitor);
 }
+
+/// Generate standard data elements according to the traversed type
+class HLADataElementFactoryVisitor : public HLADataTypeVisitor {
+public:
+    virtual ~HLADataElementFactoryVisitor();
+
+    virtual void apply(const HLADataType& dataType);
+
+    virtual void apply(const HLAInt8DataType& dataType);
+    virtual void apply(const HLAUInt8DataType& dataType);
+    virtual void apply(const HLAInt16DataType& dataType);
+    virtual void apply(const HLAUInt16DataType& dataType);
+    virtual void apply(const HLAInt32DataType& dataType);
+    virtual void apply(const HLAUInt32DataType& dataType);
+    virtual void apply(const HLAInt64DataType& dataType);
+    virtual void apply(const HLAUInt64DataType& dataType);
+    virtual void apply(const HLAFloat32DataType& dataType);
+    virtual void apply(const HLAFloat64DataType& dataType);
+
+    virtual void apply(const HLAFixedArrayDataType& dataType);
+    virtual void apply(const HLAVariableArrayDataType& dataType);
+
+    virtual void apply(const HLAEnumeratedDataType& dataType);
+
+    virtual void apply(const HLAFixedRecordDataType& dataType);
+
+    virtual void apply(const HLAVariantDataType& dataType);
+
+    HLADataElement* getDataElement()
+    { return _dataElement.release(); }
+
+protected:
+    class ArrayDataElementFactory;
+    class VariantDataElementFactory;
+
+    SGSharedPtr<HLADataElement> _dataElement;
+};
 
 } // namespace simgear
 

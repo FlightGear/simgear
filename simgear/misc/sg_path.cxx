@@ -28,13 +28,16 @@
 #include <simgear/debug/logstream.hxx>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <errno.h>
+
 #ifdef _WIN32
 #  include <direct.h>
 #endif
 #include "sg_path.hxx"
 
-using std::string;
+#include <boost/algorithm/string/case_conv.hpp>
 
+using std::string;
 
 /**
  * define directory path separators
@@ -58,14 +61,14 @@ SGPath::fix()
 {
     for ( string::size_type i = 0; i < path.size(); ++i ) {
 #if defined( WIN32 )
-	// for windoze, don't replace the ":" for the second character
-	if ( i == 1 ) {
-	    continue;
-	}
+    // for windoze, don't replace the ":" for the second character
+    if ( i == 1 ) {
+        continue;
+    }
 #endif
-	if ( path[i] == sgDirPathSepBad ) {
-	    path[i] = sgDirPathSep;
-	}
+    if ( path[i] == sgDirPathSepBad ) {
+        path[i] = sgDirPathSep;
+    }
     }
 }
 
@@ -73,7 +76,8 @@ SGPath::fix()
 // default constructor
 SGPath::SGPath()
     : path(""),
-    _cached(false)
+    _cached(false),
+    _cacheEnabled(true)
 {
 }
 
@@ -81,7 +85,8 @@ SGPath::SGPath()
 // create a path based on "path"
 SGPath::SGPath( const std::string& p )
     : path(p),
-    _cached(false)
+    _cached(false),
+    _cacheEnabled(true)
 {
     fix();
 }
@@ -89,7 +94,8 @@ SGPath::SGPath( const std::string& p )
 // create a path based on "path" and a "subpath"
 SGPath::SGPath( const SGPath& p, const std::string& r )
     : path(p.path),
-    _cached(false)
+    _cached(false),
+    _cacheEnabled(p._cacheEnabled)
 {
     append(r);
     fix();
@@ -98,9 +104,11 @@ SGPath::SGPath( const SGPath& p, const std::string& r )
 SGPath::SGPath(const SGPath& p) :
   path(p.path),
   _cached(p._cached),
+  _cacheEnabled(p._cacheEnabled),
   _exists(p._exists),
   _isDir(p._isDir),
-  _isFile(p._isFile)
+  _isFile(p._isFile),
+  _modTime(p._modTime)
 {
 }
     
@@ -108,9 +116,11 @@ SGPath& SGPath::operator=(const SGPath& p)
 {
   path = p.path;
   _cached = p._cached;
+  _cacheEnabled = p._cacheEnabled;
   _exists = p._exists;
   _isDir = p._isDir;
   _isFile = p._isFile;
+  _modTime = p._modTime;
   return *this;
 }
 
@@ -126,16 +136,20 @@ void SGPath::set( const string& p ) {
     _cached = false;
 }
 
+void SGPath::set_cached(bool cached)
+{
+    _cacheEnabled = cached;
+}
 
 // append another piece to the existing path
 void SGPath::append( const string& p ) {
     if ( path.size() == 0 ) {
-	path = p;
+    path = p;
     } else {
-	if ( p[0] != sgDirPathSep ) {
-	    path += sgDirPathSep;
-	}
-	path += p;
+    if ( p[0] != sgDirPathSep ) {
+        path += sgDirPathSep;
+    }
+    path += p;
     }
     fix();
     _cached = false;
@@ -151,9 +165,9 @@ void SGPath::add( const string& p ) {
 // path separator
 void SGPath::concat( const string& p ) {
     if ( path.size() == 0 ) {
-	path = p;
+    path = p;
     } else {
-	path += p;
+    path += p;
     }
     fix();
     _cached = false;
@@ -164,9 +178,9 @@ void SGPath::concat( const string& p ) {
 string SGPath::file() const {
     int index = path.rfind(sgDirPathSep);
     if (index >= 0) {
-	return path.substr(index + 1);
+    return path.substr(index + 1);
     } else {
-	return "";
+    return "";
     }
 }
   
@@ -175,20 +189,45 @@ string SGPath::file() const {
 string SGPath::dir() const {
     int index = path.rfind(sgDirPathSep);
     if (index >= 0) {
-	return path.substr(0, index);
+    return path.substr(0, index);
     } else {
-	return "";
+    return "";
     }
 }
 
 // get the base part of the path (everything but the extension.)
 string SGPath::base() const {
-    int index = path.rfind(".");
-    if ((index >= 0) && (path.find("/", index) == string::npos)) {
-	return path.substr(0, index);
+    unsigned int index = path.rfind(sgDirPathSep);
+    if (index == string::npos) {
+        index = 0; // no separator in the name
     } else {
-	return "";
+        ++index; // skip past the separator
     }
+
+// find the first dot after the final separator
+    unsigned int firstDot = path.find(".", index);
+    if (firstDot == string::npos) {
+        return path; // no extension, return whole path
+    }
+    
+    return path.substr(0, firstDot);
+}
+
+string SGPath::file_base() const
+{
+    unsigned int index = path.rfind(sgDirPathSep);
+    if (index == string::npos) {
+        index = 0; // no separator in the name
+    } else {
+        ++index; // skip past the separator
+    }
+    
+    unsigned int firstDot = path.find(".", index);
+    if (firstDot == string::npos) {
+        return path.substr(index); // no extensions
+    }
+    
+    return path.substr(index, firstDot - index);
 }
 
 // get the extension (everything after the final ".")
@@ -197,15 +236,36 @@ string SGPath::base() const {
 string SGPath::extension() const {
     int index = path.rfind(".");
     if ((index >= 0)  && (path.find("/", index) == string::npos)) {
-	return path.substr(index + 1);
+        return path.substr(index + 1);
     } else {
-	return "";
+        return "";
+    }
+}
+
+string SGPath::lower_extension() const {
+    return boost::to_lower_copy(extension());
+}
+
+string SGPath::complete_lower_extension() const
+{
+    unsigned int index = path.rfind(sgDirPathSep);
+    if (index == string::npos) {
+        index = 0; // no separator in the name
+    } else {
+        ++index; // skip past the separator
+    }
+    
+    int firstDot = path.find(".", index);
+    if ((firstDot >= 0)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
+        return boost::to_lower_copy(path.substr(firstDot + 1));
+    } else {
+        return "";
     }
 }
 
 void SGPath::validate() const
 {
-  if (_cached) {
+  if (_cached && _cacheEnabled) {
     return;
   }
   
@@ -221,6 +281,7 @@ void SGPath::validate() const
     _exists = true;
     _isFile = ((S_IFREG & buf.st_mode ) !=0);
     _isDir = ((S_IFDIR & buf.st_mode ) !=0);
+    _modTime = buf.st_mtime;
   }
 
 #else
@@ -232,6 +293,7 @@ void SGPath::validate() const
     _exists = true;
     _isFile = ((S_ISREG(buf.st_mode )) != 0);
     _isDir = ((S_ISDIR(buf.st_mode )) != 0);
+    _modTime = buf.st_mtime;
   }
   
 #endif
@@ -383,3 +445,29 @@ std::string SGPath::str_native() const
     return str();
 #endif
 }
+
+bool SGPath::remove()
+{
+    int err = ::unlink(c_str());
+    if (err) {
+        SG_LOG(SG_IO, SG_WARN,  "file remove failed: (" << str() << ") " << strerror(errno));
+    }
+    return (err == 0);
+}
+
+time_t SGPath::modTime() const
+{
+    validate();
+    return _modTime;
+}
+
+bool SGPath::operator==(const SGPath& other) const
+{
+    return (path == other.path);
+}
+
+bool SGPath::operator!=(const SGPath& other) const
+{
+    return (path != other.path);
+}
+

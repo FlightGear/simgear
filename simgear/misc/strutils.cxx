@@ -259,6 +259,26 @@ namespace simgear {
         return result;
     }
     
+    int compare_versions(const string& v1, const string& v2)
+    {
+        vector<string> v1parts(split(v1, "."));
+        vector<string> v2parts(split(v2, "."));
+
+        int lastPart = std::min(v1parts.size(), v2parts.size());
+        for (int part=0; part < lastPart; ++part) {
+            int part1 = to_int(v1parts[part]);
+            int part2 = to_int(v2parts[part]);
+
+            if (part1 != part2) {
+                return part1 - part2;
+            }
+        } // of parts iteration
+
+        // reached end - longer wins
+        return v1parts.size() - v2parts.size();
+    }
+    
+    
     } // end namespace strutils
     
 } // end namespace simgear

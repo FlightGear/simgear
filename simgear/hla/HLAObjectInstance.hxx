@@ -52,13 +52,8 @@ public:
     void setAttribute(unsigned index, const HLAPathElementMap& pathElementMap);
     void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
-    // Ask the rti to provide the attribute at index
-    void requestAttributeUpdate(unsigned index);
-    void requestAttributeUpdate();
-
     void registerInstance();
     void deleteInstance(const RTIData& tag);
-    void localDeleteInstance();
 
     class AttributeCallback : public SGReferenced {
     public:
@@ -84,11 +79,6 @@ public:
     // Push the current values into the RTI
     void updateAttributeValues(const RTIData& tag);
     void updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag);
-
-    // Retrieve queued up updates up to and including timestamp,
-    // Note that this only applies to timestamped updates.
-    // The unordered updates are reflected as they arrive
-    void reflectQueuedAttributeValues(const SGTimeStamp& timeStamp);
 
 private:
     void removeInstance(const RTIData& tag);

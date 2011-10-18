@@ -47,7 +47,7 @@ public:
         // Generate a Cloud
         osg::ref_ptr<simgear::EffectGeode> genCloud ();
 
-        static double getDensity(void)
+        static float getDensity(void)
         {
             return sprite_density;
         }
@@ -61,16 +61,37 @@ public:
 
 private:
 
-        double min_width;
-        double max_width;
-        double min_height;
-        double max_height;
-        double min_sprite_width;
-        double max_sprite_width;
-        double min_sprite_height;
-        double max_sprite_height;
-        double bottom_shade;
-        double zscale;
+        float min_width;
+        float max_width;
+        float min_height;
+        float max_height;
+        float min_sprite_width;
+        float max_sprite_width;
+        float min_sprite_height;
+        float max_sprite_height;
+        
+        // Minimum and maximum bottom, middle, top, sunny, shade lighting
+        // factors. For individual clouds we choose a bottom/middle/top
+        // shade from between each min/max value
+        float min_bottom_lighting_factor;
+        float max_bottom_lighting_factor;
+        float min_middle_lighting_factor;
+        float max_middle_lighting_factor;
+        float min_top_lighting_factor;
+        float max_top_lighting_factor;
+        float min_shade_lighting_factor;
+        float max_shade_lighting_factor;
+        
+        // The density of the cloud is the shading applied
+        // to cloud sprites on the opposite side of the cloud
+        // from the sun. For an invidual cloud instance a value
+        // between min_density and max_density is chosen.
+        float min_density;
+        float max_density;
+        
+        // zscale indicates how sprites should be scaled vertically
+        // after billboarding. 
+        float zscale;
         bool height_map_texture;
         int num_sprites;
         int num_textures_x;
@@ -78,7 +99,7 @@ private:
         string texture;
         osg::Geometry* quad;
         osg::ref_ptr<simgear::Effect> effect;
-        static double sprite_density;
+        static float sprite_density;
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 

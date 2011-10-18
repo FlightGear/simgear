@@ -123,7 +123,7 @@ HLAObjectInstance::getAttributeDataElement(unsigned index) const
     return _rtiObjectInstance->getDataElement(index);
 }
 
-class HLAObjectInstance::DataElementFactoryVisitor : public HLADataTypeVisitor {
+class HLAObjectInstance::DataElementFactoryVisitor : public HLADataElementFactoryVisitor {
 public:
     DataElementFactoryVisitor(const HLAPathElementMap& pathElementMap) :
         _pathElementMap(pathElementMap)
@@ -150,7 +150,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLASCharDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAUInt8DataType& dataType)
     {
@@ -158,7 +158,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAUCharDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAInt16DataType& dataType)
     {
@@ -166,7 +166,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAShortDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAUInt16DataType& dataType)
     {
@@ -174,7 +174,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAUShortDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAInt32DataType& dataType)
     {
@@ -182,7 +182,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAIntDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAUInt32DataType& dataType)
     {
@@ -190,7 +190,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAUIntDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAInt64DataType& dataType)
     {
@@ -198,7 +198,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLALongDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAUInt64DataType& dataType)
     {
@@ -206,7 +206,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAULongDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAFloat32DataType& dataType)
     {
@@ -214,7 +214,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAFloatDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
     virtual void apply(const HLAFloat64DataType& dataType)
     {
@@ -222,7 +222,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLADoubleDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
 
     class ArrayDataElementFactory : public HLAArrayDataElement::DataElementFactory {
@@ -287,7 +287,7 @@ public:
         if (_dataElement.valid())
             return;
 
-        _dataElement = new HLAEnumeratedDataElement(&dataType);
+        HLADataElementFactoryVisitor::apply(dataType);
     }
 
     virtual void apply(const HLAFixedRecordDataType& dataType)
@@ -357,9 +357,6 @@ public:
         _dataElement = variantDataElement;
     }
 
-    const SGSharedPtr<HLADataElement>& getDataElement() const
-    { return _dataElement; }
-
 private:
     SGSharedPtr<HLADataElement> createDataElement(const HLADataElement::Path& path, const HLADataType& dataType)
     {
@@ -381,7 +378,6 @@ private:
         return dataElement;
     }
 
-    SGSharedPtr<HLADataElement> _dataElement;
     const HLAPathElementMap& _pathElementMap;
     HLADataElement::Path _path;
 };
@@ -411,26 +407,6 @@ HLAObjectInstance::setAttributes(const HLAAttributePathElementMap& attributePath
          i != attributePathElementMap.end(); ++i) {
         setAttribute(i->first, i->second);
     }
-}
-
-void
-HLAObjectInstance::requestAttributeUpdate(unsigned index)
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to request attribute update for inactive object!");
-        return;
-    }
-    _rtiObjectInstance->setRequestAttributeUpdate(index, true);
-}
-
-void
-HLAObjectInstance::requestAttributeUpdate()
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to request attribute update for inactive object!");
-        return;
-    }
-    _rtiObjectInstance->setRequestAttributeUpdate(true);
 }
 
 void
@@ -472,16 +448,6 @@ HLAObjectInstance::deleteInstance(const RTIData& tag)
 }
 
 void
-HLAObjectInstance::localDeleteInstance()
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to delete inactive object!");
-        return;
-    }
-   _rtiObjectInstance->localDeleteObjectInstance();
-}
-
-void
 HLAObjectInstance::updateAttributeValues(const RTIData& tag)
 {
     if (!_rtiObjectInstance.valid()) {
@@ -503,16 +469,6 @@ HLAObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const RTI
     if (_attributeCallback.valid())
         _attributeCallback->updateAttributeValues(*this, tag);
     _rtiObjectInstance->updateAttributeValues(timeStamp, tag);
-}
-
-void
-HLAObjectInstance::reflectQueuedAttributeValues(const SGTimeStamp& timeStamp)
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
-        return;
-    }
-    _rtiObjectInstance->reflectQueuedAttributeValues(timeStamp);
 }
 
 void

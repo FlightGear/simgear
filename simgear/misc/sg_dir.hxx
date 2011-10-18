@@ -31,6 +31,10 @@
 #include <simgear/math/sg_types.hxx>
 #include <simgear/misc/sg_path.hxx>
 
+#ifdef _MSC_VER
+  typedef int mode_t;
+#endif
+
 namespace simgear
 {
   typedef std::vector<SGPath> PathList;
@@ -38,6 +42,15 @@ namespace simgear
   class Dir
   {
   public:
+    Dir();
+      
+    static Dir current();
+    
+    /**
+     * create a temporary directory, using the supplied name
+     */
+    static Dir tempDir(const std::string& templ);
+      
     Dir(const SGPath& path);
     Dir(const Dir& rel, const SGPath& relPath);
     
@@ -53,10 +66,31 @@ namespace simgear
     
     SGPath file(const std::string& name) const;
     
+    SGPath path() const
+        { return _path; }
+    
+    /**
+     * create the directory (and any parents as required) with the
+     * request mode, or return failure
+     */
+    bool create(mode_t mode);
+    
+    /**
+     * remove the directory. 
+     * If recursive is true, contained files and directories are
+     * recursively removed
+     */
+    bool remove(bool recursive = false);
+    
     /**
      * Check that the directory at the path exists (and is a directory!)
      */
     bool exists() const;
+    
+    /**
+     * parent directory, if one exists
+     */
+    Dir parent() const;
   private:
     mutable SGPath _path;
   };

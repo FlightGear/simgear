@@ -186,9 +186,11 @@ public:
     bool readObjectModelTemplate(const std::string& objectModel,
                                  ObjectModelFactory& objectModelFactory);
 
+    /// Get the object class of a given name
     HLAObjectClass* getObjectClass(const std::string& name);
     const HLAObjectClass* getObjectClass(const std::string& name) const;
 
+    /// Get the interaction class of a given name
     HLAInteractionClass* getInteractionClass(const std::string& name);
     const HLAInteractionClass* getInteractionClass(const std::string& name) const;
 

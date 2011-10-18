@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -22,7 +22,9 @@
 namespace simgear {
 
 HLAArrayDataType::HLAArrayDataType(const std::string& name) :
-    HLADataType(name)
+    HLADataType(name),
+    _isOpaque(false),
+    _isString(false)
 {
 }
 
@@ -49,6 +51,18 @@ HLAArrayDataType::setElementDataType(const HLADataType* elementDataType)
     if (getAlignment() < elementDataType->getAlignment())
         setAlignment(elementDataType->getAlignment());
     _elementDataType = elementDataType;
+}
+
+void
+HLAArrayDataType::setIsOpaque(bool isOpaque)
+{
+    _isOpaque = isOpaque;
+}
+
+void
+HLAArrayDataType::setIsString(bool isString)
+{
+    _isString = isString;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

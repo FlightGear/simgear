@@ -46,14 +46,15 @@ class CloudShaderGeometry : public osg::Drawable
         
         const static unsigned int USR_ATTR_1 = 10;
         const static unsigned int USR_ATTR_2 = 11;
-        
+        const static unsigned int USR_ATTR_3 = 12;
+                
         CloudShaderGeometry()
         { 
             setUseDisplayList(false); 
         }
 
-        CloudShaderGeometry(int vx, int vy, float width, float height, float zsc) :
-            varieties_x(vx), varieties_y(vy), zscale(zsc)
+        CloudShaderGeometry(int vx, int vy, float width, float height, float ts, float ms, float bs, float shade, float ch, float zsc) :
+            varieties_x(vx), varieties_y(vy), top_factor(ts), middle_factor(ms), bottom_factor(bs), shade_factor(shade), cloud_height(ch), zscale(zsc)
         { 
             setUseDisplayList(false); 
             float x = width/2.0f;
@@ -69,9 +70,8 @@ class CloudShaderGeometry : public osg::Drawable
         META_Object(flightgear, CloudShaderGeometry);
         
         struct CloudSprite {
-            CloudSprite(const SGVec3f& p, int tx, int ty, float w, float h,
-                        float s, float ch) :
-                    position(p), texture_index_x(tx), texture_index_y(ty), width(w), height(h), shade(s), cloud_height(ch)
+            CloudSprite(const SGVec3f& p, int tx, int ty, float w, float h) :
+                    position(p), texture_index_x(tx), texture_index_y(ty), width(w), height(h)
                     { }
         
                     SGVec3f position;
@@ -79,8 +79,6 @@ class CloudShaderGeometry : public osg::Drawable
                     int texture_index_y;
                     float width;
                     float height;
-                    float shade;
-                    float cloud_height;
         };
         
         typedef std::vector<CloudSprite> CloudSpriteList;
@@ -88,8 +86,8 @@ class CloudShaderGeometry : public osg::Drawable
         
         void insert(const CloudSprite& t)
         { _cloudsprites.push_back(t); }
-        void insert(SGVec3f& p, int tx, int ty, float w, float h, float s, float ch)
-        { insert(CloudSprite(p, tx, ty, w, h, s, ch)); }
+        void insert(SGVec3f& p, int tx, int ty, float w, float h)
+        { insert(CloudSprite(p, tx, ty, w, h)); }
         
         unsigned getNumCloudSprite() const
         { return _cloudsprites.size(); }
@@ -107,15 +105,19 @@ class CloudShaderGeometry : public osg::Drawable
             _geometry = geometry;
         }
         
-        void addSprite(const SGVec3f& p, int tx, int ty, float w, float h,
-                       float s, float cull, float cloud_height);
+        void addSprite(const SGVec3f& p, int tx, int ty, float w, float h, float cull);
                 
         osg::ref_ptr<osg::Drawable> _geometry;
 
         int varieties_x;
         int varieties_y;
+        float top_factor;
+        float middle_factor;
+        float bottom_factor;
+        float shade_factor;
+        float cloud_height;
         float zscale;
-        
+                
         // Bounding box extents.
         osg::BoundingBox _bbox;
         

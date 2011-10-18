@@ -27,29 +27,24 @@
 #ifndef _SG_BINOBJ_HXX
 #define _SG_BINOBJ_HXX
 
+#include <zlib.h> // for gzFile
 
 #include <simgear/compiler.h>
 #include <simgear/constants.h>
 #include <simgear/math/sg_types.hxx>
-#include <simgear/bucket/newbucket.hxx>
+#include <simgear/math/SGMath.hxx>
 
-#include <stdio.h>
-#include <time.h>
-
-#include <list>
+#include <vector>
 #include <string>
-
-
 
 /** STL Structure used to store object information */
 typedef std::vector < int_list > group_list;
 typedef group_list::iterator group_list_iterator;
 typedef group_list::const_iterator const_group_list_iterator;
 
-
-/** Magic Number for our file format */
-#define SG_FILE_MAGIC_NUMBER  ( ('S'<<24) + ('G'<<16) + SG_BINOBJ_VERSION )
-
+// forward decls
+class SGBucket;
+class SGPath;
 
 /**
  * A class to manipulate the simgear 3d object format.
@@ -85,6 +80,7 @@ typedef group_list::const_iterator const_group_list_iterator;
  * - vertex: FLOAT, FLOAT, FLOAT
 */
 class SGBinObject {
+private:
     unsigned short version;
 
     SGVec3d gbs_center;
@@ -119,6 +115,24 @@ class SGBinObject {
     group_list fans_tc;		// fans texture coordinate index
     string_list fan_materials;	// fans materials
 
+    void read_properties(gzFile fp, int nproperties);
+    
+    void read_object( gzFile fp,
+                             int obj_type,
+                             int nproperties,
+                             int nelements,
+                             group_list& vertices, 
+                             group_list& normals,
+                             group_list& colors,
+                             group_list& texCoords,
+                             string_list& materials);
+                             
+    void write_header(gzFile fp, int type, int nProps, int nElements);
+    void write_objects(gzFile fp, int type, const group_list& verts,
+        const group_list& normals, const group_list& colors, 
+        const group_list& texCoords, const string_list& materials);
+        
+    unsigned int count_objects(const string_list& materials);
 public:
 
     inline unsigned short get_version() const { return version; }
@@ -206,6 +220,9 @@ public:
      * @return result of write
      */
     bool write_bin( const std::string& base, const std::string& name, const SGBucket& b );
+
+
+    bool write_bin_file(const SGPath& file);
 
     /**
      * Write out the structures to an ASCII file.  We assume that the

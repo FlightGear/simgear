@@ -278,6 +278,19 @@ namespace simgear {
         return v1parts.size() - v2parts.size();
     }
     
+    string join(const string_list& l, const string& joinWith)
+    {
+        string result;
+        unsigned int count = l.size();
+        for (unsigned int i=0; i < count; ++i) {
+            result += l[i];
+            if (i < (count - 1)) {
+                result += joinWith;
+            }
+        }
+        
+        return result;
+    }
     
     } // end namespace strutils
     

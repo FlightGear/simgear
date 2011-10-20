@@ -33,6 +33,7 @@
 #include <vector>
 #include <cstdlib>
 
+typedef std::vector < std::string > string_list;
 
 namespace simgear {
   namespace strutils {
@@ -93,10 +94,16 @@ namespace simgear {
 	 * resulting in at most maxsplit+1 words.
 	 * @return Array of words.
 	 */
-	std::vector<std::string>
+	string_list
 	split( const std::string& s,
 	       const char* sep = 0,
 	       int maxsplit = 0 );
+
+       /**
+        * create a single string by joining the elements of a list with
+        * another string.
+        */
+       std::string join(const string_list& l, const std::string& joinWith = "");
 
 	/**
 	 * Test if a string starts with a string 

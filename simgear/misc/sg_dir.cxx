@@ -47,20 +47,35 @@ using std::string;
 namespace simgear
 {
 
-Dir::Dir()
+Dir::Dir() :
+    _removeOnDestroy(false)
 {
 }
 
 Dir::Dir(const SGPath& path) :
-  _path(path)
+  _path(path),
+  _removeOnDestroy(false)
 {
     _path.set_cached(false); // disable caching, so create/remove work
 }
 
 Dir::Dir(const Dir& rel, const SGPath& relPath) :
-  _path(rel.file(relPath.str()))
+  _path(rel.file(relPath.str())),
+  _removeOnDestroy(false)
 {
     _path.set_cached(false); // disable caching, so create/remove work
+}
+
+Dir::~Dir()
+{
+    if (_removeOnDestroy) {
+        remove(true);
+    }
+}
+
+void Dir::setRemoveOnDestroy()
+{
+    _removeOnDestroy = true;
 }
 
 Dir Dir::current()
@@ -79,7 +94,7 @@ Dir Dir::tempDir(const std::string& templ)
 {
 #ifdef HAVE_MKDTEMP
     char buf[1024];
-    char* tempPath = ::getenv("TMPDIR");
+    const char* tempPath = ::getenv("TMPDIR");
     if (!tempPath) {
         tempPath = "/tmp/";
     }

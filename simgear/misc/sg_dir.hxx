@@ -43,7 +43,15 @@ namespace simgear
   {
   public:
     Dir();
-      
+    ~Dir();
+    
+    /**
+     * when this directory object is destroyed, remove the corresponding
+     * diretory (and its contents) from the disk. Often used with temporary
+     * directories to ensure they are cleaned up.
+     */
+    void setRemoveOnDestroy();
+    
     static Dir current();
     
     /**
@@ -93,6 +101,7 @@ namespace simgear
     Dir parent() const;
   private:
     mutable SGPath _path;
+    bool _removeOnDestroy;
   };
 } // of namespace simgear
 

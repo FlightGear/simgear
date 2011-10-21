@@ -29,18 +29,12 @@
 
 #include <simgear/constants.h>
 
-using std::vector;
-using std::map;
-using std::string;
-
-const double SGMetarNaN = -1E20;
-#define NaN SGMetarNaN
-
 struct Token {
 	const char *id;
 	const char *text;
 };
 
+const double SGMetarNaN = -1E20;
 
 class SGMetar;
 
@@ -48,7 +42,7 @@ class SGMetarVisibility {
 	friend class SGMetar;
 public:
 	SGMetarVisibility() :
-		_distance(NaN),
+		_distance(SGMetarNaN),
 		_direction(-1),
 		_modifier(EQUALS),
 		_tendency(NONE) {}
@@ -70,8 +64,8 @@ public:
 	void set(double dist, int dir = -1, int mod = -1, int tend = -1);
 
 	inline double	getVisibility_m()	const { return _distance; }
-	inline double	getVisibility_ft()	const { return _distance == NaN ? NaN : _distance * SG_METER_TO_FEET; }
-	inline double	getVisibility_sm()	const { return _distance == NaN ? NaN : _distance * SG_METER_TO_SM; }
+	inline double	getVisibility_ft()	const { return _distance == SGMetarNaN ? SGMetarNaN : _distance * SG_METER_TO_FEET; }
+	inline double	getVisibility_sm()	const { return _distance == SGMetarNaN ? SGMetarNaN : _distance * SG_METER_TO_SM; }
 	inline int	getDirection()		const { return _direction; }
 	inline int	getModifier()		const { return _modifier; }
 	inline int	getTendency()		const { return _tendency; }
@@ -93,8 +87,8 @@ public:
 		_deposit_string(0),
 		_extent(-1),
 		_extent_string(0),
-		_depth(NaN),
-		_friction(NaN),
+		_depth(SGMetarNaN),
+		_friction(SGMetarNaN),
 		_friction_string(0),
 		_comment(0),
 		_wind_shear(false) {}
@@ -146,14 +140,14 @@ public:
 	static const char * COVERAGE_BROKEN_STRING;
 	static const char * COVERAGE_OVERCAST_STRING;
 
-	SGMetarCloud() : _coverage(COVERAGE_NIL), _altitude(NaN), _type(0), _type_long(0) {}
+	SGMetarCloud() : _coverage(COVERAGE_NIL), _altitude(SGMetarNaN), _type(0), _type_long(0) {}
 
 	void set(double alt, Coverage cov = COVERAGE_NIL );
 
 	inline Coverage getCoverage() const { return _coverage; }
 	static Coverage getCoverage( const std::string & coverage );
 	inline double getAltitude_m() const { return _altitude; }
-	inline double getAltitude_ft() const { return _altitude == NaN ? NaN : _altitude * SG_METER_TO_FEET; }
+	inline double getAltitude_ft() const { return _altitude == SGMetarNaN ? SGMetarNaN : _altitude * SG_METER_TO_FEET; }
 	inline const char *getTypeString() const { return _type; }
 	inline const char *getTypeLongString() const { return _type_long; }
 
@@ -167,8 +161,7 @@ protected:
 
 class SGMetar {
 public:
-	SGMetar(const string& m, const string& proxy = "", const string& port = "",
-			const string &auth = "", const time_t time = 0);
+	SGMetar(const std::string& m);
 	~SGMetar();
 
 	enum ReportType {
@@ -189,8 +182,8 @@ public:
 		Weather() { intensity = NIL; vincinity = false; }
 		Intensity intensity;
 		bool      vincinity;
-		vector<string> descriptions;
-		vector<string> phenomena;
+		std::vector<std::string> descriptions;
+		std::vector<std::string> phenomena;
 	};
 
 	inline const char *getData()		const { return _data; }
@@ -206,14 +199,14 @@ public:
 
 	inline int	getWindDir()		const { return _wind_dir; }
 	inline double	getWindSpeed_mps()	const { return _wind_speed; }
-	inline double	getWindSpeed_kmh()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_KMH; }
-	inline double	getWindSpeed_kt()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_KT; }
-	inline double	getWindSpeed_mph()	const { return _wind_speed == NaN ? NaN : _wind_speed * SG_MPS_TO_MPH; }
+	inline double	getWindSpeed_kmh()	const { return _wind_speed == SGMetarNaN ? SGMetarNaN : _wind_speed * SG_MPS_TO_KMH; }
+	inline double	getWindSpeed_kt()	const { return _wind_speed == SGMetarNaN ? SGMetarNaN : _wind_speed * SG_MPS_TO_KT; }
+	inline double	getWindSpeed_mph()	const { return _wind_speed == SGMetarNaN ? SGMetarNaN : _wind_speed * SG_MPS_TO_MPH; }
 
 	inline double	getGustSpeed_mps()	const { return _gust_speed; }
-	inline double	getGustSpeed_kmh()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_KMH; }
-	inline double	getGustSpeed_kt()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_KT; }
-	inline double	getGustSpeed_mph()	const { return _gust_speed == NaN ? NaN : _gust_speed * SG_MPS_TO_MPH; }
+	inline double	getGustSpeed_kmh()	const { return _gust_speed == SGMetarNaN ? SGMetarNaN : _gust_speed * SG_MPS_TO_KMH; }
+	inline double	getGustSpeed_kt()	const { return _gust_speed == SGMetarNaN ? SGMetarNaN : _gust_speed * SG_MPS_TO_KT; }
+	inline double	getGustSpeed_mph()	const { return _gust_speed == SGMetarNaN ? SGMetarNaN : _gust_speed * SG_MPS_TO_MPH; }
 
 	inline int	getWindRangeFrom()	const { return _wind_range_from; }
 	inline int	getWindRangeTo()	const { return _wind_range_to; }
@@ -224,11 +217,11 @@ public:
 	inline const SGMetarVisibility *getDirVisibility()	const { return _dir_visibility; }
 
 	inline double	getTemperature_C()	const { return _temp; }
-	inline double	getTemperature_F()	const { return _temp == NaN ? NaN : 1.8 * _temp + 32; }
+	inline double	getTemperature_F()	const { return _temp == SGMetarNaN ? SGMetarNaN : 1.8 * _temp + 32; }
 	inline double	getDewpoint_C()		const { return _dewp; }
-	inline double	getDewpoint_F()		const { return _dewp == NaN ? NaN : 1.8 * _dewp + 32; }
-	inline double	getPressure_hPa()	const { return _pressure == NaN ? NaN : _pressure / 100; }
-	inline double	getPressure_inHg()	const { return _pressure == NaN ? NaN : _pressure * SG_PA_TO_INHG; }
+	inline double	getDewpoint_F()		const { return _dewp == SGMetarNaN ? SGMetarNaN : 1.8 * _dewp + 32; }
+	inline double	getPressure_hPa()	const { return _pressure == SGMetarNaN ? SGMetarNaN : _pressure / 100; }
+	inline double	getPressure_inHg()	const { return _pressure == SGMetarNaN ? SGMetarNaN : _pressure * SG_PA_TO_INHG; }
 
 	inline int	getRain()		const { return _rain; }
 	inline int	getHail()		const { return _hail; }
@@ -237,13 +230,13 @@ public:
 
 	double		getRelHumidity()	const;
 
-	inline const vector<SGMetarCloud>& getClouds()	const	{ return _clouds; }
-	inline const map<string, SGMetarRunway>& getRunways()	const	{ return _runways; }
-	inline const vector<string>& getWeather()		const	{ return _weather; }
-	inline const vector<struct Weather> getWeather2()	const   { return _weather2; }
+	inline const std::vector<SGMetarCloud>& getClouds()	const	{ return _clouds; }
+	inline const std::map<std::string, SGMetarRunway>& getRunways()	const	{ return _runways; }
+	inline const std::vector<std::string>& getWeather()		const	{ return _weather; }
+	inline const std::vector<struct Weather> getWeather2()	const   { return _weather2; }
 
 protected:
-	string	_url;
+	std::string	_url;
 	int	_grpcount;
 	bool	_x_proxy;
 	char	*_data;
@@ -267,15 +260,15 @@ protected:
 	int	_hail;
 	int	_snow;
 	bool	_cavok;
-	vector<struct Weather> _weather2;
+	std::vector<struct Weather> _weather2;
 
 	SGMetarVisibility		_min_visibility;
 	SGMetarVisibility		_max_visibility;
 	SGMetarVisibility		_vert_visibility;
 	SGMetarVisibility		_dir_visibility[8];
-	vector<SGMetarCloud>		_clouds;
-	map<string, SGMetarRunway>	_runways;
-	vector<string>			_weather;
+	std::vector<SGMetarCloud>		_clouds;
+	std::map<std::string, SGMetarRunway>	_runways;
+	std::vector<std::string>			_weather;
 
 	bool	scanPreambleDate();
 	bool	scanPreambleTime();
@@ -303,10 +296,7 @@ protected:
 	int	scanNumber(char **str, int *num, int min, int max = 0);
 	bool	scanBoundary(char **str);
 	const struct Token *scanToken(char **str, const struct Token *list);
-	char	*loadData(const char *id, const string& proxy, const string& port,
-			const string &auth, time_t time);
 	void	normalizeData();
 };
 
-#undef NaN
 #endif // _METAR_HXX

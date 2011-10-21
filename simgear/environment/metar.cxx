@@ -32,7 +32,6 @@
 #include <time.h>
 #include <cstring>
 
-#include <simgear/io/sg_socket.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
 
@@ -40,32 +39,28 @@
 
 #define NaN SGMetarNaN
 
+using std::string;
+using std::map;
+using std::vector;
+
 /**
- * The constructor takes a Metar string, or a four-letter ICAO code. In the
- * latter case the metar string is downloaded from
- * http://weather.noaa.gov/pub/data/observations/metar/stations/.
+ * The constructor takes a Metar string
  * The constructor throws sg_io_exceptions on failure. The "METAR"
  * keyword has no effect (apart from incrementing the group counter
  * @a grpcount) and can be left away. A keyword "SPECI" is
  * likewise accepted.
  *
  * @param m     ICAO station id or metar string
- * @param proxy proxy host (optional; default: "")
- * @param port  proxy port (optional; default: "80")
- * @param auth  proxy authorization information (optional; default: "")
  *
  * @par Examples:
  * @code
  * SGMetar *m = new SGMetar("METAR KSFO 061656Z 19004KT 9SM SCT100 OVC200 08/03 A3013");
  * double t = m->getTemperature_F();
  * delete m;
- *
- * SGMetar n("KSFO", "proxy.provider.foo", "3128", "proxy-password");
- * double d = n.getDewpoint_C();
+
  * @endcode
  */
-SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
-		const string& auth, const time_t time) :
+SGMetar::SGMetar(const string& m) :
 	_grpcount(0),
 	_x_proxy(false),
 	_year(-1),
@@ -87,16 +82,10 @@ SGMetar::SGMetar(const string& m, const string& proxy, const string& port,
 	_snow(false),
 	_cavok(false)
 {
-	if (m.length() == 4 && isalnum(m[0]) && isalnum(m[1]) && isalnum(m[2]) && isalnum(m[3])) {
-		for (int i = 0; i < 4; i++)
-			_icao[i] = toupper(m[i]);
-		_icao[4] = '\0';
-		_data = loadData(_icao, proxy, port, auth, time);
-	} else {
-		_data = new char[m.length() + 2];	// make room for " \0"
-		strcpy(_data, m.c_str());
-		_url = _data;
-	}
+	_data = new char[m.length() + 2];	// make room for " \0"
+	strcpy(_data, m.c_str());
+	_url = _data;
+		
 	normalizeData();
 
 	_m = _data;
@@ -168,85 +157,6 @@ void SGMetar::useCurrentDate()
 	_year = now.tm_year + 1900;
 	_month = now.tm_mon + 1;
 }
-
-
-/**
-  * If called with "KSFO" loads data from
-  * @code
-  * http://weather.noaa.gov/pub/data/observations/metar/stations/KSFO.TXT.
-  * @endcode
-  * Throws sg_io_exception on failure. Gives up after waiting longer than 10 seconds.
-  *
-  * @param id four-letter ICAO Metar station code, e.g. "KSFO".
-  * @param proxy proxy host (optional; default: "")
-  * @param port  proxy port (optional; default: "80")
-  * @param auth  proxy authorization information (optional; default: "")
-  * @return pointer to Metar data string, allocated by new char[].
-  * @see rfc2068.txt for proxy spec ("Proxy-Authorization")
-  */
-char *SGMetar::loadData(const char *id, const string& proxy, const string& port,
-		const string& auth, time_t time)
-{
-	const int buflen = 512;
-	char buf[2 * buflen];
-
-	string metar_server = "weather.noaa.gov";
-	string host = proxy.empty() ? metar_server : proxy;
-	string path = "/pub/data/observations/metar/stations/";
-
-	path += string(id) + ".TXT";
-	_url = "http://" + metar_server + path;
-
-	SGSocket *sock = new SGSocket(host, port.empty() ? "80" : port, "tcp");
-	sock->set_timeout(10000);
-	if (!sock->open(SG_IO_OUT)) {
-		delete sock;
-		throw sg_io_exception("cannot connect to ", sg_location(host));
-	}
-
-	string get = "GET ";
-	if (!proxy.empty())
-		get += "http://" + metar_server;
-
-	sprintf(buf, "%ld", time);
-	get += path + " HTTP/1.0\015\012X-Time: " + buf + "\015\012";
-	get += "Host: " + metar_server + "\015\012";
-
-	if (!auth.empty())
-		get += "Proxy-Authorization: " + auth + "\015\012";
-
-	get += "\015\012";
-	sock->writestring(get.c_str());
-
-	int i;
-
-	// skip HTTP header
-	while ((i = sock->readline(buf, buflen))) {
-		if (i <= 2 && isspace(buf[0]) && (!buf[1] || isspace(buf[1])))
-			break;
-		if (!strncmp(buf, "X-MetarProxy: ", 13))
-			_x_proxy = true;
-	}
-	if (i) {
-		i = sock->readline(buf, buflen);
-		if (i)
-			sock->readline(&buf[i], buflen);
-	}
-
-	sock->close();
-	delete sock;
-
-	char *b = buf;
-	scanBoundary(&b);
-	if (*b == '<')
-		throw sg_io_exception("no metar data available from ", 
-				sg_location(_url));
-
-	char *metar = new char[strlen(b) + 2];	// make room for " \0"
-	strcpy(metar, b);
-	return metar;
-}
-
 
 /**
   * Replace any number of subsequent spaces by just one space, and add

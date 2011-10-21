@@ -471,3 +471,16 @@ bool SGPath::operator!=(const SGPath& other) const
     return (path != other.path);
 }
 
+bool SGPath::rename(const SGPath& newName)
+{
+    if (::rename(c_str(), newName.c_str()) != 0) {
+        SG_LOG(SG_IO, SG_WARN, "renamed failed: from " << str() << " to " << newName.str()
+            << " reason: " << strerror(errno));
+        return false;
+    }
+    
+    path = newName.path;
+    _cached = false;
+    return true;
+}
+

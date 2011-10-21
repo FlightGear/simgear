@@ -30,12 +30,20 @@ using std::string;
         exit(1); \
     }
 
+#define FUZZY_COMPARE(a, b, epsilon) \
+    if (fabs(a - b) > epsilon) { \
+        cerr << "failed:" << #a << " != " << #b << endl; \
+        cerr << "\tgot:" << a << endl; \
+        cerr << "\tepsilon:" << epsilon << endl; \
+    }
+
 #define VERIFY(a) \
     if (!(a))  { \
         cerr << "failed:" << #a << endl; \
         exit(1); \
     }
-    
+
+const double TEST_EPSILON = 1e-9;
 
 void test_basic()
 {
@@ -48,11 +56,11 @@ void test_basic()
     COMPARE(m1.getReportType(), -1); // should default to NIL?
     
     COMPARE(m1.getWindDir(), 270);
-    COMPARE(m1.getWindSpeed_kt(), 12);
+    FUZZY_COMPARE(m1.getWindSpeed_kt(), 12, TEST_EPSILON);
     
-    COMPARE(m1.getTemperature_C(), 10);
-    COMPARE(m1.getDewpoint_C(), 5);
-    COMPARE(m1.getPressure_hPa(), 1025);
+    FUZZY_COMPARE(m1.getTemperature_C(), 10, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getDewpoint_C(), 5, TEST_EPSILON);
+    FUZZY_COMPARE(m1.getPressure_hPa(), 1025, TEST_EPSILON);
 }
 
 int main(int argc, char* argv[])

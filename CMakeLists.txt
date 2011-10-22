@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6.4)
 include (CheckFunctionExists)
 include (CheckIncludeFile)
 include (CheckCXXSourceCompiles)
-include (CPack)
+
 
 project(SimGear)
 
@@ -18,6 +18,7 @@ SET(CPACK_PACKAGE_VENDOR "The FlightGear project")
 SET(CPACK_GENERATOR "TBZ2")
 SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
 
+
 # split version string into components, note CMAKE_MATCH_0 is the entire regexp match
 string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
 set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1}) 
@@ -25,6 +26,15 @@ set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
 set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 
 message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VERSION_MINOR} dot ${CPACK_PACKAGE_VERSION_PATCH}")
+
+set(CPACK_SOURCE_GENERATOR TBZ2)
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "simgear-${SIMGEAR_VERSION}" CACHE INTERNAL "tarball basename")
+set(CPACK_SOURCE_IGNORE_FILES
+  "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
+
+message(STATUS "ignoring: ${CPACK_SOURCE_IGNORE_FILES}")
+
+include (CPack)
 
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")

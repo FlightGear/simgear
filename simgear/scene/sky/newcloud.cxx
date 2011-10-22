@@ -135,11 +135,12 @@ osg::Geometry* SGNewCloud::createOrthQuad(float w, float h, int varieties_x, int
     osg::Vec2Array& t = *(new osg::Vec2Array(4));
     
     float cw = w*0.5f;
-
-    v[0].set(0.0f, -cw, 0.0f);
-    v[1].set(0.0f,  cw, 0.0f);
-    v[2].set(0.0f,  cw, h);
-    v[3].set(0.0f, -cw, h);
+    float ch = h*0.5f;
+    
+    v[0].set(0.0f, -cw, -ch);
+    v[1].set(0.0f,  cw, -ch);
+    v[2].set(0.0f,  cw, ch);
+    v[3].set(0.0f, -cw, ch);
     
     // The texture coordinate range is not the
     // entire coordinate space - as the texture

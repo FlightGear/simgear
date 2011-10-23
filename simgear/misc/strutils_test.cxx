@@ -63,6 +63,20 @@ int main (int ac, char ** av)
 // since we compare numerically, leasing zeros shouldn't matter
     VERIFY(compare_versions("0.06.7", "0.6.07") == 0);
     
+    string_list la = split("zero one two three four five");
+    COMPARE(la[2], "two");
+    COMPARE(la[5], "five");
+    COMPARE(la.size(), 6);
+    
+    string_list lb = split("alpha:beta:gamma:delta", ":", 2);
+    COMPARE(lb.size(), 3);
+    COMPARE(lb[0], "alpha");
+    COMPARE(lb[1], "beta");
+    COMPARE(lb[2], "gamma:delta");
+    
+    std::string j = join(la, "&");
+    COMPARE(j, "zero&one&two&three&four&five");
+    
     cout << "all tests passed successfully!" << endl;
     return 0;
 }

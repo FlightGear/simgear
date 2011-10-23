@@ -213,6 +213,13 @@ public:
      * modification time of the file
      */
     time_t modTime() const;
+    
+    /**
+     * rename the file / directory we point at, to a new name
+     * this may fail if the new location is on a different volume / share,
+     * or if the destination already exists, or is not writeable
+     */
+    bool rename(const SGPath& newName);
 private:
 
     void fix();

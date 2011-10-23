@@ -17,10 +17,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
 
 #include "SGAtomic.hxx"
 
-#if defined(SGATOMIC_USE_GCC4_BUILTINS) && defined (__i386__)
+#if defined(SGATOMIC_USE_GCC4_BUILTINS) && !defined (GCC_ATOMIC_BUILTINS_FOUND)
 
 // Usually the appropriate functions are inlined by gcc.
 // But if gcc is called with something equivalent to -march=i386,

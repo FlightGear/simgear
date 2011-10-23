@@ -99,7 +99,7 @@ find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
 if(SIMGEAR_HEADLESS)
-    message(STATUS "headlesss mode")
+    message(STATUS "headless mode")
     set(NO_OPENSCENEGRAPH_INTERFACE 1)
 else()
     find_package(OpenGL REQUIRED)
@@ -179,6 +179,13 @@ check_cxx_source_compiles(
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS -Wall)
+    
+    # certain GCC versions don't provide the atomic builds, and hence
+    # require is to provide them in SGAtomic.cxx
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
+    check_cxx_source_compiles(
+       "int main() { unsigned mValue; return __sync_add_and_fetch(&mValue, 1); }"
+        GCC_ATOMIC_BUILTINS_FOUND)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(WIN32)

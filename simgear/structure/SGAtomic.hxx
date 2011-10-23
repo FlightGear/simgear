@@ -35,6 +35,7 @@
 #else
 // The sledge hammer ...
 # define SGATOMIC_USE_LIBRARY_FUNCTIONS
+# define SGATOMIC_USE_MUTEX
 # include <simgear/threads/SGThread.hxx>
 #endif
 
@@ -109,9 +110,7 @@ private:
   SGAtomic(const SGAtomic&);
   SGAtomic& operator=(const SGAtomic&);
 
-#if !defined(SGATOMIC_USE_GCC4_BUILTINS) \
-  && !defined(SGATOMIC_USE_MIPOSPRO_BUILTINS) \
-  && !defined(SGATOMIC_USE_WIN32_INTERLOCKED)
+#if defined(SGATOMIC_USE_MUTEX)
   mutable SGMutex mMutex;
 #endif
   unsigned mValue;

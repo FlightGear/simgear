@@ -30,8 +30,10 @@
 # include <windows.h>
 #elif defined(GCC_ATOMIC_BUILTINS_FOUND)
 #elif defined(__GNUC__) && defined(__i386__)
-#else
+#elif defined(SGATOMIC_USE_MUTEX)
 # include <simgear/threads/SGGuard.hxx>
+#else
+# error
 #endif
 
 unsigned

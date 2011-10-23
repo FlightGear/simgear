@@ -3,8 +3,10 @@
 
 #include <boost/pool/detail/singleton.hpp>
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Referenced>
 #include <osg/ref_ptr>
+#endif 
 
 namespace simgear
 {
@@ -27,6 +29,7 @@ public:
     }
 };
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 template <typename RefClass>
 class SingletonRefPtr
 {
@@ -54,5 +57,7 @@ public:
         return SingletonRefPtr<RefClass>::instance();
     }
 };
+#endif // of NO_OPENSCENEGRAPH_INTERFACE
+
 }
 #endif

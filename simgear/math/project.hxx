@@ -16,6 +16,9 @@
 //
 #ifndef SIMGEAR_PROJECT_HXX
 #define SIMGEAR_PROJECT_HXX 1
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+
 #include <osg/GL>
 
 namespace simgear
@@ -26,4 +29,8 @@ extern GLint project(GLdouble objX, GLdouble objY, GLdouble objZ,
                      const GLint *view,
                      GLdouble* winX, GLdouble* winY, GLdouble* winZ);
 }
+
+#endif // of NO_OPENSCENEGRAPH_INTERFACE
+
 #endif
+

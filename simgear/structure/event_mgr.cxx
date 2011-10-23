@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include "event_mgr.hxx"
 
 #include <simgear/math/SGMath.hxx>

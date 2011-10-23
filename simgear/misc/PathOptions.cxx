@@ -17,6 +17,12 @@
 //
 // $Id$
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+
 #include <osgDB/Registry>
 
 #include "PathOptions.hxx"
@@ -31,3 +37,5 @@ osgDB::ReaderWriter::Options* simgear::makeOptionsFromPath(const SGPath& path)
     options->setDatabasePath(path.str());
     return options;
 }
+
+#endif // of NO_OPENSCENEGRAPH_INTERFACE

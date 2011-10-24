@@ -82,7 +82,7 @@ public:
     /**
      * Destructor
      */
-    ~SGSoundSample ();
+    virtual ~SGSoundSample ();
 
     /**
      * Detect wheter this audio sample holds the information of a sound file.

@@ -45,6 +45,8 @@ namespace simgear
 class StateAttributeFactory :
         public ReferencedSingleton<StateAttributeFactory> {
 public:
+    ~StateAttributeFactory();
+          
     // Alpha test > .01
     osg::AlphaFunc* getStandardAlphaFunc() { return _standardAlphaFunc.get(); }
     // alpha source, 1 - alpha destination

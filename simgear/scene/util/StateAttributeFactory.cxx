@@ -86,4 +86,10 @@ StateAttributeFactory::StateAttributeFactory()
     _depthWritesDisabled->setDataVariance(Object::STATIC);
 }
 
+// anchor the destructor into this file, to avoid ref_ptr warnings
+StateAttributeFactory::~StateAttributeFactory()
+{
+  
+}
+  
 }

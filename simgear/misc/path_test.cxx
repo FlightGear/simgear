@@ -27,7 +27,7 @@ using std::endl;
 void test_dir()
 {
     simgear::Dir temp = simgear::Dir::tempDir("foo");
-    cout << "created:" << temp.path().str() << endl;
+    cout << "created:" << temp.path() << endl;
   
     VERIFY(temp.exists());
     VERIFY(temp.path().isDir());

@@ -236,6 +236,13 @@ private:
     mutable time_t _modTime;
 };
 
+/// Output to an ostream
+template<typename char_type, typename traits_type>
+inline
+std::basic_ostream<char_type, traits_type>&
+operator<<(std::basic_ostream<char_type, traits_type>& s, const SGPath& p)
+{ return s << "Path \"" << p.str() << "\""; }
+
 
 /**
  * Split a directory string into a list of it's parent directories.

@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     SGPath pj("/Foo/zot.dot/thing.tar.gz");
     COMPARE(pj.dir(), std::string("/Foo/zot.dot"));
     COMPARE(pj.file(), std::string("thing.tar.gz"));
-    COMPARE(pj.base(), std::string("/Foo/zot.dot/thing"));
+    COMPARE(pj.base(), std::string("/Foo/zot.dot/thing.tar"));
     COMPARE(pj.file_base(), std::string("thing"));
     COMPARE(pj.extension(), std::string("gz"));
     COMPARE(pj.complete_lower_extension(), std::string("tar.gz"));
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
     
     SGPath extB("BAH/FOO.HTML.GZ");
     COMPARE(extB.extension(), "GZ");
-    COMPARE(extB.base(), "BAH/FOO");
+    COMPARE(extB.base(), "BAH/FOO.HTML");
     COMPARE(extB.lower_extension(), "gz");
     COMPARE(extB.complete_lower_extension(), "html.gz");
 #ifdef _WIN32

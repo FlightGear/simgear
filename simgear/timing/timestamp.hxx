@@ -184,6 +184,8 @@ public:
     { SGTimeStamp ts; ts.setTime(sec); return ts; }
     static SGTimeStamp fromSec(const double& sec)
     { SGTimeStamp ts; ts.setTime(sec); return ts; }
+    static SGTimeStamp fromMSec(nsec_type msec)
+    { return SGTimeStamp(0, 1000*1000*msec); }
     static SGTimeStamp fromUSec(nsec_type usec)
     { return SGTimeStamp(0, 1000*usec); }
     static SGTimeStamp fromNSec(nsec_type nsec)
@@ -194,6 +196,22 @@ public:
      */
     static SGTimeStamp now()
     { SGTimeStamp ts; ts.stamp(); return ts; }
+
+    /**
+     *  Sleep until the time of abstime is passed.
+     */
+    static bool sleepUntil(const SGTimeStamp& abstime);
+
+    /**
+     *  Sleep for reltime.
+     */
+    static bool sleepFor(const SGTimeStamp& reltime);
+
+    /**
+     *  Alias for the most common use case with milliseconds.
+     */
+    static bool sleepForMSec(unsigned msec)
+    { return sleepFor(fromMSec(msec)); }
 
     /**
      * elapsed time since the stamp was taken, in msec

@@ -103,10 +103,10 @@ int main( int argc, char *argv[] ) {
     ALfloat source_vel[3];
 
     // configuration values
-//    ALenum format;
-//    ALsizei size;
-//    ALvoid* data;
-//    ALsizei freq;
+    ALenum format;
+    ALsizei size;
+    ALvoid* data;
+    ALsizei freq;
     ALboolean loop = false;
 
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;

@@ -31,6 +31,7 @@
 #include <simgear/compiler.h>
 
 #include <ctime>
+#include <cerrno>
 
 #ifdef HAVE_SYS_TIMEB_H
 #  include <sys/timeb.h> // for ftime() and struct timeb
@@ -44,7 +45,6 @@
 
 #if defined(_POSIX_TIMERS) && (0 < _POSIX_TIMERS)
 #  include <time.h>
-#  include <errno.h>
 #endif
 
 #ifdef WIN32

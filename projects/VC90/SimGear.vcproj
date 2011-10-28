@@ -672,14 +672,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\misc\sgstream.cxx"
 				>
 			</File>

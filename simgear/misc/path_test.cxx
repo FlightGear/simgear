@@ -135,6 +135,14 @@ int main(int argc, char* argv[])
 #else
     COMPARE(d1.str_native(), std::string("/usr/local"));
 #endif
+  
+// paths with only the file components
+    SGPath pf("something.txt.gz");
+    COMPARE(pf.base(), "something.txt");
+    COMPARE(pf.file(), "something.txt.gz");
+    COMPARE(pf.dir(), "");
+    COMPARE(pf.lower_extension(), "gz");
+    COMPARE(pf.complete_lower_extension(), "txt.gz");
     
     test_dir();
     

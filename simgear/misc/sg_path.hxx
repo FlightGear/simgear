@@ -124,7 +124,7 @@ public:
     std::string dir() const;
   
     /**
-     * Get the base part of the path (everything but the extension.)
+     * Get the base part of the path (everything but the final extension.)
      * @return the base string
      */
     std::string base() const;

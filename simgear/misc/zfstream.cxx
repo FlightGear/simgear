@@ -167,7 +167,7 @@ gzfilebuf::close()
 
 
 std::streampos
-gzfilebuf::seekoff( std::streamoff, ios_seekdir, int )
+gzfilebuf::seekoff( std::streamoff, ios_seekdir, ios_openmode )
 {
     return std::streampos(EOF);
 }

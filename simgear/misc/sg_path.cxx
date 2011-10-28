@@ -206,7 +206,7 @@ string SGPath::base() const
         return path;
     }
     
-    if (index >= 0) {
+    if (index != string::npos) {
         return path.substr(0, index);
     } else {
         return path;
@@ -256,7 +256,7 @@ string SGPath::complete_lower_extension() const
     }
     
     string::size_type firstDot = path.find(".", index);
-    if ((firstDot >= 0)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
+    if ((firstDot != string::npos)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
         return boost::to_lower_copy(path.substr(firstDot + 1));
     } else {
         return "";

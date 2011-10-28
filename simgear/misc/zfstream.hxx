@@ -90,7 +90,7 @@ public:
     bool is_open() const { return (file != NULL); }
 
     /** @return stream position */
-    virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, int which );
+    virtual std::streampos seekoff( std::streamoff off, ios_seekdir way, ios_openmode which );
 
     /** sync the stream */
     virtual int sync();

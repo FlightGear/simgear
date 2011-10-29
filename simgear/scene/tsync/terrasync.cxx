@@ -802,10 +802,11 @@ void SGTerraSync::setTileCache(TileCache* tile_cache)
 
 void SGTerraSync::syncAirportsModels()
 {
-    static const char bounds[] = "KZAJ";
-    for( unsigned i = 0; i < sizeof(bounds)/sizeof(bounds[0])/2; i+= 2 ) 
+    static const char* bounds = "MZAJKL"; // airport sync order: K-L, A-J, M-Z
+    // note "request" method uses LIFO order, i.e. processes most recent request first
+    for( unsigned i = 0; i < strlen(bounds)/2; i++ )
     {
-        for ( char synced_other = bounds[i]; synced_other <= bounds[i+1]; synced_other++ )
+        for ( char synced_other = bounds[2*i]; synced_other <= bounds[2*i+1]; synced_other++ )
         {
             ostringstream dir;
             dir << "Airports/" << synced_other;

@@ -45,6 +45,7 @@
 
 #include <stdlib.h>             // atoi() atof() abs() system()
 #include <signal.h>             // signal()
+#include <string.h>
 
 #include <iostream>
 #include <fstream>

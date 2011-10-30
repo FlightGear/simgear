@@ -18,6 +18,8 @@
 #include "HLAPropertyDataElement.hxx"
 
 #include "HLAArrayDataElement.hxx"
+#include "HLABasicDataElement.hxx"
+#include "HLADataElementVisitor.hxx"
 #include "HLADataTypeVisitor.hxx"
 #include "HLAFixedRecordDataElement.hxx"
 #include "HLAVariantDataElement.hxx"
@@ -152,7 +154,7 @@ protected:
     const SGPropertyNode& _propertyNode;
 };
 
-class HLAPropertyDataElement::ScalarDataElement : public HLADataElement {
+class HLAPropertyDataElement::ScalarDataElement : public HLABasicDataElement {
 public:
     ScalarDataElement(const HLABasicDataType* dataType, SGPropertyNode* propertyNode);
     virtual ~ScalarDataElement();
@@ -160,16 +162,12 @@ public:
     virtual bool encode(HLAEncodeStream& stream) const;
     virtual bool decode(HLADecodeStream& stream);
 
-    virtual const HLADataType* getDataType() const;
-    virtual bool setDataType(const HLADataType* dataType);
-
 private:
-    SGSharedPtr<const HLABasicDataType> _dataType;
     SGSharedPtr<SGPropertyNode> _propertyNode;
 };
 
 HLAPropertyDataElement::ScalarDataElement::ScalarDataElement(const HLABasicDataType* dataType, SGPropertyNode* propertyNode) :
-    _dataType(dataType),
+    HLABasicDataElement(dataType),
     _propertyNode(propertyNode)
 {
 }
@@ -194,162 +192,64 @@ HLAPropertyDataElement::ScalarDataElement::decode(HLADecodeStream& stream)
     return true;
 }
 
-const HLADataType*
-HLAPropertyDataElement::ScalarDataElement::getDataType() const
-{
-    return _dataType.get();
-}
-
-bool
-HLAPropertyDataElement::ScalarDataElement::setDataType(const HLADataType* dataType)
-{
-    if (!dataType)
-        return false;
-    const HLABasicDataType* basicDataType = dataType->toBasicDataType();
-    if (!basicDataType)
-        return false;
-    _dataType = basicDataType;
-    return true;
-}
-
-
-class HLAPropertyDataElement::StringDecodeVisitor : public HLADataTypeDecodeVisitor {
-public:
-    StringDecodeVisitor(HLADecodeStream& stream, SGPropertyNode& propertyNode) :
-        HLADataTypeDecodeVisitor(stream),
-        _propertyNode(propertyNode)
-    { }
-
-    virtual void apply(const HLAFixedArrayDataType& dataType)
-    {
-        unsigned numElements = dataType.getNumElements();
-        std::string value;
-        value.reserve(numElements);
-        for (unsigned i = 0; i < numElements; ++i) {
-            HLATemplateDecodeVisitor<char> visitor(_stream);
-            dataType.getElementDataType()->accept(visitor);
-            value.push_back(visitor.getValue());
-        }
-        _propertyNode.setStringValue(value);
-    }
-    virtual void apply(const HLAVariableArrayDataType& dataType)
-    {
-        HLATemplateDecodeVisitor<std::string::size_type> numElementsVisitor(_stream);
-        dataType.getSizeDataType()->accept(numElementsVisitor);
-        std::string::size_type numElements = numElementsVisitor.getValue();
-        std::string value;
-        value.reserve(numElements);
-        for (std::string::size_type i = 0; i < numElements; ++i) {
-            HLATemplateDecodeVisitor<char> visitor(_stream);
-            dataType.getElementDataType()->accept(visitor);
-            value.push_back(visitor.getValue());
-        }
-        _propertyNode.setStringValue(value);
-    }
-
-protected:
-    SGPropertyNode& _propertyNode;
-};
-
-class HLAPropertyDataElement::StringEncodeVisitor : public HLADataTypeEncodeVisitor {
-public:
-    StringEncodeVisitor(HLAEncodeStream& stream, const SGPropertyNode& propertyNode) :
-        HLADataTypeEncodeVisitor(stream),
-        _propertyNode(propertyNode)
-    { }
-
-    virtual void apply(const HLAFixedArrayDataType& dataType)
-    {
-        unsigned numElements = dataType.getNumElements();
-        std::string value = _propertyNode.getStringValue();
-        for (unsigned i = 0; i < numElements; ++i) {
-            if (i < value.size()) {
-                HLATemplateEncodeVisitor<char> visitor(_stream, value[i]);
-                dataType.getElementDataType()->accept(visitor);
-            } else {
-                HLADataTypeEncodeVisitor visitor(_stream);
-                dataType.getElementDataType()->accept(visitor);
-            }
-        }
-    }
-
-    virtual void apply(const HLAVariableArrayDataType& dataType)
-    {
-        std::string value = _propertyNode.getStringValue();
-        HLATemplateEncodeVisitor<std::string::size_type> numElementsVisitor(_stream, value.size());
-        dataType.getSizeDataType()->accept(numElementsVisitor);
-        for (unsigned i = 0; i < value.size(); ++i) {
-            HLATemplateEncodeVisitor<char> visitor(_stream, value[i]);
-            dataType.getElementDataType()->accept(visitor);
-        }
-    }
-
-protected:
-    const SGPropertyNode& _propertyNode;
-};
-
-class HLAPropertyDataElement::StringDataElement : public HLADataElement {
+class HLAPropertyDataElement::StringDataElement : public HLAStringDataElement {
 public:
     StringDataElement(const HLAArrayDataType* dataType, SGPropertyNode* propertyNode);
     virtual ~StringDataElement();
 
-    virtual bool encode(HLAEncodeStream& stream) const;
-    virtual bool decode(HLADecodeStream& stream);
+    virtual bool decodeElement(HLADecodeStream& stream, unsigned i);
 
-    virtual const HLADataType* getDataType() const;
-    virtual bool setDataType(const HLADataType* dataType);
+    class Listener : public SGPropertyChangeListener {
+    public:
+        Listener(StringDataElement* stringDataElement);
+        virtual ~Listener();
+        virtual void valueChanged (SGPropertyNode * node);
+    private:
+        StringDataElement* _stringDataElement;
+    };
 
 private:
-    SGSharedPtr<const HLAArrayDataType> _dataType;
     SGSharedPtr<SGPropertyNode> _propertyNode;
+    Listener* _listener;
 };
 
-HLAPropertyDataElement::StringDataElement::StringDataElement(const HLAArrayDataType* dataType, SGPropertyNode* propertyNode) :
-    _dataType(dataType),
-    _propertyNode(propertyNode)
+HLAPropertyDataElement::StringDataElement::Listener::Listener(StringDataElement* stringDataElement) :
+            _stringDataElement(stringDataElement)
 {
+}
+
+HLAPropertyDataElement::StringDataElement::Listener::~Listener()
+{
+}
+
+void
+HLAPropertyDataElement::StringDataElement::Listener::valueChanged (SGPropertyNode * node)
+{
+    _stringDataElement->setValue(node->getStringValue());
+}
+
+HLAPropertyDataElement::StringDataElement::StringDataElement(const HLAArrayDataType* dataType, SGPropertyNode* propertyNode) :
+    HLAStringDataElement(dataType),
+    _propertyNode(propertyNode),
+    _listener(new Listener(this))
+{
+    _propertyNode->addChangeListener(_listener, true);
 }
 
 HLAPropertyDataElement::StringDataElement::~StringDataElement()
 {
+    _propertyNode->removeChangeListener(_listener);
+    delete _listener;
+    _listener = 0;
 }
 
 bool
-HLAPropertyDataElement::StringDataElement::encode(HLAEncodeStream& stream) const
+HLAPropertyDataElement::StringDataElement::decodeElement(HLADecodeStream& stream, unsigned i)
 {
-    StringEncodeVisitor visitor(stream, *_propertyNode);
-    _dataType->accept(visitor);
-    return true;
-}
-
-bool
-HLAPropertyDataElement::StringDataElement::decode(HLADecodeStream& stream)
-{
-    StringDecodeVisitor visitor(stream, *_propertyNode);
-    _dataType->accept(visitor);
-    return true;
-}
-
-const HLADataType*
-HLAPropertyDataElement::StringDataElement::getDataType() const
-{
-    return _dataType.get();
-}
-
-bool
-HLAPropertyDataElement::StringDataElement::setDataType(const HLADataType* dataType)
-{
-    if (!dataType)
+    if (!HLAStringDataElement::decodeElement(stream, i))
         return false;
-    const HLAArrayDataType* arrayDataType = dataType->toArrayDataType();
-    if (!arrayDataType)
-        return false;
-    const HLADataType* elementDataType = arrayDataType->getElementDataType();
-    if (!elementDataType)
-        return false;
-    if (!elementDataType->toBasicDataType())
-        return false;
-    _dataType = arrayDataType;
+    if (i + 1 == getValue().size())
+        _propertyNode->setStringValue(getValue());
     return true;
 }
 
@@ -532,6 +432,38 @@ HLAPropertyDataElement::HLAPropertyDataElement(const HLADataType* dataType) :
 
 HLAPropertyDataElement::~HLAPropertyDataElement()
 {
+}
+
+void
+HLAPropertyDataElement::accept(HLADataElementVisitor& visitor)
+{
+    if (_dataElement.valid()) {
+        visitor.apply(*_dataElement);
+    } else {
+        // We cant do anything if the data type is not valid
+        if (_dataType.valid()) {
+            HLADataElementFactoryVisitor factoryVisitor;
+            _dataType->accept(factoryVisitor);
+            _dataElement = factoryVisitor.getDataElement();
+            if (_dataElement.valid()) {
+                visitor.apply(*_dataElement);
+            } else {
+                HLADataElement::accept(visitor);
+            }
+        } else {
+            HLADataElement::accept(visitor);
+        }
+    }
+}
+
+void
+HLAPropertyDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    if (_dataElement.valid()) {
+        visitor.apply(*_dataElement);
+    } else {
+        HLADataElement::accept(visitor);
+    }
 }
 
 bool

@@ -19,6 +19,8 @@
 
 #include <simgear/debug/logstream.hxx>
 
+#include "HLADataElementVisitor.hxx"
+
 namespace simgear {
 
 HLAAbstractEnumeratedDataElement::HLAAbstractEnumeratedDataElement(const HLAEnumeratedDataType* dataType) :
@@ -28,6 +30,18 @@ HLAAbstractEnumeratedDataElement::HLAAbstractEnumeratedDataElement(const HLAEnum
 
 HLAAbstractEnumeratedDataElement::~HLAAbstractEnumeratedDataElement()
 {
+}
+
+void
+HLAAbstractEnumeratedDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLAAbstractEnumeratedDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 bool

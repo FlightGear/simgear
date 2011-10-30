@@ -19,6 +19,8 @@
 
 #include <simgear/debug/logstream.hxx>
 
+#include "HLADataElementVisitor.hxx"
+
 namespace simgear {
 
 HLADataElement::PathElement::Data::~Data()
@@ -127,6 +129,18 @@ HLADataElement::PathElement::IndexData::append(std::string& s) const
 
 HLADataElement::~HLADataElement()
 {
+}
+
+void
+HLADataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLADataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 std::string

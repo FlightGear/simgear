@@ -17,6 +17,7 @@
 
 #include "HLABasicDataElement.hxx"
 
+#include "HLADataElementVisitor.hxx"
 #include "HLADataTypeVisitor.hxx"
 
 namespace simgear {
@@ -28,6 +29,18 @@ HLABasicDataElement::HLABasicDataElement(const HLABasicDataType* dataType) :
 
 HLABasicDataElement::~HLABasicDataElement()
 {
+}
+
+void
+HLABasicDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLABasicDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 const HLABasicDataType*

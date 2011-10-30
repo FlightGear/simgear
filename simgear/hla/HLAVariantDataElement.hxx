@@ -30,6 +30,9 @@ public:
     HLAAbstractVariantDataElement(const HLAVariantDataType* dataType);
     virtual ~HLAAbstractVariantDataElement();
 
+    virtual void accept(HLADataElementVisitor& visitor);
+    virtual void accept(HLAConstDataElementVisitor& visitor) const;
+
     virtual bool decode(HLADecodeStream& stream);
     virtual bool encode(HLAEncodeStream& stream) const;
 

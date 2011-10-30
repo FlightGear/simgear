@@ -31,6 +31,9 @@ public:
     HLAPropertyDataElement(const HLADataType* dataType);
     virtual ~HLAPropertyDataElement();
 
+    virtual void accept(HLADataElementVisitor& visitor);
+    virtual void accept(HLAConstDataElementVisitor& visitor) const;
+
     virtual bool encode(HLAEncodeStream& stream) const;
     virtual bool decode(HLADecodeStream& stream);
 

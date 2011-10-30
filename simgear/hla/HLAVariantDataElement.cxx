@@ -19,6 +19,8 @@
 
 #include <simgear/debug/logstream.hxx>
 
+#include "HLADataElementVisitor.hxx"
+
 namespace simgear {
 
 HLAAbstractVariantDataElement::HLAAbstractVariantDataElement(const HLAVariantDataType* dataType) :
@@ -28,6 +30,18 @@ HLAAbstractVariantDataElement::HLAAbstractVariantDataElement(const HLAVariantDat
 
 HLAAbstractVariantDataElement::~HLAAbstractVariantDataElement()
 {
+}
+
+void
+HLAAbstractVariantDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLAAbstractVariantDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 bool

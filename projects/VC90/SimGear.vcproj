@@ -672,14 +672,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\sg_sleep.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\misc\sgstream.cxx"
 				>
 			</File>
@@ -1499,6 +1491,14 @@
 		<Filter
 			Name="Lib_sgstructure"
 			>
+			<File
+				RelativePath="..\..\simgear\structure\SGAtomic.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGAtomic.cxx"
+				>
+			</File>
 			<File
 				RelativePath="..\..\simgear\structure\callback.hxx"
 				>

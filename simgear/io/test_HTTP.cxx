@@ -12,7 +12,6 @@
 #include <simgear/io/sg_netChat.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/timing/timestamp.hxx>
-#include <simgear/misc/sg_sleep.hxx>
 
 using std::cout;
 using std::cerr;
@@ -321,7 +320,7 @@ void waitForComplete(HTTP::Client* cl, TestRequest* tr)
         if (tr->complete) {
             return;
         }
-        sleepForMSec(1);
+        SGTimeStamp::sleepForMSec(1);
     }
     
     cerr << "timed out" << endl;
@@ -335,7 +334,7 @@ void waitForFailed(HTTP::Client* cl, TestRequest* tr)
         if (tr->failed) {
             return;
         }
-        sleepForMSec(1);
+        SGTimeStamp::sleepForMSec(1);
     }
     
     cerr << "timed out waiting for failure" << endl;

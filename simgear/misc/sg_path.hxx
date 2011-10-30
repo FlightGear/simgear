@@ -124,7 +124,7 @@ public:
     std::string dir() const;
   
     /**
-     * Get the base part of the path (everything but the extension.)
+     * Get the base part of the path (everything but the final extension.)
      * @return the base string
      */
     std::string base() const;
@@ -235,6 +235,13 @@ private:
     mutable bool _isFile : 1;
     mutable time_t _modTime;
 };
+
+/// Output to an ostream
+template<typename char_type, typename traits_type>
+inline
+std::basic_ostream<char_type, traits_type>&
+operator<<(std::basic_ostream<char_type, traits_type>& s, const SGPath& p)
+{ return s << "Path \"" << p.str() << "\""; }
 
 
 /**

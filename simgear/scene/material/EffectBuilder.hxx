@@ -350,8 +350,11 @@ protected:
     struct PassAttrMapSingleton : public simgear::Singleton<PassAttrMapSingleton>
     {
         PassAttrMap passAttrMap;
+      
     };
 public:
+    virtual ~PassAttributeBuilder(); // anchor into the compilation unit.
+  
     virtual void buildAttribute(Effect* effect, Pass* pass,
                                 const SGPropertyNode* prop,
                                 const SGReaderWriterXMLOptions* options)

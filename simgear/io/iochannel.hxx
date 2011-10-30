@@ -149,7 +149,7 @@ public:
      * false.
      * @return result of eof check
      */
-    virtual bool eof();
+    virtual bool eof() const;
 
     inline void set_type( SGChannelType t ) { type = t; }
     inline SGChannelType get_type() const { return type; }

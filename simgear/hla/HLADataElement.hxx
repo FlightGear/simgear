@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -30,9 +30,15 @@ class SGTimeStamp;
 
 namespace simgear {
 
+class HLADataElementVisitor;
+class HLAConstDataElementVisitor;
+
 class HLADataElement : public SGReferenced {
 public:
     virtual ~HLADataElement();
+
+    virtual void accept(HLADataElementVisitor& visitor) = 0;
+    virtual void accept(HLAConstDataElementVisitor& visitor) const = 0;
 
     virtual bool encode(HLAEncodeStream& stream) const = 0;
     virtual bool decode(HLADecodeStream& stream) = 0;

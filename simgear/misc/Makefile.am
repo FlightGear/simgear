@@ -14,8 +14,7 @@ include_HEADERS = \
 	stdint.hxx \
 	PathOptions.hxx \
 	sg_dir.hxx \
-	ResourceManager.hxx \
-	sg_sleep.hxx
+	ResourceManager.hxx
 
 libsgmisc_a_SOURCES = \
 	sg_path.cxx \
@@ -27,8 +26,7 @@ libsgmisc_a_SOURCES = \
 	interpolator.cxx \
 	PathOptions.cxx \
 	sg_dir.cxx \
-	ResourceManager.cxx \
-	sg_sleep.cxx
+	ResourceManager.cxx
 
 #noinst_PROGRAMS = tabbed_value_test swap_test
 

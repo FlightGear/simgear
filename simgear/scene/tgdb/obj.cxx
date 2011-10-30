@@ -583,7 +583,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 {
   SGBinObject tile;
   if (!tile.read_bin(path))
-    return false;
+    return NULL;
 
   SGVec3d center = tile.get_gbs_center();
   SGGeod geodPos = SGGeod::fromCart(center);
@@ -604,7 +604,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
 
   SGTileGeometryBin tileGeometryBin;
   if (!tileGeometryBin.insertBinObj(tile, matlib))
-    return false;
+    return NULL;
 
   SGVec3f up(0, 0, 1);
   GroundLightManager* lightManager = GroundLightManager::instance();

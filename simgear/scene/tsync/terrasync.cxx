@@ -45,6 +45,7 @@
 
 #include <stdlib.h>             // atoi() atof() abs() system()
 #include <signal.h>             // signal()
+#include <string.h>
 
 #include <iostream>
 #include <fstream>
@@ -486,7 +487,18 @@ bool SGTerraSync::SvnThread::syncTreeExternal(const char* dir)
     command = buf.str();
 #endif
     SG_LOG(SG_TERRAIN,SG_DEBUG, "sync command '" << command << "'");
+
+#ifdef SG_WINDOWS
+    // tbd: does Windows support "popen"?
     int rc = system( command.c_str() );
+#else
+    FILE* pipe = popen( command.c_str(), "r");
+    int rc=-1;
+    // wait for external process to finish
+    if (pipe)
+        rc = pclose(pipe);
+#endif
+
     if (rc)
     {
         SG_LOG(SG_TERRAIN,SG_ALERT,
@@ -701,12 +713,21 @@ void SGTerraSync::reinit()
         _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));
 
         if (_svnThread->start())
+        {
             syncAirportsModels();
+            if (last_lat != NOWHERE && last_lon != NOWHERE)
+            {
+                // reschedule most recent position
+                int lat = last_lat;
+                int lon = last_lon;
+                last_lat = NOWHERE;
+                last_lon = NOWHERE;
+                schedulePosition(lat, lon);
+            }
+        }
     }
 
     _stalled_node->setBoolValue(_svnThread->_stalled);
-    last_lat = NOWHERE;
-    last_lon = NOWHERE;
 }
 
 void SGTerraSync::bind()
@@ -802,10 +823,11 @@ void SGTerraSync::setTileCache(TileCache* tile_cache)
 
 void SGTerraSync::syncAirportsModels()
 {
-    static const char bounds[] = "KZAJ";
-    for( unsigned i = 0; i < sizeof(bounds)/sizeof(bounds[0])/2; i+= 2 ) 
+    static const char* bounds = "MZAJKL"; // airport sync order: K-L, A-J, M-Z
+    // note "request" method uses LIFO order, i.e. processes most recent request first
+    for( unsigned i = 0; i < strlen(bounds)/2; i++ )
     {
-        for ( char synced_other = bounds[i]; synced_other <= bounds[i+1]; synced_other++ )
+        for ( char synced_other = bounds[2*i]; synced_other <= bounds[2*i+1]; synced_other++ )
         {
             ostringstream dir;
             dir << "Airports/" << synced_other;
@@ -896,46 +918,49 @@ void SGTerraSync::syncAreas( int lat, int lon, int lat_dir, int lon_dir )
 
 bool SGTerraSync::schedulePosition(int lat, int lon)
 {
+    bool Ok = false;
+
     // Ignore messages where the location does not change
     if ( lat != last_lat || lon != last_lon )
     {
-        SG_LOG(SG_TERRAIN,SG_DEBUG, "Requesting scenery update for position " << 
-                                    lat << "," << lon);
-        int lat_dir, lon_dir, dist;
-        if ( last_lat == NOWHERE || last_lon == NOWHERE )
+        if (_svnThread->_running)
         {
-            lat_dir = lon_dir = 0;
-        } else
-        {
-            dist = lat - last_lat;
-            if ( dist != 0 )
+            SG_LOG(SG_TERRAIN,SG_DEBUG, "Requesting scenery update for position " <<
+                                        lat << "," << lon);
+            int lat_dir=0;
+            int lon_dir=0;
+            if ( last_lat != NOWHERE && last_lon != NOWHERE )
             {
-                lat_dir = dist / abs(dist);
+                int dist = lat - last_lat;
+                if ( dist != 0 )
+                {
+                    lat_dir = dist / abs(dist);
+                }
+                else
+                {
+                    lat_dir = 0;
+                }
+                dist = lon - last_lon;
+                if ( dist != 0 )
+                {
+                    lon_dir = dist / abs(dist);
+                } else
+                {
+                    lon_dir = 0;
+                }
             }
-            else
-            {
-                lat_dir = 0;
-            }
-            dist = lon - last_lon;
-            if ( dist != 0 )
-            {
-                lon_dir = dist / abs(dist);
-            } else
-            {
-                lon_dir = 0;
-            }
+
+            SG_LOG(SG_TERRAIN,SG_DEBUG, "Scenery update for " <<
+                   "lat = " << lat << ", lon = " << lon <<
+                   ", lat_dir = " << lat_dir << ",  " <<
+                   "lon_dir = " << lon_dir);
+
+            syncAreas( lat, lon, lat_dir, lon_dir );
+            Ok = true;
         }
-
-        SG_LOG(SG_TERRAIN,SG_DEBUG, "Scenery update for " << 
-               "lat = " << lat << ", lon = " << lon <<
-               ", lat_dir = " << lat_dir << ",  " <<
-               "lon_dir = " << lon_dir);
-
-        syncAreas( lat, lon, lat_dir, lon_dir );
-
         last_lat = lat;
         last_lon = lon;
-        return true;
     }
-    return false;
+
+    return Ok;
 }

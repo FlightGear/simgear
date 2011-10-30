@@ -12,7 +12,7 @@
 #include <simgear/io/HTTPRequest.hxx>
 #include <simgear/io/sg_netChannel.hxx>
 #include <simgear/misc/strutils.hxx>
-#include <simgear/misc/sg_sleep.hxx>
+#include <simgear/timing/timestamp.hxx>
 
 using namespace simgear;
 using std::cout;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
     
     while (!req->complete()) {
         cl.update();
-        sleepForMSec(100);
+        SGTimeStamp::sleepForMSec(100);
     }
         
     if (req->responseCode() != 200) {

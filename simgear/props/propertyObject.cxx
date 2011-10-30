@@ -34,6 +34,13 @@ void PropertyObjectBase::setDefaultRoot(SGPropertyNode* aRoot)
 {
   static_defaultRoot = aRoot;
 }
+  
+PropertyObjectBase::PropertyObjectBase() :
+  _path(NULL),
+  _prop(NULL)
+{
+    
+}
 
 PropertyObjectBase::PropertyObjectBase(const PropertyObjectBase& aOther) :
   _path(aOther._path),

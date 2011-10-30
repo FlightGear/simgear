@@ -28,6 +28,6 @@ class SGBucket;
 class SGMaterialLib;
 
 // Generate an ocean tile
-osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib);
+osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints = 5, int lonPoints = 5);
 
 #endif // _SG_OBJ_HXX

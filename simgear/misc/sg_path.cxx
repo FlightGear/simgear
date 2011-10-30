@@ -175,12 +175,13 @@ void SGPath::concat( const string& p ) {
 
 
 // Get the file part of the path (everything after the last path sep)
-string SGPath::file() const {
-    int index = path.rfind(sgDirPathSep);
-    if (index >= 0) {
-    return path.substr(index + 1);
+string SGPath::file() const
+{
+    string::size_type index = path.rfind(sgDirPathSep);
+    if (index != string::npos) {
+        return path.substr(index + 1);
     } else {
-    return "";
+        return path;
     }
 }
   
@@ -189,40 +190,40 @@ string SGPath::file() const {
 string SGPath::dir() const {
     int index = path.rfind(sgDirPathSep);
     if (index >= 0) {
-    return path.substr(0, index);
+        return path.substr(0, index);
     } else {
-    return "";
+        return "";
     }
 }
 
 // get the base part of the path (everything but the extension.)
-string SGPath::base() const {
-    unsigned int index = path.rfind(sgDirPathSep);
-    if (index == string::npos) {
-        index = 0; // no separator in the name
-    } else {
-        ++index; // skip past the separator
-    }
-
-// find the first dot after the final separator
-    unsigned int firstDot = path.find(".", index);
-    if (firstDot == string::npos) {
-        return path; // no extension, return whole path
+string SGPath::base() const
+{
+    string::size_type index = path.rfind(".");
+    string::size_type lastSep = path.rfind(sgDirPathSep);
+    
+// tolerate dots inside directory names
+    if ((lastSep != string::npos) && (index < lastSep)) {
+        return path;
     }
     
-    return path.substr(0, firstDot);
+    if (index != string::npos) {
+        return path.substr(0, index);
+    } else {
+        return path;
+    }
 }
 
 string SGPath::file_base() const
 {
-    unsigned int index = path.rfind(sgDirPathSep);
+    string::size_type index = path.rfind(sgDirPathSep);
     if (index == string::npos) {
         index = 0; // no separator in the name
     } else {
         ++index; // skip past the separator
     }
     
-    unsigned int firstDot = path.find(".", index);
+    string::size_type firstDot = path.find(".", index);
     if (firstDot == string::npos) {
         return path.substr(index); // no extensions
     }
@@ -248,15 +249,15 @@ string SGPath::lower_extension() const {
 
 string SGPath::complete_lower_extension() const
 {
-    unsigned int index = path.rfind(sgDirPathSep);
+    string::size_type index = path.rfind(sgDirPathSep);
     if (index == string::npos) {
         index = 0; // no separator in the name
     } else {
         ++index; // skip past the separator
     }
     
-    int firstDot = path.find(".", index);
-    if ((firstDot >= 0)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
+    string::size_type firstDot = path.find(".", index);
+    if ((firstDot != string::npos)  && (path.find(sgDirPathSep, firstDot) == string::npos)) {
         return boost::to_lower_copy(path.substr(firstDot + 1));
     } else {
         return "";

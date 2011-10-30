@@ -102,4 +102,14 @@ namespace effect
 {
 const char* colorFields[] = {"red", "green", "blue", "alpha"};
 }
+  
+PassAttributeBuilder::~PassAttributeBuilder()
+{
 }
+  
+} // of namespace simgear
+
+
+
+
+

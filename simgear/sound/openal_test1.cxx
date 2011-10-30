@@ -103,10 +103,6 @@ int main( int argc, char *argv[] ) {
     ALfloat source_vel[3];
 
     // configuration values
-//    ALenum format;
-//    ALsizei size;
-//    ALvoid* data;
-//    ALsizei freq;
     ALboolean loop = false;
 
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
@@ -131,6 +127,11 @@ int main( int argc, char *argv[] ) {
   }
 
 #else
+  ALenum format;
+  ALsizei size;
+  ALvoid* data;
+  ALsizei freq;
+  
 # if defined (__APPLE__)
     alutLoadWAVFile( (ALbyte *)AUDIOFILE, &format, &data, &size, &freq );
 # else

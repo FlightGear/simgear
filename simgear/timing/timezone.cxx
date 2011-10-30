@@ -26,6 +26,10 @@
  *
  ************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>

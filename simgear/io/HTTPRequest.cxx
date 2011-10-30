@@ -66,7 +66,7 @@ void Request::responseStart(const string& r)
 void Request::responseHeader(const string& key, const string& value)
 {
     if (key == "connection") {
-        _willClose = (value.find("close") >= 0);
+        _willClose = (value.find("close") != string::npos);
     }
     
     _responseHeaders[key] = value;

@@ -88,7 +88,7 @@ public:
     inline std::string get_file_name() const { return file_name; }
 
     /** @return true of eof conditions exists */
-    inline bool eof() const { return eof_flag; };
+    virtual bool eof() const { return eof_flag; };
 };
 
 

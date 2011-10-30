@@ -7,7 +7,6 @@ set(HEADERS
     interpolator.hxx
     sg_dir.hxx
     sg_path.hxx
-    sg_sleep.hxx
     sgstream.hxx
     stdint.hxx
     stopwatch.hxx
@@ -24,7 +23,6 @@ set(SOURCES
     interpolator.cxx
     sg_dir.cxx
     sg_path.cxx
-    sg_sleep.cxx
     sgstream.cxx
     strutils.cxx
     tabbed_values.cxx

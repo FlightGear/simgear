@@ -28,6 +28,12 @@ public:
     HLABasicDataElement(const HLABasicDataType* dataType);
     virtual ~HLABasicDataElement();
 
+    virtual void accept(HLADataElementVisitor& visitor);
+    virtual void accept(HLAConstDataElementVisitor& visitor) const;
+
+    virtual bool encode(HLAEncodeStream& stream) const = 0;
+    virtual bool decode(HLADecodeStream& stream) = 0;
+
     virtual const HLABasicDataType* getDataType() const;
     virtual bool setDataType(const HLADataType* dataType);
     void setDataType(const HLABasicDataType* dataType);
@@ -41,6 +47,7 @@ class HLAAbstract##type##DataElement : public HLABasicDataElement {           \
 public:                                                                       \
     HLAAbstract##type##DataElement(const HLABasicDataType* dataType = 0);     \
     virtual ~HLAAbstract##type##DataElement();                                \
+                                                                              \
     virtual bool encode(HLAEncodeStream& stream) const;                       \
     virtual bool decode(HLADecodeStream& stream);                             \
                                                                               \

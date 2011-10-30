@@ -27,7 +27,7 @@ using std::endl;
 void test_dir()
 {
     simgear::Dir temp = simgear::Dir::tempDir("foo");
-    cout << "created:" << temp.path().str() << endl;
+    cout << "created:" << temp.path() << endl;
   
     VERIFY(temp.exists());
     VERIFY(temp.path().isDir());
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     SGPath pj("/Foo/zot.dot/thing.tar.gz");
     COMPARE(pj.dir(), std::string("/Foo/zot.dot"));
     COMPARE(pj.file(), std::string("thing.tar.gz"));
-    COMPARE(pj.base(), std::string("/Foo/zot.dot/thing"));
+    COMPARE(pj.base(), std::string("/Foo/zot.dot/thing.tar"));
     COMPARE(pj.file_base(), std::string("thing"));
     COMPARE(pj.extension(), std::string("gz"));
     COMPARE(pj.complete_lower_extension(), std::string("tar.gz"));
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
     
     SGPath extB("BAH/FOO.HTML.GZ");
     COMPARE(extB.extension(), "GZ");
-    COMPARE(extB.base(), "BAH/FOO");
+    COMPARE(extB.base(), "BAH/FOO.HTML");
     COMPARE(extB.lower_extension(), "gz");
     COMPARE(extB.complete_lower_extension(), "html.gz");
 #ifdef _WIN32
@@ -135,6 +135,14 @@ int main(int argc, char* argv[])
 #else
     COMPARE(d1.str_native(), std::string("/usr/local"));
 #endif
+  
+// paths with only the file components
+    SGPath pf("something.txt.gz");
+    COMPARE(pf.base(), "something.txt");
+    COMPARE(pf.file(), "something.txt.gz");
+    COMPARE(pf.dir(), "");
+    COMPARE(pf.lower_extension(), "gz");
+    COMPARE(pf.complete_lower_extension(), "txt.gz");
     
     test_dir();
     

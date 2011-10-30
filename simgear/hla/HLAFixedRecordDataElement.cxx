@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 #include <simgear/debug/logstream.hxx>
+
+#include "HLADataElementVisitor.hxx"
 #include "HLADataTypeVisitor.hxx"
 
 namespace simgear {
@@ -31,6 +33,18 @@ HLAAbstractFixedRecordDataElement::HLAAbstractFixedRecordDataElement(const HLAFi
 
 HLAAbstractFixedRecordDataElement::~HLAAbstractFixedRecordDataElement()
 {
+}
+
+void
+HLAAbstractFixedRecordDataElement::accept(HLADataElementVisitor& visitor)
+{
+    visitor.apply(*this);
+}
+
+void
+HLAAbstractFixedRecordDataElement::accept(HLAConstDataElementVisitor& visitor) const
+{
+    visitor.apply(*this);
 }
 
 bool

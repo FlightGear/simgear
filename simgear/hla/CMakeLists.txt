@@ -7,6 +7,7 @@ set(HLA_HEADERS
     HLABasicDataElement.hxx
     HLABasicDataType.hxx
     HLADataElement.hxx
+    HLADataElementVisitor.hxx
     HLADataType.hxx
     HLADataTypeVisitor.hxx
     HLAEnumeratedDataElement.hxx

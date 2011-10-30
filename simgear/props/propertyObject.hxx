@@ -28,6 +28,8 @@ class PropertyObjectBase
 public:
   static void setDefaultRoot(SGPropertyNode* aRoot);
   
+  PropertyObjectBase();
+  
   PropertyObjectBase(const PropertyObjectBase& aOther);
     
   PropertyObjectBase(const char* aChild);
@@ -57,6 +59,8 @@ template <typename T>
 class PropertyObject : PropertyObjectBase
 {
 public:
+  PropertyObject();
+  
   /**
    * Create from path relative to the default root, and option default value
    */
@@ -220,11 +224,9 @@ private:
 
 } // of namespace simgear
 
-/*
 typedef simgear::PropertyObject<double> SGPropObjDouble;
 typedef simgear::PropertyObject<bool> SGPropObjBool;
 typedef simgear::PropertyObject<std::string> SGPropObjString;
 typedef simgear::PropertyObject<long> SGPropObjInt;
-*/
 
 #endif

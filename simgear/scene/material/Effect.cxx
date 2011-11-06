@@ -46,6 +46,7 @@
 #include <osg/Material>
 #include <osg/Math>
 #include <osg/PolygonMode>
+#include <osg/PolygonOffset>
 #include <osg/Program>
 #include <osg/Referenced>
 #include <osg/RenderInfo>
@@ -1058,6 +1059,34 @@ struct PolygonModeBuilder : public PassAttributeBuilder
 };
 
 InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
+
+struct PolygonOffsetBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const SGReaderWriterXMLOptions* options)
+    {
+        if (!isAttributeActive(effect, prop))
+            return;
+        
+        const SGPropertyNode* factor
+           = getEffectPropertyChild(effect, prop, "factor");
+        const SGPropertyNode* units
+           = getEffectPropertyChild(effect, prop, "units");
+        
+        ref_ptr<PolygonOffset> polyoffset = new PolygonOffset;
+        
+        polyoffset->setFactor(factor->getFloatValue());
+        polyoffset->setUnits(units->getFloatValue());
+
+        SG_LOG(SG_INPUT, SG_BULK,
+                   "Set PolygonOffset to " << polyoffset->getFactor() << polyoffset->getUnits() );            
+
+        pass->setAttributeAndModes(polyoffset.get(),
+                                   StateAttribute::OVERRIDE|StateAttribute::ON);
+    }
+};
+
+InstallAttributeBuilder<PolygonOffsetBuilder> installPolygonOffset("polygon-offset");
 
 struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
 {

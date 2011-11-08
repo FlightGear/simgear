@@ -42,7 +42,6 @@
 #include <simgear/scene/util/SGNodeMasks.hxx>
 
 #include "modellib.hxx"
-#include "SGPagedLOD.hxx"
 #include "SGReaderWriterXML.hxx"
 #include "SGReaderWriterXMLOptions.hxx"
 

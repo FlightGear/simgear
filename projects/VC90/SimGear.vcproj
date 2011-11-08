@@ -1140,14 +1140,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\SGPagedLOD.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\model\SGPagedLOD.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\model\SGReaderWriterXML.cxx"
 				>
 			</File>

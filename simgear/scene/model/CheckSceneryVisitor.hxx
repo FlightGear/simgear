@@ -1,4 +1,5 @@
 // Copyright (C) 2008 Till Busch buti@bux.at
+// Copyright (C) 2011 Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -18,7 +19,6 @@
 #define CHECKSCENERYVISITOR_HXX
 
 #include <osg/NodeVisitor>
-#include <osg/fast_back_stack>
 
 namespace osgDB {
 class DatabasePager;
@@ -28,9 +28,7 @@ class DatabasePager;
 namespace simgear
 {
 
-class SGPagedLOD;
-
-// Checks the scene graph for SGPagedLODs that are within range
+// Checks the scene graph for PagedLOD or ProxyNodes that are within range
 // (compared to postion) and injects them into the DatabasePager.
 // After visiting, isLoaded() returns true if all models in range
 // are available.
@@ -41,6 +39,7 @@ public:
     CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range, osg::FrameStamp* framestamp);
 
     virtual void apply(osg::Node& node);
+    virtual void apply(osg::ProxyNode& node);
     virtual void apply(osg::PagedLOD& node);
     virtual void apply(osg::Transform& node);
 
@@ -58,10 +57,7 @@ private:
     osg::Vec3 _position;
     double _range;
     bool _loaded;
-    osgDB::DatabasePager* _dbp;
-    osg::FrameStamp* _framestamp;
-
-    osg::fast_back_stack<osg::Matrix> _viewMatrices;
+    osg::Matrix _matrix;
 };
 
 }

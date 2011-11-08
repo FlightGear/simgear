@@ -9,7 +9,6 @@ set(HEADERS
     SGInteractionAnimation.hxx
     SGMaterialAnimation.hxx
     SGOffsetTransform.hxx
-    SGPagedLOD.hxx
     SGReaderWriterXML.hxx
     SGReaderWriterXMLOptions.hxx
     SGRotateTransform.hxx
@@ -32,7 +31,6 @@ set(SOURCES
     SGInteractionAnimation.cxx
     SGMaterialAnimation.cxx
     SGOffsetTransform.cxx
-    SGPagedLOD.cxx
     SGReaderWriterXML.cxx
     SGRotateTransform.cxx
     SGScaleTransform.cxx

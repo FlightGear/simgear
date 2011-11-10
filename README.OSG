@@ -1,10 +1,9 @@
 [This file is mirrored in both the FlightGear and SimGear packages.]
 
-You *must* have OpenSceneGraph (OSG) installed to build this version of 
+You *must* have OpenSceneGraph (OSG) installed to build this version of
 FlightGear.
 
-Notice that FlightGear 1.9.0 requires at least version 2.7.8. Using earlier 
-versions of OSG will yield serious rendering bugs. 
+Notice that FlightGear 2.6.0 requires at least version 3.0.0.
 
 You can get the latest version of OSG from:
 
@@ -22,6 +21,6 @@ ccmake .
 [ While running ccmake: press 'c' to configure, press 'c' once more, and
   then press 'g' to generate and exit ]
 
-make 
+make
 sudo make install
 

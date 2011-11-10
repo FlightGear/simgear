@@ -1,4 +1,5 @@
 // Copyright (C) 2008 Till Busch buti@bux.at
+// Copyright (C) 2011 Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -19,11 +20,12 @@
 #endif
 
 #include <osg/Transform>
+#include <osg/ProxyNode>
+#include <osgDB/DatabasePager>
 
 #include <simgear/debug/logstream.hxx>
 
 #include "CheckSceneryVisitor.hxx"
-#include "SGPagedLOD.hxx"
 
 #include <simgear/math/SGMath.hxx>
 
@@ -33,9 +35,10 @@ CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::V
                                          osg::FrameStamp* framestamp)
 :osg::NodeVisitor(osg::NodeVisitor::NODE_VISITOR,
                   osg::NodeVisitor::TRAVERSE_ACTIVE_CHILDREN),
-_position(position), _range(range), _loaded(true), _dbp(dbp), _framestamp(framestamp)
+ _position(position), _range(range), _loaded(true), _matrix(osg::Matrix::identity())
 {
-    _viewMatrices.push_back(osg::Matrix::identity());
+    setDatabaseRequestHandler(dbp);
+    setFrameStamp(framestamp);
 }
 
 void CheckSceneryVisitor::apply(osg::Node& node)
@@ -43,20 +46,53 @@ void CheckSceneryVisitor::apply(osg::Node& node)
     traverse(node);
 }
 
+void CheckSceneryVisitor::apply(osg::ProxyNode& node)
+{
+    osg::Vec3 pos = node.getCenter() * _matrix;
+    double dist = (pos - _position).length();
+    if (dist < _range) {
+        for (unsigned i = 0; i < node.getNumFileNames(); ++i) {
+            if (node.getFileName(i).empty())
+                continue;
+            // Check if this is already loaded.
+            if (i < node.getNumChildren() && node.getChild(i))
+                continue;
+
+            // if the DatabasePager would load LODs while the splashscreen
+            // is there, we could just wait for the models to be loaded
+            // by only setting setLoaded(false) here
+            osg::NodePath nodePath = getNodePath();
+            DatabaseRequestHandler* db = getDatabaseRequestHandler();
+            const osg::FrameStamp* fs = getFrameStamp();
+            db->requestNodeFile(node.getFileName(i), nodePath, 1.0 /*priority*/, fs,
+                                node.getDatabaseRequest(i), node.getDatabaseOptions());
+            setLoaded(false);
+        }
+    }
+    traverse(node);
+}
+
 void CheckSceneryVisitor::apply(osg::PagedLOD& node)
 {
-    SGPagedLOD *sgplod = dynamic_cast<SGPagedLOD*>(&node);
-    if (sgplod) {
-        osg::Vec3 pos = sgplod->getCenter() * _viewMatrices.back();
-        double dist = (pos-_position).length();
-        if (dist < _range) {
-            if (sgplod->getNumChildren() < 1) {
-                // if the DatabasePager would load LODs while the splashscreen
-                // is there, we could just wait for the models to be loaded
-                // by only setting setLoaded(false) here
-                sgplod->forceLoad(_dbp,_framestamp, getNodePath());
-                setLoaded(false);
-            }
+    osg::Vec3 pos = node.getCenter() * _matrix;
+    double dist = (pos - _position).length();
+    if (dist < _range) {
+        for (unsigned i = 0; i < node.getNumFileNames(); ++i) {
+            if (node.getFileName(i).empty())
+                continue;
+            // Check if this is already loaded.
+            if (i < node.getNumChildren() && node.getChild(i))
+                continue;
+
+            // if the DatabasePager would load LODs while the splashscreen
+            // is there, we could just wait for the models to be loaded
+            // by only setting setLoaded(false) here
+            osg::NodePath nodePath = getNodePath();
+            DatabaseRequestHandler* db = getDatabaseRequestHandler();
+            const osg::FrameStamp* fs = getFrameStamp();
+            db->requestNodeFile(node.getFileName(i), nodePath, 1.0 /*priority*/, fs,
+                                node.getDatabaseRequest(i), node.getDatabaseOptions());
+            setLoaded(false);
         }
     }
     traverse(node);
@@ -64,14 +100,8 @@ void CheckSceneryVisitor::apply(osg::PagedLOD& node)
 
 void CheckSceneryVisitor::apply(osg::Transform &node)
 {
-    osg::Matrix currMatrix = _viewMatrices.back();
-    bool pushMatrix = node.computeLocalToWorldMatrix(currMatrix, this);
-
-    if (pushMatrix) {
-        _viewMatrices.push_back(currMatrix);
-    }
+    osg::Matrix matrix = _matrix;
+    node.computeLocalToWorldMatrix(_matrix, this);
     traverse(node);
-    if (pushMatrix) {
-        _viewMatrices.pop_back();
-    }
+    _matrix = matrix;
 }

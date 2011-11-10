@@ -439,7 +439,7 @@ void SGSoundMgr::release_source( unsigned int source )
         ALint result;
 
         alGetSourcei( source, AL_SOURCE_STATE, &result );
-        if ( result == AL_PLAYING ) {
+        if ( result == AL_PLAYING || result == AL_PAUSED ) {
             alSourceStop( source );
         }
 

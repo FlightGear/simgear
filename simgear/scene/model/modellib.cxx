@@ -123,7 +123,7 @@ SGModelLib::loadModel(const string &path,
 }
 
 osg::Node*
-SGModelLib::loadDeferedModel(const string &path, SGPropertyNode *prop_root,
+SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
                              SGModelData *data)
 {
     osg::ProxyNode* proxyNode = new osg::ProxyNode;

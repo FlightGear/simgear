@@ -10,6 +10,7 @@ set(HEADERS
     SGEnlargeBoundingBox.hxx
     SGNodeMasks.hxx
     SGPickCallback.hxx
+    SGReaderWriterOptions.hxx
     SGSceneFeatures.hxx
     SGSceneUserData.hxx
     SGStateAttributeVisitor.hxx

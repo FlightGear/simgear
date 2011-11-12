@@ -1148,10 +1148,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\model\SGReaderWriterXMLOptions.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\model\SGRotateTransform.cxx"
 				>
 			</File>
@@ -1393,10 +1389,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGReaderWriterBTG.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\tgdb\SGReaderWriterBTGOptions.hxx"
 				>
 			</File>
 			<File

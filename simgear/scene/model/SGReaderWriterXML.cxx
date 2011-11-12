@@ -40,10 +40,10 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/condition.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "modellib.hxx"
 #include "SGReaderWriterXML.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 #include "animation.hxx"
 #include "particles.hxx"
@@ -207,8 +207,8 @@ sgLoad3DModel_internal(const SGPath& path,
       return NULL;
     }
     
-    const SGReaderWriterXMLOptions* xmlOptions;
-    xmlOptions = dynamic_cast<const SGReaderWriterXMLOptions*>(options_);
+    const SGReaderWriterOptions* xmlOptions;
+    xmlOptions = dynamic_cast<const SGReaderWriterOptions*>(options_);
 
     SGSharedPtr<SGPropertyNode> prop_root;
     osg::Node *(*load_panel)(SGPropertyNode *)=0;
@@ -218,7 +218,7 @@ sgLoad3DModel_internal(const SGPath& path,
     SGPath modelDir(modelpath.dir());
     
     if (xmlOptions) {
-        prop_root = xmlOptions->getPropRoot();
+        prop_root = xmlOptions->getPropertyNode();
         load_panel = xmlOptions->getLoadPanel();
         data = xmlOptions->getModelData();
     }
@@ -268,9 +268,9 @@ sgLoad3DModel_internal(const SGPath& path,
         // model without wrapper
     }
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> options
-    = new SGReaderWriterXMLOptions(*options_);
-    options->setPropRoot(prop_root);
+    osg::ref_ptr<SGReaderWriterOptions> options
+    = new SGReaderWriterOptions(*options_);
+    options->setPropertyNode(prop_root);
     options->setLoadPanel(load_panel);
     
     // Assume that textures are in
@@ -353,9 +353,9 @@ sgLoad3DModel_internal(const SGPath& path,
           continue;
         }
 
-        osg::ref_ptr<SGReaderWriterXMLOptions> options;
-        options = new SGReaderWriterXMLOptions(*options_);
-        options->setPropRoot(prop_root);
+        osg::ref_ptr<SGReaderWriterOptions> options;
+        options = new SGReaderWriterOptions(*options_);
+        options->setPropertyNode(prop_root);
         options->setLoadPanel(load_panel);
         
         try {

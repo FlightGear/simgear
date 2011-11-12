@@ -34,7 +34,7 @@
 #include <simgear/math/SGMath.hxx>
 #include <simgear/props/AtomicChangeListener.hxx>
 #include <simgear/props/props.hxx>
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/structure/Singleton.hxx>
@@ -48,7 +48,7 @@ namespace simgear
 {
 class Effect;
 class Pass;
-class SGReaderWriterXMLOptions;
+class SGReaderWriterOptions;
 
 /**
  * Builder that returns an object, probably an OSG object.
@@ -59,10 +59,10 @@ class EffectBuilder : public SGReferenced
 public:
     virtual ~EffectBuilder() {}
     virtual T* build(Effect* effect, const SGPropertyNode*,
-                     const SGReaderWriterXMLOptions* options) = 0;
+                     const SGReaderWriterOptions* options) = 0;
     static T* buildFromType(Effect* effect, const std::string& type,
                             const SGPropertyNode*props,
-                            const SGReaderWriterXMLOptions* options)
+                            const SGReaderWriterOptions* options)
     {
         BuilderMap& builderMap = getMap();
         typename BuilderMap::iterator iter = builderMap.find(type);
@@ -302,12 +302,12 @@ const SGPropertyNode* getEffectPropertyChild(Effect* effect,
  * mentioned node name.
  */
 std::string getGlobalProperty(const SGPropertyNode* prop,
-                              const SGReaderWriterXMLOptions *);
+                              const SGReaderWriterOptions *);
 
 template<typename NameItr>
 std::vector<std::string>
 getVectorProperties(const SGPropertyNode* prop,
-                    const SGReaderWriterXMLOptions *options, size_t vecSize,
+                    const SGReaderWriterOptions *options, size_t vecSize,
                     NameItr defaultNames)
 {
     using namespace std;
@@ -318,7 +318,7 @@ getVectorProperties(const SGPropertyNode* prop,
     if (useProps.size() == 1) {
         string parentName = useProps[0]->getStringValue();
         if (parentName.size() == 0 || parentName[0] != '/')
-            parentName = options->getPropRoot()->getPath() + "/" + parentName;
+            parentName = options->getPropertyNode()->getPath() + "/" + parentName;
         if (parentName[parentName.size() - 1] != '/')
             parentName.append("/");
         NameItr itr = defaultNames;
@@ -357,7 +357,7 @@ public:
   
     virtual void buildAttribute(Effect* effect, Pass* pass,
                                 const SGPropertyNode* prop,
-                                const SGReaderWriterXMLOptions* options)
+                                const SGReaderWriterOptions* options)
     = 0;
     static PassAttributeBuilder* find(const std::string& str)
     {
@@ -610,7 +610,7 @@ inline void setDynamicVariance(osg::Object* obj)
 template<typename OSGParamType, typename ObjType, typename F>
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
-                   const F& setter, const SGReaderWriterXMLOptions* options)
+                   const F& setter, const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
@@ -631,7 +631,7 @@ template<typename OSGParamType, typename ObjType, typename SetterReturn>
 inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType),
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), options);
@@ -661,7 +661,7 @@ template<typename OSGParamType, typename ObjType, typename NameItrType,
 void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    const F& setter,
-                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
+                   NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     typedef typename Bridge<OSGParamType>::sg_type sg_type;
     const int numComponents = props::NumComponents<sg_type>::num_components;
@@ -690,7 +690,7 @@ template<typename OSGParamType, typename ObjType, typename NameItrType,
 inline void
 initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
                    SetterReturn (ObjType::*setter)(const OSGParamType&),
-                   NameItrType nameItr, const SGReaderWriterXMLOptions* options)
+                   NameItrType nameItr, const SGReaderWriterOptions* options)
 {
     initFromParameters<OSGParamType>(effect, prop, obj,
                                      boost::bind(setter, _1, _2), nameItr,

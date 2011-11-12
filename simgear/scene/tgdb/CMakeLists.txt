@@ -8,7 +8,6 @@ set(HEADERS
     SGModelBin.hxx
     SGOceanTile.hxx
     SGReaderWriterBTG.hxx
-    SGReaderWriterBTGOptions.hxx
     SGTexturedTriangleBin.hxx
     SGTriangleBin.hxx
     SGVasiDrawable.hxx

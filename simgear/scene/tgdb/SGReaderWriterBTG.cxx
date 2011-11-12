@@ -19,8 +19,8 @@
 #include <osgDB/Registry>
 
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
-#include "SGReaderWriterBTGOptions.hxx"
 #include "SGReaderWriterBTG.hxx"
 #include "obj.hxx"
 
@@ -29,6 +29,7 @@ using namespace simgear;
 SGReaderWriterBTG::SGReaderWriterBTG()
 {
     supportsExtension("btg", "SimGear btg database format");
+    // supportsExtension("btg.gz", "SimGear btg database format");
 }
 
 SGReaderWriterBTG::~SGReaderWriterBTG()
@@ -43,8 +44,8 @@ const char* SGReaderWriterBTG::className() const
 bool
 SGReaderWriterBTG::acceptsExtension(const std::string& extension) const
 {
-    std::string lowercase_ext = osgDB::convertToLowerCase(extension);
-    if (lowercase_ext == "gz")
+    // trick the osg extensions match algorithm to accept btg.gz files.
+    if (osgDB::convertToLowerCase(extension) == "gz")
         return true;
     return osgDB::ReaderWriter::acceptsExtension(extension);
 }
@@ -54,18 +55,24 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
                             const osgDB::ReaderWriter::Options* options) const
 {
     SGMaterialLib* matlib = 0;
-    bool calcLights = false;
     bool useRandomObjects = false;
     bool useRandomVegetation = false;
-    const SGReaderWriterBTGOptions* btgOptions
-        = dynamic_cast<const SGReaderWriterBTGOptions*>(options);
-    if (btgOptions) {
-        matlib = btgOptions->getMatlib();
-        calcLights = btgOptions->getCalcLights();
-        useRandomObjects = btgOptions->getUseRandomObjects();
-        useRandomVegetation = btgOptions->getUseRandomVegetation();
+    const SGReaderWriterOptions* sgOptions;
+    sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);
+    if (sgOptions) {
+        matlib = sgOptions->getMaterialLib();
+        SGPropertyNode* propertyNode = sgOptions->getPropertyNode().get();
+        if (propertyNode) {
+            useRandomObjects
+                = propertyNode->getBoolValue("/sim/rendering/random-objects",
+                                             useRandomObjects);
+            useRandomVegetation
+                = propertyNode->getBoolValue("/sim/rendering/random-vegetation",
+                                             useRandomVegetation);
+        }
     }
-    osg::Node* result = SGLoadBTG(fileName, matlib, calcLights,
+
+    osg::Node* result = SGLoadBTG(fileName, matlib,
                                   useRandomObjects,
                                   useRandomVegetation);
     if (result)

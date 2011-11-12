@@ -32,10 +32,10 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/misc/ResourceManager.hxx>
 
 #include "SGReaderWriterXML.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 #include "modellib.hxx"
 
@@ -87,7 +87,7 @@ SGModelLib::~SGModelLib()
 
 namespace
 {
-osg::Node* loadFile(const string& path, SGReaderWriterXMLOptions* options)
+osg::Node* loadFile(const string& path, SGReaderWriterOptions* options)
 {
     using namespace osg;
     using namespace osgDB;
@@ -107,8 +107,8 @@ SGModelLib::loadModel(const string &path,
                        SGModelData *data,
                        bool load2DPanels)
 {
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()->getOptions()));
-    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
+    osg::ref_ptr<SGReaderWriterOptions> opt = new SGReaderWriterOptions(*(osgDB::Registry::instance()->getOptions()));
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     
     if (load2DPanels) {
@@ -130,10 +130,10 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
     proxyNode->setFileName(0, path);
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt
-        = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()
+    osg::ref_ptr<SGReaderWriterOptions> opt
+        = new SGReaderWriterOptions(*(osgDB::Registry::instance()
                                          ->getOptions()));
-    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
     if (SGPath(path).lower_extension() == "ac")
@@ -156,10 +156,10 @@ SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 
-    osg::ref_ptr<SGReaderWriterXMLOptions> opt
-        = new SGReaderWriterXMLOptions(*(osgDB::Registry::instance()
+    osg::ref_ptr<SGReaderWriterOptions> opt
+        = new SGReaderWriterOptions(*(osgDB::Registry::instance()
                                          ->getOptions()));
-    opt->setPropRoot(prop_root ? prop_root: static_propRoot.get());
+    opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
     if (SGPath(path).lower_extension() == "ac")

@@ -56,6 +56,6 @@ inline bool SGGenTile( const std::string&, const SGBucket& b,
 }
 
 osg::Node*
-SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects, bool use_random_vegetation);
+SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_objects, bool use_random_vegetation);
 
 #endif // _SG_OBJ_HXX

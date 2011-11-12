@@ -49,7 +49,7 @@
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
-#include <simgear/scene/tgdb/SGReaderWriterBTGOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "ReaderWriterSTG.hxx"
 #include "TileEntry.hxx"
@@ -288,27 +288,26 @@ TileEntry::loadTileByFileName(const string& fileName,
         }
     }
 
-    const SGReaderWriterBTGOptions* btgOpt;
-    btgOpt = dynamic_cast<const SGReaderWriterBTGOptions *>(options);
-    osg::ref_ptr<SGReaderWriterBTGOptions> opt;
+    const SGReaderWriterOptions* btgOpt;
+    btgOpt = dynamic_cast<const SGReaderWriterOptions*>(options);
+    osg::ref_ptr<SGReaderWriterOptions> opt;
     if (btgOpt)
-        opt = new SGReaderWriterBTGOptions(*btgOpt);
+        opt = new SGReaderWriterOptions(*btgOpt);
     else
-        opt = new SGReaderWriterBTGOptions;
+        opt = new SGReaderWriterOptions;
 
     // obj_load() will generate ground lighting for us ...
     osg::Group* new_tile = new osg::Group;
 
     if (found_tile_base) {
         // load tile if found ...
-        opt->setCalcLights(true);
         obj_load( object_base.str(), new_tile, true, opt.get());
 
     } else {
         // ... or generate an ocean tile on the fly
         SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
         if ( !SGGenTile( path_list[0], tile_bucket,
-                        opt->getMatlib(), new_tile ) ) {
+                        opt->getMaterialLib(), new_tile ) ) {
             SG_LOG( SG_TERRAIN, SG_ALERT,
                     "Warning: failed to generate ocean tile!" );
         }
@@ -322,7 +321,6 @@ TileEntry::loadTileByFileName(const string& fileName,
         if (obj->type == OBJECT) {
             SGPath custom_path = obj->path;
             custom_path.append( obj->name );
-            opt->setCalcLights(true);
             obj_load( custom_path.str(), new_tile, false, opt.get());
 
         } else if (obj->type == OBJECT_SHARED || obj->type == OBJECT_STATIC) {
@@ -366,9 +364,9 @@ TileEntry::loadTileByFileName(const string& fileName,
 
             osg::Node *custom_obj = 0;
             if (obj->type == OBJECT_SIGN)
-                custom_obj = SGMakeSign(opt->getMatlib(), custom_path.str(), obj->name);
+                custom_obj = SGMakeSign(opt->getMaterialLib(), custom_path.str(), obj->name);
             else
-                custom_obj = SGMakeRunwaySign(opt->getMatlib(), custom_path.str(), obj->name);
+                custom_obj = SGMakeRunwaySign(opt->getMaterialLib(), custom_path.str(), obj->name);
 
             // wire the pieces together
             if ( custom_obj != NULL ) {

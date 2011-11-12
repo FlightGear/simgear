@@ -10,7 +10,6 @@ set(HEADERS
     SGMaterialAnimation.hxx
     SGOffsetTransform.hxx
     SGReaderWriterXML.hxx
-    SGReaderWriterXMLOptions.hxx
     SGRotateTransform.hxx
     SGScaleTransform.hxx
     SGText.hxx

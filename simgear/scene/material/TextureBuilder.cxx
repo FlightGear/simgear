@@ -32,6 +32,7 @@
 #include <osg/TextureRectangle>
 #include <osg/TextureCubeMap>
 #include <osgDB/FileUtils>
+#include <osgDB/ReadFile>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -240,8 +241,8 @@ void setAttrs(const TexTuple& attrs, Texture* tex,
     if (imageName.empty()) {
         throw BuilderException("no image file");
     } else {
-        osgDB::ReaderWriter::ReadResult result
-            = osgDB::Registry::instance()->readImage(imageName, options);
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(imageName, options);
         if (result.success()) {
             osg::ref_ptr<osg::Image> image = result.getImage();
             image = computeMipmap( image.get(), attrs.get<7>() );
@@ -511,33 +512,33 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         cubeTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
         cubeTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture::CLAMP_TO_EDGE);
 
-        osgDB::ReaderWriter::ReadResult result =
-            osgDB::Registry::instance()->readImage(_tuple.get<0>(), options);
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(_tuple.get<0>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_X, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<1>(), options);
+        result = osgDB::readImageFile(_tuple.get<1>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_X, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<2>(), options);
+        result = osgDB::readImageFile(_tuple.get<2>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Y, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<3>(), options);
+        result = osgDB::readImageFile(_tuple.get<3>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Y, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<4>(), options);
+        result = osgDB::readImageFile(_tuple.get<4>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::POSITIVE_Z, image);
         }
-        result = osgDB::Registry::instance()->readImage(_tuple.get<5>(), options);
+        result = osgDB::readImageFile(_tuple.get<5>(), options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             cubeTexture->setImage(TextureCubeMap::NEGATIVE_Z, image);
@@ -560,8 +561,8 @@ Texture* CubeMapBuilder::build(Effect* effect, const SGPropertyNode* props,
         if (itr != _crossmaps.end())
             return itr->second.get();
 
-        osgDB::ReaderWriter::ReadResult result =
-            osgDB::Registry::instance()->readImage(texname, options);
+        osgDB::ReaderWriter::ReadResult result;
+        result = osgDB::readImageFile(texname, options);
         if(result.success()) {
             osg::Image* image = result.getImage();
             image->flipVertical();   // Seems like the image coordinates are somewhat funny, flip to get better ones

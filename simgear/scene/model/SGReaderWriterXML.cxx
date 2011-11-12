@@ -29,6 +29,7 @@
 
 #include <osg/Geode>
 #include <osg/MatrixTransform>
+#include <osgDB/ReadFile>
 #include <osgDB/WriteFile>
 #include <osgDB/Registry>
 #include <osg/Switch>
@@ -280,9 +281,8 @@ sgLoad3DModel_internal(const SGPath& path,
             texturepath = texturepath.dir();
 
         options->setDatabasePath(texturepath.str());
-        osgDB::ReaderWriter::ReadResult modelResult
-            = osgDB::Registry::instance()->readNode(modelpath.str(),
-                                                    options.get());
+        osgDB::ReaderWriter::ReadResult modelResult;
+        modelResult = osgDB::readNodeFile(modelpath.str(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath.str());

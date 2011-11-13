@@ -16,13 +16,7 @@ License along with this library; if not, write to the Free Software
 Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
-#ifdef HAVE_CONFIG_H
-#include <simgear_config.h>
-#endif
 #ifndef SampleHistogram_h
-#ifdef __GNUG__
-#pragma interface
-#endif
 #define SampleHistogram_h 1
 
 #include <iosfwd>

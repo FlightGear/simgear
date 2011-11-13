@@ -29,7 +29,7 @@
 #include "subsystem_mgr.hxx"
 
 #include <simgear/math/SGMath.hxx>
-
+#include "SGSmplstat.hxx"
 
 const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
 ////////////////////////////////////////////////////////////////////////
@@ -131,6 +131,32 @@ void SGSubsystem::stamp(const string& name)
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystemGroup.
 ////////////////////////////////////////////////////////////////////////
+
+class SGSubsystemGroup::Member
+{    
+private:
+    Member (const Member &member);
+public:
+    Member ();
+    virtual ~Member ();
+    
+    virtual void update (double delta_time_sec);
+    void printTimingInformation(double time);
+    void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
+    void updateExecutionTime(double time);
+    double getTimeWarningThreshold();
+    void collectDebugTiming (bool collect) { collectTimeStats = collect; };
+    
+    SampleStatistic timeStat;
+    std::string name;
+    SGSubsystem * subsystem;
+    double min_step_sec;
+    double elapsed_sec;
+    bool collectTimeStats;
+    int exceptionCount;
+};
+
+
 
 SGSubsystemGroup::SGSubsystemGroup () :
   _fixedUpdateTime(-1.0),

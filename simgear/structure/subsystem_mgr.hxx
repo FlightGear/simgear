@@ -1,3 +1,4 @@
+
 // Written by David Megginson, started 2000-12
 //
 // Copyright (C) 2000  David Megginson, david@megginson.com
@@ -31,7 +32,6 @@
 
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include "SGSmplstat.hxx"
 
 
 class TimingInfo
@@ -331,31 +331,8 @@ public:
     void set_fixed_update_time(double fixed_dt);
 private:
 
-    class Member {
-
-    private:
-        Member (const Member &member);
-    public:
-        Member ();
-        virtual ~Member ();
-
-        virtual void update (double delta_time_sec);
-        void printTimingInformation(double time);
-        void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
-        void updateExecutionTime(double time);
-        double getTimeWarningThreshold();
-        void collectDebugTiming (bool collect) { collectTimeStats = collect; };
-
-        SampleStatistic timeStat;
-        std::string name;
-        SGSubsystem * subsystem;
-        double min_step_sec;
-        double elapsed_sec;
-        bool collectTimeStats;
-        int exceptionCount;
-    };
-
-    Member * get_member (const std::string &name, bool create = false);
+    class Member;
+    Member* get_member (const std::string &name, bool create = false);
 
     std::vector<Member *> _members;
     

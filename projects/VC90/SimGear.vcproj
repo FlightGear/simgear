@@ -440,6 +440,22 @@
 			Name="Lib_sgio"
 			>
 			<File
+				RelativePath="..\..\simgear\io\HTTPClient.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\HTTPClient.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\HTTPRequest.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\io\HTTPRequest.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\io\iochannel.cxx"
 				>
 			</File>
@@ -527,10 +543,6 @@
 				RelativePath="..\..\simgear\io\sg_socket_udp.hxx"
 				>
 			</File>
-			<File RelativePath="..\..\simgear\io\HTTPClient.cxx" ></File>
-			<File RelativePath="..\..\simgear\io\HTTPClient.hxx" ></File>
-			<File RelativePath="..\..\simgear\io\HTTPRequest.cxx" ></File>
-			<File RelativePath="..\..\simgear\io\HTTPRequest.hxx" ></File>
 		</Filter>
 		<Filter
 			Name="Lib_sgmagvar"
@@ -1012,10 +1024,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\props\tiedpropertylist.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\props\props.cxx"
 				>
 			</File>
@@ -1029,6 +1037,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\props\props_io.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\props\tiedpropertylist.hxx"
 				>
 			</File>
 		</Filter>
@@ -1464,25 +1476,17 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\threads\SGThread.hxx"
+				RelativePath="..\..\simgear\threads\SGThread.cxx"
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\threads\SGThread.cxx"
+				RelativePath="..\..\simgear\threads\SGThread.hxx"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Lib_sgstructure"
 			>
-			<File
-				RelativePath="..\..\simgear\structure\SGAtomic.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\structure\SGAtomic.cxx"
-				>
-			</File>
 			<File
 				RelativePath="..\..\simgear\structure\callback.hxx"
 				>
@@ -1548,6 +1552,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\structure\SGAtomic.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGAtomic.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\structure\SGBinding.cxx"
 				>
 			</File>
@@ -1561,6 +1573,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\SGExpression.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGPerfMon.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\SGPerfMon.hxx"
 				>
 			</File>
 			<File

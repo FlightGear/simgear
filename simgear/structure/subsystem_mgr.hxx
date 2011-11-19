@@ -48,9 +48,12 @@ public:
     const SGTimeStamp& getTime() const { return time; }
 };
 
+class SampleStatistic;
+
 typedef std::vector<TimingInfo> eventTimeVec;
 typedef std::vector<TimingInfo>::iterator eventTimeVecIterator;
 
+typedef void (*SGSubsystemTimingCb)(void* userData, const std::string& name, SampleStatistic* pStatistic);
 
 
 /**
@@ -227,7 +230,7 @@ public:
 
 
   /**
-   * Suspend or resum operation of this subsystem.
+   * Suspend or resume operation of this subsystem.
    *
    * @param suspended true if the subsystem should be suspended, false
    * otherwise.
@@ -253,43 +256,25 @@ public:
    */
   virtual bool is_suspended () const;
 
-
   /**
-   * Keep track of execution time.
-   *
-   * <p>This method keeps track of timing statistics for each subsystem.</p>
-   * 
-   * @param time execution time in ms of last call.
+   * Trigger the callback to report timing information for all subsystems.
    */
-  void updateExecutionTime(double time);
-
-  /**
-   * Print details of execution time.
-   *
-   * <p>For debugging purposes, developers can place stamp() calls
-   * at strategic points in the update() function of each subsystem, which 
-   * record the time between the successive calls to stamp. This method,
-   * printExecutionTime() is called after exectution of the subsystem
-   * update function itself to conduct a post-hoc analysis of excecution
-   * time</p>
-   */ 
-  void printTimingInformation();
+  void reportTiming(void);
 
   /**
    * Place time stamps at strategic points in the execution of subsystems 
    * update() member functions. Predominantly for debugging purposes.
    */
   void stamp(const std::string& name);
-  
-
 
 protected:
 
   bool _suspended;
 
   eventTimeVec timingInfo;
-  //int test;
 
+  static SGSubsystemTimingCb reportTimingCb;
+  static void* reportTimingUserData;
 };
 
 
@@ -322,11 +307,10 @@ public:
     virtual void remove_subsystem (const std::string &name);
     virtual bool has_subsystem (const std::string &name) const;
 
-    void collectDebugTiming(bool collect);
-    void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
+    void reportTiming(void);
 
     /**
-     * 
+     *
      */
     void set_fixed_update_time(double fixed_dt);
 private:
@@ -404,16 +388,15 @@ public:
 
     virtual SGSubsystem * get_subsystem(const std::string &name) const;
 
-   void collectDebugTiming(bool collect);
-   void printTimingStatistics(double minMaxTime=0.0,double minJitter=0.0);
+    void reportTiming();
+    void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
 
 private:
 
     SGSubsystemGroup* _groups[MAX_GROUPS];
-    
+
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;
-
 };
 
 

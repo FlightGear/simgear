@@ -81,6 +81,7 @@ void SampleStatistic::operator += (double value)
 {
   n += 1;
   x += value;
+  allTimeTotal += value;
   x2 += (value * value);
   if (minValue > value)
     minValue = value;

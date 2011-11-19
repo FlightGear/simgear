@@ -30,6 +30,7 @@ protected:
   double x;
   double x2;
   double minValue, maxValue;
+  double allTimeTotal;
 
 public:  SampleStatistic ();
   inline virtual ~ SampleStatistic ();
@@ -42,6 +43,7 @@ public:  SampleStatistic ();
   double var () const;
   double min () const;
   double max () const;
+  double total () const;
   double confidence (int p_percentage) const;
   double confidence (double p_value) const;
 
@@ -58,6 +60,7 @@ public:  SampleStatistic ();
 
 inline SampleStatistic::SampleStatistic ()
 {
+  allTimeTotal = 0;
   reset ();
 }
 inline int SampleStatistic::samples () const
@@ -71,6 +74,10 @@ inline double SampleStatistic::min () const
 inline double SampleStatistic::max () const
 {
   return (maxValue);
+}
+inline double SampleStatistic::total () const
+{
+  return (allTimeTotal);
 }
 
 inline SampleStatistic::~SampleStatistic ()

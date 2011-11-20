@@ -353,9 +353,10 @@ public:
     enum GroupType {
         INIT = 0,
         GENERAL,
-        FDM,  ///< flight model, autopilot, instruments that run coupled
+        FDM,        ///< flight model, autopilot, instruments that run coupled
         POST_FDM,   ///< certain subsystems depend on FDM data
         DISPLAY,    ///< view, camera, rendering updates
+        SOUND/*I want to be last!*/,  ///< needs to run AFTER display, to allow concurrent GPU/sound processing
         MAX_GROUPS
     };
 
@@ -392,7 +393,6 @@ public:
     void setReportTimingCb(void* userData,SGSubsystemTimingCb cb) {reportTimingCb = cb;reportTimingUserData = userData;}
 
 private:
-
     SGSubsystemGroup* _groups[MAX_GROUPS];
 
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;

@@ -53,14 +53,11 @@
 #include <simgear/scene/sky/oursun.hxx>
 #include <simgear/scene/sky/stars.hxx>
 
-using std::vector;
-
-
 typedef struct {
-        SGVec3d pos;
-        SGGeod pos_geod;
-        SGQuatd ori;
-        double spin;
+    SGVec3d pos;
+    SGGeod pos_geod;
+    SGQuatd ori;
+    double spin;
 	double gst;
 	double sun_dist;
 	double moon_dist;
@@ -69,8 +66,8 @@ typedef struct {
 
 typedef struct {
 	SGVec3f sky_color;
-        SGVec3f adj_sky_color;
-        SGVec3f fog_color;
+    SGVec3f adj_sky_color;
+    SGVec3f fog_color;
 	SGVec3f cloud_color;
 	double sun_angle, moon_angle;
 } SGSkyColor;

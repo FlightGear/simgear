@@ -605,7 +605,7 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
             // occurs: e.g. -43 on Mac when file is not found.
             // In this case, alGetString() sets 'Invalid Enum' error, so
             // showing with the original error number is helpful.
-            stringstream ss;
+            std::stringstream ss;
             ss << alGetString(alGetError()) << "(" << error << ")";
             msg.append(ss.str());
         }

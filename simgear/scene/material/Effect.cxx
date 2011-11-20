@@ -67,7 +67,7 @@
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
@@ -154,7 +154,7 @@ Effect::~Effect()
 }
 
 void buildPass(Effect* effect, Technique* tniq, const SGPropertyNode* prop,
-               const SGReaderWriterXMLOptions* options)
+               const SGReaderWriterOptions* options)
 {
     Pass* pass = new Pass;
     tniq->passes.push_back(pass);
@@ -203,12 +203,12 @@ osg::Vec4f getColor(const SGPropertyNode* prop)
 struct LightingBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 void LightingBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
-                                     const SGReaderWriterXMLOptions* options)
+                                     const SGReaderWriterOptions* options)
 {
     const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
     if (!realProp)
@@ -222,7 +222,7 @@ InstallAttributeBuilder<LightingBuilder> installLighting("lighting");
 struct ShadeModelBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -244,7 +244,7 @@ InstallAttributeBuilder<ShadeModelBuilder> installShadeModel("shade-model");
 struct CullFaceBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp) {
@@ -272,7 +272,7 @@ InstallAttributeBuilder<CullFaceBuilder> installCullFace("cull-face");
 struct ColorMaskBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -299,7 +299,7 @@ EffectPropertyMap<StateSet::RenderingHint> renderingHints(renderingHintInit);
 struct HintBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -315,7 +315,7 @@ InstallAttributeBuilder<HintBuilder> installHint("rendering-hint");
 struct RenderBinBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -342,7 +342,7 @@ InstallAttributeBuilder<RenderBinBuilder> installRenderBin("render-bin");
 struct MaterialBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 EffectNameValue<Material::ColorMode> colorModeInit[] =
@@ -358,7 +358,7 @@ EffectPropertyMap<Material::ColorMode> colorModes(colorModeInit);
 
 void MaterialBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
-                                     const SGReaderWriterXMLOptions* options)
+                                     const SGReaderWriterOptions* options)
 {
     if (!isAttributeActive(effect, prop))
         return;
@@ -428,7 +428,7 @@ EffectPropertyMap<BlendFunc::BlendFuncMode> blendFuncModes(blendFuncModesInit);
 struct BlendBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -541,7 +541,7 @@ EffectPropertyMap<Stencil::Operation> stencilOperation(stencilOperationInit);
 struct StencilBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -619,7 +619,7 @@ alphaComparison(alphaComparisonInit);
 struct AlphaTestBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -736,7 +736,7 @@ void reload_shaders()
 struct ShaderProgramBuilder : PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 
@@ -763,7 +763,7 @@ geometryOutputType(geometryOutputTypeInit);
 
 void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
                                           const SGPropertyNode* prop,
-                                          const SGReaderWriterXMLOptions*
+                                          const SGReaderWriterOptions*
                                           options)
 {
     using namespace boost;
@@ -899,7 +899,7 @@ ref_ptr<Uniform> colorMode[3];
 struct UniformBuilder :public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!texture0.valid()) {
             texture0 = new Uniform(Uniform::SAMPLER_2D, "texture");
@@ -1013,7 +1013,7 @@ InstallAttributeBuilder<UniformBuilder> installUniform("uniform");
 struct NameBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         // name can't use <use>
         string name = prop->getStringValue();
@@ -1035,7 +1035,7 @@ EffectPropertyMap<PolygonMode::Mode> polygonModeModes(polygonModeModesInit);
 struct PolygonModeBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -1063,7 +1063,7 @@ InstallAttributeBuilder<PolygonModeBuilder> installPolygonMode("polygon-mode");
 struct PolygonOffsetBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -1091,7 +1091,7 @@ InstallAttributeBuilder<PolygonOffsetBuilder> installPolygonOffset("polygon-offs
 struct VertexProgramTwoSideBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -1108,7 +1108,7 @@ installTwoSide("vertex-program-two-side");
 struct VertexProgramPointSizeBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
         if (!realProp)
@@ -1138,7 +1138,7 @@ EffectPropertyMap<Depth::Function> depthFunction(depthFunctionInit);
 struct DepthBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options)
+                        const SGReaderWriterOptions* options)
     {
         if (!isAttributeActive(effect, prop))
             return;
@@ -1169,7 +1169,7 @@ struct DepthBuilder : public PassAttributeBuilder
 InstallAttributeBuilder<DepthBuilder> installDepth("depth");
 
 void buildTechnique(Effect* effect, const SGPropertyNode* prop,
-                    const SGReaderWriterXMLOptions* options)
+                    const SGReaderWriterOptions* options)
 {
     Technique* tniq = new Technique;
     effect->techniques.push_back(tniq);
@@ -1278,7 +1278,7 @@ bool makeParametersFromStateSet(SGPropertyNode* effectRoot, const StateSet* ss)
 
 // Walk the techniques property tree, building techniques and
 // passes.
-bool Effect::realizeTechniques(const SGReaderWriterXMLOptions* options)
+bool Effect::realizeTechniques(const SGReaderWriterOptions* options)
 {
     if (_isRealized)
         return true;

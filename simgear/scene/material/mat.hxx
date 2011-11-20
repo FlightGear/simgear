@@ -45,7 +45,7 @@ namespace osg
 class StateSet;
 }
 
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
@@ -87,7 +87,7 @@ public:
    */
   SGMaterial( const osgDB::ReaderWriter::Options*, const SGPropertyNode *props);
 
-  SGMaterial(const simgear::SGReaderWriterXMLOptions*,
+  SGMaterial(const simgear::SGReaderWriterOptions*,
              const SGPropertyNode *props);
   /**
    * Destructor.
@@ -273,14 +273,14 @@ protected:
 
   struct _internal_state {
       _internal_state(simgear::Effect *e, bool l,
-                      const simgear::SGReaderWriterXMLOptions *o);
+                      const simgear::SGReaderWriterOptions *o);
       _internal_state(simgear::Effect *e, const std::string &t, bool l,
-                      const simgear::SGReaderWriterXMLOptions *o);
+                      const simgear::SGReaderWriterOptions *o);
       void add_texture(const std::string &t, int i);
       osg::ref_ptr<simgear::Effect> effect;
       std::vector<std::pair<std::string,int> > texture_paths;
       bool effect_realized;
-      osg::ref_ptr<const simgear::SGReaderWriterXMLOptions> options;
+      osg::ref_ptr<const simgear::SGReaderWriterOptions> options;
   };
 
 private:
@@ -366,9 +366,9 @@ private:
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
-  void read_properties(const simgear::SGReaderWriterXMLOptions* options,
+  void read_properties(const simgear::SGReaderWriterOptions* options,
                         const SGPropertyNode *props);
-  void buildEffectProperties(const simgear::SGReaderWriterXMLOptions* options);
+  void buildEffectProperties(const simgear::SGReaderWriterOptions* options);
 };
 
 

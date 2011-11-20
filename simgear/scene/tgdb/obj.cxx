@@ -579,7 +579,7 @@ typedef QuadTreeBuilder<osg::LOD*, ModelLOD, MakeQuadLeaf, AddModelLOD,
                         GetModelLODCoord>  RandomObjectsQuadtree;
 
 osg::Node*
-SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool use_random_objects, bool use_random_vegetation)
+SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_objects, bool use_random_vegetation)
 {
   SGBinObject tile;
   if (!tile.read_bin(path))
@@ -669,38 +669,36 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool calc_lights, bool
     } 
   }
 
-  if (calc_lights) {
-    // FIXME: ugly, has a side effect
-    if (matlib)
-      tileGeometryBin.computeRandomSurfaceLights(matlib);
+  // FIXME: ugly, has a side effect
+  if (matlib)
+    tileGeometryBin.computeRandomSurfaceLights(matlib);
 
-    if (tileGeometryBin.tileLights.getNumLights() > 0
-        || tileGeometryBin.randomTileLights.getNumLights() > 0) {
-      osg::Group* groundLights0 = new osg::Group;
-      groundLights0->setStateSet(lightManager->getGroundLightStateSet());
-      groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
-      osg::Geode* geode = new osg::Geode;
-      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.tileLights));
-      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 4, -0.3f));
-      groundLights0->addChild(geode);
-      lightGroup->addChild(groundLights0);
-    }
-    if (tileGeometryBin.randomTileLights.getNumLights() > 0) {
-      osg::Group* groundLights1 = new osg::Group;
-      groundLights1->setStateSet(lightManager->getGroundLightStateSet());
-      groundLights1->setNodeMask(GROUNDLIGHTS1_BIT);
-      osg::Group* groundLights2 = new osg::Group;
-      groundLights2->setStateSet(lightManager->getGroundLightStateSet());
-      groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
-      osg::Geode* geode = new osg::Geode;
-      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 2, -0.15f));
-      groundLights1->addChild(geode);
-      lightGroup->addChild(groundLights1);
-      geode = new osg::Geode;
-      geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights));
-      groundLights2->addChild(geode);
-      lightGroup->addChild(groundLights2);
-    }
+  if (tileGeometryBin.tileLights.getNumLights() > 0
+      || tileGeometryBin.randomTileLights.getNumLights() > 0) {
+    osg::Group* groundLights0 = new osg::Group;
+    groundLights0->setStateSet(lightManager->getGroundLightStateSet());
+    groundLights0->setNodeMask(GROUNDLIGHTS0_BIT);
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.tileLights));
+    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 4, -0.3f));
+    groundLights0->addChild(geode);
+    lightGroup->addChild(groundLights0);
+  }
+  if (tileGeometryBin.randomTileLights.getNumLights() > 0) {
+    osg::Group* groundLights1 = new osg::Group;
+    groundLights1->setStateSet(lightManager->getGroundLightStateSet());
+    groundLights1->setNodeMask(GROUNDLIGHTS1_BIT);
+    osg::Group* groundLights2 = new osg::Group;
+    groundLights2->setStateSet(lightManager->getGroundLightStateSet());
+    groundLights2->setNodeMask(GROUNDLIGHTS2_BIT);
+    osg::Geode* geode = new osg::Geode;
+    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights, 2, -0.15f));
+    groundLights1->addChild(geode);
+    lightGroup->addChild(groundLights1);
+    geode = new osg::Geode;
+    geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.randomTileLights));
+    groundLights2->addChild(geode);
+    lightGroup->addChild(groundLights2);
   }
 
   if (!tileGeometryBin.vasiLights.empty()) {

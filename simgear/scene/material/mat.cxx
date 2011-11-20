@@ -49,7 +49,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/sgstream.hxx>
-#include <simgear/scene/model/SGReaderWriterXMLOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -69,13 +69,13 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 
 SGMaterial::_internal_state::_internal_state(Effect *e, bool l,
-                                             const SGReaderWriterXMLOptions* o)
+                                             const SGReaderWriterOptions* o)
     : effect(e), effect_realized(l), options(o)
 {
 }
 
 SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
-                                             const SGReaderWriterXMLOptions* o)
+                                             const SGReaderWriterOptions* o)
     : effect(e), effect_realized(l), options(o)
 {
     texture_paths.push_back(std::make_pair(t,0));
@@ -86,7 +86,7 @@ void SGMaterial::_internal_state::add_texture(const std::string &t, int i)
     texture_paths.push_back(std::make_pair(t,i));
 }
 
-SGMaterial::SGMaterial( const SGReaderWriterXMLOptions* options,
+SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
                         const SGPropertyNode *props )
 {
     init();
@@ -97,9 +97,9 @@ SGMaterial::SGMaterial( const SGReaderWriterXMLOptions* options,
 SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
                         const SGPropertyNode *props )
 {
-    osg::ref_ptr<const SGReaderWriterXMLOptions> sgOptions;
+    osg::ref_ptr<const SGReaderWriterOptions> sgOptions;
     if (options)
-        sgOptions = new SGReaderWriterXMLOptions(*options);
+        sgOptions = new SGReaderWriterOptions(*options);
     init();
     read_properties( sgOptions.get(), props );
     buildEffectProperties(sgOptions.get());
@@ -115,7 +115,7 @@ SGMaterial::~SGMaterial (void)
 ////////////////////////////////////////////////////////////////////////
 
 void
-SGMaterial::read_properties(const SGReaderWriterXMLOptions* options,
+SGMaterial::read_properties(const SGReaderWriterOptions* options,
                             const SGPropertyNode *props)
 {
 				// Gather the path(s) to the texture(s)
@@ -296,12 +296,12 @@ Effect* SGMaterial::get_effect(int n)
     return _status[i].effect.get();
 }
 
-void SGMaterial::buildEffectProperties(const SGReaderWriterXMLOptions* options)
+void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
 {
     using namespace osg;
-    ref_ptr<SGReaderWriterXMLOptions> xmlOptions;
+    ref_ptr<SGReaderWriterOptions> xmlOptions;
     if (options)
-        xmlOptions = new SGReaderWriterXMLOptions(*options);
+        xmlOptions = new SGReaderWriterOptions(*options);
     ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);

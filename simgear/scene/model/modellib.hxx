@@ -58,9 +58,9 @@ public:
     // This function initially just returns a proxy node that refers to
     // the model file. Once the viewer steps onto that node the
     // model will be loaded.
-    static osg::Node* loadDeferedModel(const std::string &path,
-                                       SGPropertyNode *prop_root = NULL,
-                                       SGModelData *data=0);
+    static osg::Node* loadDeferredModel(const std::string &path,
+                                        SGPropertyNode *prop_root = NULL,
+                                        SGModelData *data=0);
     // Load a 3D model (any format) through the DatabasePager.
     // This function initially just returns a PagedLOD node that refers to
     // the model file. Once the viewer steps onto that node the

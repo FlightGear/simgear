@@ -461,7 +461,7 @@ bool SGBinObject::read_bin( const string& file ) {
      //cout << "Total objects to read = " << nobjects << endl;
 
     if ( sgReadError() ) {
-        cout << "We detected an error while reading the file header" << endl;
+        cout << "Error while reading header of file " << file << "(.gz)" << endl;
         return false;
     }
     
@@ -612,7 +612,7 @@ bool SGBinObject::read_bin( const string& file ) {
         }
         
         if ( sgReadError() ) {
-            cout << "We detected an error while reading object:" << i << endl;
+            cout << "Error while reading object:" << i << " in file " << file << "(.gz)" << endl;
             return false;
         }
     }
@@ -621,7 +621,7 @@ bool SGBinObject::read_bin( const string& file ) {
     gzclose(fp);
 
     if ( sgReadError() ) {
-        cout << "We detected an error while reading the file." << endl;
+        cout << "Error while reading file " << file << "(.gz)" << endl;
         return false;
     }
 
@@ -829,7 +829,7 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     gzclose(fp);
 
     if ( sgWriteError() ) {
-        cout << "We detected an error while writing the file." << endl;
+        cout << "Error while writing file " << file.str() << endl;
         return false;
     }
 

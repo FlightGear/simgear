@@ -407,8 +407,21 @@ buildVasi(const SGDirectionalLightBin& lights, const SGVec3f& up,
     drawable->addLight(lights.getLight(3).position,
                        lights.getLight(3).normal, up, 2.5);
     return drawable;
-  }
-  else if (count == 12) {
+
+  } else if (count == 6) {
+    SGVasiDrawable* drawable = new SGVasiDrawable(red, white);
+
+    // probably vasi, first 3 are downwind bar (2.5 deg)
+    for (unsigned i = 0; i < 3; ++i)
+      drawable->addLight(lights.getLight(i).position,
+                         lights.getLight(i).normal, up, 2.5);
+    // last 3 are upwind bar (3.0 deg)
+    for (unsigned i = 3; i < 6; ++i)
+      drawable->addLight(lights.getLight(i).position,
+                         lights.getLight(i).normal, up, 3.0);
+    return drawable;
+
+  } else if (count == 12) {
     SGVasiDrawable* drawable = new SGVasiDrawable(red, white);
     
     // probably vasi, first 6 are downwind bar (2.5 deg)
@@ -419,8 +432,8 @@ buildVasi(const SGDirectionalLightBin& lights, const SGVec3f& up,
     for (unsigned i = 6; i < 12; ++i)
       drawable->addLight(lights.getLight(i).position,
                          lights.getLight(i).normal, up, 3.0);
-    
     return drawable;
+
   } else {
     // fail safe
     SG_LOG(SG_TERRAIN, SG_ALERT,

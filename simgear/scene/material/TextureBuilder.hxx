@@ -29,13 +29,13 @@ public:
     // Hack to force inclusion of TextureBuilder.cxx in library
     static osg::Texture* buildFromType(Effect* effect, const std::string& type,
                                        const SGPropertyNode*props,
-                                       const SGReaderWriterXMLOptions* options);
+                                       const SGReaderWriterOptions* options);
 };
 
 struct TextureUnitBuilder : public PassAttributeBuilder
 {
     void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
-                        const SGReaderWriterXMLOptions* options);
+                        const SGReaderWriterOptions* options);
 };
 
 

@@ -29,13 +29,16 @@
 #include "subsystem_mgr.hxx"
 
 #include <simgear/math/SGMath.hxx>
+#include "SGSmplstat.hxx"
 
+const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
 
-const int SG_MAX_SUBSYSTEM_EXCEPTIONS = 4;
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystem
 ////////////////////////////////////////////////////////////////////////
 
+SGSubsystemTimingCb SGSubsystem::reportTimingCb = NULL;
+void* SGSubsystem::reportTimingUserData = NULL;
 
 SGSubsystem::SGSubsystem ()
   : _suspended(false)
@@ -100,28 +103,6 @@ SGSubsystem::is_suspended () const
   return _suspended;
 }
 
-
-void
-SGSubsystem::printTimingInformation ()
-{
-   SGTimeStamp startTime;
-   for ( eventTimeVecIterator i = timingInfo.begin();
-          i != timingInfo.end();
-          ++i) {
-       if (i == timingInfo.begin()) {
-           startTime = i->getTime();
-       } else {
-           SGTimeStamp endTime = i->getTime();
-           SG_LOG(SG_GENERAL, SG_ALERT, "- Getting to timestamp :   "
-                  << i->getName() << " takes " << endTime - startTime
-                  << " sec.");
-	   startTime = endTime;
-       }
-   }
-}
-
-
-
 void SGSubsystem::stamp(const string& name)
 {
     timingInfo.push_back(TimingInfo(name, SGTimeStamp::now()));
@@ -132,6 +113,30 @@ void SGSubsystem::stamp(const string& name)
 // Implementation of SGSubsystemGroup.
 ////////////////////////////////////////////////////////////////////////
 
+class SGSubsystemGroup::Member
+{    
+private:
+    Member (const Member &member);
+public:
+    Member ();
+    virtual ~Member ();
+    
+    virtual void update (double delta_time_sec);
+
+    void reportTiming(void) { if (reportTimingCb) reportTimingCb(reportTimingUserData, name, &timeStat); }
+    void updateExecutionTime(double time) { timeStat += time;}
+
+    SampleStatistic timeStat;
+    std::string name;
+    SGSubsystem * subsystem;
+    double min_step_sec;
+    double elapsed_sec;
+    bool collectTimeStats;
+    int exceptionCount;
+};
+
+
+
 SGSubsystemGroup::SGSubsystemGroup () :
   _fixedUpdateTime(-1.0),
   _updateTimeRemainder(0.0)
@@ -140,8 +145,6 @@ SGSubsystemGroup::SGSubsystemGroup () :
 
 SGSubsystemGroup::~SGSubsystemGroup ()
 {
-    printTimingStatistics();
-
     // reverse order to prevent order dependency problems
     for (unsigned int i = _members.size(); i > 0; i--)
     {
@@ -207,38 +210,31 @@ SGSubsystemGroup::update (double delta_time_sec)
       delta_time_sec = _fixedUpdateTime;
     }
 
+    SGTimeStamp timeStamp;
     while (loopCount-- > 0) {
       for (unsigned int i = 0; i < _members.size(); i++)
       {
-           SGTimeStamp timeStamp = SGTimeStamp::now();
-           _members[i]->update(delta_time_sec); // indirect call
-           timeStamp = SGTimeStamp::now() - timeStamp;
-           double b = timeStamp.toUSecs();
-           _members[i]->updateExecutionTime(b);
-           double threshold = _members[i]->getTimeWarningThreshold();
-           if (( b > threshold ) && (b > 10000)) {
-               _members[i]->printTimingInformation(b);
-           }
+          bool recordTime = (reportTimingCb != NULL);
+          if (recordTime)
+              timeStamp = SGTimeStamp::now();
+
+          _members[i]->update(delta_time_sec); // indirect call
+
+          if ((recordTime)&&(reportTimingCb))
+          {
+              timeStamp = SGTimeStamp::now() - timeStamp;
+              _members[i]->updateExecutionTime(timeStamp.toUSecs());
+          }
       }
     } // of multiple update loop
 }
 
-void 
-SGSubsystemGroup::collectDebugTiming(bool collect)
-{
-    for (unsigned int i = 0; i < _members.size(); i++)
-    {
-        _members[i]->collectDebugTiming(collect);
-    }
-}
-
-void 
-SGSubsystemGroup::printTimingStatistics(double minMaxTime,double minJitter)
+void
+SGSubsystemGroup::reportTiming(void)
 {
     for (unsigned int i = _members.size(); i > 0; i--)
     {
-        _members[i-1]->printTimingStatistics(minMaxTime, minJitter);
-        _members[i-1]->timeStat.reset();
+        _members[i-1]->reportTiming();
     }
 }
 
@@ -301,35 +297,6 @@ SGSubsystemGroup::set_fixed_update_time(double dt)
   _fixedUpdateTime = dt;
 }
 
-/**
- * Print timing statistics.
- * Only show data if jitter exceeds minJitter or
- * maximum time exceeds minMaxTime. 
- */
-void
-SGSubsystemGroup::Member::printTimingStatistics(double minMaxTime,double minJitter)
-{
-    if (collectTimeStats) {
-        double minTime = timeStat.min()   / 1000;
-        double maxTime = timeStat.max()   / 1000;
-        double meanTime = timeStat.mean() / 1000;
-        double stddev   = timeStat.stdDev()   / 1000;
-
-        if ((maxTime - minTime >= minJitter)||
-            (maxTime >= minMaxTime))
-        {
-            char buffer[256];
-            snprintf(buffer, 256, "Timing summary for %20s.\n"
-                                  "-  mean time: %04.2f ms.\n"
-                                  "-  min time : %04.2f ms.\n"
-                                  "-  max time : %04.2f ms.\n"
-                                  "-  stddev   : %04.2f ms.\n", name.c_str(), meanTime, minTime, maxTime, stddev);
-            SG_LOG(SG_GENERAL, SG_ALERT, buffer);
-        }
-    }
-}
-
-
 bool
 SGSubsystemGroup::has_subsystem (const string &name) const
 {
@@ -364,7 +331,6 @@ SGSubsystemGroup::Member::Member ()
       subsystem(0),
       min_step_sec(0),
       elapsed_sec(0),
-      collectTimeStats(false),
       exceptionCount(0)
 {
 }
@@ -407,31 +373,6 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 }
 
 
-void 
-SGSubsystemGroup::Member::printTimingInformation(double time)
-{
-     if (collectTimeStats) {
-         SG_LOG(SG_GENERAL, SG_ALERT, "Subsystem Timing Alert, subsystem \"" << name << "\": " << time/1000.0 << "ms");
-         subsystem->printTimingInformation();
-     }
-}
-
-double SGSubsystemGroup::Member::getTimeWarningThreshold()
-{
-    return (timeStat.mean() + 3 * timeStat.stdDev());
-}
-
-void SGSubsystemGroup::Member::updateExecutionTime(double time)
-{
-    if (collectTimeStats) {
-        timeStat += time;
-    }
-}
-
-
-
-
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGSubsystemMgr.
 ////////////////////////////////////////////////////////////////////////
@@ -505,14 +446,6 @@ SGSubsystemMgr::update (double delta_time_sec)
 {
     for (int i = 0; i < MAX_GROUPS; i++) {
         _groups[i]->update(delta_time_sec);
-    }
-}
-
-void 
-SGSubsystemMgr::collectDebugTiming(bool collect)
-{
-    for (int i = 0; i < MAX_GROUPS; i++) {
-        _groups[i]->collectDebugTiming(collect);
     }
 }
 
@@ -590,11 +523,12 @@ SGSubsystemMgr::get_subsystem (const string &name) const
         return s->second;
 }
 
+/** Trigger the timing callback to report data for all subsystems. */
 void
-SGSubsystemMgr::printTimingStatistics(double minMaxTime,double minJitter)
+SGSubsystemMgr::reportTiming()
 {
     for (int i = 0; i < MAX_GROUPS; i++) {
-        _groups[i]->printTimingStatistics(minMaxTime, minJitter);
+        _groups[i]->reportTiming();
     } // of groups iteration
 }
 

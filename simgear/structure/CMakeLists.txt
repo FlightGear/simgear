@@ -13,6 +13,7 @@ set(HEADERS
     SGSmplstat.hxx
     SGWeakPtr.hxx
     SGWeakReferenced.hxx
+    SGPerfMon.hxx
     Singleton.hxx
     StringTable.hxx
     callback.hxx
@@ -29,6 +30,7 @@ set(SOURCES
     SGExpression.cxx
     SGSmplhist.cxx
     SGSmplstat.cxx
+    SGPerfMon.cxx
     StringTable.cxx
     commands.cxx
     event_mgr.cxx

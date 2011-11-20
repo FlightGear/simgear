@@ -25,7 +25,7 @@
 
 namespace simgear
 {
-class SGReaderWriterXMLOptions;
+class SGReaderWriterOptions;
 }
 
 osg::Texture2D*
@@ -102,7 +102,7 @@ public:
 osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
                    PropertyList& effectProps,
-                   const SGReaderWriterXMLOptions* options);
+                   const SGReaderWriterOptions* options);
 
 /**
  * Transform an OSG subgraph by substituting the Effects and
@@ -115,7 +115,7 @@ instantiateEffects(osg::Node* model,
 
 inline osg::ref_ptr<osg::Node>
 instantiateEffects(osg::Node* model,
-                   const SGReaderWriterXMLOptions* options)
+                   const SGReaderWriterOptions* options)
 {
     PropertyList effectProps;
     return instantiateEffects(model, effectProps, options);

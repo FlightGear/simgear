@@ -59,9 +59,7 @@
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/misc/strutils.hxx>
 #include <simgear/threads/SGQueue.hxx>
-#include <simgear/scene/tgdb/TileCache.hxx>
 #include <simgear/misc/sg_dir.hxx>
-#include <OpenThreads/Thread>
 
 #ifdef HAVE_SVN_CLIENT_H
 #  ifdef HAVE_LIBSVN_CLIENT_1
@@ -141,7 +139,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 // SGTerraSync::SvnThread /////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-class SGTerraSync::SvnThread : public OpenThreads::Thread
+class SGTerraSync::SvnThread : public SGThread
 {
 public:
    SvnThread();
@@ -162,6 +160,7 @@ public:
    void   setLocalDir(string dir)           { _local_dir    = stripPath(dir);}
    string getLocalDir()                     { return _local_dir;}
    void   setUseSvn(bool use_svn)           { _use_svn = use_svn;}
+   void   setAllowedErrorCount(int errors)  {_allowed_errors = errors;}
 
 #ifdef HAVE_SVN_CLIENT_H
    void setUseBuiltin(bool built_in) { _use_built_in = built_in;}
@@ -175,6 +174,7 @@ public:
    volatile int  _updated_tile_count;
    volatile int  _success_count;
    volatile int  _consecutive_errors;
+   volatile int  _allowed_errors;
 
 private:
    virtual void run();
@@ -222,6 +222,7 @@ SGTerraSync::SvnThread::SvnThread() :
     _updated_tile_count(0),
     _success_count(0),
     _consecutive_errors(0),
+    _allowed_errors(6),
 #ifdef HAVE_SVN_CLIENT_H
     _use_built_in(true),
 #endif
@@ -344,7 +345,7 @@ bool SGTerraSync::SvnThread::start()
            << status
            << "Directory: '" << _local_dir << "'.");
 
-    OpenThreads::Thread::start();
+    SGThread::start();
     return true;
 }
 
@@ -556,7 +557,8 @@ void SGTerraSync::SvnThread::run()
             _busy = false;
         }
 
-        if (_consecutive_errors >= 5)
+        if ((_allowed_errors >= 0)&&
+            (_consecutive_errors >= _allowed_errors))
         {
             _stalled = true;
             _stop = true;
@@ -670,7 +672,8 @@ SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
     last_lat(NOWHERE),
     last_lon(NOWHERE),
     _terraRoot(root->getNode("/sim/terrasync",true)),
-    _tile_cache(NULL)
+    _refreshCb(NULL),
+    _userCbData(NULL)
 {
     _svnThread = new SvnThread();
 }
@@ -684,7 +687,7 @@ SGTerraSync::~SGTerraSync()
 
 void SGTerraSync::init()
 {
-    _refresh_display = _terraRoot->getNode("refresh-display",true);
+    _refreshDisplay = _terraRoot->getNode("refresh-display",true);
     _terraRoot->getNode("built-in-svn-available",true)->setBoolValue(svn_built_in_available);
     reinit();
 }
@@ -703,6 +706,7 @@ void SGTerraSync::reinit()
         _svnThread->setSvnServer(_terraRoot->getStringValue("svn-server",""));
         _svnThread->setRsyncServer(_terraRoot->getStringValue("rsync-server",""));
         _svnThread->setLocalDir(_terraRoot->getStringValue("scenery-dir",""));
+        _svnThread->setAllowedErrorCount(_terraRoot->getIntValue("max-errors",5));
 
     #ifdef HAVE_SVN_CLIENT_H
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
@@ -727,7 +731,7 @@ void SGTerraSync::reinit()
         }
     }
 
-    _stalled_node->setBoolValue(_svnThread->_stalled);
+    _stalledNode->setBoolValue(_svnThread->_stalled);
 }
 
 void SGTerraSync::bind()
@@ -745,9 +749,9 @@ void SGTerraSync::bind()
     _terraRoot->getNode("use-built-in-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
     _terraRoot->getNode("use-svn", true)->setAttribute(SGPropertyNode::USERARCHIVE,false);
     // stalled is used as a signal handler (to connect listeners triggering GUI pop-ups)
-    _stalled_node = _terraRoot->getNode("stalled", true);
-    _stalled_node->setBoolValue(_svnThread->_stalled);
-    _stalled_node->setAttribute(SGPropertyNode::PRESERVE,true);
+    _stalledNode = _terraRoot->getNode("stalled", true);
+    _stalledNode->setBoolValue(_svnThread->_stalled);
+    _stalledNode->setAttribute(SGPropertyNode::PRESERVE,true);
 }
 
 void SGTerraSync::unbind()
@@ -774,10 +778,10 @@ void SGTerraSync::update(double)
                 SG_LOG(SG_TERRAIN,SG_ALERT,
                         "Automatic scenery download/synchronization has stopped.");
             }
-            _stalled_node->setBoolValue(_svnThread->_stalled);
+            _stalledNode->setBoolValue(_svnThread->_stalled);
         }
 
-        if (!_refresh_display->getBoolValue())
+        if (!_refreshDisplay->getBoolValue())
             return;
 
         while (_svnThread->hasNewTiles())
@@ -794,7 +798,7 @@ void SGTerraSync::update(double)
 void SGTerraSync::refreshScenery(SGPath path,const string& relativeDir)
 {
     // find tiles to be refreshed
-    if (_tile_cache)
+    if (_refreshCb)
     {
         path.append(relativeDir);
         if (path.exists())
@@ -808,7 +812,7 @@ void SGTerraSync::refreshScenery(SGPath path,const string& relativeDir)
             {
                 // reload scenery tile
                 long index = atoi(tileList[i].file().c_str());
-                _tile_cache->refresh_tile(index);
+                _refreshCb(_userCbData, index);
             }
         }
     }
@@ -816,9 +820,10 @@ void SGTerraSync::refreshScenery(SGPath path,const string& relativeDir)
 
 bool SGTerraSync::isIdle() {return _svnThread->isIdle();}
 
-void SGTerraSync::setTileCache(TileCache* tile_cache)
+void SGTerraSync::setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userCbData)
 {
-    _tile_cache = tile_cache;
+    _refreshCb = refreshCb;
+    _userCbData = userCbData;
 }
 
 void SGTerraSync::syncAirportsModels()

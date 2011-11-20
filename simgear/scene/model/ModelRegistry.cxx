@@ -47,6 +47,7 @@
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>
 #include <simgear/scene/util/SGTextureStateAttributeVisitor.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/NodeAndDrawableVisitor.hxx>
 
 #include <simgear/structure/exception.hxx>
@@ -56,7 +57,6 @@
 
 #include "BoundingVolumeBuildVisitor.hxx"
 #include "model.hxx"
-#include "SGReaderWriterXMLOptions.hxx"
 
 using namespace std;
 using namespace osg;
@@ -410,8 +410,8 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
                 && group->getNumChildren() == 1)
                 optimized = static_cast<Node*>(group->getChild(0));
         }
-        const SGReaderWriterXMLOptions* sgopt
-            = dynamic_cast<const SGReaderWriterXMLOptions*>(opt);
+        const SGReaderWriterOptions* sgopt
+            = dynamic_cast<const SGReaderWriterOptions*>(opt);
         if (sgopt && sgopt->getInstantiateEffects())
             optimized = instantiateEffects(optimized.get(), sgopt);
         return optimized.release();

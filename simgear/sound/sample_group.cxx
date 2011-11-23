@@ -94,12 +94,19 @@ void SGSampleGroup::update( double dt ) {
         ALint result = AL_STOPPED;
 
         if ( sample->is_valid_source() ) {
+            int source = sample->get_source();
+
+            alGetSourcei( source, AL_SOURCE_STATE, &result );
             if ( sample->is_looping() ) {
-                sample->no_valid_source();
-                _smgr->release_source( sample->get_source() );
+                if ( result != AL_STOPPED ) {
+                    alSourceStop( source );
+                    alGetSourcei( source, AL_SOURCE_STATE, &result );
+                }
+                if ( result == AL_STOPPED ) {
+                    sample->no_valid_source();
+                    _smgr->release_source( sample->get_source() );
+                }
             }
-            else
-                alGetSourcei( sample->get_source(), AL_SOURCE_STATE, &result );
         }
 
         if ( result == AL_STOPPED ) {

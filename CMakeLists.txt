@@ -46,6 +46,17 @@ if(NOT CMAKE_BUILD_TYPE)
       FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+# Determine name of library installation directory, i.e. "lib" vs "lib64", which
+# differs between all Debian-based vs all other Linux distros.
+# See cmake bug #11964, http://cmake.org/gitweb?p=cmake.git;a=commit;h=126c993d
+# GNUInstallDirs requires CMake >= 2.8.5, use own file for older cmake
+if(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
+  include(GNUInstallDirs)
+else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
+ include(OldGNUInstallDirs)
+endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
+message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
+
 option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
@@ -166,7 +177,7 @@ if(HAVE_CLOCK_GETTIME)
         endif(NOT CLOCK_GETTIME_IN_LIBC)
 endif(HAVE_CLOCK_GETTIME)
 
-SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually d on windows")
+SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows")
 SET(CMAKE_RELEASE_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")
 SET(CMAKE_MINSIZEREL_POSTFIX "" CACHE STRING "add a postfix, usually empty on windows")

@@ -36,6 +36,7 @@ set(SOURCES
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
+if(ENABLE_TESTS)
 add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock sgio sgstructure sgthreads sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
@@ -75,4 +76,4 @@ target_link_libraries(test_binobj
     ${RT_LIBRARY}) 
     
 add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
-       
+endif(ENABLE_TESTS)

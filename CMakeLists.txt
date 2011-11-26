@@ -53,7 +53,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 if(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
   include(GNUInstallDirs)
 else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
- include(OldGNUInstallDirs)
+  include(OldGNUInstallDirs)
 endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
@@ -62,6 +62,7 @@ option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support
 option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" ON)
 option(ENABLE_RTI "Set to ON to build SimGear with RTI support" OFF)
+option(ENABLE_TESTS "Set to OFF to disable building SimGear's test applications" ON)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
@@ -236,12 +237,14 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/simgear/simgear_config_cmake.h.in"
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
-  
+
+if(ENABLE_TESTS)
 # enable CTest / make test target
 
 include (Dart)
 enable_testing()
-  
+endif(ENABLE_TESTS)
+
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 add_subdirectory(simgear)
 
@@ -254,6 +257,4 @@ CONFIGURE_FILE(
   IMMEDIATE @ONLY)
 ADD_CUSTOM_TARGET(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-
-
 

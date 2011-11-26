@@ -18,6 +18,7 @@ set(SOURCES
 
 simgear_component(sound sound "${SOURCES}" "${HEADERS}")
 
+if(ENABLE_TESTS)
 set(SOUND_TEST_LIBS
     sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
     ${CMAKE_THREAD_LIBS_INIT}
@@ -35,3 +36,4 @@ create_test(openal_test1)
 create_test(openal_test2)
 create_test(openal_test3)
 create_test(openal_test4)
+endif(ENABLE_TESTS)

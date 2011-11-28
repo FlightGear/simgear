@@ -37,43 +37,34 @@ set(SOURCES
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+
+if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+else()
+    set(TEST_LIBS
+            sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
+            ${CMAKE_THREAD_LIBS_INIT}
+            ${WINSOCK_LIBRARY}
+            ${ZLIB_LIBRARY}
+            ${RT_LIBRARY})
+endif()
+
 add_executable(test_sock socktest.cxx)
-target_link_libraries(test_sock sgio sgstructure sgthreads sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${WINSOCK_LIBRARY}
-    ${RT_LIBRARY})
+target_link_libraries(test_sock ${TEST_LIBS})
 
 add_executable(test_http test_HTTP.cxx)
-target_link_libraries(test_http
-    sgio sgstructure sgthreads sgtiming sgmisc sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${WINSOCK_LIBRARY}
-    ${RT_LIBRARY})
+target_link_libraries(test_http ${TEST_LIBS})
 
 add_test(http ${EXECUTABLE_OUTPUT_PATH}/test_http)
 
 add_executable(httpget httpget.cxx)
-target_link_libraries(httpget
-    sgio sgstructure sgthreads sgtiming sgmisc sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${WINSOCK_LIBRARY}
-    ${RT_LIBRARY})
+target_link_libraries(httpget ${TEST_LIBS})
 
 add_executable(decode_binobj decode_binobj.cxx)
-target_link_libraries(decode_binobj
-    sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${WINSOCK_LIBRARY}
-    ${ZLIB_LIBRARY}
-    ${RT_LIBRARY})
+target_link_libraries(decode_binobj ${TEST_LIBS})
 
 add_executable(test_binobj test_binobj.cxx)
-target_link_libraries(test_binobj
-    sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${WINSOCK_LIBRARY}
-    ${ZLIB_LIBRARY}
-    ${RT_LIBRARY}) 
+target_link_libraries(test_binobj ${TEST_LIBS}) 
     
 add_test(binobj ${EXECUTABLE_OUTPUT_PATH}/test_binobj)
 endif(ENABLE_TESTS)

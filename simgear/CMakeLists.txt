@@ -41,21 +41,43 @@ install (FILES ${HEADERS}  DESTINATION include/simgear/)
 
 if(SIMGEAR_SHARED)
     message(STATUS "building shared library")
-    get_property(allSources GLOBAL PROPERTY ALL_SOURCES)
+    get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
+    get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
     get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
 
-    add_library(SimGear SHARED ${allSources})
-    set_property(TARGET SimGear PROPERTY FRAMEWORK 1)
-    message(STATUS "public header: ${publicHeaders}")
+    add_library(SimGear SHARED ${coreSources})
+  # set_property(TARGET SimGear PROPERTY FRAMEWORK 1)
+  #  message(STATUS "public header: ${publicHeaders}")
     set_property(TARGET SimGear PROPERTY PUBLIC_HEADER "${publicHeaders}")
     set_property(TARGET SimGear PROPERTY LINKER_LANGUAGE CXX)
-	
-    target_link_libraries(SimGear ${ZLIB_LIBRARY} 
-			${OPENSCENEGRAPH_LIBRARIES} 
-			${OPENAL_LIBRARY} ${ALUT_LIBRARY}
-			${OPENGL_LIBRARY})
-			
+    
+    target_link_libraries(SimGear ${ZLIB_LIBRARY})					
     install(TARGETS SimGear LIBRARY DESTINATION lib${LIB_SUFFIX}
-                            PUBLIC_HEADER DESTINATION include/simgear)
+                               PUBLIC_HEADER DESTINATION include/simgear)
+                               
+	if(NOT SIMGEAR_HEADLESS)
+    	if(LIBSVN_FOUND)
+        	add_definitions(${APR_CFLAGS})
+
+        	IF(APPLE)
+        		set_property(SOURCE scene/tsync/terrasync.cxx PROPERTY COMPILE_FLAGS "-iwithsysroot ${LIBSVN_INCLUDE_DIR}")
+        	ELSE()
+        		include_directories(${LIBSVN_INCLUDE_DIR})
+        	ENDIF(APPLE)
+        endif(LIBSVN_FOUND)
+    
+    	add_library(SimGearScene SHARED ${sceneSources})
+      # set_property(TARGET SimGearScene PROPERTY FRAMEWORK 1)
+      # set_property(TARGET SimGearScene PROPERTY PUBLIC_HEADER "${publicHeaders}")
+        set_property(TARGET SimGearScene PROPERTY LINKER_LANGUAGE CXX)
+        
+        target_link_libraries(SimGearScene ${ZLIB_LIBRARY} 
+    			${OPENSCENEGRAPH_LIBRARIES} 
+    			${OPENAL_LIBRARY} ${ALUT_LIBRARY}
+    			${OPENGL_LIBRARY})
+    	
+    	install(TARGETS SimGearScene LIBRARY DESTINATION lib${LIB_SUFFIX})
+    endif()
+   
 endif(SIMGEAR_SHARED)
     

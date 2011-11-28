@@ -38,4 +38,4 @@ set(SOURCES
     userdata.cxx
     )
 
-simgear_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
+simgear_scene_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")

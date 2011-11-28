@@ -16,14 +16,19 @@ set(SOURCES
     xmlsound.cxx
     )
 
-simgear_component(sound sound "${SOURCES}" "${HEADERS}")
+simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-set(SOUND_TEST_LIBS
-    sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${RT_LIBRARY}
-    ${ALUT_LIBRARY} ${OPENAL_LIBRARY})
+
+if (SIMGEAR_SHARED)
+    set(SOUND_TEST_LIBS SimGearScene)
+else()
+    set(SOUND_TEST_LIBS
+        sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
+        ${CMAKE_THREAD_LIBS_INIT}
+        ${RT_LIBRARY}
+        ${ALUT_LIBRARY} ${OPENAL_LIBRARY})
+endif()
 
 function(create_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cxx)

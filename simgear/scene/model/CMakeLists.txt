@@ -44,4 +44,4 @@ set(SOURCES
     shadanim.cxx
     )
 
-simgear_component(model scene/model "${SOURCES}" "${HEADERS}")
+simgear_scene_component(model scene/model "${SOURCES}" "${HEADERS}")

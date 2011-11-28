@@ -36,4 +36,4 @@ set(SOURCES
     BVHTransform.cxx    
     )
 
-simgear_component(bvh scene/bvh "${SOURCES}" "${HEADERS}")
+simgear_scene_component(bvh scene/bvh "${SOURCES}" "${HEADERS}")

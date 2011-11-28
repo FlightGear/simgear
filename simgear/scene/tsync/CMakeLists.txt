@@ -19,4 +19,4 @@ if(LIBSVN_FOUND)
 
 endif()
 
-simgear_component(tsync scene/tsync "${SOURCES}" "${HEADERS}")
+simgear_scene_component(tsync scene/tsync "${SOURCES}" "${HEADERS}")

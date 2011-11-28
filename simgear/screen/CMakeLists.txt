@@ -20,4 +20,4 @@ if(JPEG_FACTORY)
 endif()
 
 
-simgear_component(screen screen "${SOURCES}" "${HEADERS}")
+simgear_scene_component(screen screen "${SOURCES}" "${HEADERS}")

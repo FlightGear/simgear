@@ -31,5 +31,5 @@ set(SOURCES
     mipmap.cxx
     )
 
-simgear_component(material scene/material "${SOURCES}" "${HEADERS}")
+simgear_scene_component(material scene/material "${SOURCES}" "${HEADERS}")
 

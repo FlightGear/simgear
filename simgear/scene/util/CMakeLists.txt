@@ -37,4 +37,4 @@ set(SOURCES
     UpdateOnceCallback.cxx
     )
 
-simgear_component(util scene/util "${SOURCES}" "${HEADERS}")
+simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")

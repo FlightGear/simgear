@@ -20,6 +20,8 @@ set(HEADERS
     StateAttributeFactory.hxx
     UpdateOnceCallback.hxx
     VectorArrayAdapter.hxx
+    PathOptions.hxx
+    project.hxx
     )
 
 set(SOURCES 
@@ -35,6 +37,8 @@ set(SOURCES
     SplicingVisitor.cxx
     StateAttributeFactory.cxx
     UpdateOnceCallback.cxx
+    PathOptions.cxx
+    project.cxx
     )
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")

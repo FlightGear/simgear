@@ -48,7 +48,7 @@
 #endif
 
 #include <simgear/math/sg_random.h>
-#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/util/PathOptions.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>

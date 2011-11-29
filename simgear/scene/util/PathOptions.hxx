@@ -20,7 +20,6 @@
 #ifndef PATHOPTIONSHXX
 #define PATHOPTIONSHXX 1
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osgDB/ReaderWriter>
 #include <simgear/misc/sg_path.hxx>
 
@@ -28,6 +27,5 @@ namespace simgear
 {
 osgDB::ReaderWriter::Options* makeOptionsFromPath(const SGPath&);
 }
-#endif
 
 #endif

@@ -42,7 +42,7 @@
 
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/util/PathOptions.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>

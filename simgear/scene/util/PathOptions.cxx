@@ -1,4 +1,5 @@
-// Copyright (C) 2010  Tim Moore moore@bricoworks.com
+// PathOptions.cxx -- make an osgDB Options object from a path
+// Copyright (C) 2007  Tim Moore timoore@redhat.com
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -14,23 +15,23 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
-#ifndef SIMGEAR_PROJECT_HXX
-#define SIMGEAR_PROJECT_HXX 1
+// $Id$
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-
-#include <osg/GL>
-
-namespace simgear
-{
-// Replacement for gluProject. OSG doesn't link in GLU anymore.
-extern GLint project(GLdouble objX, GLdouble objY, GLdouble objZ,
-                     const GLdouble *model, const GLdouble *proj,
-                     const GLint *view,
-                     GLdouble* winX, GLdouble* winY, GLdouble* winZ);
-}
-
-#endif // of NO_OPENSCENEGRAPH_INTERFACE
-
+#ifdef HAVE_CONFIG_H
+#  include <simgear_config.h>
 #endif
 
+#include <osgDB/Registry>
+
+#include "PathOptions.hxx"
+
+using namespace simgear;
+
+osgDB::ReaderWriter::Options* simgear::makeOptionsFromPath(const SGPath& path)
+{
+    using namespace osgDB;
+    ReaderWriter::Options *options
+        = new ReaderWriter::Options(*(Registry::instance()->getOptions()));
+    options->setDatabasePath(path.str());
+    return options;
+}

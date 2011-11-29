@@ -50,7 +50,7 @@
 #include <simgear/constants.h>
 #include <simgear/screen/colors.hxx>
 #include <simgear/scene/model/model.hxx>
-#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/util/PathOptions.hxx>
 
 #include "sphere.hxx"
 #include "moon.hxx"

@@ -2,7 +2,6 @@
 include (SimGearComponent)
 
 set(HEADERS 
-    PathOptions.hxx
     ResourceManager.hxx
     interpolator.hxx
     sg_dir.hxx
@@ -18,7 +17,6 @@ set(HEADERS
     )
 
 set(SOURCES 
-    PathOptions.cxx
     ResourceManager.cxx
     interpolator.cxx
     sg_dir.cxx

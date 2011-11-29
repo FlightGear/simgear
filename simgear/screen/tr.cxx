@@ -144,7 +144,7 @@
 #include <windows.h>
 #endif
 
-#include <simgear/math/project.hxx>
+#include <simgear/scene/util/project.hxx>
 
 #include "tr.h"
 

@@ -42,7 +42,7 @@
 #include <osgDB/ReadFile>
 
 #include <simgear/math/SGMath.hxx>
-#include <simgear/misc/PathOptions.hxx>
+#include <simgear/scene/util/PathOptions.hxx>
 #include <simgear/screen/colors.hxx>
 #include <simgear/scene/model/model.hxx>
 #include "oursun.hxx"

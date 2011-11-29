@@ -21,8 +21,6 @@
 
 #include "project.hxx"
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-
 #include <osg/Math>
 #include <osg/Matrixd>
 
@@ -46,7 +44,5 @@ GLint project(GLdouble objX, GLdouble objY, GLdouble objZ,
     return GL_TRUE;
 }
 
-}
-
-#endif // of NO_OPENSCENEGRAPH_INTERFACE
+} // of namespace simgear
 

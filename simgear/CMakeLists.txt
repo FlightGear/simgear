@@ -54,9 +54,9 @@ if(SIMGEAR_SHARED)
   #  set_property(TARGET SimGearCore PROPERTY PUBLIC_HEADER "${publicHeaders}")
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
     
-    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})                    
-    install(TARGETS SimGearCore LIBRARY DESTINATION lib${LIB_SUFFIX})
-                               
+    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})
+    install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
     if(NOT SIMGEAR_HEADLESS)
         if(LIBSVN_FOUND)
             add_definitions(${APR_CFLAGS})
@@ -86,7 +86,7 @@ if(SIMGEAR_SHARED)
             target_link_libraries(SimGearScene ${LIBSVN_LIBRARIES})
         endif(LIBSVN_FOUND)
                 
-        install(TARGETS SimGearScene LIBRARY DESTINATION lib${LIB_SUFFIX})
+        install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
    
 endif(SIMGEAR_SHARED)

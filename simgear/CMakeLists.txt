@@ -51,12 +51,11 @@ if(SIMGEAR_SHARED)
     
   # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
   #  message(STATUS "public header: ${publicHeaders}")
-    set_property(TARGET SimGearCore PROPERTY PUBLIC_HEADER "${publicHeaders}")
+  #  set_property(TARGET SimGearCore PROPERTY PUBLIC_HEADER "${publicHeaders}")
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
     
     target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})                    
-    install(TARGETS SimGearCore LIBRARY DESTINATION lib${LIB_SUFFIX}
-                               PUBLIC_HEADER DESTINATION include/simgear)
+    install(TARGETS SimGearCore LIBRARY DESTINATION lib${LIB_SUFFIX})
                                
     if(NOT SIMGEAR_HEADLESS)
         if(LIBSVN_FOUND)

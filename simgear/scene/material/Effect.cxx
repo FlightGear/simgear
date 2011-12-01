@@ -1157,7 +1157,7 @@ struct DepthBuilder : public PassAttributeBuilder
         const SGPropertyNode* pfar
             = getEffectPropertyChild(effect, prop, "far");
         if (pfar)
-            depth->setZFar(pnear->getValue<double>());
+            depth->setZFar(pfar->getValue<double>());
         const SGPropertyNode* pmask
             = getEffectPropertyChild(effect, prop, "write-mask");
         if (pmask)

@@ -156,7 +156,10 @@ void SGSampleGroup::update( double dt ) {
                 else
                 {
                     if (_smgr->request_buffer(sample) == SGSoundMgr::NO_BUFFER)
+                    {
+                        _smgr->release_source(source);
                         continue;
+                    }
 
                     // start playing the sample
                     ALuint buffer = sample->get_buffer();

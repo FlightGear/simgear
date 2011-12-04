@@ -180,7 +180,7 @@ public:
     /**
      * Request to stop playing the refered audio sample.
      * @param refname Reference name of the audio sample to stop
-     * @return true if the audio sample exsists and is scheduled to stop
+     * @return true if the audio sample exists and is scheduled to stop
      */
     bool stop( const string& refname );
 

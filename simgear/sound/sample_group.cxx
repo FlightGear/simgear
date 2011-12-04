@@ -113,6 +113,8 @@ void SGSampleGroup::update( double dt ) {
             sample->stop();
             if ( !sample->is_queue() ) {
                 ALuint buffer = sample->get_buffer();
+                // disconnect buffer from its source - otherwise it cannot be deleted
+                alSourceUnqueueBuffers(sample->get_source(), 1, &buffer);
                 alDeleteBuffers( 1, &buffer );
                 testForALError("buffer remove");
             }

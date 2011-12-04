@@ -215,6 +215,7 @@ void SGSoundMgr::stop() {
     for (unsigned int i=0; i<_free_sources.size(); i++) {
         ALuint source = _free_sources[i];
         alDeleteSources( 1 , &source );
+        testForALError("SGSoundMgr::stop: delete sources");
     }
     _free_sources.clear();
 
@@ -225,6 +226,7 @@ void SGSoundMgr::stop() {
         refUint ref = buffers_current->second;
         ALuint buffer = ref.id;
         alDeleteBuffers(1, &buffer);
+        testForALError("SGSoundMgr::stop: delete buffers");
     }
     _buffers.clear();
 
@@ -283,6 +285,7 @@ void SGSoundMgr::unbind ()
     for (unsigned int i=0; i<_free_sources.size(); i++) {
         ALuint source = _free_sources[i];
         alDeleteSources( 1 , &source );
+        testForALError("SGSoundMgr::unbind: delete sources");
     }
 
     _free_sources.clear();
@@ -412,7 +415,7 @@ void SGSoundMgr::set_volume( float v )
 // and hence orientation) of the sources.
 //
 // The Sound Manager is (and should be) the only one knowing about source
-// management. Sources further away should be suspendped to free resources for
+// management. Sources further away should be suspended to free resources for
 // newly added sounds close by.
 unsigned int SGSoundMgr::request_source()
 {
@@ -424,7 +427,7 @@ unsigned int SGSoundMgr::request_source()
        _sources_in_use.push_back(source);
     }
     else
-       SG_LOG( SG_GENERAL, SG_INFO, "No more free sources available\n");
+       SG_LOG( SG_GENERAL, SG_ALERT, "Sound manager: No more free sources available!\n");
 
     return source;
 }

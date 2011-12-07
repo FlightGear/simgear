@@ -157,14 +157,16 @@ void SGSampleGroup::update( double dt ) {
                 }
                 else
                 {
-                    if (_smgr->request_buffer(sample) == SGSoundMgr::NO_BUFFER)
+                    ALuint buffer = _smgr->request_buffer(sample);
+                    if (buffer == SGSoundMgr::FAILED_BUFFER ||
+                        buffer == SGSoundMgr::NO_BUFFER)
                     {
                         _smgr->release_source(source);
                         continue;
                     }
 
                     // start playing the sample
-                    ALuint buffer = sample->get_buffer();
+                    buffer = sample->get_buffer();
                     if ( alIsBuffer(buffer) == AL_TRUE )
                     {
                         alSourcei( source, AL_BUFFER, buffer );

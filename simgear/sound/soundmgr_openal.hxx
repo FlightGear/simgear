@@ -200,7 +200,8 @@ public:
 
     enum {
         NO_SOURCE = (unsigned int)-1,
-        NO_BUFFER = (unsigned int)-1
+        NO_BUFFER = (unsigned int)-1,
+        FAILED_BUFFER = (unsigned int)-2
     };
 
     /**

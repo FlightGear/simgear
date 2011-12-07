@@ -481,8 +481,9 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
               if (res == false) return NO_BUFFER;
             } catch (sg_exception& e) {
               SG_LOG(SG_GENERAL, SG_ALERT,
-                     "failed to load sound buffer:" << e.getFormattedMessage());
-              return NO_BUFFER;
+                    "failed to load sound buffer: " << e.getFormattedMessage());
+              sample->set_buffer( SGSoundMgr::FAILED_BUFFER );
+              return FAILED_BUFFER;
             }
             
             sample->set_frequency( freq );
@@ -618,6 +619,7 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
 #endif
 
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
+        free(data);
         throw sg_io_exception("Warning: STEREO files are not supported for 3D audio effects: " + samplepath);
     }
 

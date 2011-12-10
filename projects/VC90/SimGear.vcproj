@@ -600,14 +600,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\project.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\math\project.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\sg_geodesy.hxx"
 				>
 			</File>
@@ -649,14 +641,6 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\misc\interpolator.hxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\PathOptions.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\misc\PathOptions.hxx"
 				>
 			</File>
 			<File
@@ -1794,11 +1778,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\util\PathOptions.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\PathOptions.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\util\PrimitiveUtils.cxx"
 				>
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\PrimitiveUtils.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\project.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\project.hxx"
 				>
 			</File>
 			<File

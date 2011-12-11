@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS 
     GroundLightManager.hxx
+    ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
     SGDirectionalLightBin.hxx
     SGLightBin.hxx
@@ -24,6 +25,7 @@ set(HEADERS
 
 set(SOURCES 
     GroundLightManager.cxx
+    ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
     SGOceanTile.cxx
     SGReaderWriterBTG.cxx
@@ -39,3 +41,18 @@ set(SOURCES
     )
 
 simgear_scene_component(tgdb scene/tgdb "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+
+  if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+  else()
+    set(TEST_LIBS sgbucket sgmisc sgmath sgdebug)
+  endif()
+  
+
+  add_executable(BucketBoxTest BucketBoxTest.cxx)
+  target_link_libraries(BucketBoxTest ${TEST_LIBS})
+  add_test(BucketBoxTest ${EXECUTABLE_OUTPUT_PATH}/BucketBoxTest)
+
+endif(ENABLE_TESTS)

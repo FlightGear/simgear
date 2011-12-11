@@ -51,6 +51,7 @@
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
+#include "ReaderWriterSPT.hxx"
 #include "ReaderWriterSTG.hxx"
 #include "TileEntry.hxx"
 
@@ -62,6 +63,9 @@ ModelLoadHelper *TileEntry::_modelLoader=0;
 namespace {
 osgDB::RegisterReaderWriterProxy<ReaderWriterSTG> g_readerWriterSTGProxy;
 ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
+
+osgDB::RegisterReaderWriterProxy<ReaderWriterSPT> g_readerWriterSPTProxy;
+ModelRegistryCallbackProxy<LoadOnlyCallback> g_sptCallbackProxy("spt");
 }
 
 

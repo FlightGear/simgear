@@ -148,7 +148,7 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _static_changed(true),
     _is_file(false)
 {
-    SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
+    SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
 }
 
@@ -184,7 +184,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _static_changed(true),
     _is_file(false)
 {
-    SG_LOG( SG_GENERAL, SG_DEBUG, "In memory sounds sample" );
+    SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
     _data = (unsigned char*)*data; *data = NULL;
 }
 

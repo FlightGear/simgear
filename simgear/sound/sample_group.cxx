@@ -181,7 +181,7 @@ void SGSampleGroup::update( double dt ) {
                         alSourcePlay( source );
                         testForALError("sample play");
                     } else
-                        SG_LOG( SG_GENERAL, SG_ALERT, "No such buffer!\n");
+                        SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!\n");
                 }
             }
 
@@ -463,7 +463,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
 bool SGSampleGroup::testForError(void *p, string s)
 {
    if (p == NULL) {
-      SG_LOG( SG_GENERAL, SG_ALERT, "Error (sample group): " << s);
+      SG_LOG( SG_SOUND, SG_ALERT, "Error (sample group): " << s);
       return true;
    }
    return false;
@@ -473,7 +473,7 @@ bool SGSampleGroup::testForALError(string s)
 {
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_GENERAL, SG_ALERT, "AL Error (" << _refname << "): "
+       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << _refname << "): "
                                       << alGetString(error) << " at " << s);
        return true;
     }

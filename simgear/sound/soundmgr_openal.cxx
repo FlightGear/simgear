@@ -111,7 +111,7 @@ SGSoundMgr::~SGSoundMgr() {
 // initialize the sound manager
 void SGSoundMgr::init(const char *devname) {
 
-    SG_LOG( SG_GENERAL, SG_INFO, "Initializing OpenAL sound manager" );
+    SG_LOG( SG_SOUND, SG_INFO, "Initializing OpenAL sound manager" );
 
     ALCdevice *device = alcOpenDevice(devname);
     if ( testForError(device, "Audio device not available, trying default") ) {
@@ -137,7 +137,7 @@ void SGSoundMgr::init(const char *devname) {
     }
 
     if (_context != NULL)
-        SG_LOG(SG_GENERAL, SG_ALERT, "context is already assigned");
+        SG_LOG(SG_SOUND, SG_ALERT, "context is already assigned");
     _context = context;
     _working = true;
 
@@ -184,7 +184,7 @@ void SGSoundMgr::init(const char *devname) {
     }
 
     if (_free_sources.size() == 0) {
-        SG_LOG(SG_GENERAL, SG_ALERT, "Unable to grab any OpenAL sources!");
+        SG_LOG(SG_SOUND, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
 }
 
@@ -427,7 +427,7 @@ unsigned int SGSoundMgr::request_source()
        _sources_in_use.push_back(source);
     }
     else
-       SG_LOG( SG_GENERAL, SG_ALERT, "Sound manager: No more free sources available!\n");
+       SG_LOG( SG_SOUND, SG_ALERT, "Sound manager: No more free sources available!\n");
 
     return source;
 }
@@ -480,7 +480,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
               bool res = load(sample_name, &sample_data, &format, &size, &freq);
               if (res == false) return NO_BUFFER;
             } catch (sg_exception& e) {
-              SG_LOG(SG_GENERAL, SG_ALERT,
+              SG_LOG(SG_SOUND, SG_ALERT,
                     "failed to load sound buffer: " << e.getFormattedMessage());
               sample->set_buffer( SGSoundMgr::FAILED_BUFFER );
               return FAILED_BUFFER;
@@ -661,7 +661,7 @@ vector<const char*> SGSoundMgr::get_available_devices()
 bool SGSoundMgr::testForError(void *p, string s)
 {
    if (p == NULL) {
-      SG_LOG( SG_GENERAL, SG_ALERT, "Error: " << s);
+      SG_LOG( SG_SOUND, SG_ALERT, "Error: " << s);
       return true;
    }
    return false;
@@ -672,7 +672,7 @@ bool SGSoundMgr::testForALError(string s)
 {
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
-       SG_LOG( SG_GENERAL, SG_ALERT, "AL Error (sound manager): "
+       SG_LOG( SG_SOUND, SG_ALERT, "AL Error (sound manager): "
                                       << alGetString(error) << " at " << s);
        return true;
     }
@@ -684,7 +684,7 @@ bool SGSoundMgr::testForALCError(string s)
     ALCenum error;
     error = alcGetError(_device);
     if (error != ALC_NO_ERROR) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "ALC Error (sound manager): "
+        SG_LOG( SG_SOUND, SG_ALERT, "ALC Error (sound manager): "
                                        << alcGetString(_device, error) << " at "
                                        << s);
         return true;
@@ -698,7 +698,7 @@ bool SGSoundMgr::testForALUTError(string s)
     ALenum error;
     error =  alutGetError ();
     if (error != ALUT_ERROR_NO_ERROR) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "ALUT Error (sound manager): "
+        SG_LOG( SG_SOUND, SG_ALERT, "ALUT Error (sound manager): "
                                        << alutGetErrorString(error) << " at "
                                        << s);
         return true;

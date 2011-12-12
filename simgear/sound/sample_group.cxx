@@ -406,6 +406,17 @@ void SGSampleGroup::update_pos_and_orientation() {
         sample->set_rotation( ec2body );
         sample->set_position( position );
         sample->set_velocity( velocity );
+
+        // Test if a sample is farther away than max distance, if so
+        // stop the sound playback and free it's source.
+        float max2 = sample->get_max_dist() * sample->get_max_dist();
+        float dist2 = position[0]*position[0]
+                      + position[1]*position[1] + position[2]*position[2];
+        if (sample->is_playing() && (dist2 > max2)) {
+            sample->stop();
+        } else if (!sample->is_playing() && (dist2 < max2)) {
+            sample->play(sample->is_looping());
+        }
     }
 }
 

@@ -152,6 +152,22 @@ public:
      */
     inline bool is_playing() { return _playing; }
 
+
+    /**
+     * Set this sample to out-of-range (or not) and
+     * Schedule this audio sample to stop (or start) playing.
+     */
+    inline void set_out_of_range(bool oor = true) {
+        _out_of_range = oor; _playing = oor ? false : true; _changed = true;
+    }
+
+    /**
+     * Test if this sample to out-of-range or not.
+     */
+    inline bool test_out_of_range() {
+        return _out_of_range;
+    }
+
     /**
      * Set the data associated with this audio sample
      * @param data Pointer to a memory block containg this audio sample data.
@@ -495,6 +511,7 @@ private:
     bool _playing;
     bool _changed;
     bool _static_changed;
+    bool _out_of_range;
     bool _is_file;
 
     string random_string();

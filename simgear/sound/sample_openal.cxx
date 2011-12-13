@@ -74,6 +74,7 @@ SGSoundSample::SGSoundSample() :
     _playing(false),
     _changed(true),
     _static_changed(true),
+    _out_of_range(false),
     _is_file(false)
 {
 }
@@ -109,6 +110,7 @@ SGSoundSample::SGSoundSample(const char *file, const SGPath& currentDir) :
     _playing(false),
     _changed(true),
     _static_changed(true),
+    _out_of_range(false),
     _is_file(true)
 {
     SGPath p = simgear::ResourceManager::instance()->findPath(file, currentDir);
@@ -146,6 +148,7 @@ SGSoundSample::SGSoundSample( const unsigned char** data,
     _playing(false),
     _changed(true),
     _static_changed(true),
+    _out_of_range(false),
     _is_file(false)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );
@@ -182,6 +185,7 @@ SGSoundSample::SGSoundSample( void** data, int len, int freq, int format ) :
     _playing(false),
     _changed(true),
     _static_changed(true),
+    _out_of_range(false),
     _is_file(false)
 {
     SG_LOG( SG_SOUND, SG_DEBUG, "In memory sounds sample" );

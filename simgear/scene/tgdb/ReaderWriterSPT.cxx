@@ -54,6 +54,10 @@ ReaderWriterSPT::className() const
 osgDB::ReaderWriter::ReadResult
 ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* options) const
 {
+    // We get called with different extensions. To make sure search continues,
+    // we need to return FILE_NOT_HANDLED in this case.
+    if (osgDB::getLowerCaseFileExtension(fileName) != "spt")
+        return ReadResult(osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED);
     if (fileName != "state.spt")
         return ReadResult(osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND);
 

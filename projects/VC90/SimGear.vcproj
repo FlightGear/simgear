@@ -1340,6 +1340,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\BucketBox.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\GroundLightManager.cxx"
 				>
 			</File>
@@ -1361,6 +1365,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\tgdb\pt_lights.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\ReaderWriterSPT.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\tgdb\ReaderWriterSPT.hxx"
 				>
 			</File>
 			<File
@@ -1589,6 +1601,10 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\structure\SGSmplstat.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\structure\Singleton.hxx"
 				>
 			</File>
 			<File

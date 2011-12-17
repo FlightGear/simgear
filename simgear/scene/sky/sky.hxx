@@ -437,6 +437,38 @@ public:
      */
     virtual void set_3dCloudVisRange(float vis);
 
+    /** Get 3D cloud impostor distance*/
+    virtual float get_3dCloudImpostorDistance() const;
+
+    /** Set 3D cloud impostor distance
+     * @param density 3D cloud impostor distance
+     */
+    virtual void set_3dCloudImpostorDistance(float vis);
+
+    /** Get 3D cloud LoD1 Range*/
+    virtual float get_3dCloudLoD1Range() const;
+
+    /** Set 3D cloud LoD1 Range
+     * @param vis LoD1 Range
+     */
+    virtual void set_3dCloudLoD1Range(float vis);
+
+    /** Get 3D cloud LoD2 Range*/
+    virtual float get_3dCloudLoD2Range() const;
+
+    /** Set 3D cloud LoD2 Range
+     * @param vis LoD2 Range
+     */
+    virtual void set_3dCloudLoD2Range(float vis);
+
+    /** Get 3D cloud impostor usage */
+    virtual bool get_3dCloudUseImpostors() const;
+
+    /** Set 3D cloud impostor usage
+     * @param wrap whether use impostors for 3D clouds
+     */
+    virtual void set_3dCloudUseImpostors(bool imp);
+
     /** Get 3D cloud wrapping */
     virtual bool get_3dCloudWrap() const;
 

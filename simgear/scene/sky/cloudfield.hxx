@@ -72,16 +72,12 @@ private:
 
   float Rnd(float);
         
-  // Radius of the LoD nodes for the dynamic quadtrees.
-  static float RADIUS_LEVEL_1;
-  static float RADIUS_LEVEL_2;
-
   // Theoretical maximum cloud depth, used for fudging the LoD
   // ranges to ensure that clouds become visible at maximum range
   static float MAX_CLOUD_DEPTH;
 
-	// this is a relative position only, with that we can move all clouds at once
-	SGVec3f relative_position;
+  // this is a relative position only, with that we can move all clouds at once
+  SGVec3f relative_position;
 
   osg::ref_ptr<osg::Group> field_root;
   osg::ref_ptr<osg::Group> placed_root;
@@ -150,6 +146,10 @@ public:
   static SGVec3f view_vec, view_X, view_Y;
 
   static float view_distance;
+  static float impostor_distance;
+  static float lod1_range;
+  static float lod2_range;
+  static bool use_impostors;
   static double timer_dt;
   static float fieldSize;
   static bool wrap;
@@ -157,9 +157,18 @@ public:
   static bool getWrap(void) { return wrap; }
   static void setWrap(bool w) { wrap = w; }
 
+  static float getImpostorDistance(void) { return impostor_distance; }
+  static void setImpostorDistance(float d) { impostor_distance = d; }
+  static float getLoD1Range(void) { return lod1_range; }
+  static void setLoD1Range(int d) { lod1_range = d; }
+  static float getLoD2Range(void) { return lod2_range; }
+  static void setLoD2Range(int d) { lod2_range = d; }
+  static void setUseImpostors(bool b) { use_impostors = b; }
+  static bool getUseImpostors(void) { return use_impostors; }
+  
   static float getVisRange(void) { return view_distance; }
   static void setVisRange(float d) { view_distance = d; }
-  void applyVisRange(void);
+  void applyVisAndLoDRange(void);
 
   static osg::Fog* getFog()
   {

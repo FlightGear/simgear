@@ -28,6 +28,7 @@
 #include <osg/Texture2D>
 #include <osg/PositionAttitudeTransform>
 #include <osg/Vec4f>
+#include <osgSim/Impostor>
 
 #include <simgear/compiler.h>
 
@@ -68,9 +69,15 @@ float SGCloudField::fieldSize = 50000.0f;
 double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 bool SGCloudField::wrap = true;
-float SGCloudField::RADIUS_LEVEL_1 = 5000.0f;
-float SGCloudField::RADIUS_LEVEL_2 = 2000.0f;
 float SGCloudField::MAX_CLOUD_DEPTH = 2000.0f;
+bool SGCloudField::use_impostors = true;
+float SGCloudField::lod1_range = 10000.0f;
+float SGCloudField::lod2_range = 5000.0f;
+float SGCloudField::impostor_distance = 10000.0f;
+
+int impostorcount = 0;
+int lodcount = 0;
+int cloudcount = 0;
 
 SGVec3f SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
@@ -165,6 +172,9 @@ SGCloudField::SGCloudField() :
     field_transform->addChild(altitude_transform.get());
     placed_root = new osg::Group();
     altitude_transform->addChild(placed_root);
+    impostorcount = 0;
+    lodcount = 0;
+    cloudcount = 0;
 }
     
 SGCloudField::~SGCloudField() {
@@ -182,12 +192,12 @@ void SGCloudField::clear(void) {
     cloud_hash.clear();
 }
 
-void SGCloudField::applyVisRange(void)
+void SGCloudField::applyVisAndLoDRange(void)
 {
     for (unsigned int i = 0; i < placed_root->getNumChildren(); i++) {
         osg::ref_ptr<osg::LOD> lodnode1 = (osg::LOD*) placed_root->getChild(i);
         for (unsigned int j = 0; j < lodnode1->getNumChildren(); j++) {
-            lodnode1->setRange(j, 0.0f, view_distance + RADIUS_LEVEL_1 + RADIUS_LEVEL_2 + MAX_CLOUD_DEPTH);
+            lodnode1->setRange(j, 0.0f, lod1_range + view_distance + MAX_CLOUD_DEPTH);
             osg::ref_ptr<osg::LOD> lodnode2 = (osg::LOD*) lodnode1->getChild(j);
             for (unsigned int k = 0; k < lodnode2->getNumChildren(); k++) {
                 lodnode2->setRange(k, 0.0f, view_distance + MAX_CLOUD_DEPTH);
@@ -217,15 +227,19 @@ void SGCloudField::removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransfo
 {
     osg::ref_ptr<osg::Group> lodnode = transform->getParent(0);
     lodnode->removeChild(transform);
+    cloudcount--;
 
-    // Clean up the LOD nodes if required
     if (lodnode->getNumChildren() == 0) {
         osg::ref_ptr<osg::Group> lodnode1 = lodnode->getParent(0);
-            
+        osg::ref_ptr<osgSim::Impostor> impostornode = (osgSim::Impostor*) lodnode1->getParent(0);
+
         lodnode1->removeChild(lodnode);
-            
-        if (lodnode1->getNumChildren() == 0) {
-            placed_root->removeChild(lodnode1);
+        lodcount--;
+
+        if (lodnode1->getNumChildren() == 0) {        
+          impostornode->removeChild(lodnode1);        
+          placed_root->removeChild(impostornode);
+          impostorcount--;
         }
     }
 }
@@ -291,39 +305,55 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
     bool found = false;
     osg::ref_ptr<osg::LOD> lodnode1;
     osg::ref_ptr<osg::LOD> lodnode;
+    osg::ref_ptr<osgSim::Impostor> impostornode;
 
     for (unsigned int i = 0; (!found) && (i < placed_root->getNumChildren()); i++) {
         lodnode1 = (osg::LOD*) placed_root->getChild(i);
-        if ((lodnode1->getCenter() - pos).length2() < RADIUS_LEVEL_1*RADIUS_LEVEL_1) {
-            // New cloud is within RADIUS_LEVEL_1 of the center of the LOD node.
-            found = true;
-        }
+        if ((lodnode1->getCenter() - pos).length2() < lod1_range*lod1_range) {
+          // New cloud is within RADIUS_LEVEL_1 of the center of the LOD node.
+          found = true;
+        }         
     }
 
     if (!found) {
-        lodnode1 = new osg::LOD();
-        placed_root->addChild(lodnode1.get());
+        if (use_impostors) {
+          impostornode = new osgSim::Impostor();
+          impostornode->setImpostorThreshold(impostor_distance);
+          //impostornode->setImpostorThresholdToBound();
+          //impostornode->setCenter(pos);                
+          placed_root->addChild(impostornode.get());
+          lodnode1 = (osg::ref_ptr<osg::LOD>) impostornode;
+        } else {
+          lodnode1 = new osg::LOD();
+          placed_root->addChild(lodnode1.get());
+        }
+        impostorcount++;
     }
 
     // Now check if there is a second level LOD node at an appropriate distance
     found = false;
-
-    for (unsigned int j = 0; (!found) && (j < lodnode1->getNumChildren()); j++) {
+    
+    for (unsigned int j = 0; (!found) && (j < lodnode1->getNumChildren()); j++) {      
         lodnode = (osg::LOD*) lodnode1->getChild(j);
-        if ((lodnode->getCenter() - pos).length2() < RADIUS_LEVEL_2*RADIUS_LEVEL_2) {
+        if ((lodnode->getCenter() - pos).length2() < lod2_range*lod2_range) {
             // We've found the right leaf LOD node
             found = true;
         }
     }
 
     if (!found) {
-        // No suitable leave node was found, so we need to add one.
+        // No suitable leaf node was found, so we need to add one.
         lodnode = new osg::LOD();
-        lodnode1->addChild(lodnode, 0.0f, view_distance + RADIUS_LEVEL_1 + RADIUS_LEVEL_2 + MAX_CLOUD_DEPTH);
-    }
-
+        lodnode1->addChild(lodnode, 0.0f, lod1_range + view_distance + MAX_CLOUD_DEPTH);
+        lodcount++;
+    } 
+    
     transform->setPosition(pos);
-    lodnode->addChild(transform.get(), 0.0f, view_distance + MAX_CLOUD_DEPTH);
+    lodnode->addChild(transform.get(), 0.0f, view_distance);
+    cloudcount++;
+    SG_LOG(SG_ENVIRONMENT, SG_DEBUG, "Impostors: " << impostorcount <<
+                                     " LoD: " << lodcount << 
+                                     " Clouds: " << cloudcount);
 
     lodnode->dirtyBound();
     lodnode1->dirtyBound();

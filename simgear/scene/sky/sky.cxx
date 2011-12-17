@@ -233,7 +233,43 @@ void SGSky::set_3dCloudVisRange(float vis)
 {
     SGCloudField::setVisRange(vis);
     for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
-        cloud_layers[i]->get_layer3D()->applyVisRange();
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+float SGSky::get_3dCloudImpostorDistance() const {
+    return SGCloudField::getImpostorDistance();
+}
+
+void SGSky::set_3dCloudImpostorDistance(float vis)
+{
+    SGCloudField::setImpostorDistance(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+float SGSky::get_3dCloudLoD1Range() const {
+    return SGCloudField::getLoD1Range();
+}
+
+void SGSky::set_3dCloudLoD1Range(float vis)
+{
+    SGCloudField::setLoD1Range(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
+    }
+}
+
+float SGSky::get_3dCloudLoD2Range() const {
+    return SGCloudField::getLoD2Range();
+}
+
+void SGSky::set_3dCloudLoD2Range(float vis)
+{
+    SGCloudField::setLoD2Range(vis);
+    for ( int i = 0; i < (int)cloud_layers.size(); ++i ) {
+        cloud_layers[i]->get_layer3D()->applyVisAndLoDRange();
     }
 }
 
@@ -244,6 +280,15 @@ bool SGSky::get_3dCloudWrap() const {
 void SGSky::set_3dCloudWrap(bool wrap)
 {
     SGCloudField::setWrap(wrap);
+}
+
+bool SGSky::get_3dCloudUseImpostors() const {
+    return SGCloudField::getUseImpostors();
+}
+
+void SGSky::set_3dCloudUseImpostors(bool imp)
+{
+    SGCloudField::setUseImpostors(imp);
 }
 
 

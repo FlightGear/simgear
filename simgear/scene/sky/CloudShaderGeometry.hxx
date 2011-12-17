@@ -100,12 +100,9 @@ class CloudShaderGeometry : public osg::Drawable
             return _bbox;
         }
         
-        void setGeometry(osg::Drawable* geometry)
-        {
-            _geometry = geometry;
-        }
-        
         void addSprite(const SGVec3f& p, int tx, int ty, float w, float h, float cull);
+        void generateGeometry();
+        void rebuildGeometry();
                 
         osg::ref_ptr<osg::Drawable> _geometry;
 

@@ -119,56 +119,9 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     } else {
         effect = iter->second.get();
     }
-    quad = createOrthQuad(min_sprite_width, min_sprite_height,
-                          num_textures_x, num_textures_y);
 }
 
 SGNewCloud::~SGNewCloud() {
-}
-
-osg::Geometry* SGNewCloud::createOrthQuad(float w, float h, int varieties_x, int varieties_y)
-{
-    // Create front and back polygons so we don't need to screw around
-    // with two-sided lighting in the shader.
-    osg::Vec3Array& v = *(new osg::Vec3Array(4));
-    osg::Vec3Array& n = *(new osg::Vec3Array(4));
-    osg::Vec2Array& t = *(new osg::Vec2Array(4));
-    
-    float cw = w*0.5f;
-    float ch = h*0.5f;
-    
-    v[0].set(0.0f, -cw, -ch);
-    v[1].set(0.0f,  cw, -ch);
-    v[2].set(0.0f,  cw, ch);
-    v[3].set(0.0f, -cw, ch);
-    
-    // The texture coordinate range is not the
-    // entire coordinate space - as the texture
-    // has a number of different clouds on it.
-    float tx = 1.0f/varieties_x;
-    float ty = 1.0f/varieties_y;
-
-    t[0].set(0.0f, 0.0f);
-    t[1].set(  tx, 0.0f);
-    t[2].set(  tx, ty);
-    t[3].set(0.0f, ty);
-
-    // The normal isn't actually use in lighting.
-    n[0].set(1.0f, -1.0f, -1.0f);
-    n[1].set(1.0f,  1.0f, -1.0f);
-    n[2].set(1.0f,  1.0f,  1.0f);
-    n[3].set(1.0f, -1.0f,  1.0f);
-
-    osg::Geometry *geom = new osg::Geometry;
-
-    geom->setVertexArray(&v);
-    geom->setTexCoordArray(0, &t);
-    geom->setNormalArray(&n);
-    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
-    // No color for now; that's used to pass the position.
-    geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,4));
-
-    return geom;
 }
 
 #if 0
@@ -240,28 +193,28 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
             z = height * cos(elev) * 0.5f + height * 0.5f;
         }
         
-        // Determine the height and width as scaling factors on the minimum size (used to create the quad).
-        float sprite_width = 1.0f + sg_random() * (max_sprite_width - min_sprite_width) / min_sprite_width;
-        float sprite_height = 1.0f + sg_random() * (max_sprite_height - min_sprite_height) / min_sprite_height;
+        // Determine the height and width
+        float sprite_width = min_sprite_width + sg_random() * (max_sprite_width - min_sprite_width);
+        float sprite_height = min_sprite_height + sg_random() * (max_sprite_height - min_sprite_height);
         
         // Sprites are never taller than square.
-        if (sprite_height * min_sprite_height > sprite_width * min_sprite_width)
+        if (sprite_height > sprite_width )
         {
-            sprite_height = sprite_width * min_sprite_width / min_sprite_height;
+            sprite_height = sprite_width;
         }
 
         if (i == 0) {
             // The center sprite is always maximum size to fill up any holes.
-            sprite_width = 1.0f + (max_sprite_width - min_sprite_width) / min_sprite_width;
-            sprite_height = 1.0f + (max_sprite_height - min_sprite_height) / min_sprite_height;
+            sprite_width = max_sprite_width;
+            sprite_height = max_sprite_height;
         }
         
         // If the center of the sprite is less than half the sprite heightthe sprite will extend 
         // below the bottom of the cloud and must be shifted upwards. This is particularly important 
         // for cumulus clouds which have a very well defined base.
-        if (z < 0.5f * sprite_height * min_sprite_height)
+        if (z < 0.5f * sprite_height)
         {
-            z = 0.5f * sprite_height * min_sprite_height;          
+            z = 0.5f * sprite_height;
         }        
 
         // Determine the sprite texture indexes.
@@ -287,7 +240,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
                       cull_distance_squared);
     }
     
-    sg->setGeometry(quad);
+    sg->generateGeometry();
     geode->addDrawable(sg);
     geode->setName("3D cloud");
     geode->setEffect(effect.get());

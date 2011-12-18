@@ -53,22 +53,20 @@ static const char sgSearchPathSep = ':';
 #endif
 
 
-// If Unix, replace all ":" with "/".  In windoze, allow the
-// second character to be a ":" for things like c:\foo\bar
-
+// For windows, replace "\" by "/".
 void
 SGPath::fix()
 {
-    for ( string::size_type i = 0; i < path.size(); ++i ) {
-#if defined( WIN32 )
-    // for windoze, don't replace the ":" for the second character
-    if ( i == 1 ) {
-        continue;
+    string::size_type sz = path.size();
+    for ( string::size_type i = 0; i < sz; ++i ) {
+        if ( path[i] == sgDirPathSepBad ) {
+            path[i] = sgDirPathSep;
+        }
     }
-#endif
-    if ( path[i] == sgDirPathSepBad ) {
-        path[i] = sgDirPathSep;
-    }
+    // drop trailing "/"
+    while ((sz>1)&&(path[sz-1]==sgDirPathSep))
+    {
+        path.resize(--sz);
     }
 }
 

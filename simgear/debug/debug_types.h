@@ -1,5 +1,5 @@
 /** \file debug_types.h
- *  Define the various logging classes and prioritiess
+ *  Define the various logging classes and priorities
  */
 
 /** 
@@ -30,7 +30,7 @@ typedef enum {
     SG_AI          = 0x00080000,
     SG_ENVIRONMENT = 0x00100000,
     SG_SOUND       = 0x00200000,
-    SG_UNDEFD      = 0x00400000, // For range checkingng
+    SG_UNDEFD      = 0x00400000, // For range checking
 
     SG_ALL         = 0xFFFFFFFF
 } sgDebugClass;

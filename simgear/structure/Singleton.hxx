@@ -1,12 +1,12 @@
 #ifndef SIMGEAR_SINGLETON_HXX
 #define SIMGEAR_SINGLETON_HXX 1
 
-#include <boost/pool/detail/singleton.hpp>
+#include "singleton.hpp"
 
 #ifndef NO_OPENSCENEGRAPH_INTERFACE
 #include <osg/Referenced>
 #include <osg/ref_ptr>
-#endif 
+#endif
 
 namespace simgear
 {

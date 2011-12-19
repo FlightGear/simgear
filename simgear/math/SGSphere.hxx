@@ -22,6 +22,7 @@ template<typename T>
 class SGSphere {
 public:
   SGSphere() :
+    _center(0.0, 0.0, 0.0),
     _radius(-1)
   { }
   SGSphere(const SGVec3<T>& center, const T& radius) :

@@ -94,7 +94,7 @@ private:
 int main(int argc, char* argv[])
 {
     HTTP::Client cl;
-    SGFile* outFile;
+    SGFile* outFile = 0;
     string proxy, proxyAuth;
     string_list headers;
     string url;

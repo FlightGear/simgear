@@ -43,9 +43,11 @@ bool testBasic()
 
   double ff(aFoo);
   assert(ff == 12.0); // comparison with literal
+  if (ff != 12.0) cout << "Error: a/foo != 12!" << endl;
   
   const float fff(12.0f);
   assert(fff == aFoo); // comparion with float value
+  if (fff != aFoo) cout << "Error: 12 != a/foo" << endl;
 
   return true;
 }

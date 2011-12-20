@@ -22,7 +22,11 @@ template<typename T>
 class SGSphere {
 public:
   SGSphere() :
-    _center(0.0, 0.0, 0.0),
+     /*
+      * Do not initialize _center to save unneeded initialization time.
+      * Fix 'may be used uninitialized' warnings locally instead
+      */
+//  _center(0.0, 0.0, 0.0),
     _radius(-1)
   { }
   SGSphere(const SGVec3<T>& center, const T& radius) :

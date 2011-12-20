@@ -18,6 +18,8 @@
 #ifndef SGSphere_H
 #define SGSphere_H
 
+#pragma GCC diagnostic ignored "-Wuninitialized" SGSphere();
+
 template<typename T>
 class SGSphere {
 public:

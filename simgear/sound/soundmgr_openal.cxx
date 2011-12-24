@@ -427,7 +427,7 @@ unsigned int SGSoundMgr::request_source()
        _sources_in_use.push_back(source);
     }
     else
-       SG_LOG( SG_SOUND, SG_ALERT, "Sound manager: No more free sources available!\n");
+       SG_LOG( SG_SOUND, SG_BULK, "Sound manager: No more free sources available!\n");
 
     return source;
 }

@@ -90,7 +90,7 @@ Effect::Effect()
 }
 
 Effect::Effect(const Effect& rhs, const CopyOp& copyop)
-    : root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
+    : osg::Object(rhs,copyop), root(rhs.root), parametersProp(rhs.parametersProp), _cache(0),
       _isRealized(rhs._isRealized)
 {
     typedef vector<ref_ptr<Technique> > TechniqueList;

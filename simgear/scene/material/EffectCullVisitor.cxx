@@ -36,6 +36,7 @@ EffectCullVisitor::EffectCullVisitor()
 }
 
 EffectCullVisitor::EffectCullVisitor(const EffectCullVisitor& rhs) :
+    osg::Referenced(rhs),
     CullVisitor(rhs)
 {
 }

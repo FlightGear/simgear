@@ -103,7 +103,7 @@ protected:
     struct ContextInfo : public osg::Referenced
     {
         ContextInfo() : valid(UNKNOWN) {}
-        ContextInfo(const ContextInfo& rhs) : valid(rhs.valid()) {}
+        ContextInfo(const ContextInfo& rhs) : osg::Referenced(rhs), valid(rhs.valid()) {}
         ContextInfo& operator=(const ContextInfo& rhs)
         {
             valid = rhs.valid;

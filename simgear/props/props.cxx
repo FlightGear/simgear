@@ -664,7 +664,8 @@ SGPropertyNode::SGPropertyNode ()
  * Copy constructor.
  */
 SGPropertyNode::SGPropertyNode (const SGPropertyNode &node)
-  : _index(node._index),
+  : SGReferenced(node),
+    _index(node._index),
     _name(node._name),
     _parent(0),			// don't copy the parent
     _type(node._type),

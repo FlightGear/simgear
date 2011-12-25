@@ -101,7 +101,7 @@ public:
 	inline double			getFriction()		const { return _friction; }
 	inline const char		*getFrictionString()	const { return _friction_string; }
 	inline const char		*getComment()		const { return _comment; }
-	inline const bool		getWindShear()		const { return _wind_shear; }
+	inline       bool		getWindShear()		const { return _wind_shear; }
 	inline const SGMetarVisibility&	getMinVisibility()	const { return _min_visibility; }
 	inline const SGMetarVisibility&	getMaxVisibility()	const { return _max_visibility; }
 
@@ -188,7 +188,7 @@ public:
 
 	inline const char *getData()		const { return _data; }
 	inline const char *getUnusedData()	const { return _m; }
-	inline const bool getProxy()		const { return _x_proxy; }
+	inline       bool getProxy()		const { return _x_proxy; }
 	inline const char *getId()		const { return _icao; }
 	inline int	getYear()		const { return _year; }
 	inline int	getMonth()		const { return _month; }

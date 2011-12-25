@@ -40,7 +40,7 @@ extern "C" {
  * Structure to hold MT algorithm state to easily allow independant
  * sets of random numbers with different seeds.
  */
-struct {unsigned int array[MT_N]; int index; } typedef mt;
+typedef struct {unsigned int array[MT_N]; int index; } mt;
 
 /**
  * Initialize a new MT state with a given seed.

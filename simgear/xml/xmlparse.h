@@ -473,7 +473,7 @@ void XMLPARSEAPI
 XML_ParserFree(XML_Parser parser);
 
 /* Returns a string describing the error. */
-const XML_LChar XMLPARSEAPI *XML_ErrorString(int code);
+const XML_LChar XMLPARSEAPI *XML_ErrorString(size_t code);
 
 #ifdef __cplusplus
 }

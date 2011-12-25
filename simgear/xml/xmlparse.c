@@ -911,7 +911,7 @@ void XML_DefaultCurrent(XML_Parser parser)
   }
 }
 
-const XML_LChar *XML_ErrorString(int code)
+const XML_LChar *XML_ErrorString(size_t code)
 {
   static const XML_LChar *message[] = {
     0,

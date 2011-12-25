@@ -98,6 +98,6 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
     T step = max - min;
     while( val >= max )  val -= step;
     while( val < min ) val += step;
-};
+}
 
 #endif // _SG_INLINES_H

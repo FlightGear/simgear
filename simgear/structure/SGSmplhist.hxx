@@ -55,7 +55,7 @@ public:
 inline int SampleHistogram::buckets ()
 {
   return (howManyBuckets);
-};
+}
 
 inline double SampleHistogram::bucketThreshold (int i)
 {

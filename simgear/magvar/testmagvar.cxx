@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   /* output N, E, down components of B (nTesla)
      dip angle (down positive), variation (E positive) */
 double lat_deg,lon_deg,h,var;
-int model,yy,mm,dd;
+int /* model,*/yy,mm,dd;
 double field[6];
 
 if ((argc != 8) && (argc !=7)) {
@@ -36,9 +36,9 @@ mm=     (int)strtol(argv[4],NULL,10);
 dd=     (int)strtol(argv[5],NULL,10);
 yy=     (int)strtol(argv[6],NULL,10);
 if (argc == 8){
-  model=  (int)strtol(argv[7],NULL,10);
+//  model=  (int)strtol(argv[7],NULL,10);
 }else{
-  model=7;
+//  model=7;
 }
 
 

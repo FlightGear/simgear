@@ -113,7 +113,7 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
         osg::Quat ftainv = field_transform->getAttitude().inverse();
         
         // delta is the vector from the old position to the new position in cloud-coords
-        osg::Vec3f delta = ftainv * (osg_pos - old_pos);
+        // osg::Vec3f delta = ftainv * (osg_pos - old_pos);
         old_pos = osg_pos;
                 
         // Check if any of the clouds should be moved.

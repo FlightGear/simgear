@@ -294,7 +294,7 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
     const double saif = sun_angle/SG_PI;
     static const SGVec3f blueShift(0.8, 1.0, 1.2);
     const SGVec3f skyFogDelta = sky_color - fog_color;
-    const SGVec3f sunSkyDelta = sun_color - sky_color;
+//    const SGVec3f sunSkyDelta = sun_color - sky_color;
 
     // For now the colors of the upper two rings are linearly
     // interpolated between the zenith color and the first horizon

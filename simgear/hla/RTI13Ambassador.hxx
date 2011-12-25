@@ -90,7 +90,7 @@ public:
     // { _rtiAmbassador.sendInteraction(interactionClassHandle, parameters, tag.data()); }
 
     void deleteObjectInstance(const RTI::ObjectHandle& objectHandle, const SGTimeStamp& timeStamp, const RTIData& tag)
-    { RTI::EventRetractionHandle h = _rtiAmbassador.deleteObjectInstance(objectHandle, toFedTime(timeStamp), tag.data()); }
+    { /* RTI::EventRetractionHandle h = */ _rtiAmbassador.deleteObjectInstance(objectHandle, toFedTime(timeStamp), tag.data()); }
     void deleteObjectInstance(const RTI::ObjectHandle& objectHandle, const RTIData& tag)
     { _rtiAmbassador.deleteObjectInstance(objectHandle, tag.data()); }
     void localDeleteObjectInstance(const RTI::ObjectHandle& objectHandle)

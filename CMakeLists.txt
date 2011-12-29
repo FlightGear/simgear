@@ -10,6 +10,9 @@ project(SimGear)
 file(READ version versionFile)
 string(STRIP ${versionFile} SIMGEAR_VERSION)
 
+# use simgear version also as the SO version (if building SOs)
+SET(SIMGEAR_SOVERSION ${SIMGEAR_VERSION})
+
 #packaging
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")

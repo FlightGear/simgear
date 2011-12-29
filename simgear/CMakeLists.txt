@@ -48,12 +48,14 @@ if(SIMGEAR_SHARED)
     add_library(SimGearCore SHARED ${coreSources})
     set_property(TARGET SimGearCore PROPERTY COMPILE_FLAGS "-DNO_OPENSCENEGRAPH_INTERFACE=1")
     
-    
   # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
   #  message(STATUS "public header: ${publicHeaders}")
   #  set_property(TARGET SimGearCore PROPERTY PUBLIC_HEADER "${publicHeaders}")
     set_property(TARGET SimGearCore PROPERTY LINKER_LANGUAGE CXX)
-    
+
+    set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
+    set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
+
     target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})
     install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
@@ -74,7 +76,9 @@ if(SIMGEAR_SHARED)
       # set_property(TARGET SimGearScene PROPERTY FRAMEWORK 1)
       # set_property(TARGET SimGearScene PROPERTY PUBLIC_HEADER "${publicHeaders}")
         set_property(TARGET SimGearScene PROPERTY LINKER_LANGUAGE CXX)
-        
+        set_property(TARGET SimGearScene PROPERTY VERSION   ${SIMGEAR_VERSION})
+        set_property(TARGET SimGearScene PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
+    
         target_link_libraries(SimGearScene 
             SimGearCore
             ${ZLIB_LIBRARY} 
@@ -85,7 +89,7 @@ if(SIMGEAR_SHARED)
         if(LIBSVN_FOUND)
             target_link_libraries(SimGearScene ${LIBSVN_LIBRARIES})
         endif(LIBSVN_FOUND)
-                
+
         install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
    

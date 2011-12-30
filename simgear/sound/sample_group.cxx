@@ -409,13 +409,15 @@ void SGSampleGroup::update_pos_and_orientation() {
 
         // Test if a sample is farther away than max distance, if so
         // stop the sound playback and free it's source.
-        float max2 = sample->get_max_dist() * sample->get_max_dist();
-        float dist2 = position[0]*position[0]
-                      + position[1]*position[1] + position[2]*position[2];
-        if ((dist2 > max2) && !sample->test_out_of_range()) {
-            sample->set_out_of_range(true);
-        } else if ((dist2 < max2) && sample->test_out_of_range()) {
-            sample->set_out_of_range(false);
+        if (!_tied_to_listener) {
+            float max2 = sample->get_max_dist() * sample->get_max_dist();
+            float dist2 = position[0]*position[0]
+                          + position[1]*position[1] + position[2]*position[2];
+            if ((dist2 > max2) && !sample->test_out_of_range()) {
+                sample->set_out_of_range(true);
+            } else if ((dist2 < max2) && sample->test_out_of_range()) {
+                sample->set_out_of_range(false);
+            }
         }
     }
 }

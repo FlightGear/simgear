@@ -343,4 +343,18 @@ private:
   class VncCallback;
 };
 
+
+//////////////////////////////////////////////////////////////////////
+// Light animation
+//////////////////////////////////////////////////////////////////////
+
+class SGLightAnimation : public SGAnimation {
+public:
+  SGLightAnimation(const SGPropertyNode* configNode,
+                  SGPropertyNode* modelRoot);
+  virtual osg::Group* createAnimationGroup(osg::Group& parent);
+  virtual void install(osg::Node& node);
+private:
+};
+
 #endif // _SG_ANIMATION_HXX

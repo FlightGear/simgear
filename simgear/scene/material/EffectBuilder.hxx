@@ -58,16 +58,16 @@ class EffectBuilder : public SGReferenced
 {
 public:
     virtual ~EffectBuilder() {}
-    virtual T* build(Effect* effect, const SGPropertyNode*,
+    virtual T* build(Effect* effect, Pass* pass, const SGPropertyNode*,
                      const SGReaderWriterOptions* options) = 0;
-    static T* buildFromType(Effect* effect, const std::string& type,
+    static T* buildFromType(Effect* effect, Pass* pass, const std::string& type,
                             const SGPropertyNode*props,
                             const SGReaderWriterOptions* options)
     {
         BuilderMap& builderMap = getMap();
         typename BuilderMap::iterator iter = builderMap.find(type);
         if (iter != builderMap.end())
-            return iter->second->build(effect, props, options);
+            return iter->second->build(effect, pass, props, options);
         else
             return 0;
     }

@@ -916,6 +916,7 @@ struct UniformBuilder :public PassAttributeBuilder
             return;
         const SGPropertyNode* nameProp = prop->getChild("name");
         const SGPropertyNode* typeProp = prop->getChild("type");
+        const SGPropertyNode* positionedProp = prop->getChild("positioned");
         const SGPropertyNode* valProp = prop->getChild("value");
         string name;
         Uniform::Type uniformType = Uniform::FLOAT;
@@ -1003,6 +1004,11 @@ struct UniformBuilder :public PassAttributeBuilder
             }
         }
         pass->addUniform(uniform.get());
+        if (positionedProp && positionedProp->getBoolValue() && uniformType == Uniform::FLOAT_VEC4) {
+            osg::Vec4 offset;
+            uniform->get(offset);
+            pass->addPositionedUniform( name, offset );
+        }
     }
 };
 
@@ -1163,7 +1169,10 @@ struct DepthBuilder : public PassAttributeBuilder
             = getEffectPropertyChild(effect, prop, "write-mask");
         if (pmask)
             depth->setWriteMask(pmask->getValue<bool>());
-        pass->setAttribute(depth.get());
+        const SGPropertyNode* penabled
+            = getEffectPropertyChild(effect, prop, "enabled");
+        bool enabled = ( penabled == 0 || penabled->getBoolValue() );
+        pass->setAttributeAndModes(depth.get(), enabled ? osg::StateAttribute::ON : osg::StateAttribute::OFF);
     }
 };
 

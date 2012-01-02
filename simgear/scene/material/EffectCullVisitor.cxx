@@ -19,6 +19,7 @@
 #endif
 
 #include <osg/StateSet>
+#include <osg/Texture2D>
 
 #include "EffectCullVisitor.hxx"
 
@@ -78,4 +79,20 @@ void EffectCullVisitor::apply(osg::Geode& node)
         popStateSet();
 
 }
+
+void EffectCullVisitor::clearBufferList()
+{
+    _bufferList.clear();
+}
+
+void EffectCullVisitor::addBuffer(int i, osg::Texture2D* tex)
+{
+    _bufferList.insert(std::make_pair(i,tex));
+}
+
+osg::Texture2D* EffectCullVisitor::getBuffer(int i)
+{
+    return _bufferList[i];
+}
+
 }

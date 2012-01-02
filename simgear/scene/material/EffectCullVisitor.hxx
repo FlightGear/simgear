@@ -19,9 +19,12 @@
 
 #include <osgUtil/CullVisitor>
 
+#include <map>
+
 namespace osg
 {
 class Geode;
+class Texture2D;
 }
 
 namespace simgear
@@ -34,6 +37,13 @@ public:
     virtual osgUtil::CullVisitor* clone() const;
     using osgUtil::CullVisitor::apply;
     virtual void apply(osg::Geode& node);
+
+    void clearBufferList();
+    void addBuffer(int i, osg::Texture2D* tex);
+    osg::Texture2D* getBuffer(int i);
+
+private:
+    std::map<int,osg::ref_ptr<osg::Texture2D> > _bufferList;
 };
 }
 #endif

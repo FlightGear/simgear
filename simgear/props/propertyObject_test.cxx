@@ -2,6 +2,12 @@
 #  include <simgear_config.h>
 #endif
 
+#ifdef NDEBUG
+// Always enable DEBUG mode in test application, otherwise "assert" test
+// statements have no effect and don't actually test anything (catch 17 ;-) ).
+#undef NDEBUG
+#endif
+
 #include <simgear/compiler.h>
 
 #include <iostream>
@@ -143,8 +149,9 @@ void testReadMissing()
   PropertyObject<bool> b("not/found/honest");
 
   try {
-    bool v = b;    
+    bool v = b;
     assert(false && "read of missing property didn't throw");
+    (void) v; // don't warn about unused variable
   } catch (sg_exception& e) {
     // expected
   }

@@ -355,6 +355,16 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
+  SGVec3d _position;
+  SGVec3d _direction;
+  SGVec4d _ambient;
+  SGVec4d _diffuse;
+  SGVec4d _specular;
+  SGVec3d _attenuation;
+  double _exponent;
+  double _cutoff;
+  double _near;
+  double _far;
 };
 
 #endif // _SG_ANIMATION_HXX

@@ -69,7 +69,8 @@ double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 bool SGCloudField::wrap = true;
 float SGCloudField::RADIUS_LEVEL_1 = 5000.0f;
-float SGCloudField::RADIUS_LEVEL_2 = 1000.0f;
+float SGCloudField::RADIUS_LEVEL_2 = 2000.0f;
+float SGCloudField::MAX_CLOUD_DEPTH = 2000.0f;
 
 SGVec3f SGCloudField::view_vec, SGCloudField::view_X, SGCloudField::view_Y;
 
@@ -186,9 +187,10 @@ void SGCloudField::applyVisRange(void)
     for (unsigned int i = 0; i < placed_root->getNumChildren(); i++) {
         osg::ref_ptr<osg::LOD> lodnode1 = (osg::LOD*) placed_root->getChild(i);
         for (unsigned int j = 0; j < lodnode1->getNumChildren(); j++) {
+            lodnode1->setRange(j, 0.0f, view_distance + RADIUS_LEVEL_1 + RADIUS_LEVEL_2 + MAX_CLOUD_DEPTH);
             osg::ref_ptr<osg::LOD> lodnode2 = (osg::LOD*) lodnode1->getChild(j);
             for (unsigned int k = 0; k < lodnode2->getNumChildren(); k++) {
-                lodnode2->setRange(k, 0.0f, view_distance);
+                lodnode2->setRange(k, 0.0f, view_distance + MAX_CLOUD_DEPTH);
             }
         }
     }
@@ -317,11 +319,11 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
     if (!found) {
         // No suitable leave node was found, so we need to add one.
         lodnode = new osg::LOD();
-        lodnode1->addChild(lodnode, 0.0f, 4*RADIUS_LEVEL_1);
+        lodnode1->addChild(lodnode, 0.0f, view_distance + RADIUS_LEVEL_1 + RADIUS_LEVEL_2 + MAX_CLOUD_DEPTH);
     }
 
     transform->setPosition(pos);
-    lodnode->addChild(transform.get(), 0.0f, view_distance);
+    lodnode->addChild(transform.get(), 0.0f, view_distance + MAX_CLOUD_DEPTH);
 
     lodnode->dirtyBound();
     lodnode1->dirtyBound();

@@ -76,6 +76,10 @@ private:
   static float RADIUS_LEVEL_1;
   static float RADIUS_LEVEL_2;
 
+  // Theoretical maximum cloud depth, used for fudging the LoD
+  // ranges to ensure that clouds become visible at maximum range
+  static float MAX_CLOUD_DEPTH;
+
 	// this is a relative position only, with that we can move all clouds at once
 	SGVec3f relative_position;
 

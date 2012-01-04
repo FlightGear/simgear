@@ -438,7 +438,7 @@ sgLoad3DModel_internal(const SGPath& path,
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
-                             options.get());
+                             options.get(), path.str(), i);
 
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);

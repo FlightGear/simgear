@@ -410,7 +410,8 @@ SGAnimation::~SGAnimation()
 bool
 SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
                      SGPropertyNode* modelRoot,
-                     const osgDB::Options* options)
+                     const osgDB::Options* options,
+                     const string &path, int i)
 {
   std::string type = configNode->getStringValue("type", "none");
   if (type == "alpha-test") {
@@ -466,7 +467,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGTranslateAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "light") {
-    SGLightAnimation animInst(configNode, modelRoot);
+    SGLightAnimation animInst(configNode, modelRoot, path, i);
     animInst.apply(node);
   } else if (type == "null" || type == "none" || type.empty()) {
     SGGroupAnimation animInst(configNode, modelRoot);

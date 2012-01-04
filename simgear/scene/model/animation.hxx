@@ -46,7 +46,8 @@ public:
 
   static bool animate(osg::Node* node, const SGPropertyNode* configNode,
                       SGPropertyNode* modelRoot,
-                      const osgDB::Options* options);
+                      const osgDB::Options* options,
+                      const string &path, int i);
 
 protected:
   void apply(osg::Node* node);
@@ -351,7 +352,8 @@ private:
 class SGLightAnimation : public SGAnimation {
 public:
   SGLightAnimation(const SGPropertyNode* configNode,
-                  SGPropertyNode* modelRoot);
+                   SGPropertyNode* modelRoot,
+                   const string &path, int i);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
@@ -365,6 +367,7 @@ private:
   double _cutoff;
   double _near;
   double _far;
+  string _key;
 };
 
 #endif // _SG_ANIMATION_HXX

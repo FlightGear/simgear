@@ -28,6 +28,7 @@ set(SOURCES
     ModelRegistry.cxx
     SGClipGroup.cxx
     SGInteractionAnimation.cxx
+    SGLightAnimation.cxx
     SGMaterialAnimation.cxx
     SGOffsetTransform.cxx
     SGReaderWriterXML.cxx

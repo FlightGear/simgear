@@ -221,6 +221,10 @@ if(WIN32)
     set( RT_LIBRARY "winmm" )
 endif(WIN32)    
 
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") 
+   set (WARNING_FLAGS "-Wall -Wno-overloaded-virtual")
+endif() 
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 

@@ -231,6 +231,47 @@ ModelRegistry::readImage(const string& fileName,
             SG_LOG(SG_IO, SG_BULK, "Reading image \""
                    << res.getImage()->getFileName() << "\"");
 
+        // Check for precompressed textures that depend on an extension
+        switch (res.getImage()->getPixelFormat()) {
+
+            // GL_EXT_texture_compression_s3tc
+            // patented, no way to decompress these
+        case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
+
+            // GL_EXT_texture_sRGB
+            // patented, no way to decompress these
+        case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
+        case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
+
+            // GL_TDFX_texture_compression_FXT1
+            // can decompress these in software but
+            // no code present in simgear.
+        case GL_COMPRESSED_RGB_FXT1_3DFX:
+        case GL_COMPRESSED_RGBA_FXT1_3DFX:
+
+            // GL_EXT_texture_compression_rgtc
+            // can decompress these in software but
+            // no code present in simgear.
+        case GL_COMPRESSED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
+        case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
+        case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
+
+            SG_LOG(SG_IO, SG_ALERT, "Image \"" << res.getImage()->getFileName()
+                   << "\" contains non portable compressed textures.\n"
+                   "Usage of these textures depend on an extension that"
+                   " is not guaranteed to be present.");
+            break;
+
+        default:
+            break;
+        }
+
         return res;
     }
 }

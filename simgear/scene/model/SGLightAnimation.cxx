@@ -62,8 +62,7 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
 osg::Group*
 SGLightAnimation::createAnimationGroup(osg::Group& parent)
 {
-    osg::MatrixTransform* grp = new osg::MatrixTransform;
-    grp->setMatrix(osg::Matrix::translate(toOsg(_position)));
+    osg::Group* grp = new osg::Group;
     parent.addChild(grp);
     grp->setNodeMask( simgear::MODELLIGHT_BIT );
     return grp;
@@ -76,45 +75,6 @@ SGLightAnimation::install(osg::Node& node)
 
     std::string light_type = getConfig()->getStringValue("light-type");
     if (light_type == "spot") {
-
-        SGVec3d p1( _direction.z(), _direction.x(), _direction.y() ),
-        p2 = cross( _direction, p1 );
-        p1 = cross( p2, _direction );
-
-        float r2 = _far * tan( _cutoff * SG_DEGREES_TO_RADIANS );
-
-        osg::Geometry* cone = new osg::Geometry;
-cone->setUseDisplayList(false);
-        osg::Vec3Array* vertices = new osg::Vec3Array(34);
-        (*vertices)[0] = osg::Vec3(0.0,0.0,0.0);
-        for (int i=0; i<16; ++i) {
-            (*vertices)[16-i]    = toOsg(_direction)*_far + toOsg(p1)*r2*cos( i * 2 * M_PI / 16 ) + toOsg(p2)*r2*sin( i * 2 * M_PI / 16 );
-        }
-        (*vertices)[17] = (*vertices)[1];
-
-        // Bottom
-        for (int i=0; i<16; ++i) {
-            (*vertices)[18+i]    = toOsg(_direction)*_far + toOsg(p1)*r2*cos( i * 2 * M_PI / 16 ) + toOsg(p2)*r2*sin( i * 2 * M_PI / 16 );
-        }
-
-        osg::Vec4Array* colours = new osg::Vec4Array(1);
-        (*colours)[0] = toOsg(_diffuse);
-        cone->setColorArray(colours);
-        cone->setColorBinding(osg::Geometry::BIND_OVERALL);
-
-        osg::Vec3Array* normals = new osg::Vec3Array(1);
-        (*normals)[0] = toOsg(_direction);
-        cone->setNormalArray(normals);
-        cone->setNormalBinding(osg::Geometry::BIND_OVERALL);
-
-        cone->setVertexArray(vertices);
-        cone->addPrimitiveSet( new osg::DrawArrays( GL_TRIANGLE_FAN, 0, 18 ) );
-        cone->addPrimitiveSet( new osg::DrawArrays( GL_TRIANGLE_FAN, 18, 16 ) );
-
-        simgear::EffectGeode* geode = new simgear::EffectGeode;
-        geode->addDrawable( cone );
-
-        node.asGroup()->addChild( geode );
 
         simgear::Effect* effect = 0;
         EffectMap::iterator iter = lightEffectMap.find(_key);
@@ -139,6 +99,18 @@ cone->setUseDisplayList(false);
         } else {
             effect = iter->second.get();
         }
-        geode->setEffect(effect);
+
+        node.setNodeMask( simgear::MODELLIGHT_BIT );
+        simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
+        if (geode == 0) {
+            osg::Group* grp = node.asGroup();
+            if (grp != 0) {
+                for (size_t i=0; i<grp->getNumChildren(); ++i) {
+                    geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
+                    if (geode)
+                        geode->setEffect(effect);
+                }
+            }
+        }
     }
 }

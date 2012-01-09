@@ -915,6 +915,7 @@ TextureBuilder::Registrar installDepthBuffer("depth-buffer", new GBufferBuilder(
 TextureBuilder::Registrar installNormalBuffer("normal-buffer", new GBufferBuilder(1));
 TextureBuilder::Registrar installDiffuseBuffer("diffuse-buffer", new GBufferBuilder(2));
 TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(3));
+TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(4));
 }
 
 }

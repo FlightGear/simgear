@@ -31,7 +31,6 @@ public:
 
 #ifdef __GNUC__
 // Avoid "_data not initialized" warnings (see comment below).
-#   pragma GCC diagnostic push
 #   pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
@@ -50,7 +49,7 @@ public:
 
 #ifdef __GNUC__
   // Restore warning settings.
-#   pragma GCC diagnostic pop
+#   pragma GCC diagnostic warning "-Wuninitialized"
 #endif
 
   /// Constructor. Initialize by the given values

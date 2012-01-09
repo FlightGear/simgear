@@ -25,7 +25,6 @@ public:
 
 #ifdef __GNUC__
 // Avoid "_center not initialized" warnings.
-#   pragma GCC diagnostic push
 #   pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
@@ -49,7 +48,7 @@ public:
 
 #ifdef __GNUC__
   // Restore warning settings.
-#   pragma GCC diagnostic pop
+#   pragma GCC diagnostic warning "-Wuninitialized"
 #endif
 
   const SGVec3<T>& getCenter() const

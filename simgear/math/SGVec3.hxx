@@ -29,6 +29,12 @@ class SGVec3 {
 public:
   typedef T value_type;
 
+#ifdef __GNUC__
+// Avoid "_data not initialized" warnings (see comment below).
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
   /// Default constructor. Does not initialize at all.
   /// If you need them zero initialized, use SGVec3::zeros()
   SGVec3(void)
@@ -41,6 +47,12 @@ public:
       data()[i] = SGLimits<T>::quiet_NaN();
 #endif
   }
+
+#ifdef __GNUC__
+  // Restore warning settings.
+#   pragma GCC diagnostic pop
+#endif
+
   /// Constructor. Initialize by the given values
   SGVec3(T x, T y, T z)
   { data()[0] = x; data()[1] = y; data()[2] = z; }

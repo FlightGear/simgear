@@ -69,16 +69,21 @@ int naVec_append(naRef vec, naRef o)
     return 0;
 }
 
-void naVec_setsize(naRef vec, int sz)
+void naVec_setsize(naContext c, naRef vec, int sz)
 {
-    int i;
-    struct VecRec* v = PTR(vec).vec->rec;
-    struct VecRec* nv = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * sz);
-    nv->size = sz;
-    nv->alloced = sz;
-    for(i=0; i<sz; i++)
-        nv->array[i] = (v && i < v->size) ? v->array[i] : naNil();
-    naGC_swapfree((void*)&(PTR(vec).vec->rec), nv);
+    if (sz < 0)
+        naRuntimeError(c, "size cannot be negative");
+    else
+    {
+        int i;
+        struct VecRec* v = PTR(vec).vec->rec;
+        struct VecRec* nv = naAlloc(sizeof(struct VecRec) + sizeof(naRef) * sz);
+        nv->size = sz;
+        nv->alloced = sz;
+        for(i=0; i<sz; i++)
+            nv->array[i] = (v && i < v->size) ? v->array[i] : naNil();
+        naGC_swapfree((void*)&(PTR(vec).vec->rec), nv);
+    }
 }
 
 naRef naVec_removelast(naRef vec)

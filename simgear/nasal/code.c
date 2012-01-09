@@ -269,7 +269,7 @@ static void setupArgs(naContext ctx, struct Frame* f, naRef* args, int nargs)
     args += c->nOptArgs;
     if(c->needArgVector || nargs > 0) {
         naRef argv = naNewVector(ctx);
-        naVec_setsize(argv, nargs > 0 ? nargs : 0);
+        naVec_setsize(ctx, argv, nargs > 0 ? nargs : 0);
         for(i=0; i<nargs; i++)
             PTR(argv).vec->rec->array[i] = *args++;
         naiHash_newsym(PTR(f->locals).hash, &c->constants[c->restArgSym], &argv);
@@ -349,7 +349,7 @@ static naRef evalCat(naContext ctx, naRef l, naRef r)
     if(IS_VEC(l) && IS_VEC(r)) {
         int i, ls = naVec_size(l), rs = naVec_size(r);
         naRef v = naNewVector(ctx);
-        naVec_setsize(v, ls + rs);
+        naVec_setsize(ctx, v, ls + rs);
         for(i=0; i<ls; i+=1) naVec_set(v, i, naVec_get(l, i));
         for(i=0; i<rs; i+=1) naVec_set(v, i+ls, naVec_get(r, i));
         return v;

@@ -228,7 +228,7 @@ static naRef f_stat(naContext ctx, naRef me, int argc, naRef* args)
         naRuntimeError(ctx, strerror(errno));
     }
     result = naNewVector(ctx);
-    naVec_setsize(result, 12);
+    naVec_setsize(ctx, result, 12);
 #define FLD(x) naVec_set(result, n++, naNum(s.st_##x));
     FLD(dev);  FLD(ino);  FLD(mode);  FLD(nlink);  FLD(uid);  FLD(gid);
     FLD(rdev); FLD(size); FLD(atime); FLD(mtime);  FLD(ctime);

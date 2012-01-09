@@ -117,13 +117,13 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
 
         if (*s == '{') {
             if (cmd)
-                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unexpected { in sign contents");
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Illegal taxiway sign syntax. Unexpected '{' in '" << content << "'.");
             cmd = true;
             continue;
 
         } else if (*s == '}') {
             if (!cmd)
-                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unexpected } in sign contents");
+                SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Illegal taxiway sign syntax. Unexpected '{' in '" << content << "'.");
             cmd = false;
             continue;
 

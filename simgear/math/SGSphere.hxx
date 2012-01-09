@@ -18,13 +18,17 @@
 #ifndef SGSphere_H
 #define SGSphere_H
 
-#ifndef _MSC_VER
-#   pragma GCC diagnostic ignored "-Wuninitialized" SGSphere();
-#endif
 
 template<typename T>
 class SGSphere {
 public:
+
+#ifdef __GNUC__
+// Avoid "_center not initialized" warnings.
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wuninitialized"
+#endif
+
   SGSphere() :
      /*
       * Do not initialize _center to save unneeded initialization time.
@@ -42,6 +46,11 @@ public:
     _center(sphere.getCenter()),
     _radius(sphere.getRadius())
   { }
+
+#ifdef __GNUC__
+  // Restore warning settings.
+#   pragma GCC diagnostic pop
+#endif
 
   const SGVec3<T>& getCenter() const
   { return _center; }

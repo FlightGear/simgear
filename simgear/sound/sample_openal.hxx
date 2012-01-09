@@ -85,7 +85,7 @@ public:
     virtual ~SGSoundSample ();
 
     /**
-     * Detect wheter this audio sample holds the information of a sound file.
+     * Detect whether this audio sample holds the information of a sound file.
      * @return Return true if this audio sample is to be constructed from a file.
      */
     inline bool is_file() const { return _is_file; }
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * Test if static dataa of audio sample configuration has changed.
+     * Test if static data of audio sample configuration has changed.
      * Calling this function will reset the flag so calling it a second
      * time in a row will return false.
      * @return Return true is the static data has changed in the mean time.

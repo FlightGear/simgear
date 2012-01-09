@@ -143,7 +143,7 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     errno = 0;
 
     while (1) {
-        fgets(buffer, 256, infile);
+        (void) fgets(buffer, 256, infile);
         if (feof(infile)) {
             break;
         }

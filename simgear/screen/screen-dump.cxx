@@ -65,9 +65,15 @@ bool sg_glWritePPMFile(const char *filename, GLubyte *buffer, int win_width, int
 	    for (k = 0; k < RGB3; k++)
 		ibuffer[q++] = (unsigned char)
 		    *(buffer + (pixelSize*((win_height-1-i)*win_width+j)+k));
-    fwrite(ibuffer, sizeof(unsigned char), RGB3*win_width*win_height, fp);
+    int written = fwrite(ibuffer, sizeof(unsigned char), RGB3*win_width*win_height, fp);
     fclose(fp);
     free(ibuffer);
+
+    if ( written != RGB3*win_width*win_height )
+    {
+        printf("Warning: failed to write %s. File truncated.\n", filename);
+        return false;
+    }
 
     printf("wrote file '%s' (%d x %d pixels, %d bytes)\n",
 	   filename, win_width, win_height, RGB3*win_width*win_height);

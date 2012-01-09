@@ -1006,9 +1006,13 @@ bool SGBinObject::write_ascii( const string& base, const string& name,
     fclose(fp);
 
     string command = "gzip --force --best " + file.str();
-    system(command.c_str());
+    int err = system(command.c_str());
+    if (err)
+    {
+        cout << "ERROR: gzip " << file.str() << " failed!" << endl;
+    }
 
-    return true;
+    return (err == 0);
 }
 
 void SGBinObject::read_properties(gzFile fp, int nproperties)

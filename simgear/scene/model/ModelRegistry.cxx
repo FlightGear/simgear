@@ -236,24 +236,30 @@ ModelRegistry::readImage(const string& fileName,
 
             // GL_EXT_texture_compression_s3tc
             // patented, no way to decompress these
+#if defined(GL_COMPRESSED_RGB_S3TC_DXT1_EXT)
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-
+#endif
+            
+#if defined(GL_COMPRESSED_SRGB_S3TC_DXT1_EXT)            
             // GL_EXT_texture_sRGB
             // patented, no way to decompress these
         case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
-
+#endif
+            
+#if defined(GL_COMPRESSED_RGB_FXT1_3DFX)
             // GL_TDFX_texture_compression_FXT1
             // can decompress these in software but
             // no code present in simgear.
         case GL_COMPRESSED_RGB_FXT1_3DFX:
         case GL_COMPRESSED_RGBA_FXT1_3DFX:
-
+#endif
+            
             // GL_EXT_texture_compression_rgtc
             // can decompress these in software but
             // no code present in simgear.

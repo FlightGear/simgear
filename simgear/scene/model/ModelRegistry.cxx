@@ -236,33 +236,49 @@ ModelRegistry::readImage(const string& fileName,
 
             // GL_EXT_texture_compression_s3tc
             // patented, no way to decompress these
-#if defined(GL_COMPRESSED_RGB_S3TC_DXT1_EXT)
+#ifndef GL_EXT_texture_compression_s3tc
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT   0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT  0x83F1
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT  0x83F2
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT  0x83F3
+#endif
         case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-#endif
             
-#if defined(GL_COMPRESSED_SRGB_S3TC_DXT1_EXT)            
             // GL_EXT_texture_sRGB
             // patented, no way to decompress these
+#ifndef GL_EXT_texture_sRGB
+#define GL_COMPRESSED_SRGB_S3TC_DXT1_EXT  0x8C4C
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 0x8C4F
+#endif
         case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
-#endif
             
-#if defined(GL_COMPRESSED_RGB_FXT1_3DFX)
             // GL_TDFX_texture_compression_FXT1
             // can decompress these in software but
             // no code present in simgear.
+#ifndef GL_3DFX_texture_compression_FXT1
+#define GL_COMPRESSED_RGB_FXT1_3DFX       0x86B0
+#define GL_COMPRESSED_RGBA_FXT1_3DFX      0x86B1
+#endif
         case GL_COMPRESSED_RGB_FXT1_3DFX:
         case GL_COMPRESSED_RGBA_FXT1_3DFX:
-#endif
             
             // GL_EXT_texture_compression_rgtc
             // can decompress these in software but
             // no code present in simgear.
+#ifndef GL_EXT_texture_compression_rgtc
+#define GL_COMPRESSED_RED_RGTC1_EXT       0x8DBB
+#define GL_COMPRESSED_SIGNED_RED_RGTC1_EXT 0x8DBC
+#define GL_COMPRESSED_RED_GREEN_RGTC2_EXT 0x8DBD
+#define GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT 0x8DBE
+#endif
         case GL_COMPRESSED_RED_RGTC1_EXT:
         case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
         case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:

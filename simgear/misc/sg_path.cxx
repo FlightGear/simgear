@@ -109,7 +109,7 @@ SGPath::SGPath(const SGPath& p) :
   _modTime(p._modTime)
 {
 }
-    
+
 SGPath& SGPath::operator=(const SGPath& p)
 {
   path = p.path;
@@ -142,12 +142,12 @@ void SGPath::set_cached(bool cached)
 // append another piece to the existing path
 void SGPath::append( const string& p ) {
     if ( path.size() == 0 ) {
-    path = p;
+        path = p;
     } else {
     if ( p[0] != sgDirPathSep ) {
         path += sgDirPathSep;
     }
-    path += p;
+        path += p;
     }
     fix();
     _cached = false;
@@ -163,9 +163,9 @@ void SGPath::add( const string& p ) {
 // path separator
 void SGPath::concat( const string& p ) {
     if ( path.size() == 0 ) {
-    path = p;
+        path = p;
     } else {
-    path += p;
+        path += p;
     }
     fix();
     _cached = false;
@@ -481,5 +481,18 @@ bool SGPath::rename(const SGPath& newName)
     path = newName.path;
     _cached = false;
     return true;
+}
+
+std::string SGPath::realpath() const
+{
+#ifdef _WIN32
+    // Not implemented for Windows yet. Return original path instead.
+    return path;
+#else
+    char* buf = ::realpath(path.c_str(), NULL);
+    std::string p(buf);
+    free(buf);
+    return p;
+#endif
 }
 

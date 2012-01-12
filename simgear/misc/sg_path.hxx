@@ -112,6 +112,12 @@ public:
     void concat( const std::string& p );
 
     /**
+     * Returns a string with the absolute pathname that names the same file, whose
+     * resolution does not involve '.', '..', or symbolic links.
+     */
+    std::string realpath() const;
+
+    /**
      * Get the file part of the path (everything after the last path sep)
      * @return file string
      */

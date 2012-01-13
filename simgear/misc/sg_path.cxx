@@ -490,6 +490,11 @@ std::string SGPath::realpath() const
     return path;
 #else
     char* buf = ::realpath(path.c_str(), NULL);
+    if (!buf)
+    {
+        SG_LOG(SG_IO, SG_ALERT, "ERROR: The path '" << path << "' does not exist in the file system.");
+        return path;
+    }
     std::string p(buf);
     free(buf);
     return p;

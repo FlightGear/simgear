@@ -911,11 +911,12 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
 
 namespace
 {
-TextureBuilder::Registrar installDepthBuffer("depth-buffer", new GBufferBuilder(0));
-TextureBuilder::Registrar installNormalBuffer("normal-buffer", new GBufferBuilder(1));
-TextureBuilder::Registrar installDiffuseBuffer("diffuse-buffer", new GBufferBuilder(2));
-TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(3));
-TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(4));
+    TextureBuilder::Registrar installDepthBuffer("depth-buffer", new GBufferBuilder(Effect::DEPTH_BUFFER));
+    TextureBuilder::Registrar installNormalBuffer("normal-buffer", new GBufferBuilder(Effect::NORMAL_BUFFER));
+    TextureBuilder::Registrar installDiffuseBuffer("diffuse-buffer", new GBufferBuilder(Effect::DIFFUSE_BUFFER));
+    TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(Effect::SPECULAR_BUFFER));
+    TextureBuilder::Registrar installEmissionBuffer("emission-buffer", new GBufferBuilder(Effect::EMISSION_BUFFER));
+    TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(Effect::LIGHTING_BUFFER));
 }
 
 }

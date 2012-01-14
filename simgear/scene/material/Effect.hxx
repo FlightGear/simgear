@@ -81,6 +81,16 @@ public:
            const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
     osg::StateSet* getDefaultStateSet();
 
+    enum Buffer
+    {
+        DEPTH_BUFFER,
+        NORMAL_BUFFER,
+        DIFFUSE_BUFFER,
+        SPECULAR_BUFFER,
+        EMISSION_BUFFER,
+        LIGHTING_BUFFER
+    };
+
     // Define what needs to be generated for this effect
     enum Generator
     {

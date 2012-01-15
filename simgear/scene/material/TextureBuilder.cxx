@@ -917,6 +917,7 @@ namespace
     TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(Effect::SPECULAR_BUFFER));
     TextureBuilder::Registrar installEmissionBuffer("emission-buffer", new GBufferBuilder(Effect::EMISSION_BUFFER));
     TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(Effect::LIGHTING_BUFFER));
+    TextureBuilder::Registrar installBloomBuffer("bloom-buffer", new GBufferBuilder(Effect::BLOOM_BUFFER));
 }
 
 }

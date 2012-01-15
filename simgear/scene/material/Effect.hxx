@@ -88,7 +88,8 @@ public:
         DIFFUSE_BUFFER,
         SPECULAR_BUFFER,
         EMISSION_BUFFER,
-        LIGHTING_BUFFER
+        LIGHTING_BUFFER,
+        BLOOM_BUFFER
     };
 
     // Define what needs to be generated for this effect

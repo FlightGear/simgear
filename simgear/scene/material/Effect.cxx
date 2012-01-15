@@ -961,6 +961,11 @@ struct UniformBuilder :public PassAttributeBuilder
         uniform->setName(name);
         uniform->setType(uniformType);
         switch (uniformType) {
+        case Uniform::BOOL:
+            initFromParameters(effect, valProp, uniform.get(),
+                               static_cast<bool (Uniform::*)(bool)>(&Uniform::set),
+                               options);
+            break;
         case Uniform::FLOAT:
             initFromParameters(effect, valProp, uniform.get(),
                                static_cast<bool (Uniform::*)(float)>(&Uniform::set),

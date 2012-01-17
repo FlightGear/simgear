@@ -70,10 +70,10 @@ double SGCloudField::timer_dt = 0.0;
 float SGCloudField::view_distance = 20000.0f;
 bool SGCloudField::wrap = true;
 float SGCloudField::MAX_CLOUD_DEPTH = 2000.0f;
-bool SGCloudField::use_impostors = true;
-float SGCloudField::lod1_range = 10000.0f;
-float SGCloudField::lod2_range = 5000.0f;
-float SGCloudField::impostor_distance = 10000.0f;
+bool SGCloudField::use_impostors = false;
+float SGCloudField::lod1_range = 8000.0f;
+float SGCloudField::lod2_range = 4000.0f;
+float SGCloudField::impostor_distance = 15000.0f;
 
 int impostorcount = 0;
 int lodcount = 0;
@@ -197,7 +197,7 @@ void SGCloudField::applyVisAndLoDRange(void)
     for (unsigned int i = 0; i < placed_root->getNumChildren(); i++) {
         osg::ref_ptr<osg::LOD> lodnode1 = (osg::LOD*) placed_root->getChild(i);
         for (unsigned int j = 0; j < lodnode1->getNumChildren(); j++) {
-            lodnode1->setRange(j, 0.0f, lod1_range + view_distance + MAX_CLOUD_DEPTH);
+            lodnode1->setRange(j, 0.0f, lod1_range + lod2_range + view_distance + MAX_CLOUD_DEPTH);
             osg::ref_ptr<osg::LOD> lodnode2 = (osg::LOD*) lodnode1->getChild(j);
             for (unsigned int k = 0; k < lodnode2->getNumChildren(); k++) {
                 lodnode2->setRange(k, 0.0f, view_distance + MAX_CLOUD_DEPTH);
@@ -344,12 +344,12 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
     if (!found) {
         // No suitable leaf node was found, so we need to add one.
         lodnode = new osg::LOD();
-        lodnode1->addChild(lodnode, 0.0f, lod1_range + view_distance + MAX_CLOUD_DEPTH);
+        lodnode1->addChild(lodnode, 0.0f, lod1_range + lod2_range + view_distance + MAX_CLOUD_DEPTH);
         lodcount++;
     } 
     
     transform->setPosition(pos);
-    lodnode->addChild(transform.get(), 0.0f, view_distance);
+    lodnode->addChild(transform.get(), 0.0f, view_distance + MAX_CLOUD_DEPTH);
     cloudcount++;
     SG_LOG(SG_ENVIRONMENT, SG_DEBUG, "Impostors: " << impostorcount <<
                                      " LoD: " << lodcount << 

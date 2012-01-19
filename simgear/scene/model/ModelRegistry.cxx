@@ -284,10 +284,10 @@ ModelRegistry::readImage(const string& fileName,
         case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
         case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
 
-            SG_LOG(SG_IO, SG_ALERT, "Image \"" << fileName
-                   << "\" contains non portable compressed textures.\n"
-                   "Usage of these textures depend on an extension that"
-                   " is not guaranteed to be present.");
+            SG_LOG(SG_IO, SG_ALERT, "Image \"" << fileName << "\"\n"
+                   "uses compressed textures which cannot be supported on "
+                   "some systems.\n"
+                   "Please decompress this texture for improved portability.");
             break;
 
         default:

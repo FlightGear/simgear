@@ -178,7 +178,7 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
         return eitr->second.get();
     // Basic stuff; no sprite or attenuation support
     Pass *basicPass = new Pass;
-    basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+    basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "RenderBin");
     basicPass->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     StateAttributeFactory *attrFact = StateAttributeFactory::instance();
     basicPass->setAttributeAndModes(attrFact->getStandardBlendFunc());
@@ -336,7 +336,7 @@ SGLightFactory::getLights(const SGLightBin& lights, unsigned inc, float alphaOff
     if (!simpleLightSS.valid()) {
       StateAttributeFactory *attrFact = StateAttributeFactory::instance();
       simpleLightSS = new StateSet;
-      simpleLightSS->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+      simpleLightSS->setRenderBinDetails(POINT_LIGHTS_BIN, "RenderBin");
       simpleLightSS->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
       simpleLightSS->setAttributeAndModes(attrFact->getStandardBlendFunc());
       simpleLightSS->setAttributeAndModes(attrFact->getStandardAlphaFunc());
@@ -452,7 +452,7 @@ SGLightFactory::getVasi(const SGVec3f& up, const SGDirectionalLightBin& lights,
     return 0;
 
   osg::StateSet* stateSet = drawable->getOrCreateStateSet();
-  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");
+  stateSet->setRenderBinDetails(POINT_LIGHTS_BIN, "RenderBin");
   stateSet->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
   osg::BlendFunc* blendFunc = new osg::BlendFunc;

@@ -56,7 +56,7 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} ${JPEG_LIBRARY})
+    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})
     install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     if(NOT SIMGEAR_HEADLESS)
@@ -84,7 +84,8 @@ if(SIMGEAR_SHARED)
             ${ZLIB_LIBRARY} 
             ${OPENSCENEGRAPH_LIBRARIES} 
             ${OPENAL_LIBRARY} ${ALUT_LIBRARY}
-            ${OPENGL_LIBRARY})
+            ${OPENGL_LIBRARY}
+            ${JPEG_LIBRARY})
     
         if(LIBSVN_FOUND)
             target_link_libraries(SimGearScene ${LIBSVN_LIBRARIES})

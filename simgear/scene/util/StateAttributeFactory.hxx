@@ -72,7 +72,6 @@ public:
     // Standard depth with writes disabled.
     osg::Depth* getDepthWritesDisabled() { return _depthWritesDisabled.get(); }
     osg::Texture3D* getNoiseTexture(int size);
-    osg::Texture2D* getNoiseNormalMap();
     StateAttributeFactory();    
 protected:
     osg::ref_ptr<osg::AlphaFunc> _standardAlphaFunc;
@@ -82,7 +81,6 @@ protected:
     osg::ref_ptr<osg::TexEnv> _standardTexEnv;
     osg::ref_ptr<osg::Texture2D> _whiteTexture;
     osg::ref_ptr<osg::Texture2D> _transparentTexture;
-    osg::ref_ptr<osg::Texture2D> _noiseNormalTexture;
     osg::ref_ptr<osg::Vec4Array> _white;
     osg::ref_ptr<osg::CullFace> _cullFaceFront;
     osg::ref_ptr<osg::CullFace> _cullFaceBack;

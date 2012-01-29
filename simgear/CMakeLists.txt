@@ -56,7 +56,7 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY})
+    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} ${JPEG_LIBRARY})
     install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     if(NOT SIMGEAR_HEADLESS)

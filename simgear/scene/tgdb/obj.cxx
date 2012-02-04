@@ -756,7 +756,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   if (!tileGeometryBin.vasiLights.empty()) {
     EffectGeode* vasiGeode = new EffectGeode;
     Effect* vasiEffect
-        = getLightEffect(48, osg::Vec3(1, 0.0001, 0.000001), 1, 48, true);
+        = getLightEffect(32, osg::Vec3(1, 0.0001, 0.000001), 1, 32, true);
     vasiGeode->setEffect(vasiEffect);
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = 0;

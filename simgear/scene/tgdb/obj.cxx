@@ -42,6 +42,8 @@
 
 #include <boost/foreach.hpp>
 
+#include <algorithm>
+
 #include <simgear/debug/logstream.hxx>
 #include <simgear/io/sg_binobj.hxx>
 #include <simgear/math/sg_geodesy.hxx>
@@ -382,7 +384,7 @@ struct SGTileGeometryBin {
         mat = matlib->find(i->first);
       eg = new EffectGeode;
       if (mat)
-        eg->setEffect(mat->get_effect());
+        eg->setEffect(mat->get_effect(i->second));
       eg->addDrawable(geometry);
       eg->runGenerators(geometry);  // Generate extra data needed by effect
       if (group)
@@ -417,7 +419,7 @@ struct SGTileGeometryBin {
       }
       
       std::vector<SGVec3f> randomPoints;
-      i->second.addRandomSurfacePoints(coverage, 3, randomPoints);
+      i->second.addRandomSurfacePoints(coverage, 3, mat->get_object_mask(i->second), randomPoints);
       std::vector<SGVec3f>::iterator j;
       for (j = randomPoints.begin(); j != randomPoints.end(); ++j) {
         float zombie = mt_rand(&seed);
@@ -445,7 +447,7 @@ struct SGTileGeometryBin {
     }
   }
 
-  void computeRandomForest(SGMaterialLib* matlib)
+  void computeRandomForest(SGMaterialLib* matlib, float vegetation_density)
   {
     SGMaterialTriangleMap::iterator i;
 
@@ -493,6 +495,8 @@ struct SGTileGeometryBin {
       i->second.addRandomTreePoints(wood_coverage,
                                     mat->get_tree_density(),
                                     mat->get_wood_size(),
+                                    mat->get_object_mask(i->second),
+                                    vegetation_density,
                                     randomPoints);
       
       std::vector<SGVec3f>::iterator k;
@@ -531,12 +535,29 @@ struct SGTileGeometryBin {
             for (int k = 0; k < nObjects; k++) {
               SGMatModel * object = object_group->get_object(k);
 
-              std::vector<SGVec3f> randomPoints;
+              std::vector<std::pair<SGVec3f, float> > randomPoints;
 
-              i->second.addRandomPoints(object->get_coverage_m2(), randomPoints);
-              std::vector<SGVec3f>::iterator l;
+              i->second.addRandomPoints(object->get_coverage_m2(), 
+                                        mat->get_object_mask(i->second), 
+                                        randomPoints);
+              std::vector<std::pair<SGVec3f, float> >::iterator l;
               for (l = randomPoints.begin(); l != randomPoints.end(); ++l) {
-                randomModels.insert(*l, object, (int)object->get_randomized_range_m(&seed));
+                
+                // Only add the model if it is sufficiently far from the
+                // other models
+                bool close = false;                
+                
+                for (unsigned i = 0; i < randomModels.getNumModels(); i++) {
+                  float spacing = std::max(randomModels.getMatModel(i).model->get_spacing_m(), object->get_spacing_m());
+                  spacing = spacing * spacing;
+                  
+                  if (distSqr(randomModels.getMatModel(i).position, l->first) < spacing) {
+                    close = true;                
+                  }              
+                }            
+                if (!close) { 
+                  randomModels.insert(l->first, object, (int)object->get_randomized_range_m(&seed), l->second);
+                }
               }
             }
           }
@@ -544,6 +565,7 @@ struct SGTileGeometryBin {
       }
     }
   }
+  
 
   bool insertBinObj(const SGBinObject& obj, SGMaterialLib* matlib)
   {
@@ -579,7 +601,7 @@ typedef QuadTreeBuilder<osg::LOD*, ModelLOD, MakeQuadLeaf, AddModelLOD,
                         GetModelLODCoord>  RandomObjectsQuadtree;
 
 osg::Node*
-SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_objects, bool use_random_vegetation)
+SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_objects, bool use_random_vegetation, float vegetation_density)
 {
   SGBinObject tile;
   if (!tile.read_bin(path))
@@ -632,12 +654,14 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_object
         for (unsigned int i = 0;
              i < tileGeometryBin.randomModels.getNumModels(); i++) {
           SGMatModelBin::MatModel obj
-            = tileGeometryBin.randomModels.getMatModel(i);
-          osg::Node* node = sgGetRandomModel(obj.model, seed);
+            = tileGeometryBin.randomModels.getMatModel(i);          
+            
+          osg::Node* node = sgGetRandomModel(obj.model, &seed);
         
           // Create a matrix to place the object in the correct
           // location, and then apply the rotation matrix created
-          // above, with an additional random heading rotation if appropriate.
+          // above, with an additional random (or taken from
+          // the object mask) heading rotation if appropriate.
           osg::Matrix transformMat;
           transformMat = osg::Matrix::translate(toOsg(obj.position));
           if (obj.model->get_heading_type() == SGMatModel::HEADING_RANDOM) {
@@ -646,6 +670,14 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_object
             transformMat.preMult(osg::Matrix::rotate(hdg,
                                                      osg::Vec3d(0.0, 0.0, 1.0)));
           }
+
+          if (obj.model->get_heading_type() == SGMatModel::HEADING_MASK) {
+            // Rotate the object around the z axis.
+            double hdg = obj.rotation * M_PI * 2;
+            transformMat.preMult(osg::Matrix::rotate(hdg,
+                                                     osg::Vec3d(0.0, 0.0, 1.0)));
+          }
+          
           osg::MatrixTransform* position =
             new osg::MatrixTransform(transformMat);
           position->addChild(node);
@@ -660,7 +692,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_object
 
     if (use_random_vegetation && matlib) {
       // Now add some random forest.
-      tileGeometryBin.computeRandomForest(matlib);
+      tileGeometryBin.computeRandomForest(matlib, vegetation_density);
       
       if (tileGeometryBin.randomForest.size() > 0) {
         forestNode = createForest(tileGeometryBin.randomForest, osg::Matrix::identity());

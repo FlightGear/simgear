@@ -62,6 +62,7 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
     SGMaterialLib* matlib = 0;
     bool useRandomObjects = false;
     bool useRandomVegetation = false;
+    float vegetation_density = 1.0f;
     const SGReaderWriterOptions* sgOptions;
     sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);
     if (sgOptions) {
@@ -74,12 +75,16 @@ SGReaderWriterBTG::readNode(const std::string& fileName,
             useRandomVegetation
                 = propertyNode->getBoolValue("/sim/rendering/random-vegetation",
                                              useRandomVegetation);
+            vegetation_density
+                = propertyNode->getFloatValue("/sim/rendering/vegetation-density",
+                                              vegetation_density);
         }
     }
 
     osg::Node* result = SGLoadBTG(fileName, matlib,
                                   useRandomObjects,
-                                  useRandomVegetation);
+                                  useRandomVegetation,
+                                  vegetation_density);
     if (result)
         return result;
     else

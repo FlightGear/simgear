@@ -30,7 +30,7 @@
 #include <string.h>
 #include <map>
 #include <vector>
-#include<string>
+#include <string>
 
 #include <boost/foreach.hpp>
 #include "mat.hxx"
@@ -74,7 +74,7 @@ SGMaterial::_internal_state::_internal_state(Effect *e, bool l,
 {
 }
 
-SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l,
+SGMaterial::_internal_state::_internal_state(Effect *e, const string &t, bool l, 
                                              const SGReaderWriterOptions* o)
     : effect(e), effect_realized(l), options(o)
 {
@@ -118,14 +118,22 @@ void
 SGMaterial::read_properties(const SGReaderWriterOptions* options,
                             const SGPropertyNode *props)
 {
-				// Gather the path(s) to the texture(s)
+  std::vector<bool> dds;
   std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
   for (unsigned int i = 0; i < textures.size(); i++)
   {
     string tname = textures[i]->getStringValue();
+    
     if (tname.empty()) {
         tname = "unknown.rgb";
     }
+    
+    if (tname.rfind(".dds") == (tname.length() - 4)) {
+      dds.push_back(true);
+    } else {
+      dds.push_back(false);      
+    }  
+    
     SGPath tpath("Textures.high");
     tpath.append(tname);
     string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
@@ -134,7 +142,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       tpath.append(tname);
       fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
     }
-
+    
     if (!fullTexPath.empty() ) {
       _internal_state st( NULL, fullTexPath, false, options );
       _status.push_back( st );
@@ -152,6 +160,15 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       if (tname.empty()) {
           tname = "unknown.rgb";
       }
+      
+      if (j == 0) {
+        if (tname.rfind(".dds") == (tname.length() - 4)) {
+          dds.push_back(true);
+        } else {
+          dds.push_back(false);      
+        }  
+      }
+  
       SGPath tpath("Textures.high");
       tpath.append(tname);
       string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
@@ -160,6 +177,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tpath.append(tname);
         fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
       }
+      
       st.add_texture(fullTexPath, textures[j]->getIndex());
     }
 
@@ -175,6 +193,43 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     _internal_state st( NULL, tpath.str(), true, options );
     _status.push_back( st );
   }
+  
+  std::vector<SGPropertyNode_ptr> masks = props->getChildren("object-mask");
+  for (unsigned int i = 0; i < masks.size(); i++)
+  {
+    string omname = masks[i]->getStringValue();
+    
+    if (! omname.empty()) {
+      SGPath ompath("Textures.high");
+      ompath.append(omname);
+      string fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
+      
+      if (fullMaskPath.empty()) {
+        ompath = SGPath("Textures");
+        ompath.append(omname);
+        fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
+      }    
+      
+      osg::Image* image = osgDB::readImageFile(fullMaskPath, options);
+      if (image->valid())
+      {
+        osg::Texture2D* object_mask = new osg::Texture2D;
+        
+        if (dds[i]) {
+          // Texture is a DDS. This is relevant for the object mask, as DDS
+          // textures have an origin at the bottom left rather than top
+          // left, therefore we flip the object mask vertically.
+          image->flipVertical();          
+        }
+        
+        object_mask->setImage(image);
+        object_mask->setDataVariance(osg::Object::STATIC);
+        object_mask->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+        object_mask->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
+        _masks.push_back(object_mask);
+      } 
+    }
+  } 
 
   xsize = props->getDoubleValue("xsize", 0.0);
   ysize = props->getDoubleValue("ysize", 0.0);
@@ -195,7 +250,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     string treeTexPath = props->getStringValue("tree-texture");
     tree_texture = SGModelLib::findDataFile(treeTexPath, options);
   }
-
+  
   // surface values for use with ground reactions
   solid = props->getBoolValue("solid", true);
   friction_factor = props->getDoubleValue("friction-factor", 1.0);
@@ -253,7 +308,6 @@ void
 SGMaterial::init ()
 {
     _status.clear();
-    _current_ptr = 0;
     xsize = 0;
     ysize = 0;
     wrapu = true;
@@ -278,22 +332,47 @@ SGMaterial::init ()
     effect = "Effects/terrain-default";
 }
 
-Effect* SGMaterial::get_effect(int n)
+Effect* SGMaterial::get_effect(int i)
+{    
+    if(!_status[i].effect_realized) {
+        _status[i].effect->realizeTechniques(_status[i].options.get());
+        _status[i].effect_realized = true;
+    }
+    return _status[i].effect.get();
+}
+
+Effect* SGMaterial::get_effect(SGTexturedTriangleBin triangleBin)
 {
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
         return 0;
     }
-    int i = n >= 0 ? n : _current_ptr;
-    if(!_status[i].effect_realized) {
-        _status[i].effect->realizeTechniques(_status[i].options.get());
-        _status[i].effect_realized = true;
+    
+    int i = triangleBin.getTextureIndex() % _status.size();
+    return get_effect(i);
+}
+
+Effect* SGMaterial::get_effect()
+{
+    return get_effect(0);
+}
+
+
+osg::Texture2D* SGMaterial::get_object_mask(SGTexturedTriangleBin triangleBin)
+{
+    if (_status.size() == 0) {
+        SG_LOG( SG_GENERAL, SG_WARN, "No mask available.");
+        return 0;
     }
-    // XXX This business of returning a "random" alternate texture is
-    // really bogus. It means that the appearance of the terrain
-    // depends on the order in which it is paged in!
-    _current_ptr = (_current_ptr + 1) % _status.size();
-    return _status[i].effect.get();
+    
+    // Note that the object mask is closely linked to the texture/effect
+    // so we index based on the texture index, 
+    unsigned int i = triangleBin.getTextureIndex() % _status.size();
+    if (i < _masks.size()) {
+        return _masks[i];      
+    } else {
+        return 0;      
+    }
 }
 
 void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)

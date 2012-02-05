@@ -43,7 +43,7 @@ void sgUserDataInit(SGPropertyNode *p);
 /**
  * Get a random model.
  */
-osg::Node* sgGetRandomModel(SGMatModel *obj, mt seed);
+osg::Node* sgGetRandomModel(SGMatModel *obj, mt *seed);
 
 namespace simgear
 {

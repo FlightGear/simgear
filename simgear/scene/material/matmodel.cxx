@@ -55,6 +55,7 @@ using std::map;
 SGMatModel::SGMatModel (const SGPropertyNode * node, double range_m)
   : _models_loaded(false),
     _coverage_m2(node->getDoubleValue("coverage-m2", 1000000)),
+    _spacing_m(node->getDoubleValue("spacing-m", 20)),
     _range_m(range_m)
 {
 				// Sanity check
@@ -77,6 +78,8 @@ SGMatModel::SGMatModel (const SGPropertyNode * node, double range_m)
     _heading_type = HEADING_BILLBOARD;
   } else if (hdg == "random") {
     _heading_type = HEADING_RANDOM;
+  } else if (hdg == "mask") {
+    _heading_type = HEADING_MASK;
   } else {
     _heading_type = HEADING_FIXED;
     SG_LOG(SG_INPUT, SG_ALERT, "Unknown heading type: " << hdg
@@ -135,11 +138,11 @@ SGMatModel::load_models( SGPropertyNode *prop_root )
 }
 
 osg::Node*
-SGMatModel::get_random_model( SGPropertyNode *prop_root, mt seed )
+SGMatModel::get_random_model( SGPropertyNode *prop_root, mt* seed )
 {
   load_models( prop_root ); // comment this out if preloading models
   int nModels = _models.size();
-  return _models[mt_rand(&seed) * nModels].get();
+  return _models[mt_rand(seed) * nModels].get();
 }
 
 double
@@ -151,6 +154,11 @@ SGMatModel::get_coverage_m2 () const
 double SGMatModel::get_range_m() const
 {
   return _range_m;
+}
+
+double SGMatModel::get_spacing_m() const
+{
+  return _spacing_m;
 }
 
 double SGMatModel::get_randomized_range_m(mt* seed) const

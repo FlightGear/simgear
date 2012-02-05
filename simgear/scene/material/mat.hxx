@@ -37,8 +37,11 @@
 #include <map>
 
 #include <simgear/math/SGMath.hxx>
+#include "Effect.hxx"
+#include <simgear/scene/tgdb/SGTexturedTriangleBin.hxx>
 
 #include <osg/ref_ptr>
+#include <osg/Texture2D>
 
 namespace osg
 {
@@ -103,7 +106,14 @@ public:
   /**
    * Get the textured state.
    */
-  simgear::Effect *get_effect(int n = -1);
+  simgear::Effect* get_effect(SGTexturedTriangleBin triangleBin);
+  simgear::Effect* get_effect();
+
+  /**
+   * Get the textured state.
+   */
+  osg::Texture2D* get_object_mask(SGTexturedTriangleBin triangleBin);
+
 
   /**
    * Get the number of textures assigned to this material.
@@ -189,7 +199,7 @@ public:
    * @return the texture to use for trees.
    */
   inline std::string get_tree_texture () const { return  tree_texture; }
-
+  
   /**
    * Return if the surface material is solid, if it is not solid, a fluid
    * can be assumed, that is usually water.
@@ -293,9 +303,6 @@ private:
   // texture status
   std::vector<_internal_state> _status;
 
-  // Round-robin counter
-  mutable unsigned int _current_ptr;
-
   // texture size
   double xsize, ysize;
 
@@ -361,6 +368,10 @@ private:
   
   // Tree texture, typically a strip of applicable tree textures
   std::string tree_texture;
+  
+  // Object mask, a simple RGB texture used as a mask when placing
+  // random vegetation, objects and buildings
+  std::vector<osg::Texture2D*> _masks;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.
@@ -369,6 +380,7 @@ private:
   void read_properties(const simgear::SGReaderWriterOptions* options,
                         const SGPropertyNode *props);
   void buildEffectProperties(const simgear::SGReaderWriterOptions* options);
+  simgear::Effect* get_effect(int i);
 };
 
 

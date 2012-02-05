@@ -32,7 +32,7 @@
 
 #include <osg/Image>
 
-#include <simgear/scene/material/Noise.hxx>
+#include "Noise.hxx"
 
 using namespace osg;
 

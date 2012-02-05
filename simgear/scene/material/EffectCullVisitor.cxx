@@ -27,7 +27,7 @@
 #include "Effect.hxx"
 #include "Technique.hxx"
 
-#include <scene\util\RenderConstants.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 
 namespace simgear
 {

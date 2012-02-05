@@ -27,12 +27,15 @@
 #include "Effect.hxx"
 #include "Technique.hxx"
 
+#include <scene\util\RenderConstants.hxx>
+
 namespace simgear
 {
 
 using osgUtil::CullVisitor;
 
-EffectCullVisitor::EffectCullVisitor()
+EffectCullVisitor::EffectCullVisitor(bool collectLights) :
+    _collectLights(collectLights)
 {
 }
 
@@ -56,6 +59,9 @@ void EffectCullVisitor::apply(osg::Geode& node)
         CullVisitor::apply(node);
         return;
     }
+    if (_collectLights && ( eg->getNodeMask() & MODELLIGHT_BIT ) ) {
+        _lightList.push_back( eg );
+    }
     Effect* effect = eg->getEffect();
     Technique* technique = 0;
     if (!effect) {
@@ -78,6 +84,13 @@ void EffectCullVisitor::apply(osg::Geode& node)
     if (node_state)
         popStateSet();
 
+}
+
+void EffectCullVisitor::reset()
+{
+    _lightList.clear();
+
+    osgUtil::CullVisitor::reset();
 }
 
 void EffectCullVisitor::clearBufferList()

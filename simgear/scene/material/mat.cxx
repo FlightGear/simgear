@@ -238,8 +238,6 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
   mipmap = props->getBoolValue("mipmap", true);
   light_coverage = props->getDoubleValue("light-coverage", 0.0);
   wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
-  wood_size = props->getDoubleValue("wood-size", 0.0);
-  tree_density = props->getDoubleValue("tree-density", 1.0);
   tree_height = props->getDoubleValue("tree-height-m", 0.0);
   tree_width = props->getDoubleValue("tree-width-m", 0.0);
   tree_range = props->getDoubleValue("tree-range-m", 0.0);

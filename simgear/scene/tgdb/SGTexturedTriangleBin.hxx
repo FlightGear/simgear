@@ -171,8 +171,6 @@ public:
   // Computes and adds random surface points to the points list for tree
   // coverage.
   void addRandomTreePoints(float wood_coverage, 
-                           float tree_density,
-                           float wood_size,
                            osg::Texture2D* object_mask,
                            float vegetation_density,
                            std::vector<SGVec3f>& points)
@@ -193,127 +191,46 @@ public:
       if (area <= SGLimitsf::min())
         continue;
 
-      if (object_mask != NULL) {
-        // For partial units of area, use a zombie door method to
-        // create the proper random chance of a point being created
-        // for this triangle
-        float unit = area + mt_rand(&seed)*wood_coverage;
+      // For partial units of area, use a zombie door method to
+      // create the proper random chance of a point being created
+      // for this triangle
+      float unit = area + mt_rand(&seed)*wood_coverage;
+      
+      // Vegetation density is linear, while we're creating woodland
+      // by area.
+      int woodcount = (int) (vegetation_density * 
+                             vegetation_density * 
+                             unit / wood_coverage);
+      
+      for (int j = 0; j < woodcount; j++) {
+        float a = mt_rand(&seed);
+        float b = mt_rand(&seed);
+
+        if ( a + b > 1.0f ) {
+          a = 1.0f - a;
+          b = 1.0f - b;
+        }
+
+        float c = 1.0f - a - b;
+
+        SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
         
-        // Vegetation density is linear, while we're creating woodland
-        // by area.
-        int woodcount = (int) (vegetation_density * 
-                               vegetation_density * 
-                               unit / wood_coverage);
-        
-        for (int j = 0; j < woodcount; j++) {
-          float a = mt_rand(&seed);
-          float b = mt_rand(&seed);
-
-          if ( a + b > 1.0f ) {
-            a = 1.0f - a;
-            b = 1.0f - b;
-          }
-
-          float c = 1.0f - a - b;
-
-          SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+        if (object_mask != NULL) {
           SGVec2f texCoord = a*t0 + b*t1 + c*t2;
           
           // Check this random point against the object mask
-          // green channel.
+          // green (for trees) channel. 
           osg::Image* img = object_mask->getImage();            
           unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
           unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
           
-          if (mt_rand(&seed) < img->getColor(x, y).g()) {                
+          if (mt_rand(&seed) < img->getColor(x, y).g()) {  
+            // The red channel contains the rotation for this object                                  
             points.push_back(randomPoint);
           }
-        }
-      } else {
-        // For partial units of area, use a zombie door method to
-        // create the proper random chance of a point being created
-        // for this triangle
-        float unit = area + mt_rand(&seed)*wood_coverage;
-        int woodcount = (int) (unit / wood_coverage);
-        
-        if (wood_size < 1.0) {
-          // A wood size of 0 is used for an even spread of woodland,
-          // where each wood contains a single tree. In this case we
-          // need to apply the vegetation_density to the wood count rather
-          // than the tree density.
-          woodcount = woodcount * vegetation_density;
-        }        
-        
-        for (int j = 0; j < woodcount; j++) {
-
-          if (wood_size < area) {
-            // We need to place a wood within the triangle and populate it
-
-            // Determine the center of the wood
-            float x = mt_rand(&seed);
-            float y = mt_rand(&seed);
-
-            // Determine the size of this wood in m^2, and the number
-            // of trees in the wood
-            float ws = wood_size + wood_size * (mt_rand(&seed) - 0.5f);
-            unsigned total_trees = ws / tree_density;            
-            
-            if (wood_size >= 1.0) {
-              total_trees = total_trees * vegetation_density;
-            }
-            
-            float wood_length = sqrt(ws);
-
-            // From our wood size, work out the fraction on the two axis.
-            // This will be used as a factor when placing trees in the wood.
-            float x_tree_factor = wood_length / length(v1 -v0);
-            float y_tree_factor = wood_length / length(v2 -v0);
-
-            for (unsigned k = 0; k <= total_trees; k++) {
-
-              float a = x + x_tree_factor * (mt_rand(&seed) - 0.5f);
-              float b = y + y_tree_factor * (mt_rand(&seed) - 0.5f);
-
-
-              // In some cases, the triangle side lengths are so small that the
-              // tree_factors become so large as to make placing the tree within
-              // the triangle almost impossible. In this case, we place them
-              // randomly across the triangle.
-              if (a < 0.0f || a > 1.0f) a = mt_rand(&seed);
-              if (b < 0.0f || b > 1.0f) b = mt_rand(&seed);
-              
-              if ( a + b > 1.0f ) {
-                a = 1.0f - a;
-                b = 1.0f - b;
-              }
-                
-              float c = 1.0f - a - b;
-              SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-              points.push_back(randomPoint);              
-            }
-          } else {
-            // This triangle is too small to contain a complete wood, so just
-            // distribute trees across it.
-            unsigned total_trees = area / tree_density;
-
-            for (unsigned k = 0; k <= total_trees; k++) {
-
-              float a = mt_rand(&seed);
-              float b = mt_rand(&seed);
-
-              if ( a + b > 1.0f ) {
-                a = 1.0f - a;
-                b = 1.0f - b;
-              }
-
-              float c = 1.0f - a - b;
-
-              SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
-              SGVec2f texCoord = a*t0 + b*t1 + c*t2;
-              points.push_back(randomPoint);
-            }
-          }
-        }
+        } else {
+          points.push_back(randomPoint);
+        }                
       }
     }
   }

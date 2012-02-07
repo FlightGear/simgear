@@ -493,8 +493,6 @@ struct SGTileGeometryBin {
 
       std::vector<SGVec3f> randomPoints;
       i->second.addRandomTreePoints(wood_coverage,
-                                    mat->get_tree_density(),
-                                    mat->get_wood_size(),
                                     mat->get_object_mask(i->second),
                                     vegetation_density,
                                     randomPoints);

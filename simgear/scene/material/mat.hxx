@@ -150,20 +150,6 @@ public:
    * @return The area (m^2) covered by each wood.
    */
   inline double get_wood_coverage () const { return wood_coverage; }
-
-  /**
-   * Get the density of the wood
-   *
-   * @return The area (m^2) covered by each tree in the wood.
-   */
-  inline double get_tree_density () const { return tree_density; }
-  
-  /**
-   * Get the size of each wood
-   *
-   * @return the average area (m^2) of each wood
-   */
-  inline double get_wood_size () const { return wood_size; }
   
   /**
    * Get the tree height.
@@ -317,12 +303,6 @@ private:
   
   // coverage of woods
   double wood_coverage;
-
-  // The size of each wood
-  double wood_size;
-
-  // Tree density within the wood
-  double tree_density;
 
   // Range at which trees become visible
   double tree_range;

@@ -357,6 +357,7 @@ public:
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
 private:
+  string _light_type;
   SGVec3d _position;
   SGVec3d _direction;
   SGVec4d _ambient;

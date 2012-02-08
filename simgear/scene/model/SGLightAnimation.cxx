@@ -44,6 +44,7 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
                                    const string &path, int i) :
     SGAnimation(configNode, modelRoot)
 {
+    _light_type = getConfig()->getStringValue("light-type");
     _position = SGVec3d( getConfig()->getDoubleValue("position/x"), getConfig()->getDoubleValue("position/y"), getConfig()->getDoubleValue("position/z") );
     _direction = SGVec3d( getConfig()->getDoubleValue("direction/x"), getConfig()->getDoubleValue("direction/y"), getConfig()->getDoubleValue("direction/z") );
     double l = length(_direction);
@@ -73,8 +74,7 @@ SGLightAnimation::install(osg::Node& node)
 {
     SGAnimation::install(node);
 
-    std::string light_type = getConfig()->getStringValue("light-type");
-    if (light_type == "spot") {
+    if (_light_type == "spot") {
 
         simgear::Effect* effect = 0;
         EffectMap::iterator iter = lightEffectMap.find(_key);
@@ -91,6 +91,41 @@ SGLightAnimation::install(osg::Node& node)
             params->getNode("light-spot/exponent",true)->setValue(_exponent);
             params->getNode("light-spot/cutoff",true)->setValue(_cutoff);
             params->getNode("light-spot/cosCutoff",true)->setValue( cos(_cutoff*SG_DEGREES_TO_RADIANS) );
+            params->getNode("light-spot/near",true)->setValue(_near);
+            params->getNode("light-spot/far",true)->setValue(_far);
+
+            effect = simgear::makeEffect(effectProp, true);
+            lightEffectMap.insert(EffectMap::value_type(_key, effect));
+        } else {
+            effect = iter->second.get();
+        }
+
+        node.setNodeMask( simgear::MODELLIGHT_BIT );
+        simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
+        if (geode == 0) {
+            osg::Group* grp = node.asGroup();
+            if (grp != 0) {
+                for (size_t i=0; i<grp->getNumChildren(); ++i) {
+                    geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
+                    if (geode)
+                        geode->setEffect(effect);
+                }
+            }
+        }
+    }
+    else if (_light_type == "point") {
+
+        simgear::Effect* effect = 0;
+        EffectMap::iterator iter = lightEffectMap.find(_key);
+        if (iter == lightEffectMap.end()) {
+            SGPropertyNode_ptr effectProp = new SGPropertyNode;
+            makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-point");
+            SGPropertyNode* params = makeChild(effectProp, "parameters");
+            params->getNode("light-spot/position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
+            params->getNode("light-spot/ambient",true)->setValue(_ambient);
+            params->getNode("light-spot/diffuse",true)->setValue(_diffuse);
+            params->getNode("light-spot/specular",true)->setValue(_specular);
+            params->getNode("light-spot/attenuation",true)->setValue(_attenuation);
             params->getNode("light-spot/near",true)->setValue(_near);
             params->getNode("light-spot/far",true)->setValue(_far);
 

@@ -244,9 +244,21 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
   tree_varieties = props->getIntValue("tree-varieties", 1);
 
   const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
+  
   if (treeTexNode) {
     string treeTexPath = props->getStringValue("tree-texture");
-    tree_texture = SGModelLib::findDataFile(treeTexPath, options);
+    
+    if (! treeTexPath.empty()) {
+      SGPath treePath("Textures.high");
+      treePath.append(treeTexPath);
+      tree_texture = SGModelLib::findDataFile(treePath.str(), options);
+      
+      if (tree_texture.empty()) {
+        treePath = SGPath("Textures");
+        treePath.append(treeTexPath);
+        tree_texture = SGModelLib::findDataFile(treePath.str(), options);
+      }    
+    }
   }
   
   // surface values for use with ground reactions

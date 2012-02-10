@@ -275,9 +275,7 @@ public:
           SGVec2f texCoord = a*t0 + b*t1 + c*t2;
           
           // Check this random point against the object mask
-          // blue (for buildings) channel. Also check
-          // that they are more than spacing metres away from
-          // any other point.
+          // blue (for buildings) channel. 
           osg::Image* img = object_mask->getImage();            
           unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
           unsigned int y = (int) (img->t() * texCoord.y()) % img->t();

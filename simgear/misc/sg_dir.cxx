@@ -265,7 +265,7 @@ bool Dir::create(mode_t mode)
     
 // recursively create parent directories
     Dir pr(parent());
-    if (!pr.exists()) {
+    if (!pr.path().isNull() && !pr.exists()) {
         bool ok = pr.create(mode);
         if (!ok) {
             return false;

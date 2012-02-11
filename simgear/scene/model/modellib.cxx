@@ -68,11 +68,13 @@ std::string SGModelLib::findDataFile(const std::string& file,
   const osgDB::ReaderWriter::Options* opts,
   SGPath currentPath)
 {
+  if (file.empty())
+    return file;
   SGPath p = ResourceManager::instance()->findPath(file, currentPath);
-  if (p.exists()) {
+  if (p.exists()&&p.isFile()) {
     return p.str();
   }
-      
+
   // finally hand on to standard OSG behaviour
   return osgDB::findDataFile(file, opts);
 }

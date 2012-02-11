@@ -216,14 +216,11 @@ TexTuple makeTexTuple(Effect* effect, const SGPropertyNode* props,
     if (pImage)
     {
         imageName = pImage->getStringValue();
-        if (!imageName.empty())
+        absFileName = SGModelLib::findDataFile(imageName, options);
+        if (absFileName.empty())
         {
-            absFileName = SGModelLib::findDataFile(imageName, options);
-            if (absFileName.empty())
-            {
-                SG_LOG(SG_INPUT, SG_ALERT, "Texture file not found: '"
-                       << imageName << "'");
-            }
+            SG_LOG(SG_INPUT, SG_ALERT, "Texture file not found: '"
+                   << imageName << "'");
         }
     }
 

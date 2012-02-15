@@ -262,7 +262,10 @@ PropsVisitor::startElement (const char * name, const XMLAttributes &atts)
     }
 
     const char *type = atts.getValue("type");
-    if (type)
+    // if a type is given and the node is tied,
+    // don't clear the value because
+    // clearValue() unties the property
+    if (type && false == node->isTied() )
       node->clearValue();
     push_state(node, type, mode, omit);
   }

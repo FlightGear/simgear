@@ -24,6 +24,7 @@
 
 #include "HLADataType.hxx"
 #include "HLAObjectInstance.hxx"
+#include "HLATypes.hxx"
 
 namespace simgear {
 

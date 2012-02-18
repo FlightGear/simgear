@@ -22,6 +22,7 @@ set(HLA_HEADERS
     HLAOMTXmlVisitor.hxx
     HLAPropertyDataElement.hxx
     HLARawDataElement.hxx
+    HLATypes.hxx
     HLAVariantDataElement.hxx
     HLAVariantDataType.hxx
     HLAVariantRecordDataElement.hxx

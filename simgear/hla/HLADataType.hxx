@@ -34,13 +34,6 @@ class HLAEnumeratedDataType;
 class HLAFixedRecordDataType;
 class HLAVariantRecordDataType;
 
-enum HLAUpdateType {
-    HLAStaticUpdate,
-    HLAPeriodicUpdate,
-    HLAConditionalUpdate,
-    HLAUndefinedUpdate
-};
-
 class HLADataType : public SGWeakReferenced {
 public:
     virtual ~HLADataType();

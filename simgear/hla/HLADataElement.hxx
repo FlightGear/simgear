@@ -150,15 +150,18 @@ public:
         SGSharedPtr<Data> _data;
     };
     typedef std::list<PathElement> Path;
-    typedef std::pair<std::string, Path> AttributePathPair;
+    typedef std::pair<std::string, Path> StringPathPair;
+    typedef StringPathPair AttributePathPair; // deprecated
     typedef std::pair<unsigned, Path> IndexPathPair;
 
     static std::string toString(const Path& path);
-    static std::string toString(const AttributePathPair& path)
+    static std::string toString(const StringPathPair& path)
     { return path.first + toString(path.second); }
-    static AttributePathPair toAttributePathPair(const std::string& s);
+    static StringPathPair toStringPathPair(const std::string& s);
+    static AttributePathPair toAttributePathPair(const std::string& s) // deprecated
+    { return toStringPathPair(s); }
     static Path toPath(const std::string& s)
-    { return toAttributePathPair(s).second; }
+    { return toStringPathPair(s).second; }
 
 private:
     // SGSharedPtr<const TimeStamp> _timeStamp;

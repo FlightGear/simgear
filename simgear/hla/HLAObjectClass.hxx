@@ -48,7 +48,7 @@ public:
     HLAUpdateType getAttributeUpdateType(unsigned index) const;
     void setAttributeUpdateType(unsigned index, HLAUpdateType updateType);
 
-    HLADataElement::IndexPathPair getIndexPathPair(const HLADataElement::AttributePathPair&) const;
+    HLADataElement::IndexPathPair getIndexPathPair(const HLADataElement::StringPathPair&) const;
     HLADataElement::IndexPathPair getIndexPathPair(const std::string& path) const;
 
     bool subscribe(const std::set<unsigned>& indexSet, bool active);

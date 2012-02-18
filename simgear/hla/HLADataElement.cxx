@@ -152,11 +152,11 @@ HLADataElement::toString(const Path& path)
     return s;
 }
 
-HLADataElement::AttributePathPair
-HLADataElement::toAttributePathPair(const std::string& s)
+HLADataElement::StringPathPair
+HLADataElement::toStringPathPair(const std::string& s)
 {
     Path path;
-    // Skip the initial attribute name if given
+    // Skip the initial attribute/parameter name if given
     std::string::size_type i = s.find_first_of("[.");
     std::string attribute = s.substr(0, i);
     while (i < s.size()) {
@@ -171,7 +171,7 @@ HLADataElement::toAttributePathPair(const std::string& s)
                 if (10 <= v) {
                     SG_LOG(SG_NETWORK, SG_WARN, "HLADataElement: invalid character in array subscript for \""
                            << s << "\" at \"" << attribute << toString(path) << "\"!");
-                    return AttributePathPair();
+                    return StringPathPair();
                 }
                 index *= 10;
                 index += v;
@@ -186,7 +186,7 @@ HLADataElement::toAttributePathPair(const std::string& s)
             if (s.size() <= ++i) {
                 SG_LOG(SG_NETWORK, SG_WARN, "HLADataElement: invalid terminating '.' for \""
                        << s << "\"!");
-                return AttributePathPair();
+                return StringPathPair();
             }
             std::string::size_type e = s.find_first_of("[.", i);
             path.push_back(s.substr(i, e - i));
@@ -195,7 +195,7 @@ HLADataElement::toAttributePathPair(const std::string& s)
         }
     }
 
-    return AttributePathPair(attribute, path);
+    return StringPathPair(attribute, path);
 }
 
 }

@@ -24,6 +24,8 @@ set(HLA_HEADERS
     HLARawDataElement.hxx
     HLAVariantDataElement.hxx
     HLAVariantDataType.hxx
+    HLAVariantRecordDataElement.hxx
+    HLAVariantRecordDataType.hxx
     )
 
 set(HLA_SOURCES
@@ -44,8 +46,8 @@ set(HLA_SOURCES
     HLAOMTXmlVisitor.cxx
     HLAPropertyDataElement.cxx
     HLARawDataElement.cxx
-    HLAVariantDataElement.cxx
-    HLAVariantDataType.cxx
+    HLAVariantRecordDataElement.cxx
+    HLAVariantRecordDataType.cxx
     )
 simgear_component(hla hla "${HLA_SOURCES}" "${HLA_HEADERS}")
 

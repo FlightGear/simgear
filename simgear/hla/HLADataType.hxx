@@ -32,7 +32,7 @@ class HLABasicDataType;
 class HLAArrayDataType;
 class HLAEnumeratedDataType;
 class HLAFixedRecordDataType;
-class HLAVariantDataType;
+class HLAVariantRecordDataType;
 
 enum HLAUpdateType {
     HLAStaticUpdate,
@@ -63,7 +63,9 @@ public:
     virtual const HLAArrayDataType* toArrayDataType() const;
     virtual const HLAEnumeratedDataType* toEnumeratedDataType() const;
     virtual const HLAFixedRecordDataType* toFixedRecordDataType() const;
-    virtual const HLAVariantDataType* toVariantDataType() const;
+    /// deprecated
+    const HLAVariantRecordDataType* toVariantDataType() const { return toVariantRecordDataType(); }
+    virtual const HLAVariantRecordDataType* toVariantRecordDataType() const;
 
 protected:
     HLADataType(const std::string& name, unsigned alignment = 1);

@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,7 +24,7 @@
 #include "HLAEnumeratedDataElement.hxx"
 #include "HLAFixedRecordDataElement.hxx"
 #include "HLAObjectClass.hxx"
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 #include "RTIObjectClass.hxx"
 #include "RTIObjectInstance.hxx"
 
@@ -312,9 +312,9 @@ public:
         _dataElement = recordDataElement;
     }
 
-    class VariantDataElementFactory : public HLAVariantDataElement::DataElementFactory {
+    class VariantRecordDataElementFactory : public HLAVariantRecordDataElement::DataElementFactory {
     public:
-        VariantDataElementFactory(const HLADataElement::Path& path, const HLAPathElementMap& pathElementMap) :
+        VariantRecordDataElementFactory(const HLADataElement::Path& path, const HLAPathElementMap& pathElementMap) :
             _path(path)
         {
             for (HLAPathElementMap::const_iterator i = pathElementMap.lower_bound(path);
@@ -325,9 +325,9 @@ public:
                 _pathElementMap.insert(*i);
             }
         }
-        virtual HLADataElement* createElement(const HLAVariantDataElement& element, unsigned index)
+        virtual HLADataElement* createElement(const HLAVariantRecordDataElement& element, unsigned index)
         {
-            const HLAVariantDataType* dataType = element.getDataType();
+            const HLAVariantRecordDataType* dataType = element.getDataType();
             if (!dataType)
                 return 0;
             const HLADataType* alternativeDataType = element.getAlternativeDataType();
@@ -344,17 +344,17 @@ public:
         HLAPathElementMap _pathElementMap;
     };
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
         _dataElement = createDataElement(_path, dataType);
         if (_dataElement.valid())
             return;
 
-        SGSharedPtr<HLAVariantDataElement> variantDataElement;
-        variantDataElement = new HLAVariantDataElement(&dataType);
-        variantDataElement->setDataElementFactory(new VariantDataElementFactory(_path, _pathElementMap));
+        SGSharedPtr<HLAVariantRecordDataElement> variantRecordDataElement;
+        variantRecordDataElement = new HLAVariantRecordDataElement(&dataType);
+        variantRecordDataElement->setDataElementFactory(new VariantRecordDataElementFactory(_path, _pathElementMap));
 
-        _dataElement = variantDataElement;
+        _dataElement = variantRecordDataElement;
     }
 
 private:

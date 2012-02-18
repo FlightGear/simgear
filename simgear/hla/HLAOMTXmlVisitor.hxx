@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -153,7 +153,7 @@ private:
     SGSharedPtr<HLAEnumeratedDataType> getEnumeratedDataType(const std::string& dataTypeName) const;
     SGSharedPtr<HLADataType> getArrayDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
     SGSharedPtr<HLAFixedRecordDataType> getFixedRecordDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
-    SGSharedPtr<HLAVariantDataType> getVariantDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
+    SGSharedPtr<HLAVariantRecordDataType> getVariantRecordDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
 
     enum Mode {
         UnknownMode,

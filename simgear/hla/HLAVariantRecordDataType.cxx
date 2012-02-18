@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -15,36 +15,36 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#include "HLAVariantDataType.hxx"
+#include "HLAVariantRecordDataType.hxx"
 
 #include "HLADataTypeVisitor.hxx"
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 
 namespace simgear {
 
-HLAVariantDataType::HLAVariantDataType(const std::string& name) :
+HLAVariantRecordDataType::HLAVariantRecordDataType(const std::string& name) :
     HLADataType(name)
 {
 }
 
-HLAVariantDataType::~HLAVariantDataType()
+HLAVariantRecordDataType::~HLAVariantRecordDataType()
 {
 }
 
 void
-HLAVariantDataType::accept(HLADataTypeVisitor& visitor) const
+HLAVariantRecordDataType::accept(HLADataTypeVisitor& visitor) const
 {
     visitor.apply(*this);
 }
 
-const HLAVariantDataType*
-HLAVariantDataType::toVariantDataType() const
+const HLAVariantRecordDataType*
+HLAVariantRecordDataType::toVariantRecordDataType() const
 {
     return this;
 }
 
 bool
-HLAVariantDataType::decode(HLADecodeStream& stream, HLAAbstractVariantDataElement& value) const
+HLAVariantRecordDataType::decode(HLADecodeStream& stream, HLAAbstractVariantRecordDataElement& value) const
 {
     if (!stream.alignOffsetForSize(getAlignment()))
         return false;
@@ -61,7 +61,7 @@ HLAVariantDataType::decode(HLADecodeStream& stream, HLAAbstractVariantDataElemen
 }
 
 bool
-HLAVariantDataType::encode(HLAEncodeStream& stream, const HLAAbstractVariantDataElement& value) const
+HLAVariantRecordDataType::encode(HLAEncodeStream& stream, const HLAAbstractVariantRecordDataElement& value) const
 {
     if (!stream.alignOffsetForSize(getAlignment()))
         return false;
@@ -76,14 +76,14 @@ HLAVariantDataType::encode(HLAEncodeStream& stream, const HLAAbstractVariantData
 }
 
 void
-HLAVariantDataType::setEnumeratedDataType(HLAEnumeratedDataType* dataType)
+HLAVariantRecordDataType::setEnumeratedDataType(HLAEnumeratedDataType* dataType)
 {
     _enumeratedDataType = dataType;
 }
 
 bool
-HLAVariantDataType::addAlternative(const std::string& name, const std::string& enumerator,
-                                   const HLADataType* dataType, const std::string& semantics)
+HLAVariantRecordDataType::addAlternative(const std::string& name, const std::string& enumerator,
+                                         const HLADataType* dataType, const std::string& semantics)
 {
     if (!_enumeratedDataType.valid())
         return false;

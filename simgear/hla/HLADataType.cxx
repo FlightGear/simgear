@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -69,8 +69,8 @@ HLADataType::toFixedRecordDataType() const
     return 0;
 }
 
-const HLAVariantDataType*
-HLADataType::toVariantDataType() const
+const HLAVariantRecordDataType*
+HLADataType::toVariantRecordDataType() const
 {
     return 0;
 }

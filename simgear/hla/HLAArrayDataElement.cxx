@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -213,8 +213,8 @@ HLAVariantArrayDataElement::setDataType(const HLADataType* dataType)
         SG_LOG(SG_NETWORK, SG_WARN, "HLAVariantArrayDataType: unable to set data type, dataType is not an array data type!");
         return false;
     }
-    const HLAVariantDataType* variantDataType = arrayDataType->getElementDataType()->toVariantDataType();
-    if (!variantDataType) {
+    const HLAVariantRecordDataType* variantRecordDataType = arrayDataType->getElementDataType()->toVariantRecordDataType();
+    if (!variantRecordDataType) {
         SG_LOG(SG_NETWORK, SG_WARN, "HLAVariantArrayDataType: unable to set data type: arrayDataTypes element data type is no a variant data type!");
         return false;
     }
@@ -237,7 +237,7 @@ HLAVariantArrayDataElement::setNumElements(unsigned size)
 bool
 HLAVariantArrayDataElement::decodeElement(HLADecodeStream& stream, unsigned i)
 {
-    HLAVariantDataElement* dataElement = getElement(i);
+    HLAVariantRecordDataElement* dataElement = getElement(i);
     if (!dataElement)
         return false;
     return dataElement->decode(stream);
@@ -258,7 +258,7 @@ HLAVariantArrayDataElement::encodeElement(HLAEncodeStream& stream, unsigned i) c
     return dataElement->encode(stream);
 }
 
-const HLAVariantDataElement*
+const HLAVariantRecordDataElement*
 HLAVariantArrayDataElement::getElement(unsigned index) const
 {
     if (_elementVector.size() <= index)
@@ -266,7 +266,7 @@ HLAVariantArrayDataElement::getElement(unsigned index) const
     return _elementVector[index].get();
 }
 
-HLAVariantDataElement*
+HLAVariantRecordDataElement*
 HLAVariantArrayDataElement::getElement(unsigned index)
 {
     if (_elementVector.size() <= index)
@@ -274,7 +274,7 @@ HLAVariantArrayDataElement::getElement(unsigned index)
     return _elementVector[index].get();
 }
 
-HLAVariantDataElement*
+HLAVariantRecordDataElement*
 HLAVariantArrayDataElement::getOrCreateElement(unsigned index)
 {
     if (_elementVector.size() <= index)
@@ -284,7 +284,7 @@ HLAVariantArrayDataElement::getOrCreateElement(unsigned index)
 }
 
 void
-HLAVariantArrayDataElement::setElement(unsigned index, HLAVariantDataElement* value)
+HLAVariantArrayDataElement::setElement(unsigned index, HLAVariantRecordDataElement* value)
 {
     unsigned oldSize = _elementVector.size();
     if (oldSize <= index) {
@@ -307,7 +307,7 @@ HLAVariantArrayDataElement::getAlternativeDataElementFactory()
     return _alternativeDataElementFactory.get();
 }
 
-HLAVariantDataElement*
+HLAVariantRecordDataElement*
 HLAVariantArrayDataElement::newElement()
 {
     const HLAArrayDataType* arrayDataType = getDataType();
@@ -316,12 +316,12 @@ HLAVariantArrayDataElement::newElement()
     const HLADataType* elementDataType = arrayDataType->getElementDataType();
     if (!elementDataType)
         return 0;
-    const HLAVariantDataType* variantDataType = elementDataType->toVariantDataType();
-    if (!variantDataType)
+    const HLAVariantRecordDataType* variantRecordDataType = elementDataType->toVariantRecordDataType();
+    if (!variantRecordDataType)
         return 0;
-    HLAVariantDataElement* variantDataElement = new HLAVariantDataElement(variantDataType);
-    variantDataElement->setDataElementFactory(_alternativeDataElementFactory.get());
-    return variantDataElement;
+    HLAVariantRecordDataElement* variantRecordDataElement = new HLAVariantRecordDataElement(variantRecordDataType);
+    variantRecordDataElement->setDataElementFactory(_alternativeDataElementFactory.get());
+    return variantRecordDataElement;
 }
 
 }

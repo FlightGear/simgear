@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -23,7 +23,7 @@
 #include <simgear/math/SGMath.hxx>
 #include "HLAArrayDataType.hxx"
 #include "HLADataElement.hxx"
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 #include "HLADataTypeVisitor.hxx"
 
 namespace simgear {
@@ -102,20 +102,20 @@ public:
     virtual unsigned getNumElements() const;
     virtual bool encodeElement(HLAEncodeStream& stream, unsigned i) const;
 
-    const HLAVariantDataElement* getElement(unsigned index) const;
-    HLAVariantDataElement* getElement(unsigned index);
-    HLAVariantDataElement* getOrCreateElement(unsigned index);
-    void setElement(unsigned index, HLAVariantDataElement* value);
+    const HLAVariantRecordDataElement* getElement(unsigned index) const;
+    HLAVariantRecordDataElement* getElement(unsigned index);
+    HLAVariantRecordDataElement* getOrCreateElement(unsigned index);
+    void setElement(unsigned index, HLAVariantRecordDataElement* value);
 
-    typedef HLAVariantDataElement::DataElementFactory AlternativeDataElementFactory;
+    typedef HLAVariantRecordDataElement::DataElementFactory AlternativeDataElementFactory;
 
     void setAlternativeDataElementFactory(AlternativeDataElementFactory* alternativeDataElementFactory);
     AlternativeDataElementFactory* getAlternativeDataElementFactory();
 
 private:
-    HLAVariantDataElement* newElement();
+    HLAVariantRecordDataElement* newElement();
 
-    typedef std::vector<SGSharedPtr<HLAVariantDataElement> > ElementVector;
+    typedef std::vector<SGSharedPtr<HLAVariantRecordDataElement> > ElementVector;
     ElementVector _elementVector;
 
     SGSharedPtr<AlternativeDataElementFactory> _alternativeDataElementFactory;

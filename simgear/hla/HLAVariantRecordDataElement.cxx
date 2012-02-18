@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -15,7 +15,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 
 #include <simgear/debug/logstream.hxx>
 
@@ -23,29 +23,29 @@
 
 namespace simgear {
 
-HLAAbstractVariantDataElement::HLAAbstractVariantDataElement(const HLAVariantDataType* dataType) :
+HLAAbstractVariantRecordDataElement::HLAAbstractVariantRecordDataElement(const HLAVariantRecordDataType* dataType) :
     _dataType(dataType)
 {
 }
 
-HLAAbstractVariantDataElement::~HLAAbstractVariantDataElement()
+HLAAbstractVariantRecordDataElement::~HLAAbstractVariantRecordDataElement()
 {
 }
 
 void
-HLAAbstractVariantDataElement::accept(HLADataElementVisitor& visitor)
+HLAAbstractVariantRecordDataElement::accept(HLADataElementVisitor& visitor)
 {
     visitor.apply(*this);
 }
 
 void
-HLAAbstractVariantDataElement::accept(HLAConstDataElementVisitor& visitor) const
+HLAAbstractVariantRecordDataElement::accept(HLAConstDataElementVisitor& visitor) const
 {
     visitor.apply(*this);
 }
 
 bool
-HLAAbstractVariantDataElement::decode(HLADecodeStream& stream)
+HLAAbstractVariantRecordDataElement::decode(HLADecodeStream& stream)
 {
     if (!_dataType.valid())
         return false;
@@ -53,39 +53,39 @@ HLAAbstractVariantDataElement::decode(HLADecodeStream& stream)
 }
 
 bool
-HLAAbstractVariantDataElement::encode(HLAEncodeStream& stream) const
+HLAAbstractVariantRecordDataElement::encode(HLAEncodeStream& stream) const
 {
     if (!_dataType.valid())
         return false;
     return _dataType->encode(stream, *this);
 }
 
-const HLAVariantDataType*
-HLAAbstractVariantDataElement::getDataType() const
+const HLAVariantRecordDataType*
+HLAAbstractVariantRecordDataElement::getDataType() const
 {
     return _dataType.get();
 }
 
 bool
-HLAAbstractVariantDataElement::setDataType(const HLADataType* dataType)
+HLAAbstractVariantRecordDataElement::setDataType(const HLADataType* dataType)
 {
-    const HLAVariantDataType* variantDataType = dataType->toVariantDataType();
-    if (!variantDataType) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAVariantDataType: unable to set data type!");
+    const HLAVariantRecordDataType* variantRecordDataType = dataType->toVariantRecordDataType();
+    if (!variantRecordDataType) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLAVariantRecordDataType: unable to set data type!");
         return false;
     }
-    setDataType(variantDataType);
+    setDataType(variantRecordDataType);
     return true;
 }
 
 void
-HLAAbstractVariantDataElement::setDataType(const HLAVariantDataType* dataType)
+HLAAbstractVariantRecordDataElement::setDataType(const HLAVariantRecordDataType* dataType)
 {
     _dataType = dataType;
 }
 
 std::string
-HLAAbstractVariantDataElement::getAlternativeName() const
+HLAAbstractVariantRecordDataElement::getAlternativeName() const
 {
     if (!_dataType.valid())
         return std::string();
@@ -93,7 +93,7 @@ HLAAbstractVariantDataElement::getAlternativeName() const
 }
 
 const HLADataType*
-HLAAbstractVariantDataElement::getAlternativeDataType() const
+HLAAbstractVariantRecordDataElement::getAlternativeDataType() const
 {
     if (!_dataType.valid())
         return 0;
@@ -101,22 +101,22 @@ HLAAbstractVariantDataElement::getAlternativeDataType() const
 }
 
 
-HLAVariantDataElement::DataElementFactory::~DataElementFactory()
+HLAVariantRecordDataElement::DataElementFactory::~DataElementFactory()
 {
 }
 
-HLAVariantDataElement::HLAVariantDataElement(const HLAVariantDataType* dataType) :
-    HLAAbstractVariantDataElement(dataType),
+HLAVariantRecordDataElement::HLAVariantRecordDataElement(const HLAVariantRecordDataType* dataType) :
+    HLAAbstractVariantRecordDataElement(dataType),
     _alternativeIndex(~0u)
 {
 }
 
-HLAVariantDataElement::~HLAVariantDataElement()
+HLAVariantRecordDataElement::~HLAVariantRecordDataElement()
 {
 }
 
 bool
-HLAVariantDataElement::setAlternativeIndex(unsigned index)
+HLAVariantRecordDataElement::setAlternativeIndex(unsigned index)
 {
     if (_alternativeIndex == index)
         return true;
@@ -129,37 +129,37 @@ HLAVariantDataElement::setAlternativeIndex(unsigned index)
 }
 
 bool
-HLAVariantDataElement::decodeAlternative(HLADecodeStream& stream)
+HLAVariantRecordDataElement::decodeAlternative(HLADecodeStream& stream)
 {
     return _dataElement->decode(stream);
 }
 
 unsigned
-HLAVariantDataElement::getAlternativeIndex() const
+HLAVariantRecordDataElement::getAlternativeIndex() const
 {
     return _alternativeIndex;
 }
 
 bool
-HLAVariantDataElement::encodeAlternative(HLAEncodeStream& stream) const
+HLAVariantRecordDataElement::encodeAlternative(HLAEncodeStream& stream) const
 {
     return _dataElement->encode(stream);
 }
 
 void
-HLAVariantDataElement::setDataElementFactory(HLAVariantDataElement::DataElementFactory* dataElementFactory)
+HLAVariantRecordDataElement::setDataElementFactory(HLAVariantRecordDataElement::DataElementFactory* dataElementFactory)
 {
     _dataElementFactory = dataElementFactory;
 }
 
-HLAVariantDataElement::DataElementFactory*
-HLAVariantDataElement::getDataElementFactory()
+HLAVariantRecordDataElement::DataElementFactory*
+HLAVariantRecordDataElement::getDataElementFactory()
 {
     return _dataElementFactory;
 }
 
 HLADataElement*
-HLAVariantDataElement::newElement(unsigned index)
+HLAVariantRecordDataElement::newElement(unsigned index)
 {
     if (!_dataElementFactory.valid())
         return 0;

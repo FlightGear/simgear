@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,7 +28,7 @@
 #include "HLADataTypeVisitor.hxx"
 #include "HLAEnumeratedDataType.hxx"
 #include "HLAFixedRecordDataType.hxx"
-#include "HLAVariantDataType.hxx"
+#include "HLAVariantRecordDataType.hxx"
 
 namespace simgear {
 
@@ -287,7 +287,7 @@ HLAOMTXmlVisitor::getDataType(const std::string& dataTypeName, HLAOMTXmlVisitor:
     if (dataType.valid())
         return dataType;
 
-    dataType = getVariantDataType(dataTypeName, dataTypeMap);
+    dataType = getVariantRecordDataType(dataTypeName, dataTypeMap);
     if (dataType.valid())
         return dataType;
 
@@ -473,13 +473,13 @@ HLAOMTXmlVisitor::getFixedRecordDataType(const std::string& dataTypeName, HLAOMT
     return dataType;
 }
 
-SGSharedPtr<HLAVariantDataType>
-HLAOMTXmlVisitor::getVariantDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
+SGSharedPtr<HLAVariantRecordDataType>
+HLAOMTXmlVisitor::getVariantRecordDataType(const std::string& dataTypeName, HLAOMTXmlVisitor::StringDataTypeMap& dataTypeMap) const
 {
     VariantRecordDataMap::const_iterator i = _variantRecordDataMap.find(dataTypeName);
     if (i == _variantRecordDataMap.end())
         return 0;
-    SGSharedPtr<HLAVariantDataType> dataType = new HLAVariantDataType(dataTypeName);
+    SGSharedPtr<HLAVariantRecordDataType> dataType = new HLAVariantRecordDataType(dataTypeName);
     dataTypeMap[dataTypeName] = dataType;
 
     SGSharedPtr<HLAEnumeratedDataType> enumeratedDataType = getEnumeratedDataType(i->second._dataType);

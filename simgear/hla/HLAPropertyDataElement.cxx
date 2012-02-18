@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@
 #include "HLADataElementVisitor.hxx"
 #include "HLADataTypeVisitor.hxx"
 #include "HLAFixedRecordDataElement.hxx"
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 
 namespace simgear {
 
@@ -373,14 +373,14 @@ public:
         _dataElement = recordDataElement;
     }
 
-    class VariantDataElementFactory : public HLAVariantDataElement::DataElementFactory {
+    class VariantRecordDataElementFactory : public HLAVariantRecordDataElement::DataElementFactory {
     public:
-        VariantDataElementFactory(SGPropertyNode* propertyNode) :
+        VariantRecordDataElementFactory(SGPropertyNode* propertyNode) :
             _propertyNode(propertyNode)
         { }
-        virtual HLADataElement* createElement(const HLAVariantDataElement& element, unsigned index)
+        virtual HLADataElement* createElement(const HLAVariantRecordDataElement& element, unsigned index)
         {
-            const HLAVariantDataType* dataType = element.getDataType();
+            const HLAVariantRecordDataType* dataType = element.getDataType();
             if (!dataType)
                 return 0;
             const HLADataType* alternativeDataType = element.getAlternativeDataType();
@@ -394,12 +394,12 @@ public:
         SGSharedPtr<SGPropertyNode> _propertyNode;
     };
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
-        SGSharedPtr<HLAVariantDataElement> variantDataElement;
-        variantDataElement = new HLAVariantDataElement(&dataType);
-        variantDataElement->setDataElementFactory(new VariantDataElementFactory(_propertyNode.get()));
-        _dataElement = variantDataElement;
+        SGSharedPtr<HLAVariantRecordDataElement> variantRecordDataElement;
+        variantRecordDataElement = new HLAVariantRecordDataElement(&dataType);
+        variantRecordDataElement->setDataElementFactory(new VariantRecordDataElementFactory(_propertyNode.get()));
+        _dataElement = variantRecordDataElement;
     }
 
     HLADataElement* getDataElement()

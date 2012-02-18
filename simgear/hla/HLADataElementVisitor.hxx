@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,7 +24,7 @@ class HLABasicDataElement;
 class HLAAbstractEnumeratedDataElement;
 class HLAAbstractFixedRecordDataElement;
 class HLAAbstractArrayDataElement;
-class HLAAbstractVariantDataElement;
+class HLAAbstractVariantRecordDataElement;
 
 class HLADataElementVisitor {
 public:
@@ -36,7 +36,7 @@ public:
     virtual void apply(HLAAbstractEnumeratedDataElement&);
     virtual void apply(HLAAbstractArrayDataElement&);
     virtual void apply(HLAAbstractFixedRecordDataElement&);
-    virtual void apply(HLAAbstractVariantDataElement&);
+    virtual void apply(HLAAbstractVariantRecordDataElement&);
 };
 
 class HLAConstDataElementVisitor {
@@ -49,7 +49,7 @@ public:
     virtual void apply(const HLAAbstractEnumeratedDataElement&);
     virtual void apply(const HLAAbstractArrayDataElement&);
     virtual void apply(const HLAAbstractFixedRecordDataElement&);
-    virtual void apply(const HLAAbstractVariantDataElement&);
+    virtual void apply(const HLAAbstractVariantRecordDataElement&);
 };
 
 }

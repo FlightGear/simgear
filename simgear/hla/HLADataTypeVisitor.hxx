@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,7 +27,7 @@
 #include "HLADataElement.hxx"
 #include "HLAEnumeratedDataType.hxx"
 #include "HLAFixedRecordDataType.hxx"
-#include "HLAVariantDataType.hxx"
+#include "HLAVariantRecordDataType.hxx"
 
 namespace simgear {
 
@@ -84,7 +84,7 @@ public:
     virtual void apply(const HLAFixedRecordDataType& dataType)
     { apply(static_cast<const HLADataType&>(dataType)); }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     { apply(static_cast<const HLADataType&>(dataType)); }
 };
 
@@ -145,7 +145,7 @@ public:
         }
     }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     { assert(0); }
 
 protected:
@@ -188,7 +188,7 @@ public:
             dataType.getFieldDataType(i)->accept(*this);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType) { assert(0); }
+    virtual void apply(const HLAVariantRecordDataType& dataType) { assert(0); }
 
 protected:
     HLADecodeStream& _stream;
@@ -232,7 +232,7 @@ public:
             dataType.getFieldDataType(i)->accept(*this);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType) { assert(0); }
+    virtual void apply(const HLAVariantRecordDataType& dataType) { assert(0); }
 
 protected:
     HLAEncodeStream& _stream;
@@ -269,7 +269,7 @@ public:
         HLADataTypeDecodeVisitor::apply(dataType);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
         SG_LOG(SG_NETWORK, SG_WARN, "Unexpected HLADataType while decodeing scalar value");
         HLADataTypeDecodeVisitor::apply(dataType);
@@ -305,7 +305,7 @@ public:
         HLADataTypeEncodeVisitor::apply(dataType);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
         SG_LOG(SG_NETWORK, SG_WARN, "Unexpected HLADataType while writing scalar value");
         HLADataTypeEncodeVisitor::apply(dataType);
@@ -386,7 +386,7 @@ public:
         HLADataTypeDecodeVisitor::apply(dataType);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
         SG_LOG(SG_NETWORK, SG_WARN, "Unexpected HLADataType while decodeing a fixed record value");
         HLADataTypeDecodeVisitor::apply(dataType);
@@ -467,7 +467,7 @@ public:
         HLADataTypeEncodeVisitor::apply(dataType);
     }
 
-    virtual void apply(const HLAVariantDataType& dataType)
+    virtual void apply(const HLAVariantRecordDataType& dataType)
     {
         SG_LOG(SG_NETWORK, SG_WARN, "Unexpected HLADataType while writing a fixed record value");
         HLADataTypeEncodeVisitor::apply(dataType);
@@ -654,14 +654,14 @@ public:
 
     virtual void apply(const HLAFixedRecordDataType& dataType);
 
-    virtual void apply(const HLAVariantDataType& dataType);
+    virtual void apply(const HLAVariantRecordDataType& dataType);
 
     HLADataElement* getDataElement()
     { return _dataElement.release(); }
 
 protected:
     class ArrayDataElementFactory;
-    class VariantDataElementFactory;
+    class VariantRecordDataElementFactory;
 
     SGSharedPtr<HLADataElement> _dataElement;
 };

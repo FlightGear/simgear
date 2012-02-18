@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -22,7 +22,7 @@
 #include "HLADataTypeVisitor.hxx"
 #include "HLAEnumeratedDataElement.hxx"
 #include "HLAFixedRecordDataElement.hxx"
-#include "HLAVariantDataElement.hxx"
+#include "HLAVariantRecordDataElement.hxx"
 
 namespace simgear {
 
@@ -160,11 +160,11 @@ HLADataElementFactoryVisitor::apply(const HLAFixedRecordDataType& dataType)
     _dataElement = recordDataElement;
 }
 
-class HLADataElementFactoryVisitor::VariantDataElementFactory : public HLAVariantDataElement::DataElementFactory {
+class HLADataElementFactoryVisitor::VariantRecordDataElementFactory : public HLAVariantRecordDataElement::DataElementFactory {
 public:
-    virtual HLADataElement* createElement(const HLAVariantDataElement& element, unsigned index)
+    virtual HLADataElement* createElement(const HLAVariantRecordDataElement& element, unsigned index)
     {
-        const HLAVariantDataType* dataType = element.getDataType();
+        const HLAVariantRecordDataType* dataType = element.getDataType();
         if (!dataType)
             return 0;
         const HLADataType* alternativeDataType = element.getAlternativeDataType();
@@ -177,12 +177,12 @@ public:
 };
 
 void
-HLADataElementFactoryVisitor::apply(const HLAVariantDataType& dataType)
+HLADataElementFactoryVisitor::apply(const HLAVariantRecordDataType& dataType)
 {
-    SGSharedPtr<HLAVariantDataElement> variantDataElement;
-    variantDataElement = new HLAVariantDataElement(&dataType);
-    variantDataElement->setDataElementFactory(new VariantDataElementFactory);
-    _dataElement = variantDataElement;
+    SGSharedPtr<HLAVariantRecordDataElement> variantRecordDataElement;
+    variantRecordDataElement = new HLAVariantRecordDataElement(&dataType);
+    variantRecordDataElement->setDataElementFactory(new VariantRecordDataElementFactory);
+    _dataElement = variantRecordDataElement;
 }
 
 } // namespace simgear

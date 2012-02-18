@@ -729,11 +729,6 @@ HLAOMTXmlVisitor::startElement(const char* name, const XMLAttributes& atts)
             throw sg_exception("enumeratedDataTypes tag outside dataTypes!");
         pushMode(EnumeratedDataTypesMode);
 
-        Enumerator enumerator;
-        enumerator._name = getAttribute("name", atts);
-        enumerator._values = getAttribute("values", atts);
-        _enumeratedDataMap[_enumeratedDataName]._enumeratorList.push_back(enumerator);
-
     } else if (strcmp(name, "arrayData") == 0) {
         if (getCurrentMode() != ArrayDataTypesMode)
             throw sg_exception("arrayData tag outside arrayDataTypes!");

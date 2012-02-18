@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -161,7 +161,7 @@ public:
     /// a pending time advance is granted.
     bool processMessages();
 
-    /// Legacy tick call
+    /// Legacy tick call - deprecated
     bool tick(const double& minimum, const double& maximum);
 
     class ObjectModelFactory {
@@ -170,7 +170,7 @@ public:
         { }
 
         virtual HLAObjectClass* createObjectClass(const std::string& name, HLAFederate& federate)
-        { return new HLAObjectClass(name, federate); }
+        { return federate.createObjectClass(name); }
         virtual bool subscribeObjectClass(const std::string& objectClassName, const std::string& sharing)
         { return sharing.find("Subscribe") != std::string::npos; }
         virtual bool publishObjectClass(const std::string& objectClassName, const std::string& sharing)
@@ -182,13 +182,22 @@ public:
 
     };
 
-    /// Read an omt xml file
+    /// Read an omt xml file - deprecated
     bool readObjectModelTemplate(const std::string& objectModel,
                                  ObjectModelFactory& objectModelFactory);
+
+    /// Read an rti1.3 omt xml file
+    bool readRTI13ObjectModelTemplate(const std::string& objectModel);
+    /// Read an rti1516 omt xml file
+    bool readRTI1516ObjectModelTemplate(const std::string& objectModel);
+    /// Read an rti1516e omt xml file
+    bool readRTI1516EObjectModelTemplate(const std::string& objectModel);
 
     /// Get the object class of a given name
     HLAObjectClass* getObjectClass(const std::string& name);
     const HLAObjectClass* getObjectClass(const std::string& name) const;
+    /// Default create function. Creates a default object class
+    virtual HLAObjectClass* createObjectClass(const std::string& name);
 
     /// Get the interaction class of a given name
     HLAInteractionClass* getInteractionClass(const std::string& name);

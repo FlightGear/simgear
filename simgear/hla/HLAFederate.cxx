@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -831,6 +831,27 @@ HLAFederate::readObjectModelTemplate(const std::string& objectModel,
     return true;
 }
 
+bool
+HLAFederate::readRTI13ObjectModelTemplate(const std::string& objectModel)
+{
+    SG_LOG(SG_IO, SG_ALERT, "HLA version RTI13 not yet(!?) supported.");
+    return false;
+}
+
+bool
+HLAFederate::readRTI1516ObjectModelTemplate(const std::string& objectModel)
+{
+    ObjectModelFactory objectModelFactory;
+    return readObjectModelTemplate(objectModel, objectModelFactory);
+}
+
+bool
+HLAFederate::readRTI1516EObjectModelTemplate(const std::string& objectModel)
+{
+    SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
+    return false;
+}
+
 HLAObjectClass*
 HLAFederate::getObjectClass(const std::string& name)
 {
@@ -847,6 +868,12 @@ HLAFederate::getObjectClass(const std::string& name) const
     if (i == _objectClassMap.end())
         return 0;
     return i->second.get();
+}
+
+HLAObjectClass*
+HLAFederate::createObjectClass(const std::string& name)
+{
+    return new HLAObjectClass(name, *this);
 }
 
 HLAInteractionClass*
@@ -884,6 +911,14 @@ HLAFederate::readObjectModel()
 {
     /// Currently empty, but is called at the right time so that
     /// the object model is present when it is needed
+    // switch (getVersion()) {
+    // case RTI13:
+    //     return readRTI13ObjectModelTemplate(getFederationObjectModel());
+    // case RTI1516:
+    //     return readRTI1516ObjectModelTemplate(getFederationObjectModel());
+    // case RTI1516E:
+    //     return readRTI1516EObjectModelTemplate(getFederationObjectModel());
+    // }
     return true;
 }
 

@@ -688,7 +688,7 @@ SGTerraSync::~SGTerraSync()
 void SGTerraSync::init()
 {
     _refreshDisplay = _terraRoot->getNode("refresh-display",true);
-    _terraRoot->getNode("built-in-svn-available",true)->setBoolValue(svn_built_in_available);
+    _terraRoot->setBoolValue("built-in-svn-available",svn_built_in_available);
     reinit();
 }
 
@@ -711,7 +711,7 @@ void SGTerraSync::reinit()
     #ifdef HAVE_SVN_CLIENT_H
         _svnThread->setUseBuiltin(_terraRoot->getBoolValue("use-built-in-svn",true));
     #else
-        _terraRoot->getNode("use-built-in-svn",true)->setBoolValue(false);
+        _terraRoot->setBoolValue("use-built-in-svn",false);
     #endif
         _svnThread->setUseSvn(_terraRoot->getBoolValue("use-svn",true));
         _svnThread->setExtSvnUtility(_terraRoot->getStringValue("ext-svn-utility","svn"));

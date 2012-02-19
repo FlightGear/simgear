@@ -71,7 +71,7 @@ std::string SGModelLib::findDataFile(const std::string& file,
   if (file.empty())
     return file;
   SGPath p = ResourceManager::instance()->findPath(file, currentPath);
-  if (p.exists()&&p.isFile()) {
+  if (p.exists()) {
     return p.str();
   }
 

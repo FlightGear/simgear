@@ -243,8 +243,11 @@ void setAttrs(const TexTuple& attrs, Texture* tex,
     } else {
         osgDB::ReaderWriter::ReadResult result;
         result = osgDB::readImageFile(imageName, options);
-        if (result.success()) {
-            osg::ref_ptr<osg::Image> image = result.getImage();
+        osg::ref_ptr<osg::Image> image;
+        if (result.success())
+            image = result.getImage();
+        if (image.valid())
+        {
             image = computeMipmap( image.get(), attrs.get<7>() );
             tex->setImage(GL_FRONT_AND_BACK, image.get());
             int s = image->s();
@@ -360,7 +363,7 @@ osg::Image* make3DNoiseImage(int texSize)
     GLubyte *ptr;
     double amp = 0.5;
 
-    osg::notify(osg::WARN) << "creating 3D noise texture... ";
+    SG_LOG(SG_INPUT, SG_INFO, "creating 3D noise texture... ");
 
     for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5)
     {
@@ -383,7 +386,7 @@ osg::Image* make3DNoiseImage(int texSize)
         }
     }
 
-    osg::notify(osg::WARN) << "DONE" << std::endl;
+    SG_LOG(SG_INPUT, SG_INFO, "creating 3D noise textures complete!");
     return image;
 }
 

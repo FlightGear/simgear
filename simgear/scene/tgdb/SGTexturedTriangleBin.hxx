@@ -235,7 +235,8 @@ public:
     }
   }
   
-   void addRandomPoints(float coverage, 
+   void addRandomPoints(double coverage, 
+                        double spacing,
                         osg::Texture2D* object_mask,
                         std::vector<std::pair<SGVec3f, float> >& points)
   {
@@ -271,22 +272,30 @@ public:
         float c = 1 - a - b;
         SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
         
-        if (object_mask != NULL) {
-          SGVec2f texCoord = a*t0 + b*t1 + c*t2;
-          
-          // Check this random point against the object mask
-          // blue (for buildings) channel. 
-          osg::Image* img = object_mask->getImage();            
-          unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
-          unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
-          
-          if (mt_rand(&seed) < img->getColor(x, y).b()) {  
-            // The red channel contains the rotation for this object                                  
-            points.push_back(std::make_pair(randomPoint, img->getColor(x,y).r()));
-          }
-        } else {
-          points.push_back(std::make_pair(randomPoint, mt_rand(&seed)));
-        }        
+        // Check that the point is sufficiently far from
+        // the edge of the triangle by measuring the distance
+        // from the three lines that make up the triangle.        
+        if (((length(cross(randomPoint - v0, randomPoint - v1)) / length(v1 - v0)) > spacing) &&
+            ((length(cross(randomPoint - v1, randomPoint - v2)) / length(v2 - v1)) > spacing) &&
+            ((length(cross(randomPoint - v2, randomPoint - v0)) / length(v0 - v2)) > spacing)   )
+        {
+          if (object_mask != NULL) {
+            SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+            
+            // Check this random point against the object mask
+            // blue (for buildings) channel. 
+            osg::Image* img = object_mask->getImage();            
+            unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
+            unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+            
+            if (mt_rand(&seed) < img->getColor(x, y).b()) {  
+              // The red channel contains the rotation for this object                                  
+              points.push_back(std::make_pair(randomPoint, img->getColor(x,y).r()));
+            }
+          } else {
+            points.push_back(std::make_pair(randomPoint, mt_rand(&seed)));
+          }        
+        }
         num -= 1.0;
       }
     }

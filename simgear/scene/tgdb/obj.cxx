@@ -536,6 +536,7 @@ struct SGTileGeometryBin {
               std::vector<std::pair<SGVec3f, float> > randomPoints;
 
               i->second.addRandomPoints(object->get_coverage_m2(), 
+                                        object->get_spacing_m(),
                                         mat->get_object_mask(i->second), 
                                         randomPoints);
               std::vector<std::pair<SGVec3f, float> >::iterator l;

@@ -167,18 +167,16 @@ if(HAVE_UNISTD_H)
 
         int main() { return 0; }
         "
-        HAVE_CLOCK_GETTIME)    
+        HAVE_CLOCK_GETTIME)
 endif(HAVE_UNISTD_H)
 
 set(RT_LIBRARY "")
 if(HAVE_CLOCK_GETTIME)
-    check_function_exists(clock_gettime CLOCK_GETTIME_IN_LIBC)
-    if(NOT CLOCK_GETTIME_IN_LIBC)
-        check_library_exists(rt clock_gettime "" HAVE_RT)
-        if(HAVE_RT)
-            set(RT_LIBRARY rt)
-        endif(HAVE_RT)
-        endif(NOT CLOCK_GETTIME_IN_LIBC)
+    #check_function_exists(clock_gettime CLOCK_GETTIME_IN_LIBC)
+    check_library_exists(rt clock_gettime "" HAVE_RT)
+    if(HAVE_RT)
+        set(RT_LIBRARY rt)
+    endif(HAVE_RT)
 endif(HAVE_CLOCK_GETTIME)
 
 SET(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "add a postfix, usually 'd' on windows")

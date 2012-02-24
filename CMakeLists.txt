@@ -172,7 +172,6 @@ endif(HAVE_UNISTD_H)
 
 set(RT_LIBRARY "")
 if(HAVE_CLOCK_GETTIME)
-    #check_function_exists(clock_gettime CLOCK_GETTIME_IN_LIBC)
     check_library_exists(rt clock_gettime "" HAVE_RT)
     if(HAVE_RT)
         set(RT_LIBRARY rt)

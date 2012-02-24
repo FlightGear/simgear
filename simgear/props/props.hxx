@@ -63,13 +63,14 @@ inline T parseString(const std::string& str)
     return result;
 }
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 // Extended properties
 template<>
 std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result);
 template<>
 std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result);
+#endif
 
-    
 /**
  * Property value types.
  */
@@ -164,6 +165,7 @@ DEFINTERNALPROP(const char *, STRING);
 DEFINTERNALPROP(const char[], STRING);
 #undef DEFINTERNALPROP
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 template<>
 struct PropertyTraits<SGVec3d>
 {
@@ -177,6 +179,8 @@ struct PropertyTraits<SGVec4d>
     static const Type type_tag = VEC4D;
     enum  { Internal = 0 };
 };
+#endif
+
 }
 }
 
@@ -689,10 +693,12 @@ std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
     return stream;
 }
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 template<>
 std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const;
 template<>
 std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const;
+#endif
 
 
 /**

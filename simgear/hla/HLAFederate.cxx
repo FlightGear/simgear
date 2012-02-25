@@ -17,8 +17,11 @@
 
 #include "HLAFederate.hxx"
 
-#include "RTI13Federate.hxx"
+#include "simgear/debug/logstream.hxx"
+
 #include "RTIFederate.hxx"
+#include "RTIFederateFactoryRegistry.hxx"
+#include "RTI13FederateFactory.hxx"
 #include "RTIInteractionClass.hxx"
 #include "RTIObjectClass.hxx"
 #include "HLADataElement.hxx"
@@ -35,6 +38,8 @@ HLAFederate::HLAFederate() :
     _timeConstrainedByLocalClock(false),
     _done(false)
 {
+    // For now instantiate the current only available factory here explicitly
+    RTI13FederateFactory::instance();
 }
 
 HLAFederate::~HLAFederate()
@@ -159,28 +164,9 @@ HLAFederate::setFederateName(const std::string& federateName)
 bool
 HLAFederate::connect(Version version, const std::list<std::string>& stringList)
 {
-    if (_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Trying to connect to already connected federate!");
-        return false;
-    }
-    switch (version) {
-    case RTI13:
-        _rtiFederate = new RTI13Federate(stringList);
-        _version = version;
-        _connectArguments = stringList;
-        break;
-    case RTI1516:
-        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516 not yet(!?) supported.");
-        // _rtiFederate = new RTI1516Federate(stringList);
-        break;
-    case RTI1516E:
-        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
-        // _rtiFederate = new RTI1516eFederate(stringList);
-        break;
-    default:
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Unknown rti version in connect!");
-    }
-    return _rtiFederate.valid();
+    _version = version;
+    _connectArguments = stringList;
+    return connect();
 }
 
 bool
@@ -190,17 +176,22 @@ HLAFederate::connect()
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Trying to connect to already connected federate!");
         return false;
     }
+
+    SGSharedPtr<RTIFederateFactoryRegistry> registry = RTIFederateFactoryRegistry::instance();
+    if (!registry) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: RTIFederateFactoryRegistry is no longer available!");
+        return false;
+    }
+
     switch (_version) {
     case RTI13:
-        _rtiFederate = new RTI13Federate(_connectArguments);
+        _rtiFederate = registry->create("RTI13", _connectArguments);
         break;
     case RTI1516:
-        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516 not yet(!?) supported.");
-        // _rtiFederate = new RTI1516Federate(_connectArguments);
+        _rtiFederate = registry->create("RTI1516", _connectArguments);
         break;
     case RTI1516E:
-        SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
-        // _rtiFederate = new RTI1516eFederate(_connectArguments);
+        _rtiFederate = registry->create("RTI1516E", _connectArguments);
         break;
     default:
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Unknown rti version in connect!");

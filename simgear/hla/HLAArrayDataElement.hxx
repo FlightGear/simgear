@@ -214,7 +214,7 @@ public:
 
     virtual bool setNumElements(unsigned count)
     {
-        for (unsigned i = 2; i < count; ++i)
+        for (unsigned i = count; i < 2; ++i)
             _value[i] = 0;
         return true;
     }
@@ -306,7 +306,7 @@ public:
 
     virtual bool setNumElements(unsigned count)
     {
-        for (unsigned i = 3; i < count; ++i)
+        for (unsigned i = count; i < 3; ++i)
             _value[i] = 0;
         return true;
     }
@@ -398,7 +398,7 @@ public:
 
     virtual bool setNumElements(unsigned count)
     {
-        for (unsigned i = 4; i < count; ++i)
+        for (unsigned i = count; i < 4; ++i)
             _value[i] = 0;
         return true;
     }
@@ -490,7 +490,7 @@ public:
 
     virtual bool setNumElements(unsigned count)
     {
-        for (unsigned i = 4; i < count; ++i)
+        for (unsigned i = count; i < 4; ++i)
             _value[i] = 0;
         return true;
     }

@@ -128,7 +128,9 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tname = "unknown.rgb";
     }
     
-    if (tname.rfind(".dds") == (tname.length() - 4)) {
+    if ((tname.rfind(".dds") == (tname.length() - 4)) ||
+        (tname.rfind(".DDS") == (tname.length() - 4))   ) 
+    {
       dds.push_back(true);
     } else {
       dds.push_back(false);      
@@ -162,7 +164,9 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       }
       
       if (j == 0) {
-        if (tname.rfind(".dds") == (tname.length() - 4)) {
+        if ((tname.rfind(".dds") == (tname.length() - 4)) ||
+            (tname.rfind(".DDS") == (tname.length() - 4))   )
+        {
           dds.push_back(true);
         } else {
           dds.push_back(false);      
@@ -215,10 +219,14 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       {
         osg::Texture2D* object_mask = new osg::Texture2D;
         
-        if (dds[i]) {
-          // Texture is a DDS. This is relevant for the object mask, as DDS
-          // textures have an origin at the bottom left rather than top
-          // left, therefore we flip the object mask vertically.
+        bool dds_mask = ((omname.rfind(".dds") == (omname.length() - 4)) ||
+                         (omname.rfind(".DDS") == (omname.length() - 4))   );
+        
+        if (dds[i] != dds_mask) {
+          // Texture format does not match mask format. This is relevant for 
+          // the object mask, as DDS textures have an origin at the bottom 
+          // left rather than top left, therefore we flip the object mask 
+          // vertically.
           image->flipVertical();          
         }
         

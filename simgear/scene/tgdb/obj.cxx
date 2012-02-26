@@ -547,7 +547,7 @@ struct SGTileGeometryBin {
                 bool close = false;                
                 
                 for (unsigned i = 0; i < randomModels.getNumModels(); i++) {
-                  float spacing = std::max(randomModels.getMatModel(i).model->get_spacing_m(), object->get_spacing_m());
+                  float spacing = randomModels.getMatModel(i).model->get_spacing_m() + object->get_spacing_m();
                   spacing = spacing * spacing;
                   
                   if (distSqr(randomModels.getMatModel(i).position, l->first) < spacing) {

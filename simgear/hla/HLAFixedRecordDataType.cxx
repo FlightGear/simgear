@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -43,6 +43,14 @@ HLAFixedRecordDataType::toFixedRecordDataType() const
     return this;
 }
 
+void
+HLAFixedRecordDataType::releaseDataTypeReferences()
+{
+    unsigned numFields = getNumFields();
+    for (unsigned i = 0; i < numFields; ++i)
+        _fieldList[i].releaseDataTypeReferences();
+}
+
 bool
 HLAFixedRecordDataType::decode(HLADecodeStream& stream, HLAAbstractFixedRecordDataElement& value) const
 {
@@ -68,10 +76,18 @@ HLAFixedRecordDataType::encode(HLAEncodeStream& stream, const HLAAbstractFixedRe
 void
 HLAFixedRecordDataType::addField(const std::string& name, const HLADataType* dataType)
 {
-    // FIXME this only works if we do not reset the alignment to something smaller
-    if (getAlignment() < dataType->getAlignment())
-        setAlignment(dataType->getAlignment());
     _fieldList.push_back(Field(name, dataType));
+}
+
+void
+HLAFixedRecordDataType::_recomputeAlignmentImplementation()
+{
+    unsigned alignment = 1;
+    for (unsigned i = 0; i < getNumFields(); ++i) {
+        if (const HLADataType* dataType = getFieldDataType(i))
+            alignment = std::max(alignment, dataType->getAlignment());
+    }
+    setAlignment(alignment);
 }
 
 } // namespace simgear

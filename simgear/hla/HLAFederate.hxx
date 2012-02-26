@@ -193,20 +193,45 @@ public:
     /// Read an rti1516e omt xml file
     bool readRTI1516EObjectModelTemplate(const std::string& objectModel);
 
+    /// Is called past a successful join to populate the rti classes
+    bool resolveObjectModel();
+
+    /// Access data types
+    const HLADataType* getDataType(const std::string& name) const;
+    // virtual const HLADataType* createDataType(const std::string& name);
+    bool insertDataType(const std::string& name, const SGSharedPtr<HLADataType>& dataType);
+    void recomputeDataTypeAlignment();
+
+    /// Get the interaction class of a given name
+    HLAInteractionClass* getInteractionClass(const std::string& name);
+    const HLAInteractionClass* getInteractionClass(const std::string& name) const;
+    /// Default create function. Creates a default interaction class
+    virtual HLAInteractionClass* createInteractionClass(const std::string& name);
+
     /// Get the object class of a given name
     HLAObjectClass* getObjectClass(const std::string& name);
     const HLAObjectClass* getObjectClass(const std::string& name) const;
     /// Default create function. Creates a default object class
     virtual HLAObjectClass* createObjectClass(const std::string& name);
 
-    /// Get the interaction class of a given name
-    HLAInteractionClass* getInteractionClass(const std::string& name);
-    const HLAInteractionClass* getInteractionClass(const std::string& name) const;
+    /// Get the object instance of a given name
+    HLAObjectInstance* getObjectInstance(const std::string& name);
+    const HLAObjectInstance* getObjectInstance(const std::string& name) const;
+    virtual HLAObjectInstance* createObjectInstance(HLAObjectClass* objectClass, const std::string& name);
 
     /// Tells the main exec loop to continue or not.
     void setDone(bool done);
     bool getDone() const;
 
+    /// The user overridable slot that is called to set up an object model
+    /// By default, depending on the set up rti version, the apropriate
+    ///  bool read{RTI13,RTI1516,RTI1516E}ObjectModelTemplate(const std::string& objectModel);
+    /// method is called.
+    /// Note that the RTI13 files do not contain any information about the data types.
+    /// A user needs to set up the data types and assign them to the object classes/
+    /// interaction classes theirselves.
+    /// Past reading the object model, it is still possible to change the subscription/publication
+    /// types without introducing traffic on the backend rti.
     virtual bool readObjectModel();
 
     virtual bool subscribe();
@@ -221,6 +246,16 @@ public:
 private:
     HLAFederate(const HLAFederate&);
     HLAFederate& operator=(const HLAFederate&);
+
+    void _clearRTI();
+
+    /// Internal helpers for interaction classes
+    bool _insertInteractionClass(const SGSharedPtr<HLAInteractionClass>& interactionClass);
+    /// Internal helpers for object classes
+    bool _insertObjectClass(const SGSharedPtr<HLAObjectClass>& objectClass);
+    /// Internal helpers for object instances
+    bool _insertObjectInstance(const SGSharedPtr<HLAObjectInstance>& objectInstance);
+    void _eraseObjectInstance(const std::string& name);
 
     /// The underlying interface to the rti implementation
     SGSharedPtr<RTIFederate> _rtiFederate;
@@ -256,14 +291,27 @@ private:
     /// If true the exec method returns.
     bool _done;
 
-    typedef std::map<std::string, SGSharedPtr<HLAObjectClass> > ObjectClassMap;
-    ObjectClassMap _objectClassMap;
+    /// The Data Types by name
+    typedef std::map<std::string, SGSharedPtr<HLADataType> > DataTypeMap;
+    DataTypeMap _dataTypeMap;
 
+    /// The Interaction Classes by name
     typedef std::map<std::string, SGSharedPtr<HLAInteractionClass> > InteractionClassMap;
     InteractionClassMap _interactionClassMap;
 
+    /// The Object Classes by name
+    typedef std::map<std::string, SGSharedPtr<HLAObjectClass> > ObjectClassMap;
+    ObjectClassMap _objectClassMap;
+
+    /// The Object Instances by name
+    typedef std::map<std::string, SGSharedPtr<HLAObjectInstance> > ObjectInstanceMap;
+    ObjectInstanceMap _objectInstanceMap;
+    /// The Object Instances by name, the ones that have an explicit given name, may be not yet registered
+    // ObjectInstanceMap _explicitNamedObjectInstanceMap;
+
     friend class HLAInteractionClass;
     friend class HLAObjectClass;
+    friend class HLAObjectInstance;
 };
 
 } // namespace simgear

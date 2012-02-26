@@ -71,10 +71,21 @@ public:
     { _rtiAmbassador.publishObjectClass(handle, attributeHandleSet); }
     void unpublishObjectClass(const RTI::ObjectClassHandle& handle)
     { _rtiAmbassador.unpublishObjectClass(handle); }
+
+    void publishInteractionClass(const RTI::InteractionClassHandle& handle)
+    { _rtiAmbassador.publishInteractionClass(handle); }
+    void unpublishInteractionClass(const RTI::InteractionClassHandle& handle)
+    { _rtiAmbassador.unpublishInteractionClass(handle); }
+
     void subscribeObjectClassAttributes(const RTI::ObjectClassHandle& handle, const RTI::AttributeHandleSet& attributeHandleSet, bool active)
     { _rtiAmbassador.subscribeObjectClassAttributes(handle, attributeHandleSet, active ? RTI::RTI_TRUE : RTI::RTI_FALSE); }
     void unsubscribeObjectClass(const RTI::ObjectClassHandle& handle)
     { _rtiAmbassador.unsubscribeObjectClass(handle); }
+
+    void subscribeInteractionClass(const RTI::InteractionClassHandle& handle, bool active)
+    { _rtiAmbassador.subscribeInteractionClass(handle, active ? RTI::RTI_TRUE : RTI::RTI_FALSE); }
+    void unsubscribeInteractionClass(const RTI::InteractionClassHandle& handle)
+    { _rtiAmbassador.unsubscribeInteractionClass(handle); }
 
     RTI::ObjectHandle registerObjectInstance(const RTI::ObjectClassHandle& handle)
     { return _rtiAmbassador.registerObjectInstance(handle); }
@@ -264,20 +275,8 @@ public:
     //     }
     //     return false;
     // }
-    // bool isAttributeOwnedByFederate(const RTIHandle& objectHandle, const RTIHandle& attributeHandle)
-    // {
-    //     try {
-    //         return _rtiAmbassador.isAttributeOwnedByFederate(objectHandle, attributeHandle);
-    //     } catch (RTI::ObjectNotKnown& e) {
-    //     } catch (RTI::AttributeNotDefined& e) {
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::SaveInProgress& e) {
-    //     } catch (RTI::RestoreInProgress& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return false;
-    // }
+    bool isAttributeOwnedByFederate(const RTI::ObjectHandle& objectHandle, const RTI::AttributeHandle& attributeHandle)
+    { return _rtiAmbassador.isAttributeOwnedByFederate(objectHandle, attributeHandle); }
 
     /// Time Management
 
@@ -347,55 +346,15 @@ public:
     std::string getAttributeName(const RTI::AttributeHandle& attributeHandle, const RTI::ObjectClassHandle& objectClassHandle)
     { return rtiToStdString(_rtiAmbassador.getAttributeName(attributeHandle, objectClassHandle)); }
 
-    // RTIHandle getInteractionClassHandle(const std::string& name)
-    // {
-    //     try {
-    //         return _rtiAmbassador.getInteractionClassHandle(name.c_str());
-    //     } catch (RTI::NameNotFound& e) {
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return RTIHandle(-1);
-    // }
-    // std::string getInteractionClassName(const RTIHandle& handle)
-    // {
-    //     std::string name;
-    //     try {
-    //         rtiToStdString(name, _rtiAmbassador.getInteractionClassName(handle));
-    //     } catch (RTI::InteractionClassNotDefined& e) {
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return name;
-    // }
+    RTI::InteractionClassHandle getInteractionClassHandle(const std::string& name)
+    { return _rtiAmbassador.getInteractionClassHandle(name.c_str()); }
+    std::string getInteractionClassName(const RTI::InteractionClassHandle& handle)
+    { return rtiToStdString(_rtiAmbassador.getInteractionClassName(handle)); }
 
-    // RTIHandle getParameterHandle(const std::string& parameterName, const RTIHandle& interactionClassHandle)
-    // {
-    //     try {
-    //         return _rtiAmbassador.getParameterHandle(parameterName.c_str(), interactionClassHandle);
-    //     } catch (RTI::InteractionClassNotDefined& e) {
-    //     } catch (RTI::NameNotFound& e) {
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return RTIHandle(-1);
-    // }
-    // std::string getParameterName(const RTIHandle& parameterHandle, const RTIHandle& interactionClassHandle)
-    // {
-    //     std::string parameterName;
-    //     try {
-    //         rtiToStdString(parameterName, _rtiAmbassador.getParameterName(parameterHandle, interactionClassHandle));
-    //     } catch (RTI::InteractionClassNotDefined& e) {
-    //     } catch (RTI::InteractionParameterNotDefined& e) {
-    //     } catch (RTI::FederateNotExecutionMember& e) {
-    //     } catch (RTI::ConcurrentAccessAttempted& e) {
-    //     } catch (RTI::RTIinternalError& e) {
-    //     }
-    //     return parameterName;
-    // }
+    RTI::ParameterHandle getParameterHandle(const std::string& parameterName, const RTI::InteractionClassHandle& interactionClassHandle)
+    { return _rtiAmbassador.getParameterHandle(parameterName.c_str(), interactionClassHandle); }
+    std::string getParameterName(const RTI::ParameterHandle& parameterHandle, const RTI::InteractionClassHandle& interactionClassHandle)
+    { return rtiToStdString(_rtiAmbassador.getParameterName(parameterHandle, interactionClassHandle)); }
 
     RTI::ObjectHandle getObjectInstanceHandle(const std::string& name)
     { return _rtiAmbassador.getObjectInstanceHandle(name.c_str()); }

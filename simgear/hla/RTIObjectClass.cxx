@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -17,12 +17,13 @@
 
 #include "RTIObjectClass.hxx"
 
+#include "simgear/debug/logstream.hxx"
 #include "RTIObjectInstance.hxx"
 
 namespace simgear {
 
-RTIObjectClass::RTIObjectClass(HLAObjectClass* hlaObjectClass) :
-    _hlaObjectClass(hlaObjectClass)
+RTIObjectClass::RTIObjectClass(HLAObjectClass* objectClass) :
+    _objectClass(objectClass)
 {
 }
 
@@ -33,35 +34,31 @@ RTIObjectClass::~RTIObjectClass()
 void
 RTIObjectClass::discoverInstance(RTIObjectInstance* objectInstance, const RTIData& tag) const
 {
-    SGSharedPtr<HLAObjectClass> hlaObjectClass = _hlaObjectClass.lock();
-    if (!hlaObjectClass.valid()) {
+    if (!_objectClass) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Invalid hla object class pointer in RTIObjectClass::discoverInstance().");
         return;
     }
-    hlaObjectClass->discoverInstance(objectInstance, tag);
-    objectInstance->requestObjectAttributeValueUpdate();
+    _objectClass->_discoverInstance(objectInstance, tag);
 }
 
 void
 RTIObjectClass::startRegistration() const
 {
-    SGSharedPtr<HLAObjectClass> hlaObjectClass = _hlaObjectClass.lock();
-    if (!hlaObjectClass.valid()) {
+    if (!_objectClass) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Invalid hla object class pointer in RTIObjectClass::startRegstration().");
         return;
     }
-    hlaObjectClass->startRegistrationCallback();
+    _objectClass->_startRegistration();
 }
 
 void
 RTIObjectClass::stopRegistration() const
 {
-    SGSharedPtr<HLAObjectClass> hlaObjectClass = _hlaObjectClass.lock();
-    if (!hlaObjectClass.valid()) {
+    if (!_objectClass) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Invalid hla object class pointer in RTIObjectClass::stopRegistration().");
         return;
     }
-    hlaObjectClass->stopRegistrationCallback();
+    _objectClass->_stopRegistration();
 }
 
 }

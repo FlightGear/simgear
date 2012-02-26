@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -174,6 +174,15 @@ HLAEnumeratedDataType::setRepresentation(HLABasicDataType* representation)
     RepresentationVisitor representationVisitor;
     representation->accept(representationVisitor);
     _map.swap(representationVisitor._map);
+}
+
+void
+HLAEnumeratedDataType::_recomputeAlignmentImplementation()
+{
+    unsigned alignment = 1;
+    if (const HLADataType* dataType = getRepresentation())
+        alignment = std::max(alignment, dataType->getAlignment());
+    setAlignment(alignment);
 }
 
 } // namespace simgear

@@ -25,8 +25,11 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/xml/easyxml.hxx>
 #include "HLADataType.hxx"
+#include "HLATypes.hxx"
 
 namespace simgear {
+
+class HLAFederate;
 
 class HLAOMTXmlVisitor : public XMLVisitor {
 public:
@@ -37,12 +40,44 @@ public:
         { }
         const std::string& getName() const
         { return _name; }
+        const std::string& getDataType() const
+        { return _dataType; }
+        const std::string& getSharing() const
+        { return _sharing; }
         const std::string& getDimensions() const
         { return _dimensions; }
         const std::string& getTransportation() const
         { return _transportation; }
         const std::string& getOrder() const
         { return _order; }
+
+        HLASubscriptionType getSubscriptionType() const
+        {
+            if (_sharing.find("Subscribe") != std::string::npos)
+                return HLASubscribedActive;
+            else
+                return HLAUnsubscribed;
+        }
+
+        HLAPublicationType getPublicationType() const
+        {
+            if (_sharing.find("Publish") != std::string::npos)
+                return HLAPublished;
+            else
+                return HLAUnpublished;
+        }
+
+        HLAUpdateType getUpdateType() const
+        {
+            if (_updateType == "Periodic")
+                return HLAPeriodicUpdate;
+            else if (_updateType == "Static")
+                return HLAStaticUpdate;
+            else if (_updateType == "Conditional")
+                return HLAConditionalUpdate;
+            else
+                return HLAUndefinedUpdate;
+        }
 
         std::string _name;
         std::string _dataType;
@@ -66,7 +101,6 @@ public:
 
         unsigned getNumAttributes() const;
         const Attribute* getAttribute(unsigned index) const;
-        const Attribute* getAttribute(const std::string& name) const;
 
         const ObjectClass* getParentObjectClass() const;
 
@@ -101,12 +135,28 @@ public:
 
         const std::string& getName() const;
         const std::string& getDimensions() const;
+        const std::string& getSharing() const;
         const std::string& getTransportation() const;
         const std::string& getOrder() const;
 
+        HLASubscriptionType getSubscriptionType() const
+        {
+            if (_sharing.find("Subscribe") != std::string::npos)
+                return HLASubscribedActive;
+            else
+                return HLAUnsubscribed;
+        }
+
+        HLAPublicationType getPublicationType() const
+        {
+            if (_sharing.find("Publish") != std::string::npos)
+                return HLAPublished;
+            else
+                return HLAUnpublished;
+        }
+
         unsigned getNumParameters() const;
         const Parameter* getParameter(unsigned index) const;
-        const Parameter* getParameter(const std::string& name) const;
 
         const InteractionClass* getParentInteractionClass() const;
 
@@ -114,6 +164,7 @@ public:
         friend class HLAOMTXmlVisitor;
         std::string _name;
         std::string _dimensions;
+        std::string _sharing;
         std::string _transportation;
         std::string _order;
         ParameterList _parameters;
@@ -124,36 +175,23 @@ public:
     HLAOMTXmlVisitor();
     ~HLAOMTXmlVisitor();
 
+    void setDataTypesToFederate(HLAFederate& federate);
+    void setToFederate(HLAFederate& federate);
+
     unsigned getNumObjectClasses() const;
     const ObjectClass* getObjectClass(unsigned i) const;
-    const ObjectClass* getObjectClass(const std::string& name) const;
-
-    /// Return the data type from the fom data
-    const Attribute* getAttribute(const std::string& objectClassName, const std::string& attributeName) const;
-    /// Return the data type from the fom data
-    HLADataType* getAttributeDataType(const std::string& objectClassName, const std::string& attributeName) const;
 
     unsigned getNumInteractionClasses() const;
     const InteractionClass* getInteractionClass(unsigned i) const;
-    const InteractionClass* getInteractionClass(const std::string& name) const;
-
-    /// Return the data type from the fom data
-    const Parameter* getParameter(const std::string& interactionClassName, const std::string& parameterName) const;
-
-    /// Return the data type from the fom data
-    HLADataType* getParameterDataType(const std::string& interactionClassName, const std::string& parameterName) const;
-
-    HLADataType* getDataType(const std::string& dataTypeName) const;
 
 private:
-    typedef std::map<std::string, SGSharedPtr<HLADataType> > StringDataTypeMap;
-    SGSharedPtr<HLADataType> getDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
-    SGSharedPtr<HLABasicDataType> getBasicDataType(const std::string& dataTypeName) const;
-    SGSharedPtr<HLADataType> getSimpleDataType(const std::string& dataTypeName) const;
-    SGSharedPtr<HLAEnumeratedDataType> getEnumeratedDataType(const std::string& dataTypeName) const;
-    SGSharedPtr<HLADataType> getArrayDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
-    SGSharedPtr<HLAFixedRecordDataType> getFixedRecordDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
-    SGSharedPtr<HLAVariantRecordDataType> getVariantRecordDataType(const std::string& dataTypeName, StringDataTypeMap& dataTypeMap) const;
+    SGSharedPtr<HLADataType> getDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLABasicDataType> getBasicDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLADataType> getSimpleDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLAEnumeratedDataType> getEnumeratedDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLADataType> getArrayDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLAFixedRecordDataType> getFixedRecordDataType(const std::string& dataTypeName);
+    SGSharedPtr<HLAVariantRecordDataType> getVariantRecordDataType(const std::string& dataTypeName);
 
     enum Mode {
         UnknownMode,
@@ -195,8 +233,8 @@ private:
     virtual void startElement(const char* name, const XMLAttributes& atts);
     virtual void endElement(const char* name);
 
-    std::string getAttribute(const char* name, const XMLAttributes& atts);
-    std::string getAttribute(const std::string& name, const XMLAttributes& atts);
+    static std::string getAttribute(const char* name, const XMLAttributes& atts);
+    static std::string getAttribute(const std::string& name, const XMLAttributes& atts);
 
     struct BasicData {
         // std::string _name;
@@ -275,6 +313,9 @@ private:
     /// The total list of interaction classes
     InteractionClassList _interactionClassList;
     InteractionClassList _interactionClassStack;
+
+    typedef std::map<std::string, SGSharedPtr<HLADataType> > StringDataTypeMap;
+    StringDataTypeMap _dataTypeMap;
 
     /// DataType definitions
     BasicDataMap _basicDataMap;

@@ -37,6 +37,8 @@ public:
 
     virtual const HLAVariantRecordDataType* toVariantRecordDataType() const;
 
+    virtual void releaseDataTypeReferences();
+    
     virtual bool decode(HLADecodeStream& stream, HLAAbstractVariantRecordDataElement& value) const;
     virtual bool encode(HLAEncodeStream& stream, const HLAAbstractVariantRecordDataElement& value) const;
 
@@ -83,6 +85,9 @@ public:
     }
     std::string getAlternativeSemantics(const std::string& enumerator) const
     { return getAlternativeSemantics(getAlternativeIndex(enumerator)); }
+
+protected:
+    virtual void _recomputeAlignmentImplementation();
 
 private:
     SGSharedPtr<HLAEnumeratedDataType> _enumeratedDataType;

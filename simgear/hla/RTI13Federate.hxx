@@ -25,6 +25,7 @@
 #include <RTI.hh>
 
 #include "RTIFederate.hxx"
+#include "RTI13InteractionClass.hxx"
 #include "RTI13ObjectClass.hxx"
 #include "RTI13ObjectInstance.hxx"
 
@@ -78,6 +79,7 @@ public:
     virtual bool processMessages(const double& minimum, const double& maximum);
 
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
+    virtual RTI13InteractionClass* createInteractionClass(const std::string& name, HLAInteractionClass* interactionClass);
 
     virtual RTI13ObjectInstance* getObjectInstance(const std::string& name);
     void insertObjectInstance(RTI13ObjectInstance* objectInstance);

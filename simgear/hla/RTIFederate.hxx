@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -20,6 +20,7 @@
 
 #include <string>
 #include "simgear/structure/SGWeakReferenced.hxx"
+#include "RTIInteractionClass.hxx"
 #include "RTIObjectClass.hxx"
 #include "RTIObjectInstance.hxx"
 
@@ -79,7 +80,7 @@ public:
     virtual bool processMessages(const double& minimum, const double& maximum) = 0;
 
     virtual RTIObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass) = 0;
-    // virtual RTIInteractionClass* createInteractionClass(const std::string& name) = 0;
+    virtual RTIInteractionClass* createInteractionClass(const std::string& name, HLAInteractionClass* interactionClass) = 0;
 
     virtual RTIObjectInstance* getObjectInstance(const std::string& name) = 0;
 

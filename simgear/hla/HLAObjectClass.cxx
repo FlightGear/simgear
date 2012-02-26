@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -17,6 +17,7 @@
 
 #include "HLAObjectClass.hxx"
 
+#include "simgear/debug/logstream.hxx"
 #include "RTIFederate.hxx"
 #include "RTIObjectClass.hxx"
 #include "RTIObjectInstance.hxx"
@@ -54,87 +55,127 @@ HLAObjectClass::RegistrationCallback::~RegistrationCallback()
 {
 }
 
-HLAObjectClass::HLAObjectClass(const std::string& name, HLAFederate& federate) :
+HLAObjectClass::HLAObjectClass(const std::string& name, HLAFederate* federate) :
+    _federate(federate),
     _name(name)
 {
-    _rtiObjectClass = federate._rtiFederate->createObjectClass(name, this);
-    if (!_rtiObjectClass.valid())
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::HLAObjectClass(): No RTIObjectClass found for \"" << name << "\"!");
+    if (!federate) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass::HLAObjectClass(): "
+               "No parent federate given for object class \"" << getName() << "\"!");
+        return;
+    }
+    federate->_insertObjectClass(this);
 }
 
 HLAObjectClass::~HLAObjectClass()
 {
+    // HLAObjectClass objects only get deleted when the parent federate
+    // dies. So we do not need to deregister there.
+
+    _clearRTIObjectClass();
+}
+
+const std::string&
+HLAObjectClass::getName() const
+{
+    return _name;
 }
 
 unsigned
 HLAObjectClass::getNumAttributes() const
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::getAttributeIndex(): No RTIObject class for object class \"" << getName() << "\"!");
-        return 0;
-    }
-    return _rtiObjectClass->getNumAttributes();
+    return _attributeVector.size();
+}
+
+unsigned
+HLAObjectClass::addAttribute(const std::string& name)
+{
+    unsigned index = _attributeVector.size();
+    _nameIndexMap[name] = index;
+    _attributeVector.push_back(Attribute(name));
+    _resolveAttributeIndex(name, index);
+    return index;
 }
 
 unsigned
 HLAObjectClass::getAttributeIndex(const std::string& name) const
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::getAttributeIndex(): No RTIObject class for object class \"" << getName() << "\"!");
+    NameIndexMap::const_iterator i = _nameIndexMap.find(name);
+    if (i == _nameIndexMap.end())
         return ~0u;
-    }
-    return _rtiObjectClass->getOrCreateAttributeIndex(name);
+    return i->second;
 }
 
 std::string
 HLAObjectClass::getAttributeName(unsigned index) const
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::getAttributeIndex(): No RTIObject class for object class \"" << getName() << "\"!");
-        return 0;
-    }
-    return _rtiObjectClass->getAttributeName(index);
+    if (_attributeVector.size() <= index)
+        return std::string();
+    return _attributeVector[index]._name;
 }
 
 const HLADataType*
 HLAObjectClass::getAttributeDataType(unsigned index) const
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::getAttributeDataType(): No RTIObject class for object class \"" << getName() << "\"!");
+    if (_attributeVector.size() <= index)
         return 0;
-    }
-    return _rtiObjectClass->getAttributeDataType(index);
+    return _attributeVector[index]._dataType.get();
 }
 
 void
 HLAObjectClass::setAttributeDataType(unsigned index, const HLADataType* dataType)
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::setAttributeDataType(): No RTIObject class for object class \"" << getName() << "\"!");
+    if (_attributeVector.size() <= index)
         return;
-    }
-    _rtiObjectClass->setAttributeDataType(index, dataType);
+    _attributeVector[index]._dataType = dataType;
 }
 
 HLAUpdateType
 HLAObjectClass::getAttributeUpdateType(unsigned index) const
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::getAttributeUpdateType(): No RTIObject class for object class \"" << getName() << "\"!");
+    if (_attributeVector.size() <= index)
         return HLAUndefinedUpdate;
-    }
-    return _rtiObjectClass->getAttributeUpdateType(index);
+    return _attributeVector[index]._updateType;
 }
 
 void
 HLAObjectClass::setAttributeUpdateType(unsigned index, HLAUpdateType updateType)
 {
-    if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::setAttributeUpdateType(): "
-               "No RTIObject class for object class \"" << getName() << "\"!");
+    if (_attributeVector.size() <= index)
         return;
-    }
-    _rtiObjectClass->setAttributeUpdateType(index, updateType);
+    _attributeVector[index]._updateType = updateType;
+}
+
+HLASubscriptionType
+HLAObjectClass::getAttributeSubscriptionType(unsigned index) const
+{
+    if (_attributeVector.size() <= index)
+        return HLAUnsubscribed;
+    return _attributeVector[index]._subscriptionType;
+}
+
+void
+HLAObjectClass::setAttributeSubscriptionType(unsigned index, HLASubscriptionType subscriptionType)
+{
+    if (_attributeVector.size() <= index)
+        return;
+    _attributeVector[index]._subscriptionType = subscriptionType;
+}
+
+HLAPublicationType
+HLAObjectClass::getAttributePublicationType(unsigned index) const
+{
+    if (_attributeVector.size() <= index)
+        return HLAUnpublished;
+    return _attributeVector[index]._publicationType;
+}
+
+void
+HLAObjectClass::setAttributePublicationType(unsigned index, HLAPublicationType publicationType)
+{
+    if (_attributeVector.size() <= index)
+        return;
+    _attributeVector[index]._publicationType = publicationType;
 }
 
 HLADataElement::IndexPathPair
@@ -157,40 +198,77 @@ HLAObjectClass::getIndexPathPair(const std::string& path) const
 }
 
 bool
-HLAObjectClass::subscribe(const std::set<unsigned>& indexSet, bool active)
+HLAObjectClass::subscribe()
 {
     if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::subscribe(): No RTIObject class for object class \"" << getName() << "\"!");
+        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::subscribe(): "
+               "No RTIObject class for object class \"" << getName() << "\"!");
         return false;
     }
-    return _rtiObjectClass->subscribe(indexSet, active);
+
+    HLAIndexList indexList;
+    for (unsigned i = 1; i < getNumAttributes(); ++i) {
+        if (_attributeVector[i]._subscriptionType != HLASubscribedActive)
+            continue;
+        indexList.push_back(i);
+    }
+    if (!indexList.empty()) {
+        if (!_rtiObjectClass->subscribe(indexList, true))
+            return false;
+    }
+
+    indexList.clear();
+    for (unsigned i = 1; i < getNumAttributes(); ++i) {
+        if (_attributeVector[i]._subscriptionType != HLASubscribedPassive)
+            continue;
+        indexList.push_back(i);
+    }
+    if (!indexList.empty()) {
+        if (!_rtiObjectClass->subscribe(indexList, false))
+            return false;
+    }
+    return true;
 }
 
 bool
 HLAObjectClass::unsubscribe()
 {
     if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::unsubscribe(): No RTIObject class for object class \"" << getName() << "\"!");
+        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::unsubscribe(): "
+               "No RTIObject class for object class \"" << getName() << "\"!");
         return false;
     }
     return _rtiObjectClass->unsubscribe();
 }
 
 bool
-HLAObjectClass::publish(const std::set<unsigned>& indexSet)
+HLAObjectClass::publish()
 {
     if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::publish(): No RTIObject class for object class \"" << getName() << "\"!");
+        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::publish(): "
+               "No RTIObject class for object class \"" << getName() << "\"!");
         return false;
     }
-    return _rtiObjectClass->publish(indexSet);
+
+    HLAIndexList indexList;
+    for (unsigned i = 1; i < getNumAttributes(); ++i) {
+        if (_attributeVector[i]._publicationType == HLAUnpublished)
+            continue;
+        indexList.push_back(i);
+    }
+    if (indexList.empty())
+        return true;
+    if (!_rtiObjectClass->publish(indexList))
+        return false;
+    return true;
 }
 
 bool
 HLAObjectClass::unpublish()
 {
     if (!_rtiObjectClass.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::unpublish(): No RTIObject class for object class \"" << getName() << "\"!");
+        SG_LOG(SG_NETWORK, SG_WARN, "HLAObjectClass::unpublish(): "
+               "No RTIObject class for object class \"" << getName() << "\"!");
         return false;
     }
     return _rtiObjectClass->unpublish();
@@ -207,82 +285,135 @@ HLAObjectClass::stopRegistration() const
 }
 
 HLAObjectInstance*
-HLAObjectClass::createObjectInstance(RTIObjectInstance* rtiObjectInstance)
+HLAObjectClass::createObjectInstance(const std::string& name)
 {
-    return new HLAObjectInstance(this, rtiObjectInstance);
+    HLAObjectInstance* objectInstance = createObjectInstance();
+    if (objectInstance)
+        return objectInstance;
+    SGSharedPtr<HLAFederate> federate = _federate.lock();
+    if (!federate.valid())
+        return 0;
+    return federate->createObjectInstance(this, name);
+}
+
+HLAObjectInstance*
+HLAObjectClass::createObjectInstance()
+{
+    return 0;
 }
 
 void
-HLAObjectClass::discoverInstance(RTIObjectInstance* objectInstance, const RTIData& tag)
+HLAObjectClass::_setRTIObjectClass(RTIObjectClass* objectClass)
 {
-    SGSharedPtr<HLAObjectInstance> hlaObjectInstance = createObjectInstance(objectInstance);
-    if (hlaObjectInstance.valid()) {
-        SG_LOG(SG_NETWORK, SG_INFO, "RTI: create new object instance for discovered \""
-               << hlaObjectInstance->getName() << "\" object");
-        _objectInstanceSet.insert(hlaObjectInstance);
-        discoverInstanceCallback(*hlaObjectInstance, tag);
-    } else {
-        SG_LOG(SG_NETWORK, SG_INFO, "RTI: local delete of \"" << objectInstance->getName() << "\"");
-        objectInstance->localDeleteObjectInstance();
+    if (_rtiObjectClass) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: Setting RTIObjectClass twice for object class \"" << getName() << "\"!");
+        return;
     }
-}
-
-void
-HLAObjectClass::removeInstance(HLAObjectInstance& hlaObjectInstance, const RTIData& tag)
-{
-    SG_LOG(SG_NETWORK, SG_INFO, "RTI: remove object instance \"" << hlaObjectInstance.getName() << "\"");
-    removeInstanceCallback(hlaObjectInstance, tag);
-    _objectInstanceSet.erase(&hlaObjectInstance);
-}
-
-void
-HLAObjectClass::registerInstance(HLAObjectInstance& objectInstance)
-{
-    _objectInstanceSet.insert(&objectInstance);
-    registerInstanceCallback(objectInstance);
-}
-
-void
-HLAObjectClass::deleteInstance(HLAObjectInstance& objectInstance)
-{
-    deleteInstanceCallback(objectInstance);
-    _objectInstanceSet.erase(&objectInstance);
-}
-
-void
-HLAObjectClass::discoverInstanceCallback(HLAObjectInstance& objectInstance, const RTIData& tag) const
-{
-    if (!_instanceCallback.valid())
+    _rtiObjectClass = objectClass;
+    if (_rtiObjectClass->_objectClass != this) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: backward reference does not match!");
         return;
-    _instanceCallback->discoverInstance(*this, objectInstance, tag);
+    }
+    for (unsigned i = 0; i < _attributeVector.size(); ++i)
+        _resolveAttributeIndex(_attributeVector[i]._name, i);
 }
 
 void
-HLAObjectClass::removeInstanceCallback(HLAObjectInstance& objectInstance, const RTIData& tag) const
+HLAObjectClass::_resolveAttributeIndex(const std::string& name, unsigned index)
 {
-    if (!_instanceCallback.valid())
+    if (!_rtiObjectClass)
         return;
-    _instanceCallback->removeInstance(*this, objectInstance, tag);
+    if (!_rtiObjectClass->resolveAttributeIndex(name, index))
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: Could not resolve attribute \""
+               << name << "\" for object class \"" << getName() << "\"!");
 }
 
 void
-HLAObjectClass::registerInstanceCallback(HLAObjectInstance& objectInstance) const
+HLAObjectClass::_clearRTIObjectClass()
 {
-    if (!_instanceCallback.valid())
+    if (!_rtiObjectClass.valid())
         return;
-    _instanceCallback->registerInstance(*this, objectInstance);
+    _rtiObjectClass->_objectClass = 0;
+    _rtiObjectClass = 0;
 }
 
 void
-HLAObjectClass::deleteInstanceCallback(HLAObjectInstance& objectInstance) const
+HLAObjectClass::_discoverInstance(RTIObjectInstance* rtiObjectInstance, const RTIData& tag)
 {
-    if (!_instanceCallback.valid())
+    SGSharedPtr<HLAFederate> federate = _federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not find parent federate while discovering object instance");
         return;
-    _instanceCallback->deleteInstance(*this, objectInstance);
+    }
+
+    SGSharedPtr<HLAObjectInstance> objectInstance = createObjectInstance(rtiObjectInstance->getName());
+    if (!objectInstance.valid()) {
+        SG_LOG(SG_NETWORK, SG_INFO, "RTI: could not create new object instance for discovered \""
+               << rtiObjectInstance->getName() << "\" object");
+        return;
+    }
+    SG_LOG(SG_NETWORK, SG_INFO, "RTI: create new object instance for discovered \""
+           << rtiObjectInstance->getName() << "\" object");
+    objectInstance->_setRTIObjectInstance(rtiObjectInstance);
+    if (!federate->_insertObjectInstance(objectInstance)) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not insert new object instance for discovered \""
+               << rtiObjectInstance->getName() << "\" object");
+        return;
+    }
+    if (_instanceCallback.valid())
+        _instanceCallback->discoverInstance(*this, *objectInstance, tag);
 }
 
 void
-HLAObjectClass::startRegistrationCallback()
+HLAObjectClass::_removeInstance(HLAObjectInstance& objectInstance, const RTIData& tag)
+{
+    SGSharedPtr<HLAFederate> federate = _federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not find parent federate while removing object instance");
+        return;
+    }
+    SG_LOG(SG_NETWORK, SG_INFO, "RTI: remove object instance \"" << objectInstance.getName() << "\"");
+    if (_instanceCallback.valid())
+        _instanceCallback->removeInstance(*this, objectInstance, tag);
+    federate->_eraseObjectInstance(objectInstance.getName());
+}
+
+void
+HLAObjectClass::_registerInstance(HLAObjectInstance* objectInstance)
+{
+    SGSharedPtr<HLAFederate> federate = _federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not find parent federate while registering object instance");
+        return;
+    }
+    if (!objectInstance)
+        return;
+    // We can only register object instances with a valid name at the rti.
+    // So, we cannot do that at HLAObjectInstance creation time.
+    if (!federate->_insertObjectInstance(objectInstance)) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not insert new object instance \""
+               << objectInstance->getName() << "\" object");
+        return;
+    }
+    if (_instanceCallback.valid())
+        _instanceCallback->registerInstance(*this, *objectInstance);
+}
+
+void
+HLAObjectClass::_deleteInstance(HLAObjectInstance& objectInstance)
+{
+    SGSharedPtr<HLAFederate> federate = _federate.lock();
+    if (!federate.valid()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not find parent federate while deleting object instance");
+        return;
+    }
+    if (_instanceCallback.valid())
+        _instanceCallback->deleteInstance(*this, objectInstance);
+    federate->_eraseObjectInstance(objectInstance.getName());
+}
+
+void
+HLAObjectClass::_startRegistration()
 {
     if (_registrationCallback.valid())
         _registrationCallback->startRegistration(*this);
@@ -291,7 +422,7 @@ HLAObjectClass::startRegistrationCallback()
 }
 
 void
-HLAObjectClass::stopRegistrationCallback()
+HLAObjectClass::_stopRegistration()
 {
     if (_registrationCallback.valid())
         _registrationCallback->stopRegistration(*this);

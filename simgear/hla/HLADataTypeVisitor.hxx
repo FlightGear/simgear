@@ -38,16 +38,6 @@ public:
     virtual void apply(const HLADataType& dataType)
     { }
 
-    virtual void apply(const HLADataTypeReference& dataType)
-    {
-        SGSharedPtr<const HLADataType> dataTypeReference = dataType.getDataType();
-        if (!dataTypeReference.valid()) {
-            SG_LOG(SG_NETWORK, SG_WARN, "HLADataTypeReference weak reference vanished!");
-            return;
-        }
-        dataTypeReference->accept(*this);
-    }
-
     virtual void apply(const HLABasicDataType& dataType)
     { apply(static_cast<const HLADataType&>(dataType)); }
     virtual void apply(const HLAInt8DataType& dataType)

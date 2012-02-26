@@ -222,7 +222,7 @@ struct RTI13Federate::FederateAmbassador : public RTI::FederateAmbassador {
             return;
         if (!i->second.valid())
             return;
-        SGSharedPtr<RTI13ObjectInstance> objectInstance = new RTI13ObjectInstance(objectHandle, 0, i->second, _rtiAmbassador.get(), false);
+        SGSharedPtr<RTI13ObjectInstance> objectInstance = new RTI13ObjectInstance(objectHandle, 0, i->second, _rtiAmbassador.get());
         _objectInstanceMap[objectHandle] = objectInstance;
         i->second->discoverInstance(objectInstance.get(), tag);
     }
@@ -278,7 +278,7 @@ struct RTI13Federate::FederateAmbassador : public RTI::FederateAmbassador {
             return;
         if (!i->second.valid())
             return;
-        i->second->reflectAttributeValues(attributeHandleDataPairList, timeStamp, tag);
+        i->second->reflectAttributeValues(attributeHandleDataPairList, timeStamp, tag, _indexPool);
     }
 
     class ReflectAttributeValuesCallback : public TagQueueCallback {
@@ -327,7 +327,7 @@ struct RTI13Federate::FederateAmbassador : public RTI::FederateAmbassador {
             return;
         if (!i->second.valid())
             return;
-        i->second->reflectAttributeValues(attributeHandleDataPairList, tag);
+        i->second->reflectAttributeValues(attributeHandleDataPairList, tag, _indexPool);
     }
 
     virtual void receiveInteraction(RTI::InteractionClassHandle interactionClassHandle, const RTI::ParameterHandleValuePairSet& parameters,
@@ -855,6 +855,9 @@ struct RTI13Federate::FederateAmbassador : public RTI::FederateAmbassador {
     void freeAttributeHandleDataPairList(RTI13AttributeHandleDataPairList& attributeHandleDataPairList)
     { _attributeHandleDataPairPool.splice(_attributeHandleDataPairPool.end(), attributeHandleDataPairList); }
 
+    // For attribute reflection, pool or indices
+    HLAIndexList _indexPool;
+
     // Top level information for dispatching federate object attribute updates
     typedef std::map<RTI::ObjectHandle, SGSharedPtr<RTI13ObjectInstance> > ObjectInstanceMap;
     // Map of all available objects
@@ -863,6 +866,10 @@ struct RTI13Federate::FederateAmbassador : public RTI::FederateAmbassador {
     // Top level information for dispatching creation of federate objects
     typedef std::map<RTI::ObjectClassHandle, SGSharedPtr<RTI13ObjectClass> > ObjectClassMap;
     ObjectClassMap _objectClassMap;
+
+    // Top level information for dispatching creation of federate objects
+    typedef std::map<RTI::InteractionClassHandle, SGSharedPtr<RTI13InteractionClass> > InteractionClassMap;
+    InteractionClassMap _interactionClassMap;
 
     bool _timeRegulationEnabled;
     bool _timeConstrainedEnabled;
@@ -1598,6 +1605,35 @@ RTI13Federate::createObjectClass(const std::string& objectClassName, HLAObjectCl
         return 0;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get object class: " << e._name << " " << e._reason);
+        return 0;
+    }
+}
+
+RTI13InteractionClass*
+RTI13Federate::createInteractionClass(const std::string& interactionClassName, HLAInteractionClass* interactionClass)
+{
+    try {
+        RTI::InteractionClassHandle interactionClassHandle;
+        interactionClassHandle = _ambassador->getInteractionClassHandle(interactionClassName);
+        if (_federateAmbassador->_interactionClassMap.find(interactionClassHandle) != _federateAmbassador->_interactionClassMap.end()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not create interaction class, interaction class already exists!");
+            return 0;
+        }
+        RTI13InteractionClass* rtiInteractionClass;
+        rtiInteractionClass = new RTI13InteractionClass(interactionClass, interactionClassHandle, _ambassador.get());
+        _federateAmbassador->_interactionClassMap[interactionClassHandle] = rtiInteractionClass;
+        return rtiInteractionClass;
+    } catch (RTI::NameNotFound& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get interaction class: " << e._name << " " << e._reason);
+        return 0;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get interaction class: " << e._name << " " << e._reason);
+        return 0;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get interaction class: " << e._name << " " << e._reason);
+        return 0;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not get interaction class: " << e._name << " " << e._reason);
         return 0;
     }
 }

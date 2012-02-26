@@ -18,6 +18,8 @@
 #ifndef HLATypes_hxx
 #define HLATypes_hxx
 
+#include <list>
+
 namespace simgear {
 
 enum HLASubscriptionType {
@@ -37,6 +39,8 @@ enum HLAUpdateType {
     HLAConditionalUpdate,
     HLAUndefinedUpdate
 };
+
+typedef std::list<unsigned> HLAIndexList;
 
 } // namespace simgear
 

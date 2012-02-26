@@ -42,7 +42,7 @@ typedef std::list<RTI13AttributeHandleDataPair> RTI13AttributeHandleDataPairList
 
 class RTI13ObjectInstance : public RTIObjectInstance {
 public:
-    RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* hlaObjectInstance, const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador, bool owned);
+    RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* hlaObjectInstance, const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador);
     virtual ~RTI13ObjectInstance();
 
     const RTI::ObjectHandle& getHandle() const
@@ -55,8 +55,6 @@ public:
 
     unsigned getNumAttributes() const
     { return get13ObjectClass()->getNumAttributes(); }
-    unsigned getAttributeIndex(const std::string& name) const
-    { return get13ObjectClass()->getAttributeIndex(name); }
     unsigned getAttributeIndex(const RTI::AttributeHandle& handle) const
     { return get13ObjectClass()->getAttributeIndex(handle); }
     RTI::AttributeHandle getAttributeHandle(unsigned index) const
@@ -68,13 +66,17 @@ public:
     virtual void deleteObjectInstance(const SGTimeStamp& timeStamp, const RTIData& tag);
     virtual void localDeleteObjectInstance();
 
-    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList, const RTIData& tag);
-    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList, const SGTimeStamp& timeStamp, const RTIData& tag);
-    virtual void requestObjectAttributeValueUpdate();
+    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                const RTIData& tag, HLAIndexList& indexPool);
+    void reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                const SGTimeStamp& timeStamp, const RTIData& tag, HLAIndexList& indexPool);
+    virtual void requestObjectAttributeValueUpdate(const HLAIndexList& indexList);
     void provideAttributeValueUpdate(const std::vector<RTI::AttributeHandle>& attributes);
 
     virtual void updateAttributeValues(const RTIData& tag);
     virtual void updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag);
+
+    virtual bool isAttributeOwnedByFederate(unsigned index) const;
 
     void attributesInScope(const std::vector<RTI::AttributeHandle>& attributes);
     void attributesOutOfScope(const std::vector<RTI::AttributeHandle>& attributes);

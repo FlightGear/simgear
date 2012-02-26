@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2010  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,6 +36,8 @@ public:
 
     virtual const HLAFixedRecordDataType* toFixedRecordDataType() const;
 
+    virtual void releaseDataTypeReferences();
+
     virtual bool decode(HLADecodeStream& stream, HLAAbstractFixedRecordDataElement& value) const;
     virtual bool encode(HLAEncodeStream& stream, const HLAAbstractFixedRecordDataElement& value) const;
 
@@ -67,6 +69,9 @@ public:
 
     void addField(const std::string& name, const HLADataType* dataType);
 
+protected:
+    virtual void _recomputeAlignmentImplementation();
+
 private:
     struct Field {
         Field(const std::string& name, const HLADataType* dataType) :
@@ -76,6 +81,8 @@ private:
 
         const HLADataType* getDataType() const
         { return _dataType.get(); }
+        void releaseDataTypeReferences()
+        { _dataType = 0; }
 
     private:
         std::string _name;

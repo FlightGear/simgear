@@ -1,4 +1,4 @@
-// Copyright (C) 2009 - 2011  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2009 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -35,6 +35,8 @@ public:
 
     virtual const HLAArrayDataType* toArrayDataType() const;
 
+    virtual void releaseDataTypeReferences();
+
     virtual bool decode(HLADecodeStream& stream, HLAAbstractArrayDataElement& value) const = 0;
     virtual bool encode(HLAEncodeStream& stream, const HLAAbstractArrayDataElement& value) const = 0;
 
@@ -49,6 +51,9 @@ public:
     void setIsString(bool isString);
     bool getIsString() const
     { return _isString; }
+
+protected:
+    virtual void _recomputeAlignmentImplementation();
 
 private:
     SGSharedPtr<const HLADataType> _elementDataType;
@@ -85,12 +90,15 @@ public:
     virtual bool decode(HLADecodeStream& stream, HLAAbstractArrayDataElement& value) const;
     virtual bool encode(HLAEncodeStream& stream, const HLAAbstractArrayDataElement& value) const;
 
-    void setSizeDataType(const HLADataType* sizeDataType);
-    const HLADataType* getSizeDataType() const
+    void setSizeDataType(const HLABasicDataType* sizeDataType);
+    const HLABasicDataType* getSizeDataType() const
     { return _sizeDataType.get(); }
 
+protected:
+    virtual void _recomputeAlignmentImplementation();
+
 private:
-    SGSharedPtr<const HLADataType> _sizeDataType;
+    SGSharedPtr<const HLABasicDataType> _sizeDataType;
 };
 
 } // namespace simgear

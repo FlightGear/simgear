@@ -17,6 +17,8 @@
 
 #include "HLAFederate.hxx"
 
+#include <algorithm>
+
 #include "simgear/debug/logstream.hxx"
 
 #include "RTIFederate.hxx"
@@ -44,6 +46,13 @@ HLAFederate::HLAFederate() :
 
 HLAFederate::~HLAFederate()
 {
+    _clearRTI();
+
+    // Remove the data type references from the data types.
+    // This is to remove the cycles from the data types that might happen if a data type references itself
+    for (DataTypeMap::iterator i = _dataTypeMap.begin(); i != _dataTypeMap.end(); ++i) {
+        i->second->releaseDataTypeReferences();
+    }
 }
 
 HLAFederate::Version
@@ -206,7 +215,8 @@ HLAFederate::disconnect()
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    _rtiFederate = 0;
+
+    _clearRTI();
     return true;
 }
 
@@ -739,11 +749,6 @@ bool
 HLAFederate::readObjectModelTemplate(const std::string& objectModel,
                                      HLAFederate::ObjectModelFactory& objectModelFactory)
 {
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return false;
-    }
-
     // The XML version of the federate object model.
     // This one covers the generic attributes, parameters and data types.
     HLAOMTXmlVisitor omtXmlVisitor;
@@ -757,6 +762,8 @@ HLAFederate::readObjectModelTemplate(const std::string& objectModel,
         SG_LOG(SG_IO, SG_ALERT, "Could not open HLA XML object model file");
         return false;
     }
+
+    omtXmlVisitor.setDataTypesToFederate(*this);
 
     unsigned numObjectClasses = omtXmlVisitor.getNumObjectClasses();
     for (unsigned i = 0; i < numObjectClasses; ++i) {
@@ -772,54 +779,41 @@ HLAFederate::readObjectModelTemplate(const std::string& objectModel,
         bool publish = objectModelFactory.publishObjectClass(objectClassName, objectClass->getSharing());
         bool subscribe = objectModelFactory.subscribeObjectClass(objectClassName, objectClass->getSharing());
 
-        std::set<unsigned> subscriptions;
-        std::set<unsigned> publications;
-
         // process the attributes
         for (unsigned j = 0; j < objectClass->getNumAttributes(); ++j) {
             const simgear::HLAOMTXmlVisitor::Attribute* attribute;
             attribute = objectClass->getAttribute(j);
 
             std::string attributeName = attribute->getName();
-            unsigned index = hlaObjectClass->getAttributeIndex(attributeName);
+            unsigned index = hlaObjectClass->addAttribute(attributeName);
 
             if (index == ~0u) {
                 SG_LOG(SG_IO, SG_WARN, "RTI does not know the \"" << attributeName << "\" attribute!");
                 continue;
             }
 
-            SGSharedPtr<HLADataType> dataType;
-            dataType = omtXmlVisitor.getAttributeDataType(objectClassName, attributeName);
+            // the attributes datatype
+            SGSharedPtr<const HLADataType> dataType = getDataType(attribute->getDataType());
             if (!dataType.valid()) {
                 SG_LOG(SG_IO, SG_WARN, "Could not find data type for attribute \""
                        << attributeName << "\" in object class \"" << objectClassName << "\"!");
             }
             hlaObjectClass->setAttributeDataType(index, dataType);
-
-            HLAUpdateType updateType = HLAUndefinedUpdate;
-            if (attribute->_updateType == "Periodic")
-                updateType = HLAPeriodicUpdate;
-            else if (attribute->_updateType == "Static")
-                updateType = HLAStaticUpdate;
-            else if (attribute->_updateType == "Conditional")
-                updateType = HLAConditionalUpdate;
-            hlaObjectClass->setAttributeUpdateType(index, updateType);
-
+            hlaObjectClass->setAttributeUpdateType(index, attribute->getUpdateType());
             if (subscribe && objectModelFactory.subscribeAttribute(objectClassName, attributeName, attribute->_sharing))
-                subscriptions.insert(index);
+                hlaObjectClass->setAttributeSubscriptionType(index, attribute->getSubscriptionType());
             if (publish && objectModelFactory.publishAttribute(objectClassName, attributeName, attribute->_sharing))
-                publications.insert(index);
+                hlaObjectClass->setAttributePublicationType(index, attribute->getPublicationType());
         }
 
         if (publish)
-            hlaObjectClass->publish(publications);
+            hlaObjectClass->publish();
         if (subscribe)
-            hlaObjectClass->subscribe(subscriptions, true);
+            hlaObjectClass->subscribe();
 
-        _objectClassMap[objectClassName] = hlaObjectClass;
     }
 
-    return true;
+    return resolveObjectModel();
 }
 
 bool
@@ -832,8 +826,23 @@ HLAFederate::readRTI13ObjectModelTemplate(const std::string& objectModel)
 bool
 HLAFederate::readRTI1516ObjectModelTemplate(const std::string& objectModel)
 {
-    ObjectModelFactory objectModelFactory;
-    return readObjectModelTemplate(objectModel, objectModelFactory);
+    // The XML version of the federate object model.
+    // This one covers the generic attributes, parameters and data types.
+    HLAOMTXmlVisitor omtXmlVisitor;
+    try {
+        readXML(objectModel, omtXmlVisitor);
+    } catch (const sg_throwable& e) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not open HLA XML object model file: "
+               << e.getMessage());
+        return false;
+    } catch (...) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not open HLA XML object model file");
+        return false;
+    }
+
+    omtXmlVisitor.setToFederate(*this);
+
+    return resolveObjectModel();
 }
 
 bool
@@ -841,6 +850,98 @@ HLAFederate::readRTI1516EObjectModelTemplate(const std::string& objectModel)
 {
     SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
     return false;
+}
+
+bool
+HLAFederate::resolveObjectModel()
+{
+    if (!_rtiFederate.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
+        return false;
+    }
+
+    for (InteractionClassMap::iterator i = _interactionClassMap.begin(); i != _interactionClassMap.end(); ++i) {
+        RTIInteractionClass* rtiInteractionClass = _rtiFederate->createInteractionClass(i->second->getName(), i->second.get());
+        if (!rtiInteractionClass) {
+            SG_LOG(SG_NETWORK, SG_ALERT, "HLAFederate::_insertInteractionClass(): "
+                   "No RTIInteractionClass found for \"" << i->second->getName() << "\"!");
+            return false;
+        }
+        i->second->_setRTIInteractionClass(rtiInteractionClass);
+    }
+
+    for (ObjectClassMap::iterator i = _objectClassMap.begin(); i != _objectClassMap.end(); ++i) {
+        RTIObjectClass* rtiObjectClass = _rtiFederate->createObjectClass(i->second->getName(), i->second.get());
+        if (!rtiObjectClass) {
+            SG_LOG(SG_NETWORK, SG_ALERT, "HLAFederate::_insertObjectClass(): "
+                   "No RTIObjectClass found for \"" << i->second->getName() << "\"!");
+            return false;
+        }
+        i->second->_setRTIObjectClass(rtiObjectClass);
+    }
+
+    return true;
+}
+
+const HLADataType*
+HLAFederate::getDataType(const std::string& name) const
+{
+    DataTypeMap::const_iterator i = _dataTypeMap.find(name);
+    if (i == _dataTypeMap.end())
+        return 0;
+    return i->second.get();
+}
+
+bool
+HLAFederate::insertDataType(const std::string& name, const SGSharedPtr<HLADataType>& dataType)
+{
+    if (!dataType.valid())
+        return false;
+    if (_dataTypeMap.find(name) != _dataTypeMap.end()) {
+        SG_LOG(SG_IO, SG_ALERT, "HLAFederate::insertDataType: data type with name \""
+               << name << "\" already known to federate!");
+        return false;
+    }
+    _dataTypeMap.insert(DataTypeMap::value_type(name, dataType));
+    return true;
+}
+
+void
+HLAFederate::recomputeDataTypeAlignment()
+{
+    // Finish alignment computations
+    bool changed;
+    do {
+        changed = false;
+        for (DataTypeMap::iterator i = _dataTypeMap.begin(); i != _dataTypeMap.end(); ++i) {
+            if (i->second->recomputeAlignment())
+                changed = true;
+        }
+    } while (changed);
+}
+
+HLAInteractionClass*
+HLAFederate::getInteractionClass(const std::string& name)
+{
+    InteractionClassMap::const_iterator i = _interactionClassMap.find(name);
+    if (i == _interactionClassMap.end())
+        return 0;
+    return i->second.get();
+}
+
+const HLAInteractionClass*
+HLAFederate::getInteractionClass(const std::string& name) const
+{
+    InteractionClassMap::const_iterator i = _interactionClassMap.find(name);
+    if (i == _interactionClassMap.end())
+        return 0;
+    return i->second.get();
+}
+
+HLAInteractionClass*
+HLAFederate::createInteractionClass(const std::string& name)
+{
+    return new HLAInteractionClass(name, this);
 }
 
 HLAObjectClass*
@@ -864,25 +965,31 @@ HLAFederate::getObjectClass(const std::string& name) const
 HLAObjectClass*
 HLAFederate::createObjectClass(const std::string& name)
 {
-    return new HLAObjectClass(name, *this);
+    return new HLAObjectClass(name, this);
 }
 
-HLAInteractionClass*
-HLAFederate::getInteractionClass(const std::string& name)
+HLAObjectInstance*
+HLAFederate::getObjectInstance(const std::string& name)
 {
-    InteractionClassMap::const_iterator i = _interactionClassMap.find(name);
-    if (i == _interactionClassMap.end())
+    ObjectInstanceMap::const_iterator i = _objectInstanceMap.find(name);
+    if (i == _objectInstanceMap.end())
         return 0;
     return i->second.get();
 }
 
-const HLAInteractionClass*
-HLAFederate::getInteractionClass(const std::string& name) const
+const HLAObjectInstance*
+HLAFederate::getObjectInstance(const std::string& name) const
 {
-    InteractionClassMap::const_iterator i = _interactionClassMap.find(name);
-    if (i == _interactionClassMap.end())
+    ObjectInstanceMap::const_iterator i = _objectInstanceMap.find(name);
+    if (i == _objectInstanceMap.end())
         return 0;
     return i->second.get();
+}
+
+HLAObjectInstance*
+HLAFederate::createObjectInstance(HLAObjectClass* objectClass, const std::string& name)
+{
+    return new HLAObjectInstance(objectClass);
 }
 
 void
@@ -900,30 +1007,62 @@ HLAFederate::getDone() const
 bool
 HLAFederate::readObjectModel()
 {
-    /// Currently empty, but is called at the right time so that
-    /// the object model is present when it is needed
-    // switch (getVersion()) {
-    // case RTI13:
-    //     return readRTI13ObjectModelTemplate(getFederationObjectModel());
-    // case RTI1516:
-    //     return readRTI1516ObjectModelTemplate(getFederationObjectModel());
-    // case RTI1516E:
-    //     return readRTI1516EObjectModelTemplate(getFederationObjectModel());
-    // }
-    return true;
+    // Depending on the actual version, try to find an apropriate
+    // file format for the given file. The first one is always the
+    // version native object model file format.
+    switch (getVersion()) {
+    case RTI13:
+        if (readRTI13ObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        if (readRTI1516ObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        return readRTI1516EObjectModelTemplate(getFederationObjectModel());
+    case RTI1516:
+        if (readRTI1516ObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        if (readRTI1516EObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        return readRTI13ObjectModelTemplate(getFederationObjectModel());
+    case RTI1516E:
+        if (readRTI1516EObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        if (readRTI1516ObjectModelTemplate(getFederationObjectModel()))
+            return true;
+        return readRTI13ObjectModelTemplate(getFederationObjectModel());
+    default:
+        return false;
+    }
 }
 
 bool
 HLAFederate::subscribe()
 {
-    /// Currently empty, but is called at the right time
+    for (InteractionClassMap::iterator i = _interactionClassMap.begin(); i != _interactionClassMap.end(); ++i) {
+        if (!i->second->subscribe())
+            return false;
+    }
+
+    for (ObjectClassMap::iterator i = _objectClassMap.begin(); i != _objectClassMap.end(); ++i) {
+        if (!i->second->subscribe())
+            return false;
+    }
+
     return true;
 }
 
 bool
 HLAFederate::publish()
 {
-    /// Currently empty, but is called at the right time
+    for (InteractionClassMap::iterator i = _interactionClassMap.begin(); i != _interactionClassMap.end(); ++i) {
+        if (!i->second->publish())
+            return false;
+    }
+
+    for (ObjectClassMap::iterator i = _objectClassMap.begin(); i != _objectClassMap.end(); ++i) {
+        if (!i->second->publish())
+            return false;
+    }
+
     return true;
 }
 
@@ -1033,6 +1172,77 @@ HLAFederate::exec()
         return false;
     
     return true;
+}
+
+void
+HLAFederate::_clearRTI()
+{
+    for (InteractionClassMap::iterator i = _interactionClassMap.begin(); i != _interactionClassMap.end(); ++i)
+        i->second->_clearRTIInteractionClass();
+    for (ObjectInstanceMap::iterator i = _objectInstanceMap.begin(); i != _objectInstanceMap.end(); ++i)
+        i->second->_clearRTIObjectInstance();
+    for (ObjectClassMap::iterator i = _objectClassMap.begin(); i != _objectClassMap.end(); ++i)
+        i->second->_clearRTIObjectClass();
+
+    _rtiFederate = 0;
+}
+
+bool
+HLAFederate::_insertInteractionClass(const SGSharedPtr<HLAInteractionClass>& interactionClass)
+{
+    if (!interactionClass.valid())
+        return false;
+    if (_interactionClassMap.find(interactionClass->getName()) != _interactionClassMap.end()) {
+        SG_LOG(SG_IO, SG_ALERT, "HLA: _insertInteractionClass: object instance with name \""
+               << interactionClass->getName() << "\" already known to federate!");
+        return false;
+    }
+    _interactionClassMap.insert(InteractionClassMap::value_type(interactionClass->getName(), interactionClass));
+    return true;
+}
+
+bool
+HLAFederate::_insertObjectClass(const SGSharedPtr<HLAObjectClass>& objectClass)
+{
+    if (!objectClass.valid())
+        return false;
+    if (_objectClassMap.find(objectClass->getName()) != _objectClassMap.end()) {
+        SG_LOG(SG_IO, SG_ALERT, "HLA: _insertObjectClass: object instance with name \""
+               << objectClass->getName() << "\" already known to federate!");
+        return false;
+    }
+    _objectClassMap.insert(ObjectClassMap::value_type(objectClass->getName(), objectClass));
+    return true;
+}
+
+bool
+HLAFederate::_insertObjectInstance(const SGSharedPtr<HLAObjectInstance>& objectInstance)
+{
+    if (!objectInstance.valid())
+        return false;
+    if (objectInstance->getName().empty()) {
+        SG_LOG(SG_IO, SG_ALERT, "HLA: _insertObjectInstance: trying to insert object instance with empty name!");
+        return false;
+    }
+    if (_objectInstanceMap.find(objectInstance->getName()) != _objectInstanceMap.end()) {
+        SG_LOG(SG_IO, SG_WARN, "HLA: _insertObjectInstance: object instance with name \""
+               << objectInstance->getName() << "\" already known to federate!");
+        return false;
+    }
+    _objectInstanceMap.insert(ObjectInstanceMap::value_type(objectInstance->getName(), objectInstance));
+    return true;
+}
+
+void
+HLAFederate::_eraseObjectInstance(const std::string& name)
+{
+    ObjectInstanceMap::iterator i = _objectInstanceMap.find(name);
+    if (i == _objectInstanceMap.end()) {
+        SG_LOG(SG_IO, SG_WARN, "HLA: _eraseObjectInstance: object instance with name \""
+               << name << "\" not known to federate!");
+        return;
+    }
+    _objectInstanceMap.erase(i);
 }
 
 } // namespace simgear

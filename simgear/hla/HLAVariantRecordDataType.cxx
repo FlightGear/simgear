@@ -43,6 +43,13 @@ HLAVariantRecordDataType::toVariantRecordDataType() const
     return this;
 }
 
+void
+HLAVariantRecordDataType::releaseDataTypeReferences()
+{
+    for (AlternativeList::iterator i = _alternativeList.begin(); i != _alternativeList.end(); ++i)
+        i->_dataType = 0;
+}
+
 bool
 HLAVariantRecordDataType::decode(HLADecodeStream& stream, HLAAbstractVariantRecordDataElement& value) const
 {
@@ -94,8 +101,20 @@ HLAVariantRecordDataType::addAlternative(const std::string& name, const std::str
     _alternativeList[index]._name = name;
     _alternativeList[index]._dataType = dataType;
     _alternativeList[index]._semantics = semantics;
-    setAlignment(SGMisc<unsigned>::max(getAlignment(), dataType->getAlignment()));
     return true;
+}
+
+void
+HLAVariantRecordDataType::_recomputeAlignmentImplementation()
+{
+    unsigned alignment = 1;
+    if (const HLADataType* dataType = getEnumeratedDataType())
+        alignment = std::max(alignment, dataType->getAlignment());
+    for (unsigned i = 0; i < getNumAlternatives(); ++i) {
+        if (const HLADataType* dataType = getAlternativeDataType(i))
+            alignment = std::max(alignment, dataType->getAlignment());
+    }
+    setAlignment(alignment);
 }
 
 } // namespace simgear

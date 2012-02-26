@@ -22,8 +22,7 @@
 namespace simgear {
 
 RTIObjectInstance::RTIObjectInstance(HLAObjectInstance* hlaObjectInstance) :
-    _hlaObjectInstance(hlaObjectInstance),
-    _pendingAttributeUpdateRequest(false)
+    _objectInstance(hlaObjectInstance)
 {
 }
 
@@ -37,54 +36,29 @@ RTIObjectInstance::getNumAttributes() const
     return getObjectClass()->getNumAttributes();
 }
 
-unsigned
-RTIObjectInstance::getAttributeIndex(const std::string& name) const
-{
-    return getObjectClass()->getAttributeIndex(name);
-}
-
-std::string
-RTIObjectInstance::getAttributeName(unsigned index) const
-{
-    return getObjectClass()->getAttributeName(index);
-}
-
 void
 RTIObjectInstance::removeInstance(const RTIData& tag)
 {
-    SGSharedPtr<HLAObjectInstance> hlaObjectInstance =  _hlaObjectInstance.lock();
-    if (!hlaObjectInstance.valid())
+    if (!_objectInstance)
         return;
-    hlaObjectInstance->removeInstance(tag);
+    _objectInstance->_removeInstance(tag);
 }
 
 void
-RTIObjectInstance::reflectAttributeValues(const RTIIndexDataPairList& dataPairList, const RTIData& tag)
+RTIObjectInstance::reflectAttributeValues(const HLAIndexList& indexList, const RTIData& tag)
 {
-    for (RTIIndexDataPairList::const_iterator i = dataPairList.begin();
-         i != dataPairList.end(); ++i) {
-        reflectAttributeValue(i->first, i->second);
-    }
-
-    SGSharedPtr<HLAObjectInstance> hlaObjectInstance =  _hlaObjectInstance.lock();
-    if (!hlaObjectInstance.valid())
+    if (!_objectInstance)
         return;
-    hlaObjectInstance->reflectAttributeValues(dataPairList, tag);
+    _objectInstance->_reflectAttributeValues(indexList, tag);
 }
 
 void
-RTIObjectInstance::reflectAttributeValues(const RTIIndexDataPairList& dataPairList,
+RTIObjectInstance::reflectAttributeValues(const HLAIndexList& indexList,
                                           const SGTimeStamp& timeStamp, const RTIData& tag)
 {
-    for (RTIIndexDataPairList::const_iterator i = dataPairList.begin();
-         i != dataPairList.end(); ++i) {
-        reflectAttributeValue(i->first, i->second);
-    }
-
-    SGSharedPtr<HLAObjectInstance> hlaObjectInstance =  _hlaObjectInstance.lock();
-    if (!hlaObjectInstance.valid())
+    if (!_objectInstance)
         return;
-    hlaObjectInstance->reflectAttributeValues(dataPairList, timeStamp, tag);
+    _objectInstance->_reflectAttributeValues(indexList, timeStamp, tag);
 }
 
 }

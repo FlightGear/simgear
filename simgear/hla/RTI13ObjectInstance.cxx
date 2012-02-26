@@ -20,15 +20,15 @@
 
 namespace simgear {
 
-RTI13ObjectInstance::RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* hlaObjectInstance,
-                                         const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador, bool owned) :
-    RTIObjectInstance(hlaObjectInstance),
+RTI13ObjectInstance::RTI13ObjectInstance(const RTI::ObjectHandle& handle, HLAObjectInstance* objectInstance,
+                                         const RTI13ObjectClass* objectClass, RTI13Ambassador* ambassador) :
+    RTIObjectInstance(objectInstance),
     _handle(handle),
     _objectClass(objectClass),
     _ambassador(ambassador),
     _attributeValuePairSet(RTI::AttributeSetFactory::create(objectClass->getNumAttributes()))
 {
-    updateAttributesFromClass(owned);
+    _setNumAttributes(getNumAttributes());
 }
 
 RTI13ObjectInstance::~RTI13ObjectInstance()
@@ -177,81 +177,79 @@ RTI13ObjectInstance::localDeleteObjectInstance()
 }
 
 void
-RTI13ObjectInstance::reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList, const RTIData& tag)
+RTI13ObjectInstance::reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
+                                            const RTIData& tag, HLAIndexList& indexPool)
 {
-    // Retrieve an empty update struct from the memory pool
-    RTIIndexDataPairList indexDataPairList;
+    HLAIndexList reflectedIndices;
     for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
          i != attributeHandleDataPairList.end(); ++i) {
         unsigned index = getAttributeIndex(i->first);
-        // Get a RTIData from the data pool
-        getDataFromPool(indexDataPairList);
-        indexDataPairList.back().first = index;
-        indexDataPairList.back().second.swap(i->second);
+        _attributeData[index]._data.swap(i->second);
+
+        if (indexPool.empty())
+            reflectedIndices.push_back(index);
+        else {
+            reflectedIndices.splice(reflectedIndices.end(), indexPool, indexPool.begin());
+            reflectedIndices.back() = index;
+        }
     }
 
-    RTIObjectInstance::reflectAttributeValues(indexDataPairList, tag);
+    RTIObjectInstance::reflectAttributeValues(reflectedIndices, tag);
 
-    RTIIndexDataPairList::iterator j = indexDataPairList.begin();
-    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
-         i != attributeHandleDataPairList.end(); ++i, ++j) {
-        i->second.swap(j->second);
-    }
-
-    // Return the update data back to the pool
-    putDataToPool(indexDataPairList);
+    // Return the index list to the pool
+    indexPool.splice(indexPool.end(), reflectedIndices);
 }
 
 void
 RTI13ObjectInstance::reflectAttributeValues(RTI13AttributeHandleDataPairList& attributeHandleDataPairList,
-                                            const SGTimeStamp& timeStamp, const RTIData& tag)
+                                            const SGTimeStamp& timeStamp, const RTIData& tag, HLAIndexList& indexPool)
 {
-    // Retrieve an empty update struct from the memory pool
-    RTIIndexDataPairList indexDataPairList;
+    HLAIndexList reflectedIndices;
     for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
          i != attributeHandleDataPairList.end(); ++i) {
         unsigned index = getAttributeIndex(i->first);
-        // Get a RTIData from the data pool
-        getDataFromPool(indexDataPairList);
-        indexDataPairList.back().first = index;
-        indexDataPairList.back().second.swap(i->second);
+        _attributeData[index]._data.swap(i->second);
+
+        if (indexPool.empty())
+            reflectedIndices.push_back(index);
+        else {
+            reflectedIndices.splice(reflectedIndices.end(), indexPool, indexPool.begin());
+            reflectedIndices.back() = index;
+        }
     }
 
-    RTIObjectInstance::reflectAttributeValues(indexDataPairList, timeStamp, tag);
+    RTIObjectInstance::reflectAttributeValues(reflectedIndices, timeStamp, tag);
 
-    RTIIndexDataPairList::iterator j = indexDataPairList.begin();
-    for (RTI13AttributeHandleDataPairList::iterator i = attributeHandleDataPairList.begin();
-         i != attributeHandleDataPairList.end(); ++i, ++j) {
-        i->second.swap(j->second);
-    }
-
-    // Return the update data back to the pool
-    putDataToPool(indexDataPairList);
+    // Return the index list to the pool
+    indexPool.splice(indexPool.end(), reflectedIndices);
 }
 
 void
-RTI13ObjectInstance::requestObjectAttributeValueUpdate()
+RTI13ObjectInstance::requestObjectAttributeValueUpdate(const HLAIndexList& indexList)
 {
     if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
         return;
     }
 
+    if (indexList.empty())
+        return;
+
     try {
         unsigned numAttributes = getNumAttributes();
         std::auto_ptr<RTI::AttributeHandleSet> attributeHandleSet(RTI::AttributeHandleSetFactory::create(numAttributes));
-        for (unsigned i = 0; i < numAttributes; ++i) {
-            if (!getRequestAttributeUpdate(i))
+        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
+            if (getAttributeOwned(*i)) {
+                SG_LOG(SG_NETWORK, SG_WARN, "RTI13ObjectInstance::requestObjectAttributeValueUpdate(): "
+                       "Invalid attribute index!");
                 continue;
-            attributeHandleSet->add(getAttributeHandle(i));
+            }
+            attributeHandleSet->add(getAttributeHandle(*i));
         }
         if (!attributeHandleSet->size())
             return;
 
         _ambassador->requestObjectAttributeValueUpdate(_handle, *attributeHandleSet);
-
-        for (unsigned i = 0; i < numAttributes; ++i)
-            setRequestAttributeUpdate(i, false);
 
         return;
     } catch (RTI::ObjectNotKnown& e) {
@@ -288,7 +286,7 @@ RTI13ObjectInstance::provideAttributeValueUpdate(const std::vector<RTI::Attribut
     size_t numAttribs = attributeHandleSet.size();
     for (RTI::ULong i = 0; i < numAttribs; ++i) {
         unsigned index = getAttributeIndex(attributeHandleSet[i]);
-        setAttributeForceUpdate(index);
+        _attributeData[index]._dirty = true;
     }
 }
 
@@ -306,15 +304,9 @@ RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
 
         unsigned numAttributes = getNumAttributes();
         for (unsigned i = 0; i < numAttributes; ++i) {
-            if (!getAttributeEffectiveUpdateEnabled(i))
+            if (!_attributeData[i]._dirty)
                 continue;
-            const HLADataElement* dataElement = getDataElement(i);
-            if (!dataElement)
-                continue;
-            // FIXME cache somewhere
-            RTIData data;
-            HLAEncodeStream stream(data);
-            dataElement->encode(stream);
+            const RTIData& data = _attributeData[i]._data;
             _attributeValuePairSet->add(getAttributeHandle(i), data.data(), data.size());
         }
 
@@ -324,7 +316,7 @@ RTI13ObjectInstance::updateAttributeValues(const RTIData& tag)
         _ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, tag);
 
         for (unsigned i = 0; i < numAttributes; ++i) {
-            setAttributeUpdated(i);
+            _attributeData[i]._dirty = false;
         }
 
     } catch (RTI::ObjectNotKnown& e) {
@@ -363,15 +355,9 @@ RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const R
 
         unsigned numAttributes = getNumAttributes();
         for (unsigned i = 0; i < numAttributes; ++i) {
-            if (!getAttributeEffectiveUpdateEnabled(i))
+            if (!_attributeData[i]._dirty)
                 continue;
-            const HLADataElement* dataElement = getDataElement(i);
-            if (!dataElement)
-                continue;
-            // FIXME cache somewhere
-            RTIData data;
-            HLAEncodeStream stream(data);
-            dataElement->encode(stream);
+            const RTIData& data = _attributeData[i]._data;
             _attributeValuePairSet->add(getAttributeHandle(i), data.data(), data.size());
         }
 
@@ -381,7 +367,7 @@ RTI13ObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const R
         _ambassador->updateAttributeValues(_handle, *_attributeValuePairSet, timeStamp, tag);
 
         for (unsigned i = 0; i < numAttributes; ++i) {
-            setAttributeUpdated(i);
+            _attributeData[i]._dirty = false;
         }
 
     } catch (RTI::ObjectNotKnown& e) {
@@ -447,6 +433,48 @@ RTI13ObjectInstance::turnUpdatesOffForObjectInstance(const std::vector<RTI::Attr
         setAttributeUpdateEnabled(getAttributeIndex(attributeHandle), false);
     }
 }
+
+bool
+RTI13ObjectInstance::isAttributeOwnedByFederate(unsigned index) const
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "Error: Ambassador is zero.");
+        return false;
+    }
+    try {
+        RTI::AttributeHandle attributeHandle = getAttributeHandle(index);
+        return _ambassador->isAttributeOwnedByFederate(_handle, attributeHandle);
+    } catch (RTI::ObjectNotKnown& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::AttributeNotDefined& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::FederateNotExecutionMember& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::SaveInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RestoreInProgress& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Could not query attribute ownership for index " << index << ": "
+               << e._name << " " << e._reason);
+        return false;
+    }
+    return false;
+ }
 
 void
 RTI13ObjectInstance::requestAttributeOwnershipAssumption(const std::vector<RTI::AttributeHandle>& attributes, const RTIData& tag)

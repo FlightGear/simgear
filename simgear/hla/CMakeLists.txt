@@ -40,6 +40,7 @@ set(HLA_SOURCES
     HLAEnumeratedDataElement.cxx
     HLAEnumeratedDataType.cxx
     HLAFederate.cxx
+    HLAInteractionClass.cxx
     HLAFixedRecordDataElement.cxx
     HLAFixedRecordDataType.cxx
     HLAObjectClass.cxx
@@ -54,6 +55,7 @@ simgear_component(hla hla "${HLA_SOURCES}" "${HLA_HEADERS}")
 
 if(RTI_FOUND)
   set(RTI13_SOURCES
+    RTI13InteractionClass.cxx
     RTI13ObjectClass.cxx
     RTI13ObjectInstance.cxx
     RTI13Federate.cxx
@@ -64,6 +66,7 @@ if(RTI_FOUND)
 endif()
 
 set(RTI_SOURCES
+  RTIInteractionClass.cxx
   RTIObjectClass.cxx
   RTIObjectInstance.cxx
   RTIFederate.cxx

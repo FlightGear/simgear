@@ -39,12 +39,6 @@ HLADataType::accept(HLADataTypeVisitor& visitor) const
     visitor.apply(*this);
 }
 
-const HLADataTypeReference*
-HLADataType::toDataTypeReference() const
-{
-    return 0;
-}
-
 const HLABasicDataType*
 HLADataType::toBasicDataType() const
 {
@@ -75,6 +69,19 @@ HLADataType::toVariantRecordDataType() const
     return 0;
 }
 
+bool
+HLADataType::recomputeAlignment()
+{
+    unsigned alignment = getAlignment();
+    _recomputeAlignmentImplementation();
+    return alignment != getAlignment();
+}
+
+void
+HLADataType::releaseDataTypeReferences()
+{
+}
+
 void
 HLADataType::setAlignment(unsigned alignment)
 {
@@ -85,20 +92,9 @@ HLADataType::setAlignment(unsigned alignment)
         _alignment = alignment;
 }
 
-HLADataTypeReference::~HLADataTypeReference()
-{
-}
-
 void
-HLADataTypeReference::accept(HLADataTypeVisitor& visitor) const
+HLADataType::_recomputeAlignmentImplementation()
 {
-    visitor.apply(*this);
-}
-
-const HLADataTypeReference*
-HLADataTypeReference::toDataTypeReference() const
-{
-    return this;
 }
 
 }

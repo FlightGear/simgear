@@ -15,38 +15,18 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 //
 
-#ifndef RTIInteractionClass_hxx
-#define RTIInteractionClass_hxx
-
-#include <string>
-#include "simgear/structure/SGReferenced.hxx"
+#include "RTIInteractionClass.hxx"
 
 namespace simgear {
 
-class HLAInteractionClass;
-
-class RTIInteractionClass : public SGReferenced {
-public:
-    RTIInteractionClass(HLAInteractionClass* interactionClass);
-    virtual ~RTIInteractionClass();
-
-    virtual bool resolveParameterIndex(const std::string& name, unsigned index) = 0;
-
-    virtual bool publish() = 0;
-    virtual bool unpublish() = 0;
-
-    virtual bool subscribe(bool) = 0;
-    virtual bool unsubscribe() = 0;
-
-    // virtual void send(const RTIData& tag) = 0;
-    // virtual void send(const SGTimeStamp& timeStamp, const RTIData& tag) = 0;
-
-private:
-    HLAInteractionClass* _interactionClass;
-
-    friend class HLAInteractionClass;
-};
-
+RTIInteractionClass::RTIInteractionClass(HLAInteractionClass* interactionClass) :
+    _interactionClass(interactionClass)
+{
 }
 
-#endif
+RTIInteractionClass::~RTIInteractionClass()
+{
+    _interactionClass = 0;
+}
+
+}

@@ -18,10 +18,12 @@
 #include "HLAObjectInstance.hxx"
 
 #include <algorithm>
+#include "simgear/debug/logstream.hxx"
 #include "HLAArrayDataElement.hxx"
 #include "HLABasicDataElement.hxx"
 #include "HLADataElement.hxx"
 #include "HLAEnumeratedDataElement.hxx"
+#include "HLAFederate.hxx"
 #include "HLAFixedRecordDataElement.hxx"
 #include "HLAObjectClass.hxx"
 #include "HLAVariantRecordDataElement.hxx"
@@ -30,97 +32,93 @@
 
 namespace simgear {
 
+HLAObjectInstance::UpdateCallback::~UpdateCallback()
+{
+}
+
+HLAObjectInstance::ReflectCallback::~ReflectCallback()
+{
+}
+
 HLAObjectInstance::HLAObjectInstance(HLAObjectClass* objectClass) :
+    _federate(objectClass->_federate),
     _objectClass(objectClass)
 {
 }
 
-HLAObjectInstance::HLAObjectInstance(HLAObjectClass* objectClass, RTIObjectInstance* rtiObjectInstance) :
-    _objectClass(objectClass),
-    _rtiObjectInstance(rtiObjectInstance)
-{
-    _rtiObjectInstance->_hlaObjectInstance = this;
-    _name = _rtiObjectInstance->getName();
-}
-
 HLAObjectInstance::~HLAObjectInstance()
 {
-}
-
-SGSharedPtr<HLAObjectClass>
-HLAObjectInstance::getObjectClass() const
-{
-    return _objectClass.lock();
+    _clearRTIObjectInstance();
 }
 
 unsigned
 HLAObjectInstance::getNumAttributes() const
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to get number of attributes for inactive object!");
-        return 0;
-    }
-    return _rtiObjectInstance->getNumAttributes();
+    return _objectClass->getNumAttributes();
 }
 
 unsigned
 HLAObjectInstance::getAttributeIndex(const std::string& name) const
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to get attribute index for inactive object!");
-        return 0;
-    }
-    return _rtiObjectInstance->getAttributeIndex(name);
+    return _objectClass->getAttributeIndex(name);
 }
 
 std::string
 HLAObjectInstance::getAttributeName(unsigned index) const
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to get attribute name for inactive object!");
-        return std::string();
-    }
-    return _rtiObjectInstance->getAttributeName(index);
+    return _objectClass->getAttributeName(index);
+}
+
+bool
+HLAObjectInstance::getAttributeOwned(unsigned index) const
+{
+    if (!_rtiObjectInstance.valid())
+        return false;
+    return _rtiObjectInstance->getAttributeOwned(index);
 }
 
 const HLADataType*
 HLAObjectInstance::getAttributeDataType(unsigned index) const
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to get attribute index for inactive object!");
-        return 0;
-    }
-    return _rtiObjectInstance->getAttributeDataType(index);
-}
-
-void
-HLAObjectInstance::setAttributeDataElement(unsigned index, SGSharedPtr<HLADataElement> dataElement)
-{
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to set data element for inactive object!");
-        return;
-    }
-    _rtiObjectInstance->setDataElement(index, dataElement);
+    return _objectClass->getAttributeDataType(index);
 }
 
 HLADataElement*
 HLAObjectInstance::getAttributeDataElement(unsigned index)
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to set data element for inactive object!");
+    if (_attributeVector.size() <= index)
         return 0;
-    }
-    return _rtiObjectInstance->getDataElement(index);
+    return _attributeVector[index]._dataElement.get();
 }
 
 const HLADataElement*
 HLAObjectInstance::getAttributeDataElement(unsigned index) const
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_ALERT, "Trying to set data element for inactive object!");
+    if (_attributeVector.size() <= index)
         return 0;
+    return _attributeVector[index]._dataElement.get();
+}
+
+bool
+HLAObjectInstance::getAttributeData(unsigned index, RTIData& data) const
+{
+    if (!_rtiObjectInstance.valid()) {
+        SG_LOG(SG_IO, SG_ALERT, "Trying to get raw attribute data without rti object instance for \"" << getName() << "\"!");
+        return false;
     }
-    return _rtiObjectInstance->getDataElement(index);
+    return _rtiObjectInstance->getAttributeData(index, data);
+}
+
+void
+HLAObjectInstance::setAttributeDataElement(unsigned index, const SGSharedPtr<HLADataElement>& dataElement)
+{
+    unsigned numAttributes = getNumAttributes();
+    if (numAttributes <= index)
+        return;
+    _attributeVector.resize(numAttributes);
+    _attributeVector[index]._dataElement = dataElement;
+    if (getAttributeOwned(index))
+        encodeAttributeValue(index);
 }
 
 class HLAObjectInstance::DataElementFactoryVisitor : public HLADataElementFactoryVisitor {
@@ -387,8 +385,8 @@ HLAObjectInstance::setAttribute(unsigned index, const HLAPathElementMap& pathEle
 {
     const HLADataType* dataType = getAttributeDataType(index);
     if (!dataType) {
-        SG_LOG(SG_IO, SG_ALERT, "Cannot get attribute data type for setting attribute at index "
-               << index << "!");
+        SG_LOG(SG_IO, SG_ALERT, "Cannot get attribute data type for setting attribute \""
+               << getAttributeName(index) << "\" at index " << index << "!");
         return;
     }
 
@@ -416,21 +414,19 @@ HLAObjectInstance::registerInstance()
         SG_LOG(SG_IO, SG_ALERT, "Trying to register object " << getName() << " already known to the RTI!");
         return;
     }
-    SGSharedPtr<HLAObjectClass> objectClass = _objectClass.lock();
-    if (!objectClass.valid()) {
+    if (!_objectClass.valid()) {
         SG_LOG(SG_IO, SG_ALERT, "Could not register object with unknown object class!");
         return;
     }
     // This error must have been flagged before
-    if (!objectClass->_rtiObjectClass.valid())
+    if (!_objectClass->_rtiObjectClass.valid())
         return;
-    _rtiObjectInstance = objectClass->_rtiObjectClass->registerObjectInstance(this);
+    _setRTIObjectInstance(_objectClass->_rtiObjectClass->registerObjectInstance(this));
     if (!_rtiObjectInstance.valid()) {
         SG_LOG(SG_IO, SG_ALERT, "Could not register object at the RTI!");
         return;
     }
-    _name = _rtiObjectInstance->getName();
-    objectClass->registerInstance(*this);
+    _objectClass->_registerInstance(this);
 }
 
 void
@@ -440,61 +436,214 @@ HLAObjectInstance::deleteInstance(const RTIData& tag)
         SG_LOG(SG_IO, SG_ALERT, "Trying to delete inactive object!");
         return;
     }
-    SGSharedPtr<HLAObjectClass> objectClass = _objectClass.lock();
-    if (!objectClass.valid())
+    if (!_objectClass.valid())
         return;
-    objectClass->deleteInstance(*this);
+    _objectClass->_deleteInstance(*this);
     _rtiObjectInstance->deleteObjectInstance(tag);
 }
 
 void
 HLAObjectInstance::updateAttributeValues(const RTIData& tag)
 {
-    if (!_rtiObjectInstance.valid()) {
-        SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
-        return;
-    }
     if (_attributeCallback.valid())
         _attributeCallback->updateAttributeValues(*this, tag);
-    _rtiObjectInstance->updateAttributeValues(tag);
+    if (_updateCallback.valid()) {
+        _updateCallback->updateAttributeValues(*this, tag);
+    } else {
+        encodeAttributeValues();
+        sendAttributeValues(tag);
+    }
 }
 
 void
 HLAObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag)
 {
+    if (_attributeCallback.valid())
+        _attributeCallback->updateAttributeValues(*this, tag);
+    if (_updateCallback.valid()) {
+        _updateCallback->updateAttributeValues(*this, timeStamp, tag);
+    } else {
+        encodeAttributeValues();
+        sendAttributeValues(timeStamp, tag);
+    }
+}
+
+void
+HLAObjectInstance::encodeAttributeValues()
+{
+    unsigned numAttributes = _attributeVector.size();
+    for (unsigned i = 0; i < numAttributes;++i) {
+        if (!_attributeVector[i]._unconditionalUpdate)
+            continue;
+        encodeAttributeValue(i);
+    }
+}
+
+void
+HLAObjectInstance::encodeAttributeValue(unsigned index)
+{
     if (!_rtiObjectInstance.valid()) {
         SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
         return;
     }
-    if (_attributeCallback.valid())
-        _attributeCallback->updateAttributeValues(*this, tag);
+    const HLADataElement* dataElement = getAttributeDataElement(index);
+    if (!dataElement)
+        return;
+    _rtiObjectInstance->encodeAttributeData(index, *dataElement);
+}
+
+void
+HLAObjectInstance::sendAttributeValues(const RTIData& tag)
+{
+    if (!_rtiObjectInstance.valid()) {
+        SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
+        return;
+    }
+    _rtiObjectInstance->updateAttributeValues(tag);
+}
+
+void
+HLAObjectInstance::sendAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag)
+{
+    if (!_rtiObjectInstance.valid()) {
+        SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
+        return;
+    }
     _rtiObjectInstance->updateAttributeValues(timeStamp, tag);
 }
 
 void
-HLAObjectInstance::removeInstance(const RTIData& tag)
+HLAObjectInstance::reflectAttributeValues(const HLAIndexList& indexList, const RTIData& tag)
 {
-    SGSharedPtr<HLAObjectClass> objectClass = _objectClass.lock();
-    if (!objectClass.valid())
-        return;
-    objectClass->removeInstanceCallback(*this, tag);
+    for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i)
+        reflectAttributeValue(*i, tag);
 }
 
 void
-HLAObjectInstance::reflectAttributeValues(const RTIIndexDataPairList& dataPairList, const RTIData& tag)
-{
-    if (!_attributeCallback.valid())
-        return;
-    _attributeCallback->reflectAttributeValues(*this, dataPairList, tag);
-}
-
-void
-HLAObjectInstance::reflectAttributeValues(const RTIIndexDataPairList& dataPairList,
+HLAObjectInstance::reflectAttributeValues(const HLAIndexList& indexList,
                                           const SGTimeStamp& timeStamp, const RTIData& tag)
 {
-    if (!_attributeCallback.valid())
+    for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i)
+        reflectAttributeValue(*i, timeStamp, tag);
+}
+
+void
+HLAObjectInstance::reflectAttributeValue(unsigned index, const RTIData& tag)
+{
+    HLADataElement* dataElement = getAttributeDataElement(index);
+    if (!dataElement)
         return;
-    _attributeCallback->reflectAttributeValues(*this, dataPairList, timeStamp, tag);
+    _rtiObjectInstance->decodeAttributeData(index, *dataElement);
+}
+
+void
+HLAObjectInstance::reflectAttributeValue(unsigned index, const SGTimeStamp& timeStamp, const RTIData& tag)
+{
+    HLADataElement* dataElement = getAttributeDataElement(index);
+    if (!dataElement)
+        return;
+    // dataElement->setTimeStamp(timeStamp);
+    _rtiObjectInstance->decodeAttributeData(index, *dataElement);
+}
+
+void
+HLAObjectInstance::_setRTIObjectInstance(RTIObjectInstance* rtiObjectInstance)
+{
+    _rtiObjectInstance = rtiObjectInstance;
+    _rtiObjectInstance->setObjectInstance(this);
+    _name = _rtiObjectInstance->getName();
+
+    unsigned numAttributes = getNumAttributes();
+    _attributeVector.resize(numAttributes);
+    for (unsigned i = 0; i < numAttributes; ++i) {
+        HLAUpdateType updateType = getObjectClass()->getAttributeUpdateType(i);
+        if (getAttributeOwned(i) && updateType != HLAUndefinedUpdate) {
+            _attributeVector[i]._enabledUpdate = true;
+            _attributeVector[i]._unconditionalUpdate = (updateType == HLAPeriodicUpdate);
+            // In case of an owned attribute, now encode its value
+            encodeAttributeValue(i);
+        } else {
+            _attributeVector[i]._enabledUpdate = false;
+            _attributeVector[i]._unconditionalUpdate = false;
+        }
+    }
+
+    // This makes sense with any new object. Even if we registered one, there might be unpublished attributes.
+    HLAIndexList indexList;
+    for (unsigned i = 0; i < numAttributes; ++i) {
+        HLAUpdateType updateType = getObjectClass()->getAttributeUpdateType(i);
+        if (getAttributeOwned(i))
+            continue;
+        if (updateType == HLAUndefinedUpdate)
+            continue;
+        if (updateType == HLAPeriodicUpdate)
+            continue;
+        indexList.push_back(i);
+    }
+    _rtiObjectInstance->requestObjectAttributeValueUpdate(indexList);
+}
+
+void
+HLAObjectInstance::_clearRTIObjectInstance()
+{
+    if (!_rtiObjectInstance.valid())
+        return;
+
+    for (unsigned i = 0; i < _attributeVector.size(); ++i) {
+        _attributeVector[i]._enabledUpdate = false;
+        _attributeVector[i]._unconditionalUpdate = false;
+    }
+
+    _rtiObjectInstance->setObjectInstance(0);
+    _rtiObjectInstance = 0;
+}
+
+void
+HLAObjectInstance::_removeInstance(const RTIData& tag)
+{
+    if (!_objectClass.valid())
+        return;
+    _objectClass->_removeInstance(*this, tag);
+}
+
+void
+HLAObjectInstance::_reflectAttributeValues(const HLAIndexList& indexList, const RTIData& tag)
+{
+    if (_reflectCallback.valid()) {
+        _reflectCallback->reflectAttributeValues(*this, indexList, tag);
+    } else if (_attributeCallback.valid()) {
+        reflectAttributeValues(indexList, tag);
+
+        RTIIndexDataPairList dataPairList;
+        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
+            dataPairList.push_back(RTIIndexDataPair());
+            dataPairList.back().first = *i;
+            getAttributeData(*i, dataPairList.back().second);
+        }
+        _attributeCallback->reflectAttributeValues(*this, dataPairList, tag);
+    } else {
+        reflectAttributeValues(indexList, tag);
+    }
+}
+
+void
+HLAObjectInstance::_reflectAttributeValues(const HLAIndexList& indexList, const SGTimeStamp& timeStamp, const RTIData& tag)
+{
+    if (_reflectCallback.valid()) {
+        _reflectCallback->reflectAttributeValues(*this, indexList, timeStamp, tag);
+    } else if (_attributeCallback.valid()) {
+        reflectAttributeValues(indexList, timeStamp, tag);
+
+        RTIIndexDataPairList dataPairList;
+        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
+            dataPairList.push_back(RTIIndexDataPair());
+            dataPairList.back().first = *i;
+            getAttributeData(*i, dataPairList.back().second);
+        }
+        _attributeCallback->reflectAttributeValues(*this, dataPairList, timeStamp, tag);
+    } else {
+        reflectAttributeValues(indexList, timeStamp, tag);
+    }
 }
 
 } // namespace simgear

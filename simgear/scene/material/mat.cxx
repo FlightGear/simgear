@@ -128,14 +128,6 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tname = "unknown.rgb";
     }
     
-    if ((tname.rfind(".dds") == (tname.length() - 4)) ||
-        (tname.rfind(".DDS") == (tname.length() - 4))   ) 
-    {
-      dds.push_back(true);
-    } else {
-      dds.push_back(false);      
-    }  
-    
     SGPath tpath("Textures.high");
     tpath.append(tname);
     string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
@@ -144,6 +136,12 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       tpath.append(tname);
       fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
     }
+    
+    if (tpath.lower_extension() == "dds") {
+      dds.push_back(true);
+    } else {
+      dds.push_back(false);      
+    }  
     
     if (!fullTexPath.empty() ) {
       _internal_state st( NULL, fullTexPath, false, options );
@@ -162,17 +160,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       if (tname.empty()) {
           tname = "unknown.rgb";
       }
-      
-      if (j == 0) {
-        if ((tname.rfind(".dds") == (tname.length() - 4)) ||
-            (tname.rfind(".DDS") == (tname.length() - 4))   )
-        {
-          dds.push_back(true);
-        } else {
-          dds.push_back(false);      
-        }  
-      }
-  
+
       SGPath tpath("Textures.high");
       tpath.append(tname);
       string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
@@ -180,6 +168,14 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tpath = SGPath("Textures");
         tpath.append(tname);
         fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
+      }
+      
+      if (j == 0) {
+        if (tpath.lower_extension() == "dds") {
+          dds.push_back(true);
+        } else {
+          dds.push_back(false);      
+        }  
       }
       
       st.add_texture(fullTexPath, textures[j]->getIndex());
@@ -219,8 +215,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
       {
         osg::Texture2D* object_mask = new osg::Texture2D;
         
-        bool dds_mask = ((omname.rfind(".dds") == (omname.length() - 4)) ||
-                         (omname.rfind(".DDS") == (omname.length() - 4))   );
+        bool dds_mask = (ompath.lower_extension() == "dds");
         
         if (dds[i] != dds_mask) {
           // Texture format does not match mask format. This is relevant for 

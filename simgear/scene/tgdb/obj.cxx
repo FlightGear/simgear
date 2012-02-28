@@ -672,7 +672,7 @@ SGLoadBTG(const std::string& path, SGMaterialLib *matlib, bool use_random_object
 
           if (obj.model->get_heading_type() == SGMatModel::HEADING_MASK) {
             // Rotate the object around the z axis.
-            double hdg = obj.rotation * M_PI * 2;
+            double hdg =  - obj.rotation * M_PI * 2;
             transformMat.preMult(osg::Matrix::rotate(hdg,
                                                      osg::Vec3d(0.0, 0.0, 1.0)));
           }

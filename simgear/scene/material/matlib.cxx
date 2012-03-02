@@ -75,23 +75,13 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
     for (int i = 0; i < nMaterials; i++) {
         const SGPropertyNode *node = materials.getChild(i);
         if (!strcmp(node->getName(), "material")) {
-            const SGPropertyNode *conditionNode = node->getChild("condition");
-            if (conditionNode) {
-                SGSharedPtr<const SGCondition> condition = sgReadCondition(prop_root, conditionNode);
-                if (!condition->test()) {
-                    SG_LOG(SG_INPUT, SG_DEBUG, "Skipping material entry #"
-                        << i << " (condition false)");
-                    continue;
-                }
-            }
-
-            SGSharedPtr<SGMaterial> m = new SGMaterial(options.get(), node);
+            SGSharedPtr<SGMaterial> m = new SGMaterial(options.get(), node, prop_root);
 
             vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {
                 string name = names[j]->getStringValue();
                 // cerr << "Material " << name << endl;
-                matlib[name] = m;
+                matlib[name].push_back(m);
                 m->add_name(name);
                 SG_LOG( SG_TERRAIN, SG_DEBUG, "  Loading material "
                         << names[j]->getStringValue() );
@@ -109,9 +99,19 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
 SGMaterial *SGMaterialLib::find( const string& material ) {
     SGMaterial *result = NULL;
     material_map_iterator it = matlib.find( material );
-    if ( it != end() ) {
-	result = it->second;
-	return result;
+    if ( it != end() ) {            
+        // We now have a list of materials that match this
+        // name. Find the first one that either doesn't have
+        // a condition, or has a condition that evaluates
+        // to true.
+        material_list_iterator iter = it->second.begin();        
+        while (iter != it->second.end()) {            
+            result = *iter;
+            if (result->valid()) {
+                return result;
+            }
+            iter++;
+        }
     }
 
     return NULL;
@@ -122,8 +122,7 @@ SGMaterialLib::~SGMaterialLib ( void ) {
     SG_LOG( SG_GENERAL, SG_INFO, "SGMaterialLib::~SGMaterialLib() size=" << matlib.size());
 }
 
-const SGMaterial*
-SGMaterialLib::findMaterial(const osg::Geode* geode)
+const SGMaterial *SGMaterialLib::findMaterial(const osg::Geode* geode)
 {
     if (!geode)
         return 0;

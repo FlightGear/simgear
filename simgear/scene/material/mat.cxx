@@ -40,6 +40,7 @@
 #include <osg/ShadeModel>
 #include <osg/StateSet>
 #include <osg/TexEnv>
+#include <osg/Texture>
 #include <osg/Texture2D>
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
@@ -87,21 +88,23 @@ void SGMaterial::_internal_state::add_texture(const std::string &t, int i)
 }
 
 SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
-                        const SGPropertyNode *props )
+                        const SGPropertyNode *props,
+                        SGPropertyNode *prop_root )
 {
     init();
-    read_properties( options, props );
+    read_properties( options, props, prop_root );
     buildEffectProperties(options);
 }
 
 SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
-                        const SGPropertyNode *props )
+                        const SGPropertyNode *props, 
+                        SGPropertyNode *prop_root)
 {
     osg::ref_ptr<const SGReaderWriterOptions> sgOptions;
     if (options)
         sgOptions = new SGReaderWriterOptions(*options);
     init();
-    read_properties( sgOptions.get(), props );
+    read_properties( sgOptions.get(), props, prop_root);
     buildEffectProperties(sgOptions.get());
 }
 
@@ -116,7 +119,8 @@ SGMaterial::~SGMaterial (void)
 
 void
 SGMaterial::read_properties(const SGReaderWriterOptions* options,
-                            const SGPropertyNode *props)
+                            const SGPropertyNode *props,
+                            SGPropertyNode *prop_root)
 {
   std::vector<bool> dds;
   std::vector<SGPropertyNode_ptr> textures = props->getChildren("texture");
@@ -226,6 +230,12 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         }
         
         object_mask->setImage(image);
+        
+        // We force the filtering to be nearest, as the red channel (rotation)
+        // in particular, doesn't make sense to be interpolated between pixels.
+        object_mask->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+        object_mask->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+        
         object_mask->setDataVariance(osg::Object::STATIC);
         object_mask->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
         object_mask->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
@@ -309,6 +319,14 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     if (name)
       glyphs[name] = new SGMaterialGlyph(glyph_nodes[i]);
   }
+  
+  // Read conditions node  
+  const SGPropertyNode *conditionNode = props->getChild("condition");
+  if (conditionNode) {
+    condition = sgReadCondition(prop_root, conditionNode);
+  } 
+  
+  
 }
 
 

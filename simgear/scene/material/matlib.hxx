@@ -58,7 +58,9 @@ class SGMaterialLib {
 private:
 
     // associative array of materials
-    typedef map < string, SGSharedPtr<SGMaterial> > material_map;
+    typedef std::vector< SGSharedPtr<SGMaterial> > material_list;    
+    typedef material_list::iterator material_list_iterator;
+    typedef map < string,  material_list> material_map;
     typedef material_map::iterator material_map_iterator;
     typedef material_map::const_iterator const_material_map_iterator;
 
@@ -81,7 +83,7 @@ public:
     material_map_iterator end() { return matlib.end(); }
     const_material_map_iterator end() const { return matlib.end(); }
 
-    static const SGMaterial* findMaterial(const osg::Geode* geode);
+    static const SGMaterial *findMaterial(const osg::Geode* geode);
 
     // Destructor
     ~SGMaterialLib ( void );

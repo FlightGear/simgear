@@ -52,6 +52,7 @@ class StateSet;
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
+#include <simgear/props/condition.hxx>
 
 #include "matmodel.hxx"
 
@@ -88,10 +89,13 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const osgDB::ReaderWriter::Options*, const SGPropertyNode *props);
+  SGMaterial( const osgDB::ReaderWriter::Options*, 
+              const SGPropertyNode *props, 
+              SGPropertyNode *prop_root);
 
   SGMaterial(const simgear::SGReaderWriterOptions*,
-             const SGPropertyNode *props);
+             const SGPropertyNode *props,
+             SGPropertyNode *prop_root);
   /**
    * Destructor.
    */
@@ -233,6 +237,18 @@ public:
   SGMatModelGroup * get_object_group (int index) const {
     return object_groups[index];
   }
+  
+  /**
+   * Evaluate whether this material is valid given the current global
+   * property state.
+   */
+   bool valid() { 
+     if (condition) {
+       return condition->test();       
+     } else {
+       return true;
+     }
+   }
 
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.
@@ -352,13 +368,17 @@ private:
   // Object mask, a simple RGB texture used as a mask when placing
   // random vegetation, objects and buildings
   std::vector<osg::Texture2D*> _masks;
-
+  
+  // Condition, indicating when this material is active
+  SGSharedPtr<const SGCondition> condition;
+
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.
   ////////////////////////////////////////////////////////////////////
 
   void read_properties(const simgear::SGReaderWriterOptions* options,
-                        const SGPropertyNode *props);
+                        const SGPropertyNode *props,
+                        SGPropertyNode *prop_root);
   void buildEffectProperties(const simgear::SGReaderWriterOptions* options);
   simgear::Effect* get_effect(int i);
 };

@@ -139,7 +139,7 @@ public:
     const std::string& getValue() const
     { return _value; }
     void setValue(const std::string& value)
-    { _value = value; }
+    { _value = value; setDirty(true); }
 
     virtual bool setNumElements(unsigned count)
     {
@@ -216,7 +216,7 @@ public:
     const SGVec2<T>& getValue() const
     { return _value; }
     void setValue(const SGVec2<T>& value)
-    { _value = value; }
+    { _value = value; setDirty(true); }
 
     virtual bool setNumElements(unsigned count)
     {
@@ -308,7 +308,7 @@ public:
     const SGVec3<T>& getValue() const
     { return _value; }
     void setValue(const SGVec3<T>& value)
-    { _value = value; }
+    { _value = value; setDirty(true); }
 
     virtual bool setNumElements(unsigned count)
     {
@@ -400,7 +400,7 @@ public:
     const SGVec4<T>& getValue() const
     { return _value; }
     void setValue(const SGVec4<T>& value)
-    { _value = value; }
+    { _value = value; setDirty(true); }
 
     virtual bool setNumElements(unsigned count)
     {
@@ -492,7 +492,7 @@ public:
     const SGQuat<T>& getValue() const
     { return _value; }
     void setValue(const SGQuat<T>& value)
-    { _value = value; }
+    { _value = value; setDirty(true); }
 
     virtual bool setNumElements(unsigned count)
     {

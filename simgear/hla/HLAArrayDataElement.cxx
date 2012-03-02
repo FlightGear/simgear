@@ -111,6 +111,7 @@ HLAArrayDataElement::setNumElements(unsigned size)
     _elementVector.resize(size);
     for (unsigned i = oldSize; i < size; ++i)
         _elementVector[i] = newElement(i);
+    setDirty(true);
     return true;
 }
 
@@ -177,6 +178,7 @@ HLAArrayDataElement::setElement(unsigned index, HLADataElement* value)
     _elementVector[index] = value;
     if (value)
         value->attachStamp(*this);
+    setDirty(true);
 }
 
 void
@@ -252,6 +254,7 @@ HLAVariantArrayDataElement::setNumElements(unsigned size)
     _elementVector.resize(size);
     for (unsigned i = oldSize; i < size; ++i)
         _elementVector[i] = newElement();
+    setDirty(true);
     return true;
 }
 
@@ -318,6 +321,7 @@ HLAVariantArrayDataElement::setElement(unsigned index, HLAVariantRecordDataEleme
     _elementVector[index] = value;
     if (value)
         value->attachStamp(*this);
+    setDirty(true);
 }
 
 void

@@ -125,6 +125,7 @@ void                                                                            
 HLA##type##DataElement::setValue(ctype value)                                                     \
 {                                                                                                 \
     _value = value;                                                                               \
+    setDirty(true);                                                                               \
 }
 
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(Char, char);

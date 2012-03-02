@@ -126,6 +126,7 @@ HLAVariantRecordDataElement::setAlternativeIndex(unsigned index)
         return false;
     _dataElement.swap(dataElement);
     _alternativeIndex = index;
+    setDirty(true);
     return true;
 }
 

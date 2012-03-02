@@ -121,8 +121,6 @@ HLAObjectInstance::setAttributeDataElement(unsigned index, const SGSharedPtr<HLA
     _attributeVector[index]._dataElement = dataElement;
     if (_attributeVector[index]._dataElement.valid())
         _attributeVector[index]._dataElement->createStamp();
-    if (getAttributeOwned(index))
-        encodeAttributeValue(index);
 }
 
 class HLAObjectInstance::DataElementFactoryVisitor : public HLADataElementFactoryVisitor {
@@ -477,9 +475,13 @@ HLAObjectInstance::encodeAttributeValues()
 {
     unsigned numAttributes = _attributeVector.size();
     for (unsigned i = 0; i < numAttributes;++i) {
-        if (!_attributeVector[i]._unconditionalUpdate)
-            continue;
-        encodeAttributeValue(i);
+        if (_attributeVector[i]._unconditionalUpdate) {
+            encodeAttributeValue(i);
+        } else if (_attributeVector[i]._enabledUpdate) {
+            const HLADataElement* dataElement = getAttributeDataElement(i);
+            if (dataElement && dataElement->getDirty())
+                encodeAttributeValue(i);
+        }
     }
 }
 
@@ -490,10 +492,11 @@ HLAObjectInstance::encodeAttributeValue(unsigned index)
         SG_LOG(SG_IO, SG_INFO, "Not updating inactive object!");
         return;
     }
-    const HLADataElement* dataElement = getAttributeDataElement(index);
+    HLADataElement* dataElement = getAttributeDataElement(index);
     if (!dataElement)
         return;
     _rtiObjectInstance->encodeAttributeData(index, *dataElement);
+    dataElement->setDirty(false);
 }
 
 void

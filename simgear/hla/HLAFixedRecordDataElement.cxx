@@ -187,6 +187,7 @@ HLAFixedRecordDataElement::setField(unsigned index, HLADataElement* value)
     _fieldVector[index] = value;
     if (value)
         value->attachStamp(*this);
+    setDirty(true);
 }
 
 void

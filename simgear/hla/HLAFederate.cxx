@@ -649,14 +649,11 @@ HLAFederate::timeAdvanceAvailable()
     }
 
     SGTimeStamp timeStamp;
-    if (!_rtiFederate->queryGALT(timeStamp)) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Could not query GALT!");
-        return false;
-    }
-
-    if (!_rtiFederate->timeAdvanceRequestAvailable(timeStamp)) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
-        return false;
+    if (_rtiFederate->queryGALT(timeStamp)) {
+        if (!_rtiFederate->timeAdvanceRequestAvailable(timeStamp)) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Time advance request failed!");
+            return false;
+        }
     }
 
     return processMessages();

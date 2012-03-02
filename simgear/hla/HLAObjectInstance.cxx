@@ -116,7 +116,11 @@ HLAObjectInstance::setAttributeDataElement(unsigned index, const SGSharedPtr<HLA
     if (numAttributes <= index)
         return;
     _attributeVector.resize(numAttributes);
+    if (_attributeVector[index]._dataElement.valid())
+        _attributeVector[index]._dataElement->clearStamp();
     _attributeVector[index]._dataElement = dataElement;
+    if (_attributeVector[index]._dataElement.valid())
+        _attributeVector[index]._dataElement->createStamp();
     if (getAttributeOwned(index))
         encodeAttributeValue(index);
 }
@@ -533,6 +537,7 @@ HLAObjectInstance::reflectAttributeValue(unsigned index, const RTIData& tag)
     HLADataElement* dataElement = getAttributeDataElement(index);
     if (!dataElement)
         return;
+    dataElement->setTimeStampValid(false);
     _rtiObjectInstance->decodeAttributeData(index, *dataElement);
 }
 
@@ -542,7 +547,8 @@ HLAObjectInstance::reflectAttributeValue(unsigned index, const SGTimeStamp& time
     HLADataElement* dataElement = getAttributeDataElement(index);
     if (!dataElement)
         return;
-    // dataElement->setTimeStamp(timeStamp);
+    dataElement->setTimeStamp(timeStamp);
+    dataElement->setTimeStampValid(true);
     _rtiObjectInstance->decodeAttributeData(index, *dataElement);
 }
 

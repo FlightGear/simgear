@@ -78,6 +78,9 @@ public:
     void setDataElementFactory(DataElementFactory* dataElementFactory);
     DataElementFactory* getDataElementFactory();
 
+protected:
+    virtual void _setStamp(Stamp* stamp);
+
 private:
     HLADataElement* newElement(unsigned index);
 
@@ -111,6 +114,9 @@ public:
 
     void setAlternativeDataElementFactory(AlternativeDataElementFactory* alternativeDataElementFactory);
     AlternativeDataElementFactory* getAlternativeDataElementFactory();
+
+protected:
+    virtual void _setStamp(Stamp* stamp);
 
 private:
     HLAVariantRecordDataElement* newElement();

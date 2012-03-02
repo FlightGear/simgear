@@ -113,6 +113,7 @@ HLAVariantRecordDataElement::HLAVariantRecordDataElement(const HLAVariantRecordD
 
 HLAVariantRecordDataElement::~HLAVariantRecordDataElement()
 {
+    clearStamp();
 }
 
 bool
@@ -158,12 +159,25 @@ HLAVariantRecordDataElement::getDataElementFactory()
     return _dataElementFactory;
 }
 
+void
+HLAVariantRecordDataElement::_setStamp(Stamp* stamp)
+{
+    HLAAbstractVariantRecordDataElement::_setStamp(stamp);
+    if (!_dataElement.valid())
+        return;
+    _dataElement->attachStamp(*this);
+}
+
 HLADataElement*
 HLAVariantRecordDataElement::newElement(unsigned index)
 {
     if (!_dataElementFactory.valid())
         return 0;
-    return _dataElementFactory->createElement(*this, index);
+    HLADataElement* dataElement = _dataElementFactory->createElement(*this, index);
+    if (!dataElement)
+        return 0;
+    dataElement->attachStamp(*this);
+    return dataElement;
 }
 
 }

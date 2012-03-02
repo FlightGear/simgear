@@ -132,6 +132,51 @@ HLADataElement::~HLADataElement()
 }
 
 void
+HLADataElement::setTimeStamp(const SGTimeStamp& timeStamp)
+{
+    if (!_stamp.valid())
+        return;
+    _stamp->setTimeStamp(timeStamp);
+}
+
+void
+HLADataElement::setTimeStampValid(bool timeStampValid)
+{
+    if (!_stamp.valid())
+        return;
+    _stamp->setTimeStampValid(timeStampValid);
+}
+
+double
+HLADataElement::getTimeDifference(const SGTimeStamp& timeStamp) const
+{
+    if (!_stamp.valid())
+        return 0;
+    if (!_stamp->getTimeStampValid())
+        return 0;
+    return (timeStamp - _stamp->getTimeStamp()).toSecs();
+}
+
+void
+HLADataElement::createStamp()
+{
+    _setStamp(new Stamp);
+    setDirty(true);
+}
+
+void
+HLADataElement::attachStamp(HLADataElement& dataElement)
+{
+    _setStamp(dataElement._getStamp());
+}
+
+void
+HLADataElement::clearStamp()
+{
+    _setStamp(0);
+}
+
+void
 HLADataElement::accept(HLADataElementVisitor& visitor)
 {
     visitor.apply(*this);
@@ -196,6 +241,12 @@ HLADataElement::toStringPathPair(const std::string& s)
     }
 
     return StringPathPair(attribute, path);
+}
+
+void
+HLADataElement::_setStamp(HLADataElement::Stamp* stamp)
+{
+    _stamp = stamp;
 }
 
 }

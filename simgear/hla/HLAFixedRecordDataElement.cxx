@@ -120,6 +120,7 @@ HLAFixedRecordDataElement::HLAFixedRecordDataElement(const HLAFixedRecordDataTyp
 
 HLAFixedRecordDataElement::~HLAFixedRecordDataElement()
 {
+    clearStamp();
 }
 
 bool
@@ -181,13 +182,28 @@ HLAFixedRecordDataElement::setField(unsigned index, HLADataElement* value)
 {
     if (getNumFields() <= index)
         return;
+    if (_fieldVector[index].valid())
+        _fieldVector[index]->clearStamp();
     _fieldVector[index] = value;
+    if (value)
+        value->attachStamp(*this);
 }
 
 void
 HLAFixedRecordDataElement::setField(const std::string& name, HLADataElement* value)
 {
     setField(getFieldNumber(name), value);
+}
+
+void
+HLAFixedRecordDataElement::_setStamp(Stamp* stamp)
+{
+    HLAAbstractFixedRecordDataElement::_setStamp(stamp);
+    for (FieldVector::iterator i = _fieldVector.begin(); i != _fieldVector.end(); ++i) {
+        if (!i->valid())
+            continue;
+        (*i)->attachStamp(*this);
+    }
 }
 
 }

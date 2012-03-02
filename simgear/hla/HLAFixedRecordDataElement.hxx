@@ -70,6 +70,9 @@ public:
     void setField(unsigned index, HLADataElement* value);
     void setField(const std::string& name, HLADataElement* value);
 
+protected:
+    virtual void _setStamp(Stamp* stamp);
+
 private:
     typedef std::vector<SGSharedPtr<HLADataElement> > FieldVector;
     FieldVector _fieldVector;

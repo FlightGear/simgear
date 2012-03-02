@@ -99,6 +99,7 @@ HLAArrayDataElement::HLAArrayDataElement(const HLAArrayDataType* dataType) :
 
 HLAArrayDataElement::~HLAArrayDataElement()
 {
+    clearStamp();
 }
 
 bool
@@ -171,7 +172,11 @@ HLAArrayDataElement::setElement(unsigned index, HLADataElement* value)
         for (unsigned j = oldSize; j < index; ++j)
             _elementVector[j] = newElement(j);
     }
+    if (_elementVector[index].valid())
+        _elementVector[index]->clearStamp();
     _elementVector[index] = value;
+    if (value)
+        value->attachStamp(*this);
 }
 
 void
@@ -186,12 +191,27 @@ HLAArrayDataElement::getDataElementFactory()
     return _dataElementFactory.get();
 }
 
+void
+HLAArrayDataElement::_setStamp(Stamp* stamp)
+{
+    HLAAbstractArrayDataElement::_setStamp(stamp);
+    for (ElementVector::iterator i = _elementVector.begin(); i != _elementVector.end(); ++i) {
+        if (!i->valid())
+            continue;
+        (*i)->attachStamp(*this);
+    }
+}
+
 HLADataElement*
 HLAArrayDataElement::newElement(unsigned index)
 {
     if (!_dataElementFactory.valid())
         return 0;
-    return _dataElementFactory->createElement(*this, index);
+    HLADataElement* dataElement = _dataElementFactory->createElement(*this, index);
+    if (!dataElement)
+        return 0;
+    dataElement->attachStamp(*this);
+    return dataElement;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -203,6 +223,7 @@ HLAVariantArrayDataElement::HLAVariantArrayDataElement() :
 
 HLAVariantArrayDataElement::~HLAVariantArrayDataElement()
 {
+    clearStamp();
 }
 
 bool
@@ -292,7 +313,11 @@ HLAVariantArrayDataElement::setElement(unsigned index, HLAVariantRecordDataEleme
         for (unsigned j = oldSize; j < index; ++j)
             _elementVector[j] = newElement();
     }
+    if (_elementVector[index].valid())
+        _elementVector[index]->clearStamp();
     _elementVector[index] = value;
+    if (value)
+        value->attachStamp(*this);
 }
 
 void
@@ -305,6 +330,17 @@ HLAVariantArrayDataElement::AlternativeDataElementFactory*
 HLAVariantArrayDataElement::getAlternativeDataElementFactory()
 {
     return _alternativeDataElementFactory.get();
+}
+
+void
+HLAVariantArrayDataElement::_setStamp(Stamp* stamp)
+{
+    HLAAbstractArrayDataElement::_setStamp(stamp);
+    for (ElementVector::iterator i = _elementVector.begin(); i != _elementVector.end(); ++i) {
+        if (!i->valid())
+            continue;
+        (*i)->attachStamp(*this);
+    }
 }
 
 HLAVariantRecordDataElement*
@@ -321,6 +357,7 @@ HLAVariantArrayDataElement::newElement()
         return 0;
     HLAVariantRecordDataElement* variantRecordDataElement = new HLAVariantRecordDataElement(variantRecordDataType);
     variantRecordDataElement->setDataElementFactory(_alternativeDataElementFactory.get());
+    variantRecordDataElement->attachStamp(*this);
     return variantRecordDataElement;
 }
 

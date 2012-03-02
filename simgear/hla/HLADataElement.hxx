@@ -46,34 +46,30 @@ public:
     virtual const HLADataType* getDataType() const = 0;
     virtual bool setDataType(const HLADataType* dataType) = 0;
 
-    // Container for the timestamp the originating attribute was last updated for
-    // class TimeStamp : public SGReferenced {
-    // public:
-    //     const SGTimeStamp& getTimeStamp() const
-    //     { return _timeStamp; }
-    //     void setTimeStamp(const SGTimeStamp& timeStamp)
-    //     { _timeStamp = timeStamp; }
-    // private:
-    //     SGTimeStamp _timeStamp;
-    // };
+    /// Returns the time stamp if this data element.
+    /// Do not access this getter if the getTimeStampValid() method returns false.
+    const SGTimeStamp& getTimeStamp() const
+    { return _stamp->getTimeStamp(); }
+    void setTimeStamp(const SGTimeStamp& timeStamp);
 
-    // const TimeStamp* getTimeStamp() const
-    // { return _timeStamp.get(); }
-    // void setTimeStamp(const TimeStamp* timeStamp)
-    // { _timeStamp = timeStamp; }
+    bool getTimeStampValid() const
+    { if (!_stamp.valid()) return false; return _stamp->getTimeStampValid(); }
+    void setTimeStampValid(bool timeStampValid);
 
-    // struct ChangeCount : public SGReferenced {
-    //     ChangeCount() : _value(0) {}
-    //     unsigned _value;
-    // };
-    // SGSharedPtr<ChangeCount> _changeCount;
-    // unsigned getChangeCount() const
-    // {
-    //     // If we don't have return allways the same
-    //     if (!_changeCount.valid())
-    //         return 0;
-    //     return _changeCount->_value;
-    // }
+    /// Convenience function that gives the time difference in seconds to a given timestamp
+    /// This function returns 0 if the timestamp is not valid.
+    double getTimeDifference(const SGTimeStamp& timeStamp) const;
+
+    /// Dirty tracking of the attribute/parameter that this data element belongs to
+    bool getDirty() const
+    { if (!_stamp.valid()) return true; return _stamp->getDirty(); }
+    void setDirty(bool dirty)
+    { if (!_stamp.valid()) return; _stamp->setDirty(dirty); }
+
+    /// Stamp handling
+    void createStamp();
+    void attachStamp(HLADataElement& dataElement);
+    void clearStamp();
 
     /// HLADataElements could be identified by path
     /// These paths are composed of structure field names and array indices in the
@@ -163,8 +159,42 @@ public:
     static Path toPath(const std::string& s)
     { return toStringPathPair(s).second; }
 
+protected:
+    // Container for the timestamp the originating attribute was last updated for
+    class Stamp : public SGReferenced {
+    public:
+        Stamp() : _timeStampValid(false), _dirty(true)
+        { }
+
+        const SGTimeStamp& getTimeStamp() const
+        { return _timeStamp; }
+        void setTimeStamp(const SGTimeStamp& timeStamp)
+        { _timeStamp = timeStamp; }
+
+        bool getTimeStampValid() const
+        { return _timeStampValid; }
+        void setTimeStampValid(bool timeStampValid)
+        { _timeStampValid = timeStampValid; }
+
+        bool getDirty() const
+        { return _dirty; }
+        void setDirty(bool dirty)
+        { _dirty = dirty; }
+
+    private:
+        SGTimeStamp _timeStamp;
+        bool _timeStampValid;
+        bool _dirty;
+    };
+
+    /// get the stamp
+    Stamp* _getStamp() const
+    { return _stamp.get(); }
+    /// Set the stamp
+    virtual void _setStamp(Stamp* stamp);
+
 private:
-    // SGSharedPtr<const TimeStamp> _timeStamp;
+    SGSharedPtr<Stamp> _stamp;
 };
 
 class HLADataElementProvider {

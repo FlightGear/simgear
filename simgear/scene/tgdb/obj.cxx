@@ -65,7 +65,6 @@
 #include "GroundLightManager.hxx"
 
 
-#include "userdata.hxx"
 #include "pt_lights.hxx"
 
 using namespace simgear;

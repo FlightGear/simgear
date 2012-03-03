@@ -53,6 +53,7 @@
 
 #include "ReaderWriterSPT.hxx"
 #include "ReaderWriterSTG.hxx"
+#include "SGOceanTile.hxx"
 #include "TileEntry.hxx"
 
 using std::string;
@@ -314,8 +315,11 @@ TileEntry::loadTileByFileName(const string& fileName,
     } else {
         // ... or generate an ocean tile on the fly
         SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
-        if ( !SGGenTile( path_list[0], tile_bucket,
-                        opt->getMaterialLib(), new_tile ) ) {
+
+        osg::Node* node = SGOceanTile(tile_bucket, opt->getMaterialLib());
+        if ( node ) {
+            new_tile->addChild(node);
+        } else {
             SG_LOG( SG_TERRAIN, SG_ALERT,
                     "Warning: failed to generate ocean tile!" );
         }

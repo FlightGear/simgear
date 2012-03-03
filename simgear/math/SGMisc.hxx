@@ -87,6 +87,11 @@ public:
   static int roundToInt(const T& v)
   { return int(round(v)); }
 
+  // Linear interpolation between two arbitrary typed values
+  template<typename S>
+  static S lerp(const S& val0, const S& val1, const T& t)
+  { return val0*(T(1) - t) + val1*t; }
+
 #ifndef NDEBUG
   /// Returns true if v is a NaN value
   /// Use with care: allways code that you do not need to use that!

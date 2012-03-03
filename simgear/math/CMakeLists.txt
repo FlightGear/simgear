@@ -2,7 +2,6 @@ include (SimGearComponent)
 
 
 set(HEADERS 
-    Math.hxx
     SGBox.hxx
     SGCMath.hxx
     SGGeoc.hxx

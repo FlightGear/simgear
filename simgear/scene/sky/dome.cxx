@@ -40,7 +40,7 @@
 #include <osg/CullFace>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/Math.hxx>
+#include <simgear/math/SGMath.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
@@ -234,7 +234,7 @@ static void fade_to_black(osg::Vec3 sky_color[], float asl, int count) {
         sky_color[i] *= d;
 }
 
-inline void clampColor(osg::Vec3& color)
+static inline void clampColor(osg::Vec3& color)
 {
     color.x() = osg::clampTo(color.x(), 0.0f, 1.0f);
     color.y() = osg::clampTo(color.y(), 0.0f, 1.0f);
@@ -310,17 +310,17 @@ SGSkyDome::repaint( const SGVec3f& sun_color, const SGVec3f& sky_color,
         int j=0;
         // Color top half by linear interpolation (90...60 degrees)
         for (; j < upperRings; j++)
-            colors(j, i) = simgear::math::lerp(toOsg(sky_color), colors(upperRings, i), j / (float)upperRings);
+            colors(j, i) = SGMiscf::lerp(toOsg(sky_color), colors(upperRings, i), j / (float)upperRings);
 
         j++; // Skip the 60 deg ring
         // From 60 to ~85 degrees
         for (int l = 0; j < upperRings + middleRings + 1; j++, l++)
-            colors(j, i) = simgear::math::lerp(colors(upperRings, i),
+            colors(j, i) = SGMiscf::lerp(colors(upperRings, i),
                        toOsg(sky_color - middleVisFactor * diff + middle_amt), l / (float)middleRings);
 
         // 85 to 90 degrees
         for (int l = 0; j < halfRings; j++, l++)
-            colors(j, i) = simgear::math::lerp(colors(upperRings + middleRings, i), toOsg(fog_color + outer_amt),
+            colors(j, i) = SGMiscf::lerp(colors(upperRings + middleRings, i), toOsg(fog_color + outer_amt),
                         l / (float)(halfRings - upperRings - middleRings));
 
         // Original colors

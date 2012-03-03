@@ -96,11 +96,14 @@ Dir Dir::tempDir(const std::string& templ)
     char buf[1024];
     const char* tempPath = ::getenv("TMPDIR");
     if (!tempPath) {
-        tempPath = "/tmp/";
+        tempPath = "/tmp";
     }
+    SGPath p(tempPath);
+    p.append(templ);
     // Mac OS-X / BSD manual says any number of 'X's, but GLibc manual
     // says exactly six, so that's what I'm going with
-    ::snprintf(buf, 1024, "%s%s-XXXXXX", tempPath, templ.c_str());
+    p.concat("-XXXXXX");
+    ::snprintf(buf, 1024, "%s", p.c_str());
     if (!mkdtemp(buf)) {
         SG_LOG(SG_IO, SG_WARN, "mkdtemp failed:" << strerror(errno));
         return Dir();

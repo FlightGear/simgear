@@ -4,6 +4,7 @@ set(HEADERS
     CopyOp.hxx
     NodeAndDrawableVisitor.hxx
     OsgMath.hxx
+    OsgSingleton.hxx
     PrimitiveUtils.hxx
     QuadTreeBuilder.hxx
     RenderConstants.hxx

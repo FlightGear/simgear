@@ -37,7 +37,7 @@ class Texture2D;
 class TexEnv;
 }
 
-#include <simgear/structure/Singleton.hxx>
+#include <simgear/scene/util/OsgSingleton.hxx>
 
 // Return read-only instances of common OSG state attributes.
 namespace simgear

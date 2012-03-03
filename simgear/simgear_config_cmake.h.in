@@ -17,6 +17,3 @@
 #cmakedefine HAVE_LIBSVN_CLIENT_1
 
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
-
-// set if building headless (no OSG or OpenGL libs)
-#cmakedefine NO_OPENSCENEGRAPH_INTERFACE

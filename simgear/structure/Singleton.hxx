@@ -3,11 +3,6 @@
 
 #include "singleton.hpp"
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Referenced>
-#include <osg/ref_ptr>
-#endif
-
 namespace simgear
 {
 /**
@@ -28,36 +23,6 @@ public:
         return &singleton;
     }
 };
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-template <typename RefClass>
-class SingletonRefPtr
-{
-public:
-    SingletonRefPtr()
-    {
-        ptr = new RefClass;
-    }
-    static RefClass* instance()
-    {
-        SingletonRefPtr& singleton
-            = boost::details::pool::singleton_default<SingletonRefPtr>::instance();
-        return singleton.ptr.get();
-    }
-private:
-    osg::ref_ptr<RefClass> ptr;
-};
-
-template <typename RefClass>
-class ReferencedSingleton : public virtual osg::Referenced
-{
-public:
-    static RefClass* instance()
-    {
-        return SingletonRefPtr<RefClass>::instance();
-    }
-};
-#endif // of NO_OPENSCENEGRAPH_INTERFACE
 
 }
 #endif

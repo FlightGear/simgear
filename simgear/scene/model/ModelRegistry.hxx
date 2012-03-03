@@ -27,7 +27,7 @@
 #include <osgDB/Registry>
 
 #include <simgear/compiler.h>
-#include <simgear/structure/Singleton.hxx>
+#include <simgear/scene/util/OsgSingleton.hxx>
 
 #include <string>
 #include <map>

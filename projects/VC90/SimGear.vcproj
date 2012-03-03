@@ -1300,14 +1300,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\material\Noise.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\material\Noise.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\material\Pass.cxx"
 				>
 			</File>
@@ -1795,6 +1787,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\NodeAndDrawableVisitor.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\Noise.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\Noise.hxx"
 				>
 			</File>
 			<File

@@ -3,6 +3,7 @@ include (SimGearComponent)
 set(HEADERS 
     CopyOp.hxx
     NodeAndDrawableVisitor.hxx
+	Noise.hxx
     OsgMath.hxx
     OsgSingleton.hxx
     PrimitiveUtils.hxx
@@ -28,6 +29,7 @@ set(HEADERS
 set(SOURCES 
     CopyOp.cxx
     NodeAndDrawableVisitor.cxx
+	Noise.cxx
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx

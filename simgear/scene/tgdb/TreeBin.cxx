@@ -285,7 +285,8 @@ struct TreeTransformer
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
 
-osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform)
+osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
+                         const SGReaderWriterOptions* options)
 {
     Matrix transInv = Matrix::inverse(transform);
     static Matrix ident;
@@ -307,7 +308,7 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
             // emphasize n = 0
             params->getChild("texture", 0, true)->getChild("image", 0, true)
                 ->setStringValue(forest->texture);
-            effect = makeEffect(effectProp, true);
+            effect = makeEffect(effectProp, true, options);
             treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
         } else {
             effect = iter->second.get();

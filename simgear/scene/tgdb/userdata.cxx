@@ -59,10 +59,6 @@ void sgUserDataInit( SGPropertyNode *p ) {
     root_props = p;
 }
 
-osg::Node* sgGetRandomModel(SGMatModel *obj, mt *seed) {
-   return obj->get_random_model( root_props, seed );
- }
-
 namespace simgear
 {
 SGPropertyNode* getPropertyRoot()

@@ -65,6 +65,7 @@ public:
 
 typedef std::list<TreeBin*> SGTreeBinList;
 
-osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform);
+osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform,
+                         const SGReaderWriterOptions* options);
 }
 #endif

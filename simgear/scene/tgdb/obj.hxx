@@ -42,6 +42,9 @@ using std::string;
 
 class SGBucket;
 class SGMaterialLib;
+namespace simgear {
+class SGReaderWriterOptions;
+}
 
 // Generate an ocean tile
 inline bool SGGenTile( const std::string&, const SGBucket& b,
@@ -57,9 +60,6 @@ inline bool SGGenTile( const std::string&, const SGBucket& b,
 
 osg::Node*
 SGLoadBTG(const std::string& path, 
-          SGMaterialLib *matlib, 
-          bool use_random_objects, 
-          bool use_random_vegetation, 
-          float vegetation_density);
+          const simgear::SGReaderWriterOptions* options);
 
 #endif // _SG_OBJ_HXX

@@ -70,8 +70,6 @@ if(SIMGEAR_SHARED)
     endif(LIBSVN_FOUND)
 
     if(NOT SIMGEAR_HEADLESS)
-        list(APPEND sceneSources scene/util/SGCoreOSGDependant.cxx)
-
         add_library(SimGearScene SHARED ${sceneSources})
       # set_property(TARGET SimGearScene PROPERTY FRAMEWORK 1)
       # set_property(TARGET SimGearScene PROPERTY PUBLIC_HEADER "${publicHeaders}")

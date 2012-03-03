@@ -46,6 +46,7 @@ if(SIMGEAR_SHARED)
     get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
 
     add_library(SimGearCore SHARED ${coreSources})
+    set_property(TARGET SimGearCore PROPERTY COMPILE_FLAGS "-DNO_OPENSCENEGRAPH_INTERFACE=1")
 
   # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
   #  message(STATUS "public header: ${publicHeaders}")

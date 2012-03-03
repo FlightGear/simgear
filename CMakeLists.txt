@@ -115,6 +115,7 @@ find_package(Threads REQUIRED)
 
 if(SIMGEAR_HEADLESS)
     message(STATUS "headless mode")
+    set(NO_OPENSCENEGRAPH_INTERFACE 1)
 else()
     find_package(OpenGL REQUIRED)
     find_package(OpenAL REQUIRED)

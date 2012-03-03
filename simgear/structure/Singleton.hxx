@@ -3,8 +3,10 @@
 
 #include "singleton.hpp"
 
-#include "SGReferenced.hxx"
-#include "SGSharedPtr.hxx"
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
+#include <osg/Referenced>
+#include <osg/ref_ptr>
+#endif
 
 namespace simgear
 {
@@ -27,6 +29,7 @@ public:
     }
 };
 
+#ifndef NO_OPENSCENEGRAPH_INTERFACE
 template <typename RefClass>
 class SingletonRefPtr
 {
@@ -42,11 +45,11 @@ public:
         return singleton.ptr.get();
     }
 private:
-    SGSharedPtr<RefClass> ptr;
+    osg::ref_ptr<RefClass> ptr;
 };
 
 template <typename RefClass>
-class ReferencedSingleton : public virtual SGReferenced
+class ReferencedSingleton : public virtual osg::Referenced
 {
 public:
     static RefClass* instance()
@@ -54,6 +57,7 @@ public:
         return SingletonRefPtr<RefClass>::instance();
     }
 };
+#endif // of NO_OPENSCENEGRAPH_INTERFACE
 
 }
 #endif

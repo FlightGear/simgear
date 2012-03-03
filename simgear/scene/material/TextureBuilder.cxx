@@ -44,8 +44,6 @@
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 
-#include "Noise.hxx"
-
 namespace simgear
 {
 using namespace std;
@@ -345,51 +343,6 @@ TextureBuilder::Registrar installTransparent("transparent",
                                              new TransparentTextureBuilder);
 }
 
-osg::Image* make3DNoiseImage(int texSize)
-{
-    osg::Image* image = new osg::Image;
-    image->setImage(texSize, texSize, texSize,
-                    4, GL_RGBA, GL_UNSIGNED_BYTE,
-                    new unsigned char[4 * texSize * texSize * texSize],
-                    osg::Image::USE_NEW_DELETE);
-
-    const int startFrequency = 4;
-    const int numOctaves = 4;
-
-    int f, i, j, k, inc;
-    double ni[3];
-    double inci, incj, inck;
-    int frequency = startFrequency;
-    GLubyte *ptr;
-    double amp = 0.5;
-
-    SG_LOG(SG_INPUT, SG_INFO, "creating 3D noise texture... ");
-
-    for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5)
-    {
-        SetNoiseFrequency(frequency);
-        ptr = image->data();
-        ni[0] = ni[1] = ni[2] = 0;
-
-        inci = 1.0 / (texSize / frequency);
-        for (i = 0; i < texSize; ++i, ni[0] += inci)
-        {
-            incj = 1.0 / (texSize / frequency);
-            for (j = 0; j < texSize; ++j, ni[1] += incj)
-            {
-                inck = 1.0 / (texSize / frequency);
-                for (k = 0; k < texSize; ++k, ni[2] += inck, ptr += 4)
-                {
-                    *(ptr+inc) = (GLubyte) (((noise3(ni) + 1.0) * amp) * 128.0);
-                }
-            }
-        }
-    }
-
-    SG_LOG(SG_INPUT, SG_INFO, "creating 3D noise textures complete!");
-    return image;
-}
-
 class NoiseBuilder : public TextureBuilder
 {
 public:
@@ -408,18 +361,8 @@ Texture* NoiseBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* p
                                                             "size");
     if (sizeProp)
         texSize = sizeProp->getValue<int>();
-    NoiseMap::iterator itr = _noises.find(texSize);
-    if (itr != _noises.end())
-        return itr->second.get();
-    Texture3D* noiseTexture = new osg::Texture3D;
-    noiseTexture->setFilter(osg::Texture3D::MIN_FILTER, osg::Texture3D::LINEAR);
-    noiseTexture->setFilter(osg::Texture3D::MAG_FILTER, osg::Texture3D::LINEAR);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_S, osg::Texture3D::REPEAT);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_T, osg::Texture3D::REPEAT);
-    noiseTexture->setWrap(osg::Texture3D::WRAP_R, osg::Texture3D::REPEAT);
-    noiseTexture->setImage( make3DNoiseImage(texSize) );
-    _noises.insert(make_pair(texSize, noiseTexture));
-    return noiseTexture;
+
+    return StateAttributeFactory::instance()->getNoiseTexture(texSize);
 }
 
 namespace
@@ -917,7 +860,9 @@ namespace
     TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(Effect::SPECULAR_BUFFER));
     TextureBuilder::Registrar installEmissionBuffer("emission-buffer", new GBufferBuilder(Effect::EMISSION_BUFFER));
     TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(Effect::LIGHTING_BUFFER));
+    TextureBuilder::Registrar installMiddleBloomBuffer("middle-bloom-buffer", new GBufferBuilder(Effect::MIDDLE_BLOOM_BUFFER));
     TextureBuilder::Registrar installBloomBuffer("bloom-buffer", new GBufferBuilder(Effect::BLOOM_BUFFER));
+    TextureBuilder::Registrar installAoBuffer("ao-buffer", new GBufferBuilder(Effect::AO_BUFFER));
 }
 
 }

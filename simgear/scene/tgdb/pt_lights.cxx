@@ -60,6 +60,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/SGEnlargeBoundingBox.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 
 #include <simgear/scene/material/Effect.hxx>

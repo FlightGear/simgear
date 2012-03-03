@@ -22,10 +22,10 @@
 #endif
 
 #include <simgear/math/SGMath.hxx>
-#include <simgear/math/SGGeod.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/structure/OSGVersion.hxx>
 
 #include <osgParticle/SmokeTrailEffect>
@@ -558,7 +558,7 @@ void Particles::operator()(osg::Node* node, osg::NodeVisitor* nv)
                 // Make new frame for particle system, coincident with
                 // the emitter frame, but oriented with local Z.
                 SGGeod geod = SGGeod::fromCart(toSG(emitOrigin));
-                Matrix newParticleMat = geod.makeZUpFrame();
+                Matrix newParticleMat = makeZUpFrame(geod);
                 Matrix changeParticleFrame
                     = particleMat * Matrix::inverse(newParticleMat);
                 particleFrame->setMatrix(newParticleMat);

@@ -32,6 +32,8 @@
 #include <osgDB/FileNameUtils>
 #include <osgDB/ReadFile>
 
+#include <simgear/scene/util/OsgMath.hxx>
+
 #include "BucketBox.hxx"
 
 namespace simgear {

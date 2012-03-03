@@ -31,6 +31,7 @@
 
 #include <simgear/math/sg_random.h>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/sg_inlines.h>
 
 #include <osg/StateSet>

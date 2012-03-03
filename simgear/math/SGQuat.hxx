@@ -26,10 +26,6 @@
 #undef max
 #endif
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Quat>
-#endif
-
 /// Quaternion Class
 template<typename T>
 class SGQuat {
@@ -779,17 +775,5 @@ inline
 SGQuatd
 toQuatd(const SGQuatf& v)
 { return SGQuatd(v(0), v(1), v(2), v(3)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGQuatd
-toSG(const osg::Quat& q)
-{ return SGQuatd(q[0], q[1], q[2], q[3]); }
-
-inline
-osg::Quat
-toOsg(const SGQuatd& q)
-{ return osg::Quat(q[0], q[1], q[2], q[3]); }
-#endif
 
 #endif

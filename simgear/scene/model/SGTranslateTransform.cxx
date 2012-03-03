@@ -27,6 +27,8 @@
 #include <osgDB/Input>
 #include <osgDB/Output>
 
+#include <simgear/scene/util/OsgMath.hxx>
+
 #include "SGTranslateTransform.hxx"
 
 SGTranslateTransform::SGTranslateTransform() :

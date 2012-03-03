@@ -29,15 +29,14 @@ set(HEADERS
     leastsqs.hxx
     sg_geodesy.hxx
     sg_types.hxx
-	sg_random.h
+    sg_random.h
     )
 
 set(SOURCES 
-    SGGeod.cxx
     SGGeodesy.cxx
     interpolater.cxx
     leastsqs.cxx
-	sg_random.c
+    sg_random.c
     )
 
 simgear_component(math math "${SOURCES}" "${HEADERS}")

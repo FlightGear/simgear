@@ -26,7 +26,7 @@
 #include <osg/PagedLOD>
 #include <osgUtil/UpdateVisitor>
 
-#include "simgear/math/SGMath.hxx"
+#include "OsgMath.hxx"
 
 class SGUpdateVisitor : public osgUtil::UpdateVisitor {
 public:

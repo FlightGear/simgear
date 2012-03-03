@@ -42,6 +42,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGBinding.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/util/SGStateAttributeVisitor.hxx>

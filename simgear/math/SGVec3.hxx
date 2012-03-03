@@ -18,11 +18,6 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Vec3f>
-#include <osg/Vec3d>
-#endif
-
 /// 3D Vector Class
 template<typename T>
 class SGVec3 {
@@ -504,27 +499,5 @@ inline
 SGVec3d
 toVec3d(const SGVec3f& v)
 { return SGVec3d(v(0), v(1), v(2)); }
-
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-inline
-SGVec3d
-toSG(const osg::Vec3d& v)
-{ return SGVec3d(v[0], v[1], v[2]); }
-
-inline
-SGVec3f
-toSG(const osg::Vec3f& v)
-{ return SGVec3f(v[0], v[1], v[2]); }
-
-inline
-osg::Vec3d
-toOsg(const SGVec3d& v)
-{ return osg::Vec3d(v[0], v[1], v[2]); }
-
-inline
-osg::Vec3f
-toOsg(const SGVec3f& v)
-{ return osg::Vec3f(v[0], v[1], v[2]); }
-#endif
 
 #endif

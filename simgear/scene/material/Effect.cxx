@@ -69,6 +69,7 @@
 
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>

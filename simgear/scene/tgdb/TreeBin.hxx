@@ -29,7 +29,7 @@
 #include <osg/Group>
 #include <osg/Matrix>
 
-#include <simgear/math/SGMath.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
 namespace simgear
 {

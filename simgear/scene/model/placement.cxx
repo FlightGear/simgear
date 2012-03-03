@@ -10,6 +10,7 @@
 #include "placement.hxx"
 
 #include <simgear/compiler.h>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 
 

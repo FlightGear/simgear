@@ -29,7 +29,7 @@
 #include <stdio.h>
 
 #include <simgear/math/sg_random.h>
-#include <simgear/math/SGMath.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include "SGTriangleBin.hxx"
 
 

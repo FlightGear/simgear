@@ -20,10 +20,6 @@
 
 #include <simgear/constants.h>
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-#include <osg/Matrix>
-#endif
-
 // #define SG_GEOD_NATIVE_DEGREE
 
 /// Class representing a geodetic location
@@ -89,19 +85,6 @@ public:
   // Compare two geodetic positions for equality
   bool operator == ( const SGGeod & other ) const;
 
-#ifndef NO_OPENSCENEGRAPH_INTERFACE
-  // Create a local coordinate frame in the earth-centered frame of
-  // reference. X points north, Z points down.
-  // makeSimulationFrameRelative() only includes rotation.
-  osg::Matrix makeSimulationFrameRelative() const;
-  osg::Matrix makeSimulationFrame() const;
-
-  // Create a Z-up local coordinate frame in the earth-centered frame
-  // of reference. This is what scenery models, etc. expect.
-  // makeZUpFrameRelative() only includes rotation.
-  osg::Matrix makeZUpFrameRelative() const;
-  osg::Matrix makeZUpFrame() const;
-#endif
 private:
   /// This one is private since construction is not unique if you do
   /// not know the units of the arguments. Use the factory methods for

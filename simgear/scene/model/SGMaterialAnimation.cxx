@@ -28,6 +28,7 @@
 #include <simgear/scene/material/Technique.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/model/ConditionNode.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
 using namespace std;
 using namespace simgear;

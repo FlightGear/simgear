@@ -40,7 +40,7 @@
 #include <osg/CullFace>
 
 #include <simgear/debug/logstream.hxx>
-#include <simgear/math/SGMath.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>

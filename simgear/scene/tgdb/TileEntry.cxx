@@ -42,13 +42,13 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.h>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "ReaderWriterSPT.hxx"
@@ -111,7 +111,7 @@ static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
                             double lon, double elev, double hdg)
 {
     SGGeod geod = SGGeod::fromDegM(lon, lat, elev);
-    obj_pos = geod.makeZUpFrame();
+    obj_pos = makeZUpFrame(geod);
     // hdg is not a compass heading, but a counter-clockwise rotation
     // around the Z axis
     obj_pos.preMult(osg::Matrix::rotate(hdg * SGD_DEGREES_TO_RADIANS,

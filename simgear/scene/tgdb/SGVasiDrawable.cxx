@@ -27,6 +27,8 @@
 
 #include "SGVasiDrawable.hxx"
 
+#include <simgear/scene/util/OsgMath.hxx>
+
 struct SGVasiDrawable::LightData {
   LightData(const SGVec3f& p, const SGVec3f& n, const SGVec3f& up) :
     position(p),

@@ -26,6 +26,7 @@
 #include <osg/NodeVisitor>
 #include <osg/TemplatePrimitiveFunctor>
 
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/scene/bvh/BVHGroup.hxx>
 #include <simgear/scene/bvh/BVHLineGeometry.hxx>

@@ -18,6 +18,8 @@
 #ifndef SGIntersect_HXX
 #define SGIntersect_HXX
 
+#include <algorithm>
+
 template<typename T>
 inline bool
 intersects(const SGSphere<T>& s1, const SGSphere<T>& s2)

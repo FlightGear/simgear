@@ -866,6 +866,23 @@ Expression* logicopParser(const SGPropertyNode* exp, Parser* parser)
 ExpParserRegistrar andRegistrar("and", logicopParser<AndExpression>);
 ExpParserRegistrar orRegistrar("or", logicopParser<OrExpression>);
 
+Expression* notLogicopParser(const SGPropertyNode* exp, Parser* parser)
+{
+    using namespace boost;
+    vector<Expression*> children;
+    parser->readChildren(exp, children);
+    vector<Expression*>::iterator notBool =
+        find_if(children.begin(), children.end(),
+                boost::bind(&Expression::getType, _1) != BOOL);
+    if (notBool != children.end() || children.size() != 1)
+        throw("non boolean operand to not expression");
+    NotExpression *expr = new NotExpression;
+    expr->setOperand(static_cast< ::SGExpression<bool>*>(children[0]));
+    return expr;
+}
+
+ExpParserRegistrar notRegistrar("not", notLogicopParser);
+
 int BindingLayout::addBinding(const string& name, Type type)
 {
     //XXX error checkint

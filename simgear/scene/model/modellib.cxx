@@ -109,7 +109,8 @@ SGModelLib::loadModel(const string &path,
                        SGModelData *data,
                        bool load2DPanels)
 {
-    osg::ref_ptr<SGReaderWriterOptions> opt = new SGReaderWriterOptions(*(osgDB::Registry::instance()->getOptions()));
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     
@@ -132,9 +133,8 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
     proxyNode->setFileName(0, path);
 
-    osg::ref_ptr<SGReaderWriterOptions> opt
-        = new SGReaderWriterOptions(*(osgDB::Registry::instance()
-                                         ->getOptions()));
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);
@@ -158,9 +158,8 @@ SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
     plod->setFileName(0, path);
     plod->setRange(0, 0.0, 50.0*SG_NM_TO_METER);
 
-    osg::ref_ptr<SGReaderWriterOptions> opt
-        = new SGReaderWriterOptions(*(osgDB::Registry::instance()
-                                         ->getOptions()));
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(osgDB::Registry::instance()->getOptions());
     opt->setPropertyNode(prop_root ? prop_root: static_propRoot.get());
     opt->setModelData(data);
     opt->setLoadPanel(static_panelFunc);

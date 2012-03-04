@@ -269,11 +269,9 @@ sgLoad3DModel_internal(const SGPath& path,
         if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
-        osg::ref_ptr<SGReaderWriterOptions> options2;
-        options2 = new SGReaderWriterOptions(*options);
-        options2->setDatabasePath(texturepath.str());
+        options->setDatabasePath(texturepath.str());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.str(), options2.get());
+        modelResult = osgDB::readNodeFile(modelpath.str(), options.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath.str());
@@ -289,7 +287,7 @@ sgLoad3DModel_internal(const SGPath& path,
         model->addObserver(databaseReference);
 
         // Update liveries
-        TextureUpdateVisitor liveryUpdate(options2->getDatabasePathList());
+        TextureUpdateVisitor liveryUpdate(options->getDatabasePathList());
         model->accept(liveryUpdate);
 
         // Copy the userdata fields, still sharing the boundingvolumes,

@@ -297,13 +297,8 @@ TileEntry::loadTileByFileName(const string& fileName,
         }
     }
 
-    const SGReaderWriterOptions* btgOpt;
-    btgOpt = dynamic_cast<const SGReaderWriterOptions*>(options);
     osg::ref_ptr<SGReaderWriterOptions> opt;
-    if (btgOpt)
-        opt = new SGReaderWriterOptions(*btgOpt);
-    else
-        opt = new SGReaderWriterOptions;
+    opt = SGReaderWriterOptions::copyOrCreate(options);
 
     // obj_load() will generate ground lighting for us ...
     osg::Group* new_tile = new osg::Group;

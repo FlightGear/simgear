@@ -68,11 +68,6 @@ private:
     // osgDB::DatabasePager.
     osg::ref_ptr<osg::Referenced> _databaseRequest;
 
-    static bool obj_load( const std::string& path,
-                          osg::Group* geometry,
-                          bool is_base,
-                          const osgDB::Options* options);
-
     /**
      * This value is used by the tile scheduler/loader to load tiles
      * in a useful sequence. The priority is set to reflect the tiles

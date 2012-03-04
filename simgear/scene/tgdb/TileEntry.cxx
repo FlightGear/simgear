@@ -130,17 +130,6 @@ void TileEntry::prep_ssg_node(float vis) {
     _node->setRange( 0, 0, vis + bounding_radius );
 }
 
-bool TileEntry::obj_load(const string& path, osg::Group *geometry, bool is_base,
-                         const osgDB::Options* options)
-{
-    osg::Node* node = osgDB::readNodeFile(path, options);
-    if (node)
-      geometry->addChild(node);
-
-    return node != 0;
-}
-
-
 typedef enum {
     OBJECT,
     OBJECT_SHARED,
@@ -305,8 +294,10 @@ TileEntry::loadTileByFileName(const string& fileName,
 
     if (found_tile_base) {
         // load tile if found ...
-        obj_load( object_base.str(), new_tile, true, opt.get());
-
+        osg::ref_ptr<osg::Node> node;
+        node = osgDB::readRefNodeFile(object_base.str(), opt.get());
+        if (node.valid())
+            new_tile->addChild(node);
     } else {
         // ... or generate an ocean tile on the fly
         SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
@@ -328,7 +319,10 @@ TileEntry::loadTileByFileName(const string& fileName,
         if (obj->type == OBJECT) {
             SGPath custom_path = obj->path;
             custom_path.append( obj->name );
-            obj_load( custom_path.str(), new_tile, false, opt.get());
+            osg::ref_ptr<osg::Node> node;
+            node = osgDB::readRefNodeFile(custom_path.str(), opt.get());
+            if (node.valid())
+                new_tile->addChild(node);
 
         } else if (obj->type == OBJECT_SHARED || obj->type == OBJECT_STATIC) {
             // object loading is deferred to main render thread,
@@ -341,33 +335,30 @@ TileEntry::loadTileByFileName(const string& fileName,
             }
             custom_path.append( obj->name );
 
-            osg::Matrix obj_pos;
-            WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
-
-            osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
-            obj_trans->setDataVariance(osg::Object::STATIC);
-            obj_trans->setMatrix( obj_pos );
-
-            // wire as much of the scene graph together as we can
-            new_tile->addChild( obj_trans );
-
-            osg::Node* model = 0;
+            osg::ref_ptr<osg::Node> model;
             if(_modelLoader)
                 model = _modelLoader->loadTileModel(custom_path.str(),
                                                     obj->type == OBJECT_SHARED);
-            if (model)
-                obj_trans->addChild(model);
+            else
+                model = osgDB::readRefNodeFile(custom_path.str(), opt.get());
+
+            if (model.valid()) {
+                osg::Matrix obj_pos;
+                WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
+                
+                osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
+                obj_trans->setDataVariance(osg::Object::STATIC);
+                obj_trans->setMatrix( obj_pos );
+                
+                // wire as much of the scene graph together as we can
+                new_tile->addChild( obj_trans );
+
+                obj_trans->addChild(model.get());
+            }
         } else if (obj->type == OBJECT_SIGN || obj->type == OBJECT_RUNWAY_SIGN) {
             // load the object itself
             SGPath custom_path = obj->path;
             custom_path.append( obj->name );
-
-            osg::Matrix obj_pos;
-            WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
-
-            osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
-            obj_trans->setDataVariance(osg::Object::STATIC);
-            obj_trans->setMatrix( obj_pos );
 
             osg::Node *custom_obj = 0;
             if (obj->type == OBJECT_SIGN)
@@ -377,10 +368,17 @@ TileEntry::loadTileByFileName(const string& fileName,
 
             // wire the pieces together
             if ( custom_obj != NULL ) {
-                obj_trans -> addChild( custom_obj );
+                osg::Matrix obj_pos;
+                WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
+                
+                osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
+                obj_trans->setDataVariance(osg::Object::STATIC);
+                obj_trans->setMatrix( obj_pos );
+                
+                obj_trans->addChild( custom_obj );
+                
+                new_tile->addChild( obj_trans );
             }
-            new_tile->addChild( obj_trans );
-
         }
         delete obj;
     }

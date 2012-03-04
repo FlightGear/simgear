@@ -81,6 +81,12 @@ HLAObjectClass::getName() const
     return _name;
 }
 
+const SGWeakPtr<HLAFederate>&
+HLAObjectClass::getFederate() const
+{
+    return _federate;
+}
+
 unsigned
 HLAObjectClass::getNumAttributes() const
 {

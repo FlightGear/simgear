@@ -41,6 +41,9 @@ public:
 
     const std::string& getName() const;
 
+    /// return the federate this interaction class belongs to
+    const SGWeakPtr<HLAFederate>& getFederate() const;
+
     HLASubscriptionType getSubscriptionType() const;
     void setSubscriptionType(HLASubscriptionType subscriptionType);
 

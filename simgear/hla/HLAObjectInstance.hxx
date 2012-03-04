@@ -39,13 +39,14 @@ public:
     virtual ~HLAObjectInstance();
 
     /// Return the name of this object instance
-    const std::string& getName() const
-    { return _name; }
+    const std::string& getName() const;
+
+    /// return the federate this instance belongs to
+    const SGWeakPtr<HLAFederate>& getFederate() const;
 
     /// Return the object class of this instance.
     /// Should always return a valid object class.
-    const SGSharedPtr<HLAObjectClass>& getObjectClass() const
-    { return _objectClass; }
+    const SGSharedPtr<HLAObjectClass>& getObjectClass() const;
 
     /// Return the number of attributes
     unsigned getNumAttributes() const;
@@ -55,7 +56,8 @@ public:
     /// Return the attribute name for the attribute with the given index
     std::string getAttributeName(unsigned index) const;
 
-    /// Return true if the attribute with the given index is owned by this federate
+    /// Return true if the attribute with the given index is owned by
+    /// this federate
     bool getAttributeOwned(unsigned index) const;
 
     /// Return the data type of the attribute with the given index
@@ -65,7 +67,8 @@ public:
     HLADataElement* getAttributeDataElement(unsigned index);
     const HLADataElement* getAttributeDataElement(unsigned index) const;
 
-    /// Write the raw attribute data value into data, works only of the object is backed up with an rti object instance
+    /// Write the raw attribute data value into data, works only of the object
+    /// is backed up with an rti object instance
     bool getAttributeData(unsigned index, RTIData& data) const;
 
     /// Sets the data element of the attribute with the given index to dataElement

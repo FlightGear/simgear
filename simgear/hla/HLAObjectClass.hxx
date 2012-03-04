@@ -38,6 +38,9 @@ public:
     /// Return the name of this object class
     const std::string& getName() const;
 
+    /// return the federate this class belongs to
+    const SGWeakPtr<HLAFederate>& getFederate() const;
+
     /// Return the number of attributes in this object class
     unsigned getNumAttributes() const;
 

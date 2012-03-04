@@ -55,6 +55,12 @@ HLAInteractionClass::getName() const
     return _name;
 }
 
+const SGWeakPtr<HLAFederate>&
+HLAInteractionClass::getFederate() const
+{
+    return _federate;
+}
+
 HLASubscriptionType
 HLAInteractionClass::getSubscriptionType() const
 {

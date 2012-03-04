@@ -51,6 +51,24 @@ HLAObjectInstance::~HLAObjectInstance()
     _clearRTIObjectInstance();
 }
 
+const std::string&
+HLAObjectInstance::getName() const
+{
+    return _name;
+}
+
+const SGWeakPtr<HLAFederate>&
+HLAObjectInstance::getFederate() const
+{
+    return _federate;
+}
+
+const SGSharedPtr<HLAObjectClass>&
+HLAObjectInstance::getObjectClass() const
+{
+    return _objectClass;
+}
+
 unsigned
 HLAObjectInstance::getNumAttributes() const
 {

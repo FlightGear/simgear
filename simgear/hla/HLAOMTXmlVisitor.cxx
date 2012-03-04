@@ -529,28 +529,26 @@ HLAOMTXmlVisitor::endXML()
         throw sg_exception("Internal parse error!");
 
     // propagate parent attributes to the derived classes
-    // Note that this preserves the order og the attributes starting from the root object
+    // Note that this preserves the order of the attributes starting from the root object
     for (ObjectClassList::const_iterator i = _objectClassList.begin(); i != _objectClassList.end(); ++i) {
         SGSharedPtr<const ObjectClass> objectClass = (*i)->_parentObjectClass;
-        while (objectClass) {
-            for (AttributeList::const_reverse_iterator j = objectClass->_attributes.rbegin();
-                 j != objectClass->_attributes.rend(); ++j) {
-                (*i)->_attributes.insert((*i)->_attributes.begin(), *j);
-            }
-            objectClass = objectClass->_parentObjectClass;
+        if (!objectClass.valid())
+            continue;
+        for (AttributeList::const_reverse_iterator j = objectClass->_attributes.rbegin();
+             j != objectClass->_attributes.rend(); ++j) {
+            (*i)->_attributes.insert((*i)->_attributes.begin(), *j);
         }
     }
 
     // propagate parent parameter to the derived interactions
-    // Note that this preserves the order og the parameters starting from the root object
+    // Note that this preserves the order of the parameters starting from the root object
     for (InteractionClassList::const_iterator i = _interactionClassList.begin(); i != _interactionClassList.end(); ++i) {
         SGSharedPtr<const InteractionClass> interactionClass = (*i)->_parentInteractionClass;
-        while (interactionClass) {
-            for (ParameterList::const_reverse_iterator j = interactionClass->_parameters.rbegin();
-                 j != interactionClass->_parameters.rend(); ++j) {
-                (*i)->_parameters.insert((*i)->_parameters.begin(), *j);
-            }
-            interactionClass = interactionClass->_parentInteractionClass;
+        if (!interactionClass.valid())
+            continue;
+        for (ParameterList::const_reverse_iterator j = interactionClass->_parameters.rbegin();
+             j != interactionClass->_parameters.rend(); ++j) {
+            (*i)->_parameters.insert((*i)->_parameters.begin(), *j);
         }
     }
 }

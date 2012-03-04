@@ -54,7 +54,7 @@ const char* ReaderWriterSTG::className() const
 
 osgDB::ReaderWriter::ReadResult
 ReaderWriterSTG::readNode(const std::string& fileName,
-                          const osgDB::ReaderWriter::Options* options) const
+                          const osgDB::Options* options) const
 {
     osg::Node* result = TileEntry::loadTileByFileName(fileName, options);
     // For debugging race conditions

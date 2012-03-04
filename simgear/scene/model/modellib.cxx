@@ -65,7 +65,7 @@ void SGModelLib::setPanelFunc(panel_func pf)
 }
 
 std::string SGModelLib::findDataFile(const std::string& file, 
-  const osgDB::ReaderWriter::Options* opts,
+  const osgDB::Options* opts,
   SGPath currentPath)
 {
   if (file.empty())
@@ -141,9 +141,9 @@ SGModelLib::loadDeferredModel(const string &path, SGPropertyNode *prop_root,
     if (SGPath(path).lower_extension() == "ac")
         opt->setInstantiateEffects(true);
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
-        opt->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_ALL);
+        opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else
-        opt->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
+        opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
     proxyNode->setDatabaseOptions(opt.get());
 
     return proxyNode;
@@ -167,9 +167,9 @@ SGModelLib::loadPagedModel(const string &path, SGPropertyNode *prop_root,
     if (SGPath(path).lower_extension() == "ac")
         opt->setInstantiateEffects(true);
     if (!prop_root || prop_root->getBoolValue("/sim/rendering/cache", true))
-        opt->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_ALL);
+        opt->setObjectCacheHint(osgDB::Options::CACHE_ALL);
     else
-        opt->setObjectCacheHint(osgDB::ReaderWriter::Options::CACHE_NONE);
+        opt->setObjectCacheHint(osgDB::Options::CACHE_NONE);
     plod->setDatabaseOptions(opt.get());
     return plod;
 }

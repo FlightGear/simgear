@@ -94,7 +94,7 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 {
     osg::StateSet *stateSet = new osg::StateSet;
 
-    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+    osg::ref_ptr<osgDB::Options> options
         = makeOptionsFromPath(path);
     stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
                                                      options.get()));

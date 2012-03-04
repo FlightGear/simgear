@@ -111,7 +111,7 @@ class Particles : public osg::NodeCallback
 public:
     Particles();
 
-    static osg::Group * appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::ReaderWriter::Options* options);
+    static osg::Group * appendParticles(const SGPropertyNode* configNode, SGPropertyNode* modelRoot, const osgDB::Options* options);
 
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 

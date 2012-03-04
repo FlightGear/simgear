@@ -412,7 +412,7 @@ private:
 
 SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
                                          SGPropertyNode* modelRoot,
-                                         const osgDB::ReaderWriter::Options*
+                                         const osgDB::Options*
                                          options) :
   SGAnimation(configNode, modelRoot),
   texturePathList(options->getDatabasePathList())

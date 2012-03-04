@@ -89,7 +89,7 @@ public:
    * state information for the material.  This node is usually
    * loaded from the $FG_ROOT/materials.xml file.
    */
-  SGMaterial( const osgDB::ReaderWriter::Options*, 
+  SGMaterial( const osgDB::Options*, 
               const SGPropertyNode *props, 
               SGPropertyNode *prop_root);
 

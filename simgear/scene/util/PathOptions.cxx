@@ -27,11 +27,11 @@
 
 using namespace simgear;
 
-osgDB::ReaderWriter::Options* simgear::makeOptionsFromPath(const SGPath& path)
+osgDB::Options* simgear::makeOptionsFromPath(const SGPath& path)
 {
     using namespace osgDB;
-    ReaderWriter::Options *options
-        = new ReaderWriter::Options(*(Registry::instance()->getOptions()));
+    Options *options
+        = new Options(*(Registry::instance()->getOptions()));
     options->setDatabasePath(path.str());
     return options;
 }

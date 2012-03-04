@@ -131,7 +131,7 @@ void TileEntry::prep_ssg_node(float vis) {
 }
 
 bool TileEntry::obj_load(const string& path, osg::Group *geometry, bool is_base,
-                         const osgDB::ReaderWriter::Options* options)
+                         const osgDB::Options* options)
 {
     osg::Node* node = osgDB::readNodeFile(path, options);
     if (node)
@@ -178,7 +178,7 @@ struct Object {
 
 osg::Node*
 TileEntry::loadTileByFileName(const string& fileName,
-                              const osgDB::ReaderWriter::Options* options)
+                              const osgDB::Options* options)
 {
     std::string index_str = osgDB::getNameLessExtension(fileName);
     index_str = osgDB::getSimpleFileName(index_str);

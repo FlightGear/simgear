@@ -57,7 +57,7 @@ SGReaderWriterBTG::acceptsExtension(const std::string& extension) const
 
 osgDB::ReaderWriter::ReadResult
 SGReaderWriterBTG::readNode(const std::string& fileName,
-                            const osgDB::ReaderWriter::Options* options) const
+                            const osgDB::Options* options) const
 {
     const SGReaderWriterOptions* sgOptions;
     sgOptions = dynamic_cast<const SGReaderWriterOptions*>(options);

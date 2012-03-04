@@ -69,7 +69,7 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     env_node = property_tree_Node;
 
-    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+    osg::ref_ptr<osgDB::Options> options
         = makeOptionsFromPath(path);
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch

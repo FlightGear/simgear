@@ -410,7 +410,7 @@ SGAnimation::~SGAnimation()
 bool
 SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
                      SGPropertyNode* modelRoot,
-                     const osgDB::ReaderWriter::Options* options)
+                     const osgDB::Options* options)
 {
   std::string type = configNode->getStringValue("type", "none");
   if (type == "alpha-test") {

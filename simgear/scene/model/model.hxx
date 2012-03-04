@@ -30,12 +30,12 @@ class SGReaderWriterOptions;
 
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true, int mipmaplevels = -1);
 
 inline osg::Texture2D*
 SGLoadTexture2D(const std::string& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true, int mipmaplevels = -1)
 {
     return SGLoadTexture2D(true, path, options, wrapu, wrapv, mipmaplevels);
@@ -43,7 +43,7 @@ SGLoadTexture2D(const std::string& path,
 
 inline osg::Texture2D*
 SGLoadTexture2D(const SGPath& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {
@@ -53,7 +53,7 @@ SGLoadTexture2D(const SGPath& path,
 
 inline osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const SGPath& path,
-                const osgDB::ReaderWriter::Options* options = 0,
+                const osgDB::Options* options = 0,
                 bool wrapu = true, bool wrapv = true,
                 int mipmaplevels = -1)
 {

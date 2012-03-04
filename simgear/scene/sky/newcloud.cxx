@@ -110,7 +110,7 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
                                      "texture"),
                            "image"),
                  texture);
-        ref_ptr<osgDB::ReaderWriter::Options> options
+        ref_ptr<osgDB::Options> options
             = makeOptionsFromPath(texture_root);
         ref_ptr<SGReaderWriterOptions> sgOptions
             = new SGReaderWriterOptions(*options.get());

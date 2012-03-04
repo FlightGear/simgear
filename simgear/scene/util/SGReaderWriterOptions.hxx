@@ -39,7 +39,7 @@ public:
         _instantiateEffects(false)
     { }
     SGReaderWriterOptions(const std::string& str) :
-        osgDB::ReaderWriter::Options(str),
+        osgDB::Options(str),
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
@@ -47,7 +47,7 @@ public:
     { }
     SGReaderWriterOptions(const osgDB::Options& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
-        osgDB::ReaderWriter::Options(options, copyop),
+        osgDB::Options(options, copyop),
         _materialLib(0),
         _load_panel(0),
         _model_data(0),
@@ -55,7 +55,7 @@ public:
     { }
     SGReaderWriterOptions(const SGReaderWriterOptions& options,
                           const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY) :
-        osgDB::ReaderWriter::Options(options, copyop),
+        osgDB::Options(options, copyop),
         _propertyNode(options._propertyNode),
         _materialLib(options._materialLib),
         _load_panel(options._load_panel),

@@ -135,7 +135,7 @@ void transformParticles(osgParticle::ParticleSystem* particleSys,
 
 osg::Group * Particles::appendParticles(const SGPropertyNode* configNode,
                                           SGPropertyNode* modelRoot,
-                                          const osgDB::ReaderWriter::Options*
+                                          const osgDB::Options*
                                           options)
 {
     SG_LOG(SG_GENERAL, SG_DEBUG, "Setting up a particle system!\n");

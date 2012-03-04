@@ -193,7 +193,7 @@ public:
 } // namespace
 
 Node* DefaultProcessPolicy::process(Node* node, const string& filename,
-                                    const ReaderWriter::Options* opt)
+                                    const Options* opt)
 {
     TextureNameVisitor nameVisitor;
     node->accept(nameVisitor);
@@ -202,7 +202,7 @@ Node* DefaultProcessPolicy::process(Node* node, const string& filename,
 
 ReaderWriter::ReadResult
 ModelRegistry::readImage(const string& fileName,
-                         const ReaderWriter::Options* opt)
+                         const Options* opt)
 {
     CallbackMap::iterator iter
         = imageCallbackMap.find(getFileExtension(fileName));
@@ -300,7 +300,7 @@ ModelRegistry::readImage(const string& fileName,
 
 
 osg::Node* DefaultCachePolicy::find(const string& fileName,
-                                    const ReaderWriter::Options* opt)
+                                    const Options* opt)
 {
     Registry* registry = Registry::instance();
     osg::Node* cached
@@ -342,7 +342,7 @@ OptimizeModelPolicy::OptimizeModelPolicy(const string& extension) :
 
 osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
                                          const string& fileName,
-                                         const osgDB::ReaderWriter::Options* opt)
+                                         const osgDB::Options* opt)
 {
     osgUtil::Optimizer optimizer;
     optimizer.optimize(node, _osgOptions);
@@ -358,7 +358,7 @@ osg::Node* OptimizeModelPolicy::optimize(osg::Node* node,
 }
 
 string OSGSubstitutePolicy::substitute(const string& name,
-                                       const ReaderWriter::Options* opt)
+                                       const Options* opt)
 {
     string fileSansExtension = getNameLessExtension(name);
     string osgFileName = fileSansExtension + ".osg";
@@ -413,7 +413,7 @@ ModelRegistry::addNodeCallbackForExtension(const string& extension,
 
 ReaderWriter::ReadResult
 ModelRegistry::readNode(const string& fileName,
-                        const ReaderWriter::Options* opt)
+                        const Options* opt)
 {
     ReaderWriter::ReadResult res;
     CallbackMap::iterator iter
@@ -436,10 +436,10 @@ public:
     Referenced::setThreadSafeReferenceCounting(true);
 
     Registry* registry = Registry::instance();
-    ReaderWriter::Options* options = new ReaderWriter::Options;
-    int cacheOptions = ReaderWriter::Options::CACHE_ALL;
+    Options* options = new Options;
+    int cacheOptions = Options::CACHE_ALL;
     options->
-      setObjectCacheHint((ReaderWriter::Options::CacheHintOptions)cacheOptions);
+      setObjectCacheHint((Options::CacheHintOptions)cacheOptions);
     registry->setOptions(options);
     registry->getOrCreateSharedStateManager()->
       setShareMode(SharedStateManager::SHARE_STATESETS);
@@ -457,7 +457,7 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
         _osgOptions &= ~Optimizer::TRISTRIP_GEOMETRY;
     }
     Node* optimize(Node* node, const string& fileName,
-                   const ReaderWriter::Options* opt)
+                   const Options* opt)
     {
         ref_ptr<Node> optimized
             = OptimizeModelPolicy::optimize(node, fileName, opt);
@@ -484,7 +484,7 @@ struct ACOptimizePolicy : public OptimizeModelPolicy {
 struct ACProcessPolicy {
     ACProcessPolicy(const string& extension) {}
     Node* process(Node* node, const string& filename,
-                  const ReaderWriter::Options* opt)
+                  const Options* opt)
     {
         Matrix m(1, 0, 0, 0,
                  0, 0, 1, 0,

@@ -39,7 +39,7 @@ using std::vector;
 
 osg::Texture2D*
 SGLoadTexture2D(bool staticTexture, const std::string& path,
-                const osgDB::ReaderWriter::Options* options,
+                const osgDB::Options* options,
                 bool wrapu, bool wrapv, int)
 {
   osg::Image* image;

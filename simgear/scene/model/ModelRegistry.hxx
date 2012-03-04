@@ -70,7 +70,7 @@ public:
     }
     virtual osgDB::ReaderWriter::ReadResult
     readNode(const std::string& fileName,
-             const osgDB::ReaderWriter::Options* opt)
+             const osgDB::Options* opt)
     {
         using namespace osg;
         using namespace osgDB;
@@ -103,7 +103,7 @@ public:
 protected:
     static osgDB::ReaderWriter::ReadResult
     loadUsingReaderWriter(const std::string& fileName,
-                          const osgDB::ReaderWriter::Options* opt)
+                          const osgDB::Options* opt)
     {
         using namespace osgDB;
         ReaderWriter* rw = Registry::instance()
@@ -126,20 +126,20 @@ protected:
 struct DefaultProcessPolicy {
     DefaultProcessPolicy(const std::string& extension) {}
     osg::Node* process(osg::Node* node, const std::string& filename,
-                       const osgDB::ReaderWriter::Options* opt);
+                       const osgDB::Options* opt);
 };
 
 struct DefaultCachePolicy {
     DefaultCachePolicy(const std::string& extension) {}
     osg::Node* find(const std::string& fileName,
-                    const osgDB::ReaderWriter::Options* opt);
+                    const osgDB::Options* opt);
     void addToCache(const std::string& filename, osg::Node* node);
 };
 
 struct NoCachePolicy {
     NoCachePolicy(const std::string& extension) {}
     osg::Node* find(const std::string& fileName,
-                    const osgDB::ReaderWriter::Options* opt)
+                    const osgDB::Options* opt)
     {
         return 0;
     }
@@ -150,7 +150,7 @@ class OptimizeModelPolicy {
 public:
     OptimizeModelPolicy(const std::string& extension);
     osg::Node* optimize(osg::Node* node, const std::string& fileName,
-                        const osgDB::ReaderWriter::Options* opt);
+                        const osgDB::Options* opt);
 protected:
     unsigned _osgOptions;
 };
@@ -158,7 +158,7 @@ protected:
 struct NoOptimizePolicy {
     NoOptimizePolicy(const std::string& extension) {}
     osg::Node* optimize(osg::Node* node, const std::string& fileName,
-                        const osgDB::ReaderWriter::Options* opt)
+                        const osgDB::Options* opt)
     {
         return node;
     }
@@ -167,13 +167,13 @@ struct NoOptimizePolicy {
 struct OSGSubstitutePolicy {
     OSGSubstitutePolicy(const std::string& extension) {}
     std::string substitute(const std::string& name,
-                           const osgDB::ReaderWriter::Options* opt);
+                           const osgDB::Options* opt);
 };
 
 struct NoSubstitutePolicy {
     NoSubstitutePolicy(const std::string& extension) {}
     std::string substitute(const std::string& name,
-                           const osgDB::ReaderWriter::Options* opt)
+                           const osgDB::Options* opt)
     {
         return std::string();
     }
@@ -206,10 +206,10 @@ public:
     ModelRegistry();
     virtual osgDB::ReaderWriter::ReadResult
     readImage(const std::string& fileName,
-              const osgDB::ReaderWriter::Options* opt);
+              const osgDB::Options* opt);
     virtual osgDB::ReaderWriter::ReadResult
     readNode(const std::string& fileName,
-             const osgDB::ReaderWriter::Options* opt);
+             const osgDB::Options* opt);
     void addImageCallbackForExtension(const std::string& extension,
                                       osgDB::Registry::ReadFileCallback*
                                       callback);

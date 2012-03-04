@@ -25,7 +25,7 @@
 
 namespace simgear
 {
-osgDB::ReaderWriter::Options* makeOptionsFromPath(const SGPath&);
+osgDB::Options* makeOptionsFromPath(const SGPath&);
 }
 
 #endif

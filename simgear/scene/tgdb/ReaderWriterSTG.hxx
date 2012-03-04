@@ -34,7 +34,7 @@ public:
     virtual const char* className() const;
 
     virtual ReadResult readNode(const std::string& fileName,
-                                const osgDB::ReaderWriter::Options* options)
+                                const osgDB::Options* options)
         const;
 };
 

@@ -46,7 +46,7 @@ public:
 
   static bool animate(osg::Node* node, const SGPropertyNode* configNode,
                       SGPropertyNode* modelRoot,
-                      const osgDB::ReaderWriter::Options* options);
+                      const osgDB::Options* options);
 
 protected:
   void apply(osg::Node* node);
@@ -321,7 +321,7 @@ class SGShaderAnimation : public SGAnimation {
 public:
   SGShaderAnimation(const SGPropertyNode* configNode,
                     SGPropertyNode* modelRoot,
-                    const osgDB::ReaderWriter::Options* options);
+                    const osgDB::Options* options);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
   class UpdateCallback;

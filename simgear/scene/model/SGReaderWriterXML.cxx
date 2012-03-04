@@ -58,7 +58,7 @@ using namespace osg;
 
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
-                       const osgDB::ReaderWriter::Options* options,
+                       const osgDB::Options* options,
                        SGPropertyNode *overlay = 0);
 
 
@@ -78,7 +78,7 @@ const char* SGReaderWriterXML::className() const
 
 osgDB::ReaderWriter::ReadResult
 SGReaderWriterXML::readNode(const std::string& fileName,
-                            const osgDB::ReaderWriter::Options* options) const
+                            const osgDB::Options* options) const
 {
     osg::Node *result=0;
     try {
@@ -200,7 +200,7 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
-                       const osgDB::ReaderWriter::Options* options_,
+                       const osgDB::Options* options_,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {

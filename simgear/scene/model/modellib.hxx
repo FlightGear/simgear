@@ -71,7 +71,7 @@ public:
                                      SGModelData *data=0);
 
     static std::string findDataFile(const std::string& file, 
-      const osgDB::ReaderWriter::Options* opts = NULL,
+      const osgDB::Options* opts = NULL,
       SGPath currentDir = SGPath()); 
 protected:
     SGModelLib();

@@ -71,7 +71,7 @@ private:
     static bool obj_load( const std::string& path,
                           osg::Group* geometry,
                           bool is_base,
-                          const osgDB::ReaderWriter::Options* options);
+                          const osgDB::Options* options);
 
     /**
      * This value is used by the tile scheduler/loader to load tiles
@@ -106,7 +106,7 @@ public:
      * Transition to OSG database pager
      */
     static osg::Node* loadTileByFileName(const std::string& index_str,
-                                         const osgDB::ReaderWriter::Options*);
+                                         const osgDB::Options*);
     /**
      * Return true if the tile entry is loaded, otherwise return false
      * indicating that the loading thread is still working on this.

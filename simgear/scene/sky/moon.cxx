@@ -78,7 +78,7 @@ SGMoon::build( SGPath path, double moon_size ) {
     stateSet->setRenderBinDetails(-5, "RenderBin");
 
     // set up the orb state
-    osg::ref_ptr<osgDB::ReaderWriter::Options> options
+    osg::ref_ptr<osgDB::Options> options
         = makeOptionsFromPath(path);
 
     osg::Texture2D* texture = SGLoadTexture2D("moon.png", options.get());

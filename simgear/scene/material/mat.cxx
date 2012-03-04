@@ -96,7 +96,7 @@ SGMaterial::SGMaterial( const SGReaderWriterOptions* options,
     buildEffectProperties(options);
 }
 
-SGMaterial::SGMaterial( const osgDB::ReaderWriter::Options* options,
+SGMaterial::SGMaterial( const osgDB::Options* options,
                         const SGPropertyNode *props, 
                         SGPropertyNode *prop_root)
 {

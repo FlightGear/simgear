@@ -200,34 +200,26 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
-                       const osgDB::Options* options_,
+                       const osgDB::Options* dbOptions,
                        SGPropertyNode *overlay)
 {
     if (!path.exists()) {
       SG_LOG(SG_INPUT, SG_ALERT, "Failed to load file: \"" << path.str() << "\"");
       return NULL;
     }
-    
-    const SGReaderWriterOptions* xmlOptions;
-    xmlOptions = dynamic_cast<const SGReaderWriterOptions*>(options_);
 
-    SGSharedPtr<SGPropertyNode> prop_root;
-    osg::Node *(*load_panel)(SGPropertyNode *)=0;
-    osg::ref_ptr<SGModelData> data;
+    osg::ref_ptr<SGReaderWriterOptions> options;
+    options = SGReaderWriterOptions::copyOrCreate(dbOptions);
+    
     SGPath modelpath(path);
     SGPath texturepath(path);
     SGPath modelDir(modelpath.dir());
     
-    if (xmlOptions) {
-        prop_root = xmlOptions->getPropertyNode();
-        load_panel = xmlOptions->getLoadPanel();
-        data = xmlOptions->getModelData();
-    }
-    
-    if (!prop_root) {
+    SGSharedPtr<SGPropertyNode> prop_root = options->getPropertyNode();
+    if (!prop_root.valid())
         prop_root = new SGPropertyNode;
-    }
-
+    osg::ref_ptr<SGModelData> data = options->getModelData();
+    
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
     SGPropertyNode_ptr props = new SGPropertyNode;
@@ -269,10 +261,7 @@ sgLoad3DModel_internal(const SGPath& path,
         // model without wrapper
     }
 
-    osg::ref_ptr<SGReaderWriterOptions> options
-    = new SGReaderWriterOptions(*options_);
     options->setPropertyNode(prop_root);
-    options->setLoadPanel(load_panel);
     
     // Assume that textures are in
     // the same location as the XML file.
@@ -280,9 +269,11 @@ sgLoad3DModel_internal(const SGPath& path,
         if (!texturepath.extension().empty())
             texturepath = texturepath.dir();
 
-        options->setDatabasePath(texturepath.str());
+        osg::ref_ptr<SGReaderWriterOptions> options2;
+        options2 = new SGReaderWriterOptions(*options);
+        options2->setDatabasePath(texturepath.str());
         osgDB::ReaderWriter::ReadResult modelResult;
-        modelResult = osgDB::readNodeFile(modelpath.str(), options.get());
+        modelResult = osgDB::readNodeFile(modelpath.str(), options2.get());
         if (!modelResult.validNode())
             throw sg_io_exception("Failed to load 3D model:" + modelResult.message(),
                                   modelpath.str());
@@ -298,7 +289,7 @@ sgLoad3DModel_internal(const SGPath& path,
         model->addObserver(databaseReference);
 
         // Update liveries
-        TextureUpdateVisitor liveryUpdate(options->getDatabasePathList());
+        TextureUpdateVisitor liveryUpdate(options2->getDatabasePathList());
         model->accept(liveryUpdate);
 
         // Copy the userdata fields, still sharing the boundingvolumes,
@@ -353,11 +344,6 @@ sgLoad3DModel_internal(const SGPath& path,
           continue;
         }
 
-        osg::ref_ptr<SGReaderWriterOptions> options;
-        options = new SGReaderWriterOptions(*options_);
-        options->setPropertyNode(prop_root);
-        options->setLoadPanel(load_panel);
-        
         try {
             submodel = sgLoad3DModel_internal(submodelPath, options.get(),
                                               sub_props->getNode("overlay"));
@@ -405,6 +391,7 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     } // end of submodel loading
 
+    osg::Node *(*load_panel)(SGPropertyNode *) = options->getLoadPanel();
     if ( load_panel ) {
         // Load panels
         vector<SGPropertyNode_ptr> panel_nodes = props->getChildren("panel");
@@ -420,15 +407,17 @@ sgLoad3DModel_internal(const SGPath& path,
     std::vector<SGPropertyNode_ptr> particle_nodes;
     particle_nodes = props->getChildren("particlesystem");
     for (unsigned i = 0; i < particle_nodes.size(); ++i) {
+        osg::ref_ptr<SGReaderWriterOptions> options2;
+        options2 = new SGReaderWriterOptions(*options);
         if (i==0) {
             if (!texturepath.extension().empty())
                 texturepath = texturepath.dir();
 
-            options->setDatabasePath(texturepath.str());
+            options2->setDatabasePath(texturepath.str());
         }
         group->addChild(Particles::appendParticles(particle_nodes[i],
                         prop_root,
-                        options.get()));
+                        options2.get()));
     }
 
     std::vector<SGPropertyNode_ptr> text_nodes;

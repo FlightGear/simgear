@@ -21,7 +21,6 @@
 #define SGREADERWRITEROPTIONS_HXX 1
 
 #include <osgDB/Options>
-#include <osgDB/Registry>
 #include <simgear/scene/model/modellib.hxx>
 #include <simgear/props/props.hxx>
 
@@ -93,26 +92,11 @@ public:
     void setInstantiateEffects(bool instantiateEffects)
     { _instantiateEffects = instantiateEffects; }
 
-    static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options)
-    {
-        if (!options)
-            options = osgDB::Registry::instance()->getOptions();
-        if (!options)
-            return new SGReaderWriterOptions;
-        if (!dynamic_cast<const SGReaderWriterOptions*>(options))
-            return new SGReaderWriterOptions(*options);
-        return new SGReaderWriterOptions(*static_cast<const SGReaderWriterOptions*>(options));
-    }
-
-    static SGReaderWriterOptions* fromPath(const std::string& path)
-    {
-        SGReaderWriterOptions* options = copyOrCreate(0);
-        options->setDatabasePath(path);
-        return options;
-    }
+    static SGReaderWriterOptions* copyOrCreate(const osgDB::Options* options);
+    static SGReaderWriterOptions* fromPath(const std::string& path);
 
 protected:
-    virtual ~SGReaderWriterOptions() {}
+    virtual ~SGReaderWriterOptions();
 
 private:
     SGSharedPtr<SGPropertyNode> _propertyNode;

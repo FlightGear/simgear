@@ -31,6 +31,7 @@ set(SOURCES
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx
+    SGReaderWriterOptions.cxx
     SGSceneFeatures.cxx
     SGSceneUserData.cxx
     SGStateAttributeVisitor.cxx

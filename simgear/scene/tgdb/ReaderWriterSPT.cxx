@@ -67,6 +67,12 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
     stateSet->setAttributeAndModes(new osg::CullFace);
 
     std::string imageFileName = options->getPluginStringData("SimGear::FG_WORLD_TEXTURE");
+    if (imageFileName.empty()) {
+        imageFileName = options->getPluginStringData("SimGear::FG_ROOT");
+        imageFileName = osgDB::concatPaths(imageFileName, "Textures");
+        imageFileName = osgDB::concatPaths(imageFileName, "Globe");
+        imageFileName = osgDB::concatPaths(imageFileName, "world.topo.bathy.200407.3x4096x2048.png");
+    }
     if (osg::Image* image = osgDB::readImageFile(imageFileName, options)) {
         osg::Texture2D* texture = new osg::Texture2D;
         texture->setImage(image);

@@ -100,12 +100,11 @@ SGMaterial::SGMaterial( const osgDB::Options* options,
                         const SGPropertyNode *props, 
                         SGPropertyNode *prop_root)
 {
-    osg::ref_ptr<const SGReaderWriterOptions> sgOptions;
-    if (options)
-        sgOptions = new SGReaderWriterOptions(*options);
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(options);
     init();
-    read_properties( sgOptions.get(), props, prop_root);
-    buildEffectProperties(sgOptions.get());
+    read_properties(opt.get(), props, prop_root);
+    buildEffectProperties(opt.get());
 }
 
 SGMaterial::~SGMaterial (void)
@@ -409,9 +408,6 @@ osg::Texture2D* SGMaterial::get_object_mask(SGTexturedTriangleBin triangleBin)
 void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
 {
     using namespace osg;
-    ref_ptr<SGReaderWriterOptions> xmlOptions;
-    if (options)
-        xmlOptions = new SGReaderWriterOptions(*options);
     ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
@@ -449,7 +445,7 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
         makeChild(effectParamProp, "scale")->setValue(SGVec3d(xsize,ysize,0.0));
         makeChild(effectParamProp, "light-coverage")->setDoubleValue(light_coverage);
 
-        matState.effect = makeEffect(effectProp, false, xmlOptions.get());
+        matState.effect = makeEffect(effectProp, false, options);
         matState.effect->setUserData(user.get());
     }
 }

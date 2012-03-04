@@ -1794,14 +1794,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\scene\util\PathOptions.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\simgear\scene\util\PathOptions.hxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\scene\util\PrimitiveUtils.cxx"
 				>
 			</File>

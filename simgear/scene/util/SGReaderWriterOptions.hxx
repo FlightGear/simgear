@@ -104,6 +104,13 @@ public:
         return new SGReaderWriterOptions(*static_cast<const SGReaderWriterOptions*>(options));
     }
 
+    static SGReaderWriterOptions* fromPath(const std::string& path)
+    {
+        SGReaderWriterOptions* options = copyOrCreate(0);
+        options->setDatabasePath(path);
+        return options;
+    }
+
 protected:
     virtual ~SGReaderWriterOptions() {}
 

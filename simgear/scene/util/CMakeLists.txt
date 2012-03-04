@@ -22,7 +22,6 @@ set(HEADERS
     StateAttributeFactory.hxx
     UpdateOnceCallback.hxx
     VectorArrayAdapter.hxx
-    PathOptions.hxx
     project.hxx
     )
 
@@ -39,7 +38,6 @@ set(SOURCES
     SplicingVisitor.cxx
     StateAttributeFactory.cxx
     UpdateOnceCallback.cxx
-    PathOptions.cxx
     project.cxx
     )
 

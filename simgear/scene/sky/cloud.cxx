@@ -43,12 +43,9 @@
 #include <osg/TextureCubeMap>
 #include <osg/TexMat>
 #include <osg/Fog>
-#if SG_OSG_MIN_VERSION_REQUIRED(2,9,5)
-#include <osgDB/Options>
-#endif
 
 #include <simgear/math/sg_random.h>
-#include <simgear/scene/util/PathOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
@@ -94,8 +91,8 @@ SGMakeState(const SGPath &path, const char* colorTexture,
 {
     osg::StateSet *stateSet = new osg::StateSet;
 
-    osg::ref_ptr<osgDB::Options> options
-        = makeOptionsFromPath(path);
+    osg::ref_ptr<SGReaderWriterOptions> options;
+    options = SGReaderWriterOptions::fromPath(path.str());
     stateSet->setTextureAttribute(0, SGLoadTexture2D(colorTexture,
                                                      options.get()));
     stateSet->setTextureMode(0, GL_TEXTURE_2D, osg::StateAttribute::ON);

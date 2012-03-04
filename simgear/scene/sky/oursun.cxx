@@ -42,7 +42,7 @@
 #include <osgDB/ReadFile>
 
 #include <simgear/math/SGMath.hxx>
-#include <simgear/scene/util/PathOptions.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/screen/colors.hxx>
 #include <simgear/scene/model/model.hxx>
 #include "oursun.hxx"
@@ -69,8 +69,8 @@ SGSun::build( SGPath path, double sun_size, SGPropertyNode *property_tree_Node )
 
     env_node = property_tree_Node;
 
-    osg::ref_ptr<osgDB::Options> options
-        = makeOptionsFromPath(path);
+    osg::ref_ptr<SGReaderWriterOptions> options;
+    options = SGReaderWriterOptions::fromPath(path.str());
     // build the ssg scene graph sub tree for the sky and connected
     // into the provide scene graph branch
     sun_transform = new osg::MatrixTransform;

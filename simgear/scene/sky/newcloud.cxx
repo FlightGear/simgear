@@ -42,7 +42,6 @@
 
 #include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/scene/util/PathOptions.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
@@ -110,11 +109,9 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
                                      "texture"),
                            "image"),
                  texture);
-        ref_ptr<osgDB::Options> options
-            = makeOptionsFromPath(texture_root);
-        ref_ptr<SGReaderWriterOptions> sgOptions
-            = new SGReaderWriterOptions(*options.get());
-        if ((effect = makeEffect(pcloudEffect, true, sgOptions.get())))
+        ref_ptr<SGReaderWriterOptions> options;
+        options = SGReaderWriterOptions::fromPath(texture_root.str());
+        if ((effect = makeEffect(pcloudEffect, true, options.get())))
             effectMap.insert(EffectMap::value_type(texture, effect));
     } else {
         effect = iter->second.get();

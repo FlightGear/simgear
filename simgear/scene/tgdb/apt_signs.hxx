@@ -42,13 +42,11 @@ using std::string;
 
 
 // Generate a generic sign
-osg::Node* SGMakeSign( SGMaterialLib *matlib,
-                       const string& path, const string& content );
+osg::Node* SGMakeSign( SGMaterialLib *matlib, const string& content );
 
 
 // Generate a runway sign
-osg::Node* SGMakeRunwaySign( SGMaterialLib *matlib,
-                             const string& path, const string& name );
+osg::Node* SGMakeRunwaySign( SGMaterialLib *matlib, const string& name );
 
 
 #endif // _SG_APT_SIGNS_HXX

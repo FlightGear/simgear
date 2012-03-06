@@ -362,9 +362,9 @@ TileEntry::loadTileByFileName(const string& fileName,
 
             osg::Node *custom_obj = 0;
             if (obj->type == OBJECT_SIGN)
-                custom_obj = SGMakeSign(opt->getMaterialLib(), custom_path.str(), obj->name);
+                custom_obj = SGMakeSign(opt->getMaterialLib(), obj->name);
             else
-                custom_obj = SGMakeRunwaySign(opt->getMaterialLib(), custom_path.str(), obj->name);
+                custom_obj = SGMakeRunwaySign(opt->getMaterialLib(), obj->name);
 
             // wire the pieces together
             if ( custom_obj != NULL ) {

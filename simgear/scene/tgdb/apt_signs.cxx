@@ -90,7 +90,7 @@ struct pair {
 // see $FG_ROOT/Docs/README.scenery
 //
 osg::Node*
-SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
+SGMakeSign(SGMaterialLib *matlib, const string& content)
 {
     double sign_height = 1.0;  // meter
     bool lighted = true;
@@ -370,7 +370,7 @@ SGMakeSign(SGMaterialLib *matlib, const string& path, const string& content)
 }
 
 osg::Node*
-SGMakeRunwaySign(SGMaterialLib *matlib, const string& path, const string& name)
+SGMakeRunwaySign(SGMaterialLib *matlib, const string& name)
 {
     // for demo purposes we assume each element (letter) is 1x1 meter.
     // Sign is placed 0.25 meters above the ground

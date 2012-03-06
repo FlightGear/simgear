@@ -70,6 +70,16 @@ ModelRegistryCallbackProxy<LoadOnlyCallback> g_sptCallbackProxy("spt");
 }
 
 
+static SGBucket getBucketFromFileName(const std::string& fileName)
+{
+    std::istringstream ss(osgDB::getNameLessExtension(fileName));
+    long index;
+    ss >> index;
+    if (ss.fail())
+        return SGBucket();
+    return SGBucket(index);
+}
+
 // Constructor
 TileEntry::TileEntry ( const SGBucket& b )
     : tile_bucket( b ),
@@ -107,18 +117,6 @@ TileEntry::~TileEntry ()
 {
 }
 
-static void WorldCoordinate(osg::Matrix& obj_pos, double lat,
-                            double lon, double elev, double hdg)
-{
-    SGGeod geod = SGGeod::fromDegM(lon, lat, elev);
-    obj_pos = makeZUpFrame(geod);
-    // hdg is not a compass heading, but a counter-clockwise rotation
-    // around the Z axis
-    obj_pos.preMult(osg::Matrix::rotate(hdg * SGD_DEGREES_TO_RADIANS,
-                                        0.0, 0.0, 1.0));
-}
-
-
 // Update the ssg transform node for this tile so it can be
 // properly drawn relative to our (0,0,0) point
 void TileEntry::prep_ssg_node(float vis) {
@@ -130,259 +128,227 @@ void TileEntry::prep_ssg_node(float vis) {
     _node->setRange( 0, 0, vis + bounding_radius );
 }
 
-typedef enum {
-    OBJECT,
-    OBJECT_SHARED,
-    OBJECT_STATIC,
-    OBJECT_SIGN,
-    OBJECT_RUNWAY_SIGN
-} object_type;
-
-
-// storage class for deferred object processing in TileEntry::load()
-struct Object {
-    Object(object_type t, const string& token, const SGPath& p,
-           std::istream& in)
-        : type(t), path(p)
-    {
-        in >> name;
-        if (type != OBJECT)
-            in >> lon >> lat >> elev >> hdg;
-        in >> ::skipeol;
-
-        if (type == OBJECT)
-            SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  " << name);
-        else
-            SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  " << name << "  lon=" <<
-                    lon << "  lat=" << lat << "  elev=" << elev << "  hdg=" << hdg);
-    }
-    object_type type;
-    string name;
-    SGPath path;
-    double lon, lat, elev, hdg;
-};
-
-// Work in progress... load the tile based entirely by name cuz that's
-// what we'll want to do with the database pager.
-
 osg::Node*
 TileEntry::loadTileByFileName(const string& fileName,
                               const osgDB::Options* options)
 {
-    std::string index_str = osgDB::getNameLessExtension(fileName);
-    index_str = osgDB::getSimpleFileName(index_str);
+    SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
 
-    long tileIndex;
-    {
-        std::istringstream idxStream(index_str);
-        idxStream >> tileIndex;
+    // Space for up to two stg file names.
+    // There is usually one in the Terrain and one in the Objects subdirectory.
+    std::string absoluteFileName[2];
+
+    // We treat 123.stg different than ./123.stg.
+    // The difference is that ./123.stg as well as any absolute path
+    // really loads the given stg file and only this.
+    // In contrast 123.stg uses the search paths to load a set of stg
+    // files spread across the scenery directories.
+    std::string simpleFileName = osgDB::getSimpleFileName(fileName);
+    SGBucket bucket = getBucketFromFileName(simpleFileName);
+    bool file_mode = false;
+    if (simpleFileName == fileName && options) {
+        // This is considered a meta file, so apply the scenery path search
+        const osgDB::FilePathList& filePathList = options->getDatabasePathList();
+        std::string basePath = bucket.gen_base_path();
+        for (osgDB::FilePathList::const_iterator i = filePathList.begin();
+             i != filePathList.end(); ++i) {
+            SGPath terrain(*i);
+            terrain.append("Terrain");
+            terrain.append(basePath);
+            terrain.append(simpleFileName);
+
+            SGPath objects(*i);
+            objects.append("Objects");
+            objects.append(basePath);
+            objects.append(simpleFileName);
+
+            if (terrain.isFile() || objects.isFile()) {
+                absoluteFileName[0] = terrain.str();
+                absoluteFileName[1] = objects.str();
+                break;
+            }
+        }
+    } else {
+        // This is considered a real existing file.
+        // We still apply the search path algorithms for relative files.
+        absoluteFileName[0] = osgDB::findDataFile(fileName, options);
+        // Do not generate an ocean tile if we have no btg
+        file_mode = true;
     }
-    SGBucket tile_bucket(tileIndex);
-    const string basePath = tile_bucket.gen_base_path();
+
+    std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
+    osg::ref_ptr<SGReaderWriterOptions> opt;
+    opt = SGReaderWriterOptions::copyOrCreate(options);
 
     bool found_tile_base = false;
+    osg::ref_ptr<osg::Group> group = new osg::Group;
+    for (unsigned i = 0; i < 2; ++i) {
 
-    SGPath object_base;
-    vector<const Object*> objects;
+        if (absoluteFileName[i].empty())
+            continue;
 
-    SG_LOG( SG_TERRAIN, SG_INFO, "Loading tile " << index_str );
-
-    osgDB::FilePathList path_list=options->getDatabasePathList();
-    // Make sure we find the original filename here...
-    std::string filePath = osgDB::getFilePath(fileName);
-    if (!filePath.empty()) {
-        SGPath p(filePath);
-        p.append("..");
-        p.append("..");
-        path_list.push_front(p.str());
-    }
-
-    // scan and parse all files and store information
-    for (unsigned int i = 0; i < path_list.size(); i++) {
-        // If we found a terrain tile in Terrain/, we have to process the
-        // Objects/ dir in the same group, too, before we can stop scanning.
-        // FGGlobals::set_fg_scenery() inserts an empty string to path_list
-        // as marker.
-
-        if (path_list[i].empty()) {
-            if (found_tile_base)
-                break;
-            else
-                continue;
-        }
-
-        bool has_base = false;
-
-        SGPath tile_path = path_list[i];
-        tile_path.append(basePath);
-
-        SGPath basename = tile_path;
-        basename.append( index_str );
-
-        SG_LOG( SG_TERRAIN, SG_DEBUG, "  Trying " << basename.str() );
-
-
-        // Check for master .stg (scene terra gear) file
-        SGPath stg_name = basename;
-        stg_name.concat( ".stg" );
-
-        sg_gzifstream in( stg_name.str() );
+        sg_gzifstream in( absoluteFileName[i] );
         if ( !in.is_open() )
             continue;
 
+        SG_LOG(SG_TERRAIN, SG_INFO, "Loading stg file " << absoluteFileName[i]);
+
+        std::string filePath = osgDB::getFilePath(absoluteFileName[i]);
+
+        osg::ref_ptr<SGReaderWriterOptions> staticOptions;
+        staticOptions = SGReaderWriterOptions::copyOrCreate(options);
+        staticOptions->getDatabasePathList().clear();
+        staticOptions->getDatabasePathList().push_back(filePath);
+        staticOptions->setObjectCacheHint(osgDB::Options::CACHE_NONE);
+       
+        osg::ref_ptr<SGReaderWriterOptions> sharedOptions;
+        sharedOptions = SGReaderWriterOptions::copyOrCreate(options);
+        sharedOptions->getDatabasePathList().clear();
+
+        SGPath path = filePath;
+        path.append(".."); path.append(".."); path.append("..");
+        sharedOptions->getDatabasePathList().push_back(path.str());
+        sharedOptions->getDatabasePathList().push_back(fg_root);
+
+        bool has_base = false;
         while ( ! in.eof() ) {
-            string token;
+            std::string token;
             in >> token;
 
+            // No comment
             if ( token.empty() || token[0] == '#' ) {
-               in >> ::skipeol;
-               continue;
+                in >> ::skipeol;
+                continue;
             }
-                            // Load only once (first found)
+
+            // Then there is always a name
+            std::string name;
+            in >> name;
+
+            SGPath path = filePath;
+            path.append(name);
+
+            osg::ref_ptr<osg::Node> node;
             if ( token == "OBJECT_BASE" ) {
-                string name;
-                in >> name >> ::skipws;
+                // Load only once (first found)
                 SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
 
                 if (!found_tile_base) {
                     found_tile_base = true;
                     has_base = true;
+                    
+                    node = osgDB::readRefNodeFile(path.str(),
+                                                  staticOptions.get());
 
-                    object_base = tile_path;
-                    object_base.append(name);
-
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName[i]
+                                << ": Failed to load OBJECT_BASE '"
+                                << name << "'" );
+                    }
                 } else
                     SG_LOG(SG_TERRAIN, SG_BULK, "    (skipped)");
 
-                            // Load only if base is not in another file
             } else if ( token == "OBJECT" ) {
-                if (!found_tile_base || has_base)
-                    objects.push_back(new Object(OBJECT, token, tile_path, in));
-                else {
-                    string name;
-                    in >> name >> ::skipeol;
+                // Load only if base is not in another file
+                if (!found_tile_base || has_base) {
+                    node = osgDB::readRefNodeFile(path.str(),
+                                                  staticOptions.get());
+
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName[i]
+                                << ": Failed to load OBJECT '"
+                                << name << "'" );
+                    }
+                } else {
                     SG_LOG(SG_TERRAIN, SG_BULK, "    " << token << "  "
-                            << name << "  (skipped)");
+                           << name << "  (skipped)");
                 }
 
-                            // Always OK to load
-            } else if ( token == "OBJECT_STATIC" ) {
-                objects.push_back(new Object(OBJECT_STATIC, token, tile_path, in));
-
-            } else if ( token == "OBJECT_SHARED" ) {
-                objects.push_back(new Object(OBJECT_SHARED, token, tile_path, in));
-
-            } else if ( token == "OBJECT_SIGN" ) {
-                objects.push_back(new Object(OBJECT_SIGN, token, tile_path, in));
-
-            } else if ( token == "OBJECT_RUNWAY_SIGN" ) {
-                objects.push_back(new Object(OBJECT_RUNWAY_SIGN, token, tile_path, in));
-
             } else {
-                SG_LOG( SG_TERRAIN, SG_DEBUG,
-                        "Unknown token '" << token << "' in " << stg_name.str() );
-                in >> ::skipws;
+                double lon, lat, elev, hdg;
+                in >> lon >> lat >> elev >> hdg;
+                
+                // Always OK to load
+                if ( token == "OBJECT_STATIC" ) {
+                    /// Hmm, the findDataFile should happen downstream
+                    std::string absName = osgDB::findDataFile(name,
+                                               staticOptions.get());
+                    if(_modelLoader) {
+                        node = _modelLoader->loadTileModel(absName, false);
+                    } else {
+                        node = osgDB::readRefNodeFile(absName,
+                                               staticOptions.get());
+                    }
+
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName[i]
+                                << ": Failed to load OBJECT_STATIC '"
+                                << name << "'" );
+                    }
+                    
+                } else if ( token == "OBJECT_SHARED" ) {
+                    if(_modelLoader) {
+                        node = _modelLoader->loadTileModel(name, true);
+                    } else {
+                        /// Hmm, the findDataFile should happen in the downstream readers
+                        std::string absName = osgDB::findDataFile(name,
+                                                   sharedOptions.get());
+                        node = osgDB::readRefNodeFile(absName,
+                                                   sharedOptions.get());
+                    }
+
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName[i]
+                                << ": Failed to load OBJECT_SHARED '"
+                                << name << "'" );
+                    }
+                    
+                } else if ( token == "OBJECT_SIGN" ) {
+                    node = SGMakeSign(opt->getMaterialLib(), name);
+                    
+                } else if ( token == "OBJECT_RUNWAY_SIGN" ) {
+                    node = SGMakeRunwaySign(opt->getMaterialLib(), name);
+                    
+                } else {
+                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName[i]
+                            << ": Unknown token '" << token << "'" );
+                }
+
+                if (node.valid() && token != "OBJECT") {
+                    osg::Matrix matrix;
+                    matrix = makeZUpFrame(SGGeod::fromDegM(lon, lat, elev));
+                    matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(hdg),
+                                                   osg::Vec3(0, 0, 1)));
+                    
+                    osg::MatrixTransform* matrixTransform;
+                    matrixTransform = new osg::MatrixTransform(matrix);
+                    matrixTransform->setDataVariance(osg::Object::STATIC);
+                    matrixTransform->addChild(node.get());
+                    node = matrixTransform;
+                }
             }
+
+            if (node.valid())
+                group->addChild(node.get());
+
+            in >> ::skipeol;
         }
     }
 
-    osg::ref_ptr<SGReaderWriterOptions> opt;
-    opt = SGReaderWriterOptions::copyOrCreate(options);
-
-    // obj_load() will generate ground lighting for us ...
-    osg::Group* new_tile = new osg::Group;
-
-    if (found_tile_base) {
-        // load tile if found ...
-        osg::ref_ptr<osg::Node> node;
-        node = osgDB::readRefNodeFile(object_base.str(), opt.get());
-        if (node.valid())
-            new_tile->addChild(node);
-    } else {
+    if (!found_tile_base && !file_mode) {
         // ... or generate an ocean tile on the fly
         SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
 
-        osg::Node* node = SGOceanTile(tile_bucket, opt->getMaterialLib());
+        osg::Node* node = SGOceanTile(bucket, opt->getMaterialLib());
         if ( node ) {
-            new_tile->addChild(node);
+            group->addChild(node);
         } else {
             SG_LOG( SG_TERRAIN, SG_ALERT,
                     "Warning: failed to generate ocean tile!" );
         }
     }
 
-
-    // now that we have a valid center, process all the objects
-    for (unsigned int j = 0; j < objects.size(); j++) {
-        const Object *obj = objects[j];
-
-        if (obj->type == OBJECT) {
-            SGPath custom_path = obj->path;
-            custom_path.append( obj->name );
-            osg::ref_ptr<osg::Node> node;
-            node = osgDB::readRefNodeFile(custom_path.str(), opt.get());
-            if (node.valid())
-                new_tile->addChild(node);
-
-        } else if (obj->type == OBJECT_SHARED || obj->type == OBJECT_STATIC) {
-            // object loading is deferred to main render thread,
-            // but lets figure out the paths right now.
-            SGPath custom_path;
-            if ( obj->type == OBJECT_STATIC ) {
-                custom_path = obj->path;
-            } else {
-                // custom_path = globals->get_fg_root();
-            }
-            custom_path.append( obj->name );
-
-            osg::ref_ptr<osg::Node> model;
-            if(_modelLoader)
-                model = _modelLoader->loadTileModel(custom_path.str(),
-                                                    obj->type == OBJECT_SHARED);
-            else
-                model = osgDB::readRefNodeFile(custom_path.str(), opt.get());
-
-            if (model.valid()) {
-                osg::Matrix obj_pos;
-                WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
-                
-                osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
-                obj_trans->setDataVariance(osg::Object::STATIC);
-                obj_trans->setMatrix( obj_pos );
-                
-                // wire as much of the scene graph together as we can
-                new_tile->addChild( obj_trans );
-
-                obj_trans->addChild(model.get());
-            }
-        } else if (obj->type == OBJECT_SIGN || obj->type == OBJECT_RUNWAY_SIGN) {
-            // load the object itself
-            SGPath custom_path = obj->path;
-            custom_path.append( obj->name );
-
-            osg::Node *custom_obj = 0;
-            if (obj->type == OBJECT_SIGN)
-                custom_obj = SGMakeSign(opt->getMaterialLib(), obj->name);
-            else
-                custom_obj = SGMakeRunwaySign(opt->getMaterialLib(), obj->name);
-
-            // wire the pieces together
-            if ( custom_obj != NULL ) {
-                osg::Matrix obj_pos;
-                WorldCoordinate( obj_pos, obj->lat, obj->lon, obj->elev, obj->hdg );
-                
-                osg::MatrixTransform *obj_trans = new osg::MatrixTransform;
-                obj_trans->setDataVariance(osg::Object::STATIC);
-                obj_trans->setMatrix( obj_pos );
-                
-                obj_trans->addChild( custom_obj );
-                
-                new_tile->addChild( obj_trans );
-            }
-        }
-        delete obj;
-    }
-    return new_tile;
+    return group.release();
 }
 
 void

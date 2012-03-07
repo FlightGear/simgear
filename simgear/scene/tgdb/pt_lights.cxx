@@ -478,8 +478,8 @@ SGLightFactory::getSequenced(const SGDirectionalLightBin& lights)
   float flashTime = 2e-2 + 5e-3*sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(40.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  10.0f, 40.0f, true);
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
+                                  6.0f, 10.0f, true);
   for (int i = lights.getNumLights() - 1; 0 <= i; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
@@ -505,8 +505,8 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   float flashTime = 2e-2 + 5e-3*sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(40.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
-                                  10.0, 40.0, false);
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
+                                  6.0, 10.0, false);
   // centerline lights
   for (int i = lights.getNumLights() - 1; 2 <= i; --i) {
     EffectGeode* egeode = new EffectGeode;

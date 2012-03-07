@@ -756,7 +756,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   if (!tileGeometryBin.vasiLights.empty()) {
     EffectGeode* vasiGeode = new EffectGeode;
     Effect* vasiEffect
-        = getLightEffect(32, osg::Vec3(1, 0.0001, 0.000001), 1, 32, true);
+        = getLightEffect(24, osg::Vec3(1, 0.0001, 0.000001), 1, 24, true);
     vasiGeode->setEffect(vasiEffect);
     SGVec4f red(1, 0, 0, 1);
     SGMaterial* mat = 0;
@@ -782,8 +782,9 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   if (tileGeometryBin.runwayLights.getNumLights() > 0
       || !tileGeometryBin.rabitLights.empty()
       || !tileGeometryBin.reilLights.empty()
-      || !tileGeometryBin.odalLights.empty())
-      runwayEffect = getLightEffect(32, osg::Vec3(1, 0.001, 0.0002), 2, 32, true);
+      || !tileGeometryBin.odalLights.empty()
+      || tileGeometryBin.taxiLights.getNumLights() > 0)
+      runwayEffect = getLightEffect(16, osg::Vec3(1, 0.001, 0.0002), 1, 16, true);
   if (tileGeometryBin.runwayLights.getNumLights() > 0
       || !tileGeometryBin.rabitLights.empty()
       || !tileGeometryBin.reilLights.empty()
@@ -816,12 +817,11 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   }
 
   if (tileGeometryBin.taxiLights.getNumLights() > 0) {
-    Effect* taxiEffect = getLightEffect(16, osg::Vec3(1, 0.001, 0.0002), 1, 16, true);
     osg::Group* taxiLights = new osg::Group;
     taxiLights->setStateSet(lightManager->getTaxiLightStateSet());
     taxiLights->setNodeMask(RUNWAYLIGHTS_BIT);
     EffectGeode* geode = new EffectGeode;
-    geode->setEffect(taxiEffect);
+    geode->setEffect(runwayEffect);
     geode->addDrawable(SGLightFactory::getLights(tileGeometryBin.taxiLights));
     taxiLights->addChild(geode);
     lightGroup->addChild(taxiLights);

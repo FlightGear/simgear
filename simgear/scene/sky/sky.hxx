@@ -229,6 +229,7 @@ private:
     // visibility
     float visibility;
     float effective_visibility;
+    float minimum_sky_visibility;
 
     int in_cloud;
     int cur_layer_pos;
@@ -478,7 +479,10 @@ public:
     virtual void set_3dCloudWrap(bool wrap);
 
 
+    /** Get minimum sky visibility */
+    virtual float get_minimum_sky_visibility() const;
+
+    /** Set minimum sky visibility */
+    virtual void set_minimum_sky_visibility( float value );
 };
-
-
 #endif // _SG_SKY_HXX

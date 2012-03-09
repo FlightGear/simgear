@@ -40,6 +40,7 @@
 // Constructor
 SGSky::SGSky( void ) {
     effective_visibility = visibility = 10000.0;
+    minimum_sky_visibility = 1000;
 
     // near cloud visibility state variables
     in_puff = false;
@@ -113,7 +114,7 @@ void SGSky::build( double h_radius_m, double v_radius_m,
 // 180 degrees = darkest midnight
 bool SGSky::repaint( const SGSkyColor &sc, const SGEphemeris& eph )
 {
-    if ( effective_visibility > 1000.0 ) {
+    if ( effective_visibility > minimum_sky_visibility ) {
 	enable();
 	dome->repaint( sc.adj_sky_color, sc.sky_color, sc.fog_color,
                        sc.sun_angle, effective_visibility );
@@ -292,6 +293,15 @@ void SGSky::set_3dCloudUseImpostors(bool imp)
     SGCloudField::setUseImpostors(imp);
 }
 
+float SGSky::get_minimum_sky_visibility() const 
+{
+    return minimum_sky_visibility;
+}
+
+void SGSky::set_minimum_sky_visibility( float value )
+{
+    minimum_sky_visibility = value;
+}
 
 void SGSky::texture_path( const string& path ) {
 	tex_path = SGPath( path );

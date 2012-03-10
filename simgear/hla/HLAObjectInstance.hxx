@@ -159,7 +159,6 @@ private:
     struct Attribute {
         Attribute() : _enabledUpdate(false), _unconditionalUpdate(false) {}
         SGSharedPtr<HLADataElement> _dataElement;
-        // SGSharedPtr<HLADataElement::TimeStamp> _timeStamp;
         bool _enabledUpdate;
         bool _unconditionalUpdate;
         // HLAIndexList::iterator _unconditionalUpdateAttributeIndexListIterator;

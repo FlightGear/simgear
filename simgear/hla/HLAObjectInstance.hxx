@@ -35,7 +35,7 @@ class HLAObjectClass;
 
 class HLAObjectInstance : public SGWeakReferenced {
 public:
-    HLAObjectInstance(HLAObjectClass* objectClass);
+    HLAObjectInstance(HLAObjectClass* objectClass = 0);
     virtual ~HLAObjectInstance();
 
     /// Return the name of this object instance
@@ -78,6 +78,7 @@ public:
     void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
     void registerInstance();
+    void registerInstance(HLAObjectClass* objectClass);
     void deleteInstance(const RTIData& tag);
 
     // Push the current values into the RTI

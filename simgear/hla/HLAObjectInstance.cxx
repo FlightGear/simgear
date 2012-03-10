@@ -47,9 +47,10 @@ HLAObjectInstance::ReflectCallback::~ReflectCallback()
 }
 
 HLAObjectInstance::HLAObjectInstance(HLAObjectClass* objectClass) :
-    _federate(objectClass->_federate),
     _objectClass(objectClass)
 {
+    if (objectClass)
+        _federate = objectClass->_federate;
 }
 
 HLAObjectInstance::~HLAObjectInstance()
@@ -78,18 +79,24 @@ HLAObjectInstance::getObjectClass() const
 unsigned
 HLAObjectInstance::getNumAttributes() const
 {
+    if (!_objectClass.valid())
+        return 0;
     return _objectClass->getNumAttributes();
 }
 
 unsigned
 HLAObjectInstance::getAttributeIndex(const std::string& name) const
 {
+    if (!_objectClass.valid())
+        return ~0u;
     return _objectClass->getAttributeIndex(name);
 }
 
 std::string
 HLAObjectInstance::getAttributeName(unsigned index) const
 {
+    if (!_objectClass.valid())
+        return std::string();
     return _objectClass->getAttributeName(index);
 }
 
@@ -104,6 +111,8 @@ HLAObjectInstance::getAttributeOwned(unsigned index) const
 const HLADataType*
 HLAObjectInstance::getAttributeDataType(unsigned index) const
 {
+    if (!_objectClass.valid())
+        return 0;
     return _objectClass->getAttributeDataType(index);
 }
 
@@ -436,14 +445,26 @@ HLAObjectInstance::setAttributes(const HLAAttributePathElementMap& attributePath
 void
 HLAObjectInstance::registerInstance()
 {
+    registerInstance(_objectClass.get());
+}
+
+void
+HLAObjectInstance::registerInstance(HLAObjectClass* objectClass)
+{
     if (_rtiObjectInstance.valid()) {
         SG_LOG(SG_IO, SG_ALERT, "Trying to register object " << getName() << " already known to the RTI!");
         return;
     }
-    if (!_objectClass.valid()) {
+    if (!objectClass) {
         SG_LOG(SG_IO, SG_ALERT, "Could not register object with unknown object class!");
         return;
     }
+    if (_objectClass.valid() && objectClass != _objectClass.get()) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not change object class while registering!");
+        return;
+    }
+    _objectClass = objectClass;
+    _federate = _objectClass->_federate;
     // This error must have been flagged before
     if (!_objectClass->_rtiObjectClass.valid())
         return;
@@ -582,6 +603,9 @@ HLAObjectInstance::reflectAttributeValue(unsigned index, const SGTimeStamp& time
 void
 HLAObjectInstance::_setRTIObjectInstance(RTIObjectInstance* rtiObjectInstance)
 {
+    if (!_objectClass.valid())
+        return;
+
     _rtiObjectInstance = rtiObjectInstance;
     _rtiObjectInstance->setObjectInstance(this);
     _name = _rtiObjectInstance->getName();
@@ -589,7 +613,7 @@ HLAObjectInstance::_setRTIObjectInstance(RTIObjectInstance* rtiObjectInstance)
     unsigned numAttributes = getNumAttributes();
     _attributeVector.resize(numAttributes);
     for (unsigned i = 0; i < numAttributes; ++i) {
-        HLAUpdateType updateType = getObjectClass()->getAttributeUpdateType(i);
+        HLAUpdateType updateType = _objectClass->getAttributeUpdateType(i);
         if (getAttributeOwned(i) && updateType != HLAUndefinedUpdate) {
             _attributeVector[i]._enabledUpdate = true;
             _attributeVector[i]._unconditionalUpdate = (updateType == HLAPeriodicUpdate);
@@ -604,7 +628,7 @@ HLAObjectInstance::_setRTIObjectInstance(RTIObjectInstance* rtiObjectInstance)
     // This makes sense with any new object. Even if we registered one, there might be unpublished attributes.
     HLAIndexList indexList;
     for (unsigned i = 0; i < numAttributes; ++i) {
-        HLAUpdateType updateType = getObjectClass()->getAttributeUpdateType(i);
+        HLAUpdateType updateType = _objectClass->getAttributeUpdateType(i);
         if (getAttributeOwned(i))
             continue;
         if (updateType == HLAUndefinedUpdate)

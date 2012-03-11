@@ -402,20 +402,22 @@ sgLoad3DModel_internal(const SGPath& path,
         }
     }
 
-    std::vector<SGPropertyNode_ptr> particle_nodes;
-    particle_nodes = props->getChildren("particlesystem");
-    for (unsigned i = 0; i < particle_nodes.size(); ++i) {
-        osg::ref_ptr<SGReaderWriterOptions> options2;
-        options2 = new SGReaderWriterOptions(*options);
-        if (i==0) {
-            if (!texturepath.extension().empty())
-                texturepath = texturepath.dir();
-
-            options2->setDatabasePath(texturepath.str());
+    if (dbOptions->getPluginStringData("SimGear::PARTICLESYSTEM") != "OFF") {
+        std::vector<SGPropertyNode_ptr> particle_nodes;
+        particle_nodes = props->getChildren("particlesystem");
+        for (unsigned i = 0; i < particle_nodes.size(); ++i) {
+            osg::ref_ptr<SGReaderWriterOptions> options2;
+            options2 = new SGReaderWriterOptions(*options);
+            if (i==0) {
+                if (!texturepath.extension().empty())
+                    texturepath = texturepath.dir();
+                
+                options2->setDatabasePath(texturepath.str());
+            }
+            group->addChild(Particles::appendParticles(particle_nodes[i],
+                                                       prop_root,
+                                                       options2.get()));
         }
-        group->addChild(Particles::appendParticles(particle_nodes[i],
-                        prop_root,
-                        options2.get()));
     }
 
     std::vector<SGPropertyNode_ptr> text_nodes;

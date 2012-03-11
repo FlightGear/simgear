@@ -95,7 +95,8 @@ public:
                 optimizedNode = _optimizePolicy.optimize(processedNode.get(),
                                                          fileName, opt);
             }
-            _bvhPolicy.buildBVH(fileName, optimizedNode.get());
+            if (opt->getPluginStringData("SimGear::BOUNDINGVOLUMES") != "OFF")
+                _bvhPolicy.buildBVH(fileName, optimizedNode.get());
             _cachePolicy.addToCache(fileName, optimizedNode.get());
         }
         return ReaderWriter::ReadResult(optimizedNode.get());

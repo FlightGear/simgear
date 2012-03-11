@@ -44,6 +44,7 @@ public:
     /// The rti version backend to connect
     Version getVersion() const;
     bool setVersion(HLAFederate::Version version);
+    bool setVersion(const std::string& version);
 
     /// The rti backends connect arguments, depends on the version
     const std::list<std::string>& getConnectArguments() const;

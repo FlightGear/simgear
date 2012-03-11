@@ -78,6 +78,22 @@ HLAFederate::setVersion(HLAFederate::Version version)
     return true;
 }
 
+bool
+HLAFederate::setVersion(const std::string& version)
+{
+    if (version == "RTI13")
+        return setVersion(RTI13);
+    else if (version == "RTI1516")
+        return setVersion(RTI1516);
+    else if (version == "RTI1516E")
+        return setVersion(RTI1516E);
+    else {
+        /// at some time think about routing these down to the factory
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLA: Unknown version string in HLAFederate::setVersion!");
+        return false;
+    }
+}
+
 const std::list<std::string>&
 HLAFederate::getConnectArguments() const
 {

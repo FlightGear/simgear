@@ -80,8 +80,6 @@ private:
     /** Time when tile expires. */ 
     double _time_expired;
 
-    static ModelLoadHelper *_modelLoader;
-
 public:
 
     // Constructor
@@ -91,7 +89,7 @@ public:
     // Destructor
     ~TileEntry();
 
-    static void setModelLoadHelper(ModelLoadHelper *m) { _modelLoader=m; }
+    static void setModelLoadHelper(ModelLoadHelper *m);
 
     // Update the ssg transform node for this tile so it can be
     // properly drawn relative to our (0,0,0) point

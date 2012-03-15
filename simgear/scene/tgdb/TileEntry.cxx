@@ -35,6 +35,7 @@
 #include <osg/ProxyNode>
 
 #include <osgDB/FileNameUtils>
+#include <osgDB/FileUtils>
 #include <osgDB/ReaderWriter>
 #include <osgDB/ReadFile>
 #include <osgDB/Registry>
@@ -46,14 +47,11 @@
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
-#include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
 #include <simgear/scene/tgdb/obj.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
-#include "ReaderWriterSPT.hxx"
-#include "ReaderWriterSTG.hxx"
 #include "SGOceanTile.hxx"
 #include "TileEntry.hxx"
 
@@ -61,15 +59,6 @@ using std::string;
 using namespace simgear;
 
 static ModelLoadHelper *_modelLoader=0;
-
-namespace {
-osgDB::RegisterReaderWriterProxy<ReaderWriterSTG> g_readerWriterSTGProxy;
-ModelRegistryCallbackProxy<LoadOnlyCallback> g_stgCallbackProxy("stg");
-
-osgDB::RegisterReaderWriterProxy<ReaderWriterSPT> g_readerWriterSPTProxy;
-ModelRegistryCallbackProxy<LoadOnlyCallback> g_sptCallbackProxy("spt");
-}
-
 
 static SGBucket getBucketFromFileName(const std::string& fileName)
 {

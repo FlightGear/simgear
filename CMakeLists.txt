@@ -201,6 +201,10 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 if(WIN32)
 
+    if(MINGW)
+        add_definitions(-D_WIN32_WINNT=0x501)
+    endif()
+
     if(MSVC)
         # turn off various warnings
         # foreach(warning 4244 4251 4267 4275 4290 4786 4305 4996)

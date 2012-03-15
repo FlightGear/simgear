@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-#ifdef _MSC_VER
+#if defined _MSC_VER || defined _WIN32_WINNT
 #   define  random  rand
 #endif
 

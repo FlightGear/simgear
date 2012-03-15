@@ -14,8 +14,6 @@ set(HEADERS
     SGVasiDrawable.hxx
     SGVertexArrayBin.hxx
     ShaderGeometry.hxx
-    TileCache.hxx
-    TileEntry.hxx
     TreeBin.hxx
     apt_signs.hxx
     obj.hxx
@@ -31,8 +29,6 @@ set(SOURCES
     SGReaderWriterBTG.cxx
     SGVasiDrawable.cxx
     ShaderGeometry.cxx
-    TileCache.cxx
-    TileEntry.cxx
     TreeBin.cxx
     apt_signs.cxx
     obj.cxx

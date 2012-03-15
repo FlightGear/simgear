@@ -48,8 +48,6 @@
 
 namespace simgear {
 
-class ModelLoadHelper;
-
 /**
  * A class to encapsulate everything we need to know about a scenery tile.
  */
@@ -88,8 +86,6 @@ public:
 
     // Destructor
     ~TileEntry();
-
-    static void setModelLoadHelper(ModelLoadHelper *m);
 
     // Update the ssg transform node for this tile so it can be
     // properly drawn relative to our (0,0,0) point
@@ -155,12 +151,6 @@ public:
     {
         return _databaseRequest;
     }
-};
-
-class ModelLoadHelper {
-public:
-    virtual osg::Node *loadTileModel(const std::string& modelPath, bool cacheModel)=0;
-
 };
 
 }

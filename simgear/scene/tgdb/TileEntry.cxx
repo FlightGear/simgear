@@ -58,8 +58,6 @@
 using std::string;
 using namespace simgear;
 
-static ModelLoadHelper *_modelLoader=0;
-
 static SGBucket getBucketFromFileName(const std::string& fileName)
 {
     std::istringstream ss(osgDB::getNameLessExtension(fileName));
@@ -152,17 +150,13 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
                 /// Hmm, the findDataFile should happen downstream
                 std::string absName = osgDB::findDataFile(name,
                                                           staticOptions.get());
-                if(_modelLoader) {
-                    node = _modelLoader->loadTileModel(absName, false);
-                } else {
-                    osg::ref_ptr<SGReaderWriterOptions> opt;
-                    opt = new SGReaderWriterOptions(*staticOptions);
-                    if (SGPath(absName).lower_extension() == "ac")
-                        opt->setInstantiateEffects(true);
-                    else
-                        opt->setInstantiateEffects(false);
-                    node = osgDB::readRefNodeFile(absName, opt.get());
-                }
+                osg::ref_ptr<SGReaderWriterOptions> opt;
+                opt = new SGReaderWriterOptions(*staticOptions);
+                if (SGPath(absName).lower_extension() == "ac")
+                    opt->setInstantiateEffects(true);
+                else
+                    opt->setInstantiateEffects(false);
+                node = osgDB::readRefNodeFile(absName, opt.get());
                 
                 if (!node.valid()) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
@@ -171,25 +165,21 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
                 }
                 
             } else if ( token == "OBJECT_SHARED" ) {
-                if(_modelLoader) {
-                    node = _modelLoader->loadTileModel(name, true);
-                } else {
-                    osg::ref_ptr<SGReaderWriterOptions> opt;
-                    opt = new SGReaderWriterOptions(*sharedOptions);
-
-                    /// Hmm, the findDataFile should happen in the downstream readers
-                    std::string absName = osgDB::findDataFile(name, opt.get());
-
-                    osg::ProxyNode* proxyNode = new osg::ProxyNode;
-                    proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
-                    proxyNode->setFileName(0, absName);
-                    if (SGPath(absName).lower_extension() == "ac")
-                        opt->setInstantiateEffects(true);
-                    else
-                        opt->setInstantiateEffects(false);
-                    proxyNode->setDatabaseOptions(opt.get());
-                    node = proxyNode;
-                }
+                osg::ref_ptr<SGReaderWriterOptions> opt;
+                opt = new SGReaderWriterOptions(*sharedOptions);
+                
+                /// Hmm, the findDataFile should happen in the downstream readers
+                std::string absName = osgDB::findDataFile(name, opt.get());
+                
+                osg::ProxyNode* proxyNode = new osg::ProxyNode;
+                proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+                proxyNode->setFileName(0, absName);
+                if (SGPath(absName).lower_extension() == "ac")
+                    opt->setInstantiateEffects(true);
+                else
+                    opt->setInstantiateEffects(false);
+                proxyNode->setDatabaseOptions(opt.get());
+                node = proxyNode;
                 
                 if (!node.valid()) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
@@ -231,12 +221,6 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
     return has_base;
 }
     
-void
-TileEntry::setModelLoadHelper(ModelLoadHelper *m)
-{
-    _modelLoader=m;
-}
-
 // Constructor
 TileEntry::TileEntry ( const SGBucket& b )
     : tile_bucket( b ),

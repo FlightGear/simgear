@@ -32,6 +32,8 @@
 
 #include <osg/Image>
 
+#include <simgear/debug/logstream.hxx>
+
 #include "Noise.hxx"
 
 using namespace osg;
@@ -107,7 +109,7 @@ osg::Image* make3DNoiseImage(int texSize)
     GLubyte *ptr;
     double amp = 0.5;
 
-    osg::notify(osg::WARN) << "creating 3D noise texture... ";
+    SG_LOG(SG_TERRAIN, SG_BULK, "creating 3D noise texture... ");
 
     for (f = 0, inc = 0; f < numOctaves; ++f, frequency *= 2, ++inc, amp *= 0.5)
     {
@@ -130,7 +132,8 @@ osg::Image* make3DNoiseImage(int texSize)
         }
     }
 
-    osg::notify(osg::WARN) << "DONE" << std::endl;
+    SG_LOG(SG_TERRAIN, SG_BULK, "DONE");
+
     return image;
 }
 

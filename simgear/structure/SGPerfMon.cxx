@@ -34,7 +34,6 @@
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/math/sg_geodesy.hxx>
-#include <simgear/sound/soundmgr_openal.hxx>
 #include <simgear/structure/exception.hxx>
 
 using std::string;

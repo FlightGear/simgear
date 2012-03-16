@@ -33,9 +33,18 @@ public:
 
     virtual const char* className() const;
 
-    virtual ReadResult readNode(const std::string& fileName,
-                                const osgDB::Options* options)
-        const;
+    virtual ReadResult
+    readNode(const std::string&, const osgDB::Options*) const;
+
+private:
+    /// Read an real existing stg file that exists on disk.
+    ReadResult
+    readStgFile(const std::string& fileName, const osgDB::Options* options) const;
+
+    /// Read an real existing stg file that exists on disk and return true
+    /// if a BASE_OBJECT is found.
+    bool
+    readStgFile(const std::string&, osg::Group&, const osgDB::Options*) const;
 };
 
 }

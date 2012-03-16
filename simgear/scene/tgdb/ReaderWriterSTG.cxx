@@ -47,18 +47,103 @@
 
 using namespace simgear;
 
-static SGBucket getBucketFromFileName(const std::string& fileName)
+ReaderWriterSTG::ReaderWriterSTG()
 {
+    supportsExtension("stg", "SimGear stg database format");
+}
+
+ReaderWriterSTG::~ReaderWriterSTG()
+{
+}
+
+const char* ReaderWriterSTG::className() const
+{
+    return "STG Database reader";
+}
+
+osgDB::ReaderWriter::ReadResult
+ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* options) const
+{
+    // We treat 123.stg different than ./123.stg.
+    // The difference is that ./123.stg as well as any absolute path
+    // really loads the given stg file and only this.
+    // In contrast 123.stg uses the search paths to load a set of stg
+    // files spread across the scenery directories.
+    if (osgDB::getSimpleFileName(fileName) != fileName)
+        return readStgFile(fileName, options);
+
+    // For stg meta files, we need options for the search path.
+    if (!options)
+        return ReadResult::FILE_NOT_FOUND;
+
+    // Extract the bucket from the filename
     std::istringstream ss(osgDB::getNameLessExtension(fileName));
     long index;
     ss >> index;
     if (ss.fail())
-        return SGBucket();
-    return SGBucket(index);
+        return ReadResult::FILE_NOT_FOUND;
+
+    SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
+
+    SGBucket bucket(index);
+    std::string basePath = bucket.gen_base_path();
+
+    osg::ref_ptr<osg::Group> group = new osg::Group;
+
+    // Stop scanning once an object base is found
+    bool foundBase = false;
+    // This is considered a meta file, so apply the scenery path search
+    const osgDB::FilePathList& filePathList = options->getDatabasePathList();
+    for (osgDB::FilePathList::const_iterator i = filePathList.begin();
+         i != filePathList.end() && !foundBase; ++i) {
+        SGPath objects(*i);
+        objects.append("Objects");
+        objects.append(basePath);
+        objects.append(fileName);
+        if (readStgFile(objects.str(), *group, options))
+            foundBase = true;
+        
+        SGPath terrain(*i);
+        terrain.append("Terrain");
+        terrain.append(basePath);
+        terrain.append(fileName);
+        if (readStgFile(terrain.str(), *group, options))
+            foundBase = true;
+    }
+    
+    // ... or generate an ocean tile on the fly
+    if (!foundBase) {
+        SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
+        
+        osg::ref_ptr<SGReaderWriterOptions> opt;
+        opt = SGReaderWriterOptions::copyOrCreate(options);
+        osg::Node* node = SGOceanTile(bucket, opt->getMaterialLib());
+        if ( node ) {
+            group->addChild(node);
+        } else {
+            SG_LOG( SG_TERRAIN, SG_ALERT,
+                    "Warning: failed to generate ocean tile!" );
+        }
+    }
+
+    return group.get();
 }
 
-static bool
-loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB::Options* options)
+osgDB::ReaderWriter::ReadResult
+ReaderWriterSTG::readStgFile(const std::string& fileName, const osgDB::Options* options) const
+{
+    // This is considered a real existing file.
+    // We still apply the search path algorithms for relative files.
+    osg::ref_ptr<osg::Group> group = new osg::Group;
+
+    readStgFile(osgDB::findDataFile(fileName, options), *group, options);
+
+    return group.get();
+}
+
+bool
+ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
+                             osg::Group& group, const osgDB::Options* options) const
 {
     if (absoluteFileName.empty())
         return false;
@@ -136,16 +221,19 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
             
             // Always OK to load
             if ( token == "OBJECT_STATIC" ) {
-                /// Hmm, the findDataFile should happen downstream
-                std::string absName = osgDB::findDataFile(name,
-                                                          staticOptions.get());
                 osg::ref_ptr<SGReaderWriterOptions> opt;
                 opt = new SGReaderWriterOptions(*staticOptions);
+                osg::ProxyNode* proxyNode = new osg::ProxyNode;
+                proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+                /// Hmm, the findDataFile should happen downstream
+                std::string absName = osgDB::findDataFile(name, opt.get());
+                proxyNode->setFileName(0, absName);
                 if (SGPath(absName).lower_extension() == "ac")
                     opt->setInstantiateEffects(true);
                 else
                     opt->setInstantiateEffects(false);
-                node = osgDB::readRefNodeFile(absName, opt.get());
+                proxyNode->setDatabaseOptions(opt.get());
+                node = proxyNode;
                 
                 if (!node.valid()) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
@@ -156,19 +244,13 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
             } else if ( token == "OBJECT_SHARED" ) {
                 osg::ref_ptr<SGReaderWriterOptions> opt;
                 opt = new SGReaderWriterOptions(*sharedOptions);
-                
                 /// Hmm, the findDataFile should happen in the downstream readers
                 std::string absName = osgDB::findDataFile(name, opt.get());
-                
-                osg::ProxyNode* proxyNode = new osg::ProxyNode;
-                proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
-                proxyNode->setFileName(0, absName);
                 if (SGPath(absName).lower_extension() == "ac")
                     opt->setInstantiateEffects(true);
                 else
                     opt->setInstantiateEffects(false);
-                proxyNode->setDatabaseOptions(opt.get());
-                node = proxyNode;
+                node = osgDB::readRefNodeFile(absName, opt.get());
                 
                 if (!node.valid()) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
@@ -209,97 +291,3 @@ loadStgFile(const std::string& absoluteFileName, osg::Group& group, const osgDB:
 
     return has_base;
 }
-    
-static osg::Node*
-loadTileByFileName(const string& fileName, const osgDB::Options* options)
-{
-    SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
-
-    // We treat 123.stg different than ./123.stg.
-    // The difference is that ./123.stg as well as any absolute path
-    // really loads the given stg file and only this.
-    // In contrast 123.stg uses the search paths to load a set of stg
-    // files spread across the scenery directories.
-    std::string simpleFileName = osgDB::getSimpleFileName(fileName);
-    SGBucket bucket = getBucketFromFileName(simpleFileName);
-    osg::ref_ptr<osg::Group> group = new osg::Group;
-    if (simpleFileName != fileName || !options) {
-        // This is considered a real existing file.
-        // We still apply the search path algorithms for relative files.
-        loadStgFile(osgDB::findDataFile(fileName, options), *group, options);
-        return group.release();
-    }
-
-    // This is considered a meta file, so apply the scenery path search
-    const osgDB::FilePathList& filePathList = options->getDatabasePathList();
-    std::string basePath = bucket.gen_base_path();
-    // Stop scanning once an object base is found
-    bool foundBase = false;
-    for (osgDB::FilePathList::const_iterator i = filePathList.begin();
-         i != filePathList.end() && !foundBase; ++i) {
-        SGPath objects(*i);
-        objects.append("Objects");
-        objects.append(basePath);
-        objects.append(simpleFileName);
-        if (loadStgFile(objects.str(), *group, options))
-            foundBase = true;
-        
-        SGPath terrain(*i);
-        terrain.append("Terrain");
-        terrain.append(basePath);
-        terrain.append(simpleFileName);
-        if (loadStgFile(terrain.str(), *group, options))
-            foundBase = true;
-    }
-    
-    // ... or generate an ocean tile on the fly
-    if (!foundBase) {
-        SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
-        
-        osg::ref_ptr<SGReaderWriterOptions> opt;
-        opt = SGReaderWriterOptions::copyOrCreate(options);
-        osg::Node* node = SGOceanTile(bucket, opt->getMaterialLib());
-        if ( node ) {
-            group->addChild(node);
-        } else {
-            SG_LOG( SG_TERRAIN, SG_ALERT,
-                    "Warning: failed to generate ocean tile!" );
-        }
-    }
-    return group.release();
-}
-
-ReaderWriterSTG::ReaderWriterSTG()
-{
-    supportsExtension("stg", "SimGear stg database format");
-}
-
-ReaderWriterSTG::~ReaderWriterSTG()
-{
-}
-
-const char* ReaderWriterSTG::className() const
-{
-    return "STG Database reader";
-}
-
-//#define SLOW_PAGER 1
-#ifdef SLOW_PAGER
-#include <unistd.h>
-#endif
-
-osgDB::ReaderWriter::ReadResult
-ReaderWriterSTG::readNode(const std::string& fileName,
-                          const osgDB::Options* options) const
-{
-    osg::Node* result = loadTileByFileName(fileName, options);
-    // For debugging race conditions
-#ifdef SLOW_PAGER
-    sleep(5);
-#endif
-    if (result)
-        return result;
-    else
-        return ReadResult::FILE_NOT_HANDLED;
-}
-

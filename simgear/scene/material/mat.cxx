@@ -138,6 +138,10 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             tpath = SGPath("Textures");
             tpath.append(tname);
             fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
+            if (fullTexPath.empty()) {
+                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                        << tname << "\" in Textures or Textures.high folders.");
+            }
         }
 
         if (tpath.lower_extension() == "dds") {
@@ -171,6 +175,10 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                 tpath = SGPath("Textures");
                 tpath.append(tname);
                 fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
+                if (fullTexPath.empty() ) {
+                    SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                            << tname << "\" in Textures or Textures.high folders.");
+                }
             }
 
             if (j == 0) {
@@ -214,8 +222,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             }
 
             if (fullMaskPath.empty()) {
-                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture file \""
-                        << ompath.str() << "\"");
+                SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \""
+                        << omname << "\" in Textures or Textures.high folders.");
             }
             else
             {

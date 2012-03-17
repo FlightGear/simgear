@@ -211,35 +211,42 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         ompath = SGPath("Textures");
         ompath.append(omname);
         fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
-      }    
-      
-      osg::Image* image = osgDB::readImageFile(fullMaskPath, options);
-      if (image->valid())
+      }
+
+      if (fullMaskPath.empty()) {
+          SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture file \""
+                 << ompath.str() << "\"");
+      }
+      else
       {
-        osg::Texture2D* object_mask = new osg::Texture2D;
-        
-        bool dds_mask = (ompath.lower_extension() == "dds");
-        
-        if (dds[i] != dds_mask) {
-          // Texture format does not match mask format. This is relevant for 
-          // the object mask, as DDS textures have an origin at the bottom 
-          // left rather than top left, therefore we flip the object mask 
-          // vertically.
-          image->flipVertical();          
+        osg::Image* image = osgDB::readImageFile(fullMaskPath, options);
+        if (image && image->valid())
+        {
+          osg::Texture2D* object_mask = new osg::Texture2D;
+
+          bool dds_mask = (ompath.lower_extension() == "dds");
+
+          if (dds[i] != dds_mask) {
+            // Texture format does not match mask format. This is relevant for
+            // the object mask, as DDS textures have an origin at the bottom
+            // left rather than top left, therefore we flip the object mask
+            // vertically.
+            image->flipVertical();
+          }
+
+          object_mask->setImage(image);
+
+          // We force the filtering to be nearest, as the red channel (rotation)
+          // in particular, doesn't make sense to be interpolated between pixels.
+          object_mask->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
+          object_mask->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
+
+          object_mask->setDataVariance(osg::Object::STATIC);
+          object_mask->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
+          object_mask->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
+          _masks.push_back(object_mask);
         }
-        
-        object_mask->setImage(image);
-        
-        // We force the filtering to be nearest, as the red channel (rotation)
-        // in particular, doesn't make sense to be interpolated between pixels.
-        object_mask->setFilter(osg::Texture::MIN_FILTER, osg::Texture::NEAREST);
-        object_mask->setFilter(osg::Texture::MAG_FILTER, osg::Texture::NEAREST);
-        
-        object_mask->setDataVariance(osg::Object::STATIC);
-        object_mask->setWrap(osg::Texture::WRAP_S, osg::Texture::REPEAT);
-        object_mask->setWrap(osg::Texture::WRAP_T, osg::Texture::REPEAT);
-        _masks.push_back(object_mask);
-      } 
+      }
     }
   } 
 

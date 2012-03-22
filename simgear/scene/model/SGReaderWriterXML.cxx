@@ -215,8 +215,11 @@ sgLoad3DModel_internal(const SGPath& path,
     SGPath texturepath(path);
     SGPath modelDir(modelpath.dir());
     
-    SGSharedPtr<SGPropertyNode> prop_root = options->getPropertyNode();
-    if (!prop_root.valid())
+    SGSharedPtr<SGPropertyNode> prop_root;
+    if (options->getPropertyNode().valid() &&
+        options->getPropertyNode()->getRootNode())
+        prop_root = options->getPropertyNode()->getRootNode();
+    else
         prop_root = new SGPropertyNode;
     osg::ref_ptr<SGModelData> data = options->getModelData();
     

@@ -269,7 +269,7 @@ SGXmlSound::init(SGPropertyNode *root, SGPropertyNode *node,
    //
    // Initialize the sample
    //
-   if (is_avionics) {
+   if ((is_avionics)&&(avionics)) {
       _sgrp = avionics;
    } else {
       _sgrp = sgrp;

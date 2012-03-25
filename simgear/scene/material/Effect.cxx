@@ -998,8 +998,8 @@ struct UniformBuilder :public PassAttributeBuilder
         // optimize common uniforms
         if (uniformType == Uniform::SAMPLER_2D || uniformType == Uniform::INT)
         {
-            int val;
-            uniform->get(val);
+            int val = 0;
+            uniform->get(val); // 'val' remains unchanged in case of error (Uniform is a non-scalar)
             if (uniformType == Uniform::SAMPLER_2D && val == 0
                 && name == "texture") {
                 uniform = texture0;

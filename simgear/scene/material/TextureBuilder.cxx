@@ -132,7 +132,7 @@ void TextureUnitBuilder::buildAttribute(Effect* effect, Pass* pass,
                                                 options);
     }
     catch (BuilderException& e) {
-        SG_LOG(SG_INPUT, SG_ALERT, e.getFormattedMessage() << ", "
+        SG_LOG(SG_INPUT, SG_DEBUG, e.getFormattedMessage() << ", "
             << "maybe the reader did not set the filename attribute, "
             << "using white for type '" << type << "' on '" << pass->getName() << "', in " << prop->getPath() );
         texture = StateAttributeFactory::instance()->getWhiteTexture();
@@ -857,8 +857,7 @@ namespace
     TextureBuilder::Registrar installDepthBuffer("depth-buffer", new GBufferBuilder(Effect::DEPTH_BUFFER));
     TextureBuilder::Registrar installNormalBuffer("normal-buffer", new GBufferBuilder(Effect::NORMAL_BUFFER));
     TextureBuilder::Registrar installDiffuseBuffer("diffuse-buffer", new GBufferBuilder(Effect::DIFFUSE_BUFFER));
-    TextureBuilder::Registrar installSpecularBuffer("specular-buffer", new GBufferBuilder(Effect::SPECULAR_BUFFER));
-    TextureBuilder::Registrar installEmissionBuffer("emission-buffer", new GBufferBuilder(Effect::EMISSION_BUFFER));
+    TextureBuilder::Registrar installSpecularBuffer("spec-emis-buffer", new GBufferBuilder(Effect::SPEC_EMIS_BUFFER));
     TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(Effect::LIGHTING_BUFFER));
     TextureBuilder::Registrar installMiddleBloomBuffer("middle-bloom-buffer", new GBufferBuilder(Effect::MIDDLE_BLOOM_BUFFER));
     TextureBuilder::Registrar installBloomBuffer("bloom-buffer", new GBufferBuilder(Effect::BLOOM_BUFFER));

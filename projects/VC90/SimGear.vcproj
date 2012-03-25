@@ -616,10 +616,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\simgear\math\SGGeod.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\simgear\math\SGGeodesy.cxx"
 				>
 			</File>
@@ -1396,6 +1392,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\simgear\scene\tgdb\SGTexturedTriangleBin.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\..\simgear\scene\tgdb\SGVasiDrawable.cxx"
 				>
 			</File>
@@ -1839,6 +1839,14 @@
 			</File>
 			<File
 				RelativePath="..\..\simgear\scene\util\SGNodeMasks.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGReaderWriterOptions.cxx"
+				>
+			</File>
+			<File
+				RelativePath="..\..\simgear\scene\util\SGReaderWriterOptions.hxx"
 				>
 			</File>
 			<File

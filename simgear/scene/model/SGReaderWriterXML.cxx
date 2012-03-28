@@ -218,7 +218,9 @@ sgLoad3DModel_internal(const SGPath& path,
     SGSharedPtr<SGPropertyNode> prop_root = options->getPropertyNode();
     if (!prop_root.valid())
         prop_root = new SGPropertyNode;
+    // The model data appear to be only used in the topmost model
     osg::ref_ptr<SGModelData> data = options->getModelData();
+    options->setModelData(0);
     
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;

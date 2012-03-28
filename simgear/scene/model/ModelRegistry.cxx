@@ -64,29 +64,7 @@ using namespace osgUtil;
 using namespace osgDB;
 using namespace simgear;
 
-// Little helper class that holds an extra reference to a
-// loaded 3d model.
-// Since we clone all structural nodes from our 3d models,
-// the database pager will only see one single reference to
-// top node of the model and expire it relatively fast.
-// We attach that extra reference to every model cloned from
-// a base model in the pager. When that cloned model is deleted
-// this extra reference is deleted too. So if there are no
-// cloned models left the model will expire.
 namespace {
-class SGDatabaseReference : public Observer {
-public:
-  SGDatabaseReference(Referenced* referenced) :
-    mReferenced(referenced)
-  { }
-  virtual void objectDeleted(void*)
-  {
-    mReferenced = 0;
-  }
-private:
-  ref_ptr<Referenced> mReferenced;
-};
-
 // Set the name of a Texture to the simple name of its image
 // file. This can be used to do livery substitution after the image
 // has been deallocated.

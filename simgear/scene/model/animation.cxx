@@ -433,7 +433,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGInteractionAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "material") {
-    SGMaterialAnimation animInst(configNode, modelRoot, options);
+    SGMaterialAnimation animInst(configNode, modelRoot, options, path);
     animInst.apply(node);
   } else if (type == "noshadow") {
     SGShadowAnimation animInst(configNode, modelRoot);

@@ -413,13 +413,14 @@ private:
 SGMaterialAnimation::SGMaterialAnimation(const SGPropertyNode* configNode,
                                          SGPropertyNode* modelRoot,
                                          const osgDB::Options*
-                                         options) :
+                                         options, const string &path) :
   SGAnimation(configNode, modelRoot),
   texturePathList(options->getDatabasePathList())
 {
   if (configNode->hasChild("global"))
-    SG_LOG(SG_IO, SG_ALERT, "Use of <global> in material animation is "
-           "no longer supported");
+    SG_LOG(SG_IO, SG_ALERT, path <<
+           ": Use of <global> in material animation is "
+           "no longer supported.");
 }
 
 osg::Group*

@@ -279,7 +279,7 @@ public:
     Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 protected:
-    typedef map<TexTuple, ref_ptr<T> > TexMap;
+    typedef map<TexTuple, observer_ptr<T> > TexMap;
     TexMap texMap;
     const string _type;
 };
@@ -290,11 +290,20 @@ Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* 
 {
     TexTuple attrs = makeTexTuple(effect, props, options, _type);
     typename TexMap::iterator itr = texMap.find(attrs);
+
     if (itr != texMap.end())
-        return itr->second.get();
+    {
+        T* tex = itr->second.get();
+        if (tex)
+            return tex;
+    }
+
     T* tex = new T;
     setAttrs(attrs, tex, options);
-    texMap.insert(make_pair(attrs, tex));
+    if (itr == texMap.end())
+        texMap.insert(make_pair(attrs, tex));
+    else
+        itr->second = tex; // update existing, but empty observer
     return tex;
 }
 

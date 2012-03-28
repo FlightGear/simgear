@@ -84,7 +84,7 @@ private:
         
         // The density of the cloud is the shading applied
         // to cloud sprites on the opposite side of the cloud
-        // from the sun. For an invidual cloud instance a value
+        // from the sun. For an individual cloud instance a value
         // between min_density and max_density is chosen.
         float min_density;
         float max_density;
@@ -102,7 +102,6 @@ private:
         static float sprite_density;
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
-
 };
 
 

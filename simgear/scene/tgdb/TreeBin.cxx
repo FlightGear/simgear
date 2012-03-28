@@ -208,7 +208,7 @@ void addTreeToLeafGeode(Geode* geode, const SGVec3f& p)
     }
 }
 
-typedef std::map<std::string, osg::ref_ptr<Effect> > EffectMap;
+typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
 
 static EffectMap treeEffectMap;
 
@@ -299,9 +299,14 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
     for (i = forestList.begin(); i != forestList.end(); ++i) {
         TreeBin* forest = *i;
       
-        Effect* effect = 0;
+        ref_ptr<Effect> effect;
         EffectMap::iterator iter = treeEffectMap.find(forest->texture);
-        if (iter == treeEffectMap.end()) {
+
+        if (iter != treeEffectMap.end())
+            effect = iter->second.get();
+
+        if (!effect.valid())
+        {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");
             SGPropertyNode* params = makeChild(effectProp, "parameters");
@@ -309,11 +314,12 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
             params->getChild("texture", 0, true)->getChild("image", 0, true)
                 ->setStringValue(forest->texture);
             effect = makeEffect(effectProp, true, options);
-            treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
-        } else {
-            effect = iter->second.get();
+            if (iter == treeEffectMap.end())
+                treeEffectMap.insert(EffectMap::value_type(forest->texture, effect));
+            else
+                iter->second = effect; // update existing, but empty observer
         }
-        
+
         // Now, create a quadtree for the forest.
         ShaderGeometryQuadtree
             quadtree(GetTreeCoord(), AddTreesLeafObject(),

@@ -24,6 +24,7 @@
 #include <boost/functional/hash.hpp>
 
 #include <osg/Object>
+#include <osg/observer_ptr>
 #include <osgDB/ReaderWriter>
 
 #include <simgear/props/props.hxx>
@@ -158,7 +159,7 @@ protected:
             bool operator()(const Key& lhs, const Key& rhs) const;
         };
     };
-    typedef std::tr1::unordered_map<Key, osg::ref_ptr<Effect>,
+    typedef std::tr1::unordered_map<Key, osg::observer_ptr<Effect>,
                                     boost::hash<Key>, Key::EqualTo> Cache;
     Cache* getCache()
     {

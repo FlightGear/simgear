@@ -1392,10 +1392,11 @@ public:
     
     void valueChanged(SGPropertyNode* node)
     {
-        _tniq->refreshValidity();
+        if (_tniq.valid())
+            _tniq->refreshValidity();
     }
 protected:
-    osg::ref_ptr<Technique> _tniq;
+    osg::observer_ptr<Technique> _tniq;
 };
 
 template<typename T>

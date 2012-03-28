@@ -159,7 +159,7 @@ gen_standard_light_sprite(void)
 namespace
 {
 typedef boost::tuple<float, osg::Vec3, float, float, bool> PointParams;
-typedef std::map<PointParams, ref_ptr<Effect> > EffectMap;
+typedef std::map<PointParams, observer_ptr<Effect> > EffectMap;
 
 EffectMap effectMap;
 
@@ -174,7 +174,8 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     PointParams pointParams(size, attenuation, minSize, maxSize, directional);
     ScopedLock<Mutex> lock(lightMutex);
     EffectMap::iterator eitr = effectMap.find(pointParams);
-    if (eitr != effectMap.end())
+    if ((eitr != effectMap.end())&&
+        eitr->second.valid())
         return eitr->second.get();
     // Basic stuff; no sprite or attenuation support
     Pass *basicPass = new Pass;
@@ -204,7 +205,7 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     spritePass->setTextureAttribute(0, attrFact->getStandardTexEnv());
     Pass *combinedPass = clone(spritePass, CopyOp::SHALLOW_COPY);
     combinedPass->setAttributeAndModes(point);
-    Effect* effect = new Effect;
+    ref_ptr<Effect> effect = new Effect;
     std::vector<std::string> parameterExtensions;
 
     if (SGSceneFeatures::instance()->getEnablePointSpriteLights())
@@ -232,8 +233,11 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     Technique* basicTniq = new Technique(true);
     basicTniq->passes.push_back(basicPass);
     effect->techniques.push_back(basicTniq);
-    effectMap.insert(std::make_pair(pointParams, effect));
-    return effect;
+    if (eitr == effectMap.end())
+        effectMap.insert(std::make_pair(pointParams, effect));
+    else
+        eitr->second = effect; // update existing, but empty observer
+    return effect.release();
 }
 
 

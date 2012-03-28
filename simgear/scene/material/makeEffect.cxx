@@ -44,7 +44,7 @@ using namespace osg;
 using namespace effect;
 
 typedef vector<const SGPropertyNode*> RawPropVector;
-typedef map<const string, ref_ptr<Effect> > EffectMap;
+typedef map<const string, observer_ptr<Effect> > EffectMap;
 
 namespace
 {
@@ -122,7 +122,8 @@ Effect* makeEffect(const string& name,
     {
         OpenThreads::ScopedLock<OpenThreads::ReentrantMutex> lock(effectMutex);
         EffectMap::iterator itr = effectMap.find(name);
-        if (itr != effectMap.end())
+        if ((itr != effectMap.end())&&
+            itr->second.valid())
             return itr->second.get();
     }
     string effectFileName(name);
@@ -207,7 +208,8 @@ Effect* makeEffect(SGPropertyNode* prop,
                 itr = cache->find(key);
                 if (itr != cache->end()) {
                     effect = itr->second.get();
-                    effect->generator = parent->generator;  // Copy the generators
+                    if (effect.valid())
+                        effect->generator = parent->generator;  // Copy the generators
                 }
             }
             if (!effect.valid()) {
@@ -219,8 +221,13 @@ Effect* makeEffect(SGPropertyNode* prop,
                     lock(effectMutex);
                 pair<Effect::Cache::iterator, bool> irslt
                     = cache->insert(make_pair(key, effect));
-                if (!irslt.second)
-                    effect = irslt.first->second;
+                if (!irslt.second) {
+                    ref_ptr<Effect> old = irslt.first->second.get();
+                    if (old.valid())
+                        effect = old; // Another thread beat us in creating it! Discard our own...
+                    else
+                        irslt.first->second = effect; // update existing, but empty observer
+                }
                 effect->generator = parent->generator;  // Copy the generators
             }
         } else {

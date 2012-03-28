@@ -64,7 +64,7 @@ using namespace std;
 
 namespace
 {
-typedef std::map<std::string, osg::ref_ptr<Effect> > EffectMap;
+typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
 EffectMap effectMap;
 }
 
@@ -102,7 +102,13 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
 
     // Create a new Effect for the texture, if required.
     EffectMap::iterator iter = effectMap.find(texture);
-    if (iter == effectMap.end()) {
+
+    if (iter != effectMap.end()) {
+        effect = iter->second.get();
+    }
+
+    if (!effect.valid())
+    {
         SGPropertyNode_ptr pcloudEffect = new SGPropertyNode;
         makeChild(pcloudEffect, "inherits-from")->setValue("Effects/cloud");
         setValue(makeChild(makeChild(makeChild(pcloudEffect, "parameters"),
@@ -111,10 +117,14 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
                  texture);
         ref_ptr<SGReaderWriterOptions> options;
         options = SGReaderWriterOptions::fromPath(texture_root.str());
-        if ((effect = makeEffect(pcloudEffect, true, options.get())))
-            effectMap.insert(EffectMap::value_type(texture, effect));
-    } else {
-        effect = iter->second.get();
+        effect = makeEffect(pcloudEffect, true, options.get());
+        if (effect.valid())
+        {
+            if (iter == effectMap.end())
+                effectMap.insert(EffectMap::value_type(texture, effect));
+            else
+                iter->second = effect; // update existing, but empty observer
+        }
     }
 }
 

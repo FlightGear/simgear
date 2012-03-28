@@ -263,8 +263,6 @@ sgLoad3DModel_internal(const SGPath& path,
         // model without wrapper
     }
 
-    options->setPropertyNode(prop_root);
-    
     // Assume that textures are in
     // the same location as the XML file.
     if (!model) {

@@ -540,3 +540,34 @@ SGLightFactory::getOdal(const SGLightBin& lights)
 
   return sequence;
 }
+
+// Blinking hold short line lights
+osg::Node*
+SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
+{
+  if (lights.getNumLights() < 2)
+    return 0;
+
+  float flashTime = 2;
+  osg::Sequence* sequence = new osg::Sequence;
+  sequence->setDefaultTime(flashTime);
+  Effect* effect = getLightEffect(6, osg::Vec3(1, 0.001, 0.000002),
+                                  0, 6, true);
+  // Lights on
+  EffectGeode* egeode = new EffectGeode;
+  for (int i = lights.getNumLights(); 0 <= i; --i) {
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+  }
+  sequence->addChild(egeode, flashTime);
+
+  // Lights off
+  sequence->addChild(new osg::Group, flashTime);
+
+  sequence->setInterval(osg::Sequence::LOOP, 0, -1);
+  sequence->setDuration(1.0f, -1);
+  sequence->setMode(osg::Sequence::START);
+  sequence->setSync(true);
+
+  return sequence;
+}

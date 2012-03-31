@@ -91,7 +91,8 @@ public:
         LIGHTING_BUFFER,
         MIDDLE_BLOOM_BUFFER,
         BLOOM_BUFFER,
-        AO_BUFFER
+        AO_BUFFER,
+        SHADOW_BUFFER
     };
 
     // Define what needs to be generated for this effect

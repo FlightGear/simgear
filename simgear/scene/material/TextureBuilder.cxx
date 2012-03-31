@@ -871,6 +871,7 @@ namespace
     TextureBuilder::Registrar installMiddleBloomBuffer("middle-bloom-buffer", new GBufferBuilder(Effect::MIDDLE_BLOOM_BUFFER));
     TextureBuilder::Registrar installBloomBuffer("bloom-buffer", new GBufferBuilder(Effect::BLOOM_BUFFER));
     TextureBuilder::Registrar installAoBuffer("ao-buffer", new GBufferBuilder(Effect::AO_BUFFER));
+    TextureBuilder::Registrar installShadowBuffer("shadow-buffer", new GBufferBuilder(Effect::SHADOW_BUFFER));
 }
 
 }

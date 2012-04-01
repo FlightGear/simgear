@@ -87,7 +87,7 @@ SGGeodesy::SGCartToGeod(const SGVec3<double>& cart, SGGeod& geod)
     // coordinates 0/0/-EQURAD. It may be any other place on geoide's surface,
     // the Northpole, Hawaii or Wentorf. This one was easy to code ;-)
     geod.setLongitudeRad( 0.0 );
-    geod.setLongitudeRad( 0.0 );
+    geod.setLatitudeRad( 0.0 );
     geod.setElevationM( -EQURAD );
     return;
   }

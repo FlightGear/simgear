@@ -33,10 +33,12 @@ class EffectGeode;
 class EffectCullVisitor : public osgUtil::CullVisitor
 {
 public:
-    EffectCullVisitor(bool collectLights = false);
+    EffectCullVisitor();
+    EffectCullVisitor(bool ignoreLOD, bool collectLights = false);
     EffectCullVisitor(const EffectCullVisitor&);
     virtual osgUtil::CullVisitor* clone() const;
     using osgUtil::CullVisitor::apply;
+    virtual void apply(osg::LOD& node);
     virtual void apply(osg::Geode& node);
     virtual void reset();
 
@@ -47,6 +49,7 @@ public:
 private:
     std::map<int,osg::ref_ptr<osg::Texture2D> > _bufferList;
     std::vector<osg::ref_ptr<EffectGeode> > _lightList;
+    bool _ignoreLOD;
     bool _collectLights;
 };
 }

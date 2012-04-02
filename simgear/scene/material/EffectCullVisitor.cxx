@@ -20,7 +20,6 @@
 
 #include <osg/StateSet>
 #include <osg/Texture2D>
-#include <osg/LOD>
 
 #include "EffectCullVisitor.hxx"
 
@@ -35,53 +34,20 @@ namespace simgear
 
 using osgUtil::CullVisitor;
 
-EffectCullVisitor::EffectCullVisitor() :
-    _ignoreLOD(false),
-    _collectLights(false)
-{
-}
-
-EffectCullVisitor::EffectCullVisitor(bool ignoreLOD, bool collectLights) :
-    _ignoreLOD(ignoreLOD),
+EffectCullVisitor::EffectCullVisitor(bool collectLights) :
     _collectLights(collectLights)
 {
 }
 
 EffectCullVisitor::EffectCullVisitor(const EffectCullVisitor& rhs) :
     osg::Referenced(rhs),
-    CullVisitor(rhs),
-    _ignoreLOD(rhs._ignoreLOD),
-    _collectLights(rhs._collectLights)
+    CullVisitor(rhs)
 {
 }
 
 CullVisitor* EffectCullVisitor::clone() const
 {
     return new EffectCullVisitor(*this);
-}
-
-void EffectCullVisitor::apply(osg::LOD& node)
-{
-    if (_ignoreLOD) {
-        if (isCulled(node)) return;
-
-        // push the culling mode.
-        pushCurrentMask();
-
-        // push the node's state.
-        osg::StateSet* node_state = node.getStateSet();
-        if (node_state) pushStateSet(node_state);
-
-        if (_traversalMode==TRAVERSE_PARENTS) node.osg::Group::ascend(*this);
-        else if (_traversalMode!=TRAVERSE_NONE) node.osg::Group::traverse(*this);
-        // pop the node's state off the render graph stack.
-        if (node_state) popStateSet();
-
-        // pop the culling mode.
-        popCurrentMask();
-    }
-    else
-        CullVisitor::apply(node);
 }
 
 void EffectCullVisitor::apply(osg::Geode& node)

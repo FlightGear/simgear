@@ -291,20 +291,20 @@ Texture* TexBuilder<T>::build(Effect* effect, Pass* pass, const SGPropertyNode* 
     TexTuple attrs = makeTexTuple(effect, props, options, _type);
     typename TexMap::iterator itr = texMap.find(attrs);
 
-    if (itr != texMap.end())
+    ref_ptr<T> tex;
+    if ((itr != texMap.end())&&
+        (itr->second.lock(tex)))
     {
-        T* tex = itr->second.get();
-        if (tex)
-            return tex;
+        return tex.release();
     }
 
-    T* tex = new T;
+    tex = new T;
     setAttrs(attrs, tex, options);
     if (itr == texMap.end())
         texMap.insert(make_pair(attrs, tex));
     else
         itr->second = tex; // update existing, but empty observer
-    return tex;
+    return tex.release();
 }
 
 

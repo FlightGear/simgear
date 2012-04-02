@@ -103,11 +103,8 @@ SGNewCloud::SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def
     // Create a new Effect for the texture, if required.
     EffectMap::iterator iter = effectMap.find(texture);
 
-    if (iter != effectMap.end()) {
-        effect = iter->second.get();
-    }
-
-    if (!effect.valid())
+    if ((iter == effectMap.end())||
+        (!iter->second.lock(effect)))
     {
         SGPropertyNode_ptr pcloudEffect = new SGPropertyNode;
         makeChild(pcloudEffect, "inherits-from")->setValue("Effects/cloud");

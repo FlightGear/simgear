@@ -378,6 +378,8 @@ SGMaterial::init ()
 Effect* SGMaterial::get_effect(int i)
 {    
     if(!_status[i].effect_realized) {
+        if (!_status[i].effect.valid())
+            return 0;
         _status[i].effect->realizeTechniques(_status[i].options.get());
         _status[i].effect_realized = true;
     }
@@ -459,7 +461,8 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
         makeChild(effectParamProp, "light-coverage")->setDoubleValue(light_coverage);
 
         matState.effect = makeEffect(effectProp, false, options);
-        matState.effect->setUserData(user.get());
+        if (matState.effect.valid())
+            matState.effect->setUserData(user.get());
     }
 }
 

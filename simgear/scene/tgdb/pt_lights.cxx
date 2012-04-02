@@ -174,9 +174,12 @@ Effect* getLightEffect(float size, const Vec3& attenuation,
     PointParams pointParams(size, attenuation, minSize, maxSize, directional);
     ScopedLock<Mutex> lock(lightMutex);
     EffectMap::iterator eitr = effectMap.find(pointParams);
-    if ((eitr != effectMap.end())&&
-        eitr->second.valid())
-        return eitr->second.get();
+    if (eitr != effectMap.end())
+    {
+        ref_ptr<Effect> effect;
+        if (eitr->second.lock(effect))
+            return effect.release();
+    }
     // Basic stuff; no sprite or attenuation support
     Pass *basicPass = new Pass;
     basicPass->setRenderBinDetails(POINT_LIGHTS_BIN, "DepthSortedBin");

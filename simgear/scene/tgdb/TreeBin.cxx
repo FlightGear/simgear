@@ -302,10 +302,8 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
         ref_ptr<Effect> effect;
         EffectMap::iterator iter = treeEffectMap.find(forest->texture);
 
-        if (iter != treeEffectMap.end())
-            effect = iter->second.get();
-
-        if (!effect.valid())
+        if ((iter == treeEffectMap.end())||
+            (!iter->second.lock(effect)))
         {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/tree");

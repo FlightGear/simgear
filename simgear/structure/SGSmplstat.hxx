@@ -30,9 +30,10 @@ protected:
   double x;
   double x2;
   double minValue, maxValue;
-  double allTimeTotal;
+  double totalTime, cumulativeTime;
 
-public:  SampleStatistic ();
+public:
+  SampleStatistic ();
   inline virtual ~ SampleStatistic ();
   virtual void reset ();
 
@@ -44,40 +45,43 @@ public:  SampleStatistic ();
   double min () const;
   double max () const;
   double total () const;
+  double cumulative () const;
   double confidence (int p_percentage) const;
   double confidence (double p_value) const;
 
   void error (const char *msg);
 };
 
-// error handlers
-
-//extern void default_SampleStatistic_error_handler (const char *);
-//extern one_arg_error_handler_t SampleStatistic_error_handler;
-
-//extern one_arg_error_handler_t
-//set_SampleStatistic_error_handler (one_arg_error_handler_t f);
 
 inline SampleStatistic::SampleStatistic ()
 {
-  allTimeTotal = 0;
+  cumulativeTime = 0;
   reset ();
 }
+
 inline int SampleStatistic::samples () const
 {
   return (n);
 }
+
 inline double SampleStatistic::min () const
 {
   return (minValue);
 }
+
 inline double SampleStatistic::max () const
 {
   return (maxValue);
 }
+
 inline double SampleStatistic::total () const
 {
-  return (allTimeTotal);
+  return (totalTime);
+}
+
+inline double SampleStatistic::cumulative () const
+{
+  return (cumulativeTime);
 }
 
 inline SampleStatistic::~SampleStatistic ()

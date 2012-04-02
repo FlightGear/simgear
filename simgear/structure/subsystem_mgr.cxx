@@ -210,11 +210,11 @@ SGSubsystemGroup::update (double delta_time_sec)
       delta_time_sec = _fixedUpdateTime;
     }
 
+    bool recordTime = (reportTimingCb != NULL);
     SGTimeStamp timeStamp;
     while (loopCount-- > 0) {
       for (unsigned int i = 0; i < _members.size(); i++)
       {
-          bool recordTime = (reportTimingCb != NULL);
           if (recordTime)
               timeStamp = SGTimeStamp::now();
 

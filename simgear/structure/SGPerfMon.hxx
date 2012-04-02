@@ -54,8 +54,6 @@ private:
     SGPropertyNode_ptr _statiticsSubsystems;
     SGPropertyNode_ptr _statisticsFlag;
     SGPropertyNode_ptr _statisticsInterval;
-//    SGPropertyNode_ptr _statiticsMinJitter;
-//    SGPropertyNode_ptr _statiticsMinTime;
 
     bool _isEnabled;
     int _count;

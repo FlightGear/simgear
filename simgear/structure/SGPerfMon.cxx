@@ -52,8 +52,6 @@ SGPerformanceMonitor::bind(void)
     _statiticsSubsystems = _root->getChild("subsystems",    0, true);
     _statisticsFlag      = _root->getChild("enabled",       0, true);
     _statisticsInterval  = _root->getChild("interval-s",    0, true);
-//    _statiticsMinJitter  = _root->getChild("min-jitter-ms", 0, true);
-//    _statiticsMinTime    = _root->getChild("min-time-ms",   0, true);
 }
 
 void
@@ -62,8 +60,6 @@ SGPerformanceMonitor::unbind(void)
     _statiticsSubsystems = 0;
     _statisticsFlag = 0;
     _statisticsInterval = 0;
-//    _statiticsMinJitter = 0;
-//    _statiticsMinTime = 0;
 }
 
 void
@@ -110,12 +106,13 @@ SGPerformanceMonitor::reportTiming(const string& name, SampleStatistic* timeStat
 {
     SGPropertyNode* node = _statiticsSubsystems->getChild("subsystem",_count++,true);
 
-    double minMs    = timeStat->min()    / 1000;
-    double maxMs    = timeStat->max()    / 1000;
-    double meanMs   = timeStat->mean()   / 1000;
-    double stdDevMs = timeStat->stdDev() / 1000;
-    double totalMs  = timeStat->total()  / 1000;
-    int    samples  = timeStat->samples();
+    double minMs        = timeStat->min()    / 1000;
+    double maxMs        = timeStat->max()    / 1000;
+    double meanMs       = timeStat->mean()   / 1000;
+    double stdDevMs     = timeStat->stdDev() / 1000;
+    double totalMs      = timeStat->total()  / 1000;
+    double cumulativeMs = timeStat->cumulative() / 1000;
+    int    samples      = timeStat->samples();
 
     node->setStringValue("name", name);
     node->setDoubleValue("min-ms", minMs);
@@ -123,6 +120,7 @@ SGPerformanceMonitor::reportTiming(const string& name, SampleStatistic* timeStat
     node->setDoubleValue("mean-ms", meanMs);
     node->setDoubleValue("stddev-ms", stdDevMs);
     node->setDoubleValue("total-ms", totalMs);
+    node->setDoubleValue("cumulative-ms", cumulativeMs);
     node->setDoubleValue("count",samples);
 
     timeStat->reset();

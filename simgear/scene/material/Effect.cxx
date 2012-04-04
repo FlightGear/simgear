@@ -839,6 +839,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
             program->addShader(sitr->second.get());
         } else {
             ref_ptr<Shader> shader = new Shader(stype);
+			shader->setName(fileName);
             if (shader->loadShaderSourceFromFile(fileName)) {
                 program->addShader(shader.get());
                 shaderMap.insert(ShaderMap::value_type(skey, shader));

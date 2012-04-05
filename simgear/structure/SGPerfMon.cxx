@@ -76,7 +76,10 @@ SGPerformanceMonitor::update(double dt)
         // flag has changed, update subsystem manager
         _isEnabled = _statisticsFlag->getBoolValue();
         if (_isEnabled)
+        {
             _subSysMgr->setReportTimingCb(this,&subSystemMgrHook);
+            _lastUpdate.stamp();
+        }
         else
             _subSysMgr->setReportTimingCb(this,0);
     }

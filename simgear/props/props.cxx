@@ -778,13 +778,39 @@ SGPropertyNode::~SGPropertyNode ()
 bool
 SGPropertyNode::alias (SGPropertyNode * target)
 {
-  if (target == 0 || _type == props::ALIAS || _tied)
-    return false;
-  clearValue();
-  get(target);
-  _value.alias = target;
-  _type = props::ALIAS;
-  return true;
+  if (target && (_type != props::ALIAS) && (!_tied))
+  {
+    clearValue();
+    get(target);
+    _value.alias = target;
+    _type = props::ALIAS;
+    return true;
+  }
+
+#if PROPS_STANDALONE
+#else
+  if (!target)
+  {
+    SG_LOG(SG_GENERAL, SG_ALERT,
+           "Failed to create alias for " << getPath() << ". "
+           "The target property does not exist.");
+  }
+  else
+  if (_type == props::ALIAS)
+  {
+    SG_LOG(SG_GENERAL, SG_ALERT,
+           "Failed to create alias at " << target->getPath() << ". "
+           "Source "<< getPath() << " is also an alias. Unsupported recursion.");
+  }
+  else
+  if (_tied)
+  {
+    SG_LOG(SG_GENERAL, SG_ALERT, "Failed to create alias at " << target->getPath() << ". "
+           "Source " << getPath() << " is a tied property.");
+  }
+#endif
+
+  return false;
 }
 
 

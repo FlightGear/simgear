@@ -27,8 +27,12 @@
 #include <osg/Geometry>
 #include <osg/MatrixTransform>
 #include <simgear/scene/material/EffectGeode.hxx>
-#include <boost/scoped_array.hpp>
+#include <simgear/scene/material/Technique.hxx>
+#include <simgear/scene/material/Pass.hxx>
 #include <simgear/scene/util/CopyOp.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
+#include <boost/scoped_array.hpp>
+#include <boost/foreach.hpp>
 
 typedef std::map<string, osg::ref_ptr<simgear::Effect> > EffectMap;
 static EffectMap lightEffectMap;
@@ -38,6 +42,58 @@ static EffectMap lightEffectMap;
                 getConfig()->getDoubleValue(n "/g"), \
                 getConfig()->getDoubleValue(n "/b"), \
                 getConfig()->getDoubleValue(n "/a") )
+
+class SGLightAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+    UpdateCallback(string k, const SGExpressiond* v, SGVec4d a, SGVec4d d, SGVec4d s) :
+        _key(k),
+        _ambient(a),
+        _diffuse(d),
+        _specular(s),
+        _animationValue(v)
+    {
+        _prev_values[k] = -1;
+    }
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+    {
+        double dim = _animationValue->getValue();
+        if (dim != _prev_values[_key]) {
+            _prev_values[_key] = dim;
+
+            EffectMap::iterator iter = lightEffectMap.find(_key);
+            if (iter != lightEffectMap.end()) {
+                simgear::Effect* effect = iter->second;
+                SGPropertyNode* params = effect->parametersProp;
+                params->getNode("ambient")->setValue(_ambient * dim);
+                params->getNode("diffuse")->setValue(_diffuse * dim);
+                params->getNode("specular")->setValue(_specular * dim);
+                BOOST_FOREACH(osg::ref_ptr<simgear::Technique>& technique, effect->techniques)
+                {
+                    BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes)
+                    {
+                        osg::Uniform* amb = pass->getUniform("Ambient");
+                        amb->set(toOsg(_ambient) * dim);
+                        osg::Uniform* dif = pass->getUniform("Diffuse");
+                        dif->set(toOsg(_diffuse) * dim);
+                        osg::Uniform* spe = pass->getUniform("Specular");
+                        spe->set(toOsg(_specular) * dim);
+                    }
+                }
+            }
+        }
+        traverse(node, nv);
+    }
+public:
+    string _key;
+    SGVec4d _ambient;
+    SGVec4d _diffuse;
+    SGVec4d _specular;
+    SGSharedPtr<SGExpressiond const> _animationValue;
+
+    typedef std::map<string, double> PrevValueMap;
+    static PrevValueMap _prev_values;
+};
+SGLightAnimation::UpdateCallback::PrevValueMap SGLightAnimation::UpdateCallback::_prev_values;
 
 SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
                                    SGPropertyNode* modelRoot,
@@ -58,12 +114,20 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
     _near = getConfig()->getDoubleValue("near-m");
     _far = getConfig()->getDoubleValue("far-m");
     _key = path + ";" + boost::lexical_cast<string>( i );
+
+    SGConstPropertyNode_ptr dim_factor = configNode->getChild("dim-factor");
+    if (dim_factor.valid()) {
+        _animationValue = read_value(dim_factor, modelRoot, "", 0, 1);
+    }
 }
 
 osg::Group*
 SGLightAnimation::createAnimationGroup(osg::Group& parent)
 {
     osg::Group* grp = new osg::Group;
+    grp->setName("light animation node");
+    if (_animationValue.valid())
+        grp->setUpdateCallback(new UpdateCallback(_key, _animationValue, _ambient, _diffuse, _specular));
     parent.addChild(grp);
     grp->setNodeMask( simgear::MODELLIGHT_BIT );
     return grp;
@@ -81,18 +145,22 @@ SGLightAnimation::install(osg::Node& node)
         if (iter == lightEffectMap.end()) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-spot");
+            double dim = 1.0;
+            if (_animationValue.valid())
+                dim = _animationValue->getValue();
+
             SGPropertyNode* params = makeChild(effectProp, "parameters");
-            params->getNode("light-spot/position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
-            params->getNode("light-spot/direction",true)->setValue(SGVec4d(_direction.x(),_direction.y(),_direction.z(),0.0));
-            params->getNode("light-spot/ambient",true)->setValue(_ambient);
-            params->getNode("light-spot/diffuse",true)->setValue(_diffuse);
-            params->getNode("light-spot/specular",true)->setValue(_specular);
-            params->getNode("light-spot/attenuation",true)->setValue(_attenuation);
-            params->getNode("light-spot/exponent",true)->setValue(_exponent);
-            params->getNode("light-spot/cutoff",true)->setValue(_cutoff);
-            params->getNode("light-spot/cosCutoff",true)->setValue( cos(_cutoff*SG_DEGREES_TO_RADIANS) );
-            params->getNode("light-spot/near",true)->setValue(_near);
-            params->getNode("light-spot/far",true)->setValue(_far);
+            params->getNode("position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
+            params->getNode("direction",true)->setValue(SGVec4d(_direction.x(),_direction.y(),_direction.z(),0.0));
+            params->getNode("ambient",true)->setValue(_ambient * dim);
+            params->getNode("diffuse",true)->setValue(_diffuse * dim);
+            params->getNode("specular",true)->setValue(_specular * dim);
+            params->getNode("attenuation",true)->setValue(_attenuation);
+            params->getNode("exponent",true)->setValue(_exponent);
+            params->getNode("cutoff",true)->setValue(_cutoff);
+            params->getNode("cosCutoff",true)->setValue( cos(_cutoff*SG_DEGREES_TO_RADIANS) );
+            params->getNode("near",true)->setValue(_near);
+            params->getNode("far",true)->setValue(_far);
 
             effect = simgear::makeEffect(effectProp, true);
             lightEffectMap.insert(EffectMap::value_type(_key, effect));
@@ -120,14 +188,18 @@ SGLightAnimation::install(osg::Node& node)
         if (iter == lightEffectMap.end()) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-point");
+            double dim = 1.0;
+            if (_animationValue.valid())
+                dim = _animationValue->getValue();
+
             SGPropertyNode* params = makeChild(effectProp, "parameters");
-            params->getNode("light-spot/position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
-            params->getNode("light-spot/ambient",true)->setValue(_ambient);
-            params->getNode("light-spot/diffuse",true)->setValue(_diffuse);
-            params->getNode("light-spot/specular",true)->setValue(_specular);
-            params->getNode("light-spot/attenuation",true)->setValue(_attenuation);
-            params->getNode("light-spot/near",true)->setValue(_near);
-            params->getNode("light-spot/far",true)->setValue(_far);
+            params->getNode("position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
+            params->getNode("ambient",true)->setValue(_ambient * dim);
+            params->getNode("diffuse",true)->setValue(_diffuse * dim);
+            params->getNode("specular",true)->setValue(_specular * dim);
+            params->getNode("attenuation",true)->setValue(_attenuation);
+            params->getNode("near",true)->setValue(_near);
+            params->getNode("far",true)->setValue(_far);
 
             effect = simgear::makeEffect(effectProp, true);
             lightEffectMap.insert(EffectMap::value_type(_key, effect));

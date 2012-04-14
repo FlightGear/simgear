@@ -369,6 +369,9 @@ private:
   double _near;
   double _far;
   string _key;
+  class UpdateCallback;
+  friend class UpdateCallback;
+  SGSharedPtr<SGExpressiond> _animationValue;
 };
 
 #endif // _SG_ANIMATION_HXX

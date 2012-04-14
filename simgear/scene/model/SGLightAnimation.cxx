@@ -72,11 +72,14 @@ public:
                     BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes)
                     {
                         osg::Uniform* amb = pass->getUniform("Ambient");
-                        amb->set(toOsg(_ambient) * dim);
+                        if (amb)
+                            amb->set(toOsg(_ambient) * dim);
                         osg::Uniform* dif = pass->getUniform("Diffuse");
-                        dif->set(toOsg(_diffuse) * dim);
+                        if (dif)
+                            dif->set(toOsg(_diffuse) * dim);
                         osg::Uniform* spe = pass->getUniform("Specular");
-                        spe->set(toOsg(_specular) * dim);
+                        if (spe)
+                            spe->set(toOsg(_specular) * dim);
                     }
                 }
             }

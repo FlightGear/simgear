@@ -147,6 +147,7 @@ SGLightAnimation::install(osg::Node& node)
         EffectMap::iterator iter = lightEffectMap.find(_key);
         if (iter == lightEffectMap.end()) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
+            makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-spot");
             double dim = 1.0;
             if (_animationValue.valid())
@@ -190,6 +191,7 @@ SGLightAnimation::install(osg::Node& node)
         EffectMap::iterator iter = lightEffectMap.find(_key);
         if (iter == lightEffectMap.end()) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
+            makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-point");
             double dim = 1.0;
             if (_animationValue.valid())

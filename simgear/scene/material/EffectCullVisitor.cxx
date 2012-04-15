@@ -98,14 +98,14 @@ void EffectCullVisitor::clearBufferList()
     _bufferList.clear();
 }
 
-void EffectCullVisitor::addBuffer(int i, osg::Texture2D* tex)
+void EffectCullVisitor::addBuffer(std::string b, osg::Texture2D* tex)
 {
-    _bufferList.insert(std::make_pair(i,tex));
+    _bufferList.insert(std::make_pair(b,tex));
 }
 
-osg::Texture2D* EffectCullVisitor::getBuffer(int i)
+osg::Texture2D* EffectCullVisitor::getBuffer(std::string b)
 {
-    return _bufferList[i];
+    return _bufferList[b];
 }
 
 }

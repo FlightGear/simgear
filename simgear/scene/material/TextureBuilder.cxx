@@ -832,11 +832,11 @@ bool makeTextureParameters(SGPropertyNode* paramRoot, const StateSet* ss)
 class GBufferBuilder : public TextureBuilder
 {
 public:
-    GBufferBuilder(int b) : buffer(b) {}
+    GBufferBuilder() {}
     Texture* build(Effect* effect, Pass* pass, const SGPropertyNode*,
                    const SGReaderWriterOptions* options);
 private:
-    int buffer;
+    string buffer;
 };
 
 Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* prop,
@@ -847,15 +847,10 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
     if (pUnit) {
         unit = pUnit->getValue<int>();
     } else {
-        const SGPropertyNode* pName = prop->getChild("name");
-        if (pName)
-            try {
-                unit = boost::lexical_cast<int>(pName->getStringValue());
-            } catch (boost::bad_lexical_cast& lex) {
-                SG_LOG(SG_INPUT, SG_ALERT, "can't decode name as texture unit "
-                       << lex.what());
-            }
+        SG_LOG(SG_INPUT, SG_ALERT, "no texture unit");
     }
+    buffer = prop->getStringValue("name");
+
     pass->setBufferUnit( unit, buffer );
 
     // Return white for now. Would be overridden in Technique::ProcessDrawable
@@ -864,15 +859,7 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
 
 namespace
 {
-    TextureBuilder::Registrar installDepthBuffer("depth-buffer", new GBufferBuilder(Effect::DEPTH_BUFFER));
-    TextureBuilder::Registrar installNormalBuffer("normal-buffer", new GBufferBuilder(Effect::NORMAL_BUFFER));
-    TextureBuilder::Registrar installDiffuseBuffer("diffuse-buffer", new GBufferBuilder(Effect::DIFFUSE_BUFFER));
-    TextureBuilder::Registrar installSpecularBuffer("spec-emis-buffer", new GBufferBuilder(Effect::SPEC_EMIS_BUFFER));
-    TextureBuilder::Registrar installLightingBuffer("lighting-buffer", new GBufferBuilder(Effect::LIGHTING_BUFFER));
-    TextureBuilder::Registrar installMiddleBloomBuffer("middle-bloom-buffer", new GBufferBuilder(Effect::MIDDLE_BLOOM_BUFFER));
-    TextureBuilder::Registrar installBloomBuffer("bloom-buffer", new GBufferBuilder(Effect::BLOOM_BUFFER));
-    TextureBuilder::Registrar installAoBuffer("ao-buffer", new GBufferBuilder(Effect::AO_BUFFER));
-    TextureBuilder::Registrar installShadowBuffer("shadow-buffer", new GBufferBuilder(Effect::SHADOW_BUFFER));
+    TextureBuilder::Registrar installBuffer("buffer", new GBufferBuilder);
 }
 
 }

@@ -26,7 +26,7 @@ namespace simgear
 class Pass : public osg::StateSet
 {
 public:
-    typedef std::list<std::pair<int,int> > BufferUnitList;
+    typedef std::list<std::pair<int,std::string> > BufferUnitList;
     typedef std::map<std::string,osg::Vec4> PositionedUniformMap;
 
     META_Object(simgear,Pass);
@@ -34,7 +34,7 @@ public:
     Pass(const Pass& rhs,
          const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
 
-    void setBufferUnit( int unit, int buffer ) { _bufferUnitList.push_back( std::make_pair(unit,buffer) ); }
+    void setBufferUnit( int unit, std::string buffer ) { _bufferUnitList.push_back( std::make_pair(unit,buffer) ); }
     const BufferUnitList& getBufferUnitList() const { return _bufferUnitList; }
 
     void addPositionedUniform( const std::string& name, const osg::Vec4& offset ) { _positionedUniforms[name] = offset; }

@@ -41,11 +41,11 @@ public:
     virtual void reset();
 
     void clearBufferList();
-    void addBuffer(int i, osg::Texture2D* tex);
-    osg::Texture2D* getBuffer(int i);
+    void addBuffer(std::string b, osg::Texture2D* tex);
+    osg::Texture2D* getBuffer(std::string b);
 
 private:
-    std::map<int,osg::ref_ptr<osg::Texture2D> > _bufferList;
+    std::map<std::string,osg::ref_ptr<osg::Texture2D> > _bufferList;
     std::vector<osg::ref_ptr<EffectGeode> > _lightList;
     bool _collectLights;
 };

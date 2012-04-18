@@ -360,6 +360,7 @@ private:
   string _light_type;
   SGVec3d _position;
   SGVec3d _direction;
+  SGVec4d _ambient;
   SGVec4d _diffuse;
   SGVec4d _specular;
   SGVec3d _attenuation;

@@ -45,8 +45,9 @@ static EffectMap lightEffectMap;
 
 class SGLightAnimation::UpdateCallback : public osg::NodeCallback {
 public:
-    UpdateCallback(string k, const SGExpressiond* v, SGVec4d d, SGVec4d s) :
+    UpdateCallback(string k, const SGExpressiond* v, SGVec4d a, SGVec4d d, SGVec4d s) :
         _key(k),
+        _ambient(a),
         _diffuse(d),
         _specular(s),
         _animationValue(v)
@@ -63,12 +64,16 @@ public:
             if (iter != lightEffectMap.end()) {
                 simgear::Effect* effect = iter->second;
                 SGPropertyNode* params = effect->parametersProp;
+                params->getNode("ambient")->setValue(_ambient * dim);
                 params->getNode("diffuse")->setValue(_diffuse * dim);
                 params->getNode("specular")->setValue(_specular * dim);
                 BOOST_FOREACH(osg::ref_ptr<simgear::Technique>& technique, effect->techniques)
                 {
                     BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes)
                     {
+                        osg::Uniform* amb = pass->getUniform("Ambient");
+                        if (amb)
+                            amb->set(toOsg(_ambient) * dim);
                         osg::Uniform* dif = pass->getUniform("Diffuse");
                         if (dif)
                             dif->set(toOsg(_diffuse) * dim);
@@ -83,6 +88,7 @@ public:
     }
 public:
     string _key;
+    SGVec4d _ambient;
     SGVec4d _diffuse;
     SGVec4d _specular;
     SGSharedPtr<SGExpressiond const> _animationValue;
@@ -102,6 +108,7 @@ SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
     _direction = SGVec3d( getConfig()->getDoubleValue("direction/x"), getConfig()->getDoubleValue("direction/y"), getConfig()->getDoubleValue("direction/z") );
     double l = length(_direction);
     if (l > 0.001) _direction /= l;
+    _ambient = GET_COLOR_VALUE("ambient");
     _diffuse = GET_COLOR_VALUE("diffuse");
     _specular = GET_COLOR_VALUE("specular");
     _attenuation = SGVec3d( getConfig()->getDoubleValue("attenuation/c"), getConfig()->getDoubleValue("attenuation/l"), getConfig()->getDoubleValue("attenuation/q") );
@@ -123,7 +130,7 @@ SGLightAnimation::createAnimationGroup(osg::Group& parent)
     osg::Group* grp = new osg::Group;
     grp->setName("light animation node");
     if (_animationValue.valid())
-        grp->setUpdateCallback(new UpdateCallback(_key, _animationValue, _diffuse, _specular));
+        grp->setUpdateCallback(new UpdateCallback(_key, _animationValue, _ambient, _diffuse, _specular));
     parent.addChild(grp);
     grp->setNodeMask( simgear::MODELLIGHT_BIT );
     return grp;
@@ -149,6 +156,7 @@ SGLightAnimation::install(osg::Node& node)
             SGPropertyNode* params = makeChild(effectProp, "parameters");
             params->getNode("position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
             params->getNode("direction",true)->setValue(SGVec4d(_direction.x(),_direction.y(),_direction.z(),0.0));
+            params->getNode("ambient",true)->setValue(_ambient * dim);
             params->getNode("diffuse",true)->setValue(_diffuse * dim);
             params->getNode("specular",true)->setValue(_specular * dim);
             params->getNode("attenuation",true)->setValue(_attenuation);
@@ -191,6 +199,7 @@ SGLightAnimation::install(osg::Node& node)
 
             SGPropertyNode* params = makeChild(effectProp, "parameters");
             params->getNode("position",true)->setValue(SGVec4d(_position.x(),_position.y(),_position.z(),1.0));
+            params->getNode("ambient",true)->setValue(_ambient * dim);
             params->getNode("diffuse",true)->setValue(_diffuse * dim);
             params->getNode("specular",true)->setValue(_specular * dim);
             params->getNode("attenuation",true)->setValue(_attenuation);

@@ -25,9 +25,6 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-//#include <iostream>
-//using namespace std;
-
 namespace simgear
 {
 
@@ -35,6 +32,7 @@ namespace HTTP
 {
 
 extern const int DEFAULT_HTTP_PORT = 80;
+const char* CONTENT_TYPE_URL_ENCODED = "application/x-www-form-urlencoded";
 
 class Connection : public NetChat
 {
@@ -103,15 +101,27 @@ public:
         state = STATE_SENT_REQUEST;
         bodyTransferSize = -1;
         chunkedTransfer = false;
+        noMessageBody = (r->method() == "HEAD");
         setTerminator("\r\n");
         
         stringstream headerData;
         string path = r->path();
+        string query = r->query();
+        string bodyData;
+        
         if (!client->proxyHost().empty()) {
-            path = r->url();
+            path = r->scheme() + "://" + r->host() + r->path();
         }
 
-        headerData << r->method() << " " << path << " HTTP/1.1\r\n";
+        if (r->method() == "POST") {
+            headerData << r->method() << " " << path << " HTTP/1.1\r\n";
+            bodyData = query.substr(1); // URL-encode, drop the leading '?'
+            headerData << "Content-Type:" << CONTENT_TYPE_URL_ENCODED << "\r\n";
+            headerData << "Content-Length:" << bodyData.size() << "\r\n";
+        } else {
+            headerData << r->method() << " " << path << query << " HTTP/1.1\r\n";
+        }
+        
         headerData << "Host: " << r->hostAndPort() << "\r\n";
         headerData << "User-Agent:" << client->userAgent() << "\r\n";
         if (!client->proxyAuth().empty()) {
@@ -123,9 +133,10 @@ public:
         }
 
         headerData << "\r\n"; // final CRLF to terminate the headers
-
-    // TODO - add request body support for PUT, etc operations
-
+        if (!bodyData.empty()) {
+            headerData << bodyData;
+        }
+        
         bool ok = push(headerData.str().c_str());
         if (!ok) {
             SG_LOG(SG_IO, SG_WARN, "HTTP writing to socket failed");
@@ -150,6 +161,10 @@ public:
             activeRequest->responseStart(buffer);
             state = STATE_GETTING_HEADERS;
             buffer.clear();
+            if (activeRequest->responseCode() == 204) {
+                noMessageBody = true;
+            }
+            
             break;
             
         case STATE_GETTING_HEADERS:
@@ -233,6 +248,11 @@ private:
             
             if (chunkedTransfer) {
                 state = STATE_GETTING_CHUNKED;
+            } else if (noMessageBody || (bodyTransferSize == 0)) {
+                // force the state to GETTING_BODY, to simplify logic in
+                // responseComplete and handleClose
+                state = STATE_GETTING_BODY;
+                responseComplete();
             } else {
                 setByteCount(bodyTransferSize); // may be -1, that's fine
                 state = STATE_GETTING_BODY;
@@ -327,7 +347,6 @@ private:
     {
         activeRequest->responseComplete();
         client->requestFinished(this);
-        //cout << "response complete: " << activeRequest->url() << endl;
         
         bool doClose = activeRequest->closeAfterComplete();
         activeRequest = NULL;
@@ -374,6 +393,7 @@ private:
     int bodyTransferSize;
     SGTimeStamp idleTime;
     bool chunkedTransfer;
+    bool noMessageBody;
     
     std::list<Request_ptr> queuedRequests;
 };

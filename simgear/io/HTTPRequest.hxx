@@ -30,6 +30,7 @@ public:
     virtual std::string host() const;
     virtual std::string hostAndPort() const;
     virtual unsigned short port() const;
+    virtual std::string query() const;
     
     virtual string_list requestHeaders() const;
     virtual std::string header(const std::string& name) const;

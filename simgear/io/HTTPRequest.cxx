@@ -125,6 +125,20 @@ string Request::path() const
     return u.substr(hostEnd, query - hostEnd);
 }
 
+
+string Request::query() const
+{
+  string u(url());
+  int query = u.find('?');
+  if (query < 0) {
+    return "";  //no query string found
+  }
+  
+  return u.substr(query);   //includes question mark
+}
+
+
+
 string Request::host() const
 {
     string hp(hostAndPort());

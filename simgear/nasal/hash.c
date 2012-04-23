@@ -179,7 +179,8 @@ void naiGCMarkHash(naRef hash)
 static void tmpStr(naRef* out, struct naStr* str, const char* key)
 {
     str->type = T_STR;
-    str->hashcode = str->emblen = 0;
+    str->hashcode = 0;
+    str->emblen = -1;
     str->data.ref.ptr = (unsigned char*)key;
     str->data.ref.len = strlen(key);
     SETPTR(*out, str);

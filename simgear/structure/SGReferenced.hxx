@@ -32,8 +32,6 @@ class SGReferenced {
 public:
   SGReferenced(void) : _refcount(0u)
   {}
-  virtual ~SGReferenced()
-  {}
   /// Do not copy reference counts. Each new object has it's own counter
   SGReferenced(const SGReferenced&) : _refcount(0u)
   {}

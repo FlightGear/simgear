@@ -25,6 +25,7 @@ set(SOURCES
     GroundLightManager.cxx
     ReaderWriterSPT.cxx
     ReaderWriterSTG.cxx
+    SGBuildingBin.cxx
     SGOceanTile.cxx
     SGReaderWriterBTG.cxx
     SGVasiDrawable.cxx

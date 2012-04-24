@@ -145,6 +145,67 @@ public:
    * @return The area (m^2) covered by each light.
    */
   inline double get_light_coverage () const { return light_coverage; }
+  
+  /**
+   * Get the building coverage.
+   *
+   * A smaller number means more generated buildings.
+   *
+   * @return The area (m^2) covered by each light.
+   */
+  inline double get_building_coverage () const { return building_coverage; }
+
+  /**
+   * Get the building spacing.
+   *
+   * This is the minimum spacing between buildings
+   *
+   * @return The minimum distance between buildings
+   */
+  inline double get_building_spacing () const { return building_spacing; }
+
+  /**
+   * Get the building texture.
+   *
+   * This is the texture used for auto-generated buildings.
+   *
+   * @return The texture for auto-generated buildings.
+   */
+  inline std::string get_building_texture () const { return building_texture; }
+  
+  // Ratio of the 3 random building sizes
+  inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  inline double get_building_medium_fraction () const { return building_medium_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  inline double get_building_large_fraction () const { return building_large_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
+  
+  // Proportion of buildings with pitched roofs
+  inline double get_building_small_pitch () const { return building_small_pitch; }
+  inline double get_building_medium_pitch () const { return building_medium_pitch; }
+  inline double get_building_large_pitch () const { return building_large_pitch; }
+
+  // Min/Max number of floors for each size
+  inline int get_building_small_min_floors () const { return  building_small_min_floors; }
+  inline int get_building_small_max_floors () const { return  building_small_max_floors; }
+  inline int get_building_medium_min_floors () const { return building_medium_min_floors; }
+  inline int get_building_medium_max_floors () const { return building_medium_max_floors; }
+  inline int get_building_large_min_floors () const { return building_large_min_floors; }
+  inline int get_building_large_max_floors () const { return building_large_max_floors; }
+  
+  // Minimum width and depth for each size
+  inline double get_building_small_min_width () const { return building_small_min_width; }
+  inline double get_building_small_max_width () const { return building_small_max_width; }
+  inline double get_building_small_min_depth () const { return building_small_min_depth; }
+  inline double get_building_small_max_depth () const { return building_small_max_depth; }
+  
+  inline double get_building_medium_min_width () const { return building_medium_min_width; }
+  inline double get_building_medium_max_width () const { return building_medium_max_width; }
+  inline double get_building_medium_min_depth () const { return building_medium_min_depth; }
+  inline double get_building_medium_max_depth () const { return building_medium_max_depth; }
+  
+  inline double get_building_large_min_width () const { return building_large_min_width; }
+  inline double get_building_large_max_width () const { return building_large_max_width; }
+  inline double get_building_large_min_depth () const { return building_large_min_depth; }
+  inline double get_building_large_max_depth () const { return building_large_max_depth; }
 
   /**
    * Get the wood coverage.
@@ -316,6 +377,49 @@ private:
 
   // coverage of night lighting.
   double light_coverage;
+  
+  // coverage of buildings
+  double building_coverage;
+  
+  // building spacing
+  double building_spacing;
+  
+  // building texture
+  std::string building_texture;
+
+  // Ratio of the 3 random building sizes
+  double building_small_ratio;
+  double building_medium_ratio;
+  double building_large_ratio;
+  
+  // Proportion of buildings with pitched roofs
+  double building_small_pitch;
+  double building_medium_pitch;
+  double building_large_pitch;
+
+  // Min/Max number of floors for each size
+  int building_small_min_floors; 
+  int building_small_max_floors;
+  int building_medium_min_floors;
+  int building_medium_max_floors;
+  int building_large_min_floors;
+  int building_large_max_floors;
+  
+  // Minimum width and depth for each size
+  double building_small_min_width;
+  double building_small_max_width;
+  double building_small_min_depth;
+  double building_small_max_depth;
+  
+  double building_medium_min_width;
+  double building_medium_max_width;
+  double building_medium_min_depth;
+  double building_medium_max_depth;
+  
+  double building_large_min_width;
+  double building_large_max_width;
+  double building_large_min_depth;
+  double building_large_max_depth;
   
   // coverage of woods
   double wood_coverage;

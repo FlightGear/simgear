@@ -264,6 +264,49 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     wrapv = props->getBoolValue("wrapv", true);
     mipmap = props->getBoolValue("mipmap", true);
     light_coverage = props->getDoubleValue("light-coverage", 0.0);
+    
+    // Building properties
+    building_coverage = props->getDoubleValue("building-coverage", 0.0);
+    building_spacing = props->getDoubleValue("building-spacing-m", 5.0);
+    
+    string bt = props->getStringValue("building-texture", "Textures/buildings.png");
+    building_texture = SGModelLib::findDataFile(bt, options);    
+    
+    if (building_texture.empty()) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+    }    
+        
+    building_small_ratio = props->getDoubleValue("building-small-ratio", 0.8);
+    building_medium_ratio = props->getDoubleValue("building-medium-ratio", 0.15);
+    building_large_ratio =  props->getDoubleValue("building-large-ratio", 0.05);
+    
+    building_small_pitch =  props->getDoubleValue("building-small-pitch", 0.8);
+    building_medium_pitch =  props->getDoubleValue("building-medium-pitch", 0.2);
+    building_large_pitch =  props->getDoubleValue("building-large-pitch", 0.1);
+
+    building_small_min_floors = props->getIntValue("building-small-min-floors", 1);
+    building_small_max_floors = props->getIntValue("building-small-max-floors", 3);
+    building_medium_min_floors = props->getIntValue("building-medium-min-floors", 3);
+    building_medium_max_floors = props->getIntValue("building-medium-max-floors", 8);
+    building_large_min_floors = props->getIntValue("building-large-min-floors", 5);
+    building_large_max_floors = props->getIntValue("building-large-max-floors", 20);
+    
+    building_small_min_width = props->getFloatValue("building-small-min-width-m", 15.0);
+    building_small_max_width = props->getFloatValue("building-small-max-width-m", 60.0);
+    building_small_min_depth = props->getFloatValue("building-small-min-depth-m", 10.0);
+    building_small_max_depth = props->getFloatValue("building-small-max-depth-m", 20.0);
+    
+    building_medium_min_width = props->getFloatValue("building-medium-min-width-m", 25.0);
+    building_medium_max_width = props->getFloatValue("building-medium-max-width-m", 50.0);
+    building_medium_min_depth = props->getFloatValue("building-medium-min-depth-m", 20.0);
+    building_medium_max_depth = props->getFloatValue("building-medium-max-depth-m", 50.0);
+    
+    building_large_min_width = props->getFloatValue("building-large-min-width-m", 50.0);
+    building_large_max_width = props->getFloatValue("building-large-max-width-m", 75.0);
+    building_large_min_depth = props->getFloatValue("building-large-min-depth-m", 50.0);
+    building_large_max_depth = props->getFloatValue("building-large-max-depth-m", 75.0);
+        
+    // Random vegetation properties
     wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
     tree_height = props->getDoubleValue("tree-height-m", 0.0);
     tree_width = props->getDoubleValue("tree-width-m", 0.0);
@@ -358,6 +401,7 @@ SGMaterial::init ()
 
     mipmap = true;
     light_coverage = 0.0;
+    building_coverage = 0.0;
 
     solid = true;
     friction_factor = 1;

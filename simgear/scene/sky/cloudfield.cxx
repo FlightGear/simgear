@@ -178,7 +178,7 @@ SGCloudField::SGCloudField() :
 }
     
 SGCloudField::~SGCloudField() {
-        }
+}
 
 
 void SGCloudField::clear(void) {
@@ -208,7 +208,7 @@ void SGCloudField::applyVisAndLoDRange(void)
             
 bool SGCloudField::addCloud(float lon, float lat, float alt, int index, osg::ref_ptr<EffectGeode> geode) {
   return addCloud(lon, lat, alt, 0.0f, 0.0f, index, geode);
-        }
+}
 
 bool SGCloudField::addCloud(float lon, float lat, float alt, float x, float y, int index, osg::ref_ptr<EffectGeode> geode) {
     // If this cloud index already exists, don't replace it.
@@ -220,11 +220,16 @@ bool SGCloudField::addCloud(float lon, float lat, float alt, float x, float y, i
     addCloudToTree(transform, lon, lat, alt, x, y);
     cloud_hash[index] = transform;
     return true;
-    }
-    
+}
+
 // Remove a give cloud from inside the tree, without removing it from the cloud hash
 void SGCloudField::removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransform> transform)
 {
+    if (transform == 0)
+    {
+        // Ooops!
+        return;
+    }
     osg::ref_ptr<osg::Group> lodnode = transform->getParent(0);
     lodnode->removeChild(transform);
     cloudcount--;
@@ -236,8 +241,8 @@ void SGCloudField::removeCloudFromTree(osg::ref_ptr<osg::PositionAttitudeTransfo
         lodnode1->removeChild(lodnode);
         lodcount--;
 
-        if (lodnode1->getNumChildren() == 0) {        
-          impostornode->removeChild(lodnode1);        
+        if (lodnode1->getNumChildren() == 0) {
+          impostornode->removeChild(lodnode1);
           placed_root->removeChild(impostornode);
           impostorcount--;
         }

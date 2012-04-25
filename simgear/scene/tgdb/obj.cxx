@@ -48,6 +48,7 @@
 #include <simgear/io/sg_binobj.hxx>
 #include <simgear/math/sg_geodesy.hxx>
 #include <simgear/math/sg_random.h>
+#include <simgear/math/SGMisc.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
@@ -571,7 +572,7 @@ struct SGTileGeometryBin {
             buildingtype = SGBuildingBin::SMALL;
             width = mat->get_building_small_min_width() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_small_max_width() - mat->get_building_small_min_width());
             depth = mat->get_building_small_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_small_max_depth() - mat->get_building_small_min_depth());
-            floors = round(mat->get_building_small_min_floors() + mt_rand(&seed) * (mat->get_building_small_max_floors() - mat->get_building_small_min_floors()));
+            floors = SGMisc::round(mat->get_building_small_min_floors() + mt_rand(&seed) * (mat->get_building_small_max_floors() - mat->get_building_small_min_floors()));
             height = floors * (2.8 + mt_rand(&seed));
             
             if (depth > width) { depth = width; }
@@ -581,14 +582,14 @@ struct SGTileGeometryBin {
             buildingtype = SGBuildingBin::MEDIUM;
             width = mat->get_building_medium_min_width() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_medium_max_width() - mat->get_building_medium_min_width());
             depth = mat->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_medium_max_depth() - mat->get_building_medium_min_depth());
-            floors = round(mat->get_building_medium_min_floors() + mt_rand(&seed) * (mat->get_building_medium_max_floors() - mat->get_building_medium_min_floors()));
+            floors = SGMisc::round(mat->get_building_medium_min_floors() + mt_rand(&seed) * (mat->get_building_medium_max_floors() - mat->get_building_medium_min_floors()));
             height = floors * (2.8 + mt_rand(&seed));
             pitched = (mt_rand(&seed) < mat->get_building_medium_pitch());         
           } else {
             buildingtype = SGBuildingBin::LARGE;
             width = mat->get_building_large_min_width() + mt_rand(&seed) * (mat->get_building_large_max_width() - mat->get_building_large_min_width());
             depth = mat->get_building_large_min_depth() + mt_rand(&seed) * (mat->get_building_large_max_depth() - mat->get_building_large_min_depth());
-            floors = round(mat->get_building_large_min_floors() + mt_rand(&seed) * (mat->get_building_large_max_floors() - mat->get_building_large_min_floors())); 
+            floors = SGMisc::round(mat->get_building_large_min_floors() + mt_rand(&seed) * (mat->get_building_large_max_floors() - mat->get_building_large_min_floors())); 
             height = floors * (2.8 + mt_rand(&seed));
             pitched = (mt_rand(&seed) < mat->get_building_large_pitch());                   
           }

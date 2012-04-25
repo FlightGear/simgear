@@ -80,9 +80,7 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       osg::ref_ptr<osg::Geometry> geom;
       osg::Vec3Array* v = new osg::Vec3Array;
       osg::Vec2Array* t = new osg::Vec2Array;
-      
-      // Color and Normal will be per QUAD
-      osg::Vec4Array* c = new osg::Vec4Array;
+      osg::Vec4Array* c = new osg::Vec4Array; // single value
       osg::Vec3Array* n = new osg::Vec3Array;            
       
       if (geode->getNumDrawables() == 0) {
@@ -97,7 +95,7 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         geom->setColorArray(c);
         geom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
-        geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+        geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
         // Temporary primitive set. Will be over-written later.
         geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,1));
         geode->addDrawable(geom);
@@ -145,7 +143,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( 0, -cw,   0) * transformMat ); // top left
       v->push_back( osg::Vec3( 0,  cw,   0) * transformMat ); // top right
       
-      n->push_back( osg::Vec3(-1, 0, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(-1, 0, 0) * rotationMat ); // normal
       
       // Left face
       v->push_back( osg::Vec3(  0, -cw, -10) * transformMat ); // bottom right
@@ -153,7 +152,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( cd, -cw,   0) * transformMat ); // top left
       v->push_back( osg::Vec3(  0, -cw,   0) * transformMat ); // top right
 
-      n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
 
       // Back face
       v->push_back( osg::Vec3( cd, -cw, -10) * transformMat ); // bottom right
@@ -161,7 +161,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( cd,  cw,   0) * transformMat ); // top left
       v->push_back( osg::Vec3( cd, -cw,   0) * transformMat ); // top right
       
-      n->push_back( osg::Vec3(1, 0, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(1, 0, 0) * rotationMat ); // normal
       
       // Right face
       v->push_back( osg::Vec3( cd, cw, -10) * transformMat ); // bottom right
@@ -169,7 +170,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3(  0, cw,   0) * transformMat ); // top left
       v->push_back( osg::Vec3( cd, cw,   0) * transformMat ); // top right
 
-      n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal      
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal      
       
       // MAIN BODY
       // Front face        
@@ -178,7 +180,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( 0, -cw, ch) * transformMat ); // top left
       v->push_back( osg::Vec3( 0,  cw, ch) * transformMat ); // top right
       
-      n->push_back( osg::Vec3(-1, 0, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(-1, 0, 0) * rotationMat ); // normal
       
       // Left face
       v->push_back( osg::Vec3(  0, -cw,  0) * transformMat ); // bottom right
@@ -186,7 +189,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( cd, -cw, ch) * transformMat ); // top left
       v->push_back( osg::Vec3(  0, -cw, ch) * transformMat ); // top right
 
-      n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
 
       // Back face
       v->push_back( osg::Vec3( cd, -cw,  0) * transformMat ); // bottom right
@@ -194,7 +198,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3( cd,  cw, ch) * transformMat ); // top left
       v->push_back( osg::Vec3( cd, -cw, ch) * transformMat ); // top right
       
-      n->push_back( osg::Vec3(1, 0, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(1, 0, 0) * rotationMat ); // normal
       
       // Right face
       v->push_back( osg::Vec3( cd, cw,  0) * transformMat ); // bottom right
@@ -202,7 +207,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       v->push_back( osg::Vec3(  0, cw, ch) * transformMat ); // top left
       v->push_back( osg::Vec3( cd, cw, ch) * transformMat ); // top right
 
-      n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal
+      for (int i=0; i<4; ++i)
+        n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal
       
       // ROOF
       if (building.pitched) {      
@@ -212,35 +218,45 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         v->push_back( osg::Vec3(     0, -cw,   ch) * transformMat ); // bottom left
         v->push_back( osg::Vec3(0.5*cd, -cw, ch+3) * transformMat ); // top left
         v->push_back( osg::Vec3(0.5*cd,  cw, ch+3) * transformMat ); // top right
-        n->push_back( osg::Vec3(-0.707, 0, 0.707) * rotationMat ); // normal
+        
+        for (int i=0; i<4; ++i)
+          n->push_back( osg::Vec3(-0.707, 0, 0.707) * rotationMat ); // normal
         
         // Left pitched roof
         v->push_back( osg::Vec3(     0, -cw,   ch) * transformMat ); // bottom right
         v->push_back( osg::Vec3(    cd, -cw,   ch) * transformMat ); // bottom left
         v->push_back( osg::Vec3(0.5*cd, -cw, ch+3) * transformMat ); // top left
         v->push_back( osg::Vec3(0.5*cd, -cw, ch+3) * transformMat ); // top right
-        n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
+        
+        for (int i=0; i<4; ++i)
+          n->push_back( osg::Vec3(0, -1, 0) * rotationMat ); // normal
 
         // Back pitched roof
         v->push_back( osg::Vec3(    cd, -cw,   ch) * transformMat ); // bottom right
         v->push_back( osg::Vec3(    cd,  cw,   ch) * transformMat ); // bottom left
         v->push_back( osg::Vec3(0.5*cd,  cw, ch+3) * transformMat ); // top left
         v->push_back( osg::Vec3(0.5*cd, -cw, ch+3) * transformMat ); // top right
-        n->push_back( osg::Vec3(0.707, 0, 0.707) * rotationMat ); // normal      
+        
+        for (int i=0; i<4; ++i)
+          n->push_back( osg::Vec3(0.707, 0, 0.707) * rotationMat ); // normal      
 
         // Right pitched roof
         v->push_back( osg::Vec3(    cd, cw,   ch) * transformMat ); // bottom right
         v->push_back( osg::Vec3(     0, cw,   ch) * transformMat ); // bottom left
         v->push_back( osg::Vec3(0.5*cd, cw, ch+3) * transformMat ); // top left
         v->push_back( osg::Vec3(0.5*cd, cw, ch+3) * transformMat ); // top right
-        n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal
+        
+        for (int i=0; i<4; ++i)
+          n->push_back( osg::Vec3(0, 1, 0) * rotationMat ); // normal
       } else {      
         // Top face
         v->push_back( osg::Vec3(  0,  cw, ch) * transformMat ); // bottom right
         v->push_back( osg::Vec3(  0, -cw, ch) * transformMat ); // bottom left
         v->push_back( osg::Vec3( cd, -cw, ch) * transformMat ); // top left
         v->push_back( osg::Vec3( cd,  cw, ch) * transformMat ); // top right
-        n->push_back( osg::Vec3( 0, 0, 1) * rotationMat ); // normal
+        
+        for (int i=0; i<4; ++i)
+          n->push_back( osg::Vec3( 0, 0, 1) * rotationMat ); // normal
       }
       
       // The 1024x1024 texture is split into 32x16 blocks.

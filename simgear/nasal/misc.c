@@ -121,11 +121,12 @@ naRef naNewFunc(struct Context* c, naRef code)
 
 naRef naNewGhost(naContext c, naGhostType* type, void* ptr)
 {
+    naRef ghost;
     // ensure 'simple' ghost users don't see garbage for these fields
     type->get_member = 0;
     type->set_member = 0;
     
-    naRef ghost = naNew(c, T_GHOST);
+    ghost = naNew(c, T_GHOST);
     PTR(ghost).ghost->gtype = type;
     PTR(ghost).ghost->ptr = ptr;
     return ghost;

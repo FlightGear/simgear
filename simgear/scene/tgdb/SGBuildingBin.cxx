@@ -59,8 +59,8 @@
 #include "ShaderGeometry.hxx"
 #include "SGBuildingBin.hxx"
 
-#define SG_BUILDING_QUAD_TREE_DEPTH 3
-#define SG_BUILDING_FADE_OUT_LEVELS 10
+#define SG_BUILDING_QUAD_TREE_DEPTH 2
+#define SG_BUILDING_FADE_OUT_LEVELS 4
 
 using namespace osg;
 

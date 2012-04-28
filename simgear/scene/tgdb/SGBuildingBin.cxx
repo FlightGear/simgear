@@ -517,6 +517,10 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       geode->setDrawable(0, geom);      
 }
 
+typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
+
+static EffectMap buildingEffectMap;
+
 // Helper classes for creating the quad tree
 namespace
 {
@@ -536,17 +540,16 @@ struct MakeBuildingLeaf
         // Create a series of LOD nodes so trees cover decreases slightly
         // gradually with distance from _range to 2*_range
         for (float i = 0.0; i < SG_BUILDING_FADE_OUT_LEVELS; i++)
-        {        
-            //osg::ref_ptr<EffectGeode> geode = new EffectGeode();
-            //geode->setEffect(_effect);
-            osg::ref_ptr<osg::Geode>  geode = new osg::Geode();          
-            result->addChild(geode, 0, _range * (1.0 + i / (SG_BUILDING_FADE_OUT_LEVELS - 1.0)));
+        {   
+            EffectGeode* geode = new EffectGeode;
+            geode->setEffect(_effect.get());
+            result->addChild(geode, 0, _range * (1.0 + i / (SG_BUILDING_FADE_OUT_LEVELS - 1.0)));               
         }
         return result;
     }
     
     float _range;
-    Effect* _effect;
+    ref_ptr<Effect> _effect;
 };
 
 struct AddBuildingLeafObject
@@ -593,12 +596,31 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
     static Matrix ident;
     // Set up some shared structures.
     MatrixTransform* mt = new MatrixTransform(transform);
-    Effect* effect = makeEffect("Effects/model-default", true); 
 
     SGBuildingBin* bin = NULL;
       
     BOOST_FOREACH(bin, buildings)
     {      
+      
+        ref_ptr<Effect> effect;
+        EffectMap::iterator iter = buildingEffectMap.find(bin->texture);
+
+        if ((iter == buildingEffectMap.end())||
+            (!iter->second.lock(effect)))
+        {
+            SGPropertyNode_ptr effectProp = new SGPropertyNode;
+            makeChild(effectProp, "inherits-from")->setStringValue("Effects/building");
+            SGPropertyNode* params = makeChild(effectProp, "parameters");
+            // emphasize n = 0
+            params->getChild("texture", 0, true)->getChild("image", 0, true)
+                ->setStringValue(bin->texture);
+            effect = makeEffect(effectProp, true, options);
+            if (iter == buildingEffectMap.end())
+                buildingEffectMap.insert(EffectMap::value_type(bin->texture, effect));
+            else
+                iter->second = effect; // update existing, but empty observer
+        }
+      
         // Now, create a quadbuilding for the buildings.            
         BuildingGeometryQuadtree
             quadbuilding(GetBuildingCoord(), AddBuildingLeafObject(),
@@ -617,6 +639,7 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
         
         ref_ptr<Group> group = quadbuilding.getRoot();
         
+        /*
         // Set up the stateset for this building bin and the texture to use.
         osg::StateSet* stateSet = group->getOrCreateStateSet();
         const std::string texturename = bin->texture;
@@ -643,6 +666,7 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
         material->setShininess(osg::Material::FRONT, 0.0);
         material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
         stateSet->setAttribute(material);
+        */
         mt->addChild(group);        
     }
     

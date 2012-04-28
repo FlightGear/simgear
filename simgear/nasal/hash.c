@@ -186,11 +186,11 @@ static void tmpStr(naRef* out, struct naStr* str, const char* key)
     SETPTR(*out, str);
 }
 
-int naMember_cget(naRef obj, const char* field, naRef* out)
+int naMember_cget(naContext c, naRef obj, const char* field, naRef* out)
 {
     naRef key; struct naStr str;
     tmpStr(&key, &str, field);
-    return naMember_get(obj, key, out);
+    return naMember_get(c, obj, key, out);
 }
 
 naRef naHash_cget(naRef hash, char* key)

@@ -506,18 +506,19 @@ struct SGTileGeometryBin {
       int triangle_dropped = 0;
       int building_dropped = 0;
       int random_dropped = 0;
+      int mask_dropped = 0;
 
       for (unsigned i = 0; i < num; ++i) {
         SGBuildingBin::BuildingList triangle_buildings;
         SGTexturedTriangleBin::triangle_ref triangleRef = triangleBin.getTriangleRef(i);
         
-        SGVec3f v0 = triangleBin.getVertex(triangleRef[0]).vertex;
-        SGVec3f v1 = triangleBin.getVertex(triangleRef[1]).vertex;
-        SGVec3f v2 = triangleBin.getVertex(triangleRef[2]).vertex;
-        SGVec2f t0 = triangleBin.getVertex(triangleRef[0]).texCoord;
-        SGVec2f t1 = triangleBin.getVertex(triangleRef[1]).texCoord;
-        SGVec2f t2 = triangleBin.getVertex(triangleRef[2]).texCoord;
-        SGVec3f normal = cross(v1 - v0, v2 - v0);
+        SGVec3f vorigin = triangleBin.getVertex(triangleRef[0]).vertex;
+        SGVec3f v0 = triangleBin.getVertex(triangleRef[1]).vertex - vorigin;
+        SGVec3f v1 = triangleBin.getVertex(triangleRef[2]).vertex - vorigin;
+        SGVec2f torigin = triangleBin.getVertex(triangleRef[0]).texCoord;
+        SGVec2f t0 = triangleBin.getVertex(triangleRef[1]).texCoord - torigin;
+        SGVec2f t1 = triangleBin.getVertex(triangleRef[2]).texCoord - torigin;
+        SGVec3f normal = cross(v0, v1);
         
         // Compute the area
         float area = 0.5f*length(normal);
@@ -528,34 +529,66 @@ struct SGTileGeometryBin {
         // create the proper random chance of an object being created
         // for this triangle.
         double num = area / coverage + mt_rand(&seed);
+        if (num < 1.0f) {
+          continue;          
+        }
+                
+        // Apply density, which is linear, while we're dealing in areas
+        num = num * building_density * building_density;
         
-        // Apply density.
-        num = num * building_density;
+        // Cosine of the angle between the two vectors.
+        float cosine = (dot(v0, v1) / (length(v0) * length(v1)));
 
-        // place an object each unit of area
+        // Determine a grid spacing in each vector such that the correct
+        // coverage will result.
+        float stepv0 = (sqrtf(coverage) / building_density) / length(v0) / sqrtf(1 - cosine * cosine);
+        float stepv1 = (sqrtf(coverage) / building_density) / length(v1);
+        
+        stepv0 = std::min(stepv0, 1.0f);
+        stepv1 = std::min(stepv1, 1.0f);
+        
+        // Start at a random point. a will be immediately incremented below.
+        float a = -mt_rand(&seed) * stepv0;  
+        float b = mt_rand(&seed) * stepv1;
+
+        // Place an object each unit of area
         while ( num > 1.0 ) {
-          float a = mt_rand(&seed);
-          float b = mt_rand(&seed);
-          if ( a + b > 1 ) {
-            a = 1 - a;
-            b = 1 - b;
+
+          // Set the next location to place a building          
+          a += stepv0;
+          
+          if ( a + b > 1.0f ) {
+            // Reached the end of the scan-line on v0. Reset and increment
+            // scan-line on v1
+            a = mt_rand(&seed) * stepv0;
+            b += stepv1;
           }
           
-          float c = 1 - a - b;
-          SGVec3f randomPoint = a*v0 + b*v1 + c*v2;
+          if (b > 1.0f) {
+            // In a degenerate case of a single point, we might be outside the 
+            // scanline.
+            b = mt_rand(&seed) * stepv1;
+          }
+          
+          SGVec3f randomPoint = vorigin + a*v0 + b*v1;
           float rotation = mt_rand(&seed);
           
           if (object_mask != NULL) {
-            SGVec2f texCoord = a*t0 + b*t1 + c*t2;
+            SGVec2f texCoord = torigin + a*t0 + b*t1;
             osg::Image* img = object_mask->getImage();            
-            unsigned int x = (int) (img->s() * texCoord.x()) % img->s();
-            unsigned int y = (int) (img->t() * texCoord.y()) % img->t();
+            int x = (int) (img->s() * texCoord.x()) % img->s();
+            int y = (int) (img->t() * texCoord.y()) % img->t();
             
+            // In some degenerate cases x or y can be < 1, in which case the mod operand fails
+            while (x < 0) x += img->s();
+            while (y < 0) y += img->t();
+
             if (mt_rand(&seed) < img->getColor(x, y).b()) {  
               // Object passes mask. Rotation is taken from the red channel
               rotation = img->getColor(x,y).r();
             } else {
               // Fails mask test - try again.
+              mask_dropped++;
               num -= 1.0;
               continue;
             }  
@@ -610,9 +643,11 @@ struct SGTileGeometryBin {
           // Check that the point is sufficiently far from
           // the edge of the triangle by measuring the distance
           // from the three lines that make up the triangle.        
-          if (((length(cross(randomPoint - v0, randomPoint - v1)) / length(v1 - v0)) < radius) ||
-              ((length(cross(randomPoint - v1, randomPoint - v2)) / length(v2 - v1)) < radius) ||
-              ((length(cross(randomPoint - v2, randomPoint - v0)) / length(v0 - v2)) < radius)   )
+          SGVec3f p = randomPoint - vorigin;
+          
+          if (((length(cross(p     , p - v0)) / length(v0))      < radius) ||
+              ((length(cross(p - v0, p - v1)) / length(v1 - v0)) < radius) ||
+              ((length(cross(p - v1, p     )) / length(v1))      < radius)   )
           {
             triangle_dropped++;
             num -= 1.0;
@@ -672,8 +707,9 @@ struct SGTileGeometryBin {
                                             rotation,
                                             pitched);                                                            
           triangle_buildings.push_back(building);
+
           num -= 1.0;
-        }
+        }        
         
         // Add the buildings from this triangle to the overall list.
         SGBuildingBin::BuildingList::iterator l;  
@@ -682,8 +718,9 @@ struct SGTileGeometryBin {
           bin->insert(*l);
         }
       }
-
+      
       SG_LOG(SG_INPUT, SG_DEBUG, "Random Buildings: " << bin->getNumBuildings());
+      SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to mask: " << mask_dropped);
       SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to triangle edge: " << triangle_dropped);
       SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to random object: " << random_dropped);
       SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to other building: " << building_dropped);
@@ -696,6 +733,7 @@ struct SGTileGeometryBin {
 
     // generate a repeatable random seed
     mt seed;
+
     mt_init(&seed, unsigned(586));
 
     for (i = materialTriangleMap.begin(); i != materialTriangleMap.end(); ++i) {

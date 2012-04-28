@@ -99,8 +99,8 @@ void naRethrowError(naContext subc);
 // Retrieve the specified member from the object, respecting the
 // "parents" array as for "object.field".  Returns zero for missing
 // fields.
-int naMember_get(naRef obj, naRef field, naRef* out);
-int naMember_cget(naRef obj, const char* field, naRef* out);
+int naMember_get(naContext c, naRef obj, naRef field, naRef* out);
+int naMember_cget(naContext c, naRef obj, const char* field, naRef* out);
 
 // Returns a hash containing functions from the Nasal standard library
 // Useful for passing as a namespace to an initial function call
@@ -181,8 +181,12 @@ void naHash_keys(naRef dst, naRef hash);
 typedef struct naGhostType {
     void(*destroy)(void*);
     const char* name;
+    const char*(*get_member)(naContext c, void*, naRef key, naRef* out);
+    void(*set_member)(naContext c, void*, naRef key, naRef val);
 } naGhostType;
+
 naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
+naRef        naNewGhost2(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);
 int          naIsGhost(naRef r);

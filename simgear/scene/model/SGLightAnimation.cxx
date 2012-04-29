@@ -34,7 +34,7 @@
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
 
-typedef std::map<string, osg::ref_ptr<simgear::Effect> > EffectMap;
+typedef std::map<string, osg::observer_ptr<simgear::Effect> > EffectMap;
 static EffectMap lightEffectMap;
 
 #define GET_COLOR_VALUE(n) \
@@ -60,9 +60,9 @@ public:
         if (dim != _prev_values[_key]) {
             _prev_values[_key] = dim;
 
+            osg::ref_ptr<simgear::Effect> effect;
             EffectMap::iterator iter = lightEffectMap.find(_key);
-            if (iter != lightEffectMap.end()) {
-                simgear::Effect* effect = iter->second;
+            if (iter != lightEffectMap.end() && iter->second.lock(effect)) {
                 SGPropertyNode* params = effect->parametersProp;
                 params->getNode("ambient")->setValue(_ambient * dim);
                 params->getNode("diffuse")->setValue(_diffuse * dim);
@@ -143,9 +143,9 @@ SGLightAnimation::install(osg::Node& node)
 
     if (_light_type == "spot") {
 
-        simgear::Effect* effect = 0;
+        osg::ref_ptr<simgear::Effect> effect;
         EffectMap::iterator iter = lightEffectMap.find(_key);
-        if (iter == lightEffectMap.end()) {
+        if (iter == lightEffectMap.end() || !iter->second.lock(effect)) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-spot");
@@ -167,7 +167,10 @@ SGLightAnimation::install(osg::Node& node)
             params->getNode("far",true)->setValue(_far);
 
             effect = simgear::makeEffect(effectProp, true);
-            lightEffectMap.insert(EffectMap::value_type(_key, effect));
+            if (iter==lightEffectMap.end())
+                lightEffectMap.insert(EffectMap::value_type(_key, effect));
+            else
+                iter->second = effect;
         } else {
             effect = iter->second.get();
         }
@@ -187,9 +190,9 @@ SGLightAnimation::install(osg::Node& node)
     }
     else if (_light_type == "point") {
 
-        simgear::Effect* effect = 0;
+        osg::ref_ptr<simgear::Effect> effect;
         EffectMap::iterator iter = lightEffectMap.find(_key);
-        if (iter == lightEffectMap.end()) {
+        if (iter == lightEffectMap.end() || !iter->second.lock(effect)) {
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-point");
@@ -207,7 +210,10 @@ SGLightAnimation::install(osg::Node& node)
             params->getNode("far",true)->setValue(_far);
 
             effect = simgear::makeEffect(effectProp, true);
-            lightEffectMap.insert(EffectMap::value_type(_key, effect));
+            if (iter==lightEffectMap.end())
+                lightEffectMap.insert(EffectMap::value_type(_key, effect));
+            else
+                iter->second = effect;
         } else {
             effect = iter->second.get();
         }

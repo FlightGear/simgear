@@ -247,10 +247,13 @@ sgLoad3DModel_internal(const SGPath& path,
 
             if (props->hasValue("/texture-path")) {
                 string texturePathStr = props->getStringValue("/texture-path");
-                texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
-                if (texturepath.isNull())
-                    throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
-                            path.str());
+                if (!texturePathStr.empty())
+                {
+                    texturepath = SGModelLib::findDataFile(texturePathStr, NULL, modelDir);
+                    if (texturepath.isNull())
+                        throw sg_io_exception("Texture file not found: '" + texturePathStr + "'",
+                                path.str());
+                }
             }
         } else {
             model = new osg::Node;

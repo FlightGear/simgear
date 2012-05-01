@@ -611,9 +611,14 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
             SGPropertyNode_ptr effectProp = new SGPropertyNode;
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/building");
             SGPropertyNode* params = makeChild(effectProp, "parameters");
-            // emphasize n = 0
+            // Main texture - n=0
             params->getChild("texture", 0, true)->getChild("image", 0, true)
                 ->setStringValue(bin->texture);
+
+            // Light map - n=1
+            params->getChild("texture", 1, true)->getChild("image", 0, true)
+                ->setStringValue(bin->lightMap);
+                
             effect = makeEffect(effectProp, true, options);
             if (iter == buildingEffectMap.end())
                 buildingEffectMap.insert(EffectMap::value_type(bin->texture, effect));
@@ -639,34 +644,6 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
         
         ref_ptr<Group> group = quadbuilding.getRoot();
         
-        /*
-        // Set up the stateset for this building bin and the texture to use.
-        osg::StateSet* stateSet = group->getOrCreateStateSet();
-        const std::string texturename = bin->texture;
-        osg::Texture2D* texture = SGLoadTexture2D(texturename);
-        texture->setWrap(osg::Texture2D::WRAP_S,  osg::Texture2D::CLAMP_TO_EDGE);
-        texture->setWrap(osg::Texture2D::WRAP_T,  osg::Texture2D::CLAMP_TO_EDGE);
-        stateSet->setTextureAttributeAndModes(0, texture);
-                
-        osg::ShadeModel* shadeModel = new osg::ShadeModel;
-        shadeModel->setMode(osg::ShadeModel::FLAT);
-        stateSet->setAttributeAndModes(shadeModel);
-        stateSet->setMode(GL_LIGHTING, osg::StateAttribute::ON);
-        stateSet->setMode(GL_FOG, osg::StateAttribute::ON);
-        stateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::ON);
-        stateSet->setMode(GL_CULL_FACE, osg::StateAttribute::ON);
-        stateSet->setMode(GL_BLEND, osg::StateAttribute::OFF);
-        stateSet->setMode(GL_ALPHA_TEST, osg::StateAttribute::OFF);
-        stateSet->setAttribute(new osg::CullFace(osg::CullFace::BACK));
-
-        osg::Material* material = new osg::Material;
-        material->setAmbient(osg::Material::FRONT, osg::Vec4(0.3,0.3,0.3,1.0));
-        material->setDiffuse(osg::Material::FRONT, osg::Vec4(1.0,1.0,1.0,1.0));
-        material->setSpecular(osg::Material::FRONT, osg::Vec4(0,0,0,1.0));
-        material->setShininess(osg::Material::FRONT, 0.0);
-        material->setColorMode(osg::Material::AMBIENT_AND_DIFFUSE);
-        stateSet->setAttribute(material);
-        */
         mt->addChild(group);        
     }
     

@@ -274,8 +274,15 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     
     if (building_texture.empty()) {
         SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
+    }
+    
+    bt = props->getStringValue("building-lightmap", "Textures/buildings-lightmap.png");
+    building_lightmap = SGModelLib::findDataFile(bt, options);    
+    
+    if (building_lightmap.empty()) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "Cannot find texture \"" << bt);
     }    
-        
+            
     building_small_ratio = props->getDoubleValue("building-small-ratio", 0.8);
     building_medium_ratio = props->getDoubleValue("building-medium-ratio", 0.15);
     building_large_ratio =  props->getDoubleValue("building-large-ratio", 0.05);

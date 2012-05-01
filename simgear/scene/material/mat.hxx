@@ -172,6 +172,15 @@ public:
    * @return The texture for auto-generated buildings.
    */
   inline std::string get_building_texture () const { return building_texture; }
+
+  /**
+   * Get the building lightmap.
+   *
+   * This is the lightmap used for auto-generated buildings.
+   *
+   * @return The lightmap for auto-generated buildings.
+   */
+  inline std::string get_building_lightmap () const { return building_lightmap; }
   
   // Ratio of the 3 random building sizes
   inline double get_building_small_fraction () const { return building_small_ratio / (building_small_ratio + building_medium_ratio + building_large_ratio); }
@@ -384,8 +393,9 @@ private:
   // building spacing
   double building_spacing;
   
-  // building texture
+  // building texture & lightmap
   std::string building_texture;
+  std::string building_lightmap;
 
   // Ratio of the 3 random building sizes
   double building_small_ratio;

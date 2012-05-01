@@ -496,6 +496,7 @@ struct SGTileGeometryBin {
       if (!found) {
         bin = new SGBuildingBin();
         bin->texture = mat->get_building_texture();
+        bin->lightMap = mat->get_building_lightmap();
         SG_LOG(SG_INPUT, SG_DEBUG, "Building texture " << bin->texture);
         randomBuildings.push_back(bin);
       }       

@@ -86,6 +86,7 @@ public:
   BuildingList buildings;
   
   std::string texture;
+  std::string lightMap;
 
   void insert(const Building& model)
   { 

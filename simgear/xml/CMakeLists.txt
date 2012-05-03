@@ -25,6 +25,8 @@ set(SOURCES
     easyxml.cxx
     internal.h
     ascii.h
+    expat.h
+    expat_external.h
     )
 
 simgear_component(xml xml "${SOURCES}" "${HEADERS}")

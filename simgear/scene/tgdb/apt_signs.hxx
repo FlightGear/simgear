@@ -45,8 +45,4 @@ using std::string;
 osg::Node* SGMakeSign( SGMaterialLib *matlib, const string& content );
 
 
-// Generate a runway sign
-osg::Node* SGMakeRunwaySign( SGMaterialLib *matlib, const string& name );
-
-
 #endif // _SG_APT_SIGNS_HXX

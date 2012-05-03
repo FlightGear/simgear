@@ -261,9 +261,6 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
             } else if ( token == "OBJECT_SIGN" ) {
                 node = SGMakeSign(staticOptions->getMaterialLib(), name);
                 
-            } else if ( token == "OBJECT_RUNWAY_SIGN" ) {
-                node = SGMakeRunwaySign(staticOptions->getMaterialLib(), name);
-                
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                         << ": Unknown token '" << token << "'" );

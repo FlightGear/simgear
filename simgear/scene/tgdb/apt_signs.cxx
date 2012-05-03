@@ -41,7 +41,6 @@
 #include "apt_signs.hxx"
 
 #define SIGN "OBJECT_SIGN: "
-#define RWY "OBJECT_RUNWAY_SIGN: "
 
 using std::vector;
 using namespace simgear;
@@ -367,27 +366,4 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
     object->addChild(geode);
 
     return object;
-}
-
-osg::Node*
-SGMakeRunwaySign(SGMaterialLib *matlib, const string& name)
-{
-    // for demo purposes we assume each element (letter) is 1x1 meter.
-    // Sign is placed 0.25 meters above the ground
-
-    float width = name.length() / 3.0;
-
-    osg::Vec3 corner(-width, 0, 0.25f);
-    osg::Vec3 widthVec(2*width + 1, 0, 0);
-    osg::Vec3 heightVec(0, 0, 1);
-    osg::Geometry* geometry;
-    geometry = osg::createTexturedQuadGeometry(corner, widthVec, heightVec);
-    EffectGeode* geode = new EffectGeode;
-    geode->setName(name);
-    geode->addDrawable(geometry);
-    SGMaterial *mat = matlib->find(name);
-    if (mat)
-      geode->setEffect(mat->get_effect());
-
-    return geode;
 }

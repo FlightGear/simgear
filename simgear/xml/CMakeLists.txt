@@ -23,6 +23,8 @@ set(SOURCES
     xmlrole.c
     xmltok.c
     easyxml.cxx
+    internal.h
+    ascii.h
     )
 
 simgear_component(xml xml "${SOURCES}" "${HEADERS}")

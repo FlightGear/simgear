@@ -155,6 +155,8 @@ check_function_exists(ftime HAVE_FTIME)
 check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(rint HAVE_RINT)
 check_function_exists(mkdtemp HAVE_MKDTEMP)
+check_function_exists(bcopy HAVE_BCOPY)
+check_function_exists(mmap HAVE_MMAP)
 
 if(HAVE_UNISTD_H)
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
@@ -225,11 +227,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
    set (WARNING_FLAGS "-Wall -Wno-overloaded-virtual")
 endif() 
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS} -DHAVE_EXPAT_CONFIG_H")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_BINARY_DIR}/simgear)
+include_directories(${PROJECT_BINARY_DIR}/simgear/xml)
 
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
     ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} 
@@ -244,6 +247,11 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/simgear/simgear_config_cmake.h.in"
   "${PROJECT_BINARY_DIR}/simgear/simgear_config.h"
   )
+
+configure_file (
+    "${PROJECT_SOURCE_DIR}/simgear/xml/expat_config_cmake.in"
+    "${PROJECT_BINARY_DIR}/simgear/xml/expat_config.h"
+)
 
 if(ENABLE_TESTS)
 # enable CTest / make test target

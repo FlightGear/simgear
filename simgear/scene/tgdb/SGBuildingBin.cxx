@@ -132,8 +132,7 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       float ch = building.height;
       
       // 0,0,0 is the bottom center of the front
-      // face, e.g. where the front door would be
-      
+      // face, e.g. where the front door would be      
       
       // BASEMENT
       // This exteds 10m below the main section
@@ -269,10 +268,10 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         int row = ((int) (mt_rand(&seed) * 1000)) % 5;
         float base_y = (float) row * 16.0 * 3.0 / 1024.0;
         float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-        float left_x = 0.0f;
-        float right_x = 32.0 / 1024.0 * round((float) building.width / 6.0f);
-        float front_x = 384.0/1024.0;
-        float back_x = 384.0/1024.0 + 32.0 / 1024.0 * round((float) building.depth/ 6.0f);
+        float left_x = 32.0 / 1024.0 * round((float) building.width / 6.0f);
+        float right_x = 0.0f;
+        float front_x = 384.0/1024.0 + 32.0 / 1024.0 * round((float) building.depth/ 6.0f);
+        float back_x = 384.0/1024.0;
 
         // BASEMENT - uses the baseline texture
         for (unsigned int i = 0; i < 16; i++) {          
@@ -307,10 +306,10 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         if (building.pitched) { 
           // Use the entire height of the roof texture
           top_y = base_y + 16.0 * 3.0 / 1024.0;     
-          left_x = 512/1024.0;
-          right_x = 512/1024.0 + 32.0 / 1024.0 * round(building.width / 6.0f);
-          front_x = 480.0/1024.0;
-          back_x = 512.0/1024.0;
+          left_x = 512/1024.0 + 32.0 / 1024.0 * round(building.width / 6.0f);
+          right_x = 512/1024.0;
+          front_x = 512.0/1024.0;
+          back_x = 480.0/1024.0;
           
           // Front
           t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
@@ -337,8 +336,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
           t->push_back( osg::Vec2( front_x, top_y ) ); // top right
         } else {
           // Flat roof
-          left_x = 512.0/1024.0;
-          right_x = 640.0/1024.0;
+          left_x = 640.0/1024.0;
+          right_x = 512.0/1024.0;
           // Use the entire height of the roof texture
           top_y = base_y + 16.0 * 3.0 / 1024.0;    
           
@@ -355,8 +354,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         int column = ((int) (mt_rand(&seed) * 1000)) % 5;        
         float base_y = 288 / 1024.0;
         float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-        float left_x = column * 192.0 /1024.0;
-        float right_x = left_x + 32.0 / 1024.0 * round((float) building.width / 10.0f);
+        float left_x = column * 192.0 /1024.0 + 32.0 / 1024.0 * round((float) building.width / 10.0f);
+        float right_x = column * 192.0 /1024.0;
 
         // BASEMENT - uses the baseline texture
         for (unsigned int i = 0; i < 16; i++) {          
@@ -392,8 +391,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         if (building.pitched) {      
           base_y = 288.0/1024.0;
           top_y = 576.0/1024.0;
-          left_x = 960.0/1024.0;
-          right_x = 1.0;
+          left_x = 1.0;
+          right_x = 960.0/1024.0;
           // Front
           t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
           t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
@@ -421,7 +420,9 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
           // Flat roof
           base_y = 416/1024.0;
           top_y = 576.0/1024.0;
-          right_x = left_x + 32.0 / 1024.0 * 6.0;
+          left_x = (column + 1)* 192.0 /1024.0;
+          right_x = column * 192.0 /1024.0;
+          //right_x = left_x + 32.0 / 1024.0 * 6.0;
           
           t->push_back( osg::Vec2( right_x, base_y) ); // bottom right
           t->push_back( osg::Vec2( left_x,  base_y) ); // bottom left
@@ -435,8 +436,8 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
         int column = ((int) (mt_rand(&seed) * 1000)) % 8;        
         float base_y = 576 / 1024.0;
         float top_y = base_y + 16.0 * (float) building.floors / 1024.0;
-        float left_x = column * 128.0 /1024.0;
-        float right_x = left_x + 32.0 / 1024.0 * round((float) building.width / 20.0f);
+        float left_x = column * 128.0 /1024.0 + 32.0 / 1024.0 * round((float) building.width / 20.0f);
+        float right_x = column * 128.0 /1024.0; 
 
         // BASEMENT - uses the baseline texture
         for (unsigned int i = 0; i < 16; i++) {          

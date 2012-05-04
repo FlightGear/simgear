@@ -615,6 +615,7 @@ struct SGTileGeometryBin {
             floors = SGMisc<double>::round(mat->get_building_small_min_floors() + mt_rand(&seed) * (mat->get_building_small_max_floors() - mat->get_building_small_min_floors()));
             height = floors * (2.8 + mt_rand(&seed));
             
+            // Small buildings are never deeper than they are wide.
             if (depth > width) { depth = width; }
             
             pitched = (mt_rand(&seed) < mat->get_building_small_pitch());
@@ -624,6 +625,13 @@ struct SGTileGeometryBin {
             depth = mat->get_building_medium_min_depth() + mt_rand(&seed) * mt_rand(&seed) * (mat->get_building_medium_max_depth() - mat->get_building_medium_min_depth());
             floors = SGMisc<double>::round(mat->get_building_medium_min_floors() + mt_rand(&seed) * (mat->get_building_medium_max_floors() - mat->get_building_medium_min_floors()));
             height = floors * (2.8 + mt_rand(&seed));
+            
+            while ((height > width) && (floors > mat->get_building_medium_min_floors())) {
+              // Ensure that medium buildings aren't taller than they are wide
+              floors--;
+              height = floors * (2.8 + mt_rand(&seed));                            
+            }
+            
             pitched = (mt_rand(&seed) < mat->get_building_medium_pitch());         
           } else {
             buildingtype = SGBuildingBin::LARGE;

@@ -22,11 +22,6 @@
 #include "expat_config.h"
 #endif /* ndef COMPILED_FROM_DSP */
 
-// FIXME: I just want to compile
-#ifdef _MSC_VER
-#define HAVE_MEMMOVE 1
-#endif
-
 #include "ascii.h"
 #include "expat.h"
 

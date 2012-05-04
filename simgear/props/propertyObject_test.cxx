@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 
 // working around MSVC weirdness with props.hxx and SGMathFwd

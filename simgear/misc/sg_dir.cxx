@@ -42,6 +42,7 @@
 #include <boost/foreach.hpp>
 
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 
 using std::string;

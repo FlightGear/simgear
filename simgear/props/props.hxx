@@ -63,13 +63,6 @@ inline T parseString(const std::string& str)
     return result;
 }
 
-// Extended properties
-template<>
-std::istream& readFrom<SGVec3d>(std::istream& stream, SGVec3d& result);
-template<>
-std::istream& readFrom<SGVec4d>(std::istream& stream, SGVec4d& result);
-
-    
 /**
  * Property value types.
  */
@@ -164,19 +157,6 @@ DEFINTERNALPROP(const char *, STRING);
 DEFINTERNALPROP(const char[], STRING);
 #undef DEFINTERNALPROP
 
-template<>
-struct PropertyTraits<SGVec3d>
-{
-    static const Type type_tag = VEC3D;
-    enum  { Internal = 0 };
-};
-
-template<>
-struct PropertyTraits<SGVec4d>
-{
-    static const Type type_tag = VEC4D;
-    enum  { Internal = 0 };
-};
 }
 }
 
@@ -688,11 +668,6 @@ std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
     static_cast<SGRawValue<T>*>(this)->setValue(value);
     return stream;
 }
-
-template<>
-std::ostream& SGRawBase<SGVec3d>::printOn(std::ostream& stream) const;
-template<>
-std::ostream& SGRawBase<SGVec4d>::printOn(std::ostream& stream) const;
 
 
 /**

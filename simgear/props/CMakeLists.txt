@@ -10,6 +10,7 @@ set(HEADERS
     props_io.hxx
     propsfwd.hxx
     tiedpropertylist.hxx
+    vectorPropTemplates.hxx
     )
 
 set(SOURCES 

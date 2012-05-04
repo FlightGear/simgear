@@ -52,6 +52,7 @@
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/props/props_io.hxx>
+#include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/model/model.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
@@ -479,7 +480,7 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
     SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
     SGPropertyNode* materialProp = makeChild(paramProp, "material");
-    makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));    
+    makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));
     makeChild(materialProp, "diffuse")->setValue(SGVec4d(diffuse));
     makeChild(materialProp, "specular")->setValue(SGVec4d(specular));
     makeChild(materialProp, "emissive")->setValue(SGVec4d(emission));

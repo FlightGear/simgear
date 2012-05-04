@@ -74,7 +74,7 @@
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 #include <simgear/structure/SGExpression.hxx>
-
+#include <simgear/props/vectorPropTemplates.hxx>
 
 
 namespace simgear

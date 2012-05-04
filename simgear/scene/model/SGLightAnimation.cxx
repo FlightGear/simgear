@@ -26,6 +26,7 @@
 
 #include <osg/Geometry>
 #include <osg/MatrixTransform>
+#include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/Technique.hxx>
 #include <simgear/scene/material/Pass.hxx>

@@ -11,6 +11,7 @@
 #endif
 
 #include "props.hxx"
+#include "vectorPropTemplates.hxx"
 
 #include <algorithm>
 

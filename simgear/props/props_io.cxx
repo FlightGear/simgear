@@ -14,7 +14,7 @@
 
 #include <simgear/compiler.h>
 
-#include <stdlib.h>		// atof() atoi()
+#include <stdlib.h>     // atof() atoi()
 
 #include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
@@ -25,11 +25,12 @@
 
 #include "props.hxx"
 #include "props_io.hxx"
+#include "vectorPropTemplates.hxx"
 
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <cstring>		// strcmp()
+#include <cstring>      // strcmp()
 #include <vector>
 #include <map>
 

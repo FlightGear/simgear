@@ -15,6 +15,7 @@
       defined(_M_X64) 
 # define NASAL_LE
 #elif defined(__sparc) || defined(__ppc__) || defined(__PPC) || \
+      defined (__powerpc__) || defined (__powerpc64__) || defined (__alpha__) || \
       defined(__mips) || defined(__ARMEB__)
 # define NASAL_BE
 #else

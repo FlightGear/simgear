@@ -134,7 +134,7 @@ public:
             method = line[0];
             path = line[1];
             
-            int queryPos = path.find('?'); 
+            string::size_type queryPos = path.find('?');
             if (queryPos != string::npos) {
                 parseArgs(path.substr(queryPos + 1));
                 path = path.substr(0, queryPos);
@@ -151,8 +151,8 @@ public:
                 return;
             }
             
-            int colonPos = buffer.find(':');
-            if (colonPos < 0) {
+            string::size_type colonPos = buffer.find(':');
+            if (colonPos == string::npos) {
                 cerr << "malformed HTTP response header:" << buffer << endl;
                 buffer.clear();
                 return;
@@ -173,8 +173,8 @@ public:
     {
         string_list argv = strutils::split(argData, "&");
         for (unsigned int a=0; a<argv.size(); ++a) {
-            int eqPos = argv[a].find('=');
-            if (eqPos < 0) {
+            string::size_type eqPos = argv[a].find('=');
+            if (eqPos == string::npos) {
                 cerr << "malformed HTTP argument:" << argv[a] << endl;
                 continue;
             }

@@ -36,8 +36,6 @@
 
 #include "interpolater.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 using std::string;
 
 // Constructor -- starts with an empty table.

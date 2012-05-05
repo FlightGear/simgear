@@ -21,7 +21,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/props_io.hxx>

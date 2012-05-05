@@ -32,7 +32,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/misc/ResourceManager.hxx>
 
 #include "soundmgr_openal.hxx"

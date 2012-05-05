@@ -18,7 +18,6 @@
 #include <osgDB/ReadFile>
 #include <osgDB/SharedStateManager>
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGSceneFeatures.hxx>

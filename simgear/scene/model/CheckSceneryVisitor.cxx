@@ -27,8 +27,6 @@
 
 #include "CheckSceneryVisitor.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 using namespace simgear;
 
 CheckSceneryVisitor::CheckSceneryVisitor(osgDB::DatabasePager* dbp, const osg::Vec3 &position, double range,

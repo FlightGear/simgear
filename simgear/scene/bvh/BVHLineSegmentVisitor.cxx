@@ -19,7 +19,6 @@
 #  include <simgear_config.h>
 #endif
 
-#include <simgear/math/SGMath.hxx>
 #include "BVHLineSegmentVisitor.hxx"
 
 #include <simgear/math/SGGeometry.hxx>

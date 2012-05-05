@@ -32,7 +32,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/props/condition.hxx>
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
 

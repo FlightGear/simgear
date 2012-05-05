@@ -24,7 +24,6 @@
 
 #include <simgear/scene/model/ModelRegistry.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/math/SGMath.hxx>
 
 #include "SGReaderWriterBTG.hxx"
 #include "obj.hxx"

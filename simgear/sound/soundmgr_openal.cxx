@@ -44,7 +44,6 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sg_path.hxx>
-#include <simgear/math/SGMath.hxx>
 
 using std::string;
 using std::vector;

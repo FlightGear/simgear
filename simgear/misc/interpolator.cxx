@@ -22,8 +22,6 @@
 
 #include "interpolator.hxx"
 
-#include <simgear/math/SGMath.hxx>
-
 void SGInterpolator::addNew(SGPropertyNode* prop, int nPoints)
 {
     // Set the property type to a double, if it isn't already, and

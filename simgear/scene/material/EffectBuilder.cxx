@@ -5,8 +5,6 @@
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/tgdb/userdata.hxx>
 
-#include <simgear/math/SGMath.hxx>
-
 #include "EffectBuilder.hxx"
 #include "Effect.hxx"
 

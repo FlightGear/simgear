@@ -13,7 +13,6 @@
 
 #include "commands.hxx"
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/exception.hxx>
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/threads/SGGuard.hxx>

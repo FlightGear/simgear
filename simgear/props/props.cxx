@@ -28,8 +28,6 @@
 #include <boost/functional/hash.hpp>
 #include <boost/range.hpp>
 
-#include <simgear/math/SGMath.hxx>
-
 #if PROPS_STANDALONE
 #include <iostream>
 #else

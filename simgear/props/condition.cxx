@@ -18,7 +18,6 @@
 #include "props.hxx"
 #include "condition.hxx"
 
-#include <simgear/math/SGMath.hxx>
 #include <simgear/structure/SGExpression.hxx>
 
 using std::istream;

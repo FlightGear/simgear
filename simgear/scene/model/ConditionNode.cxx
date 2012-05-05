@@ -24,8 +24,6 @@
 #include <osgDB/Registry>
 #include <osgDB/Output>
 
-#include <simgear/math/SGMath.hxx>
-
 namespace simgear
 {
 using namespace osg;

@@ -191,8 +191,9 @@ check_cxx_source_compiles(
     HAVE_ISNAN)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(WARNING_FLAGS -Wall)
-    
+    set(WARNING_FLAGS_CXX "-Wall")
+    set(WARNING_FLAGS_C   "-Wall")
+
     # certain GCC versions don't provide the atomic builds, and hence
     # require is to provide them in SGAtomic.cxx
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_INCLUDE_PATH})
@@ -200,6 +201,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
        "int main() { unsigned mValue; return __sync_add_and_fetch(&mValue, 1); }"
         GCC_ATOMIC_BUILTINS_FOUND)
 endif(CMAKE_COMPILER_IS_GNUCXX)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+   set(WARNING_FLAGS_CXX "-Wall -Wno-overloaded-virtual")
+   set(WARNING_FLAGS_C   "-Wall")
+endif()
 
 if(WIN32)
 
@@ -221,14 +227,10 @@ if(WIN32)
     
     set( WINSOCK_LIBRARY "ws2_32.lib" )
     set( RT_LIBRARY "winmm" )
-endif(WIN32)    
+endif(WIN32)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") 
-   set (WARNING_FLAGS "-Wall -Wno-overloaded-virtual")
-endif() 
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARNING_FLAGS_C} ${MSVC_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS_CXX} ${MSVC_FLAGS} ${BOOST_CXX_FLAGS}")
 
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_BINARY_DIR}/simgear)

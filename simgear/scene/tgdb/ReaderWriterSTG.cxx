@@ -47,6 +47,18 @@
 
 using namespace simgear;
 
+static SGBucket bucketIndexFromFileName(const std::string& fileName)
+{
+  // Extract the bucket from the filename
+  std::istringstream ss(osgDB::getNameLessExtension(fileName));
+  long index;
+  ss >> index;
+  if (ss.fail())
+    return SGBucket();
+  
+  return SGBucket(index);
+}
+
 ReaderWriterSTG::ReaderWriterSTG()
 {
     supportsExtension("stg", "SimGear stg database format");
@@ -76,16 +88,11 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
     if (!options)
         return ReadResult::FILE_NOT_FOUND;
 
-    // Extract the bucket from the filename
-    std::istringstream ss(osgDB::getNameLessExtension(fileName));
-    long index;
-    ss >> index;
-    if (ss.fail())
-        return ReadResult::FILE_NOT_FOUND;
+
 
     SG_LOG(SG_TERRAIN, SG_INFO, "Loading tile " << fileName);
 
-    SGBucket bucket(index);
+    SGBucket bucket(bucketIndexFromFileName(fileName));
     std::string basePath = bucket.gen_base_path();
 
     osg::ref_ptr<osg::Group> group = new osg::Group;
@@ -100,14 +107,14 @@ ReaderWriterSTG::readNode(const std::string& fileName, const osgDB::Options* opt
         objects.append("Objects");
         objects.append(basePath);
         objects.append(fileName);
-        if (readStgFile(objects.str(), *group, options))
+        if (readStgFile(objects.str(), bucket, *group, options))
             foundBase = true;
         
         SGPath terrain(*i);
         terrain.append("Terrain");
         terrain.append(basePath);
         terrain.append(fileName);
-        if (readStgFile(terrain.str(), *group, options))
+        if (readStgFile(terrain.str(), bucket, *group, options))
             foundBase = true;
     }
     
@@ -135,14 +142,15 @@ ReaderWriterSTG::readStgFile(const std::string& fileName, const osgDB::Options* 
     // This is considered a real existing file.
     // We still apply the search path algorithms for relative files.
     osg::ref_ptr<osg::Group> group = new osg::Group;
-
-    readStgFile(osgDB::findDataFile(fileName, options), *group, options);
+    std::string path = osgDB::findDataFile(fileName, options);
+    readStgFile(path, bucketIndexFromFileName(path), *group, options);
 
     return group.get();
 }
 
 bool
 ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
+                             const SGBucket& bucket,
                              osg::Group& group, const osgDB::Options* options) const
 {
     if (absoluteFileName.empty())
@@ -172,6 +180,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
     std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
     sharedOptions->getDatabasePathList().push_back(fg_root);
     
+    simgear::AirportSignBuilder signBuilder(staticOptions->getMaterialLib(), bucket.get_center());
+  
     bool has_base = false;
     while ( ! in.eof() ) {
         std::string token;
@@ -259,8 +269,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 }
                 
             } else if ( token == "OBJECT_SIGN" ) {
-                node = SGMakeSign(staticOptions->getMaterialLib(), name);
-                
+                //node = SGMakeSign(staticOptions->getMaterialLib(), name);
+              signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                         << ": Unknown token '" << token << "'" );
@@ -285,6 +295,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
         
         in >> ::skipeol;
     }
+  
+    group.addChild(signBuilder.getSignsGroup());
 
     return has_base;
 }

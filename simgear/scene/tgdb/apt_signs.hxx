@@ -24,23 +24,36 @@
 #ifndef _SG_APT_SIGNS_HXX
 #define _SG_APT_SIGNS_HXX
 
-
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
-
 #include <simgear/compiler.h>
 
 #include <string>
+#include <memory> // for auto-ptr
 
 #include <osg/Node>
 
 class SGMaterialLib;            // forward declaration
-
+class SGGeod;
 
 // Generate a generic sign
 osg::Node* SGMakeSign( SGMaterialLib *matlib, const std::string& content );
 
+namespace simgear
+{
+
+class AirportSignBuilder
+{
+public:
+    AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center);
+    ~AirportSignBuilder();
+    
+    void addSign(const SGGeod& pos, double heading, const std::string& content);
+        
+    osg::Node* getSignsGroup();
+private:
+    class AirportSignBuilderPrivate;
+    std::auto_ptr<AirportSignBuilderPrivate> d;
+};
+
+} // of namespace simgear
 
 #endif // _SG_APT_SIGNS_HXX

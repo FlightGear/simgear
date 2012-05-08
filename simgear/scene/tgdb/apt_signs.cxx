@@ -49,15 +49,14 @@ using namespace simgear;
 
 // for temporary storage of sign elements
 struct element_info {
-    element_info(SGMaterial *m, Effect *s, SGMaterialGlyph *g, double h, double c)
-        : material(m), state(s), glyph(g), height(h), coverwidth(c)
+    element_info(SGMaterial *m, SGMaterialGlyph *g, double h, double c)
+        : material(m), glyph(g), height(h), coverwidth(c)
     {
         scale = h * m->get_xsize()
                 / (m->get_ysize() < 0.001 ? 1.0 : m->get_ysize());
         abswidth = c == 0 ? g->get_width() * scale : c;
     }
     SGMaterial *material;
-    Effect *state;
     SGMaterialGlyph *glyph;
     double height;
     double scale;
@@ -66,9 +65,6 @@ struct element_info {
 };
 
 typedef std::vector<element_info*> ElementVec;
-
-
-
 
 const double HT[5] = {0.460, 0.610, 0.760, 1.220, 0.760}; // standard panel height sizes
 const double grounddist = 0.2;     // hard-code sign distance from surface for now
@@ -128,6 +124,8 @@ struct GlyphGeometry
   
   void addSignCase(double caseWidth, double caseHeight, const osg::Matrix& xform)
   {
+    int last = vertices->size();
+    
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist + caseHeight));
@@ -135,7 +133,7 @@ struct GlyphGeometry
     
     
     for (int i=0; i<4; ++i)
-      normals->push_back(xform.preMult(osg::Vec3(-1, 0.0, 0)));
+      normals->push_back(osg::Vec3(-1, 0.0, 0));
     
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  -caseWidth,  grounddist + caseHeight));
@@ -143,7 +141,7 @@ struct GlyphGeometry
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
     
     for (int i=0; i<4; ++i)
-      normals->push_back(xform.preMult(osg::Vec3(0, 0, 1)));
+      normals->push_back(osg::Vec3(0, 0, 1));
     
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
@@ -151,7 +149,7 @@ struct GlyphGeometry
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist));
     
     for (int i=0; i<4; ++i)
-      normals->push_back(xform.preMult(osg::Vec3(1, 0.0, 0)));
+      normals->push_back(osg::Vec3(1, 0.0, 0));
     
     for (int i = 0; i < 3; ++i) {
       uvs->push_back(osg::Vec2(1,    1));
@@ -160,21 +158,17 @@ struct GlyphGeometry
       uvs->push_back(osg::Vec2(1,    0));
     }
     
+  // transform all the newly added vertices and normals by the matrix
+    for (unsigned int i=last; i<vertices->size(); ++i) {
+      (*vertices)[i]= xform.preMult((*vertices)[i]);
+      (*normals)[i] = xform.preMult((*normals)[i]);
+    }
+    
     quads->setCount(vertices->size());
   }
 };
 
 typedef std::map<Effect*, GlyphGeometry*> EffectGeometryMap;
-
-void SGMakeSignFace(EffectGeometryMap& glyphs, const ElementVec& elements, double hpos, const osg::Matrix& xform)
-{
-    BOOST_FOREACH(element_info* element, elements) {
-        GlyphGeometry* gg = glyphs[element->state];
-        gg->addGlyph(element->glyph, hpos, grounddist, element->abswidth, element->height, xform);
-        hpos += element->abswidth;
-        delete element;
-    }
-}
 
 GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
 {
@@ -206,9 +200,67 @@ GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
 }
 
 // see $FG_ROOT/Docs/README.scenery
-//
-osg::Node*
-SGMakeSign(SGMaterialLib *matlib, const string& content)
+
+namespace simgear
+{
+
+class AirportSignBuilder::AirportSignBuilderPrivate
+{
+public:
+    SGMaterialLib* materials;
+    EffectGeometryMap geometries;
+    osg::MatrixTransform* signsGroup;
+    GlyphGeometry* signCaseGeometry;
+    
+    GlyphGeometry* getGeometry(Effect* eff)
+    {
+        EffectGeometryMap::iterator it = geometries.find(eff);
+        if (it != geometries.end()) {
+            return it->second;
+        }
+        
+        GlyphGeometry* gg = makeGeometry(eff, signsGroup);
+        geometries[eff] = gg;
+        return gg;
+    }
+    
+    void makeFace(const ElementVec& elements, double hpos, const osg::Matrix& xform)
+    {
+        BOOST_FOREACH(element_info* element, elements) {
+            GlyphGeometry* gg = getGeometry(element->material->get_effect());
+            gg->addGlyph(element->glyph, hpos, grounddist, element->abswidth, element->height, xform);
+            hpos += element->abswidth;
+            delete element;
+        }
+    }
+    
+};
+
+AirportSignBuilder::AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center) :
+    d(new AirportSignBuilderPrivate)
+{
+    d->signsGroup = new osg::MatrixTransform;
+    d->signsGroup->setMatrix(makeZUpFrame(center));
+    
+    assert(mats);
+    d->materials = mats;
+    d->signCaseGeometry = d->getGeometry(d->materials->find("signcase")->get_effect());
+}
+
+osg::Node* AirportSignBuilder::getSignsGroup()
+{
+    return d->signsGroup;
+}
+
+AirportSignBuilder::~AirportSignBuilder()
+{
+    EffectGeometryMap::iterator it;
+    for (it = d->geometries.begin(); it != d->geometries.end(); ++it) {
+        delete it->second;
+    }
+}
+
+void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::string& content)
 {
     double sign_height = 1.0;  // meter
     string newmat = "BlackSign";
@@ -221,12 +273,6 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
     bool isBackside = false;
     int size = -1;
     char oldtype = 0, newtype = 0;
-
-    EffectGeometryMap geoms;
-  
-    osg::Group* object = new osg::Group;
-    object->setName(content);
-
     SGMaterial *material = 0;
 
     // Part I: parse & measure
@@ -334,7 +380,7 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
         }
 
         if (newmat.size()) {
-            material = matlib->find(newmat);
+            material = d->materials->find(newmat);
             newmat.clear();
         }
  
@@ -344,14 +390,7 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
             continue;
         }
 
-        // in managed mode push frame stop and frame start first
-        Effect *state = material->get_effect();
-        if (geoms[state] == NULL) {
-          geoms[state] = makeGeometry(state, object);
-        }
-      
-        element_info *e1;
-        element_info *e2;
+    // in managed mode push frame stop and frame start first
         if (!isBackside) {
             if (newtype && newtype != oldtype) {
                 if (close1) {
@@ -362,16 +401,16 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
                 oldtype = newtype;
                 SGMaterialGlyph *g = material->get_glyph("stop-frame");
                 if (g)
-                    close1 = new element_info(material, state, g, sign_height, 0);
+                    close1 = new element_info(material, g, sign_height, 0);
                 g = material->get_glyph("start-frame");
                 if (g) {
-                    e1 = new element_info(material, state, g, sign_height, 0);
+                    element_info* e1 = new element_info(material, g, sign_height, 0);
                     elements1.push_back(e1);
                     total_width1 += e1->glyph->get_width() * e1->scale;
                 }
             }
             // now the actually requested glyph (front)
-            e1 = new element_info(material, state, glyph, sign_height, 0);
+            element_info* e1 = new element_info(material, glyph, sign_height, 0);
             elements1.push_back(e1);
             total_width1 += e1->glyph->get_width() * e1->scale;
         } else {
@@ -384,16 +423,16 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
                 oldtype = newtype;
                 SGMaterialGlyph *g = material->get_glyph("stop-frame");
                 if (g)
-                    close2 = new element_info(material, state, g, sign_height, 0);
+                    close2 = new element_info(material, g, sign_height, 0);
                 g = material->get_glyph("start-frame");
                 if (g) {
-                    e2 = new element_info(material, state, g, sign_height, 0);
+                    element_info* e2 = new element_info(material, g, sign_height, 0);
                     elements2.push_back(e2);
                     total_width2 += e2->glyph->get_width() * e2->scale;
                 }
             }
             // now the actually requested glyph (back)
-            e2 = new element_info(material, state, glyph, sign_height, 0);
+            element_info* e2 = new element_info(material, glyph, sign_height, 0);
             elements2.push_back(e2);
             total_width2 += e2->glyph->get_width() * e2->scale;
         }
@@ -412,39 +451,44 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
         close2 = 0;
     }
 
-
   // Part II: typeset
     double boxwidth = std::max(total_width1, total_width2) * 0.5;
     double hpos = -boxwidth;
-    SGMaterial *mat = matlib->find("signcase");
-    geoms[mat->get_effect()] = makeGeometry(mat->get_effect(), object);
+    SGMaterial *mat = d->materials->find("signcase");
   
     double coverSize = fabs(total_width1 - total_width2) * 0.5;
+    element_info* s1 = new element_info(mat, mat->get_glyph("cover"), sign_height, coverSize);
+    element_info* s2 = new element_info(mat, mat->get_glyph("cover"), sign_height, coverSize);
   
-    if (total_width1 < total_width2) {
-        if (mat) {
-            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
-            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
-            elements1.insert(elements1.begin(), s1);
-            elements1.push_back(s2);
-        }
-
+    if (total_width1 < total_width2) {            
+        elements1.insert(elements1.begin(), s1);
+        elements1.push_back(s2);
     } else if (total_width2 < total_width1) {
-        if (mat) {
-            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
-            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
-            elements2.insert(elements2.begin(), s1);
-            elements2.push_back(s2);
-        }
+        elements2.insert(elements2.begin(), s1);
+        elements2.push_back(s2);
+    } else {
+        delete s1;
+        delete s2;
     }
-
-    // Create front side
-    SGMakeSignFace(geoms, elements1, hpos, osg::Matrix::identity());
-
-    // Create back side
-    const osg::Vec3d axis(0, 0, 1);
-    SGMakeSignFace(geoms, elements2, hpos, osg::Matrix::rotate( M_PI, axis));
-    geoms[mat->get_effect()]->addSignCase(boxwidth, sign_height, osg::Matrix::identity());
-  
-    return object;
+    
+// position the sign
+    const osg::Vec3 Z_AXIS(0, 0, 1);
+    osg::Matrix m(makeZUpFrame(pos));
+    m.preMultRotate(osg::Quat(SGMiscd::deg2rad(heading), Z_AXIS));
+    
+    // apply the inverse of the group transform, so sign vertices
+    // are relative to the tile center, and hence have a magnitude which
+    // fits in a float with sufficent precision.
+    m.postMult(d->signsGroup->getInverseMatrix());
+    
+    d->makeFace(elements1, hpos, m);
+// Create back side
+    osg::Matrix back(m);
+    back.preMultRotate(osg::Quat(M_PI, Z_AXIS));
+    d->makeFace(elements2, hpos, back);
+    
+    d->signCaseGeometry->addSignCase(boxwidth, sign_height, m);
 }
+
+} // of namespace simgear
+

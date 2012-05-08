@@ -24,6 +24,8 @@
 
 #include <osgDB/ReaderWriter>
 
+class SGBucket;
+
 namespace simgear {
 
 class ReaderWriterSTG : public osgDB::ReaderWriter {
@@ -44,7 +46,7 @@ private:
     /// Read an real existing stg file that exists on disk and return true
     /// if a BASE_OBJECT is found.
     bool
-    readStgFile(const std::string&, osg::Group&, const osgDB::Options*) const;
+    readStgFile(const std::string&, const SGBucket& bucket,  osg::Group&, const osgDB::Options*) const;
 };
 
 }

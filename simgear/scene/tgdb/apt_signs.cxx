@@ -25,6 +25,7 @@
 #endif
 
 #include <vector>
+#include <boost/foreach.hpp>
 
 #include <osg/Geode>
 #include <osg/Geometry>
@@ -66,6 +67,9 @@ struct element_info {
 
 typedef std::vector<element_info*> ElementVec;
 
+
+
+
 const double HT[5] = {0.460, 0.610, 0.760, 1.220, 0.760}; // standard panel height sizes
 const double grounddist = 0.2;     // hard-code sign distance from surface for now
 const double thick = 0.1;    // half the thickness of the 3D sign
@@ -91,73 +95,115 @@ struct pair {
     {0, 0},
 };
 
-void SGMakeSignFace(osg::Group* object, const ElementVec& elements, double hpos, bool isBackside)
+struct GlyphGeometry
 {
-    std::map<Effect*, EffectGeode*> geodesByEffect;
+  osg::DrawArrays* quads;
+  osg::Vec2Array* uvs;
+  osg::Vec3Array* vertices;
+  osg::Vec3Array* normals;
+  
+  void addGlyph(SGMaterialGlyph* glyph, double x, double y, double width, double height, const osg::Matrix& xform)
+  {
+    
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x, y)));
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y)));
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x + width, y + height)));
+    vertices->push_back(xform.preMult(osg::Vec3(thick, x, y + height)));
+    
+    // texture coordinates
+    double xoffset = glyph->get_left();
+    double texWidth = glyph->get_width();
+    
+    uvs->push_back(osg::Vec2(xoffset,         0));
+    uvs->push_back(osg::Vec2(xoffset + texWidth, 0));
+    uvs->push_back(osg::Vec2(xoffset + texWidth, 1));
+    uvs->push_back(osg::Vec2(xoffset,         1));
 
-    for (unsigned int i = 0; i < elements.size(); i++) {
-        element_info *element = elements[i];
+    // normals
+    for (int i=0; i<4; ++i)
+      normals->push_back(xform.preMult(osg::Vec3(0, -1, 0)));
+    
+    quads->setCount(vertices->size());
+  }
+  
+  void addSignCase(double caseWidth, double caseHeight, const osg::Matrix& xform)
+  {
+    vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist));
+    vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist));
+    vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
+    
+    
+    for (int i=0; i<4; ++i)
+      normals->push_back(xform.preMult(osg::Vec3(-1, 0.0, 0)));
+    
+    vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  -caseWidth,  grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
+    
+    for (int i=0; i<4; ++i)
+      normals->push_back(xform.preMult(osg::Vec3(0, 0, 1)));
+    
+    vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
+    vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist));
+    vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist));
+    
+    for (int i=0; i<4; ++i)
+      normals->push_back(xform.preMult(osg::Vec3(1, 0.0, 0)));
+    
+    for (int i = 0; i < 3; ++i) {
+      uvs->push_back(osg::Vec2(1,    1));
+      uvs->push_back(osg::Vec2(0.75, 1));
+      uvs->push_back(osg::Vec2(0.75, 0));
+      uvs->push_back(osg::Vec2(1,    0));
+    }
+    
+    quads->setCount(vertices->size());
+  }
+};
 
-        double xoffset = element->glyph->get_left();
-        double height = element->height;
-        double width = element->glyph->get_width();
+typedef std::map<Effect*, GlyphGeometry*> EffectGeometryMap;
 
-        osg::Vec3Array* vl = new osg::Vec3Array;
-        osg::Vec2Array* tl = new osg::Vec2Array;
-
-        // vertices
-        vl->push_back(osg::Vec3(thick, hpos,            grounddist));
-        vl->push_back(osg::Vec3(thick, hpos + element->abswidth, grounddist));
-        vl->push_back(osg::Vec3(thick, hpos,            grounddist + height));
-        vl->push_back(osg::Vec3(thick, hpos + element->abswidth, grounddist + height));
-
-        // texture coordinates
-        tl->push_back(osg::Vec2(xoffset,         0));
-        tl->push_back(osg::Vec2(xoffset + width, 0));
-        tl->push_back(osg::Vec2(xoffset,         1));
-        tl->push_back(osg::Vec2(xoffset + width, 1));
-
-        // normals
-        osg::Vec3Array* nl = new osg::Vec3Array;
-        nl->push_back(osg::Vec3(0, -1, 0));
-
-        // colors
-        osg::Vec4Array* cl = new osg::Vec4Array;
-        cl->push_back(osg::Vec4(1, 1, 1, 1));
-
-        osg::Geometry* geometry = new osg::Geometry;
-        geometry->setVertexArray(vl);
-        geometry->setNormalArray(nl);
-        geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
-        geometry->setColorArray(cl);
-        geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-        geometry->setTexCoordArray(0, tl);
-        geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
-
-        EffectGeode* geode = geodesByEffect[element->state];
-        if (!geode) {
-            geode = new EffectGeode();
-            geode->setEffect(element->state);
-            geodesByEffect[element->state] = geode;
-        }
-
-        geode->addDrawable(geometry);
-
-        if (isBackside) {
-            osg::MatrixTransform* transform = new osg::MatrixTransform();
-            const double angle = 180;
-            const osg::Vec3d axis(0, 0, 1);
-            transform->setMatrix(osg::Matrix::rotate( osg::DegreesToRadians(angle), axis));
-            transform->addChild(geode);
-            object->addChild(transform);
-        } else
-            object->addChild(geode);
-
+void SGMakeSignFace(EffectGeometryMap& glyphs, const ElementVec& elements, double hpos, const osg::Matrix& xform)
+{
+    BOOST_FOREACH(element_info* element, elements) {
+        GlyphGeometry* gg = glyphs[element->state];
+        gg->addGlyph(element->glyph, hpos, grounddist, element->abswidth, element->height, xform);
         hpos += element->abswidth;
         delete element;
     }
 }
 
+GlyphGeometry* makeGeometry(Effect* eff, osg::Group* group)
+{
+  GlyphGeometry* gg = new GlyphGeometry;
+  
+  EffectGeode* geode = new EffectGeode;
+  geode->setEffect(eff);
+ 
+  gg->vertices = new osg::Vec3Array;
+  gg->normals = new osg::Vec3Array;
+  gg->uvs = new osg::Vec2Array;
+  
+  osg::Vec4Array* cl = new osg::Vec4Array;
+  cl->push_back(osg::Vec4(1, 1, 1, 1));
+  
+  osg::Geometry* geometry = new osg::Geometry;
+  geometry->setVertexArray(gg->vertices);
+  geometry->setNormalArray(gg->normals);
+  geometry->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
+  geometry->setColorArray(cl);
+  geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+  geometry->setTexCoordArray(0, gg->uvs);
+  
+  gg->quads = new osg::DrawArrays(GL_QUADS, 0, gg->vertices->size());
+  geometry->addPrimitiveSet(gg->quads);
+  geode->addDrawable(geometry);
+  group->addChild(geode);
+  return gg;
+}
 
 // see $FG_ROOT/Docs/README.scenery
 //
@@ -176,6 +222,8 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
     int size = -1;
     char oldtype = 0, newtype = 0;
 
+    EffectGeometryMap geoms;
+  
     osg::Group* object = new osg::Group;
     object->setName(content);
 
@@ -298,6 +346,10 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
 
         // in managed mode push frame stop and frame start first
         Effect *state = material->get_effect();
+        if (geoms[state] == NULL) {
+          geoms[state] = makeGeometry(state, object);
+        }
+      
         element_info *e1;
         element_info *e2;
         if (!isBackside) {
@@ -361,92 +413,38 @@ SGMakeSign(SGMaterialLib *matlib, const string& content)
     }
 
 
-    // Part II: typeset
-    double hpos = -total_width1 / 2;
-    double boxwidth = total_width1 > total_width2 ? total_width1/2 : total_width2/2;
-
+  // Part II: typeset
+    double boxwidth = std::max(total_width1, total_width2) * 0.5;
+    double hpos = -boxwidth;
+    SGMaterial *mat = matlib->find("signcase");
+    geoms[mat->get_effect()] = makeGeometry(mat->get_effect(), object);
+  
+    double coverSize = fabs(total_width1 - total_width2) * 0.5;
+  
     if (total_width1 < total_width2) {
-        double ssize = (total_width2 - total_width1)/2;
-        SGMaterial *mat = matlib->find("signcase");
         if (mat) {
-            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, ssize);
-            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, ssize);
+            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
+            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
             elements1.insert(elements1.begin(), s1);
             elements1.push_back(s2);
         }
-        hpos = -total_width2 / 2;
 
     } else if (total_width2 < total_width1) {
-        double ssize = (total_width1 - total_width2)/2;
-        SGMaterial *mat = matlib->find("signcase");
         if (mat) {
-            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, ssize);
-            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, ssize);
+            element_info* s1 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
+            element_info* s2 = new element_info(mat, mat->get_effect(), mat->get_glyph("cover"), sign_height, coverSize);
             elements2.insert(elements2.begin(), s1);
             elements2.push_back(s2);
         }
-        hpos = -total_width1 / 2;
     }
 
     // Create front side
-    SGMakeSignFace(object, elements1, hpos, false);
+    SGMakeSignFace(geoms, elements1, hpos, osg::Matrix::identity());
 
     // Create back side
-    SGMakeSignFace(object, elements2, hpos, true);
-
-
-    // Add 3D case for signs
-    osg::Vec3Array* vl = new osg::Vec3Array;
-    osg::Vec2Array* tl = new osg::Vec2Array;
-    osg::Vec3Array* nl = new osg::Vec3Array;
-
-    //left side
-    vl->push_back(osg::Vec3(-thick, -boxwidth,  grounddist));
-    vl->push_back(osg::Vec3(thick, -boxwidth,  grounddist));
-    vl->push_back(osg::Vec3(-thick, -boxwidth,  grounddist + sign_height));
-    vl->push_back(osg::Vec3(thick, -boxwidth,  grounddist + sign_height));
-
-    nl->push_back(osg::Vec3(-1, 0, 0));
-
-    //top
-    vl->push_back(osg::Vec3(-thick, -boxwidth,  grounddist + sign_height));
-    vl->push_back(osg::Vec3(thick,  -boxwidth,  grounddist + sign_height));
-    vl->push_back(osg::Vec3(-thick, boxwidth, grounddist + sign_height));
-    vl->push_back(osg::Vec3(thick,  boxwidth, grounddist + sign_height));
-
-    nl->push_back(osg::Vec3(0, 0, 1));
-
-    //right side
-    vl->push_back(osg::Vec3(-thick, boxwidth, grounddist + sign_height));
-    vl->push_back(osg::Vec3(thick,  boxwidth, grounddist + sign_height));
-    vl->push_back(osg::Vec3(-thick, boxwidth, grounddist));
-    vl->push_back(osg::Vec3(thick,  boxwidth, grounddist));
-
-    for (int i = 0; i < 4; ++i) {
-        tl->push_back(osg::Vec2(1,    1));
-        tl->push_back(osg::Vec2(0.75, 1));
-        tl->push_back(osg::Vec2(1,    0));
-        tl->push_back(osg::Vec2(0.75, 0));
-    }
-
-    nl->push_back(osg::Vec3(1, 0, 0));
-
-    osg::Vec4Array* cl = new osg::Vec4Array;
-    cl->push_back(osg::Vec4(1.0, 1.0, 1.0, 1.0));
-    osg::Geometry* geometry = new osg::Geometry;
-    geometry->setVertexArray(vl);
-    geometry->setNormalArray(nl);
-    geometry->setNormalBinding(osg::Geometry::BIND_OVERALL);
-    geometry->setTexCoordArray(0, tl);
-    geometry->setColorArray(cl);
-    geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
-    geometry->addPrimitiveSet(new osg::DrawArrays(GL_TRIANGLE_STRIP, 0, vl->size()));
-    EffectGeode* geode = new EffectGeode;
-    geode->addDrawable(geometry);
-    SGMaterial *mat = matlib->find("signcase");
-    if (mat)
-      geode->setEffect(mat->get_effect());
-    object->addChild(geode);
-
+    const osg::Vec3d axis(0, 0, 1);
+    SGMakeSignFace(geoms, elements2, hpos, osg::Matrix::rotate( M_PI, axis));
+    geoms[mat->get_effect()]->addSignCase(boxwidth, sign_height, osg::Matrix::identity());
+  
     return object;
 }

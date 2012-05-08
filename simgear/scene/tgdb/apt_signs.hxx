@@ -38,11 +38,9 @@
 
 class SGMaterialLib;            // forward declaration
 
-using std::string;
-
 
 // Generate a generic sign
-osg::Node* SGMakeSign( SGMaterialLib *matlib, const string& content );
+osg::Node* SGMakeSign( SGMaterialLib *matlib, const std::string& content );
 
 
 #endif // _SG_APT_SIGNS_HXX

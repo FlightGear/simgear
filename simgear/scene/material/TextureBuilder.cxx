@@ -849,7 +849,11 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
     } else {
         SG_LOG(SG_INPUT, SG_ALERT, "no texture unit");
     }
-    buffer = prop->getStringValue("name");
+    const SGPropertyNode* nameProp = getEffectPropertyChild(effect, prop,
+                                                            "name");
+    if (!nameProp)
+        return 0;
+    buffer = nameProp->getStringValue();
 
     pass->setBufferUnit( unit, buffer );
 

@@ -337,7 +337,11 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
 
         for (size_t i = 0; i < group->getNumChildren(); ++i)
             mt->addChild(group->getChild(i));
+            
+        delete forest;
     }
+    
+    forestList.clear();
     
     return mt;
 }

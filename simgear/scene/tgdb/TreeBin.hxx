@@ -60,8 +60,11 @@ public:
     const Tree& getTree(unsigned i) const
     { return _trees[i]; }
     TreeList _trees;
+    
+    ~TreeBin() {
+      _trees.clear();
+    }    
 };
-
 
 typedef std::list<TreeBin*> SGTreeBinList;
 

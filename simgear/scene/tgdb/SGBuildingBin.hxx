@@ -100,6 +100,10 @@ public:
   { return buildings.size(); }
   const Building& getBuilding(unsigned i) const
   { return buildings[i]; }  
+  
+  ~SGBuildingBin() {
+    buildings.clear();    
+  }
 };
 
 // List of buildings

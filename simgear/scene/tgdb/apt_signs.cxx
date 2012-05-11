@@ -125,39 +125,51 @@ struct GlyphGeometry
   void addSignCase(double caseWidth, double caseHeight, const osg::Matrix& xform)
   {
     int last = vertices->size();
-    
+    double texsize = caseWidth / caseHeight;
+
+    //left
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist));
     vertices->push_back(osg::Vec3(thick, -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
-    
+
+    uvs->push_back(osg::Vec2(1,    1));
+    uvs->push_back(osg::Vec2(0.75, 1));
+    uvs->push_back(osg::Vec2(0.75, 0));
+    uvs->push_back(osg::Vec2(1,    0));
     
     for (int i=0; i<4; ++i)
       normals->push_back(osg::Vec3(-1, 0.0, 0));
-    
+
+    //top
     vertices->push_back(osg::Vec3(-thick, -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  -caseWidth,  grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
     
+    uvs->push_back(osg::Vec2(1,    texsize));
+    uvs->push_back(osg::Vec2(0.75, texsize));
+    uvs->push_back(osg::Vec2(0.75, 0));
+    uvs->push_back(osg::Vec2(1,    0));
+
     for (int i=0; i<4; ++i)
       normals->push_back(osg::Vec3(0, 0, 1));
-    
+
+    //right
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist + caseHeight));
     vertices->push_back(osg::Vec3(thick,  caseWidth, grounddist));
     vertices->push_back(osg::Vec3(-thick, caseWidth, grounddist));
-    
+
+    uvs->push_back(osg::Vec2(1,    1));
+    uvs->push_back(osg::Vec2(0.75, 1));
+    uvs->push_back(osg::Vec2(0.75, 0));
+    uvs->push_back(osg::Vec2(1,    0));
+
     for (int i=0; i<4; ++i)
       normals->push_back(osg::Vec3(1, 0.0, 0));
-    
-    for (int i = 0; i < 3; ++i) {
-      uvs->push_back(osg::Vec2(1,    1));
-      uvs->push_back(osg::Vec2(0.75, 1));
-      uvs->push_back(osg::Vec2(0.75, 0));
-      uvs->push_back(osg::Vec2(1,    0));
-    }
-    
+
+
   // transform all the newly added vertices and normals by the matrix
     for (unsigned int i=last; i<vertices->size(); ++i) {
       (*vertices)[i]= xform.preMult((*vertices)[i]);
@@ -457,8 +469,8 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
     SGMaterial *mat = d->materials->find("signcase");
   
     double coverSize = fabs(total_width1 - total_width2) * 0.5;
-    element_info* s1 = new element_info(mat, mat->get_glyph("cover"), sign_height, coverSize);
-    element_info* s2 = new element_info(mat, mat->get_glyph("cover"), sign_height, coverSize);
+    element_info* s1 = new element_info(mat, mat->get_glyph("cover1"), sign_height, coverSize);
+    element_info* s2 = new element_info(mat, mat->get_glyph("cover2"), sign_height, coverSize);
   
     if (total_width1 < total_width2) {            
         elements1.insert(elements1.begin(), s1);

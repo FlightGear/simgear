@@ -288,7 +288,12 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 }
                 
             } else if ( token == "OBJECT_SIGN" ) {
-                signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name);
+                int size(-1);
+
+                if ( hasOptionalValue(in) ){
+                    in >> size;
+                }
+                signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name, size);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                         << ": Unknown token '" << token << "'" );

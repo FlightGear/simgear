@@ -66,7 +66,10 @@ struct element_info {
 
 typedef std::vector<element_info*> ElementVec;
 
-const double HT[5] = {0.460, 0.610, 0.760, 1.220, 0.760}; // standard panel height sizes
+// Standard panel height sizes. The first value is unused to
+// make sure the size value equals 1:1 the value from the apt.dat file:
+const double HT[6] = {0.1, 0.460, 0.610, 0.760, 1.220, 0.760};
+
 const double grounddist = 0.2;     // hard-code sign distance from surface for now
 const double thick = 0.1;    // half the thickness of the 3D sign
 
@@ -80,14 +83,13 @@ struct pair {
     {"@d",       "^d"},
     {"@l",       "^l"},
     {"@lu",      "^lu"},
-    {"@ul",      "^lu"},
     {"@ld",      "^ld"},
-    {"@dl",      "^ld"},
     {"@r",       "^r"},
     {"@ru",      "^ru"},
-    {"@ur",      "^ru"},
     {"@rd",      "^rd"},
-    {"@dr",      "^rd"},
+    {"r1",       "^I1"},
+    {"r2",       "^I2"},
+    {"r3",       "^I3"},
     {0, 0},
 };
 
@@ -274,7 +276,7 @@ AirportSignBuilder::~AirportSignBuilder()
     }
 }
 
-void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::string& content)
+void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::string& content, int size)
 {
     double sign_height = 1.0;  // meter
     string newmat = "BlackSign";
@@ -285,9 +287,13 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
     double total_width2 = 0.0;
     bool cmd = false;
     bool isBackside = false;
-    int size = -1;
     char oldtype = 0, newtype = 0;
     SGMaterial *material = 0;
+
+    if (size < -1 || size > 5){
+        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Found illegal sign size value of '" << size << "' for " << content << ".");
+        size = -1;
+    }
 
     // Part I: parse & measure
     for (const char *s = content.data(); *s; s++) {
@@ -315,9 +321,10 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
 
             for (; *s; s++) {
                 name += *s;
-                if (s[1] == ',' || s[1] == '}' || s[1] == '=')
+                if (s[1] == ',' || s[1] == '}' )
                     break;
             }
+
             if (!*s) {
                 SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unclosed { in sign contents");
             } else if (s[1] == '=') {
@@ -330,25 +337,44 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                     SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "unclosed { in sign contents");
             }
 
-            if (name == "@@") {
-                isBackside = true;
-                continue;
+            if (name == "no-entry") {
+                sign_height = HT[size < 0 ? 3 : size];
+                newmat = "RedSign";
+                newtype = 'R';
             }
 
-            if (name == "@size") {
-                sign_height = strtod(value.data(), 0);
+            else if (name == "critical") {
+                sign_height = HT[size < 0 ? 3 : size];
+                newmat = "SpecialSign";
+                newtype = 'S';
+            }
+
+            else if (name == "safety") {
+                sign_height = HT[size < 0 ? 3 : size];
+                newmat = "SpecialSign";
+                newtype = 'S';
+            }
+
+            else if (name == "hazard") {
+                sign_height = HT[size < 0 ? 3 : size];
+                newmat = "SpecialSign";
+                newtype = 'S';
+            }
+
+            if (name == "@@") {
+                isBackside = true;
                 continue;
             }
 
             if (name.size() == 2 || name.size() == 3) {
                 string n = name;
                 if (n.size() == 3 && n[2] >= '1' && n[2] <= '5') {
-                    size = n[2] - '1';
+                    size = n[2];
                     n = n.substr(0, 2);
                 }
                 if (n == "@Y") {
                     if (size < 3) {
-                        sign_height = HT[size < 0 ? 2 : size];
+                        sign_height = HT[size < 0 ? 3 : size];
                         newmat = "YellowSign";
                         newtype = 'Y';
                         continue;
@@ -356,7 +382,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
 
                 } else if (n == "@R") {
                     if (size < 3) {
-                        sign_height = HT[size < 0 ? 2 : size];
+                        sign_height = HT[size < 0 ? 3 : size];
                         newmat = "RedSign";
                         newtype = 'R';
                         continue;
@@ -364,15 +390,15 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
 
                 } else if (n == "@L") {
                     if (size < 3) {
-                        sign_height = HT[size < 0 ? 2 : size];
+                        sign_height = HT[size < 0 ? 3 : size];
                         newmat = "FramedSign";
                         newtype = 'L';
                         continue;
                     }
 
                 } else if (n == "@B") {
-                    if (size < 0 || size == 3 || size == 4) {
-                        sign_height = HT[size < 0 ? 3 : size];
+                    if (size < 0 || size == 4 || size == 5) {
+                        sign_height = HT[size < 0 ? 4 : size];
                         newmat = "BlackSign";
                         newtype = 'B';
                         continue;
@@ -397,7 +423,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
             material = d->materials->find(newmat);
             newmat.clear();
         }
- 
+
         SGMaterialGlyph *glyph = material->get_glyph(name);
         if (!glyph) {
             SG_LOG( SG_TERRAIN, SG_ALERT, SIGN "unsupported glyph '" << *s << '\'');

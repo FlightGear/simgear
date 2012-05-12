@@ -46,7 +46,7 @@ public:
     AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center);
     ~AirportSignBuilder();
     
-    void addSign(const SGGeod& pos, double heading, const std::string& content);
+    void addSign(const SGGeod& pos, double heading, const std::string& content, int size);
         
     osg::Node* getSignsGroup();
 private:

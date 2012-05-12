@@ -102,21 +102,19 @@ void SGSampleGroup::update( double dt ) {
                     alSourceStop( source );
                     alGetSourcei( source, AL_SOURCE_STATE, &result );
                 }
-                if ( result == AL_STOPPED ) {
-                    sample->no_valid_source();
-                    _smgr->release_source( sample->get_source() );
-                }
+            }
+            if ( result == AL_STOPPED ) {
+                sample->no_valid_source();
+                _smgr->release_source( source );
             }
         }
 
         if ( result == AL_STOPPED ) {
             sample->stop();
-            if ( !sample->is_queue() ) {
-                ALuint buffer = sample->get_buffer();
-                // disconnect buffer from its source - otherwise it cannot be deleted
-                alSourceUnqueueBuffers(sample->get_source(), 1, &buffer);
-                alDeleteBuffers( 1, &buffer );
-                testForALError("buffer remove");
+            if (( !sample->is_queue() )&&
+                (sample->is_valid_buffer()))
+            {
+                _smgr->release_buffer(sample);
             }
             _removed_samples.erase( _removed_samples.begin()+i );
             size--;
@@ -181,7 +179,7 @@ void SGSampleGroup::update( double dt ) {
                         alSourcePlay( source );
                         testForALError("sample play");
                     } else
-                        SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!\n");
+                        SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
                 }
             }
 
@@ -193,7 +191,7 @@ void SGSampleGroup::update( double dt ) {
 
             alGetSourcei( source, AL_SOURCE_STATE, &result );
             if ( result == AL_STOPPED ) {
-                // sample is stoped because it wasn't looping
+                // sample is stopped because it wasn't looping
                 sample->stop();
                 sample->no_valid_source();
                 _smgr->release_source( source );

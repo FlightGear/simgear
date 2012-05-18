@@ -839,6 +839,38 @@ private:
     string buffer;
 };
 
+class BufferNameChangeListener : public SGPropertyChangeListener, public InitializeWhenAdded,
+      public Effect::Updater {
+public:
+    BufferNameChangeListener(Pass* p, int u, const std::string& pn) : pass(p), unit(u)
+    {
+        propName = new std::string(pn);
+    }
+    ~BufferNameChangeListener()
+    {
+        delete propName;
+        propName = 0;
+    }
+    void valueChanged(SGPropertyNode* node)
+    {
+        const char* buffer = node->getStringValue();
+        pass->setBufferUnit(unit, buffer);
+    }
+    void initOnAddImpl(Effect* effect, SGPropertyNode* propRoot)
+    {
+        SGPropertyNode* listenProp = makeNode(propRoot, *propName);
+        delete propName;
+        propName = 0;
+        if (listenProp)
+            listenProp->addChangeListener(this, true);
+    }
+
+private:
+    ref_ptr<Pass> pass;
+    int unit;
+    std::string* propName;
+};
+
 Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode* prop,
                                     const SGReaderWriterOptions* options)
 {
@@ -853,9 +885,15 @@ Texture* GBufferBuilder::build(Effect* effect, Pass* pass, const SGPropertyNode*
                                                             "name");
     if (!nameProp)
         return 0;
-    buffer = nameProp->getStringValue();
 
-    pass->setBufferUnit( unit, buffer );
+    if (nameProp->nChildren() == 0) {
+        buffer = nameProp->getStringValue();
+        pass->setBufferUnit( unit, buffer );
+    } else {
+        std::string propName = getGlobalProperty(nameProp, options);
+        BufferNameChangeListener* listener = new BufferNameChangeListener(pass, unit, propName);
+        effect->addUpdater(listener);
+    }
 
     // Return white for now. Would be overridden in Technique::ProcessDrawable
     return StateAttributeFactory::instance()->getWhiteTexture();

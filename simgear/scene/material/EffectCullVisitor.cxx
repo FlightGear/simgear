@@ -52,8 +52,6 @@ CullVisitor* EffectCullVisitor::clone() const
 
 void EffectCullVisitor::apply(osg::Geode& node)
 {
-    if (node.getNodeMask() != simgear::MODELLIGHT_BIT ) // HACK
-        node.setNodeMask(node.getNodeMask() & ~simgear::MODELLIGHT_BIT);
     if (isCulled(node))
         return;
     EffectGeode *eg = dynamic_cast<EffectGeode*>(&node);

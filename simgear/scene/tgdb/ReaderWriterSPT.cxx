@@ -38,6 +38,77 @@
 
 namespace simgear {
 
+// Cull away tiles that we watch from downside
+struct ReaderWriterSPT::CullCallback : public osg::NodeCallback {
+    virtual ~CullCallback()
+    { }
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+    {
+        const osg::BoundingSphere& nodeBound = node->getBound();
+        // If the bounding sphere of the node is empty, there is nothing to do
+        if (!nodeBound.valid())
+            return;
+
+        // Culling away tiles that we look at from the downside.
+        // This is done by computing the maximum distance we can
+        // see something from the current eyepoint. If the sphere
+        // that is defined by this radius does no intersects the
+        // nodes sphere, then this tile is culled away.
+        // Computing this radius happens by two rectangular triangles:
+        // Let r be the view point. rmin is the minimum radius we find
+        // a ground surface we need to look above. rmax is the
+        // maximum object radius we expect any object.
+        //
+        //    d1   d2
+        //  x----x----x
+        //  r\  rmin /rmax
+        //    \  |  /
+        //     \ | /
+        //      \|/
+        //
+        // The distance from the eyepoint to the point
+        // where the line of sight is perpandicular to
+        // the radius vector with minimal height is
+        // d1 = sqrt(r^2 - rmin^2).
+        // The distance from the point where the line of sight
+        // is perpandicular to the radius vector with minimal height
+        // to the highest possible object on earth with radius rmax is 
+        // d2 = sqrt(rmax^2 - rmin^2).
+        // So the maximum distance we can see something on the earth
+        // from a viewpoint r is
+        // d = d1 + d2
+
+        // This is the equatorial earth radius minus 450m,
+        // little lower than Dead Sea.
+        float rmin = 6378137 - 450;
+        float rmin2 = rmin*rmin;
+        // This is the equatorial earth radius plus 9000m,
+        // little higher than Mount Everest.
+        float rmax = 6378137 + 9000;
+        float rmax2 = rmax*rmax;
+
+        // Check if we are looking from below any ground
+        osg::Vec3 viewPoint = nv->getViewPoint();
+        // blow the viewpoint up to a spherical earth with equatorial radius:
+        osg::Vec3 sphericViewPoint = viewPoint;
+        sphericViewPoint[2] *= 1.0033641;
+        float r2 = sphericViewPoint.length2();
+        if (r2 <= rmin2)
+            return;
+
+        // Due to this line of sight computation, the visible tiles
+        // are limited to be within a sphere with radius d1 + d2.
+        float d1 = sqrtf(r2 - rmin2);
+        float d2 = sqrtf(rmax2 - rmin2);
+        // Note that we again base the sphere around elliptic view point,
+        // but use the radius from the spherical computation.
+        if (!nodeBound.intersects(osg::BoundingSphere(viewPoint, d1 + d2)))
+            return;
+
+        traverse(node, nv);
+    }
+};
+
 ReaderWriterSPT::ReaderWriterSPT()
 {
     supportsExtension("spt", "SimGear paged terrain meta database.");
@@ -153,7 +224,9 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
     SGSpheref sphere = bucketBox.getBoundingSphere();
     pagedLOD->setCenter(toOsg(sphere.getCenter()));
     pagedLOD->setRadius(sphere.getRadius());
-        
+
+    pagedLOD->setCullCallback(new CullCallback);
+
     osg::ref_ptr<osgDB::Options> localOptions;
     localOptions = static_cast<osgDB::Options*>(options->clone(osg::CopyOp()));
     pagedLOD->setDatabaseOptions(localOptions.get());

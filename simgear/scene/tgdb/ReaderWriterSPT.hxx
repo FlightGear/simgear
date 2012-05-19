@@ -41,6 +41,9 @@ protected:
     osg::Node* createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const;
     osg::Node* createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const;
     osg::StateSet* getLowLODStateSet(const osgDB::Options* options) const;
+
+private:
+    struct CullCallback;
 };
 
 } // namespace simgear

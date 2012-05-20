@@ -198,6 +198,20 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 }
 }
 
+class SGSetNodeMaskVisitor : public osg::NodeVisitor {
+public:
+    SGSetNodeMaskVisitor(osg::Node::NodeMask nms, osg::Node::NodeMask nmc) :
+        osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), nodeMaskSet(nms), nodeMaskClear(nmc)
+    {}
+    virtual void apply(osg::Geode& node) {
+        node.setNodeMask((node.getNodeMask() | nodeMaskSet) & ~nodeMaskClear);
+        traverse(node);
+    }
+private:
+    osg::Node::NodeMask nodeMaskSet;
+    osg::Node::NodeMask nodeMaskClear;
+};
+
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
                        const osgDB::Options* dbOptions,
@@ -430,6 +444,7 @@ sgLoad3DModel_internal(const SGPath& path,
                         prop_root,
                         options.get()));
     }
+
     PropertyList effect_nodes = props->getChildren("effect");
     PropertyList animation_nodes = props->getChildren("animation");
     PropertyList light_nodes = props->getChildren("light");
@@ -440,6 +455,9 @@ sgLoad3DModel_internal(const SGPath& path,
             = instantiateEffects(group.get(), effect_nodes, options.get());
         group = static_cast<Group*>(modelWithEffects.get());
     }
+
+    SGSetNodeMaskVisitor snmv(0, simgear::MODELLIGHT_BIT);
+    group->accept(snmv);
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,

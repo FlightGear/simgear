@@ -281,7 +281,22 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 matrix = makeZUpFrame(SGGeod::fromDegM(lon, lat, elev));
                 matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(hdg),
                                                osg::Vec3(0, 0, 1)));
-                
+
+                while ( (in.peek() != '\n') && (in.peek() != '\r') &&
+                        (in.peek() != '-')  && isspace(in.peek()) ) {
+                   in.get();
+                }
+
+                if (isdigit(in.peek()) || (in.peek() == '-')){
+                    double pitch(0.0), roll(0.0);
+                    in >> pitch >> roll;
+
+                    matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(pitch),
+                                                   osg::Vec3(0, 1, 0)));
+                    matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(roll),
+                                                   osg::Vec3(1, 0, 0)));
+                }
+
                 osg::MatrixTransform* matrixTransform;
                 matrixTransform = new osg::MatrixTransform(matrix);
                 matrixTransform->setDataVariance(osg::Object::STATIC);

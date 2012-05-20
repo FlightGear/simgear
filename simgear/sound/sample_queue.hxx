@@ -39,7 +39,6 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/math/SGMath.hxx>
 
 #include "sample_openal.hxx"
 

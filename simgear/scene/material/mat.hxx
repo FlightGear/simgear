@@ -36,7 +36,6 @@
 #include <vector>
 #include <map>
 
-#include <simgear/math/SGMath.hxx>
 #include "Effect.hxx"
 #include <simgear/scene/tgdb/SGTexturedTriangleBin.hxx>
 

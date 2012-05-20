@@ -26,7 +26,6 @@
 #include <GL/gl.h>
 #include <osg/Drawable>
 #include <osg/State>
-#include <simgear/math/SGMath.hxx>
 
 struct SGDebugDrawCallback : public osg::Drawable::DrawCallback {
   virtual void drawImplementation(osg::State& state,

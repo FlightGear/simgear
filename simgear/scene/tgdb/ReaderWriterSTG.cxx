@@ -269,8 +269,7 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 }
                 
             } else if ( token == "OBJECT_SIGN" ) {
-                //node = SGMakeSign(staticOptions->getMaterialLib(), name);
-              signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name);
+                signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                         << ": Unknown token '" << token << "'" );
@@ -311,7 +310,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
         in >> ::skipeol;
     }
   
-    group.addChild(signBuilder.getSignsGroup());
+    if (signBuilder.getSignsGroup())
+        group.addChild(signBuilder.getSignsGroup());
 
     return has_base;
 }

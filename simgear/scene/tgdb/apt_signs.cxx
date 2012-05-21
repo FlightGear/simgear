@@ -261,6 +261,8 @@ AirportSignBuilder::AirportSignBuilder(SGMaterialLib* mats, const SGGeod& center
 
 osg::Node* AirportSignBuilder::getSignsGroup()
 {
+    if (0 == d->signsGroup->getNumChildren())
+        return 0;
     return d->signsGroup;
 }
 

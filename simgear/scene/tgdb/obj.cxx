@@ -726,13 +726,15 @@ struct SGTileGeometryBin {
         for (l = triangle_buildings.begin(); l != triangle_buildings.end(); ++l) {
           bin->insert(*l);
         }
+        
+        triangle_buildings.clear();
       }
       
-      SG_LOG(SG_INPUT, SG_DEBUG, "Random Buildings: " << bin->getNumBuildings());
-      SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to mask: " << mask_dropped);
-      SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to triangle edge: " << triangle_dropped);
-      SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to random object: " << random_dropped);
-      SG_LOG(SG_INPUT, SG_DEBUG, "  Dropped due to other building: " << building_dropped);
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "Random Buildings: " << bin->getNumBuildings());
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to mask: " << mask_dropped);
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to triangle edge: " << triangle_dropped);
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to random object: " << random_dropped);
+      SG_LOG(SG_TERRAIN, SG_DEBUG, "  Dropped due to other building: " << building_dropped);
     }
   }
   

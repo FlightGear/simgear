@@ -69,6 +69,7 @@ namespace simgear
   
 typedef std::map<std::string, osg::observer_ptr<osg::StateSet> > BuildingStateSetMap;
 static BuildingStateSetMap statesetmap;
+static int numBuildings;
 
 void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& building)
 {
@@ -602,6 +603,8 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
       
     BOOST_FOREACH(bin, buildings)
     {      
+        numBuildings = numBuildings + bin->getNumBuildings();
+        SG_LOG(SG_TERRAIN, SG_DEBUG, "Total random buildings generated: " << numBuildings);
       
         ref_ptr<Effect> effect;
         EffectMap::iterator iter = buildingEffectMap.find(bin->texture);
@@ -643,11 +646,10 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
                        BuildingTransformer(transInv));
         quadbuilding.buildQuadTree(rotatedBuildings.begin(), rotatedBuildings.end());
         
-        ref_ptr<Group> group = quadbuilding.getRoot();
-        
+        ref_ptr<Group> group = quadbuilding.getRoot();        
         mt->addChild(group);  
-        delete bin;      
-    }
+        delete bin;  
+    }        
     
     buildings.clear();
     

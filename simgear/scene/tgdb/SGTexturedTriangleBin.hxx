@@ -293,7 +293,7 @@ public:
               points.push_back(std::make_pair(randomPoint, img->getColor(x,y).r()));
             }
           } else {
-            points.push_back(std::make_pair(randomPoint, mt_rand(&seed)));
+            points.push_back(std::make_pair(randomPoint, static_cast<float>(mt_rand(&seed))));
           }        
         }
         num -= 1.0;

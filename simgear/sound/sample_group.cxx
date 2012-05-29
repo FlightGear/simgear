@@ -134,7 +134,7 @@ void SGSampleGroup::update( double dt ) {
     for ( ; sample_current != sample_end; ++sample_current ) {
         SGSoundSample *sample = sample_current->second;
 
-        if ( !sample->is_valid_source() && sample->is_playing() ) {
+        if ( !sample->is_valid_source() && sample->is_playing() && !sample->test_out_of_range()) {
             //
             // a request to start playing a sound has been filed.
             //

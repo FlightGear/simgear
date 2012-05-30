@@ -183,8 +183,10 @@ SGLightAnimation::install(osg::Node& node)
             if (grp != 0) {
                 for (size_t i=0; i<grp->getNumChildren(); ++i) {
                     geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
-                    if (geode)
+                    if (geode) {
+                        geode->setNodeMask( simgear::MODELLIGHT_BIT );
                         geode->setEffect(effect);
+                    }
                 }
             }
         }
@@ -226,8 +228,10 @@ SGLightAnimation::install(osg::Node& node)
             if (grp != 0) {
                 for (size_t i=0; i<grp->getNumChildren(); ++i) {
                     geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
-                    if (geode)
+                    if (geode) {
+                        geode->setNodeMask( simgear::MODELLIGHT_BIT );
                         geode->setEffect(effect);
+                    }
                 }
             }
         }

@@ -447,7 +447,6 @@ sgLoad3DModel_internal(const SGPath& path,
 
     PropertyList effect_nodes = props->getChildren("effect");
     PropertyList animation_nodes = props->getChildren("animation");
-    PropertyList light_nodes = props->getChildren("light");
     // Some material animations (eventually all) are actually effects.
     makeEffectAnimations(animation_nodes, effect_nodes);
     {

@@ -485,8 +485,11 @@ bool SGPath::rename(const SGPath& newName)
 
 std::string SGPath::realpath() const
 {
-#ifdef _WIN32
+#if defined(_WIN32) || (defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1050)
     // Not implemented for Windows yet. Return original path instead.
+
+    // Workaround for Mac OS 10.5. Somehow fgfs crashes on Mac at ::realpath. 
+    // simply returning path works on Mac since absolute path is passed from the GUI launcher
     return path;
 #else
     char* buf = ::realpath(path.c_str(), NULL);

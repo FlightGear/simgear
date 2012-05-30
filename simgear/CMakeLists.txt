@@ -11,7 +11,6 @@ foreach( mylibfolder
         misc
         nasal
         props
-        route
         serial
         structure
         threads

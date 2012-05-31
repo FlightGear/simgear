@@ -198,9 +198,10 @@ void makeEffectAnimations(PropertyList& animation_nodes,
 }
 }
 
-class SGSetNodeMaskVisitor : public osg::NodeVisitor {
+namespace simgear {
+class SetNodeMaskVisitor : public osg::NodeVisitor {
 public:
-    SGSetNodeMaskVisitor(osg::Node::NodeMask nms, osg::Node::NodeMask nmc) :
+    SetNodeMaskVisitor(osg::Node::NodeMask nms, osg::Node::NodeMask nmc) :
         osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN), nodeMaskSet(nms), nodeMaskClear(nmc)
     {}
     virtual void apply(osg::Geode& node) {
@@ -211,6 +212,7 @@ private:
     osg::Node::NodeMask nodeMaskSet;
     osg::Node::NodeMask nodeMaskClear;
 };
+}
 
 static osg::Node *
 sgLoad3DModel_internal(const SGPath& path,
@@ -311,6 +313,9 @@ sgLoad3DModel_internal(const SGPath& path,
         // but introducing new data for velocities.
         UserDataCopyVisitor userDataCopyVisitor;
         model->accept(userDataCopyVisitor);
+
+        SetNodeMaskVisitor setNodeMaskVisitor(0, simgear::MODELLIGHT_BIT);
+        model->accept(setNodeMaskVisitor);
     }
     model->setName(modelpath.str());
 
@@ -455,8 +460,6 @@ sgLoad3DModel_internal(const SGPath& path,
         group = static_cast<Group*>(modelWithEffects.get());
     }
 
-    SGSetNodeMaskVisitor snmv(0, simgear::MODELLIGHT_BIT);
-    group->accept(snmv);
     for (unsigned i = 0; i < animation_nodes.size(); ++i)
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,

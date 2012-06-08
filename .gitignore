@@ -1,5 +1,4 @@
 Makefile
-INSTALL
 SimGear.spec
 *.o
 lib*.a

@@ -66,17 +66,7 @@ SGSampleGroup::~SGSampleGroup ()
 {
     _active = false;
 
-    sample_map_iterator sample_current = _samples.begin();
-    sample_map_iterator sample_end = _samples.end();
-    for ( ; sample_current != sample_end; ++sample_current ) {
-        SGSoundSample *sample = sample_current->second;
-
-        if ( sample->is_valid_source() && sample->is_playing() ) {
-            sample->no_valid_source();
-            _smgr->release_source( sample->get_source() );
-            _smgr->release_buffer( sample );
-        }
-    }
+    this->stop();
 
     _smgr = 0;
 }

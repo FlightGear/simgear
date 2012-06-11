@@ -38,6 +38,7 @@
 #include <simgear/debug/logstream.hxx>
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>
@@ -239,7 +240,10 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 std::string absName = osgDB::findDataFile(name, opt.get());
                 proxyNode->setFileName(0, absName);
                 if (SGPath(absName).lower_extension() == "ac")
+                {
+                    proxyNode->setNodeMask( ~simgear::MODELLIGHT_BIT );
                     opt->setInstantiateEffects(true);
+                }
                 else
                     opt->setInstantiateEffects(false);
                 proxyNode->setDatabaseOptions(opt.get());
@@ -261,6 +265,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 else
                     opt->setInstantiateEffects(false);
                 node = osgDB::readRefNodeFile(absName, opt.get());
+                if (SGPath(absName).lower_extension() == "ac")
+                    node->setNodeMask( ~simgear::MODELLIGHT_BIT );
                 
                 if (!node.valid()) {
                     SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName

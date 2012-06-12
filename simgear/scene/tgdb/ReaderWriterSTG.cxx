@@ -60,6 +60,19 @@ static SGBucket bucketIndexFromFileName(const std::string& fileName)
   return SGBucket(index);
 }
 
+static bool hasOptionalValue(sg_gzifstream &in)
+{
+    while ( (in.peek() != '\n') && (in.peek() != '\r')
+            && isspace(in.peek()) ) {
+        in.get();
+    }
+    if ( isdigit(in.peek()) || (in.peek() == '-') ){
+        return true;
+    } else {
+        return false;
+    }
+}
+
 ReaderWriterSTG::ReaderWriterSTG()
 {
     supportsExtension("stg", "SimGear stg database format");
@@ -287,12 +300,7 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 matrix.preMultRotate(osg::Quat(SGMiscd::deg2rad(hdg),
                                                osg::Vec3(0, 0, 1)));
 
-                while ( (in.peek() != '\n') && (in.peek() != '\r') &&
-                        (in.peek() != '-')  && isspace(in.peek()) ) {
-                   in.get();
-                }
-
-                if (isdigit(in.peek()) || (in.peek() == '-')){
+                if ( hasOptionalValue(in) ){
                     double pitch(0.0), roll(0.0);
                     in >> pitch >> roll;
 

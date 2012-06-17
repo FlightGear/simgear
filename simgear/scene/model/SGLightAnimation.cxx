@@ -74,13 +74,13 @@ public:
                     {
                         osg::Uniform* amb = pass->getUniform("Ambient");
                         if (amb)
-                            amb->set(toOsg(_ambient) * dim);
+                            amb->set(osg::Vec4f(_ambient.x() * dim, _ambient.y() * dim, _ambient.z() * dim, _ambient.w() * dim));
                         osg::Uniform* dif = pass->getUniform("Diffuse");
                         if (dif)
-                            dif->set(toOsg(_diffuse) * dim);
+                            dif->set(osg::Vec4f(_diffuse.x() * dim, _diffuse.y() * dim, _diffuse.z() * dim, _diffuse.w() * dim));
                         osg::Uniform* spe = pass->getUniform("Specular");
                         if (spe)
-                            spe->set(toOsg(_specular) * dim);
+                            spe->set(osg::Vec4f(_specular.x() * dim, _specular.y() * dim, _specular.z() * dim, _specular.w() * dim));
                     }
                 }
             }

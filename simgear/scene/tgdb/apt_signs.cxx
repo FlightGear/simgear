@@ -373,7 +373,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                     n = n.substr(0, 2);
                 }
                 if (n == "@Y") {
-                    if (size < 3) {
+                    if (size <= 3) {
                         sign_height = HT[size < 0 ? 3 : size];
                         newmat = "YellowSign";
                         newtype = 'Y';
@@ -381,7 +381,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                     }
 
                 } else if (n == "@R") {
-                    if (size < 3) {
+                    if (size <= 3) {
                         sign_height = HT[size < 0 ? 3 : size];
                         newmat = "RedSign";
                         newtype = 'R';
@@ -389,7 +389,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                     }
 
                 } else if (n == "@L") {
-                    if (size < 3) {
+                    if (size <= 3) {
                         sign_height = HT[size < 0 ? 3 : size];
                         newmat = "FramedSign";
                         newtype = 'L';

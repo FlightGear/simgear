@@ -65,9 +65,7 @@ SGSampleGroup::SGSampleGroup ( SGSoundMgr *smgr, const string &refname ) :
 SGSampleGroup::~SGSampleGroup ()
 {
     _active = false;
-
-    this->stop();
-
+    stop();
     _smgr = 0;
 }
 

@@ -130,6 +130,11 @@ bool SGCloudField::reposition( const SGVec3f& p, const SGVec3f& up, double lon, 
             ++itr) {
               
              osg::ref_ptr<osg::PositionAttitudeTransform> pat = itr->second;
+            
+             if (pat == 0) {
+                continue;
+             }
+             
              osg::Vec3f currpos = field_transform->getPosition() + fta * pat->getPosition();
                                       
              // Determine the vector from the new position to the cloud in cloud-space.
@@ -367,7 +372,7 @@ void SGCloudField::addCloudToTree(osg::ref_ptr<osg::PositionAttitudeTransform> t
         
 bool SGCloudField::deleteCloud(int identifier) {
     osg::ref_ptr<osg::PositionAttitudeTransform> transform = cloud_hash[identifier];
-    if (transform == NULL) return false;
+    if (transform == 0) return false;
         
     removeCloudFromTree(transform);
     cloud_hash.erase(identifier);

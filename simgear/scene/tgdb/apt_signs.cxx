@@ -373,36 +373,44 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                     n = n.substr(0, 2);
                 }
                 if (n == "@Y") {
-                    if (size < 4) {
-                        sign_height = HT[size < 0 ? 3 : size];
-                        newmat = "YellowSign";
-                        newtype = 'Y';
-                        continue;
+                    if (size > 3) {
+                        size = -1;
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
                     }
+                    sign_height = HT[size < 0 ? 3 : size];
+                    newmat = "YellowSign";
+                    newtype = 'Y';
+                    continue;
 
                 } else if (n == "@R") {
-                    if (size < 4) {
-                        sign_height = HT[size < 0 ? 3 : size];
-                        newmat = "RedSign";
-                        newtype = 'R';
-                        continue;
+                    if (size > 3) {
+                        size = -1;
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
                     }
+                    sign_height = HT[size < 0 ? 3 : size];
+                    newmat = "RedSign";
+                    newtype = 'R';
+                    continue;
 
                 } else if (n == "@L") {
-                    if (size < 4) {
-                        sign_height = HT[size < 0 ? 3 : size];
-                        newmat = "FramedSign";
-                        newtype = 'L';
-                        continue;
+                    if (size > 3) {
+                        size = -1;
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
                     }
+                    sign_height = HT[size < 0 ? 3 : size];
+                    newmat = "FramedSign";
+                    newtype = 'L';
+                    continue;
 
                 } else if (n == "@B") {
-                    if (size < 0 || size == 4 || size == 5) {
-                        sign_height = HT[size < 0 ? 4 : size];
-                        newmat = "BlackSign";
-                        newtype = 'B';
-                        continue;
+                    if ( (size != -1) && (size != 4) && (size != 5) ) {
+                        size = -1;
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 4 or 5");
                     }
+                    sign_height = HT[size < 0 ? 4 : size];
+                    newmat = "BlackSign";
+                    newtype = 'B';
+                    continue;
                 }
             }
 

@@ -113,7 +113,7 @@ public:
 
     /**
      * Register a sample group to the sound manager.
-     * @para sgrp Pointer to a sample group to add
+     * @param sgrp Pointer to a sample group to add
      * @param refname Reference name of the sample group
      * @return true if successful, false otherwise
      */
@@ -250,7 +250,7 @@ public:
     inline bool has_changed() { return _changed; }
 
     /**
-     * Some implementations seem to need the velocity miltyplied by a
+     * Some implementations seem to need the velocity multiplied by a
      * factor of 100 to make them distinct. I've not found if this is
      * a problem in the implementation or in out code. Until then
      * this function is used to detect the problematic implementations.

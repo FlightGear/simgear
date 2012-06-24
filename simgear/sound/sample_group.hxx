@@ -145,7 +145,7 @@ public:
     void resume();
 
     /**
-     * Request to start playing the refered audio sample.
+     * Request to start playing the referred audio sample.
      * @param refname Reference name of the audio sample to start playing
      * @param looping Define if the sound should loop continuously
      * @return true if the audio sample exsists and is scheduled for playing
@@ -153,7 +153,7 @@ public:
     bool play( const string& refname, bool looping );
     
     /**
-     * Request to start playing the refered audio sample looping.
+     * Request to start playing the referred audio sample looping.
      * @param refname Reference name of the audio sample to start playing
      * @return true if the audio sample exsists and is scheduled for playing
      */
@@ -162,9 +162,9 @@ public:
     }
 
     /**
-     * Request to start playing the refered audio sample once.
+     * Request to start playing the referred audio sample once.
      * @param refname Reference name of the audio sample to start playing
-     * @return true if the audio sample exsists and is scheduled for playing
+     * @return true if the audio sample exists and is scheduled for playing
      */
     inline bool play_once( const string& refname ) {
         return play( refname, false );
@@ -178,7 +178,7 @@ public:
     bool is_playing( const string& refname );
 
     /**
-     * Request to stop playing the refered audio sample.
+     * Request to stop playing the referred audio sample.
      * @param refname Reference name of the audio sample to stop
      * @return true if the audio sample exists and is scheduled to stop
      */

@@ -60,12 +60,12 @@ else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
-option(SIMGEAR_SHARED "Set to ON to build SimGear as a shared library/framework" OFF)
+option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
-option(JPEG_FACTORY "Enable JPEG-factory support" OFF)
-option(ENABLE_LIBSVN "Set to ON to build SimGear with libsvnclient support" ON)
-option(ENABLE_RTI "Set to ON to build SimGear with RTI support" OFF)
-option(ENABLE_TESTS "Set to OFF to disable building SimGear's test applications" ON)
+option(JPEG_FACTORY     "Enable JPEG-factory support" OFF)
+option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" ON)
+option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
+option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
@@ -104,7 +104,7 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
   message(STATUS "BOOST_ROOT is ${BOOST_ROOT}")
   set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
   set (ALUT_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
-  set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib) 
+  set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
 endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
 find_package(Boost REQUIRED)
@@ -114,8 +114,9 @@ find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
 
 if(SIMGEAR_HEADLESS)
-    message(STATUS "headless mode")
+    message(STATUS "SimGear mode: HEADLESS")
 else()
+    message(STATUS "SimGear mode: NORMAL")
     find_package(OpenGL REQUIRED)
     find_package(OpenAL REQUIRED)
     find_package(ALUT REQUIRED)
@@ -123,21 +124,28 @@ else()
 endif(SIMGEAR_HEADLESS)
 
 if(JPEG_FACTORY)
-    message(STATUS "JPEG-factory enabled")
+    message(STATUS "JPEG-factory: ENABLED")
     find_package(JPEG REQUIRED)
     include_directories(${JPEG_INCLUDE_DIR})
+else()
+    message(STATUS "JPEG-factory: DISABLED")
 endif(JPEG_FACTORY)
 
 if(ENABLE_LIBSVN)
-	find_package(SvnClient)
+    find_package(SvnClient)
 
-	if(LIBSVN_FOUND)
-		message(STATUS "libsvn found, enabling in SimGear")
-		set(HAVE_SVN_CLIENT_H 1)
-		set(HAVE_LIBSVN_CLIENT_1 1)
-	else()
-		message(STATUS "Missing libsvn, unable to enable SVN in SimGear")
-	endif(LIBSVN_FOUND)
+    if(LIBSVN_FOUND)
+        message(STATUS "Subversion client support: ENABLED")
+        set(HAVE_SVN_CLIENT_H 1)
+        set(HAVE_LIBSVN_CLIENT_1 1)
+    else()
+        # Oops. ENABLE_LIBSVN is ON, but svn is still missing.
+        # Provide clearly visible warning/hint, so builders know what else they should install (or disable).
+        message(WARNING "Failed to enable subversion client support. Unable to find required subversion client library. Some features may not be available (scenery download).")
+        message(WARNING "Install 'libsvn' library/DLL (libsvn-devel/libsvnclient/...). Otherwise disable subversion support (set 'ENABLE_LIBSVN' to 'OFF').")
+    endif(LIBSVN_FOUND)
+else()
+    message(STATUS "Subversion client support: DISABLED")
 endif(ENABLE_LIBSVN)
 
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -146,8 +154,11 @@ check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(windows.h HAVE_WINDOWS_H)
 
 if(ENABLE_RTI)
-# See if we have any rti library variant installed
+    # See if we have any rti library variant installed
+    message(STATUS "RTI: ENABLED")
     find_package(RTI)
+else()
+    message(STATUS "RTI: DISABLED")
 endif(ENABLE_RTI)
 
 check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
@@ -256,10 +267,13 @@ configure_file (
 )
 
 if(ENABLE_TESTS)
-# enable CTest / make test target
+    # enable CTest / make test target
+    message(STATUS "Tests: ENABLED")
 
-include (Dart)
-enable_testing()
+    include (Dart)
+        enable_testing()
+else()
+    message(STATUS "Tests: DISABLED")
 endif(ENABLE_TESTS)
 
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
@@ -274,4 +288,3 @@ CONFIGURE_FILE(
   IMMEDIATE @ONLY)
 ADD_CUSTOM_TARGET(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
-

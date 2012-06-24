@@ -39,7 +39,7 @@ set(HEADERS compiler.h constants.h sg_inlines.h ${PROJECT_BINARY_DIR}/simgear/ve
 install (FILES ${HEADERS}  DESTINATION include/simgear/)
 
 if(SIMGEAR_SHARED)
-    message(STATUS "building shared library")
+    message(STATUS "Library building mode: SHARED LIBRARIES")
     get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
     get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
     get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
@@ -87,5 +87,7 @@ if(SIMGEAR_SHARED)
         install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
+else()
+    message(STATUS "Library building mode: STATIC LIBRARIES")
 endif(SIMGEAR_SHARED)
 

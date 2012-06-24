@@ -46,32 +46,29 @@ static EffectMap lightEffectMap;
 
 class SGLightAnimation::UpdateCallback : public osg::NodeCallback {
 public:
-    UpdateCallback(string k, const SGExpressiond* v, SGVec4d a, SGVec4d d, SGVec4d s) :
-        _key(k),
+    UpdateCallback(const SGExpressiond* v, SGVec4d a, SGVec4d d, SGVec4d s) :
         _ambient(a),
         _diffuse(d),
         _specular(s),
         _animationValue(v)
     {
-        _prev_values[k] = -1;
+        _prev_value = -1;
     }
     virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
     {
         double dim = _animationValue->getValue();
-        if (dim != _prev_values[_key]) {
-            _prev_values[_key] = dim;
+        if (dim != _prev_value) {
+            _prev_value = dim;
+            simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>( node );
+            if (geode != 0) {
+                osg::ref_ptr<simgear::Effect> effect = geode->getEffect();
 
-            osg::ref_ptr<simgear::Effect> effect;
-            EffectMap::iterator iter = lightEffectMap.find(_key);
-            if (iter != lightEffectMap.end() && iter->second.lock(effect)) {
                 SGPropertyNode* params = effect->parametersProp;
                 params->getNode("ambient")->setValue(_ambient * dim);
                 params->getNode("diffuse")->setValue(_diffuse * dim);
                 params->getNode("specular")->setValue(_specular * dim);
-                BOOST_FOREACH(osg::ref_ptr<simgear::Technique>& technique, effect->techniques)
-                {
-                    BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes)
-                    {
+                BOOST_FOREACH(osg::ref_ptr<simgear::Technique>& technique, effect->techniques) {
+                    BOOST_FOREACH(osg::ref_ptr<simgear::Pass>& pass, technique->passes) {
                         osg::Uniform* amb = pass->getUniform("Ambient");
                         if (amb)
                             amb->set(osg::Vec4f(_ambient.x() * dim, _ambient.y() * dim, _ambient.z() * dim, _ambient.w() * dim));
@@ -88,16 +85,12 @@ public:
         traverse(node, nv);
     }
 public:
-    string _key;
     SGVec4d _ambient;
     SGVec4d _diffuse;
     SGVec4d _specular;
     SGSharedPtr<SGExpressiond const> _animationValue;
-
-    typedef std::map<string, double> PrevValueMap;
-    static PrevValueMap _prev_values;
+    double _prev_value;
 };
-SGLightAnimation::UpdateCallback::PrevValueMap SGLightAnimation::UpdateCallback::_prev_values;
 
 SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
                                    SGPropertyNode* modelRoot,
@@ -130,8 +123,6 @@ SGLightAnimation::createAnimationGroup(osg::Group& parent)
 {
     osg::Group* grp = new osg::Group;
     grp->setName("light animation node");
-    if (_animationValue.valid())
-        grp->setUpdateCallback(new UpdateCallback(_key, _animationValue, _ambient, _diffuse, _specular));
     parent.addChild(grp);
     grp->setNodeMask( simgear::MODELLIGHT_BIT );
     return grp;
@@ -142,12 +133,17 @@ SGLightAnimation::install(osg::Node& node)
 {
     SGAnimation::install(node);
 
-    if (_light_type == "spot") {
+    bool cacheEffect = false;
+    osg::ref_ptr<simgear::Effect> effect;
+    EffectMap::iterator iter = lightEffectMap.end();
+    if (!_animationValue.valid()) { // Effects with animated properties should be singletons
+        iter = lightEffectMap.find(_key);
+        cacheEffect = true;
+    }
 
-        osg::ref_ptr<simgear::Effect> effect;
-        EffectMap::iterator iter = lightEffectMap.find(_key);
-        if (iter == lightEffectMap.end() || !iter->second.lock(effect)) {
-            SGPropertyNode_ptr effectProp = new SGPropertyNode;
+    if (iter == lightEffectMap.end() || !iter->second.lock(effect)) {
+        SGPropertyNode_ptr effectProp = new SGPropertyNode;
+        if (_light_type == "spot") {
             makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-spot");
             double dim = 1.0;
@@ -166,37 +162,8 @@ SGLightAnimation::install(osg::Node& node)
             params->getNode("cosCutoff",true)->setValue( cos(_cutoff*SG_DEGREES_TO_RADIANS) );
             params->getNode("near",true)->setValue(_near);
             params->getNode("far",true)->setValue(_far);
-
-            effect = simgear::makeEffect(effectProp, true);
-            if (iter==lightEffectMap.end())
-                lightEffectMap.insert(EffectMap::value_type(_key, effect));
-            else
-                iter->second = effect;
-        } else {
-            effect = iter->second.get();
         }
-
-        node.setNodeMask( simgear::MODELLIGHT_BIT );
-        simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
-        if (geode == 0) {
-            osg::Group* grp = node.asGroup();
-            if (grp != 0) {
-                for (size_t i=0; i<grp->getNumChildren(); ++i) {
-                    geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
-                    if (geode) {
-                        geode->setNodeMask( simgear::MODELLIGHT_BIT );
-                        geode->setEffect(effect);
-                    }
-                }
-            }
-        }
-    }
-    else if (_light_type == "point") {
-
-        osg::ref_ptr<simgear::Effect> effect;
-        EffectMap::iterator iter = lightEffectMap.find(_key);
-        if (iter == lightEffectMap.end() || !iter->second.lock(effect)) {
-            SGPropertyNode_ptr effectProp = new SGPropertyNode;
+        else if (_light_type == "point") {
             makeChild(effectProp, "name")->setStringValue(_key);
             makeChild(effectProp, "inherits-from")->setStringValue("Effects/light-point");
             double dim = 1.0;
@@ -211,29 +178,34 @@ SGLightAnimation::install(osg::Node& node)
             params->getNode("attenuation",true)->setValue(_attenuation);
             params->getNode("near",true)->setValue(_near);
             params->getNode("far",true)->setValue(_far);
-
-            effect = simgear::makeEffect(effectProp, true);
-            if (iter==lightEffectMap.end())
-                lightEffectMap.insert(EffectMap::value_type(_key, effect));
-            else
-                iter->second = effect;
         } else {
-            effect = iter->second.get();
+            return;
         }
 
-        node.setNodeMask( simgear::MODELLIGHT_BIT );
-        simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
-        if (geode == 0) {
-            osg::Group* grp = node.asGroup();
-            if (grp != 0) {
-                for (size_t i=0; i<grp->getNumChildren(); ++i) {
-                    geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
-                    if (geode) {
-                        geode->setNodeMask( simgear::MODELLIGHT_BIT );
-                        geode->setEffect(effect);
-                    }
+        effect = simgear::makeEffect(effectProp, true);
+        if (iter == lightEffectMap.end() && cacheEffect)
+            lightEffectMap.insert(EffectMap::value_type(_key, effect));
+        else if (cacheEffect)
+            iter->second = effect;
+    } else {
+        effect = iter->second.get();
+    }
+
+    node.setNodeMask( simgear::MODELLIGHT_BIT );
+    simgear::EffectGeode* geode = dynamic_cast<simgear::EffectGeode*>(&node);
+    if (geode == 0) {
+        osg::Group* grp = node.asGroup();
+        if (grp != 0) {
+            for (size_t i=0; i<grp->getNumChildren(); ++i) {
+                geode = dynamic_cast<simgear::EffectGeode*>(grp->getChild(i));
+                if (geode) {
+                    geode->setNodeMask( simgear::MODELLIGHT_BIT );
+                    geode->setEffect(effect);
                 }
             }
         }
     }
+
+    if (geode != 0 && _animationValue.valid())
+        geode->setUpdateCallback(new UpdateCallback(_animationValue, _ambient, _diffuse, _specular));
 }

@@ -4,6 +4,7 @@ set(HEADERS
     GroundLightManager.hxx
     ReaderWriterSPT.hxx
     ReaderWriterSTG.hxx
+    SGBuildingBin.hxx
     SGDirectionalLightBin.hxx
     SGLightBin.hxx
     SGModelBin.hxx

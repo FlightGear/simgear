@@ -43,6 +43,7 @@
 #include <simgear/scene/material/matlib.hxx>
 
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
+#include <simgear/scene/util/SGNodeMasks.hxx>
 
 using namespace simgear;
 // Ocean tile with curvature and apron to hide cracks. The cracks are
@@ -336,6 +337,7 @@ osg::Node* SGOceanTile(const SGBucket& b, SGMaterialLib *matlib, int latPoints, 
     transform->setMatrix(osg::Matrix::rotate(toOsg(hlOr))*
                          osg::Matrix::translate(toOsg(cartCenter)));
     transform->addChild(geode);
-  
+    transform->setNodeMask( ~simgear::MODELLIGHT_BIT );
+
     return transform;
 }

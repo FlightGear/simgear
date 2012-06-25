@@ -1167,7 +1167,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     if (forestNode.valid())  objectLOD->addChild(forestNode.get(), 0, 20000);
     if (buildingNode.valid()) objectLOD->addChild(buildingNode.get(), 0, 20000);
     
-    unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECIEVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
+    unsigned nodeMask = SG_NODEMASK_CASTSHADOW_BIT | SG_NODEMASK_RECEIVESHADOW_BIT | SG_NODEMASK_TERRAIN_BIT;
     objectLOD->setNodeMask(nodeMask);
     transform->addChild(objectLOD);
   }

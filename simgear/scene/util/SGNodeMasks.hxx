@@ -31,7 +31,7 @@
 /// If set, cast shadows
 #define SG_NODEMASK_CASTSHADOW_BIT     simgear::CASTSHADOW_BIT
 /// If set, cast recieves shadows
-#define SG_NODEMASK_RECIEVESHADOW_BIT  simgear::RECEIVESHADOW_BIT
+#define SG_NODEMASK_RECEIVESHADOW_BIT  simgear::RECEIVESHADOW_BIT
 #define SG_NODEMASK_GUI_BIT            simgear::GUI_BIT
 #define SG_NODEMASK_2DPANEL_BIT        simgear::PANEL2D_BIT
 /// If set, the node is pickable

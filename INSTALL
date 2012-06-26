@@ -24,7 +24,34 @@ use:
     make
     sudo make install
 
-Further information:
-* README.cmake and README.msvc files of the FlightGear package
-* http://wiki.flightgear.org/Building_Flightgear
+
+Build Dependencies
+==================
+SimGear depends on a number of 3rd party libraries, the most notable
+being:
+
+* OpenSceneGraph (OSG) - see README.OSG
+* Portable Games Library (PLIB) - see README.plib
+* zlib compression library - see README.zlib
+* Open Audio Library (OpenAL) - see README.OpenAL
+* Subversion Client Library (optional dependency)
+
+
+Further information
+===================
+* README.cmake
+  for more detailed CMake instructions
+
+* README.msvc
+  in the FlightGear source package for more Windows-specific instructions
+
+* FlightGear Wiki
+  http://wiki.flightgear.org/Building_Flightgear
+
+* FlightGear Forums
+  For help on building see: http://www.flightgear.org/forums
+  => Support/Compiling
+
+* FlightGear Mailing lists
+  http://wiki.flightgear.org/index.php/Mailing_list
 

@@ -378,7 +378,6 @@ SGAnimation::SGAnimation(const SGPropertyNode* configNode,
 {
   _name = configNode->getStringValue("name", "");
   _enableHOT = configNode->getBoolValue("enable-hot", true);
-  _disableShadow = configNode->getBoolValue("disable-shadow", false);
   std::vector<SGPropertyNode_ptr> objectNames =
     configNode->getChildren("object-name");
   for (unsigned i = 0; i < objectNames.size(); ++i)
@@ -501,10 +500,6 @@ SGAnimation::install(osg::Node& node)
     node.setNodeMask( SG_NODEMASK_TERRAIN_BIT | node.getNodeMask());
   else
     node.setNodeMask(~SG_NODEMASK_TERRAIN_BIT & node.getNodeMask());
-  if (!_disableShadow)
-    node.setNodeMask( SG_NODEMASK_CASTSHADOW_BIT | node.getNodeMask());
-  else
-    node.setNodeMask(~SG_NODEMASK_CASTSHADOW_BIT & node.getNodeMask());
 }
 
 osg::Group*
@@ -1825,12 +1820,13 @@ osg::Group*
 SGShadowAnimation::createAnimationGroup(osg::Group& parent)
 {
   SGSharedPtr<SGCondition const> condition = getCondition();
-  if (!condition)
-    return 0;
 
   osg::Group* group = new osg::Group;
   group->setName("shadow animation");
-  group->setUpdateCallback(new UpdateCallback(condition));
+  if (condition)
+    group->setUpdateCallback(new UpdateCallback(condition));
+  else
+    group->setNodeMask(~SG_NODEMASK_CASTSHADOW_BIT & group->getNodeMask());
   parent.addChild(group);
   return group;
 }

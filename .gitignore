@@ -1,5 +1,4 @@
 Makefile
-SimGear.spec
 *.o
 lib*.a
 .*.swp

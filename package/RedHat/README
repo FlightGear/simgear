@@ -1,0 +1,13 @@
+Building a SimGear RPM package for Red Hat
+
+Please see the "package/openSUSE" directory for an
+example how to build a SimGear RPM package with
+shared SimGear libraries.
+
+You may need to adapt the names (exact spelling) of some
+of the package dependencies in the openSUSE RPM spec,
+since these may slightly differ for Red Hat.
+
+(If you have a working and tested Red Hat RPM spec,
+you're welcome to contribute it to this project.)
+

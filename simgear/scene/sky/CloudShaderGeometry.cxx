@@ -167,9 +167,10 @@ void CloudShaderGeometry::generateGeometry()
     
     // Create front and back polygons so we don't need to screw around
     // with two-sided lighting in the shader.
-    osg::Vec3Array& v = *(new osg::Vec3Array(4 * numsprites));
-    osg::Vec4Array& c = *(new osg::Vec4Array(4 * numsprites));
-    osg::Vec2Array& t = *(new osg::Vec2Array(4 * numsprites));
+    osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
+    osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+    osg::ref_ptr<osg::Vec2Array> t = new osg::Vec2Array;
     
     int idx = 0;
 
@@ -182,46 +183,47 @@ void CloudShaderGeometry::generateGeometry()
         float ch = 0.5f * iter->height;        
         
         // Create the vertices
-        v[4*idx  ].set(0.0f, -cw, -ch);
-        v[4*idx+1].set(0.0f,  cw, -ch);
-        v[4*idx+2].set(0.0f,  cw, ch);
-        v[4*idx+3].set(0.0f, -cw, ch);
+        v->push_back(osg::Vec3(0.0f, -cw, -ch));
+        v->push_back(osg::Vec3(0.0f,  cw, -ch));
+        v->push_back(osg::Vec3(0.0f,  cw, ch));
+        v->push_back(osg::Vec3(0.0f, -cw, ch));
         
+        // The normals aren't actually used in lighting,
+        // but we set them per vertex as this is more
+        // efficient than an overall binding on some
+        // graphics cards.
+        n->push_back(osg::Vec3(1.0f, -1.0f, -1.0f));
+        n->push_back(osg::Vec3(1.0f,  1.0f, -1.0f));
+        n->push_back(osg::Vec3(1.0f,  1.0f,  1.0f));
+        n->push_back(osg::Vec3(1.0f, -1.0f,  1.0f));
+
         // Set the texture coords for each vertex
         // from the texture index, and the number
         // of textures in the image    
         int x = iter->texture_index_x;
         int y = iter->texture_index_y;
         
-        t[4*idx  ].set( (float) x       / varieties_x, (float) y / varieties_y);
-        t[4*idx+1].set( (float) (x + 1) / varieties_x, (float) y / varieties_y);
-        t[4*idx+2].set( (float) (x + 1) / varieties_x, (float) (y + 1) / varieties_y);
-        t[4*idx+3].set( (float) x       / varieties_x, (float) (y + 1) / varieties_y);
-
+        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) y / varieties_y));
+        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) y / varieties_y));
+        t->push_back(osg::Vec2( (float) (x + 1) / varieties_x, (float) (y + 1) / varieties_y));
+        t->push_back(osg::Vec2( (float) x       / varieties_x, (float) (y + 1) / varieties_y));
+        
         // The color isn't actually use in lighting, but instead to indicate the center of rotation
-        c[4*idx  ].set(iter->position.x(), iter->position.y(), iter->position.z(), zscale);
-        c[4*idx+1].set(iter->position.x(), iter->position.y(), iter->position.z(), zscale);
-        c[4*idx+2].set(iter->position.x(), iter->position.y(), iter->position.z(), zscale);
-        c[4*idx+3].set(iter->position.x(), iter->position.y(), iter->position.z(), zscale);
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
+        c->push_back(osg::Vec4(iter->position.x(), iter->position.y(), iter->position.z(), zscale));
         
         idx++;      
     }
     
     //Quads now created, add it to the geometry.
     osg::Geometry* geom = new osg::Geometry;
-    geom->setVertexArray(&v);
-    geom->setTexCoordArray(0, &t);
-    
-    // The normal isn't actually use in lighting, so we simply bind overall.
-    osg::Vec3Array& n = *(new osg::Vec3Array(4));
-    n[0].set(1.0f, -1.0f, -1.0f);
-    n[1].set(1.0f,  1.0f, -1.0f);
-    n[2].set(1.0f,  1.0f,  1.0f);
-    n[3].set(1.0f, -1.0f,  1.0f);
-    
-    geom->setNormalArray(&n);
-    geom->setNormalBinding(Geometry::BIND_OVERALL);
-    geom->setColorArray(&c);
+    geom->setVertexArray(v);
+    geom->setTexCoordArray(0, t);
+    geom->setNormalArray(n);
+    geom->setNormalBinding(Geometry::BIND_PER_VERTEX);
+    geom->setColorArray(c);
     geom->setColorBinding(Geometry::BIND_PER_VERTEX);
     geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,numsprites*4));
     _geometry = geom;

@@ -136,7 +136,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         tpath.append(tname);
         string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
         if (fullTexPath.empty()) {
-            tpath = SGPath("Textures");
+            tpath.set("Textures");
             tpath.append(tname);
             fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
             if (fullTexPath.empty()) {
@@ -173,7 +173,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             tpath.append(tname);
             string fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
             if (fullTexPath.empty()) {
-                tpath = SGPath("Textures");
+                tpath.set("Textures");
                 tpath.append(tname);
                 fullTexPath = SGModelLib::findDataFile(tpath.str(), options);
                 if (fullTexPath.empty() ) {
@@ -217,7 +217,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             string fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
 
             if (fullMaskPath.empty()) {
-                ompath = SGPath("Textures");
+                ompath.set("Textures");
                 ompath.append(omname);
                 fullMaskPath = SGModelLib::findDataFile(ompath.str(), options);
             }
@@ -332,7 +332,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
             tree_texture = SGModelLib::findDataFile(treePath.str(), options);
 
             if (tree_texture.empty()) {
-                treePath = SGPath("Textures");
+                treePath.set("Textures");
                 treePath.append(treeTexPath);
                 tree_texture = SGModelLib::findDataFile(treePath.str(), options);
             }

@@ -79,10 +79,10 @@ void addBuildingToLeafGeode(Geode* geode, const SGBuildingBin::Building& buildin
       
       // Get or create geometry.
       osg::ref_ptr<osg::Geometry> geom;
-      osg::Vec3Array* v = new osg::Vec3Array;
-      osg::Vec2Array* t = new osg::Vec2Array;
-      osg::Vec4Array* c = new osg::Vec4Array; // single value
-      osg::Vec3Array* n = new osg::Vec3Array;            
+      osg::Vec3Array* v;
+      osg::Vec2Array* t;
+      osg::Vec4Array* c;
+      osg::Vec3Array* n;
       
       if (geode->getNumDrawables() == 0) {
         geom = new osg::Geometry;        

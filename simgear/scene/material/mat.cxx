@@ -238,8 +238,11 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
                     if (dds[i] != dds_mask) {
                         // Texture format does not match mask format. This is relevant for
                         // the object mask, as DDS textures have an origin at the bottom
-                        // left rather than top left, therefore we flip the object mask
-                        // vertically.
+                        // left rather than top left. Therefore we flip a copy of the image
+                        // (otherwise a second reference to the object mask would flip it
+                        // back!).                
+                        SG_LOG(SG_GENERAL, SG_DEBUG, "Flipping object mask" << omname);  
+                        image = (osg::Image* ) image->clone(osg::CopyOp::SHALLOW_COPY);
                         image->flipVertical();
                     }
 

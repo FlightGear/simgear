@@ -797,9 +797,11 @@ SGPropertyNode::alias (SGPropertyNode * target)
   else
   if (_type == props::ALIAS)
   {
+    if (_value.alias == target)
+        return true; // ok, identical alias requested
     SG_LOG(SG_GENERAL, SG_ALERT,
            "Failed to create alias at " << target->getPath() << ". "
-           "Source "<< getPath() << " is also an alias. Unsupported recursion.");
+           "Source "<< getPath() << " is already aliasing another property.");
   }
   else
   if (_tied)

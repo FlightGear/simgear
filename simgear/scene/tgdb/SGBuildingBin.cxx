@@ -619,8 +619,8 @@ osg::Group* createRandomBuildings(SGBuildingBinList buildings, const osg::Matrix
             params->getChild("texture", 0, true)->getChild("image", 0, true)
                 ->setStringValue(bin->texture);
 
-            // Light map - n=1
-            params->getChild("texture", 1, true)->getChild("image", 0, true)
+            // Light map - n=3
+            params->getChild("texture", 3, true)->getChild("image", 0, true)
                 ->setStringValue(bin->lightMap);
                 
             effect = makeEffect(effectProp, true, options);

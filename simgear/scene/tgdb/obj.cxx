@@ -553,12 +553,12 @@ struct SGTileGeometryBin {
         float b = mt_rand(&seed) * stepv1;
 
         // Place an object each unit of area
-        while ( num > 1.0 ) {
+        while (num > 1.0) {
 
           // Set the next location to place a building          
           a += stepv0;
           
-          if ( a + b > 1.0f ) {
+          if ((a + b) > 1.0f) {
             // Reached the end of the scan-line on v0. Reset and increment
             // scan-line on v1
             a = mt_rand(&seed) * stepv0;
@@ -567,8 +567,15 @@ struct SGTileGeometryBin {
           
           if (b > 1.0f) {
             // In a degenerate case of a single point, we might be outside the 
-            // scanline.
-            b = mt_rand(&seed) * stepv1;
+            // scanline.  Note that we need to still ensure that a+b < 1.
+            b = mt_rand(&seed) * stepv1 * (1.0f - a);
+          }
+          
+          if ((a + b) > 1.0f ) {
+            // Truly degenerate case - simply choose a random point guaranteed
+            // to fulfil the constraing of a+b < 1.
+            a = mt_rand(&seed);
+            b = mt_rand(&seed) * (1.0f - a);
           }
           
           SGVec3f randomPoint = vorigin + a*v0 + b*v1;

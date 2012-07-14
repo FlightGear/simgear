@@ -47,6 +47,7 @@
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
+#include <simgear/scene/util/RenderConstants.hxx>
 
 #include <algorithm>
 #include <osg/BlendFunc>
@@ -248,6 +249,7 @@ osg::ref_ptr<EffectGeode> SGNewCloud::genCloud() {
     geode->addDrawable(sg);
     geode->setName("3D cloud");
     geode->setEffect(effect.get());
+    geode->setNodeMask( ~simgear::MODELLIGHT_BIT );
     
     return geode;
 }

@@ -114,6 +114,7 @@ osg::Group* Particles::getCommonRoot()
         commonGeode.get()->setName("common particle system geode");
         commonRoot.get()->addChild(commonGeode.get());
         commonRoot.get()->addChild(psu.get());
+        commonRoot->setNodeMask( ~simgear::MODELLIGHT_BIT );
     }
     return commonRoot.get();
 }

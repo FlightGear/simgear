@@ -80,7 +80,7 @@ osg::Group* SGPrecipitation::build(void)
         group->addChild(_precipitationEffect.get());
     }
 
-    group->setNodeMask( ~simgear::CASTSHADOW_BIT );
+    group->setNodeMask( ~(simgear::CASTSHADOW_BIT | simgear::MODELLIGHT_BIT) );
 
     return group;
 }

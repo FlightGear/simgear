@@ -44,7 +44,8 @@ enum NodeMask {
     // Everything else that isn't terrain. Initially for clouds;
     // eventually for other models?
     MODEL_BIT = (1 << 12),
-    MODELLIGHT_BIT = (1 << 13)
+    MODELLIGHT_BIT = (1 << 13),
+    PERMANENTLIGHT_BIT = (1 << 14)
 };
 
 // Theory of bin numbering:

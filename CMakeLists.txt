@@ -13,6 +13,14 @@ string(STRIP ${versionFile} SIMGEAR_VERSION)
 # use simgear version also as the SO version (if building SOs)
 SET(SIMGEAR_SOVERSION ${SIMGEAR_VERSION})
 
+# Warning when build is not an out-of-source build.
+string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" InSourceBuild)
+if(InSourceBuild)
+    message(WARNING  "Avoid building inside the source tree!")
+    message(WARNING  "Create a separate build directory instead (i.e. 'sgbuild') and call CMake from there: ")
+    message(WARNING  "  mkdir ../sgbuild && cd ../sgbuild && cmake ${CMAKE_SOURCE_DIR}")
+endif(InSourceBuild)
+
 #packaging
 SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
 SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <functional>
 
+#include <OpenThreads/Atomic>
 #include <OpenThreads/Mutex>
 #include <OpenThreads/ReentrantMutex>
 #include <OpenThreads/ScopedLock>
@@ -42,6 +43,7 @@
 #include <simgear/props/props.hxx>
 #include <simgear/structure/SGBinding.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
+#include <simgear/scene/material/EffectCullVisitor.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
@@ -722,59 +724,128 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of rotate/spin animation
 ////////////////////////////////////////////////////////////////////////
 
-class SGRotateAnimation::UpdateCallback : public osg::NodeCallback {
+//Cull callback
+class RotAnimCallback : public osg::NodeCallback
+{
 public:
-  UpdateCallback(SGCondition const* condition,
-                 SGExpressiond const* animationValue) :
-    _condition(condition),
-    _animationValue(animationValue)
-  { }
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    if (!_condition || _condition->test()) {
-      SGRotateTransform* transform;
-      transform = static_cast<SGRotateTransform*>(node);
-      transform->setAngleDeg(_animationValue->getValue());
-    }
-    traverse(node, nv);
-  }
+      RotAnimCallback(SGCondition const* condition,
+                      SGExpressiond const* animationValue,
+                      double initialValue = 0.0) :
+          _condition(condition),
+          _animationValue(animationValue),
+          _initialValue(initialValue),
+          _lastValue(0.0)
+    { }
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 public:
-  SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGExpressiond const> _animationValue;
+    SGSharedPtr<SGCondition const> _condition;
+    SGSharedPtr<SGExpressiond const> _animationValue;
+    double _initialValue;
+    double _lastValue;
 };
 
-class SGRotateAnimation::SpinUpdateCallback : public osg::NodeCallback {
+void RotAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    using namespace osg;
+    SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
+    EffectCullVisitor* cv = dynamic_cast<EffectCullVisitor*>(nv);
+
+    if (!cv)
+        return;
+    double angle = 0.0;
+    if (!_condition || _condition->test()) {
+        angle = _animationValue->getValue() - _initialValue;
+        _lastValue = angle;
+    } else {
+        angle = _lastValue;
+    }
+    const SGVec3d& sgcenter = transform->getCenter();
+    const SGVec3d& sgaxis = transform->getAxis();
+    Matrixd mat = Matrixd::translate(-sgcenter[0], -sgcenter[1], -sgcenter[2])
+        * Matrixd::rotate(SGMiscd::deg2rad(angle), sgaxis[0], sgaxis[1], sgaxis[2])
+        * Matrixd::translate(sgcenter[0], sgcenter[1], sgcenter[2])
+        * *cv->getModelViewMatrix();
+    ref_ptr<RefMatrix> refmat = new RefMatrix(mat);
+    cv->pushModelViewMatrix(refmat.get(), transform->getReferenceFrame());
+    traverse(transform, nv);
+    cv->popModelViewMatrix();
+}
+
+// Cull callback
+class SpinAnimCallback : public osg::NodeCallback {
 public:
-  SpinUpdateCallback(SGCondition const* condition,
-                     SGExpressiond const* animationValue) :
+    SpinAnimCallback(SGCondition const* condition,
+                       SGExpressiond const* animationValue,
+          double initialValue = 0.0) :
     _condition(condition),
     _animationValue(animationValue),
-    _lastTime(-1)
-  { }
-  virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-  {
-    if (!_condition || _condition->test()) {
-      SGRotateTransform* transform;
-      transform = static_cast<SGRotateTransform*>(node);
-
-      double t = nv->getFrameStamp()->getReferenceTime();
-      double dt = 0;
-      if (0 <= _lastTime)
-        dt = t - _lastTime;
-      _lastTime = t;
-      double velocity_rpms = _animationValue->getValue()/60;
-      double angle = transform->getAngleDeg();
-      angle += dt*velocity_rpms*360;
-      angle -= 360*floor(angle/360);
-      transform->setAngleDeg(angle);
-    }
-    traverse(node, nv);
-  }
+    _initialValue(initialValue)
+    {}
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
 public:
-  SGSharedPtr<SGCondition const> _condition;
-  SGSharedPtr<SGExpressiond const> _animationValue;
-  double _lastTime;
+    SGSharedPtr<SGCondition const> _condition;
+    SGSharedPtr<SGExpressiond const> _animationValue;
+    double _initialValue;
+protected:
+    // This cull callback can run in different threads if there is
+    // more than one camera. It is probably safe to overwrite the
+    // reference values in multiple threads, but we'll provide a
+    // threadsafe way to manage those values just to be safe.
+    struct ReferenceValues {
+        ReferenceValues(double t, double rot, double vel)
+            : _time(t), _rotation(rot), _rotVelocity(vel)
+        {
+        }
+        double _time;
+        double _rotation;
+        double _rotVelocity;
+    };
+    OpenThreads::AtomicPtr _referenceValues;
 };
+
+void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
+{
+    using namespace osg;
+    SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
+    EffectCullVisitor* cv = dynamic_cast<EffectCullVisitor*>(nv);
+    if (!cv)
+        return;
+    if (!_condition || _condition->test()) {
+        double t = nv->getFrameStamp()->getReferenceTime();
+        double rps = _animationValue->getValue() / 60.0;
+        ReferenceValues* refval = static_cast<ReferenceValues*>(_referenceValues.get());
+        if (!refval || refval->_rotVelocity != rps) {
+            ReferenceValues* newref = 0;
+            if (!refval) {
+                // initialization
+                newref = new ReferenceValues(t, 0.0, rps);
+            } else {
+                double newRot = refval->_rotation + (t - refval->_time) * refval->_rotVelocity;
+                newref = new ReferenceValues(t, newRot, rps);
+            }
+            if (_referenceValues.assign(newref, refval)) {
+                delete refval;
+            }
+            refval = newref;
+        }
+        double rotation = refval->_rotation + (t - refval->_time) * rps;
+        double intPart;
+        double rot = modf(rotation, &intPart);
+        double angle = rot * 2.0 * osg::PI;
+        const SGVec3d& sgcenter = transform->getCenter();
+        const SGVec3d& sgaxis = transform->getAxis();
+        Matrixd mat = Matrixd::translate(-sgcenter[0], -sgcenter[1], -sgcenter[2])
+            * Matrixd::rotate(angle, sgaxis[0], sgaxis[1], sgaxis[2])
+            * Matrixd::translate(sgcenter[0], sgcenter[1], sgcenter[2])
+            * *cv->getModelViewMatrix();
+        ref_ptr<RefMatrix> refmat = new RefMatrix(mat);
+        cv->pushModelViewMatrix(refmat.get(), transform->getReferenceFrame());
+        traverse(transform, nv);
+        cv->popModelViewMatrix();
+    } else {
+        traverse(transform, nv);
+    }
+}
 
 SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
                                      SGPropertyNode* modelRoot) :
@@ -792,7 +863,6 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
     _initialValue = _animationValue->getValue();
   else
     _initialValue = 0;
-
   _center = SGVec3d::zeros();
   if (configNode->hasValue("axis/x1-m")) {
     SGVec3d v1, v2;
@@ -823,12 +893,12 @@ SGRotateAnimation::createAnimationGroup(osg::Group& parent)
   SGRotateTransform* transform = new SGRotateTransform;
   transform->setName("rotate animation");
   if (_isSpin) {
-    SpinUpdateCallback* uc;
-    uc = new SpinUpdateCallback(_condition, _animationValue);
-    transform->setUpdateCallback(uc);
+    SpinAnimCallback* cc;
+    cc = new SpinAnimCallback(_condition, _animationValue, _initialValue);
+    transform->setCullCallback(cc);
   } else if (_animationValue || !_animationValue->isConst()) {
-    UpdateCallback* uc = new UpdateCallback(_condition, _animationValue);
-    transform->setUpdateCallback(uc);
+      RotAnimCallback* cc = new RotAnimCallback(_condition, _animationValue, _initialValue);
+      transform->setCullCallback(cc);
   }
   transform->setCenter(_center);
   transform->setAxis(_axis);

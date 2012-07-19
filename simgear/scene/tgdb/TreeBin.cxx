@@ -35,6 +35,7 @@
 #include <osg/Math>
 #include <osg/MatrixTransform>
 #include <osg/Matrix>
+#include <osg/NodeVisitor>
 
 #include <osgDB/ReadFile>
 #include <osgDB/FileUtils>
@@ -281,6 +282,42 @@ struct TreeTransformer
     Matrix mat;
 };
 
+// We may end up with a quadtree with many empty leaves. One might say
+// that we should avoid constructing the leaves in the first place,
+// but this node visitor tries to clean up after the fact.
+
+struct QuadTreeCleaner : public osg::NodeVisitor
+{
+    QuadTreeCleaner() : NodeVisitor(NodeVisitor::TRAVERSE_ALL_CHILDREN)
+    {
+    }
+    void apply(LOD& lod)
+    {
+        for (int i  = lod.getNumChildren() - 1; i >= 0; --i) {
+            EffectGeode* geode = dynamic_cast<EffectGeode*>(lod.getChild(i));
+            if (!geode)
+                continue;
+            bool geodeEmpty = true;
+            for (unsigned j = 0; j < geode->getNumDrawables(); ++j) {
+                const Geometry* geom = dynamic_cast<Geometry*>(geode->getDrawable(j));
+                if (!geom) {
+                    geodeEmpty = false;
+                    break;
+                }
+                for (unsigned k = 0; k < geom->getNumPrimitiveSets(); k++) {
+                    const PrimitiveSet* ps = geom->getPrimitiveSet(k);
+                    if (ps->getNumIndices() > 0) {
+                        geodeEmpty = false;
+                        break;
+                    }
+                }
+            }
+            if (geodeEmpty)
+                lod.removeChildren(i, 1);
+        }
+    }
+};
+
 // This actually returns a MatrixTransform node. If we rotate the whole
 // forest into the local Z-up coordinate system we can reuse the
 // primitive tree geometry for all the forests of the same type.
@@ -342,8 +379,10 @@ osg::Group* createForest(SGTreeBinList& forestList, const osg::Matrix& transform
     }
     
     forestList.clear();
-    
+    QuadTreeCleaner cleaner;
+    mt->accept(cleaner);
     return mt;
 }
+
 
 }

@@ -314,7 +314,9 @@ OptimizeModelPolicy::OptimizeModelPolicy(const string& extension) :
     _osgOptions(Optimizer::SHARE_DUPLICATE_STATE
                 | Optimizer::MERGE_GEOMETRY
                 | Optimizer::FLATTEN_STATIC_TRANSFORMS
-                | Optimizer::TRISTRIP_GEOMETRY)
+                | Optimizer::INDEX_MESH
+                | Optimizer::VERTEX_POSTTRANSFORM
+                | Optimizer::VERTEX_PRETRANSFORM)
 {
 }
 

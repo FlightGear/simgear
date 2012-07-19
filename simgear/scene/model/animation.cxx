@@ -657,7 +657,9 @@ public:
                  SGExpressiond const* animationValue) :
     _condition(condition),
     _animationValue(animationValue)
-  { }
+  {
+      setName("SGTranslateAnimation::UpdateCallback");
+  }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (!_condition || _condition->test()) {
@@ -921,6 +923,7 @@ public:
     _animationValue[0] = animationValue[0];
     _animationValue[1] = animationValue[1];
     _animationValue[2] = animationValue[2];
+    setName("SGScaleAnimation::UpdateCallback");
   }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
@@ -1443,7 +1446,9 @@ public:
     _maxAnimationValue(maxAnimationValue),
     _minStaticValue(minValue),
     _maxStaticValue(maxValue)
-  {}
+  {
+      setName("SGRangeAnimation::UpdateCallback");
+  }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     osg::LOD* lod = static_cast<osg::LOD*>(node);
@@ -1699,7 +1704,9 @@ public:
   UpdateCallback(const SGPropertyNode* configNode, const SGExpressiond* v) :
     _prev_value(-1),
     _animationValue(v)
-  { }
+  {
+      setName("SGBlendAnimation::UpdateCallback");
+  }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     double blend = _animationValue->getValue();
@@ -1778,6 +1785,7 @@ public:
                                        rNode->getDoubleValue( "max", 1));
       }
     }
+    setName("SGTimedAnimation::UpdateCallback");
   }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
@@ -1866,7 +1874,9 @@ class SGShadowAnimation::UpdateCallback : public osg::NodeCallback {
 public:
   UpdateCallback(const SGCondition* condition) :
     _condition(condition)
-  {}
+  {
+      setName("SGShadowAnimation::UpdateCallback");
+  }
   virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
   {
     if (_condition->test())
@@ -1959,7 +1969,9 @@ class SGTexTransformAnimation::UpdateCallback :
 public:
   UpdateCallback(const SGCondition* condition) :
     _condition(condition)
-  { }
+  {
+      setName("SGTexTransformAnimation::UpdateCallback");
+  }
   virtual void operator () (osg::StateAttribute* sa, osg::NodeVisitor*)
   {
     if (!_condition || _condition->test()) {

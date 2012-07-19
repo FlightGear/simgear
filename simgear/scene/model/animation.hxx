@@ -136,8 +136,6 @@ public:
                     SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
 private:
-  class UpdateCallback;
-  class SpinUpdateCallback;
   SGSharedPtr<const SGCondition> _condition;
   SGSharedPtr<const SGExpressiond> _animationValue;
   SGVec3d _axis;

@@ -755,16 +755,6 @@ HLAFederate::processMessages()
 }
 
 bool
-HLAFederate::tick(const double& minimum, const double& maximum)
-{
-    if (!_rtiFederate.valid()) {
-        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
-        return false;
-    }
-    return _rtiFederate->processMessages(minimum, maximum);
-}
-
-bool
 HLAFederate::readObjectModelTemplate(const std::string& objectModel,
                                      HLAFederate::ObjectModelFactory& objectModelFactory)
 {

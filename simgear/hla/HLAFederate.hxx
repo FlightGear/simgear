@@ -162,9 +162,6 @@ public:
     /// a pending time advance is granted.
     bool processMessages();
 
-    /// Legacy tick call - deprecated
-    bool tick(const double& minimum, const double& maximum);
-
     class ObjectModelFactory {
     public:
         virtual ~ObjectModelFactory()

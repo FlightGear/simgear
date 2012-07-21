@@ -23,8 +23,6 @@ set(HLA_HEADERS
     HLAPropertyDataElement.hxx
     HLARawDataElement.hxx
     HLATypes.hxx
-    HLAVariantDataElement.hxx
-    HLAVariantDataType.hxx
     HLAVariantRecordDataElement.hxx
     HLAVariantRecordDataType.hxx
     )

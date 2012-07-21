@@ -96,24 +96,32 @@ HLAAbstractFixedRecordDataElement::setDataType(const HLAFixedRecordDataType* dat
 unsigned
 HLAAbstractFixedRecordDataElement::getNumFields() const
 {
+    if (!_dataType.valid())
+        return 0;
     return _dataType->getNumFields();
 }
 
 unsigned
 HLAAbstractFixedRecordDataElement::getFieldNumber(const std::string& name) const
 {
+    if (!_dataType.valid())
+        return ~0u;
     return _dataType->getFieldNumber(name);
 }
 
 const HLADataType*
 HLAAbstractFixedRecordDataElement::getFieldDataType(unsigned i) const
 {
+    if (!_dataType.valid())
+        return 0;
     return _dataType->getFieldDataType(i);
 }
 
 const HLADataType*
 HLAAbstractFixedRecordDataElement::getFieldDataType(const std::string& name) const
 {
+    if (!_dataType.valid())
+        return 0;
     return getFieldDataType(getFieldNumber(name));
 }
 
@@ -127,6 +135,15 @@ HLAFixedRecordDataElement::HLAFixedRecordDataElement(const HLAFixedRecordDataTyp
 HLAFixedRecordDataElement::~HLAFixedRecordDataElement()
 {
     clearStamp();
+}
+
+bool
+HLAFixedRecordDataElement::setDataType(const HLADataType* dataType)
+{
+    if (!HLAAbstractFixedRecordDataElement::setDataType(dataType))
+        return false;
+    _fieldVector.resize(getNumFields());
+    return true;
 }
 
 bool

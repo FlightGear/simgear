@@ -58,6 +58,8 @@ public:
     HLAFixedRecordDataElement(const HLAFixedRecordDataType* dataType);
     virtual ~HLAFixedRecordDataElement();
 
+    virtual bool setDataType(const HLADataType* dataType);
+
     virtual bool decodeField(HLADecodeStream& stream, unsigned i);
     virtual bool encodeField(HLAEncodeStream& stream, unsigned i) const;
 

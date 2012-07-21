@@ -95,6 +95,7 @@ private:                                                                      \
 };
 
 
+TYPED_HLA_BASIC_DATA_ELEMENT(Bool, bool);
 TYPED_HLA_BASIC_DATA_ELEMENT(Char, char);
 TYPED_HLA_BASIC_DATA_ELEMENT(WChar, wchar_t);
 TYPED_HLA_BASIC_DATA_ELEMENT(SChar, signed char);

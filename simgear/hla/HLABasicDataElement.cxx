@@ -134,6 +134,7 @@ HLA##type##DataElement::setValue(ctype value)                                   
     setDirty(true);                                                                               \
 }
 
+IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(Bool, bool);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(Char, char);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(WChar, wchar_t);
 IMPLEMENT_TYPED_HLA_BASIC_DATA_ELEMENT(SChar, signed char);

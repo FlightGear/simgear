@@ -229,6 +229,11 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
 
     osg::ref_ptr<osgDB::Options> localOptions;
     localOptions = static_cast<osgDB::Options*>(options->clone(osg::CopyOp()));
+    // FIXME:
+    // The particle systems have nodes with culling disabled.
+    // PagedLOD nodes with childnodes like this will never expire.
+    // So, for now switch them off.
+    localOptions->setPluginStringData("SimGear::PARTICLESYSTEM", "OFF");
     pagedLOD->setDatabaseOptions(localOptions.get());
         
     float range;

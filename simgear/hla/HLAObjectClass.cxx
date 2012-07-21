@@ -299,19 +299,10 @@ HLAObjectClass::stopRegistration() const
 HLAObjectInstance*
 HLAObjectClass::createObjectInstance(const std::string& name)
 {
-    HLAObjectInstance* objectInstance = createObjectInstance();
-    if (objectInstance)
-        return objectInstance;
     SGSharedPtr<HLAFederate> federate = _federate.lock();
     if (!federate.valid())
         return 0;
     return federate->createObjectInstance(this, name);
-}
-
-HLAObjectInstance*
-HLAObjectClass::createObjectInstance()
-{
-    return 0;
 }
 
 void

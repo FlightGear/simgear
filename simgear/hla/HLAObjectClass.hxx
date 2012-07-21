@@ -120,7 +120,6 @@ public:
 
     /// Create a new instance of this class.
     virtual HLAObjectInstance* createObjectInstance(const std::string& name);
-    virtual HLAObjectInstance* createObjectInstance(); // deprecated
 
 private:
     HLAObjectClass(const HLAObjectClass&);

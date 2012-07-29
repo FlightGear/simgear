@@ -162,28 +162,6 @@ public:
     /// a pending time advance is granted.
     bool processMessages();
 
-    class ObjectModelFactory {
-    public:
-        virtual ~ObjectModelFactory()
-        { }
-
-        virtual HLAObjectClass* createObjectClass(const std::string& name, HLAFederate& federate)
-        { return federate.createObjectClass(name); }
-        virtual bool subscribeObjectClass(const std::string& objectClassName, const std::string& sharing)
-        { return sharing.find("Subscribe") != std::string::npos; }
-        virtual bool publishObjectClass(const std::string& objectClassName, const std::string& sharing)
-        { return sharing.find("Publish") != std::string::npos; }
-        virtual bool subscribeAttribute(const std::string& objectClassName, const std::string& attributeName, const std::string& sharing)
-        { return sharing.find("Subscribe") != std::string::npos; }
-        virtual bool publishAttribute(const std::string& objectClassName, const std::string& attributeName, const std::string& sharing)
-        { return sharing.find("Publish") != std::string::npos; }
-
-    };
-
-    /// Read an omt xml file - deprecated
-    bool readObjectModelTemplate(const std::string& objectModel,
-                                 ObjectModelFactory& objectModelFactory);
-
     /// Read an rti1.3 omt xml file
     bool readRTI13ObjectModelTemplate(const std::string& objectModel);
     /// Read an rti1516 omt xml file

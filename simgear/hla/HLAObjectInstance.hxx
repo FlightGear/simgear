@@ -127,25 +127,6 @@ public:
     const SGSharedPtr<ReflectCallback>& getReflectCallback() const
     { return _reflectCallback; }
 
-    // deprecated.
-    class AttributeCallback : public SGReferenced {
-    public:
-        virtual ~AttributeCallback() {}
-        virtual void updateAttributeValues(HLAObjectInstance& objectInstance, const RTIData& tag)
-        { }
-        virtual void reflectAttributeValues(HLAObjectInstance& objectInstance,
-                                            const RTIIndexDataPairList& dataPairList, const RTIData& tag)
-        { }
-        virtual void reflectAttributeValues(HLAObjectInstance& objectInstance, const RTIIndexDataPairList& dataPairList,
-                                            const SGTimeStamp& timeStamp, const RTIData& tag)
-        { reflectAttributeValues(objectInstance, dataPairList, tag); }
-    };
-
-    void setAttributeCallback(const SGSharedPtr<AttributeCallback>& attributeCallback)
-    { _attributeCallback = attributeCallback; }
-    const SGSharedPtr<AttributeCallback>& getAttributeCallback() const
-    { return _attributeCallback; }
-
 private:
     void _setRTIObjectInstance(RTIObjectInstance* rtiObjectInstance);
     void _clearRTIObjectInstance();
@@ -192,7 +173,6 @@ private:
     // Callback classes
     SGSharedPtr<UpdateCallback> _updateCallback;
     SGSharedPtr<ReflectCallback> _reflectCallback;
-    SGSharedPtr<AttributeCallback> _attributeCallback;
 
     friend class HLAFederate;
     friend class HLAObjectClass;

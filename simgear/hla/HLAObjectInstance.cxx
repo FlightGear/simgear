@@ -492,8 +492,6 @@ HLAObjectInstance::deleteInstance(const RTIData& tag)
 void
 HLAObjectInstance::updateAttributeValues(const RTIData& tag)
 {
-    if (_attributeCallback.valid())
-        _attributeCallback->updateAttributeValues(*this, tag);
     if (_updateCallback.valid()) {
         _updateCallback->updateAttributeValues(*this, tag);
     } else {
@@ -505,8 +503,6 @@ HLAObjectInstance::updateAttributeValues(const RTIData& tag)
 void
 HLAObjectInstance::updateAttributeValues(const SGTimeStamp& timeStamp, const RTIData& tag)
 {
-    if (_attributeCallback.valid())
-        _attributeCallback->updateAttributeValues(*this, tag);
     if (_updateCallback.valid()) {
         _updateCallback->updateAttributeValues(*this, timeStamp, tag);
     } else {
@@ -668,16 +664,6 @@ HLAObjectInstance::_reflectAttributeValues(const HLAIndexList& indexList, const 
 {
     if (_reflectCallback.valid()) {
         _reflectCallback->reflectAttributeValues(*this, indexList, tag);
-    } else if (_attributeCallback.valid()) {
-        reflectAttributeValues(indexList, tag);
-
-        RTIIndexDataPairList dataPairList;
-        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
-            dataPairList.push_back(RTIIndexDataPair());
-            dataPairList.back().first = *i;
-            getAttributeData(*i, dataPairList.back().second);
-        }
-        _attributeCallback->reflectAttributeValues(*this, dataPairList, tag);
     } else {
         reflectAttributeValues(indexList, tag);
     }
@@ -688,16 +674,6 @@ HLAObjectInstance::_reflectAttributeValues(const HLAIndexList& indexList, const 
 {
     if (_reflectCallback.valid()) {
         _reflectCallback->reflectAttributeValues(*this, indexList, timeStamp, tag);
-    } else if (_attributeCallback.valid()) {
-        reflectAttributeValues(indexList, timeStamp, tag);
-
-        RTIIndexDataPairList dataPairList;
-        for (HLAIndexList::const_iterator i = indexList.begin(); i != indexList.end(); ++i) {
-            dataPairList.push_back(RTIIndexDataPair());
-            dataPairList.back().first = *i;
-            getAttributeData(*i, dataPairList.back().second);
-        }
-        _attributeCallback->reflectAttributeValues(*this, dataPairList, timeStamp, tag);
     } else {
         reflectAttributeValues(indexList, timeStamp, tag);
     }

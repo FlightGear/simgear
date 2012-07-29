@@ -54,8 +54,6 @@ public:
     virtual const HLAArrayDataType* toArrayDataType() const;
     virtual const HLAEnumeratedDataType* toEnumeratedDataType() const;
     virtual const HLAFixedRecordDataType* toFixedRecordDataType() const;
-    /// deprecated
-    const HLAVariantRecordDataType* toVariantDataType() const { return toVariantRecordDataType(); }
     virtual const HLAVariantRecordDataType* toVariantRecordDataType() const;
 
     /// Recompute the alignment value of this data type.

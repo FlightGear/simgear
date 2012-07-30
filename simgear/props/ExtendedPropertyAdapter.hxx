@@ -46,7 +46,7 @@ public:
         if (_elements.size() < num_components)
             throw sg_exception();
         for (int i = 0; i < num_components; ++i)
-            result[i] = _elements[i]->getValue<double>();
+            result[i] = _elements[i]->template getValue<double>();
         return result;
     }
     void set(const T& val)

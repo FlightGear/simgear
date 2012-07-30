@@ -108,7 +108,7 @@ public:
 // conversion operators
   operator T () const
   {
-    return getOrThrow()->getValue<T>();
+    return getOrThrow()->template getValue<T>();
   }
 
   T operator=(const T& aValue)

@@ -195,7 +195,7 @@ void findAttr(const effect::EffectPropertyMap<T>& pMap,
 {
     using namespace effect;
     typename EffectPropertyMap<T>::BMap::iterator itr
-        = pMap._map.get<from>().find(name);
+        = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end()) {
         throw effect::BuilderException(string("findAttr: could not find attribute ")
                                + string(name));
@@ -233,7 +233,7 @@ const T* findAttr(const effect::EffectPropertyMap<T>& pMap,
 {
     using namespace effect;
     typename EffectPropertyMap<T>::BMap::iterator itr
-        = pMap._map.get<from>().find(name);
+        = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end())
         return 0;
     else 
@@ -267,8 +267,8 @@ std::string findName(const effect::EffectPropertyMap<T>& pMap, T value)
     using namespace effect;
     std::string result;
     typename EffectPropertyMap<T>::BMap::template index_iterator<to>::type itr
-        = pMap._map.get<to>().find(value);
-    if (itr != pMap._map.get<to>().end())
+        = pMap._map.template get<to>().find(value);
+    if (itr != pMap._map.template get<to>().end())
         result = itr->first;
     return result;
 }

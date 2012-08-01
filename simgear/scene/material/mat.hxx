@@ -484,6 +484,9 @@ private:
   
   // Condition, indicating when this material is active
   SGSharedPtr<const SGCondition> condition;
+  
+  // Parameters from the materials file
+  const SGPropertyNode* parameters;
 
   ////////////////////////////////////////////////////////////////////
   // Internal constructors and methods.

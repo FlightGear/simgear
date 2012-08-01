@@ -387,6 +387,13 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
         if (name)
             glyphs[name] = new SGMaterialGlyph(glyph_nodes[i]);
     }
+    
+    // Read parameters entry, which is passed into the effect
+    if (props->hasChild("parameters")) {
+        parameters = props->getChild("parameters");
+    } else {
+        parameters = new SGPropertyNode();
+    }
 
     // Read conditions node
     const SGPropertyNode *conditionNode = props->getChild("condition");
@@ -481,7 +488,10 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
     ref_ptr<SGMaterialUserData> user = new SGMaterialUserData(this);
     SGPropertyNode_ptr propRoot = new SGPropertyNode();
     makeChild(propRoot, "inherits-from")->setStringValue(effect);
+    
     SGPropertyNode* paramProp = makeChild(propRoot, "parameters");
+    copyProperties(parameters, paramProp);
+    
     SGPropertyNode* materialProp = makeChild(paramProp, "material");
     makeChild(materialProp, "ambient")->setValue(SGVec4d(ambient));
     makeChild(materialProp, "diffuse")->setValue(SGVec4d(diffuse));

@@ -72,51 +72,6 @@ using namespace simgear;
 ////////////////////////////////////////////////////////////////////////
 
 /**
- * Set up the transform matrix for a spin or rotation.
- */
-static void
-set_rotation (osg::Matrix &matrix, double position_deg,
-              const SGVec3d &center, const SGVec3d &axis)
-{
-  double temp_angle = -SGMiscd::deg2rad(position_deg);
-  
-  double s = sin(temp_angle);
-  double c = cos(temp_angle);
-  double t = 1 - c;
-  
-  // axis was normalized at load time 
-  // hint to the compiler to put these into FP registers
-  double x = axis[0];
-  double y = axis[1];
-  double z = axis[2];
-  
-  matrix(0, 0) = t * x * x + c ;
-  matrix(0, 1) = t * y * x - s * z ;
-  matrix(0, 2) = t * z * x + s * y ;
-  matrix(0, 3) = 0;
-  
-  matrix(1, 0) = t * x * y + s * z ;
-  matrix(1, 1) = t * y * y + c ;
-  matrix(1, 2) = t * z * y - s * x ;
-  matrix(1, 3) = 0;
-  
-  matrix(2, 0) = t * x * z - s * y ;
-  matrix(2, 1) = t * y * z + s * x ;
-  matrix(2, 2) = t * z * z + c ;
-  matrix(2, 3) = 0;
-  
-  // hint to the compiler to put these into FP registers
-  x = center[0];
-  y = center[1];
-  z = center[2];
-  
-  matrix(3, 0) = x - x*matrix(0, 0) - y*matrix(1, 0) - z*matrix(2, 0);
-  matrix(3, 1) = y - x*matrix(0, 1) - y*matrix(1, 1) - z*matrix(2, 1);
-  matrix(3, 2) = z - x*matrix(0, 2) - y*matrix(1, 2) - z*matrix(2, 2);
-  matrix(3, 3) = 1;
-}
-
-/**
  * Set up the transform matrix for a translation.
  */
 static void
@@ -726,51 +681,81 @@ SGTranslateAnimation::createAnimationGroup(osg::Group& parent)
 // Implementation of rotate/spin animation
 ////////////////////////////////////////////////////////////////////////
 
-//Cull callback
-class RotAnimCallback : public osg::NodeCallback
+class SGRotAnimTransform : public SGRotateTransform
 {
 public:
-      RotAnimCallback(SGCondition const* condition,
-                      SGExpressiond const* animationValue,
-                      double initialValue = 0.0) :
-          _condition(condition),
-          _animationValue(animationValue),
-          _initialValue(initialValue),
-          _lastValue(0.0)
-    { }
-    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv);
-public:
+    SGRotAnimTransform();
+    SGRotAnimTransform(const SGRotAnimTransform&,
+                       const osg::CopyOp& copyop = osg::CopyOp::SHALLOW_COPY);
+    META_Node(simgear, SGRotAnimTransform);
+    virtual bool computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                           osg::NodeVisitor* nv) const;
+    virtual bool computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                           osg::NodeVisitor* nv) const;
     SGSharedPtr<SGCondition const> _condition;
     SGSharedPtr<SGExpressiond const> _animationValue;
-    double _initialValue;
-    double _lastValue;
+    // used when condition is false
+    mutable double _lastAngle;
 };
 
-void RotAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
+SGRotAnimTransform::SGRotAnimTransform()
+    : _lastAngle(0.0)
 {
-    using namespace osg;
-    SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
-    EffectCullVisitor* cv = dynamic_cast<EffectCullVisitor*>(nv);
+}
 
-    if (!cv)
-        return;
+SGRotAnimTransform::SGRotAnimTransform(const SGRotAnimTransform& rhs,
+                                       const osg::CopyOp& copyop)
+    : SGRotateTransform(rhs, copyop), _condition(rhs._condition),
+      _animationValue(rhs._animationValue), _lastAngle(rhs._lastAngle)
+{
+}
+
+bool SGRotAnimTransform::computeLocalToWorldMatrix(osg::Matrix& matrix,
+                                                   osg::NodeVisitor* nv) const
+{
     double angle = 0.0;
     if (!_condition || _condition->test()) {
-        angle = _animationValue->getValue() - _initialValue;
-        _lastValue = angle;
+        angle = _animationValue->getValue();
+        _lastAngle = angle;
     } else {
-        angle = _lastValue;
+        angle = _lastAngle;
     }
-    const SGVec3d& sgcenter = transform->getCenter();
-    const SGVec3d& sgaxis = transform->getAxis();
-    Matrixd mat = Matrixd::translate(-sgcenter[0], -sgcenter[1], -sgcenter[2])
-        * Matrixd::rotate(SGMiscd::deg2rad(angle), sgaxis[0], sgaxis[1], sgaxis[2])
-        * Matrixd::translate(sgcenter[0], sgcenter[1], sgcenter[2])
-        * *cv->getModelViewMatrix();
-    ref_ptr<RefMatrix> refmat = new RefMatrix(mat);
-    cv->pushModelViewMatrix(refmat.get(), transform->getReferenceFrame());
-    traverse(transform, nv);
-    cv->popModelViewMatrix();
+    double angleRad = SGMiscd::deg2rad(angle);
+    if (_referenceFrame == RELATIVE_RF) {
+        // FIXME optimize
+        osg::Matrix tmp;
+        set_rotation(tmp, angleRad, getCenter(), getAxis());
+        matrix.preMult(tmp);
+    } else {
+        osg::Matrix tmp;
+        SGRotateTransform::set_rotation(tmp, angleRad, getCenter(), getAxis());
+        matrix = tmp;
+    }
+    return true;
+}
+
+bool SGRotAnimTransform::computeWorldToLocalMatrix(osg::Matrix& matrix,
+                                                   osg::NodeVisitor* nv) const
+{
+    double angle = 0.0;
+    if (!_condition || _condition->test()) {
+        angle = _animationValue->getValue();
+        _lastAngle = angle;
+    } else {
+        angle = _lastAngle;
+    }
+    double angleRad = SGMiscd::deg2rad(angle);
+    if (_referenceFrame == RELATIVE_RF) {
+        // FIXME optimize
+        osg::Matrix tmp;
+        set_rotation(tmp, -angleRad, getCenter(), getAxis());
+        matrix.postMult(tmp);
+    } else {
+        osg::Matrix tmp;
+        set_rotation(tmp, -angleRad, getCenter(), getAxis());
+        matrix = tmp;
+    }
+    return true;
 }
 
 // Cull callback
@@ -892,21 +877,28 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
 osg::Group*
 SGRotateAnimation::createAnimationGroup(osg::Group& parent)
 {
-  SGRotateTransform* transform = new SGRotateTransform;
-  transform->setName("rotate animation");
-  if (_isSpin) {
-    SpinAnimCallback* cc;
-    cc = new SpinAnimCallback(_condition, _animationValue, _initialValue);
-    transform->setCullCallback(cc);
-  } else if (_animationValue || !_animationValue->isConst()) {
-      RotAnimCallback* cc = new RotAnimCallback(_condition, _animationValue, _initialValue);
-      transform->setCullCallback(cc);
-  }
-  transform->setCenter(_center);
-  transform->setAxis(_axis);
-  transform->setAngleDeg(_initialValue);
-  parent.addChild(transform);
-  return transform;
+    if (_isSpin) {
+        SGRotateTransform* transform = new SGRotateTransform;
+        transform->setName("spin rotate animation");
+        SpinAnimCallback* cc;
+        cc = new SpinAnimCallback(_condition, _animationValue, _initialValue);
+        transform->setCullCallback(cc);
+        transform->setCenter(_center);
+        transform->setAxis(_axis);
+        transform->setAngleDeg(_initialValue);
+        parent.addChild(transform);
+        return transform;
+    } else {
+        SGRotAnimTransform* transform = new SGRotAnimTransform;
+        transform->setName("rotate animation");
+        transform->_condition = _condition;
+        transform->_animationValue = _animationValue;
+        transform->_lastAngle = _initialValue;
+        transform->setCenter(_center);
+        transform->setAxis(_axis);
+        parent.addChild(transform);
+        return transform;
+    }
 }
 
 
@@ -1956,7 +1948,8 @@ public:
   virtual void transform(osg::Matrix& matrix)
   {
     osg::Matrix tmp;
-    set_rotation(tmp, _value, _center, _axis);
+    SGRotateTransform::set_rotation(tmp, SGMiscd::deg2rad(_value), _center,
+                                    _axis);
     matrix.preMult(tmp);
   }
 private:

@@ -31,9 +31,9 @@
 
 #include "SGRotateTransform.hxx"
 
-static void
-set_rotation (osg::Matrix &matrix, double position_rad,
-              const SGVec3d &center, const SGVec3d &axis)
+void SGRotateTransform::set_rotation (osg::Matrix &matrix, double position_rad,
+                                      const SGVec3d &center,
+                                      const SGVec3d &axis)
 {
   double temp_angle = -position_rad;
   

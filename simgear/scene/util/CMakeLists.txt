@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS 
     CopyOp.hxx
+    DeletionManager.hxx
     NodeAndDrawableVisitor.hxx
 	Noise.hxx
     OsgMath.hxx
@@ -28,6 +29,7 @@ set(HEADERS
 
 set(SOURCES 
     CopyOp.cxx
+    DeletionManager.cxx
     NodeAndDrawableVisitor.cxx
 	Noise.cxx
     PrimitiveUtils.cxx

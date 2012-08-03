@@ -44,6 +44,7 @@
 #include <simgear/structure/SGBinding.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/EffectCullVisitor.hxx>
+#include <simgear/scene/util/DeletionManager.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
@@ -778,7 +779,8 @@ protected:
     // more than one camera. It is probably safe to overwrite the
     // reference values in multiple threads, but we'll provide a
     // threadsafe way to manage those values just to be safe.
-    struct ReferenceValues {
+    struct ReferenceValues : public osg::Referenced
+    {
         ReferenceValues(double t, double rot, double vel)
             : _time(t), _rotation(rot), _rotVelocity(vel)
         {
@@ -800,19 +802,31 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     if (!_condition || _condition->test()) {
         double t = nv->getFrameStamp()->getReferenceTime();
         double rps = _animationValue->getValue() / 60.0;
-        ReferenceValues* refval = static_cast<ReferenceValues*>(_referenceValues.get());
-        if (!refval || refval->_rotVelocity != rps) {
-            ReferenceValues* newref = 0;
-            if (!refval) {
+        ref_ptr<ReferenceValues>
+            refval(static_cast<ReferenceValues*>(_referenceValues.get()));
+    if (!refval || refval->_rotVelocity != rps) {
+            ref_ptr<ReferenceValues> newref;
+            if (!refval.valid()) {
                 // initialization
                 newref = new ReferenceValues(t, 0.0, rps);
             } else {
                 double newRot = refval->_rotation + (t - refval->_time) * refval->_rotVelocity;
                 newref = new ReferenceValues(t, newRot, rps);
             }
+            // increment reference pointer, because it will be stored
+            // naked in _referenceValues.
+            newref->ref();
             if (_referenceValues.assign(newref, refval)) {
-                delete refval;
+                if (refval.valid()) {
+                    DeletionManager::instance()->addStaleObject(refval.get());
+                    refval->unref();
+                }
+            } else {
+                // Another thread installed new values before us
+                newref->unref();
             }
+            // Whatever happened, we can use the reference values just
+            // calculated.
             refval = newref;
         }
         double rotation = refval->_rotation + (t - refval->_time) * rps;

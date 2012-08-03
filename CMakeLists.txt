@@ -120,7 +120,7 @@ else()
     find_package(OpenGL REQUIRED)
     find_package(OpenAL REQUIRED)
     find_package(ALUT REQUIRED)
-    find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgUtil)
+    find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)
 endif(SIMGEAR_HEADLESS)
 
 if(JPEG_FACTORY)

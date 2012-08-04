@@ -1069,7 +1069,10 @@ HLAFederate::init()
 bool
 HLAFederate::update()
 {
-    return timeAdvanceBy(_timeIncrement);
+    if (_timeIncrement <= SGTimeStamp::fromSec(0))
+        return processMessages();
+    else
+        return timeAdvanceBy(_timeIncrement);
 }
 
 bool

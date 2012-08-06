@@ -614,10 +614,10 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
-    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) {
         setter(obj, valProp->getValue<OSGParamType>());
     } else {
+        setDynamicVariance(obj);
         std::string propName = getGlobalProperty(valProp, options);
         ScalarChangeListener<OSGParamType, ObjType, F>* listener
             = new ScalarChangeListener<OSGParamType, ObjType, F>(obj, setter,
@@ -667,10 +667,10 @@ initFromParameters(Effect* effect, const SGPropertyNode* prop, ObjType* obj,
     const SGPropertyNode* valProp = getEffectPropertyNode(effect, prop);
     if (!valProp)
         return;
-    setDynamicVariance(obj);
     if (valProp->nChildren() == 0) { // Has <use>?
         setter(obj, Bridge<OSGParamType>::get(valProp->getValue<sg_type>()));
     } else {
+        setDynamicVariance(obj);
         std::vector<std::string> paramNames
             = getVectorProperties(valProp, options,numComponents, nameItr);
         if (paramNames.empty())

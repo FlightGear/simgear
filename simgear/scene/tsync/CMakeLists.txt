@@ -10,13 +10,7 @@ set(SOURCES
 
 if(LIBSVN_FOUND)
 	add_definitions(${APR_CFLAGS})
-
-	IF(APPLE)
-		set_property(SOURCE terrasync.cxx PROPERTY COMPILE_FLAGS "-iwithsysroot ${LIBSVN_INCLUDE_DIR}")
-	ELSE()
-		include_directories(${LIBSVN_INCLUDE_DIR})
-	ENDIF(APPLE)
-
+	include_directories(${LIBSVN_INCLUDE_DIR})
 endif()
 
 simgear_component(tsync scene/tsync "${SOURCES}" "${HEADERS}")

@@ -59,12 +59,7 @@ if(SIMGEAR_SHARED)
 
     if(LIBSVN_FOUND)
         add_definitions(${APR_CFLAGS})
-
-        IF(APPLE)
-            set_property(SOURCE scene/tsync/terrasync.cxx PROPERTY COMPILE_FLAGS "-iwithsysroot ${LIBSVN_INCLUDE_DIR}")
-        ELSE()
-            include_directories(${LIBSVN_INCLUDE_DIR})
-        ENDIF(APPLE)
+        include_directories(${LIBSVN_INCLUDE_DIR})
         target_link_libraries(SimGearCore ${LIBSVN_LIBRARIES})
     endif(LIBSVN_FOUND)
 

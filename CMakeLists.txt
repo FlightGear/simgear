@@ -118,9 +118,6 @@ endif (MSVC AND MSVC_3RDPARTY_ROOT)
 find_package(Boost REQUIRED)
 set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DISABLE_SERIALIZATION")
 
-find_package(ZLIB REQUIRED)
-find_package(Threads REQUIRED)
-
 if(SIMGEAR_HEADLESS)
     message(STATUS "SimGear mode: HEADLESS")
 else()
@@ -155,6 +152,9 @@ if(ENABLE_LIBSVN)
 else()
     message(STATUS "Subversion client support: DISABLED")
 endif(ENABLE_LIBSVN)
+
+find_package(ZLIB REQUIRED)
+find_package(Threads REQUIRED)
 
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)

@@ -100,6 +100,11 @@ public:
     const SGSharedPtr<InstanceCallback>& getInstanceCallback() const
     { return _instanceCallback; }
 
+    virtual void discoverInstance(HLAObjectInstance& objectInstance, const RTIData& tag);
+    virtual void removeInstance(HLAObjectInstance& objectInstance, const RTIData& tag);
+    virtual void registerInstance(HLAObjectInstance& objectInstance);
+    virtual void deleteInstance(HLAObjectInstance& objectInstance);
+
     // Is called by the default registration callback if installed
     // Should register the already known object instances of this class.
     virtual void startRegistration() const;
@@ -120,6 +125,9 @@ public:
 
     /// Create a new instance of this class.
     virtual HLAObjectInstance* createObjectInstance(const std::string& name);
+
+    virtual void createAttributeDataElements(HLAObjectInstance& objectInstance);
+    virtual HLADataElement* createAttributeDataElement(HLAObjectInstance& objectInstance, unsigned index);
 
 private:
     HLAObjectClass(const HLAObjectClass&);

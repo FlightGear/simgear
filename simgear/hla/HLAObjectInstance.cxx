@@ -443,6 +443,28 @@ HLAObjectInstance::setAttributes(const HLAAttributePathElementMap& attributePath
 }
 
 void
+HLAObjectInstance::discoverInstance(const RTIData& tag)
+{
+    HLAObjectClass* objectClass = getObjectClass().get();
+    if (!objectClass) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not discover instance of unknown object class!");
+        return;
+    }
+    objectClass->discoverInstance(*this, tag);
+}
+
+void
+HLAObjectInstance::removeInstance(const RTIData& tag)
+{
+    HLAObjectClass* objectClass = getObjectClass().get();
+    if (!objectClass) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not remove instance of unknown object class!");
+        return;
+    }
+    objectClass->removeInstance(*this, tag);
+}
+
+void
 HLAObjectInstance::registerInstance()
 {
     registerInstance(_objectClass.get());
@@ -487,6 +509,40 @@ HLAObjectInstance::deleteInstance(const RTIData& tag)
         return;
     _objectClass->_deleteInstance(*this);
     _rtiObjectInstance->deleteObjectInstance(tag);
+}
+
+void
+HLAObjectInstance::createAttributeDataElements()
+{
+    HLAObjectClass* objectClass = getObjectClass().get();
+    if (!objectClass) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not create data elements for instance of unknown object class!");
+        return;
+    }
+    objectClass->createAttributeDataElements(*this);
+}
+
+void
+HLAObjectInstance::createAndSetAttributeDataElement(unsigned index)
+{
+    if (getAttributeDataElement(index)) {
+        SG_LOG(SG_IO, SG_DEBUG, "Attribute data element for attribute \""
+               << getAttributeName(index) << "\" is already set.");
+        return;
+    }
+    SGSharedPtr<HLADataElement> dataElement = createAttributeDataElement(index);
+    setAttributeDataElement(index, dataElement);
+}
+
+HLADataElement*
+HLAObjectInstance::createAttributeDataElement(unsigned index)
+{
+    HLAObjectClass* objectClass = getObjectClass().get();
+    if (!objectClass) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not create data element for instance of unknown object class!");
+        return 0;
+    }
+    return objectClass->createAttributeDataElement(*this, index);
 }
 
 void

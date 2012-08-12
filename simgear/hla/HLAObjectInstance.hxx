@@ -77,9 +77,26 @@ public:
     void setAttribute(unsigned index, const HLAPathElementMap& pathElementMap);
     void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
+    /// Gets called on discovering this object instance.
+    virtual void discoverInstance(const RTIData& tag);
+    /// Gets called on remove this object instance.
+    virtual void removeInstance(const RTIData& tag);
+
+    /// Call this to register the object instance at the rti and assign the object class to it.
     void registerInstance();
-    void registerInstance(HLAObjectClass* objectClass);
-    void deleteInstance(const RTIData& tag);
+    virtual void registerInstance(HLAObjectClass* objectClass);
+    /// Call this to delete the object instance from the rti.
+    virtual void deleteInstance(const RTIData& tag);
+
+    /// Is called when the instance is either registered or discovered.
+    /// It creates data elements for each element that is not yet set and that has a data type attached.
+    /// the default calls back into the object class createAttributeDataElements method.
+    virtual void createAttributeDataElements();
+    /// Create and set the data element with index. Called somewhere in the above callchain.
+    void createAndSetAttributeDataElement(unsigned index);
+    /// Create an individual data element, the default calls back into the object class
+    /// createAttributeDataElement method.
+    virtual HLADataElement* createAttributeDataElement(unsigned index);
 
     // Push the current values into the RTI
     virtual void updateAttributeValues(const RTIData& tag);

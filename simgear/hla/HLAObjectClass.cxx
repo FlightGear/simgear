@@ -28,6 +28,7 @@
 #include "RTIObjectClass.hxx"
 #include "RTIObjectInstance.hxx"
 #include "HLADataType.hxx"
+#include "HLADataTypeVisitor.hxx"
 #include "HLAFederate.hxx"
 #include "HLAObjectInstance.hxx"
 
@@ -287,6 +288,34 @@ HLAObjectClass::unpublish()
 }
 
 void
+HLAObjectClass::discoverInstance(HLAObjectInstance& objectInstance, const RTIData& tag)
+{
+    if (_instanceCallback.valid())
+        _instanceCallback->discoverInstance(*this, objectInstance, tag);
+}
+
+void
+HLAObjectClass::removeInstance(HLAObjectInstance& objectInstance, const RTIData& tag)
+{
+    if (_instanceCallback.valid())
+        _instanceCallback->removeInstance(*this, objectInstance, tag);
+}
+
+void
+HLAObjectClass::registerInstance(HLAObjectInstance& objectInstance)
+{
+    if (_instanceCallback.valid())
+        _instanceCallback->registerInstance(*this, objectInstance);
+}
+
+void
+HLAObjectClass::deleteInstance(HLAObjectInstance& objectInstance)
+{
+    if (_instanceCallback.valid())
+        _instanceCallback->deleteInstance(*this, objectInstance);
+}
+
+void
 HLAObjectClass::startRegistration() const
 {
 }
@@ -303,6 +332,26 @@ HLAObjectClass::createObjectInstance(const std::string& name)
     if (!federate.valid())
         return 0;
     return federate->createObjectInstance(this, name);
+}
+
+void
+HLAObjectClass::createAttributeDataElements(HLAObjectInstance& objectInstance)
+{
+    unsigned numAttributes = getNumAttributes();
+    for (unsigned i = 0; i < numAttributes; ++i)
+        objectInstance.createAndSetAttributeDataElement(i);
+}
+
+HLADataElement*
+HLAObjectClass::createAttributeDataElement(HLAObjectInstance& objectInstance, unsigned index)
+{
+    // FIXME here we want to have a vector of factories and if this fails do the following
+    const HLADataType* dataType = getAttributeDataType(index);
+    if (!dataType)
+        return 0;
+    HLADataElementFactoryVisitor dataElementFactoryVisitor;
+    dataType->accept(dataElementFactoryVisitor);
+    return dataElementFactoryVisitor.getDataElement();
 }
 
 void
@@ -363,8 +412,8 @@ HLAObjectClass::_discoverInstance(RTIObjectInstance* rtiObjectInstance, const RT
                << rtiObjectInstance->getName() << "\" object");
         return;
     }
-    if (_instanceCallback.valid())
-        _instanceCallback->discoverInstance(*this, *objectInstance, tag);
+    objectInstance->discoverInstance(tag);
+    objectInstance->createAttributeDataElements();
 }
 
 void
@@ -376,8 +425,7 @@ HLAObjectClass::_removeInstance(HLAObjectInstance& objectInstance, const RTIData
         return;
     }
     SG_LOG(SG_NETWORK, SG_INFO, "RTI: remove object instance \"" << objectInstance.getName() << "\"");
-    if (_instanceCallback.valid())
-        _instanceCallback->removeInstance(*this, objectInstance, tag);
+    objectInstance.removeInstance(tag);
     federate->_eraseObjectInstance(objectInstance.getName());
 }
 
@@ -398,8 +446,8 @@ HLAObjectClass::_registerInstance(HLAObjectInstance* objectInstance)
                << objectInstance->getName() << "\" object");
         return;
     }
-    if (_instanceCallback.valid())
-        _instanceCallback->registerInstance(*this, *objectInstance);
+    registerInstance(*objectInstance);
+    objectInstance->createAttributeDataElements();
 }
 
 void
@@ -410,8 +458,7 @@ HLAObjectClass::_deleteInstance(HLAObjectInstance& objectInstance)
         SG_LOG(SG_NETWORK, SG_ALERT, "RTI: could not find parent federate while deleting object instance");
         return;
     }
-    if (_instanceCallback.valid())
-        _instanceCallback->deleteInstance(*this, objectInstance);
+    deleteInstance(objectInstance);
     federate->_eraseObjectInstance(objectInstance.getName());
 }
 

@@ -18,7 +18,7 @@ class Client
 public:
     Client();
     
-    void update();
+    void update(int waitTimeout = 0);
     
     void makeRequest(const Request_ptr& r);
     

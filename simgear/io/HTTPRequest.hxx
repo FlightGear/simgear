@@ -43,7 +43,25 @@ public:
         
     void setResponseLength(unsigned int l);    
     virtual unsigned int responseLength() const;
+  
+    /**
+     * Query the size of the request body. -1 (the default value) means no
+     * request body
+     */
+    virtual int requestBodyLength() const;
     
+    /**
+     * Retrieve the body data bytes. Will be passed the maximum body bytes
+     * to return in the buffer, and should update count with the actual number
+     * of bytes written. 
+     */
+    virtual void getBodyData(char* s, int& count) const;
+  
+    /**
+     * retrieve the request body content type. Default is text/plain
+     */
+    virtual std::string requestBodyType() const;
+  
     /**
      * running total of body bytes received so far. Can be used
      * to generate a completion percentage, if the response length is

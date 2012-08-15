@@ -22,6 +22,14 @@ using std::stringstream;
 using namespace simgear;
 
 const char* BODY1 = "The quick brown fox jumps over a lazy dog.";
+const char* BODY3 = "Cras ut neque nulla. Duis ut velit neque, sit amet "
+"pharetra risus. In est ligula, lacinia vitae congue in, sollicitudin at "
+"libero. Mauris pharetra pretium elit, nec placerat dui semper et. Maecenas "
+"magna magna, placerat sed luctus ac, commodo et ligula. Mauris at purus et "
+"nisl molestie auctor placerat at quam. Donec sapien magna, venenatis sed "
+"iaculis id, fringilla vel arcu. Duis sed neque nisi. Cras a arcu sit amet "
+"risus ultrices varius. Integer sagittis euismod dui id varius. Cras vel "
+"justo gravida metus.";
 
 const unsigned int body2Size = 8 * 1024;
 char body2[body2Size];
@@ -29,7 +37,7 @@ char body2[body2Size];
 #define COMPARE(a, b) \
     if ((a) != (b))  { \
         cerr << "failed:" << #a << " != " << #b << endl; \
-        cerr << "\tgot:" << a << endl; \
+        cerr << "\tgot:'" << a << "'" << endl; \
         exit(1); \
     }
 
@@ -91,6 +99,7 @@ protected:
     
     virtual void gotBodyData(const char* s, int n)
     {
+      //std::cout << "got body data:'" << string(s, n) << "'" <<std::endl;
         bodyData += string(s, n);
     }
     
@@ -107,6 +116,7 @@ public:
     {
         STATE_IDLE = 0,
         STATE_HEADERS,
+        STATE_CLOSING,
         STATE_REQUEST_BODY
     };
     
@@ -114,6 +124,7 @@ public:
     {
         state = STATE_IDLE;
         setTerminator("\r\n");
+        
     }
     
     virtual void collectIncomingData(const char* s, int n)
@@ -163,9 +174,10 @@ public:
             requestHeaders[key] = value;
             buffer.clear();
         } else if (state == STATE_REQUEST_BODY) {
-            cerr << "done getting requst body";
             receivedBody();
             setTerminator("\r\n");
+        } else if (state == STATE_CLOSING) {
+          // ignore!
         }
     }  
     
@@ -191,6 +203,14 @@ public:
         
         if (path == "/test1") {
             string contentStr(BODY1);
+            stringstream d;
+            d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
+            d << "Content-Length:" << contentStr.size() << "\r\n";
+            d << "\r\n"; // final CRLF to terminate the headers
+            d << contentStr;
+            push(d.str().c_str());
+        } else if (path == "/testLorem") {
+            string contentStr(BODY3);
             stringstream d;
             d << "HTTP/1.1 " << 200 << " " << reasonForCode(200) << "\r\n";
             d << "Content-Length:" << contentStr.size() << "\r\n";
@@ -257,12 +277,15 @@ public:
             sendBody2();
         } else if (strutils::starts_with(path, "/test_1_0")) {
             string contentStr(BODY1);
+            if (strutils::ends_with(path, "/B")) {
+                contentStr = BODY3;
+            }
             stringstream d;
             d << "HTTP/1.0 " << 200 << " " << reasonForCode(200) << "\r\n";
             d << "\r\n"; // final CRLF to terminate the headers
             d << contentStr;
             push(d.str().c_str());
-            closeWhenDone();
+            closeAfterSending();
         } else if (path == "/test_close") {
             string contentStr(BODY1);
             stringstream d;
@@ -271,7 +294,7 @@ public:
             d << "\r\n"; // final CRLF to terminate the headers
             d << contentStr;
             push(d.str().c_str());
-            closeWhenDone();
+            closeAfterSending();
         } else if (path == "/test_args") {
             if ((args["foo"] != "abc") || (args["bar"] != "1234") || (args["username"] != "johndoe")) {
                 sendErrorResponse(400, true, "bad arguments");
@@ -300,6 +323,12 @@ public:
         }
     }
     
+    void closeAfterSending()
+    {
+      state = STATE_CLOSING;
+      closeWhenDone();
+    }
+  
     void receivedBody()
     {
         state = STATE_IDLE;
@@ -457,6 +486,19 @@ int main(int argc, char* argv[])
     }
     
     {
+      TestRequest* tr = new TestRequest("http://localhost:2000/testLorem");
+      HTTP::Request_ptr own(tr);
+      cl.makeRequest(tr);
+      
+      waitForComplete(&cl, tr);
+      COMPARE(tr->responseCode(), 200);
+      COMPARE(tr->responseReason(), string("OK"));
+      COMPARE(tr->responseLength(), strlen(BODY3));
+      COMPARE(tr->responseBytesReceived(), strlen(BODY3));
+      COMPARE(tr->bodyData, string(BODY3));
+    }
+  
+    {
         TestRequest* tr = new TestRequest("http://localhost:2000/test_args?foo=abc&bar=1234&username=johndoe");
         HTTP::Request_ptr own(tr);
         cl.makeRequest(tr);
@@ -590,6 +632,8 @@ int main(int argc, char* argv[])
     }
     
 // pipelining
+    cout << "testing HTTP 1.1 pipelineing" << endl;
+  
     {
         cl.setProxy("", 80);
         TestRequest* tr = new TestRequest("http://localhost:2000/test1");
@@ -597,7 +641,7 @@ int main(int argc, char* argv[])
         cl.makeRequest(tr);
         
         
-        TestRequest* tr2 = new TestRequest("http://localhost:2000/test1");
+        TestRequest* tr2 = new TestRequest("http://localhost:2000/testLorem");
         HTTP::Request_ptr own2(tr2);
         cl.makeRequest(tr2);
         
@@ -609,7 +653,11 @@ int main(int argc, char* argv[])
         VERIFY(tr->complete);
         VERIFY(tr2->complete);
         COMPARE(tr->bodyData, string(BODY1));
-        COMPARE(tr2->bodyData, string(BODY1));
+      
+        COMPARE(tr2->responseLength(), strlen(BODY3));
+        COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
+        COMPARE(tr2->bodyData, string(BODY3));
+      
         COMPARE(tr3->bodyData, string(BODY1));
     }
     
@@ -633,8 +681,14 @@ int main(int argc, char* argv[])
         waitForComplete(&cl, tr3);
         VERIFY(tr->complete);
         VERIFY(tr2->complete);
+        
+        COMPARE(tr->responseLength(), strlen(BODY1));
+        COMPARE(tr->responseBytesReceived(), strlen(BODY1));
         COMPARE(tr->bodyData, string(BODY1));
-        COMPARE(tr2->bodyData, string(BODY1));
+      
+        COMPARE(tr2->responseLength(), strlen(BODY3));
+        COMPARE(tr2->responseBytesReceived(), strlen(BODY3));
+        COMPARE(tr2->bodyData, string(BODY3));
         COMPARE(tr3->bodyData, string(BODY1));
     }
     

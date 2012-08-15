@@ -218,6 +218,22 @@ bool Request::closeAfterComplete() const
 // for non HTTP/1.1 connections, assume server closes
     return _willClose || (_responseVersion != HTTP_1_1);
 }
+  
+int Request::requestBodyLength() const
+{
+  return -1;
+}
+
+std::string Request::requestBodyType() const
+{
+    return "text/plain";
+}
+  
+void Request::getBodyData(char*, int& count) const
+{
+  count = 0;
+  return;
+}
 
 } // of namespace HTTP
 

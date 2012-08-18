@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 #include <simgear/props/condition.hxx>
 #include <simgear/props/props.hxx>

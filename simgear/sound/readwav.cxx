@@ -21,6 +21,7 @@
 #include "readwav.hxx"
 
 #include <cassert>
+#include <cstdlib>
 
 #include <zlib.h> // for gzXXX functions
 

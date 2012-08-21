@@ -63,6 +63,8 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/threads/SGThread.hxx>
 
+using std::string;
+
 namespace {
 
 class Resolver : public SGThread

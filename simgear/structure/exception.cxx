@@ -6,9 +6,12 @@
 
 
 #include "exception.hxx"
+
 #include <stdio.h>
 #include <cstring>
 #include <sstream>
+
+#include <simgear/misc/sg_path.hxx>
 
 using std::string;
 
@@ -24,7 +27,7 @@ sg_location::sg_location ()
     _path[0] = '\0';
 }
 
-sg_location::sg_location (const string& path, int line, int column)
+sg_location::sg_location (const std::string& path, int line, int column)
   : _line(line),
     _column(column),
     _byte(-1)
@@ -97,7 +100,7 @@ sg_location::setByte (int byte)
   _byte = byte;
 }
 
-string
+std::string
 sg_location::asString () const
 {
   std::ostringstream out;
@@ -266,6 +269,12 @@ sg_io_exception::sg_io_exception (const string& message,
   : sg_exception(message, origin),
     _location(location)
 {
+}
+
+sg_io_exception::sg_io_exception (const string &message, const SGPath& origin)
+    : sg_exception(message, origin.str())
+{
+    
 }
 
 sg_io_exception::~sg_io_exception () throw ()

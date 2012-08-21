@@ -111,7 +111,6 @@ if (MSVC AND MSVC_3RDPARTY_ROOT)
   set (BOOST_ROOT ${MSVC_3RDPARTY_ROOT}/boost_1_44_0)
   message(STATUS "BOOST_ROOT is ${BOOST_ROOT}")
   set (OPENAL_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
-  set (ALUT_INCLUDE_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/include)
   set (OPENAL_LIBRARY_DIR ${MSVC_3RDPARTY_ROOT}/${MSVC_3RDPARTY_DIR}/lib)
 endif (MSVC AND MSVC_3RDPARTY_ROOT)
 
@@ -124,7 +123,6 @@ else()
     message(STATUS "SimGear mode: NORMAL")
     find_package(OpenGL REQUIRED)
     find_package(OpenAL REQUIRED)
-    find_package(ALUT REQUIRED)
     find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)
 endif(SIMGEAR_HEADLESS)
 
@@ -257,7 +255,7 @@ include_directories(${PROJECT_BINARY_DIR}/simgear/xml)
 
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
     ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} 
-    ${ALUT_INCLUDE_DIR} ${OPENAL_INCLUDE_DIR} )
+    ${OPENAL_INCLUDE_DIR} )
 
 add_definitions(-DHAVE_CONFIG_H)
 add_definitions(-DHAVE_EXPAT_CONFIG_H)

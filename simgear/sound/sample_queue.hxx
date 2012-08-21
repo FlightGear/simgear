@@ -148,7 +148,7 @@ private:
     bool _playing;
     bool _changed;
 
-    string random_string();
+    std::string random_string();
 };
 
 

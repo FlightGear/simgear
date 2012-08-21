@@ -266,7 +266,7 @@ public:
      * @param freq Pointer to a vairable that gets the sample frequency in Herz
      * @return true if succesful, false on error
      */
-    bool load(string &samplepath, void **data, int *format,
+    bool load(const string &samplepath, void **data, int *format,
                                          size_t *size, int *freq );
 
     /**
@@ -281,7 +281,6 @@ public:
     const std::string& get_renderer() { return _renderer; }
 
 private:
-    static int _alut_init;
 
     bool _working;
     bool _active;
@@ -317,7 +316,6 @@ private:
 
     bool testForALError(std::string s);
     bool testForALCError(std::string s);
-    bool testForALUTError(std::string s);
     bool testForError(void *p, std::string s);
 
     void update_pos_and_orientation();

@@ -167,7 +167,7 @@ EffectPropertyMap<T>::EffectPropertyMap(const EffectNameValue<T> (&attrs)[N])
 template<typename T>
 struct SimplePropertyMap
 {
-    typedef std::map<string, T> map_type;
+    typedef std::map<std::string, T> map_type;
     map_type _map;
     template<int N>
     SimplePropertyMap(const EffectNameValue<T> (&attrs)[N])
@@ -197,8 +197,8 @@ void findAttr(const effect::EffectPropertyMap<T>& pMap,
     typename EffectPropertyMap<T>::BMap::iterator itr
         = pMap._map.template get<from>().find(name);
     if (itr == pMap._map.end()) {
-        throw effect::BuilderException(string("findAttr: could not find attribute ")
-                               + string(name));
+        throw effect::BuilderException(std::string("findAttr: could not find attribute ")
+                                       + std::string(name));
     } else {
         result = itr->second;
     }
@@ -373,7 +373,7 @@ public:
 template<typename T>
 struct InstallAttributeBuilder
 {
-    InstallAttributeBuilder(const string& name)
+    InstallAttributeBuilder(const std::string& name)
     {
         PassAttributeBuilder::PassAttrMapSingleton::instance()
             ->passAttrMap.insert(make_pair(name, new T));

@@ -136,7 +136,7 @@ SGTimeZoneContainer::SGTimeZoneContainer(const char *filename)
     char buffer[256];
     FILE* infile = fopen(filename, "rb");
     if (!(infile)) {
-        string e = "Unable to open time zone file '";
+        std::string e = "Unable to open time zone file '";
         throw sg_exception(e + filename + '\'');
     }
     

@@ -513,7 +513,7 @@ private:
     bool _out_of_range;
     bool _is_file;
 
-    string random_string();
+    std::string random_string();
 };
 
 

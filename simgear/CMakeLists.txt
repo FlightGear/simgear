@@ -75,7 +75,7 @@ if(SIMGEAR_SHARED)
             SimGearCore
             ${ZLIB_LIBRARY}
             ${OPENSCENEGRAPH_LIBRARIES}
-            ${OPENAL_LIBRARY} ${ALUT_LIBRARY}
+            ${OPENAL_LIBRARY}
             ${OPENGL_LIBRARY}
             ${JPEG_LIBRARY})
     

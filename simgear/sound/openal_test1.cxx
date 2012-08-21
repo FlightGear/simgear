@@ -12,20 +12,19 @@
 # define AL_ILLEGAL_COMMAND AL_INVALID_OPERATION
 # include <OpenAL/al.h>
 # include <OpenAL/alc.h>
-# include <ALUT/alut.h>
 #elif defined(OPENALSDK)
 # include <al.h>
 # include <alc.h>
-# include <AL/alut.h> 
 #else
 # include <AL/al.h>
 # include <AL/alc.h>
-# include <AL/alut.h>
 #endif
 
 #define AUDIOFILE	SRC_DIR"/jet.wav"
 
+#include <simgear/sound/readwav.hxx>
 #include <simgear/debug/logstream.hxx>
+#include <simgear/misc/sg_path.hxx>
 
 static void print_openal_error( ALuint error ) {
     if ( error == AL_INVALID_NAME ) {
@@ -44,22 +43,24 @@ static void print_openal_error( ALuint error ) {
 }
 
 
-int main( int argc, char *argv[] ) {
-    // initialize OpenAL
-    ALCdevice *dev;
-    ALCcontext *context;
-
-    alutInit(&argc, argv);
+int main( int argc, char *argv[] ) 
+{
     sglog().setLogLevels( SG_ALL, SG_ALERT );
-
+    
     // initialize OpenAL
-    if ( (dev = alcOpenDevice( NULL )) != NULL
-            && ( context = alcCreateContext( dev, NULL )) != NULL ) {
-        alcMakeContextCurrent( context );
-    } else {
-        context = 0;
-        SG_LOG( SG_GENERAL, SG_ALERT, "Audio initialization failed!" );
+    ALCdevice *dev = alcOpenDevice(NULL); 
+    if (!dev) {
+      SG_LOG( SG_GENERAL, SG_ALERT, "Audio device initialization failed!" );
+      return EXIT_FAILURE;
     }
+    
+    ALCcontext *context = alcCreateContext(dev, NULL);
+    if (!context) {
+      SG_LOG( SG_GENERAL, SG_ALERT, "Audio context initialization failed!" );
+      return EXIT_FAILURE;
+    }
+    
+    alcMakeContextCurrent( context );
 
     // Position of the listener.
     ALfloat listener_pos[3];
@@ -108,50 +109,15 @@ int main( int argc, char *argv[] ) {
     source_pos[0] = 0.0; source_pos[1] = 0.0; source_pos[2] = 0.0;
     source_vel[0] = 0.0; source_vel[1] = 0.0; source_vel[2] = 0.0;
 
-    // create an OpenAL buffer handle
-    alGenBuffers(1, &buffer);
-    ALuint error = alGetError();
-    if ( error != AL_NO_ERROR ) {
-        print_openal_error( error );
-        SG_LOG( SG_GENERAL, SG_ALERT, "Failed to gen OpenAL buffer." );
-    } else {
-        SG_LOG( SG_GENERAL, SG_ALERT, "Buffer created ok!" );
-    }
-
     // Load the sample file
-#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
-
-  buffer = alutCreateBufferFromFile(AUDIOFILE);
-  if (buffer == AL_NONE) {
-    SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
-  }
-
-#else
-  ALenum format;
-  ALsizei size;
-  ALvoid* data;
-  ALsizei freq;
-  
-# if defined (__APPLE__)
-    alutLoadWAVFile( (ALbyte *)AUDIOFILE, &format, &data, &size, &freq );
-# else
-    alutLoadWAVFile( (ALbyte *)AUDIOFILE, &format, &data, &size, &freq, &loop );
-# endif
-    if (alGetError() != AL_NO_ERROR) {
-        SG_LOG( SG_GENERAL, SG_ALERT, "Failed to load wav file.");
-    }
-
-    // Copy data to the internal OpenAL buffer
-    alBufferData( buffer, format, data, size, freq );
-    if (alGetError() != AL_NO_ERROR) {
+      buffer = simgear::createBufferFromFile(SGPath(AUDIOFILE));
+      if (buffer == AL_NONE) {
         SG_LOG( SG_GENERAL, SG_ALERT, "Failed to buffer data.");
-    }
-
-    alutUnloadWAV( format, data, size, freq );
-#endif
+      }
 
     alGenSources(1, &source);
     if (alGetError() != AL_NO_ERROR) {
+        ALuint error = alGetError();
         print_openal_error( error );
     }
 
@@ -165,7 +131,10 @@ int main( int argc, char *argv[] ) {
     alSourcePlay( source );
 
     sleep(10);
-    alutExit();
-
+    
+     alcMakeContextCurrent(NULL);
+     alcDestroyContext(context);
+     alcCloseDevice(dev);
+     
     return 0;
 }

@@ -8,6 +8,8 @@
 #include "EffectBuilder.hxx"
 #include "Effect.hxx"
 
+using std::string;
+
 namespace simgear
 {
 

@@ -29,17 +29,12 @@
 #  include <simgear_config.h>
 #endif
 
-#if defined( __APPLE__ )
-# include <ALUT/alut.h>
-#else
-# include <AL/alut.h>
-#endif
-
 #include <iostream>
 #include <algorithm>
 #include <cstring>
 
 #include "soundmgr_openal.hxx"
+#include "readwav.hxx"
 
 #include <simgear/structure/exception.hxx>
 #include <simgear/debug/logstream.hxx>
@@ -61,8 +56,6 @@ extern bool isNaN(float *v);
 // Sound Manager
 //
 
-int SGSoundMgr::_alut_init = 0;
-
 // constructor
 SGSoundMgr::SGSoundMgr() :
     _working(false),
@@ -81,17 +74,6 @@ SGSoundMgr::SGSoundMgr() :
     _renderer("unknown"),
     _vendor("unknown")
 {
-#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
-    if (_alut_init == 0) {
-        if ( !alutInitWithoutContext(NULL, NULL) ) {
-            testForALUTError("alut initialization");
-            return;
-        }
-    }
-    _alut_init++;
-#else
-  //#error ALUT 1.1 required, ALUT 1.0 is no longer supported, please upgrade
-#endif
 }
 
 // destructor
@@ -99,12 +81,6 @@ SGSoundMgr::SGSoundMgr() :
 SGSoundMgr::~SGSoundMgr() {
 
     stop();
-#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
-    _alut_init--;
-    if (_alut_init == 0) {
-        alutExit ();
-    }
-#endif
 }
 
 // initialize the sound manager
@@ -564,7 +540,7 @@ void SGSoundMgr::update_pos_and_orientation() {
     _absolute_pos = _base_pos;
 }
 
-bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
+bool SGSoundMgr::load(const string &samplepath, void **dbuf, int *fmt,
                                           size_t *sz, int *frq )
 {
     if ( !_working ) return false;
@@ -574,48 +550,15 @@ bool SGSoundMgr::load(string &samplepath, void **dbuf, int *fmt,
     ALsizei freq;
     ALvoid *data;
 
-#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
     ALfloat freqf;
     // ignore previous errors to prevent the system from halting on silly errors
     alGetError();
     alcGetError(_device);
-    data = alutLoadMemoryFromFile(samplepath.c_str(), &format, &size, &freqf );
+    data = simgear::loadWAVFromFile(samplepath, format, size, freqf );
     freq = (ALsizei)freqf;
-    int error = alutGetError();
-    if (data == NULL || error != ALUT_ERROR_NO_ERROR) {
-        string msg = "Failed to load wav file: ";
-         msg.append(alutGetErrorString(error));
-        throw sg_io_exception(msg.c_str(), sg_location(samplepath));
-        return false;
+    if (data == NULL) {
+        throw sg_io_exception("Failed to load wav file", sg_location(samplepath));
     }
-
-#else
-    ALbyte *fname = (ALbyte *)samplepath.c_str();
-# if defined (__APPLE__)
-    alutLoadWAVFile( fname, &format, &data, &size, &freq );
-# else
-    ALboolean loop;
-    alutLoadWAVFile( fname, &format, &data, &size, &freq, &loop );
-# endif
-    ALenum error =  alGetError();
-    if ( error != AL_NO_ERROR ) {
-        string msg = "Failed to load wav file: ";
-        const ALchar *errorString = alGetString(error);
-        if (errorString) {
-            msg.append(errorString);
-        } else {
-            // alGetString returns NULL when an unexpected or OS specific error
-            // occurs: e.g. -43 on Mac when file is not found.
-            // In this case, alGetString() sets 'Invalid Enum' error, so
-            // showing with the original error number is helpful.
-            std::stringstream ss;
-            ss << alGetString(alGetError()) << "(" << error << ")";
-            msg.append(ss.str());
-        }
-        throw sg_io_exception(msg.c_str(), sg_location(samplepath));
-        return false;
-    }
-#endif
 
     if (format == AL_FORMAT_STEREO8 || format == AL_FORMAT_STEREO16) {
         free(data);
@@ -688,20 +631,5 @@ bool SGSoundMgr::testForALCError(string s)
                                        << s);
         return true;
     }
-    return false;
-}
-
-bool SGSoundMgr::testForALUTError(string s)
-{
-#if defined(ALUT_API_MAJOR_VERSION) && ALUT_API_MAJOR_VERSION >= 1
-    ALenum error;
-    error =  alutGetError ();
-    if (error != ALUT_ERROR_NO_ERROR) {
-        SG_LOG( SG_SOUND, SG_ALERT, "ALUT Error (sound manager): "
-                                       << alutGetErrorString(error) << " at "
-                                       << s);
-        return true;
-    }
-#endif
     return false;
 }

@@ -6,6 +6,7 @@ set(HEADERS
     sample_queue.hxx
     soundmgr_openal.hxx
     xmlsound.hxx
+    readwav.hxx
     )
     
 set(SOURCES 
@@ -14,6 +15,7 @@ set(SOURCES
     sample_queue.cxx
     soundmgr_openal.cxx
     xmlsound.cxx
+    readwav.cxx
     )
 
 simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")
@@ -27,7 +29,7 @@ else()
         sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
         ${CMAKE_THREAD_LIBS_INIT}
         ${RT_LIBRARY}
-        ${ALUT_LIBRARY} ${OPENAL_LIBRARY})
+        ${OPENAL_LIBRARY})
 endif()
 
 function(create_test TEST_NAME)

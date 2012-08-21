@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cstdlib> // EXIT_FAILURE
 
 #ifdef _WIN32
 #include <windows.h>

@@ -109,11 +109,10 @@ int16_t mulaw2linear (uint8_t mulawbyte)
    uint8_t *d = (uint8_t *) b->data;
    size_t newLength = b->length * 2;
    int16_t *buf = (int16_t *) malloc(newLength);
-   size_t i;
    if (buf == NULL)
      throw sg_exception("malloc failed decoing ULaw WAV file");
    
-   for (i = 0; i < b->length; i++) {
+   for (ALsizei i = 0; i < b->length; i++) {
        buf[i] = mulaw2linear(d[i]);
     }
     

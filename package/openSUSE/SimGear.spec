@@ -9,7 +9,6 @@ Source:     http://mirrors.ibiblio.org/pub/mirrors/flightgear/ftp/Source/simgear
 BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 BuildRequires: gcc, gcc-c++, cmake
-BuildRequires: freealut, freealut-devel
 BuildRequires: libopenal1-soft, openal-soft
 BuildRequires: plib-devel >= 1.8.5
 BuildRequires: libOpenSceneGraph-devel >= 3.0

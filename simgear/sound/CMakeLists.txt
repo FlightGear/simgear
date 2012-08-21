@@ -29,7 +29,8 @@ else()
         sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
         ${CMAKE_THREAD_LIBS_INIT}
         ${RT_LIBRARY}
-        ${OPENAL_LIBRARY})
+        ${OPENAL_LIBRARY}
+        ${ZLIB_LIBRARY})
 endif()
 
 function(create_test TEST_NAME)

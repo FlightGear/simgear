@@ -39,6 +39,7 @@
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
 #include "apt_signs.hxx"
 

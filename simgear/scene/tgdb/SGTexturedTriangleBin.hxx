@@ -361,7 +361,8 @@ public:
   osg::Geometry* buildGeometry() const
   { return buildGeometry(getTriangles()); }
   
-  int getTextureIndex() {
+  int getTextureIndex() const
+  {
     if (empty() || getNumTriangles() == 0)
       return 0;
 

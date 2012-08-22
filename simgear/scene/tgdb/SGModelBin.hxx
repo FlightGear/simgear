@@ -22,8 +22,12 @@
 #ifndef SG_MAT_MODEL_BIN_HXX
 #define SG_MAT_MODEL_BIN_HXX
 
-#include <math.h>
+#include <vector>
+#include <simgear/math/SGMath.hxx>
 
+// forward decls  
+class SGMatModel;
+   
 class SGMatModelBin {
 public:
   struct MatModel {

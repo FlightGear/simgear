@@ -26,10 +26,6 @@
 #ifndef _SG_MAT_HXX
 #define _SG_MAT_HXX
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <simgear/compiler.h>
 
 #include <string>      // Standard C++ string library
@@ -37,7 +33,6 @@
 #include <map>
 
 #include "Effect.hxx"
-#include <simgear/scene/tgdb/SGTexturedTriangleBin.hxx>
 
 #include <osg/ref_ptr>
 #include <osg/Texture2D>
@@ -47,21 +42,21 @@ namespace osg
 class StateSet;
 }
 
-#include <simgear/scene/util/SGReaderWriterOptions.hxx>
-#include <simgear/props/props.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/scene/util/SGSceneFeatures.hxx>
-#include <simgear/props/condition.hxx>
-
-#include "matmodel.hxx"
+#include <simgear/math/SGMath.hxx>
 
 namespace simgear
 {
 class Effect;
 void reload_shaders();
+class SGReaderWriterOptions;
 }
 
+class SGMatModelGroup;
+class SGCondition;
+class SGPropertyNode;
 class SGMaterialGlyph;
+class SGTexturedTriangleBin;
 
 /**
  * A material in the scene graph.
@@ -109,13 +104,13 @@ public:
   /**
    * Get the textured state.
    */
-  simgear::Effect* get_effect(SGTexturedTriangleBin triangleBin);
+  simgear::Effect* get_effect(const SGTexturedTriangleBin& triangleBin);
   simgear::Effect* get_effect();
 
   /**
    * Get the textured state.
    */
-  osg::Texture2D* get_object_mask(SGTexturedTriangleBin triangleBin);
+  osg::Texture2D* get_object_mask(const SGTexturedTriangleBin& triangleBin);
 
 
   /**
@@ -311,13 +306,7 @@ public:
    * Evaluate whether this material is valid given the current global
    * property state.
    */
-   bool valid() { 
-     if (condition) {
-       return condition->test();       
-     } else {
-       return true;
-     }
-   }
+     bool valid() const;
 
   /**
    * Return pointer to glyph class, or 0 if it doesn't exist.

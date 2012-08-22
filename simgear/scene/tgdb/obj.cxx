@@ -52,11 +52,13 @@
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/material/mat.hxx>
+#include <simgear/scene/material/matmodel.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/model/SGOffsetTransform.hxx>
 #include <simgear/scene/util/SGUpdateVisitor.hxx>
 #include <simgear/scene/util/SGNodeMasks.hxx>
 #include <simgear/scene/util/QuadTreeBuilder.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 
 #include "SGTexturedTriangleBin.hxx"
 #include "SGLightBin.hxx"

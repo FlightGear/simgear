@@ -39,6 +39,7 @@
 #include <simgear/misc/sgstream.hxx>
 #include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/material/mat.hxx>
 #include <simgear/scene/material/matlib.hxx>
 #include <simgear/scene/tgdb/apt_signs.hxx>

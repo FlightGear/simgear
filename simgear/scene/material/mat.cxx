@@ -54,8 +54,12 @@
 #include <simgear/props/props_io.hxx>
 #include <simgear/props/vectorPropTemplates.hxx>
 #include <simgear/scene/model/model.hxx>
+#include <simgear/scene/material/matmodel.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/props/condition.hxx>
+#include <simgear/scene/util/SGSceneFeatures.hxx>
+#include <simgear/scene/tgdb/SGTexturedTriangleBin.hxx>
 
 #include "Effect.hxx"
 #include "Technique.hxx"
@@ -448,7 +452,7 @@ Effect* SGMaterial::get_effect(int i)
     return _status[i].effect.get();
 }
 
-Effect* SGMaterial::get_effect(SGTexturedTriangleBin triangleBin)
+Effect* SGMaterial::get_effect(const SGTexturedTriangleBin& triangleBin)
 {
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No effect available.");
@@ -465,7 +469,7 @@ Effect* SGMaterial::get_effect()
 }
 
 
-osg::Texture2D* SGMaterial::get_object_mask(SGTexturedTriangleBin triangleBin)
+osg::Texture2D* SGMaterial::get_object_mask(const SGTexturedTriangleBin& triangleBin)
 {
     if (_status.size() == 0) {
         SG_LOG( SG_GENERAL, SG_WARN, "No mask available.");
@@ -539,6 +543,15 @@ SGMaterialGlyph* SGMaterial::get_glyph (const string& name) const
         return 0;
 
     return it->second;
+}
+
+bool SGMaterial::valid() const
+{ 
+  if (condition) {
+    return condition->test();       
+  } else {
+    return true;
+  }
 }
 
 

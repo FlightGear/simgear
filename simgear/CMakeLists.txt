@@ -3,6 +3,7 @@ file(WRITE ${PROJECT_BINARY_DIR}/simgear/version.h "#define SIMGEAR_VERSION ${SI
 
 foreach( mylibfolder 
         bucket
+        bvh
         debug
         ephemeris
         io

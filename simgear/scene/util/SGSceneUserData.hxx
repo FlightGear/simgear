@@ -25,7 +25,7 @@
 #include <vector>
 #include <osg/Node>
 #include <osg/Object>
-#include <simgear/scene/bvh/BVHNode.hxx>
+#include <simgear/bvh/BVHNode.hxx>
 #include "SGPickCallback.hxx"
 
 class SGSceneUserData : public osg::Object {

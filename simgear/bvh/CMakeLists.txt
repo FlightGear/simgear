@@ -1,8 +1,7 @@
 include (SimGearComponent)
 
-set(HEADERS 
+set(HEADERS
     BVHBoundingBoxVisitor.hxx
-    BVHDebugCollectVisitor.hxx
     BVHGroup.hxx
     BVHLineGeometry.hxx
     BVHLineSegmentVisitor.hxx
@@ -19,9 +18,9 @@ set(HEADERS
     BVHSubTreeCollector.hxx
     BVHTransform.hxx
     BVHVisitor.hxx
-    )
+)
 
-set(SOURCES 
+set(SOURCES
     BVHGroup.cxx
     BVHLineGeometry.cxx
     BVHLineSegmentVisitor.cxx
@@ -33,7 +32,19 @@ set(SOURCES
     BVHStaticNode.cxx
     BVHStaticTriangle.cxx
     BVHSubTreeCollector.cxx
-    BVHTransform.cxx    
-    )
+    BVHTransform.cxx
+)
 
-simgear_scene_component(bvh scene/bvh "${SOURCES}" "${HEADERS}")
+simgear_component(bvh bvh "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+  if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+  else()
+    set(TEST_LIBS sgbvh sgmath sgstructure sgdebug)
+  endif()
+
+  add_executable(bvhtest bvhtest.cxx)
+  target_link_libraries(bvhtest ${TEST_LIBS})
+  add_test(bvhtest ${EXECUTABLE_OUTPUT_PATH}/bvhtest)
+endif(ENABLE_TESTS)

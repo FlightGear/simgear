@@ -32,21 +32,22 @@
 #include <osg/StateSet>
 
 #include <simgear/math/SGGeometry.hxx>
+#include <simgear/scene/util/OsgMath.hxx>
 
-#include "BVHVisitor.hxx"
-#include "BVHNode.hxx"
-#include "BVHGroup.hxx"
-#include "BVHTransform.hxx"
-#include "BVHMotionTransform.hxx"
-#include "BVHStaticGeometry.hxx"
+#include <simgear/bvh/BVHVisitor.hxx>
+#include <simgear/bvh/BVHNode.hxx>
+#include <simgear/bvh/BVHGroup.hxx>
+#include <simgear/bvh/BVHTransform.hxx>
+#include <simgear/bvh/BVHMotionTransform.hxx>
+#include <simgear/bvh/BVHStaticGeometry.hxx>
 
-#include "BVHStaticData.hxx"
+#include <simgear/bvh/BVHStaticData.hxx>
 
-#include "BVHStaticNode.hxx"
-#include "BVHStaticTriangle.hxx"
-#include "BVHStaticBinary.hxx"
+#include <simgear/bvh/BVHStaticNode.hxx>
+#include <simgear/bvh/BVHStaticTriangle.hxx>
+#include <simgear/bvh/BVHStaticBinary.hxx>
 
-#include "BVHBoundingBoxVisitor.hxx"
+#include <simgear/bvh/BVHBoundingBoxVisitor.hxx>
 
 namespace simgear {
 

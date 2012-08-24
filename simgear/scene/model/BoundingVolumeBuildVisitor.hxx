@@ -33,7 +33,7 @@
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/math/SGGeometry.hxx>
 
-#include <simgear/scene/bvh/BVHStaticGeometryBuilder.hxx>
+#include <simgear/bvh/BVHStaticGeometryBuilder.hxx>
 
 namespace simgear {
 

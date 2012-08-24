@@ -26,10 +26,10 @@
 #include <osg/NodeVisitor>
 #include <osg/TemplatePrimitiveFunctor>
 
+#include <simgear/bvh/BVHGroup.hxx>
+#include <simgear/bvh/BVHLineGeometry.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
-#include <simgear/scene/bvh/BVHGroup.hxx>
-#include <simgear/scene/bvh/BVHLineGeometry.hxx>
 
 class SGInteractionAnimation::LineCollector : public osg::NodeVisitor {
     struct LinePrimitiveFunctor {

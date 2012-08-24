@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS 
     BoundingVolumeBuildVisitor.hxx
+    BVHDebugCollectVisitor.hxx
     CheckSceneryVisitor.hxx
     ConditionNode.hxx
     ModelRegistry.hxx

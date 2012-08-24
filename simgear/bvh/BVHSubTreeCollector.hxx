@@ -43,6 +43,7 @@ public:
     virtual ~BVHSubTreeCollector();
     
     virtual void apply(BVHGroup&);
+    virtual void apply(BVHPageNode&);
     virtual void apply(BVHTransform&);
     virtual void apply(BVHMotionTransform&);
     virtual void apply(BVHLineGeometry&);

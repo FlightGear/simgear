@@ -23,6 +23,7 @@
 #include "BVHVisitor.hxx"
 #include "BVHNode.hxx"
 #include "BVHGroup.hxx"
+#include "BVHPageNode.hxx"
 #include "BVHTransform.hxx"
 #include "BVHMotionTransform.hxx"
 #include "BVHLineGeometry.hxx"
@@ -44,6 +45,8 @@ public:
     { _box.clear(); }
     
     virtual void apply(BVHGroup& node)
+    { expandBy(node.getBoundingSphere()); }
+    virtual void apply(BVHPageNode& node)
     { expandBy(node.getBoundingSphere()); }
     virtual void apply(BVHTransform& node)
     { expandBy(node.getBoundingSphere()); }

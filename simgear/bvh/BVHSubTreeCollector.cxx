@@ -60,6 +60,22 @@ BVHSubTreeCollector::apply(BVHGroup& group)
 }
 
 void
+BVHSubTreeCollector::apply(BVHPageNode& group)
+{
+    if (!intersects(_sphere, group.getBoundingSphere()))
+        return;
+
+    // The _nodeList content is somehow the 'return value' of the subtree.
+    // Set it to zero to see if we have something to collect down there.
+    NodeList parentNodeList;
+    pushNodeList(parentNodeList);
+
+    group.traverse(*this);
+    
+    popNodeList(parentNodeList);
+}
+
+void
 BVHSubTreeCollector::apply(BVHTransform& transform)
 {
     if (!intersects(_sphere, transform.getBoundingSphere()))

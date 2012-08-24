@@ -1,4 +1,4 @@
-// Copyright (C) 2008 - 2009  Mathias Froehlich - Mathias.Froehlich@web.de
+// Copyright (C) 2008 - 2012  Mathias Froehlich - Mathias.Froehlich@web.de
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -23,6 +23,7 @@ namespace simgear {
 class BVHStaticData;
 
 class BVHGroup;
+class BVHPageNode;
 class BVHTransform;
 class BVHMotionTransform;
 class BVHStaticGeometry;
@@ -41,6 +42,7 @@ public:
 
     // High level nodes to handle
     virtual void apply(BVHGroup&) = 0;
+    virtual void apply(BVHPageNode&) = 0;
     virtual void apply(BVHTransform&) = 0;
     virtual void apply(BVHMotionTransform&) = 0;
     virtual void apply(BVHLineGeometry&) = 0;

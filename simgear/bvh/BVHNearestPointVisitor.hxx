@@ -24,6 +24,7 @@
 
 #include "BVHNode.hxx"
 #include "BVHGroup.hxx"
+#include "BVHPageNode.hxx"
 #include "BVHTransform.hxx"
 #include "BVHLineGeometry.hxx"
 #include "BVHStaticGeometry.hxx"
@@ -47,6 +48,12 @@ public:
     { }
     
     virtual void apply(BVHGroup& leaf)
+    {
+        if (!intersects(_sphere, leaf.getBoundingSphere()))
+            return;
+        leaf.traverse(*this);
+    }
+    virtual void apply(BVHPageNode& leaf)
     {
         if (!intersects(_sphere, leaf.getBoundingSphere()))
             return;

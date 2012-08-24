@@ -27,6 +27,7 @@
 
 #include "BVHNode.hxx"
 #include "BVHGroup.hxx"
+#include "BVHPageNode.hxx"
 #include "BVHTransform.hxx"
 #include "BVHMotionTransform.hxx"
 #include "BVHLineGeometry.hxx"
@@ -46,6 +47,14 @@ BVHLineSegmentVisitor::apply(BVHGroup& group)
     if (!intersects(_lineSegment, group.getBoundingSphere()))
         return;
     group.traverse(*this);
+}
+
+void
+BVHLineSegmentVisitor::apply(BVHPageNode& pageNode)
+{
+    if (!intersects(_lineSegment, pageNode.getBoundingSphere()))
+        return;
+    pageNode.traverse(*this);
 }
     
 void

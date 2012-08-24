@@ -8,6 +8,9 @@ set(HEADERS
     BVHMotionTransform.hxx
     BVHNearestPointVisitor.hxx
     BVHNode.hxx
+    BVHPageNode.hxx
+    BVHPageRequest.hxx
+    BVHPager.hxx
     BVHStaticBinary.hxx
     BVHStaticData.hxx
     BVHStaticGeometry.hxx
@@ -27,6 +30,9 @@ set(SOURCES
     BVHLineSegmentVisitor.cxx
     BVHMotionTransform.cxx
     BVHNode.cxx
+    BVHPageNode.cxx
+    BVHPageRequest.cxx
+    BVHPager.cxx
     BVHStaticBinary.cxx
     BVHStaticGeometry.cxx
     BVHStaticLeaf.cxx

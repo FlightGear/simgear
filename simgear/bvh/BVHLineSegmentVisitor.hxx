@@ -60,6 +60,7 @@ public:
     { return _id; }
 
     virtual void apply(BVHGroup& group);
+    virtual void apply(BVHPageNode& node);
     virtual void apply(BVHTransform& transform);
     virtual void apply(BVHMotionTransform& transform);
     virtual void apply(BVHLineGeometry&);

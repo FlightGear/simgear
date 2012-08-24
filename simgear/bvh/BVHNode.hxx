@@ -26,6 +26,7 @@ namespace simgear {
 
 class BVHGroup;
 class BVHVisitor;
+class BVHPageNode;
 
 // Base for the tree nodes
 class BVHNode : public SGReferenced {
@@ -55,6 +56,7 @@ public:
     
 protected:
     friend class BVHGroup;
+    friend class BVHPageNode;
     void addParent(BVHNode* parent);
     void removeParent(BVHNode* parent);
     

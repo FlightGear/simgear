@@ -334,11 +334,11 @@ public:
             std::swap(_geometryBuilder, primitiveFunctor._geometryBuilder);
         }
 
-        void setCurrentMaterial(const SGMaterial* material)
+        void setCurrentMaterial(const BVHMaterial* material)
         {
             _geometryBuilder->setCurrentMaterial(material);
         }
-        const SGMaterial* getCurrentMaterial() const
+        const BVHMaterial* getCurrentMaterial() const
         {
             return _geometryBuilder->getCurrentMaterial();
         }
@@ -384,10 +384,10 @@ public:
     {
     }
 
-    const SGMaterial* pushMaterial(osg::Geode* geode)
+    const BVHMaterial* pushMaterial(osg::Geode* geode)
     {
-        const SGMaterial* oldMaterial = _primitiveFunctor.getCurrentMaterial();
-        const SGMaterial* material = SGMaterialLib::findMaterial(geode);
+        const BVHMaterial* oldMaterial = _primitiveFunctor.getCurrentMaterial();
+        const BVHMaterial* material = SGMaterialLib::findMaterial(geode);
         if (material)
             _primitiveFunctor.setCurrentMaterial(material);
         return oldMaterial;
@@ -403,7 +403,7 @@ public:
         if (hasBoundingVolumeTree(geode))
             return;
 
-        const SGMaterial* oldMaterial = pushMaterial(&geode);
+        const BVHMaterial* oldMaterial = pushMaterial(&geode);
 
         bool flushHere = getNodePath().size() <= 1 || _dumpIntoLeafs;
         if (flushHere) {
@@ -411,7 +411,7 @@ public:
             PFunctor previousPrimitives;
             _primitiveFunctor.swap(previousPrimitives);
 
-            const SGMaterial* mat = previousPrimitives.getCurrentMaterial();
+            const BVHMaterial* mat = previousPrimitives.getCurrentMaterial();
             _primitiveFunctor.setCurrentMaterial(mat);
 
             // walk the children
@@ -458,7 +458,7 @@ public:
         PFunctor previousPrimitives;
         _primitiveFunctor.swap(previousPrimitives);
 
-        const SGMaterial* mat = previousPrimitives.getCurrentMaterial();
+        const BVHMaterial* mat = previousPrimitives.getCurrentMaterial();
         _primitiveFunctor.setCurrentMaterial(mat);
 
         // walk the children

@@ -16,6 +16,7 @@ set(HEADERS
     BVHStaticNode.hxx
     BVHStaticTriangle.hxx
     BVHSubTreeCollector.hxx
+    BVHMaterial.hxx
     BVHTransform.hxx
     BVHVisitor.hxx
 )
@@ -32,6 +33,7 @@ set(SOURCES
     BVHStaticNode.cxx
     BVHStaticTriangle.cxx
     BVHSubTreeCollector.cxx
+    BVHMaterial.cxx
     BVHTransform.cxx
 )
 

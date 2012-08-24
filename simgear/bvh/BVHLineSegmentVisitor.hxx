@@ -54,7 +54,7 @@ public:
     { return _linearVelocity; }
     const SGVec3d& getAngularVelocity() const
     { return _angularVelocity; }
-    const SGMaterial* getMaterial() const
+    const BVHMaterial* getMaterial() const
     { return _material; }
     BVHNode::Id getId() const
     { return _id; }
@@ -87,7 +87,7 @@ private:
     SGVec3d _normal;
     SGVec3d _linearVelocity;
     SGVec3d _angularVelocity;
-    const SGMaterial* _material;
+    const BVHMaterial* _material;
     BVHNode::Id _id;
     
     bool _haveHit;

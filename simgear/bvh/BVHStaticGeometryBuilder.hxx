@@ -78,16 +78,16 @@ public:
     typedef std::set<SGVec3<unsigned> > TriangleSet;
     TriangleSet _triangleSet;
 
-    void setCurrentMaterial(const SGMaterial* material)
+    void setCurrentMaterial(const BVHMaterial* material)
     {
         _currentMaterial = material;
         _currentMaterialIndex = addMaterial(material);
     }
-    const SGMaterial* getCurrentMaterial() const
+    const BVHMaterial* getCurrentMaterial() const
     {
         return _currentMaterial;
     }
-    unsigned addMaterial(const SGMaterial* material)
+    unsigned addMaterial(const BVHMaterial* material)
     {
         MaterialMap::const_iterator i = _materialMap.find(material);
         if (i != _materialMap.end())
@@ -97,9 +97,9 @@ public:
         return index;
     }
 
-    typedef std::map<const SGMaterial*, unsigned> MaterialMap;
+    typedef std::map<const BVHMaterial*, unsigned> MaterialMap;
     MaterialMap _materialMap;
-    const SGMaterial* _currentMaterial;
+    const BVHMaterial* _currentMaterial;
     unsigned _currentMaterialIndex;
 
     void addTriangle(const SGVec3f& v1, const SGVec3f& v2, const SGVec3f& v3)

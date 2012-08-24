@@ -44,6 +44,7 @@ class StateSet;
 
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
+#include <simgear/bvh/BVHMaterial.hxx>
 
 namespace simgear
 {
@@ -67,7 +68,7 @@ class SGTexturedTriangleBin;
  * defined in the $FG_ROOT/materials.xml file, and can be changed
  * at runtime.
  */
-class SGMaterial : public SGReferenced {
+class SGMaterial : public simgear::BVHMaterial {
 
 public:
 
@@ -255,32 +256,6 @@ public:
   inline std::string get_tree_texture () const { return  tree_texture; }
   
   /**
-   * Return if the surface material is solid, if it is not solid, a fluid
-   * can be assumed, that is usually water.
-   */
-  bool get_solid () const { return solid; }
-
-  /**
-   * Get the friction factor for that material
-   */
-  double get_friction_factor () const { return friction_factor; }
-
-  /**
-   * Get the rolling friction for that material
-   */
-  double get_rolling_friction () const { return rolling_friction; }
-
-  /**
-   * Get the bumpines for that material
-   */
-  double get_bumpiness () const { return bumpiness; }
-
-  /**
-   * Get the load resistance
-   */
-  double get_load_resistance () const { return load_resistance; }
-
-  /**
    * Get the list of names for this material
    */
   const std::vector<std::string>& get_names() const { return _names; }
@@ -433,21 +408,6 @@ private:
 
   // Number of varieties of tree texture
   int tree_varieties;
-
-  // True if the material is solid, false if it is a fluid
-  bool solid;
-
-  // the friction factor of that surface material
-  double friction_factor;
-
-  // the rolling friction of that surface material
-  double rolling_friction;
-
-  // the bumpiness of that surface material
-  double bumpiness;
-
-  // the load resistance of that surface material
-  double load_resistance;
 
   // material properties
   SGVec4f ambient, diffuse, specular, emission;

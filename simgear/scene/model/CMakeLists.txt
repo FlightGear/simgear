@@ -3,6 +3,7 @@ include (SimGearComponent)
 set(HEADERS 
     BoundingVolumeBuildVisitor.hxx
     BVHDebugCollectVisitor.hxx
+    BVHPageNodeOSG.hxx
     CheckSceneryVisitor.hxx
     ConditionNode.hxx
     ModelRegistry.hxx
@@ -24,6 +25,7 @@ set(HEADERS
     )
 
 set(SOURCES 
+    BVHPageNodeOSG.cxx
     CheckSceneryVisitor.cxx
     ConditionNode.cxx
     ModelRegistry.cxx

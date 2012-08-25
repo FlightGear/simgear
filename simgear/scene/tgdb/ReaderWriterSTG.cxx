@@ -49,6 +49,24 @@
 
 using namespace simgear;
 
+/// Ok, this is a hack - we do not exactly know if it's an airport or not.
+/// This feature might also vanish again later. This is currently to
+/// support testing an external ai component that just loads the the airports
+/// and supports ground queries on only these areas.
+static bool isAirportBtg(const std::string& name)
+{
+    if (name.size() < 8)
+        return false;
+    if (name.substr(4, 8) != ".btg")
+        return false;
+    for (unsigned i = 0; i < 4; ++i) {
+        if (name[i] < 'A' || 'Z' < name[i])
+            continue;
+        return true;
+    }
+    return false;
+}
+
 static SGBucket bucketIndexFromFileName(const std::string& fileName)
 {
   // Extract the bucket from the filename
@@ -194,7 +212,12 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
     sharedOptions->getDatabasePathList().push_back(path.str());
     std::string fg_root = options->getPluginStringData("SimGear::FG_ROOT");
     sharedOptions->getDatabasePathList().push_back(fg_root);
-    
+
+    // do only load airport btg files.
+    bool onlyAirports = options->getPluginStringData("SimGear::FG_ONLY_AIRPORTS") == "ON";
+    // do only load terrain btg files
+    bool onlyTerrain = options->getPluginStringData("SimGear::FG_ONLY_TERRAIN") == "ON";
+
     simgear::AirportSignBuilder signBuilder(staticOptions->getMaterialLib(), bucket.get_center());
   
     bool has_base = false;
@@ -221,23 +244,28 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
             SG_LOG( SG_TERRAIN, SG_BULK, "    " << token << " " << name );
             
             has_base = true;
-            node = osgDB::readRefNodeFile(path.str(),
-                                          staticOptions.get());
+
+            if (!onlyAirports || isAirportBtg(name)) {
+                node = osgDB::readRefNodeFile(path.str(),
+                                              staticOptions.get());
                 
-            if (!node.valid()) {
-                SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                        << ": Failed to load OBJECT_BASE '"
-                        << name << "'" );
+                if (!node.valid()) {
+                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                            << ": Failed to load OBJECT_BASE '"
+                            << name << "'" );
+                }
             }
             
         } else if ( token == "OBJECT" ) {
-            node = osgDB::readRefNodeFile(path.str(),
-                                          staticOptions.get());
+            if (!onlyAirports || isAirportBtg(name)) {
+                node = osgDB::readRefNodeFile(path.str(),
+                                              staticOptions.get());
                 
-            if (!node.valid()) {
-                SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                        << ": Failed to load OBJECT '"
-                        << name << "'" );
+                if (!node.valid()) {
+                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                            << ": Failed to load OBJECT '"
+                            << name << "'" );
+                }
             }
             
         } else {
@@ -246,46 +274,50 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
             
             // Always OK to load
             if ( token == "OBJECT_STATIC" ) {
-                osg::ref_ptr<SGReaderWriterOptions> opt;
-                opt = new SGReaderWriterOptions(*staticOptions);
-                osg::ProxyNode* proxyNode = new osg::ProxyNode;
-                proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
-                /// Hmm, the findDataFile should happen downstream
-                std::string absName = osgDB::findDataFile(name, opt.get());
-                proxyNode->setFileName(0, absName);
-                if (SGPath(absName).lower_extension() == "ac")
-                {
-                    proxyNode->setNodeMask( ~simgear::MODELLIGHT_BIT );
-                    opt->setInstantiateEffects(true);
-                }
-                else
-                    opt->setInstantiateEffects(false);
-                proxyNode->setDatabaseOptions(opt.get());
-                node = proxyNode;
-                
-                if (!node.valid()) {
-                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                            << ": Failed to load OBJECT_STATIC '"
-                            << name << "'" );
+                if (!onlyTerrain) {
+                    osg::ref_ptr<SGReaderWriterOptions> opt;
+                    opt = new SGReaderWriterOptions(*staticOptions);
+                    osg::ProxyNode* proxyNode = new osg::ProxyNode;
+                    proxyNode->setLoadingExternalReferenceMode(osg::ProxyNode::DEFER_LOADING_TO_DATABASE_PAGER);
+                    /// Hmm, the findDataFile should happen downstream
+                    std::string absName = osgDB::findDataFile(name, opt.get());
+                    proxyNode->setFileName(0, absName);
+                    if (SGPath(absName).lower_extension() == "ac")
+                    {
+                        proxyNode->setNodeMask( ~simgear::MODELLIGHT_BIT );
+                        opt->setInstantiateEffects(true);
+                    }
+                    else
+                        opt->setInstantiateEffects(false);
+                    proxyNode->setDatabaseOptions(opt.get());
+                    node = proxyNode;
+                    
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                                << ": Failed to load OBJECT_STATIC '"
+                                << name << "'" );
+                    }
                 }
                 
             } else if ( token == "OBJECT_SHARED" ) {
-                osg::ref_ptr<SGReaderWriterOptions> opt;
-                opt = new SGReaderWriterOptions(*sharedOptions);
-                /// Hmm, the findDataFile should happen in the downstream readers
-                std::string absName = osgDB::findDataFile(name, opt.get());
-                if (SGPath(absName).lower_extension() == "ac")
-                    opt->setInstantiateEffects(true);
-                else
-                    opt->setInstantiateEffects(false);
-                node = osgDB::readRefNodeFile(absName, opt.get());
-                if (SGPath(absName).lower_extension() == "ac")
-                    node->setNodeMask( ~simgear::MODELLIGHT_BIT );
-                
-                if (!node.valid()) {
-                    SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
-                            << ": Failed to load OBJECT_SHARED '"
-                            << name << "'" );
+                if (!onlyTerrain) {
+                    osg::ref_ptr<SGReaderWriterOptions> opt;
+                    opt = new SGReaderWriterOptions(*sharedOptions);
+                    /// Hmm, the findDataFile should happen in the downstream readers
+                    std::string absName = osgDB::findDataFile(name, opt.get());
+                    if (SGPath(absName).lower_extension() == "ac")
+                        opt->setInstantiateEffects(true);
+                    else
+                        opt->setInstantiateEffects(false);
+                    node = osgDB::readRefNodeFile(absName, opt.get());
+                    if (SGPath(absName).lower_extension() == "ac")
+                        node->setNodeMask( ~simgear::MODELLIGHT_BIT );
+                    
+                    if (!node.valid()) {
+                        SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
+                                << ": Failed to load OBJECT_SHARED '"
+                                << name << "'" );
+                    }
                 }
                 
             } else if ( token == "OBJECT_SIGN" ) {
@@ -294,7 +326,8 @@ ReaderWriterSTG::readStgFile(const std::string& absoluteFileName,
                 if ( hasOptionalValue(in) ){
                     in >> size;
                 }
-                signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name, size);
+                if (!onlyTerrain)
+                    signBuilder.addSign(SGGeod::fromDegM(lon, lat, elev), hdg, name, size);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT, absoluteFileName
                         << ": Unknown token '" << token << "'" );

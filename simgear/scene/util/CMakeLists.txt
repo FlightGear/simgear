@@ -4,7 +4,8 @@ set(HEADERS
     CopyOp.hxx
     DeletionManager.hxx
     NodeAndDrawableVisitor.hxx
-	Noise.hxx
+    Noise.hxx
+    OptionsReadFileCallback.hxx
     OsgMath.hxx
     OsgSingleton.hxx
     PrimitiveUtils.hxx
@@ -31,7 +32,8 @@ set(SOURCES
     CopyOp.cxx
     DeletionManager.cxx
     NodeAndDrawableVisitor.cxx
-	Noise.cxx
+    Noise.cxx
+    OptionsReadFileCallback.cxx
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx

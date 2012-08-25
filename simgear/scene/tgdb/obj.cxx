@@ -1160,7 +1160,7 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
   transform->addChild(terrainGroup);
   if (lightGroup->getNumChildren() > 0) {
     osg::LOD* lightLOD = new osg::LOD;
-    lightLOD->addChild(lightGroup.get(), 0, 30000);
+    lightLOD->addChild(lightGroup.get(), 0, 60000);
     // VASI is always on, so doesn't use light bits.
     lightLOD->setNodeMask(LIGHTS_BITS | MODEL_BIT | PERMANENTLIGHT_BIT);
     transform->addChild(lightLOD);

@@ -77,9 +77,11 @@ const char* SGReaderWriterXML::className() const
 }
 
 osgDB::ReaderWriter::ReadResult
-SGReaderWriterXML::readNode(const std::string& fileName,
+SGReaderWriterXML::readNode(const std::string& name,
                             const osgDB::Options* options) const
 {
+    std::string fileName = osgDB::findDataFile(name, options);
+
     osg::Node *result=0;
     try {
         SGPath p = SGModelLib::findDataFile(fileName);

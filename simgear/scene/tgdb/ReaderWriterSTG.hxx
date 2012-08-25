@@ -39,14 +39,7 @@ public:
     readNode(const std::string&, const osgDB::Options*) const;
 
 private:
-    /// Read an real existing stg file that exists on disk.
-    ReadResult
-    readStgFile(const std::string& fileName, const osgDB::Options* options) const;
-
-    /// Read an real existing stg file that exists on disk and return true
-    /// if a BASE_OBJECT is found.
-    bool
-    readStgFile(const std::string&, const SGBucket& bucket,  osg::Group&, const osgDB::Options*) const;
+    struct _ModelBin;
 };
 
 }

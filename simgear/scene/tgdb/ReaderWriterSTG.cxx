@@ -27,6 +27,8 @@
 
 #include <osg/MatrixTransform>
 #include <osg/ProxyNode>
+#include <osgUtil/LineSegmentIntersector>
+#include <osgUtil/IntersectionVisitor>
 
 #include <osgDB/FileNameUtils>
 #include <osgDB/FileUtils>
@@ -85,20 +87,22 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _ObjectStatic {
-        _ObjectStatic() : _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0) { }
+        _ObjectStatic() : _agl(false), _proxy(false), _lon(0), _lat(0), _elev(0), _hdg(0), _pitch(0), _roll(0) { }
         std::string _errorLocation;
         std::string _token;
         std::string _name;
+        bool _agl;
         bool _proxy;
         double _lon, _lat, _elev;
         double _hdg, _pitch, _roll;
         osg::ref_ptr<SGReaderWriterOptions> _options;
     };
     struct _Sign {
-        _Sign() : _lon(0), _lat(0), _elev(0), _hdg(0), _size(-1) { }
+        _Sign() : _agl(false), _lon(0), _lat(0), _elev(0), _hdg(0), _size(-1) { }
         std::string _errorLocation;
         std::string _token;
         std::string _name;
+        bool _agl;
         double _lon, _lat, _elev;
         double _hdg;
         int _size;
@@ -134,6 +138,23 @@ struct ReaderWriterSTG::_ModelBin {
         return staticOptions.release();
     }
 
+    double elevation(osg::Group& group, const SGGeod& geod)
+    {
+        SGVec3d start = SGVec3d::fromGeod(SGGeod::fromGeodM(geod, 10000));
+        SGVec3d end = SGVec3d::fromGeod(SGGeod::fromGeodM(geod, -1000));
+        
+        osg::ref_ptr<osgUtil::LineSegmentIntersector> intersector;
+        intersector = new osgUtil::LineSegmentIntersector(toOsg(start), toOsg(end));
+        osgUtil::IntersectionVisitor visitor(intersector.get());
+        group.accept(visitor);
+        
+        if (!intersector->containsIntersections())
+            return 0;
+        
+        SGVec3d cart = toSG(intersector->getFirstIntersection().getWorldIntersectPoint());
+        return SGGeod::fromCart(cart).getElevationM();
+    }
+    
     bool read(const std::string& absoluteFileName, const osgDB::Options* options)
     {
         if (absoluteFileName.empty())
@@ -204,7 +225,7 @@ struct ReaderWriterSTG::_ModelBin {
                 
             } else {
                 // Always OK to load
-                if (token == "OBJECT_STATIC") {
+                if (token == "OBJECT_STATIC" || token == "OBJECT_STATIC_AGL") {
                     if (!onlyTerrain) {
                         osg::ref_ptr<SGReaderWriterOptions> opt;
                         opt = staticOptions(filePath, options);
@@ -216,13 +237,14 @@ struct ReaderWriterSTG::_ModelBin {
                         obj._errorLocation = absoluteFileName;
                         obj._token = token;
                         obj._name = name;
+                        obj._agl = (token == "OBJECT_STATIC_AGL");
                         obj._proxy = true;
                         in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
                         obj._options = opt;
                         _objectStaticList.push_back(obj);
                     }
                         
-                } else if (token == "OBJECT_SHARED") {
+                } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
                     if (!onlyTerrain) {
                         osg::ref_ptr<SGReaderWriterOptions> opt;
                         opt = staticOptions(filePath, options);
@@ -234,17 +256,19 @@ struct ReaderWriterSTG::_ModelBin {
                         obj._errorLocation = absoluteFileName;
                         obj._token = token;
                         obj._name = name;
+                        obj._agl = (token == "OBJECT_SHARED_AGL");
                         obj._proxy = false;
                         in >> obj._lon >> obj._lat >> obj._elev >> obj._hdg >> obj._pitch >> obj._roll;
                         obj._options = opt;
                         _objectStaticList.push_back(obj);
                     }
 
-                } else if (token == "OBJECT_SIGN") {
+                } else if (token == "OBJECT_SIGN" || token == "OBJECT_SIGN_AGL") {
                     if (!onlyTerrain) {
                         _Sign sign;
                         sign._token = token;
                         sign._name = name;
+                        sign._agl = (token == "OBJECT_SIGN_AGL");
                         in >> sign._lon >> sign._lat >> sign._elev >> sign._hdg >> sign._size;
                         _signList.push_back(sign);
                     }
@@ -290,6 +314,18 @@ struct ReaderWriterSTG::_ModelBin {
             }
         }
 
+        for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
+            if (!i->_agl)
+                continue;
+            i->_elev += elevation(*group, SGGeod::fromDeg(i->_lon, i->_lat));
+        }
+        
+        for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i) {
+            if (!i->_agl)
+                continue;
+            i->_elev += elevation(*group, SGGeod::fromDeg(i->_lon, i->_lat));
+        }
+        
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
             osg::ref_ptr<osg::Node> node;
             if (i->_proxy)  {

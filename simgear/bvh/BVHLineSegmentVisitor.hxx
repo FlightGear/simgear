@@ -20,12 +20,13 @@
 
 #include <simgear/math/SGGeometry.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-#include <simgear/scene/material/mat.hxx>
 
 #include "BVHVisitor.hxx"
 #include "BVHNode.hxx"
 
 namespace simgear {
+
+class BVHMaterial;
 
 class BVHLineSegmentVisitor : public BVHVisitor {
 public:

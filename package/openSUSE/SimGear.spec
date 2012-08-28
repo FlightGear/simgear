@@ -10,7 +10,6 @@ BuildRoot:  %{_tmppath}/%{name}-%{version}-build
 
 BuildRequires: gcc, gcc-c++, cmake
 BuildRequires: libopenal1-soft, openal-soft
-BuildRequires: plib-devel >= 1.8.5
 BuildRequires: libOpenSceneGraph-devel >= 3.0
 BuildRequires: zlib, zlib-devel
 BuildRequires: libjpeg62, libjpeg62-devel
@@ -26,7 +25,6 @@ simulation and visualization applications such as FlightGear or TerraGear.
 Group:         Development/Libraries/Other
 Summary:       Development header files for SimGear
 Requires:      SimGear = %{version}
-Requires:      plib-devel
 
 %description devel
 Development headers and libraries for building applications against SimGear.

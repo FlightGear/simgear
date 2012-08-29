@@ -31,7 +31,6 @@ SimGear depends on a number of 3rd party libraries, the most notable
 being:
 
 * OpenSceneGraph (OSG) - see README.OSG
-* Portable Games Library (PLIB) - see README.plib
 * zlib compression library - see README.zlib
 * Open Audio Library (OpenAL) - see README.OpenAL
 * Subversion Client Library (optional dependency)

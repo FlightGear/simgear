@@ -20,8 +20,8 @@ Probably you want to specify an install prefix:
     cmake ../simgear -DCMAKE_INSTALL_PREFIX=/usr
 
 Note the install prefix is automatically searched for required libraries
-and header files, so if you install PLIB, OpenSceneGraph to the
-same prefix, most configuration options are unnecessary.
+and header files, so if you install OpenSceneGraph to the same prefix,
+most configuration options are unnecessary.
 
 If for some reason you have a dependency (or several) at a different prefix,
 you can specify one or more via CMAKE_PREFIX_PATH:
@@ -33,7 +33,7 @@ you can specify one or more via CMAKE_PREFIX_PATH:
 Standard prefixes are searched automatically (/usr, /usr/local, /opt/local)
 
 Most dependencies also expose an environment variable to specify their
-installation directory explicitly eg OSG_DIR or PLIBDIR. Any of the methods
+installation directory explicitly eg OSG_DIR. Any of the methods
 described above will work, but specifying an INSTALL_PREFIX or PREFIX_PATH is
 usually simpler.
 

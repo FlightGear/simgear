@@ -671,9 +671,9 @@ InstallAttributeBuilder<AlphaTestBuilder> installAlphaTest("alpha-test");
 InstallAttributeBuilder<TextureUnitBuilder> textureUnitBuilder("texture-unit");
 
 // Shader key, used both for shaders with relative and absolute names
-typedef pair<string, Shader::Type> ShaderKey;
+typedef pair<string, int> ShaderKey;
 
-inline ShaderKey makeShaderKey(SGPropertyNode_ptr& ptr, Shader::Type shaderType)
+inline ShaderKey makeShaderKey(SGPropertyNode_ptr& ptr, int shaderType)
 {
     return ShaderKey(ptr->getStringValue(), shaderType);
 }
@@ -815,7 +815,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     BOOST_FOREACH(const ShaderKey& shaderKey, prgKey.shaders)
     {
         const string& shaderName = shaderKey.first;
-        Shader::Type stype = shaderKey.second;
+        Shader::Type stype = (Shader::Type)shaderKey.second;
         string fileName = SGModelLib::findDataFile(shaderName, options);
         if (fileName.empty())
             throw BuilderException(string("couldn't find shader ") +
@@ -833,7 +833,7 @@ void ShaderProgramBuilder::buildAttribute(Effect* effect, Pass* pass,
     BOOST_FOREACH(const ShaderKey& skey, resolvedKey.shaders)
     {
         const string& fileName = skey.first;
-        Shader::Type stype = skey.second;
+        Shader::Type stype = (Shader::Type)skey.second;
         ShaderMap::iterator sitr = shaderMap.find(skey);
         if (sitr != shaderMap.end()) {
             program->addShader(sitr->second.get());

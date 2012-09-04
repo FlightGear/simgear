@@ -376,7 +376,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 if (n == "@Y") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "YellowSign";
@@ -386,7 +386,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@R") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "RedSign";
@@ -396,7 +396,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@L") {
                     if (size > 3) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 1 to 3");
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN << content << " has wrong size. Allowed values are 1 to 3");
                     }
                     sign_height = HT[size < 0 ? 3 : size];
                     newmat = "FramedSign";
@@ -406,7 +406,7 @@ void AirportSignBuilder::addSign(const SGGeod& pos, double heading, const std::s
                 } else if (n == "@B") {
                     if ( (size != -1) && (size != 4) && (size != 5) ) {
                         size = -1;
-                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN "Wrong size for " << name << ". Allowed values are 4 or 5");
+                        SG_LOG(SG_TERRAIN, SG_ALERT, SIGN << content << " has wrong size. Allowed values are 4 or 5");
                     }
                     sign_height = HT[size < 0 ? 4 : size];
                     newmat = "BlackSign";

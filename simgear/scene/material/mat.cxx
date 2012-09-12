@@ -514,9 +514,9 @@ void SGMaterial::buildEffectProperties(const SGReaderWriterOptions* options)
             makeChild(texProp, "filter")
                 ->setStringValue(mipmap ? "linear-mipmap-linear" : "nearest");
             makeChild(texProp, "wrap-s")
-                ->setStringValue(wrapu ? "repeat" : "clamp");
+                ->setStringValue(wrapu ? "repeat" : "clamp-to-edge");
             makeChild(texProp, "wrap-t")
-                ->setStringValue(wrapv ? "repeat" : "clamp");
+                ->setStringValue(wrapv ? "repeat" : "clamp-to-edge");
         }
         makeChild(effectParamProp, "xsize")->setDoubleValue(xsize);
         makeChild(effectParamProp, "ysize")->setDoubleValue(ysize);

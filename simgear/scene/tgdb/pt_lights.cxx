@@ -548,7 +548,8 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
   if (lights.getNumLights() < 2)
     return 0;
 
-  float flashTime = 2;
+  sg_srandom(unsigned(lights.getLight(0).position[0]));
+  float flashTime = 2 + 0.1 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
   sequence->setDefaultTime(flashTime);
   Effect* effect = getLightEffect(6, osg::Vec3(1, 0.001, 0.000002),

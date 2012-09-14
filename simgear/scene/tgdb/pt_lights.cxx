@@ -551,24 +551,24 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
   sg_srandom(unsigned(lights.getLight(0).position[0]));
   float flashTime = 2 + 0.1 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
-  sequence->setDefaultTime(flashTime);
-  Effect* effect = getLightEffect(6, osg::Vec3(1, 0.001, 0.000002),
-                                  0, 6, true);
-  // Lights on
-  EffectGeode* egeode = new EffectGeode;
-  for (int i = lights.getNumLights(); 0 <= i; --i) {
-    egeode->setEffect(effect);
-    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
-  }
-  sequence->addChild(egeode, flashTime);
 
-  // Lights off
+  // start with lights off
   sequence->addChild(new osg::Group, flashTime);
+  // ...and increase the lights in steps
+  for (int i = 2; i < 7; i+=2) {
+      Effect* effect = getLightEffect(i, osg::Vec3(1, 0.001, 0.000002),
+                                      0, i, true);
+      EffectGeode* egeode = new EffectGeode;
+      for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
+          egeode->addDrawable(getLightDrawable(lights.getLight(j)));
+          egeode->setEffect(effect);
+      }
+      sequence->addChild(egeode, (i==6) ? flashTime : 0.1);
+  }
 
-  sequence->setInterval(osg::Sequence::LOOP, 0, -1);
+  sequence->setInterval(osg::Sequence::SWING, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
-  sequence->setSync(true);
 
   return sequence;
 }

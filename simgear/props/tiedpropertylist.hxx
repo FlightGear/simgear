@@ -130,6 +130,12 @@ public:
             pop_back();
         }
     }
+
+    void setAttribute (SGPropertyNode::Attribute attr, bool state)
+    {
+        for (std::vector<SGPropertyNode_ptr>::iterator it=begin() ; it < end(); it++ )
+           (*it)->setAttribute(attr, state);
+    }
 private:
     SGPropertyNode_ptr _root;
 };

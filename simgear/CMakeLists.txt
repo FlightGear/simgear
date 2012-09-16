@@ -60,7 +60,9 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY VERSION   ${SIMGEAR_VERSION})
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
-    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} 
+        ${EXPAT_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT})
 
     if(LIBSVN_FOUND)
         target_link_libraries(SimGearCore ${LIBSVN_LIBRARIES})

@@ -74,6 +74,7 @@ option(JPEG_FACTORY     "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" ON)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
+option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
@@ -167,6 +168,16 @@ endif(ENABLE_LIBSVN)
 
 find_package(ZLIB REQUIRED)
 find_package(Threads REQUIRED)
+
+if (SYSTEM_EXPAT)
+    message(STATUS "Requested to use system Expat library, forcing SIMGEAR_SHARED to true")
+    set(SIMGEAR_SHARED ON)
+    find_package(EXPAT REQUIRED)
+    include_directories(${EXPAT_INCLUDE_DIRS})
+else()
+    message(STATUS "Using built-in expat code")
+    add_definitions(-DHAVE_EXPAT_CONFIG_H)
+endif(SYSTEM_EXPAT)
 
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
 check_include_file(sys/timeb.h HAVE_SYS_TIMEB_H)
@@ -272,7 +283,6 @@ include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS}
     ${OPENAL_INCLUDE_DIR} )
 
 add_definitions(-DHAVE_CONFIG_H)
-add_definitions(-DHAVE_EXPAT_CONFIG_H)
 
 # configure a header file to pass some of the CMake settings
 # to the source code

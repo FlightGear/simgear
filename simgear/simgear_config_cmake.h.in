@@ -17,3 +17,5 @@
 #cmakedefine HAVE_LIBSVN_CLIENT_1
 
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
+
+#cmakedefine SYSTEM_EXPAT

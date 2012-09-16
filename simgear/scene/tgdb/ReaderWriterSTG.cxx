@@ -247,7 +247,7 @@ struct ReaderWriterSTG::_ModelBin {
                 } else if (token == "OBJECT_SHARED" || token == "OBJECT_SHARED_AGL") {
                     if (!onlyTerrain) {
                         osg::ref_ptr<SGReaderWriterOptions> opt;
-                        opt = staticOptions(filePath, options);
+                        opt = sharedOptions(filePath, options);
                         if (SGPath(name).lower_extension() == "ac")
                             opt->setInstantiateEffects(true);
                         else

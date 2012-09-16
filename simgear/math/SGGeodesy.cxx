@@ -21,6 +21,7 @@
 
 #include <cmath>
 
+#include <simgear/sg_inlines.h>
 #include <simgear/structure/exception.hxx>
 #include <simgear/debug/logstream.hxx>
 
@@ -344,7 +345,8 @@ static int _geo_inverse_wgs_84( double lat1, double lon1, double lat2,
     } else if(  fabs(cosphi1) < testv ) {
 	// initial point is polar
 	int k = _geo_inverse_wgs_84( lat2,lon2,lat1,lon1, az1,az2,s );
-	k = k; // avoid compiler error since return result is unused
+	SG_UNUSED(k);
+    
 	b = *az1; *az1 = *az2; *az2 = b;
 	return 0;
     } else if( fabs(cosphi2) < testv ) {
@@ -352,7 +354,8 @@ static int _geo_inverse_wgs_84( double lat1, double lon1, double lat2,
         double _lon1 = lon1 + 180.0f;
 	int k = _geo_inverse_wgs_84( lat1, lon1, lat1, _lon1, 
 				    az1, az2, s );
-	k = k; // avoid compiler error since return result is unused
+	SG_UNUSED(k);
+    
 	*s /= 2.0;
 	*az2 = *az1 + 180.0;
 	if( *az2 > 360.0 ) *az2 -= 360.0; 

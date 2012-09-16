@@ -100,4 +100,7 @@ inline void SG_NORMALIZE_RANGE( T &val, const T min, const T max ) {
     while( val < min ) val += step;
 }
 
+// avoid an 'unused parameter' compiler warning.
+#define SG_UNUSED(x) (void)x
+
 #endif // _SG_INLINES_H

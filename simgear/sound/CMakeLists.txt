@@ -26,7 +26,7 @@ if (SIMGEAR_SHARED)
     set(SOUND_TEST_LIBS SimGearScene)
 else()
     set(SOUND_TEST_LIBS
-        sgsound sgio sgmath sgstructure sgthreads sgtiming sgmisc sgdebug
+        SimGearScene SimGearCore
         ${CMAKE_THREAD_LIBS_INIT}
         ${RT_LIBRARY}
         ${OPENAL_LIBRARY}

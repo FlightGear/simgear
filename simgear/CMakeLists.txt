@@ -39,12 +39,17 @@ endif(ENABLE_RTI)
 set(HEADERS compiler.h constants.h sg_inlines.h ${PROJECT_BINARY_DIR}/simgear/version.h)
 install (FILES ${HEADERS}  DESTINATION include/simgear/)
 
+get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
+get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
+get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
+
+if(LIBSVN_FOUND)
+	add_definitions(${APR_CFLAGS})
+	include_directories(${LIBSVN_INCLUDE_DIR})
+endif()
+
 if(SIMGEAR_SHARED)
     message(STATUS "Library building mode: SHARED LIBRARIES")
-    get_property(coreSources GLOBAL PROPERTY CORE_SOURCES)
-    get_property(sceneSources GLOBAL PROPERTY SCENE_SOURCES)
-    get_property(publicHeaders GLOBAL PROPERTY PUBLIC_HEADERS)
-
     add_library(SimGearCore SHARED ${coreSources})
 
   # set_property(TARGET SimGearCore PROPERTY FRAMEWORK 1)
@@ -56,11 +61,8 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
     target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
-    install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
     if(LIBSVN_FOUND)
-        add_definitions(${APR_CFLAGS})
-        include_directories(${LIBSVN_INCLUDE_DIR})
         target_link_libraries(SimGearCore ${LIBSVN_LIBRARIES})
     endif(LIBSVN_FOUND)
 
@@ -82,8 +84,19 @@ if(SIMGEAR_SHARED)
     
         install(TARGETS SimGearScene LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
-
+    
+    install(TARGETS SimGearCore LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 else()
     message(STATUS "Library building mode: STATIC LIBRARIES")
+    
+    add_library(SimGearCore STATIC ${coreSources})
+    install(TARGETS SimGearCore ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    
+    if(NOT SIMGEAR_HEADLESS)
+        add_library(SimGearScene STATIC ${sceneSources})
+        install(TARGETS SimGearScene ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
+
+
 

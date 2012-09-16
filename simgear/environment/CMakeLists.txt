@@ -13,7 +13,7 @@ if (SIMGEAR_SHARED)
     target_link_libraries(test_metar SimGearScene) 
 else()
     target_link_libraries(test_metar
-        sgenvironment sgstructure sgmisc sgdebug
+        SimGearScene SimGearCore
         ${CMAKE_THREAD_LIBS_INIT}
         ${ZLIB_LIBRARY}
         ${RT_LIBRARY})

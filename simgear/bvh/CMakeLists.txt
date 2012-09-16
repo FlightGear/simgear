@@ -46,13 +46,7 @@ set(SOURCES
 simgear_component(bvh bvh "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
-  if (SIMGEAR_SHARED)
-    set(TEST_LIBS SimGearCore)
-  else()
-    set(TEST_LIBS sgbvh sgmath sgstructure sgdebug)
-  endif()
-
   add_executable(bvhtest bvhtest.cxx)
-  target_link_libraries(bvhtest ${TEST_LIBS})
+  target_link_libraries(bvhtest SimGearCore)
   add_test(bvhtest ${EXECUTABLE_OUTPUT_PATH}/bvhtest)
 endif(ENABLE_TESTS)

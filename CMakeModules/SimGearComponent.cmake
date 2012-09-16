@@ -1,23 +1,14 @@
 
 macro(simgear_component_common name includePath sourcesList sources headers)
-    if (SIMGEAR_SHARED)
+    foreach(s ${sources})
+        set_property(GLOBAL
+            APPEND PROPERTY ${sourcesList} "${CMAKE_CURRENT_SOURCE_DIR}/${s}")
+    endforeach()
 
-        foreach(s ${sources})
-            set_property(GLOBAL
-                APPEND PROPERTY ${sourcesList} "${CMAKE_CURRENT_SOURCE_DIR}/${s}")
-        endforeach()
-
-		foreach(h ${headers})
-			set_property(GLOBAL
-				APPEND PROPERTY PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${h}")
-		endforeach()
-        
-    else()
-        set(libName "sg${name}")
-        add_library(${libName} STATIC ${sources} ${headers})
-
-        install (TARGETS ${libName} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    endif()
+	foreach(h ${headers})
+		set_property(GLOBAL
+			APPEND PROPERTY PUBLIC_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/${h}")
+	endforeach()
     
     install (FILES ${headers}  DESTINATION include/simgear/${includePath})
 endmacro()

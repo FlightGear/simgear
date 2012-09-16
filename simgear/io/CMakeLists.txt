@@ -41,8 +41,7 @@ if(ENABLE_TESTS)
 if (SIMGEAR_SHARED)
     set(TEST_LIBS SimGearCore)
 else()
-    set(TEST_LIBS
-            sgio sgbucket sgstructure sgthreads sgtiming sgmisc sgdebug
+    set(TEST_LIBS SimGearCore
             ${CMAKE_THREAD_LIBS_INIT}
             ${WINSOCK_LIBRARY}
             ${ZLIB_LIBRARY}

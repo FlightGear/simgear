@@ -423,66 +423,66 @@ public:
     }
 
     /** Get 3D cloud density */
-    virtual double get_3dCloudDensity() const;
+    double get_3dCloudDensity() const;
 
     /** Set 3D cloud density 
      * @param density 3D cloud density
      */
-    virtual void set_3dCloudDensity(double density);
+    void set_3dCloudDensity(double density);
 
     /** Get 3D cloud visibility range*/
-    virtual float get_3dCloudVisRange() const;
+    float get_3dCloudVisRange() const;
 
     /** Set 3D cloud visibility range
      * @param density 3D cloud visibility range
      */
-    virtual void set_3dCloudVisRange(float vis);
+    void set_3dCloudVisRange(float vis);
 
     /** Get 3D cloud impostor distance*/
-    virtual float get_3dCloudImpostorDistance() const;
+    float get_3dCloudImpostorDistance() const;
 
     /** Set 3D cloud impostor distance
      * @param density 3D cloud impostor distance
      */
-    virtual void set_3dCloudImpostorDistance(float vis);
+    void set_3dCloudImpostorDistance(float vis);
 
     /** Get 3D cloud LoD1 Range*/
-    virtual float get_3dCloudLoD1Range() const;
+    float get_3dCloudLoD1Range() const;
 
     /** Set 3D cloud LoD1 Range
      * @param vis LoD1 Range
      */
-    virtual void set_3dCloudLoD1Range(float vis);
+    void set_3dCloudLoD1Range(float vis);
 
     /** Get 3D cloud LoD2 Range*/
-    virtual float get_3dCloudLoD2Range() const;
+    float get_3dCloudLoD2Range() const;
 
     /** Set 3D cloud LoD2 Range
      * @param vis LoD2 Range
      */
-    virtual void set_3dCloudLoD2Range(float vis);
+    void set_3dCloudLoD2Range(float vis);
 
     /** Get 3D cloud impostor usage */
-    virtual bool get_3dCloudUseImpostors() const;
+    bool get_3dCloudUseImpostors() const;
 
     /** Set 3D cloud impostor usage
      * @param wrap whether use impostors for 3D clouds
      */
-    virtual void set_3dCloudUseImpostors(bool imp);
+    void set_3dCloudUseImpostors(bool imp);
 
     /** Get 3D cloud wrapping */
-    virtual bool get_3dCloudWrap() const;
+    bool get_3dCloudWrap() const;
 
     /** Set 3D cloud wrapping
      * @param wrap whether to wrap 3D clouds
      */
-    virtual void set_3dCloudWrap(bool wrap);
+    void set_3dCloudWrap(bool wrap);
 
 
     /** Get minimum sky visibility */
-    virtual float get_minimum_sky_visibility() const;
+    float get_minimum_sky_visibility() const;
 
     /** Set minimum sky visibility */
-    virtual void set_minimum_sky_visibility( float value );
+    void set_minimum_sky_visibility( float value );
 };
 #endif // _SG_SKY_HXX

@@ -100,5 +100,10 @@ else()
     endif(NOT SIMGEAR_HEADLESS)
 endif(SIMGEAR_SHARED)
 
-
-
+if(ENABLE_RTI)
+    # Ugly first aid to make hla compile agian
+    set_property(SOURCE hla/RTI13InteractionClass.cxx hla/RTI13ObjectClass.cxx
+        hla/RTI13ObjectInstance.cxx hla/RTI13Federate.cxx
+        hla/RTI13FederateFactory.cxx
+        APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
+endif(ENABLE_RTI)

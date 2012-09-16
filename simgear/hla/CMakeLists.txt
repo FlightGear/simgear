@@ -60,7 +60,6 @@ if(RTI_FOUND)
     RTI13FederateFactory.cxx
     )
   simgear_component(rti13 hla "${RTI13_SOURCES}" "")
-  set_property(TARGET sgrti13 APPEND PROPERTY COMPILE_FLAGS "-I${RTI_INCLUDE_DIR}")
 endif()
 
 set(RTI_SOURCES

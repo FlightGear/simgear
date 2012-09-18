@@ -56,6 +56,13 @@ SGSubsystem::init ()
 {
 }
 
+SGSubsystem::InitStatus
+SGSubsystem::incrementalInit ()
+{
+  init();
+  return INIT_DONE;
+}
+
 void
 SGSubsystem::postinit ()
 {
@@ -135,13 +142,15 @@ public:
     double elapsed_sec;
     bool collectTimeStats;
     int exceptionCount;
+    int initTime;
 };
 
 
 
 SGSubsystemGroup::SGSubsystemGroup () :
   _fixedUpdateTime(-1.0),
-  _updateTimeRemainder(0.0)
+  _updateTimeRemainder(0.0),
+  _initPosition(-1)
 {
 }
 
@@ -159,6 +168,26 @@ SGSubsystemGroup::init ()
 {
     for (unsigned int i = 0; i < _members.size(); i++)
         _members[i]->subsystem->init();
+}
+
+SGSubsystem::InitStatus
+SGSubsystemGroup::incrementalInit()
+{
+  if (_initPosition < 0)
+    _initPosition = 0;
+  
+  if (_initPosition >= _members.size())
+    return INIT_DONE;
+  
+  SGTimeStamp st;
+  st.stamp();
+  InitStatus memberStatus = _members[_initPosition]->subsystem->incrementalInit();
+  _members[_initPosition]->initTime += st.elapsedMSec();
+  
+  if (memberStatus == INIT_DONE)
+    ++_initPosition;
+  
+  return INIT_CONTINUE;
 }
 
 void
@@ -181,6 +210,7 @@ SGSubsystemGroup::shutdown ()
     // reverse order to prevent order dependency problems
     for (unsigned int i = _members.size(); i > 0; i--)
         _members[i-1]->subsystem->shutdown();
+  _initPosition = -1;
 }
 
 void
@@ -333,7 +363,8 @@ SGSubsystemGroup::Member::Member ()
       subsystem(0),
       min_step_sec(0),
       elapsed_sec(0),
-      exceptionCount(0)
+      exceptionCount(0),
+      initTime(0)
 {
 }
 
@@ -380,7 +411,8 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 ////////////////////////////////////////////////////////////////////////
 
 
-SGSubsystemMgr::SGSubsystemMgr ()
+SGSubsystemMgr::SGSubsystemMgr () :
+  _initPosition(-1)
 {
   for (int i = 0; i < MAX_GROUPS; i++) {
     _groups[i] = new SGSubsystemGroup;
@@ -405,6 +437,22 @@ SGSubsystemMgr::init ()
             _groups[i]->init();
 }
 
+SGSubsystem::InitStatus
+SGSubsystemMgr::incrementalInit()
+{
+  if (_initPosition < 0)
+    _initPosition = 0;
+  
+  if (_initPosition >= MAX_GROUPS)
+    return INIT_DONE;
+  
+  InitStatus memberStatus = _groups[_initPosition]->incrementalInit();  
+  if (memberStatus == INIT_DONE)
+    ++_initPosition;
+  
+  return INIT_CONTINUE;
+}
+
 void
 SGSubsystemMgr::postinit ()
 {
@@ -425,6 +473,8 @@ SGSubsystemMgr::shutdown ()
     // reverse order to prevent order dependency problems
     for (int i = MAX_GROUPS-1; i >= 0; i--)
         _groups[i]->shutdown();
+  
+    _initPosition = -1;
 }
 
 

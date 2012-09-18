@@ -150,6 +150,13 @@ public:
    */
   virtual void init ();
 
+  typedef enum
+  {
+    INIT_DONE,      ///< subsystem is fully initialised
+    INIT_CONTINUE   ///< init should be called again
+  } InitStatus;
+  
+  virtual InitStatus incrementalInit ();
 
   /**
    * Initialize parts that depend on other subsystems having been initialized.
@@ -289,7 +296,8 @@ public:
     SGSubsystemGroup ();
     virtual ~SGSubsystemGroup ();
 
-    virtual void init ();
+    virtual void init();
+    virtual InitStatus incrementalInit ();
     virtual void postinit ();
     virtual void reinit ();
     virtual void shutdown ();
@@ -322,6 +330,9 @@ private:
     
     double _fixedUpdateTime;
     double _updateTimeRemainder;
+    
+  /// index of the member we are currently init-ing
+    int _initPosition;
 };
 
 
@@ -364,6 +375,7 @@ public:
     virtual ~SGSubsystemMgr ();
 
     virtual void init ();
+    virtual InitStatus incrementalInit ();
     virtual void postinit ();
     virtual void reinit ();
     virtual void shutdown ();
@@ -394,7 +406,8 @@ public:
 
 private:
     SGSubsystemGroup* _groups[MAX_GROUPS];
-
+    int _initPosition;
+  
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;
 };

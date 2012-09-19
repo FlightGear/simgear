@@ -239,7 +239,7 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
 
                     bool dds_mask = (ompath.lower_extension() == "dds");
 
-                    if (dds[i] != dds_mask) {
+                    if (i < dds.size() && dds[i] != dds_mask) {
                         // Texture format does not match mask format. This is relevant for
                         // the object mask, as DDS textures have an origin at the bottom
                         // left rather than top left. Therefore we flip a copy of the image

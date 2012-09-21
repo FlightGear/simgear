@@ -150,7 +150,7 @@ public:
 SGSubsystemGroup::SGSubsystemGroup () :
   _fixedUpdateTime(-1.0),
   _updateTimeRemainder(0.0),
-  _initPosition(-1)
+  _initPosition(0)
 {
 }
 
@@ -173,9 +173,6 @@ SGSubsystemGroup::init ()
 SGSubsystem::InitStatus
 SGSubsystemGroup::incrementalInit()
 {
-  if (_initPosition < 0)
-    _initPosition = 0;
-  
   if (_initPosition >= _members.size())
     return INIT_DONE;
   
@@ -210,7 +207,7 @@ SGSubsystemGroup::shutdown ()
     // reverse order to prevent order dependency problems
     for (unsigned int i = _members.size(); i > 0; i--)
         _members[i-1]->subsystem->shutdown();
-  _initPosition = -1;
+  _initPosition = 0;
 }
 
 void
@@ -412,7 +409,7 @@ SGSubsystemGroup::Member::update (double delta_time_sec)
 
 
 SGSubsystemMgr::SGSubsystemMgr () :
-  _initPosition(-1)
+  _initPosition(0)
 {
   for (int i = 0; i < MAX_GROUPS; i++) {
     _groups[i] = new SGSubsystemGroup;
@@ -440,9 +437,6 @@ SGSubsystemMgr::init ()
 SGSubsystem::InitStatus
 SGSubsystemMgr::incrementalInit()
 {
-  if (_initPosition < 0)
-    _initPosition = 0;
-  
   if (_initPosition >= MAX_GROUPS)
     return INIT_DONE;
   
@@ -474,7 +468,7 @@ SGSubsystemMgr::shutdown ()
     for (int i = MAX_GROUPS-1; i >= 0; i--)
         _groups[i]->shutdown();
   
-    _initPosition = -1;
+    _initPosition = 0;
 }
 
 

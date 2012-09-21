@@ -332,7 +332,7 @@ private:
     double _updateTimeRemainder;
     
   /// index of the member we are currently init-ing
-    int _initPosition;
+    unsigned int _initPosition;
 };
 
 
@@ -406,7 +406,7 @@ public:
 
 private:
     SGSubsystemGroup* _groups[MAX_GROUPS];
-    int _initPosition;
+    unsigned int _initPosition;
   
     typedef std::map<std::string, SGSubsystem*> SubsystemDict;
     SubsystemDict _subsystem_map;

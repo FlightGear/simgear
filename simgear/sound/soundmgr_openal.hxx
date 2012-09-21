@@ -83,22 +83,26 @@ public:
     SGSoundMgr();
     ~SGSoundMgr();
 
-    void init(const char *devname = NULL);
-    void bind();
-    void unbind();
+    void init();
     void update(double dt);
     
     void suspend();
     void resume();
     void stop();
 
-    inline void reinit() { stop(); init(); }
+    void reinit();
+
+    /**
+     * Select a specific sound device.
+     * Requires a init/reinit call before sound is actually switched.
+     */
+    inline void select_device(const char* devname) {_device_name = devname;}
 
     /**
      * Test is the sound manager is in a working condition.
      * @return true is the sound manager is working
      */
-    inline bool is_working() const { return _working; }
+    inline bool is_working() const { return (_device != NULL); }
 
     /**
      * Set the sound manager to a  working condition.
@@ -282,7 +286,6 @@ public:
 
 private:
 
-    bool _working;
     bool _active;
     bool _changed;
     float _volume;
@@ -313,6 +316,7 @@ private:
     bool _bad_doppler;
     std::string _renderer;
     std::string _vendor;
+    std::string _device_name;
 
     bool testForALError(std::string s);
     bool testForALCError(std::string s);

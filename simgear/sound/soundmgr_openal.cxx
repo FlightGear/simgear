@@ -43,7 +43,9 @@
 using std::string;
 using std::vector;
 
+#if 0
 extern bool isNaN(float *v);
+#endif
 
 #define MAX_SOURCES	128
 
@@ -58,7 +60,6 @@ extern bool isNaN(float *v);
 
 // constructor
 SGSoundMgr::SGSoundMgr() :
-    _working(false),
     _active(false),
     _changed(true),
     _volume(0.0),
@@ -80,23 +81,44 @@ SGSoundMgr::SGSoundMgr() :
 
 SGSoundMgr::~SGSoundMgr() {
 
-    stop();
+    if (is_working())
+        stop();
+    _sample_groups.clear();
 }
 
 // initialize the sound manager
-void SGSoundMgr::init(const char *devname) {
+void SGSoundMgr::init() {
+
+    if (is_working())
+    {
+        SG_LOG( SG_SOUND, SG_ALERT, "Oops, OpenAL sound manager is already initialized." );
+        return;
+    }
 
     SG_LOG( SG_SOUND, SG_INFO, "Initializing OpenAL sound manager" );
 
-    ALCdevice *device = alcOpenDevice(devname);
-    if ( testForError(device, "Audio device not available, trying default") ) {
+    _free_sources.clear();
+    _free_sources.reserve( MAX_SOURCES );
+    _sources_in_use.clear();
+    _sources_in_use.reserve( MAX_SOURCES );
+
+    ALCdevice *device = NULL;
+    const char* devname = _device_name.c_str();
+    if (_device_name == "")
+        devname = NULL; // use default device
+    else
+    {
+        // try non-default device
+        device = alcOpenDevice(devname);
+    }
+
+    if ((!devname)||(testForError(device, "Audio device not available, trying default.")) ) {
         device = alcOpenDevice(NULL);
-        if (testForError(device, "Default Audio device not available.") ) {
+        if (testForError(device, "Default audio device not available.") ) {
            return;
         }
     }
 
-    _device = device;
     ALCcontext *context = alcCreateContext(device, NULL);
     testForALCError("context creation.");
     if ( testForError(context, "Unable to create a valid context.") ) {
@@ -112,9 +134,11 @@ void SGSoundMgr::init(const char *devname) {
     }
 
     if (_context != NULL)
+    {
         SG_LOG(SG_SOUND, SG_ALERT, "context is already assigned");
+    }
     _context = context;
-    _working = true;
+    _device = device;
 
     _at_up_vec[0] = 0.0; _at_up_vec[1] = 0.0; _at_up_vec[2] = -1.0;
     _at_up_vec[3] = 0.0; _at_up_vec[4] = 1.0; _at_up_vec[5] = 0.0;
@@ -163,8 +187,24 @@ void SGSoundMgr::init(const char *devname) {
     }
 }
 
+void SGSoundMgr::reinit()
+{
+    bool was_active = _active;
+
+    if (was_active)
+    {
+        suspend();
+    }
+
+    SGSoundMgr::stop();
+    SGSoundMgr::init();
+
+    if (was_active)
+        resume();
+}
+
 void SGSoundMgr::activate() {
-    if ( _working ) {
+    if ( is_working() ) {
         _active = true;
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
@@ -204,15 +244,14 @@ void SGSoundMgr::stop() {
         testForALError("SGSoundMgr::stop: delete buffers");
     }
     _buffers.clear();
+    _sources_in_use.clear();
 
-    if (_working) {
-        _working = false;
+    if (is_working()) {
         _active = false;
-        _context = alcGetCurrentContext();
-        _device = alcGetContextsDevice(_context);
         alcDestroyContext(_context);
         alcCloseDevice(_device);
         _context = NULL;
+        _device = NULL;
 
         _renderer = "unknown";
         _vendor = "unknown";
@@ -220,7 +259,7 @@ void SGSoundMgr::stop() {
 }
 
 void SGSoundMgr::suspend() {
-    if (_working) {
+    if (is_working()) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -232,7 +271,7 @@ void SGSoundMgr::suspend() {
 }
 
 void SGSoundMgr::resume() {
-    if (_working) {
+    if (is_working()) {
         sample_group_map_iterator sample_grp_current = _sample_groups.begin();
         sample_group_map_iterator sample_grp_end = _sample_groups.end();
         for ( ; sample_grp_current != sample_grp_end; ++sample_grp_current ) {
@@ -241,30 +280,6 @@ void SGSoundMgr::resume() {
         }
         _active = true;
     }
-}
-
-void SGSoundMgr::bind ()
-{
-    _free_sources.clear();
-    _free_sources.reserve( MAX_SOURCES );
-    _sources_in_use.clear();
-    _sources_in_use.reserve( MAX_SOURCES );
-}
-
-
-void SGSoundMgr::unbind ()
-{
-    _sample_groups.clear();
-
-    // delete free sources
-    for (unsigned int i=0; i<_free_sources.size(); i++) {
-        ALuint source = _free_sources[i];
-        alDeleteSources( 1 , &source );
-        testForALError("SGSoundMgr::unbind: delete sources");
-    }
-
-    _free_sources.clear();
-    _sources_in_use.clear();
 }
 
 // run the audio scheduler
@@ -543,7 +558,8 @@ void SGSoundMgr::update_pos_and_orientation() {
 bool SGSoundMgr::load(const string &samplepath, void **dbuf, int *fmt,
                                           size_t *sz, int *frq )
 {
-    if ( !_working ) return false;
+    if ( !is_working() )
+        return false;
 
     ALenum format;
     ALsizei size;

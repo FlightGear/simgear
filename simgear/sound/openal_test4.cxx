@@ -21,7 +21,8 @@ int main( int argc, char *argv[] ) {
     smgr = new SGSoundMgr;
 
     smgr->bind();
-    smgr->init("OSS Default");
+    smgr->select_device("OSS Default");
+    smgr->init();
     sgr = smgr->find("default", true);
     smgr->set_volume(0.9);
     smgr->activate();

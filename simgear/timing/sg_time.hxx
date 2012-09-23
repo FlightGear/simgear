@@ -36,10 +36,13 @@
 #include <simgear/compiler.h>
 
 #include <ctime>
+#include <memory> // for std::auto_ptr
+#include <string>
 
-#include <simgear/timing/timezone.h>
-
-
+// forward decls
+class SGPath;
+class SGGeod;
+ 
 /**
  * A class to calculate and manage a variety of time parameters.
  * The SGTime class provides many real-world time values. It
@@ -63,8 +66,6 @@
 class SGTime {
 
 private:
-    // tzContainer stores all the current Timezone control points/
-    SGTimeZoneContainer* tzContainer;
 
     // Points to the current local timezone name;
     std::string zonename;
@@ -96,7 +97,7 @@ private:
     double gst_diff;
 
     /** init common constructor code */
-    void init( double lon_rad, double lat_rad, const std::string& root,
+    void init( const SGGeod& location, const SGPath& root,
                time_t init_time );
 
 public:
@@ -120,14 +121,14 @@ public:
      * @param root root path point to data file location (timezone, etc.)
      * @param init_time provide an initialization time, 0 means use
               current clock time */
-    SGTime( double lon_rad, double lat_rad, const std::string& root,
-            time_t init_time );
+    SGTime( const SGGeod& location, const SGPath& root,
+               time_t init_time );
 
     /**
      * Create an instance given a data file path.
      * @param root root path point to data file location (timezone, etc.)
      */
-    SGTime( const std::string& root );
+    SGTime( const SGPath& root );
 
     /** Destructor */
     ~SGTime();
@@ -145,7 +146,7 @@ public:
               clock time
      * @param warp an optional time offset specified in seconds.  This
      *        allows us to advance or rewind "time" if we choose to.  */
-    void update( double lon_rad, double lat_rad, time_t ct, long int warp );
+    void update( const SGGeod& location, time_t ct, long int warp );
 
     /**
      * Given lon/lat, update timezone information and local_offset
@@ -157,7 +158,7 @@ public:
      * @param lon_rad current longitude (radians)
      * @param lat_rad current latitude (radians)
      * @param root base path containing time zone directory */
-    void updateLocal( double lon_rad, double lat_rad, const std::string& root );
+    void updateLocal( const SGGeod& location, const std::string& root );
 
     /** @return current system/unix time in seconds */
     inline time_t get_cur_time() const { return cur_time; };

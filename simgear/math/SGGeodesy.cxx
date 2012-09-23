@@ -318,6 +318,24 @@ SGGeodesy::direct(const SGGeod& p1, double course1,
   return ret == 0;
 }
 
+SGGeod
+SGGeodesy::direct(const SGGeod& p1, double course1, double distance)
+{
+  double lat2, lon2, course2;
+  int ret = _geo_direct_wgs_84(p1.getLatitudeDeg(), p1.getLongitudeDeg(),
+                               course1, distance, &lat2, &lon2, &course2);
+  if (ret != 0) {
+    throw sg_exception("_geo_direct_wgs_84 failed");
+  }
+  
+  SGGeod p2;
+  p2.setLatitudeDeg(lat2);
+  p2.setLongitudeDeg(lon2);
+  p2.setElevationM(0);
+  return p2;
+}
+
+
 // given lat1, lon1, lat2, lon2, calculate starting and ending
 // az1, az2 and distance (s).  Lat, lon, and azimuth are in degrees.
 // distance in meters

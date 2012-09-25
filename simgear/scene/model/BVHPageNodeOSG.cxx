@@ -591,6 +591,7 @@ public:
         return _pageNode.get();
     }
 
+private:
     SGSharedPtr<BVHPageNodeOSG> _pageNode;
     std::vector<SGSharedPtr<BVHNode> > _nodeVector;
 };

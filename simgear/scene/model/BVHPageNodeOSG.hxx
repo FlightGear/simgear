@@ -28,10 +28,10 @@ namespace simgear {
 class BVHPageNodeOSG : public BVHPageNode {
 public:
     BVHPageNodeOSG(const std::string& name, const SGSphered& boundingSphere,
-                   const osg::ref_ptr<osg::Referenced>& options);
+                   const osg::ref_ptr<const osg::Referenced>& options);
     BVHPageNodeOSG(const std::vector<std::string>& nameList,
                    const SGSphered& boundingSphere,
-                   const osg::ref_ptr<osg::Referenced>& options);
+                   const osg::ref_ptr<const osg::Referenced>& options);
     virtual ~BVHPageNodeOSG();
     
     virtual BVHPageRequest* newRequest();
@@ -39,7 +39,7 @@ public:
     void setBoundingSphere(const SGSphered& sphere);
 
     static SGSharedPtr<BVHNode>
-    load(const std::string& name, const osg::ref_ptr<osg::Referenced>& options);
+    load(const std::string& name, const osg::ref_ptr<const osg::Referenced>& options);
 
 protected:
     virtual SGSphered computeBoundingSphere() const;
@@ -54,7 +54,7 @@ private:
     /// The bounding sphere as given by the lod node.
     SGSphered _boundingSphere;
     /// The osg loader options that are active for this subtree
-    osg::ref_ptr<osg::Referenced> _options;
+    osg::ref_ptr<const osg::Referenced> _options;
 };
 
 }

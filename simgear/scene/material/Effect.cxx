@@ -602,6 +602,24 @@ struct StencilBuilder : public PassAttributeBuilder
 
 InstallAttributeBuilder<StencilBuilder> installStencil("stencil");
 
+struct AlphaToCoverageBuilder : public PassAttributeBuilder
+{
+    void buildAttribute(Effect* effect, Pass* pass, const SGPropertyNode* prop,
+                        const SGReaderWriterOptions* options);
+};
+
+void AlphaToCoverageBuilder::buildAttribute(Effect* effect, Pass* pass,
+                                     const SGPropertyNode* prop,
+                                     const SGReaderWriterOptions* options)
+{
+    const SGPropertyNode* realProp = getEffectPropertyNode(effect, prop);
+    if (!realProp)
+        return;
+    pass->setMode(GL_SAMPLE_ALPHA_TO_COVERAGE_ARB, (realProp->getValue<bool>() ? 
+                                    StateAttribute::ON : StateAttribute::OFF));
+}
+
+InstallAttributeBuilder<AlphaToCoverageBuilder> installAlphaToCoverage("alpha-to-coverage");
 
 EffectNameValue<AlphaFunc::ComparisonFunction> alphaComparisonInit[] =
 {
@@ -648,6 +666,7 @@ struct AlphaTestBuilder : public PassAttributeBuilder
                                                              "comparison");
         const SGPropertyNode* pRef = getEffectPropertyChild(effect, prop,
                                                              "reference");
+
         AlphaFunc::ComparisonFunction func = AlphaFunc::ALWAYS;
         float refValue = 1.0f;
         if (pComp)

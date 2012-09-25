@@ -7,6 +7,7 @@ set(HEADERS
     CheckSceneryVisitor.hxx
     ConditionNode.hxx
     ModelRegistry.hxx
+    PrimitiveCollector.hxx
     SGClipGroup.hxx
     SGInteractionAnimation.hxx
     SGMaterialAnimation.hxx
@@ -29,6 +30,7 @@ set(SOURCES
     CheckSceneryVisitor.cxx
     ConditionNode.cxx
     ModelRegistry.cxx
+    PrimitiveCollector.cxx
     SGClipGroup.cxx
     SGInteractionAnimation.cxx
     SGLightAnimation.cxx

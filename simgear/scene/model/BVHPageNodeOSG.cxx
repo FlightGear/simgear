@@ -31,7 +31,6 @@
 #include <osg/PagedLOD>
 #include <osg/ProxyNode>
 #include <osg/Transform>
-#include <osg/TriangleFunctor>
 #include <osgDB/ReadFile>
 
 #include <simgear/scene/material/mat.hxx>
@@ -43,303 +42,40 @@
 
 #include <simgear/bvh/BVHStaticGeometryBuilder.hxx>
 
+#include "PrimitiveCollector.hxx"
+
 namespace simgear {
 
 class BVHPageNodeOSG::_NodeVisitor : public osg::NodeVisitor {
 public:
-    class PFunctor : public osg::PrimitiveFunctor {
+    class _PrimitiveCollector : public PrimitiveCollector {
     public:
-        PFunctor() :
-            _modeCache(0)
-        {
-            _geometryBuilder = new BVHStaticGeometryBuilder;
-        }
-        virtual ~PFunctor()
+        _PrimitiveCollector() :
+            _geometryBuilder(new BVHStaticGeometryBuilder)
+        { }
+        virtual ~_PrimitiveCollector()
         { }
 
-        virtual void setVertexArray(unsigned int count, const osg::Vec2* vertices)
+        virtual void addPoint(const osg::Vec3d& v1)
+        { }
+        virtual void addLine(const osg::Vec3d& v1, const osg::Vec3d& v2)
+        { }
+        virtual void addTriangle(const osg::Vec3d& v1, const osg::Vec3d& v2, const osg::Vec3d& v3)
         {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0], vertices[i][1], 0);
-        }
-
-        virtual void setVertexArray(unsigned int count, const osg::Vec3* vertices)
-        {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0], vertices[i][1], vertices[i][2]);
-        }
-
-        virtual void setVertexArray(unsigned int count, const osg::Vec4* vertices)
-        {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0]/vertices[i][3],
-                                       vertices[i][1]/vertices[i][3],
-                                       vertices[i][2]/vertices[i][3]);
-        }
-
-        virtual void setVertexArray(unsigned int count, const osg::Vec2d* vertices)
-        {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0], vertices[i][1], 0);
-        }
-
-        virtual void setVertexArray(unsigned int count, const osg::Vec3d* vertices)
-        {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0], vertices[i][1], vertices[i][2]);
-        }
-
-        virtual void setVertexArray(unsigned int count, const osg::Vec4d* vertices) 
-        {
-            _vertices.resize(count);
-            for (unsigned i = 0; i < count; ++i)
-                _vertices[i] = SGVec3f(vertices[i][0]/vertices[i][3],
-                                       vertices[i][1]/vertices[i][3],
-                                       vertices[i][2]/vertices[i][3]);
-        }
-
-        virtual void drawArrays(GLenum mode, GLint first, GLsizei count)
-        {
-            if (_vertices.empty() || count <= 0)
-                return;
-
-            GLsizei end = first + count;
-            switch(mode) {
-            case (GL_TRIANGLES):
-                for (GLsizei i = first; i < end - 2; i += 3) {
-                    addTriangle(i, i + 1, i + 2);
-                }
-                break;
-
-            case (GL_TRIANGLE_STRIP):
-                for (GLsizei i = first; i < end - 2; ++i) {
-                    addTriangle(i, i + 1, i + 2);
-                }
-                break;
-
-            case (GL_QUADS):
-                for (GLsizei i = first; i < end - 3; i += 4) {
-                    addQuad(i, i + 1, i + 2, i + 3);
-                }
-                break;
-
-            case (GL_QUAD_STRIP):
-                for (GLsizei i = first; i < end - 3; i += 2) {
-                    addQuad(i, i + 1, i + 2, i + 3);
-                }
-                break;
-
-            case (GL_POLYGON): // treat polygons as GL_TRIANGLE_FAN
-            case (GL_TRIANGLE_FAN):
-                for (GLsizei i = first; i < end - 2; ++i) {
-                    addTriangle(first, i + 1, i + 2);
-                }
-                break;
-
-            case (GL_POINTS):
-                for (GLsizei i = first; i < end; ++i) {
-                    addPoint(i);
-                }
-                break;
-
-            case (GL_LINES):
-                for (GLsizei i = first; i < end - 1; i += 2) {
-                    addLine(i, i + 1);
-                }
-                break;
-
-            case (GL_LINE_STRIP):
-                for (GLsizei i = first; i < end - 1; ++i) {
-                    addLine(i, i + 1);
-                }
-                break;
-
-            case (GL_LINE_LOOP):
-                for (GLsizei i = first; i < end - 1; ++i) {
-                    addLine(i, i + 1);
-                }
-                addLine(end - 1, first);
-                break;
-
-            default:
-                break;
-            }
-        }
-  
-        virtual void drawElements(GLenum mode, GLsizei count, const GLubyte* indices)
-        {
-            drawElementsTemplate(mode, count, indices);
-        }
-
-        virtual void drawElements(GLenum mode, GLsizei count, const GLushort* indices)
-        {
-            drawElementsTemplate(mode, count, indices);
-        }
-
-        virtual void drawElements(GLenum mode, GLsizei count, const GLuint* indices)
-        {
-            drawElementsTemplate(mode, count, indices);
-        }
-
-        virtual void begin(GLenum mode)
-        {
-            _modeCache = mode;
-            _vertices.resize(0);
-        }
-
-        virtual void vertex(const osg::Vec2& v)
-        {
-            _vertices.push_back(SGVec3f(v[0], v[1], 0));
-        }
-        virtual void vertex(const osg::Vec3& v)
-        {
-            _vertices.push_back(SGVec3f(v[0], v[1], v[2]));
-        }
-        virtual void vertex(const osg::Vec4& v)
-        {
-            _vertices.push_back(SGVec3f(v[0]/v[3], v[1]/v[3], v[2]/v[3]));
-        }
-        virtual void vertex(float x, float y)
-        {
-            _vertices.push_back(SGVec3f(x, y, 0));
-        }
-        virtual void vertex(float x, float y, float z)
-        {
-            _vertices.push_back(SGVec3f(x, y, z));
-        }
-        virtual void vertex(float x, float y, float z, float w)
-        {
-            _vertices.push_back(SGVec3f(x/w, y/w, z/w));
-        }
-        virtual void end()
-        {
-            if (_vertices.empty())
-                return;
-
-            drawArrays(_modeCache, 0, _vertices.size());
-        }
-
-        template<typename index_type>
-        void drawElementsTemplate(GLenum mode, GLsizei count,
-                                  const index_type* indices)
-        {
-            if (_vertices.empty() || indices == 0 || count <= 0)
-                return;
-    
-            switch(mode) {
-            case (GL_TRIANGLES):
-                for (GLsizei i = 0; i < count - 2; i += 3) {
-                    addTriangle(indices[i], indices[i + 1], indices[i + 2]);
-                }
-                break;
-
-            case (GL_TRIANGLE_STRIP):
-                for (GLsizei i = 0; i < count - 2; ++i) {
-                    addTriangle(indices[i], indices[i + 1], indices[i + 2]);
-                }
-                break;
-
-            case (GL_QUADS):
-                for (GLsizei i = 0; i < count - 3; i += 4) {
-                    addQuad(indices[i], indices[i + 1], indices[i + 2], indices[i + 3]);
-                }
-                break;
-
-            case (GL_QUAD_STRIP):
-                for (GLsizei i = 0; i < count - 3; i += 2) {
-                    addQuad(indices[i], indices[i + 1], indices[i + 2], indices[i + 3]);
-                }
-                break;
-
-            case (GL_POLYGON):
-            case (GL_TRIANGLE_FAN):
-                for (GLsizei i = 0; i < count - 2; ++i) {
-                    addTriangle(indices[0], indices[i + 1], indices[i + 2]);
-                }
-                break;
-
-            case (GL_POINTS):
-                for(GLsizei i = 0; i < count; ++i) {
-                    addPoint(indices[i]);
-                }
-                break;
-
-            case (GL_LINES):
-                for (GLsizei i = 0; i < count - 1; i += 2) {
-                    addLine(indices[i], indices[i + 1]);
-                }
-                break;
-
-            case (GL_LINE_STRIP):
-                for (GLsizei i = 0; i < count - 1; ++i) {
-                    addLine(indices[i], indices[i + 1]);
-                }
-                break;
-
-            case (GL_LINE_LOOP):
-                for (GLsizei i = 0; i < count - 1; ++i) {
-                    addLine(indices[i], indices[i + 1]);
-                }
-                addLine(indices[count - 1], indices[0]);
-                break;
-
-            default:
-                break;
-            }
-        }    
-
-        void addPoint(unsigned i1)
-        {
-            addPoint(_vertices[i1]);
-        }
-        void addLine(unsigned i1, unsigned i2)
-        {
-            addLine(_vertices[i1], _vertices[i2]);
-        }
-        void addTriangle(unsigned i1, unsigned i2, unsigned i3)
-        {
-            addTriangle(_vertices[i1], _vertices[i2], _vertices[i3]);
-        }
-        void addQuad(unsigned i1, unsigned i2, unsigned i3, unsigned i4)
-        {
-            addQuad(_vertices[i1], _vertices[i2], _vertices[i3], _vertices[i4]);
-        }
-
-        void addPoint(const SGVec3f& v1)
-        {
-        }
-        void addLine(const SGVec3f& v1, const SGVec3f& v2)
-        {
-        }
-        void addTriangle(const SGVec3f& v1, const SGVec3f& v2, const SGVec3f& v3)
-        {
-            _geometryBuilder->addTriangle(v1, v2, v3);
-        }
-        void addQuad(const SGVec3f& v1, const SGVec3f& v2,
-                     const SGVec3f& v3, const SGVec3f& v4)
-        {
-            _geometryBuilder->addTriangle(v1, v2, v3);
-            _geometryBuilder->addTriangle(v1, v3, v4);
+            _geometryBuilder->addTriangle(toVec3f(toSG(v1)), toVec3f(toSG(v2)), toVec3f(toSG(v3)));
         }
 
         BVHNode* buildTreeAndClear()
         {
             BVHNode* bvNode = _geometryBuilder->buildTree();
             _geometryBuilder = new BVHStaticGeometryBuilder;
-            _vertices.clear();
             return bvNode;
         }
 
-        void swap(PFunctor& primitiveFunctor)
+        void swap(_PrimitiveCollector& primitiveCollector)
         {
-            _vertices.swap(primitiveFunctor._vertices);
-            std::swap(_modeCache, primitiveFunctor._modeCache);
-            std::swap(_geometryBuilder, primitiveFunctor._geometryBuilder);
+            PrimitiveCollector::swap(primitiveCollector);
+            std::swap(_geometryBuilder, primitiveCollector._geometryBuilder);
         }
 
         void setCurrentMaterial(const BVHMaterial* material)
@@ -350,9 +86,6 @@ public:
         {
             return _geometryBuilder->getCurrentMaterial();
         }
-
-        std::vector<SGVec3f> _vertices;
-        GLenum _modeCache;
 
         SGSharedPtr<BVHStaticGeometryBuilder> _geometryBuilder;
     };
@@ -368,10 +101,10 @@ public:
 
     const BVHMaterial* pushMaterial(osg::Geode* geode)
     {
-        const BVHMaterial* oldMaterial = _primitiveFunctor.getCurrentMaterial();
+        const BVHMaterial* oldMaterial = _primitiveCollector.getCurrentMaterial();
         const BVHMaterial* material = SGMaterialLib::findMaterial(geode);
         if (material)
-            _primitiveFunctor.setCurrentMaterial(material);
+            _primitiveCollector.setCurrentMaterial(material);
         return oldMaterial;
     }
 
@@ -380,9 +113,9 @@ public:
         const BVHMaterial* oldMaterial = pushMaterial(&geode);
 
         for(unsigned i = 0; i < geode.getNumDrawables(); ++i)
-            geode.getDrawable(i)->accept(_primitiveFunctor);
+            geode.getDrawable(i)->accept(_primitiveCollector);
 
-        _primitiveFunctor.setCurrentMaterial(oldMaterial);
+        _primitiveCollector.setCurrentMaterial(oldMaterial);
     }
 
     virtual void apply(osg::Group& group)
@@ -390,11 +123,11 @@ public:
         // FIXME optimize this to collapse more leafs
 
         // push the current active primitive list
-        PFunctor previousPrimitives;
-        _primitiveFunctor.swap(previousPrimitives);
+        _PrimitiveCollector previousPrimitives;
+        _primitiveCollector.swap(previousPrimitives);
 
         const BVHMaterial* mat = previousPrimitives.getCurrentMaterial();
-        _primitiveFunctor.setCurrentMaterial(mat);
+        _primitiveCollector.setCurrentMaterial(mat);
 
         NodeVector nodeVector;
         _nodeVector.swap(nodeVector);
@@ -422,7 +155,7 @@ public:
         }
 
         // pop the current active primitive list
-        _primitiveFunctor.swap(previousPrimitives);
+        _primitiveCollector.swap(previousPrimitives);
     }
 
     virtual void apply(osg::Transform& transform)
@@ -435,11 +168,11 @@ public:
             return;
 
         // push the current active primitive list
-        PFunctor previousPrimitives;
-        _primitiveFunctor.swap(previousPrimitives);
+        _PrimitiveCollector previousPrimitives;
+        _primitiveCollector.swap(previousPrimitives);
 
         const BVHMaterial* mat = previousPrimitives.getCurrentMaterial();
-        _primitiveFunctor.setCurrentMaterial(mat);
+        _primitiveCollector.setCurrentMaterial(mat);
 
         NodeVector nodeVector;
         _nodeVector.swap(nodeVector);
@@ -455,7 +188,7 @@ public:
         _nodeVector.swap(nodeVector);
 
         // pop the current active primitive list
-        _primitiveFunctor.swap(previousPrimitives);
+        _primitiveCollector.swap(previousPrimitives);
 
         if (!nodeVector.empty()) {
             SGSharedPtr<BVHTransform> bvhTransform = new BVHTransform;
@@ -479,7 +212,7 @@ public:
     void addBoundingVolumeTreeToNode()
     {
         // Build the flat tree.
-        BVHNode* bvNode = _primitiveFunctor.buildTreeAndClear();
+        BVHNode* bvNode = _primitiveCollector.buildTreeAndClear();
 
         // Nothing in there?
         if (!bvNode)
@@ -553,7 +286,7 @@ public:
     }
 
 private:
-    PFunctor _primitiveFunctor;
+    _PrimitiveCollector _primitiveCollector;
     typedef std::vector<SGSharedPtr<BVHNode> > NodeVector;
     NodeVector _nodeVector;
 };

@@ -608,6 +608,10 @@ struct AlphaToCoverageBuilder : public PassAttributeBuilder
                         const SGReaderWriterOptions* options);
 };
 
+#ifndef GL_SAMPLE_ALPHA_TO_COVERAGE_ARB
+#define GL_SAMPLE_ALPHA_TO_COVERAGE_ARB 0x809E
+#endif
+
 void AlphaToCoverageBuilder::buildAttribute(Effect* effect, Pass* pass,
                                      const SGPropertyNode* prop,
                                      const SGReaderWriterOptions* options)

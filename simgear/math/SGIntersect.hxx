@@ -253,11 +253,11 @@ intersects(SGVec3<T>& dst, const SGLineSegment<T>& lineSegment, const SGPlane<T>
 
   // The negative numerator for the \alpha expression
   T num = plane.getPositiveDist();
-  num -= dot(plane.getNormal(), lineSegment.getOrigin());
+  num -= dot(plane.getNormal(), lineSegment.getStart());
   
   // If the numerator is zero, we have the lines origin included in the plane
   if (fabs(num) <= SGLimits<T>::min()) {
-    dst = lineSegment.getOrigin();
+    dst = lineSegment.getStart();
     return true;
   }
 
@@ -279,7 +279,7 @@ intersects(SGVec3<T>& dst, const SGLineSegment<T>& lineSegment, const SGPlane<T>
   if (1 < alpha)
     return false;
 
-  dst = lineSegment.getOrigin() + alpha*lineSegment.getDirection();
+  dst = lineSegment.getStart() + alpha*lineSegment.getDirection();
   return true;
 }
 // make it symmetric

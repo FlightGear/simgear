@@ -232,6 +232,11 @@ check_cxx_source_compiles(
     void f() { isnan(0.0);} "
     HAVE_ISNAN)
 
+check_cxx_source_compiles(
+    "#include <cmath> 
+    void f() { std::isnan(0.0);} "
+    HAVE_STD_ISNAN)
+
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(WARNING_FLAGS_CXX "-Wall")
     set(WARNING_FLAGS_C   "-Wall")

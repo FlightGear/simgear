@@ -92,7 +92,6 @@ public:
   static S lerp(const S& val0, const S& val1, const T& t)
   { return val0*(T(1) - t) + val1*t; }
 
-#ifndef NDEBUG
   /// Returns true if v is a NaN value
   /// Use with care: allways code that you do not need to use that!
   static bool isNaN(const T& v)
@@ -109,7 +108,6 @@ public:
     return !(v == v);
 #endif
   }
-#endif
 };
 
 #endif

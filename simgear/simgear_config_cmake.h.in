@@ -10,6 +10,7 @@
 #cmakedefine HAVE_RINT
 #cmakedefine HAVE_TIMEGM
 #cmakedefine HAVE_ISNAN
+#cmakedefine HAVE_STD_ISNAN
 #cmakedefine HAVE_WINDOWS_H
 #cmakedefine HAVE_MKDTEMP
 

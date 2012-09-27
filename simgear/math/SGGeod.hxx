@@ -20,10 +20,6 @@
 
 #include <simgear/constants.h>
 
-#ifndef _MSC_VER
-using std::isnan;
-#endif
-
 // #define SG_GEOD_NATIVE_DEGREE
 
 /// Class representing a geodetic location
@@ -356,7 +352,10 @@ inline
 bool
 SGGeod::isValid() const
 {
-  if (isnan(_lon) || isnan(_lat)) return false;
+  if (SGMiscd::isNaN(_lon))
+      return false;
+  if (SGMiscd::isNaN(_lat))
+      return false;
 #ifdef SG_GEOD_NATIVE_DEGREE
   return (_lon >= -180.0) && (_lon <= 180.0) &&
   (_lat >= -90.0) && (_lat <= 90.0);

@@ -423,10 +423,11 @@ bool SGBinObject::read_bin( const string& file ) {
     } else {
         // close the file before we return
         gzclose(fp);
-
+        SG_LOG( SG_EVENT, SG_ALERT,
+           "ERROR: " << file << "has bad header");
         return false;
     }
-
+    
     // read creation time
     unsigned int foo_calendar_time;
     sgReadUInt( fp, &foo_calendar_time );

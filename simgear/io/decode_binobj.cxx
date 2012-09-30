@@ -13,6 +13,7 @@
 #include <cstdio>
 
 #include "sg_binobj.hxx"
+#include <simgear/debug/logstream.hxx>
 
 using std::cout;
 using std::endl;
@@ -25,6 +26,9 @@ int main( int argc, char **argv ) {
     if ( argc != 2 ) {
         cout << "Usage: " << argv[0] << " binary_obj_file" << endl;
     }
+    
+    
+    sglog().setLogLevels( SG_ALL, SG_ALERT );
 
     SGBinObject obj;
     bool result = obj.read_bin( argv[1] );

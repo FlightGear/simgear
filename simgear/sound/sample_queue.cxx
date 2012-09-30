@@ -35,7 +35,9 @@
 
 #include "soundmgr_openal.hxx"
 #include "sample_queue.hxx"
+#include "soundmgr_openal_private.hxx"
 
+using std::string;
 
 //
 // SGSampleQueue

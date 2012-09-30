@@ -36,7 +36,9 @@
 
 #include "soundmgr_openal.hxx"
 #include "sample_openal.hxx"
+#include "soundmgr_openal_private.hxx"
 
+using std::string;
 
 //
 // SGSoundSample

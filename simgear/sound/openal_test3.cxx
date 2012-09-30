@@ -10,7 +10,8 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include "soundmgr_openal.hxx"
-
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
 int main( int argc, char *argv[] ) {
     SGSampleGroup *sgr;

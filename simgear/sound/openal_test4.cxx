@@ -10,7 +10,8 @@
 #include <simgear/misc/sg_path.hxx>
 
 #include "soundmgr_openal.hxx"
-
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
 int main( int argc, char *argv[] ) {
     SGSampleQueue *squeue;
@@ -31,7 +32,7 @@ int main( int argc, char *argv[] ) {
     void *data;
     size_t len;
     int freq, fmt;
-    string file = SRC_DIR"/jet.wav";
+    std::string file = SRC_DIR"/jet.wav";
     smgr->load(file, &data, &fmt, &len, &freq);
 
     squeue = new SGSampleQueue( freq, fmt );

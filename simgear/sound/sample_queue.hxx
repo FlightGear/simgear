@@ -36,7 +36,6 @@
 #include <vector>
 
 #include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 

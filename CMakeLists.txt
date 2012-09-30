@@ -74,6 +74,7 @@ option(JPEG_FACTORY     "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" ON)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
+option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
 option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)
 
 if (MSVC)
@@ -134,10 +135,15 @@ set (BOOST_CXX_FLAGS "-DBOOST_MULTI_INDEX_DISABLE_SERIALIZATION -DBOOST_BIMAP_DI
 
 if(SIMGEAR_HEADLESS)
     message(STATUS "SimGear mode: HEADLESS")
+    set(ENABLE_SOUND 0)
 else()
     message(STATUS "SimGear mode: NORMAL")
     find_package(OpenGL REQUIRED)
-    find_package(OpenAL REQUIRED)
+    
+    if (ENABLE_SOUND)
+        find_package(OpenAL REQUIRED)
+    endif(ENABLE_SOUND)
+    
     find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)
 endif(SIMGEAR_HEADLESS)
 

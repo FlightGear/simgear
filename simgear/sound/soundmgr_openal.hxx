@@ -38,40 +38,15 @@
 #include <string>
 #include <vector>
 #include <map>
-
-#if defined(__APPLE__)
-# include <OpenAL/al.h>
-# include <OpenAL/alc.h>
-#elif defined(OPENALSDK)
-# include <al.h>
-# include <alc.h>
-#else
-# include <AL/al.h>
-# include <AL/alc.h>
-#endif
-
+#include <memory> // for std::auto_ptr
+     
 #include <simgear/compiler.h>
 #include <simgear/structure/subsystem_mgr.hxx>
-#include <simgear/math/SGMathFwd.hxx>
+#include <simgear/math/SGMath.hxx>
 
-#include "sample_group.hxx"
-
-struct refUint {
-    unsigned int refctr;
-    ALuint id;
-
-    refUint() { refctr = 0; id = (ALuint)-1; };
-    refUint(ALuint i) { refctr = 1; id = i; };
-    ~refUint() {};
-};
-
-typedef std::map < std::string, refUint > buffer_map;
-typedef buffer_map::iterator buffer_map_iterator;
-typedef buffer_map::const_iterator  const_buffer_map_iterator;
-
-typedef std::map < std::string, SGSharedPtr<SGSampleGroup> > sample_group_map;
-typedef sample_group_map::iterator sample_group_map_iterator;
-typedef sample_group_map::const_iterator const_sample_group_map_iterator;
+// forward decls
+class SGSampleGroup;
+class SGSoundSample;
 
 /**
  * Manage a collection of SGSampleGroup instances
@@ -102,7 +77,7 @@ public:
      * Test is the sound manager is in a working condition.
      * @return true is the sound manager is working
      */
-    inline bool is_working() const { return (_device != NULL); }
+    bool is_working() const;
 
     /**
      * Set the sound manager to a  working condition.
@@ -142,15 +117,13 @@ public:
      * @param refname Reference name of the sample group to find
      * @return A pointer to the SGSampleGroup
      */
-    SGSampleGroup *find( const string& refname, bool create = false );
+    SGSampleGroup *find( const std::string& refname, bool create = false );
 
     /**
      * Set the Cartesian position of the sound manager.
      * @param pos OpenAL listener position
      */
-    void set_position( const SGVec3d& pos, const SGGeod& pos_geod ) {
-        _base_pos = pos; _geod_pos = pos_geod; _changed = true;
-    }
+    void set_position( const SGVec3d& pos, const SGGeod& pos_geod );
 
     void set_position_offset( const SGVec3d& pos ) {
         _offset_pos = pos; _changed = true;
@@ -161,7 +134,7 @@ public:
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right
      * @return OpenAL listener position
      */
-    SGVec3d& get_position() { return _absolute_pos; }
+    const SGVec3d& get_position() const;
 
     /**
      * Set the velocity vector (in meters per second) of the sound manager
@@ -183,24 +156,20 @@ public:
      * Set the orientation of the sound manager
      * @param ori Quaternation containing the orientation information
      */
-    void set_orientation( const SGQuatd& ori ) {
-        _orientation = ori; _changed = true;
-    }
+    void set_orientation( const SGQuatd& ori );
 
     /**
      * Get the orientation of the sound manager
      * @return Quaternation containing the orientation information
      */
-    inline const SGQuatd& get_orientation() { return _orientation; }
+    const SGQuatd& get_orientation() const;
 
     /**
      * Get the direction vector of the sound manager
      * This is in the same coordinate system as OpenGL; y=up, z=back, x=right.
      * @return Look-at direction of the OpenAL listener
      */
-    SGVec3f get_direction() {
-        return SGVec3f(_at_up_vec[0], _at_up_vec[1], _at_up_vec[2]);
-    }
+    SGVec3f get_direction() const;
 
     enum {
         NO_SOURCE = (unsigned int)-1,
@@ -270,7 +239,7 @@ public:
      * @param freq Pointer to a vairable that gets the sample frequency in Herz
      * @return true if succesful, false on error
      */
-    bool load(const string &samplepath, void **data, int *format,
+    bool load(const std::string &samplepath, void **data, int *format,
                                          size_t *size, int *freq );
 
     /**
@@ -285,33 +254,20 @@ public:
     const std::string& get_renderer() { return _renderer; }
 
 private:
-
+    class SoundManagerPrivate;
+    /// private implementation object
+    std::auto_ptr<SoundManagerPrivate> d;
+        
     bool _active;
     bool _changed;
     float _volume;
 
-    ALCdevice *_device;
-    ALCcontext *_context;
-
     // Position of the listener.
-    SGVec3d _absolute_pos;
     SGVec3d _offset_pos;
-    SGVec3d _base_pos;
     SGGeod _geod_pos;
 
     // Velocity of the listener.
     SGVec3d _velocity;
-
-    // Orientation of the listener. 
-    // first 3 elements are "at" vector, second 3 are "up" vector
-    SGQuatd _orientation;
-    ALfloat _at_up_vec[6];
-
-    sample_group_map _sample_groups;
-    buffer_map _buffers;
-
-    std::vector<ALuint> _free_sources;
-    std::vector<ALuint> _sources_in_use;
 
     bool _bad_doppler;
     std::string _renderer;
@@ -322,7 +278,6 @@ private:
     bool testForALCError(std::string s);
     bool testForError(void *p, std::string s);
 
-    void update_pos_and_orientation();
     void update_sample_config( SGSampleGroup *sound );
 };
 

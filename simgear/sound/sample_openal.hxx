@@ -30,19 +30,19 @@
 #ifndef _SG_SAMPLE_HXX
 #define _SG_SAMPLE_HXX 1
 
-#ifndef __cplusplus
-# error This library requires C++
-#endif
-
 #include <string>
-#include <cstdlib>
 
 #include <simgear/compiler.h>
-#include <simgear/debug/logstream.hxx>
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-
+#include <simgear/math/SGMath.hxx>
+     
 class SGPath;
+
+#ifndef AL_FORMAT_MONO8
+     #define AL_FORMAT_MONO8    0x1100
+#endif
+ 
 
 /**
  * manages everything we need to know for an individual audio sample

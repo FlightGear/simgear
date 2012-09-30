@@ -16,6 +16,7 @@ set(SOURCES
     soundmgr_openal.cxx
     xmlsound.cxx
     readwav.cxx
+    soundmgr_openal_private.hxx
     )
 
 simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")

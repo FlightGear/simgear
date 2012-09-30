@@ -25,6 +25,9 @@
 #  include <simgear_config.h>
 #endif
 
+#include "xmlsound.hxx"
+
+
 #include <simgear/compiler.h>
 
 #include <string.h>
@@ -35,8 +38,10 @@
 #include <simgear/structure/exception.hxx>
 #include <simgear/misc/sg_path.hxx>
 
-#include "xmlsound.hxx"
+#include "sample_group.hxx"
+#include "sample_openal.hxx"
 
+using std::string;
 
 // static double _snd_lin(double v)   { return v; }
 static double _snd_inv(double v)   { return (v == 0) ? 1e99 : 1/v; }

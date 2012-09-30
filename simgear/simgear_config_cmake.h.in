@@ -20,3 +20,4 @@
 #cmakedefine GCC_ATOMIC_BUILTINS_FOUND
 
 #cmakedefine SYSTEM_EXPAT
+#cmakedefine ENABLE_SOUND

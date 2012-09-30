@@ -25,9 +25,13 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/debug/logstream.hxx>
 
 #include "soundmgr_openal.hxx"
+#include "soundmgr_openal_private.hxx"
 #include "sample_group.hxx"
+
+using std::string;
 
 bool isNaN(float *v) {
    return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));

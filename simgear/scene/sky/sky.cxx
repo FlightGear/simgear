@@ -81,10 +81,11 @@ SGSky::~SGSky( void )
 // the provided branch
 void SGSky::build( double h_radius_m, double v_radius_m,
                    double sun_size, double moon_size,
-                   const SGEphemeris& eph, SGPropertyNode *property_tree_node )
+                   const SGEphemeris& eph, SGPropertyNode *property_tree_node,
+                   simgear::SGReaderWriterOptions* options )
 {
     dome = new SGSkyDome;
-    pre_transform->addChild( dome->build( h_radius_m, v_radius_m ) );
+    pre_transform->addChild( dome->build( h_radius_m, v_radius_m, options ) );
 
     pre_transform->addChild(_ephTransform.get());
     planets = new SGStars;

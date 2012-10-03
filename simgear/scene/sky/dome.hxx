@@ -39,6 +39,10 @@ namespace osg
 class DrawElementsUShort;
 }
 
+namespace simgear {
+class SGReaderWriterOptions;
+}
+
 class SGSkyDome : public SGReferenced {
     osg::ref_ptr<osg::MatrixTransform> dome_transform;
     double asl;
@@ -55,7 +59,7 @@ public:
 
     // initialize the sky object and connect it into our scene graph
     // root
-    osg::Node *build( double hscale = 80000.0, double vscale = 80000.0 );
+    osg::Node *build( double hscale = 80000.0, double vscale = 80000.0, simgear::SGReaderWriterOptions *options = 0 );
 
     // repaint the sky colors based on current value of sun_angle,
     // sky, and fog colors.  This updates the color arrays for

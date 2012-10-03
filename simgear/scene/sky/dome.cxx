@@ -38,9 +38,11 @@
 #include <osg/ShadeModel>
 #include <osg/PrimitiveSet>
 #include <osg/CullFace>
+#include <osgDB/Registry>
 
 #include <simgear/debug/logstream.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <simgear/scene/util/VectorArrayAdapter.hxx>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
@@ -159,14 +161,14 @@ void SGSkyDome::makeDome(int rings, int bands, DrawElementsUShort& elements)
 
 // initialize the sky object and connect it into our scene graph
 osg::Node*
-SGSkyDome::build( double hscale, double vscale ) {
+SGSkyDome::build( double hscale, double vscale, simgear::SGReaderWriterOptions *options ) {
 
     EffectGeode* geode = new EffectGeode;
 //    Geode* geode = new Geode;
     geode->setName("Skydome");
     geode->setCullingActive(false); // Prevent skydome from being culled away
 
-    Effect *effect = makeEffect("Effects/skydome", true);
+    Effect *effect = makeEffect("Effects/skydome", true, options);
     if(effect)
       geode->setEffect(effect);
 

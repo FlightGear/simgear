@@ -32,6 +32,7 @@
 #include <simgear/scene/material/Pass.hxx>
 #include <simgear/scene/util/CopyOp.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
+#include <simgear/scene/util/SGReaderWriterOptions.hxx>
 #include <boost/scoped_array.hpp>
 #include <boost/foreach.hpp>
 
@@ -94,8 +95,10 @@ public:
 
 SGLightAnimation::SGLightAnimation(const SGPropertyNode* configNode,
                                    SGPropertyNode* modelRoot,
+                                   const osgDB::Options* options,
                                    const string &path, int i) :
-    SGAnimation(configNode, modelRoot)
+    SGAnimation(configNode, modelRoot),
+    _options(options)
 {
     _light_type = getConfig()->getStringValue("light-type");
     _position = SGVec3d( getConfig()->getDoubleValue("position/x"), getConfig()->getDoubleValue("position/y"), getConfig()->getDoubleValue("position/z") );
@@ -182,7 +185,7 @@ SGLightAnimation::install(osg::Node& node)
             return;
         }
 
-        effect = simgear::makeEffect(effectProp, true);
+        effect = simgear::makeEffect(effectProp, true, dynamic_cast<const simgear::SGReaderWriterOptions*>(_options.get()));
         if (iter == lightEffectMap.end() && cacheEffect)
             lightEffectMap.insert(EffectMap::value_type(_key, effect));
         else if (cacheEffect)

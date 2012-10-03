@@ -424,7 +424,7 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
     SGTranslateAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
   } else if (type == "light") {
-    SGLightAnimation animInst(configNode, modelRoot, path, i);
+    SGLightAnimation animInst(configNode, modelRoot, options, path, i);
     animInst.apply(node);
   } else if (type == "null" || type == "none" || type.empty()) {
     SGGroupAnimation animInst(configNode, modelRoot);

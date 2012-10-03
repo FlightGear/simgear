@@ -350,6 +350,7 @@ class SGLightAnimation : public SGAnimation {
 public:
   SGLightAnimation(const SGPropertyNode* configNode,
                    SGPropertyNode* modelRoot,
+                   const osgDB::Options* options,
                    const string &path, int i);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
   virtual void install(osg::Node& node);
@@ -369,6 +370,7 @@ private:
   class UpdateCallback;
   friend class UpdateCallback;
   SGSharedPtr<SGExpressiond> _animationValue;
+  osg::ref_ptr<const osgDB::Options> _options;
 };
 
 #endif // _SG_ANIMATION_HXX

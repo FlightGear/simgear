@@ -167,11 +167,11 @@ size_t hash_value(const Effect::Key&);
 
 Effect* makeEffect(const std::string& name,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options = 0);
+                   const SGReaderWriterOptions* options);
 
 Effect* makeEffect(SGPropertyNode* prop,
                    bool realizeTechniques,
-                   const SGReaderWriterOptions* options = 0);
+                   const SGReaderWriterOptions* options);
 
 bool makeParametersFromStateSet(SGPropertyNode* paramRoot,
                                 const osg::StateSet* ss);

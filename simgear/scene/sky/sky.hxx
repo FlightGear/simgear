@@ -277,7 +277,7 @@ public:
     void build( double h_radius_m, double v_radius_m,
                 double sun_size, double moon_size,
                 const SGEphemeris& eph, SGPropertyNode *property_tree_node,
-                simgear::SGReaderWriterOptions* options = 0);
+                simgear::SGReaderWriterOptions* options);
 
     /**
      * Repaint the sky components based on current value of sun_angle,

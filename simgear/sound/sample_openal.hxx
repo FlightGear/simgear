@@ -68,7 +68,7 @@ public:
      * Constructor.
      * @param data Pointer to a memory buffer containing this audio sample data
        The application may free the data by calling free_data(), otherwise it
-       will be resident untill the class is destroyed. This pointer will be
+       will be resident until the class is destroyed. This pointer will be
        set to NULL after calling this function.
      * @param len Byte length of array
      * @param freq Frequency of the provided data (bytes per second)
@@ -188,9 +188,7 @@ public:
     /**
      * Free the data associated with this audio sample
      */
-    void free_data() {
-        if ( _data != NULL ) free( _data ); _data = NULL;
-    }
+    void free_data();
 
     /**
      * Set the source id of this source

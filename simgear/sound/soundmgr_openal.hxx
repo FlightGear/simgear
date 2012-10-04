@@ -203,7 +203,7 @@ public:
 
     /**
      * Get a free OpenAL buffer-id
-     * The buffer-id will be asigned to the sample by calling this function.
+     * The buffer-id will be assigned to the sample by calling this function.
      * @param sample Pointer to an audio sample to assign the buffer-id to
      * @return NO_BUFFER if loading of the buffer failed.
      */

@@ -26,7 +26,7 @@
 #  include <simgear_config.h>
 #endif
 
-#include <stdlib.h>	// rand()
+#include <stdlib.h>	// rand(), free()
 #include <cstring>
 
 #include <simgear/debug/logstream.hxx>
@@ -232,4 +232,7 @@ SGPath SGSoundSample::file_path() const
   return SGPath(_refname);
 }
 
-
+void SGSoundSample::free_data()
+{
+   if ( _data != NULL ) free( _data ); _data = NULL;
+}

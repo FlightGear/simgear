@@ -320,6 +320,9 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_large_max_width = props->getFloatValue("building-large-max-width-m", 75.0);
     building_large_min_depth = props->getFloatValue("building-large-min-depth-m", 50.0);
     building_large_max_depth = props->getFloatValue("building-large-max-depth-m", 75.0);
+    
+    cos_object_max_density_slope_angle  = cos(props->getFloatValue("object-max-density-angle-deg", 20.0) * osg::PI/180.0);
+    cos_object_zero_density_slope_angle = cos(props->getFloatValue("object-zero-density-angle-deg", 30.0) * osg::PI/180.0);
         
     // Random vegetation properties
     wood_coverage = props->getDoubleValue("wood-coverage", 0.0);
@@ -327,6 +330,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     tree_width = props->getDoubleValue("tree-width-m", 0.0);
     tree_range = props->getDoubleValue("tree-range-m", 0.0);
     tree_varieties = props->getIntValue("tree-varieties", 1);
+    cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 45.0) * osg::PI/180.0);
+    cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 60.0) * osg::PI/180.0);
 
     const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
     

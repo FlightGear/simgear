@@ -210,6 +210,9 @@ public:
   inline double get_building_large_max_width () const { return building_large_max_width; }
   inline double get_building_large_min_depth () const { return building_large_min_depth; }
   inline double get_building_large_max_depth () const { return building_large_max_depth; }
+  
+  inline double get_cos_object_max_density_slope_angle () const { return cos_object_max_density_slope_angle; }
+  inline double get_cos_object_zero_density_slope_angle () const { return cos_object_zero_density_slope_angle; }
 
   /**
    * Get the wood coverage.
@@ -254,6 +257,24 @@ public:
    * @return the texture to use for trees.
    */
   inline std::string get_tree_texture () const { return  tree_texture; }
+  
+  /**
+   * Get the cosine of the maximum tree density slope angle. We
+   * use the cosine as it can be compared directly to the z component
+   * of a triangle normal.
+   * 
+   * @return the cosine of the maximum tree density slope angle.
+   */
+  inline double get_cos_tree_max_density_slope_angle () const { return cos_tree_max_density_slope_angle; }
+  
+  /**
+   * Get the cosine of the maximum tree density slope angle. We
+   * use the cosine as it can be compared directly to the z component
+   * of a triangle normal.
+   * 
+   * @return the cosine of the maximum tree density slope angle.
+   */
+  inline double get_cos_tree_zero_density_slope_angle () const { return cos_tree_zero_density_slope_angle; }
   
   /**
    * Get the list of names for this material
@@ -301,7 +322,7 @@ public:
     return SGVec2f((0 < tex_width) ? 1000.0f/tex_width : 1.0f,
                    (0 < tex_height) ? 1000.0f/tex_height : 1.0f);
   }
-
+  
 protected:
 
 
@@ -394,6 +415,12 @@ private:
   double building_large_min_depth;
   double building_large_max_depth;
   
+  // Cosine of the angle of maximum and zero density, 
+  // used to stop buildings and random objects from being 
+  // created on too steep a slope.
+  double cos_object_max_density_slope_angle;
+  double cos_object_zero_density_slope_angle;
+  
   // coverage of woods
   double wood_coverage;
 
@@ -408,6 +435,11 @@ private:
 
   // Number of varieties of tree texture
   int tree_varieties;
+  
+  // cosine of the tile angle of maximum and zero density,
+  // used to stop trees from being created on too steep a slope.
+  double cos_tree_max_density_slope_angle;
+  double cos_tree_zero_density_slope_angle;
 
   // material properties
   SGVec4f ambient, diffuse, specular, emission;

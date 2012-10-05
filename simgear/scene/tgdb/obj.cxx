@@ -476,10 +476,11 @@ struct SGTileGeometryBin {
       if (!mat)
         continue;
 
-      osg::Texture2D* object_mask = mat->get_object_mask(triangleBin);
-
-      int group_count = mat->get_object_group_count();
-      float building_coverage = mat->get_building_coverage();      
+      osg::Texture2D* object_mask  = mat->get_object_mask(triangleBin);
+      int   group_count            = mat->get_object_group_count();
+      float building_coverage      = mat->get_building_coverage();      
+      float cos_zero_density_angle = mat->get_cos_object_zero_density_slope_angle();
+      float cos_max_density_angle  = mat->get_cos_object_max_density_slope_angle();
       
       bool found = false;
       SGBuildingBin* bin = NULL;
@@ -516,6 +517,19 @@ struct SGTileGeometryBin {
         SGVec2f t1 = triangleBin.getVertex(triangleRef[2]).texCoord - torigin;
         SGVec3f normal = cross(v0, v1);
         
+        // Ensure the slope isn't too steep by checking the
+        // cos of the angle between the slope normal and the
+        // vertical (conveniently the z-component of the normalized
+        // normal) and values passed in.                   
+        float cos = normalize(normal).z();
+        float slope_density = 1.0;
+        if (cos < cos_zero_density_angle) continue; // Too steep for any objects
+        if (cos < cos_max_density_angle) {
+          slope_density = 
+            (cos - cos_zero_density_angle) / 
+            (cos_max_density_angle - cos_zero_density_angle);
+        }
+                
         // Containers to hold the random buildings and objects generated
         // for this triangle for collision detection purposes.
         std::vector< std::pair< SGVec3f, float> > triangleObjectsList;
@@ -541,8 +555,12 @@ struct SGTileGeometryBin {
             for (int k = 0; k < nObjects; k++) {
               SGMatModel * object = object_group->get_object(k);
               
+              // Determine the number of objecst to place, taking into account
+              // the slope density factor.
+              double n = slope_density * area / object->get_coverage_m2();
+              
               // Use the zombie door method to determine fractional object placement.
-              double n = area / object->get_coverage_m2() + mt_rand(&seed);
+              n = n + mt_rand(&seed);
 
               // place an object each unit of area
               while ( n > 1.0 ) {
@@ -619,17 +637,20 @@ struct SGTileGeometryBin {
         }        
         
         // Random objects now generated.  Now generate the random buildings (if any);
-        if (use_random_buildings && (building_coverage > 0)) {
+        if (use_random_buildings && (building_coverage > 0) && (building_density > 0)) {
+          
+          // Calculate the number of buildings, taking into account building density (which is linear)
+          // and the slope density factor.  
+          double num = building_density * building_density * slope_density * area / building_coverage;
+          
           // For partial units of area, use a zombie door method to
           // create the proper random chance of an object being created
           // for this triangle.
-          double num = area / building_coverage + mt_rand(&seed);
+          num = num + mt_rand(&seed);
+
           if (num < 1.0f) {
             continue;          
           }
-                  
-          // Apply density, which is linear, while we're dealing in areas
-          num = num * building_density * building_density;
           
           // Cosine of the angle between the two vectors.
           float cosine = (dot(v0, v1) / (length(v0) * length(v1)));
@@ -784,7 +805,7 @@ struct SGTileGeometryBin {
         continue;
 
       float wood_coverage = mat->get_wood_coverage();
-      if (wood_coverage <= 0)
+      if ((wood_coverage <= 0) || (vegetation_density <= 0))
         continue;
               
       // Attributes that don't vary by tree but do vary by material
@@ -818,6 +839,8 @@ struct SGTileGeometryBin {
       i->second.addRandomTreePoints(wood_coverage,
                                     mat->get_object_mask(i->second),
                                     vegetation_density,
+                                    mat->get_cos_tree_max_density_slope_angle(),
+                                    mat->get_cos_tree_zero_density_slope_angle(),
                                     randomPoints);
       
       std::vector<SGVec3f>::iterator k;

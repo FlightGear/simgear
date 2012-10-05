@@ -173,6 +173,8 @@ public:
   void addRandomTreePoints(float wood_coverage, 
                            osg::Texture2D* object_mask,
                            float vegetation_density,
+                           float cos_max_density_angle,
+                           float cos_zero_density_angle,
                            std::vector<SGVec3f>& points)
   {
     unsigned num = getNumTriangles();
@@ -186,21 +188,33 @@ public:
       SGVec2f t2 = getVertex(triangleRef[2]).texCoord;
       SGVec3f normal = cross(v1 - v0, v2 - v0);
       
+      // Ensure the slope isn't too steep by checking the
+      // cos of the angle between the slope normal and the
+      // vertical (conveniently the z-component of the normalized
+      // normal) and values passed in.                   
+      float alpha = normalize(normal).z();
+      float slope_density = 1.0;
+      
+      if (alpha < cos_zero_density_angle) 
+        continue; // Too steep for any vegetation      
+      
+      if (alpha < cos_max_density_angle) {
+        slope_density = 
+          (alpha - cos_zero_density_angle) / (cos_max_density_angle - cos_zero_density_angle);
+      }
+      
       // Compute the area
       float area = 0.5f*length(normal);
       if (area <= SGLimitsf::min())
         continue;
-
-      // For partial units of area, use a zombie door method to
-      // create the proper random chance of a point being created
-      // for this triangle
-      float unit = area + mt_rand(&seed)*wood_coverage;
-      
-      // Vegetation density is linear, while we're creating woodland
-      // by area.
-      int woodcount = (int) (vegetation_density * 
-                             vegetation_density * 
-                             unit / wood_coverage);
+        
+      // Determine the number of trees, taking into account vegetation
+      // density (which is linear) and the slope density factor.
+      // Use a zombie door method to create the proper random chance 
+      // of a tree being created for partial values.
+      int woodcount = (int) (vegetation_density * vegetation_density * 
+                             slope_density *
+                             area / wood_coverage + mt_rand(&seed));
       
       for (int j = 0; j < woodcount; j++) {
         float a = mt_rand(&seed);

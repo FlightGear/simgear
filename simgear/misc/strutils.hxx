@@ -142,6 +142,13 @@ namespace simgear {
      * is greater
      */
     int compare_versions(const std::string& v1, const std::string& v2);
+
+    /**
+     * Convert a string to upper case.
+     * @return upper case string
+     */
+    std::string uppercase(const std::string &s);
+
   } // end namespace strutils
 } // end namespace simgear
 

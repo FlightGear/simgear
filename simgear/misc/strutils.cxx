@@ -292,6 +292,14 @@ namespace simgear {
         return result;
     }
     
+    string uppercase(const string &s) {
+      string rslt(s);
+      for(string::iterator p = rslt.begin(); p != rslt.end(); p++){
+        *p = toupper(*p);
+      }
+      return rslt;
+    }
+
     } // end namespace strutils
     
 } // end namespace simgear

@@ -330,8 +330,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     tree_width = props->getDoubleValue("tree-width-m", 0.0);
     tree_range = props->getDoubleValue("tree-range-m", 0.0);
     tree_varieties = props->getIntValue("tree-varieties", 1);
-    cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 45.0) * osg::PI/180.0);
-    cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 60.0) * osg::PI/180.0);
+    cos_tree_max_density_slope_angle  = cos(props->getFloatValue("tree-max-density-angle-deg", 30.0) * osg::PI/180.0);
+    cos_tree_zero_density_slope_angle = cos(props->getFloatValue("tree-zero-density-angle-deg", 45.0) * osg::PI/180.0);
 
     const SGPropertyNode* treeTexNode = props->getChild("tree-texture");
     

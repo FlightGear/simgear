@@ -14,6 +14,7 @@
 #include "vectorPropTemplates.hxx"
 
 #include <algorithm>
+#include <limits>
 
 #include <sstream>
 #include <iomanip>
@@ -214,6 +215,26 @@ find_last_child (const char * name, const PropertyList& nodes)
     }
   }
   return index;
+}
+
+/**
+ * Get first unused index for child nodes with the given name
+ */
+static int
+first_unused_index( const char * name,
+                    const PropertyList& nodes,
+                    int min_index )
+{
+  const char* nameEnd = name + strlen(name);
+
+  for( int index = min_index; index < std::numeric_limits<int>::max(); ++index )
+  {
+    if( find_child(name, nameEnd, index, nodes) < 0 )
+      return index;
+  }
+
+  SG_LOG(SG_GENERAL, SG_ALERT, "Too much nodes: " << name);
+  return -1;
 }
 
 template<typename Itr>
@@ -858,9 +879,11 @@ SGPropertyNode::getAliasTarget () const
  * create a non-const child by name after the last node with the same name.
  */
 SGPropertyNode *
-SGPropertyNode::addChild (const char * name)
+SGPropertyNode::addChild(const char * name, int min_index, bool append)
 {
-  int pos = find_last_child(name, _children)+1;
+  int pos = append
+          ? std::max(find_last_child(name, _children) + 1, min_index)
+          : first_unused_index(name, _children, min_index);
 
   SGPropertyNode_ptr node;
   node = new SGPropertyNode(name, name + strlen(name), pos, this);

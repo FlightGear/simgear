@@ -44,6 +44,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
+#include <algorithm> // for std::sort
 
 using std::string;
 
@@ -122,6 +123,11 @@ Dir Dir::tempDir(const std::string& templ)
     
     return t;
 #endif
+}
+
+static bool pathSortPredicate(const SGPath& p1, const SGPath& p2)
+{
+  return p1.file() < p2.file();
 }
 
 PathList Dir::children(int types, const std::string& nameFilter) const
@@ -241,6 +247,11 @@ PathList Dir::children(int types, const std::string& nameFilter) const
   
   closedir(dp);
 #endif
+
+  // File system order is random. Make things deterministic,
+  // so it's the same for every user.
+  std::sort(result.begin(), result.end(), pathSortPredicate);
+
   return result;
 }
 

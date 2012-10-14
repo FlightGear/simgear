@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <limits>
 
+#include <set>
 #include <sstream>
 #include <iomanip>
 #include <iterator>
@@ -892,6 +893,52 @@ SGPropertyNode::addChild(const char * name, int min_index, bool append)
   return node;
 }
 
+/**
+ * Create multiple children with unused indices
+ */
+simgear::PropertyList
+SGPropertyNode::addChildren( const std::string& name,
+                             size_t count,
+                             int min_index,
+                             bool append )
+{
+  simgear::PropertyList nodes;
+  std::set<int> used_indices;
+
+  if( !append )
+  {
+    // First grab all used indices. This saves us of testing every index if it
+    // is used for every element to be created
+    for( size_t i = 0; i < nodes.size(); i++ )
+    {
+      const SGPropertyNode* node = nodes[i];
+
+      if( node->getNameString() == name && node->getIndex() >= min_index )
+        used_indices.insert(node->getIndex());
+    }
+  }
+  else
+  {
+    // If we don't want to fill the holes just find last node
+    min_index = std::max(find_last_child(name.c_str(), _children) + 1, min_index);
+  }
+
+  for( int index = min_index;
+            index < std::numeric_limits<int>::max() && nodes.size() < count;
+          ++index )
+  {
+    if( used_indices.find(index) == used_indices.end() )
+    {
+      SGPropertyNode_ptr node;
+      node = new SGPropertyNode(name, index, this);
+      _children.push_back(node);
+      fireChildAdded(node);
+      nodes.push_back(node);
+    }
+  }
+
+  return nodes;
+}
 
 /**
  * Get a non-const child by index.

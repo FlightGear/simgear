@@ -851,7 +851,7 @@ public:
   }
 
   /**
-   * Create a child node after the last node with the same name.
+   * Create a new child node with the given name and an unused index
    *
    * @param min_index Minimal index for new node (skips lower indices)
    * @param append    Whether to simply use the index after the last used index
@@ -864,6 +864,19 @@ public:
                               int min_index = 0,
                               bool append = true )
   { return addChild(name.c_str(), min_index, append); }
+
+  /**
+   * Create multiple child nodes with the given name an unused indices
+   *
+   * @param count     The number of nodes create
+   * @param min_index Minimal index for new nodes (skips lower indices)
+   * @param append    Whether to simply use the index after the last used index
+   *                  or use a lower, unused index if it exists
+   */
+  simgear::PropertyList addChildren ( const std::string& name,
+                                      size_t count,
+                                      int min_index = 0,
+                                      bool append = true );
 
   /**
    * Get a child node by name and index.

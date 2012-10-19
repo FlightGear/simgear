@@ -24,6 +24,7 @@ foreach( mylibfolder
 endforeach( mylibfolder )
 
 if(NOT SIMGEAR_HEADLESS)
+    add_subdirectory(canvas)
     add_subdirectory(environment)
     add_subdirectory(screen)
     add_subdirectory(scene)

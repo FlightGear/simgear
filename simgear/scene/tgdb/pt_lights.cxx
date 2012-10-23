@@ -515,7 +515,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.0001, 0.00000001),
                                   6.0, 10.0, false);
   // centerline lights
-  for (int i = lights.getNumLights() - 1; 2 <= i; --i) {
+  for (int i = lights.getNumLights(); i > 1; --i) {
     EffectGeode* egeode = new EffectGeode;
     egeode->setEffect(effect);
     egeode->addDrawable(getLightDrawable(lights.getLight(i)));
@@ -532,7 +532,7 @@ SGLightFactory::getOdal(const SGLightBin& lights)
   sequence->addChild(group, flashTime);
 
   // add an extra empty group for a break
-  sequence->addChild(new osg::Group, 9 + 1e-1*sg_random());
+  sequence->addChild(new osg::Group, 2 + 1e-1*sg_random());
   sequence->setInterval(osg::Sequence::LOOP, 0, -1);
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);

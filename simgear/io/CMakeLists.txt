@@ -16,6 +16,10 @@ set(HEADERS
     sg_socket_udp.hxx
     HTTPClient.hxx
     HTTPRequest.hxx
+    DAVMultiStatus.hxx
+    SVNRepository.hxx
+    SVNDirectory.hxx
+    SVNReportParser.hxx
     )
 
 set(SOURCES
@@ -32,11 +36,28 @@ set(SOURCES
     sg_socket_udp.cxx
     HTTPClient.cxx
     HTTPRequest.cxx
+    DAVMultiStatus.cxx
+    SVNRepository.cxx
+    SVNDirectory.cxx
+    SVNReportParser.cxx
     )
 
 simgear_component(io io "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+    
+if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+else()
+    set(TEST_LIBS SimGearCore
+            ${CMAKE_THREAD_LIBS_INIT}
+            ${WINSOCK_LIBRARY}
+            ${ZLIB_LIBRARY}
+            ${RT_LIBRARY})
+endif()
+
+add_executable(http_svn http_svn.cxx)
+target_link_libraries(http_svn ${TEST_LIBS})
 
 add_executable(test_sock socktest.cxx)
 target_link_libraries(test_sock ${TEST_LIBS})

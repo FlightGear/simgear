@@ -25,6 +25,7 @@
 
 #include "ReaderWriterSTG.hxx"
 
+#include <osg/LOD>
 #include <osg/MatrixTransform>
 #include <osg/ProxyNode>
 #include <osgUtil/LineSegmentIntersector>
@@ -288,8 +289,8 @@ struct ReaderWriterSTG::_ModelBin {
         osg::ref_ptr<SGReaderWriterOptions> options;
         options = SGReaderWriterOptions::copyOrCreate(opt);
 
-        osg::ref_ptr<osg::Group> group = new osg::Group;
-        group->setDataVariance(osg::Object::STATIC);
+        osg::ref_ptr<osg::Group> terrainGroup = new osg::Group;
+        terrainGroup->setDataVariance(osg::Object::STATIC);
 
         if (_foundBase) {
             for (std::list<_Object>::iterator i = _objectList.begin(); i != _objectList.end(); ++i) {
@@ -300,14 +301,14 @@ struct ReaderWriterSTG::_ModelBin {
                            << i->_token << " '" << i->_name << "'");
                     continue;
                 }
-                group->addChild(node.get());
+                terrainGroup->addChild(node.get());
             }
         } else {
             SG_LOG(SG_TERRAIN, SG_INFO, "  Generating ocean tile");
             
             osg::Node* node = SGOceanTile(bucket, options->getMaterialLib());
             if (node) {
-                group->addChild(node);
+                terrainGroup->addChild(node);
             } else {
                 SG_LOG( SG_TERRAIN, SG_ALERT,
                         "Warning: failed to generate ocean tile!" );
@@ -317,15 +318,18 @@ struct ReaderWriterSTG::_ModelBin {
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
             if (!i->_agl)
                 continue;
-            i->_elev += elevation(*group, SGGeod::fromDeg(i->_lon, i->_lat));
+            i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
         
         for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i) {
             if (!i->_agl)
                 continue;
-            i->_elev += elevation(*group, SGGeod::fromDeg(i->_lon, i->_lat));
+            i->_elev += elevation(*terrainGroup, SGGeod::fromDeg(i->_lon, i->_lat));
         }
         
+        osg::ref_ptr<osg::Group> modelGroup = new osg::Group;
+        modelGroup->setDataVariance(osg::Object::STATIC);
+
         for (std::list<_ObjectStatic>::iterator i = _objectStaticList.begin(); i != _objectStaticList.end(); ++i) {
             osg::ref_ptr<osg::Node> node;
             if (i->_proxy)  {
@@ -355,16 +359,23 @@ struct ReaderWriterSTG::_ModelBin {
             matrixTransform = new osg::MatrixTransform(matrix);
             matrixTransform->setDataVariance(osg::Object::STATIC);
             matrixTransform->addChild(node.get());
-            group->addChild(matrixTransform);
+            modelGroup->addChild(matrixTransform);
         }
         
         simgear::AirportSignBuilder signBuilder(options->getMaterialLib(), bucket.get_center());
         for (std::list<_Sign>::iterator i = _signList.begin(); i != _signList.end(); ++i)
             signBuilder.addSign(SGGeod::fromDegM(i->_lon, i->_lat, i->_elev), i->_hdg, i->_name, i->_size);
         if (signBuilder.getSignsGroup())
-            group->addChild(signBuilder.getSignsGroup());
+            modelGroup->addChild(signBuilder.getSignsGroup());
+
+        osg::LOD* lod = new osg::LOD;
+        lod->setDataVariance(osg::Object::STATIC);
+        if (terrainGroup->getNumChildren())
+            lod->addChild(terrainGroup.get(), 0, std::numeric_limits<float>::max());
+        if (modelGroup->getNumChildren())
+            lod->addChild(modelGroup.get(), 0, 30000);
         
-        return group.release();
+        return lod;
     }
         
     bool _foundBase;

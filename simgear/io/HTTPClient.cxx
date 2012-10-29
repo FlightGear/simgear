@@ -451,7 +451,7 @@ private:
             headersComplete();
             
             if (contentGZip || contentDeflate) {
-                bzero(&zlib, sizeof(z_stream));
+                memset(&zlib, 0, sizeof(z_stream));
                 if (!zlibOutputBuffer) {
                     zlibOutputBuffer = (unsigned char*) malloc(ZLIB_DECOMPRESS_BUFFER_SIZE);
                 }

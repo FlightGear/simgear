@@ -57,7 +57,6 @@ using std::stringstream;
 
 using namespace simgear;
 
-
 ////////////////////////////////////////////////////////////////////////
 // Local classes.
 ////////////////////////////////////////////////////////////////////////
@@ -74,14 +73,12 @@ public:
 };
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // Convenience macros for value access.
 ////////////////////////////////////////////////////////////////////////
 
 #define TEST_READ(dflt) if (!getAttribute(READ)) return dflt
 #define TEST_WRITE if (!getAttribute(WRITE)) return false
-
 
 ////////////////////////////////////////////////////////////////////////
 // Local path normalization code.
@@ -153,7 +150,6 @@ inline bool validateName(const string& name)
              is_alnum() || is_any_of("_-."));
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Other static utility functions.
 ////////////////////////////////////////////////////////////////////////
@@ -370,7 +366,6 @@ find_node (SGPropertyNode * current,
      return find_node_aux(current, itr, create, last_index);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Private methods from SGPropertyNode (may be inlined for speed).
 ////////////////////////////////////////////////////////////////////////
@@ -654,7 +649,6 @@ SGPropertyNode::trace_read () const
 #endif
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Public methods from SGPropertyNode.
 ////////////////////////////////////////////////////////////////////////
@@ -1839,7 +1833,6 @@ SGPropertyNode::getNode (const char * relative_path, int index) const
   return ((SGPropertyNode *)this)->getNode(relative_path, index, false);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Convenience methods using relative paths.
 ////////////////////////////////////////////////////////////////////////
@@ -2146,9 +2139,32 @@ SGPropertyNode::fireChildAdded (SGPropertyNode * child)
 }
 
 void
+SGPropertyNode::fireCreatedRecursive()
+{
+  _parent->fireChildAdded(this);
+
+  if( _children.empty() && getType() != simgear::props::NONE )
+    return fireValueChanged();
+
+  for(size_t i = 0; i < _children.size(); ++i)
+    _children[i]->fireCreatedRecursive();
+}
+
+void
 SGPropertyNode::fireChildRemoved (SGPropertyNode * child)
 {
   fireChildRemoved(this, child);
+}
+
+void
+SGPropertyNode::fireChildrenRemovedRecursive()
+{
+  for(size_t i = 0; i < _children.size(); ++i)
+  {
+    SGPropertyNode* child = _children[i];
+    fireChildRemoved(this, child);
+    child->fireChildrenRemovedRecursive();
+  }
 }
 
 void
@@ -2189,7 +2205,6 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
     _parent->fireChildRemoved(parent, child);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // Implementation of SGPropertyChangeListener.
 ////////////////////////////////////////////////////////////////////////

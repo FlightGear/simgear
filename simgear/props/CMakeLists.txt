@@ -4,6 +4,8 @@ include (SimGearComponent)
 set(HEADERS 
     AtomicChangeListener.hxx
     ExtendedPropertyAdapter.hxx
+    PropertyBasedElement.hxx
+    PropertyBasedMgr.hxx
     condition.hxx
     propertyObject.hxx
     props.hxx
@@ -15,6 +17,8 @@ set(HEADERS
 
 set(SOURCES 
     AtomicChangeListener.cxx
+    PropertyBasedElement.cxx
+    PropertyBasedMgr.cxx
     condition.cxx
     propertyObject.cxx
     props.cxx

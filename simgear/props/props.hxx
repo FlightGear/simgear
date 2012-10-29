@@ -162,7 +162,6 @@ DEFINTERNALPROP(const char[], STRING);
 
 
 
-
 ////////////////////////////////////////////////////////////////////////
 // A raw value.
 //
@@ -669,7 +668,6 @@ std::istream& SGRawBase<T, 0>::readFrom(std::istream& stream)
     return stream;
 }
 
-
 /**
  * The smart pointer that manage reference counting
  */
@@ -682,7 +680,6 @@ namespace simgear
 typedef std::vector<SGPropertyNode_ptr> PropertyList;
 }
 
-
 /**
  * The property change listener interface.
  *
@@ -707,7 +704,6 @@ private:
 };
 
 
-
 /**
  * A node in a property tree.
  */
@@ -1587,11 +1583,28 @@ public:
    */
   void fireChildAdded (SGPropertyNode * child);
 
+  /**
+   * Trigger a child-added and value-changed event for every child (Unlimited
+   * depth) and the node itself.
+   *
+   * It can be used to simulating the creation of a property tree, eg. for
+   * (re)initializing a subsystem which is controlled through the property tree.
+   */
+  void fireCreatedRecursive();
 
   /**
    * Fire a child-removed event to all listeners.
    */
   void fireChildRemoved (SGPropertyNode * child);
+
+  /**
+   * Fire a child-removed event for every child of this node (Unlimited depth)
+   *
+   * Upon removal of a child node only for this single node a child-removed
+   * event is triggered. If eg. resource cleanup relies on receiving a
+   * child-removed event for every child this method can be used.
+   */
+  void fireChildrenRemovedRecursive();
 
 
   /**
@@ -1687,7 +1700,6 @@ private:
 
   std::vector<SGPropertyChangeListener *> * _listeners;
 
-
   // Pass name as a pair of iterators
   template<typename Itr>
   SGPropertyNode * getChildImpl (Itr begin, Itr end, int index = 0, bool create = false);

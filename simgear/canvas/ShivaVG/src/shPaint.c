@@ -187,7 +187,7 @@ void shUpdateColorRampTexture(SHPaint *p)
 
 void shValidateInputStops(SHPaint *p)
 {
-  SHStop *instop, stop;
+  SHStop *instop, stop = {0, {0,0,0,0}};
   SHfloat lastOffset=0.0f;
   int i;
   

@@ -47,6 +47,8 @@ VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height)
   g_context->surfaceHeight = height;
   
   /* setup GL projection */
+  /* We handle viewport and projection ourselves...
+
   glViewport(0,0,width,height);
   
   glMatrixMode(GL_PROJECTION);
@@ -54,7 +56,7 @@ VG_API_CALL VGboolean vgCreateContextSH(VGint width, VGint height)
   gluOrtho2D(0,width,0,height);
   
   glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
+  glLoadIdentity();*/
   
   return VG_TRUE;
 }

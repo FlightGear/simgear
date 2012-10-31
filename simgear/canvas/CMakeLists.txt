@@ -2,6 +2,7 @@ include (SimGearComponent)
 
 set(HEADERS
     ODGauge.hxx
+    VGInitOperation.hxx
     )
 
 set(SOURCES

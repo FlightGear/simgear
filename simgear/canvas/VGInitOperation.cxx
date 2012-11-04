@@ -33,7 +33,7 @@ namespace canvas
 
 
   //----------------------------------------------------------------------------
-  virtual void VGInitOperation::operator()(osg::GraphicsContext* context)
+  void VGInitOperation::operator()(osg::GraphicsContext* context)
   {
     GLint vp[4];
     glGetIntegerv(GL_VIEWPORT, vp);

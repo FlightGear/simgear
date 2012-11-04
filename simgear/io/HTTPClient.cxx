@@ -37,7 +37,7 @@ namespace HTTP
 
 extern const int DEFAULT_HTTP_PORT = 80;
 const char* CONTENT_TYPE_URL_ENCODED = "application/x-www-form-urlencoded";
-const int MAX_INFLIGHT_REQUESTS = 32;
+const unsigned int MAX_INFLIGHT_REQUESTS = 32;
 const int ZLIB_DECOMPRESS_BUFFER_SIZE = 32 * 1024;
 const int ZLIB_INFLATE_WINDOW_BITS = -MAX_WBITS;
   

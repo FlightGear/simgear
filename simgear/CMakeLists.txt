@@ -79,7 +79,6 @@ if(SIMGEAR_SHARED)
 
         target_link_libraries(SimGearScene
             SimGearCore
-            ShivaVG
             ${ZLIB_LIBRARY}
             ${OPENSCENEGRAPH_LIBRARIES}
             ${OPENAL_LIBRARY}

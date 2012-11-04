@@ -16,31 +16,32 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_VG_INITOPERATION_HXX_
-#define CANVAS_VG_INITOPERATION_HXX_
-
-#include <osg/GraphicsThread>
+#include "VGInitOperation.hxx"
+#include <vg/openvg.h>
 
 namespace simgear
 {
 namespace canvas
 {
 
-  /**
-   * Deferred graphics operation to setup OpenVG which needs a valid OpenGL
-   * context. Pass to osg::GraphicsContext::add and ensure it's executed before
-   * doing any path rendering
-   */
-  class VGInitOperation:
-    public osg::GraphicsOperation
+  //----------------------------------------------------------------------------
+  VGInitOperation::VGInitOperation():
+    GraphicsOperation("canvas::VGInit", false)
   {
-    public:
 
-      VGInitOperation();
-      virtual void operator()(osg::GraphicsContext* context);
-  };
+  }
+
+
+  //----------------------------------------------------------------------------
+  virtual void VGInitOperation::operator()(osg::GraphicsContext* context)
+  {
+    GLint vp[4];
+    glGetIntegerv(GL_VIEWPORT, vp);
+
+    // ATTENTION: If using another OpenVG implementation ensure it doesn't
+    //            change any OpenGL state!
+    vgCreateContextSH(vp[2], vp[3]);
+  }
 
 } // namespace canvas
 } // namespace simgear
-
-#endif /* CANVAS_VG_INITOPERATION_HXX_ */

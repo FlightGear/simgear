@@ -16,6 +16,7 @@ set(SOURCES
   CanvasMgr.cxx
   CanvasPlacement.cxx
   ODGauge.cxx
+  VGInitOperation.cxx
 )
 
 add_subdirectory(ShivaVG/src)

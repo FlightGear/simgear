@@ -1163,6 +1163,18 @@ public:
              ::type* dummy = 0) const;
 
   /**
+   * Get a list of values from all children with the given name
+   */
+  template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+  std::vector<T> getChildValues(const std::string& name) const;
+
+  /**
+   * Get a list of values from all children with the given name
+   */
+  template<typename T>
+  std::vector<T> getChildValues(const std::string& name) const;
+
+  /**
    * Set a bool value for this node.
    */
   bool setBoolValue (bool value);
@@ -1844,6 +1856,25 @@ inline T SGPropertyNode::getValue(typename boost::enable_if_c<simgear::props
                                   ::PropertyTraits<T>::Internal>::type* dummy) const
 {
   return ::getValue<T>(this);
+}
+
+template<typename T, typename T_get /* = T */> // TODO use C++11 or traits
+std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
+{
+  const simgear::PropertyList& props = getChildren(name);
+  std::vector<T> values( props.size() );
+
+  for( size_t i = 0; i < props.size(); ++i )
+    values[i] = props[i]->getValue<T_get>();
+
+  return values;
+}
+
+template<typename T>
+inline
+std::vector<T> SGPropertyNode::getChildValues(const std::string& name) const
+{
+  return getChildValues<T, T>(name);
 }
 
 template<typename T>

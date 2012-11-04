@@ -1,4 +1,4 @@
-// Base class for elements of property controlled subsystems
+// Base class for canvas placements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,40 +16,24 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#include "PropertyBasedElement.hxx"
+#include "CanvasPlacement.hxx"
 
 namespace simgear
 {
+namespace canvas
+{
 
-  //------------------------------------------------------------------------------
-  PropertyBasedElement::PropertyBasedElement(SGPropertyNode* node):
-    _node(node)
+  //----------------------------------------------------------------------------
+  Placement::Placement()
   {
-    _node->addChangeListener(this);
-  }
 
-  //------------------------------------------------------------------------------
-  PropertyBasedElement::~PropertyBasedElement()
-  {
-    _node->removeChangeListener(this);
-  }
-
-  //------------------------------------------------------------------------------
-  SGConstPropertyNode_ptr PropertyBasedElement::getProps() const
-  {
-    return _node;
-  }
-
-  //------------------------------------------------------------------------------
-  SGPropertyNode_ptr PropertyBasedElement::getProps()
-  {
-    return _node;
   }
 
   //----------------------------------------------------------------------------
-  void PropertyBasedElement::setSelf(const PropertyBasedElementPtr& self)
+  Placement::~Placement()
   {
-    _self = self;
+
   }
 
+} // namespace canvas
 } // namespace simgear

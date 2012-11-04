@@ -1,4 +1,4 @@
-// osg::Operation to initialize the OpenVG context used for path rendering
+// A text on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,44 +16,44 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_VG_INITOPERATION_HXX_
-#define CANVAS_VG_INITOPERATION_HXX_
+#ifndef CANVAS_TEXT_HXX_
+#define CANVAS_TEXT_HXX_
 
-#include <vg/openvg.h>
-#include <osg/GraphicsThread>
+#include "CanvasElement.hxx"
+#include <osgText/Text>
+#include <map>
+#include <vector>
 
 namespace simgear
 {
 namespace canvas
 {
 
-  /**
-   * Deferred graphics operation to setup OpenVG which needs a valid OpenGL
-   * context. Pass to osg::GraphicsContext::add and ensure it's executed before
-   * doing any path rendering
-   */
-  class VGInitOperation:
-    public osg::GraphicsOperation
+  class Text:
+    public Element
   {
     public:
+      Text( const CanvasWeakPtr& canvas,
+            SGPropertyNode_ptr node,
+            const Style& parent_style );
+      ~Text();
 
-      VGInitOperation():
-        GraphicsOperation("canvas::VGInit", false)
-      {}
+      void setText(const char* text);
+      void setFont(const char* name);
+      void setAlignment(const char* align);
 
-      virtual void operator()(osg::GraphicsContext* context)
-      {
-        GLint vp[4];
-        glGetIntegerv(GL_VIEWPORT, vp);
+    protected:
 
-        // ATTENTION: If using another OpenVG implementation ensure it doesn't
-        //            change any OpenGL state!
-        vgCreateContextSH(vp[2], vp[3]);
-      }
+      class TextOSG;
+      osg::ref_ptr<TextOSG> _text;
+
+      virtual void childChanged(SGPropertyNode * child);
+
+      void handleHit(float x, float y);
 
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_VG_INITOPERATION_HXX_ */
+#endif /* CANVAS_TEXT_HXX_ */

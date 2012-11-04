@@ -4,6 +4,7 @@ include (SimGearComponent)
 set(HEADERS 
     ResourceManager.hxx
     interpolator.hxx
+    parse_color.hxx
     sg_dir.hxx
     sg_path.hxx
     sgstream.hxx
@@ -19,6 +20,7 @@ set(HEADERS
 set(SOURCES 
     ResourceManager.cxx
     interpolator.cxx
+    parse_color.cxx
     sg_dir.cxx
     sg_path.cxx
     sgstream.cxx
@@ -38,6 +40,10 @@ target_link_libraries(test_tabbed_values SimGearCore)
 add_executable(test_strings strutils_test.cxx )
 add_test(test_strings ${EXECUTABLE_OUTPUT_PATH}/test_strings)
 target_link_libraries(test_strings SimGearCore)
+
+add_executable(test_parse_color parse_color_test.cxx )
+add_test(test_parse_color ${EXECUTABLE_OUTPUT_PATH}/test_parse_color)
+target_link_libraries(test_parse_color SimGearCore)
 
 add_executable(test_path path_test.cxx )
 add_test(test_path ${EXECUTABLE_OUTPUT_PATH}/test_path)

@@ -1,4 +1,4 @@
-// osg::Operation to initialize the OpenVG context used for path rendering
+// Canvas with 2D rendering API
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,44 +16,46 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_VG_INITOPERATION_HXX_
-#define CANVAS_VG_INITOPERATION_HXX_
+#ifndef SG_CANVAS_MGR_H_
+#define SG_CANVAS_MGR_H_
 
-#include <vg/openvg.h>
-#include <osg/GraphicsThread>
+#include "canvas_fwd.hxx"
+#include <simgear/props/PropertyBasedMgr.hxx>
 
 namespace simgear
 {
 namespace canvas
 {
 
-  /**
-   * Deferred graphics operation to setup OpenVG which needs a valid OpenGL
-   * context. Pass to osg::GraphicsContext::add and ensure it's executed before
-   * doing any path rendering
-   */
-  class VGInitOperation:
-    public osg::GraphicsOperation
+  class CanvasMgr:
+    public PropertyBasedMgr
   {
     public:
 
-      VGInitOperation():
-        GraphicsOperation("canvas::VGInit", false)
-      {}
+      /**
+       * @param node            Root node of branch used to control canvasses
+       * @param system_adapter  Adapter for connecting between canvas and
+       *                        application framework
+       *
+       */
+      CanvasMgr( SGPropertyNode_ptr node,
+                 SystemAdapterPtr system_adapter );
 
-      virtual void operator()(osg::GraphicsContext* context)
-      {
-        GLint vp[4];
-        glGetIntegerv(GL_VIEWPORT, vp);
+      /**
+       * Get ::Canvas by index
+       *
+       * @param index Index of texture node in /canvas/by-index/
+       */
+      CanvasPtr getCanvas(size_t index) const;
 
-        // ATTENTION: If using another OpenVG implementation ensure it doesn't
-        //            change any OpenGL state!
-        vgCreateContextSH(vp[2], vp[3]);
-      }
+    protected:
 
+      SystemAdapterPtr _system_adapter;
+
+      virtual void elementCreated(PropertyBasedElementPtr element);
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_VG_INITOPERATION_HXX_ */
+#endif /* SG_CANVAS_MGR_H_ */

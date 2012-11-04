@@ -1,4 +1,4 @@
-// osg::Operation to initialize the OpenVG context used for path rendering
+// An OpenVG path on the Canvas
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,44 +16,42 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_VG_INITOPERATION_HXX_
-#define CANVAS_VG_INITOPERATION_HXX_
+#ifndef CANVAS_PATH_HXX_
+#define CANVAS_PATH_HXX_
 
-#include <vg/openvg.h>
-#include <osg/GraphicsThread>
+#include "CanvasElement.hxx"
 
 namespace simgear
 {
 namespace canvas
 {
-
-  /**
-   * Deferred graphics operation to setup OpenVG which needs a valid OpenGL
-   * context. Pass to osg::GraphicsContext::add and ensure it's executed before
-   * doing any path rendering
-   */
-  class VGInitOperation:
-    public osg::GraphicsOperation
+  class Path:
+    public Element
   {
     public:
+      Path( const CanvasWeakPtr& canvas,
+            SGPropertyNode_ptr node,
+            const Style& parent_style );
+      virtual ~Path();
 
-      VGInitOperation():
-        GraphicsOperation("canvas::VGInit", false)
-      {}
+      virtual void update(double dt);
 
-      virtual void operator()(osg::GraphicsContext* context)
+    protected:
+
+      enum PathAttributes
       {
-        GLint vp[4];
-        glGetIntegerv(GL_VIEWPORT, vp);
+        CMDS       = LAST_ATTRIBUTE << 1,
+        COORDS     = CMDS << 1
+      };
 
-        // ATTENTION: If using another OpenVG implementation ensure it doesn't
-        //            change any OpenGL state!
-        vgCreateContextSH(vp[2], vp[3]);
-      }
+      class PathDrawable;
+      osg::ref_ptr<PathDrawable> _path;
 
+      virtual void childRemoved(SGPropertyNode * child);
+      virtual void childChanged(SGPropertyNode * child);
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_VG_INITOPERATION_HXX_ */
+#endif /* CANVAS_PATH_HXX_ */

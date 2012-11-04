@@ -1,7 +1,8 @@
 include (SimGearComponent)
 
 
-set(HEADERS 
+set(HEADERS
+    Rect.hxx
     SGBox.hxx
     SGCMath.hxx
     SGGeoc.hxx

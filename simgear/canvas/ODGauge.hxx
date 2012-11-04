@@ -10,29 +10,27 @@
 // Supports now multisampling/mipmapping, usage of the stencil buffer and placing
 // the texture in the scene by certain filter criteria
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of the
-// License, or (at your option) any later version.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Library General Public
+// License as published by the Free Software Foundation; either
+// version 2 of the License, or (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// General Public License for more details.
+// Library General Public License for more details.
 //
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-//
-//
+// You should have received a copy of the GNU Library General Public
+// License along with this library; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #ifndef _SG_OD_GAUGE_HXX
 #define _SG_OD_GAUGE_HXX
 
+#include "canvas_fwd.hxx"
+
 #include <osg/NodeCallback>
 #include <osg/Group>
-
-#include <boost/function.hpp>
 
 namespace osg
 {
@@ -42,6 +40,9 @@ namespace osg
 
 namespace simgear
 {
+namespace canvas
+{
+
   /**
    * Owner Drawn Gauge (aka render-to-texture) helper class
    */
@@ -49,11 +50,10 @@ namespace simgear
   {
     public:
 
-      typedef boost::function<void(osg::Camera*)> CameraRegistrationCallback;
-
-      ODGauge( const CameraRegistrationCallback& cb_camera_add,
-               const CameraRegistrationCallback& cb_camera_remove );
+      ODGauge();
       virtual ~ODGauge();
+
+      void setSystemAdapter(const SystemAdapterPtr& system_adapter);
 
       /**
        * Set the size of the render target.
@@ -124,7 +124,9 @@ namespace simgear
       // Real initialization function. Bad name.
       void allocRT(osg::NodeCallback* camera_cull_callback = 0);
 
-    private:
+    protected:
+
+      SystemAdapterPtr _system_adapter;
 
       int _size_x,
           _size_y,
@@ -142,15 +144,13 @@ namespace simgear
       osg::ref_ptr<osg::Camera> camera;
       osg::ref_ptr<osg::Texture2D> texture;
 
-      CameraRegistrationCallback _cb_cam_add,
-                                 _cb_cam_remove;
-
       void updateCoordinateFrame();
       void updateStencil();
       void updateSampling();
 
   };
 
+} // namespace canvas
 } // namespace simgear
 
 #endif // _SG_OD_GAUGE_HXX

@@ -1,4 +1,4 @@
-// osg::Operation to initialize the OpenVG context used for path rendering
+// Base class for canvas placements
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,44 +16,26 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_VG_INITOPERATION_HXX_
-#define CANVAS_VG_INITOPERATION_HXX_
-
-#include <vg/openvg.h>
-#include <osg/GraphicsThread>
+#ifndef CANVAS_PLACEMENT_HXX_
+#define CANVAS_PLACEMENT_HXX_
 
 namespace simgear
 {
 namespace canvas
 {
 
-  /**
-   * Deferred graphics operation to setup OpenVG which needs a valid OpenGL
-   * context. Pass to osg::GraphicsContext::add and ensure it's executed before
-   * doing any path rendering
-   */
-  class VGInitOperation:
-    public osg::GraphicsOperation
+  class Placement
   {
     public:
+      Placement();
+      virtual ~Placement() = 0;
 
-      VGInitOperation():
-        GraphicsOperation("canvas::VGInit", false)
-      {}
-
-      virtual void operator()(osg::GraphicsContext* context)
-      {
-        GLint vp[4];
-        glGetIntegerv(GL_VIEWPORT, vp);
-
-        // ATTENTION: If using another OpenVG implementation ensure it doesn't
-        //            change any OpenGL state!
-        vgCreateContextSH(vp[2], vp[3]);
-      }
-
+    private:
+      Placement(const Placement&) /* = delete */;
+      Placement& operator=(const Placement&) /* = delete */;
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_VG_INITOPERATION_HXX_ */
+#endif /* CANVAS_PLACEMENT_HXX_ */

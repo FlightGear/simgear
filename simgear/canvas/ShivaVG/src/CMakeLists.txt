@@ -1,20 +1,8 @@
-include(CheckIncludeFile)
-check_include_file("inttypes.h" HAVE_INTTYPES_H)
+include(SimGearComponent)
 
-if(HAVE_INTTYPES_H)
-  add_definitions(-DHAVE_INTTYPES_H)
-endif()
-add_definitions(-DVG_API_EXPORT)
+#add_definitions(-DVG_API_EXPORT)
 
-INCLUDE_DIRECTORIES(
-  ${OPENGL_INCLUDE_DIR}
-  ../include
-)
-
-SET(INCROOT ../include/VG)
-SET(SRCROOT .)
-
-SET(ShivaVG_Src
+set(ShivaVG_Src
     ${SRCROOT}/shArrays.c
     ${SRCROOT}/shArrays.h
     ${SRCROOT}/shContext.c
@@ -36,17 +24,4 @@ SET(ShivaVG_Src
     ${SRCROOT}/shVgu.c
 )
 
-ADD_LIBRARY(
-    ShivaVG
-    ${ShivaVG_Src}
-)
-
-TARGET_LINK_LIBRARIES(
-    ShivaVG
-    ${OPENGL_gl_LIBRARY}
-    ${OPENGL_glu_LIBRARY}
-)
-
-if(NOT SIMGEAR_HEADLESS)
-  install(TARGETS ShivaVG ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif()
+simgear_scene_component(ShivaVG canvas/ShivaVG "${ShivaVG_Src}" "")

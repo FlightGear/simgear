@@ -23,10 +23,6 @@
 #include <simgear/math/SGMathFwd.hxx>
 #include <simgear/math/SGVec4.hxx>
 
-#ifndef SIMGEAR_HEADLESS
-# include <osg/Vec4>
-#endif
-
 #include <string>
 
 namespace simgear
@@ -42,7 +38,7 @@ namespace simgear
    */
   bool parseColor(std::string str, SGVec4f& result);
 
-#ifndef SIMGEAR_HEADLESS
+#ifdef OSG_VEC4
   /**
    * Parse a (CSS) color into an osg::Vec4
    *

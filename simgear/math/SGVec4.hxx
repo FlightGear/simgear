@@ -18,6 +18,8 @@
 #ifndef SGVec4_H
 #define SGVec4_H
 
+#include <iosfwd>
+
 /// 4D Vector Class
 template<typename T>
 class SGVec4 {

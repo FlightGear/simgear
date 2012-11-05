@@ -27,10 +27,10 @@ namespace simgear
 {
 
   //----------------------------------------------------------------------------
-  bool parseColor(std::string str, osg::Vec4& result)
+  bool parseColor(std::string str, SGVec4f& result)
   {
     boost::trim(str);
-    osg::Vec4 color(0,0,0,1);
+    SGVec4f color(0,0,0,1);
 
     if( str.empty() )
       return false;
@@ -49,7 +49,7 @@ namespace simgear
            tok != tokens.end() && comp < 4;
            ++tok, ++comp )
       {
-        color._v[comp] = strtol(std::string(*tok).c_str(), 0, 16) / 255.f;
+        color[comp] = strtol(std::string(*tok).c_str(), 0, 16) / 255.f;
       }
     }
     // rgb(r,g,b)
@@ -75,9 +75,9 @@ namespace simgear
            tok != tokens.end() && comp < 4;
            ++tok, ++comp )
       {
-        color._v[comp] = boost::lexical_cast<float>(*tok)
-                       // rgb = [0,255], a = [0,1]
-                       / (comp < 3 ? 255 : 1);
+        color[comp] = boost::lexical_cast<float>(*tok)
+                    // rgb = [0,255], a = [0,1]
+                    / (comp < 3 ? 255 : 1);
       }
     }
     else
@@ -86,5 +86,17 @@ namespace simgear
     result = color;
     return true;
   }
+
+#ifndef SIMGEAR_HEADLESS
+  bool parseColor(std::string str, osg::Vec4& result)
+  {
+    SGVec4f color;
+    if( !parseColor(str, color) )
+      return false;
+
+    result.set(color[0], color[1], color[2], color[3]);
+    return true;
+  }
+#endif
 
 } // namespace simgear

@@ -406,6 +406,8 @@ typedef enum {
 
 /* Function Prototypes */
 
+#if 0 // We are including ShivaVG directly into libSimGearScene and only using
+      // inside the library so there is no need for any dll import/export stuff
 #if defined(_WIN32) || defined(__VC32__)
 #	if defined(VG_API_EXPORT)
 #		define VG_API_CALL __declspec(dllexport)
@@ -414,6 +416,9 @@ typedef enum {
 #	endif
 #else
 #	define VG_API_CALL extern
+#endif
+#else
+#   define VG_API_CALL
 #endif
 
 #if defined (__cplusplus)

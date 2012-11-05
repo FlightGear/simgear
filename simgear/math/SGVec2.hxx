@@ -18,6 +18,8 @@
 #ifndef SGVec2_H
 #define SGVec2_H
 
+#include <iosfwd>
+
 /// 2D Vector Class
 template<typename T>
 class SGVec2 {

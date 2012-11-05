@@ -19,7 +19,14 @@
 #ifndef PARSE_COLOR_HXX_
 #define PARSE_COLOR_HXX_
 
-#include <osg/Vec4>
+#include <simgear/math/SGLimits.hxx>
+#include <simgear/math/SGMathFwd.hxx>
+#include <simgear/math/SGVec4.hxx>
+
+#ifndef SIMGEAR_HEADLESS
+# include <osg/Vec4>
+#endif
+
 #include <string>
 
 namespace simgear
@@ -33,7 +40,19 @@ namespace simgear
    *
    * @return Whether str contained a valid color (and result has been modified)
    */
+  bool parseColor(std::string str, SGVec4f& result);
+
+#ifndef SIMGEAR_HEADLESS
+  /**
+   * Parse a (CSS) color into an osg::Vec4
+   *
+   * @param str     Text to parse
+   * @param result  Output for parse color
+   *
+   * @return Whether str contained a valid color (and result has been modified)
+   */
   bool parseColor(std::string str, osg::Vec4& result);
+#endif
 
 } // namespace simgear
 

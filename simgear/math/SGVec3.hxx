@@ -18,6 +18,8 @@
 #ifndef SGVec3_H
 #define SGVec3_H
 
+#include <iosfwd>
+
 /// 3D Vector Class
 template<typename T>
 class SGVec3 {

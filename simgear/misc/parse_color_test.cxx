@@ -20,11 +20,11 @@
 
 #define VERIFY_COLOR(str, r, g, b, a) \
   VERIFY(simgear::parseColor(str, color)) \
-  COMPARE(color, osg::Vec4(r, g, b, a))
+  COMPARE(color, SGVec4f(r, g, b, a))
     
 int main (int ac, char ** av)
 {
-  osg::Vec4 color;
+  SGVec4f color;
   VERIFY_COLOR("#ff0000", 1,0,0,1);
   VERIFY_COLOR("#00ff00", 0,1,0,1);
   VERIFY_COLOR("#0000ff", 0,0,1,1);

@@ -8,6 +8,7 @@ set(HEADERS
     OptionsReadFileCallback.hxx
     OsgMath.hxx
     OsgSingleton.hxx
+    parse_color.hxx
     PrimitiveUtils.hxx
     QuadTreeBuilder.hxx
     RenderConstants.hxx
@@ -34,6 +35,7 @@ set(SOURCES
     NodeAndDrawableVisitor.cxx
     Noise.cxx
     OptionsReadFileCallback.cxx
+    parse_color.cxx
     PrimitiveUtils.cxx
     QuadTreeBuilder.cxx
     SGEnlargeBoundingBox.cxx
@@ -49,3 +51,9 @@ set(SOURCES
     )
 
 simgear_scene_component(util scene/util "${SOURCES}" "${HEADERS}")
+
+if(ENABLE_TESTS)
+add_executable(test_parse_color parse_color_test.cxx )
+add_test(test_parse_color ${EXECUTABLE_OUTPUT_PATH}/test_parse_color)
+target_link_libraries(test_parse_color SimGearScene)
+endif(ENABLE_TESTS)

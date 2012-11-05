@@ -16,10 +16,6 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#include <simgear_config.h>
-#ifndef SIMGEAR_HEADLESS
-# include <osg/Vec4>
-#endif
 #include "parse_color.hxx"
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -31,10 +27,10 @@ namespace simgear
 {
 
   //----------------------------------------------------------------------------
-  bool parseColor(std::string str, SGVec4f& result)
+  bool parseColor(std::string str, osg::Vec4& result)
   {
     boost::trim(str);
-    SGVec4f color(0,0,0,1);
+    osg::Vec4 color(0,0,0,1);
 
     if( str.empty() )
       return false;
@@ -90,17 +86,5 @@ namespace simgear
     result = color;
     return true;
   }
-
-#ifndef SIMGEAR_HEADLESS
-  bool parseColor(std::string str, osg::Vec4& result)
-  {
-    SGVec4f color;
-    if( !parseColor(str, color) )
-      return false;
-
-    result.set(color[0], color[1], color[2], color[3]);
-    return true;
-  }
-#endif
 
 } // namespace simgear

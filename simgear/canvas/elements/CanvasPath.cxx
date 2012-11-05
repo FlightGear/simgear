@@ -17,7 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasPath.hxx"
-#include <simgear/misc/parse_color.hxx>
+#include <simgear/scene/util/parse_color.hxx>
 
 #include <osg/Drawable>
 #include <osg/BlendFunc>

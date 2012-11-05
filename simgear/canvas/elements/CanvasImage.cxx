@@ -21,7 +21,7 @@
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasMgr.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
-#include <simgear/misc/parse_color.hxx>
+#include <simgear/scene/util/parse_color.hxx>
 #include <simgear/misc/sg_path.hxx>
 
 #include <osg/Array>

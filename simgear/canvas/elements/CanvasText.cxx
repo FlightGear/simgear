@@ -19,7 +19,7 @@
 #include "CanvasText.hxx"
 #include <simgear/canvas/Canvas.hxx>
 #include <simgear/canvas/CanvasSystemAdapter.hxx>
-#include <simgear/misc/parse_color.hxx>
+#include <simgear/scene/util/parse_color.hxx>
 #include <osgText/Text>
 
 namespace simgear

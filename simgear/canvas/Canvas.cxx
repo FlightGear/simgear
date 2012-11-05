@@ -18,7 +18,7 @@
 
 #include "Canvas.hxx"
 #include <simgear/canvas/MouseEvent.hxx>
-#include <simgear/misc/parse_color.hxx>
+#include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 
 #include <osg/Camera>

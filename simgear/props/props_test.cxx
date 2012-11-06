@@ -324,7 +324,7 @@ test_property_nodes ()
 
   cout << "Testing addition of a totally empty node" << endl;
   if (root.getNode("/a/b/c", true) == 0)
-    cerr << "** failed to create /a/b/c" << endl;
+    cerr << "** FAILED to create /a/b/c" << endl;
   dump_node(&root);
   cout << endl;
 }
@@ -338,14 +338,41 @@ void test_addChild()
 
   SGPropertyNode *test = root.getChild("test", 0, true);
   SGPropertyNode *n = test->getNode("foo", true);
+
+  cout << "Testing appending initial child node" << endl;
+  test = root.addChild("child", 0, true);
+  if (test == 0)
+    cerr << "** FAILED to append initial child node" << endl;
+  if (root.getNode("child", 0, false) != test)
+      cerr << "** FAILED to create initial child node at expected index #0" << endl;
+
   n->getChild("child", 1, true)->setIntValue(1);
   n->getChild("child", 2, true)->setIntValue(2);
-  n->getChild("child", 4, true)->setIntValue(2);
+  n->getChild("child", 4, true)->setIntValue(4);
   dump_node(&root);
 
   SGPropertyNode *ch = n->addChild("child");
-  ch->setIntValue(3);
+  ch->setIntValue(5);
+  if (n->getChild("child", 5, false) != ch)
+      cerr << "** FAILED to create child node at expected index #5" << endl;
   cerr << endl << "ADDED: " << ch->getPath() << endl << endl;
+
+  cout << "Testing appending child node at first empty index" << endl;
+  ch = n->addChild("child", 0, false);
+  ch->setIntValue(3);
+  if (n->getChild("child", 3, false) != ch)
+      cerr << "** FAILED to create child node at expected index #3" << endl;
+
+  cout << "Testing appending child node" << endl;
+  ch = n->addChild("first", 0, false);
+  if (ch == 0)
+      cerr << "** Failed to add child node" << endl;
+  if (n->getChild("first", 0, false) != ch)
+      cerr << "** FAILED to append child node with expected index #0" << endl;
+  cerr << "ADDED: " << ch->getPath() << endl;
+  if (root.getChild("test/foo/first", false) != ch)
+      cerr << "** FAILED to append child node at expected path 'test/foo/first'" << endl;
+
   dump_node(&root);
 }
 

@@ -186,7 +186,7 @@ find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
 
-    // searching for a mathing index is a lot less time consuming than
+    // searching for a matching index is a lot less time consuming than
     // comparing two strings so do that first.
     if (node->getIndex() == index && boost::equals(node->getName(), name))
       return i;
@@ -201,7 +201,7 @@ static int
 find_last_child (const char * name, const PropertyList& nodes)
 {
   int nNodes = nodes.size();
-  int index = 0;
+  int index = -1;
 
   for (int i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
@@ -230,7 +230,7 @@ first_unused_index( const char * name,
       return index;
   }
 
-  SG_LOG(SG_GENERAL, SG_ALERT, "Too much nodes: " << name);
+  SG_LOG(SG_GENERAL, SG_ALERT, "Too many nodes: " << name);
   return -1;
 }
 

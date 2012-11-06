@@ -22,30 +22,21 @@
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
 
-#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/lambda/core.hpp>
 
 namespace simgear
 {
 namespace canvas
 {
   /**
-   * Create an ElementFactory for elements of type T
+   * Create an canvas Element of type T
    */
   template<typename T>
-  ElementFactory createElementFactory()
+  ElementPtr createElement( const CanvasWeakPtr& canvas,
+                            const SGPropertyNode_ptr& node,
+                            const Style& style )
   {
-    return boost::bind
-    (
-      &boost::make_shared<T, const CanvasWeakPtr&,
-                             const SGPropertyNode_ptr&,
-                             const Style&>,
-      boost::lambda::_1,
-      boost::lambda::_2,
-      boost::lambda::_3
-    );
+    return ElementPtr( new T(canvas, node, style) );
   }
 
   //----------------------------------------------------------------------------
@@ -54,11 +45,11 @@ namespace canvas
                 const Style& parent_style ):
     Element(canvas, node, parent_style)
   {
-    _child_factories["group"] = createElementFactory<Group>();
-    _child_factories["image"] = createElementFactory<Image>();
-    _child_factories["map"  ] = createElementFactory<Map  >();
-    _child_factories["path" ] = createElementFactory<Path >();
-    _child_factories["text" ] = createElementFactory<Text >();
+    _child_factories["group"] = &createElement<Group>;
+    _child_factories["image"] = &createElement<Image>;
+    _child_factories["map"  ] = &createElement<Map  >;
+    _child_factories["path" ] = &createElement<Path >;
+    _child_factories["text" ] = &createElement<Text >;
   }
 
   //----------------------------------------------------------------------------

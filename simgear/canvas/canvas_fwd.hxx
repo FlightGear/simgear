@@ -46,9 +46,9 @@ namespace canvas
   typedef boost::weak_ptr<Element> ElementWeakPtr;
 
   typedef std::map<std::string, const SGPropertyNode*> Style;
-  typedef boost::function<ElementPtr( const CanvasWeakPtr&,
-                                      const SGPropertyNode_ptr&,
-                                      const Style& )> ElementFactory;
+  typedef ElementPtr (*ElementFactory)( const CanvasWeakPtr&,
+                                        const SGPropertyNode_ptr&,
+                                        const Style& );
 
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 

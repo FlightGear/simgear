@@ -240,7 +240,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Element::Element( const CanvasWeakPtr& canvas,
-                    SGPropertyNode_ptr node,
+                    const SGPropertyNode_ptr& node,
                     const Style& parent_style ):
     _canvas( canvas ),
     _transform_dirty( false ),

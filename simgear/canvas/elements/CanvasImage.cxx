@@ -73,7 +73,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Image::Image( const CanvasWeakPtr& canvas,
-                SGPropertyNode_ptr node,
+                const SGPropertyNode_ptr& node,
                 const Style& parent_style ):
     Element(canvas, node, parent_style),
     _texture(new osg::Texture2D),

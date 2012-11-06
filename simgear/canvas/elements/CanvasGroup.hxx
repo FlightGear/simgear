@@ -21,16 +21,12 @@
 
 #include "CanvasElement.hxx"
 
-#include <boost/shared_ptr.hpp>
 #include <list>
-#include <map>
 
 namespace simgear
 {
 namespace canvas
 {
-
-  typedef boost::shared_ptr<Element> ElementPtr;
 
   class Group:
     public Element
@@ -42,7 +38,7 @@ namespace canvas
                        > ChildList;
 
       Group( const CanvasWeakPtr& canvas,
-             SGPropertyNode_ptr node,
+             const SGPropertyNode_ptr& node,
              const Style& parent_style = Style() );
       virtual ~Group();
 
@@ -50,7 +46,10 @@ namespace canvas
 
     protected:
 
-      ChildList _children;
+      typedef std::map<std::string, ElementFactory> ChildFactories;
+
+      ChildFactories    _child_factories;
+      ChildList         _children;
 
       virtual bool handleLocalMouseEvent(const canvas::MouseEvent& event);
 

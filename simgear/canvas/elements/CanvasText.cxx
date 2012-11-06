@@ -176,7 +176,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Text::Text( const CanvasWeakPtr& canvas,
-              SGPropertyNode_ptr node,
+              const SGPropertyNode_ptr& node,
               const Style& parent_style ):
     Element(canvas, node, parent_style),
     _text( new Text::TextOSG(this) )

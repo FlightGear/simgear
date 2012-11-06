@@ -46,7 +46,7 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Map::Map( const CanvasWeakPtr& canvas,
-            SGPropertyNode_ptr node,
+            const SGPropertyNode_ptr& node,
             const Style& parent_style ):
     Group(canvas, node, parent_style),
     // TODO make projection configurable

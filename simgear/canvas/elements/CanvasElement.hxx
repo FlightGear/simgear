@@ -43,7 +43,6 @@ namespace canvas
     public SGPropertyChangeListener
   {
     public:
-      typedef std::map<std::string, const SGPropertyNode*> Style;
       typedef boost::function<void(const SGPropertyNode*)> StyleSetter;
       typedef std::map<std::string, StyleSetter> StyleSetters;
 
@@ -116,7 +115,7 @@ namespace canvas
       std::vector<SGPropertyNode_ptr>   _bounding_box;
 
       Element( const CanvasWeakPtr& canvas,
-               SGPropertyNode_ptr node,
+               const SGPropertyNode_ptr& node,
                const Style& parent_style );
 
       template<typename T, class C1, class C2>

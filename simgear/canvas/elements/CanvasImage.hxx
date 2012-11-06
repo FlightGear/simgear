@@ -42,7 +42,7 @@ namespace canvas
        *                  [x,y]                         Position of rectangle
        */
       Image( const CanvasWeakPtr& canvas,
-             SGPropertyNode_ptr node,
+             const SGPropertyNode_ptr& node,
              const Style& parent_style );
       virtual ~Image();
 

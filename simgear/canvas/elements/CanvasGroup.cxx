@@ -22,20 +22,43 @@
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/lambda/core.hpp>
 
 namespace simgear
 {
 namespace canvas
 {
+  /**
+   * Create an ElementFactory for elements of type T
+   */
+  template<typename T>
+  ElementFactory createElementFactory()
+  {
+    return boost::bind
+    (
+      &boost::make_shared<T, const CanvasWeakPtr&,
+                             const SGPropertyNode_ptr&,
+                             const Style&>,
+      boost::lambda::_1,
+      boost::lambda::_2,
+      boost::lambda::_3
+    );
+  }
 
   //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
-                SGPropertyNode_ptr node,
+                const SGPropertyNode_ptr& node,
                 const Style& parent_style ):
     Element(canvas, node, parent_style)
   {
-
+    _child_factories["group"] = createElementFactory<Group>();
+    _child_factories["image"] = createElementFactory<Image>();
+    _child_factories["map"  ] = createElementFactory<Map  >();
+    _child_factories["path" ] = createElementFactory<Path >();
+    _child_factories["text" ] = createElementFactory<Text >();
   }
 
   //----------------------------------------------------------------------------
@@ -71,26 +94,16 @@ namespace canvas
     if( child->getParent() != _node )
       return;
 
-    boost::shared_ptr<Element> element;
-
-    // TODO create map of child factories and use also to check for element
-    //      on deletion in ::childRemoved
-    if( child->getNameString() == "text" )
-      element.reset( new Text(_canvas, child, _style) );
-    else if( child->getNameString() == "group" )
-      element.reset( new Group(_canvas, child, _style) );
-    else if( child->getNameString() == "map" )
-      element.reset( new Map(_canvas, child, _style) );
-    else if( child->getNameString() == "path" )
-      element.reset( new Path(_canvas, child, _style) );
-    else if( child->getNameString() == "image" )
-      element.reset( new Image(_canvas, child, _style) );
-
-    if( element )
+    ChildFactories::iterator child_factory =
+      _child_factories.find( child->getNameString() );
+    if( child_factory != _child_factories.end() )
     {
+      ElementPtr element = child_factory->second(_canvas, child, _style);
+
       // Add to osg scene graph...
       _transform->addChild( element->getMatrixTransform() );
       _children.push_back( ChildList::value_type(child, element) );
+
       return;
     }
 
@@ -120,11 +133,7 @@ namespace canvas
     if( node->getParent() != _node )
       return;
 
-    if(    node->getNameString() == "text"
-        || node->getNameString() == "group"
-        || node->getNameString() == "map"
-        || node->getNameString() == "path"
-        || node->getNameString() == "image" )
+    if( _child_factories.find(node->getNameString()) != _child_factories.end() )
     {
       ChildFinder pred(node);
       ChildList::iterator child =

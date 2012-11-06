@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
+#include <map>
 #include <vector>
 
 namespace simgear
@@ -39,6 +40,15 @@ namespace canvas
   class Canvas;
   typedef boost::shared_ptr<Canvas> CanvasPtr;
   typedef boost::weak_ptr<Canvas> CanvasWeakPtr;
+
+  class Element;
+  typedef boost::shared_ptr<Element> ElementPtr;
+  typedef boost::weak_ptr<Element> ElementWeakPtr;
+
+  typedef std::map<std::string, const SGPropertyNode*> Style;
+  typedef boost::function<ElementPtr( const CanvasWeakPtr&,
+                                      const SGPropertyNode_ptr&,
+                                      const Style& )> ElementFactory;
 
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 

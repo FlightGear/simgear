@@ -237,7 +237,7 @@ char
 gzfilebuf::allocate()
 {
     obuf_size = page_size / sizeof(char);
-    obuffer = new char [ibuf_size];
+    obuffer = new char [obuf_size];
     return 0;
 }
 

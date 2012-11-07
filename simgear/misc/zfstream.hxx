@@ -102,7 +102,7 @@ protected:
     virtual int_type overflow( int_type c = parent::traits_type::eof() );
     bool    out_waiting();
     char*   base() {return obuffer;}
-    int     blen() {return ibuf_size;}
+    int     blen() {return obuf_size;}
     char    allocate();
 
 private:

@@ -39,7 +39,9 @@ gzfilebuf::gzfilebuf()
       mode(ios_openmode(0)),
       own_file_descriptor(false),
       ibuf_size(0),
-      ibuffer(0)
+      ibuffer(0),
+      obuf_size(0),
+      obuffer(0)
 {
 //     try {
     ibuf_size = page_size / sizeof(char);
@@ -59,6 +61,8 @@ gzfilebuf::~gzfilebuf()
     if ( own_file_descriptor )
         this->close();
     delete [] ibuffer;
+    if (obuffer)
+        delete [] obuffer;
 }
 
 void
@@ -153,17 +157,17 @@ gzfilebuf::close()
     return this;
 }
 
-// int
-// gzfilebuf::setcompressionlevel( int comp_level )
-// {
-//     return gzsetparams(file, comp_level, -2);
-// }
+int
+gzfilebuf::setcompressionlevel( int comp_level )
+{
+    return gzsetparams(file, comp_level, -2);
+}
 
-// int
-// gzfilebuf::setcompressionstrategy( int comp_strategy )
-// {
-//     return gzsetparams(file, -2, comp_strategy);
-// }
+int
+gzfilebuf::setcompressionstrategy( int comp_strategy )
+{
+    return gzsetparams(file, -2, comp_strategy);
+}
 
 
 std::streampos
@@ -173,10 +177,9 @@ gzfilebuf::seekoff( std::streamoff, ios_seekdir, ios_openmode )
 }
 
 gzfilebuf::int_type
-gzfilebuf::overflow( int_type )
+gzfilebuf::overflow( int_type c )
 {
-#if 0
-    if ( !is_open() || !(mode & ios::out) )
+    if ( !is_open() || !(mode & ios_out) )
         return EOF;
 
     if ( !base() )
@@ -207,7 +210,6 @@ gzfilebuf::overflow( int_type )
         *pptr() = c;
         pbump(1);
     }
-#endif
     return 0;
 }
 
@@ -220,6 +222,22 @@ gzfilebuf::sync()
     if ( pptr() != 0 && pptr() > pbase() )
         return flushbuf();
 
+    return 0;
+}
+
+bool
+gzfilebuf::out_waiting()
+{
+    char* q = pbase();
+    int n = pptr() - q;
+    return n>0;
+}
+
+char
+gzfilebuf::allocate()
+{
+    obuf_size = page_size / sizeof(char);
+    obuffer = new char [ibuf_size];
     return 0;
 }
 

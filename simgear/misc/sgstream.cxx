@@ -29,6 +29,7 @@
 
 using std::string;
 using std::istream;
+using std::ostream;
 
 sg_gzifstream::sg_gzifstream()
     : istream(&gzbuf)
@@ -146,3 +147,44 @@ skipcomment( istream& in )
     return in;
 }
 
+
+sg_gzofstream::sg_gzofstream()
+    : ostream(&gzbuf)
+{
+}
+
+//-----------------------------------------------------------------------------
+//
+// Open a file for gzipped writing.
+//
+sg_gzofstream::sg_gzofstream( const string& name, ios_openmode io_mode )
+    : ostream(&gzbuf)
+{
+    this->open( name, io_mode );
+}
+
+//-----------------------------------------------------------------------------
+//
+// Attach a stream to an already opened file descriptor.
+//
+sg_gzofstream::sg_gzofstream( int fd, ios_openmode io_mode )
+    : ostream(&gzbuf)
+{
+    gzbuf.attach( fd, io_mode );
+}
+
+//-----------------------------------------------------------------------------
+//
+// Open a file for gzipped writing.
+//
+void
+sg_gzofstream::open( const string& name, ios_openmode io_mode )
+{
+    gzbuf.open( name.c_str(), io_mode );
+}
+
+void
+sg_gzofstream::attach( int fd, ios_openmode io_mode )
+{
+    gzbuf.attach( fd, io_mode );
+}

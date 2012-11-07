@@ -250,12 +250,88 @@ void test_big()
    compareTris(basic, rd);
 }
 
+void test_some_objects()
+{
+    SGBinObject basic;
+    SGPath path(simgear::Dir::current().file("some_objects.btg.gz"));
+    
+    SGVec3d center(1, 2, 3);
+    basic.set_gbs_center(center);
+    basic.set_gbs_radius(12345);
+    
+    std::vector<SGVec3d> points;
+    generate_points(10000, points);
+    std::vector<SGVec3f> normals;
+    generate_normals(1024, normals);
+    std::vector<SGVec2f> texCoords;
+    generate_tcs(20000, texCoords);
+    
+    basic.set_wgs84_nodes(points);
+    basic.set_normals(normals);
+    basic.set_texcoords(texCoords);
+    
+    generate_tris(basic, 30000); // a number smaller than 2^15!
+    
+    bool ok = basic.write_bin_file(path);
+    VERIFY( ok );
+    
+    SGBinObject rd;
+    ok = rd.read_bin(path.str()) ;
+    VERIFY( ok);
+    COMPARE(rd.get_version(), 7); // since we have less than 2^15 tris
+    COMPARE(rd.get_wgs84_nodes().size(), points.size());
+    COMPARE(rd.get_texcoords().size(), texCoords.size());
+   
+    comparePoints(rd, points);
+    compareTexCoords(rd, texCoords);
+    compareTris(basic, rd);
+}
+
+void test_many_objects()
+{
+    SGBinObject basic;
+    SGPath path(simgear::Dir::current().file("many_objects.btg.gz"));
+    
+    SGVec3d center(1, 2, 3);
+    basic.set_gbs_center(center);
+    basic.set_gbs_radius(12345);
+    
+    std::vector<SGVec3d> points;
+    generate_points(10000, points);
+    std::vector<SGVec3f> normals;
+    generate_normals(1024, normals);
+    std::vector<SGVec2f> texCoords;
+    generate_tcs(20000, texCoords);
+    
+    basic.set_wgs84_nodes(points);
+    basic.set_normals(normals);
+    basic.set_texcoords(texCoords);
+    
+    generate_tris(basic, 200000);
+    
+    bool ok = basic.write_bin_file(path);
+    VERIFY( ok );
+    
+    SGBinObject rd;
+    ok = rd.read_bin(path.str()) ;
+    VERIFY( ok);
+    COMPARE(rd.get_version(), 10); // should be version 10 since indices are > 2^16
+    COMPARE(rd.get_wgs84_nodes().size(), points.size());
+    COMPARE(rd.get_texcoords().size(), texCoords.size());
+   
+    comparePoints(rd, points);
+    compareTexCoords(rd, texCoords);
+    compareTris(basic, rd);
+}
+
 int main(int argc, char* argv[])
 {
     test_empty();
     test_basic();
     test_many_tcs();
     test_big();
+    test_some_objects();
+    test_many_objects();
     
     return 0;
 }

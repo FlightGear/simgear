@@ -722,6 +722,26 @@ bool SGBinObject::write_bin( const string& base, const string& name,
     return write_bin_file(file);
 }
 
+static unsigned int max_object_size( const string_list& materials )
+{
+    unsigned int max_size = 0;
+
+    for (unsigned int start=0; start < materials.size();) {
+        string m = materials[start];
+        unsigned int end = start + 1;
+        // find range of objects with identical material, calc its size
+        for (; (end < materials.size()) && (m == materials[end]); ++end) {}
+
+        unsigned int cur_size = end - start;
+        max_size = std::max(max_size, cur_size);
+        start = end;
+    }
+
+    return max_size;
+}
+
+const unsigned int VERSION_7_MATERIAL_LIMIT = 0x7fff;
+
 bool SGBinObject::write_bin_file(const SGPath& file)
 {
     int i;
@@ -753,9 +773,16 @@ bool SGBinObject::write_bin_file(const SGPath& file)
     cout << "tex coords = " << texcoords.size() << endl;
 
     version = 10;
+    bool shortMaterialsRanges = 
+        (max_object_size(pt_materials) < VERSION_7_MATERIAL_LIMIT) &&
+        (max_object_size(fan_materials) < VERSION_7_MATERIAL_LIMIT) &&
+        (max_object_size(strip_materials) < VERSION_7_MATERIAL_LIMIT) &&
+        (max_object_size(tri_materials) < VERSION_7_MATERIAL_LIMIT);
+                    
     if ((wgs84_nodes.size() < 0xffff) &&
         (normals.size() < 0xffff) &&
-        (texcoords.size() < 0xffff)) {
+        (texcoords.size() < 0xffff) &&
+        shortMaterialsRanges) {
         version = 7; // use smaller indices if possible
     }
 

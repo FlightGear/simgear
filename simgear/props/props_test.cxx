@@ -357,20 +357,28 @@ void test_addChild()
       cerr << "** FAILED to create child node at expected index #5" << endl;
   cerr << endl << "ADDED: " << ch->getPath() << endl << endl;
 
-  cout << "Testing appending child node at first empty index" << endl;
-  ch = n->addChild("child", 0, false);
+  cout << "Testing appending child node at first empty index (Skipping 0)" << endl;
+  ch = n->addChild("child", 1, false);
   ch->setIntValue(3);
   if (n->getChild("child", 3, false) != ch)
       cerr << "** FAILED to create child node at expected index #3" << endl;
+
+  cout << "Testing appending child node at first empty index" << endl;
+  ch = n->addChild("child", 0, false);
+  ch->setIntValue(0);
+  if (n->getChild("child", 0, false) != ch)
+      cerr << "** FAILED to create child node at expected index #0" << endl;
 
   cout << "Testing appending child node" << endl;
   ch = n->addChild("first", 0, false);
   if (ch == 0)
       cerr << "** Failed to add child node" << endl;
+  else
+      ch->setStringValue("append first");
   if (n->getChild("first", 0, false) != ch)
       cerr << "** FAILED to append child node with expected index #0" << endl;
   cerr << "ADDED: " << ch->getPath() << endl;
-  if (root.getChild("test/foo/first", false) != ch)
+  if (root.getNode("test/foo/first", false) != ch)
       cerr << "** FAILED to append child node at expected path 'test/foo/first'" << endl;
 
   dump_node(&root);

@@ -226,11 +226,11 @@ private:
     void _clearRTI();
 
     /// Internal helpers for interaction classes
-    bool _insertInteractionClass(const SGSharedPtr<HLAInteractionClass>& interactionClass);
+    bool _insertInteractionClass(HLAInteractionClass* interactionClass);
     /// Internal helpers for object classes
-    bool _insertObjectClass(const SGSharedPtr<HLAObjectClass>& objectClass);
+    bool _insertObjectClass(HLAObjectClass* objectClass);
     /// Internal helpers for object instances
-    bool _insertObjectInstance(const SGSharedPtr<HLAObjectInstance>& objectInstance);
+    bool _insertObjectInstance(HLAObjectInstance* objectInstance);
     void _eraseObjectInstance(const std::string& name);
 
     /// The underlying interface to the rti implementation

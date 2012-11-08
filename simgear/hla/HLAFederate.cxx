@@ -1129,9 +1129,9 @@ HLAFederate::_clearRTI()
 }
 
 bool
-HLAFederate::_insertInteractionClass(const SGSharedPtr<HLAInteractionClass>& interactionClass)
+HLAFederate::_insertInteractionClass(HLAInteractionClass* interactionClass)
 {
-    if (!interactionClass.valid())
+    if (!interactionClass)
         return false;
     if (_interactionClassMap.find(interactionClass->getName()) != _interactionClassMap.end()) {
         SG_LOG(SG_IO, SG_ALERT, "HLA: _insertInteractionClass: object instance with name \""
@@ -1143,9 +1143,9 @@ HLAFederate::_insertInteractionClass(const SGSharedPtr<HLAInteractionClass>& int
 }
 
 bool
-HLAFederate::_insertObjectClass(const SGSharedPtr<HLAObjectClass>& objectClass)
+HLAFederate::_insertObjectClass(HLAObjectClass* objectClass)
 {
-    if (!objectClass.valid())
+    if (!objectClass)
         return false;
     if (_objectClassMap.find(objectClass->getName()) != _objectClassMap.end()) {
         SG_LOG(SG_IO, SG_ALERT, "HLA: _insertObjectClass: object instance with name \""
@@ -1157,9 +1157,9 @@ HLAFederate::_insertObjectClass(const SGSharedPtr<HLAObjectClass>& objectClass)
 }
 
 bool
-HLAFederate::_insertObjectInstance(const SGSharedPtr<HLAObjectInstance>& objectInstance)
+HLAFederate::_insertObjectInstance(HLAObjectInstance* objectInstance)
 {
-    if (!objectInstance.valid())
+    if (!objectInstance)
         return false;
     if (objectInstance->getName().empty()) {
         SG_LOG(SG_IO, SG_ALERT, "HLA: _insertObjectInstance: trying to insert object instance with empty name!");

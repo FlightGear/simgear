@@ -68,14 +68,22 @@ else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
+if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
+option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)
+else()
+# Building SimGear DLLs is currently not supported for MSVC.
+set(SIMGEAR_SHARED OFF)
+# Using a system expat is currently not supported for MSVC - it would require shared simgear (DLL).
+set(SYSTEM_EXPAT OFF)
+endif()
+
 option(SIMGEAR_HEADLESS "Set to ON to build SimGear without GUI/graphics support" OFF)
 option(JPEG_FACTORY     "Enable JPEG-factory support" OFF)
 option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" ON)
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
-option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)

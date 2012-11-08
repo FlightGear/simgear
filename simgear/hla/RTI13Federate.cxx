@@ -1566,7 +1566,7 @@ RTI13Federate::queryLITS(SGTimeStamp& timeStamp)
 bool
 RTI13Federate::processMessage()
 {
-    bool result = _ambassador->tick();
+    bool result = _tick();
     _federateAmbassador->processQueues();
     return result;
 }
@@ -1574,17 +1574,64 @@ RTI13Federate::processMessage()
 bool
 RTI13Federate::processMessages(const double& minimum, const double& maximum)
 {
-    bool result = _ambassador->tick(minimum, 0);
+    bool result = _tick(minimum, 0);
     _federateAmbassador->processQueues();
     if (!result)
         return false;
     SGTimeStamp timeStamp = SGTimeStamp::now() + SGTimeStamp::fromSec(maximum);
     do {
-        result = _ambassador->tick(0, 0);
+        result = _tick(0, 0);
         _federateAmbassador->processQueues();
     } while (result && SGTimeStamp::now() <= timeStamp);
     return result;
 }
+
+bool
+RTI13Federate::_tick()
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ambassador is zero while calling _tick().");
+        return false;
+    }
+
+    try {
+        return _ambassador->tick();
+    } catch (RTI::SpecifiedSaveLabelDoesNotExist& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Specified save label does not exist: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Concurrent access attempted: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Internal error: " << e._name << " " << e._reason);
+        return false;
+    }
+    return false;
+}
+
+bool
+RTI13Federate::_tick(const double& minimum, const double& maximum)
+{
+    if (!_ambassador.valid()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ambassador is zero while calling _tick().");
+        return false;
+    }
+
+    try {
+        return _ambassador->tick(minimum, maximum);
+    } catch (RTI::SpecifiedSaveLabelDoesNotExist& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Specified save label does not exist: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::ConcurrentAccessAttempted& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Concurrent access attempted: " << e._name << " " << e._reason);
+        return false;
+    } catch (RTI::RTIinternalError& e) {
+        SG_LOG(SG_NETWORK, SG_WARN, "RTI: Internal error: " << e._name << " " << e._reason);
+        return false;
+    }
+    return false;
+}
+
 
 RTI13ObjectClass*
 RTI13Federate::createObjectClass(const std::string& objectClassName, HLAObjectClass* hlaObjectClass)

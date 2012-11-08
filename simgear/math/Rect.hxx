@@ -19,8 +19,6 @@
 #ifndef SG_RECT_HXX_
 #define SG_RECT_HXX_
 
-#include <osg/Vec2>
-
 namespace simgear
 {
 

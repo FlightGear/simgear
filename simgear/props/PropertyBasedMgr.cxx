@@ -46,6 +46,49 @@ namespace simgear
   }
 
   //----------------------------------------------------------------------------
+  PropertyBasedElementPtr
+  PropertyBasedMgr::createElement(const std::string& name)
+  {
+    SGPropertyNode* node = _props->addChild(_name_elements, 0, false);
+    if( !name.empty() )
+      node->setStringValue("name", name);
+
+    return getElement( node->getIndex() );
+  }
+
+  //----------------------------------------------------------------------------
+  PropertyBasedElementPtr PropertyBasedMgr::getElement(size_t index) const
+  {
+    if( index >= _elements.size() )
+      return PropertyBasedElementPtr();
+
+    return _elements[index];
+  }
+
+  //----------------------------------------------------------------------------
+  const SGPropertyNode* PropertyBasedMgr::getPropertyRoot() const
+  {
+    return _props;
+  }
+
+  //----------------------------------------------------------------------------
+  PropertyBasedMgr::PropertyBasedMgr( SGPropertyNode_ptr props,
+                                      const std::string& name_elements,
+                                      ElementFactory element_factory ):
+    _props( props ),
+    _name_elements( name_elements ),
+    _element_factory( element_factory )
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  PropertyBasedMgr::~PropertyBasedMgr()
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
   void PropertyBasedMgr::childAdded( SGPropertyNode * parent,
                                      SGPropertyNode * child )
   {
@@ -101,29 +144,6 @@ namespace simgear
     else
       // remove the element...
       _elements[index].reset();
-  }
-
-  //----------------------------------------------------------------------------
-  const SGPropertyNode* PropertyBasedMgr::getPropertyRoot() const
-  {
-    return _props;
-  }
-
-  //----------------------------------------------------------------------------
-  PropertyBasedMgr::PropertyBasedMgr( SGPropertyNode_ptr props,
-                                      const std::string& name_elements,
-                                      ElementFactory element_factory ):
-    _props( props ),
-    _name_elements( name_elements ),
-    _element_factory( element_factory )
-  {
-
-  }
-
-  //----------------------------------------------------------------------------
-  PropertyBasedMgr::~PropertyBasedMgr()
-  {
-
   }
 
 } // namespace simgear

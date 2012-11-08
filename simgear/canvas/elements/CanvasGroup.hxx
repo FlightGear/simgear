@@ -42,6 +42,10 @@ namespace canvas
              const Style& parent_style = Style() );
       virtual ~Group();
 
+      ElementPtr createChild( const std::string& type,
+                              const std::string& name = "" );
+      ElementPtr getChild(const SGPropertyNode* node);
+
       virtual void update(double dt);
 
     protected:
@@ -58,6 +62,8 @@ namespace canvas
       virtual void childChanged(SGPropertyNode * child);
 
       void handleZIndexChanged(SGPropertyNode* node, int z_index);
+
+      ChildList::iterator findChild(const SGPropertyNode* node);
   };
 
 } // namespace canvas

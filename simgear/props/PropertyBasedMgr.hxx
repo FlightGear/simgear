@@ -39,12 +39,19 @@ namespace simgear
 
       virtual void update (double delta_time_sec);
 
-      virtual void childAdded( SGPropertyNode * parent,
-                               SGPropertyNode * child );
-      virtual void childRemoved( SGPropertyNode * parent,
-                                 SGPropertyNode * child );
+      /**
+       * Create a new PropertyBasedElement
+       *
+       * @param name    Name of the new element
+       */
+      PropertyBasedElementPtr createElement(const std::string& name = "");
 
-      virtual void elementCreated(PropertyBasedElementPtr element) {}
+      /**
+       * Get an existing PropertyBasedElement by its index
+       *
+       * @param index   Index of element node in property tree
+       */
+      PropertyBasedElementPtr getElement(size_t index) const;
 
       virtual const SGPropertyNode* getPropertyRoot() const;
 
@@ -74,6 +81,13 @@ namespace simgear
                         const std::string& name_elements,
                         ElementFactory element_factory );
       virtual ~PropertyBasedMgr() = 0;
+
+      virtual void childAdded( SGPropertyNode * parent,
+                               SGPropertyNode * child );
+      virtual void childRemoved( SGPropertyNode * parent,
+                                 SGPropertyNode * child );
+
+      virtual void elementCreated(PropertyBasedElementPtr element) {}
 
   };
 

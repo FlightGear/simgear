@@ -22,7 +22,9 @@
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lambda/core.hpp>
 
 namespace simgear
 {
@@ -56,6 +58,27 @@ namespace canvas
   Group::~Group()
   {
 
+  }
+
+  //----------------------------------------------------------------------------
+  ElementPtr Group::createChild( const std::string& type,
+                                 const std::string& name )
+  {
+    SGPropertyNode* node = _node->addChild(type, 0, false);
+    if( !name.empty() )
+      node->setStringValue("name", name);
+
+    return getChild(node);
+  }
+
+  //----------------------------------------------------------------------------
+  ElementPtr Group::getChild(const SGPropertyNode* node)
+  {
+    ChildList::iterator child = findChild(node);
+    if( child == _children.end() )
+      return ElementPtr();
+
+    return child->second;
   }
 
   //----------------------------------------------------------------------------
@@ -102,23 +125,6 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  struct ChildFinder
-  {
-    public:
-      ChildFinder(SGPropertyNode *node):
-        _node(node)
-      {}
-
-      bool operator()(const Group::ChildList::value_type& el) const
-      {
-        return el.first == _node;
-      }
-
-    private:
-      SGPropertyNode *_node;
-  };
-
-  //----------------------------------------------------------------------------
   void Group::childRemoved(SGPropertyNode* node)
   {
     if( node->getParent() != _node )
@@ -126,10 +132,7 @@ namespace canvas
 
     if( _child_factories.find(node->getNameString()) != _child_factories.end() )
     {
-      ChildFinder pred(node);
-      ChildList::iterator child =
-        std::find_if(_children.begin(), _children.end(), pred);
-
+      ChildList::iterator child = findChild(node);
       if( child == _children.end() )
         SG_LOG
         (
@@ -162,10 +165,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Group::handleZIndexChanged(SGPropertyNode* node, int z_index)
   {
-    ChildFinder pred(node);
-    ChildList::iterator child =
-      std::find_if(_children.begin(), _children.end(), pred);
-
+    ChildList::iterator child = findChild(node);
     if( child == _children.end() )
       return;
 
@@ -212,6 +212,17 @@ namespace canvas
       SG_GENERAL,
       SG_INFO,
       "canvas::Group: Moved element " << index << " to position " << index_new
+    );
+  }
+
+  //----------------------------------------------------------------------------
+  Group::ChildList::iterator Group::findChild(const SGPropertyNode* node)
+  {
+    return std::find_if
+    (
+      _children.begin(),
+      _children.end(),
+      boost::bind(&Group::ChildList::value_type::first, _1) == node
     );
   }
 

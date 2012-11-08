@@ -91,6 +91,8 @@ namespace canvas
        */
       void removeDependentCanvas(const CanvasWeakPtr& canvas);
 
+      GroupPtr createGroup(const std::string& name = "");
+
       /**
        * Enable rendering for the next frame
        *

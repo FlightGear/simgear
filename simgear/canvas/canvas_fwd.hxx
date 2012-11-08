@@ -37,13 +37,23 @@ namespace simgear
 namespace canvas
 {
 
-  class Canvas;
-  typedef boost::shared_ptr<Canvas> CanvasPtr;
-  typedef boost::weak_ptr<Canvas> CanvasWeakPtr;
+#define SG_FWD_DECL(name)\
+  class name;\
+  typedef boost::shared_ptr<name> name##Ptr;\
+  typedef boost::weak_ptr<name> name##WeakPtr;
 
-  class Element;
-  typedef boost::shared_ptr<Element> ElementPtr;
-  typedef boost::weak_ptr<Element> ElementWeakPtr;
+  SG_FWD_DECL(Canvas)
+  SG_FWD_DECL(Element)
+  SG_FWD_DECL(Group)
+  SG_FWD_DECL(Image)
+  SG_FWD_DECL(Map)
+  SG_FWD_DECL(Path)
+  SG_FWD_DECL(Text)
+
+  SG_FWD_DECL(Placement)
+  SG_FWD_DECL(SystemAdapter)
+
+#undef SG_FWD_DECL
 
   typedef std::map<std::string, const SGPropertyNode*> Style;
   typedef ElementPtr (*ElementFactory)( const CanvasWeakPtr&,
@@ -52,14 +62,9 @@ namespace canvas
 
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 
-  class Placement;
-  typedef boost::shared_ptr<Placement> PlacementPtr;
   typedef std::vector<PlacementPtr> Placements;
   typedef boost::function<Placements( const SGPropertyNode*,
                                       CanvasPtr )> PlacementFactory;
-
-  class SystemAdapter;
-  typedef boost::shared_ptr<SystemAdapter> SystemAdapterPtr;
 
 } // namespace canvas
 } // namespace simgear

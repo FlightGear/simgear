@@ -175,6 +175,11 @@ naRef naHash_cget(naRef hash, char* key);
 void naHash_set(naRef hash, naRef key, naRef val);
 void naHash_cset(naRef hash, char* key, naRef val);
 void naHash_delete(naRef hash, naRef key);
+/**
+ * Store the keys in ::hash into the vector at ::dst
+ *
+ * @see ::naNewVector
+ */
 void naHash_keys(naRef dst, naRef hash);
 
 // Ghost utilities:
@@ -185,7 +190,16 @@ typedef struct naGhostType {
     void(*set_member)(naContext c, void*, naRef key, naRef val);
 } naGhostType;
 
+/**
+ * Create a ghost for an object without any attributes. If ::t contains pointers
+ * to get_member or set_member function they will be ignored.
+ */
 naRef        naNewGhost(naContext c, naGhostType* t, void* ghost);
+/**
+ * Create a ghost for an object. This version uses the get_member and set_member
+ * function pointers in ::t upon trying to get or set a member respectively from
+ * Nasal.
+ */
 naRef        naNewGhost2(naContext c, naGhostType* t, void* ghost);
 naGhostType* naGhost_type(naRef ghost);
 void*        naGhost_ptr(naRef ghost);

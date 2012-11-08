@@ -42,6 +42,13 @@ namespace canvas
                  SystemAdapterPtr system_adapter );
 
       /**
+       * Create a new canvas
+       *
+       * @param name    Name of the new canvas
+       */
+      CanvasPtr createCanvas(const std::string& name = "");
+
+      /**
        * Get ::Canvas by index
        *
        * @param index Index of texture node in /canvas/by-index/

@@ -136,6 +136,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  GroupPtr Canvas::createGroup(const std::string& name)
+  {
+    return boost::dynamic_pointer_cast<Group>
+    (
+      _root_group->createChild("group", name)
+    );
+  }
+
+  //----------------------------------------------------------------------------
   void Canvas::enableRendering(bool force)
   {
     _visible = true;

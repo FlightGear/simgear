@@ -19,6 +19,7 @@
 #define HLATypes_hxx
 
 #include <list>
+#include <vector>
 
 namespace simgear {
 
@@ -41,6 +42,8 @@ enum HLAUpdateType {
 };
 
 typedef std::list<unsigned> HLAIndexList;
+
+typedef std::vector<unsigned> HLADataElementIndex;
 
 } // namespace simgear
 

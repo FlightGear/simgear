@@ -442,6 +442,87 @@ HLAObjectInstance::setAttributes(const HLAAttributePathElementMap& attributePath
     }
 }
 
+bool
+HLAObjectInstance::getAttributeIndex(HLADataElementIndex& index, const std::string& path) const
+{
+    HLAObjectClass* objectClass = getObjectClass().get();
+    if (!objectClass) {
+        SG_LOG(SG_IO, SG_ALERT, "Could not get the data element index of an object instance with unknown class!");
+        return false;
+    }
+    return objectClass->getAttributeIndex(index, path);
+}
+
+HLADataElement*
+HLAObjectInstance::getAttributeDataElement(const HLADataElementIndex& index)
+{
+    if (index.empty())
+        return 0;
+    HLADataElement* dataElement = getAttributeDataElement(index[0]);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(index.begin() + 1, index.end());
+}
+
+const HLADataElement*
+HLAObjectInstance::getAttributeDataElement(const HLADataElementIndex& index) const
+{
+    if (index.empty())
+        return 0;
+    const HLADataElement* dataElement = getAttributeDataElement(index[0]);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(index.begin() + 1, index.end());
+}
+
+void
+HLAObjectInstance::setAttributeDataElement(const HLADataElementIndex& index, const SGSharedPtr<HLADataElement>& dataElement)
+{
+    if (index.empty())
+        return;
+    if (index.size() == 1) {
+        if (!getAttributeDataType(index[0]))
+            return;
+        if (dataElement.valid() && !dataElement->setDataType(getAttributeDataType(index[0])))
+            return;
+        setAttributeDataElement(index[0], dataElement);
+    } else {
+        SGSharedPtr<HLADataElement> attributeDataElement = getAttributeDataElement(index[0]);
+        if (!attributeDataElement.valid())
+            attributeDataElement = createAttributeDataElement(index[0]);
+        if (!attributeDataElement.valid())
+            return;
+        attributeDataElement->setDataElement(index.begin() + 1, index.end(), dataElement.get());
+    }
+}
+
+HLADataElement*
+HLAObjectInstance::getAttributeDataElement(const std::string& path)
+{
+    HLADataElementIndex index;
+    if (!getAttributeIndex(index, path))
+        return 0;
+    return getAttributeDataElement(index); 
+}
+
+const HLADataElement*
+HLAObjectInstance::getAttributeDataElement(const std::string& path) const
+{
+    HLADataElementIndex index;
+    if (!getAttributeIndex(index, path))
+        return 0;
+    return getAttributeDataElement(index); 
+}
+
+void
+HLAObjectInstance::setAttributeDataElement(const std::string& path, const SGSharedPtr<HLADataElement>& dataElement)
+{
+    HLADataElementIndex index;
+    if (!getAttributeIndex(index, path))
+        return;
+    setAttributeDataElement(index, dataElement); 
+}
+
 void
 HLAObjectInstance::discoverInstance(const RTIData& tag)
 {

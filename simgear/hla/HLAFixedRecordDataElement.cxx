@@ -147,6 +147,54 @@ HLAFixedRecordDataElement::setDataType(const HLADataType* dataType)
 }
 
 bool
+HLAFixedRecordDataElement::setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement)
+{
+    // Must have happened in the parent
+    if (begin == end)
+        return false;
+    unsigned index = *begin;
+    if (++begin != end) {
+        if (getNumFields() <= index)
+            return false;
+        if (!getField(index) && getFieldDataType(index)) {
+            HLADataElementFactoryVisitor visitor;
+            getFieldDataType(index)->accept(visitor);
+            setField(index, visitor.getDataElement());
+        }
+        if (!getField(index))
+            return false;
+        return getField(index)->setDataElement(begin, end, dataElement);
+    } else {
+        if (!dataElement->setDataType(getFieldDataType(index)))
+            return false;
+        setField(index, dataElement);
+        return true;
+    }
+}
+
+HLADataElement*
+HLAFixedRecordDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end)
+{
+    if (begin == end)
+        return this;
+    HLADataElement* dataElement = getField(*begin);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(++begin, end);
+}
+
+const HLADataElement*
+HLAFixedRecordDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const
+{
+    if (begin == end)
+        return this;
+    const HLADataElement* dataElement = getField(*begin);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(++begin, end);
+}
+
+bool
 HLAFixedRecordDataElement::decodeField(HLADecodeStream& stream, unsigned i)
 {
     HLADataElement* dataElement = getField(i);

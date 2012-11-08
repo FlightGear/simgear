@@ -25,6 +25,7 @@
 #include <simgear/timing/timestamp.hxx>
 #include "RTIData.hxx"
 #include "HLADataType.hxx"
+#include "HLATypes.hxx"
 
 class SGTimeStamp;
 
@@ -45,6 +46,17 @@ public:
 
     virtual const HLADataType* getDataType() const = 0;
     virtual bool setDataType(const HLADataType* dataType) = 0;
+
+    bool setDataElement(const HLADataElementIndex& index, HLADataElement* dataElement)
+    { return setDataElement(index.begin(), index.end(), dataElement); }
+    HLADataElement* getDataElement(const HLADataElementIndex& index)
+    { return getDataElement(index.begin(), index.end()); }
+    const HLADataElement* getDataElement(const HLADataElementIndex& index) const
+    { return getDataElement(index.begin(), index.end()); }
+
+    virtual bool setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement);
+    virtual HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end);
+    virtual const HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const;
 
     /// Returns the time stamp if this data element.
     /// Do not access this getter if the getTimeStampValid() method returns false.

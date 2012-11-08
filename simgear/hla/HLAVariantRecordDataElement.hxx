@@ -57,6 +57,10 @@ public:
     HLAVariantRecordDataElement(const HLAVariantRecordDataType* dataType);
     virtual ~HLAVariantRecordDataElement();
 
+    virtual bool setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement);
+    virtual HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end);
+    virtual const HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const;
+
     virtual bool setAlternativeIndex(unsigned index);
     virtual bool decodeAlternative(HLADecodeStream& stream);
     virtual unsigned getAlternativeIndex() const;

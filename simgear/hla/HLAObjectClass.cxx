@@ -211,6 +211,36 @@ HLAObjectClass::getIndexPathPair(const std::string& path) const
 }
 
 bool
+HLAObjectClass::getAttributeIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
+{
+    if (path.empty()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: failed to parse empty element path!");
+        return false;
+    }
+    size_t len = path.find_first_of("[.");
+    unsigned index = 0;
+    while (index < getNumAttributes()) {
+        if (path.compare(0, len, getAttributeName(index)) == 0)
+            break;
+        ++index;
+    }
+    if (getNumAttributes() <= index) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: faild to parse data element index \"" << path << "\":\n"
+               << "Attribute \"" << path.substr(0, len) << "\" not found in object class \""
+               << getName() << "\"!");
+        return false;
+    }
+    if (!getAttributeDataType(index)) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: faild to parse data element index \"" << path << "\":\n"
+               << "Undefined attribute data type in variant record data type \""
+               << getAttributeName(index) << "\"!");
+        return false;
+    }
+    dataElementIndex.push_back(index);
+    return getAttributeDataType(index)->getDataElementIndex(dataElementIndex, path, len);
+}
+
+bool
 HLAObjectClass::subscribe()
 {
     if (!_rtiObjectClass.valid()) {

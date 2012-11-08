@@ -77,6 +77,25 @@ public:
     void setAttribute(unsigned index, const HLAPathElementMap& pathElementMap);
     void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
+    /// Retrieve the data element index for the given path.
+    bool getAttributeIndex(HLADataElementIndex& index, const std::string& path) const;
+
+    /// Return the data element of the attribute with the given index
+    HLADataElement* getAttributeDataElement(const HLADataElementIndex& index);
+    const HLADataElement* getAttributeDataElement(const HLADataElementIndex& index) const;
+    /// Set the data element of the attribute with the given index
+    void setAttributeDataElement(const HLADataElementIndex& index, const SGSharedPtr<HLADataElement>& dataElement);
+
+    /// Return the data element of the attribute with the given path.
+    /// The method is only for convenience as parsing the path is expensive.
+    /// Precompute the index and use the index instead if you use this method more often.
+    HLADataElement* getAttributeDataElement(const std::string& path);
+    const HLADataElement* getAttributeDataElement(const std::string& path) const;
+    /// Set the data element of the attribute with the given path
+    /// The method is only for convenience as parsing the path is expensive.
+    /// Precompute the index and use the index instead if you use this method more often.
+    void setAttributeDataElement(const std::string& path, const SGSharedPtr<HLADataElement>& dataElement);
+
     /// Gets called on discovering this object instance.
     virtual void discoverInstance(const RTIData& tag);
     /// Gets called on remove this object instance.

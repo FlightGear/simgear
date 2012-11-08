@@ -77,6 +77,9 @@ public:
     /// Return the index, path pair for the given string path
     HLADataElement::IndexPathPair getIndexPathPair(const std::string& path) const;
 
+    /// Get the attribute data element index for the given path, return true if successful
+    bool getAttributeIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const;
+
     virtual bool subscribe();
     virtual bool unsubscribe();
 

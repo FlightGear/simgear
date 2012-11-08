@@ -26,6 +26,7 @@
 #include <simgear/debug/logstream.hxx>
 
 #include "HLADataElementVisitor.hxx"
+#include "HLADataTypeVisitor.hxx"
 
 namespace simgear {
 
@@ -120,6 +121,58 @@ HLAVariantRecordDataElement::HLAVariantRecordDataElement(const HLAVariantRecordD
 HLAVariantRecordDataElement::~HLAVariantRecordDataElement()
 {
     clearStamp();
+}
+
+bool
+HLAVariantRecordDataElement::setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement)
+{
+    // Must have happened in the parent
+    if (begin == end)
+        return false;
+    unsigned index = *begin;
+    if (++begin != end) {
+        if (!setAlternativeIndex(index))
+            return false;
+        if (!_dataElement.valid() && getAlternativeDataType()) {
+            HLADataElementFactoryVisitor visitor;
+            getAlternativeDataType()->accept(visitor);
+            _dataElement = visitor.getDataElement();
+        }
+        if (!_dataElement.valid())
+            return false;
+        return _dataElement->setDataElement(begin, end, dataElement);
+    } else {
+        if (!setAlternativeIndex(index))
+            return false;
+        if (!dataElement->setDataType(getAlternativeDataType()))
+            return false;
+        _dataElement = dataElement;
+        return true;
+    }
+}
+
+HLADataElement*
+HLAVariantRecordDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end)
+{
+    if (begin == end)
+        return this;
+    if (getAlternativeIndex() != *begin)
+        return 0;
+    if (!_dataElement.valid())
+        return 0;
+    return _dataElement->getDataElement(++begin, end);
+}
+
+const HLADataElement*
+HLAVariantRecordDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const
+{
+    if (begin == end)
+        return this;
+    if (getAlternativeIndex() != *begin)
+        return 0;
+    if (!_dataElement.valid())
+        return 0;
+    return _dataElement->getDataElement(++begin, end);
 }
 
 bool

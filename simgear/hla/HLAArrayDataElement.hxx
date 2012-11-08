@@ -59,6 +59,10 @@ public:
     HLAArrayDataElement(const HLAArrayDataType* dataType = 0);
     virtual ~HLAArrayDataElement();
 
+    virtual bool setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement);
+    virtual HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end);
+    virtual const HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const;
+
     virtual bool setNumElements(unsigned size);
     virtual bool decodeElement(HLADecodeStream& stream, unsigned i);
     virtual unsigned getNumElements() const;

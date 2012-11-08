@@ -137,6 +137,28 @@ HLADataElement::~HLADataElement()
 {
 }
 
+bool
+HLADataElement::setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement)
+{
+    return false;
+}
+
+HLADataElement*
+HLADataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end)
+{
+    if (begin != end)
+        return 0;
+    return this;
+}
+
+const HLADataElement*
+HLADataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const
+{
+    if (begin != end)
+        return 0;
+    return this;
+}
+
 void
 HLADataElement::setTimeStamp(const SGTimeStamp& timeStamp)
 {

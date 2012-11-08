@@ -109,6 +109,54 @@ HLAArrayDataElement::~HLAArrayDataElement()
 }
 
 bool
+HLAArrayDataElement::setDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end, HLADataElement* dataElement)
+{
+    // Must have happened in the parent
+    if (begin == end)
+        return false;
+    unsigned index = *begin;
+    if (++begin != end) {
+        if (getNumElements() <= index && !setNumElements(index + 1))
+            return false;
+        if (!getElement(index) && getElementDataType()) {
+            HLADataElementFactoryVisitor visitor;
+            getElementDataType()->accept(visitor);
+            setElement(index, visitor.getDataElement());
+        }
+        if (!getElement(index))
+            return false;
+        return getElement(index)->setDataElement(begin, end, dataElement);
+    } else {
+        if (!dataElement->setDataType(getElementDataType()))
+            return false;
+        setElement(index, dataElement);
+        return true;
+    }
+}
+
+HLADataElement*
+HLAArrayDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end)
+{
+    if (begin == end)
+        return this;
+    HLADataElement* dataElement = getElement(*begin);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(++begin, end);
+}
+
+const HLADataElement*
+HLAArrayDataElement::getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const
+{
+    if (begin == end)
+        return this;
+    const HLADataElement* dataElement = getElement(*begin);
+    if (!dataElement)
+        return 0;
+    return dataElement->getDataElement(++begin, end);
+}
+
+bool
 HLAArrayDataElement::setNumElements(unsigned size)
 {
     unsigned oldSize = _elementVector.size();

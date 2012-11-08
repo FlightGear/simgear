@@ -178,6 +178,10 @@ HLAOMTXmlVisitor::setToFederate(HLAFederate& federate)
     unsigned numInteractionClasses = getNumInteractionClasses();
     for (unsigned i = 0; i < numInteractionClasses; ++i) {
         const InteractionClass* interactionClass = getInteractionClass(i);
+        if (federate.getInteractionClass(interactionClass->getName())) {
+            SG_LOG(SG_IO, SG_ALERT, "Not creating Interaction class \"" << interactionClass->getName() << "\" twice!.");
+            continue;
+        }
 
         SGSharedPtr<HLAInteractionClass> hlaInteractionClass;
         hlaInteractionClass = federate.createInteractionClass(interactionClass->getName());
@@ -201,6 +205,10 @@ HLAOMTXmlVisitor::setToFederate(HLAFederate& federate)
     unsigned numObjectClasses = getNumObjectClasses();
     for (unsigned i = 0; i < numObjectClasses; ++i) {
         const ObjectClass* objectClass = getObjectClass(i);
+        if (federate.getObjectClass(objectClass->getName())) {
+            SG_LOG(SG_IO, SG_ALERT, "Not creating Object class \"" << objectClass->getName() << "\" twice!.");
+            continue;
+        }
 
         SGSharedPtr<HLAObjectClass> hlaObjectClass;
         hlaObjectClass = federate.createObjectClass(objectClass->getName());

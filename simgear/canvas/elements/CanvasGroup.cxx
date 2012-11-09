@@ -222,7 +222,7 @@ namespace canvas
     (
       _children.begin(),
       _children.end(),
-      boost::bind(&Group::ChildList::value_type::first, _1) == node
+      boost::bind(&ChildList::value_type::first, _1) == node
     );
   }
 

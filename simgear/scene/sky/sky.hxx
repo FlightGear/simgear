@@ -34,6 +34,7 @@
 #endif
 
 #include <simgear/compiler.h>
+#include <simgear/math/sg_random.h>
 #include <simgear/misc/sg_path.hxx>
 #include <simgear/props/props.hxx>
 
@@ -250,6 +251,9 @@ private:
 
     // 3D cloud density
     double clouds_3d_density;
+    
+    // RNG seed
+    mt seed;
 
 public:
 

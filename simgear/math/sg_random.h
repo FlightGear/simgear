@@ -48,6 +48,13 @@ typedef struct {unsigned int array[MT_N]; int index; } mt;
 void mt_init(mt *mt, unsigned int seed);
 
 /**
+ * Initialize a new MT state with a seed that only
+ * changes every 10 minutes.  Used to synchronize
+ * multi-process deployments.
+ */
+void mt_init_time_10(mt *mt);
+
+/**
  * Generate a new 32-bit random number based on the given MT state.
  */
 unsigned int mt_rand32( mt *mt);

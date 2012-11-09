@@ -46,7 +46,7 @@ class CloudShaderGeometry : public osg::Drawable
         
         const static unsigned int USR_ATTR_1 = 10;
         const static unsigned int USR_ATTR_2 = 11;
-        const static unsigned int USR_ATTR_3 = 12;
+        const static unsigned int USR_ATTR_3 = 12;        
                 
         CloudShaderGeometry()
         { 

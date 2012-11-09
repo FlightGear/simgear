@@ -28,6 +28,7 @@
 #include <vector>
 #include <osg/Fog>
 
+#include <simgear/math/sg_random.h>
 #include <simgear/scene/material/Effect.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 
@@ -100,6 +101,9 @@ private:
         osg::Geometry* quad;
         osg::ref_ptr<simgear::Effect> effect;
         static float sprite_density;
+        
+        // RNG seed for this cloud
+        mt seed;
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 };

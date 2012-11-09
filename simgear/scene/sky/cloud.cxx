@@ -194,7 +194,10 @@ SGCloudLayer::SGCloudLayer( const string &tex_path ) :
                                        ->getWhiteTexture(),
                                        osg::StateAttribute::ON);
   rootSet->setDataVariance(osg::Object::DYNAMIC);
-
+  
+  // Ensure repeatability of the random seed within 10 minutes,
+  // to keep multi-computer systems in sync.
+  sg_srandom_time_10();
   base = osg::Vec2(sg_random(), sg_random());
   group_top->addChild(layer_transform.get());
   group_bottom->addChild(layer_transform.get());

@@ -29,7 +29,6 @@
 #include "cloudfield.hxx"
 #include "newcloud.hxx"
 
-#include <simgear/math/sg_random.h>
 #include <simgear/scene/util/RenderConstants.hxx>
 #include <simgear/scene/util/OsgMath.hxx>
 #include <simgear/sg_inlines.h>
@@ -68,6 +67,10 @@ SGSky::SGSky( void ) {
     pre_transform = new osg::Group;
 
     _ephTransform = new osg::MatrixTransform;
+    
+    // Set up a RNG that is repeatable within 10 minutes to ensure that clouds
+    // are synced up in multi-process deployments.
+    mt_init_time_10(&seed);
 }
 
 
@@ -373,11 +376,11 @@ void SGSky::modify_vis( float alt, float time_factor ) {
 	if ( ratio < 1.0 ) {
 	    if ( ! in_puff ) {
 		// calc chance of entering cloud puff
-		double rnd = sg_random();
+		double rnd = mt_rand(&seed);
 		double chance = rnd * rnd * rnd;
 		if ( chance > 0.95 /* * (diff - 25) / 50.0 */ ) {
 		    in_puff = true;
-		    puff_length = sg_random() * 2.0; // up to 2 seconds
+		    puff_length = mt_rand(&seed) * 2.0; // up to 2 seconds
 		    puff_progression = 0.0;
 		}
 	    }

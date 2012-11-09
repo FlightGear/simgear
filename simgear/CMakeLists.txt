@@ -11,6 +11,7 @@ foreach( mylibfolder
         math
         misc
         nasal
+        nasal/cppbind
         props
         serial
         structure

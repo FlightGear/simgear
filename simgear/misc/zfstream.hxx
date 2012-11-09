@@ -127,7 +127,7 @@ private:
     int obuf_size;
     char* obuffer;
 
-    enum { page_size = 4096 };
+    enum { page_size = 65536 };
 
 private:
     // Not defined

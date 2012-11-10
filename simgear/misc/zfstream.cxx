@@ -270,7 +270,7 @@ gzfilebuf::underflow()
     }
     else
     {
-        return fillbuf() == EOF ? traits_type::eof() : int_type(*gptr());
+        return fillbuf() == EOF ? traits_type::eof() : (unsigned char) (*gptr());
     }
 }
 

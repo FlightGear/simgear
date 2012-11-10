@@ -13,7 +13,7 @@ set(HEADERS
     tabbed_values.hxx
     texcoord.hxx
     zfstream.hxx
-    
+    gzcontainerfile.hxx
     )
 
 set(SOURCES 
@@ -26,6 +26,7 @@ set(SOURCES
     tabbed_values.cxx
     texcoord.cxx
     zfstream.cxx
+    gzcontainerfile.cxx
     )
 
 simgear_component(misc misc "${SOURCES}" "${HEADERS}")

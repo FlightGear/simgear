@@ -22,7 +22,7 @@
 #include <simgear/nasal/nasal.h>
 
 #include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_arithmetic.hpp>
+#include <boost/type_traits.hpp>
 
 #include <string>
 #include <vector>
@@ -64,8 +64,16 @@ namespace nasal
   /**
    * Convert std::vector to Nasal vector
    */
-  template<class T>
-  naRef to_nasal(naContext c, const std::vector<T>& vec)
+  template< template<class T, class Alloc> class Vector,
+            class T,
+            class Alloc
+          >
+  typename boost::enable_if< boost::is_same< Vector<T,Alloc>,
+                                             std::vector<T,Alloc>
+                                           >,
+                             naRef
+                           >::type
+  to_nasal(naContext c, const Vector<T, Alloc>& vec)
   {
     naRef ret = naNewVector(c);
     naVec_setsize(c, ret, vec.size());

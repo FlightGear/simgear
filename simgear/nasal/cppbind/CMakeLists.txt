@@ -2,11 +2,14 @@ include (SimGearComponent)
 
 set(HEADERS
   NasalHash.hxx
+  from_nasal_detail.hxx
+  from_nasal.hxx
   to_nasal.hxx
 )
 
 set(SOURCES
   NasalHash.cxx
+  from_nasal.cxx
   to_nasal.cxx
 )
 

@@ -62,6 +62,10 @@ public:
     HLADataElement::IndexPathPair getIndexPathPair(const HLADataElement::StringPathPair& stringPathPair) const;
     HLADataElement::IndexPathPair getIndexPathPair(const std::string& path) const;
 
+    /// Get the attribute data element index for the given path, return true if successful
+    bool getDataElementIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const;
+    HLADataElementIndex getDataElementIndex(const std::string& path) const;
+
     virtual bool subscribe();
     virtual bool unsubscribe();
 

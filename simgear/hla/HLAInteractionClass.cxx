@@ -160,6 +160,44 @@ HLAInteractionClass::getIndexPathPair(const std::string& path) const
 }
 
 bool
+HLAInteractionClass::getDataElementIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
+{
+    if (path.empty()) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: failed to parse empty element path!");
+        return false;
+    }
+    std::string::size_type len = std::min(path.find_first_of("[."), path.size());
+    unsigned index = 0;
+    while (index < getNumParameters()) {
+        if (path.compare(0, len, getParameterName(index)) == 0)
+            break;
+        ++index;
+    }
+    if (getNumParameters() <= index) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: faild to parse data element index \"" << path << "\":\n"
+               << "Parameter \"" << path.substr(0, len) << "\" not found in object class \""
+               << getName() << "\"!");
+        return false;
+    }
+    if (!getParameterDataType(index)) {
+        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: faild to parse data element index \"" << path << "\":\n"
+               << "Undefined parameter data type in variant record data type \""
+               << getParameterName(index) << "\"!");
+        return false;
+    }
+    dataElementIndex.push_back(index);
+    return getParameterDataType(index)->getDataElementIndex(dataElementIndex, path, len);
+}
+
+HLADataElementIndex
+HLAInteractionClass::getDataElementIndex(const std::string& path) const
+{
+    HLADataElementIndex dataElementIndex;
+    getDataElementIndex(dataElementIndex, path);
+    return dataElementIndex;
+}
+
+bool
 HLAInteractionClass::subscribe()
 {
     if (!_rtiInteractionClass) {

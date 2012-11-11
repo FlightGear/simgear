@@ -211,13 +211,13 @@ HLAObjectClass::getIndexPathPair(const std::string& path) const
 }
 
 bool
-HLAObjectClass::getAttributeIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
+HLAObjectClass::getDataElementIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
 {
     if (path.empty()) {
         SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass: failed to parse empty element path!");
         return false;
     }
-    size_t len = path.find_first_of("[.");
+    std::string::size_type len = std::min(path.find_first_of("[."), path.size());
     unsigned index = 0;
     while (index < getNumAttributes()) {
         if (path.compare(0, len, getAttributeName(index)) == 0)
@@ -238,6 +238,14 @@ HLAObjectClass::getAttributeIndex(HLADataElementIndex& dataElementIndex, const s
     }
     dataElementIndex.push_back(index);
     return getAttributeDataType(index)->getDataElementIndex(dataElementIndex, path, len);
+}
+
+HLADataElementIndex
+HLAObjectClass::getDataElementIndex(const std::string& path) const
+{
+    HLADataElementIndex dataElementIndex;
+    getDataElementIndex(dataElementIndex, path);
+    return dataElementIndex;
 }
 
 bool

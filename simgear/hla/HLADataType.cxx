@@ -90,7 +90,7 @@ HLADataType::releaseDataTypeReferences()
 
 class HLADataType::_DataElementIndexVisitor : public HLADataTypeVisitor {
 public:
-    _DataElementIndexVisitor(HLADataElementIndex& index, const std::string& path, size_t offset) :
+    _DataElementIndexVisitor(HLADataElementIndex& index, const std::string& path, std::string::size_type offset) :
         _index(index),
         _path(path),
         _offset(offset),
@@ -106,7 +106,11 @@ public:
     }
     virtual void apply(const HLAArrayDataType& dataType)
     {
-        if (_path.size() <= _offset) {
+        if (_path.size() == _offset) {
+            _success = true;
+            return;
+        }
+        if (_path.size() < _offset) {
             SG_LOG(SG_NETWORK, SG_ALERT, "HLADataType: faild to parse data element index \"" << _path << "\":\n"
                    << "Expected array subscript at the end of the path!");
             return;
@@ -157,7 +161,11 @@ public:
 
     virtual void apply(const HLAFixedRecordDataType& dataType)
     {
-        if (_path.size() <= _offset) {
+        if (_path.size() == _offset) {
+            _success = true;
+            return;
+        }
+        if (_path.size() < _offset) {
             SG_LOG(SG_NETWORK, SG_ALERT, "HLADataType: faild to parse data element index \"" << _path << "\":\n"
                    << "Expected field name at the end of the path!");
             return;
@@ -169,7 +177,7 @@ public:
                    << "Expected field name at the end of the path!");
             return;
         }
-        size_t len = _path.find_first_of("[.", _offset) - _offset;
+        std::string::size_type len = std::min(_path.find_first_of("[.", _offset), _path.size()) - _offset;
         unsigned index = 0;
         while (index < dataType.getNumFields()) {
             if (_path.compare(_offset, len, dataType.getFieldName(index)) == 0)
@@ -194,7 +202,11 @@ public:
 
     virtual void apply(const HLAVariantRecordDataType& dataType)
     {
-        if (_path.size() <= _offset) {
+        if (_path.size() == _offset) {
+            _success = true;
+            return;
+        }
+        if (_path.size() < _offset) {
             SG_LOG(SG_NETWORK, SG_ALERT, "HLADataType: faild to parse data element index \"" << _path << "\":\n"
                    << "Expected alternative name at the end of the path!");
             return;
@@ -206,7 +218,7 @@ public:
                    << "Expected alternative name at the end of the path!");
             return;
         }
-        size_t len = _path.find_first_of("[.", _offset) - _offset;
+        std::string::size_type len = std::min(_path.find_first_of("[.", _offset), _path.size()) - _offset;
         unsigned index = 0;
         while (index < dataType.getNumAlternatives()) {
             if (_path.compare(_offset, len, dataType.getAlternativeName(index)) == 0)
@@ -231,12 +243,12 @@ public:
 
     HLADataElementIndex& _index;
     const std::string& _path;
-    size_t _offset;
+    std::string::size_type _offset;
     bool _success;
 };
 
 bool
-HLADataType::getDataElementIndex(HLADataElementIndex& index, const std::string& path, size_t offset) const
+HLADataType::getDataElementIndex(HLADataElementIndex& index, const std::string& path, std::string::size_type offset) const
 {
     _DataElementIndexVisitor visitor(index, path, offset);
     accept(visitor);

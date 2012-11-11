@@ -64,7 +64,7 @@ public:
     /// required for propper feeing of memory.
     virtual void releaseDataTypeReferences();
 
-    bool getDataElementIndex(HLADataElementIndex& index, const std::string& path, size_t offset) const;
+    bool getDataElementIndex(HLADataElementIndex& index, const std::string& path, std::string::size_type offset) const;
 
 protected:
     HLADataType(const std::string& name, unsigned alignment = 1);

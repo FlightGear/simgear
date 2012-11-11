@@ -78,7 +78,8 @@ public:
     void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
     /// Retrieve the data element index for the given path.
-    bool getAttributeIndex(HLADataElementIndex& index, const std::string& path) const;
+    bool getDataElementIndex(HLADataElementIndex& index, const std::string& path) const;
+    HLADataElementIndex getDataElementIndex(const std::string& path) const;
 
     /// Return the data element of the attribute with the given index
     HLADataElement* getAttributeDataElement(const HLADataElementIndex& index);

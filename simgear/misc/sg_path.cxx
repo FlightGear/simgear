@@ -485,14 +485,18 @@ bool SGPath::rename(const SGPath& newName)
 
 std::string SGPath::realpath() const
 {
-#if defined(_WIN32) || (defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1050)
-    // Not implemented for Windows yet. Return original path instead.
-
+#if (defined(__APPLE__) && MAC_OS_X_VERSION_MAX_ALLOWED <= 1050)
     // Workaround for Mac OS 10.5. Somehow fgfs crashes on Mac at ::realpath. 
-    // simply returning path works on Mac since absolute path is passed from the GUI launcher
+    // This means relative paths cannot be used on Mac OS <= 10.5
     return path;
 #else
+  #if defined(_MSC_VER)
+    // with absPath NULL, will allocate, and ignore length
+    char *buf = _fullpath( NULL, path.c_str(), _MAX_PATH );
+  #else
+    // POSIX
     char* buf = ::realpath(path.c_str(), NULL);
+  #endif
     if (!buf)
     {
         SG_LOG(SG_IO, SG_ALERT, "ERROR: The path '" << path << "' does not exist in the file system.");
@@ -503,4 +507,3 @@ std::string SGPath::realpath() const
     return p;
 #endif
 }
-

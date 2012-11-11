@@ -19,6 +19,7 @@
 #define HLALocation_hxx
 
 #include "HLABasicDataElement.hxx"
+#include "HLATypes.hxx"
 
 namespace simgear {
 
@@ -68,29 +69,29 @@ public:
     virtual void setLinearBodyVelocity(const SGVec3d& linearVelocity)
     { _linearVelocity = linearVelocity; }
 
-    HLADataElementProvider getPositionDataElement(unsigned i)
+    HLADataElement* getPositionDataElement(unsigned i)
     {
         if (3 <= i)
-            return HLADataElementProvider();
+            return 0;
         return new PositionDataElement(this, i);
     }
-    HLADataElementProvider getOrientationDataElement(unsigned i)
+    HLADataElement* getOrientationDataElement(unsigned i)
     {
         if (3 <= i)
-            return HLADataElementProvider();
+            return 0;
         return new OrientationDataElement(this, i);
     }
 
-    HLADataElementProvider getAngularVelocityDataElement(unsigned i)
+    HLADataElement* getAngularVelocityDataElement(unsigned i)
     {
         if (3 <= i)
-            return HLADataElementProvider();
+            return 0;
         return new AngularVelocityDataElement(this, i);
     }
-    HLADataElementProvider getLinearVelocityDataElement(unsigned i)
+    HLADataElement* getLinearVelocityDataElement(unsigned i)
     {
         if (3 <= i)
-            return HLADataElementProvider();
+            return 0;
         return new LinearVelocityDataElement(this, i);
     }
 
@@ -166,11 +167,12 @@ class HLALocationFactory : public SGReferenced {
 public:
     virtual ~HLALocationFactory() {}
     virtual HLAAbstractLocation* createLocation(HLAAttributePathElementMap&) const = 0;
+    virtual HLAAbstractLocation* createLocation(HLAObjectInstance&) const = 0;
 };
 
 class HLACartesianLocationFactory : public HLALocationFactory {
 public:
-    virtual HLAAbstractLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
+    virtual HLACartesianLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
     {
         HLACartesianLocation* location = new HLACartesianLocation;
         for (unsigned i = 0; i < 3; ++i) {
@@ -189,6 +191,70 @@ public:
             const HLADataElement::IndexPathPair& indexPathPair = _linearVelocityIndexPathPair[i];
             attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getLinearVelocityDataElement(i);
         }
+        return location;
+    }
+
+    virtual HLACartesianLocation* createLocation(HLAObjectInstance& objectInstance) const
+    {
+        HLACartesianLocation* location = new HLACartesianLocation;
+        for (unsigned i = 0; i < 3; ++i) {
+            const HLADataElement::IndexPathPair& indexPathPair = _positonIndexPathPair[i];
+            if (indexPathPair.first == 0)
+                continue;
+            std::string path = objectInstance.getAttributeName(indexPathPair.first);
+            if (!indexPathPair.second.empty())
+                path += HLADataElement::toString(indexPathPair.second);
+            HLADataElementIndex index;
+            if (!objectInstance.getDataElementIndex(index, path))
+                continue;
+            objectInstance.setAttributeDataElement(index, location->getPositionDataElement(i));
+        }
+        for (unsigned i = 0; i < 3; ++i) {
+            const HLADataElement::IndexPathPair& indexPathPair = _orientationIndexPathPair[i];
+            if (indexPathPair.first == 0)
+                continue;
+            std::string path = objectInstance.getAttributeName(indexPathPair.first);
+            if (!indexPathPair.second.empty())
+                path += HLADataElement::toString(indexPathPair.second);
+            HLADataElementIndex index;
+            if (!objectInstance.getDataElementIndex(index, path))
+                continue;
+            objectInstance.setAttributeDataElement(index, location->getOrientationDataElement(i));
+        }
+        for (unsigned i = 0; i < 3; ++i) {
+            const HLADataElement::IndexPathPair& indexPathPair = _angularVelocityIndexPathPair[i];
+            if (indexPathPair.first == 0)
+                continue;
+            std::string path = objectInstance.getAttributeName(indexPathPair.first);
+            if (!indexPathPair.second.empty())
+                path += HLADataElement::toString(indexPathPair.second);
+            HLADataElementIndex index;
+            if (!objectInstance.getDataElementIndex(index, path))
+                continue;
+            objectInstance.setAttributeDataElement(index, location->getAngularVelocityDataElement(i));
+        }
+        for (unsigned i = 0; i < 3; ++i) {
+            const HLADataElement::IndexPathPair& indexPathPair = _linearVelocityIndexPathPair[i];
+            if (indexPathPair.first == 0)
+                continue;
+            std::string path = objectInstance.getAttributeName(indexPathPair.first);
+            if (!indexPathPair.second.empty())
+                path += HLADataElement::toString(indexPathPair.second);
+            HLADataElementIndex index;
+            if (!objectInstance.getDataElementIndex(index, path))
+                continue;
+            objectInstance.setAttributeDataElement(index, location->getLinearVelocityDataElement(i));
+        }
+
+        for (unsigned i = 0; i < 3; ++i)
+            objectInstance.setAttributeDataElement(_positonIndex[i], location->getPositionDataElement(i));
+        for (unsigned i = 0; i < 3; ++i)
+            objectInstance.setAttributeDataElement(_orientationIndex[i], location->getOrientationDataElement(i));
+        for (unsigned i = 0; i < 3; ++i)
+            objectInstance.setAttributeDataElement(_angularVelocityIndex[i], location->getAngularVelocityDataElement(i));
+        for (unsigned i = 0; i < 3; ++i)
+            objectInstance.setAttributeDataElement(_linearVelocityIndex[i], location->getLinearVelocityDataElement(i));
+
         return location;
     }
 
@@ -218,16 +284,71 @@ public:
         _linearVelocityIndexPathPair[index] = indexPathPair;
     }
 
+    void setPositionIndex(unsigned index, const HLADataElementIndex& dataElementIndex)
+    {
+        if (3 <= index)
+            return;
+        _positonIndex[index] = dataElementIndex;
+    }
+    void setOrientationIndex(unsigned index, const HLADataElementIndex& dataElementIndex)
+    {
+        if (3 <= index)
+            return;
+        _orientationIndex[index] = dataElementIndex;
+    }
+
+    void setAngularVelocityIndex(unsigned index, const HLADataElementIndex& dataElementIndex)
+    {
+        if (3 <= index)
+            return;
+        _angularVelocityIndex[index] = dataElementIndex;
+    }
+    void setLinearVelocityIndex(unsigned index, const HLADataElementIndex& dataElementIndex)
+    {
+        if (3 <= index)
+            return;
+        _linearVelocityIndex[index] = dataElementIndex;
+    }
+
 private:
     HLADataElement::IndexPathPair _positonIndexPathPair[3];
     HLADataElement::IndexPathPair _orientationIndexPathPair[3];
 
     HLADataElement::IndexPathPair _angularVelocityIndexPathPair[3];
     HLADataElement::IndexPathPair _linearVelocityIndexPathPair[3];
+
+    HLADataElementIndex _positonIndex[3];
+    HLADataElementIndex _orientationIndex[3];
+
+    HLADataElementIndex _angularVelocityIndex[3];
+    HLADataElementIndex _linearVelocityIndex[3];
 };
 
 class HLAGeodeticLocation : public HLAAbstractLocation {
 public:
+    enum Semantic {
+        LatitudeDeg,
+        LatitudeRad,
+        LongitudeDeg,
+        LongitudeRad,
+        ElevationM,
+        ElevationFt,
+        HeadingDeg,
+        HeadingRad,
+        PitchDeg,
+        PitchRad,
+        RollDeg,
+        RollRad,
+        GroundTrackDeg,
+        GroundTrackRad,
+        GroundSpeedKnots,
+        GroundSpeedFtPerSec,
+        GroundSpeedMPerSec,
+        VerticalSpeedFtPerSec,
+        VerticalSpeedFtPerMin,
+        VerticalSpeedMPerSec
+    };
+
     HLAGeodeticLocation() :
         _dirty(true),
         _cartPosition(SGVec3d::zeros()),
@@ -349,7 +470,7 @@ public:
     { return 60*getVerticalSpeedFtPerSec(); }
 
 #define DATA_ELEMENT(name) \
-    HLADataElementProvider get## name ## DataElement()                  \
+    HLADataElement* get## name ## DataElement()                  \
     { return new DataElement<&HLAGeodeticLocation::get## name, &HLAGeodeticLocation::set ## name>(this); }
 
     DATA_ELEMENT(LatitudeDeg)
@@ -375,6 +496,54 @@ public:
     DATA_ELEMENT(VerticalSpeedFtPerMin)
 
 #undef DATA_ELEMENT
+
+    HLADataElement* getDataElement(Semantic semantic)
+    {
+        switch (semantic) {
+        case LatitudeDeg:
+            return getLatitudeDegDataElement();
+        case LatitudeRad:
+            return getLatitudeRadDataElement();
+        case LongitudeDeg:
+            return getLongitudeDegDataElement();
+        case LongitudeRad:
+            return getLongitudeRadDataElement();
+        case ElevationM:
+            return getElevationMDataElement();
+        case ElevationFt:
+            return getElevationFtDataElement();
+        case HeadingDeg:
+            return getHeadingDegDataElement();
+        case HeadingRad:
+            return getHeadingRadDataElement();
+        case PitchDeg:
+            return getPitchDegDataElement();
+        case PitchRad:
+            return getPitchRadDataElement();
+        case RollDeg:
+            return getRollDegDataElement();
+        case RollRad:
+            return getRollRadDataElement();
+        case GroundTrackDeg:
+            return getGroundTrackDegDataElement();
+        case GroundTrackRad:
+            return getGroundTrackRadDataElement();
+        case GroundSpeedKnots:
+            return getGroundSpeedKnotsDataElement();
+        case GroundSpeedFtPerSec:
+            return getGroundSpeedFtPerSecDataElement();
+        case GroundSpeedMPerSec:
+            return getGroundSpeedMPerSecDataElement();
+        case VerticalSpeedFtPerSec:
+            return getVerticalSpeedFtPerSecDataElement();
+        case VerticalSpeedFtPerMin:
+            return getVerticalSpeedFtPerMinDataElement();
+        case VerticalSpeedMPerSec:
+            return getVerticalSpeedMPerSecDataElement();
+        default:
+            return 0;
+        }
+    }
 
 private:
     template<double (HLAGeodeticLocation::*getter)() const,
@@ -441,26 +610,26 @@ private:
 class HLAGeodeticLocationFactory : public HLALocationFactory {
 public:
     enum Semantic {
-        LatitudeDeg,
-        LatitudeRad,
-        LongitudeDeg,
-        LongitudeRad,
-        ElevationM,
-        ElevationFt,
-        HeadingDeg,
-        HeadingRad,
-        PitchDeg,
-        PitchRad,
-        RollDeg,
-        RollRad,
-        GroundTrackDeg,
-        GroundTrackRad,
-        GroundSpeedKnots,
-        GroundSpeedFtPerSec,
-        GroundSpeedMPerSec,
-        VerticalSpeedFtPerSec,
-        VerticalSpeedFtPerMin,
-        VerticalSpeedMPerSec
+        LatitudeDeg = HLAGeodeticLocation::LatitudeDeg,
+        LatitudeRad = HLAGeodeticLocation::LatitudeRad,
+        LongitudeDeg = HLAGeodeticLocation::LongitudeDeg,
+        LongitudeRad = HLAGeodeticLocation::LongitudeRad,
+        ElevationM = HLAGeodeticLocation::ElevationM,
+        ElevationFt = HLAGeodeticLocation::ElevationFt,
+        HeadingDeg = HLAGeodeticLocation::HeadingDeg,
+        HeadingRad = HLAGeodeticLocation::HeadingRad,
+        PitchDeg = HLAGeodeticLocation::PitchDeg,
+        PitchRad = HLAGeodeticLocation::PitchRad,
+        RollDeg = HLAGeodeticLocation::RollDeg,
+        RollRad = HLAGeodeticLocation::RollRad,
+        GroundTrackDeg = HLAGeodeticLocation::GroundTrackDeg,
+        GroundTrackRad = HLAGeodeticLocation::GroundTrackRad,
+        GroundSpeedKnots = HLAGeodeticLocation::GroundSpeedKnots,
+        GroundSpeedFtPerSec = HLAGeodeticLocation::GroundSpeedFtPerSec,
+        GroundSpeedMPerSec = HLAGeodeticLocation::GroundSpeedMPerSec,
+        VerticalSpeedFtPerSec = HLAGeodeticLocation::VerticalSpeedFtPerSec,
+        VerticalSpeedFtPerMin = HLAGeodeticLocation::VerticalSpeedFtPerMin,
+        VerticalSpeedMPerSec = HLAGeodeticLocation::VerticalSpeedMPerSec
     };
 
     virtual HLAGeodeticLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
@@ -469,68 +638,33 @@ public:
 
         for (IndexPathPairSemanticMap::const_iterator i = _indexPathPairSemanticMap.begin();
              i != _indexPathPairSemanticMap.end(); ++i) {
-            switch (i->second) {
-            case LatitudeDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLatitudeDegDataElement();
-                break;
-            case LatitudeRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLatitudeRadDataElement();
-                break;
-            case LongitudeDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLongitudeDegDataElement();
-                break;
-            case LongitudeRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getLongitudeRadDataElement();
-                break;
-            case ElevationM:
-                attributePathElementMap[i->first.first][i->first.second] = location->getElevationMDataElement();
-                break;
-            case ElevationFt:
-                attributePathElementMap[i->first.first][i->first.second] = location->getElevationFtDataElement();
-                break;
-            case HeadingDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getHeadingDegDataElement();
-                break;
-            case HeadingRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getHeadingRadDataElement();
-                break;
-            case PitchDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getPitchDegDataElement();
-                break;
-            case PitchRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getPitchRadDataElement();
-                break;
-            case RollDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getRollDegDataElement();
-                break;
-            case RollRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getRollRadDataElement();
-                break;
-            case GroundTrackDeg:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundTrackDegDataElement();
-                break;
-            case GroundTrackRad:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundTrackRadDataElement();
-                break;
-            case GroundSpeedKnots:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedKnotsDataElement();
-                break;
-            case GroundSpeedFtPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedFtPerSecDataElement();
-                break;
-            case GroundSpeedMPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getGroundSpeedMPerSecDataElement();
-                break;
-            case VerticalSpeedFtPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedFtPerSecDataElement();
-                break;
-            case VerticalSpeedFtPerMin:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedFtPerMinDataElement();
-                break;
-            case VerticalSpeedMPerSec:
-                attributePathElementMap[i->first.first][i->first.second] = location->getVerticalSpeedMPerSecDataElement();
-                break;
-            }
+            HLAGeodeticLocation::Semantic semantic = HLAGeodeticLocation::Semantic(i->second);
+            attributePathElementMap[i->first.first][i->first.second] = location->getDataElement(semantic);
+        }
+
+        return location;
+    }
+
+    virtual HLAGeodeticLocation* createLocation(HLAObjectInstance& objectInstance) const
+    {
+        HLAGeodeticLocation* location = new HLAGeodeticLocation;
+
+        for (IndexPathPairSemanticMap::const_iterator i = _indexPathPairSemanticMap.begin();
+             i != _indexPathPairSemanticMap.end(); ++i) {
+            std::string path = objectInstance.getAttributeName(i->first.first);
+            if (!i->first.second.empty())
+                path += HLADataElement::toString(i->first.second);
+            HLADataElementIndex index;
+            if (!objectInstance.getDataElementIndex(index, path))
+                continue;
+            HLAGeodeticLocation::Semantic semantic = HLAGeodeticLocation::Semantic(i->second);
+            objectInstance.setAttributeDataElement(index, location->getDataElement(semantic));
+        }
+
+        for (IndexSemanticMap::const_iterator i = _indexSemanticMap.begin();
+             i != _indexSemanticMap.end(); ++i) {
+            HLAGeodeticLocation::Semantic semantic = HLAGeodeticLocation::Semantic(i->second);
+            objectInstance.setAttributeDataElement(i->first, location->getDataElement(semantic));
         }
 
         return location;
@@ -538,10 +672,15 @@ public:
 
     void setIndexPathPair(Semantic semantic, const HLADataElement::IndexPathPair& indexPathPair)
     { _indexPathPairSemanticMap[indexPathPair] = semantic; }
+    void setIndex(Semantic semantic, const HLADataElementIndex& index)
+    { _indexSemanticMap[index] = semantic; }
 
 private:
     typedef std::map<HLADataElement::IndexPathPair, Semantic> IndexPathPairSemanticMap;
     IndexPathPairSemanticMap _indexPathPairSemanticMap;
+
+    typedef std::map<HLADataElementIndex, Semantic> IndexSemanticMap;
+    IndexSemanticMap _indexSemanticMap;
 };
 
 } // namespace simgear

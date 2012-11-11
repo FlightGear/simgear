@@ -73,9 +73,6 @@ public:
 
     /// Sets the data element of the attribute with the given index to dataElement
     void setAttributeDataElement(unsigned index, const SGSharedPtr<HLADataElement>& dataElement);
-    /// Sets the data element of the attribute with the given index to the content of pathElementMap
-    void setAttribute(unsigned index, const HLAPathElementMap& pathElementMap);
-    void setAttributes(const HLAAttributePathElementMap& attributePathElementMap);
 
     /// Retrieve the data element index for the given path.
     bool getDataElementIndex(HLADataElementIndex& index, const std::string& path) const;
@@ -172,8 +169,6 @@ private:
     void _removeInstance(const RTIData& tag);
     void _reflectAttributeValues(const HLAIndexList& indexList, const RTIData& tag);
     void _reflectAttributeValues(const HLAIndexList& indexList, const SGTimeStamp& timeStamp, const RTIData& tag);
-
-    class DataElementFactoryVisitor;
 
     struct Attribute {
         Attribute() : _enabledUpdate(false), _unconditionalUpdate(false) {}

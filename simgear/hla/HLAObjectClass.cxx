@@ -191,25 +191,6 @@ HLAObjectClass::setAttributePublicationType(unsigned index, HLAPublicationType p
     _attributeVector[index]._publicationType = publicationType;
 }
 
-HLADataElement::IndexPathPair
-HLAObjectClass::getIndexPathPair(const HLADataElement::StringPathPair& stringPathPair) const
-{
-    unsigned index = getAttributeIndex(stringPathPair.first);
-    if (getNumAttributes() <= index) {
-        SG_LOG(SG_NETWORK, SG_ALERT, "HLAObjectClass::getIndexPathPair(\""
-               << HLADataElement::toString(stringPathPair)
-               << "\"): Could not resolve attribute \"" << stringPathPair.first
-               << "\" for object class \"" << getName() << "\"!");
-    }
-    return HLADataElement::IndexPathPair(index, stringPathPair.second);
-}
-
-HLADataElement::IndexPathPair
-HLAObjectClass::getIndexPathPair(const std::string& path) const
-{
-    return getIndexPathPair(HLADataElement::toStringPathPair(path));
-}
-
 bool
 HLAObjectClass::getDataElementIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
 {

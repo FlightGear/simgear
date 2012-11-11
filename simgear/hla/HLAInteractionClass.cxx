@@ -140,25 +140,6 @@ HLAInteractionClass::setParameterDataType(unsigned index, const SGSharedPtr<cons
     _parameterVector[index]._dataType = dataType;
 }
 
-HLADataElement::IndexPathPair
-HLAInteractionClass::getIndexPathPair(const HLADataElement::StringPathPair& stringPathPair) const
-{
-    unsigned index = getParameterIndex(stringPathPair.first);
-    if (getNumParameters() <= index) {
-        SG_LOG(SG_NETWORK, SG_ALERT, "HLAInteractionClass::getIndexPathPair(\""
-               << HLADataElement::toString(stringPathPair)
-               << "\"): Could not resolve attribute \"" << stringPathPair.first
-               << "\" for interaction class \"" << getName() << "\"!");
-    }
-    return HLADataElement::IndexPathPair(index, stringPathPair.second);
-}
-
-HLADataElement::IndexPathPair
-HLAInteractionClass::getIndexPathPair(const std::string& path) const
-{
-    return getIndexPathPair(HLADataElement::toStringPathPair(path));
-}
-
 bool
 HLAInteractionClass::getDataElementIndex(HLADataElementIndex& dataElementIndex, const std::string& path) const
 {

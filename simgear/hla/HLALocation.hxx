@@ -166,85 +166,14 @@ private:
 class HLALocationFactory : public SGReferenced {
 public:
     virtual ~HLALocationFactory() {}
-    virtual HLAAbstractLocation* createLocation(HLAAttributePathElementMap&) const = 0;
     virtual HLAAbstractLocation* createLocation(HLAObjectInstance&) const = 0;
 };
 
 class HLACartesianLocationFactory : public HLALocationFactory {
 public:
-    virtual HLACartesianLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
-    {
-        HLACartesianLocation* location = new HLACartesianLocation;
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _positonIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getPositionDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _orientationIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getOrientationDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _angularVelocityIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getAngularVelocityDataElement(i);
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _linearVelocityIndexPathPair[i];
-            attributePathElementMap[indexPathPair.first][indexPathPair.second] = location->getLinearVelocityDataElement(i);
-        }
-        return location;
-    }
-
     virtual HLACartesianLocation* createLocation(HLAObjectInstance& objectInstance) const
     {
         HLACartesianLocation* location = new HLACartesianLocation;
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _positonIndexPathPair[i];
-            if (indexPathPair.first == 0)
-                continue;
-            std::string path = objectInstance.getAttributeName(indexPathPair.first);
-            if (!indexPathPair.second.empty())
-                path += HLADataElement::toString(indexPathPair.second);
-            HLADataElementIndex index;
-            if (!objectInstance.getDataElementIndex(index, path))
-                continue;
-            objectInstance.setAttributeDataElement(index, location->getPositionDataElement(i));
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _orientationIndexPathPair[i];
-            if (indexPathPair.first == 0)
-                continue;
-            std::string path = objectInstance.getAttributeName(indexPathPair.first);
-            if (!indexPathPair.second.empty())
-                path += HLADataElement::toString(indexPathPair.second);
-            HLADataElementIndex index;
-            if (!objectInstance.getDataElementIndex(index, path))
-                continue;
-            objectInstance.setAttributeDataElement(index, location->getOrientationDataElement(i));
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _angularVelocityIndexPathPair[i];
-            if (indexPathPair.first == 0)
-                continue;
-            std::string path = objectInstance.getAttributeName(indexPathPair.first);
-            if (!indexPathPair.second.empty())
-                path += HLADataElement::toString(indexPathPair.second);
-            HLADataElementIndex index;
-            if (!objectInstance.getDataElementIndex(index, path))
-                continue;
-            objectInstance.setAttributeDataElement(index, location->getAngularVelocityDataElement(i));
-        }
-        for (unsigned i = 0; i < 3; ++i) {
-            const HLADataElement::IndexPathPair& indexPathPair = _linearVelocityIndexPathPair[i];
-            if (indexPathPair.first == 0)
-                continue;
-            std::string path = objectInstance.getAttributeName(indexPathPair.first);
-            if (!indexPathPair.second.empty())
-                path += HLADataElement::toString(indexPathPair.second);
-            HLADataElementIndex index;
-            if (!objectInstance.getDataElementIndex(index, path))
-                continue;
-            objectInstance.setAttributeDataElement(index, location->getLinearVelocityDataElement(i));
-        }
 
         for (unsigned i = 0; i < 3; ++i)
             objectInstance.setAttributeDataElement(_positonIndex[i], location->getPositionDataElement(i));
@@ -256,32 +185,6 @@ public:
             objectInstance.setAttributeDataElement(_linearVelocityIndex[i], location->getLinearVelocityDataElement(i));
 
         return location;
-    }
-
-    void setPositionIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _positonIndexPathPair[index] = indexPathPair;
-    }
-    void setOrientationIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _orientationIndexPathPair[index] = indexPathPair;
-    }
-
-    void setAngularVelocityIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _angularVelocityIndexPathPair[index] = indexPathPair;
-    }
-    void setLinearVelocityIndexPathPair(unsigned index, const HLADataElement::IndexPathPair& indexPathPair)
-    {
-        if (3 <= index)
-            return;
-        _linearVelocityIndexPathPair[index] = indexPathPair;
     }
 
     void setPositionIndex(unsigned index, const HLADataElementIndex& dataElementIndex)
@@ -311,12 +214,6 @@ public:
     }
 
 private:
-    HLADataElement::IndexPathPair _positonIndexPathPair[3];
-    HLADataElement::IndexPathPair _orientationIndexPathPair[3];
-
-    HLADataElement::IndexPathPair _angularVelocityIndexPathPair[3];
-    HLADataElement::IndexPathPair _linearVelocityIndexPathPair[3];
-
     HLADataElementIndex _positonIndex[3];
     HLADataElementIndex _orientationIndex[3];
 
@@ -632,34 +529,9 @@ public:
         VerticalSpeedMPerSec = HLAGeodeticLocation::VerticalSpeedMPerSec
     };
 
-    virtual HLAGeodeticLocation* createLocation(HLAAttributePathElementMap& attributePathElementMap) const
-    {
-        HLAGeodeticLocation* location = new HLAGeodeticLocation;
-
-        for (IndexPathPairSemanticMap::const_iterator i = _indexPathPairSemanticMap.begin();
-             i != _indexPathPairSemanticMap.end(); ++i) {
-            HLAGeodeticLocation::Semantic semantic = HLAGeodeticLocation::Semantic(i->second);
-            attributePathElementMap[i->first.first][i->first.second] = location->getDataElement(semantic);
-        }
-
-        return location;
-    }
-
     virtual HLAGeodeticLocation* createLocation(HLAObjectInstance& objectInstance) const
     {
         HLAGeodeticLocation* location = new HLAGeodeticLocation;
-
-        for (IndexPathPairSemanticMap::const_iterator i = _indexPathPairSemanticMap.begin();
-             i != _indexPathPairSemanticMap.end(); ++i) {
-            std::string path = objectInstance.getAttributeName(i->first.first);
-            if (!i->first.second.empty())
-                path += HLADataElement::toString(i->first.second);
-            HLADataElementIndex index;
-            if (!objectInstance.getDataElementIndex(index, path))
-                continue;
-            HLAGeodeticLocation::Semantic semantic = HLAGeodeticLocation::Semantic(i->second);
-            objectInstance.setAttributeDataElement(index, location->getDataElement(semantic));
-        }
 
         for (IndexSemanticMap::const_iterator i = _indexSemanticMap.begin();
              i != _indexSemanticMap.end(); ++i) {
@@ -670,15 +542,10 @@ public:
         return location;
     }
 
-    void setIndexPathPair(Semantic semantic, const HLADataElement::IndexPathPair& indexPathPair)
-    { _indexPathPairSemanticMap[indexPathPair] = semantic; }
     void setIndex(Semantic semantic, const HLADataElementIndex& index)
     { _indexSemanticMap[index] = semantic; }
 
 private:
-    typedef std::map<HLADataElement::IndexPathPair, Semantic> IndexPathPairSemanticMap;
-    IndexPathPairSemanticMap _indexPathPairSemanticMap;
-
     typedef std::map<HLADataElementIndex, Semantic> IndexSemanticMap;
     IndexSemanticMap _indexSemanticMap;
 };

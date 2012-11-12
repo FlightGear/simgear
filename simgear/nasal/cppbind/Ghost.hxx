@@ -1,5 +1,6 @@
-///@file Expose C++ objects to Nasal as ghosts
-//
+///@file
+/// Expose C++ objects to Nasal as ghosts
+///
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
 // This library is free software; you can redistribute it and/or
@@ -29,6 +30,11 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <map>
+
+/**
+ * Bindings between C++ and the Nasal scripting language
+ */
 namespace nasal
 {
 

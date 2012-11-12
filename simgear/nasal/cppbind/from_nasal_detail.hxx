@@ -1,5 +1,6 @@
-// Conversion helpers used by from_nasal<T>(naContext, naRef)
-//
+///@file
+/// Conversion helpers used by from_nasal<T>(naContext, naRef)
+///
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
 // This library is free software; you can redistribute it and/or
@@ -39,10 +40,23 @@ namespace nasal
     public std::bad_cast
   {
     public:
+      /**
+       * Construct with generic error message
+       */
       bad_nasal_cast();
+
+      /**
+       * Construct from an error message
+       *
+       * @param msg Error message/description
+       */
       explicit bad_nasal_cast(const std::string& msg);
 
       virtual ~bad_nasal_cast() throw();
+
+      /**
+       * Get a description of the cause of the failed cast.
+       */
       virtual const char* what() const throw();
 
     protected:

@@ -1,5 +1,6 @@
-///@file Conversion functions to convert Nasal types to C++ types
-//
+///@file
+/// Conversion functions to convert Nasal types to C++ types
+///
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
 // This library is free software; you can redistribute it and/or
@@ -26,6 +27,12 @@ namespace nasal
 
   /**
    * Convert a Nasal type to any supported C++ type.
+   *
+   * @param c   Active Nasal context
+   * @param ref Nasal object to be converted
+   * @tparam T  Target type of conversion
+   *
+   * @throws bad_nasal_cast if conversion is not possible
    *
    * @note  Every type which should be supported needs a function with the
    *        following signature declared:

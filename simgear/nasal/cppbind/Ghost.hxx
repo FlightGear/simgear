@@ -177,7 +177,7 @@ namespace nasal
    *     void setX(int x);
    *     int getX() const;
    *
-   *     naRef myMember(int argc, naRef* args);
+   *     naRef myMember(naContext c, int argc, naRef* args);
    * }
    *
    * void exposeClasses()
@@ -206,9 +206,10 @@ namespace nasal
   {
     public:
       typedef typename GhostTypeTraits<T>::raw_type                 raw_type;
-      typedef naRef (T::*member_func_t)(int, naRef*);
-      typedef boost::function<naRef(naContext c, raw_type*)>        getter_t;
-      typedef boost::function<void(naContext c, raw_type*, naRef)>  setter_t;
+      typedef naRef (raw_type::*member_func_t)(naContext, int, naRef*);
+      typedef naRef (*free_func_t)(raw_type&, naContext, int, naRef*);
+      typedef boost::function<naRef(naContext, raw_type*)>        getter_t;
+      typedef boost::function<void(naContext, raw_type*, naRef)>  setter_t;
 
       /**
        * A ghost member. Can consist either of getter and/or setter functions
@@ -413,7 +414,7 @@ namespace nasal
        * class MyClass
        * {
        *   public:
-       *     naRef myMethod(int argc, naRef* args);
+       *     naRef myMethod(naContext c, int argc, naRef* args);
        * }
        *
        * Ghost<MyClass>::init("Test")
@@ -424,6 +425,27 @@ namespace nasal
       Ghost& method(const std::string& name)
       {
         _members[name].func = &MemberFunctionWrapper<func>::call;
+        return *this;
+      }
+
+      /**
+       * Register a free function as member function. The object instance is
+       * passed as additional first argument.
+       *
+       * @tparam func   Pointer to free function being registered.
+       *
+       * @code{cpp}
+       * class MyClass;
+       * naRef myMethod(MyClass& obj, naContext c, int argc, naRef* args);
+       *
+       * Ghost<MyClass>::init("Test")
+       *   .method<&myMethod>("myMethod");
+       * @endcode
+       */
+      template<free_func_t func>
+      Ghost& method(const std::string& name)
+      {
+        _members[name].func = &FreeFunctionWrapper<func>::call;
         return *this;
       }
 
@@ -468,6 +490,30 @@ namespace nasal
         return getSingletonHolder().get();
       }
 
+      // TODO integrate with from_nasal template to be able to cast objects
+      //      passed as function argument.
+      static raw_type* from_nasal(naRef me)
+      {
+        if( naGhost_type(me) != &getSingletonPtr()->_ghost_type )
+          return 0;
+
+        return Ghost::getRawPtr( static_cast<T*>(naGhost_ptr(me)) );
+      }
+
+      static raw_type* requireObject(naContext c, naRef me)
+      {
+        raw_type* obj = Ghost::from_nasal(me);
+        if( !obj )
+          naRuntimeError
+          (
+            c,
+            "method called on object of wrong type: '%s' expected",
+            getSingletonPtr()->_ghost_type.name
+          );
+
+        return obj;
+      }
+
       /**
        * Wrapper class to enable registering pointers to member functions as
        * Nasal function callbacks. We need to use the function pointer as
@@ -483,18 +529,29 @@ namespace nasal
          */
         static naRef call(naContext c, naRef me, int argc, naRef* args)
         {
-          if( naGhost_type(me) != &getSingletonPtr()->_ghost_type )
-            naRuntimeError
-            (
-              c,
-              "method called on object of wrong type: '%s' expected",
-              getSingletonPtr()->_ghost_type.name
-            );
+          return (requireObject(c, me)->*func)(c, argc, args);
+        }
+      };
 
-          raw_type* obj = Ghost::getRawPtr( static_cast<T*>(naGhost_ptr(me)) );
-          assert(obj);
-
-          return (obj->*func)(argc, args);
+      /**
+       * Wrapper class to enable registering pointers to free functions (only
+       * external linkage). We need to use the function pointer as template
+       * parameter to ensure every registered function gets a static function
+       * which can be passed to Nasal. Even though we just wrap another simple
+       * function pointer this intermediate step is need to be able to retrieve
+       * the object the function call belongs to and pass it along as argument.
+       */
+      template<free_func_t func>
+      struct FreeFunctionWrapper
+      {
+        /**
+         * Called from Nasal upon invocation of the according registered
+         * function. Forwards the call to the passed function pointer and passes
+         * the required parameters.
+         */
+        static naRef call(naContext c, naRef me, int argc, naRef* args)
+        {
+          return func(*requireObject(c, me), c, argc, args);
         }
       };
 

@@ -13,7 +13,7 @@
 
 struct Base
 {
-  naRef member(int, naRef*) { return naNil(); }
+  naRef member(naContext, int, naRef*) { return naNil(); }
 };
 struct Derived:
   public Base

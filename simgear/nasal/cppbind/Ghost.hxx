@@ -1,0 +1,558 @@
+///@file
+
+#ifndef SG_NASAL_GHOST_HXX_
+#define SG_NASAL_GHOST_HXX_
+
+#include "from_nasal.hxx"
+#include "to_nasal.hxx"
+
+#include <simgear/debug/logstream.hxx>
+
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/utility/enable_if.hpp>
+
+namespace nasal
+{
+
+  /**
+   * Traits for C++ classes exposed as Ghost. This is the basic template for
+   * raw types.
+   */
+  template<class T>
+  struct GhostTypeTraits
+  {
+    /** Whether the class is passed by shared pointer or raw pointer */
+    typedef boost::false_type::type is_shared;
+
+    /** The raw class type (Without any shared pointer) */
+    typedef T raw_type;
+  };
+
+  template<class T>
+  struct GhostTypeTraits<boost::shared_ptr<T> >
+  {
+    typedef boost::true_type::type is_shared;
+    typedef T raw_type;
+  };
+
+#ifdef OSG_REF_PTR
+  template<class T>
+  struct GhostTypeTraits<osg::ref_ptr<T> >
+  {
+    typedef boost::true_type::type is_shared;
+    typedef T raw_type;
+  };
+#endif
+
+#ifdef SGSharedPtr_HXX
+  template<class T>
+  struct GhostTypeTraits<SGSharedPtr<T> >
+  {
+    typedef boost::true_type::type is_shared;
+    typedef T raw_type;
+  };
+#endif
+
+  /**
+   * Policy for creating ghost instances from shared pointer objects.
+   */
+  template<class T>
+  struct SharedPointerPolicy
+  {
+    typedef typename GhostTypeTraits<T>::raw_type raw_type;
+
+    /**
+     * Create a shared pointer on the heap to handle the reference counting for
+     * the passed shared pointer while it is used in Nasal space.
+     */
+    static T* createInstance(const T& ptr)
+    {
+      return new T(ptr);
+    }
+
+    static raw_type* getRawPtr(void* ptr)
+    {
+      return static_cast<T*>(ptr)->get();
+    }
+  };
+
+  /**
+   * Policy for creating ghost instances as raw objects on the heap.
+   */
+  template<class T>
+  struct RawPointerPolicy
+  {
+    typedef typename GhostTypeTraits<T>::raw_type raw_type;
+
+    /**
+     * Create a new object instance on the heap
+     */
+    static T* createInstance()
+    {
+      return new T();
+    }
+
+    static raw_type* getRawPtr(void* ptr)
+    {
+      BOOST_STATIC_ASSERT((boost::is_same<raw_type, T>::value));
+      return static_cast<T*>(ptr);
+    }
+  };
+
+  namespace internal
+  {
+    /**
+     * Metadata for Ghost object types
+     */
+    class GhostMetadata
+    {
+      public:
+        /**
+         * Add a nasal base class to the ghost. Will be available in the ghosts
+         * parents array.
+         */
+        void addNasalBase(const naRef& parent)
+        {
+          assert( naIsHash(parent) );
+          _parents.push_back(parent);
+        }
+
+      protected:
+        const std::string             _name;
+        naGhostType                   _ghost_type;
+  //      std::vector<GhostMetadata*>   _base_classes;
+        std::vector<naRef>            _parents;
+
+        explicit GhostMetadata(const std::string& name):
+          _name(name)
+        {
+
+        }
+
+  //      void addBaseClass(GhostMetadata* base)
+  //      {
+  //        assert(base);
+  //        _base_classes.push_back(base);
+  //      }
+
+        naRef getParents(naContext c)
+        {
+          return nasal::to_nasal(c, _parents);
+        }
+    };
+  }
+
+  /**
+   * Class for exposing C++ objects to Nasal
+   *
+   * @code{cpp}
+   * // Example class to be exposed to Nasal
+   * class MyClass
+   * {
+   *   public:
+   *     void setX(int x);
+   *     int getX() const;
+   *
+   *     naRef myMember(int argc, naRef* args);
+   * }
+   *
+   * void exposeClasses()
+   * {
+   *   // Register a nasal ghost type for MyClass. This needs to be done only
+   *   // once before creating the first ghost instance.
+   *   Ghost<MyClass>::init("MyClass")
+   *     // Members can be exposed by getters and setters
+   *     .member("x", &MyClass::getX, &MyClass::setX)
+   *     // For readonly variables only pass a getter
+   *     .member("x_readonly", &MyClass::getX)
+   *     // It is also possible to expose writeonly members
+   *     .member("x_writeonly", &MyClass::setX)
+   *     // Methods use a slightly different syntax - The pointer to the member
+   *     // function has to be passed as template argument
+   *     .method<&MyClass::myMember>("myMember");
+   * }
+   * @endcode
+   */
+  template<class T>
+  class Ghost:
+    public internal::GhostMetadata,
+    protected boost::mpl::if_< typename GhostTypeTraits<T>::is_shared,
+                               SharedPointerPolicy<T>,
+                               RawPointerPolicy<T> >::type
+  {
+    public:
+      typedef typename GhostTypeTraits<T>::raw_type                 raw_type;
+      typedef naRef (T::*member_func_t)(int, naRef*);
+      typedef boost::function<naRef(naContext c, raw_type*)>        getter_t;
+      typedef boost::function<void(naContext c, raw_type*, naRef)>  setter_t;
+
+      /**
+       * A ghost member. Can consist either of getter and/or setter functions
+       * for exposing a data variable or a single callable function.
+       */
+      struct member_t
+      {
+        member_t():
+          func(0)
+        {}
+
+        member_t( const getter_t& getter,
+                  const setter_t& setter,
+                  naCFunction func = 0 ):
+          getter( getter ),
+          setter( setter ),
+          func( func )
+        {}
+
+        member_t(naCFunction func):
+          func( func )
+        {}
+
+        getter_t    getter;
+        setter_t    setter;
+        naCFunction func;
+      };
+
+      typedef std::map<std::string, member_t> MemberMap;
+
+      /**
+       * Register a new ghost type.
+       *
+       * @param name    Descriptive name of the ghost type.
+       */
+      static Ghost& init(const std::string& name)
+      {
+        getSingletonHolder().reset( new Ghost(name) );
+        return *getSingletonPtr();
+      }
+
+      /**
+       * Register a base class for this ghost. The base class needs to be
+       * registers on its own before it can be used as base class.
+       *
+       * @tparam BaseGhost  Type of base class already wrapped into Ghost class
+       *                    (Ghost<Base>)
+       *
+       * @code{cpp}
+       * Ghost<MyBase>::init("MyBase");
+       * Ghost<MyClass>::init("MyClass")
+       *   .bases<Ghost<MyBase> >();
+       * @endcode
+       */
+      template<class BaseGhost>
+      typename boost::enable_if_c
+        <    boost::is_base_of<GhostMetadata, BaseGhost>::value
+          && boost::is_base_of<typename BaseGhost::raw_type, raw_type>::value,
+          Ghost
+        >::type&
+      bases()
+      {
+        BaseGhost* base = BaseGhost::getSingletonPtr();
+        //addBaseClass( base );
+
+        // Replace any getter that is not available in the current class.
+        // TODO check if this is the correct behavior of function overriding
+        for( typename BaseGhost::MemberMap::const_iterator member =
+               base->_members.begin();
+               member != base->_members.end();
+             ++member )
+        {
+          if( _members.find(member->first) == _members.end() )
+            _members[member->first] = member_t
+            (
+              member->second.getter,
+              member->second.setter,
+              member->second.func
+            );
+        }
+
+        return *this;
+      }
+
+      /**
+       * Register a base class for this ghost. The base class needs to be
+       * registers on its own before it can be used as base class.
+       *
+       * @tparam Base   Type of base class (Base as used in Ghost<Base>)
+       *
+       * @code{cpp}
+       * Ghost<MyBase>::init("MyBase");
+       * Ghost<MyClass>::init("MyClass")
+       *   .bases<MyBase>();
+       * @endcode
+       */
+      template<class Base>
+      typename boost::enable_if_c
+        <   !boost::is_base_of<GhostMetadata, Base>::value
+          && boost::is_base_of<typename Ghost<Base>::raw_type, raw_type>::value,
+          Ghost
+        >::type&
+      bases()
+      {
+        return bases< Ghost<Base> >();
+      }
+
+      /**
+       * Register an existing Nasal class/hash as base class for this ghost.
+       *
+       * @param parent  Nasal hash/class
+       */
+      Ghost& bases(const naRef& parent)
+      {
+        addNasalBase(parent);
+        return *this;
+      }
+
+      /**
+       * Register a member variable by passing a getter and/or setter method.
+       *
+       * @param field   Name of member
+       * @param getter  Getter for variable
+       * @param setter  Setter for variable (Pass 0 to prevent write access)
+       *
+       */
+      template<class Var>
+      Ghost& member( const std::string& field,
+                     Var (raw_type::*getter)() const,
+                     void (raw_type::*setter)(Var) = 0 )
+      {
+        member_t m;
+        if( getter )
+        {
+          naRef (*to_nasal_)(naContext, Var) = &nasal::to_nasal;
+
+          // Getter signature: naRef(naContext, raw_type*)
+          m.getter = boost::bind(to_nasal_, _1, boost::bind(getter, _2));
+        }
+
+        if( setter )
+        {
+          Var (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
+
+          // Setter signature: void(naContext, raw_type*, naRef)
+          m.setter = boost::bind(setter, _2, boost::bind(from_nasal_, _1, _3));
+        }
+
+        return member(field, m.getter, m.setter);
+      }
+
+      /**
+       * Register a write only member variable.
+       *
+       * @param field   Name of member
+       * @param setter  Setter for variable
+       */
+      template<class Var>
+      Ghost& member( const std::string& field,
+                     void (raw_type::*setter)(Var) )
+      {
+        return member<Var>(field, 0, setter);
+      }
+
+      /**
+       * Register a member variable by passing a getter and/or setter method.
+       *
+       * @param field   Name of member
+       * @param getter  Getter for variable
+       * @param setter  Setter for variable (Pass empty to prevent write access)
+       *
+       */
+      Ghost& member( const std::string& field,
+                     const getter_t& getter,
+                     const setter_t& setter = setter_t() )
+      {
+        if( !getter.empty() || !setter.empty() )
+          _members[field] = member_t(getter, setter);
+        else
+          SG_LOG
+          (
+            SG_NASAL,
+            SG_WARN,
+            "Member '" << field << "' requires a getter or setter"
+          );
+        return *this;
+      }
+
+      /**
+       * Register a member function.
+       *
+       * @note Because only function pointers can be registered as Nasal
+       *       functions it is needed to pass the function pointer as template
+       *       argument. This allows us to create a separate instance of the
+       *       MemberFunctionWrapper for each registered function and therefore
+       *       provides us with the needed static functions to be passed on to
+       *       Nasal.
+       *
+       * @tparam func   Pointer to member function being registered.
+       *
+       * @code{cpp}
+       * class MyClass
+       * {
+       *   public:
+       *     naRef myMethod(int argc, naRef* args);
+       * }
+       *
+       * Ghost<MyClass>::init("Test")
+       *   .method<&MyClass::myMethod>("myMethod");
+       * @endcode
+       */
+      template<member_func_t func>
+      Ghost& method(const std::string& name)
+      {
+        _members[name].func = &MemberFunctionWrapper<func>::call;
+        return *this;
+      }
+
+      // TODO use variadic template when supporting C++11
+      /**
+       * Create a Nasal instance of this ghost.
+       *
+       * @param c   Active Nasal context
+       */
+      static naRef create( naContext c )
+      {
+        return makeGhost(c, Ghost::createInstance());
+      }
+
+      /**
+       * Create a Nasal instance of this ghost.
+       *
+       * @param c   Active Nasal context
+       * @param a1  Parameter used for creating new instance
+       */
+      template<class A1>
+      static naRef create( naContext c, const A1& a1 )
+      {
+        return makeGhost(c, Ghost::createInstance(a1));
+      }
+
+      /**
+       * Nasal callback for creating a new instance of this ghost.
+       */
+      static naRef f_create(naContext c, naRef me, int argc, naRef* args)
+      {
+        return create(c);
+      }
+
+    private:
+
+      template<class>
+      friend class Ghost;
+
+      static Ghost* getSingletonPtr()
+      {
+        return getSingletonHolder().get();
+      }
+
+      /**
+       * Wrapper class to enable registering pointers to member functions as
+       * Nasal function callbacks. We need to use the function pointer as
+       * template parameter to ensure every registered function gets a static
+       * function which can be passed to Nasal.
+       */
+      template<member_func_t func>
+      struct MemberFunctionWrapper
+      {
+        /**
+         * Called from Nasal upon invocation of the according registered
+         * function. Forwards the call to the passed object instance.
+         */
+        static naRef call(naContext c, naRef me, int argc, naRef* args)
+        {
+          if( naGhost_type(me) != &getSingletonPtr()->_ghost_type )
+            naRuntimeError
+            (
+              c,
+              "method called on object of wrong type: '%s' expected",
+              getSingletonPtr()->_ghost_type.name
+            );
+
+          raw_type* obj = Ghost::getRawPtr( static_cast<T*>(naGhost_ptr(me)) );
+          assert(obj);
+
+          return (obj->*func)(argc, args);
+        }
+      };
+
+      typedef std::auto_ptr<Ghost> GhostPtr;
+      MemberMap _members;
+
+      explicit Ghost(const std::string& name):
+        GhostMetadata( name )
+      {
+        _ghost_type.destroy = &destroyGhost;
+        _ghost_type.name = _name.c_str();
+        _ghost_type.get_member = &getMember;
+        _ghost_type.set_member = &setMember;
+      }
+
+      static GhostPtr& getSingletonHolder()
+      {
+        static GhostPtr instance;
+        return instance;
+      }
+
+      static naRef makeGhost(naContext c, void *ptr)
+      {
+        return naNewGhost2(c, &getSingletonPtr()->_ghost_type, ptr);
+      }
+
+      static void destroyGhost(void *ptr)
+      {
+        delete (T*)ptr;
+      }
+
+      /**
+       * Callback for retrieving a ghost member.
+       */
+      static const char* getMember(naContext c, void* g, naRef key, naRef* out)
+      {
+        const std::string key_str = nasal::from_nasal<std::string>(c, key);
+        if( key_str == "parents" )
+        {
+          if( getSingletonPtr()->_parents.empty() )
+            return 0;
+
+          *out = getSingletonPtr()->getParents(c);
+          return "";
+        }
+
+        typename MemberMap::iterator member =
+          getSingletonPtr()->_members.find(key_str);
+
+        if( member == getSingletonPtr()->_members.end() )
+          return 0;
+
+        if( member->second.func )
+          *out = nasal::to_nasal(c, member->second.func);
+        else if( !member->second.getter.empty() )
+          *out = member->second.getter(c, Ghost::getRawPtr(g));
+        else
+          return "Read-protected member";
+
+        return "";
+      }
+
+      /**
+       * Callback for writing to a ghost member.
+       */
+      static void setMember(naContext c, void* g, naRef field, naRef val)
+      {
+        const std::string key = nasal::from_nasal<std::string>(c, field);
+        typename MemberMap::iterator member =
+          getSingletonPtr()->_members.find(key);
+
+        if( member == getSingletonPtr()->_members.end() )
+          naRuntimeError(c, "ghost: No such member: %s", key.c_str());
+        if( member->second.setter.empty() )
+          naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
+
+        member->second.setter(c, Ghost::getRawPtr(g), val);
+      }
+  };
+
+} // namespace nasal
+
+#endif /* SG_NASAL_GHOST_HXX_ */

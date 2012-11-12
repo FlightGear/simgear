@@ -1,6 +1,5 @@
+#include "Ghost.hxx"
 #include "NasalHash.hxx"
-#include "from_nasal.hxx"
-#include "to_nasal.hxx"
 
 #include <cstring>
 #include <iostream>
@@ -11,6 +10,18 @@
     std::cerr << "failed:" << #a << std::endl; \
     return 1; \
   }
+
+struct Base
+{
+  naRef member(int, naRef*) { return naNil(); }
+};
+struct Derived:
+  public Base
+{
+  int _x;
+  int getX() const { return _x; }
+  void setX(int x) { _x = x; }
+};
 
 int main(int argc, char* argv[])
 {
@@ -60,6 +71,16 @@ int main(int argc, char* argv[])
 
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
+
+  Ghost<Base>::init("Base")
+    .method<&Base::member>("member");
+  Ghost<Derived>::init("Derived")
+    .bases<Base>()
+    .member("x", &Derived::getX, &Derived::setX);
+
+  naRef derived = Ghost<Derived>::create(c);
+  VERIFY( naIsGhost(derived) );
+  // TODO actuall do something with the ghosts...
 
   naFreeContext(c);
 

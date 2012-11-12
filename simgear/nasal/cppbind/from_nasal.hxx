@@ -1,4 +1,4 @@
-// Conversion functions to convert Nasal types to C++ types
+///@file Conversion functions to convert Nasal types to C++ types
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

@@ -1,4 +1,4 @@
-// Wrapper class for Nasal hashes
+///@file Wrapper class for Nasal hashes
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

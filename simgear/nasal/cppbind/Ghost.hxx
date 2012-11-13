@@ -434,16 +434,21 @@ namespace nasal
        *
        * @tparam func   Pointer to free function being registered.
        *
+       * @note Due to a severe bug in Visual Studio it is not possible to create
+       *       a specialization of #method for free function pointers and
+       *       member function pointers at the same time. Do overcome this
+       *       limitation we had to use a different name for this function.
+       *
        * @code{cpp}
        * class MyClass;
        * naRef myMethod(MyClass& obj, naContext c, int argc, naRef* args);
        *
        * Ghost<MyClass>::init("Test")
-       *   .method<&myMethod>("myMethod");
+       *   .method_func<&myMethod>("myMethod");
        * @endcode
        */
       template<free_func_t func>
-      Ghost& method(const std::string& name)
+      Ghost& method_func(const std::string& name)
       {
         _members[name].func = &FreeFunctionWrapper<func>::call;
         return *this;

@@ -23,6 +23,8 @@ struct Derived:
   void setX(int x) { _x = x; }
 };
 
+naRef member(Derived&, naContext, int, naRef*) { return naNil(); }
+
 int main(int argc, char* argv[])
 {
   naContext c = naNewContext();
@@ -76,7 +78,8 @@ int main(int argc, char* argv[])
     .method<&Base::member>("member");
   Ghost<Derived>::init("Derived")
     .bases<Base>()
-    .member("x", &Derived::getX, &Derived::setX);
+    .member("x", &Derived::getX, &Derived::setX)
+    .method_func<&member>("free_member");
 
   naRef derived = Ghost<Derived>::create(c);
   VERIFY( naIsGhost(derived) );

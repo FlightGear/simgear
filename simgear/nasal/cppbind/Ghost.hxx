@@ -517,19 +517,19 @@ namespace nasal
         // this ghost wraps.
         if(   !boost::is_same
                  < typename BaseGhost::raw_type,
-                   Ghost::raw_type
+                   typename Ghost::raw_type
                  >::value
             && dynamic_cast<const Ghost::raw_type*>(base) != base )
           return 0;
 
         // Now check if we can further downcast to one of our derived classes.
-        naGhostType* ghost_type = 0;
         for( typename DerivedList::reverse_iterator
                derived = getSingletonPtr()->_derived_classes.rbegin();
                derived != getSingletonPtr()->_derived_classes.rend();
              ++derived )
         {
-          ghost_type = (*derived)( static_cast<const Ghost::raw_type*>(base) );
+          naGhostType* ghost_type =
+            (*derived)( static_cast<const typename Ghost::raw_type*>(base) );
           if( ghost_type )
             return ghost_type;
         }

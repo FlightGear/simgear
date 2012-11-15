@@ -519,7 +519,7 @@ namespace nasal
                  < typename BaseGhost::raw_type,
                    typename Ghost::raw_type
                  >::value
-            && dynamic_cast<const Ghost::raw_type*>(base) != base )
+            && dynamic_cast<const typename Ghost::raw_type*>(base) != base )
           return 0;
 
         // Now check if we can further downcast to one of our derived classes.

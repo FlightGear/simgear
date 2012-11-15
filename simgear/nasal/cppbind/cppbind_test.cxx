@@ -1,19 +1,22 @@
 #include "Ghost.hxx"
 #include "NasalHash.hxx"
 
+#include <boost/shared_ptr.hpp>
+
 #include <cstring>
 #include <iostream>
 
 #define VERIFY(a) \
   if( !(a) ) \
   { \
-    std::cerr << "failed:" << #a << std::endl; \
+    std::cerr << "failed: line " << __LINE__ << ": " << #a << std::endl; \
     return 1; \
   }
 
 struct Base
 {
   naRef member(naContext, int, naRef*) { return naNil(); }
+  virtual ~Base(){};
 };
 struct Derived:
   public Base
@@ -21,6 +24,16 @@ struct Derived:
   int _x;
   int getX() const { return _x; }
   void setX(int x) { _x = x; }
+};
+struct DoubleDerived:
+  public Derived
+{
+
+};
+struct DoubleDerived2:
+  public Derived
+{
+
 };
 
 naRef member(Derived&, naContext, int, naRef*) { return naNil(); }
@@ -83,6 +96,36 @@ int main(int argc, char* argv[])
 
   naRef derived = Ghost<Derived>::create(c);
   VERIFY( naIsGhost(derived) );
+  VERIFY( std::string("Derived") ==  naGhost_type(derived)->name );
+
+  typedef boost::shared_ptr<Base> BasePtr;
+  typedef boost::shared_ptr<Derived> DerivedPtr;
+  typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
+  typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+
+  Ghost<BasePtr>::init("BasePtr");
+  Ghost<DerivedPtr>::init("DerivedPtr")
+    .bases<BasePtr>();
+  Ghost<DoubleDerivedPtr>::init("DoubleDerivedPtr")
+    .bases<DerivedPtr>();
+  Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
+    .bases<DerivedPtr>();
+
+  BasePtr d( new Derived );
+  derived = Ghost<BasePtr>::create(c, d);
+  VERIFY( naIsGhost(derived) );
+  VERIFY( std::string("DerivedPtr") == naGhost_type(derived)->name );
+
+  BasePtr d2( new DoubleDerived );
+  derived = Ghost<BasePtr>::create(c, d2);
+  VERIFY( naIsGhost(derived) );
+  VERIFY( std::string("DoubleDerivedPtr") ==  naGhost_type(derived)->name );
+
+  BasePtr d3( new DoubleDerived2 );
+  derived = Ghost<BasePtr>::create(c, d3);
+  VERIFY( naIsGhost(derived) );
+  VERIFY( std::string("DoubleDerived2Ptr") ==  naGhost_type(derived)->name );
+
   // TODO actuall do something with the ghosts...
 
   naFreeContext(c);

@@ -84,6 +84,7 @@ namespace nasal
   struct SharedPointerPolicy
   {
     typedef typename GhostTypeTraits<T>::raw_type raw_type;
+    typedef boost::false_type returns_dynamic_type;
 
     /**
      * Create a shared pointer on the heap to handle the reference counting for
@@ -107,6 +108,7 @@ namespace nasal
   struct RawPointerPolicy
   {
     typedef typename GhostTypeTraits<T>::raw_type raw_type;
+    typedef boost::true_type returns_dynamic_type;
 
     /**
      * Create a new object instance on the heap
@@ -243,10 +245,14 @@ namespace nasal
       /**
        * Register a new ghost type.
        *
+       * @note Only intialize each ghost type once!
+       *
        * @param name    Descriptive name of the ghost type.
        */
       static Ghost& init(const std::string& name)
       {
+        assert( !getSingletonPtr() );
+
         getSingletonHolder().reset( new Ghost(name) );
         return *getSingletonPtr();
       }
@@ -273,7 +279,7 @@ namespace nasal
       bases()
       {
         BaseGhost* base = BaseGhost::getSingletonPtr();
-        //addBaseClass( base );
+        base->addDerived( &getTypeFor<BaseGhost> );
 
         // Replace any getter that is not available in the current class.
         // TODO check if this is the correct behavior of function overriding
@@ -490,6 +496,62 @@ namespace nasal
       template<class>
       friend class Ghost;
 
+      typedef naGhostType* (*type_checker_t)(const raw_type*);
+      typedef std::vector<type_checker_t> DerivedList;
+      DerivedList _derived_classes;
+
+      void addDerived(const type_checker_t& derived_info)
+      {
+        _derived_classes.push_back(derived_info);
+      }
+
+      template<class BaseGhost>
+      static
+      typename boost::enable_if
+        < boost::is_polymorphic<typename BaseGhost::raw_type>,
+          naGhostType*
+        >::type
+      getTypeFor(const typename BaseGhost::raw_type* base)
+      {
+        // Check first if passed pointer can by converted to instance of class
+        // this ghost wraps.
+        if(   !boost::is_same
+                 < typename BaseGhost::raw_type,
+                   Ghost::raw_type
+                 >::value
+            && dynamic_cast<const Ghost::raw_type*>(base) != base )
+          return 0;
+
+        // Now check if we can further downcast to one of our derived classes.
+        naGhostType* ghost_type = 0;
+        for( typename DerivedList::reverse_iterator
+               derived = getSingletonPtr()->_derived_classes.rbegin();
+               derived != getSingletonPtr()->_derived_classes.rend();
+             ++derived )
+        {
+          ghost_type = (*derived)( static_cast<const Ghost::raw_type*>(base) );
+          if( ghost_type )
+            return ghost_type;
+        }
+
+        // If base is not an instance of any derived class, this class has to
+        // be the dynamic type.
+        return &getSingletonPtr()->_ghost_type;
+      }
+
+      template<class BaseGhost>
+      static
+      typename boost::disable_if
+        < boost::is_polymorphic<typename BaseGhost::raw_type>,
+          naGhostType*
+        >::type
+      getTypeFor(const typename BaseGhost::raw_type* base)
+      {
+        // For non polymorphic classes there is no possibility to get the actual
+        // dynamic type, therefore we can only use its static type.
+        return &BaseGhost::getSingletonPtr()->_ghost_type;
+      }
+
       static Ghost* getSingletonPtr()
       {
         return getSingletonHolder().get();
@@ -580,7 +642,23 @@ namespace nasal
 
       static naRef makeGhost(naContext c, void *ptr)
       {
-        return naNewGhost2(c, &getSingletonPtr()->_ghost_type, ptr);
+        naGhostType* ghost_type = 0;
+        if( Ghost::returns_dynamic_type::value )
+          // For pointer policies already returning instances of an object with
+          // the dynamic type of this Ghost's raw_type the type is always the
+          // same.
+          ghost_type = &getSingletonPtr()->_ghost_type;
+        else
+          // If wrapping eg. shared pointers the users passes an already
+          // existing instance of an object which will then be hold be a new
+          // shared pointer. We therefore have to check for the dynamic type
+          // of the object as it might differ from the passed static type.
+          ghost_type = getTypeFor<Ghost>( Ghost::getRawPtr(ptr) );
+
+        if( !ghost_type )
+          return naNil();
+
+        return naNewGhost2(c, ghost_type, ptr);
       }
 
       static void destroyGhost(void *ptr)

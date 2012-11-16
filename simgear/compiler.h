@@ -46,6 +46,9 @@
 #    warning GCC compilers prior to 3.4 are suspect  
 #  endif
 
+#  define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
 #  define SG_COMPILER_STR "GNU C++ version " SG_STRINGIZE(__GNUC__) "." SG_STRINGIZE(__GNUC_MINOR__)
 #endif // __GNUC__
 

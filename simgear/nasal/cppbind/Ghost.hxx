@@ -279,7 +279,20 @@ namespace nasal
       bases()
       {
         BaseGhost* base = BaseGhost::getSingletonPtr();
-        base->addDerived( &Ghost::getTypeFor<BaseGhost> );
+        base->addDerived
+        (
+          // Both ways of retrieving the address of a static member function
+          // should be legal but not all compilers know this.
+          // g++-4.4.7+ has been tested to work with both versions
+#if defined(GCC_VERSION) && GCC_VERSION < 40407
+          // The old version of g++ used on Jenkins (16.11.2012) only compiles
+          // this version.
+          &getTypeFor<BaseGhost>
+#else
+          // VS (2008, 2010, ... ?) only allow this version.
+          &Ghost::getTypeFor<BaseGhost>
+#endif
+        );
 
         // Replace any getter that is not available in the current class.
         // TODO check if this is the correct behavior of function overriding

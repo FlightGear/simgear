@@ -279,7 +279,7 @@ namespace nasal
       bases()
       {
         BaseGhost* base = BaseGhost::getSingletonPtr();
-        base->addDerived( &getTypeFor<BaseGhost> );
+        base->addDerived( &Ghost::getTypeFor<BaseGhost> );
 
         // Replace any getter that is not available in the current class.
         // TODO check if this is the correct behavior of function overriding

@@ -109,6 +109,18 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  SGConstPropertyNode_ptr Element::getProps() const
+  {
+    return _node;
+  }
+
+  //----------------------------------------------------------------------------
+  SGPropertyNode_ptr Element::getProps()
+  {
+    return  _node;
+  }
+
+  //----------------------------------------------------------------------------
   bool Element::handleMouseEvent(const MouseEvent& event)
   {
     // Transform event to local coordinates

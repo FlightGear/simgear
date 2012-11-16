@@ -210,8 +210,8 @@ namespace nasal
       typedef typename GhostTypeTraits<T>::raw_type                 raw_type;
       typedef naRef (raw_type::*member_func_t)(naContext, int, naRef*);
       typedef naRef (*free_func_t)(raw_type&, naContext, int, naRef*);
-      typedef boost::function<naRef(naContext, raw_type*)>        getter_t;
-      typedef boost::function<void(naContext, raw_type*, naRef)>  setter_t;
+      typedef boost::function<naRef(naContext, raw_type&)>        getter_t;
+      typedef boost::function<void(naContext, raw_type&, naRef)>  setter_t;
 
       /**
        * A ghost member. Can consist either of getter and/or setter functions
@@ -352,7 +352,7 @@ namespace nasal
         {
           naRef (*to_nasal_)(naContext, Var) = &nasal::to_nasal;
 
-          // Getter signature: naRef(naContext, raw_type*)
+          // Getter signature: naRef(naContext, raw_type&)
           m.getter = boost::bind(to_nasal_, _1, boost::bind(getter, _2));
         }
 
@@ -360,7 +360,7 @@ namespace nasal
         {
           Var (*from_nasal_)(naContext, naRef) = &nasal::from_nasal;
 
-          // Setter signature: void(naContext, raw_type*, naRef)
+          // Setter signature: void(naContext, raw_type&, naRef)
           m.setter = boost::bind(setter, _2, boost::bind(from_nasal_, _1, _3));
         }
 
@@ -567,7 +567,7 @@ namespace nasal
         return Ghost::getRawPtr( static_cast<T*>(naGhost_ptr(me)) );
       }
 
-      static raw_type* requireObject(naContext c, naRef me)
+      static raw_type& requireObject(naContext c, naRef me)
       {
         raw_type* obj = Ghost::from_nasal(me);
         if( !obj )
@@ -578,7 +578,7 @@ namespace nasal
             getSingletonPtr()->_ghost_type.name
           );
 
-        return obj;
+        return *obj;
       }
 
       /**
@@ -596,7 +596,7 @@ namespace nasal
          */
         static naRef call(naContext c, naRef me, int argc, naRef* args)
         {
-          return (requireObject(c, me)->*func)(c, argc, args);
+          return (requireObject(c, me).*func)(c, argc, args);
         }
       };
 
@@ -618,7 +618,7 @@ namespace nasal
          */
         static naRef call(naContext c, naRef me, int argc, naRef* args)
         {
-          return func(*requireObject(c, me), c, argc, args);
+          return func(requireObject(c, me), c, argc, args);
         }
       };
 
@@ -690,7 +690,7 @@ namespace nasal
         if( member->second.func )
           *out = nasal::to_nasal(c, member->second.func);
         else if( !member->second.getter.empty() )
-          *out = member->second.getter(c, Ghost::getRawPtr(g));
+          *out = member->second.getter(c, *Ghost::getRawPtr(g));
         else
           return "Read-protected member";
 
@@ -711,7 +711,7 @@ namespace nasal
         if( member->second.setter.empty() )
           naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
 
-        member->second.setter(c, Ghost::getRawPtr(g), val);
+        member->second.setter(c, *Ghost::getRawPtr(g), val);
       }
   };
 

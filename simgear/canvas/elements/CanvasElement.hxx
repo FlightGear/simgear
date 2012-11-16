@@ -67,6 +67,9 @@ namespace canvas
        */
       virtual void update(double dt);
 
+      SGConstPropertyNode_ptr getProps() const;
+      SGPropertyNode_ptr getProps();
+
       /**
        * Handle mouse event (transforms coordinates to local coordinate frame
        * and forwards event to #handleLocalMouseEvent)

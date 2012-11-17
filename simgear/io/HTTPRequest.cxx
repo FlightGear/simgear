@@ -112,8 +112,10 @@ string Request::path() const
     }
     
     int hostEnd = u.find('/', schemeEnd + 3);
-    if (hostEnd < 0) { 
-        return ""; // couldn't parse host
+    if (hostEnd < 0) {
+// couldn't parse host, or URL looks like 'http://foo.com' (no trailing '/') 
+// fixup to root resource path: '/' 
+        return "/"; 
     }
     
     int query = u.find('?', hostEnd + 1);
@@ -203,6 +205,7 @@ void Request::setFailure(int code, const std::string& reason)
 void Request::failed()
 {
     // no-op in base class
+    SG_LOG(SG_IO, SG_INFO, "request failed:" << url());
 }
 
 Request::HTTPVersion Request::decodeVersion(const string& v)

@@ -130,7 +130,7 @@ public:
     {
       assert(!sentRequests.empty());
       
-      activeRequest = sentRequests.front();
+      activeRequest = sentRequests.front();      
       activeRequest->responseStart(buffer);
       state = STATE_GETTING_HEADERS;
       buffer.clear();
@@ -169,9 +169,10 @@ public:
      
       Request_ptr r = queuedRequests.front();
       requestBodyBytesToSend = r->requestBodyLength();
-    
+          
       stringstream headerData;
       string path = r->path();
+      assert(!path.empty());
       string query = r->query();
       string bodyData;
       
@@ -179,7 +180,7 @@ public:
           path = r->scheme() + "://" + r->host() + r->path();
       }
 
-      if (r->method() == "POST") {
+      if (r->requestBodyType() == CONTENT_TYPE_URL_ENCODED) {
           headerData << r->method() << " " << path << " HTTP/1.1\r\n";
           bodyData = query.substr(1); // URL-encode, drop the leading '?'
           headerData << "Content-Type:" << CONTENT_TYPE_URL_ENCODED << "\r\n";
@@ -429,7 +430,7 @@ public:
 private:
     bool connectToHost()
     {
-        SG_LOG(SG_IO, SG_INFO, "HTTP connecting to " << host << ":" << port);
+        SG_LOG(SG_IO, SG_DEBUG, "HTTP connecting to " << host << ":" << port);
         
         if (!open()) {
             SG_LOG(SG_ALL, SG_WARN, "HTTP::Connection: connectToHost: open() failed");
@@ -657,7 +658,6 @@ void Client::update(int waitTimeout)
             _connections.erase(del);
         } else {
             if (it->second->shouldStartNext()) {
-                SG_LOG(SG_IO, SG_INFO, "should start next, hmm");
                 it->second->tryStartNextRequest();
             }
             

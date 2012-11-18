@@ -55,6 +55,14 @@ namespace canvas
        */
       CanvasPtr getCanvas(size_t index) const;
 
+      /**
+       * Get ::Canvas by name
+       *
+       * @param name Value of child node "name" in
+       *             /canvas/by-index/texture[i]/name
+       */
+      CanvasPtr getCanvas(const std::string& name) const;
+
     protected:
 
       SystemAdapterPtr _system_adapter;

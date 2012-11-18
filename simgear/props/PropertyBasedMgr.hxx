@@ -53,6 +53,13 @@ namespace simgear
        */
       PropertyBasedElementPtr getElement(size_t index) const;
 
+      /**
+       * Get an existing PropertyBasedElement by its name
+       *
+       * @param name    Name (value of child node "name" will be matched)
+       */
+      PropertyBasedElementPtr getElement(const std::string& name) const;
+
       virtual const SGPropertyNode* getPropertyRoot() const;
 
     protected:

@@ -655,6 +655,9 @@ namespace nasal
 
       static naRef makeGhost(naContext c, void *ptr)
       {
+        if( !Ghost::getRawPtr(ptr) )
+          return naNil();
+
         naGhostType* ghost_type = 0;
         if( Ghost::returns_dynamic_type::value )
           // For pointer policies already returning instances of an object with

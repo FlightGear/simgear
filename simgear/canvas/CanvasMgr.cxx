@@ -56,6 +56,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  CanvasPtr CanvasMgr::getCanvas(const std::string& name) const
+  {
+    return boost::static_pointer_cast<Canvas>( getElement(name) );
+  }
+
+  //----------------------------------------------------------------------------
   void CanvasMgr::elementCreated(PropertyBasedElementPtr element)
   {
     CanvasPtr canvas = boost::static_pointer_cast<Canvas>(element);

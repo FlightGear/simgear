@@ -182,6 +182,12 @@ static double sidereal_course( time_t cur_time, const struct tm *gmt, double lng
     return lstTmp;
 }
 
+/** Deprecated method. To be removed after the next release... */
+void SGTime::update( double lon_rad, double lat_rad, time_t ct, long int warp )
+{
+    const SGGeod& location = SGGeod::fromRad(lon_rad, lat_rad);
+    update(location, ct, warp);
+}
 
 // Update the time related variables
 void SGTime::update( const SGGeod& location, time_t ct, long int warp )

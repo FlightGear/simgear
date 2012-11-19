@@ -148,6 +148,9 @@ public:
      *        allows us to advance or rewind "time" if we choose to.  */
     void update( const SGGeod& location, time_t ct, long int warp );
 
+    /** Deprecated method. To be removed after the next release... */
+    void update( double lon_rad, double lat_rad, time_t ct, long int warp ) DEPRECATED;
+
     /**
      * Given lon/lat, update timezone information and local_offset
      * The updateLocal() method is intended to be called less

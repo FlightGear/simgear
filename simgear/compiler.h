@@ -184,6 +184,12 @@ inline int (isnan)(double r) { return !(r <= 0 || r >= 0); }
 #  define SG_UNIX
 #endif
 
+#if defined( __GNUC__ )
+#  define DEPRECATED __attribute__ ((deprecated))
+#else
+#  define DEPRECATED
+#endif
+
 //
 // No user modifiable definitions beyond here.
 //

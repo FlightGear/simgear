@@ -81,23 +81,6 @@ public:
     virtual void set_source(unsigned int sid);
 
     /**
-     * Get the OpenAL source id of this source
-     * @return OpenAL source-id
-     */
-    virtual inline unsigned int get_source() { return _source; }
-
-    /**
-     * Test if the source-id of this audio sample may be passed to OpenAL.
-     * @return true if the source-id is valid
-     */
-    virtual inline bool is_valid_source() const { return _valid_source; }
-
-    /**
-     * Set the source-id of this audio sample to invalid.
-     */
-    virtual inline void no_valid_source() { _valid_source = false; }
-
-    /**
      * Test if the buffer-id of this audio sample may be passed to OpenAL.
      * @return false for sample queue
      */
@@ -106,46 +89,11 @@ public:
     inline virtual bool is_queue() const { return true; }
 
 private:
-
-    // Position of the source sound.
-    SGVec3d _absolute_pos;      // absolute position
-    SGVec3d _relative_pos;      // position relative to the base position
-    SGVec3d _direction;         // orientation offset
-    SGVec3f _velocity;          // Velocity of the source sound.
-
-    // The position and orientation of this sound
-    SGQuatd _orientation;       // base orientation
-    SGVec3f _orivec;		// orientation vector for OpenAL
-    SGVec3d _base_pos;		// base position
-
-    SGQuatd _rotation;
-
     std::string _refname;	// sample name
     std::vector<unsigned int> _buffers;
     unsigned int _buffer;
 
-    // configuration values
-    int _format;
-    int _freq;
-
-    // Sources are points emitting sound.
-    bool _valid_source;
-    unsigned int _source;
-
-    // The orientation of this sound (direction and cut-off angles)
-    float _inner_angle;
-    float _outer_angle;
-    float _outer_gain;
-
-    float _pitch;
-    float _volume;
-    float _master_volume;
-    float _reference_dist;
-    float _max_dist;
-    bool _loop;
-
     bool _playing;
-    bool _changed;
 
     std::string random_string();
 };

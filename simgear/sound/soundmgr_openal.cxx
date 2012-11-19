@@ -129,13 +129,13 @@ SGSoundMgr::SGSoundMgr() :
     _changed(true),
     _volume(0.0),
     _offset_pos(SGVec3d::zeros()),
-    _geod_pos(SGGeod::fromCart(SGVec3d::zeros())),
     _velocity(SGVec3d::zeros()),
     _bad_doppler(false),
     _renderer("unknown"),
     _vendor("unknown")
 {
     d.reset(new SoundManagerPrivate);
+    d->_base_pos = SGVec3d::fromGeod(_geod_pos);
 }
 
 // destructor

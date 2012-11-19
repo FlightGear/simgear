@@ -1,3 +1,4 @@
+
 // queue.cxx -- Audio sample encapsulation class
 // 
 // Written by Curtis Olson, started April 2004.
@@ -39,37 +40,19 @@
 
 using std::string;
 
+#define ENABLE_SOUND
+
 //
 // SGSampleQueue
 //
 
 // empty constructor
 SGSampleQueue::SGSampleQueue( int freq, int format ) :
-    _absolute_pos(SGVec3d::zeros()),
-    _relative_pos(SGVec3d::zeros()),
-    _direction(SGVec3d::zeros()),
-    _velocity(SGVec3f::zeros()),
-    _orientation(SGQuatd::zeros()),
-    _orivec(SGVec3f::zeros()),
-    _base_pos(SGVec3d::zeros()),
-    _rotation(SGQuatd::zeros()),
     _refname(random_string()),
-    _format(format),
-    _freq(freq),
-    _valid_source(false),
-    _source(SGSoundMgr::NO_SOURCE),
-    _inner_angle(360.0),
-    _outer_angle(360.0),
-    _outer_gain(0.0),
-    _pitch(1.0),
-    _volume(1.0),
-    _master_volume(1.0),
-    _reference_dist(500.0),
-    _max_dist(3000.0),
-    _loop(false),
-    _playing(false),
-    _changed(true)
+    _playing(false)
 {
+    _freq = freq;
+    _format = format;
     _buffers.clear();
 }
 
@@ -79,6 +62,7 @@ SGSampleQueue::~SGSampleQueue() {
 
 void SGSampleQueue::stop()
 {
+#ifdef ENABLE_SOUND
     ALint num;
     alGetSourcei(_source, AL_BUFFERS_PROCESSED, &num);
     for (int i=0; i<num; i++) {
@@ -87,13 +71,14 @@ void SGSampleQueue::stop()
         alDeleteBuffers(1, &buffer);
     }
     _buffers.clear();
-
+#endif
     _playing = false;
     _changed = true;
 }
 
 void SGSampleQueue::add( const void* smp_data, size_t len )
 {
+#ifdef ENABLE_SOUND
     const ALvoid *data = (const ALvoid *)smp_data;
     ALuint buffer;
     ALint num;
@@ -114,14 +99,13 @@ void SGSampleQueue::add( const void* smp_data, size_t len )
         alBufferData(buffer, _format, data, len, _freq);
         _buffers.push_back(buffer);
     }
+#endif
 }
 
 void SGSampleQueue::set_source( unsigned int sid )
 {
-    _source = sid;
-    _valid_source = true;
-    _changed = true;
-
+    SGSoundSample::set_source(sid);
+#ifdef ENABLE_SOUND
     ALuint num = _buffers.size();
     for (unsigned int i=0; i < num; i++)
     {
@@ -129,7 +113,7 @@ void SGSampleQueue::set_source( unsigned int sid )
         alSourceQueueBuffers(_source, 1, &buffer);
     }
     _buffers.clear();
-
+#endif
 }
 
 string SGSampleQueue::random_string() {

@@ -194,7 +194,7 @@ public:
      * Set the source id of this source
      * @param sid OpenAL source-id
      */
-    virtual inline void set_source(unsigned int sid) {
+    virtual void set_source(unsigned int sid) {
         _source = sid; _valid_source = true; _changed = true;
     }
 
@@ -202,18 +202,18 @@ public:
      * Get the OpenAL source id of this source
      * @return OpenAL source-id
      */
-    virtual inline unsigned int get_source() { return _source; }
+    virtual unsigned int get_source() { return _source; }
 
     /**
      * Test if the source-id of this audio sample may be passed to OpenAL.
      * @return true if the source-id is valid
      */
-    virtual inline bool is_valid_source() const { return _valid_source; }
+    virtual bool is_valid_source() const { return _valid_source; }
 
     /**
      * Set the source-id of this audio sample to invalid.
      */
-    virtual inline void no_valid_source() { _valid_source = false; }
+    virtual void no_valid_source() { _valid_source = false; }
 
     /**
      * Set the OpenAL buffer-id of this source
@@ -462,6 +462,16 @@ public:
 
     void update_pos_and_orientation();
 
+protected:
+    int _format;
+    size_t _size;
+    int _freq;
+    bool _changed;
+    
+    // Sources are points emitting sound.
+    bool _valid_source;
+    unsigned int _source;
+
 private:
 
     // Position of the source sound.
@@ -481,17 +491,10 @@ private:
     unsigned char* _data;
 
     // configuration values
-    int _format;
-    size_t _size;
-    int _freq;
-
+    
     // Buffers hold sound data.
     bool _valid_buffer;
     unsigned int _buffer;
-
-    // Sources are points emitting sound.
-    bool _valid_source;
-    unsigned int _source;
 
     // The orientation of this sound (direction and cut-off angles)
     float _inner_angle;
@@ -506,7 +509,6 @@ private:
     bool _loop;
 
     bool _playing;
-    bool _changed;
     bool _static_changed;
     bool _out_of_range;
     bool _is_file;

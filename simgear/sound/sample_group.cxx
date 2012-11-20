@@ -24,7 +24,9 @@
 #  include <simgear_config.h>
 #endif
 
+#include <cassert>
 #include <simgear/compiler.h>
+#include <simgear/sg_inlines.h>
 #include <simgear/debug/logstream.hxx>
 
 #include "soundmgr_openal.hxx"
@@ -73,35 +75,44 @@ SGSampleGroup::~SGSampleGroup ()
     _smgr = 0;
 }
 
-void SGSampleGroup::update( double dt ) {
+static bool is_sample_stopped(SGSoundSample *sample)
+{
+#ifdef ENABLE_SOUND
+    assert(sample->is_valid_source());
+    unsigned int source = sample->get_source();
+    int result;
+    alGetSourcei( source, AL_SOURCE_STATE, &result );
+    return (result == AL_STOPPED);
+#else
+    return true;
+#endif
+}
 
-    if ( !_active || _pause ) return;
-
-    testForALError("start of update!!\n");
-
+void SGSampleGroup::cleanup_removed_samples()
+{
     // Delete any OpenAL buffers that might still be in use.
     unsigned int size = _removed_samples.size();
     for (unsigned int i=0; i<size; ) {
         SGSoundSample *sample = _removed_samples[i];
-        ALint result = AL_STOPPED;
-
+        bool stopped = is_sample_stopped(sample);
+        
         if ( sample->is_valid_source() ) {
             int source = sample->get_source();
-
-            alGetSourcei( source, AL_SOURCE_STATE, &result );
-            if ( sample->is_looping() ) {
-                if ( result != AL_STOPPED ) {
-                    alSourceStop( source );
-                    alGetSourcei( source, AL_SOURCE_STATE, &result );
-                }
+            
+            if ( sample->is_looping() && !stopped) {
+#ifdef ENABLE_SOUND
+                alSourceStop( source );
+#endif
+                stopped = is_sample_stopped(sample);
             }
-            if ( result == AL_STOPPED ) {
+            
+            if ( stopped ) {
                 sample->no_valid_source();
                 _smgr->release_source( source );
             }
         }
-
-        if ( result == AL_STOPPED ) {
+        
+        if ( stopped ) {
             sample->stop();
             if (( !sample->is_queue() )&&
                 (sample->is_valid_buffer()))
@@ -114,7 +125,82 @@ void SGSampleGroup::update( double dt ) {
         }
         i++;
     }
+}
 
+void SGSampleGroup::start_playing_sample(SGSoundSample *sample)
+{
+#ifdef ENABLE_SOUND
+    //
+    // a request to start playing a sound has been filed.
+    //
+    ALuint source = _smgr->request_source();
+    if (alIsSource(source) == AL_FALSE ) {
+        return;
+    }
+    
+    sample->set_source( source );
+    update_sample_config( sample );
+    ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
+    
+    if ( !sample->is_queue() )
+    {
+        ALuint buffer = _smgr->request_buffer(sample);
+        if (buffer == SGSoundMgr::FAILED_BUFFER ||
+            buffer == SGSoundMgr::NO_BUFFER)
+        {
+            _smgr->release_source(source);
+            return;
+        }
+        
+        // start playing the sample
+        buffer = sample->get_buffer();
+        if ( alIsBuffer(buffer) == AL_TRUE )
+        {
+            alSourcei( source, AL_BUFFER, buffer );
+            testForALError("assign buffer to source");
+        } else
+            SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
+    }
+    
+    alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
+    alSourcei( source, AL_LOOPING, looping );
+    alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
+    alSourcePlay( source );
+    testForALError("sample play");
+#endif
+}
+
+void SGSampleGroup::check_playing_sample(SGSoundSample *sample)
+{
+    // check if the sound has stopped by itself
+    
+    if (is_sample_stopped(sample)) {
+        // sample is stopped because it wasn't looping
+        sample->stop();
+        sample->no_valid_source();
+        _smgr->release_source( sample->get_source() );
+        _smgr->release_buffer( sample );
+        remove( sample->get_sample_name() );
+    } else if ( sample->has_changed() ) {
+        if ( !sample->is_playing() ) {
+            // a request to stop playing the sound has been filed.
+            sample->stop();
+            sample->no_valid_source();
+            _smgr->release_source( sample->get_source() );
+        } else if ( _smgr->has_changed() ) {
+            update_sample_config( sample );
+        }
+    }
+}
+
+void SGSampleGroup::update( double dt ) {
+
+    if ( !_active || _pause ) return;
+
+    testForALError("start of update!!\n");
+
+    cleanup_removed_samples();
+    
     // Update the position and orientation information for all samples.
     if ( _changed || _smgr->has_changed() ) {
         update_pos_and_orientation();
@@ -127,81 +213,10 @@ void SGSampleGroup::update( double dt ) {
         SGSoundSample *sample = sample_current->second;
 
         if ( !sample->is_valid_source() && sample->is_playing() && !sample->test_out_of_range()) {
-            //
-            // a request to start playing a sound has been filed.
-            //
-            ALuint source = _smgr->request_source();
-            if (alIsSource(source) == AL_TRUE )
-            {
-                ALboolean looping = sample->is_looping() ? AL_TRUE : AL_FALSE;
-                if ( sample->is_queue() )
-                {
-                    sample->set_source( source );
-                    update_sample_config( sample );
-
-                    alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
-                    alSourcei( source, AL_LOOPING, looping );
-                    alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
-                    alSourcePlay( source );
-                    testForALError("sample play");
-                }
-                else
-                {
-                    ALuint buffer = _smgr->request_buffer(sample);
-                    if (buffer == SGSoundMgr::FAILED_BUFFER ||
-                        buffer == SGSoundMgr::NO_BUFFER)
-                    {
-                        _smgr->release_source(source);
-                        continue;
-                    }
-
-                    // start playing the sample
-                    buffer = sample->get_buffer();
-                    if ( alIsBuffer(buffer) == AL_TRUE )
-                    {
-                        alSourcei( source, AL_BUFFER, buffer );
-                        testForALError("assign buffer to source");
-
-                        sample->set_source( source );
-                        update_sample_config( sample );
-
-                        alSourcei( source, AL_LOOPING, looping );
-                        alSourcef( source, AL_ROLLOFF_FACTOR, 0.3 );
-                        alSourcei( source, AL_SOURCE_RELATIVE, AL_FALSE );
-                        alSourcePlay( source );
-                        testForALError("sample play");
-                    } else
-                        SG_LOG( SG_SOUND, SG_ALERT, "No such buffer!");
-                }
-            }
+            start_playing_sample(sample);
 
         } else if ( sample->is_valid_source() ) {
-            // check if the sound has stopped by itself
-
-            unsigned int source = sample->get_source();
-            int result;
-
-            alGetSourcei( source, AL_SOURCE_STATE, &result );
-            if ( result == AL_STOPPED ) {
-                // sample is stopped because it wasn't looping
-                sample->stop();
-                sample->no_valid_source();
-                _smgr->release_source( source );
-                _smgr->release_buffer( sample );
-                remove( sample->get_sample_name() );
-            }
-            else
-            if ( sample->has_changed() ) {
-                if ( !sample->is_playing() ) {
-                    // a request to stop playing the sound has been filed.
-                    sample->stop();
-                    sample->no_valid_source();
-                    _smgr->release_source( sample->get_source() );
-                } else if ( _smgr->has_changed() ) {
-                    update_sample_config( sample );
-                }
-            }
-
+            check_playing_sample(sample);
         }
         testForALError("update");
     }
@@ -274,11 +289,13 @@ SGSampleGroup::stop ()
         SGSoundSample *sample = sample_current->second;
 
         if ( sample->is_valid_source() ) {
+#ifdef ENABLE_SOUND
             ALint source = sample->get_source();
             if ( sample->is_playing() ) {
                 alSourceStop( source );
                 testForALError("stop");
             }
+#endif
             _smgr->release_source( source );
             sample->no_valid_source();
         }
@@ -300,10 +317,11 @@ SGSampleGroup::suspend ()
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
             SGSoundSample *sample = sample_current->second;
-
+#ifdef ENABLE_SOUND
             if ( sample->is_valid_source() && sample->is_playing() ) {
                 alSourcePause( sample->get_source() );
             }
+#endif
         }
         testForALError("suspend");
     }
@@ -318,10 +336,11 @@ SGSampleGroup::resume ()
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
             SGSoundSample *sample = sample_current->second;
-
+#ifdef ENABLE_SOUND
             if ( sample->is_valid_source() && sample->is_playing() ) {
                 alSourcePlay( sample->get_source() );
             }
+#endif
         }
         testForALError("resume");
         _pause = false;
@@ -369,8 +388,7 @@ void SGSampleGroup::set_volume( float vol )
 {
     if (vol > _volume*1.01 || vol < _volume*0.99) {
         _volume = vol;
-        if (_volume < 0.0) _volume = 0.0;
-        if (_volume > 1.0) _volume = 1.0;
+        SG_CLAMP_RANGE(_volume, 0.0f, 1.0f);
         _changed = true;
     }
 }
@@ -412,7 +430,9 @@ void SGSampleGroup::update_pos_and_orientation() {
     }
 }
 
-void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
+void SGSampleGroup::update_sample_config( SGSoundSample *sample )
+{
+#ifdef ENABLE_SOUND
     SGVec3f orientation, velocity;
     SGVec3d position;
 
@@ -461,6 +481,7 @@ void SGSampleGroup::update_sample_config( SGSoundSample *sample ) {
                            sample->get_reference_dist() );
         testForALError("distance rolloff");
     }
+#endif
 }
 
 bool SGSampleGroup::testForError(void *p, string s)
@@ -474,12 +495,14 @@ bool SGSampleGroup::testForError(void *p, string s)
 
 bool SGSampleGroup::testForALError(string s)
 {
+#ifdef SG_C
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
        SG_LOG( SG_SOUND, SG_ALERT, "AL Error (" << _refname << "): "
                                       << alGetString(error) << " at " << s);
        return true;
     }
+#endif
     return false;
 }
 

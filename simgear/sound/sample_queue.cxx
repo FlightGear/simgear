@@ -40,8 +40,6 @@
 
 using std::string;
 
-#define ENABLE_SOUND
-
 //
 // SGSampleQueue
 //

@@ -214,6 +214,10 @@ protected:
     bool _active;
 
 private:
+    void cleanup_removed_samples();
+    void start_playing_sample(SGSoundSample *sample);
+    void check_playing_sample(SGSoundSample *sample);
+  
     bool _changed;
     bool _pause;
     float _volume;

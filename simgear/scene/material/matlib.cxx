@@ -77,7 +77,7 @@ bool SGMaterialLib::load( const string &fg_root, const string& mpath,
         if (!strcmp(node->getName(), "material")) {
             SGSharedPtr<SGMaterial> m = new SGMaterial(options.get(), node, prop_root);
 
-            vector<SGPropertyNode_ptr>names = node->getChildren("name");
+            std::vector<SGPropertyNode_ptr>names = node->getChildren("name");
             for ( unsigned int j = 0; j < names.size(); j++ ) {
                 string name = names[j]->getStringValue();
                 // cerr << "Material " << name << endl;

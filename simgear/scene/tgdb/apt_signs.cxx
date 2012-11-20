@@ -46,6 +46,7 @@
 #define SIGN "OBJECT_SIGN: "
 
 using std::vector;
+using std::string;
 using namespace simgear;
 
 // for temporary storage of sign elements

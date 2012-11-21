@@ -18,6 +18,7 @@
 
 #include "Canvas.hxx"
 #include <simgear/canvas/MouseEvent.hxx>
+#include <simgear/canvas/CanvasPlacement.hxx>
 #include <simgear/scene/util/parse_color.hxx>
 #include <simgear/scene/util/RenderConstants.hxx>
 
@@ -382,6 +383,21 @@ namespace canvas
     if(    node->getParent()->getParent() == _node
         && node->getParent()->getNameString() == "placement" )
     {
+      bool placement_dirty = false;
+      BOOST_FOREACH(Placements& placements, _placements)
+      {
+        BOOST_FOREACH(PlacementPtr& placement, placements)
+        {
+          // check if change can be directly handled by placement
+          if(    placement->getProps() == node->getParent()
+              && !placement->childChanged(node) )
+            placement_dirty = true;
+        }
+      }
+
+      if( !placement_dirty )
+        return;
+
       // prevent double updates...
       for( size_t i = 0; i < _dirty_placements.size(); ++i )
       {

@@ -17,6 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasPlacement.hxx"
+#include <simgear/props/props.hxx>
 
 namespace simgear
 {
@@ -24,7 +25,8 @@ namespace canvas
 {
 
   //----------------------------------------------------------------------------
-  Placement::Placement()
+  Placement::Placement(SGPropertyNode* node):
+    _node(node)
   {
 
   }
@@ -33,6 +35,24 @@ namespace canvas
   Placement::~Placement()
   {
 
+  }
+
+  //----------------------------------------------------------------------------
+  SGConstPropertyNode_ptr Placement::getProps() const
+  {
+    return _node;
+  }
+
+  //----------------------------------------------------------------------------
+  SGPropertyNode_ptr Placement::getProps()
+  {
+    return _node;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Placement::childChanged(SGPropertyNode* child)
+  {
+    return false;
   }
 
 } // namespace canvas

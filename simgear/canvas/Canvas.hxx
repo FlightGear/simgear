@@ -159,12 +159,12 @@ namespace canvas
       bool _render_always; //<! Used to disable automatic lazy rendering (culling)
 
       std::vector<SGPropertyNode*> _dirty_placements;
-      std::vector<canvas::Placements> _placements;
+      std::vector<Placements> _placements;
       std::set<CanvasWeakPtr> _dependent_canvases; //<! Canvases which use this
                                                    //   canvas and should be
                                                    //   notified about changes
 
-      typedef std::map<std::string, canvas::PlacementFactory> PlacementFactoryMap;
+      typedef std::map<std::string, PlacementFactory> PlacementFactoryMap;
       static PlacementFactoryMap _placement_factories;
 
       virtual void setSelf(const PropertyBasedElementPtr& self);

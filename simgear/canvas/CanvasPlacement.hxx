@@ -19,6 +19,8 @@
 #ifndef CANVAS_PLACEMENT_HXX_
 #define CANVAS_PLACEMENT_HXX_
 
+#include <simgear/props/propsfwd.hxx>
+
 namespace simgear
 {
 namespace canvas
@@ -27,8 +29,16 @@ namespace canvas
   class Placement
   {
     public:
-      Placement();
+      Placement(SGPropertyNode* node);
       virtual ~Placement() = 0;
+
+      SGConstPropertyNode_ptr getProps() const;
+      SGPropertyNode_ptr getProps();
+
+      virtual bool childChanged(SGPropertyNode* child);
+
+    protected:
+      SGPropertyNode_ptr _node;
 
     private:
       Placement(const Placement&) /* = delete */;

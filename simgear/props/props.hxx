@@ -1597,12 +1597,14 @@ public:
 
   /**
    * Trigger a child-added and value-changed event for every child (Unlimited
-   * depth) and the node itself.
+   * depth).
+   *
+   * @param fire_self   Whether to trigger the events also for the node itself.
    *
    * It can be used to simulating the creation of a property tree, eg. for
    * (re)initializing a subsystem which is controlled through the property tree.
    */
-  void fireCreatedRecursive();
+  void fireCreatedRecursive(bool fire_self = false);
 
   /**
    * Fire a child-removed event to all listeners.

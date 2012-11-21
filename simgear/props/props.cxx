@@ -2139,15 +2139,18 @@ SGPropertyNode::fireChildAdded (SGPropertyNode * child)
 }
 
 void
-SGPropertyNode::fireCreatedRecursive()
+SGPropertyNode::fireCreatedRecursive(bool fire_self)
 {
-  _parent->fireChildAdded(this);
+  if( fire_self )
+  {
+    _parent->fireChildAdded(this);
 
-  if( _children.empty() && getType() != simgear::props::NONE )
-    return fireValueChanged();
+    if( _children.empty() && getType() != simgear::props::NONE )
+      return fireValueChanged();
+  }
 
   for(size_t i = 0; i < _children.size(); ++i)
-    _children[i]->fireCreatedRecursive();
+    _children[i]->fireCreatedRecursive(true);
 }
 
 void

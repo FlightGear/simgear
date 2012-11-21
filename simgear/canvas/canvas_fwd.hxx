@@ -63,7 +63,7 @@ namespace canvas
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 
   typedef std::vector<PlacementPtr> Placements;
-  typedef boost::function<Placements( const SGPropertyNode*,
+  typedef boost::function<Placements( SGPropertyNode*,
                                       CanvasPtr )> PlacementFactory;
 
 } // namespace canvas

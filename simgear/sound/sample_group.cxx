@@ -295,8 +295,8 @@ SGSampleGroup::stop ()
                 alSourceStop( source );
                 testForALError("stop");
             }
-#endif
             _smgr->release_source( source );
+#endif
             sample->no_valid_source();
         }
 
@@ -316,8 +316,8 @@ SGSampleGroup::suspend ()
         sample_map_iterator sample_current = _samples.begin();
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
-            SGSoundSample *sample = sample_current->second;
 #ifdef ENABLE_SOUND
+            SGSoundSample *sample = sample_current->second;
             if ( sample->is_valid_source() && sample->is_playing() ) {
                 alSourcePause( sample->get_source() );
             }
@@ -332,17 +332,17 @@ void
 SGSampleGroup::resume ()
 {
     if (_active && _pause == true) {
+#ifdef ENABLE_SOUND
         sample_map_iterator sample_current = _samples.begin();
         sample_map_iterator sample_end = _samples.end();
         for ( ; sample_current != sample_end; ++sample_current ) {
             SGSoundSample *sample = sample_current->second;
-#ifdef ENABLE_SOUND
             if ( sample->is_valid_source() && sample->is_playing() ) {
                 alSourcePlay( sample->get_source() );
             }
-#endif
         }
         testForALError("resume");
+#endif
         _pause = false;
     }
 }

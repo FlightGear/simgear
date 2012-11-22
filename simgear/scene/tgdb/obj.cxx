@@ -88,6 +88,7 @@ struct SGTileGeometryBin {
   SGDirectionalLightListBin rabitLights;
   SGLightListBin odalLights;
   SGDirectionalLightListBin holdshortLights;
+  SGDirectionalLightListBin guardLights;
   SGDirectionalLightListBin reilLights;
   SGMatModelBin randomModels;
   SGBuildingBinList randomBuildings;
@@ -170,6 +171,11 @@ struct SGTileGeometryBin {
       } else if (materialName == "RWY_YELLOW_PULSE_LIGHTS") {
         holdshortLights.push_back(SGDirectionalLightBin());
         addPointGeometry(holdshortLights.back(), obj.get_wgs84_nodes(),
+                         obj.get_normals(), color, obj.get_pts_v()[grp],
+                         obj.get_pts_n()[grp]);
+      } else if (materialName == "RWY_GUARD_LIGHTS") {
+        guardLights.push_back(SGDirectionalLightBin());
+        addPointGeometry(guardLights.back(), obj.get_wgs84_nodes(),
                          obj.get_normals(), color, obj.get_pts_v()[grp],
                          obj.get_pts_n()[grp]);
       } else if (materialName == "RWY_REIL_LIGHTS") {
@@ -1091,7 +1097,8 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
       || !tileGeometryBin.rabitLights.empty()
       || !tileGeometryBin.reilLights.empty()
       || !tileGeometryBin.odalLights.empty()
-      || !tileGeometryBin.holdshortLights.empty()) {
+      || !tileGeometryBin.holdshortLights.empty()
+      || !tileGeometryBin.guardLights.empty()) {
     osg::Group* rwyLights = new osg::Group;
     rwyLights->setStateSet(lightManager->getRunwayLightStateSet());
     rwyLights->setNodeMask(RUNWAYLIGHTS_BIT);
@@ -1114,6 +1121,10 @@ SGLoadBTG(const std::string& path, const simgear::SGReaderWriterOptions* options
     for (i = tileGeometryBin.holdshortLights.begin();
          i != tileGeometryBin.holdshortLights.end(); ++i) {
       rwyLights->addChild(SGLightFactory::getHoldShort(*i));
+    }
+    for (i = tileGeometryBin.guardLights.begin();
+         i != tileGeometryBin.guardLights.end(); ++i) {
+      rwyLights->addChild(SGLightFactory::getGuard(*i));
     }
     SGLightListBin::const_iterator j;
     for (j = tileGeometryBin.odalLights.begin();

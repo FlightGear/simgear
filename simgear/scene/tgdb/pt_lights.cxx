@@ -549,7 +549,7 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
     return 0;
 
   sg_srandom(unsigned(lights.getLight(0).position[0]));
-  float flashTime = 2 + 0.1 * sg_random();
+  float flashTime = 1 + 0.1 * sg_random();
   osg::Sequence* sequence = new osg::Sequence;
 
   // start with lights off
@@ -557,7 +557,7 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
   // ...and increase the lights in steps
   for (int i = 2; i < 7; i+=2) {
       Effect* effect = getLightEffect(i, osg::Vec3(1, 0.001, 0.000002),
-                                      0, i, true);
+                                      0.0f, i, true);
       EffectGeode* egeode = new EffectGeode;
       for (unsigned int j = 0; j < lights.getNumLights(); ++j) {
           egeode->addDrawable(getLightDrawable(lights.getLight(j)));
@@ -570,5 +570,32 @@ SGLightFactory::getHoldShort(const SGDirectionalLightBin& lights)
   sequence->setDuration(1.0f, -1);
   sequence->setMode(osg::Sequence::START);
 
+  return sequence;
+}
+
+// Alternating runway guard lights ("wig-wag")
+osg::Node*
+SGLightFactory::getGuard(const SGDirectionalLightBin& lights)
+{
+  if (lights.getNumLights() < 2)
+    return 0;
+
+  // generate a repeatable random seed
+  sg_srandom(unsigned(lights.getLight(0).position[0]));
+  float flashTime = 1.0f + 1*sg_random();
+  osg::Sequence* sequence = new osg::Sequence;
+  sequence->setDefaultTime(flashTime);
+  Effect* effect = getLightEffect(10.0f, osg::Vec3(1.0, 0.001, 0.000002),
+                                  0.0f, 8.0f, true);
+  for (unsigned int i = 0; i < lights.getNumLights(); ++i) {
+    EffectGeode* egeode = new EffectGeode;
+    egeode->setEffect(effect);
+    egeode->addDrawable(getLightDrawable(lights.getLight(i)));
+    sequence->addChild(egeode, flashTime);
+  }
+  sequence->setInterval(osg::Sequence::LOOP, 0, -1);
+  sequence->setDuration(1.0f, -1);
+  sequence->setMode(osg::Sequence::START);
+  sequence->setSync(true);
   return sequence;
 }

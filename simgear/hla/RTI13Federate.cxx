@@ -1563,73 +1563,77 @@ RTI13Federate::queryLITS(SGTimeStamp& timeStamp)
     return true;
 }
 
-bool
+RTI13Federate::ProcessMessageResult
 RTI13Federate::processMessage()
 {
-    bool result = _tick();
+    ProcessMessageResult result = _tick();
     _federateAmbassador->processQueues();
     return result;
 }
 
-bool
+RTI13Federate::ProcessMessageResult
 RTI13Federate::processMessages(const double& minimum, const double& maximum)
 {
-    bool result = _tick(minimum, 0);
+    ProcessMessageResult result = _tick(minimum, 0);
     _federateAmbassador->processQueues();
-    if (!result)
-        return false;
+    if (result != ProcessMessagePending)
+        return result;
     SGTimeStamp timeStamp = SGTimeStamp::now() + SGTimeStamp::fromSec(maximum);
     do {
         result = _tick(0, 0);
         _federateAmbassador->processQueues();
-    } while (result && SGTimeStamp::now() <= timeStamp);
+    } while (result == ProcessMessagePending && SGTimeStamp::now() <= timeStamp);
     return result;
 }
 
-bool
+RTI13Federate::ProcessMessageResult
 RTI13Federate::_tick()
 {
     if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ambassador is zero while calling _tick().");
-        return false;
+        return ProcessMessageFatal;
     }
 
     try {
-        return _ambassador->tick();
+        if (_ambassador->tick())
+            return ProcessMessagePending;
+        return ProcessMessageLast;
     } catch (RTI::SpecifiedSaveLabelDoesNotExist& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Specified save label does not exist: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     } catch (RTI::ConcurrentAccessAttempted& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Concurrent access attempted: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Internal error: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     }
-    return false;
+    return ProcessMessageFatal;
 }
 
-bool
+RTI13Federate::ProcessMessageResult
 RTI13Federate::_tick(const double& minimum, const double& maximum)
 {
     if (!_ambassador.valid()) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Ambassador is zero while calling _tick().");
-        return false;
+        return ProcessMessageFatal;
     }
 
     try {
-        return _ambassador->tick(minimum, maximum);
+        if (_ambassador->tick(minimum, maximum))
+            return ProcessMessagePending;
+        return ProcessMessageLast;
     } catch (RTI::SpecifiedSaveLabelDoesNotExist& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Specified save label does not exist: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     } catch (RTI::ConcurrentAccessAttempted& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Concurrent access attempted: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     } catch (RTI::RTIinternalError& e) {
         SG_LOG(SG_NETWORK, SG_WARN, "RTI: Internal error: " << e._name << " " << e._reason);
-        return false;
+        return ProcessMessageFatal;
     }
-    return false;
+    return ProcessMessageFatal;
 }
 
 

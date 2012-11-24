@@ -541,7 +541,10 @@ HLAFederate::enableTimeConstrained()
     }
 
     while (!_rtiFederate->getTimeConstrainedEnabled()) {
-        _rtiFederate->processMessage();
+        if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessage()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+            return false;
+        }
     }
 
     return true;
@@ -584,7 +587,10 @@ HLAFederate::enableTimeRegulation(const SGTimeStamp& lookahead)
     }
 
     while (!_rtiFederate->getTimeRegulationEnabled()) {
-        _rtiFederate->processMessage();
+        if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessage()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+            return false;
+        }
     }
 
     return true;
@@ -708,7 +714,12 @@ HLAFederate::processMessage()
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->processMessage();
+    
+    if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessage()) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+        return false;
+    }
+    return true;
 }
 
 bool
@@ -718,7 +729,12 @@ HLAFederate::processMessage(const SGTimeStamp& timeout)
         SG_LOG(SG_NETWORK, SG_WARN, "HLA: Accessing unconnected federate!");
         return false;
     }
-    return _rtiFederate->processMessages(timeout.toSecs(), 0);
+
+    if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessages(timeout.toSecs(), 0)) {
+        SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+        return false;
+    }
+    return true;
 }
 
 bool
@@ -730,7 +746,10 @@ HLAFederate::processMessages()
     }
 
     while (_rtiFederate->getTimeAdvancePending()) {
-        _rtiFederate->processMessage();
+        if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessage()) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+            return false;
+        }
     }
 
     if (_timeConstrainedByLocalClock) {
@@ -744,12 +763,23 @@ HLAFederate::processMessages()
             double rest = (systemTime - SGTimeStamp::now()).toSecs();
             if (rest < 0)
                 break;
-            _rtiFederate->processMessages(rest, rest);
+            if (RTIFederate::ProcessMessageFatal == _rtiFederate->processMessages(rest, rest)) {
+                SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+                return false;
+            }
         }
     }
     
     // Now flush just what is left
-    while (_rtiFederate->processMessages(0, 0));
+    while (true) {
+        RTIFederate::ProcessMessageResult result = _rtiFederate->processMessages(0, 0);
+        if (RTIFederate::ProcessMessageLast == result)
+            break;
+        if (RTIFederate::ProcessMessageFatal == result) {
+            SG_LOG(SG_NETWORK, SG_WARN, "HLA: Fatal error on processing messages!");
+            return false;
+        }
+    }
 
     return true;
 }

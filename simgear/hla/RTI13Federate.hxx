@@ -75,12 +75,12 @@ public:
     virtual bool queryLITS(SGTimeStamp& timeStamp);
 
     /// Process messages
-    virtual bool processMessage();
-    virtual bool processMessages(const double& minimum, const double& maximum);
+    virtual ProcessMessageResult processMessage();
+    virtual ProcessMessageResult processMessages(const double& minimum, const double& maximum);
 
     // helper functions for the above
-    bool _tick();
-    bool _tick(const double& minimum, const double& maximum);
+    ProcessMessageResult _tick();
+    ProcessMessageResult _tick(const double& minimum, const double& maximum);
 
     virtual RTI13ObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass);
     virtual RTI13InteractionClass* createInteractionClass(const std::string& name, HLAInteractionClass* interactionClass);

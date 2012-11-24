@@ -75,9 +75,15 @@ public:
     virtual bool queryGALT(SGTimeStamp& timeStamp) = 0;
     virtual bool queryLITS(SGTimeStamp& timeStamp) = 0;
 
+    enum ProcessMessageResult {
+        ProcessMessagePending,
+        ProcessMessageLast,
+        ProcessMessageFatal
+    };
+
     /// Process messages
-    virtual bool processMessage() = 0;
-    virtual bool processMessages(const double& minimum, const double& maximum) = 0;
+    virtual ProcessMessageResult processMessage() = 0;
+    virtual ProcessMessageResult processMessages(const double& minimum, const double& maximum) = 0;
 
     virtual RTIObjectClass* createObjectClass(const std::string& name, HLAObjectClass* hlaObjectClass) = 0;
     virtual RTIInteractionClass* createInteractionClass(const std::string& name, HLAInteractionClass* interactionClass) = 0;

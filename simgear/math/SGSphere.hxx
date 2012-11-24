@@ -72,6 +72,18 @@ public:
   void clear()
   { _radius = -1; }
 
+  /// Return true if this is inside sphere
+  bool inside(const SGSphere<T>& sphere) const
+  {
+    if (empty())
+      return false;
+    if (sphere.empty())
+      return false;
+
+    T dist = sphere.getRadius() - getRadius();
+    return distSqr(getCenter(), sphere.getCenter()) <= dist*dist;
+  }
+
   void expandBy(const SGVec3<T>& v)
   {
     if (empty()) {

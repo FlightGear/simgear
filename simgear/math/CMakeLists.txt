@@ -13,6 +13,7 @@ set(HEADERS
     SGIntersect.hxx
     SGLimits.hxx
     SGLineSegment.hxx
+    SGLocation.hxx
     SGMath.hxx
     SGMathFwd.hxx
     SGMatrix.hxx

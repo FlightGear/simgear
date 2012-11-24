@@ -24,6 +24,8 @@ class SGGeoc;
 class SGGeod;
 
 template<typename T>
+class SGLocation;
+template<typename T>
 class SGLimits;
 template<typename T>
 class SGMatrix;
@@ -38,6 +40,8 @@ class SGVec3;
 template<typename T>
 class SGVec4;
 
+typedef SGLocation<float> SGLocationf;
+typedef SGLocation<double> SGLocationd;
 typedef SGLimits<float> SGLimitsf;
 typedef SGLimits<double> SGLimitsd;
 typedef SGMatrix<float> SGMatrixf;

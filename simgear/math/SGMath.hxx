@@ -34,6 +34,7 @@
 #include "SGGeoc.hxx"
 #include "SGGeod.hxx"
 #include "SGQuat.hxx"
+#include "SGLocation.hxx"
 #include "SGMatrix.hxx"
 
 #endif

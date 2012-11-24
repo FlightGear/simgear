@@ -18,6 +18,7 @@
 #ifndef HLALocation_hxx
 #define HLALocation_hxx
 
+#include <simgear/math/SGMath.hxx>
 #include "HLABasicDataElement.hxx"
 #include "HLATypes.hxx"
 
@@ -27,6 +28,9 @@ class HLAAbstractLocation : public SGReferenced {
 public:
     virtual ~HLAAbstractLocation() {}
 
+    virtual SGLocationd getLocation() const = 0;
+    virtual void setLocation(const SGLocationd&) = 0;
+
     virtual SGVec3d getCartPosition() const = 0;
     virtual void setCartPosition(const SGVec3d&) = 0;
 
@@ -34,10 +38,21 @@ public:
     virtual void setCartOrientation(const SGQuatd&) = 0;
 
     virtual SGVec3d getAngularBodyVelocity() const = 0;
-    virtual void setAngularBodyVelocity(const SGVec3d& angular) = 0;
+    virtual void setAngularBodyVelocity(const SGVec3d&) = 0;
 
     virtual SGVec3d getLinearBodyVelocity() const = 0;
-    virtual void setLinearBodyVelocity(const SGVec3d& linear) = 0;
+    virtual void setLinearBodyVelocity(const SGVec3d&) = 0;
+
+    virtual double getTimeDifference(const SGTimeStamp&) const
+    { return 0; }
+
+    // Get the position and orientation extrapolated to the given time stamp.
+    SGLocationd getLocation(const SGTimeStamp& timeStamp) const
+    {
+        SGLocationd location = getLocation();
+        location.eulerStepBodyVelocities(getTimeDifference(timeStamp), getLinearBodyVelocity(), getAngularBodyVelocity());
+        return location;
+    }
 };
 
 class HLACartesianLocation : public HLAAbstractLocation {
@@ -48,6 +63,14 @@ public:
         _angularVelocity(SGVec3d::zeros()),
         _linearVelocity(SGVec3d::zeros())
     { }
+
+    virtual SGLocationd getLocation() const
+    { return SGLocationd(_position, SGQuatd::fromPositiveRealImag(_imag)); }
+    virtual void setLocation(const SGLocationd& location)
+    {
+        _position = location.getPosition();
+        _imag = location.getOrientation().getPositiveRealImag();
+    }
 
     virtual SGVec3d getCartPosition() const
     { return _position; }
@@ -258,6 +281,18 @@ public:
         _verticalSpeedMPerSec(0)
     {
         updateCartesianFromGeodetic();
+    }
+
+    virtual SGLocationd getLocation() const
+    {
+        updateCartesianFromGeodetic();
+        return SGLocationd(_cartPosition, _cartOrientation);
+    }
+    virtual void setLocation(const SGLocationd& location)
+    {
+         _cartPosition = location.getPosition();
+         _cartOrientation = location.getOrientation();
+         _dirty = true;
     }
 
     virtual SGVec3d getCartPosition() const

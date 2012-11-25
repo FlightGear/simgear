@@ -41,6 +41,7 @@ set(HLA_SOURCES
     HLAInteractionClass.cxx
     HLAFixedRecordDataElement.cxx
     HLAFixedRecordDataType.cxx
+    HLALocation.cxx
     HLAObjectClass.cxx
     HLAObjectInstance.cxx
     HLAOMTXmlVisitor.cxx

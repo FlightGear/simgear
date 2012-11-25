@@ -127,8 +127,8 @@ public:
      */
     virtual T pop() {
 	SGGuard<SGMutex> g(mutex);
-	//if (fifo.empty()) throw NoSuchElementException();
-	assert( ! this->fifo.empty() );
+	    if (this->fifo.empty()) return T(); // assumes T is default constructable
+        
 //  	if (fifo.empty())
 //  	{
 //  	    mutex.unlock();

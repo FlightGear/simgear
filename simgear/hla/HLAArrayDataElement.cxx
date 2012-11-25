@@ -157,6 +157,21 @@ HLAArrayDataElement::getDataElement(HLADataElementIndex::const_iterator begin, H
 }
 
 bool
+HLAArrayDataElement::setDataType(const HLADataType* dataType)
+{
+    if (!HLAAbstractArrayDataElement::setDataType(dataType))
+        return false;
+    for (unsigned i = 0; i < getNumElements(); ++i) {
+        HLADataElement* dataElement = getElement(i);
+        if (!dataElement)
+            continue;
+        if (!dataElement->setDataType(getElementDataType()))
+            return false;
+    }
+    return true;
+}
+
+bool
 HLAArrayDataElement::setNumElements(unsigned size)
 {
     unsigned oldSize = _elementVector.size();

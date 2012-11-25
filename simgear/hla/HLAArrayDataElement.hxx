@@ -63,6 +63,8 @@ public:
     virtual HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end);
     virtual const HLADataElement* getDataElement(HLADataElementIndex::const_iterator begin, HLADataElementIndex::const_iterator end) const;
 
+    virtual bool setDataType(const HLADataType* dataType);
+
     virtual bool setNumElements(unsigned size);
     virtual bool decodeElement(HLADecodeStream& stream, unsigned i);
     virtual unsigned getNumElements() const;

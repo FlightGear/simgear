@@ -26,7 +26,7 @@ namespace simgear
 namespace canvas
 {
 
-  struct Event
+  class Event
   {
     public:
 

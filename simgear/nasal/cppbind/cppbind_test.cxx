@@ -42,7 +42,6 @@ typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 
 naRef member(Derived&, const nasal::CallContext&) { return naNil(); }
-naRef member(DerivedPtr&, const nasal::CallContext&) { return naNil(); }
 
 int main(int argc, char* argv[])
 {

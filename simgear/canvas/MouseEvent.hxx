@@ -27,24 +27,25 @@ namespace simgear
 namespace canvas
 {
 
-  struct MouseEvent:
+  class MouseEvent:
     public Event
   {
-    MouseEvent():
-      button(-1),
-      state(-1),
-      mod(-1)
-    {}
+    public:
+      MouseEvent():
+        button(-1),
+        state(-1),
+        mod(-1)
+      {}
 
-    osg::Vec2f getPos() const { return pos; }
-    osg::Vec3f getPos3() const { return osg::Vec3f(pos, 0); }
-    osg::Vec2f getDelta() const { return delta; }
+      osg::Vec2f getPos() const { return pos; }
+      osg::Vec3f getPos3() const { return osg::Vec3f(pos, 0); }
+      osg::Vec2f getDelta() const { return delta; }
 
-    osg::Vec2f  pos,
-                delta;
-    int         button, //<! Button for this event
-                state,  //<! Current button state
-                mod;    //<! Keyboard modifier state
+      osg::Vec2f  pos,
+                  delta;
+      int         button, //<! Button for this event
+                  state,  //<! Current button state
+                  mod;    //<! Keyboard modifier state
   };
 
 } // namespace canvas

@@ -97,28 +97,17 @@ namespace nasal
   /**
    * Convert a Nasal vector to a std::vector
    */
-  template<class Vector>
-  typename boost::enable_if< boost::is_same
-                             < Vector,
-                               std::vector<typename Vector::value_type>
-                             >,
-                             Vector
-                           >::type
-  from_nasal_helper(naContext c, naRef ref, Vector*)
+  template<class T>
+  std::vector<T> from_nasal_helper(naContext c, naRef ref, std::vector<T>*)
   {
     if( !naIsVector(ref) )
       throw bad_nasal_cast("Not a vector");
 
     int size = naVec_size(ref);
-    Vector vec(size);
+    std::vector<T> vec(size);
 
     for(int i = 0; i < size; ++i)
-      vec[i] = from_nasal_helper
-      (
-        c,
-        naVec_get(ref, i),
-        static_cast<typename Vector::value_type*>(0)
-      );
+      vec[i] = from_nasal_helper(c, naVec_get(ref, i), static_cast<T*>(0));
 
     return vec;
   }

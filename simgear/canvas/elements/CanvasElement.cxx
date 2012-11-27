@@ -17,6 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasElement.hxx"
+#include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
 
 #include <osg/Drawable>
@@ -109,6 +110,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  naRef Element::addEventListener(const nasal::CallContext& ctx)
+  {
+    std::cout << "addEventListener " << _node->getPath() << std::endl;
+    return naNil();
+  }
+
+  //----------------------------------------------------------------------------
   SGConstPropertyNode_ptr Element::getProps() const
   {
     return _node;
@@ -121,28 +129,41 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::handleMouseEvent(const MouseEvent& event)
+  bool Element::accept(EventVisitor& visitor)
   {
-    // Transform event to local coordinates
-    const osg::Matrixd& m = _transform->getInverseMatrix();
-    MouseEvent local_event = event;
-    local_event.x = m(0, 0) * event.x + m(1, 0) * event.y + m(3, 0);
-    local_event.y = m(0, 1) * event.x + m(1, 1) * event.y + m(3, 1);
+    return visitor.apply(*this);
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::ascend(EventVisitor& visitor)
+  {
+    if( _parent )
+      return _parent->accept(visitor);
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::traverse(EventVisitor& visitor)
+  {
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
+  bool Element::hitBound(const osg::Vec2f& pos) const
+  {
+    const osg::Vec3f pos3(pos, 0);
 
     // Drawables have a bounding box...
     if( _drawable )
     {
-      if( !_drawable->getBound().contains(local_event.getPos3()) )
+      if( !_drawable->getBound().contains(pos3) )
         return false;
     }
     // ... for other elements, i.e. groups only a bounding sphere is available
-    else if( !_transform->getBound().contains(local_event.getPos3()) )
+    else if( !_transform->getBound().contains(pos3) )
       return false;
 
-    local_event.dx = m(0, 0) * event.dx + m(1, 0) * event.dy;
-    local_event.dy = m(0, 1) * event.dx + m(1, 1) * event.dy;
-
-    return handleLocalMouseEvent(local_event);
+    return true;
   }
 
   //----------------------------------------------------------------------------
@@ -253,8 +274,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   Element::Element( const CanvasWeakPtr& canvas,
                     const SGPropertyNode_ptr& node,
-                    const Style& parent_style ):
+                    const Style& parent_style,
+                    Element* parent ):
     _canvas( canvas ),
+    _parent( parent ),
     _transform_dirty( false ),
     _transform( new osg::MatrixTransform ),
     _node( node ),
@@ -273,13 +296,11 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::handleLocalMouseEvent(const MouseEvent& event)
+  void Element::callListeners(canvas::Event& event)
   {
-//    std::cout << _node->getPath()
-//              << " local: pos=(" << event.x << "|" << event.y << ") "
-//              <<         "d=(" << event.dx << "|" << event.dx << ")"
-//              << std::endl;
-    return true;
+    ListenerMap::iterator listeners = _listener.find(event.getType());
+    if( listeners == _listener.end() )
+      return;
   }
 
   //----------------------------------------------------------------------------

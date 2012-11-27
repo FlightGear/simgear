@@ -1,4 +1,4 @@
-// A text on the Canvas
+// Listener for canvas (GUI) events being passed to a Nasal function/code
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,45 +16,33 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_TEXT_HXX_
-#define CANVAS_TEXT_HXX_
+#ifndef CANVAS_EVENT_LISTENER_HXX_
+#define CANVAS_EVENT_LISTENER_HXX_
 
-#include "CanvasElement.hxx"
-#include <osgText/Text>
-#include <map>
-#include <vector>
+#include "canvas_fwd.hxx"
+#include <simgear/nasal/naref.h>
 
 namespace simgear
 {
 namespace canvas
 {
 
-  class Text:
-    public Element
+  class EventListener
   {
     public:
-      Text( const CanvasWeakPtr& canvas,
-            const SGPropertyNode_ptr& node,
-            const Style& parent_style,
-            Element* parent = 0 );
-      ~Text();
+      EventListener( naRef code,
+                     const SystemAdapterPtr& sys_adapter );
+      ~EventListener();
 
-      void setText(const char* text);
-      void setFont(const char* name);
-      void setAlignment(const char* align);
+      void call();
 
     protected:
-
-      class TextOSG;
-      osg::ref_ptr<TextOSG> _text;
-
-      virtual void childChanged(SGPropertyNode * child);
-
-      void handleHit(float x, float y);
-
+      naRef _code;
+      int _gc_key;
+      SystemAdapterWeakPtr _sys;
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_TEXT_HXX_ */
+#endif /* CANVAS_EVENT_LISTENER_HXX_ */

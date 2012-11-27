@@ -1,4 +1,5 @@
-// An OpenVG path on the Canvas
+// Visitor for traversing a canvas element hierarchy similar to the traversal
+// of the DOM Level 2 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,43 +17,51 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_PATH_HXX_
-#define CANVAS_PATH_HXX_
+#ifndef CANVAS_EVENT_VISITOR_HXX_
+#define CANVAS_EVENT_VISITOR_HXX_
 
-#include "CanvasElement.hxx"
+#include "canvas_fwd.hxx"
+#include <deque>
 
 namespace simgear
 {
 namespace canvas
 {
-  class Path:
-    public Element
+
+  class EventVisitor
   {
     public:
-      Path( const CanvasWeakPtr& canvas,
-            const SGPropertyNode_ptr& node,
-            const Style& parent_style,
-            Element* parent = 0 );
-      virtual ~Path();
 
-      virtual void update(double dt);
-
-    protected:
-
-      enum PathAttributes
+      enum TraverseMode
       {
-        CMDS       = LAST_ATTRIBUTE << 1,
-        COORDS     = CMDS << 1
+        TRAVERSE_UP,
+        TRAVERSE_DOWN
       };
 
-      class PathDrawable;
-      osg::ref_ptr<PathDrawable> _path;
+      EventVisitor( TraverseMode mode,
+                    const osg::Vec2f& pos,
+                    const osg::Vec2f& delta );
+      virtual ~EventVisitor();
+      virtual bool traverse(Element& el);
+      virtual bool apply(Element& el);
 
-      virtual void childRemoved(SGPropertyNode * child);
-      virtual void childChanged(SGPropertyNode * child);
+      bool propagateEvent(const EventPtr& event);
+
+    protected:
+      struct EventTarget
+      {
+        Element*   element;
+        osg::Vec2f local_pos,
+                   local_delta;
+      };
+      typedef std::deque<EventTarget> EventTargets;
+
+      EventTargets  _target_path;
+      TraverseMode  _traverse_mode;
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_PATH_HXX_ */
+
+#endif /* CANVAS_EVENTVISITOR_HXX_ */

@@ -19,6 +19,7 @@
 #ifndef CANVAS_MOUSE_EVENT_HXX_
 #define CANVAS_MOUSE_EVENT_HXX_
 
+#include "CanvasEvent.hxx"
 #include <osgGA/GUIEventAdapter>
 
 namespace simgear
@@ -26,32 +27,24 @@ namespace simgear
 namespace canvas
 {
 
-  class MouseEvent
+  struct MouseEvent:
+    public Event
   {
-    public:
-      typedef osgGA::GUIEventAdapter::EventType EventType;
-      typedef osgGA::GUIEventAdapter::ScrollingMotion Scroll;
+    MouseEvent():
+      button(-1),
+      state(-1),
+      mod(-1)
+    {}
 
-      MouseEvent(EventType type):
-        type(type),
-        x(-1), y(-1),
-        dx(0), dy(0),
-        button(-1),
-        state(-1),
-        mod(-1),
-        scroll(osgGA::GUIEventAdapter::SCROLL_NONE)
-      {}
+    osg::Vec2f getPos() const { return pos; }
+    osg::Vec3f getPos3() const { return osg::Vec3f(pos, 0); }
+    osg::Vec2f getDelta() const { return delta; }
 
-      osg::Vec2f getPos() const { return osg::Vec2f(x, y); }
-      osg::Vec3f getPos3() const { return osg::Vec3f(x, y, 0); }
-
-      EventType   type;
-      float       x, y,
-                  dx, dy;
-      int         button, //<! Button for this event
-                  state,  //<! Current button state
-                  mod;    //<! Keyboard modifier state
-      Scroll      scroll;
+    osg::Vec2f  pos,
+                delta;
+    int         button, //<! Button for this event
+                state,  //<! Current button state
+                mod;    //<! Keyboard modifier state
   };
 
 } // namespace canvas

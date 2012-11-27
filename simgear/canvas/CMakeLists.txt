@@ -3,6 +3,10 @@ include (SimGearComponent)
 set(HEADERS
   canvas_fwd.hxx
   Canvas.hxx
+  CanvasEvent.hxx
+  CanvasEventListener.hxx
+  CanvasEventTypes.hxx
+  CanvasEventVisitor.hxx
   CanvasMgr.hxx
   CanvasPlacement.hxx
   CanvasSystemAdapter.hxx
@@ -13,6 +17,10 @@ set(HEADERS
 
 set(SOURCES
   Canvas.cxx
+  Canvas.cxx
+  CanvasEvent.cxx
+  CanvasEventListener.cxx
+  CanvasEventVisitor.cxx
   CanvasMgr.cxx
   CanvasPlacement.cxx
   ODGauge.cxx

@@ -17,6 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "Canvas.hxx"
+#include "CanvasEventVisitor.hxx"
 #include <simgear/canvas/MouseEvent.hxx>
 #include <simgear/canvas/CanvasPlacement.hxx>
 #include <simgear/scene/util/parse_color.hxx>
@@ -324,23 +325,31 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Canvas::handleMouseEvent(const MouseEvent& event)
+  bool Canvas::handleMouseEvent(const MouseEventPtr& event)
   {
-    _mouse_x = event.x;
-    _mouse_y = event.y;
-    _mouse_dx = event.dx;
-    _mouse_dy = event.dy;
-    _mouse_button = event.button;
-    _mouse_state = event.state;
-    _mouse_mod = event.mod;
-    _mouse_scroll = event.scroll;
+    _mouse_x = event->pos.x();
+    _mouse_y = event->pos.y();
+    _mouse_dx = event->delta.x();
+    _mouse_dy = event->delta.y();
+    _mouse_button = event->button;
+    _mouse_state = event->state;
+    _mouse_mod = event->mod;
+    //_mouse_scroll = event.scroll;
     // Always set event type last because all listeners are attached to it
-    _mouse_event = event.type;
+    _mouse_event = event->type;
 
-    if( _root_group.get() )
-      return _root_group->handleMouseEvent(event);
-    else
+    if( !_root_group.get() )
       return false;
+
+    EventVisitor visitor( EventVisitor::TRAVERSE_DOWN,
+                          event->getPos(),
+                          event->getDelta() );
+    if( !_root_group->accept(visitor) )
+      return false;
+
+    // TODO create special events like click/dblclick etc.
+
+    return visitor.propagateEvent(event);
   }
 
   //----------------------------------------------------------------------------

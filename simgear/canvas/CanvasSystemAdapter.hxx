@@ -48,6 +48,15 @@ namespace canvas
        * cleaned up by the garbage collector.
        */
       virtual void gcRelease(int key) = 0;
+
+      /**
+       * Call a Nasal function with the given environment and arguments.
+       */
+      virtual naRef callMethod( naRef code,
+                                naRef self,
+                                int argc,
+                                naRef* args,
+                                naRef locals ) = 0;
   };
 
 } // namespace canvas

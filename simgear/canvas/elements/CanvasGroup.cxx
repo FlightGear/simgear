@@ -21,6 +21,8 @@
 #include "CanvasMap.hxx"
 #include "CanvasPath.hxx"
 #include "CanvasText.hxx"
+#include <simgear/canvas/CanvasEventVisitor.hxx>
+#include <simgear/canvas/MouseEvent.hxx>
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -36,16 +38,18 @@ namespace canvas
   template<typename T>
   ElementPtr createElement( const CanvasWeakPtr& canvas,
                             const SGPropertyNode_ptr& node,
-                            const Style& style )
+                            const Style& style,
+                            Element* parent )
   {
-    return ElementPtr( new T(canvas, node, style) );
+    return ElementPtr( new T(canvas, node, style, parent) );
   }
 
   //----------------------------------------------------------------------------
   Group::Group( const CanvasWeakPtr& canvas,
                 const SGPropertyNode_ptr& node,
-                const Style& parent_style ):
-    Element(canvas, node, parent_style)
+                const Style& parent_style,
+                Element* parent ):
+    Element(canvas, node, parent_style, parent)
   {
     _child_factories["group"] = &createElement<Group>;
     _child_factories["image"] = &createElement<Image>;
@@ -91,12 +95,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Group::handleLocalMouseEvent(const canvas::MouseEvent& event)
+  bool Group::traverse(EventVisitor& visitor)
   {
     // Iterate in reverse order as last child is displayed on top
     BOOST_REVERSE_FOREACH( ChildList::value_type child, _children )
     {
-      if( child.second->handleMouseEvent(event) )
+      if( child.second->accept(visitor) )
         return true;
     }
     return false;
@@ -112,7 +116,7 @@ namespace canvas
       _child_factories.find( child->getNameString() );
     if( child_factory != _child_factories.end() )
     {
-      ElementPtr element = child_factory->second(_canvas, child, _style);
+      ElementPtr element = child_factory->second(_canvas, child, _style, this);
 
       // Add to osg scene graph...
       _transform->addChild( element->getMatrixTransform() );

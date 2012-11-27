@@ -37,7 +37,8 @@ namespace canvas
     public:
       Map( const CanvasWeakPtr& canvas,
            const SGPropertyNode_ptr& node,
-           const Style& parent_style );
+           const Style& parent_style,
+           Element* parent = 0 );
       virtual ~Map();
 
       virtual void update(double dt);

@@ -1,4 +1,4 @@
-// A text on the Canvas
+// Canvas Event for event model similar to DOM Level 2 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -16,45 +16,41 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
-#ifndef CANVAS_TEXT_HXX_
-#define CANVAS_TEXT_HXX_
+#ifndef CANVAS_EVENT_HXX_
+#define CANVAS_EVENT_HXX_
 
-#include "CanvasElement.hxx"
-#include <osgText/Text>
-#include <map>
-#include <vector>
+#include "canvas_fwd.hxx"
 
 namespace simgear
 {
 namespace canvas
 {
 
-  class Text:
-    public Element
+  struct Event
   {
     public:
-      Text( const CanvasWeakPtr& canvas,
-            const SGPropertyNode_ptr& node,
-            const Style& parent_style,
-            Element* parent = 0 );
-      ~Text();
 
-      void setText(const char* text);
-      void setFont(const char* name);
-      void setAlignment(const char* align);
+      enum Type
+      {
+        UNKNOWN,
+#       define ENUM_MAPPING(name, str) name,
+#         include "CanvasEventTypes.hxx"
+#       undef ENUM_MAPPING
+        USER_TYPE ///<! first unused id to be used for user defined types (not
+                  ///   implemented yet)
+      };
 
-    protected:
+      Type              type;
+      ElementWeakPtr    target;
 
-      class TextOSG;
-      osg::ref_ptr<TextOSG> _text;
-
-      virtual void childChanged(SGPropertyNode * child);
-
-      void handleHit(float x, float y);
+      Event();
+      Type getType() const;
+      std::string getTypeString() const;
+      ElementWeakPtr getTarget() const;
 
   };
 
 } // namespace canvas
 } // namespace simgear
 
-#endif /* CANVAS_TEXT_HXX_ */
+#endif /* CANVAS_EVENT_HXX_ */

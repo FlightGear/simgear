@@ -39,7 +39,8 @@ namespace canvas
 
       Group( const CanvasWeakPtr& canvas,
              const SGPropertyNode_ptr& node,
-             const Style& parent_style = Style() );
+             const Style& parent_style = Style(),
+             Element* parent = 0 );
       virtual ~Group();
 
       ElementPtr createChild( const std::string& type,
@@ -48,14 +49,14 @@ namespace canvas
 
       virtual void update(double dt);
 
+      virtual bool traverse(EventVisitor& visitor);
+
     protected:
 
       typedef std::map<std::string, ElementFactory> ChildFactories;
 
       ChildFactories    _child_factories;
       ChildList         _children;
-
-      virtual bool handleLocalMouseEvent(const canvas::MouseEvent& event);
 
       virtual void childAdded(SGPropertyNode * child);
       virtual void childRemoved(SGPropertyNode * child);

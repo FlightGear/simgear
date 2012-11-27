@@ -50,15 +50,21 @@ namespace canvas
   SG_FWD_DECL(Path)
   SG_FWD_DECL(Text)
 
+  SG_FWD_DECL(Event)
+  SG_FWD_DECL(EventListener)
+  SG_FWD_DECL(MouseEvent)
   SG_FWD_DECL(Placement)
   SG_FWD_DECL(SystemAdapter)
 
 #undef SG_FWD_DECL
 
+  class EventVisitor;
+
   typedef std::map<std::string, const SGPropertyNode*> Style;
   typedef ElementPtr (*ElementFactory)( const CanvasWeakPtr&,
                                         const SGPropertyNode_ptr&,
-                                        const Style& );
+                                        const Style&,
+                                        Element* );
 
   typedef osg::ref_ptr<osgText::Font> FontPtr;
 

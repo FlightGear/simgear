@@ -20,8 +20,11 @@
 #define CANVAS_ELEMENT_HXX_
 
 #include <simgear/canvas/canvas_fwd.hxx>
+#include <simgear/canvas/CanvasEvent.hxx>
 #include <simgear/props/props.hxx>
 #include <simgear/misc/stdint.hxx> // for uint32_t
+#include <simgear/nasal/cppbind/Ghost.hxx>
+
 #include <osg/BoundingBox>
 #include <osg/MatrixTransform>
 
@@ -38,7 +41,6 @@ namespace simgear
 namespace canvas
 {
 
-  class MouseEvent;
   class Element:
     public SGPropertyChangeListener
   {
@@ -67,14 +69,17 @@ namespace canvas
        */
       virtual void update(double dt);
 
+      naRef addEventListener(const nasal::CallContext& ctx);
+
       SGConstPropertyNode_ptr getProps() const;
       SGPropertyNode_ptr getProps();
 
-      /**
-       * Handle mouse event (transforms coordinates to local coordinate frame
-       * and forwards event to #handleLocalMouseEvent)
-       */
-      virtual bool handleMouseEvent(const canvas::MouseEvent& event);
+      virtual bool accept(EventVisitor& visitor);
+      virtual bool ascend(EventVisitor& visitor);
+      virtual bool traverse(EventVisitor& visitor);
+
+      virtual bool hitBound(const osg::Vec2f& pos) const;
+
 
       osg::ref_ptr<osg::MatrixTransform> getMatrixTransform();
 
@@ -106,6 +111,7 @@ namespace canvas
       };
 
       CanvasWeakPtr _canvas;
+      Element      *_parent;
       uint32_t _attributes_dirty;
 
       bool _transform_dirty;
@@ -117,9 +123,15 @@ namespace canvas
       StyleSetters                      _style_setters;
       std::vector<SGPropertyNode_ptr>   _bounding_box;
 
+      typedef std::vector<EventListenerPtr> Listener;
+      typedef std::map<Event::Type, Listener> ListenerMap;
+
+      ListenerMap _listener;
+
       Element( const CanvasWeakPtr& canvas,
                const SGPropertyNode_ptr& node,
-               const Style& parent_style );
+               const Style& parent_style,
+               Element* parent );
 
       template<typename T, class C1, class C2>
       Element::StyleSetter
@@ -156,7 +168,7 @@ namespace canvas
         return boost::bind(setter, instance, boost::bind(&getValue<T1>, _1));
       }
 
-      virtual bool handleLocalMouseEvent(const canvas::MouseEvent& event);
+      void callListeners(canvas::Event& event);
 
       virtual void childAdded(SGPropertyNode * child)  {}
       virtual void childRemoved(SGPropertyNode * child){}

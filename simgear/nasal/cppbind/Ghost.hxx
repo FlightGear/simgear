@@ -83,8 +83,9 @@ namespace nasal
   template<class T>
   struct SharedPointerPolicy
   {
-    typedef typename GhostTypeTraits<T>::raw_type raw_type;
-    typedef boost::false_type returns_dynamic_type;
+    typedef typename GhostTypeTraits<T>::raw_type   raw_type;
+    typedef T                                       pointer;
+    typedef boost::false_type                       returns_dynamic_type;
 
     /**
      * Create a shared pointer on the heap to handle the reference counting for
@@ -95,9 +96,25 @@ namespace nasal
       return new T(ptr);
     }
 
+    static pointer getPtr(void* ptr)
+    {
+      if( ptr )
+        return *static_cast<T*>(ptr);
+      else
+        return pointer();
+    }
+
     static raw_type* getRawPtr(void* ptr)
     {
-      return static_cast<T*>(ptr)->get();
+      if( ptr )
+        return static_cast<T*>(ptr)->get();
+      else
+        return 0;
+    }
+
+    static raw_type* getRawPtr(const T& ptr)
+    {
+      return ptr.get();
     }
   };
 
@@ -107,8 +124,9 @@ namespace nasal
   template<class T>
   struct RawPointerPolicy
   {
-    typedef typename GhostTypeTraits<T>::raw_type raw_type;
-    typedef boost::true_type returns_dynamic_type;
+    typedef typename GhostTypeTraits<T>::raw_type   raw_type;
+    typedef raw_type*                               pointer;
+    typedef boost::true_type                        returns_dynamic_type;
 
     /**
      * Create a new object instance on the heap
@@ -116,6 +134,12 @@ namespace nasal
     static T* createInstance()
     {
       return new T();
+    }
+
+    static pointer getPtr(void* ptr)
+    {
+      BOOST_STATIC_ASSERT((boost::is_same<pointer, T*>::value));
+      return static_cast<T*>(ptr);
     }
 
     static raw_type* getRawPtr(void* ptr)
@@ -143,11 +167,30 @@ namespace nasal
           _parents.push_back(parent);
         }
 
+        bool isBaseOf(naGhostType* ghost_type) const
+        {
+          if( ghost_type == &_ghost_type )
+            return true;
+
+          for( DerivedList::const_iterator derived = _derived_classes.begin();
+                                           derived != _derived_classes.end();
+                                         ++derived )
+          {
+            if( (*derived)->isBaseOf(ghost_type) )
+              return true;
+          }
+
+          return false;
+        }
+
       protected:
-        const std::string             _name;
-        naGhostType                   _ghost_type;
-  //      std::vector<GhostMetadata*>   _base_classes;
-        std::vector<naRef>            _parents;
+
+        typedef std::vector<const GhostMetadata*> DerivedList;
+
+        const std::string   _name;
+        naGhostType         _ghost_type;
+        DerivedList         _derived_classes;
+        std::vector<naRef>  _parents;
 
         explicit GhostMetadata(const std::string& name):
           _name(name)
@@ -155,11 +198,18 @@ namespace nasal
 
         }
 
-  //      void addBaseClass(GhostMetadata* base)
-  //      {
-  //        assert(base);
-  //        _base_classes.push_back(base);
-  //      }
+        void addDerived(const GhostMetadata* derived)
+        {
+          assert(derived);
+          _derived_classes.push_back(derived);
+
+          SG_LOG
+          (
+            SG_NASAL,
+            SG_INFO,
+            "Ghost::addDerived: " <<_ghost_type.name << " -> " << derived->_name
+          );
+        }
 
         naRef getParents(naContext c)
         {
@@ -167,6 +217,22 @@ namespace nasal
         }
     };
   }
+
+  /**
+   * Context passed to a function/method being called from Nasal
+   */
+  struct CallContext
+  {
+    CallContext(naContext c, int argc, naRef* args):
+      c(c),
+      argc(argc),
+      args(args)
+    {}
+
+    naContext   c;
+    int         argc;
+    naRef      *args;
+  };
 
   /**
    * Class for exposing C++ objects to Nasal
@@ -207,9 +273,11 @@ namespace nasal
                                RawPointerPolicy<T> >::type
   {
     public:
-      typedef typename GhostTypeTraits<T>::raw_type                 raw_type;
-      typedef naRef (raw_type::*member_func_t)(naContext, int, naRef*);
-      typedef naRef (*free_func_t)(raw_type&, naContext, int, naRef*);
+      typedef T                                                   value_type;
+      typedef typename GhostTypeTraits<T>::raw_type               raw_type;
+      typedef typename Ghost::pointer                             pointer;
+      typedef naRef (raw_type::*member_func_t)(const CallContext&);
+      typedef naRef (*free_func_t)(raw_type&, const CallContext&);
       typedef boost::function<naRef(naContext, raw_type&)>        getter_t;
       typedef boost::function<void(naContext, raw_type&, naRef)>  setter_t;
 
@@ -281,6 +349,7 @@ namespace nasal
         BaseGhost* base = BaseGhost::getSingletonPtr();
         base->addDerived
         (
+          this,
           // Both ways of retrieving the address of a static member function
           // should be legal but not all compilers know this.
           // g++-4.4.7+ has been tested to work with both versions
@@ -504,6 +573,55 @@ namespace nasal
         return create(c);
       }
 
+      static bool isBaseOf(naGhostType* ghost_type)
+      {
+        if( !ghost_type )
+          return false;
+
+        return getSingletonPtr()->GhostMetadata::isBaseOf(ghost_type);
+      }
+
+      static bool isBaseOf(naRef obj)
+      {
+        return isBaseOf( naGhost_type(obj) );
+      }
+
+      /**
+       * Convert Nasal object to C++ object. To get a valid object the passed
+       * Nasal objects has to be derived class of the target class (Either
+       * derived in C++ or in Nasal using a 'parents' vector)
+       */
+      static pointer fromNasal(naContext c, naRef me)
+      {
+        // Check if it's a ghost and if it can be converted
+        if( isBaseOf( naGhost_type(me) ) )
+          return Ghost::getPtr( naGhost_ptr(me) );
+
+        // Now if it is derived from a ghost (hash with ghost in parent vector)
+        // TODO handle recursive parents
+        else if( naIsHash(me) )
+        {
+          naRef na_parents = naHash_cget(me, const_cast<char*>("parents"));
+          if( !naIsVector(na_parents) )
+          {
+            SG_LOG(SG_NASAL, SG_DEBUG, "Missing 'parents' vector for ghost");
+            return pointer();
+          }
+
+          typedef std::vector<naRef> naRefs;
+          naRefs parents = from_nasal<naRefs>(c, na_parents);
+          for( naRefs::const_iterator parent = parents.begin();
+                                      parent != parents.end();
+                                    ++parent )
+          {
+            if( isBaseOf(naGhost_type(*parent)) )
+              return Ghost::getPtr( naGhost_ptr(*parent) );
+          }
+        }
+
+        return pointer();
+      }
+
     private:
 
       template<class>
@@ -511,11 +629,13 @@ namespace nasal
 
       typedef naGhostType* (*type_checker_t)(const raw_type*);
       typedef std::vector<type_checker_t> DerivedList;
-      DerivedList _derived_classes;
+      DerivedList _derived_types;
 
-      void addDerived(const type_checker_t& derived_info)
+      void addDerived( const internal::GhostMetadata* derived_meta,
+                       const type_checker_t& derived_info )
       {
-        _derived_classes.push_back(derived_info);
+        GhostMetadata::addDerived(derived_meta);
+        _derived_types.push_back(derived_info);
       }
 
       template<class BaseGhost>
@@ -537,8 +657,8 @@ namespace nasal
 
         // Now check if we can further downcast to one of our derived classes.
         for( typename DerivedList::reverse_iterator
-               derived = getSingletonPtr()->_derived_classes.rbegin();
-               derived != getSingletonPtr()->_derived_classes.rend();
+               derived = getSingletonPtr()->_derived_types.rbegin();
+               derived != getSingletonPtr()->_derived_types.rend();
              ++derived )
         {
           naGhostType* ghost_type =
@@ -570,24 +690,17 @@ namespace nasal
         return getSingletonHolder().get();
       }
 
-      // TODO integrate with from_nasal template to be able to cast objects
-      //      passed as function argument.
-      static raw_type* from_nasal(naRef me)
-      {
-        if( naGhost_type(me) != &getSingletonPtr()->_ghost_type )
-          return 0;
-
-        return Ghost::getRawPtr( static_cast<T*>(naGhost_ptr(me)) );
-      }
-
       static raw_type& requireObject(naContext c, naRef me)
       {
-        raw_type* obj = Ghost::from_nasal(me);
+        raw_type* obj = Ghost::getRawPtr( fromNasal(c, me) );
+        naGhostType* ghost_type = naGhost_type(me);
+
         if( !obj )
           naRuntimeError
           (
             c,
-            "method called on object of wrong type: '%s' expected",
+            "method called on object of wrong type: is '%s' expected '%s'",
+            ghost_type ? ghost_type->name : "unknown",
             getSingletonPtr()->_ghost_type.name
           );
 
@@ -609,7 +722,7 @@ namespace nasal
          */
         static naRef call(naContext c, naRef me, int argc, naRef* args)
         {
-          return (requireObject(c, me).*func)(c, argc, args);
+          return (requireObject(c, me).*func)(CallContext(c, argc, args));
         }
       };
 
@@ -631,7 +744,7 @@ namespace nasal
          */
         static naRef call(naContext c, naRef me, int argc, naRef* args)
         {
-          return func(requireObject(c, me), c, argc, args);
+          return func(requireObject(c, me), CallContext(c, argc, args));
         }
       };
 

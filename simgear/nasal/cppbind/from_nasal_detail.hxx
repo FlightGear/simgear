@@ -64,14 +64,19 @@ namespace nasal
   };
 
   /**
+   * Simple pass through for unified handling also of naRef.
+   */
+  inline naRef from_nasal_helper(naContext, naRef ref, naRef*) { return ref; }
+
+  /**
    * Convert Nasal string to std::string
    */
-  std::string from_nasal(naContext c, naRef ref, std::string*);
+  std::string from_nasal_helper(naContext c, naRef ref, std::string*);
 
   /**
    * Convert a Nasal hash to a nasal::Hash
    */
-  Hash from_nasal(naContext c, naRef ref, Hash*);
+  Hash from_nasal_helper(naContext c, naRef ref, Hash*);
 
   /**
    * Convert a Nasal number to a C++ numeric type
@@ -80,7 +85,7 @@ namespace nasal
   typename boost::enable_if< boost::is_arithmetic<T>,
                              T
                            >::type
-  from_nasal(naContext c, naRef ref, T*)
+  from_nasal_helper(naContext c, naRef ref, T*)
   {
     naRef num = naNumValue(ref);
     if( !naIsNum(num) )
@@ -92,11 +97,14 @@ namespace nasal
   /**
    * Convert a Nasal vector to a std::vector
    */
-  template<class Vector, class T>
-  typename boost::enable_if< boost::is_same<Vector, std::vector<T> >,
+  template<class Vector>
+  typename boost::enable_if< boost::is_same
+                             < Vector,
+                               std::vector<typename Vector::value_type>
+                             >,
                              Vector
                            >::type
-  from_nasal(naContext c, naRef ref, Vector*)
+  from_nasal_helper(naContext c, naRef ref, Vector*)
   {
     if( !naIsVector(ref) )
       throw bad_nasal_cast("Not a vector");
@@ -105,7 +113,12 @@ namespace nasal
     Vector vec(size);
 
     for(int i = 0; i < size; ++i)
-      vec[i] = from_nasal<T>(c, naVec_get(ref, i));
+      vec[i] = from_nasal_helper
+      (
+        c,
+        naVec_get(ref, i),
+        static_cast<typename Vector::value_type*>(0)
+      );
 
     return vec;
   }

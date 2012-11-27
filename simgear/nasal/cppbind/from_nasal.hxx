@@ -37,12 +37,12 @@ namespace nasal
    * @note  Every type which should be supported needs a function with the
    *        following signature declared:
    *
-   *        Type from_nasal(naContext, naRef, Type*)
+   *        Type from_nasal_helper(naContext, naRef, Type*)
    */
   template<class T>
   T from_nasal(naContext c, naRef ref)
   {
-    return from_nasal(c, ref, static_cast<T*>(0));
+    return from_nasal_helper(c, ref, static_cast<T*>(0));
   }
 
 } // namespace nasal

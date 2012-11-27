@@ -15,7 +15,7 @@
 
 struct Base
 {
-  naRef member(naContext, int, naRef*) { return naNil(); }
+  naRef member(const nasal::CallContext&) { return naNil(); }
   virtual ~Base(){};
 };
 struct Derived:
@@ -36,7 +36,13 @@ struct DoubleDerived2:
 
 };
 
-naRef member(Derived&, naContext, int, naRef*) { return naNil(); }
+typedef boost::shared_ptr<Base> BasePtr;
+typedef boost::shared_ptr<Derived> DerivedPtr;
+typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
+typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
+
+naRef member(Derived&, const nasal::CallContext&) { return naNil(); }
+naRef member(DerivedPtr&, const nasal::CallContext&) { return naNil(); }
 
 int main(int argc, char* argv[])
 {
@@ -84,6 +90,9 @@ int main(int argc, char* argv[])
   r = to_nasal(c, hash);
   VERIFY( naIsHash(r) );
 
+  VERIFY( hash.get<std::string>("name") == "my-name" );
+  VERIFY( naIsString(hash.get("name")) );
+
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
 
@@ -98,14 +107,11 @@ int main(int argc, char* argv[])
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("Derived") ==  naGhost_type(derived)->name );
 
-  typedef boost::shared_ptr<Base> BasePtr;
-  typedef boost::shared_ptr<Derived> DerivedPtr;
-  typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
-  typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
-
   Ghost<BasePtr>::init("BasePtr");
   Ghost<DerivedPtr>::init("DerivedPtr")
-    .bases<BasePtr>();
+    .bases<BasePtr>()
+    .member("x", &Derived::getX, &Derived::setX)
+    .method_func<&member>("free_member");
   Ghost<DoubleDerivedPtr>::init("DoubleDerivedPtr")
     .bases<DerivedPtr>();
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
@@ -126,7 +132,29 @@ int main(int argc, char* argv[])
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DoubleDerived2Ptr") ==  naGhost_type(derived)->name );
 
-  // TODO actuall do something with the ghosts...
+  VERIFY( Ghost<BasePtr>::isBaseOf(derived) );
+  VERIFY( Ghost<DerivedPtr>::isBaseOf(derived) );
+  VERIFY( Ghost<DoubleDerived2Ptr>::isBaseOf(derived) );
+
+  VERIFY( Ghost<BasePtr>::fromNasal(c, derived) == d3 );
+  VERIFY( Ghost<BasePtr>::fromNasal(c, derived) != d2 );
+  VERIFY(    Ghost<DerivedPtr>::fromNasal(c, derived)
+          == boost::dynamic_pointer_cast<Derived>(d3) );
+  VERIFY(    Ghost<DoubleDerived2Ptr>::fromNasal(c, derived)
+          == boost::dynamic_pointer_cast<DoubleDerived2>(d3) );
+  VERIFY( !Ghost<DoubleDerivedPtr>::fromNasal(c, derived) );
+
+  // Check converting to Ghost if using Nasal hashes with actual ghost inside
+  // the hashes parents vector
+  std::vector<naRef> parents;
+  parents.push_back(hash.get_naRef());
+  parents.push_back(derived);
+
+  Hash obj(c);
+  obj.set("parents", parents);
+  VERIFY( Ghost<BasePtr>::fromNasal(c, obj.get_naRef()) == d3 );
+
+  // TODO actually do something with the ghosts...
 
   naFreeContext(c);
 

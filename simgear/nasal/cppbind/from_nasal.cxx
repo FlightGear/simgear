@@ -47,14 +47,14 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  std::string from_nasal(naContext c, naRef ref, std::string*)
+  std::string from_nasal_helper(naContext c, naRef ref, std::string*)
   {
     naRef na_str = naStringValue(c, ref);
     return std::string(naStr_data(na_str), naStr_len(na_str));
   }
 
   //----------------------------------------------------------------------------
-  Hash from_nasal(naContext c, naRef ref, Hash*)
+  Hash from_nasal_helper(naContext c, naRef ref, Hash*)
   {
     if( !naIsHash(ref) )
       throw bad_nasal_cast("Not a hash");

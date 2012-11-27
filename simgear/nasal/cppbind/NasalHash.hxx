@@ -19,6 +19,7 @@
 #ifndef SG_NASAL_HASH_HXX_
 #define SG_NASAL_HASH_HXX_
 
+#include "from_nasal.hxx"
 #include "to_nasal.hxx"
 
 namespace nasal
@@ -44,7 +45,7 @@ namespace nasal
        * @param hash  Existing Nasal Hash
        * @param c     Nasal context for creating new Nasal objects
        */
-      Hash(const naRef& hash, naContext c);
+      Hash(naRef hash, naContext c);
 
       /**
        * Set member
@@ -64,6 +65,25 @@ namespace nasal
       void set(const std::string& name, const T& val)
       {
         set(name, to_nasal(_context, val));
+      }
+
+      /**
+       * Get member
+       *
+       * @param name    Member name
+       */
+      naRef get(const std::string& name);
+
+      /**
+       * Get member converted to given type
+       *
+       * @tparam T      Type to convert to (using from_nasal)
+       * @param name    Member name
+       */
+      template<class T>
+      T get(const std::string& name)
+      {
+        return from_nasal<T>(_context, get(name));
       }
 
       /**

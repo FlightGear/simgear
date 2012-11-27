@@ -33,7 +33,7 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
-  Hash::Hash(const naRef& hash, naContext c):
+  Hash::Hash(naRef hash, naContext c):
     _hash(hash),
     _context(c)
   {
@@ -44,6 +44,14 @@ namespace nasal
   void Hash::set(const std::string& name, naRef ref)
   {
     naHash_set(_hash, to_nasal(_context, name), ref);
+  }
+
+  //----------------------------------------------------------------------------
+  naRef Hash::get(const std::string& name)
+  {
+    naRef result;
+    return naHash_get(_hash, to_nasal(_context, name), &result) ? result
+                                                                : naNil();
   }
 
   //----------------------------------------------------------------------------

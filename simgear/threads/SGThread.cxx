@@ -81,7 +81,7 @@ struct SGThread::PrivateData {
     HANDLE _handle;
 };
 
-static long SGThread::current( void ) {
+long SGThread::current( void ) {
     return (long)GetCurrentThreadId();
 }
 

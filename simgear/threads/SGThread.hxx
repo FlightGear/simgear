@@ -50,6 +50,11 @@ public:
      */
     void join();
 
+    /**
+     *Retreive the current thread id.
+     */
+    static long current( void );
+
 protected:
     /**
      * Destroy a thread object.

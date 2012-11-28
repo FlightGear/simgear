@@ -81,6 +81,10 @@ struct SGThread::PrivateData {
     HANDLE _handle;
 };
 
+static long SGThread::current( void ) {
+    return (long)GetCurrentThreadId();
+}
+
 struct SGMutex::PrivateData {
     PrivateData()
     {
@@ -226,6 +230,10 @@ struct SGThread::PrivateData {
     pthread_t _thread;
     bool _started;
 };
+
+long SGThread::current( void ) {
+    return (long)pthread_self();
+}
 
 struct SGMutex::PrivateData {
     PrivateData()

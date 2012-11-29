@@ -229,8 +229,16 @@ namespace nasal
       args(args)
     {}
 
+    /**
+     * Get the argument with given index if it exists. Otherwise returns the
+     * passed default value.
+     *
+     * @tparam T    Type of argument (converted using ::from_nasal)
+     * @param index Index of requested argument
+     * @param def   Default value returned if too few arguments available
+     */
     template<class T>
-    T get(size_t index, const T& def = T()) const
+    T getArg(size_t index, const T& def = T()) const
     {
       if( index >= argc )
         return def;
@@ -238,8 +246,12 @@ namespace nasal
       return from_nasal<T>(c, args[index]);
     }
 
+    /**
+     * Get the argument with given index. Raises a Nasal runtime error if there
+     * are to few arguments available.
+     */
     template<class T>
-    T require(size_t index) const
+    T requireArg(size_t index) const
     {
       if( index >= argc )
         naRuntimeError(c, "Missing required arg #%d", index);

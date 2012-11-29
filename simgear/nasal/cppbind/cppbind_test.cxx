@@ -157,9 +157,9 @@ int main(int argc, char* argv[])
     to_nasal(c, std::string("test-arg"))
   };
   CallContext cc(c, sizeof(args)/sizeof(args[0]), args);
-  VERIFY( cc.require<std::string>(0) == "test-arg" );
-  VERIFY( cc.get<std::string>(0) == "test-arg" );
-  VERIFY( cc.get<std::string>(1) == "" );
+  VERIFY( cc.requireArg<std::string>(0) == "test-arg" );
+  VERIFY( cc.getArg<std::string>(0) == "test-arg" );
+  VERIFY( cc.getArg<std::string>(1) == "" );
 
   // TODO actually do something with the ghosts...
 

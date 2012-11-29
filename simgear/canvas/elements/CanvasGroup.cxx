@@ -66,11 +66,11 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   ElementPtr Group::createChild( const std::string& type,
-                                 const std::string& name )
+                                 const std::string& id )
   {
     SGPropertyNode* node = _node->addChild(type, 0, false);
-    if( !name.empty() )
-      node->setStringValue("name", name);
+    if( !id.empty() )
+      node->setStringValue("id", id);
 
     return getChild(node);
   }
@@ -83,6 +83,32 @@ namespace canvas
       return ElementPtr();
 
     return child->second;
+  }
+
+  //----------------------------------------------------------------------------
+  ElementPtr Group::getElementById(const std::string& id)
+  {
+    std::vector<GroupPtr> groups;
+
+    BOOST_FOREACH( ChildList::value_type child, _children )
+    {
+      const ElementPtr& el = child.second;
+      if( el->getProps()->getStringValue("id") == id )
+        return el;
+
+      GroupPtr group = boost::dynamic_pointer_cast<Group>(el);
+      if( group )
+        groups.push_back(group);
+    }
+
+    BOOST_FOREACH( GroupPtr group, groups )
+    {
+      ElementPtr el = group->getElementById(id);
+      if( el )
+        return el;
+    }
+
+    return ElementPtr();
   }
 
   //----------------------------------------------------------------------------

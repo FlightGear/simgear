@@ -628,7 +628,6 @@ namespace nasal
           return Ghost::getPtr( naGhost_ptr(me) );
 
         // Now if it is derived from a ghost (hash with ghost in parent vector)
-        // TODO handle recursive parents
         else if( naIsHash(me) )
         {
           naRef na_parents = naHash_cget(me, const_cast<char*>("parents"));
@@ -644,8 +643,9 @@ namespace nasal
                                       parent != parents.end();
                                     ++parent )
           {
-            if( isBaseOf(naGhost_type(*parent)) )
-              return Ghost::getPtr( naGhost_ptr(*parent) );
+            pointer ptr = fromNasal(c, *parent);
+            if( ptr )
+              return ptr;
           }
         }
 

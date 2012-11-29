@@ -17,7 +17,6 @@ set(HEADERS
 
 set(SOURCES
   Canvas.cxx
-  Canvas.cxx
   CanvasEvent.cxx
   CanvasEventListener.cxx
   CanvasEventVisitor.cxx

@@ -44,8 +44,15 @@ namespace canvas
       virtual ~Group();
 
       ElementPtr createChild( const std::string& type,
-                              const std::string& name = "" );
+                              const std::string& id = "" );
       ElementPtr getChild(const SGPropertyNode* node);
+
+      /**
+       * Get first child with given id (breadth-first search)
+       *
+       * @param id  Id (value if property node 'id') of element
+       */
+      ElementPtr getElementById(const std::string& id);
 
       virtual void update(double dt);
 

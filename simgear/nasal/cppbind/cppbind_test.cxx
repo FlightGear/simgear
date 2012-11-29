@@ -153,6 +153,13 @@ int main(int argc, char* argv[])
   obj.set("parents", parents);
   VERIFY( Ghost<BasePtr>::fromNasal(c, obj.get_naRef()) == d3 );
 
+  // Check recursive parents (aka parent-of-parent)
+  std::vector<naRef> parents2;
+  parents2.push_back(obj.get_naRef());
+  Hash derived_obj(c);
+  derived_obj.set("parents", parents2);
+  VERIFY( Ghost<BasePtr>::fromNasal(c, derived_obj.get_naRef()) == d3 );
+
   naRef args[] = {
     to_nasal(c, std::string("test-arg"))
   };

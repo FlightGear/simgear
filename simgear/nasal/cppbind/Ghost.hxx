@@ -223,14 +223,32 @@ namespace nasal
    */
   struct CallContext
   {
-    CallContext(naContext c, int argc, naRef* args):
+    CallContext(naContext c, size_t argc, naRef* args):
       c(c),
       argc(argc),
       args(args)
     {}
 
+    template<class T>
+    T get(size_t index, const T& def = T()) const
+    {
+      if( index >= argc )
+        return def;
+
+      return from_nasal<T>(c, args[index]);
+    }
+
+    template<class T>
+    T require(size_t index) const
+    {
+      if( index >= argc )
+        naRuntimeError(c, "Missing required arg #%d", index);
+
+      return from_nasal<T>(c, args[index]);
+    }
+
     naContext   c;
-    int         argc;
+    size_t      argc;
     naRef      *args;
   };
 

@@ -153,6 +153,14 @@ int main(int argc, char* argv[])
   obj.set("parents", parents);
   VERIFY( Ghost<BasePtr>::fromNasal(c, obj.get_naRef()) == d3 );
 
+  naRef args[] = {
+    to_nasal(c, std::string("test-arg"))
+  };
+  CallContext cc(c, sizeof(args)/sizeof(args[0]), args);
+  VERIFY( cc.require<std::string>(0) == "test-arg" );
+  VERIFY( cc.get<std::string>(0) == "test-arg" );
+  VERIFY( cc.get<std::string>(1) == "" );
+
   // TODO actually do something with the ghosts...
 
   naFreeContext(c);

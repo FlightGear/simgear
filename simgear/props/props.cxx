@@ -158,7 +158,7 @@ inline bool validateName(const string& name)
 static char *
 copy_string (const char * s)
 {
-  unsigned long int slen = strlen(s);
+  size_t slen = strlen(s);
   char * copy = new char[slen + 1];
 
   // the source string length is known so no need to check for '\0'
@@ -181,15 +181,15 @@ template<typename Itr>
 static int
 find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 {
-  int nNodes = nodes.size();
+  size_t nNodes = nodes.size();
   boost::iterator_range<Itr> name(begin, end);
-  for (int i = 0; i < nNodes; i++) {
+  for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
 
     // searching for a matching index is a lot less time consuming than
     // comparing two strings so do that first.
     if (node->getIndex() == index && boost::equals(node->getName(), name))
-      return i;
+      return static_cast<int>(i);
   }
   return -1;
 }
@@ -200,10 +200,10 @@ find_child (Itr begin, Itr end, int index, const PropertyList& nodes)
 static int
 find_last_child (const char * name, const PropertyList& nodes)
 {
-  int nNodes = nodes.size();
+  size_t nNodes = nodes.size();
   int index = -1;
 
-  for (int i = 0; i < nNodes; i++) {
+  for (size_t i = 0; i < nNodes; i++) {
     SGPropertyNode * node = nodes[i];
     if (compare_strings(node->getName(), name))
     {
@@ -1008,9 +1008,9 @@ PropertyList
 SGPropertyNode::getChildren (const char * name) const
 {
   PropertyList children;
-  int max = _children.size();
+  size_t max = _children.size();
 
-  for (int i = 0; i < max; i++)
+  for (size_t i = 0; i < max; i++)
     if (compare_strings(_children[i]->getName(), name))
       children.push_back(_children[i]);
 
@@ -1066,7 +1066,7 @@ SGPropertyNode::removeChildren (const char * name, bool keep)
 {
   PropertyList children;
 
-  for (int pos = _children.size() - 1; pos >= 0; pos--)
+  for (int pos = static_cast<int>(_children.size() - 1); pos >= 0; pos--)
     if (compare_strings(_children[pos]->getName(), name))
       children.push_back(removeChild(pos, keep));
 
@@ -2214,7 +2214,7 @@ SGPropertyNode::fireChildRemoved (SGPropertyNode * parent,
 
 SGPropertyChangeListener::~SGPropertyChangeListener ()
 {
-  for (int i = _properties.size() - 1; i >= 0; i--)
+  for (int i = static_cast<int>(_properties.size() - 1); i >= 0; i--)
     _properties[i]->removeChangeListener(this);
 }
 

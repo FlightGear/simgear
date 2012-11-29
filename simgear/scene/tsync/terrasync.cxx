@@ -99,7 +99,7 @@ namespace UpdateInterval
     static const double SuccessfulAttempt = 24*60*60;
     // interval in seconds to allow another update after a failed attempt (10 minutes)
     static const double FailedAttempt     = 10*60;
-};
+}
 
 typedef map<string,time_t> CompletedTiles;
 
@@ -110,7 +110,7 @@ string stripPath(string path)
 {
     // svn doesn't like trailing white-spaces or path separators - strip them!
     path = simgear::strutils::strip(path);
-    int slen = path.length();
+    size_t slen = path.length();
     while ((slen>0)&&
             ((path[slen-1]=='/')||(path[slen-1]=='\\')))
     {

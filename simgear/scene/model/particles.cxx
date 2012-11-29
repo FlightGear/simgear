@@ -1,6 +1,6 @@
 // particles.cxx - classes to manage particles
-// started in 2008 by Tiago Gusmão, using animation.hxx as reference
-// Copyright (C) 2008 Tiago Gusmão
+// started in 2008 by Tiago Gusmï¿½o, using animation.hxx as reference
+// Copyright (C) 2008 Tiago Gusmï¿½o
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -79,7 +79,7 @@ SGConstPropertyNode_ptr GlobalParticleCallback::enabledNode = 0;
 
 osg::ref_ptr<osg::Group> Particles::commonRoot;
 osg::ref_ptr<osgParticle::ParticleSystemUpdater> Particles::psu = new osgParticle::ParticleSystemUpdater;
-osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;;
+osg::ref_ptr<osg::Geode> Particles::commonGeode = new osg::Geode;
 osg::Vec3 Particles::_wind;
 bool Particles::_frozen = false;
 

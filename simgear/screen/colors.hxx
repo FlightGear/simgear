@@ -44,7 +44,7 @@ inline void gamma_correct_rgb(float *color,
     color[0] = pow(color[0], tmp);
     color[1] = pow(color[1], tmp);
     color[2] = pow(color[2], tmp);
-};
+}
 
 inline void gamma_correct_c(float *color,
                             float reff = 2.5, float system = system_gamma)
@@ -53,7 +53,7 @@ inline void gamma_correct_c(float *color,
       return;
 
    *color = pow(*color, reff/system);
-};
+}
 
 inline void gamma_restore_rgb(float *color,
                               float reff = 2.5, float system = system_gamma)
@@ -65,7 +65,7 @@ inline void gamma_restore_rgb(float *color,
     color[0] = pow(color[0], tmp);
     color[1] = pow(color[1], tmp);
     color[2] = pow(color[2], tmp);
-};
+}
 
 inline void gamma_restore_c(float *color,
                             float reff = 2.5, float system = system_gamma)
@@ -74,7 +74,7 @@ inline void gamma_restore_c(float *color,
       return;
 
    *color = pow(*color, system/reff);
-};
+}
 
 
 #endif // _SG_COLORS_HXX

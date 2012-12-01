@@ -52,7 +52,7 @@ public:
     SGLocationd getLocation(const SGTimeStamp& timeStamp) const
     {
         SGLocationd location = getLocation();
-        location.eulerStepBodyVelocities(getTimeDifference(timeStamp), getLinearBodyVelocity(), getAngularBodyVelocity());
+        location.eulerStepBodyVelocitiesMidOrientation(getTimeDifference(timeStamp), getLinearBodyVelocity(), getAngularBodyVelocity());
         return location;
     }
 };

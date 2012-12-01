@@ -68,6 +68,32 @@ else(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 endif(${CMAKE_VERSION} VERSION_GREATER 2.8.4)
 message(STATUS "Library installation directory: ${CMAKE_INSTALL_LIBDIR}")
 
+#####################################################################################
+# Configure library search paths
+#####################################################################################
+
+if(NOT "${CMAKE_LIBRARY_ARCHITECTURE}" STREQUAL "")
+    # Workaround for Ubuntu/Debian which introduced the "multiarch" library
+    # directory structure, which is unsupported by CMake < 2.8.10, so we need to
+    # add paths manually
+    # see http://www.cmake.org/Bug/view.php?id=12049 and
+    # http://www.cmake.org/Bug/view.php?id=12037
+    list(APPEND ADDITIONAL_LIBRARY_PATHS
+         /usr/local/lib/${CMAKE_LIBRARY_ARCHITECTURE}
+         /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}
+         /lib/${CMAKE_LIBRARY_ARCHITECTURE})
+    message(STATUS "additional library directories: ${ADDITIONAL_LIBRARY_PATHS}")
+endif()
+
+if(NOT MSVC)
+    # TBD: are these really necessary? Aren't they considered by cmake automatically?
+    list(APPEND ADDITIONAL_LIBRARY_PATHS
+         /local
+         /usr/local
+         /usr)
+endif()
+#####################################################################################
+
 if (NOT MSVC)
 option(SIMGEAR_SHARED   "Set to ON to build SimGear as a shared library/framework" OFF)
 option(SYSTEM_EXPAT     "Set to ON to build SimGear using the system libExpat" OFF)

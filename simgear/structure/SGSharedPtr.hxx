@@ -1,6 +1,6 @@
 /* -*-c++-*-
  *
- * Copyright (C) 2005-2009 Mathias Froehlich 
+ * Copyright (C) 2005-2012 Mathias Froehlich 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -104,7 +104,7 @@ private:
   void get(const T* p) const
   { T::get(p); }
   void put(void)
-  { if (!T::put(_ptr)) { delete _ptr; _ptr = 0; } }
+  { if (!T::put(_ptr)) delete _ptr; _ptr = 0; }
   
   // The reference itself.
   T* _ptr;

@@ -250,7 +250,17 @@ namespace canvas
   {
     if( parent == _node && child->getNameString() == NAME_TRANSFORM )
     {
-      assert(child->getIndex() < static_cast<int>(_transform_types.size()));
+      if( child->getIndex() >= static_cast<int>(_transform_types.size()) )
+      {
+        SG_LOG
+        (
+          SG_GENERAL,
+          SG_WARN,
+          "Element::childRemoved: unknown transform: " << child->getPath()
+        );
+        return;
+      }
+
       _transform_types[ child->getIndex() ] = TT_NONE;
 
       while( !_transform_types.empty() && _transform_types.back() == TT_NONE )

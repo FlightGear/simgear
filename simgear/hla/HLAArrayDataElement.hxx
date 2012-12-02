@@ -299,6 +299,7 @@ private:
 
 typedef HLAVec2Data<float> HLAVec2fData;
 typedef HLAVec2Data<double> HLAVec2dData;
+typedef HLAVec2Data<int> HLAVec2iData;
 
 template<typename T>
 class HLAVec3DataElement : public HLAAbstractArrayDataElement {
@@ -391,6 +392,7 @@ private:
 
 typedef HLAVec3Data<float> HLAVec3fData;
 typedef HLAVec3Data<double> HLAVec3dData;
+typedef HLAVec3Data<int> HLAVec3iData;
 
 template<typename T>
 class HLAVec4DataElement : public HLAAbstractArrayDataElement {
@@ -483,6 +485,7 @@ private:
 
 typedef HLAVec4Data<float> HLAVec4fData;
 typedef HLAVec4Data<double> HLAVec4dData;
+typedef HLAVec4Data<int> HLAVec4iData;
 
 template<typename T>
 class HLAQuatDataElement : public HLAAbstractArrayDataElement {

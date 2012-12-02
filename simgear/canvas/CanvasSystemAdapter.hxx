@@ -20,7 +20,7 @@
 #define SG_CANVAS_SYSTEM_ADAPTER_HXX_
 
 #include "canvas_fwd.hxx"
-#include <simgear/nasal/naref.h>
+#include <simgear/nasal/nasal.h>
 
 namespace simgear
 {
@@ -36,6 +36,8 @@ namespace canvas
       virtual void addCamera(osg::Camera* camera) const = 0;
       virtual void removeCamera(osg::Camera* camera) const = 0;
       virtual osg::Image* getImage(const std::string& path) const = 0;
+
+      virtual naContext getNasalContext() const = 0;
 
       /**
        * Save passed reference to Nasal object from being deleted by the

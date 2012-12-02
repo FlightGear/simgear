@@ -34,7 +34,7 @@ namespace canvas
                      const SystemAdapterPtr& sys_adapter );
       ~EventListener();
 
-      void call();
+      void call(const canvas::EventPtr& event);
 
     protected:
       naRef _code;

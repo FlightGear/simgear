@@ -257,6 +257,15 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  naRef Canvas::addEventListener(const nasal::CallContext& ctx)
+  {
+    if( !_root_group.get() )
+      naRuntimeError(ctx.c, "Canvas: No root group!");
+
+    return _root_group->addEventListener(ctx);
+  }
+
+  //----------------------------------------------------------------------------
   void Canvas::setSizeX(int sx)
   {
     if( _size_x == sx )

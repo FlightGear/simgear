@@ -17,6 +17,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "CanvasElement.hxx"
+#include <simgear/canvas/Canvas.hxx>
+#include <simgear/canvas/CanvasEventListener.hxx>
 #include <simgear/canvas/CanvasEventVisitor.hxx>
 #include <simgear/canvas/MouseEvent.hxx>
 
@@ -24,6 +26,7 @@
 #include <osg/Geode>
 
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 #include <cassert>
 #include <cstring>
@@ -112,7 +115,28 @@ namespace canvas
   //----------------------------------------------------------------------------
   naRef Element::addEventListener(const nasal::CallContext& ctx)
   {
-    std::cout << "addEventListener " << _node->getPath() << std::endl;
+    const std::string type_str = ctx.requireArg<std::string>(0);
+    naRef code = ctx.requireArg<naRef>(1);
+
+    SG_LOG
+    (
+      SG_NASAL,
+      SG_INFO,
+      "addEventListener(" << _node->getPath() << ", " << type_str << ")"
+    );
+
+    Event::Type type = Event::strToType(type_str);
+    if( type == Event::UNKNOWN )
+      naRuntimeError( ctx.c,
+                      "addEventListener: Unknown event type %s",
+                      type_str.c_str() );
+
+    _listener[ type ].push_back
+    (
+      boost::make_shared<EventListener>( code,
+                                         _canvas.lock()->getSystemAdapter() )
+    );
+
     return naNil();
   }
 
@@ -146,6 +170,17 @@ namespace canvas
   bool Element::traverse(EventVisitor& visitor)
   {
     return true;
+  }
+
+  //----------------------------------------------------------------------------
+  void Element::callListeners(const canvas::EventPtr& event)
+  {
+    ListenerMap::iterator listeners = _listener.find(event->getType());
+    if( listeners == _listener.end() )
+      return;
+
+    BOOST_FOREACH(EventListenerPtr listener, listeners->second)
+      listener->call(event);
   }
 
   //----------------------------------------------------------------------------
@@ -293,14 +328,6 @@ namespace canvas
       SG_DEBUG,
       "New canvas element " << node->getPath()
     );
-  }
-
-  //----------------------------------------------------------------------------
-  void Element::callListeners(canvas::Event& event)
-  {
-    ListenerMap::iterator listeners = _listener.find(event.getType());
-    if( listeners == _listener.end() )
-      return;
   }
 
   //----------------------------------------------------------------------------

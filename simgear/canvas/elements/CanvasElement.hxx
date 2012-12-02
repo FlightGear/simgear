@@ -78,6 +78,8 @@ namespace canvas
       virtual bool ascend(EventVisitor& visitor);
       virtual bool traverse(EventVisitor& visitor);
 
+      void callListeners(const canvas::EventPtr& event);
+
       virtual bool hitBound(const osg::Vec2f& pos) const;
 
 
@@ -167,8 +169,6 @@ namespace canvas
       {
         return boost::bind(setter, instance, boost::bind(&getValue<T1>, _1));
       }
-
-      void callListeners(canvas::Event& event);
 
       virtual void childAdded(SGPropertyNode * child)  {}
       virtual void childRemoved(SGPropertyNode * child){}

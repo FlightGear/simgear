@@ -17,6 +17,9 @@ struct Base
 {
   naRef member(const nasal::CallContext&) { return naNil(); }
   virtual ~Base(){};
+
+  std::string getString() const { return ""; }
+  void setString(const std::string&) {}
 };
 struct Derived:
   public Base
@@ -96,7 +99,8 @@ int main(int argc, char* argv[])
   mod.set("parent", hash);
 
   Ghost<Base>::init("Base")
-    .method<&Base::member>("member");
+    .method<&Base::member>("member")
+    .member("str", &Base::getString, &Base::setString);
   Ghost<Derived>::init("Derived")
     .bases<Base>()
     .member("x", &Derived::getX, &Derived::setX)

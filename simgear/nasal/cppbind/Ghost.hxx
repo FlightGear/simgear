@@ -26,6 +26,7 @@
 #include <simgear/debug/logstream.hxx>
 
 #include <boost/bind.hpp>
+#include <boost/call_traits.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -457,12 +458,13 @@ namespace nasal
       template<class Var>
       Ghost& member( const std::string& field,
                      Var (raw_type::*getter)() const,
-                     void (raw_type::*setter)(Var) = 0 )
+                     void (raw_type::*setter)(typename boost::call_traits<Var>::param_type) = 0 )
       {
         member_t m;
         if( getter )
         {
-          naRef (*to_nasal_)(naContext, Var) = &nasal::to_nasal;
+          typedef typename boost::call_traits<Var>::param_type param_type;
+          naRef (*to_nasal_)(naContext, param_type) = &nasal::to_nasal;
 
           // Getter signature: naRef(naContext, raw_type&)
           m.getter = boost::bind(to_nasal_, _1, boost::bind(getter, _2));

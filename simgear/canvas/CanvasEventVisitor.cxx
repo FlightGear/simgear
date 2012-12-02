@@ -1,5 +1,5 @@
 // Visitor for traversing a canvas element hierarchy similar to the traversal
-// of the DOM Level 2 Event Model
+// of the DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -70,7 +70,10 @@ namespace canvas
         m(0, 1) * pos[0] + m(1, 1) * pos[1] + m(3, 1)
       );
 
-      if( !el.hitBound(local_pos) )
+      // Don't check collision with root element (2nd element in _target_path)
+      // do event listeners attached to the canvas itself (its root group)
+      // always get called even if no element has been hit.
+      if( _target_path.size() > 2 && !el.hitBound(local_pos) )
         return false;
 
       const osg::Vec2f& delta = _target_path.back().local_delta;
@@ -83,7 +86,7 @@ namespace canvas
       EventTarget target = {&el, local_pos, local_delta};
       _target_path.push_back(target);
 
-      if( el.traverse(*this) )
+      if( el.traverse(*this) || _target_path.size() <= 2 )
         return true;
 
       _target_path.pop_back();
@@ -96,7 +99,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool EventVisitor::propagateEvent(const EventPtr& event)
   {
-//    std::cout << "Propagate event " << event->getTypeString() << "\n";
+    // Event propagation similar to DOM Level 3 event flow:
+    // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
+
+    // Capturing phase
 //    for( EventTargets::iterator it = _target_path.begin();
 //                                it != _target_path.end();
 //                              ++it )
@@ -105,6 +111,20 @@ namespace canvas
 //        std::cout << it->element->getProps()->getPath() << " "
 //                  << "(" << it->local_pos.x() << "|" << it->local_pos.y() << ")\n";
 //    }
+
+    // Bubbling phase
+    for( EventTargets::reverse_iterator it = _target_path.rbegin();
+                                        it != _target_path.rend();
+                                      ++it )
+    {
+      if( !it->element )
+        continue;
+
+      it->element->callListeners(event);
+
+      if( event->propagation_stopped )
+        return true;
+    }
 
     return true;
   }

@@ -16,10 +16,11 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
+#include "CanvasEvent.hxx"
 #include "CanvasEventListener.hxx"
 #include "CanvasSystemAdapter.hxx"
 
-#include <simgear/nasal/nasal.h>
+#include <simgear/nasal/cppbind/Ghost.hxx>
 
 namespace simgear
 {
@@ -52,13 +53,16 @@ namespace canvas
   }
 
   //------------------------------------------------------------------------------
-  void EventListener::call()
+  void EventListener::call(const canvas::EventPtr& event)
   {
-    const size_t num_args = 1;
-    naRef args[num_args] = {
-      naNil()
+    SystemAdapterPtr sys = _sys.lock();
+
+    naRef args[] = {
+      nasal::Ghost<EventPtr>::create(sys->getNasalContext(), event)
     };
-    _sys.lock()->callMethod(_code, naNil(), num_args, args, naNil());
+    const int num_args = sizeof(args)/sizeof(args[0]);
+
+    sys->callMethod(_code, naNil(), num_args, args, naNil());
   }
 
 

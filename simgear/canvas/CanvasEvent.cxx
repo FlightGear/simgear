@@ -1,4 +1,4 @@
-// Canvas Event for event model similar to DOM Level 2 Event Model
+// Canvas Event for event model similar to DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -25,7 +25,14 @@ namespace canvas
 
   //----------------------------------------------------------------------------
   Event::Event():
-    type(UNKNOWN)
+    type(UNKNOWN),
+    propagation_stopped(false)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  Event::~Event()
   {
 
   }
@@ -53,6 +60,32 @@ namespace canvas
   ElementWeakPtr Event::getTarget() const
   {
     return target;
+  }
+
+  //----------------------------------------------------------------------------
+  void Event::stopPropagation()
+  {
+    propagation_stopped = true;
+  }
+
+  //----------------------------------------------------------------------------
+  Event::Type Event::strToType(const std::string& str)
+  {
+    typedef std::map<std::string, Type> TypeMap;
+    static TypeMap type_map;
+
+    if( type_map.empty() )
+    {
+#     define ENUM_MAPPING(type, str) type_map[ str ] = type;
+#       include "CanvasEventTypes.hxx"
+#     undef ENUM_MAPPING
+    }
+
+    TypeMap::const_iterator it = type_map.find(str);
+    if( it == type_map.end() )
+      return UNKNOWN;
+
+    return it->second;
   }
 
 } // namespace canvas

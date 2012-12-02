@@ -1,4 +1,4 @@
-// Canvas Event for event model similar to DOM Level 2 Event Model
+// Canvas Event for event model similar to DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //
@@ -42,11 +42,21 @@ namespace canvas
 
       Type              type;
       ElementWeakPtr    target;
+      bool              propagation_stopped;
 
       Event();
+
+      // We need a vtable to allow nasal::Ghost to determine the dynamic type
+      // of the actual event instances.
+      virtual ~Event();
+
       Type getType() const;
       std::string getTypeString() const;
+
       ElementWeakPtr getTarget() const;
+      void stopPropagation();
+
+      static Type strToType(const std::string& str);
 
   };
 

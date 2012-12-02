@@ -103,6 +103,8 @@ namespace canvas
 
       void update(double delta_time_sec);
 
+      naRef addEventListener(const nasal::CallContext& ctx);
+
       void setSizeX(int sx);
       void setSizeY(int sy);
 

@@ -1,5 +1,5 @@
 // Visitor for traversing a canvas element hierarchy similar to the traversal
-// of the DOM Level 2 Event Model
+// of the DOM Level 3 Event Model
 //
 // Copyright (C) 2012  Thomas Geymayer <tomgey@gmail.com>
 //

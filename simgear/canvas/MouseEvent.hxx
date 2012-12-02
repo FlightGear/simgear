@@ -41,6 +41,12 @@ namespace canvas
       osg::Vec3f getPos3() const { return osg::Vec3f(pos, 0); }
       osg::Vec2f getDelta() const { return delta; }
 
+      float getPosX() const { return pos.x(); }
+      float getPosY() const { return pos.y(); }
+
+      float getDeltaX() const { return delta.x(); }
+      float getDeltaY() const { return delta.y(); }
+
       osg::Vec2f  pos,
                   delta;
       int         button, //<! Button for this event

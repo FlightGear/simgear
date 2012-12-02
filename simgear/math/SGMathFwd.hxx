@@ -52,9 +52,12 @@ typedef SGQuat<float> SGQuatf;
 typedef SGQuat<double> SGQuatd;
 typedef SGVec2<float> SGVec2f;
 typedef SGVec2<double> SGVec2d;
+typedef SGVec2<int> SGVec2i;
 typedef SGVec3<float> SGVec3f;
 typedef SGVec3<double> SGVec3d;
+typedef SGVec3<int> SGVec3i;
 typedef SGVec4<float> SGVec4f;
 typedef SGVec4<double> SGVec4d;
+typedef SGVec4<int> SGVec4i;
 
 #endif

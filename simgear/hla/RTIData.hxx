@@ -431,12 +431,6 @@ private:
     unsigned _capacity;
 };
 
-// A single attribute/parameter update blob
-typedef std::pair<unsigned, RTIData> RTIIndexDataPair;
-
-// A complete set of updates we received in one reflect/receive call
-typedef std::list<RTIIndexDataPair> RTIIndexDataPairList;
-
 /// Gets an own header at some time
 
 class RTIBasicDataStream {

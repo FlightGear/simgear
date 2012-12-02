@@ -492,12 +492,13 @@ class HLAQuatDataElement : public HLAAbstractArrayDataElement {
 public:
     HLAQuatDataElement(const HLAArrayDataType* dataType = 0) :
         HLAAbstractArrayDataElement(dataType),
-        _value(SGQuat<T>::zeros())
+        _value(SGQuat<T>::unit())
     {}
     HLAQuatDataElement(const HLAArrayDataType* dataType, const SGQuat<T>& value) :
         HLAAbstractArrayDataElement(dataType),
         _value(value)
     {}
+
     const SGQuat<T>& getValue() const
     { return _value; }
     void setValue(const SGQuat<T>& value)
@@ -541,6 +542,151 @@ public:
 private:
     SGQuat<T> _value;
 };
+
+template<typename T>
+class HLAQuatData {
+public:
+    HLAQuatData() :
+        _value(new HLAQuatDataElement<T>(0))
+    { }
+    HLAQuatData(const SGQuat<T>& value) :
+        _value(new HLAQuatDataElement<T>(0, value))
+    { }
+
+    operator const SGQuat<T>&() const
+    { return _value->getValue(); }
+    HLAQuatData& operator=(const SGQuat<T>& value)
+    { _value->setValue(value); return *this; }
+
+    const SGQuat<T>& getValue() const
+    { return _value->getValue(); }
+    void setValue(const SGQuat<T>& value)
+    { _value->setValue(value); }
+
+    const HLAQuatDataElement<T>* getDataElement() const
+    { return _value.get(); }
+    HLAQuatDataElement<T>* getDataElement()
+    { return _value.get(); }
+
+    const HLAArrayDataType* getDataType() const
+    { return _value->getDataType(); }
+    void setDataType(const HLAArrayDataType* dataType)
+    { _value->setDataType(dataType); }
+
+private:
+    SGSharedPtr<HLAQuatDataElement<T> > _value;
+};
+
+typedef HLAQuatData<float> HLAQuatfData;
+typedef HLAQuatData<double> HLAQuatdData;
+
+template<typename T>
+class HLAQuat3DataElement : public HLAAbstractArrayDataElement {
+public:
+    HLAQuat3DataElement(const HLAArrayDataType* dataType = 0) :
+        HLAAbstractArrayDataElement(dataType),
+        _value(SGQuat<T>::unit()),
+        _imag(SGQuat<T>::unit().getPositiveRealImag())
+    {}
+    HLAQuat3DataElement(const HLAArrayDataType* dataType, const SGQuat<T>& value) :
+        HLAAbstractArrayDataElement(dataType),
+        _value(value),
+        _imag(value.getPositiveRealImag())
+    {}
+
+    const SGQuat<T>& getValue() const
+    { return _value; }
+    void setValue(const SGQuat<T>& value)
+    { _value = value; _imag = _value.getPositiveRealImag(); setDirty(true); }
+
+    virtual bool encode(HLAEncodeStream& stream) const
+    {
+        return HLAAbstractArrayDataElement::encode(stream);
+    }
+    virtual bool decode(HLADecodeStream& stream)
+    {
+        if (!HLAAbstractArrayDataElement::decode(stream))
+            return false;
+        _value = SGQuat<T>::fromPositiveRealImag(_imag);
+        return true;
+    }
+
+    virtual bool setNumElements(unsigned count)
+    {
+        for (unsigned i = count; i < 3; ++i)
+            _imag[i] = 0;
+        return true;
+    }
+    virtual bool decodeElement(HLADecodeStream& stream, unsigned i)
+    {
+        if (i < 3) {
+            HLATemplateDecodeVisitor<typename SGQuat<T>::value_type> visitor(stream);
+            getElementDataType()->accept(visitor);
+            _imag[i] = visitor.getValue();
+        } else {
+            HLADataTypeDecodeVisitor visitor(stream);
+            getElementDataType()->accept(visitor);
+        }
+        return true;
+    }
+
+    virtual unsigned getNumElements() const
+    {
+        return 3;
+    }
+    virtual bool encodeElement(HLAEncodeStream& stream, unsigned i) const
+    {
+        if (i < 3) {
+            HLATemplateEncodeVisitor<typename SGQuat<T>::value_type> visitor(stream, _imag[i]);
+            getElementDataType()->accept(visitor);
+        } else {
+            HLADataTypeEncodeVisitor visitor(stream);
+            getElementDataType()->accept(visitor);
+        }
+        return true;
+    }
+
+private:
+    SGQuat<T> _value;
+    SGVec3<T> _imag;
+};
+
+template<typename T>
+class HLAQuat3Data {
+public:
+    HLAQuat3Data() :
+        _value(new HLAQuat3DataElement<T>(0))
+    { }
+    HLAQuat3Data(const SGQuat<T>& value) :
+        _value(new HLAQuat3DataElement<T>(0, value))
+    { }
+
+    operator const SGQuat<T>&() const
+    { return _value->getValue(); }
+    HLAQuat3Data& operator=(const SGQuat<T>& value)
+    { _value->setValue(value); return *this; }
+
+    const SGQuat<T>& getValue() const
+    { return _value->getValue(); }
+    void setValue(const SGQuat<T>& value)
+    { _value->setValue(value); }
+
+    const HLAQuat3DataElement<T>* getDataElement() const
+    { return _value.get(); }
+    HLAQuat3DataElement<T>* getDataElement()
+    { return _value.get(); }
+
+    const HLAArrayDataType* getDataType() const
+    { return _value->getDataType(); }
+    void setDataType(const HLAArrayDataType* dataType)
+    { _value->setDataType(dataType); }
+
+private:
+    SGSharedPtr<HLAQuat3DataElement<T> > _value;
+};
+
+typedef HLAQuat3Data<float> HLAQuat3fData;
+typedef HLAQuat3Data<double> HLAQuat3dData;
 
 }
 

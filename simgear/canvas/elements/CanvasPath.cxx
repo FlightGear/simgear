@@ -32,6 +32,25 @@ namespace canvas
   typedef std::vector<VGubyte>  CmdList;
   typedef std::vector<VGfloat>  CoordList;
 
+
+  static const VGubyte shCoordsPerCommand[] = {
+    0, /* VG_CLOSE_PATH */
+    2, /* VG_MOVE_TO */
+    2, /* VG_LINE_TO */
+    1, /* VG_HLINE_TO */
+    1, /* VG_VLINE_TO */
+    4, /* VG_QUAD_TO */
+    6, /* VG_CUBIC_TO */
+    2, /* VG_SQUAD_TO */
+    4, /* VG_SCUBIC_TO */
+    5, /* VG_SCCWARC_TO */
+    5, /* VG_SCWARC_TO */
+    5, /* VG_LCCWARC_TO */
+    5  /* VG_LCWARC_TO */
+  };
+  static const VGubyte shNumCommands = sizeof(shCoordsPerCommand)
+                                     / sizeof(shCoordsPerCommand[0]);
+
   /**
    * Helper to split and convert comma/whitespace separated floating point
    * values
@@ -255,6 +274,91 @@ namespace canvas
         glPopClientAttrib();
       }
 
+      osg::BoundingBox getTransformedBounds(const osg::Matrix& mat) const
+      {
+        osg::BoundingBox bb;
+
+        osg::Vec2f cur; // VG "Current point" (in local coordinates)
+        VGubyte cmd_index = 0;
+        for( size_t i = 0,              ci = 0;
+                    i < _cmds.size() && ci < _coords.size();
+                  ++i,                  ci += shCoordsPerCommand[cmd_index] )
+        {
+          VGubyte rel = _cmds[i] & 1,
+                  cmd = _cmds[i] & ~1;
+
+          cmd_index = cmd / 2;
+          if( cmd_index >= shNumCommands )
+            return osg::BoundingBox();
+
+          const VGubyte max_coords = 3;
+          osg::Vec2f points[max_coords];
+          VGubyte num_coords = 0;
+
+          switch( cmd )
+          {
+            case VG_CLOSE_PATH:
+              break;
+            case VG_MOVE_TO:
+            case VG_LINE_TO:
+            case VG_SQUAD_TO:
+              // x0, y0
+              points[ num_coords++ ].set(_coords[ci], _coords[ci + 1]);
+              break;
+            case VG_HLINE_TO:
+              // x0
+              points[ num_coords++ ].set( _coords[ci] + (rel ? cur.x() : 0),
+                                          cur.y() );
+              // We have handled rel/abs already, so no need to do it again...
+              rel = 0;
+              break;
+            case VG_VLINE_TO:
+              // y0
+              points[ num_coords++ ].set( cur.x(),
+                                          _coords[ci] + (rel ? cur.y() : 0) );
+              // We have handled rel/abs already, so no need to do it again...
+              rel = 0;
+              break;
+            case VG_QUAD_TO:
+            case VG_SCUBIC_TO:
+              // x0,y0,x1,y1
+              points[ num_coords++ ].set(_coords[ci    ], _coords[ci + 1]);
+              points[ num_coords++ ].set(_coords[ci + 2], _coords[ci + 3]);
+              break;
+            case VG_CUBIC_TO:
+              // x0,y0,x1,y1,x2,y2
+              points[ num_coords++ ].set(_coords[ci    ], _coords[ci + 1]);
+              points[ num_coords++ ].set(_coords[ci + 2], _coords[ci + 3]);
+              points[ num_coords++ ].set(_coords[ci + 4], _coords[ci + 5]);
+              break;
+            case VG_SCCWARC_TO:
+            case VG_SCWARC_TO:
+            case VG_LCCWARC_TO:
+            case VG_LCWARC_TO:
+              // rh,rv,rot,x0,y0
+              points[ num_coords++ ].set(_coords[ci + 3], _coords[ci + 4]);
+              break;
+            default:
+              SG_LOG(SG_GL, SG_WARN, "Unknown VG command: " << (int)cmd);
+              return osg::BoundingBox();
+          }
+
+          assert(num_coords <= max_coords);
+          for(VGubyte i = 0; i < num_coords; ++i)
+          {
+            if( rel )
+              points[i] += cur;
+
+            bb.expandBy( transformPoint(mat, points[i]) );
+          }
+
+          if( num_coords > 0 )
+            cur = points[ num_coords - 1 ];
+        }
+
+        return bb;
+      }
+
       /**
        * Compute the bounding box
        */
@@ -308,6 +412,17 @@ namespace canvas
       VGfloat               _stroke_width;
       std::vector<VGfloat>  _stroke_dash;
       VGCapStyle            _stroke_linecap;
+
+      osg::Vec3f transformPoint( const osg::Matrix& m,
+                                 osg::Vec2f pos ) const
+      {
+        return osg::Vec3
+        (
+          m(0, 0) * pos[0] + m(1, 0) * pos[1] + m(3, 0),
+          m(0, 1) * pos[0] + m(1, 1) * pos[1] + m(3, 1),
+          0
+        );
+      }
 
       /**
        * Initialize/Update the OpenVG path
@@ -394,6 +509,12 @@ namespace canvas
     }
 
     Element::update(dt);
+  }
+
+  //----------------------------------------------------------------------------
+  osg::BoundingBox Path::getTransformedBounds(const osg::Matrix& m) const
+  {
+    return _path->getTransformedBounds(m);
   }
 
   //----------------------------------------------------------------------------

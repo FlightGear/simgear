@@ -58,6 +58,8 @@ namespace canvas
 
       virtual bool traverse(EventVisitor& visitor);
 
+      virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+
     protected:
 
       typedef std::map<std::string, ElementFactory> ChildFactories;

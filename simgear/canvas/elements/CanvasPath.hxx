@@ -37,6 +37,8 @@ namespace canvas
 
       virtual void update(double dt);
 
+      virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+
     protected:
 
       enum PathAttributes

@@ -133,6 +133,28 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  osg::BoundingBox Group::getTransformedBounds(const osg::Matrix& m) const
+  {
+    osg::BoundingBox bb;
+
+    BOOST_FOREACH( ChildList::value_type child, _children )
+    {
+      if( !child.second->getMatrixTransform()->getNodeMask() )
+        continue;
+
+      bb.expandBy
+      (
+        child.second->getTransformedBounds
+        (
+          child.second->getMatrixTransform()->getMatrix() * m
+        )
+      );
+    }
+
+    return bb;
+  }
+
+  //----------------------------------------------------------------------------
   void Group::childAdded(SGPropertyNode* child)
   {
     if( child->getParent() != _node )

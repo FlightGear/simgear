@@ -96,6 +96,11 @@ namespace canvas
        */
       void setBoundingBox(const osg::BoundingBox& bb);
 
+      /**
+       * Get bounding box with children/drawables transformed by passed matrix
+       */
+      virtual osg::BoundingBox getTransformedBounds(const osg::Matrix& m) const;
+
     protected:
 
       enum Attributes

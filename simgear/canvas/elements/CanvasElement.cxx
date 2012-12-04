@@ -317,6 +317,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  osg::BoundingBox Element::getTransformedBounds(const osg::Matrix& m) const
+  {
+    return osg::BoundingBox();
+  }
+
+  //----------------------------------------------------------------------------
   Element::Element( const CanvasWeakPtr& canvas,
                     const SGPropertyNode_ptr& node,
                     const Style& parent_style,

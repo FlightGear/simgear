@@ -41,7 +41,7 @@ using std::vector;
 class SGNewCloud {
 
 public:
-        SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def);
+        SGNewCloud(const SGPath &texture_root, const SGPropertyNode *cld_def, mt* s);
 
         ~SGNewCloud();
 
@@ -103,7 +103,7 @@ private:
         static float sprite_density;
         
         // RNG seed for this cloud
-        mt seed;
+        mt* seed;
 
         osg::Geometry* createOrthQuad(float w, float h, int varieties_x, int varieties_y);
 };

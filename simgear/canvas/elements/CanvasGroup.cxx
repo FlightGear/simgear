@@ -133,6 +133,23 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool Group::setStyle(const SGPropertyNode* style)
+  {
+    if(    style->getParent() != _node
+        && _style.find(style->getNameString()) != _style.end() )
+      return false;
+
+    bool handled = false;
+    BOOST_FOREACH( ChildList::value_type child, _children )
+    {
+      if( child.second->setStyle(style) )
+        handled = true;
+    }
+
+    return handled;
+  }
+
+  //----------------------------------------------------------------------------
   osg::BoundingBox Group::getTransformedBounds(const osg::Matrix& m) const
   {
     osg::BoundingBox bb;
@@ -174,6 +191,7 @@ namespace canvas
     }
 
     _style[ child->getNameString() ] = child;
+    setStyle(child);
   }
 
   //----------------------------------------------------------------------------

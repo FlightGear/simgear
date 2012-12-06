@@ -298,6 +298,18 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool Element::setStyle(const SGPropertyNode* child)
+  {
+    StyleSetters::const_iterator setter =
+      _style_setters.find(child->getNameString());
+    if( setter == _style_setters.end() )
+      return false;
+
+    setter->second(child);
+    return true;
+  }
+
+  //----------------------------------------------------------------------------
   void Element::setBoundingBox(const osg::BoundingBox& bb)
   {
     if( _bounding_box.empty() )
@@ -362,18 +374,6 @@ namespace canvas
   {
     BOOST_FOREACH( Style::value_type style, _style )
       setStyle(style.second);
-  }
-
-  //----------------------------------------------------------------------------
-  bool Element::setStyle(const SGPropertyNode* child)
-  {
-    StyleSetters::const_iterator setter =
-      _style_setters.find(child->getNameString());
-    if( setter == _style_setters.end() )
-      return false;
-
-    setter->second(child);
-    return true;
   }
 
 } // namespace canvas

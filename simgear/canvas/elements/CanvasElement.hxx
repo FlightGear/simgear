@@ -91,6 +91,8 @@ namespace canvas
                                  SGPropertyNode * child );
       virtual void valueChanged(SGPropertyNode * child);
 
+      virtual bool setStyle(const SGPropertyNode* child);
+
       /**
        * Write the given bounding box to the property tree
        */
@@ -182,7 +184,6 @@ namespace canvas
       void setDrawable(osg::Drawable* drawable);
 
       void setupStyle();
-      bool setStyle(const SGPropertyNode* child);
 
     private:
 

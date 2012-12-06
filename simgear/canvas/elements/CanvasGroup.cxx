@@ -41,7 +41,9 @@ namespace canvas
                             const Style& style,
                             Element* parent )
   {
-    return ElementPtr( new T(canvas, node, style, parent) );
+    ElementPtr el( new T(canvas, node, style, parent) );
+    el->setSelf(el);
+    return el;
   }
 
   //----------------------------------------------------------------------------

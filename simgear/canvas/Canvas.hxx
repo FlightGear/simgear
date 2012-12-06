@@ -134,6 +134,8 @@ namespace canvas
       SystemAdapterPtr  _system_adapter;
       CanvasMgr        *_canvas_mgr;
 
+      std::auto_ptr<EventManager>   _event_manager;
+
       int _size_x,
           _size_y,
           _view_width,
@@ -155,7 +157,7 @@ namespace canvas
            _visible;
 
       ODGauge _texture;
-      std::auto_ptr<Group> _root_group;
+      GroupPtr _root_group;
 
       CullCallbackPtr _cull_callback;
       bool _render_always; //<! Used to disable automatic lazy rendering (culling)

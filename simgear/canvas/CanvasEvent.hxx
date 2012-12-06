@@ -42,6 +42,7 @@ namespace canvas
 
       Type              type;
       ElementWeakPtr    target;
+      double            time;
       bool              propagation_stopped;
 
       Event();
@@ -54,6 +55,9 @@ namespace canvas
       std::string getTypeString() const;
 
       ElementWeakPtr getTarget() const;
+
+      double getTime() const;
+
       void stopPropagation();
 
       static Type strToType(const std::string& str);

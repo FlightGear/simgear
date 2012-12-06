@@ -58,6 +58,7 @@ namespace canvas
 
 #undef SG_FWD_DECL
 
+  class EventManager;
   class EventVisitor;
 
   typedef std::map<std::string, const SGPropertyNode*> Style;

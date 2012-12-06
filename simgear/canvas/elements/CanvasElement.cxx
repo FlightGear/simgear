@@ -55,6 +55,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  ElementWeakPtr Element::getWeakPtr() const
+  {
+    return boost::static_pointer_cast<Element>(_self.lock());
+  }
+
+  //----------------------------------------------------------------------------
   void Element::update(double dt)
   {
     if( !_transform->getNodeMask() )
@@ -138,18 +144,6 @@ namespace canvas
     );
 
     return naNil();
-  }
-
-  //----------------------------------------------------------------------------
-  SGConstPropertyNode_ptr Element::getProps() const
-  {
-    return _node;
-  }
-
-  //----------------------------------------------------------------------------
-  SGPropertyNode_ptr Element::getProps()
-  {
-    return  _node;
   }
 
   //----------------------------------------------------------------------------
@@ -339,17 +333,14 @@ namespace canvas
                     const SGPropertyNode_ptr& node,
                     const Style& parent_style,
                     Element* parent ):
+    PropertyBasedElement(node),
     _canvas( canvas ),
     _parent( parent ),
     _transform_dirty( false ),
     _transform( new osg::MatrixTransform ),
-    _node( node ),
     _style( parent_style ),
     _drawable( 0 )
   {
-    assert( _node );
-    _node->addChangeListener(this);
-
     SG_LOG
     (
       SG_GL,

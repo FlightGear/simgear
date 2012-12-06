@@ -5,6 +5,7 @@ set(HEADERS
   Canvas.hxx
   CanvasEvent.hxx
   CanvasEventListener.hxx
+  CanvasEventManager.hxx
   CanvasEventTypes.hxx
   CanvasEventVisitor.hxx
   CanvasMgr.hxx
@@ -19,6 +20,7 @@ set(SOURCES
   Canvas.cxx
   CanvasEvent.cxx
   CanvasEventListener.cxx
+  CanvasEventManager.cxx
   CanvasEventVisitor.cxx
   CanvasMgr.cxx
   CanvasPlacement.cxx

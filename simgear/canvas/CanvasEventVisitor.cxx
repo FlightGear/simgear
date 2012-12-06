@@ -35,7 +35,7 @@ namespace canvas
   {
     if( mode == TRAVERSE_DOWN )
     {
-      EventTarget target = {0, pos, delta};
+      EventTarget target = {ElementWeakPtr(), pos, delta};
       _target_path.push_back(target);
     }
   }
@@ -83,7 +83,7 @@ namespace canvas
         m(0, 1) * delta[0] + m(1, 1) * delta[1]
       );
 
-      EventTarget target = {&el, local_pos, local_delta};
+      EventTarget target = {el.getWeakPtr(), local_pos, local_delta};
       _target_path.push_back(target);
 
       if( el.traverse(*this) || _target_path.size() <= 2 )
@@ -97,36 +97,9 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool EventVisitor::propagateEvent(const EventPtr& event)
+  const EventPropagationPath& EventVisitor::getPropagationPath() const
   {
-    // Event propagation similar to DOM Level 3 event flow:
-    // http://www.w3.org/TR/DOM-Level-3-Events/#event-flow
-
-    // Capturing phase
-//    for( EventTargets::iterator it = _target_path.begin();
-//                                it != _target_path.end();
-//                              ++it )
-//    {
-//      if( it->element )
-//        std::cout << it->element->getProps()->getPath() << " "
-//                  << "(" << it->local_pos.x() << "|" << it->local_pos.y() << ")\n";
-//    }
-
-    // Bubbling phase
-    for( EventTargets::reverse_iterator it = _target_path.rbegin();
-                                        it != _target_path.rend();
-                                      ++it )
-    {
-      if( !it->element )
-        continue;
-
-      it->element->callListeners(event);
-
-      if( event->propagation_stopped )
-        return true;
-    }
-
-    return true;
+    return _target_path;
   }
 
 } // namespace canvas

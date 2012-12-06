@@ -21,7 +21,7 @@
 #define CANVAS_EVENT_VISITOR_HXX_
 
 #include "canvas_fwd.hxx"
-#include <deque>
+#include "CanvasEventManager.hxx"
 
 namespace simgear
 {
@@ -45,19 +45,13 @@ namespace canvas
       virtual bool traverse(Element& el);
       virtual bool apply(Element& el);
 
-      bool propagateEvent(const EventPtr& event);
+      const EventPropagationPath& getPropagationPath() const;
 
     protected:
-      struct EventTarget
-      {
-        Element*   element;
-        osg::Vec2f local_pos,
-                   local_delta;
-      };
-      typedef std::deque<EventTarget> EventTargets;
 
-      EventTargets  _target_path;
-      TraverseMode  _traverse_mode;
+      TraverseMode          _traverse_mode;
+      EventPropagationPath  _target_path;
+
   };
 
 } // namespace canvas

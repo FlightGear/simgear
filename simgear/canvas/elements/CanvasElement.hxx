@@ -21,7 +21,7 @@
 
 #include <simgear/canvas/canvas_fwd.hxx>
 #include <simgear/canvas/CanvasEvent.hxx>
-#include <simgear/props/props.hxx>
+#include <simgear/props/PropertyBasedElement.hxx>
 #include <simgear/misc/stdint.hxx> // for uint32_t
 #include <simgear/nasal/cppbind/Ghost.hxx>
 
@@ -42,7 +42,7 @@ namespace canvas
 {
 
   class Element:
-    public SGPropertyChangeListener
+    public PropertyBasedElement
   {
     public:
       typedef boost::function<void(const SGPropertyNode*)> StyleSetter;
@@ -62,6 +62,8 @@ namespace canvas
        */
       virtual ~Element() = 0;
 
+      ElementWeakPtr getWeakPtr() const;
+
       /**
        * Called every frame to update internal state
        *
@@ -70,9 +72,6 @@ namespace canvas
       virtual void update(double dt);
 
       naRef addEventListener(const nasal::CallContext& ctx);
-
-      SGConstPropertyNode_ptr getProps() const;
-      SGPropertyNode_ptr getProps();
 
       virtual bool accept(EventVisitor& visitor);
       virtual bool ascend(EventVisitor& visitor);
@@ -121,13 +120,13 @@ namespace canvas
 
       CanvasWeakPtr _canvas;
       Element      *_parent;
+
       uint32_t _attributes_dirty;
 
       bool _transform_dirty;
       osg::ref_ptr<osg::MatrixTransform>    _transform;
       std::vector<TransformType>            _transform_types;
 
-      SGPropertyNode_ptr                _node;
       Style                             _style;
       StyleSetters                      _style_setters;
       std::vector<SGPropertyNode_ptr>   _bounding_box;

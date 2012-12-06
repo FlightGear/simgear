@@ -17,6 +17,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 
 #include "Canvas.hxx"
+#include "CanvasEventManager.hxx"
 #include "CanvasEventVisitor.hxx"
 #include <simgear/canvas/MouseEvent.hxx>
 #include <simgear/canvas/CanvasPlacement.hxx>
@@ -58,6 +59,7 @@ namespace canvas
   Canvas::Canvas(SGPropertyNode* node):
     PropertyBasedElement(node),
     _canvas_mgr(0),
+    _event_manager(new EventManager),
     _size_x(-1),
     _size_y(-1),
     _view_width(-1),
@@ -356,9 +358,7 @@ namespace canvas
     if( !_root_group->accept(visitor) )
       return false;
 
-    // TODO create special events like click/dblclick etc.
-
-    return visitor.propagateEvent(event);
+    return _event_manager->handleEvent(event, visitor.getPropagationPath());
   }
 
   //----------------------------------------------------------------------------
@@ -507,6 +507,7 @@ namespace canvas
     CanvasPtr canvas = boost::static_pointer_cast<Canvas>(self);
 
     _root_group.reset( new Group(canvas, _node) );
+    _root_group->setSelf(_root_group);
 
     // Remove automatically created property listener as we forward them on our
     // own

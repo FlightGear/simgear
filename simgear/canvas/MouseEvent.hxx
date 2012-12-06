@@ -34,7 +34,8 @@ namespace canvas
       MouseEvent():
         button(-1),
         state(-1),
-        mod(-1)
+        mod(-1),
+        click_count(0)
       {}
 
       osg::Vec2f getPos() const { return pos; }
@@ -47,11 +48,14 @@ namespace canvas
       float getDeltaX() const { return delta.x(); }
       float getDeltaY() const { return delta.y(); }
 
+      int getCurrentClickCount() const { return click_count; }
+
       osg::Vec2f  pos,
                   delta;
-      int         button, //<! Button for this event
-                  state,  //<! Current button state
-                  mod;    //<! Keyboard modifier state
+      int         button,       //<! Button for this event
+                  state,        //<! Current button state
+                  mod,          //<! Keyboard modifier state
+                  click_count;  //<! Current click count
   };
 
 } // namespace canvas

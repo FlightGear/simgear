@@ -63,6 +63,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  double Event::getTime() const
+  {
+    return time;
+  }
+
+  //----------------------------------------------------------------------------
   void Event::stopPropagation()
   {
     propagation_stopped = true;

@@ -21,7 +21,7 @@ set(SOURCES
 
 simgear_scene_component(sound sound "${SOURCES}" "${HEADERS}")
 
-if(ENABLE_TESTS)
+if(ENABLE_TESTS AND ENABLE_SOUND)
 
 if (SIMGEAR_SHARED)
     set(SOUND_TEST_LIBS SimGearScene)
@@ -45,4 +45,4 @@ create_test(openal_test1)
 create_test(openal_test2)
 create_test(openal_test3)
 create_test(openal_test4)
-endif(ENABLE_TESTS)
+endif()

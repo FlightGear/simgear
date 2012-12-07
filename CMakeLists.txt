@@ -177,6 +177,7 @@ else()
     
     if (ENABLE_SOUND)
         find_package(OpenAL REQUIRED)
+        message(STATUS "Sound support: ENABLED")
     endif(ENABLE_SOUND)
     
     find_package(OpenSceneGraph 3.0.0 REQUIRED osgText osgSim osgDB osgParticle osgGA osgUtil)

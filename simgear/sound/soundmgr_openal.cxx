@@ -148,8 +148,9 @@ SGSoundMgr::~SGSoundMgr() {
 }
 
 // initialize the sound manager
-void SGSoundMgr::init() {
-
+void SGSoundMgr::init()
+{
+#ifdef ENABLE_SOUND
     if (is_working())
     {
         SG_LOG( SG_SOUND, SG_ALERT, "Oops, OpenAL sound manager is already initialized." );
@@ -247,10 +248,12 @@ void SGSoundMgr::init() {
     if (d->_free_sources.empty()) {
         SG_LOG(SG_SOUND, SG_ALERT, "Unable to grab any OpenAL sources!");
     }
+#endif
 }
 
 void SGSoundMgr::reinit()
 {
+#ifndef ENABLE_SOUND
     bool was_active = _active;
 
     if (was_active)
@@ -263,9 +266,12 @@ void SGSoundMgr::reinit()
 
     if (was_active)
         resume();
+#endif
 }
 
-void SGSoundMgr::activate() {
+void SGSoundMgr::activate()
+{
+#ifdef ENABLE_SOUND
     if ( is_working() ) {
         _active = true;
                 
@@ -276,11 +282,13 @@ void SGSoundMgr::activate() {
             sgrp->activate();
         }
     }
+#endif
 }
 
 // stop the sound manager
-void SGSoundMgr::stop() {
-
+void SGSoundMgr::stop()
+{
+#ifdef ENABLE_SOUND
     // first stop all sample groups
     sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
     sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
@@ -319,9 +327,12 @@ void SGSoundMgr::stop() {
         _renderer = "unknown";
         _vendor = "unknown";
     }
+#endif
 }
 
-void SGSoundMgr::suspend() {
+void SGSoundMgr::suspend()
+{
+#ifdef ENABLE_SOUND
     if (is_working()) {
         sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
         sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
@@ -331,9 +342,12 @@ void SGSoundMgr::suspend() {
         }
         _active = false;
     }
+#endif
 }
 
-void SGSoundMgr::resume() {
+void SGSoundMgr::resume()
+{
+#ifdef ENABLE_SOUND
     if (is_working()) {
         sample_group_map_iterator sample_grp_current = d->_sample_groups.begin();
         sample_group_map_iterator sample_grp_end = d->_sample_groups.end();
@@ -343,10 +357,13 @@ void SGSoundMgr::resume() {
         }
         _active = true;
     }
+#endif
 }
 
 // run the audio scheduler
-void SGSoundMgr::update( double dt ) {
+void SGSoundMgr::update( double dt )
+{
+#ifdef ENABLE_SOUND
     if (_active) {
         alcSuspendContext(d->_context);
 
@@ -389,6 +406,7 @@ if (isNaN(_velocity.data())) printf("NaN in listener velocity\n");
 
         alcProcessContext(d->_context);
     }
+#endif
 }
 
 // add a sample group, return true if successful
@@ -486,6 +504,7 @@ void SGSoundMgr::release_source( unsigned int source )
 
     it = std::find(d->_sources_in_use.begin(), d->_sources_in_use.end(), source);
     if ( it != d->_sources_in_use.end() ) {
+  #ifdef ENABLE_SOUND
         ALint result;
 
         alGetSourcei( source, AL_SOURCE_STATE, &result );
@@ -495,6 +514,7 @@ void SGSoundMgr::release_source( unsigned int source )
 
         alSourcei( source, AL_BUFFER, 0 );	// detach the associated buffer
         testForALError("release_source");
+  #endif
         d->_free_sources.push_back( source );
         d->_sources_in_use.erase( it );
     }
@@ -503,7 +523,7 @@ void SGSoundMgr::release_source( unsigned int source )
 unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
 {
     ALuint buffer = NO_BUFFER;
-
+#ifdef ENABLE_SOUND
     if ( !sample->is_valid_buffer() ) {
         // sample was not yet loaded or removed again
         string sample_name = sample->get_sample_name();
@@ -562,7 +582,7 @@ unsigned int SGSoundMgr::request_buffer(SGSoundSample *sample)
     else {
         buffer = sample->get_buffer();
     }
-
+#endif
     return buffer;
 }
 
@@ -580,8 +600,10 @@ void SGSoundMgr::release_buffer(SGSoundSample *sample)
         sample->no_valid_buffer();
         buffer_it->second.refctr--;
         if (buffer_it->second.refctr == 0) {
+#ifdef ENABLE_SOUND
             ALuint buffer = buffer_it->second.id;
             alDeleteBuffers(1, &buffer);
+#endif
             d->_buffers.erase( buffer_it );
             testForALError("release buffer");
         }
@@ -623,6 +645,7 @@ bool SGSoundMgr::load(const string &samplepath, void **dbuf, int *fmt,
 vector<const char*> SGSoundMgr::get_available_devices()
 {
     vector<const char*> devices;
+#ifdef ENABLE_SOUND
     const ALCchar *s;
 
     if (alcIsExtensionPresent(NULL, "ALC_enumerate_all_EXT") == AL_TRUE) {
@@ -642,7 +665,7 @@ vector<const char*> SGSoundMgr::get_available_devices()
         }
         devices.push_back(ptr);
     }
-
+#endif
     return devices;
 }
 
@@ -659,17 +682,20 @@ bool SGSoundMgr::testForError(void *p, string s)
 
 bool SGSoundMgr::testForALError(string s)
 {
+#ifdef ENABLE_SOUND
     ALenum error = alGetError();
     if (error != AL_NO_ERROR)  {
        SG_LOG( SG_SOUND, SG_ALERT, "AL Error (sound manager): "
                                       << alGetString(error) << " at " << s);
        return true;
     }
+#endif
     return false;
 }
 
 bool SGSoundMgr::testForALCError(string s)
 {
+#ifdef ENABLE_SOUND
     ALCenum error;
     error = alcGetError(d->_device);
     if (error != ALC_NO_ERROR) {
@@ -678,6 +704,7 @@ bool SGSoundMgr::testForALCError(string s)
                                        << s);
         return true;
     }
+#endif
     return false;
 }
 

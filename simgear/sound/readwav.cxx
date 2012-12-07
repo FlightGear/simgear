@@ -284,13 +284,14 @@ ALvoid* loadWAVFromFile(const SGPath& path, ALenum& format, ALsizei& size, ALflo
 
 ALuint createBufferFromFile(const SGPath& path)
 {
+  ALuint buffer = -1;
+#ifdef ENABLE_SOUND
   ALenum format;
   ALsizei size;
   ALfloat sampleFrequency;
   ALvoid* data = loadWAVFromFile(path, format, size, sampleFrequency);
   assert(data);
   
-  ALuint buffer;
   alGenBuffers(1, &buffer);
   if (alGetError() != AL_NO_ERROR) {
     free(data);
@@ -303,7 +304,7 @@ ALuint createBufferFromFile(const SGPath& path)
     free(data);
     throw sg_io_exception("OpenAL setting buffer data failed", sg_location(path.str()));
   }
-    
+#endif 
   return buffer;
 }
 

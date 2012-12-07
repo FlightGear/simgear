@@ -46,14 +46,11 @@ namespace canvas
     protected:
       struct StampedPropagationPath
       {
-        StampedPropagationPath():
-          time(0)
-        {}
+        StampedPropagationPath();
+        StampedPropagationPath(const EventPropagationPath& path, double time);
 
-        StampedPropagationPath(const EventPropagationPath& path, double time):
-          path(path),
-          time(time)
-        {}
+        void clear();
+        bool valid() const;
 
         EventPropagationPath path;
         double time;

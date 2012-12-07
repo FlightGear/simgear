@@ -29,6 +29,38 @@ namespace canvas
   const double multi_click_timeout = 0.4;
 
   //----------------------------------------------------------------------------
+  EventManager::StampedPropagationPath::StampedPropagationPath():
+    time(0)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+
+  EventManager::StampedPropagationPath::StampedPropagationPath(
+    const EventPropagationPath& path,
+    double time
+  ):
+    path(path),
+    time(time)
+  {
+
+  }
+
+  //----------------------------------------------------------------------------
+  void EventManager::StampedPropagationPath::clear()
+  {
+    path.clear();
+    time = 0;
+  }
+
+  //----------------------------------------------------------------------------
+  bool EventManager::StampedPropagationPath::valid() const
+  {
+    return !path.empty() && time > 0;
+  }
+
+  //----------------------------------------------------------------------------
   EventManager::EventManager():
     _current_click_count(0)
   {
@@ -39,7 +71,6 @@ namespace canvas
   bool EventManager::handleEvent( const MouseEventPtr& event,
                                   const EventPropagationPath& path )
   {
-    propagateEvent(event, path);
     switch( event->type )
     {
       case Event::MOUSE_DOWN:
@@ -51,16 +82,30 @@ namespace canvas
           // Ignore mouse up without any previous mouse down
           return false;
 
+        // normal mouseup
+        propagateEvent(event, path);
+
+        // now handle click/dblclick
         if( checkClickDistance(path, _last_mouse_down.path) )
           handleClick(event, getCommonAncestor(_last_mouse_down.path, path));
 
-        break;
+        _last_mouse_down.clear();
+
+        return true;
       }
+      case Event::DRAG:
+        if( !_last_mouse_down.valid() )
+          return false;
+        else
+          return propagateEvent(event, _last_mouse_down.path);
+      case Event::WHEEL:
+      case Event::MOUSE_MOVE:
+        break;
       default:
         return false;
     }
 
-    return true;
+    return propagateEvent(event, path);
   }
 
   //----------------------------------------------------------------------------
@@ -135,8 +180,12 @@ namespace canvas
         // (eg. removed by another event handler)
         continue;
 
-      if( mouse_event )
+      if( mouse_event && event->type != Event::DRAG )
       {
+        // TODO transform pos and delta for drag events. Maybe we should just
+        //      store the global coordinates and convert to local coordinates
+        //      on demand.
+
         // Position and delta are specified in local coordinate system of
         // current element
         mouse_event->pos = it->local_pos;

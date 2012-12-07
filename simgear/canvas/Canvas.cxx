@@ -336,6 +336,18 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  int Canvas::getViewWidth() const
+  {
+    return _view_width;
+  }
+
+  //----------------------------------------------------------------------------
+  int Canvas::getViewHeight() const
+  {
+    return _view_height;
+  }
+
+  //----------------------------------------------------------------------------
   bool Canvas::handleMouseEvent(const MouseEventPtr& event)
   {
     _mouse_x = event->pos.x();

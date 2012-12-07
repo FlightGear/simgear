@@ -137,6 +137,10 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Group::setStyle(const SGPropertyNode* style)
   {
+    // Don't propagate styles directly applicable to this group
+    if( Element::setStyle(style) )
+      return true;
+
     if(    style->getParent() != _node
         && _style.find(style->getNameString()) != _style.end() )
       return false;
@@ -192,8 +196,12 @@ namespace canvas
       return;
     }
 
-    _style[ child->getNameString() ] = child;
-    setStyle(child);
+    if( !Element::setStyle(child) )
+    {
+      // Only add style if not applicable to group itself
+      _style[ child->getNameString() ] = child;
+      setStyle(child);
+    }
   }
 
   //----------------------------------------------------------------------------

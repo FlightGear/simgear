@@ -114,6 +114,9 @@ namespace canvas
       void setViewWidth(int w);
       void setViewHeight(int h);
 
+      int getViewWidth() const;
+      int getViewHeight() const;
+
       bool handleMouseEvent(const MouseEventPtr& event);
 
       virtual void childAdded( SGPropertyNode * parent,

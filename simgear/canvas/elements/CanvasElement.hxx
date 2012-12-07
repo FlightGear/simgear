@@ -93,6 +93,14 @@ namespace canvas
       virtual bool setStyle(const SGPropertyNode* child);
 
       /**
+       * Set clipping shape
+       *
+       * @note Only "rect(<top>, <right>, <bottom>, <left>)" is supported
+       * @see http://www.w3.org/TR/CSS21/visufx.html#propdef-clip
+       */
+      void setClip(const std::string& clip);
+
+      /**
        * Write the given bounding box to the property tree
        */
       void setBoundingBox(const osg::BoundingBox& bb);
@@ -181,6 +189,11 @@ namespace canvas
       virtual void childChanged(SGPropertyNode * child){}
 
       void setDrawable(osg::Drawable* drawable);
+
+      /**
+       * Get stateset of drawable if available or use transform otherwise
+       */
+      osg::StateSet* getOrCreateStateSet();
 
       void setupStyle();
 

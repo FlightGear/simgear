@@ -24,9 +24,13 @@
 
 #include <osg/Drawable>
 #include <osg/Geode>
+#include <osg/Scissor>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <cassert>
 #include <cstring>
@@ -304,6 +308,71 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  void Element::setClip(const std::string& clip)
+  {
+    if( clip.empty() || clip == "auto" )
+    {
+      getOrCreateStateSet()->removeAttribute(osg::StateAttribute::SCISSOR);
+      return;
+    }
+
+    // TODO generalize CSS property parsing
+    const std::string RECT("rect(");
+    if(    !boost::ends_with(clip, ")")
+        || !boost::starts_with(clip, RECT) )
+    {
+      SG_LOG(SG_GENERAL, SG_WARN, "Canvas: invalid clip: " << clip);
+      return;
+    }
+
+    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+    const boost::char_separator<char> del(", \t\npx");
+
+    tokenizer tokens(clip.begin() + RECT.size(), clip.end() - 1, del);
+    int comp = 0;
+    int values[4];
+    for( tokenizer::const_iterator tok = tokens.begin();
+         tok != tokens.end() && comp < 4;
+         ++tok, ++comp )
+    {
+      values[comp] = boost::lexical_cast<int>(*tok);
+    }
+
+    if( comp < 4 )
+    {
+      SG_LOG(SG_GENERAL, SG_WARN, "Canvas: invalid clip: " << clip);
+      return;
+    }
+
+    float scale_x = 1,
+          scale_y = 1;
+
+    CanvasPtr canvas = _canvas.lock();
+    if( canvas )
+    {
+      // The scissor rectangle isn't affected by any transformation, so we need
+      // to convert to image/canvas coordinates on our selves.
+      scale_x = canvas->getSizeX()
+              / static_cast<float>(canvas->getViewWidth());
+      scale_y = canvas->getSizeY()
+              / static_cast<float>(canvas->getViewHeight());
+    }
+
+    osg::Scissor* scissor = new osg::Scissor();
+    // <top>, <right>, <bottom>, <left>
+    scissor->x() = scale_x * values[3];
+    scissor->y() = scale_y * values[0];
+    scissor->width() = scale_x * (values[1] - values[3]);
+    scissor->height() = scale_y * (values[2] - values[0]);
+
+    if( canvas )
+      // Canvas has y axis upside down
+      scissor->y() = canvas->getSizeY() - scissor->y() - scissor->height();
+
+    getOrCreateStateSet()->setAttributeAndModes(scissor);
+  }
+
+  //----------------------------------------------------------------------------
   void Element::setBoundingBox(const osg::BoundingBox& bb)
   {
     if( _bounding_box.empty() )
@@ -347,6 +416,8 @@ namespace canvas
       SG_DEBUG,
       "New canvas element " << node->getPath()
     );
+
+    addStyle("clip", &Element::setClip, this);
   }
 
   //----------------------------------------------------------------------------
@@ -358,6 +429,13 @@ namespace canvas
     osg::ref_ptr<osg::Geode> geode = new osg::Geode;
     geode->addDrawable(_drawable);
     _transform->addChild(geode);
+  }
+
+  //----------------------------------------------------------------------------
+  osg::StateSet* Element::getOrCreateStateSet()
+  {
+    return _drawable ? _drawable->getOrCreateStateSet()
+                     : _transform->getOrCreateStateSet();
   }
 
   //----------------------------------------------------------------------------

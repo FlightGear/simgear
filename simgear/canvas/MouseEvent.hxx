@@ -38,19 +38,23 @@ namespace canvas
         click_count(0)
       {}
 
-      osg::Vec2f getPos() const { return pos; }
-      osg::Vec3f getPos3() const { return osg::Vec3f(pos, 0); }
+      osg::Vec2f getScreenPos() const { return screen_pos; }
+      osg::Vec2f getClientPos() const { return client_pos; }
       osg::Vec2f getDelta() const { return delta; }
 
-      float getPosX() const { return pos.x(); }
-      float getPosY() const { return pos.y(); }
+      float getScreenX() const { return screen_pos.x(); }
+      float getScreenY() const { return screen_pos.y(); }
+
+      float getClientX() const { return client_pos.x(); }
+      float getClientY() const { return client_pos.y(); }
 
       float getDeltaX() const { return delta.x(); }
       float getDeltaY() const { return delta.y(); }
 
       int getCurrentClickCount() const { return click_count; }
 
-      osg::Vec2f  pos,
+      osg::Vec2f  screen_pos,   //<! Position in screen coordinates
+                  client_pos,   //<! Position in window/canvas coordinates
                   delta;
       int         button,       //<! Button for this event
                   state,        //<! Current button state

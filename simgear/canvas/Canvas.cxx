@@ -350,8 +350,8 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Canvas::handleMouseEvent(const MouseEventPtr& event)
   {
-    _mouse_x = event->pos.x();
-    _mouse_y = event->pos.y();
+    _mouse_x = event->client_pos.x();
+    _mouse_y = event->client_pos.y();
     _mouse_dx = event->delta.x();
     _mouse_dy = event->delta.y();
     _mouse_button = event->button;
@@ -365,7 +365,7 @@ namespace canvas
       return false;
 
     EventVisitor visitor( EventVisitor::TRAVERSE_DOWN,
-                          event->getPos(),
+                          event->getClientPos(),
                           event->getDelta() );
     if( !_root_group->accept(visitor) )
       return false;

@@ -1,6 +1,7 @@
 // constants.h -- various constant definitions
 //
 // Written by Curtis Olson, started February 2000.
+// Last change by Eric van den Berg, Dec 2012
 //
 // Copyright (C) 2000  Curtis L. Olson - http://www.flightgear.org/~curt/
 //
@@ -103,6 +104,34 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 /** Radius squared (meter) */
 #define SG_EQ_RAD_SQUARE_M   40680645877797.1344
 
+
+// Physical Constants, SI
+
+/**mean gravity on earth */
+#define SG_g0_m_p_s2          9.80665   // m/s2
+
+/**standard pressure at SL */
+#define SG_p0_Pa              101325.0 // Pa
+
+/**standard density at SL */
+#define SG_rho0_kg_p_m3       1.225 // kg/m3
+
+/**standard temperature at SL */
+#define SG_T0_K               288.15   // K (=15degC)
+
+/**specific gas constant of air*/
+#define SG_R_m2_p_s2_p_K      287.05   // m2/s2/K
+
+/**ratio of specific heats of air*/
+#define SG_gamma              1.4         // =cp/cv (cp = 1004.68 m2/s2 K , cv = 717.63 m2/s2 K)
+
+/**constant beta used to calculate dynamic viscosity */
+#define SG_beta_kg_p_sm_sqrK  1.458e-06   // kg/s/m/SQRT(K) 
+
+/** Sutherland constant */
+#define SG_S_K                110.4       // K
+
+
 // Conversions
 
 /** Arc seconds to radians.  (arcsec*pi)/(3600*180) = rad */
@@ -164,6 +193,9 @@ const float SG_RADIANS_TO_DEGREES = 180.0f / SG_PI;
 
 /** Inch Mercury to Pascal */
 #define SG_INHG_TO_PA       3386.388640341
+
+/** slug/ft3 to kg/m3 */
+#define SG_SLUGFT3_TO_KGPM3   515.379
 
 
 /** For divide by zero avoidance, this will be close enough to zero */

@@ -46,9 +46,10 @@ namespace canvas
       enum StatusFlags
       {
         STATUS_OK,
-        MISSING_SIZE_X = 0x0001,
-        MISSING_SIZE_Y = 0x0002,
-        CREATE_FAILED  = 0x0004
+        STATUS_DIRTY     = 1,
+        MISSING_SIZE_X = STATUS_DIRTY << 1,
+        MISSING_SIZE_Y = MISSING_SIZE_X << 1,
+        CREATE_FAILED  = MISSING_SIZE_Y << 1
       };
 
       /**

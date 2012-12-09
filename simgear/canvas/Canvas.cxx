@@ -159,15 +159,30 @@ namespace canvas
   //----------------------------------------------------------------------------
   void Canvas::update(double delta_time_sec)
   {
-    if( !_texture.serviceable() )
-    {
-      if( _status != STATUS_OK )
-        return;
+    if(    (!_texture.serviceable() && _status != STATUS_DIRTY)
+        || (_status & CREATE_FAILED) )
+      return;
 
+    if( _status == STATUS_DIRTY )
+    {
       _texture.setSize(_size_x, _size_y);
-      _texture.useImageCoords(true);
-      _texture.useStencil(true);
-      _texture.allocRT(/*_camera_callback*/);
+
+      if( !_texture.serviceable() )
+      {
+        _texture.useImageCoords(true);
+        _texture.useStencil(true);
+        _texture.allocRT(/*_camera_callback*/);
+      }
+      else
+      {
+        // Resizing causes a new texture to be created so we need to reapply all
+        // existing placements
+        for(size_t i = 0; i < _placements.size(); ++i)
+        {
+          if( !_placements[i].empty() )
+            _dirty_placements.push_back( _placements[i].front()->getProps() );
+        }
+      }
 
       osg::Camera* camera = _texture.getCamera();
 
@@ -183,6 +198,8 @@ namespace canvas
       if( _texture.serviceable() )
       {
         setStatusFlags(STATUS_OK);
+        setStatusFlags(STATUS_DIRTY, false);
+        _render_dirty = true;
       }
       else
       {
@@ -273,8 +290,7 @@ namespace canvas
     if( _size_x == sx )
       return;
     _size_x = sx;
-
-    // TODO resize if texture already allocated
+    setStatusFlags(STATUS_DIRTY);
 
     if( _size_x <= 0 )
       setStatusFlags(MISSING_SIZE_X);
@@ -291,8 +307,7 @@ namespace canvas
     if( _size_y == sy )
       return;
     _size_y = sy;
-
-    // TODO resize if texture already allocated
+    setStatusFlags(STATUS_DIRTY);
 
     if( _size_y <= 0 )
       setStatusFlags(MISSING_SIZE_Y);
@@ -545,7 +560,7 @@ namespace canvas
       _status_msg = "Missing size-y";
     else if( _status & CREATE_FAILED )
       _status_msg = "Creating render target failed";
-    else if( _status == STATUS_OK && !_texture.serviceable() )
+    else if( _status == STATUS_DIRTY )
       _status_msg = "Creation pending...";
     else
       _status_msg = "Ok";

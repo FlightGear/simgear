@@ -70,8 +70,7 @@ namespace canvas
   //----------------------------------------------------------------------------
   ODGauge::~ODGauge()
   {
-    if( camera.valid() && _system_adapter )
-      _system_adapter->removeCamera(camera.get());
+    clear();
   }
 
   //----------------------------------------------------------------------------
@@ -86,8 +85,10 @@ namespace canvas
     _size_x = size_x;
     _size_y = size_y < 0 ? size_x : size_y;
 
-    if( texture.valid() )
-      texture->setTextureSize(_size_x, _size_x);
+    if( serviceable() )
+      reinit();
+    else if( texture )
+      texture->setTextureSize(_size_x, _size_y);
   }
 
   //----------------------------------------------------------------------------
@@ -215,6 +216,25 @@ namespace canvas
       _system_adapter->addCamera(camera.get());
 
     rtAvailable = true;
+  }
+
+  //----------------------------------------------------------------------------
+  void ODGauge::reinit()
+  {
+    osg::NodeCallback* cull_callback = camera ? camera->getCullCallback() : 0;
+    clear();
+    allocRT(cull_callback);
+  }
+
+  //----------------------------------------------------------------------------
+  void ODGauge::clear()
+  {
+    if( camera.valid() && _system_adapter )
+      _system_adapter->removeCamera(camera.get());
+    camera.release();
+    texture.release();
+
+    rtAvailable = false;
   }
 
   //----------------------------------------------------------------------------

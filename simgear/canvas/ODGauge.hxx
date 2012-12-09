@@ -123,6 +123,8 @@ namespace canvas
 
       // Real initialization function. Bad name.
       void allocRT(osg::NodeCallback* camera_cull_callback = 0);
+      void reinit();
+      void clear();
 
     protected:
 

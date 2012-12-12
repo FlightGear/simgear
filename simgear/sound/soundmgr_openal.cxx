@@ -253,7 +253,6 @@ void SGSoundMgr::init()
 
 void SGSoundMgr::reinit()
 {
-#ifndef ENABLE_SOUND
     bool was_active = _active;
 
     if (was_active)
@@ -266,7 +265,6 @@ void SGSoundMgr::reinit()
 
     if (was_active)
         resume();
-#endif
 }
 
 void SGSoundMgr::activate()

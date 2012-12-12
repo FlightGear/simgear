@@ -122,6 +122,27 @@ public:
     return aValue;
   }
 
+#define SG_DEF_ASSIGN_OP(op)\
+  T operator op##=(const T rhs)\
+  {\
+    SGPropertyNode* n = getOrThrow();\
+    n->setValue<T>(n->getValue<T>() op rhs);\
+    return *this;\
+  }
+
+  SG_DEF_ASSIGN_OP(+)
+  SG_DEF_ASSIGN_OP(-)
+  SG_DEF_ASSIGN_OP(*)
+  SG_DEF_ASSIGN_OP(/)
+  SG_DEF_ASSIGN_OP(%)
+  SG_DEF_ASSIGN_OP(>>)
+  SG_DEF_ASSIGN_OP(<<)
+  SG_DEF_ASSIGN_OP(&)
+  SG_DEF_ASSIGN_OP(^)
+  SG_DEF_ASSIGN_OP(|)
+
+#undef SG_DEF_ASSIGN_OP
+
   SGPropertyNode* node() const
   {
     return PropertyObjectBase::node(false);

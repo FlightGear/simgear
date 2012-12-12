@@ -74,6 +74,12 @@ namespace simgear
             && _y1 <= y && y <= _y2;
       }
 
+      bool contains(T x, T y, T margin) const
+      {
+        return (_x1 - margin) <= x && x <= (_x2 + margin)
+            && (_y1 - margin) <= y && y <= (_y2 + margin);
+      }
+
     private:
       T _x1, _x2, _y1, _y2;
   };

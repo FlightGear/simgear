@@ -110,6 +110,27 @@ void testAssignment()
   a3 = 44;
   assert(a1 == 44);
 
+  // Compound assignment ops
+  a1 *= 2;
+  assert(a1 == 88);
+  a1 /= 2;
+  assert(a1 == 44);
+  a1 += 2;
+  assert(a1 == 46);
+  a1 -= 16;
+  assert(a1 == 30);
+  a1 %= 28;
+  assert(a1 == 2);
+  a1 >>= 1;
+  assert(a1 == 1);
+  a1 <<= 2;
+  assert(a1 == 4);
+  a1 &= 1;
+  assert(a1 == 0);
+  a1 ^= 2;
+  assert(a1 == 2);
+  a1 |= 1;
+  assert(a1 == 3);
 }
 
 void testSTLContainer()

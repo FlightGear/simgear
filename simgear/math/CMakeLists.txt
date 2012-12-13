@@ -2,7 +2,6 @@ include (SimGearComponent)
 
 
 set(HEADERS
-    Rect.hxx
     SGBox.hxx
     SGCMath.hxx
     SGGeoc.hxx
@@ -21,6 +20,7 @@ set(HEADERS
     SGPlane.hxx
     SGQuat.hxx
     SGRay.hxx
+    SGRect.hxx
     SGSphere.hxx
     SGTriangle.hxx
     SGVec2.hxx

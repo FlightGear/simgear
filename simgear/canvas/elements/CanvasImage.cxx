@@ -78,7 +78,9 @@ namespace canvas
                 Element* parent ):
     Element(canvas, node, parent_style, parent),
     _texture(new osg::Texture2D),
-    _node_src_rect( node->getNode("source", 0, true) )
+    _node_src_rect( node->getNode("source", 0, true) ),
+    _src_rect(0,0),
+    _region(0,0)
   {
     _geom = new osg::Geometry;
     _geom->setUseDisplayList(false);
@@ -147,7 +149,7 @@ namespace canvas
 
       if( !_node_src_rect->getBoolValue("normalized", true) )
       {
-        const Rect<int>& tex_dim = getTextureDimensions();
+        const SGRect<int>& tex_dim = getTextureDimensions();
 
         u0 /= tex_dim.width();
         u1 /= tex_dim.width();
@@ -216,7 +218,7 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  const Rect<float>& Image::getRegion() const
+  const SGRect<float>& Image::getRegion() const
   {
     return _region;
   }
@@ -317,7 +319,7 @@ namespace canvas
   {
     if( !_src_rect.width() || !_src_rect.height() )
     {
-      const Rect<int>& tex_dim = getTextureDimensions();
+      const SGRect<int>& tex_dim = getTextureDimensions();
 
       _node_src_rect->setBoolValue("normalized", false);
       _node_src_rect->setFloatValue("right", tex_dim.width());
@@ -332,16 +334,16 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  Rect<int> Image::getTextureDimensions() const
+  SGRect<int> Image::getTextureDimensions() const
   {
     osg::Texture2D *texture = !_src_canvas.expired()
                             ? _src_canvas.lock()->getTexture()
                             : _texture.get();
 
     if( !texture )
-      return Rect<int>();
+      return SGRect<int>();
 
-    return Rect<int>
+    return SGRect<int>
     (
       0,0,
       texture->getTextureWidth(),

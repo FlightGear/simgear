@@ -126,8 +126,9 @@ public:
   T operator op##=(const T rhs)\
   {\
     SGPropertyNode* n = getOrThrow();\
-    n->setValue<T>(n->getValue<T>() op rhs);\
-    return *this;\
+    T new_val = n->getValue<T>() op rhs;\
+    n->setValue<T>(new_val);\
+    return new_val;\
   }
 
   SG_DEF_ASSIGN_OP(+)

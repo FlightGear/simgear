@@ -22,7 +22,7 @@
 #include "CanvasElement.hxx"
 
 #include <simgear/canvas/canvas_fwd.hxx>
-#include <simgear/math/Rect.hxx>
+#include <simgear/math/SGRect.hxx>
 #include <osg/Texture2D>
 
 namespace simgear
@@ -55,7 +55,7 @@ namespace canvas
       void setImage(osg::Image *img);
       void setFill(const std::string& fill);
 
-      const Rect<float>& getRegion() const;
+      const SGRect<float>& getRegion() const;
 
     protected:
 
@@ -68,7 +68,7 @@ namespace canvas
       virtual void childChanged(SGPropertyNode * child);
 
       void setupDefaultDimensions();
-      Rect<int> getTextureDimensions() const;
+      SGRect<int> getTextureDimensions() const;
 
       osg::ref_ptr<osg::Texture2D> _texture;
       // TODO optionally forward events to canvas
@@ -80,7 +80,7 @@ namespace canvas
       osg::ref_ptr<osg::Vec4Array> _colors;
 
       SGPropertyNode *_node_src_rect;
-      Rect<float>     _src_rect,
+      SGRect<float>   _src_rect,
                       _region;
   };
 

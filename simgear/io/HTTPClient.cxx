@@ -4,6 +4,7 @@
 #include <cassert>
 #include <list>
 #include <iostream>
+#include <errno.h>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
@@ -85,7 +86,13 @@ public:
     
     // socket-level errors
     virtual void handleError(int error)
-    {        
+    {
+        if (error == ENOENT) {
+            // name lookup failure, abandon all requests on this connection
+            sentRequests.clear();
+            queuedRequests.clear();
+        }
+        
         NetChat::handleError(error);
         if (activeRequest) {
             SG_LOG(SG_IO, SG_INFO, "HTTP socket error");

@@ -211,7 +211,7 @@ NetChannel::handleResolve()
     
     if (!addr.isValid()) {
         SG_LOG(SG_IO, SG_WARN, "Network: host lookup failed:" << host);
-        handleError (0);
+        handleError (ENOENT);
         close();
         return -1;
     }
@@ -327,8 +327,13 @@ void NetChannel::handleAccept (void) {
   SG_LOG(SG_IO, SG_WARN, "Network:" << getHandle() << ": unhandled accept");
 }
 
-void NetChannel::handleError (int error) {
-  SG_LOG(SG_IO, SG_WARN,"Network:" << getHandle() << ": errno: " << strerror(errno) <<"(" << errno << ")");
+void NetChannel::handleError (int error)
+{
+    // warn about address lookup failures seperately, don't warn again.
+    // (and we (ab-)use ENOENT to mean 'name not found'.
+    if (error != ENOENT) {
+        SG_LOG(SG_IO, SG_WARN,"Network:" << getHandle() << ": errno: " << strerror(errno) <<"(" << errno << ")");
+    }
 }
 
 } // of namespace simgear

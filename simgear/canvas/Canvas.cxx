@@ -66,15 +66,6 @@ namespace canvas
     _view_height(-1),
     _status(node, "status"),
     _status_msg(node, "status-msg"),
-    _mouse_x(node, "mouse/x"),
-    _mouse_y(node, "mouse/y"),
-    _mouse_dx(node, "mouse/dx"),
-    _mouse_dy(node, "mouse/dy"),
-    _mouse_button(node, "mouse/button"),
-    _mouse_state(node, "mouse/state"),
-    _mouse_mod(node, "mouse/mod"),
-    _mouse_scroll(node, "mouse/scroll"),
-    _mouse_event(node, "mouse/event"),
     _sampling_dirty(false),
     _render_dirty(true),
     _visible(true),
@@ -365,17 +356,6 @@ namespace canvas
   //----------------------------------------------------------------------------
   bool Canvas::handleMouseEvent(const MouseEventPtr& event)
   {
-    _mouse_x = event->client_pos.x();
-    _mouse_y = event->client_pos.y();
-    _mouse_dx = event->delta.x();
-    _mouse_dy = event->delta.y();
-    _mouse_button = event->button;
-    _mouse_state = event->state;
-    _mouse_mod = event->mod;
-    //_mouse_scroll = event.scroll;
-    // Always set event type last because all listeners are attached to it
-    _mouse_event = event->type;
-
     if( !_root_group.get() )
       return false;
 
@@ -547,10 +527,9 @@ namespace canvas
   void Canvas::setStatusFlags(unsigned int flags, bool set)
   {
     if( set )
-      _status = _status | flags;
+      _status |= flags;
     else
-      _status = _status & ~flags;
-    // TODO maybe extend simgear::PropertyObject to allow |=, &= etc.
+      _status &= ~flags;
 
     if( (_status & MISSING_SIZE_X) && (_status & MISSING_SIZE_Y) )
       _status_msg = "Missing size";

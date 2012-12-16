@@ -148,14 +148,6 @@ namespace canvas
       PropertyObject<int>           _status;
       PropertyObject<std::string>   _status_msg;
 
-      PropertyObject<int>   _mouse_x, _mouse_y,
-                            _mouse_dx, _mouse_dy,
-                            _mouse_button,
-                            _mouse_state,
-                            _mouse_mod,
-                            _mouse_scroll,
-                            _mouse_event;
-
       bool _sampling_dirty,
            _render_dirty,
            _visible;

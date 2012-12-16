@@ -34,6 +34,10 @@ namespace canvas
                     local_delta;
   };
   typedef std::deque<EventTarget> EventPropagationPath;
+  inline bool operator==(const EventTarget& t1, const EventTarget& t2)
+  {
+    return t1.element.lock() == t2.element.lock();
+  }
 
   class EventManager
   {
@@ -59,7 +63,8 @@ namespace canvas
       // TODO if we really need the paths modify to not copy around the paths
       //      that much.
       StampedPropagationPath _last_mouse_down,
-                             _last_click;
+                             _last_click,
+                             _last_mouse_over;
       size_t _current_click_count;
 
       /**
@@ -67,6 +72,12 @@ namespace canvas
        */
       void handleClick( const MouseEventPtr& event,
                         const EventPropagationPath& path );
+
+      /**
+       * Handle mouseover/enter/out/leave
+       */
+      void handleMove( const MouseEventPtr& event,
+                       const EventPropagationPath& path );
 
       bool propagateEvent( const EventPtr& event,
                            const EventPropagationPath& path );

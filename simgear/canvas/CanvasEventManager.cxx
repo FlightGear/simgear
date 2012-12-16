@@ -98,8 +98,14 @@ namespace canvas
           return false;
         else
           return propagateEvent(event, _last_mouse_down.path);
-      case Event::WHEEL:
       case Event::MOUSE_MOVE:
+        handleMove(event, path);
+        break;
+      case Event::MOUSE_LEAVE:
+        // Mouse leaves window and therefore also current mouseover element
+        handleMove(event, EventPropagationPath());
+        return true;
+      case Event::WHEEL:
         break;
       default:
         return false;
@@ -145,6 +151,30 @@ namespace canvas
       propagateEvent(dbl_click, getCommonAncestor(_last_click.path, path));
 
     _last_click = StampedPropagationPath(path, event->getTime());
+  }
+
+  //----------------------------------------------------------------------------
+  void EventManager::handleMove( const MouseEventPtr& event,
+                                 const EventPropagationPath& path )
+  {
+    if( _last_mouse_over.path == path )
+      return;
+
+    if( !_last_mouse_over.path.empty() )
+    {
+      MouseEventPtr mouseout(new MouseEvent(*event));
+      mouseout->type = Event::MOUSE_OUT;
+      propagateEvent(mouseout, _last_mouse_over.path);
+    }
+
+    if( !path.empty() )
+    {
+      MouseEventPtr mouseover(new MouseEvent(*event));
+      mouseover->type = Event::MOUSE_OVER;
+      propagateEvent(mouseover, path);
+    }
+
+    _last_mouse_over.path = path;
   }
 
   //----------------------------------------------------------------------------

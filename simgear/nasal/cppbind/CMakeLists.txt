@@ -5,6 +5,7 @@ set(HEADERS
   NasalHash.hxx
   from_nasal_detail.hxx
   from_nasal.hxx
+  nasal_traits.hxx
   to_nasal.hxx
 )
 

@@ -52,7 +52,7 @@ namespace canvas
     _sys.lock()->gcRelease(_gc_key);
   }
 
-  //------------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
   void EventListener::call(const canvas::EventPtr& event)
   {
     SystemAdapterPtr sys = _sys.lock();

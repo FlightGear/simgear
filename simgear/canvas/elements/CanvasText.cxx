@@ -37,7 +37,7 @@ namespace canvas
       void setFill(const std::string& fill);
       void setBackgroundColor(const std::string& fill);
 
-      osg::Vec2 handleHit(float x, float y);
+      osg::Vec2 handleHit(const osg::Vec2f& pos);
 
       virtual osg::BoundingBox computeBound() const;
 
@@ -79,13 +79,13 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  osg::Vec2 Text::TextOSG::handleHit(float x, float y)
+  osg::Vec2 Text::TextOSG::handleHit(const osg::Vec2f& pos)
   {
     float line_height = _characterHeight + _lineSpacing;
 
     // TODO check with align other than TOP
     float first_line_y = -0.5 * _lineSpacing;//_offset.y() - _characterHeight;
-    size_t line = std::max<int>(0, (y - first_line_y) / line_height);
+    size_t line = std::max<int>(0, (pos.y() - first_line_y) / line_height);
 
     if( _textureGlyphQuadMap.empty() )
       return osg::Vec2(-1, -1);
@@ -102,7 +102,7 @@ namespace canvas
     const float character_width = getCharacterHeight()
                                 * getCharacterAspectRatio();
 
-    y = (line + 0.5) * line_height;
+    float y = (line + 0.5) * line_height;
 
     bool line_found = false;
     for(size_t i = 0; i < line_numbers.size(); ++i)
@@ -132,20 +132,21 @@ namespace canvas
                       + HIT_FRACTION * glyphs[i]->getHorizontalAdvance()
                                      * character_width;
 
-      if( x <= threshold )
+      if( pos.x() <= threshold )
       {
+        osg::Vec2 hit(0, y);
         if( i == 0 || line_numbers[i - 1] != line )
           // first character of line
-          x = coords[i * 4].x();
+          hit.x() = coords[i * 4].x();
         else if( coords[(i - 1) * 4].x() == coords[(i - 1) * 4 + 2].x() )
           // If previous character width is zero set to begin of next character
           // (Happens eg. with spaces)
-          x = coords[i * 4].x();
+          hit.x() = coords[i * 4].x();
         else
           // position at center between characters
-          x = 0.5 * (coords[(i - 1) * 4 + 2].x() + coords[i * 4].x());
+          hit.x() = 0.5 * (coords[(i - 1) * 4 + 2].x() + coords[i * 4].x());
 
-        return osg::Vec2(x, y);
+        return hit;
       }
     }
 
@@ -266,26 +267,9 @@ namespace canvas
 #endif
 
   //----------------------------------------------------------------------------
-  void Text::childChanged(SGPropertyNode* child)
+  osg::Vec2 Text::getNearestCursor(const osg::Vec2& pos) const
   {
-    if( child->getParent() != _node )
-      return;
-
-    const std::string& name = child->getNameString();
-    if( name == "hit-y" )
-      handleHit
-      (
-        _node->getFloatValue("hit-x"),
-        _node->getFloatValue("hit-y")
-      );
-  }
-
-  //----------------------------------------------------------------------------
-  void Text::handleHit(float x, float y)
-  {
-    const osg::Vec2& pos = _text->handleHit(x, y);
-    _node->setFloatValue("cursor-x", pos.x());
-    _node->setFloatValue("cursor-y", pos.y());
+    return _text->handleHit(pos);
   }
 
 } // namespace canvas

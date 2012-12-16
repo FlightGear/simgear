@@ -43,14 +43,12 @@ namespace canvas
       void setFont(const char* name);
       void setAlignment(const char* align);
 
+      osg::Vec2 getNearestCursor(const osg::Vec2& pos) const;
+
     protected:
 
       class TextOSG;
       osg::ref_ptr<TextOSG> _text;
-
-      virtual void childChanged(SGPropertyNode * child);
-
-      void handleHit(float x, float y);
 
   };
 

@@ -1,3 +1,5 @@
+#include <simgear/math/SGVec2.hxx>
+
 #include "Ghost.hxx"
 #include "NasalHash.hxx"
 
@@ -73,8 +75,15 @@ int main(int argc, char* argv[])
   VERIFY( naNumValue(r).num == 4.2f );
   VERIFY( from_nasal<float>(c, r) == 4.2f );
 
-  std::vector<int> vec;
+  float test_data[3] = {0, 4, 2};
+  r = to_nasal(c, test_data);
+
+  SGVec2f vec(0,2);
   r = to_nasal(c, vec);
+  VERIFY( from_nasal<SGVec2f>(c, r) == vec );
+
+  std::vector<int> std_vec;
+  r = to_nasal(c, std_vec);
 
   r = to_nasal(c, "string");
   try
@@ -176,6 +185,9 @@ int main(int argc, char* argv[])
   VERIFY( cc.requireArg<std::string>(0) == "test-arg" );
   VERIFY( cc.getArg<std::string>(0) == "test-arg" );
   VERIFY( cc.getArg<std::string>(1) == "" );
+
+  naRef args_vec = nasal::to_nasal(c, args);
+  VERIFY( naIsVector(args_vec) );
 
   // TODO actually do something with the ghosts...
 

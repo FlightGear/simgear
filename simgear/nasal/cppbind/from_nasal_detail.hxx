@@ -20,6 +20,8 @@
 #ifndef SG_FROM_NASAL_DETAIL_HXX_
 #define SG_FROM_NASAL_DETAIL_HXX_
 
+#include "nasal_traits.hxx"
+
 #include <simgear/nasal/nasal.h>
 
 #include <boost/utility/enable_if.hpp>
@@ -110,6 +112,20 @@ namespace nasal
       vec[i] = from_nasal_helper(c, naVec_get(ref, i), static_cast<T*>(0));
 
     return vec;
+  }
+
+  /**
+   * Convert a Nasal vector of 2 elements to a 2d vector
+   */
+  template<class Vec2>
+  typename boost::enable_if<is_vec2<Vec2>, Vec2>::type
+  from_nasal_helper(naContext c, naRef ref, Vec2*)
+  {
+    std::vector<double> vec =
+      from_nasal_helper(c, ref, static_cast<std::vector<double>*>(0));
+    if( vec.size() != 2 )
+      throw bad_nasal_cast("Expected vector with two elements");
+    return Vec2(vec[0], vec[1]);
   }
 
 } // namespace nasal

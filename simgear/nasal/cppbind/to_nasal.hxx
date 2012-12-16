@@ -20,6 +20,8 @@
 #ifndef SG_TO_NASAL_HXX_
 #define SG_TO_NASAL_HXX_
 
+#include "nasal_traits.hxx"
+
 #include <simgear/nasal/nasal.h>
 
 #include <boost/utility/enable_if.hpp>
@@ -36,6 +38,12 @@ namespace nasal
    * Convert std::string to Nasal string
    */
   naRef to_nasal(naContext c, const std::string& str);
+
+  /**
+   * Convert C-string to Nasal string
+   */
+  // We need this to prevent the array overload of to_nasal being called
+  naRef to_nasal(naContext c, const char* str);
 
   /**
    * Convert function pointer to Nasal function
@@ -63,6 +71,19 @@ namespace nasal
   }
 
   /**
+   * Convert a fixed size array to a Nasal vector
+   */
+  template<class T, size_t N>
+  naRef to_nasal(naContext c, const T(&array)[N])
+  {
+    naRef ret = naNewVector(c);
+    naVec_setsize(c, ret, N);
+    for(size_t i = 0; i < N; ++i)
+      naVec_set(ret, i, to_nasal(c, array[i]));
+    return ret;
+  }
+
+  /**
    * Convert std::vector to Nasal vector
    */
   template< template<class T, class Alloc> class Vector,
@@ -81,6 +102,19 @@ namespace nasal
     for(size_t i = 0; i < vec.size(); ++i)
       naVec_set(ret, i, to_nasal(c, vec[i]));
     return ret;
+  }
+
+  /**
+   * Convert a 2d vector to Nasal vector with 2 elements
+   */
+  template<class Vec2>
+  typename boost::enable_if<is_vec2<Vec2>, naRef>::type
+  to_nasal(naContext c, const Vec2& vec)
+  {
+    // We take just double because in Nasal every number is represented as
+    // double
+    double nasal_vec[2] = {vec[0], vec[1]};
+    return to_nasal(c, nasal_vec);
   }
 
 } // namespace nasal

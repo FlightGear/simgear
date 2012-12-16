@@ -18,6 +18,10 @@
 #ifndef SGVec2_H
 #define SGVec2_H
 
+#include "SGLimits.hxx"
+#include "SGMathFwd.hxx"
+#include "SGMisc.hxx"
+
 #include <iosfwd>
 
 /// 2D Vector Class

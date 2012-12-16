@@ -30,6 +30,12 @@ namespace nasal
   }
 
   //----------------------------------------------------------------------------
+  naRef to_nasal(naContext c, const char* str)
+  {
+    return to_nasal(c, std::string(str));
+  }
+
+  //----------------------------------------------------------------------------
   naRef to_nasal(naContext c, naCFunction func)
   {
     return naNewFunc(c, naNewCCode(c, func));

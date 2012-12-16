@@ -45,6 +45,10 @@ typedef boost::shared_ptr<DoubleDerived> DoubleDerivedPtr;
 typedef boost::shared_ptr<DoubleDerived2> DoubleDerived2Ptr;
 
 naRef member(Derived&, const nasal::CallContext&) { return naNil(); }
+naRef f_derivedGetX(naContext c, const Derived& d)
+{
+  return nasal::to_nasal(c, d.getX());
+}
 
 int main(int argc, char* argv[])
 {
@@ -104,6 +108,7 @@ int main(int argc, char* argv[])
   Ghost<Derived>::init("Derived")
     .bases<Base>()
     .member("x", &Derived::getX, &Derived::setX)
+    .member("x_alternate", &f_derivedGetX)
     .method_func<&member>("free_member");
 
   naRef derived = Ghost<Derived>::create(c);

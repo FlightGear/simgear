@@ -94,7 +94,7 @@ namespace nasal
      */
     static T* createInstance(const T& ptr)
     {
-      return new T(ptr);
+      return ptr ? new T(ptr) : 0;
     }
 
     static pointer getPtr(void* ptr)
@@ -800,31 +800,32 @@ namespace nasal
 
       static naRef makeGhost(naContext c, void *ptr)
       {
-        if( !Ghost::getRawPtr(ptr) )
-          return naNil();
+        if( Ghost::getRawPtr(ptr) )
+        {
+          naGhostType* ghost_type = 0;
+          if( Ghost::returns_dynamic_type::value )
+            // For pointer policies already returning instances of an object
+            // with the dynamic type of this Ghost's raw_type the type is always
+            // the same.
+            ghost_type = &getSingletonPtr()->_ghost_type;
+          else
+            // If wrapping eg. shared pointers the users passes an already
+            // existing instance of an object which will then be hold be a new
+            // shared pointer. We therefore have to check for the dynamic type
+            // of the object as it might differ from the passed static type.
+            ghost_type = getTypeFor<Ghost>( Ghost::getRawPtr(ptr) );
 
-        naGhostType* ghost_type = 0;
-        if( Ghost::returns_dynamic_type::value )
-          // For pointer policies already returning instances of an object with
-          // the dynamic type of this Ghost's raw_type the type is always the
-          // same.
-          ghost_type = &getSingletonPtr()->_ghost_type;
-        else
-          // If wrapping eg. shared pointers the users passes an already
-          // existing instance of an object which will then be hold be a new
-          // shared pointer. We therefore have to check for the dynamic type
-          // of the object as it might differ from the passed static type.
-          ghost_type = getTypeFor<Ghost>( Ghost::getRawPtr(ptr) );
+          if( ghost_type )
+            return naNewGhost2(c, ghost_type, ptr);
+        }
 
-        if( !ghost_type )
-          return naNil();
-
-        return naNewGhost2(c, ghost_type, ptr);
+        destroyGhost(ptr);
+        return naNil();
       }
 
       static void destroyGhost(void *ptr)
       {
-        delete (T*)ptr;
+        delete static_cast<T*>(ptr);
       }
 
       /**

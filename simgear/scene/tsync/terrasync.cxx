@@ -597,8 +597,15 @@ int SGTerraSync::SvnThread::svnClientSetup(void)
         return EXIT_FAILURE;
 #endif
 
-    apr_pool_t *pool;
-    apr_pool_create(&pool, NULL);
+    apr_pool_t *pool = NULL;
+    
+    apr_allocator_t* allocator = NULL;
+    int aprErr = apr_allocator_create(&allocator);
+    if (aprErr != APR_SUCCESS)
+        return EXIT_FAILURE;
+    
+    apr_pool_create_ex(&pool, NULL /* parent pool */, NULL /* abort func */, allocator);
+    
     svn_error_t *err = NULL;
     SVN_VERSION_DEFINE(_svn_version);
     err = svn_ver_check_list(&_svn_version, mysvn_checklist);

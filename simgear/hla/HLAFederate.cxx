@@ -787,7 +787,7 @@ HLAFederate::processMessages()
 bool
 HLAFederate::readRTI13ObjectModelTemplate(const std::string& objectModel)
 {
-    SG_LOG(SG_IO, SG_ALERT, "HLA version RTI13 not yet(!?) supported.");
+    SG_LOG(SG_IO, SG_WARN, "HLA version RTI13 not yet(!?) supported.");
     return false;
 }
 
@@ -816,7 +816,7 @@ HLAFederate::readRTI1516ObjectModelTemplate(const std::string& objectModel)
 bool
 HLAFederate::readRTI1516EObjectModelTemplate(const std::string& objectModel)
 {
-    SG_LOG(SG_IO, SG_ALERT, "HLA version RTI1516E not yet(!?) supported.");
+    SG_LOG(SG_IO, SG_WARN, "HLA version RTI1516E not yet(!?) supported.");
     return false;
 }
 

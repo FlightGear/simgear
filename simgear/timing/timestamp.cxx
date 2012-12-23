@@ -255,6 +255,24 @@ bool SGTimeStamp::sleepFor(const SGTimeStamp& reltime)
     // Don't know, but may be win32 has something better today??
     Sleep(static_cast<DWORD>(reltime.toMSecs()));
     return true;
+#elif defined __APPLE__
+    // the generic version below behaves badly on Mac; use nanosleep directly,
+    // similar to the POSIX timers version
+    struct timespec ts;
+    ts.tv_sec = reltime._sec;
+    ts.tv_nsec = reltime._nsec;
+    
+    for (;;) {
+        struct timespec rem;
+        int ret = nanosleep(&ts, &rem);
+        if (-1 == ret && errno != EINTR)
+            return false;
+        if (ret == 0)
+            break;
+        // Use the remainder for the next cycle.
+        ts = rem;
+    }
+    return true;
 #else
     SGTimeStamp abstime;
     abstime.stamp();

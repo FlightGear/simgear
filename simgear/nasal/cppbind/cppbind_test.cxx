@@ -1,4 +1,4 @@
-#include <simgear/math/SGVec2.hxx>
+#include <simgear/math/SGMath.hxx>
 
 #include "Ghost.hxx"
 #include "NasalHash.hxx"

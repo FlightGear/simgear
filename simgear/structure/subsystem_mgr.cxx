@@ -281,6 +281,16 @@ SGSubsystemGroup::resume ()
         _members[i]->subsystem->resume();
 }
 
+string_list
+SGSubsystemGroup::member_names() const
+{
+	string_list result;
+	for (unsigned int i = 0; i < _members.size(); i++)
+		result.push_back( _members[i]->name );
+	
+	return result;
+}
+
 bool
 SGSubsystemGroup::is_suspended () const
 {

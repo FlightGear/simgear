@@ -32,7 +32,7 @@
 
 #include <simgear/timing/timestamp.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
-
+#include <simgear/misc/strutils.hxx>
 
 class TimingInfo
 {
@@ -321,6 +321,12 @@ public:
      *
      */
     void set_fixed_update_time(double fixed_dt);
+	 
+	/**
+	 * retrive list of member subsystem names
+	 */ 
+    string_list member_names() const;
+	 
 private:
 
     class Member;

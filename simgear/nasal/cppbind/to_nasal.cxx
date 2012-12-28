@@ -19,6 +19,8 @@
 #include "to_nasal.hxx"
 #include "NasalHash.hxx"
 
+#include <simgear/misc/sg_path.hxx>
+
 namespace nasal
 {
   //----------------------------------------------------------------------------
@@ -53,4 +55,9 @@ namespace nasal
     return ref;
   }
 
+  //----------------------------------------------------------------------------
+  naRef to_nasal(naContext c, const SGPath& path)
+  {
+    return to_nasal(c, path.str());
+  }
 } // namespace nasal

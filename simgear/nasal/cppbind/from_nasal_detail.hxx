@@ -31,6 +31,8 @@
 #include <typeinfo> // std::bad_cast
 #include <vector>
 
+class SGPath;
+
 namespace nasal
 {
   class Hash;
@@ -74,6 +76,11 @@ namespace nasal
    * Convert Nasal string to std::string
    */
   std::string from_nasal_helper(naContext c, naRef ref, std::string*);
+
+  /**
+   * Convert a Nasal string to an SGPath
+   */
+  SGPath from_nasal_helper(naContext c, naRef ref, SGPath*);
 
   /**
    * Convert a Nasal hash to a nasal::Hash

@@ -19,6 +19,8 @@
 #include "from_nasal_detail.hxx"
 #include "NasalHash.hxx"
 
+#include <simgear/misc/sg_path.hxx>
+
 namespace nasal
 {
   //----------------------------------------------------------------------------
@@ -51,6 +53,12 @@ namespace nasal
   {
     naRef na_str = naStringValue(c, ref);
     return std::string(naStr_data(na_str), naStr_len(na_str));
+  }
+
+  SGPath from_nasal_helper(naContext c, naRef ref, SGPath*)
+  {
+      naRef na_str = naStringValue(c, ref);
+      return SGPath(std::string(naStr_data(na_str), naStr_len(na_str)));
   }
 
   //----------------------------------------------------------------------------

@@ -30,6 +30,8 @@
 #include <string>
 #include <vector>
 
+class SGPath;
+
 namespace nasal
 {
   class Hash;
@@ -60,6 +62,8 @@ namespace nasal
    */
   naRef to_nasal(naContext c, naRef ref);
 
+  naRef to_nasal(naContext c, const SGPath& path);
+    
   /**
    * Convert a numeric type to Nasal number
    */

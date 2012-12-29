@@ -88,13 +88,24 @@ public:
     virtual void handleError(int error)
     {
         if (error == ENOENT) {
-            // name lookup failure, abandon all requests on this connection
+        // name lookup failure
+            // we won't have an active request yet, so the logic below won't
+            // fire to actually call setFailure. Let's fail all of the requests
+            BOOST_FOREACH(Request_ptr req, sentRequests) {
+                req->setFailure(error, "hostname lookup failure");
+            }
+            
+            BOOST_FOREACH(Request_ptr req, queuedRequests) {
+                req->setFailure(error, "hostname lookup failure");
+            }
+            
+        // name lookup failure, abandon all requests on this connection
             sentRequests.clear();
             queuedRequests.clear();
         }
         
         NetChat::handleError(error);
-        if (activeRequest) {
+        if (activeRequest) {            
             SG_LOG(SG_IO, SG_INFO, "HTTP socket error");
             activeRequest->setFailure(error, "socket error");
             activeRequest = NULL;

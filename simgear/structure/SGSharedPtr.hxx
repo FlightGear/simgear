@@ -48,6 +48,8 @@ class SGWeakPtr;
 template<typename T>
 class SGSharedPtr {
 public:
+  typedef T element_type;
+
   SGSharedPtr(void) : _ptr(0)
   {}
   SGSharedPtr(T* ptr) : _ptr(ptr)

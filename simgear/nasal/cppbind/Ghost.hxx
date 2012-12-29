@@ -29,6 +29,7 @@
 #include <boost/call_traits.hpp>
 #include <boost/function.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
 
 #include <map>
@@ -38,117 +39,6 @@
  */
 namespace nasal
 {
-
-  /**
-   * Traits for C++ classes exposed as Ghost. This is the basic template for
-   * raw types.
-   */
-  template<class T>
-  struct GhostTypeTraits
-  {
-    /** Whether the class is passed by shared pointer or raw pointer */
-    typedef boost::false_type::type is_shared;
-
-    /** The raw class type (Without any shared pointer) */
-    typedef T raw_type;
-  };
-
-  template<class T>
-  struct GhostTypeTraits<boost::shared_ptr<T> >
-  {
-    typedef boost::true_type::type is_shared;
-    typedef T raw_type;
-  };
-
-#ifdef OSG_REF_PTR
-  template<class T>
-  struct GhostTypeTraits<osg::ref_ptr<T> >
-  {
-    typedef boost::true_type::type is_shared;
-    typedef T raw_type;
-  };
-#endif
-
-#ifdef SGSharedPtr_HXX
-  template<class T>
-  struct GhostTypeTraits<SGSharedPtr<T> >
-  {
-    typedef boost::true_type::type is_shared;
-    typedef T raw_type;
-  };
-#endif
-
-  /**
-   * Policy for creating ghost instances from shared pointer objects.
-   */
-  template<class T>
-  struct SharedPointerPolicy
-  {
-    typedef typename GhostTypeTraits<T>::raw_type   raw_type;
-    typedef T                                       pointer;
-    typedef boost::false_type                       returns_dynamic_type;
-
-    /**
-     * Create a shared pointer on the heap to handle the reference counting for
-     * the passed shared pointer while it is used in Nasal space.
-     */
-    static T* createInstance(const T& ptr)
-    {
-      return ptr ? new T(ptr) : 0;
-    }
-
-    static pointer getPtr(void* ptr)
-    {
-      if( ptr )
-        return *static_cast<T*>(ptr);
-      else
-        return pointer();
-    }
-
-    static raw_type* getRawPtr(void* ptr)
-    {
-      if( ptr )
-        return static_cast<T*>(ptr)->get();
-      else
-        return 0;
-    }
-
-    static raw_type* getRawPtr(const T& ptr)
-    {
-      return ptr.get();
-    }
-  };
-
-  /**
-   * Policy for creating ghost instances as raw objects on the heap.
-   */
-  template<class T>
-  struct RawPointerPolicy
-  {
-    typedef typename GhostTypeTraits<T>::raw_type   raw_type;
-    typedef raw_type*                               pointer;
-    typedef boost::true_type                        returns_dynamic_type;
-
-    /**
-     * Create a new object instance on the heap
-     */
-    static T* createInstance()
-    {
-      return new T();
-    }
-
-    static pointer getPtr(void* ptr)
-    {
-      BOOST_STATIC_ASSERT((boost::is_same<pointer, T*>::value));
-      return static_cast<T*>(ptr);
-    }
-
-    static raw_type* getRawPtr(void* ptr)
-    {
-      BOOST_STATIC_ASSERT((boost::is_same<raw_type, T>::value));
-      return static_cast<T*>(ptr);
-    }
-  };
 
   namespace internal
   {
@@ -217,6 +107,8 @@ namespace nasal
           return nasal::to_nasal(c, _parents);
         }
     };
+
+    BOOST_MPL_HAS_XXX_TRAIT_DEF(element_type)
   }
 
   /**
@@ -278,12 +170,14 @@ namespace nasal
    *
    *     naRef myMember(naContext c, int argc, naRef* args);
    * }
+   * typedef boost::shared_ptr<MyClass> MyClassPtr;
    *
    * void exposeClasses()
    * {
    *   // Register a nasal ghost type for MyClass. This needs to be done only
-   *   // once before creating the first ghost instance.
-   *   Ghost<MyClass>::init("MyClass")
+   *   // once before creating the first ghost instance. The exposed class needs
+   *   // to be wrapped inside a shared pointer, eg. boost::shared_ptr.
+   *   Ghost<MyClassPtr>::init("MyClass")
    *     // Members can be exposed by getters and setters
    *     .member("x", &MyClass::getX, &MyClass::setX)
    *     // For readonly variables only pass a getter
@@ -298,15 +192,13 @@ namespace nasal
    */
   template<class T>
   class Ghost:
-    public internal::GhostMetadata,
-    protected boost::mpl::if_< typename GhostTypeTraits<T>::is_shared,
-                               SharedPointerPolicy<T>,
-                               RawPointerPolicy<T> >::type
+    public internal::GhostMetadata
   {
+      BOOST_STATIC_ASSERT( internal::has_element_type<T>::value );
+
     public:
-      typedef T                                                   value_type;
-      typedef typename GhostTypeTraits<T>::raw_type               raw_type;
-      typedef typename Ghost::pointer                             pointer;
+      typedef typename T::element_type                            raw_type;
+      typedef T                                                   pointer;
       typedef naRef (raw_type::*member_func_t)(const CallContext&);
       typedef naRef (*free_func_t)(raw_type&, const CallContext&);
       typedef boost::function<naRef(naContext, raw_type&)>        getter_t;
@@ -361,22 +253,27 @@ namespace nasal
        * registers on its own before it can be used as base class.
        *
        * @tparam BaseGhost  Type of base class already wrapped into Ghost class
-       *                    (Ghost<Base>)
+       *                    (Ghost<BasePtr>)
        *
        * @code{cpp}
-       * Ghost<MyBase>::init("MyBase");
-       * Ghost<MyClass>::init("MyClass")
-       *   .bases<Ghost<MyBase> >();
+       * Ghost<MyBasePtr>::init("MyBase");
+       * Ghost<MyClassPtr>::init("MyClass")
+       *   .bases<Ghost<MyBasePtr> >();
        * @endcode
        */
       template<class BaseGhost>
-      typename boost::enable_if_c
-        <    boost::is_base_of<GhostMetadata, BaseGhost>::value
-          && boost::is_base_of<typename BaseGhost::raw_type, raw_type>::value,
+      typename boost::enable_if
+        <
+          boost::is_base_of<GhostMetadata, BaseGhost>,
           Ghost
         >::type&
       bases()
       {
+        BOOST_STATIC_ASSERT
+        ((
+          boost::is_base_of<typename BaseGhost::raw_type, raw_type>::value
+        ));
+
         BaseGhost* base = BaseGhost::getSingletonPtr();
         base->addDerived
         (
@@ -417,22 +314,27 @@ namespace nasal
        * Register a base class for this ghost. The base class needs to be
        * registers on its own before it can be used as base class.
        *
-       * @tparam Base   Type of base class (Base as used in Ghost<Base>)
+       * @tparam Base   Type of base class (Base as used in Ghost<BasePtr>)
        *
        * @code{cpp}
-       * Ghost<MyBase>::init("MyBase");
-       * Ghost<MyClass>::init("MyClass")
-       *   .bases<MyBase>();
+       * Ghost<MyBasePtr>::init("MyBase");
+       * Ghost<MyClassPtr>::init("MyClass")
+       *   .bases<MyBasePtr>();
        * @endcode
        */
       template<class Base>
-      typename boost::enable_if_c
-        <   !boost::is_base_of<GhostMetadata, Base>::value
-          && boost::is_base_of<typename Ghost<Base>::raw_type, raw_type>::value,
+      typename boost::disable_if
+        <
+          boost::is_base_of<GhostMetadata, Base>,
           Ghost
         >::type&
       bases()
       {
+        BOOST_STATIC_ASSERT
+        ((
+          boost::is_base_of<typename Ghost<Base>::raw_type, raw_type>::value
+        ));
+
         return bases< Ghost<Base> >();
       }
 
@@ -537,7 +439,7 @@ namespace nasal
        *     naRef myMethod(naContext c, int argc, naRef* args);
        * }
        *
-       * Ghost<MyClass>::init("Test")
+       * Ghost<MyClassPtr>::init("Test")
        *   .method<&MyClass::myMethod>("myMethod");
        * @endcode
        */
@@ -563,7 +465,7 @@ namespace nasal
        * class MyClass;
        * naRef myMethod(MyClass& obj, naContext c, int argc, naRef* args);
        *
-       * Ghost<MyClass>::init("Test")
+       * Ghost<MyClassPtr>::init("Test")
        *   .method_func<&myMethod>("myMethod");
        * @endcode
        */
@@ -580,10 +482,11 @@ namespace nasal
        *
        * @param c   Active Nasal context
        */
-      static naRef create( naContext c )
-      {
-        return makeGhost(c, Ghost::createInstance());
-      }
+      // TODO check if default constructor exists
+//      static naRef create( naContext c )
+//      {
+//        return makeGhost(c, createInstance());
+//      }
 
       /**
        * Create a Nasal instance of this ghost.
@@ -594,7 +497,7 @@ namespace nasal
       template<class A1>
       static naRef create( naContext c, const A1& a1 )
       {
-        return makeGhost(c, Ghost::createInstance(a1));
+        return makeGhost(c, createInstance(a1));
       }
 
       /**
@@ -627,7 +530,7 @@ namespace nasal
       {
         // Check if it's a ghost and if it can be converted
         if( isBaseOf( naGhost_type(me) ) )
-          return Ghost::getPtr( naGhost_ptr(me) );
+          return getPtr( naGhost_ptr(me) );
 
         // Now if it is derived from a ghost (hash with ghost in parent vector)
         else if( naIsHash(me) )
@@ -662,6 +565,36 @@ namespace nasal
       typedef naGhostType* (*type_checker_t)(const raw_type*);
       typedef std::vector<type_checker_t> DerivedList;
       DerivedList _derived_types;
+
+      /**
+       * Create a shared pointer on the heap to handle the reference counting
+       * for the passed shared pointer while it is used in Nasal space.
+       */
+      static pointer* createInstance(const pointer& ptr)
+      {
+        return ptr ? new pointer(ptr) : 0;
+      }
+
+      static pointer getPtr(void* ptr)
+      {
+        if( ptr )
+          return *static_cast<pointer*>(ptr);
+        else
+          return pointer();
+      }
+
+      static raw_type* getRawPtr(void* ptr)
+      {
+        if( ptr )
+          return static_cast<pointer*>(ptr)->get();
+        else
+          return 0;
+      }
+
+      static raw_type* getRawPtr(const pointer& ptr)
+      {
+        return ptr.get();
+      }
 
       void addDerived( const internal::GhostMetadata* derived_meta,
                        const type_checker_t& derived_info )
@@ -724,7 +657,7 @@ namespace nasal
 
       static raw_type& requireObject(naContext c, naRef me)
       {
-        raw_type* obj = Ghost::getRawPtr( fromNasal(c, me) );
+        raw_type* obj = getRawPtr( fromNasal(c, me) );
         naGhostType* ghost_type = naGhost_type(me);
 
         if( !obj )
@@ -800,20 +733,13 @@ namespace nasal
 
       static naRef makeGhost(naContext c, void *ptr)
       {
-        if( Ghost::getRawPtr(ptr) )
+        if( getRawPtr(ptr) )
         {
-          naGhostType* ghost_type = 0;
-          if( Ghost::returns_dynamic_type::value )
-            // For pointer policies already returning instances of an object
-            // with the dynamic type of this Ghost's raw_type the type is always
-            // the same.
-            ghost_type = &getSingletonPtr()->_ghost_type;
-          else
-            // If wrapping eg. shared pointers the users passes an already
-            // existing instance of an object which will then be hold be a new
-            // shared pointer. We therefore have to check for the dynamic type
-            // of the object as it might differ from the passed static type.
-            ghost_type = getTypeFor<Ghost>( Ghost::getRawPtr(ptr) );
+          // We are wrapping shared pointers to already existing objects which
+          // will then be hold be a new shared pointer. We therefore have to
+          // check for the dynamic type of the object as it might differ from
+          // the passed static type.
+          naGhostType* ghost_type = getTypeFor<Ghost>( getRawPtr(ptr) );
 
           if( ghost_type )
             return naNewGhost2(c, ghost_type, ptr);
@@ -825,7 +751,7 @@ namespace nasal
 
       static void destroyGhost(void *ptr)
       {
-        delete static_cast<T*>(ptr);
+        delete static_cast<pointer*>(ptr);
       }
 
       /**
@@ -852,7 +778,7 @@ namespace nasal
         if( member->second.func )
           *out = nasal::to_nasal(c, member->second.func);
         else if( !member->second.getter.empty() )
-          *out = member->second.getter(c, *Ghost::getRawPtr(g));
+          *out = member->second.getter(c, *getRawPtr(g));
         else
           return "Read-protected member";
 
@@ -873,7 +799,7 @@ namespace nasal
         if( member->second.setter.empty() )
           naRuntimeError(c, "ghost: Write protected member: %s", key.c_str());
 
-        member->second.setter(c, *Ghost::getRawPtr(g), val);
+        member->second.setter(c, *getRawPtr(g), val);
       }
   };
 

@@ -111,31 +111,21 @@ int main(int argc, char* argv[])
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
 
-  Ghost<Base>::init("Base")
+  Ghost<BasePtr>::init("BasePtr")
     .method<&Base::member>("member")
     .member("str", &Base::getString, &Base::setString);
-  Ghost<Derived>::init("Derived")
-    .bases<Base>()
-    .member("x", &Derived::getX, &Derived::setX)
-    .member("x_alternate", &f_derivedGetX)
-    .method_func<&member>("free_member");
-
-  naRef derived = Ghost<Derived>::create(c);
-  VERIFY( naIsGhost(derived) );
-  VERIFY( std::string("Derived") ==  naGhost_type(derived)->name );
-
-  Ghost<BasePtr>::init("BasePtr");
   Ghost<DerivedPtr>::init("DerivedPtr")
     .bases<BasePtr>()
     .member("x", &Derived::getX, &Derived::setX)
+    .member("x_alternate", &f_derivedGetX)
     .method_func<&member>("free_member");
   Ghost<DoubleDerivedPtr>::init("DoubleDerivedPtr")
     .bases<DerivedPtr>();
   Ghost<DoubleDerived2Ptr>::init("DoubleDerived2Ptr")
-    .bases<DerivedPtr>();
+    .bases< Ghost<DerivedPtr> >();
 
   BasePtr d( new Derived );
-  derived = Ghost<BasePtr>::create(c, d);
+  naRef derived = Ghost<BasePtr>::create(c, d);
   VERIFY( naIsGhost(derived) );
   VERIFY( std::string("DerivedPtr") == naGhost_type(derived)->name );
 

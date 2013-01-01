@@ -88,14 +88,24 @@ namespace canvas
         {
           case TT_MATRIX:
             tf = osg::Matrix( tf_node->getDoubleValue("m[0]", 1),
-                              tf_node->getDoubleValue("m[1]", 0), 0, 0,
+                              tf_node->getDoubleValue("m[1]", 0),
+                              0,
+                              tf_node->getDoubleValue("m[6]", 0),
 
                               tf_node->getDoubleValue("m[2]", 0),
-                              tf_node->getDoubleValue("m[3]", 1), 0, 0,
+                              tf_node->getDoubleValue("m[3]", 1),
+                              0,
+                              tf_node->getDoubleValue("m[7]", 0),
 
-                              0,    0,    1, 0,
+                              0,
+                              0,
+                              1,
+                              0,
+
                               tf_node->getDoubleValue("m[4]", 0),
-                              tf_node->getDoubleValue("m[5]", 0), 0, 1 );
+                              tf_node->getDoubleValue("m[5]", 0),
+                              0,
+                              tf_node->getDoubleValue("m[8]", 1) );
             break;
           case TT_TRANSLATE:
             tf.makeTranslate( osg::Vec3f( tf_node->getDoubleValue("t[0]", 0),

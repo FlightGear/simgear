@@ -79,7 +79,8 @@ namespace canvas
 
       void callListeners(const canvas::EventPtr& event);
 
-      virtual bool hitBound(const osg::Vec2f& pos) const;
+      virtual bool hitBound( const osg::Vec2f& pos,
+                             const osg::Vec2f& local_pos ) const;
 
 
       osg::ref_ptr<osg::MatrixTransform> getMatrixTransform();

@@ -192,19 +192,20 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
-  bool Element::hitBound(const osg::Vec2f& pos) const
+  bool Element::hitBound( const osg::Vec2f& pos,
+                          const osg::Vec2f& local_pos ) const
   {
     const osg::Vec3f pos3(pos, 0);
 
     // Drawables have a bounding box...
     if( _drawable )
     {
-      if( !_drawable->getBound().contains(pos3) )
+      if( !_drawable->getBound().contains(osg::Vec3f(local_pos, 0)) )
         return false;
     }
     // ... for other elements, i.e. groups only a bounding sphere is available
-    else if( !_transform->getBound().contains(pos3) )
-      return false;
+    else if( !_transform->getBound().contains(osg::Vec3f(pos, 0)) )
+        return false;
 
     return true;
   }

@@ -405,7 +405,15 @@ namespace canvas
   //----------------------------------------------------------------------------
   osg::BoundingBox Element::getTransformedBounds(const osg::Matrix& m) const
   {
-    return osg::BoundingBox();
+    if( !_drawable )
+      return osg::BoundingBox();
+
+    osg::BoundingBox transformed;
+    const osg::BoundingBox& bb = _drawable->getBound();
+    for(int i = 0; i < 4; ++i)
+      transformed.expandBy( m * bb.corner(i) );
+
+    return transformed;
   }
 
   //----------------------------------------------------------------------------

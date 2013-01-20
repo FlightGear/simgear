@@ -57,9 +57,7 @@
 // return the horizontal tile span factor based on latitude
 static double sg_bucket_span( double l ) {
     if ( l >= 89.0 ) {
-	return 360.0;
-    } else if ( l >= 88.0 ) {
-	return 8.0;
+	return 12.0;
     } else if ( l >= 86.0 ) {
 	return 4.0;
     } else if ( l >= 83.0 ) {
@@ -80,12 +78,10 @@ static double sg_bucket_span( double l ) {
 	return 1.0;
     } else if ( l >= -86.0 ) {
 	return 2.0;
-    } else if ( l >= -88.0 ) {
-	return 4.0;
     } else if ( l >= -89.0 ) {
-	return 8.0;
+	return 4.0;
     } else {
-	return 360.0;
+	return 12.0;
     }
 }
 

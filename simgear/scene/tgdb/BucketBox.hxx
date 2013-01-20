@@ -31,10 +31,10 @@ namespace simgear {
 
 #define Elements(x) (sizeof(x)/sizeof((x)[0]))
 
-// 3*5*3 * 8 = 360
-static const unsigned _lonFactors[] = { 3, 5, 3,  2, 2, 2, /* sub degree */ 2, 2, 2 };
-// 5*3*3 * 4 = 180
-static const unsigned _latFactors[] = { 5, 3, 3,  2, 2, /* sub degree */ 2, 2, 2, 1 };
+// 2*5*3*3 * 4 = 360
+static const unsigned _lonFactors[] = { 2, 5, 3, 3, 2, 2, /* sub degree */ 2, 2, 2 };
+// 3*3*5 * 4 = 180
+static const unsigned _latFactors[] = { 3, 5, 1, 3, 2, 2, /* sub degree */ 2, 2, 2 };
 
 static unsigned product(const unsigned* factors, unsigned count)
 {
@@ -50,13 +50,10 @@ static unsigned product(const unsigned* factors, unsigned count)
 /// bits which matches the SGBuckets maximum tile resolution.
 ///
 /// Notable /design/ decision:
-/// * The longitude maps to the interval [0,360[ which appears to be
-///   counter productive for the file/directory names and the
-///   texture coordinates which map [-180,180[.
-///   The reason is that the buckets at 89deg longitude are 8deg
-///   latitude width. So there is a bunch of buckets that range from
-///   [176, -184[ longitude. So the wrap happens at 0deg instead
-///   of 180deg since we have a cut edge for all latitudes.
+/// * The longitude maps to the interval [-180,180[.
+///   The latitude maps to the interval [-90,90].
+///   This works now that the tiles do no longer cut
+///   neither the 180deg nor the 0deg boundary.
 /// * This is not meant to be an API class for simgear. This is
 ///   just an internal tool that I would like to keep in the SPT loader.
 ///   But I want to have coverage somehow tested with the usual unit
@@ -140,6 +137,20 @@ public:
         // left align longitude offsets
         unsigned offset = _offset[0] - _offset[0] % _bucketSpanAtOffset(_offset[1]);
         return SGBucket(_offsetToLongitudeDeg(offset), _offsetToLatitudeDeg(_offset[1]));
+    }
+
+    BucketBox getParentBox(unsigned level) const
+    {
+        BucketBox box;
+        unsigned plon = product(_lonFactors + level, Elements(_lonFactors) - level);
+        unsigned plat = product(_latFactors + level, Elements(_latFactors) - level);
+        box._offset[0] = _offset[0] - _offset[0] % plon;
+        box._offset[0] = _normalizeLongitude(box._offset[0]);
+        box._offset[1] = _offset[1] - _offset[1] % plat;
+        box._size[0] = plon;
+        box._size[1] = plat;
+
+        return box;
     }
 
     BucketBox getSubBoxHeight(unsigned j, unsigned level) const
@@ -283,22 +294,22 @@ public:
         SGGeod p00 = _offsetToGeod(x0, y0, 0);
         SGVec3f v00 = SGVec3f::fromGeod(p00);
         SGVec3f n00 = SGQuatf::fromLonLat(p00).backTransform(SGVec3f(0, 0, -1));
-        SGVec2f t00(x0*1.0/(360*8) + 0.5, y0*1.0/(180*8));
+        SGVec2f t00(x0*1.0/(360*8), y0*1.0/(180*8));
 
         SGGeod p10 = _offsetToGeod(x1, y0, 0);
         SGVec3f v10 = SGVec3f::fromGeod(p10);
         SGVec3f n10 = SGQuatf::fromLonLat(p10).backTransform(SGVec3f(0, 0, -1));
-        SGVec2f t10(x1*1.0/(360*8) + 0.5, y0*1.0/(180*8));
+        SGVec2f t10(x1*1.0/(360*8), y0*1.0/(180*8));
 
         SGGeod p11 = _offsetToGeod(x1, y1, 0);
         SGVec3f v11 = SGVec3f::fromGeod(p11);
         SGVec3f n11 = SGQuatf::fromLonLat(p11).backTransform(SGVec3f(0, 0, -1));
-        SGVec2f t11(x1*1.0/(360*8) + 0.5, y1*1.0/(180*8));
+        SGVec2f t11(x1*1.0/(360*8), y1*1.0/(180*8));
 
         SGGeod p01 = _offsetToGeod(x0, y1, 0);
         SGVec3f v01 = SGVec3f::fromGeod(p01);
         SGVec3f n01 = SGQuatf::fromLonLat(p01).backTransform(SGVec3f(0, 0, -1));
-        SGVec2f t01(x0*1.0/(360*8) + 0.5, y1*1.0/(180*8));
+        SGVec2f t01(x0*1.0/(360*8), y1*1.0/(180*8));
     
         if (y0 != 0) {
             points[numPoints] = v00;
@@ -341,17 +352,11 @@ private:
 
     static unsigned _longitudeDegToOffset(double lon)
     {
-        lon = SGMiscd::normalizePeriodic(0, 360, lon);
-        unsigned offset = (unsigned)(8*lon + 0.5);
+        unsigned offset = (unsigned)(8*(lon + 180) + 0.5);
         return _normalizeLongitude(offset);
     }
     static double _offsetToLongitudeDeg(unsigned offset)
-    {
-        if (180*8 <= offset)
-            return offset*0.125 - 360;
-        else
-            return offset*0.125;
-    }
+    { return offset*0.125 - 180; }
 
     static unsigned _latitudeDegToOffset(double lat)
     {

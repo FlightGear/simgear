@@ -161,7 +161,7 @@ ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* opt
     // The file name without path and without the spt extension
     std::string strippedFileName = osgDB::getStrippedName(fileName);
     if (strippedFileName == "earth")
-        return createTree(BucketBox(0, -90, 360, 180), options, true);
+        return createTree(BucketBox(-180, -90, 360, 180), options, true);
 
     std::stringstream ss(strippedFileName);
     BucketBox bucketBox;

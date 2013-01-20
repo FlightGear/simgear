@@ -224,17 +224,6 @@ std::string SGBucket::gen_base_path() const {
 
 // return width of the tile in degrees
 double SGBucket::get_width() const {
-    if (lon==-180 && (lat==-89 || lat==88) ) {
-        /* Normally the tile at 180W in 88N and 89S
-         * would cover 184W to 176W and the next
-         * on the east side starts at 176W.
-         * To correct, make this a special tile
-         * from 180W to 176W with 4 degrees width
-         * instead of the normal 8 degrees at
-         * that latitude.
-         */
-         return 4.0;
-    }
     return sg_bucket_span( get_center_lat() );
 }
 

@@ -146,6 +146,32 @@ static naRef f_substr(naContext c, naRef me, int argc, naRef* args)
     return naStr_substr(naNewString(c), src, start, len);
 }
 
+static naRef f_left(naContext c, naRef me, int argc, naRef* args)
+{
+    int len;
+    naRef src = argc > 0 ? args[0] : naNil();
+    naRef lenr = argc > 1 ? naNumValue(args[1]) : naNil();
+    if(!naIsString(src)) ARGERR();
+    if(!naIsNum(lenr)) ARGERR();
+    len = (int)lenr.num;
+    if(len < 0) len = 0;
+    return naStr_substr(naNewString(c), src, 0, len);
+}
+
+static naRef f_right(naContext c, naRef me, int argc, naRef* args)
+{
+    int len, srclen;
+    naRef src = argc > 0 ? args[0] : naNil();
+    naRef lenr = argc > 1 ? naNumValue(args[1]) : naNil();
+    if(!naIsString(src)) ARGERR();
+    if(!naIsNum(lenr)) ARGERR();
+    srclen = naStr_len(src);
+    len = (int)lenr.num;
+    if (len > srclen) len = srclen;
+    if(len < 0) len = 0;
+    return naStr_substr(naNewString(c), src, srclen - len, len);
+}
+
 static naRef f_chr(naContext c, naRef me, int argc, naRef* args)
 {
     char chr[1];
@@ -573,6 +599,8 @@ static naCFuncItem funcs[] = {
     { "streq", f_streq },
     { "cmp", f_cmp },
     { "substr", f_substr },
+    { "left", f_left },
+    { "right", f_right },
     { "chr", f_chr },
     { "contains", f_contains },
     { "typeof", f_typeof },

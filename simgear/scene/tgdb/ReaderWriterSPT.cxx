@@ -27,6 +27,7 @@
 
 #include <osg/CullFace>
 #include <osg/PagedLOD>
+#include <osg/MatrixTransform>
 #include <osg/Texture2D>
 
 #include <osgDB/FileNameUtils>
@@ -269,6 +270,10 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
     if (options->getPluginStringData("SimGear::FG_EARTH") != "ON")
         return 0;
 
+    SGSpheref sphere = bucketBox.getBoundingSphere();
+    osg::Matrixd transform;
+    transform.makeTranslate(toOsg(-sphere.getCenter()));
+
     osg::Vec3Array* vertices = new osg::Vec3Array;
     osg::Vec3Array* normals = new osg::Vec3Array;
     osg::Vec2Array* texCoords = new osg::Vec2Array;
@@ -286,7 +291,7 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
             SGVec2f t[6];
             unsigned num = bucketBox.getTileTriangles(i, j, incx, incy, v, n, t);
             for (unsigned k = 0; k < num; ++k) {
-                vertices->push_back(toOsg(v[k]));
+                vertices->push_back(transform.preMult(toOsg(v[k])));
                 normals->push_back(toOsg(n[k]));
                 texCoords->push_back(toOsg(t[k]));
             }
@@ -308,14 +313,22 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
     geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
     geometry->setTexCoordArray(0, texCoords);
         
-    geometry->addPrimitiveSet(new osg::DrawArrays(osg::DrawArrays::TRIANGLES, 0, vertices->size()));
+    osg::DrawArrays* drawArrays = new osg::DrawArrays(osg::DrawArrays::TRIANGLES, 0, vertices->size());
+    drawArrays->setDataVariance(osg::Object::STATIC);
+    geometry->addPrimitiveSet(drawArrays);
         
     osg::Geode* geode = new osg::Geode;
+    geode->setDataVariance(osg::Object::STATIC);
     geode->addDrawable(geometry);
     osg::ref_ptr<osg::StateSet> stateSet = getLowLODStateSet(options);
     geode->setStateSet(stateSet.get());
 
-    return geode;
+    transform.makeTranslate(toOsg(sphere.getCenter()));
+    osg::MatrixTransform* matrixTransform = new osg::MatrixTransform(transform);
+    matrixTransform->setDataVariance(osg::Object::STATIC);
+    matrixTransform->addChild(geode);
+
+    return matrixTransform;
 }
 
 osg::ref_ptr<osg::StateSet>

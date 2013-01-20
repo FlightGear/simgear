@@ -38,6 +38,12 @@ public:
    */
   SGBinding ();
 
+    /**
+     * Convenience constructor.
+     *
+     * @param node The binding will be built from this node.
+     */
+    SGBinding(const std::string& commandName);
 
   /**
    * Convenience constructor.
@@ -119,7 +125,15 @@ private:
   mutable SGPropertyNode_ptr _setting;
 };
 
-typedef std::vector<SGSharedPtr<SGBinding> > SGBindingList;
+typedef SGSharedPtr<SGBinding> SGBinding_ptr;
+
+typedef std::vector<SGBinding_ptr > SGBindingList;
 typedef std::map<unsigned,SGBindingList> SGBindingMap;
+
+/**
+ * fire every binding in a list, in sequence
+ 
+ */
+void fireBindingList(const SGBindingList& aBindings);
 
 #endif

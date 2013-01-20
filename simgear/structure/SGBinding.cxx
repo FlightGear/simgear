@@ -11,6 +11,7 @@
 #  include <simgear_config.h>
 #endif
 
+#include <boost/foreach.hpp>
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
 
@@ -21,6 +22,14 @@ SGBinding::SGBinding()
     _arg(new SGPropertyNode),
     _setting(0)
 {
+}
+
+SGBinding::SGBinding(const std::string& commandName)
+    : _command(0),
+    _arg(0),
+    _setting(0)
+{
+    _command_name = commandName;
 }
 
 SGBinding::SGBinding(const SGPropertyNode* node, SGPropertyNode* root)
@@ -97,4 +106,11 @@ SGBinding::fire (double setting) const
     _setting->setDoubleValue(setting);
     fire();
   }
+}
+
+void fireBindingList(const SGBindingList& aBindings)
+{
+    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+        b->fire();
+    }
 }

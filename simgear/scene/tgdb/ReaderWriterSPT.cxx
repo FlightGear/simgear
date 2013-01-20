@@ -1,6 +1,6 @@
 // ReaderWriterSPT.cxx -- Provide a paged database for flightgear scenery.
 //
-// Copyright (C) 2010 - 2011  Mathias Froehlich
+// Copyright (C) 2010 - 2013  Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -30,6 +30,7 @@
 #include <osg/Texture2D>
 
 #include <osgDB/FileNameUtils>
+#include <osgDB/FileUtils>
 #include <osgDB/ReadFile>
 
 #include <simgear/scene/util/OsgMath.hxx>
@@ -130,9 +131,9 @@ ReaderWriterSPT::readObject(const std::string& fileName, const osgDB::Options* o
     // We get called with different extensions. To make sure search continues,
     // we need to return FILE_NOT_HANDLED in this case.
     if (osgDB::getLowerCaseFileExtension(fileName) != "spt")
-        return ReadResult(osgDB::ReaderWriter::ReadResult::FILE_NOT_HANDLED);
+        return ReadResult(ReadResult::FILE_NOT_HANDLED);
     if (fileName != "state.spt")
-        return ReadResult(osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND);
+        return ReadResult(ReadResult::FILE_NOT_FOUND);
 
     osg::StateSet* stateSet = new osg::StateSet;
     stateSet->setAttributeAndModes(new osg::CullFace);
@@ -161,30 +162,30 @@ ReaderWriterSPT::readNode(const std::string& fileName, const osgDB::Options* opt
     // The file name without path and without the spt extension
     std::string strippedFileName = osgDB::getStrippedName(fileName);
     if (strippedFileName == "earth")
-        return createTree(BucketBox(-180, -90, 360, 180), options, true);
+        return ReadResult(createTree(BucketBox(-180, -90, 360, 180), options, true));
 
     std::stringstream ss(strippedFileName);
     BucketBox bucketBox;
     ss >> bucketBox;
     if (ss.fail())
-        return osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND;
+        return ReadResult::FILE_NOT_FOUND;
 
     BucketBox bucketBoxList[2];
     unsigned bucketBoxListSize = bucketBox.periodicSplit(bucketBoxList);
     if (bucketBoxListSize == 0)
-        return osgDB::ReaderWriter::ReadResult::FILE_NOT_FOUND;
+        return ReadResult::FILE_NOT_FOUND;
 
     if (bucketBoxListSize == 1)
-        return createTree(bucketBoxList[0], options, true);
+        return ReadResult(createTree(bucketBoxList[0], options, true));
 
     assert(bucketBoxListSize == 2);
     osg::ref_ptr<osg::Group> group = new osg::Group;
     group->addChild(createTree(bucketBoxList[0], options, true));
     group->addChild(createTree(bucketBoxList[1], options, true));
-    return group.release();
+    return ReadResult(group);
 }
 
-osg::Node*
+osg::ref_ptr<osg::Node>
 ReaderWriterSPT::createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const
 {
     if (bucketBox.getIsBucketSize()) {
@@ -203,19 +204,19 @@ ReaderWriterSPT::createTree(const BucketBox& bucketBox, const osgDB::Options* op
 
         osg::ref_ptr<osg::Group> group = new osg::Group;
         for (unsigned i = 0; i < numTiles; ++i) {
-            osg::Node* node = createTree(bucketBoxList[i], options, false);
-            if (!node)
+            osg::ref_ptr<osg::Node> node = createTree(bucketBoxList[i], options, false);
+            if (!node.valid())
                 continue;
-            group->addChild(node);
+            group->addChild(node.get());
         }
         if (!group->getNumChildren())
             return 0;
 
-        return group.release();
+        return group;
     }
 }
 
-osg::Node*
+osg::ref_ptr<osg::Node>
 ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const
 {
     osg::PagedLOD* pagedLOD = new osg::PagedLOD;
@@ -243,8 +244,9 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
         range = 1e6;
 
     // Add the static sea level textured shell
-    if (osg::Node* tile = createSeaLevelTile(bucketBox, options))
-        pagedLOD->addChild(tile, range, std::numeric_limits<float>::max());
+    osg::ref_ptr<osg::Node> tile = createSeaLevelTile(bucketBox, options);
+    if (tile.valid())
+        pagedLOD->addChild(tile.get(), range, std::numeric_limits<float>::max());
 
     // Add the paged file name that creates the subtrees on demand
     if (bucketBox.getIsBucketSize()) {
@@ -261,7 +263,7 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
     return pagedLOD;
 }
 
-osg::Node*
+osg::ref_ptr<osg::Node>
 ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const
 {
     if (options->getPluginStringData("SimGear::FG_EARTH") != "ON")
@@ -310,23 +312,24 @@ ReaderWriterSPT::createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Opt
         
     osg::Geode* geode = new osg::Geode;
     geode->addDrawable(geometry);
-    geode->setStateSet(getLowLODStateSet(options));
+    osg::ref_ptr<osg::StateSet> stateSet = getLowLODStateSet(options);
+    geode->setStateSet(stateSet.get());
 
     return geode;
 }
 
-osg::StateSet*
+osg::ref_ptr<osg::StateSet>
 ReaderWriterSPT::getLowLODStateSet(const osgDB::Options* options) const
 {
     osg::ref_ptr<osgDB::Options> localOptions;
     localOptions = static_cast<osgDB::Options*>(options->clone(osg::CopyOp()));
     localOptions->setObjectCacheHint(osgDB::Options::CACHE_ALL);
 
-    osg::ref_ptr<osg::Object> object = osgDB::readObjectFile("state.spt", localOptions.get());
+    osg::ref_ptr<osg::Object> object = osgDB::readRefObjectFile("state.spt", localOptions.get());
     if (!dynamic_cast<osg::StateSet*>(object.get()))
         return 0;
 
-    return static_cast<osg::StateSet*>(object.release());
+    return static_cast<osg::StateSet*>(object.get());
 }
 
 } // namespace simgear

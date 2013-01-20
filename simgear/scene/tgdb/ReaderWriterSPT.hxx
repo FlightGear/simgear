@@ -1,6 +1,6 @@
 // ReaderWriterSPT.cxx -- Provide a paged database for flightgear scenery.
 //
-// Copyright (C) 2010 - 2011  Mathias Froehlich
+// Copyright (C) 2010 - 2013  Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -37,10 +37,10 @@ public:
     virtual osgDB::ReaderWriter::ReadResult readNode(const std::string& fileName, const osgDB::Options* options) const;
 
 protected:
-    osg::Node* createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const;
-    osg::Node* createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const;
-    osg::Node* createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const;
-    osg::StateSet* getLowLODStateSet(const osgDB::Options* options) const;
+    osg::ref_ptr<osg::Node> createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const;
+    osg::ref_ptr<osg::Node> createPagedLOD(const BucketBox& bucketBox, const osgDB::Options* options) const;
+    osg::ref_ptr<osg::Node> createSeaLevelTile(const BucketBox& bucketBox, const osgDB::Options* options) const;
+    osg::ref_ptr<osg::StateSet> getLowLODStateSet(const osgDB::Options* options) const;
 
 private:
     struct CullCallback;

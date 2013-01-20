@@ -1,6 +1,6 @@
 // BucketBox.cxx -- Helper for on demand database paging.
 //
-// Copyright (C) 2010 - 2011  Mathias Froehlich
+// Copyright (C) 2010 - 2013  Mathias Froehlich
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License as
@@ -208,18 +208,30 @@ public:
 
     SGSpheref getBoundingSphere() const
     {
-        SGSpheref sphere;
-        unsigned incx = 10*8;
-        for (unsigned i = 0; incx != 0; i += incx) {
-            unsigned incy = 10*8;
-            for (unsigned j = 0; incy != 0; j += incy) {
-                sphere.expandBy(SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, -1000)));
-                sphere.expandBy(SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, 10000)));
+        SGBoxf box;
+        for (unsigned i = 0, incx = 10*8; incx != 0; i += incx) {
+            for (unsigned j = 0, incy = 10*8; incy != 0; j += incy) {
+                box.expandBy(SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, -1000)));
+                box.expandBy(SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, 10000)));
                 incy = std::min(incy, _size[1] - j);
             }
             incx = std::min(incx, _size[0] - i);
         }
-        return SGSpheref(sphere.getCenter(), sphere.getRadius() + 5000);
+        SGSpheref sphere(box.getCenter(), 0);
+        for (unsigned i = 0, incx = 10*8; incx != 0; i += incx) {
+            for (unsigned j = 0, incy = 10*8; incy != 0; j += incy) {
+                float r2;
+                r2 = distSqr(sphere.getCenter(), SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, -1000)));
+                if (sphere.getRadius2() < r2)
+                    sphere.setRadius(sqrt(r2));
+                r2 = distSqr(sphere.getCenter(), SGVec3f::fromGeod(_offsetToGeod(_offset[0] + i, _offset[1] + j, 10000)));
+                if (sphere.getRadius2() < r2)
+                    sphere.setRadius(sqrt(r2));
+                incy = std::min(incy, _size[1] - j);
+            }
+            incx = std::min(incx, _size[0] - i);
+        }
+        return sphere;
     }
 
     // Split the current box into up to two boxes that do not cross the 360 deg border.

@@ -75,6 +75,71 @@ static naRef f_atan2(naContext c, naRef me, int argc, naRef* args)
     return VALIDATE(a);
 }
 
+static naRef f_floor(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric argument to floor()");
+    a.num = floor(a.num);
+    return VALIDATE(a);
+}
+
+static naRef f_ceil(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    if(naIsNil(a))
+        naRuntimeError(c, "non numeric argument to ceil()");
+    a.num = ceil(a.num);
+    return VALIDATE(a);
+}
+
+static naRef f_mod(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+    if(naIsNil(a) || naIsNil(b))
+        naRuntimeError(c, "non numeric arguments to mod()");
+    
+    a.num = fmod(a.num, b.num);
+    return VALIDATE(a);
+}
+
+static naRef f_clamp(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+    naRef x = naNumValue(argc > 2 ? args[2] : naNil());
+    
+    if(naIsNil(a) || naIsNil(b) || naIsNil(x))
+        naRuntimeError(c, "non numeric arguments to clamp()");
+    
+    if (a.num < b.num) b.num = a.num;
+    if (b.num > x.num) b.num = x.num;
+    return VALIDATE(b);
+}
+
+static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
+{
+    naRef a = naNumValue(argc > 0 ? args[0] : naNil());
+    naRef b = naNumValue(argc > 1 ? args[1] : naNil());
+    naRef x = naNumValue(argc > 2 ? args[2] : naNil());
+    
+    if(naIsNil(a) || naIsNil(b) || naIsNil(x))
+        naRuntimeError(c, "non numeric arguments to periodic()");
+  
+    double range = b.num - a.num;
+    x.num = x.num - range*floor((x.num - a.num)/range);
+    // two security checks that can only happen due to roundoff
+    if (x.num <= a.num)
+        x.num = a.num;
+    if (b.num <= x.num)
+        x.num = b.num;
+    return VALIDATE(x);
+      
+//    x.num = SGMiscd::normalizePeriodic(a, b, x);
+    return VALIDATE(x);
+}
+
 static naCFuncItem funcs[] = {
     { "sin", f_sin },
     { "cos", f_cos },
@@ -82,8 +147,15 @@ static naCFuncItem funcs[] = {
     { "ln", f_ln },
     { "sqrt", f_sqrt },
     { "atan2", f_atan2 },
+    { "floor", f_floor },
+    { "ceil", f_ceil },
+    { "mod", f_mod },
+    { "clamp", f_clamp },
+    { "periodic", f_periodic },        
     { 0 }
 };
+
+
 
 naRef naInit_math(naContext c)
 {

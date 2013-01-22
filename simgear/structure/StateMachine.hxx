@@ -23,6 +23,7 @@
 #define SIMGEAR_STATE_MACHINE_H
 
 #include <memory>
+#include <string>
 
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>

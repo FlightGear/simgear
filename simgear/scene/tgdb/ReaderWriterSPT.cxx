@@ -190,9 +190,20 @@ osg::ref_ptr<osg::Node>
 ReaderWriterSPT::createTree(const BucketBox& bucketBox, const osgDB::Options* options, bool topLevel) const
 {
     if (bucketBox.getIsBucketSize()) {
-        return createPagedLOD(bucketBox, options);
-    } else if (!topLevel && bucketBox.getStartLevel() == 4) {
+        std::string fileName;
+        fileName = bucketBox.getBucket().gen_index_str() + std::string(".stg");
+        return osgDB::readRefNodeFile(fileName, options);
+    } else if (!topLevel && bucketBox.getStartLevel() == 3) {
         // We want an other level of indirection for paging
+        // Here we get about 12x12 deg tiles
+        return createPagedLOD(bucketBox, options);
+    } else if (!topLevel && bucketBox.getStartLevel() == 5) {
+        // We want an other level of indirection for paging
+        // Here we get about 2x2 deg tiles
+        return createPagedLOD(bucketBox, options);
+    } else if (!topLevel && bucketBox.getStartLevel() == 7) {
+        // We want an other level of indirection for paging
+        // Here we get about 0.5x0.5 deg tiles
         return createPagedLOD(bucketBox, options);
     } else {
         BucketBox bucketBoxList[100];
@@ -238,11 +249,7 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
     localOptions->setPluginStringData("SimGear::PARTICLESYSTEM", "OFF");
     pagedLOD->setDatabaseOptions(localOptions.get());
         
-    float range;
-    if (bucketBox.getIsBucketSize())
-        range = 200e3;
-    else
-        range = 1e6;
+    float range = 3*sphere.getRadius();
 
     // Add the static sea level textured shell
     osg::ref_ptr<osg::Node> tile = createSeaLevelTile(bucketBox, options);

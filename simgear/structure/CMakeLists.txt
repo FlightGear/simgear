@@ -44,8 +44,17 @@ set(SOURCES
 simgear_component(structure structure "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+    
+if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+else()
+    set(TEST_LIBS SimGearCore ${CMAKE_THREAD_LIBS_INIT}
+        ${ZLIB_LIBRARY}
+        ${RT_LIBRARY})
+endif()
+    
 add_executable(test_state_machine state_machine_test.cxx)
-target_link_libraries(test_state_machine SimGearCore)
+target_link_libraries(test_state_machine ${TEST_LIBS})
 add_test(test_state_machine ${EXECUTABLE_OUTPUT_PATH}/test_state_machine)
 
 endif(ENABLE_TESTS)

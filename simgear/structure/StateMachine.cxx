@@ -25,6 +25,7 @@
      
 #include "StateMachine.hxx"
 
+#include <algorithm>
 #include <cassert>
 #include <set>
 #include <boost/foreach.hpp>

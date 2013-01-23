@@ -18,6 +18,7 @@
 
 #include "from_nasal_detail.hxx"
 #include "NasalHash.hxx"
+#include "NasalString.hxx"
 
 #include <simgear/misc/sg_path.hxx>
 
@@ -68,6 +69,15 @@ namespace nasal
       throw bad_nasal_cast("Not a hash");
 
     return Hash(ref, c);
+  }
+
+  //----------------------------------------------------------------------------
+  String from_nasal_helper(naContext c, naRef ref, String*)
+  {
+    if( !naIsString(ref) )
+      throw bad_nasal_cast("Not a string");
+
+    return String(ref);
   }
 
 } // namespace nasal

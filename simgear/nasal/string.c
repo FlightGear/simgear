@@ -320,3 +320,27 @@ static int fromnum(double val, unsigned char* s)
     *ptr = 0;
     return ptr - s;
 }
+
+
+//------------------------------------------------------------------------------
+static naRef string_methods;
+static int init = 0; // As we can't use naNil() for static initialization we
+                     // need a separate variable for saving whether we have
+                     // already initialized.
+
+//------------------------------------------------------------------------------
+naRef naInit_string(naContext c)
+{
+  string_methods = naNewHash(c);
+  init = 1;
+  return string_methods;
+}
+
+//------------------------------------------------------------------------------
+naRef getStringMethods(naContext c)
+{
+  if( !init )
+    return naNil();
+
+  return string_methods;
+}

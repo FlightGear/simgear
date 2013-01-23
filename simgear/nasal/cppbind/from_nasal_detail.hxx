@@ -36,6 +36,7 @@ class SGPath;
 namespace nasal
 {
   class Hash;
+  class String;
 
   /**
    * Thrown when converting a type from/to Nasal has failed
@@ -86,6 +87,11 @@ namespace nasal
    * Convert a Nasal hash to a nasal::Hash
    */
   Hash from_nasal_helper(naContext c, naRef ref, Hash*);
+
+  /**
+   * Convert a Nasal string to a nasal::String
+   */
+  String from_nasal_helper(naContext c, naRef ref, String*);
 
   /**
    * Convert a Nasal number to a C++ numeric type

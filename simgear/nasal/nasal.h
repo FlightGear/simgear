@@ -119,6 +119,9 @@ naRef naInit_readline(naContext c);
 naRef naInit_gtk(naContext ctx);
 naRef naInit_cairo(naContext ctx);
 
+// Returns a hash which can be used to add methods callable on strings
+naRef naInit_string(naContext c);
+
 // Context stack inspection, frame zero is the "top"
 int naStackDepth(naContext ctx);
 int naGetLine(naContext ctx, int frame);
@@ -159,6 +162,7 @@ naRef naStr_fromdata(naRef dst, const char* data, int len);
 naRef naStr_concat(naRef dest, naRef s1, naRef s2);
 naRef naStr_substr(naRef dest, naRef str, int start, int len);
 naRef naInternSymbol(naRef sym);
+naRef getStringMethods(naContext c);
 
 // Vector utilities:
 int naVec_size(naRef v);

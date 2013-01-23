@@ -3,6 +3,7 @@ include (SimGearComponent)
 set(HEADERS
   Ghost.hxx
   NasalHash.hxx
+  NasalString.hxx
   from_nasal_detail.hxx
   from_nasal.hxx
   nasal_traits.hxx
@@ -11,6 +12,7 @@ set(HEADERS
 
 set(SOURCES
   NasalHash.cxx
+  NasalString.cxx
   from_nasal.cxx
   to_nasal.cxx
 )

@@ -441,14 +441,17 @@ static const char* getMember_r(naContext ctx, naRef obj, naRef field, naRef* out
     naRef p;
     struct VecRec* pv;
     if(--count < 0) return "too many parents";
-    if(!IS_HASH(obj) && !IS_GHOST(obj)) return "non-objects have no members";
-    
+
     if (IS_GHOST(obj)) {
         if (ghostGetMember(ctx, obj, field, out)) return "";
         if(!ghostGetMember(ctx, obj, globals->parentsRef, &p)) return 0;
-    } else {
+    } else if (IS_HASH(obj)) {
         if(naHash_get(obj, field, out)) return "";
         if(!naHash_get(obj, globals->parentsRef, &p)) return 0;
+    } else if (IS_STR(obj) ) {
+        return getMember_r(ctx, getStringMethods(ctx), field, out, count);
+    } else {
+        return "non-objects have no members";
     }
     
     if(!IS_VEC(p)) return "object \"parents\" field not vector";

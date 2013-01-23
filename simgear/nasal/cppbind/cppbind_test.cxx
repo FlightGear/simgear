@@ -2,6 +2,7 @@
 
 #include "Ghost.hxx"
 #include "NasalHash.hxx"
+#include "NasalString.hxx"
 
 #include <boost/shared_ptr.hpp>
 
@@ -110,6 +111,27 @@ int main(int argc, char* argv[])
 
   Hash mod = hash.createHash("mod");
   mod.set("parent", hash);
+
+  String string( to_nasal(c, "Test") );
+  VERIFY( from_nasal<std::string>(c, string.get_naRef()) == "Test" );
+  VERIFY( string.c_str() == std::string("Test") );
+  VERIFY( string.starts_with(string) );
+  VERIFY( string.starts_with(String(c, "T")) );
+  VERIFY( string.starts_with(String(c, "Te")) );
+  VERIFY( string.starts_with(String(c, "Tes")) );
+  VERIFY( string.starts_with(String(c, "Test")) );
+  VERIFY( !string.starts_with(String(c, "Test1")) );
+  VERIFY( !string.starts_with(String(c, "bb")) );
+  VERIFY( !string.starts_with(String(c, "bbasdasdafasd")) );
+  VERIFY( string.find('e') == 1 );
+  VERIFY( string.find('9') == String::npos );
+  VERIFY( string.find_first_of(String(c, "st")) == 2 );
+  VERIFY( string.find_first_of(String(c, "st"), 3) == 3 );
+  VERIFY( string.find_first_of(String(c, "xyz")) == String::npos );
+  VERIFY( string.find_first_not_of(String(c, "Tst")) == 1 );
+  VERIFY( string.find_first_not_of(String(c, "Tse"), 2) == 3 );
+  VERIFY( string.find_first_not_of(String(c, "abc")) == 0 );
+  VERIFY( string.find_first_not_of(String(c, "abc"), 20) == String::npos );
 
   Ghost<BasePtr>::init("BasePtr")
     .method<&Base::member>("member")

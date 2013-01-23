@@ -120,6 +120,7 @@ static naRef f_clamp(naContext c, naRef me, int argc, naRef* args)
 
 static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
 {
+    double range;
     naRef a = naNumValue(argc > 0 ? args[0] : naNil());
     naRef b = naNumValue(argc > 1 ? args[1] : naNil());
     naRef x = naNumValue(argc > 2 ? args[2] : naNil());
@@ -127,7 +128,7 @@ static naRef f_periodic(naContext c, naRef me, int argc, naRef* args)
     if(naIsNil(a) || naIsNil(b) || naIsNil(x))
         naRuntimeError(c, "non numeric arguments to periodic()");
   
-    double range = b.num - a.num;
+    range = b.num - a.num;
     x.num = x.num - range*floor((x.num - a.num)/range);
     // two security checks that can only happen due to roundoff
     if (x.num <= a.num)

@@ -257,15 +257,9 @@ ReaderWriterSPT::createPagedLOD(const BucketBox& bucketBox, const osgDB::Options
         pagedLOD->addChild(tile.get(), range, std::numeric_limits<float>::max());
 
     // Add the paged file name that creates the subtrees on demand
-    if (bucketBox.getIsBucketSize()) {
-        std::string fileName;
-        fileName = bucketBox.getBucket().gen_index_str() + std::string(".stg");
-        pagedLOD->setFileName(pagedLOD->getNumChildren(), fileName);
-    } else {
-        std::stringstream ss;
-        ss << bucketBox << ".spt";
-        pagedLOD->setFileName(pagedLOD->getNumChildren(), ss.str());
-    }
+    std::stringstream ss;
+    ss << bucketBox << ".spt";
+    pagedLOD->setFileName(pagedLOD->getNumChildren(), ss.str());
     pagedLOD->setRange(pagedLOD->getNumChildren(), 0.0, range);
 
     return pagedLOD;

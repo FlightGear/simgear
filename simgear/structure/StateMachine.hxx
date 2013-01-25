@@ -75,6 +75,14 @@ public:
         std::string name() const;
         
         /**
+         * Set if the target state should automatically be excluded
+         * from the source state. Defaults to true, can be cleared
+         * to allow a state to re-enter itself
+         */
+        void setExcludeTarget(bool aExclude);
+        
+        
+        /**
          * The state we end in, after this transition fires
          */
         State* target() const;
@@ -115,6 +123,8 @@ public:
     
     typedef SGSharedPtr<State> State_ptr;
     typedef SGSharedPtr<Transition> Transition_ptr;
+    
+    void initFromPlist(SGPropertyNode* desc, SGPropertyNode* root);
     
     /**
      * create a state machine from a property list description

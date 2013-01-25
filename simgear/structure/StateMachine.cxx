@@ -71,6 +71,7 @@ public:
     SGBindingList _bindings;
     std::set<State*> _sourceStates; ///< weak refs to source states
     State* _target;
+    bool _excludeTarget;
     SGSharedPtr<SGCondition> _condition;
 };
     
@@ -175,6 +176,7 @@ StateMachine::Transition::Transition(const std::string& aName, State* aTarget) :
     assert(aTarget);
     d->_name = aName;
     d->_target = aTarget;
+    d->_excludeTarget = true;
 }
 
 StateMachine::Transition::~Transition()
@@ -197,6 +199,13 @@ void StateMachine::Transition::addSourceState(State* aSource)
 
 bool StateMachine::Transition::applicableForState(State* aCurrent) const
 {
+    if (d->_excludeTarget && (aCurrent == d->_target)) {
+        return false;
+    }
+    
+    if (d->_sourceStates.empty()) {
+        return true;
+    }
     return d->_sourceStates.count(aCurrent);
 } 
     
@@ -223,6 +232,11 @@ void StateMachine::Transition::setTriggerCondition(SGCondition* aCondition)
 void StateMachine::Transition::addBinding(SGBinding* aBinding)
 {
     d->_bindings.push_back(aBinding);
+}
+    
+void StateMachine::Transition::setExcludeTarget(bool aExclude)
+{
+    d->_excludeTarget = aExclude;
 }
     
 ///////////////////////////////////////////////////////////////////////////
@@ -402,10 +416,13 @@ StateMachine::createTransition(const std::string& aName, State_ptr aTarget)
     return t;
 }
 
-StateMachine* StateMachine::createFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
+void StateMachine::initFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
 {
-    StateMachine* sm = new StateMachine;
-    
+    std::string path = desc->getStringValue("branch");
+    if (!path.empty()) {
+        d->_root = root->getNode(path, 0, true);
+        assert(d->_root);
+    }
     
     BOOST_FOREACH(SGPropertyNode* stateDesc, desc->getChildren("state")) {
         std::string nm = stateDesc->getStringValue("name");
@@ -415,28 +432,36 @@ StateMachine* StateMachine::createFromPlist(SGPropertyNode* desc, SGPropertyNode
         readBindingList(stateDesc, "exit", root, st->d->_entryBindings);
         readBindingList(stateDesc, "update", root, st->d->_exitBindings);
         
-        sm->addState(st);
+        addState(st);
     } // of states iteration
     
     BOOST_FOREACH(SGPropertyNode* tDesc, desc->getChildren("transition")) {
         std::string nm = tDesc->getStringValue("name");
-        State_ptr target = sm->findStateByName(tDesc->getStringValue("target"));
+        State_ptr target = findStateByName(tDesc->getStringValue("target"));
         
         SGCondition* cond = sgReadCondition(root, tDesc->getChild("condition"));
         
         Transition_ptr t(new Transition(nm, target));
         t->setTriggerCondition(cond);
         
+        t->setExcludeTarget(tDesc->getBoolValue("exclude-target", true));
         BOOST_FOREACH(SGPropertyNode* src, desc->getChildren("source")) {
-            State_ptr srcState = sm->findStateByName(src->getStringValue());
+            State_ptr srcState = findStateByName(src->getStringValue());
             t->addSourceState(srcState);
         }
         
         readBindingList(tDesc, "binding", root, t->d->_bindings);
         
-        sm->addTransition(t);
+        addTransition(t);
     } // of states iteration
     
+    init();
+}
+
+StateMachine* StateMachine::createFromPlist(SGPropertyNode* desc, SGPropertyNode* root)
+{
+    StateMachine* sm = new StateMachine;
+    sm->initFromPlist(desc, root);
     return sm;
 }
 

@@ -147,6 +147,27 @@ void testBasic()
     }
 }
 
+void testNoSourcesTransition()
+{
+    BUILD_MACHINE_1();
+
+    DummyCondition* trigger4 = new DummyCondition;
+    StateMachine::Transition_ptr t4 = sm->createTransition("alwaysToA", stateA); \
+    t4->setTriggerCondition(trigger4); \
+    sm->init();
+    
+    COMPARE(sm->state()->name(), "a");
+    trigger1->_state = true;
+    sm->update(1.0);
+    trigger1->_state = false;
+    COMPARE(sm->state()->name(), "b");
+    
+    trigger4->_state = true;
+    sm->update(1.0);
+    trigger4->_state = false;
+    COMPARE(sm->state()->name(), "a");
+}
+
 void testBindings()
 {    
     SGCommandMgr* cmdMgr = SGCommandMgr::instance();
@@ -220,6 +241,8 @@ int main(int argc, char* argv[])
     testBasic();
     testBindings();
     testParse();
+    testNoSourcesTransition();
+    
     cout << __FILE__ << ": All tests passed" << endl;
     return EXIT_SUCCESS;
 }

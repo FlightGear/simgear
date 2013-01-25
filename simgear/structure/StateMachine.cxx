@@ -93,6 +93,7 @@ public:
     }
     
     StateMachine* _p;
+    bool _initialised;
     State_ptr _currentState;
     StatePtrVec _states;
     std::vector<Transition_ptr> _transitions;
@@ -245,6 +246,8 @@ StateMachine::StateMachine() :
     d(new StateMachinePrivate(this))
 {
     d->_root = new SGPropertyNode();
+    d->_listenerLockout = false;
+    d->_initialised = false;
 }
 
 StateMachine::~StateMachine()
@@ -254,7 +257,13 @@ StateMachine::~StateMachine()
 
 void StateMachine::init()
 {
+    if (d->_initialised) {
+	    return;
+    }
     
+    if (d->_states.empty()) {
+        throw sg_range_exception("StateMachine::init: no states defined");
+    }
     
     d->_currentStateIndex = d->_root->getChild("current-index", 0, true);
     d->_currentStateIndex->setIntValue(0);
@@ -269,8 +278,8 @@ void StateMachine::init()
     d->_timeInStateProp->setIntValue(0);
     
     // TODO go to default state if found
-    d->computeEligibleTransitions();
-    
+    innerChangeState(d->_states[0], NULL);
+    d->_initialised = true;
 }
 
 void StateMachine::shutdown()
@@ -282,7 +291,9 @@ void StateMachine::shutdown()
 
 void StateMachine::innerChangeState(State_ptr aState, Transition_ptr aTrans)
 {
-    d->_currentState->fireExitBindings();
+    if (d->_currentState) {
+        d->_currentState->fireExitBindings();
+    }
         
 // fire bindings before we change the state, hmmmm    
     if (aTrans) {

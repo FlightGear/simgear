@@ -21,31 +21,33 @@ if(InSourceBuild)
     message(WARNING  "  mkdir ../sgbuild && cd ../sgbuild && cmake ${CMAKE_SOURCE_DIR}")
 endif(InSourceBuild)
 
-#packaging
-SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
-SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simulation support libraries for FlightGear and related projects")
-SET(CPACK_PACKAGE_VENDOR "The FlightGear project")
-SET(CPACK_GENERATOR "TBZ2")
-SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
+if (NOT EMBEDDED_SIMGEAR)
+    #packaging
+    SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/COPYING")
+    SET(CPACK_RESOURCE_FILE_README "${PROJECT_SOURCE_DIR}/README")
+    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Simulation support libraries for FlightGear and related projects")
+    SET(CPACK_PACKAGE_VENDOR "The FlightGear project")
+    SET(CPACK_GENERATOR "TBZ2")
+    SET(CPACK_INSTALL_CMAKE_PROJECTS  ${CMAKE_CURRENT_BINARY_DIR};SimGear;ALL;/)
 
 
-# split version string into components, note CMAKE_MATCH_0 is the entire regexp match
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
-set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1}) 
-set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
-set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
+    # split version string into components, note CMAKE_MATCH_0 is the entire regexp match
+    string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" CPACK_PACKAGE_VERSION ${SIMGEAR_VERSION} )
+    set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1}) 
+    set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_MATCH_3})
 
-message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VERSION_MINOR} dot ${CPACK_PACKAGE_VERSION_PATCH}")
+    message(STATUS "version is ${CPACK_PACKAGE_VERSION_MAJOR} dot ${CPACK_PACKAGE_VERSION_MINOR} dot ${CPACK_PACKAGE_VERSION_PATCH}")
 
-set(CPACK_SOURCE_GENERATOR TBZ2)
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "simgear-${SIMGEAR_VERSION}" CACHE INTERNAL "tarball basename")
-set(CPACK_SOURCE_IGNORE_FILES
-  "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
+    set(CPACK_SOURCE_GENERATOR TBZ2)
+    set(CPACK_SOURCE_PACKAGE_FILE_NAME "simgear-${SIMGEAR_VERSION}" CACHE INTERNAL "tarball basename")
+    set(CPACK_SOURCE_IGNORE_FILES
+      "^${PROJECT_SOURCE_DIR}/.git;\\\\.gitignore;Makefile.am;~$;${CPACK_SOURCE_IGNORE_FILES}")
 
-message(STATUS "ignoring: ${CPACK_SOURCE_IGNORE_FILES}")
-
-include (CPack)
+    message(STATUS "ignoring: ${CPACK_SOURCE_IGNORE_FILES}")
+    
+    include (CPack)
+endif()
 
 # We have some custom .cmake scripts not in the official distribution.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
@@ -363,6 +365,7 @@ endif(ENABLE_TESTS)
 install (FILES ${PROJECT_BINARY_DIR}/simgear/simgear_config.h  DESTINATION include/simgear/)
 add_subdirectory(simgear)
 
+if (NOT EMBEDDED_SIMGEAR)
 #-----------------------------------------------------------------------------
 ### uninstall target
 #-----------------------------------------------------------------------------
@@ -372,3 +375,6 @@ CONFIGURE_FILE(
   IMMEDIATE @ONLY)
 ADD_CUSTOM_TARGET(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+  
+endif()
+

@@ -325,22 +325,6 @@ private:
   class UpdateCallback;
   osg::ref_ptr<osg::Texture2D> _effect_texture;
 };
-
-
-//////////////////////////////////////////////////////////////////////
-// Pick animation
-//////////////////////////////////////////////////////////////////////
-
-class SGPickAnimation : public SGAnimation {
-public:
-  SGPickAnimation(const SGPropertyNode* configNode,
-                  SGPropertyNode* modelRoot);
-  virtual osg::Group* createAnimationGroup(osg::Group& parent);
-private:
-  class PickCallback;
-  class VncCallback;
-};
-
 
 //////////////////////////////////////////////////////////////////////
 // Light animation

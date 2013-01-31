@@ -160,6 +160,7 @@ void makeEffectAnimations(PropertyList& animation_nodes,
         SGPropertyNode* typeProp = animProp->getChild("type");
         if (!typeProp)
             continue;
+        
         const char* typeString = typeProp->getStringValue();
         if (!strcmp(typeString, "material")) {
             effectProp
@@ -214,6 +215,43 @@ private:
     osg::Node::NodeMask nodeMaskSet;
     osg::Node::NodeMask nodeMaskClear;
 };
+    
+}
+
+namespace {
+    class ExcludeInPreview
+    {
+    public:
+        bool operator()(SGPropertyNode* aNode) const
+        {
+            string typeString(aNode->getStringValue("type"));
+            // exclude these so we don't show yellow outlines in preview mode
+            return (typeString == "pick") || (typeString == "knob");
+        }
+    };
+    
+    bool removeNamedNode(osg::Group* aGroup, const std::string& aName)
+    {
+        int nKids = aGroup->getNumChildren();
+        for (int i = 0; i < nKids; i++) {
+            osg::Node* child = aGroup->getChild(i);
+            if (child->getName() == aName) {
+                aGroup->removeChild(child);
+                return true;
+            }
+        }
+        
+        for (int i = 0; i < nKids; i++) {
+            osg::Group* childGroup = aGroup->getChild(i)->asGroup();
+            if (!childGroup)
+                continue;
+            
+            if (removeNamedNode(childGroup, aName))
+                return true;
+        } // of child groups traversal
+        
+        return false;
+    }
 }
 
 static osg::Node *
@@ -243,7 +281,8 @@ sgLoad3DModel_internal(const SGPath& path,
     osg::ref_ptr<osg::Node> model;
     osg::ref_ptr<osg::Group> group;
     SGPropertyNode_ptr props = new SGPropertyNode;
-
+    bool previewMode = (dbOptions->getPluginStringData("SimGear::PREVIEW") == "ON");
+    
     // Check for an XML wrapper
     if (modelpath.extension() == "xml") {
        try {
@@ -256,6 +295,10 @@ sgLoad3DModel_internal(const SGPath& path,
         if (overlay)
             copyProperties(overlay, props);
 
+        if (previewMode && props->hasChild("nopreview")) {
+            return NULL;
+        }
+        
         if (props->hasValue("/path")) {
             string modelPathStr = props->getStringValue("/path");
             modelpath = SGModelLib::findDataFile(modelPathStr, NULL, modelDir);
@@ -374,6 +417,9 @@ sgLoad3DModel_internal(const SGPath& path,
               << "\n\tfrom:" << t.getOrigin());
             continue;
         }
+        
+        if (!submodel)
+            continue;
 
         osg::ref_ptr<osg::Node> submodel_final = submodel;
         SGPropertyNode *offs = sub_props->getNode("offsets", false);
@@ -454,6 +500,13 @@ sgLoad3DModel_internal(const SGPath& path,
 
     PropertyList effect_nodes = props->getChildren("effect");
     PropertyList animation_nodes = props->getChildren("animation");
+    
+    if (previewMode) {
+        PropertyList::iterator it;
+        it = std::remove_if(animation_nodes.begin(), animation_nodes.end(), ExcludeInPreview());
+        animation_nodes.erase(it, animation_nodes.end());
+    }
+    
     // Some material animations (eventually all) are actually effects.
     makeEffectAnimations(animation_nodes, effect_nodes);
     {
@@ -462,11 +515,21 @@ sgLoad3DModel_internal(const SGPath& path,
         group = static_cast<Group*>(modelWithEffects.get());
     }
 
-    for (unsigned i = 0; i < animation_nodes.size(); ++i)
+    for (unsigned i = 0; i < animation_nodes.size(); ++i) {
+        if (previewMode && animation_nodes[i]->hasChild("nopreview")) {
+            PropertyList names(animation_nodes[i]->getChildren("object-name"));
+            for (unsigned int n=0; n<names.size(); ++n) {
+                std::cout << "remove object name:" << names[n]->getStringValue() << std::endl;
+                removeNamedNode(group, names[n]->getStringValue());
+            } // of object-names in the animation
+            continue;
+        }
+        
         /// OSGFIXME: duh, why not only model?????
         SGAnimation::animate(group.get(), animation_nodes[i], prop_root,
                              options.get(), path.str(), i);
-
+    }
+    
     if (!needTransform && group->getNumChildren() < 2) {
         model = group->getChild(0);
         group->removeChild(model.get());

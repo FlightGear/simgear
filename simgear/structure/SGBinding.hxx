@@ -136,4 +136,15 @@ typedef std::map<unsigned,SGBindingList> SGBindingMap;
  */
 void fireBindingList(const SGBindingList& aBindings);
 
+/**
+ * fire every binding in a list with a setting value
+ 
+ */
+void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, double max);
+
+/**
+ * read multiple bindings from property-list format
+ */
+SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNode* aRoot);
+
 #endif

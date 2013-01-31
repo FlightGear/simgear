@@ -27,11 +27,12 @@
 #include <osg/PolygonMode>
 #include <osg/Material>
 
-#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGPickCallback.hxx>
+#include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
 #include <simgear/structure/SGBinding.hxx>
 #include <simgear/scene/util/StateAttributeFactory.hxx>
+#include <simgear/scene/model/SGRotateTransform.hxx>
 
 using namespace simgear;
 
@@ -76,17 +77,14 @@ using OpenThreads::ScopedLock;
      }
      if (!found )
        return false;
-     SGBindingList::const_iterator i;
-     for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
-       (*i)->fire();
+       
+     fireBindingList(_bindingsDown);
      _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
      return true;
    }
    virtual void buttonReleased(void)
    {
-     SGBindingList::const_iterator i;
-     for (i = _bindingsUp.begin(); i != _bindingsUp.end(); ++i)
-       (*i)->fire();
+       fireBindingList(_bindingsUp);
    }
    virtual void update(double dt)
    {
@@ -96,9 +94,7 @@ using OpenThreads::ScopedLock;
      _repeatTime += dt;
      while (_repeatInterval < _repeatTime) {
        _repeatTime -= _repeatInterval;
-       SGBindingList::const_iterator i;
-       for (i = _bindingsDown.begin(); i != _bindingsDown.end(); ++i)
-         (*i)->fire();
+         fireBindingList(_bindingsDown);
      }
    }
  private:
@@ -252,23 +248,81 @@ using OpenThreads::ScopedLock;
  osg::ref_ptr<osg::Uniform> colorModeUniform;
  }
 
+
+void 
+SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent)
+{
+    // Contains the normal geometry that is interactive
+    osg::ref_ptr<osg::Group> normalGroup = new osg::Group;
+    normalGroup->setName("pick normal group");
+    normalGroup->addChild(commonGroup);
+    
+    // Used to render the geometry with just yellow edges
+    osg::Group* highlightGroup = new osg::Group;
+    highlightGroup->setName("pick highlight group");
+    highlightGroup->setNodeMask(simgear::PICK_BIT);
+    highlightGroup->addChild(commonGroup);
+    
+    // prepare a state set that paints the edges of this object yellow
+    // The material and texture attributes are set with
+    // OVERRIDE|PROTECTED in case there is a material animation on a
+    // higher node in the scene graph, which would have its material
+    // attribute set with OVERRIDE.
+    osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
+    osg::Texture2D* white = StateAttributeFactory::instance()->getWhiteTexture();
+    stateSet->setTextureAttributeAndModes(0, white,
+                                          (osg::StateAttribute::ON
+                                           | osg::StateAttribute::OVERRIDE
+                                           | osg::StateAttribute::PROTECTED));
+    osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
+    polygonOffset->setFactor(-1);
+    polygonOffset->setUnits(-1);
+    stateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
+    stateSet->setMode(GL_POLYGON_OFFSET_LINE,
+                      osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
+    osg::PolygonMode* polygonMode = new osg::PolygonMode;
+    polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
+                         osg::PolygonMode::LINE);
+    stateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
+    osg::Material* material = new osg::Material;
+    material->setColorMode(osg::Material::OFF);
+    material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 1));
+    // XXX Alpha < 1.0 in the diffuse material value is a signal to the
+    // default shader to take the alpha value from the material value
+    // and not the glColor. In many cases the pick animation geometry is
+    // transparent, so the outline would not be visible without this hack.
+    material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, .95));
+    material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
+    material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
+    stateSet->setAttribute(
+                           material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
+    // The default shader has a colorMode uniform that mimics the
+    // behavior of Material color mode.
+    osg::Uniform* cmUniform = 0;
+    {
+        ScopedLock<Mutex> lock(colorModeUniformMutex);
+        if (!colorModeUniform.valid()) {
+            colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
+            colorModeUniform->set(0); // MODE_OFF
+            colorModeUniform->setDataVariance(osg::Object::STATIC);
+        }
+        cmUniform = colorModeUniform.get();
+    }
+    stateSet->addUniform(cmUniform,
+                         osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
+    
+    // Only add normal geometry if configured
+    if (getConfig()->getBoolValue("visible", true))
+        parent.addChild(normalGroup.get());
+    parent.addChild(highlightGroup);
+}
+
  osg::Group*
  SGPickAnimation::createAnimationGroup(osg::Group& parent)
  {
-   osg::Group* commonGroup = new osg::Group;
-
-   // Contains the normal geometry that is interactive
-   osg::ref_ptr<osg::Group> normalGroup = new osg::Group;
-   normalGroup->setName("pick normal group");
-   normalGroup->addChild(commonGroup);
-
-   // Used to render the geometry with just yellow edges
-   osg::Group* highlightGroup = new osg::Group;
-   highlightGroup->setName("pick highlight group");
-   highlightGroup->setNodeMask(simgear::PICK_BIT);
-   highlightGroup->addChild(commonGroup);
-   SGSceneUserData* ud;
-   ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
+     osg::Group* commonGroup = new osg::Group;
+     innerSetupPickGroup(commonGroup, parent);
+     SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(commonGroup);
 
    // add actions that become macro and command invocations
    std::vector<SGPropertyNode_ptr> actions;
@@ -281,59 +335,137 @@ using OpenThreads::ScopedLock;
      ud->addPickCallback(new VncCallback(actions[i], getModelRoot(),
        &parent));
 
-   // prepare a state set that paints the edges of this object yellow
-   // The material and texture attributes are set with
-   // OVERRIDE|PROTECTED in case there is a material animation on a
-   // higher node in the scene graph, which would have its material
-   // attribute set with OVERRIDE.
-   osg::StateSet* stateSet = highlightGroup->getOrCreateStateSet();
-   osg::Texture2D* white = StateAttributeFactory::instance()->getWhiteTexture();
-   stateSet->setTextureAttributeAndModes(0, white,
-                                         (osg::StateAttribute::ON
-                                          | osg::StateAttribute::OVERRIDE
-                                          | osg::StateAttribute::PROTECTED));
-   osg::PolygonOffset* polygonOffset = new osg::PolygonOffset;
-   polygonOffset->setFactor(-1);
-   polygonOffset->setUnits(-1);
-   stateSet->setAttribute(polygonOffset, osg::StateAttribute::OVERRIDE);
-   stateSet->setMode(GL_POLYGON_OFFSET_LINE,
-                     osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE);
-   osg::PolygonMode* polygonMode = new osg::PolygonMode;
-   polygonMode->setMode(osg::PolygonMode::FRONT_AND_BACK,
-                        osg::PolygonMode::LINE);
-   stateSet->setAttribute(polygonMode, osg::StateAttribute::OVERRIDE);
-   osg::Material* material = new osg::Material;
-   material->setColorMode(osg::Material::OFF);
-   material->setAmbient(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 1));
-   // XXX Alpha < 1.0 in the diffuse material value is a signal to the
-   // default shader to take the alpha value from the material value
-   // and not the glColor. In many cases the pick animation geometry is
-   // transparent, so the outline would not be visible without this hack.
-   material->setDiffuse(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, .95));
-   material->setEmission(osg::Material::FRONT_AND_BACK, osg::Vec4f(1, 1, 0, 1));
-   material->setSpecular(osg::Material::FRONT_AND_BACK, osg::Vec4f(0, 0, 0, 0));
-   stateSet->setAttribute(
-       material, osg::StateAttribute::OVERRIDE | osg::StateAttribute::PROTECTED);
-   // The default shader has a colorMode uniform that mimics the
-   // behavior of Material color mode.
-   osg::Uniform* cmUniform = 0;
-   {
-       ScopedLock<Mutex> lock(colorModeUniformMutex);
-       if (!colorModeUniform.valid()) {
-           colorModeUniform = new osg::Uniform(osg::Uniform::INT, "colorMode");
-           colorModeUniform->set(0); // MODE_OFF
-           colorModeUniform->setDataVariance(osg::Object::STATIC);
-       }
-       cmUniform = colorModeUniform.get();
-   }
-   stateSet->addUniform(cmUniform,
-                        osg::StateAttribute::OVERRIDE | osg::StateAttribute::ON);
-   // Only add normal geometry if configured
-   if (getConfig()->getBoolValue("visible", true))
-     parent.addChild(normalGroup.get());
-   parent.addChild(highlightGroup);
-
-  
    return commonGroup;
 }
-  
+
+///////////////////////////////////////////////////////////////////////////
+
+class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
+public:
+    KnobPickCallback(const SGPropertyNode* configNode,
+                 SGPropertyNode* modelRoot) :
+        _direction(DIRECTION_NONE),
+        _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
+    {
+        const SGPropertyNode* act = configNode->getChild("action");
+        if (act)
+            _action = readBindingList(act->getChildren("binding"), modelRoot);
+        
+        const SGPropertyNode* cw = configNode->getChild("cw");
+        if (cw)
+            _bindingsCW = readBindingList(cw->getChildren("binding"), modelRoot);
+        
+        const SGPropertyNode* ccw = configNode->getChild("ccw");
+        if (ccw)
+            _bindingsCCW = readBindingList(ccw->getChildren("binding"), modelRoot);
+    }
+    
+    virtual bool buttonPressed(int button, const Info&)
+    {
+        _direction = DIRECTION_NONE;
+        if ((button == 0) || (button == 4)) {
+            _direction = DIRECTION_CLOCKWISE;
+        } else if ((button == 1) || (button == 3)) {
+            _direction = DIRECTION_ANTICLOCKWISE;
+        } else {
+            return false;
+        }
+        
+        _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
+        fire();
+        return true;
+    }
+    
+    virtual void buttonReleased(void)
+    {
+    }
+    
+    virtual void update(double dt)
+    {
+        _repeatTime += dt;
+        while (_repeatInterval < _repeatTime) {
+            _repeatTime -= _repeatInterval;
+            fire();
+        } // of repeat iteration
+    }
+private:
+    void fire()
+    {
+        switch (_direction) {
+            case DIRECTION_CLOCKWISE:
+                fireBindingListWithOffset(_action,  1, 1);
+                fireBindingList(_bindingsCW);
+                break;
+            case DIRECTION_ANTICLOCKWISE:
+                fireBindingListWithOffset(_action, -1, 1);
+                fireBindingList(_bindingsCCW);
+                break;
+            default: break;
+        }
+    }
+    
+    SGBindingList _action;
+    SGBindingList _bindingsCW,
+        _bindingsCCW;
+    
+    enum Direction
+    {
+        DIRECTION_NONE,
+        DIRECTION_CLOCKWISE,
+        DIRECTION_ANTICLOCKWISE
+    };
+    
+    Direction _direction;
+    double _repeatInterval;
+    double _repeatTime;
+};
+
+class SGKnobAnimation::UpdateCallback : public osg::NodeCallback {
+public:
+    UpdateCallback(SGExpressiond const* animationValue) :
+        _animationValue(animationValue)
+    {
+        setName("SGKnobAnimation::UpdateCallback");
+    }
+    virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+    {
+        SGRotateTransform* transform = static_cast<SGRotateTransform*>(node);
+        transform->setAngleDeg(_animationValue->getValue());
+        traverse(node, nv);
+    }
+    
+private:
+    SGSharedPtr<SGExpressiond const> _animationValue;
+};
+
+
+SGKnobAnimation::SGKnobAnimation(const SGPropertyNode* configNode,
+                                 SGPropertyNode* modelRoot) :
+    SGPickAnimation(configNode, modelRoot)
+{
+    SGSharedPtr<SGExpressiond> value = read_value(configNode, modelRoot, "-deg",
+                                                  -SGLimitsd::max(), SGLimitsd::max());
+    _animationValue = value->simplify();
+    
+    
+    readRotationCenterAndAxis(configNode, _center, _axis);
+}
+
+
+osg::Group*
+SGKnobAnimation::createAnimationGroup(osg::Group& parent)
+{
+    SGRotateTransform* transform = new SGRotateTransform();
+    innerSetupPickGroup(transform, parent);
+    
+    UpdateCallback* uc = new UpdateCallback(_animationValue);
+    transform->setUpdateCallback(uc);
+    transform->setCenter(_center);
+    transform->setAxis(_axis);
+        
+    SGSceneUserData* ud = SGSceneUserData::getOrCreateSceneUserData(transform);
+    ud->setPickCallback(new KnobPickCallback(getConfig(), getModelRoot()));
+    
+    return transform;
+}
+

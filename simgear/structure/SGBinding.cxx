@@ -114,3 +114,20 @@ void fireBindingList(const SGBindingList& aBindings)
         b->fire();
     }
 }
+
+void fireBindingListWithOffset(const SGBindingList& aBindings, double offset, double max)
+{
+    BOOST_FOREACH(SGBinding_ptr b, aBindings) {
+        b->fire(offset, max);
+    }
+}
+
+SGBindingList readBindingList(const simgear::PropertyList& aNodes, SGPropertyNode* aRoot)
+{
+    SGBindingList result;
+    BOOST_FOREACH(SGPropertyNode* node, aNodes) {
+        result.push_back(new SGBinding(node, aRoot));
+    }
+    
+    return result;
+}

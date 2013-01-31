@@ -34,7 +34,9 @@
 SGExpressiond*
 read_value(const SGPropertyNode* configNode, SGPropertyNode* modelRoot,
            const char* unit, double defMin, double defMax);
-
+
+void readRotationCenterAndAxis(const SGPropertyNode* configNode, SGVec3d& center, SGVec3d& axis);
+
 //////////////////////////////////////////////////////////////////////
 // Base class for animation installers
 //////////////////////////////////////////////////////////////////////

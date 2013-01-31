@@ -396,6 +396,9 @@ SGAnimation::animate(osg::Node* node, const SGPropertyNode* configNode,
   } else if (type == "pick") {
     SGPickAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
+  } else if (type == "knob") {
+    SGKnobAnimation animInst(configNode, modelRoot);
+    animInst.apply(node);
   } else if (type == "range") {
     SGRangeAnimation animInst(configNode, modelRoot);
     animInst.apply(node);
@@ -846,6 +849,33 @@ void SpinAnimCallback::operator()(osg::Node* node, osg::NodeVisitor* nv)
     }
 }
 
+// factored out to share with SGKnobAnimation
+void readRotationCenterAndAxis(const SGPropertyNode* configNode, SGVec3d& center, SGVec3d& axis)
+{
+    center = SGVec3d::zeros();
+    if (configNode->hasValue("axis/x1-m")) {
+        SGVec3d v1, v2;
+        v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
+        v1[1] = configNode->getDoubleValue("axis/y1-m", 0);
+        v1[2] = configNode->getDoubleValue("axis/z1-m", 0);
+        v2[0] = configNode->getDoubleValue("axis/x2-m", 0);
+        v2[1] = configNode->getDoubleValue("axis/y2-m", 0);
+        v2[2] = configNode->getDoubleValue("axis/z2-m", 0);
+        center = 0.5*(v1+v2);
+        axis = v2 - v1;
+    } else {
+        axis[0] = configNode->getDoubleValue("axis/x", 0);
+        axis[1] = configNode->getDoubleValue("axis/y", 0);
+        axis[2] = configNode->getDoubleValue("axis/z", 0);
+    }
+    if (8*SGLimitsd::min() < norm(axis))
+        axis = normalize(axis);
+    
+    center[0] = configNode->getDoubleValue("center/x-m", center[0]);
+    center[1] = configNode->getDoubleValue("center/y-m", center[1]);
+    center[2] = configNode->getDoubleValue("center/z-m", center[2]);
+}
+
 SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
                                      SGPropertyNode* modelRoot) :
   SGAnimation(configNode, modelRoot)
@@ -862,28 +892,8 @@ SGRotateAnimation::SGRotateAnimation(const SGPropertyNode* configNode,
     _initialValue = _animationValue->getValue();
   else
     _initialValue = 0;
-  _center = SGVec3d::zeros();
-  if (configNode->hasValue("axis/x1-m")) {
-    SGVec3d v1, v2;
-    v1[0] = configNode->getDoubleValue("axis/x1-m", 0);
-    v1[1] = configNode->getDoubleValue("axis/y1-m", 0);
-    v1[2] = configNode->getDoubleValue("axis/z1-m", 0);
-    v2[0] = configNode->getDoubleValue("axis/x2-m", 0);
-    v2[1] = configNode->getDoubleValue("axis/y2-m", 0);
-    v2[2] = configNode->getDoubleValue("axis/z2-m", 0);
-    _center = 0.5*(v1+v2);
-    _axis = v2 - v1;
-  } else {
-    _axis[0] = configNode->getDoubleValue("axis/x", 0);
-    _axis[1] = configNode->getDoubleValue("axis/y", 0);
-    _axis[2] = configNode->getDoubleValue("axis/z", 0);
-  }
-  if (8*SGLimitsd::min() < norm(_axis))
-    _axis = normalize(_axis);
-
-  _center[0] = configNode->getDoubleValue("center/x-m", _center[0]);
-  _center[1] = configNode->getDoubleValue("center/y-m", _center[1]);
-  _center[2] = configNode->getDoubleValue("center/z-m", _center[2]);
+  
+  readRotationCenterAndAxis(configNode, _center, _axis);
 }
 
 osg::Group*

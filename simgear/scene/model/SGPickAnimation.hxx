@@ -24,6 +24,8 @@
 
 #include <simgear/scene/model/animation.hxx>
 
+// forward decls
+class SGPickCallback;
 
 //////////////////////////////////////////////////////////////////////
 // Pick animation
@@ -34,9 +36,31 @@ public:
   SGPickAnimation(const SGPropertyNode* configNode,
                   SGPropertyNode* modelRoot);
   virtual osg::Group* createAnimationGroup(osg::Group& parent);
+    
+    
+protected:
+    void innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent);
+    
 private:
   class PickCallback;
   class VncCallback;
+};
+
+
+class SGKnobAnimation : public SGPickAnimation
+{
+public:
+    SGKnobAnimation(const SGPropertyNode* configNode,
+                    SGPropertyNode* modelRoot);
+    virtual osg::Group* createAnimationGroup(osg::Group& parent);
+
+private:
+    class KnobPickCallback;
+    class UpdateCallback;
+    
+    SGVec3d _axis;
+    SGVec3d _center;
+    SGSharedPtr<SGExpressiond const> _animationValue;
 };
 
 #endif // of SG_SCENE_PICK_ANIMATION_HXX

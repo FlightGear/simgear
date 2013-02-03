@@ -26,6 +26,8 @@
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>
 
+namespace osgGA { class GUIEventAdapter; }
+
 // Used to implement scenery interaction.
 // The interface is still under development
 class SGPickCallback : public SGReferenced {
@@ -46,7 +48,7 @@ public:
   { }
 
   virtual ~SGPickCallback() {}
-  virtual bool buttonPressed(int button, const Info& info)
+  virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* event, const Info& info)
   { return false; }
   virtual void update(double dt)
   { }

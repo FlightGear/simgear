@@ -26,7 +26,8 @@
 #include <osg/PolygonOffset>
 #include <osg/PolygonMode>
 #include <osg/Material>
-
+#include <osgGA/GUIEventAdapter>
+     
 #include <simgear/scene/util/SGPickCallback.hxx>
 #include <simgear/scene/material/EffectGeode.hxx>
 #include <simgear/scene/util/SGSceneUserData.hxx>
@@ -66,7 +67,7 @@ using OpenThreads::ScopedLock;
        _bindingsUp.push_back(new SGBinding(bindings[i], modelRoot));
      }
    }
-   virtual bool buttonPressed(int button, const Info&)
+   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
    {
      bool found = false;
      for( std::vector<int>::iterator it = _buttons.begin(); it != _buttons.end(); ++it ) {
@@ -206,7 +207,7 @@ using OpenThreads::ScopedLock;
      _squaredDown = dot(_toDown, _toDown);
    }
 
-   virtual bool buttonPressed(int button, const Info& info)
+   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info& info)
    {
      SGVec3d loc(info.local);
      SG_LOG(SG_INPUT, SG_DEBUG, "VNC pressed " << button << ": " << loc);
@@ -340,12 +341,24 @@ SGPickAnimation::innerSetupPickGroup(osg::Group* commonGroup, osg::Group& parent
 
 ///////////////////////////////////////////////////////////////////////////
 
+// insert count copies of binding list A, into the output list.
+// effectively makes the output list fire binding A multiple times
+// in sequence
+static void repeatBindings(const SGBindingList& a, SGBindingList& out, int count)
+{
+    out.clear();
+    for (int i=0; i<count; ++i) {
+        out.insert(out.end(), a.begin(), a.end());
+    }
+}
+
 class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
 public:
     KnobPickCallback(const SGPropertyNode* configNode,
                  SGPropertyNode* modelRoot) :
         _direction(DIRECTION_NONE),
-        _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
+        _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
+        _stickyShifted(false)
     {
         const SGPropertyNode* act = configNode->getChild("action");
         if (act)
@@ -358,10 +371,41 @@ public:
         const SGPropertyNode* ccw = configNode->getChild("ccw");
         if (ccw)
             _bindingsCCW = readBindingList(ccw->getChildren("binding"), modelRoot);
+        
+        if (configNode->hasChild("shift-action") || configNode->hasChild("shift-cw") ||
+            configNode->hasChild("shift-ccw"))
+        {
+        // explicit shifted behaviour - just do exactly what was provided
+            const SGPropertyNode* act = configNode->getChild("shift-action");
+            if (act)
+                _shiftedAction = readBindingList(act->getChildren("binding"), modelRoot);
+        
+            const SGPropertyNode* cw = configNode->getChild("shift-cw");
+            if (cw)
+                _shiftedCW = readBindingList(cw->getChildren("binding"), modelRoot);
+        
+            const SGPropertyNode* ccw = configNode->getChild("shift-ccw");
+            if (ccw)
+                _shiftedCCW = readBindingList(ccw->getChildren("binding"), modelRoot);
+        } else {
+            // default shifted behaviour - repeat normal bindings N times.
+            int shiftRepeat = configNode->getIntValue("shift-repeat", 10);
+            repeatBindings(_action, _shiftedAction, shiftRepeat);
+            repeatBindings(_bindingsCW, _shiftedCW, shiftRepeat);
+            repeatBindings(_bindingsCCW, _shiftedCCW, shiftRepeat);
+        } // of default shifted behaviour
     }
     
-    virtual bool buttonPressed(int button, const Info&)
+    virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
     {
+        _stickyShifted = ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_SHIFT;
+        
+        // the 'be nice to Mac / laptop' users option; alt-clicking spins the
+        // opposite direction. Should make this configurable
+        if ((button == 0) && (ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
+            button = 1;
+        }
+            
         _direction = DIRECTION_NONE;
         if ((button == 0) || (button == 4)) {
             _direction = DIRECTION_CLOCKWISE;
@@ -372,7 +416,7 @@ public:
         }
         
         _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
-        fire();
+        fire(_stickyShifted);
         return true;
     }
     
@@ -385,28 +429,32 @@ public:
         _repeatTime += dt;
         while (_repeatInterval < _repeatTime) {
             _repeatTime -= _repeatInterval;
-            fire();
+            fire(_stickyShifted);
         } // of repeat iteration
     }
 private:
-    void fire()
+    void fire(bool isShifted)
     {
+        const SGBindingList& act(isShifted ? _shiftedAction : _action);
+        const SGBindingList& cw(isShifted ? _shiftedCW : _bindingsCW);
+        const SGBindingList& ccw(isShifted ? _shiftedCCW : _bindingsCCW);
+        
         switch (_direction) {
             case DIRECTION_CLOCKWISE:
-                fireBindingListWithOffset(_action,  1, 1);
-                fireBindingList(_bindingsCW);
+                fireBindingListWithOffset(act,  1, 1);
+                fireBindingList(cw);
                 break;
             case DIRECTION_ANTICLOCKWISE:
-                fireBindingListWithOffset(_action, -1, 1);
-                fireBindingList(_bindingsCCW);
+                fireBindingListWithOffset(act, -1, 1);
+                fireBindingList(ccw);
                 break;
             default: break;
         }
     }
     
-    SGBindingList _action;
-    SGBindingList _bindingsCW,
-        _bindingsCCW;
+    SGBindingList _action, _shiftedAction;
+    SGBindingList _bindingsCW, _shiftedCW,
+        _bindingsCCW, _shiftedCCW;
     
     enum Direction
     {
@@ -418,6 +466,10 @@ private:
     Direction _direction;
     double _repeatInterval;
     double _repeatTime;
+    
+    // FIXME - would be better to pass the current modifier state
+    // into update(), but for now let's make it sticky
+    bool _stickyShifted;
 };
 
 class SGKnobAnimation::UpdateCallback : public osg::NodeCallback {

@@ -352,6 +352,15 @@ static void repeatBindings(const SGBindingList& a, SGBindingList& out, int count
     }
 }
 
+static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode* modelRoot,
+    const std::string& aName, SGBindingList& aBindings)
+{
+    const SGPropertyNode* n = aNode->getChild(aName);
+    if (n)
+        aBindings = readBindingList(n->getChildren("binding"), modelRoot);
+    
+}
+
 class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
 public:
     KnobPickCallback(const SGPropertyNode* configNode,
@@ -360,33 +369,19 @@ public:
         _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1)),
         _stickyShifted(false)
     {
-        const SGPropertyNode* act = configNode->getChild("action");
-        if (act)
-            _action = readBindingList(act->getChildren("binding"), modelRoot);
+        readOptionalBindingList(configNode, modelRoot, "action", _action);
+        readOptionalBindingList(configNode, modelRoot, "cw", _bindingsCW);
+        readOptionalBindingList(configNode, modelRoot, "ccw", _bindingsCCW);
         
-        const SGPropertyNode* cw = configNode->getChild("cw");
-        if (cw)
-            _bindingsCW = readBindingList(cw->getChildren("binding"), modelRoot);
-        
-        const SGPropertyNode* ccw = configNode->getChild("ccw");
-        if (ccw)
-            _bindingsCCW = readBindingList(ccw->getChildren("binding"), modelRoot);
+        readOptionalBindingList(configNode, modelRoot, "release", _releaseAction);
         
         if (configNode->hasChild("shift-action") || configNode->hasChild("shift-cw") ||
             configNode->hasChild("shift-ccw"))
         {
         // explicit shifted behaviour - just do exactly what was provided
-            const SGPropertyNode* act = configNode->getChild("shift-action");
-            if (act)
-                _shiftedAction = readBindingList(act->getChildren("binding"), modelRoot);
-        
-            const SGPropertyNode* cw = configNode->getChild("shift-cw");
-            if (cw)
-                _shiftedCW = readBindingList(cw->getChildren("binding"), modelRoot);
-        
-            const SGPropertyNode* ccw = configNode->getChild("shift-ccw");
-            if (ccw)
-                _shiftedCCW = readBindingList(ccw->getChildren("binding"), modelRoot);
+            readOptionalBindingList(configNode, modelRoot, "shift-action", _shiftedAction);
+            readOptionalBindingList(configNode, modelRoot, "shift-cw", _shiftedCW);
+            readOptionalBindingList(configNode, modelRoot, "shift-ccw", _shiftedCCW);
         } else {
             // default shifted behaviour - repeat normal bindings N times.
             int shiftRepeat = configNode->getIntValue("shift-repeat", 10);
@@ -422,6 +417,7 @@ public:
     
     virtual void buttonReleased(void)
     {
+        fireBindingList(_releaseAction);
     }
     
     virtual void update(double dt)
@@ -453,6 +449,7 @@ private:
     }
     
     SGBindingList _action, _shiftedAction;
+    SGBindingList _releaseAction;
     SGBindingList _bindingsCW, _shiftedCW,
         _bindingsCCW, _shiftedCCW;
     

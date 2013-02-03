@@ -361,6 +361,8 @@ static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode*
     
 }
 
+static bool static_knobMouseWheelAlternateDirection = false;
+
 class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
 public:
     KnobPickCallback(const SGPropertyNode* configNode,
@@ -400,11 +402,14 @@ public:
         if ((button == 0) && (ea->getModKeyMask() & osgGA::GUIEventAdapter::MODKEY_ALT)) {
             button = 1;
         }
+        
+        int increaseMouseWheel = static_knobMouseWheelAlternateDirection ? 3 : 4;
+        int decreaseMouseWheel = static_knobMouseWheelAlternateDirection ? 4 : 3;
             
         _direction = DIRECTION_NONE;
-        if ((button == 0) || (button == 4)) {
+        if ((button == 0) || (button == increaseMouseWheel)) {
             _direction = DIRECTION_CLOCKWISE;
-        } else if ((button == 1) || (button == 3)) {
+        } else if ((button == 1) || (button == decreaseMouseWheel)) {
             _direction = DIRECTION_ANTICLOCKWISE;
         } else {
             return false;
@@ -516,5 +521,10 @@ SGKnobAnimation::createAnimationGroup(osg::Group& parent)
     ud->setPickCallback(new KnobPickCallback(getConfig(), getModelRoot()));
     
     return transform;
+}
+
+void SGKnobAnimation::setAlternateMouseWheelDirection(bool aToggle)
+{
+    static_knobMouseWheelAlternateDirection = aToggle;
 }
 

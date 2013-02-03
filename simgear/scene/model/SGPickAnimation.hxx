@@ -54,6 +54,12 @@ public:
                     SGPropertyNode* modelRoot);
     virtual osg::Group* createAnimationGroup(osg::Group& parent);
 
+    /**
+     * by default mouse wheel up corresponds to increment (CW)
+     * and mouse-wheel down corresponds to decrement (CCW).
+     * Since no one can agree on that, make it a global toggle.
+     */
+    static void setAlternateMouseWheelDirection(bool aToggle);
 private:
     class KnobPickCallback;
     class UpdateCallback;

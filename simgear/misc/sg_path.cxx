@@ -490,7 +490,7 @@ std::string SGPath::realpath() const
     // This means relative paths cannot be used on Mac OS <= 10.5
     return path;
 #else
-  #if defined(_MSC_VER)
+  #if defined(_MSC_VER) /*for MS compilers */ || defined(_WIN32) /*needed for non MS windows compilers like MingW*/
     // with absPath NULL, will allocate, and ignore length
     char *buf = _fullpath( NULL, path.c_str(), _MAX_PATH );
   #else

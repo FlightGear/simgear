@@ -34,6 +34,7 @@
 #include "sample_group.hxx"
 
 using std::string;
+using std::isnan;
 
 bool isNaN(float *v) {
    return (isnan(v[0]) || isnan(v[1]) || isnan(v[2]));

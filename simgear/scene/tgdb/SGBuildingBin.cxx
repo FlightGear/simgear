@@ -64,7 +64,6 @@ namespace simgear
   
 typedef std::map<std::string, osg::observer_ptr<osg::StateSet> > BuildingStateSetMap;
 static BuildingStateSetMap statesetmap;
-static int numBuildings;
 
 typedef std::map<std::string, osg::observer_ptr<Effect> > EffectMap;
 static EffectMap buildingEffectMap;
@@ -135,6 +134,8 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
     
     smallBuildingFraction = mat->get_building_small_fraction();
     mediumBuildingFraction = mat->get_building_medium_fraction();
+    
+    buildingRange = mat->get_building_range();
     
     SG_LOG(SG_TERRAIN, SG_DEBUG, "Building fractions " << smallBuildingFraction << " " << mediumBuildingFraction);
     
@@ -753,10 +754,11 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
     
     for (int i = 0; i < 3; i++)
     {
+      // Create a quad tree.  Only small and medium buildings are faded out.
       BuildingGeometryQuadtree
           quadbuilding(GetBuildingCoord(), AddBuildingLeafObject(),
                    SG_BUILDING_QUAD_TREE_DEPTH,
-                   MakeBuildingLeaf(20000.0, effect));
+                   MakeBuildingLeaf(buildingRange, effect, (i != 2)));
                    
       // Transform building positions from the "geocentric" positions we
       // get from the scenery polys into the local Z-up coordinate
@@ -768,8 +770,8 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
                      BuildingInstanceTransformer(transInv));
       quadbuilding.buildQuadTree(rotatedBuildings.begin(), rotatedBuildings.end());
 
-      for (size_t i = 0; i < quadbuilding.getRoot()->getNumChildren(); ++i)
-              group->addChild(quadbuilding.getRoot()->getChild(i));
+      for (size_t j = 0; j < quadbuilding.getRoot()->getNumChildren(); ++j)
+              group->addChild(quadbuilding.getRoot()->getChild(j));
     }
       
     return group;
@@ -826,10 +828,9 @@ BuildingBoundingBoxCallback::computeBound(const Drawable& drawable) const
       MatrixTransform* mt = new MatrixTransform(transform);
 
       SGBuildingBin* bin = NULL;
-        
+      
       BOOST_FOREACH(bin, buildings)
       {      
-          numBuildings = numBuildings + bin->getNumBuildings();
           ref_ptr<Group> group = bin->createBuildingsGroup(transInv, options);
           
           for (size_t i = 0; i < group->getNumChildren(); ++i)

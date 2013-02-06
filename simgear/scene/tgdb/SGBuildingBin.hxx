@@ -45,7 +45,7 @@
 #include <simgear/scene/util/StateAttributeFactory.hxx>
 #include <simgear/structure/OSGUtils.hxx>
 
-#define SG_BUILDING_QUAD_TREE_DEPTH 2
+#define SG_BUILDING_QUAD_TREE_DEPTH 4
 #define SG_BUILDING_FADE_OUT_LEVELS 4
 
 using namespace osg;
@@ -117,6 +117,9 @@ private:
   float smallBuildingMaxDepth;
   float mediumBuildingMaxDepth;
   float largeBuildingMaxDepth;
+  
+  // Visibility range for buildings
+  float buildingRange;
   
   // Shared geometries of the building set
   ref_ptr<Geometry> smallSharedGeometry;
@@ -191,30 +194,38 @@ public:
   // Helper classes for creating the quad tree
   struct MakeBuildingLeaf
   {
-      MakeBuildingLeaf(float range, Effect* effect) :
-          _range(range), _effect(effect) {}
+      MakeBuildingLeaf(float range, Effect* effect, bool fade) :
+          _range(range), _effect(effect), _fade_out(fade) {}
       
       MakeBuildingLeaf(const MakeBuildingLeaf& rhs) :
-          _range(rhs._range), _effect(rhs._effect)
+          _range(rhs._range), _effect(rhs._effect), _fade_out(rhs._fade_out)
       {}
 
       LOD* operator() () const
       {
           LOD* result = new LOD;
           
-          // Create a series of LOD nodes so trees cover decreases slightly
-          // gradually with distance from _range to 2*_range
-          for (float i = 0.0; i < SG_BUILDING_FADE_OUT_LEVELS; i++)
-          {   
+          if (_fade_out) {            
+              // Create a series of LOD nodes so buidling cover decreases
+              // gradually with distance from _range to 2*_range
+              for (float i = 0.0; i < SG_BUILDING_FADE_OUT_LEVELS; i++)
+              {   
+                  EffectGeode* geode = new EffectGeode;
+                  geode->setEffect(_effect.get());
+                  result->addChild(geode, 0, _range * (1.0 + i / (SG_BUILDING_FADE_OUT_LEVELS - 1.0)));               
+              }
+          } else {
+              // No fade-out, so all are visible for 2X range
               EffectGeode* geode = new EffectGeode;
               geode->setEffect(_effect.get());
-              result->addChild(geode, 0, _range * (1.0 + i / (SG_BUILDING_FADE_OUT_LEVELS - 1.0)));               
+              result->addChild(geode, 0, 2.0 * _range);               
           }
           return result;
       }
       
       float _range;
       ref_ptr<Effect> _effect;
+      bool _fade_out;
   };
   
   struct AddBuildingLeafObject

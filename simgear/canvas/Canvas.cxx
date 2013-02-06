@@ -168,11 +168,7 @@ namespace canvas
       {
         // Resizing causes a new texture to be created so we need to reapply all
         // existing placements
-        for(size_t i = 0; i < _placements.size(); ++i)
-        {
-          if( !_placements[i].empty() )
-            _dirty_placements.push_back( _placements[i].front()->getProps() );
-        }
+        reloadPlacements();
       }
 
       osg::Camera* camera = _texture.getCamera();
@@ -489,6 +485,24 @@ namespace canvas
   Canvas::CullCallbackPtr Canvas::getCullCallback() const
   {
     return _cull_callback;
+  }
+
+  //----------------------------------------------------------------------------
+  void Canvas::reloadPlacements(const std::string& type)
+  {
+    for(size_t i = 0; i < _placements.size(); ++i)
+    {
+      if( _placements[i].empty() )
+        continue;
+
+      SGPropertyNode* child = _placements[i].front()->getProps();
+      if(    type.empty()
+             // reload if type matches or no type specified
+          || child->getStringValue("type", type.c_str()) == type )
+      {
+        _dirty_placements.push_back(child);
+      }
+    }
   }
 
   //----------------------------------------------------------------------------

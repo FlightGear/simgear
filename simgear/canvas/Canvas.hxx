@@ -130,6 +130,7 @@ namespace canvas
 
       CullCallbackPtr getCullCallback() const;
 
+      void reloadPlacements( const std::string& type = std::string() );
       static void addPlacementFactory( const std::string& type,
                                        PlacementFactory factory );
 

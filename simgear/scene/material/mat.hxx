@@ -211,6 +211,8 @@ public:
   inline double get_building_large_min_depth () const { return building_large_min_depth; }
   inline double get_building_large_max_depth () const { return building_large_max_depth; }
   
+  inline double get_building_range () const { return building_range; }
+  
   inline double get_cos_object_max_density_slope_angle () const { return cos_object_max_density_slope_angle; }
   inline double get_cos_object_zero_density_slope_angle () const { return cos_object_zero_density_slope_angle; }
 
@@ -414,6 +416,8 @@ private:
   double building_large_max_width;
   double building_large_min_depth;
   double building_large_max_depth;
+  
+  double building_range;
   
   // Cosine of the angle of maximum and zero density, 
   // used to stop buildings and random objects from being 

@@ -320,6 +320,8 @@ SGMaterial::read_properties(const SGReaderWriterOptions* options,
     building_large_max_width = props->getFloatValue("building-large-max-width-m", 75.0);
     building_large_min_depth = props->getFloatValue("building-large-min-depth-m", 50.0);
     building_large_max_depth = props->getFloatValue("building-large-max-depth-m", 75.0);
+
+    building_range = props->getDoubleValue("building-range-m", 10000.0);
     
     cos_object_max_density_slope_angle  = cos(props->getFloatValue("object-max-density-angle-deg", 20.0) * osg::PI/180.0);
     cos_object_zero_density_slope_angle = cos(props->getFloatValue("object-zero-density-angle-deg", 30.0) * osg::PI/180.0);

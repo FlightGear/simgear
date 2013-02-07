@@ -28,8 +28,12 @@
 #include <simgear/compiler.h>
 #include <simgear/debug/debug_types.h>
 
+#include <vector>
 #include <sstream>
-
+#include <memory> // for std::auto_ptr
+     
+typedef std::vector<std::string> string_list;
+ 
 // forward decls
 class SGPath;
       
@@ -42,6 +46,27 @@ public:
     virtual ~LogCallback() {}
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage) = 0;
+};
+     
+     
+class BufferedLogCallback : public LogCallback
+{
+public:
+    BufferedLogCallback(sgDebugClass c, sgDebugPriority p);
+    virtual ~BufferedLogCallback();
+    
+    virtual void operator()(sgDebugClass c, sgDebugPriority p, 
+        const char* file, int line, const std::string& aMessage);
+    
+    /**
+     * copy the buffered log data into the provided output list
+     * (which will be cleared first). This method is safe to call from
+     * any thread.
+     */
+    void threadsafeCopy(string_list& aOutput);
+private:
+    class BufferedLogCallbackPrivate;
+    std::auto_ptr<BufferedLogCallbackPrivate> d;
 };
      
 } // of namespace simgear

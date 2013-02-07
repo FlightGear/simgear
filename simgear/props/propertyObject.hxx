@@ -115,11 +115,9 @@ public:
   T operator=(const T& aValue)
   {
     SGPropertyNode* n = PropertyObjectBase::node(true);
-    if (!n) {
-      std::cout << "no node" << std::endl;
+    if( !n )
       return aValue;
-    }
-    
+
     n->setValue<T>(aValue);
     return aValue;
   }

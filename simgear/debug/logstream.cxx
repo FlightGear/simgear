@@ -34,6 +34,11 @@
 
 #include <simgear/misc/sg_path.hxx>
 
+#ifdef _WIN32
+// for AllocConsole
+    #include "windows.h"
+#endif
+
 const char* debugClassToString(sgDebugClass c)
 {
     switch (c) {
@@ -97,6 +102,9 @@ public:
     {
 #ifdef _WIN32
         AllocConsole(); // but only if we want a console
+        freopen("conin$", "r", stdin);
+        freopen("conout$", "w", stdout);
+        freopen("conout$", "w", stderr);
 #endif
     }
 

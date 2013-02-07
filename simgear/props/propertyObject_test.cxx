@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 
 #include "propertyObject.hxx"
 

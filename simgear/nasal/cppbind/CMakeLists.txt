@@ -20,7 +20,14 @@ set(SOURCES
 simgear_component(nasal/cppbind nasal/cppbind "${SOURCES}" "${HEADERS}")
 
 if(ENABLE_TESTS)
+
+if (SIMGEAR_SHARED)
+    set(TEST_LIBS SimGearCore)
+else()
+    set(TEST_LIBS SimGearCore ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
   add_executable(test_cppbind cppbind_test.cxx)
   add_test(test_cppbind ${EXECUTABLE_OUTPUT_PATH}/test_cppbind)
-  target_link_libraries(test_cppbind SimGearCore)
+  target_link_libraries(test_cppbind ${TEST_LIBS})
 endif(ENABLE_TESTS)

@@ -20,6 +20,8 @@
 #  include <simgear_config.h>
 #endif
 
+#include <cstdio>
+
 #include "SGText.hxx"
 
 #include <simgear/math/SGMath.hxx>

@@ -25,6 +25,7 @@
 #include <simgear/misc/sg_dir.hxx>
 #include <math.h>
 #include <stdlib.h>
+#include <cstdio>
 
 #ifdef _WIN32
 #  define WIN32_LEAN_AND_MEAN

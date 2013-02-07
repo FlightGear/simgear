@@ -66,15 +66,17 @@ SGPropertyNode* PropertyObjectBase::node(bool aCreate) const
     return _prop;
   }
   
-  SGPropertyNode* r = _prop ? _prop : static_defaultRoot;
-  _prop = r->getNode(_path, aCreate);
+  SGPropertyNode *r = _prop ? _prop : static_defaultRoot,
+                 *prop = r->getNode(_path, aCreate);
   
-  if (_prop) {
-    // resolve worked, we will cache from now on, so clear _path
+  if( prop )
+  {
+    // resolve worked, we will cache from now on, so clear _path and cache prop
     _path = NULL;
+    _prop = prop;
   }
 
-  return _prop;
+  return prop;
 }
 
 SGPropertyNode* PropertyObjectBase::getOrThrow() const

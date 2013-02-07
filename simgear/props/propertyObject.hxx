@@ -59,19 +59,20 @@ template <typename T>
 class PropertyObject : PropertyObjectBase
 {
 public:
-  PropertyObject();
+  PropertyObject()
+  {}
   
   /**
    * Create from path relative to the default root, and option default value
    */
-  PropertyObject(const char* aChild) :
+  explicit PropertyObject(const char* aChild) :
     PropertyObjectBase(aChild)
   { }
   
   /**
    * Create from a node, with optional relative path
    */
-  PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
+  explicit PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
     PropertyObjectBase(aNode, aChild)
   {
   
@@ -115,6 +116,7 @@ public:
   {
     SGPropertyNode* n = PropertyObjectBase::node(true);
     if (!n) {
+      std::cout << "no node" << std::endl;
       return aValue;
     }
     
@@ -157,13 +159,13 @@ template <>
 class PropertyObject<std::string> : PropertyObjectBase
 {
 public:
-  PropertyObject(const char* aChild) :
+  explicit PropertyObject(const char* aChild) :
     PropertyObjectBase(aChild)
   { }
   
 
   
-  PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
+  explicit PropertyObject(SGPropertyNode* aNode, const char* aChild = NULL) :
     PropertyObjectBase(aNode, aChild)
   {
   

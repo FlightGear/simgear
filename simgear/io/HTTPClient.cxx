@@ -298,25 +298,51 @@ public:
       zlib.next_out = zlibOutputBuffer;
       zlib.avail_out = ZLIB_DECOMPRESS_BUFFER_SIZE;
       
-      if (contentGZip) {
+      if (contentGZip && !handleGZipHeader()) {
+          return;
+      }
+      
+      int writtenSize = 0;
+      do {
+        int result = inflate(&zlib, Z_NO_FLUSH);
+        if (result == Z_OK || result == Z_STREAM_END) {
+            // nothing to do
+        } else {
+          SG_LOG(SG_IO, SG_WARN, "got Zlib error:" << result);
+          return;
+        }
+            
+        writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - zlib.avail_out;
+        if (result == Z_STREAM_END) {
+            break;
+        }
+      } while ((writtenSize == 0) && (zlib.avail_in > 0));
+    
+      if (writtenSize > 0) {
+        activeRequest->processBodyBytes((const char*) zlibOutputBuffer, writtenSize);
+      }
+    }
+    
+    bool handleGZipHeader()
+    {
         // we clear this down to contentDeflate once the GZip header has been seen
-        if (reqSize < GZIP_HEADER_SIZE) {
-          return; // need more header bytes
+        if (zlib.avail_in < GZIP_HEADER_SIZE) {
+          return false; // need more header bytes
         }
         
         if ((zlibInflateBuffer[0] != GZIP_HEADER_ID1) ||
             (zlibInflateBuffer[1] != GZIP_HEADER_ID2) ||
             (zlibInflateBuffer[2] != GZIP_HEADER_METHOD_DEFLATE))
         {
-          return; // invalid GZip header
+          return false; // invalid GZip header
         }
         
         char flags = zlibInflateBuffer[3];
         int gzipHeaderSize =  GZIP_HEADER_SIZE;
         if (flags & GZIP_HEADER_FEXTRA) {
           gzipHeaderSize += 2;
-          if (reqSize < gzipHeaderSize) {
-            return; // need more header bytes
+          if (zlib.avail_in < gzipHeaderSize) {
+            return false; // need more header bytes
           }
           
           unsigned short extraHeaderBytes = *(reinterpret_cast<unsigned short*>(zlibInflateBuffer + GZIP_HEADER_FEXTRA));
@@ -325,14 +351,14 @@ public:
           }
           
           gzipHeaderSize += extraHeaderBytes;
-          if (reqSize < gzipHeaderSize) {
-            return; // need more header bytes
+          if (zlib.avail_in < gzipHeaderSize) {
+            return false; // need more header bytes
           }
         }
         
         if (flags & GZIP_HEADER_FNAME) {
           gzipHeaderSize++;
-          while (gzipHeaderSize <= reqSize) {
+          while (gzipHeaderSize <= zlib.avail_in) {
             if (zlibInflateBuffer[gzipHeaderSize-1] == 0) {
               break; // found terminating NULL character
             }
@@ -341,7 +367,7 @@ public:
         
         if (flags & GZIP_HEADER_COMMENT) {
           gzipHeaderSize++;
-          while (gzipHeaderSize <= reqSize) {
+          while (gzipHeaderSize <= zlib.avail_in) {
             if (zlibInflateBuffer[gzipHeaderSize-1] == 0) {
               break; // found terminating NULL character
             }
@@ -352,33 +378,16 @@ public:
           gzipHeaderSize += 2;
         }
         
-        if (reqSize < gzipHeaderSize) {
-          return; // need more header bytes
+        if (zlib.avail_in < gzipHeaderSize) {
+          return false; // need more header bytes
         }
         
         zlib.next_in += gzipHeaderSize;
-        zlib.avail_in = reqSize - gzipHeaderSize;
+        zlib.avail_in -= gzipHeaderSize;
       // now we've processed the GZip header, can decode as deflate
         contentGZip = false;
         contentDeflate = true;
-      }
-      
-      int writtenSize = 0;
-      do {
-        int result = inflate(&zlib, Z_NO_FLUSH);
-        if (result == Z_OK || result == Z_STREAM_END) {
-              
-        } else {
-          SG_LOG(SG_IO, SG_WARN, "got Zlib error:" << result);
-          return;
-        }
-            
-        writtenSize = ZLIB_DECOMPRESS_BUFFER_SIZE - zlib.avail_out;
-      } while ((writtenSize == 0) && (zlib.avail_in > 0));
-    
-      if (writtenSize > 0) {
-        activeRequest->processBodyBytes((const char*) zlibOutputBuffer, writtenSize);
-      }
+        return true;
     }
     
     virtual void foundTerminator(void)
@@ -405,6 +414,7 @@ public:
         case STATE_GETTING_CHUNKED_BYTES:
             setTerminator("\r\n");
             state = STATE_GETTING_CHUNKED;
+            buffer.clear();
             break;
             
 
@@ -553,7 +563,7 @@ private:
             // blank line after chunk data
             return;
         }
-        
+                
         int chunkSize = 0;
         int semiPos = buffer.find(';');
         if (semiPos >= 0) {

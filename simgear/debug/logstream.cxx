@@ -334,13 +334,13 @@ logstream::get_log_priority() const
 void
 logstream::set_log_priority( sgDebugPriority p)
 {
-    global_privateLogstream->m_logPriority = p;
+    global_privateLogstream->setLogLevels(global_privateLogstream->m_logClass, p);
 }
     
 void
 logstream::set_log_classes( sgDebugClass c)
 {
-    global_privateLogstream->m_logClass = c;
+    global_privateLogstream->setLogLevels(c, global_privateLogstream->m_logPriority);
 }
 
 logstream&

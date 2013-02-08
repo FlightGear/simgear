@@ -133,54 +133,6 @@ private:
     sgDebugPriority m_priority;
 };
 
-namespace simgear
-{
- 
-class BufferedLogCallback::BufferedLogCallbackPrivate
-{
-public:
-    SGMutex m_mutex;
-    sgDebugClass m_class;
-    sgDebugPriority m_priority;
-    string_list m_buffer;
-};
-   
-BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
-    d(new BufferedLogCallbackPrivate)
-{
-    d->m_class = c;
-    d->m_priority = p;
-}
-
-BufferedLogCallback::~BufferedLogCallback()
-{
-}
- 
-void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p, 
-        const char* file, int line, const std::string& aMessage)
-{
-    SG_UNUSED(file);
-    SG_UNUSED(line);
-    
-    if ((c & d->m_class) == 0 || p < d->m_priority) return;
-    
-    SGGuard<SGMutex> g(d->m_mutex);
-    d->m_buffer.push_back(aMessage);
-}
- 
-void BufferedLogCallback::threadsafeCopy(string_list& aOutput)
-{
-    aOutput.clear();
-    SGGuard<SGMutex> g(d->m_mutex);
-    size_t sz = d->m_buffer.size();
-    aOutput.resize(sz);
-    for (unsigned int i=0; i<sz; ++i) {
-        aOutput[i] = d->m_buffer[i];
-    }
-} 
-
-} // of namespace simgear
-
 class LogStreamPrivate : public SGThread
 {
 private:

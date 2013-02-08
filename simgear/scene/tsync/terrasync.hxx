@@ -31,6 +31,8 @@ namespace simgear
 {
 const int NOWHERE = -9999;
 
+class BufferedLogCallback;
+
 typedef void (*SGTerraSyncCallback)(void* userData, long tileIndex);
 
 class SGTerraSync : public SGSubsystem
@@ -49,6 +51,10 @@ public:
     bool schedulePosition(int lat, int lon);
     void setTileRefreshCb(SGTerraSyncCallback refreshCb, void* userData = NULL);
 
+    /// retrive the associated log object, for displaying log
+    /// output somewhere (a UI, presumably)
+    BufferedLogCallback* log() const
+        { return _log; }
 protected:
     void syncAirportsModels();
     void syncArea(int lat, int lon);
@@ -67,6 +73,7 @@ private:
     SGTerraSyncCallback _refreshCb;
     void* _userCbData;
     simgear::TiedPropertyList _tiedProperties;
+    BufferedLogCallback* _log;
 };
 
 }

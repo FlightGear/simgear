@@ -60,6 +60,7 @@
 #include <simgear/misc/strutils.hxx>
 #include <simgear/threads/SGQueue.hxx>
 #include <simgear/misc/sg_dir.hxx>
+#include <simgear/debug/BufferedLogCallback.hxx>
 
 #ifdef HAVE_SVN_CLIENT_H
 #  ifdef HAVE_LIBSVN_CLIENT_1
@@ -683,6 +684,10 @@ SGTerraSync::SGTerraSync(SGPropertyNode_ptr root) :
     _userCbData(NULL)
 {
     _svnThread = new SvnThread();
+    _log = new BufferedLogCallback(SG_TERRAIN, SG_INFO);
+    _log->truncateAt(255);
+    
+    sglog().addCallback(_log);
 }
 
 SGTerraSync::~SGTerraSync()
@@ -690,6 +695,8 @@ SGTerraSync::~SGTerraSync()
     _tiedProperties.Untie();
     delete _svnThread;
     _svnThread = NULL;
+    sglog().removeCallback(_log);
+    delete _log;
 }
 
 void SGTerraSync::init()

@@ -98,7 +98,9 @@ private:
 class StderrLogCallback : public simgear::LogCallback
 {
 public:
-    StderrLogCallback()
+    StderrLogCallback(sgDebugClass c, sgDebugPriority p) :
+        m_class(c),
+            m_priority(p)
     {
 #ifdef _WIN32
         AllocConsole(); // but only if we want a console
@@ -107,10 +109,18 @@ public:
         freopen("conout$", "w", stderr);
 #endif
     }
-
+    
+    void setLogLevels( sgDebugClass c, sgDebugPriority p )
+    {
+        m_priority = p;
+        m_class = c;
+    }
+    
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage)
     {
+        if ((c & m_class) == 0 || p < m_priority) return;
+        
         // if running under MSVC, we could use OutputDebugString here
         
         fprintf(stderr, "%s\n", aMessage.c_str());
@@ -119,7 +129,8 @@ public:
         fflush(stderr);
     }
 private:
-    
+    sgDebugClass m_class;
+    sgDebugPriority m_priority;
 };
 
 namespace simgear
@@ -196,9 +207,13 @@ private:
     };
 public:
     LogStreamPrivate() :
-        m_logClass(SG_ALL), m_logPriority(SG_WARN),
+        m_logClass(SG_ALL), 
+        m_logPriority(SG_ALERT),
         m_isRunning(false)
-    { }
+    { 
+        m_stderrCallback = new StderrLogCallback(m_logClass, m_logPriority);
+        addCallback(m_stderrCallback);
+    }
                     
     SGMutex m_lock;
     SGBlockingQueue<LogEntry> m_entries;
@@ -206,6 +221,7 @@ public:
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning;
+    StderrLogCallback* m_stderrCallback;
     
     void startLog()
     {
@@ -219,6 +235,8 @@ public:
     {
         while (1) {
             LogEntry entry(m_entries.pop());
+            // special marker entry detected, terminate the thread since we are
+            // making a configuration change or quitting the app
             if ((entry.debugClass == SG_NONE) && !strcmp(entry.file, "done")) {
                 return;
             }
@@ -256,6 +274,17 @@ public:
         }
     }
     
+    void setLogLevels( sgDebugClass c, sgDebugPriority p )
+    {
+        bool wasRunning = stop();
+        m_logPriority = p;
+        m_logClass = c;
+        m_stderrCallback->setLogLevels(c, p);
+        if (wasRunning) {
+            startLog();
+        }
+    }
+    
     bool would_log( sgDebugClass c, sgDebugPriority p ) const
     {
         if (p >= SG_INFO) return true;
@@ -278,17 +307,13 @@ static LogStreamPrivate* global_privateLogstream = NULL;
 logstream::logstream()
 {
     global_privateLogstream = new LogStreamPrivate;
-    global_privateLogstream->addCallback(new StderrLogCallback);
     global_privateLogstream->startLog();
 }
 
 void
 logstream::setLogLevels( sgDebugClass c, sgDebugPriority p )
 {
-    // we don't guard writing these with a mutex, since we assume setting
-    // occurs very rarely, and any data races are benign. 
-    global_privateLogstream->m_logClass = c;
-    global_privateLogstream->m_logPriority = p;
+    global_privateLogstream->setLogLevels(c, p);
 }
 
 void

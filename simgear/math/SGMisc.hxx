@@ -41,6 +41,23 @@ public:
   static T clip(const T& a, const T& _min, const T& _max)
   { return max(_min, min(_max, a)); }
 
+  /**
+   * Seek a variable towards a target value with given rate and timestep
+   *
+   * @param var     Variable or eg. SGPropObj
+   * @param target  Target value
+   * @param rate    Max. change rate/sec
+   * @param dt      Time step (sec)
+   */
+  template<class Var>
+  static T seek(Var& var, T target, T rate, T dt)
+  {
+    if( var < target )
+      return var = min(var + rate * dt, target);
+    else
+      return var = max(var - rate * dt, target);
+  }
+
   static int sign(const T& a)
   {
     if (a < -SGLimits<T>::min())

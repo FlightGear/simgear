@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <boost/foreach.hpp>
 

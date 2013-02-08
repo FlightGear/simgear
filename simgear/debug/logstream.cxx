@@ -157,6 +157,25 @@ private:
         int line;
         std::string message;
     };
+    
+    class PauseThread
+    {
+    public:
+        PauseThread(LogStreamPrivate* parent) : m_parent(parent)
+        {
+            m_wasRunning = m_parent->stop();
+        }
+        
+        ~PauseThread()
+        {
+            if (m_wasRunning) {
+                m_parent->startLog();
+            }
+        }
+    private:
+        LogStreamPrivate* m_parent;
+        bool m_wasRunning;
+    };
 public:
     LogStreamPrivate() :
         m_logClass(SG_ALL), 
@@ -169,7 +188,10 @@ public:
                     
     SGMutex m_lock;
     SGBlockingQueue<LogEntry> m_entries;
-    std::vector<simgear::LogCallback*> m_callbacks;    
+    
+    typedef std::vector<simgear::LogCallback*> CallbackVec;
+    CallbackVec m_callbacks;    
+    
     sgDebugClass m_logClass;
     sgDebugPriority m_logPriority;
     bool m_isRunning;
@@ -219,22 +241,25 @@ public:
     
     void addCallback(simgear::LogCallback* cb)
     {
-        bool wasRunning = stop();
+        PauseThread pause(this);
         m_callbacks.push_back(cb);
-        if (wasRunning) {
-            startLog();
+    }
+    
+    void removeCallback(simgear::LogCallback* cb)
+    {
+        PauseThread pause(this);
+        CallbackVec::iterator it = std::find(m_callbacks.begin(), m_callbacks.end(), cb);
+        if (it != m_callbacks.end()) {
+            m_callbacks.erase(it);
         }
     }
     
     void setLogLevels( sgDebugClass c, sgDebugPriority p )
     {
-        bool wasRunning = stop();
+        PauseThread pause(this);
         m_logPriority = p;
         m_logClass = c;
         m_stderrCallback->setLogLevels(c, p);
-        if (wasRunning) {
-            startLog();
-        }
     }
     
     bool would_log( sgDebugClass c, sgDebugPriority p ) const
@@ -272,6 +297,12 @@ void
 logstream::addCallback(simgear::LogCallback* cb)
 {   
     global_privateLogstream->addCallback(cb);
+}
+
+void
+logstream::removeCallback(simgear::LogCallback* cb)
+{   
+    global_privateLogstream->removeCallback(cb);
 }
 
 void

@@ -93,9 +93,8 @@ public:
      * must use appropriate locking.
      */
     void addCallback(simgear::LogCallback* cb);
-    
-  //  friend logstream& sglog();
-//    static logstream *initGlobalLogstream();
+     
+    void removeCallback(simgear::LogCallback* cb);
 
 private:
     // constructor

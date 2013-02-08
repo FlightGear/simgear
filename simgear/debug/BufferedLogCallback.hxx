@@ -37,8 +37,19 @@ public:
     BufferedLogCallback(sgDebugClass c, sgDebugPriority p);
     virtual ~BufferedLogCallback();
     
+    /// truncate messages longer than a certain length. This is to work-around
+    /// for broken PUI behaviour, it can be removed once PUI is gone.
+    void truncateAt(unsigned int);
+    
     virtual void operator()(sgDebugClass c, sgDebugPriority p, 
         const char* file, int line, const std::string& aMessage);
+    
+    /**
+     * read the stamp value associated with the log buffer. This is
+     * incremented whenever the log contents change, so can be used
+     * to poll for changes.
+     */
+    unsigned int stamp() const;
     
     /**
     * copying a (large) vector of std::string would be very expensive.
@@ -53,8 +64,10 @@ public:
      * copy the buffered log data into the provided output list
      * (which will be cleared first). This method is safe to call from
      * any thread.
+     *
+     * returns the stamp value of the copied data
      */
-    void threadsafeCopy(vector_cstring& aOutput);
+    unsigned int threadsafeCopy(vector_cstring& aOutput);
 private:
     class BufferedLogCallbackPrivate;
     std::auto_ptr<BufferedLogCallbackPrivate> d;

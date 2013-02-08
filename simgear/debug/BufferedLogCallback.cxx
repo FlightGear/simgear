@@ -37,6 +37,8 @@ public:
     sgDebugClass m_class;
     sgDebugPriority m_priority;
     vector_cstring m_buffer;
+    unsigned int m_stamp;
+    unsigned int m_maxLength;
 };
    
 BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
@@ -44,6 +46,8 @@ BufferedLogCallback::BufferedLogCallback(sgDebugClass c, sgDebugPriority p) :
 {
     d->m_class = c;
     d->m_priority = p;
+    d->m_stamp = 0;
+    d->m_maxLength = 0xffff;
 }
 
 BufferedLogCallback::~BufferedLogCallback()
@@ -61,17 +65,37 @@ void BufferedLogCallback::operator()(sgDebugClass c, sgDebugPriority p,
     
     if ((c & d->m_class) == 0 || p < d->m_priority) return;
     
-    vector_cstring::value_type msg = (vector_cstring::value_type) strdup(aMessage.c_str());
+    vector_cstring::value_type msg;
+    if (aMessage.size() >= d->m_maxLength) {
+        msg = (vector_cstring::value_type) malloc(d->m_maxLength);
+        strncpy((char*) msg, aMessage.c_str(), d->m_maxLength - 1);
+        msg[d->m_maxLength - 1] = 0; // add final NULL byte
+    } else {
+        msg = (vector_cstring::value_type) strdup(aMessage.c_str());
+    }
+    
     SGGuard<SGMutex> g(d->m_mutex);
     d->m_buffer.push_back(msg);
+    d->m_stamp++;
 }
  
-void BufferedLogCallback::threadsafeCopy(vector_cstring& aOutput)
+unsigned int BufferedLogCallback::stamp() const
+{
+    return d->m_stamp;
+}
+ 
+unsigned int BufferedLogCallback::threadsafeCopy(vector_cstring& aOutput)
 {
     SGGuard<SGMutex> g(d->m_mutex);
     size_t sz = d->m_buffer.size();
     aOutput.resize(sz);
     memcpy(aOutput.data(), d->m_buffer.data(), sz * sizeof(vector_cstring::value_type));
+    return d->m_stamp;
 } 
+ 
+void BufferedLogCallback::truncateAt(unsigned int t)
+{
+    d->m_maxLength = t;
+}
  
 } // of namespace simgear

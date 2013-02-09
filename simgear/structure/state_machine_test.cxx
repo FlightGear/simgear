@@ -43,13 +43,19 @@ public:
     bool _state;
 };
 
-static int dummy_cmd_state = 0;
-
-bool dummyCommand(const SGPropertyNode* arg)
+class DummyThing
 {
-    ++dummy_cmd_state;
-    return true;
-}
+public:
+    DummyThing() : dummy_cmd_state(0) { }
+    
+    bool someCommand(const SGPropertyNode* arg)
+    {
+        dummy_cmd_state++;
+        return true;
+    }
+    
+    int dummy_cmd_state;
+};
 
 #define COMPARE(a, b) \
     if ((a) != (b))  { \
@@ -171,7 +177,8 @@ void testNoSourcesTransition()
 void testBindings()
 {    
     SGCommandMgr* cmdMgr = SGCommandMgr::instance();
-    cmdMgr->addCommand("dummy", dummyCommand);
+    DummyThing thing;
+    cmdMgr->addCommand("dummy", &thing, &DummyThing::someCommand);
     BUILD_MACHINE_1();
     
     t2->addBinding(new SGBinding("dummy"));
@@ -186,20 +193,20 @@ void testBindings()
     sm->update(1.0);
     trigger1->_state = false;
     COMPARE(sm->state()->name(), "b");
-    COMPARE(dummy_cmd_state, 1); // exit state A
+    COMPARE(thing.dummy_cmd_state, 1); // exit state A
     
     trigger2->_state = true;
     sm->update(1.0);
     trigger2->_state = false;
-    COMPARE(dummy_cmd_state, 3); // fire transition 2, enter state C
+    COMPARE(thing.dummy_cmd_state, 3); // fire transition 2, enter state C
     
-    dummy_cmd_state = 0;
+    thing.dummy_cmd_state = 0;
     sm->changeToState(stateA);
-    COMPARE(dummy_cmd_state, 1); // enter state A
+    COMPARE(thing.dummy_cmd_state, 1); // enter state A
     trigger1->_state = true;
     sm->update(1.0);
     trigger1->_state = false;
-    COMPARE(dummy_cmd_state, 2); // exit state A
+    COMPARE(thing.dummy_cmd_state, 2); // exit state A
     
 ////////////////////////
     t3->addBinding(new SGBinding("dummy"));
@@ -207,11 +214,11 @@ void testBindings()
     t3->addBinding(new SGBinding("dummy"));
     
     sm->changeToStateName("b");
-    dummy_cmd_state = 0;
+    thing.dummy_cmd_state = 0;
     trigger3->_state = true;
     sm->update(1.0);
     trigger3->_state = false;
-    COMPARE(dummy_cmd_state, 4); // three transition bindings, enter A
+    COMPARE(thing.dummy_cmd_state, 4); // three transition bindings, enter A
 }
 
 void testParse()

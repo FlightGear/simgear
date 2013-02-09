@@ -52,12 +52,15 @@ SGCommandMgr::instance()
 }
 
 void
-SGCommandMgr::addCommand (const std::string &name, command_t command)
+SGCommandMgr::addCommand (const std::string &name, Command* command)
 {
+    if (_commands.find(name) != _commands.end())
+        throw sg_exception("duplicate command name:" + name);
+    
   _commands[name] = command;
 }
 
-SGCommandMgr::command_t
+SGCommandMgr::Command*
 SGCommandMgr::getCommand (const std::string &name) const
 {
   const command_map::const_iterator it = _commands.find(name);
@@ -80,7 +83,7 @@ SGCommandMgr::getCommandNames () const
 bool
 SGCommandMgr::execute (const std::string &name, const SGPropertyNode * arg) const
 {
-  command_t command = getCommand(name);
+  Command* command = getCommand(name);
   if (command == 0)
     return false;
 

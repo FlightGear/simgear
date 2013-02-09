@@ -73,7 +73,7 @@ public:
    * @return The command associated with this binding, or 0 if none
    * is present.
    */
-  SGCommandMgr::command_t getCommand () const { return _command; }
+  SGCommandMgr::Command* getCommand () const { return _command; }
 
 
   /**
@@ -120,7 +120,7 @@ private:
   SGBinding (const SGBinding &binding);
 
   std::string _command_name;
-  mutable SGCommandMgr::command_t _command;
+  mutable SGCommandMgr::Command* _command;
   mutable SGPropertyNode_ptr _arg;
   mutable SGPropertyNode_ptr _setting;
 };

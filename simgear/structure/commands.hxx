@@ -15,12 +15,13 @@
 
 #include <string>
 #include <map>
-#include <vector>
 
 #include <simgear/threads/SGThread.hxx>
 #include <simgear/math/sg_types.hxx>
-#include <simgear/props/props.hxx>
 
+// forward decls
+class SGPropertyNode;
+     
 /**
  * Manage commands.
  *
@@ -34,12 +35,64 @@
 class SGCommandMgr
 {
 public:
+    /**
+     * Command functor object
+     */
+    class Command
+    {
+    public:
+        virtual ~Command() { }
+        virtual bool operator()(const SGPropertyNode * arg) = 0;
+    };
 
-  /**
-   * Type for a command function.
-   */
+private:
+    template< typename Fun >
+    class FunctionCommand : public Command
+    {
+    public:
+        FunctionCommand( const Fun* fun )
+    	: f_(fun) {}
+
+        virtual bool operator()(const SGPropertyNode * arg) { return (*f_)(arg); }
+    private:
+        Fun* f_;
+    };
+
+    template< class ObjPtr, typename MemFn >
+    class MethodCommand : public Command
+    {
+    public:
+        MethodCommand( const ObjPtr& pObj, MemFn pMemFn ) :
+    	  pObj_(pObj), pMemFn_(pMemFn) {}
+
+        virtual bool operator()(const SGPropertyNode * arg)
+        {
+    	     return ((*pObj_).*pMemFn_)(arg);
+        }
+    private:
+        ObjPtr pObj_;
+        MemFn pMemFn_;
+    };
+    
+   /**
+    * Helper template functions.
+    */
+
+   template< typename Fun >
+   Command* make_functor( const Fun* fun )
+   {
+       return new FunctionCommand<Fun>(fun);
+   }
+
+   template< class ObjPtr, typename MemFn >
+   Command* make_functor( const ObjPtr& pObj, MemFn pMemFn )
+   {
+       return new MethodCommand<ObjPtr,MemFn>(pObj, pMemFn );
+   }
+   
+public:
+    
   typedef bool (*command_t) (const SGPropertyNode * arg);
-
 
   /**
    * Destructor.
@@ -60,9 +113,18 @@ public:
    * a bool result.  The argument is always a const pointer to
    * an SGPropertyNode (which may contain multiple values).
    */
-  virtual void addCommand (const std::string &name, command_t command);
+  template<typename FUNC>
+  void addCommand(const std::string& name, const FUNC* f)
+  { addCommand(name, make_functor(f)); }
+       
+  void addCommand (const std::string &name, Command* command);
 
-
+  template<class OBJ, typename METHOD>
+  void addCommand(const std::string& name, const OBJ& o, METHOD m)
+  { 
+    addCommand(name, make_functor(o,m));
+  }
+  
   /**
    * Look up an existing command.
    *
@@ -70,7 +132,7 @@ public:
    * @return A pointer to the command, or 0 if there is no registered
    * command with the name specified.
    */
-  virtual command_t getCommand (const std::string &name) const;
+  virtual Command* getCommand (const std::string &name) const;
 
 
   /**
@@ -103,7 +165,7 @@ protected:
 
 private:
 
-  typedef std::map<std::string,command_t> command_map;
+  typedef std::map<std::string,Command*> command_map;
   command_map _commands;
 
   static SGMutex _instanceMutex;

@@ -109,7 +109,7 @@ public:
    * an SGPropertyNode (which may contain multiple values).
    */
   void addCommand(const std::string& name, command_t f)
-  { addCommandObject(name, new FunctionCommand(f)); }
+  { addCommandObject(name, new FunctionCommand(f); }
        
   void addCommandObject (const std::string &name, Command* command);
 

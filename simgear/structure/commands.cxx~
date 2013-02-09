@@ -52,7 +52,7 @@ SGCommandMgr::instance()
 }
 
 void
-SGCommandMgr::addCommandObject (const std::string &name, Command* command)
+SGCommandMgr::addCommand (const std::string &name, Command* command)
 {
     if (_commands.find(name) != _commands.end())
         throw sg_exception("duplicate command name:" + name);

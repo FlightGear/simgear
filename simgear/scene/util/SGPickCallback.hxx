@@ -50,10 +50,14 @@ public:
   virtual ~SGPickCallback() {}
   virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* event, const Info& info)
   { return false; }
+  
   virtual void update(double dt)
   { }
   virtual void buttonReleased(void)
   { }
+
+  virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+  {  return false; }
 
   Priority getPriority() const
   { return _priority; }

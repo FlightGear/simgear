@@ -40,6 +40,15 @@ using namespace simgear;
 using OpenThreads::Mutex;
 using OpenThreads::ScopedLock;
 
+static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode* modelRoot,
+    const std::string& aName, SGBindingList& aBindings)
+{
+    const SGPropertyNode* n = aNode->getChild(aName);
+    if (n)
+        aBindings = readBindingList(n->getChildren("binding"), modelRoot);
+    
+}
+
  class SGPickAnimation::PickCallback : public SGPickCallback {
  public:
    PickCallback(const SGPropertyNode* configNode,
@@ -47,37 +56,23 @@ using OpenThreads::ScopedLock;
      _repeatable(configNode->getBoolValue("repeatable", false)),
      _repeatInterval(configNode->getDoubleValue("interval-sec", 0.1))
    {
-     SG_LOG(SG_INPUT, SG_DEBUG, "Reading all bindings");
      std::vector<SGPropertyNode_ptr> bindings;
 
      bindings = configNode->getChildren("button");
      for (unsigned int i = 0; i < bindings.size(); ++i) {
-       _buttons.push_back( bindings[i]->getIntValue() );
-     }
-     bindings = configNode->getChildren("binding");
-     for (unsigned int i = 0; i < bindings.size(); ++i) {
-       _bindingsDown.push_back(new SGBinding(bindings[i], modelRoot));
+       _buttons.insert( bindings[i]->getIntValue() );
      }
 
-     const SGPropertyNode* upNode = configNode->getChild("mod-up");
-     if (!upNode)
-       return;
-     bindings = upNode->getChildren("binding");
-     for (unsigned int i = 0; i < bindings.size(); ++i) {
-       _bindingsUp.push_back(new SGBinding(bindings[i], modelRoot));
-     }
+     _bindingsDown = readBindingList(configNode->getChildren("binding"), modelRoot);
+     readOptionalBindingList(configNode, modelRoot, "mod-up", _bindingsUp);
+     readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
    }
+   
    virtual bool buttonPressed(int button, const osgGA::GUIEventAdapter* ea, const Info&)
    {
-     bool found = false;
-     for( std::vector<int>::iterator it = _buttons.begin(); it != _buttons.end(); ++it ) {
-       if( *it == button ) {
-         found = true;
-         break;
+       if (_buttons.find(button) == _buttons.end()) {
+           return false;
        }
-     }
-     if (!found )
-       return false;
        
      fireBindingList(_bindingsDown);
      _repeatTime = -_repeatInterval;    // anti-bobble: delay start of repeat
@@ -98,10 +93,22 @@ using OpenThreads::ScopedLock;
          fireBindingList(_bindingsDown);
      }
    }
+   
+   virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+   {
+       if (_hover.empty()) {
+           return false;
+       }
+       
+       // FIXME - make x,y available to the binding 
+       fireBindingList(_hover);
+       return true;
+   }
  private:
    SGBindingList _bindingsDown;
    SGBindingList _bindingsUp;
-   std::vector<int> _buttons;
+   SGBindingList _hover;
+   std::set<int> _buttons;
    bool _repeatable;
    double _repeatInterval;
    double _repeatTime;
@@ -352,15 +359,6 @@ static void repeatBindings(const SGBindingList& a, SGBindingList& out, int count
     }
 }
 
-static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode* modelRoot,
-    const std::string& aName, SGBindingList& aBindings)
-{
-    const SGPropertyNode* n = aNode->getChild(aName);
-    if (n)
-        aBindings = readBindingList(n->getChildren("binding"), modelRoot);
-    
-}
-
 static bool static_knobMouseWheelAlternateDirection = false;
 
 class SGKnobAnimation::KnobPickCallback : public SGPickCallback {
@@ -376,6 +374,7 @@ public:
         readOptionalBindingList(configNode, modelRoot, "ccw", _bindingsCCW);
         
         readOptionalBindingList(configNode, modelRoot, "release", _releaseAction);
+        readOptionalBindingList(configNode, modelRoot, "hovered", _hover);
         
         if (configNode->hasChild("shift-action") || configNode->hasChild("shift-cw") ||
             configNode->hasChild("shift-ccw"))
@@ -433,6 +432,17 @@ public:
             fire(_stickyShifted);
         } // of repeat iteration
     }
+
+    virtual bool hover(const osg::Vec2d& windowPos, const Info& info)
+    {
+        if (_hover.empty()) {
+            return false;
+        }
+       
+        // FIXME - make x,y available to the binding 
+        fireBindingList(_hover);
+        return true;
+    }
 private:
     void fire(bool isShifted)
     {
@@ -457,6 +467,7 @@ private:
     SGBindingList _releaseAction;
     SGBindingList _bindingsCW, _shiftedCW,
         _bindingsCCW, _shiftedCCW;
+    SGBindingList _hover;
     
     enum Direction
     {

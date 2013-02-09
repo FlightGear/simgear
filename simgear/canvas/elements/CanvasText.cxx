@@ -44,6 +44,8 @@ namespace canvas
     protected:
 
       canvas::Text *_text_element;
+
+      virtual void computePositions(unsigned int contextID) const;
   };
 
   //----------------------------------------------------------------------------
@@ -173,6 +175,70 @@ namespace canvas
     _text_element->setBoundingBox(bb);
 
     return bb;
+  }
+
+  //----------------------------------------------------------------------------
+  void Text::TextOSG::computePositions(unsigned int contextID) const
+  {
+    if( _textureGlyphQuadMap.empty() || _layout == VERTICAL )
+      return osgText::Text::computePositions(contextID);
+
+    // TODO check when it can be larger
+    assert( _textureGlyphQuadMap.size() == 1 );
+
+    const GlyphQuads& quads = _textureGlyphQuadMap.begin()->second;
+    const GlyphQuads::Glyphs& glyphs = quads._glyphs;
+    const GlyphQuads::Coords2& coords = quads._coords;
+    const GlyphQuads::LineNumbers& line_numbers = quads._lineNumbers;
+
+    float wr = _characterHeight / getCharacterAspectRatio();
+
+    size_t cur_line = static_cast<size_t>(-1);
+    for(size_t i = 0; i < glyphs.size(); ++i)
+    {
+      // Check horizontal offsets
+
+      bool first_char = cur_line != line_numbers[i];
+      cur_line = line_numbers[i];
+
+      bool last_char = (i + 1 == glyphs.size())
+                    || (cur_line != line_numbers[i + 1]);
+
+      if( first_char || last_char )
+      {
+        // From osg/src/osgText/Text.cpp:
+        //
+        // osg::Vec2 upLeft = local+osg::Vec2(0.0f-fHorizQuadMargin, ...);
+        // osg::Vec2 lowLeft = local+osg::Vec2(0.0f-fHorizQuadMargin, ...);
+        // osg::Vec2 lowRight = local+osg::Vec2(width+fHorizQuadMargin, ...);
+        // osg::Vec2 upRight = local+osg::Vec2(width+fHorizQuadMargin, ...);
+
+        float left = coords[i * 4].x(),
+              right = coords[i * 4 + 2].x(),
+              width = glyphs[i]->getWidth() * wr;
+
+        // (local + width + fHoriz) - (local - fHoriz) = width + 2*fHoriz | -width
+        float margin = 0.5f * (right - left - width),
+              cursor_x = left + margin
+                       - glyphs[i]->getHorizontalBearing().x() * wr;
+
+        if( first_char )
+        {
+          if( cur_line == 0 || cursor_x < _textBB._min.x() )
+            _textBB._min.x() = cursor_x;
+        }
+
+        if( last_char )
+        {
+          float cursor_w = cursor_x + glyphs[i]->getHorizontalAdvance() * wr;
+
+          if( cur_line == 0 || cursor_w > _textBB._max.x() )
+            _textBB._max.x() = cursor_w;
+        }
+      }
+    }
+
+    return osgText::Text::computePositions(contextID);
   }
 
   //----------------------------------------------------------------------------

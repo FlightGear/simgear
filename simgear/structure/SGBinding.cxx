@@ -15,6 +15,7 @@
 #include <simgear/compiler.h>
 #include "SGBinding.hxx"
 
+#include <simgear/props/props_io.hxx>
 #include <simgear/structure/exception.hxx>
 
 SGBinding::SGBinding()
@@ -64,25 +65,42 @@ SGBinding::read(const SGPropertyNode* node, SGPropertyNode* root)
 }
 
 void
-SGBinding::fire () const
+SGBinding::fire() const
 {
   if (test()) {
-    if (_command == 0)
-      _command = SGCommandMgr::instance()->getCommand(_command_name);
-    if (_command == 0) {
-      SG_LOG(SG_INPUT, SG_WARN, "No command attached to binding");
-    } else
-    {
-        try {
-            if (!(*_command)(_arg)) {
-                  SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
-                         << _command_name);
-            }
-        } catch (sg_exception& e) {
-          SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
-            << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
-        }
+    innerFire();
+  }
+}
+
+void
+SGBinding::innerFire () const
+{
+  if (_command == 0)
+    _command = SGCommandMgr::instance()->getCommand(_command_name);
+  if (_command == 0) {
+    SG_LOG(SG_INPUT, SG_WARN, "No command attached to binding:" << _command_name);
+  } else {
+      try {
+          if (!(*_command)(_arg)) {
+                SG_LOG(SG_INPUT, SG_ALERT, "Failed to execute command "
+                       << _command_name);
+          }
+      } catch (sg_exception& e) {
+        SG_LOG(SG_GENERAL, SG_ALERT, "command '" << _command_name << "' failed with exception\n"
+          << "\tmessage:" << e.getMessage() << " (from " << e.getOrigin() << ")");
+      }
+  }
+}
+
+void
+SGBinding::fire (SGPropertyNode* params) const
+{
+  if (test()) {
+    if (params != NULL) {
+      copyProperties(params, _arg);
     }
+    
+    innerFire();
   }
 }
 
@@ -91,7 +109,7 @@ SGBinding::fire (double offset, double max) const
 {
   if (test()) {
     _arg->setDoubleValue("offset", offset/max);
-    fire();
+    innerFire();
   }
 }
 
@@ -104,14 +122,14 @@ SGBinding::fire (double setting) const
     if (_setting == 0)          // save the setting node for efficiency
       _setting = _arg->getChild("setting", 0, true);
     _setting->setDoubleValue(setting);
-    fire();
+    innerFire();
   }
 }
 
-void fireBindingList(const SGBindingList& aBindings)
+void fireBindingList(const SGBindingList& aBindings, SGPropertyNode* params)
 {
     BOOST_FOREACH(SGBinding_ptr b, aBindings) {
-        b->fire();
+        b->fire(params);
     }
 }
 

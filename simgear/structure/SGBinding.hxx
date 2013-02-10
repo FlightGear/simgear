@@ -114,8 +114,15 @@ public:
    */
   void fire (double setting) const;
 
-
+  /**
+   * Fire a binding with a number of additional parameters
+   * 
+   * The children of params will be merged with the fixed arguments.
+   */
+  void fire (SGPropertyNode* params) const;
+  
 private:
+  void innerFire() const;
                                 // just to be safe.
   SGBinding (const SGBinding &binding);
 
@@ -134,7 +141,7 @@ typedef std::map<unsigned,SGBindingList> SGBindingMap;
  * fire every binding in a list, in sequence
  
  */
-void fireBindingList(const SGBindingList& aBindings);
+void fireBindingList(const SGBindingList& aBindings, SGPropertyNode* params = NULL);
 
 /**
  * fire every binding in a list with a setting value

@@ -100,8 +100,10 @@ static void readOptionalBindingList(const SGPropertyNode* aNode, SGPropertyNode*
            return false;
        }
        
-       // FIXME - make x,y available to the binding 
-       fireBindingList(_hover);
+       SGPropertyNode_ptr params(new SGPropertyNode);
+       params->setDoubleValue("x", windowPos.x());
+       params->setDoubleValue("y", windowPos.y());
+       fireBindingList(_hover, params.ptr());
        return true;
    }
  private:
@@ -439,8 +441,10 @@ public:
             return false;
         }
        
-        // FIXME - make x,y available to the binding 
-        fireBindingList(_hover);
+        SGPropertyNode_ptr params(new SGPropertyNode);
+        params->setDoubleValue("x", windowPos.x());
+        params->setDoubleValue("y", windowPos.y());
+        fireBindingList(_hover, params.ptr());
         return true;
     }
 private:

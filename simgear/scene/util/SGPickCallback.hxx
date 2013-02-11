@@ -22,6 +22,8 @@
 #ifndef SG_SCENE_PICKCALLBACK_HXX
 #define SG_SCENE_PICKCALLBACK_HXX
 
+#include <osg/Vec2d>
+   
 #include <simgear/structure/SGReferenced.hxx>
 #include <simgear/structure/SGSharedPtr.hxx>
 #include <simgear/math/SGMath.hxx>

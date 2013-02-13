@@ -112,6 +112,7 @@ option(ENABLE_LIBSVN    "Set to ON to build SimGear with libsvnclient support" O
 option(ENABLE_RTI       "Set to ON to build SimGear with RTI support" OFF)
 option(ENABLE_TESTS     "Set to OFF to disable building SimGear's test applications" ON)
 option(ENABLE_SOUND     "Set to OFF to disable building SimGear's sound support" ON)
+option(ENABLE_PACKAGE   "Set to ON to build package-management support" OFF)
 
 if (MSVC)
   GET_FILENAME_COMPONENT(PARENT_DIR ${PROJECT_SOURCE_DIR} PATH)
@@ -222,6 +223,13 @@ else()
     message(STATUS "Using built-in expat code")
     add_definitions(-DHAVE_EXPAT_CONFIG_H)
 endif(SYSTEM_EXPAT)
+
+if (ENABLE_PACKAGE)
+    message(STATUS "package management: ENABLED: libArchive is needed")
+    find_package(LibArchive REQUIRED)
+else()
+    message(STATUS "package management: DISABLED")
+endif(ENABLE_PACKAGE)
 
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(sys/time.h HAVE_SYS_TIME_H)
@@ -335,8 +343,11 @@ include_directories(${PROJECT_BINARY_DIR}/simgear)
 include_directories(${PROJECT_BINARY_DIR}/simgear/xml)
 
 include_directories(${OPENSCENEGRAPH_INCLUDE_DIRS} 
-    ${Boost_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIR} 
-    ${OPENAL_INCLUDE_DIR} )
+    ${Boost_INCLUDE_DIRS} 
+    ${ZLIB_INCLUDE_DIR} 
+    ${OPENAL_INCLUDE_DIR}
+    ${LibArchive_INCLUDE_DIRS}
+)
 
 add_definitions(-DHAVE_CONFIG_H)
 

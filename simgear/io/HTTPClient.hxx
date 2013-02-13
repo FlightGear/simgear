@@ -33,6 +33,12 @@ public:
         
     const std::string& proxyAuth() const
         { return _proxyAuth; }
+    
+    /**
+     * predicate, check if at least one connection is active, with at
+     * least one request active or queued.
+     */
+    bool hasActiveRequests() const; 
 private:
     void requestFinished(Connection* con);
     

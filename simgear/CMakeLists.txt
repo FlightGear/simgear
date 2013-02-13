@@ -24,6 +24,10 @@ foreach( mylibfolder
 
 endforeach( mylibfolder )
 
+if (ENABLE_PACKAGE)
+    add_subdirectory(package)
+endif(ENABLE_PACKAGE)
+
 if(NOT SIMGEAR_HEADLESS)
     add_subdirectory(canvas)
     add_subdirectory(environment)
@@ -63,6 +67,7 @@ if(SIMGEAR_SHARED)
     set_property(TARGET SimGearCore PROPERTY SOVERSION ${SIMGEAR_SOVERSION})
 
     target_link_libraries(SimGearCore ${ZLIB_LIBRARY} ${RT_LIBRARY} 
+        ${LibArchive_LIBRARIES}
         ${EXPAT_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT})
 

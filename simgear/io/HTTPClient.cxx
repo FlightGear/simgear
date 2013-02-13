@@ -455,6 +455,11 @@ public:
     {
       return !queuedRequests.empty() && (sentRequests.size() < MAX_INFLIGHT_REQUESTS);
     }
+    
+    bool isActive() const
+    {
+        return !queuedRequests.empty() || !sentRequests.empty();
+    }
 private:
     bool connectToHost()
     {
@@ -731,6 +736,16 @@ void Client::setProxy(const string& proxy, int port, const string& auth)
     _proxy = proxy;
     _proxyPort = port;
     _proxyAuth = auth;
+}
+
+bool Client::hasActiveRequests() const
+{
+    ConnectionDict::const_iterator it = _connections.begin();
+    for (; it != _connections.end(); ++it) {
+        if (it->second->isActive()) return true;
+    }
+    
+    return false;
 }
 
 } // of namespace HTTP

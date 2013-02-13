@@ -211,6 +211,12 @@ namespace canvas
   }
 
   //----------------------------------------------------------------------------
+  bool Element::isVisible() const
+  {
+    return _transform->getNodeMask() != 0;
+  }
+
+  //----------------------------------------------------------------------------
   osg::ref_ptr<osg::MatrixTransform> Element::getMatrixTransform()
   {
     return _transform;

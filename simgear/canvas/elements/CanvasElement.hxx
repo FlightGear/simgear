@@ -82,6 +82,11 @@ namespace canvas
       virtual bool hitBound( const osg::Vec2f& pos,
                              const osg::Vec2f& local_pos ) const;
 
+      /**
+       * Get whether the element is visible or hidden (Can be changed with
+       * setting property "visible" accordingly).
+       */
+      bool isVisible() const;
 
       osg::ref_ptr<osg::MatrixTransform> getMatrixTransform();
 

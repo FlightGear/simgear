@@ -319,17 +319,10 @@ namespace canvas
   {
     if( !_src_rect.width() || !_src_rect.height() )
     {
-      const SGRect<int>& tex_dim = getTextureDimensions();
-
-      _node_src_rect->setBoolValue("normalized", false);
-      _node_src_rect->setFloatValue("right", tex_dim.width());
-      _node_src_rect->setFloatValue("bottom", tex_dim.height());
-    }
-
-    if( !_region.width() || !_region.height() )
-    {
-      _node->setFloatValue("size[0]", _src_rect.width());
-      _node->setFloatValue("size[1]", _src_rect.height());
+      // Show whole image by default
+      _node_src_rect->setBoolValue("normalized", true);
+      _node_src_rect->setFloatValue("right", 1);
+      _node_src_rect->setFloatValue("bottom", 1);
     }
   }
 

@@ -324,24 +324,42 @@ namespace canvas
       _node_src_rect->setFloatValue("right", 1);
       _node_src_rect->setFloatValue("bottom", 1);
     }
+
+    if( !_region.width() || !_region.height() )
+    {
+      // Default to image size.
+      // TODO handle showing only part of image?
+      const SGRect<int>& dim = getTextureDimensions();
+      _node->setFloatValue("size[0]", dim.width());
+      _node->setFloatValue("size[1]", dim.height());
+    }
   }
 
   //----------------------------------------------------------------------------
   SGRect<int> Image::getTextureDimensions() const
   {
-    osg::Texture2D *texture = !_src_canvas.expired()
-                            ? _src_canvas.lock()->getTexture()
-                            : _texture.get();
+    CanvasPtr canvas = _src_canvas.lock();
+    SGRect<int> dim(0,0);
 
-    if( !texture )
-      return SGRect<int>();
+    // Use canvas/image dimensions rather than texture dimensions, as they could
+    // be resized internally by OpenSceneGraph (eg. to nearest power of two).
+    if( canvas )
+    {
+      dim.setRight( canvas->getViewWidth() );
+      dim.setBottom( canvas->getViewHeight() );
+    }
+    else if( _texture )
+    {
+      osg::Image* img = _texture->getImage();
 
-    return SGRect<int>
-    (
-      0,0,
-      texture->getTextureWidth(),
-      texture->getTextureHeight()
-    );
+      if( img )
+      {
+        dim.setRight( img->s() );
+        dim.setBottom( img->t() );
+      }
+    }
+
+    return dim;
   }
 
 } // namespace canvas
